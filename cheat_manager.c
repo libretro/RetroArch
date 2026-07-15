@@ -260,10 +260,21 @@ bool cheat_manager_save(
    return ret;
 }
 
+bool cheat_manager_working_code_ensure(void)
+{
+   cheat_manager_t *cheat_st = &cheat_manager_state;
+   if (!cheat_st->working_code)
+      cheat_st->working_code = (char*)calloc(1, CHEAT_CODE_SCRATCH_SIZE);
+   return cheat_st->working_code != NULL;
+}
+
 bool cheat_manager_copy_idx_to_working(unsigned idx)
 {
    cheat_manager_t *cheat_st   = &cheat_manager_state;
    if (!cheat_st->cheats || (cheat_st->size < idx + 1))
+      return false;
+
+   if (!cheat_manager_working_code_ensure())
       return false;
 
    memcpy(&cheat_st->working_cheat,
@@ -343,7 +354,8 @@ bool cheat_manager_copy_working_to_idx(unsigned idx)
    if (cheat_st->cheats[idx].code)
       free(cheat_st->cheats[idx].code);
 
-   cheat_st->cheats[idx].code = strdup(cheat_st->working_code);
+   cheat_st->cheats[idx].code = strdup(
+         cheat_st->working_code ? cheat_st->working_code : "");
 
    return true;
 }

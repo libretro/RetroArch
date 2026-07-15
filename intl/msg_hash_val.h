@@ -1,2989 +1,2034 @@
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-
-/*
-##### NOTE FOR TRANSLATORS ####
-
-PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
-
-Translations are handled using the localization platform Crowdin:
-https://crowdin.com/project/retroarch
-
-Translations from Crowdin are applied automatically and will overwrite
-any changes made to the other localization files.
-As a result, any submissions directly altering `msg_hash_*.h` files
-other than `msg_hash_us.h` will be rejected.
-*/
-
-/* Top-Level Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Menú principal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "Ajustos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "Preferits"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "Historial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "Imatges"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   "Música"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Vídeos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "Joc en línia"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Explorar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Nuclis sense continguts"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Afegir continguts"
-   )
-
-/* Main Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "Menú ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Accedix ràpidament a tots els ajustos principals del joc en funcionament."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Carregar nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Selecciona quin nucli vas a usar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "Descarregar nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "Alliberar nucli carregat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Cerca una implementació per a un nucli de libretro. El cercador començarà a buscar en la carpeta que hages triat per al teu directori de nuclis. En cas de trobar-se en blanc, començarà al directori rael.\nSi el directori de nuclis és un directori, el menú usarà aquest com a carpeta inicial. Pel contrari, si és un directori complet, aquest s'iniciarà a la carpeta on es trobe l'arxiu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Carregar contingut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Selecciona quin contingut vas a executar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Cerca continguts. Per a carregar continguts necessites un 'nucli' i un arxiu de contingut.\nPer a configurar a on comença el menú a cercar-ne, configura el directori de l'explorador d'arxius. Si no està configurat, este començará a la rael.\nEl navegador filtrarà extensions per a l'últim nucli elegit en 'Carregar nucli', i emprarà aqueix nucli quan el contingut siga carregat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Carregar disc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Carrega un mitjà físic en disc òptic. Primer selecciona el nucli (Carregar nucli) per a usar-lo amb el disc."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Abocar disc"
-   )
-MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
-   MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Converteix un mitjà físic de disc òptic en un arxiu d'imatge per a poder ser guardat i executat en la memòria del teu maquinari."
-   )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Expulsar disc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Trau el disc òptic de la unitat lectora de CD/DVD."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Llistes de reproducció"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Els continguts escanejats que coincidisquen amb la base de dades seran mostrats ací."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Afegir continguts"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Crea i actualitza els llistats escanejant contingut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Vore menú d'escriptori"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Fa aparèixer un menú en forma de la típica finestra de programari d'ordinador."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Desactivar mode Kiosc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Vore totes les configuracions relacionades amb els ajustos."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Actualitzador en línia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Baixa i instal·la diferents complements, components i continguts de RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "Joc en línia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY,
-   "Uneix-te a una sessió de joc en línia, o crea-ne la teua pròpia."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "Ajustos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS,
-   "Configura el programa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   "Informació"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Mostra informació sobre maquinari i sistema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Arxiu de configuració"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Gestiona i crea arxius de configuració."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "Ajut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Mostra com funciona el programa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Reiniciar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Reiniciar Retroarch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Tancar RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Tanca Retroarch. Guardar la configuració a l'eixir està activat."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Tanca Retroarch. Guardar la configuració a l'eixir està desactivat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Tanca RetroArch. Si tanques el programa d'una manera forçada (SIGKILL, etc.) RetroArch no guardarà les configuracions. En sistemes Unix, SIGNIT/SIGTERM permet un tancament net."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Sincronitzar ara"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Inicia manualment la sincronització en el núvol."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-   "Resoldre conflictes: conservar arxius locals"
-   )
-
-/* Main Menu > Load Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Baixar un nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Baixa i instal·la un nucli des de l'actualitzador en línia."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Instal·la o restaura un nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Instal·la o restaura un nucli des del directori de \"Baixades\"."
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Començar el processador de vídeo"
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "Iniciar RetroPad remot"
-   )
-
-/* Main Menu > Load Content */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Directori inicial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "Baixades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Explorar arxiu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Carregar arxiu"
-   )
-
-/* Main Menu > Load Content > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   "Preferits"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "El contingut afegit a \"Preferits\" se vorà ací."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   "Música"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "La música que ha sigut escoltada anteriorment se vorà ací."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "Imatges"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Les imatges que hagen sigut vistes anteriorment se voran ací."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "Vídeos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Els vídeos que hagen sigut vistos anteriorment se voran ací."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   "Rebuscar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Regira tot el contingut mitjançant una interfície de búsqueda categoritzada que coincidisca amb la base de dades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Nuclis sense continguts"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Ací apareixeran els nuclis instal·lats que puguen funcionar sense haver de carregar un contingut."
-   )
-
-/* Main Menu > Online Updater */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Descarregador de nuclis"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Actualitza nuclis instal·lats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Actualitza tot els nuclis instal·lats a la seua última versió disponible."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Canvia nuclis de les versions de la Google Play Store"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Bescanvia tots els nuclis vells i instal·lats manualment amb les últimes versions de la Google Play Store quan estiguen disponibles."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Actualitzador de miniatures de la llista de reproducció"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Baixa miniatures per als elements de la llista de reproducció seleccionada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Baixador de contingut"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Baixa contingut gratuït per al nucli seleccionat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Descarregador d'arxius de sistema per al nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Baixa arxius de sistema auxiliars per al nucli requerits per a una funció més correcta o òptima."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Actualitza els arxius d'informació dels nuclis"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Actualitza medis"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Actualitza perfils dels controladors"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Actualitza trucs"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Actualitza les bases de dades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Actualitza les superposicions"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "Actualitza els shaders GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "Actualitza els shaders Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "Actualitza els shaders Slang"
-   )
-
-/* Main Menu > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "Informació del nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "Vore informació pertanyent a l'aplicació o al nucli."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Informació del disc"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Vore informació sobre discs òptics inserits."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Informació de xarxa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Vore les IP's associades i les interfícies de la xarxa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Informació del sistema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Vore informació específica sobre el maquinari."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   "Administrador de la base de dades"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   "Vore les bases de dades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   "Administrador de cursors"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "Vore les últimes cerques."
-   )
-
-/* Main Menu > Information > Core Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "Nom del nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "Etiqueta del nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "Versió del nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   "Nom del sistema"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   "Fabricant del sistema"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "Autor/s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   "Permisos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   "Llicència"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "Extensions suportades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Interfície de programació d'aplicacions gràfiques necessàries (API)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Suport de partides guardades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "Bàsic (guardar/carregar)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Serialitzat (guardar/carregar, rebobinar)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Determinat (guardar/carregar, rebobinar, anticipació predictiva de latència, joc en línia)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "Microprogramari (firmware)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Perdut, requerit"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "Perdut, opcional:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Actual, requerit"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "Actual, opcional:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Bloquejar el nucli instal·lat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Exclou del menú 'Nuclis sense continguts'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Prevén que el nucli siga mostrat a la secció 'Nuclis sense continguts'. Només s'aplica quan el mode de vídeo estiga configurat com a 'Personalitzat'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Eliminar nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Esborra este nucli del disc."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Còpia de seguretat del nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Fa una còpia de seguretat del nucli instal·lat actualment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "Restaurar una còpia de seguretat existent"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "Instal·la una versió anterior del nucli a partir de les còpies de seguretat de nucli guardades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   "Eliminar còpia de seguretat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "Elimina un arxiu de la llista de còpies de seguretat guardades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
-   "[Automàtic]"
-   )
-
-/* Main Menu > Information > System Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   "Data de compilació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "Versió de RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   "Versió de Git"
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
-   "Compilador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   "Model de processador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   "Característiques del processador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "Arquitectura del processador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "Nuclis del processador"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Identificador del processador d'accés"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "Sistema operatiu del processador d'accés"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   "Font d'energia"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   "Controlador de contexte de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Amplària d'imatge (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Alçada d'imatge (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Punts per polzada (PPP) de pantalla"
-   )
-
-/* Main Menu > Information > Database Manager > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   "Nom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   "Descripció"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   "Gènere"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Assoliments"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   "Categoria"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   "Llengua"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   "Regió"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   "Exclusiu de consoles de joc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   "Exclusiu de plataforma"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   "Puntuació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   "Suport"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   "Estil artístic"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   "Tipus de joc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   "Narrativa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   "Ritme de joc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   "Perspectiva"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Ambientació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   "Estil visual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   "Tipus de vehicles"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "Editor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   "Desenvolupadora"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   "Origen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
-   "Franquícia"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   "Puntuació a TheGamesDB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   "Puntuació de Famitsu Magazine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   "Ressenya d'Edge Magazine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   "Puntuació d'Edge Magazine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Número de revista d'Edge Magazine"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   "Qualificació BBFC (British Board of Film Classification)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   "Qualificació ESRB (Entertainment Software Rating Board)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   "Qualificació ELSPA (Entertainment and Leisure Software Publishers Association)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   "Qualificació PEGI (Pan European Game Information)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   "Ampliació del maquinari (MegaCD/SegaCD, 32x, etc)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   "Qualificació CERO (Computer Entertainment Rating Organization)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   "Codi de número sèrie"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "Control anàlogic admès"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "Vibració admesa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Cooperatiu admès"
-   )
-
-/* Main Menu > Configuration File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Carregar configuració"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   "Guardar configuració actual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "Guardar nova configuració"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
-   "Guardar configuració com"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Reiniciar per defecte"
-   )
-
-/* Main Menu > Help */
-
-/* Main Menu > Help > Basic Menu Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "Moure cap a dalt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "Moure cap abaix"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "Confirmar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   "Informació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   "Començar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "Vore menú"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "Tancar RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "Vore teclat"
-   )
-
-/* Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   "Controladors"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Canvia els controladors usats pel sistema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "Vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Canvia els ajustos d'eixida de vídeo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Entrada"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Canvia els ajustos de comandaments, teclat i ratolí."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   "Latència"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Canvia els ajustos relacionats amb la latència de vídeo, àudio i comandaments."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "Nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Canvia els ajustos del nucli."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "Configuració"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Canvia els ajustos per defecte dels arxius de configuració."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "Guardat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Canvia els ajustos de guardat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
-   "Automàtic"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
-   "Selecció manual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "Registres"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Canvia els ajustos del registre."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Navegador d'arxius"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Regulador de fotogrames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Canvia els ajustos de rebobinat, l'avançament ràpid i la càmera lenta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "Enregistrament"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Canvia els ajustos de l'enregistrament."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "Visualitzacions a la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Canvia els ajustos de capes de visualitzacions gràfiques de controls, notificacions del sistema i disposició de vídeo a la pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   "Interfície d'usuari"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "Canvia els ajustos de la interfície de l'usuari."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "Servei d'IA"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Canvia els ajustos del servei d'IA (traducció/text a veu/etc.)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   "Accessibilitat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Canvia els ajustos del narrador d'accessibilitat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Gestió d'energia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Canvia els ajustos de la gestió d'energia del sistema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Assoliments"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Canvia els ajustos dels assoliments."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   "Xarxa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Canvia els ajustos del servidor i de la xarxa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "Llistes de reproducció"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Canvia els ajustos de les llistes de reproducció."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   "Usuari"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "Directoris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Canvia els directoris predeterminats a on es troben localitzats els arxius."
-   )
-
-/* Core option category placeholders for icons */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   "Suport"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   "Sistema"
-   )
-
-#ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-   "Canvia els ajustos relacionats amb Steam."
-   )
+/* THIS FILE IS GENERATED by intl/json2h.py - do not edit.
+ * Packed message table; source of truth is the Crowdin
+ * project (see intl/crowdin_sync.py). */
+/* Pure-ASCII source: every non-ASCII byte is a fixed 3-digit octal
+ * escape, so no execution-charset pragma is needed and the encoded
+ * UTF-8 bytes survive any compiler codepage (including MSVC 2003-2010,
+ * which have no way to consume raw UTF-8 source reliably).
+ * C4045 is disabled for old MSVC: non-final chunk members are sized
+ * without a NUL slot, which is valid C89; the sizeof compile check
+ * below still catches any real size mismatch. */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#pragma warning(disable:4045)
 #endif
 
-/* Settings > Drivers */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Entrada"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   "Comandament"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   "Vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   "Àudio"
-   )
-#ifdef HAVE_MICROPHONE
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   "Remostreig d'àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Escull el controlador de remostreig d'àudio que s'usarà."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   "Càmera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   "Wifi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Ubicació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "Menú"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Enregistrament"
-   )
-
-/* Settings > Video */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
-   "SwitchRes per a CRT's"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Crea senyals de vídeo de baixa resolució per a pantalles de tub de raigs catòdics (CRT)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   "Eixida"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Canvia els ajustos de l'eixida de vídeo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Mode pantalla entrega"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Canvia els ajustos del mode de pantalla entrega."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Mode finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Canvia els ajustos del mode finestra en pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "Escalat d'imatge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Canvia els ajustos de mida de l'escalat d'imatge."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   "Canvia els ajustos de vídeo de l'HDR."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Sincronització"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Canvia els ajustos de sincronització de vídeo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   "Suspendre el salvapantalles"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Evita que el salvapantalles del vostre sistema s'active."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Vídeo multifil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Millora el rendiment del joc a costa d'un augment de la latència i sacseig en la imatge. Usar només si la màxima velocitat no pot ser obtinguda de cap altra manera."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Inserir fotogrames negres"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   "Filtrat bilineal"
-   )
-#if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Interpolació d'imatge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Concreta el mètode d'interpolació d'imatge usat per escalar contingut a través de l'IPU interna. Usar 'Bicúbica' o 'Bilineal' és recomanable quan s'usen filtres de vídeo processats per la CPU. Esta opció no afecta al rendiment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   "Bicúbica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   "Bilineal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   "Veí més proper"
-   )
-#if defined(RS90) || defined(MIYOO)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Interpolació d'imatge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Especifica el mètode d'interpolació d'imatge que s'usarà quan l'ajust 'Escalar usant nombres sencers' estiga desactivat. 'Veí més proper' afecta menys al rendiment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   "Veí més proper"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-   "Semilineal"
-   )
-#endif
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Retarda càrrega automàtica de shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Retardar la càrrega automàtica de shaders en milisegons. Pot solucionar alguns errors gràfics que poden fer aparició a l'usar programari de captura de pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   "Filtre de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Aplica un filtre de vídeo processat per la CPU. Pot comportar un major consum de recursos de maquinari. Alguns filtres de vídeo només funcionen per a nuclis que usen 32 o 16 bits de color."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   "Remou el filtre de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   "Atura qualsevol filtre de vídeo que estiga processant la CPU."
-   )
-
-/* Settings > Video > CRT SwitchRes */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
-   "SwitchRes per a CRT's"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   "Només per a pantalles de tub de raigs catòdics (CRT). Provarà d'usar-se la resolució i refresc d'imatge exactes del nucli/joc."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   "Super-resolució CRT"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   "Canvia entre resolucions natives o panoràmiques."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "Modifica esta opció si la imatge no està ben centrada a la pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   "Modifica esta opció si la imatge no està ben centrada a la pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Canvia els menús a línia de mode (modeline) en alta resolució quan no s'haja carregat cap contingut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Freqüència de refresc d'imatge personalitzada"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Usar paràmetres de freqüència de refresc d'imatge especificats en l'arxiu de configuració si es veu necessari."
-   )
-
-/* Settings > Video > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   "Índex del monitor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   "Escull quina pantalla vas a usar."
-   )
-#if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   "Usa una escala exacta del doble de la resolució del controlador per a l'àrea de visualització. Mantin esta opció desactivada per mostrar la resolució nativa del televisor."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   "Rotació de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Força una rotació específica de la imatge de vídeo. S'acollirà a la predeterminada pel nucli."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   "Orientació de pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "Força una orientació específica de la pantalla respecte a la del sistema operatiu."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   "Índex de la GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Escull quina targeta gràfica vols usar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   "Desplaçament horitzontal de la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   "Força un reajustament horitzontal de la imatge de vídeo. S'aplicarà de manera global."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   "Desplaçament vertical de la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   "Força un reajustament vertical de la imatge de vídeo. S'aplicarà de manera global."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Freqüència de refresc vertical de la imatge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Grau de refresc d'imatge estimat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Vore l'estimació exacta del grau d'actualització de refresc d'imatge de la pantalla en hercis (Hz)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Freqüència de refresc d'imatge recollida per la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "Vore la freqüència del grau d'actualització de refresc d'imatge recollit pel controlador de vídeo."
-   )
-#if defined(DINGUX) && defined(DINGUX_BETA)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Freqüència de refresc vertical de la imatge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Establix la freqüència de l'actualització vertical de la imatge. Escollir '50 Hz' donarà una imatge més suau al estar usant continguts en format PAL."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   "Forçar desactivació de l'FBO sRGB"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Força la desactivació del suport de l'FBO (Frame Buffer Object) sRGB. Esta opció pot minvar problemes de vídeo amb el suport d'FBO sRGB en alguns controladors OpenGL d'Intel en Windows."
-   )
-
-/* Settings > Video > Fullscreen Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Mode pantalla completa en finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "Si s'està usant el mode de pantalla completa, força l'ús d'una finestra a mida completa de la pantalla per no haver de canviar entre modes de vídeo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "Ample de pantalla completa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modificant el valor, s'usarà la resolució de l'escriptori."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Alçada de la pantalla completa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Ajusta la mida d'alçada personalitzada de la imatge per al mode pantalla completa. No modificant el valor, s'usarà la resolució de l'escriptori."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Forçar resolució a UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Força la resolució a la mida de la pantalla. Si es fica valor 0, s'usarà un de fixe de 3840 × 2160."
-   )
-
-/* Settings > Video > Windowed Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Escalat en la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Ajusta la mida de la finestra al múltiple especificat de la mida de l''àrea de visualització del núcli."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Opacitat de la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   "Establix la transparència de la finestra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Vore adornaments de les finestres"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Mostra la barra de títol i les voreres de la finestra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "Vore barra del menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
-   "Mostra la barra del menú a la finestra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   "Recordar posició i mida de la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valors d'«Ample de la finestra» i «Alçada de la finestra», guardant la mida i posició de la finestra actual al tancar RetroArch. Si es desactiva esta opció, la mida de la finestra canviarà de manera dinàmica segons l'ajust «Escala en la finestra»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Usar una mida de finestra personalitzada"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valors d'«Ample de la finestra» i «Alçada de la finestra». Si es desactiva esta opció, la mida de la finestra canviarà de manera dinàmica segons l'ajust «Escala en la finestra»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   "Ample de la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Ajusta una amplada personalitzada per a la finestra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Alçada de la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "Ajusta l'alçària personalitzada per a la finestra."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Ample màxim de la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Ajusta l'amplària màxima de la finestra al reescalar-la automàticament d'acord al valor d'«Escalat en la finestra»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Alçada màxima en la finestra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Ajusta l'alçada màxima de la finestra al reescalar-la automàticament d'acord al valor d'«Alçada en la finestra»."
-   )
-
-/* Settings > Video > Scaling */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Escalar usant nombres sencers"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   "Relació d'aspecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   "Ajusta la relació d'aspecte de la imatge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Configura la relació d'aspecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Valor de punt flotant per a la relació d'aspecte de vídeo (amplada/altura)."
-   )
-#if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Mantindre relació d'aspecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Manté les relacions d'aspecte de píxels 1:1 a l'escalar continguts mitjançant la IPU interna. Si es desactiva esta opció, les imatges seran estirades a fi de que ocupen la totalitat de la pantalla."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "Relació d'aspecte personalitzat (posició X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Relació d'aspecte personalitzat (posició Y)"
-   )
-#if defined(RARCH_MOBILE)
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Relació d'aspecte personalitzat (amplària)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Establix l'amplada personalitzada de l'àrea de visualització. Este valor s'usarà si ha sigut escollit «Personalitzat» a l'ajust «Relació d'aspecte»."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Relació d'aspecte personalitzat (alçària)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Establix l'alçada personalitzada de l'àrea de visualització. Este valor s'usarà si ha sigut escollit «Personalitzat» a l'ajust «Relació d'aspecte»."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Retalla uns quants píxels a les vores de la imatge que de vegades els desenvolupadors solen deixar en blanc, o que també la imatge puga contenir píxels de residu. (cal reiniciar)"
-   )
-
-/* Settings > Video > HDR */
-
-
-
-/* Settings > Video > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   "Sincronització vertical (VSync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Sincronitza l'eixida de vídeo de la targeta gràfica amb la freqüència de refresc d'imatge d'actualització de la pantalla. Es recomana activar-lo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "Interval d'intercanvi de VSync"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
-   "Selecció automàtica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   "Sincronització vertical adaptativa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "Retardament automàtic de fotogrames"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   "Selecció automàtica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   "real(s)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "Sincronització rigorosa de la GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "Força la sincronització entre CPU i GPU. Reduix la latència a canvi de pèrdua de rendiment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Nombre de fotogrames per a sincronització rigorosa de la GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronització rigorosa de la GPU\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Sincronitzar a fotograma exacte del contingut (G-Sync, FreeSync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "Impedix capgirar-se de l'interval sol·licitat pel nucli. Recomanat per a pantalles amb una freqüència de refresc d'imatge variable (G-Sync, FreeSync, HDMI 2.1 VRR)."
-   )
-
-/* Settings > Audio */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   "Eixida"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Canvia els ajustos d'eixida d'àudio."
-   )
-#ifdef HAVE_MICROPHONE
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Sincronització"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Canvia els ajustos de la sincronització de l'àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   "Canvia els ajustos de MIDI."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   "Mesclador"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "Canvia els ajustos del mesclador d'àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   "Sons del menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   "Canvia els ajustos de so del menú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   "Silenciar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Silencia l'àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   "Silenciar mesclador d'àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "Silencia el mesclador d'àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "Automàticament silencia l'àudio quan s'usa l'avançament ràpid."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   "Accelera l'àudio a l'emprar l'avançament ràpid. Defugirá sorolls en l'àudio a canvi de la seua tonalitat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Guany de volum (dB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   "Volum d'àudio en decibels (dB). 0 dB és el volum normal, sense cap guany afegit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Mesclador de guany del volum d'àudio (dB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Mesclador d'àudio de volum global en decibels (dB). 0 dB és el volum normal, sense cap guany afegit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "Connector DSP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "Connector d'àudio DSP que procesa l'àudio abans d'enviar-lo al controlador."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Remou el connector DSP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   "Desactiva qualsevol connector d'àudio DSP en funcionament."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "Mode WASAPI exclusiu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "Permet que el controlador WASAPI agafe el control exclusiu del dispositiu d'àudio. Si es desactiva l'opció serà usat en mode compartit."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   "Format WASAPI de punt flotant"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "Utilitza el format de punt flotant per al controlador WASAPI si es suportat pel teu dispositiu d'àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Mida del búfer compartit de WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Mida (en fotogrames) de la memòria intermèdia quan s’usa el controlador WASAPI en mode compartit."
-   )
-
-/* Settings > Audio > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "Engega l'eixida d’àudio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   "Dispositiu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Força el dispositiu que usa el controlador d’àudio. Això depèn del controlador."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Força el dispositiu que usa el controlador d’àudio. Això depèn del controlador."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Latència de l'àudio (ms)"
-   )
-
-#ifdef HAVE_MICROPHONE
-/* Settings > Audio > Input */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-   "Dispositiu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   "Qualitat del remostreig"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   "Baixa este valor per afavorir el rendiment i la latència sobre la qualitat de l'àudio, incrementeu-lo per a una millor qualitat d'àudio a canvi de perdre rendiment i latència."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "Mode WASAPI exclusiu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "Format WASAPI de punt flotant"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Mida del búfer compartit de WASAPI"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Mida (en fotogrames) de la memòria intermèdia quan s’usa el controlador WASAPI en mode compartit."
-   )
-#endif
-
-/* Settings > Audio > Resampler */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Qualitat del remostreig"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "Baixa este valor per afavorir el rendiment i la latència sobre la qualitat de l'àudio, incrementeu-lo per a una millor qualitat d'àudio a canvi de perdre rendiment i latència."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "Freqüència d'eixida (Hz)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   "Freqüència de mostreig de l'eixida d'àudio."
-   )
-
-/* Settings > Audio > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "Sincronització"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Sincronitza l'àudio. Recomanat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
-   "Desplaçament màxim de sincronització"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "El canvi màxim en la freqüència d'entrada d'àudio. Incrementar això engega canvis molt grans en la sincronització a cost d'un to d'àudio imprecís (ex. executar nuclis PAL a pantalles NTSC)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   "Control dinàmic de freqüència d'àudio"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "Ajuda a suavitzar imperfeccions en la sincronització de l'àudio i vídeo. Teniu en compte que si es desactiva, serà pràcticament impossible obtenir una sincronització correcta."
-   )
-
-/* Settings > Audio > MIDI */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   "Entrada"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "Selecciona dispositiu d'entrada."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   "Eixida"
-   )
-
-/* Settings > Audio > Mixer Settings > Mixer Stream */
-
-
-/* Settings > Audio > Menu Sounds */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   "Mesclador"
-   )
-
-/* Settings > Input */
-
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-#endif
-#ifdef ANDROID
-#endif
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "Engega l'entrada des dels sensors d'acceleròmetre, giroscopi i luminància, si està suportat pel maquinari actual. Pot tenir un impacte sobre el rendiment i/o un increment de consum energètic en algunes plataformes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "Activar automàticament mode 'Prioritat de joc'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Manté el mode 'Prioritat de joc' a l'engegar i reemprendre continguts de manera automàtica. Seleccionant 'Detectar', l'ajust s'activarà si el núcli actual implementa una funció de teclat virtual."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   "Desactiva"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   "Activa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   "Detecta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Posa en pausa el contingut quan qualssevol controlador es desconnecte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
-   "Selecció automàtica"
-   )
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "Canvia els ajustos de vibració i resposta hàptica."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
-   "Canvia els ajustos de control del menú."
-   )
-
-
-/* Settings > Input > Haptic Feedback/Vibration */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "Engega la vibració del dispositiu (per a nuclis suportats)"
-   )
-
-/* Settings > Input > Menu Controls */
-
-
-/* Settings > Input > Hotkeys */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Habilitar botons d'accés directe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Tancar RetroArch"
-   )
-
-
-
-
-
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "Servei d'IA"
-   )
-
-
-/* Settings > Input > Port # Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
-   "Port assignat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-   "Botó A (dreta)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-   "Botó X (dalt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-   "Botó L (lateral)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-   "Botó R (lateral)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-   "Botó L2 (gallet)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-   "Botó R2 (gallet)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-   "Botó L3 (polzes)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-   "Botó R3 (polzes)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   "Analògic esquerre X+ (dreta)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   "Analògic esquerre X- (esquerra)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   "Analògic esquerre Y+ (baix)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   "Analògic esquerre Y- (dalt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   "Analògic dret X+ (dreta)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   "Analògic dret X- (esquerra)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   "Analògic dret Y+ (baix)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   "Analògic dret Y- (dalt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   "Gallet de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "Recàrrega de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-   "Auxiliar A de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-   "Auxiliar B de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-   "Auxiliar C de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-   "Botó 'Start' de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-   "Botó 'Select' de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Dalt de la creueta de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Baix de la creueta de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "Esquerra de la creueta de la pistola"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "Dreta de la creueta de la pistola"
-   )
-
-/* Settings > Latency */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   "[Reducció predictiva de latència no disponible]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "El nucli actual és imcompatible amb la reducció predictiva de latència per mancar de suport de desats ràpids determinístics."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-   "Nombre de fotogrames a la reducció predictiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Determina el nombre de fotogrames a executar amb antelació. Poden haver fluctuacions de senyal si el nombre de fotogrames endarrerits supera al valor intern del joc."
-   )
-#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Amagar avisos de la reducció predictiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Fa desaparèixer el missatge d'avís que es mostra a l'usar la reducció predictiva de latència si el nucli no es compatible amb els guardats ràpids."
-   )
-
-/* Settings > Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   "Activar context compartit per maquinari"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "Dóna un context privat als nuclis renderitzats per maquinari. Això alforra traginar canvis en l'estat del maquinari entre fotogrames."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Permetre als nuclis canviar el controlador de vídeo"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
-   "Permet que els nuclis canvien el controlador de vídeo a un de diferent al que s'estiga usant."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "Carregar un nucli buit al tancar-ne un altre"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Existeixen nuclis amb opció de tancat. Activant esta opció, RetroArch carregarà un nucli buit evitant que es tanque soles."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-   "Iniciar nucli automàticament"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
-   "Categories en les opcions dels nuclis"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Permet als nuclis oferir les opcions a submenús agrupats per categories. NOTA: cal tornar a carregar el nucli per a que els canvis s'executen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
-   "Memòria cau d'arxius d'informació de nuclis"
-   )
-#ifndef HAVE_DYNAMIC
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
-   "Gestiona els nuclis"
-   )
-#ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-   "Gestiona els nuclis"
-   )
-
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Vore 'Gestiona els nuclis'"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Vore l'opció 'Gestiona els nuclis' al menú principal."
-)
-
-
-
-#endif
-/* Settings > Configuration */
-
-
-/* Settings > Saving */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible."
-   )
-
-/* Settings > Logging */
-
-
-/* Settings > File Browser */
-
-
-/* Settings > Frame Throttle */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Limitar velocitat de fotogrames del menú"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Assegura una limitació de la velocitat de fotogrames per segon mentres s'està a dins del menú."
-   )
-
-/* Settings > Frame Throttle > Rewind */
-
-
-/* Settings > Frame Throttle > Frame Time Counter */
-
-
-/* Settings > Recording */
-
-
-/* Settings > On-Screen Display */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay */
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Ocultar superposició al connectar un comandament"
-   )
-#if defined(ANDROID)
-#endif
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "Si es suportat per l'actual superposició, es rotarà automàticament a fi que coincidisca amb l'orientació i la relació d'aspecte de la pantalla."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
-   "Ajusta automàticament l'escala de superposició i els elements espaiats de la interfície gràfica per tal de fer-los coincidir amb la relació d'aspecte de la pantalla. Produïx els millors resultats amb les superposicions de comandaments."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una horientació de pantalla horitzontal. Els valors positius incrementen (mentre que els valors negatius decreixen) l'amplària efectiva de la superposició."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "Aplica un factor de correcció de relació d'aspecte a la superposició quan s'usa una orientació de pantalla vertical. Els valors positius incrementen (mentre que els valors negatius decreixen) l'altura efectiva de la superposició."
-   )
-
-/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-
-/* Settings > On-Screen Display > On-Screen Notifications */
-
-
-/* Settings > User Interface */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-   "Canvia els ajustos de l'aspecte del menú."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Reprendre contingut després d'usar un guardat ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Reprendre contingut al canviar de disc"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "Vore ajustos avançats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   "Mostra els ajustos avançats per a usuaris experts."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-   "Els gestors de finestres empraran la composició per aplicar efectes visuals, detectar finestres que no responguen, entre d'altres coses."
-   )
-#ifdef _3DS
-#endif
-
-/* Settings > User Interface > Menu Item Visibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   "Menú ràpid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   "Ajustos"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
-   "Canvia la visibilitat dels elements al menú d'Ajustos."
-   )
-#ifdef HAVE_LAKKA
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   "Vore 'Arxiu de configuració'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   "Vore la opció \"Arxiu de configuració\" al Menú principal."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
-   "Vore 'Ajustos'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Establir contrasenya per activar la secció 'Ajustos'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Establix una contrasenya per ocultar la secció 'Ajustos', permetent restaurar-la des del menú principal seleccionant 'Mostrar la secció d'Ajustos' i introduint la contrasenya."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   "Menú principal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Vore 'Nuclis sense continguts'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
-   "Tots"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
-   "Un sol ús"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   "Personalitzat"
-   )
-
-/* Settings > User Interface > Menu Item Visibility > Quick Menu */
-
-
-/* Settings > User Interface > Views > Settings */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
-   "Mostra els ajustos de controladors."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
-   "Mostra els ajustos de vídeo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
-   "Mostra 'Configuració'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
-   "Vore els ajustos 'Configuració'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Vore 'Regulador de fotogrames'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Vore els ajustos de 'Regulador de fotogrames'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Vore 'Gestió d'energia'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Vore els ajustos de 'Gestió d'energia'."
-   )
-
-
-/* Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Recordar selecció al canviar entre seccions"
-   )
-
-/* Settings > AI Service */
-
-
-/* Settings > Accessibility */
-
-
-/* Settings > Power Management */
-
-/* Settings > Achievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Assoliments"
-   )
-
-/* Settings > Achievements > Appearance */
-
-
-/* Settings > Achievements > Visibility */
-
-
-/* Settings > Network */
-
-
-/* Settings > Network > Updater */
-
-
-/* Settings > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "Historial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   "Nucli:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
-   "Gestiona les llistes de reproducció"
-   )
-
-/* Settings > Playlists > Playlist Management */
-
-
-/* Settings > User */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   "Llengua"
-   )
-
-/* Settings > User > Privacy */
-
-
-/* Settings > User > Accounts */
-
-
-/* Settings > User > Accounts > RetroAchievements */
-
-
-/* Settings > User > Accounts > YouTube */
-
-
-/* Settings > User > Accounts > Twitch */
-
-
-/* Settings > User > Accounts > Facebook Gaming */
-
-
-/* Settings > User > Accounts > Kick */
-
-
-/* Settings > Directory */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "Baixades"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Directori inicial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Llistes de reproducció"
-   )
-
-#ifdef HAVE_MIST
-/* Settings > Steam */
-
-
-
-#endif
-
-/* Music */
-
-/* Music > Quick Menu */
-
-
-/* Netplay */
-
-
-/* Netplay > Host */
-
-
-/* Import Content */
-
-
-/* Import Content > Scan File */
-
-
-/* Import Content > Content Scan */
-
-
-/* Explore tab */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
-   "Regió"
-   )
-
-/* Playlist > Playlist Item */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INFORMATION,
-   "Informació"
-   )
-
-/* Playlist Item > Set Core Association */
-
-
-/* Playlist Item > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   "Nom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   "Nucli"
-   )
-
-/* Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Assoliments"
-   )
-
-/* Quick Menu > Options */
-
-
-/* Quick Menu > Options > Manage Core Options */
-
-
-/* Quick Menu > Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
-   "Gestiona els arxius de reasignació"
-   )
-
-/* Quick Menu > Controls > Manage Remap Files */
-
-
-/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
-
-
-/* Quick Menu > Cheats */
-
-
-/* Quick Menu > Cheats > Start or Continue Cheat Search */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Replace) */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Append) */
-
-
-/* Quick Menu > Cheats > Cheat Details */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-   "Engegat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   "Descripció"
-   )
-
-/* Quick Menu > Disc Control */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Expulsar disc"
-   )
-
-/* Quick Menu > Shaders */
-
-
-
-/* Quick Menu > Shaders > Shader Parameters */
-
-
-/* Quick Menu > Overrides */
-
-
-/* Quick Menu > Achievements */
-
-
-/* Quick Menu > Information */
-
-
-/* Miscellaneous UI Items */
-
-
-/* Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NONE,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OFF,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLED,
-   "Engegat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   "Cap"
-   )
-
-/* RGUI: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
-   "Afegix un poc de desenfocament al menú per suavitzar la pixelació."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Relació d'aspecte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-   "Selecciona la relació d'aspecte del menú. Una relació panoràmica incrementarà la resolució horitzontal de la interfície del menú (podria caldre reiniciar si l'opció \"Fixar relació d'aspecte del menú\" es troba desactivada)."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Assegura que el menú es mostre sempre amb la relació d'aspecte correcta. Si es desactiva, el menú ràpid serà estirat per adaptar-lo al contingut carregat o en execució."
-   )
-
-/* RGUI: Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   "Bilineal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
-   "Selecció automàtica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
-   "16:9 (centrat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
-   "16:10 (centrat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
-   "3:2 (centrat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
-   "5:3 (centrat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
-   "Selecció automàtica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
-   "Encaixar a la pantalla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Escalar usant nombres sencers"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
-   "Omplir la pantalla (estirat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   "No"
-   )
-
-/* XMB: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
-   "Cap"
-   )
-
-/* XMB: Settings Options */
-
-
-/* Ozone: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
-   "Cap"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
-   "Cap"
-   )
-
-
-
-/* MaterialUI: Settings > User Interface > Appearance */
-
-
-/* MaterialUI: Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
-   "Selecció automàtica"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   "No"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
-   "No"
-   )
-
-/* Qt (Desktop Menu) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_INFO,
-   "Informació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   "Ajustos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   "&Ajut"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Carregar nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NAME,
-   "Nom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "Llistes de reproducció"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Navegador d'arxius"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE,
-   "Nucli"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   "Informació"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   "Nom:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   "Nucli:"
-   )
-
-/* Unsorted */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "Historial"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER,
-   "Usuari"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "Força la sincronització entre CPU i GPU. Reduix la latència a canvi de pèrdua de rendiment."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   "Preajust de shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
-   "Preajust de shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   "Començar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP,
-   "Ajut"
-   )
-
-/* Discord Status */
-
-
-/* Notifications */
-
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Esperant al client..."
-   )
-
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "Configurat %s al port %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
-   "Desconnectat %s del port %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_NR,
-   "No ha sigut configurat %s (%u/%u)"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
-   "No ha sigut configurat %s (%u/%u) usant l'opció secundària"
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Error a l'esborrar el nucli de la llista 'Nuclis sense continguts': "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': "
-   )
-
-
-/* Lakka */
-
-
-/* Environment Specific Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   "Wifi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Correcció de sobreescalat (superior)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Ajusta el retall del sobreescalat de la imatge reduint un nombre específic de línies d'escalat (partint des de la part superior de la pantalla). Pot provocar defectes d'escalat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Correcció de sobreescalat (inferior)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Ajusta el retall del sobreescalat de la imatge reduint un nombre específic de línies d'escalat (partint des de la part inferior de la pantalla). Pot provocar defectes d'escalat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "Selecció manual"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Rendiment (gestionat)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
-   "Gestió personalitzada"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Reinicia RetroArch"
-   )
-#ifdef HAVE_LIBNX
-#endif
+static const struct
+{
+   char s_37033dd5[86];
+   char s_70c7c198[395];
+   char s_99bfa829[385];
+   char s_24e40f00[179];
+   char s_4ad41e20[15];
+   char s_314e7dec[12];
+   char s_061657e6[18];
+   char s_7632d987[18];
+   char s_2e5078b2[12];
+   char s_da068369[11];
+   char s_daead8a5[7];
+   char s_48c208ee[14];
+   char s_a38cafbb[23];
+   char s_dcf2e800[7];
+   char s_f7e668f4[10];
+   char s_792e0069[27];
+   char s_a9d2227f[40];
+   char s_76e73138[29];
+   char s_c82d0aee[10];
+   char s_e2062515[43];
+   char s_ad791974[10];
+   char s_b271ae95[27];
+   char s_fb84857a[7];
+   char s_3943c7ae[42];
+   char s_5b2d8d2f[20];
+   char s_affd948c[24];
+   char s_49b0b12a[7];
+   char s_ad7c73f6[16];
+   char s_30acd6fb[16];
+   char s_04b30c51[20];
+   char s_e5aeacf9[21];
+   char s_24976a5b[30];
+   char s_5209cc72[36];
+   char s_14ec7b7e[10];
+   char s_005cc6dc[12];
+   char s_00614813[17];
+   char s_8584f1d6[16];
+   char s_7fc52043[17];
+   char s_0cadcd1e[10];
+   char s_9509d1c2[12];
+   char s_c7a999e6[11];
+   char s_25babaa7[10];
+   char s_502f623c[8];
+   char s_5b51050b[12];
+   char s_c689058d[8];
+   char s_565cbabb[12];
+   char s_7bd7aa88[45];
+   char s_96114701[11];
+   char s_05dabad8[17];
+   char s_6c74f3ea[17];
+   char s_ce5f3353[23];
+   char s_6155456e[23];
+   char s_e4e54370[14];
+   char s_ec59110b[24];
+   char s_225da616[6];
+   char s_0fd30a6d[4];
+   char s_36265c93[13];
+   char s_5ac8bccf[31];
+   char s_02056693[15];
+   char s_017e8c85[54];
+   char s_1e1c0557[9];
+   char s_e68b50a2[13];
+   char s_97242f99[30];
+   char s_8cefb843[15];
+   char s_177845b3[29];
+   char s_881efe76[22];
+   char s_1e4264a1[8];
+   char s_58072ab5[46];
+   char s_78c58363[19];
+   char s_78071664[14];
+   char s_cc781d49[18];
+   char s_e3d18c38[27];
+   char s_49c9bf91[11];
+   char s_04ecbe77[9];
+   char s_525068d3[72];
+   char s_18cc5aec[26];
+   char s_b0b9ca3e[94];
+   char s_66ed0f42[4];
+   char s_ba582576[42];
+   char s_33ed5ede[29];
+   char s_8d30abf0[22];
+   char s_38b82e6c[22];
+   char s_8f133960[16];
+   char s_d7f2cfac[15];
+   char s_87e07c0e[18];
+   char s_d7f2e719[31];
+   char s_e567aa86[20];
+   char s_16eade0c[38];
+   char s_b95e3404[43];
+   char s_734d2a61[6];
+   char s_a7a97316[43];
+   char s_8b421107[30];
+   char s_145f5880[24];
+   char s_9af4bf52[29];
+   char s_e5d096ab[23];
+   char s_cdfc64f8[22];
+   char s_47501076[23];
+   char s_0bf629fd[17];
+   char s_6a07da9c[22];
+   char s_12b8e195[22];
+   char s_dd6afca3[21];
+   char s_4bcbcc14[48];
+   char s_06f25fc0[25];
+   char s_f0ce97f7[34];
+   char s_b92166cd[11];
+   char s_5d29b870[21];
+   char s_4927597c[14];
+   char s_10342503[9];
+   char s_d31f6d88[16];
+   char s_f03e9c42[22];
+   char s_7088df5e[47];
+   char s_3674ba44[13];
+   char s_6b38a08b[53];
+   char s_3e073ed3[45];
+   char s_6ebb6a00[12];
+   char s_c12910d3[8];
+   char s_40a4eb2b[60];
+   char s_1ad1dee7[7];
+   char s_99eb425d[9];
+   char s_941e50fb[18];
+   char s_2cb9dc71[10];
+   char s_a46a4178[24];
+   char s_c4842e2d[24];
+   char s_fd3e287f[9];
+   char s_550b1e93[10];
+   char s_d2224db6[8];
+   char s_c0d9bee1[8];
+   char s_c175c697[8];
+   char s_e2f27171[5];
+   char s_2f9a064c[5];
+   char s_96ee0cfb[10];
+   char s_ae50c550[10];
+   char s_b30d3e14[8];
+   char s_99d3d4ae[12];
+   char s_d81bf7a9[12];
+   char s_798643f5[33];
+   char s_b61d0a2d[30];
+   char s_c68080b6[29];
+   char s_b87232ce[29];
+   char s_231308e8[29];
+   char s_27db7cc0[26];
+   char s_700d45a9[25];
+   char s_2a30a561[25];
+   char s_0b2a8528[48];
+   char s_ea5757a0[8];
+   char s_f9ee4a82[10];
+   char s_7beff2c4[7];
+   char s_009a10e3[8];
+   char s_56e1b31e[16];
+   char s_56e1b329[18];
+   char s_3318187b[18];
+   char s_3318187c[18];
+   char s_56e1b32f[18];
+   char s_33181941[18];
+   char s_33181942[18];
+   char s_56e1b335[15];
+   char s_72765a06[25];
+   char s_72765a07[25];
+   char s_72765a08[25];
+   char s_b37addc8[33];
+   char s_b37f141b[37];
+   char s_23d05f0e[34];
+   char s_c30b67b5[33];
+   char s_e7c0ed0f[25];
+   char s_ea15eb78[29];
+   char s_73bb2346[28];
+   char s_97eb860c[21];
+   char s_735c53f7[12];
+   char s_63fbe677[34];
+   char s_87071f08[17];
+   char s_ec502f2a[19];
+   char s_46d040e3[50];
+   char s_b8b18b90[14];
+   char s_980ef0e8[8];
+   char s_9e66791a[12];
+   char s_84d3d068[10];
+   char s_6107eb09[15];
+   char s_b6172513[10];
+   char s_e3d18a3d[19];
+   char s_d15b342a[14];
+   char s_31b177ec[10];
+   char s_8cb3b95f[10];
+   char s_d9685b01[16];
+   char s_3a0abeb9[3];
+   char s_f4c2f40f[22];
+   char s_f4c9faa6[3];
+   char s_906aff13[3];
+   char s_006dbffd[3];
+   char s_e22edcd8[7];
+   char s_9da5609f[16];
+   char s_136eaaf4[22];
+   char s_8d3a8b68[6];
+   char s_f02f73fc[42];
+   char s_3a0a3fef[19];
+   char s_ba248c4b[39];
+   char s_35c29e50[45];
+   char s_72898bf0[19];
+   char s_f89e1cbc[54];
+   char s_63af41a7[30];
+   char s_df92f5b5[36];
+   char s_b00815b8[15];
+   char s_8be7813a[8];
+   char s_1757647b[7];
+   char s_e1a8f707[18];
+   char s_51844cc2[17];
+   char s_42b8ffbf[8];
+   char s_62564465[14];
+   char s_51f16286[4];
+   char s_733174db[14];
+   char s_89920317[21];
+   char s_87d88aa2[6];
+   char s_e2f5e678[4];
+   char s_25e86ee3[3];
+   char s_e2c6c781[24];
+   char s_a670da0a[30];
+   char s_164566fb[15];
+   char s_7f10fcd2[4];
+   char s_7206ddda[4];
+   char s_b3cc8a43[24];
+   char s_6090802e[24];
+   char s_1aebff8d[3];
+   char s_7ea8ec8f[37];
+   char s_f632c879[4];
+   char s_8d94cfea[24];
+   char s_5bbcf84b[7];
+   char s_64dd7209[57];
+   char s_56e21ee1[18];
+   char s_f70406ce[18];
+   char s_66df5c89[17];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
+   char s_6d025795[6];
+   char s_6d059c18[12];
+   char s_99d648f2[12];
+   char s_2aeb5474[15];
+   char s_7534cfc9[6];
+   char s_036acd54[34];
+   char s_a0a191ca[34];
+   char s_5f15f7a7[8];
+   char s_6d08238d[4];
+   char s_e8a86d57[7];
+   char s_e8ae394f[5];
+   char s_08785e85[19];
+   char s_b71e6907[24];
+   char s_260261d6[13];
+   char s_95cf0994[17];
+   char s_36109f2c[12];
+   char s_cf24fcc2[25];
+   char s_8d13ec48[16];
+   char s_b93afb41[58];
+   char s_47f4eb8e[10];
+   char s_d3a2aa7d[64];
+   char s_3413595a[28];
+   char s_046d0e21[18];
+   char s_bdc1c274[12];
+   char s_06650b16[16];
+   char s_6c06b558[35];
+   char s_00966fb4[27];
+   char s_00dfe961[25];
+   char s_2742a469[80];
+   char s_a708b2f4[51];
+   char s_17983560[57];
+   char s_3af38d58[31];
+   char s_b2865f23[12];
+   char s_e8ad0320[13];
+   char s_9251b4c1[8];
+   char s_887214f4[8];
+   char s_92be1c10[7];
+   char s_0472da71[4];
+   char s_cbdfd37c[10];
+   char s_f019e498[7];
+   char s_f1382b82[13];
+   char s_0e740679[51];
+   char s_a986c4da[12];
+   char s_69f2e90c[23];
+   char s_4ceac87e[7];
+   char s_f62d1074[7];
+   char s_f751c497[17];
+   char s_9329c64c[11];
+   char s_f8883f70[23];
+   char s_09ba892e[13];
+   char s_58b9d895[24];
+   char s_0a2aa953[18];
+   char s_ffd0dac4[13];
+   char s_1b8a5cb5[15];
+   char s_721e7bb2[15];
+   char s_a6b615f1[36];
+   char s_1938dce6[22];
+   char s_59980356[10];
+   char s_62144cdf[12];
+   char s_5c821ce2[16];
+   char s_d90b137a[15];
+   char s_b8199d1f[14];
+   char s_ac709442[14];
+   char s_f8d42b14[22];
+   char s_5f421d29[29];
+   char s_443e29a5[23];
+   char s_ccfe26d1[30];
+   char s_728ca1d3[3];
+   char s_5f612db6[18];
+   char s_b30b56ad[3];
+   char s_404e69aa[9];
+   char s_bd84f1a3[22];
+   char s_bd8bf83a[4];
+   char s_3b95fccc[47];
+   char s_00119310[41];
+   char s_1127e777[50];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "Retroflag Safe Shutdown"
-#else
-   "Retroflag Safe Shutdown (Reboot required)"
-#endif
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "For use with compatible Retroflag case."
-#else
-   "For use with compatible Retroflag case. Reboot is required when changing."
-#endif
-   )
-#endif
-#ifdef HAVE_LAKKA_SWITCH
+   char s_addc7f89[77];
 #endif
 #endif
-#ifdef HAVE_LAKKA_SWITCH
+   char s_dff02a9f[26];
+   char s_87ee250e[29];
+   char s_a11934f5[27];
+   char s_e7a63560[8];
+   char s_d61d87cd[4];
+   char s_fd9cfe13[24];
+   char s_fcc3aec5[22];
+   char s_4aaeeb99[8];
+   char s_97ede950[23];
+   char s_73818858[31];
+   char s_b160f7a1[25];
+   char s_9932960f[8];
+   char s_302fdd56[8];
+   char s_c561b96e[23];
+   char s_6262776d[5];
+   char s_25f1508f[14];
+   char s_93bae0e3[11];
+   char s_ed013a05[24];
+   char s_01a73130[31];
+   char s_d7fc4c9c[23];
+   char s_d21c686b[35];
+   char s_7943e750[28];
+   char s_ea80654d[54];
+   char s_bab74532[24];
+   char s_7d2035c4[20];
+   char s_b3565d3d[34];
+   char s_f8fa3e2f[21];
+   char s_8356c98c[36];
+   char s_5c7bbce1[22];
+   char s_cd916c68[24];
+   char s_8fe41f79[39];
+   char s_519cd5f8[42];
+   char s_43ac80a0[15];
+   char s_ebe994b4[15];
+   char s_da093426[21];
+   char s_d9b00fbd[34];
+   char s_0a008a9d[8];
+   char s_48da4695[21];
+   char s_95cbebbd[17];
+   char s_6b80a1bc[37];
+   char s_eb0d7f1d[26];
+   char s_99a77122[17];
+   char s_51cbf8f0[48];
+   char s_4a5b7672[30];
+   char s_8fa79de5[28];
+   char s_5eee10e5[31];
+   char s_eb3c8b7f[30];
+   char s_6ae93e68[29];
+   char s_e2f9cd07[7];
+   char s_7277e127[21];
+   char s_8203db0a[8];
+   char s_3a9d7557[7];
+   char s_d6fb8efe[36];
+   char s_b2f7627c[32];
+   char s_c79d5013[19];
+   char s_4bceefff[26];
+   char s_cc973e8a[7];
+   char s_d0a04fe4[17];
+   char s_ed22c5f1[26];
+   char s_f5ab35c0[25];
+   char s_3c70d08d[36];
+   char s_44e1c38f[37];
+   char s_aa9bc75d[22];
+   char s_57047267[8];
+   char s_020e2bc5[22];
+   char s_59f183c8[27];
+   char s_59f183c9[32];
+   char s_71747541[17];
+   char s_e9bca139[35];
+   char s_59dc5d76[62];
+   char s_61213f1d[19];
+   char s_57665cff[7];
+   char s_0e2c0fca[38];
+   char s_93ac5ec8[38];
+   char s_c0cdc638[46];
+   char s_afd69a70[33];
+   char s_22735e37[59];
+   char s_6c40d14e[19];
+   char s_6c1369c6[23];
+   char s_4d7e9b13[30];
+   char s_69b801ef[17];
+   char s_580e244f[7];
+   char s_f5911f43[40];
+   char s_552163d9[40];
+   char s_ef3d53d8[17];
+   char s_45816e1d[31];
+   char s_c017f975[22];
+   char s_730df420[16];
+   char s_bcddf275[8];
+   char s_258060bf[16];
+   char s_92a02470[45];
+   char s_b7ef9e17[45];
+   char s_8f37930f[46];
+   char s_8f379310[46];
+   char s_6c52dfb1[33];
+   char s_84c46931[35];
+   char s_ebf10493[14];
+   char s_a64b3a0b[31];
+   char s_83e8dc72[28];
+   char s_7cf985f0[41];
+   char s_0f5266ce[23];
+   char s_ea2674d3[41];
+   char s_ea2674d4[38];
+   char s_2d8cb7ce[24];
+   char s_68190518[40];
+   char s_b9e24170[34];
+   char s_30140cb5[21];
+   char s_25a21976[65];
+   char s_1c0a61e2[5];
+   char s_50d77da7[5];
+   char s_65e6ea7c[4];
+   char s_aa0659db[20];
+   char s_49757b91[20];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_5a8511ce[50];
+   char s_243da114[53];
+   char s_17385b20[65];
+   char s_20cc6597[86];
+   char s_66e9521c[78];
+   char s_a95c1929[60];
+   char s_23b8ca2e[28];
+   char s_042502c4[67];
+   char s_90ae9a9f[111];
+   char s_6c3c586d[198];
+   char s_950e7a66[32];
+   char s_ce113b1c[43];
+   char s_272471c3[103];
+   char s_cb649822[19];
+   char s_95821d83[47];
+   char s_bdeebb68[38];
+   char s_f9005edc[182];
+   char s_6ade80dd[59];
+   char s_b5ccfdfa[180];
+   char s_cb67f2a4[33];
+   char s_3c3598a9[54];
+   char s_4b78ee7f[83];
+   char s_aed11d67[139];
+   char s_dbe6e749[105];
+   char s_ed8a1060[102];
+   char s_555cd658[51];
+   char s_4a3d27dc[41];
+   char s_f496371e[61];
+   char s_544da5c1[75];
+   char s_0d074e33[179];
+   char s_dc427c47[61];
+   char s_684b0cb1[29];
+   char s_1d47af21[65];
+   char s_a64647a4[55];
+   char s_35f2309a[34];
+   char s_a607c53c[26];
+   char s_e00d4e7a[144];
+   char s_791acb32[99];
+   char s_92cf524f[30];
+   char s_48e88dc4[154];
+   char s_79b8ce4a[92];
+   char s_a1a8257e[104];
+   char s_d5231783[131];
+   char s_a68d6d11[50];
+   char s_74022c02[115];
+   char s_8abad013[71];
+   char s_a39ca959[71];
+   char s_16b9856e[27];
+   char s_0ef5e125[25];
+   char s_fe3fb37b[76];
+   char s_7b51019e[47];
+   char s_f2a19576[62];
+   char s_b2a8d230[51];
+   char s_11c7fa0c[100];
+   char s_3f2095b2[43];
+   char s_711cd0b9[95];
+   char s_4db83281[126];
+   char s_ccbacaee[133];
+   char s_aa39aae6[74];
+   char s_d43521db[100];
+   char s_44040aad[117];
+   char s_64d24441[49];
+   char s_ad7da224[63];
+   char s_dec53d8f[62];
+   char s_df614545[63];
+   char s_8d99673a[33];
+   char s_9eb26572[46];
+   char s_cd94bb16[201];
+   char s_2e4a5d12[53];
+   char s_c312b1ca[41];
+   char s_ba59df8d[149];
+   char s_4b824ac6[242];
+   char s_e0bb7a18[219];
+   char s_a7d61696[54];
+   char s_a2fb1996[82];
+   char s_c6e1f92b[42];
+   char s_2f5a9518[112];
+   char s_aadb028d[33];
+   char s_193e1462[60];
+   char s_dd9ff22a[98];
+   char s_a67ad98a[69];
+   char s_823a7f9e[234];
+   char s_ad131006[175];
+   char s_ee3a489b[43];
+   char s_236bd8d5[60];
+   char s_8b636a26[36];
+   char s_a9d2ffe8[33];
+   char s_4be9dc09[28];
+   char s_198c91d3[68];
+   char s_7279e585[57];
+   char s_a5ffd3d0[47];
+   char s_f28ded2f[80];
+   char s_5dc056f8[136];
+   char s_638533eb[242];
+   char s_cd6693b5[235];
+   char s_fb9a3cb9[71];
+   char s_d34eb231[86];
+   char s_70a53ed8[51];
+   char s_061c8cb7[77];
+   char s_0e319bcf[56];
+   char s_a5962f42[67];
+   char s_0c7750cd[70];
+   char s_60a8a963[40];
+   char s_3ca87244[21];
+   char s_2b36bd4d[37];
+   char s_59bd45fa[167];
+   char s_05e0fc7e[152];
+   char s_d3921d65[130];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_96c461f7[125];
 #endif
-#ifdef GEKKO
 #endif
-#ifdef UDEV_TOUCH_SUPPORT
+   char s_f05210ce[31];
+   char s_42bb4ac1[86];
+   char s_e8aee6c7[23];
+   char s_611059be[34];
+   char s_6473e665[36];
+   char s_60f20686[47];
+   char s_bce9b94f[41];
+   char s_9807adbd[30];
+   char s_35ff46c4[56];
+   char s_d512ad1c[52];
+   char s_4b009af3[82];
+   char s_46c57dde[64];
+   char s_1a8301fe[57];
+   char s_8bbf7ffb[135];
+   char s_ffd591e0[49];
+   char s_2beab583[41];
+   char s_6e9f0493[77];
+   char s_78474a95[50];
+   char s_f815af2a[78];
+   char s_8759e741[43];
+   char s_5e14cb20[182];
+   char s_ab839b13[138];
+   char s_17663212[192];
+   char s_d60aa85f[63];
+   char s_055c296e[104];
+   char s_fc2d67bb[190];
+   char s_0d96ed73[49];
+   char s_9f0fd076[149];
+   char s_9f0fd077[148];
+   char s_7a2050af[41];
+   char s_ef13be35[96];
+   char s_f2687ca7[96];
+   char s_698d5124[116];
+   char s_82fab47a[39];
+   char s_4a09218b[34];
+   char s_19d092ed[42];
+   char s_1eebf4f8[180];
+   char s_2f2ca2b6[180];
+   char s_b5a603de[102];
+   char s_d9c2db25[103];
+   char s_7c07f6fc[99];
+   char s_7968f59d[50];
+   char s_67d549fd[39];
+   char s_3aaf6bf1[165];
+   char s_5b059407[136];
+   char s_7e96b5ce[49];
+   char s_3547866d[168];
+   char s_8010a29e[157];
+   char s_81120e85[157];
+   char s_47ae341f[151];
+   char s_48696c85[96];
+   char s_3c13e61f[153];
+   char s_d96182c1[50];
+   char s_93bbb839[119];
+   char s_4d0b4ce0[121];
+   char s_f99a7d5e[280];
+   char s_f83a493c[53];
+   char s_ac90aac1[89];
+   char s_ac90aac2[86];
+   char s_3370e7fc[43];
+   char s_09581fc6[351];
+   char s_74e69f4b[108];
+   char s_5562855e[56];
+   char s_75325963[53];
+   char s_6ac06624[168];
+   char s_2a9c73f3[34];
+   char s_05e3f715[42];
+   char s_631c5635[45];
+   char s_19e809ad[38];
+   char s_db1e4390[38];
+   char s_f7e279a6[11];
+   char s_824867fd[69];
+   char s_0638fe80[66];
+   char s_05437279[25];
+   char s_c0cae103[28];
+   char s_71d52dde[61];
+   char s_c6615fcf[34];
+   char s_4b6a946a[36];
+   char s_8d677b5b[29];
+   char s_e533ddbb[22];
+   char s_45130077[26];
+   char s_856bdef7[31];
+   char s_b1e9bfbf[20];
+   char s_28bbcc15[30];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_4d7ee7e2[20];
+   char s_509dd374[25];
+   char s_bab020a4[22];
+   char s_88494936[37];
+   char s_a7ae1b42[22];
+} msg_hash_val_blob =
+{
+   "For\303\247a el dispositiu que usa el controlador d\342\200\231\303\240udio. Aix\303\262 dep\303"
+   "\250n del controlador.",
+   "Cerca una implementaci\303\263 per a un nucli de libretro. El cercador comen\303\247ar\303\240 a"
+   " buscar en la carpeta que hages triat per al teu directori de nuclis. En cas de trobar-se en bla"
+   "nc, comen\303\247ar\303\240 al directori rael.\nSi el directori de nuclis \303\251s un directori"
+   ", el men\303\272 usar\303\240 aquest com a carpeta inicial. Pel contrari, si \303\251s un direct"
+   "ori complet, aquest s'iniciar\303\240 a la carpeta on es trobe l'arxiu.",
+   "Cerca continguts. Per a carregar continguts necessites un 'nucli' i un arxiu de contingut.\nPer "
+   "a configurar a on comen\303\247a el men\303\272 a cercar-ne, configura el directori de l'explora"
+   "dor d'arxius. Si no est\303\240 configurat, este comen\303\247ar\303\241 a la rael.\nEl navegado"
+   "r filtrar\303\240 extensions per a l'\303\272ltim nucli elegit en 'Carregar nucli', i emprar\303"
+   "\240 aqueix nucli quan el contingut siga carregat.",
+   "Tanca RetroArch. Si tanques el programa d'una manera for\303\247ada (SIGKILL, etc.) RetroArch no"
+   " guardar\303\240 les configuracions. En sistemes Unix, SIGNIT/SIGTERM permet un tancament net.",
+   "Accessibilitat",
+   "Assoliments",
+   "Afegir continguts",
+   "Afegir continguts",
+   "Servei d'IA",
+   "Dispositiu",
+   "\303\200udio",
+   "Connector DSP",
+   "Remou el connector DSP",
+   "\303\200udio",
+   "Mesclador",
+   "Lat\303\250ncia de l'\303\240udio (ms)",
+   "Despla\303\247ament m\303\240xim de sincronitzaci\303\263",
+   "Silenciar mesclador d'\303\240udio",
+   "Mesclador",
+   "Mesclador de guany del volum d'\303\240udio (dB)",
+   "Silenciar",
+   "Freq\303\274\303\250ncia d'eixida (Hz)",
+   "Eixida",
+   "Control din\303\240mic de freq\303\274\303\250ncia d'\303\240udio",
+   "Remostreig d'\303\240udio",
+   "Qualitat del remostreig",
+   "\303\200udio",
+   "Sincronitzaci\303\263",
+   "Sincronitzaci\303\263",
+   "Guany de volum (dB)",
+   "Mode WASAPI exclusiu",
+   "Format WASAPI de punt flotant",
+   "Mida del b\303\272fer compartit de WASAPI",
+   "Confirmar",
+   "Informaci\303\263",
+   "Tancar RetroArch",
+   "Moure cap abaix",
+   "Moure cap a dalt",
+   "Comen\303\247ar",
+   "Vore teclat",
+   "Vore men\303\272",
+   "Comen\303\247ar",
+   "C\303\240mera",
+   "Descripci\303\263",
+   "Engegat",
+   "Assoliments",
+   "Resoldre conflictes: conservar arxius locals",
+   "Autom\303\240tic",
+   "Selecci\303\263 manual",
+   "Sincronitzar ara",
+   "Carregar configuraci\303\263",
+   "Arxiu de configuraci\303\263",
+   "Configuraci\303\263",
+   "Nuclis sense continguts",
+   "Nucli",
+   "Nom",
+   "Men\303\272 r\303\240pid",
+   "Vore 'Nuclis sense continguts'",
+   "Vore 'Ajustos'",
+   "Establir contrasenya per activar la secci\303\263 'Ajustos'",
+   "Baixades",
+   "[Autom\303\240tic]",
+   "C\303\262pia de seguretat del nucli",
+   "Eliminar nucli",
+   "Eliminar c\303\262pia de seguretat",
+   "Informaci\303\263 del nucli",
+   "Autor/s",
+   "Mem\303\262ria cau d'arxius d'informaci\303\263 de nuclis",
+   "Etiqueta del nucli",
+   "Nom del nucli",
+   "Versi\303\263 del nucli",
+   "Microprogramari (firmware)",
+   "Llic\303\250ncia",
+   "Permisos",
+   "Interf\303\255cie de programaci\303\263 d'aplicacions gr\303\240fiques necess\303\240ries (API)",
+   "B\303\240sic (guardar/carregar)",
+   "Determinat (guardar/carregar, rebobinar, anticipaci\303\263 predictiva de lat\303\250ncia, joc e"
+   "n l\303\255nia)",
+   "Cap",
+   "Serialitzat (guardar/carregar, rebobinar)",
+   "Suport de partides guardades",
+   "Extensions suportades",
+   "Fabricant del sistema",
+   "Nom del sistema",
+   "Carregar nucli",
+   "Descarregar nucli",
+   "Bloquejar el nucli instal\302\267lat",
+   "Gestiona els nuclis",
+   "Categories en les opcions dels nuclis",
+   "Restaurar una c\303\262pia de seguretat existent",
+   "Nucli",
+   "Exclou del men\303\272 'Nuclis sense continguts'",
+   "Iniciar nucli autom\303\240ticament",
+   "Descarregador de nuclis",
+   "Arquitectura del processador",
+   "Nuclis del processador",
+   "Rendiment (gestionat)",
+   "Gesti\303\263 personalitzada",
+   "Selecci\303\263 manual",
+   "SwitchRes per a CRT's",
+   "SwitchRes per a CRT's",
+   "Super-resoluci\303\263 CRT",
+   "Freq\303\274\303\250ncia de refresc d'imatge personalitzada",
+   "Administrador de cursors",
+   "Administrador de la base de dades",
+   "Directoris",
+   "Informaci\303\263 del disc",
+   "Expulsar disc",
+   "Baixades",
+   "Baixar un nucli",
+   "Baixador de contingut",
+   "Descarregador d'arxius de sistema per al nucli",
+   "Controladors",
+   "Permetre als nuclis canviar el controlador de v\303\255deo",
+   "Carregar un nucli buit al tancar-ne un altre",
+   "Abocar disc",
+   "Engegat",
+   "Engega la vibraci\303\263 del dispositiu (per a nuclis suportats)",
+   "Regi\303\263",
+   "Explorar",
+   "Directori inicial",
+   "Preferits",
+   "Regulador de fotogrames",
+   "Nuclis sense continguts",
+   "Rebuscar",
+   "Preferits",
+   "Imatges",
+   "M\303\272sica",
+   "V\303\255deos",
+   "Ajut",
+   "Ajut",
+   "Historial",
+   "Historial",
+   "Imatges",
+   "Informaci\303\263",
+   "Informaci\303\263",
+   "Anal\303\262gic esquerre X- (esquerra)",
+   "Anal\303\262gic esquerre X+ (dreta)",
+   "Anal\303\262gic esquerre Y- (dalt)",
+   "Anal\303\262gic esquerre Y+ (baix)",
+   "Anal\303\262gic dret X- (esquerra)",
+   "Anal\303\262gic dret X+ (dreta)",
+   "Anal\303\262gic dret Y- (dalt)",
+   "Anal\303\262gic dret Y+ (baix)",
+   "Activar autom\303\240ticament mode 'Prioritat de joc'",
+   "Detecta",
+   "Desactiva",
+   "Activa",
+   "Entrada",
+   "Bot\303\263 A (dreta)",
+   "Bot\303\263 L (lateral)",
+   "Bot\303\263 L2 (gallet)",
+   "Bot\303\263 L3 (polzes)",
+   "Bot\303\263 R (lateral)",
+   "Bot\303\263 R2 (gallet)",
+   "Bot\303\263 R3 (polzes)",
+   "Bot\303\263 X (dalt)",
+   "Auxiliar A de la pistola",
+   "Auxiliar B de la pistola",
+   "Auxiliar C de la pistola",
+   "Baix de la creueta de la pistola",
+   "Esquerra de la creueta de la pistola",
+   "Dreta de la creueta de la pistola",
+   "Dalt de la creueta de la pistola",
+   "Rec\303\240rrega de la pistola",
+   "Bot\303\263 'Select' de la pistola",
+   "Bot\303\263 'Start' de la pistola",
+   "Gallet de la pistola",
+   "Servei d'IA",
+   "Habilitar botons d'acc\303\251s directe",
+   "Tancar RetroArch",
+   "Reinicia RetroArch",
+   "Ocultar superposici\303\263 al connectar un comandament",
+   "Port assignat",
+   "Entrada",
+   "Comandament",
+   "Lat\303\250ncia",
+   "Carregar arxiu",
+   "Historial",
+   "Carregar contingut",
+   "Carregar disc",
+   "Ubicaci\303\263",
+   "Registres",
+   "Men\303\272 principal",
+   "No",
+   "Selecci\303\263 autom\303\240tica",
+   "No",
+   "No",
+   "No",
+   "Suport",
+   "Men\303\272 principal",
+   "Desactivar mode Kiosc",
+   "Men\303\272",
+   "Limitar velocitat de fotogrames del men\303\272",
+   "Navegador d'arxius",
+   "Reprendre contingut al canviar de disc",
+   "Recordar selecci\303\263 al canviar entre seccions",
+   "Relaci\303\263 d'aspecte",
+   "Reprendre contingut despr\303\251s d'usar un guardat r\303\240pid",
+   "Vore 'Arxiu de configuraci\303\263'",
+   "\"Load Content\" Startup Notification",
+   "Sons del men\303\272",
+   "Entrada",
+   "Eixida",
+   "Perdut, opcional:",
+   "Perdut, requerit",
+   "M\303\272sica",
+   "Joc en l\303\255nia",
+   "Cap",
+   "Joc en l\303\255nia",
+   "Informaci\303\263 de xarxa",
+   "Xarxa",
+   "Cap",
+   "No",
+   "Actualitzador en l\303\255nia",
+   "Visualitzacions a la pantalla",
+   "Explorar arxiu",
+   "Cap",
+   "Cap",
+   "Llistes de reproducci\303\263",
+   "Llistes de reproducci\303\263",
+   "No",
+   "Gestiona les llistes de reproducci\303\263",
+   "Cap",
+   "Llistes de reproducci\303\263",
+   "Nucli:",
+   "Actualitzador de miniatures de la llista de reproducci\303\263",
+   "Gesti\303\263 d'energia",
+   "Actual, opcional:",
+   "Actual, requerit",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "Nucli",
+   "Informaci\303\263",
+   "Informaci\303\263",
+   "Carregar nucli",
+   "&Ajut",
+   "\"All Playlists\" max grid entries:",
+   "\"All Playlists\" max list entries:",
+   "Ajustos",
+   "Nom",
+   "Nucli:",
+   "Nom:",
+   "Navegador d'arxius",
+   "Llistes de reproducci\303\263",
+   "Men\303\272 r\303\240pid",
+   "Tancar RetroArch",
+   "Assoliments",
+   "Control an\303\240logic adm\303\250s",
+   "Estil art\303\255stic",
+   "Qualificaci\303\263 BBFC (British Board of Film Classification)",
+   "Categoria",
+   "Qualificaci\303\263 CERO (Computer Entertainment Rating Organization)",
+   "Exclusiu de consoles de joc",
+   "Cooperatiu adm\303\250s",
+   "Descripci\303\263",
+   "Desenvolupadora",
+   "N\303\272mero de revista d'Edge Magazine",
+   "Puntuaci\303\263 d'Edge Magazine",
+   "Ressenya d'Edge Magazine",
+   "Qualificaci\303\263 ELSPA (Entertainment and Leisure Software Publishers Association)",
+   "Ampliaci\303\263 del maquinari (MegaCD/SegaCD, 32x, etc)",
+   "Qualificaci\303\263 ESRB (Entertainment Software Rating Board)",
+   "Puntuaci\303\263 de Famitsu Magazine",
+   "Franqu\303\255cia",
+   "Tipus de joc",
+   "G\303\250nere",
+   "Llengua",
+   "Suport",
+   "Nom",
+   "Narrativa",
+   "Origen",
+   "Ritme de joc",
+   "Qualificaci\303\263 PEGI (Pan European Game Information)",
+   "Perspectiva",
+   "Exclusiu de plataforma",
+   "Editor",
+   "Regi\303\263",
+   "Vibraci\303\263 admesa",
+   "Puntuaci\303\263",
+   "Codi de n\303\272mero s\303\250rie",
+   "Ambientaci\303\263",
+   "Puntuaci\303\263 a TheGamesDB",
+   "Tipus de vehicles",
+   "Estil visual",
+   "Enregistrament",
+   "Enregistrament",
+   "Gestiona els arxius de reasignaci\303\263",
+   "Reiniciar per defecte",
+   "Reiniciar",
+   "Assoliments",
+   "16:10 (centrat)",
+   "16:9 (centrat)",
+   "3:2 (centrat)",
+   "5:3 (centrat)",
+   "Selecci\303\263 autom\303\240tica",
+   "Omplir la pantalla (estirat)",
+   "Encaixar a la pantalla",
+   "Escalar usant nombres sencers",
+   "No",
+   "Directori inicial",
+   "No",
+   "Bilineal",
+   "Selecci\303\263 autom\303\240tica",
+   "Cap",
+   "Nombre de fotogrames a la reducci\303\263 predictiva",
+   "Amagar avisos de la reducci\303\263 predictiva",
+   "[Reducci\303\263 predictiva de lat\303\250ncia no disponible]",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
-#ifdef HAVE_ODROIDGO2
-#else
 #endif
-#ifdef _3DS
+   "Guardar configuraci\303\263 com",
+   "Guardar configuraci\303\263 actual",
+   "Guardar nova configuraci\303\263",
+   "Guardat",
+   "Cap",
+   "Orientaci\303\263 de pantalla",
+   "Selecci\303\263 autom\303\240tica",
+   "Ajustos",
+   "Mostra 'Configuraci\303\263'",
+   "Vore 'Regulador de fotogrames'",
+   "Vore 'Gesti\303\263 d'energia'",
+   "Ajustos",
+   "Ajustos",
+   "Vore ajustos avan\303\247ats",
+   "Tots",
+   "Personalitzat",
+   "Un sol \303\272s",
+   "Vore men\303\272 d'escriptori",
+   "Instal\302\267la o restaura un nucli",
+   "Iniciar RetroPad remot",
+   "Comen\303\247ar el processador de v\303\255deo",
+   "Suspendre el salvapantalles",
+   "Canvia nuclis de les versions de la Google Play Store",
+   "Informaci\303\263 del sistema",
+   "Data de compilaci\303\263",
+   "Caracter\303\255stiques del processador",
+   "Model de processador",
+   "Punts per polzada (PPP) de pantalla",
+   "Al\303\247ada d'imatge (mm)",
+   "Ampl\303\240ria d'imatge (mm)",
+   "Identificador del processador d'acc\303\251s",
+   "Sistema operatiu del processador d'acc\303\251s",
+   "Versi\303\263 de Git",
+   "Font d'energia",
+   "Versi\303\263 de RetroArch",
+   "Controlador de contexte de v\303\255deo",
+   "Sistema",
+   "Vore barra del men\303\272",
+   "Actualitza medis",
+   "Actualitza perfils dels controladors",
+   "Actualitza els shaders Cg",
+   "Actualitza trucs",
+   "Actualitza els arxius d'informaci\303\263 dels nuclis",
+   "Actualitza les bases de dades",
+   "Actualitza els shaders GLSL",
+   "Actualitza nuclis instal\302\267lats",
+   "Actualitza les superposicions",
+   "Actualitza els shaders Slang",
+   "Usuari",
+   "Interf\303\255cie d'usuari",
+   "Llengua",
+   "Usuari",
+   "Sincronitzaci\303\263 vertical adaptativa",
+   "Configura la relaci\303\263 d'aspecte",
+   "Relaci\303\263 d'aspecte",
+   "Inserir fotogrames negres",
+   "V\303\255deo",
+   "Filtre de v\303\255deo",
+   "Remou el filtre de v\303\255deo",
+   "For\303\247ar resoluci\303\263 a UWP",
+   "For\303\247ar desactivaci\303\263 de l'FBO sRGB",
+   "Retardament autom\303\240tic de fotogrames",
+   "Selecci\303\263 autom\303\240tica",
+   "real(s)",
+   "Mode pantalla entrega",
+   "Ample de pantalla completa",
+   "Al\303\247ada de la pantalla completa",
+   "\303\215ndex de la GPU",
+   "Sincronitzaci\303\263 rigorosa de la GPU",
+   "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
+   "\303\215ndex del monitor",
+   "Eixida",
+   "Correcci\303\263 de sobreescalat (inferior)",
+   "Correcci\303\263 de sobreescalat (superior)",
+   "Freq\303\274\303\250ncia de refresc vertical de la imatge",
+   "Grau de refresc d'imatge estimat",
+   "Freq\303\274\303\250ncia de refresc d'imatge recollida per la pantalla",
+   "Rotaci\303\263 de v\303\255deo",
+   "Escalat en la finestra",
+   "Escalar usant nombres sencers",
+   "Escalat d'imatge",
+   "V\303\255deo",
+   "Retarda c\303\240rrega autom\303\240tica de shaders",
+   "Activar context compartit per maquinari",
+   "Filtrat bilineal",
+   "Interval d'intercanvi de VSync",
+   "Selecci\303\263 autom\303\240tica",
+   "Sincronitzaci\303\263",
+   "V\303\255deos",
+   "V\303\255deo multifil",
+   "Relaci\303\263 d'aspecte personalitzat (al\303\247\303\240ria)",
+   "Relaci\303\263 d'aspecte personalitzat (ampl\303\240ria)",
+   "Relaci\303\263 d'aspecte personalitzat (posici\303\263 X)",
+   "Relaci\303\263 d'aspecte personalitzat (posici\303\263 Y)",
+   "Sincronitzaci\303\263 vertical (VSync)",
+   "Mode pantalla completa en finestra",
+   "Mode finestra",
+   "Al\303\247ada m\303\240xima en la finestra",
+   "Ample m\303\240xim de la finestra",
+   "Usar una mida de finestra personalitzada",
+   "Al\303\247ada de la finestra",
+   "Despla\303\247ament horitzontal de la pantalla",
+   "Despla\303\247ament vertical de la pantalla",
+   "Opacitat de la finestra",
+   "Recordar posici\303\263 i mida de la finestra",
+   "Vore adornaments de les finestres",
+   "Ample de la finestra",
+   "Sincronitzar a fotograma exacte del contingut (G-Sync, FreeSync)",
+   "Wifi",
+   "Wifi",
+   "Cap",
+   "Preajust de shaders",
+   "Preajust de shaders",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "Canvia els ajustos del narrador d'accessibilitat.",
+   "Crea i actualitza els llistats escanejant contingut.",
+   "Canvia els ajustos del servei d'IA (traducci\303\263/text a veu/etc.).",
+   "For\303\247a el dispositiu que usa el controlador d\342\200\231\303\240udio. Aix\303\262 dep\303"
+   "\250n del controlador.",
+   "Connector d'\303\240udio DSP que procesa l'\303\240udio abans d'enviar-lo al controlador.",
+   "Desactiva qualsevol connector d'\303\240udio DSP en funcionament.",
+   "Engega l'eixida d\342\200\231\303\240udio.",
+   "Autom\303\240ticament silencia l'\303\240udio quan s'usa l'avan\303\247ament r\303\240pid.",
+   "Accelera l'\303\240udio a l'emprar l'avan\303\247ament r\303\240pid. Defugir\303\241 sorolls en "
+   "l'\303\240udio a canvi de la seua tonalitat.",
+   "El canvi m\303\240xim en la freq\303\274\303\250ncia d'entrada d'\303\240udio. Incrementar aix"
+   "\303\262 engega canvis molt grans en la sincronitzaci\303\263 a cost d'un to d'\303\240udio impr"
+   "ec\303\255s (ex. executar nuclis PAL a pantalles NTSC).",
+   "Silencia el mesclador d'\303\240udio.",
+   "Canvia els ajustos del mesclador d'\303\240udio.",
+   "Mesclador d'\303\240udio de volum global en decibels (dB). 0 dB \303\251s el volum normal, sense"
+   " cap guany afegit.",
+   "Silencia l'\303\240udio.",
+   "Freq\303\274\303\250ncia de mostreig de l'eixida d'\303\240udio.",
+   "Canvia els ajustos d'eixida d'\303\240udio.",
+   "Ajuda a suavitzar imperfeccions en la sincronitzaci\303\263 de l'\303\240udio i v\303\255deo. Te"
+   "niu en compte que si es desactiva, ser\303\240 pr\303\240cticament impossible obtenir una sincro"
+   "nitzaci\303\263 correcta.",
+   "Escull el controlador de remostreig d'\303\240udio que s'usar\303\240.",
+   "Baixa este valor per afavorir el rendiment i la lat\303\250ncia sobre la qualitat de l'\303\240u"
+   "dio, incrementeu-lo per a una millor qualitat d'\303\240udio a canvi de perdre rendiment i lat"
+   "\303\250ncia.",
+   "Sincronitza l'\303\240udio. Recomanat.",
+   "Canvia els ajustos de la sincronitzaci\303\263 de l'\303\240udio.",
+   "Volum d'\303\240udio en decibels (dB). 0 dB \303\251s el volum normal, sense cap guany afegit.",
+   "Permet que el controlador WASAPI agafe el control exclusiu del dispositiu d'\303\240udio. Si es "
+   "desactiva l'opci\303\263 ser\303\240 usat en mode compartit.",
+   "Utilitza el format de punt flotant per al controlador WASAPI si es suportat pel teu dispositiu d"
+   "'\303\240udio.",
+   "Mida (en fotogrames) de la mem\303\262ria interm\303\250dia quan s\342\200\231usa el controlador"
+   " WASAPI en mode compartit.",
+   "Inicia manualment la sincronitzaci\303\263 en el n\303\272vol.",
+   "Gestiona i crea arxius de configuraci\303\263.",
+   "Canvia els ajustos per defecte dels arxius de configuraci\303\263.",
+   "Accedix r\303\240pidament a tots els ajustos principals del joc en funcionament.",
+   "Establix una contrasenya per ocultar la secci\303\263 'Ajustos', permetent restaurar-la des del "
+   "men\303\272 principal seleccionant 'Mostrar la secci\303\263 d'Ajustos' i introduint la contrase"
+   "nya.",
+   "Fa una c\303\262pia de seguretat del nucli instal\302\267lat actualment.",
+   "Esborra este nucli del disc.",
+   "Elimina un arxiu de la llista de c\303\262pies de seguretat guardades.",
+   "Vore informaci\303\263 pertanyent a l'aplicaci\303\263 o al nucli.",
+   "Selecciona quin nucli vas a usar.",
+   "Alliberar nucli carregat.",
+   "Permet als nuclis oferir les opcions a submen\303\272s agrupats per categories. NOTA: cal tornar"
+   " a carregar el nucli per a que els canvis s'executen.",
+   "Instal\302\267la una versi\303\263 anterior del nucli a partir de les c\303\262pies de seguretat"
+   " de nucli guardades.",
+   "Canvia els ajustos del nucli.",
+   "Prev\303\251n que el nucli siga mostrat a la secci\303\263 'Nuclis sense continguts'. Nom\303"
+   "\251s s'aplica quan el mode de v\303\255deo estiga configurat com a 'Personalitzat'.",
+   "Crea senyals de v\303\255deo de baixa resoluci\303\263 per a pantalles de tub de raigs cat\303"
+   "\262dics (CRT).",
+   "Canvia els men\303\272s a l\303\255nia de mode (modeline) en alta resoluci\303\263 quan no s'haj"
+   "a carregat cap contingut.",
+   "Nom\303\251s per a pantalles de tub de raigs cat\303\262dics (CRT). Provar\303\240 d'usar-se la "
+   "resoluci\303\263 i refresc d'imatge exactes del nucli/joc.",
+   "Canvia entre resolucions natives o panor\303\240miques.",
+   "Usar par\303\240metres de freq\303\274\303\250ncia de refresc d'imatge especificats en l'arxiu d"
+   "e configuraci\303\263 si es veu necessari.",
+   "Modifica esta opci\303\263 si la imatge no est\303\240 ben centrada a la pantalla.",
+   "Modifica esta opci\303\263 si la imatge no est\303\240 ben centrada a la pantalla.",
+   "Vore les \303\272ltimes cerques.",
+   "Vore les bases de dades.",
+   "Canvia els directoris predeterminats a on es troben localitzats els arxius.",
+   "Vore informaci\303\263 sobre discs \303\262ptics inserits.",
+   "Baixa i instal\302\267la un nucli des de l'actualitzador en l\303\255nia.",
+   "Baixa contingut gratu\303\257t per al nucli seleccionat.",
+   "Baixa arxius de sistema auxiliars per al nucli requerits per a una funci\303\263 m\303\251s corr"
+   "ecta o \303\262ptima.",
+   "Canvia els controladors usats pel sistema.",
+   "Permet que els nuclis canvien el controlador de v\303\255deo a un de diferent al que s'estiga us"
+   "ant.",
+   "Existeixen nuclis amb opci\303\263 de tancat. Activant esta opci\303\263, RetroArch carregar\303"
+   "\240 un nucli buit evitant que es tanque soles.",
+   "Converteix un mitj\303\240 f\303\255sic de disc \303\262ptic en un arxiu d'imatge per a poder se"
+   "r guardat i executat en la mem\303\262ria del teu maquinari.",
+   "Canvia els ajustos de rebobinat, l'avan\303\247ament r\303\240pid i la c\303\240mera lenta.",
+   "Ac\303\255 apareixeran els nuclis instal\302\267lats que puguen funcionar sense haver de carrega"
+   "r un contingut.",
+   "Regira tot el contingut mitjan\303\247ant una interf\303\255cie de b\303\272squeda categoritzada"
+   " que coincidisca amb la base de dades.",
+   "El contingut afegit a \"Preferits\" se vor\303\240 ac\303\255.",
+   "Les imatges que hagen sigut vistes anteriorment se voran ac\303\255.",
+   "La m\303\272sica que ha sigut escoltada anteriorment se vor\303\240 ac\303\255.",
+   "Els v\303\255deos que hagen sigut vistos anteriorment se voran ac\303\255.",
+   "Mostra com funciona el programa.",
+   "Mostra informaci\303\263 sobre maquinari i sistema.",
+   "Mant\303\251 el mode 'Prioritat de joc' a l'engegar i reemprendre continguts de manera autom\303"
+   "\240tica. Seleccionant 'Detectar', l'ajust s'activar\303\240 si el n\303\272cli actual implement"
+   "a una funci\303\263 de teclat virtual.",
+   "Canvia els ajustos de vibraci\303\263 i resposta h\303\240ptica.",
+   "Canvia els ajustos de control del men\303\272.",
+   "Si es suportat per l'actual superposici\303\263, es rotar\303\240 autom\303\240ticament a fi que"
+   " coincidisca amb l'orientaci\303\263 i la relaci\303\263 d'aspecte de la pantalla.",
+   "Ajusta autom\303\240ticament l'escala de superposici\303\263 i els elements espaiats de la inter"
+   "f\303\255cie gr\303\240fica per tal de fer-los coincidir amb la relaci\303\263 d'aspecte de la p"
+   "antalla. Produ\303\257x els millors resultats amb les superposicions de comandaments.",
+   "Engega l'entrada des dels sensors d'acceler\303\262metre, giroscopi i lumin\303\240ncia, si est"
+   "\303\240 suportat pel maquinari actual. Pot tenir un impacte sobre el rendiment i/o un increment"
+   " de consum energ\303\250tic en algunes plataformes.",
+   "Canvia els ajustos de comandaments, teclat i ratol\303\255.",
+   "Canvia els ajustos relacionats amb la lat\303\250ncia de v\303\255deo, \303\240udio i comandamen"
+   "ts.",
+   "Selecciona quin contingut vas a executar.",
+   "Carrega un mitj\303\240 f\303\255sic en disc \303\262ptic. Primer selecciona el nucli (Carregar "
+   "nucli) per a usar-lo amb el disc.",
+   "Canvia els ajustos del registre.",
+   "Vore totes les configuracions relacionades amb els ajustos.",
+   "Assegura una limitaci\303\263 de la velocitat de fotogrames per segon mentres s'est\303\240 a di"
+   "ns del men\303\272.",
+   "Afegix un poc de desenfocament al men\303\272 per suavitzar la pixelaci\303\263.",
+   "Selecciona la relaci\303\263 d'aspecte del men\303\272. Una relaci\303\263 panor\303\240mica inc"
+   "rementar\303\240 la resoluci\303\263 horitzontal de la interf\303\255cie del men\303\272 (podria"
+   " caldre reiniciar si l'opci\303\263 \"Fixar relaci\303\263 d'aspecte del men\303\272\" es troba "
+   "desactivada).",
+   "Assegura que el men\303\272 es mostre sempre amb la relaci\303\263 d'aspecte correcta. Si es des"
+   "activa, el men\303\272 r\303\240pid ser\303\240 estirat per adaptar-lo al contingut carregat o e"
+   "n execuci\303\263.",
+   "Canvia els ajustos de l'aspecte del men\303\272.",
+   "Vore la opci\303\263 \"Arxiu de configuraci\303\263\" al Men\303\272 principal.",
+   "Canvia els ajustos de so del men\303\272.",
+   "Selecciona dispositiu d'entrada.",
+   "Canvia els ajustos de MIDI.",
+   "Uneix-te a una sessi\303\263 de joc en l\303\255nia, o crea-ne la teua pr\303\262pia.",
+   "Vore les IP's associades i les interf\303\255cies de la xarxa.",
+   "Canvia els ajustos del servidor i de la xarxa.",
+   "Baixa i instal\302\267la diferents complements, components i continguts de RetroArch.",
+   "Canvia els ajustos de capes de visualitzacions gr\303\240fiques de controls, notificacions del s"
+   "istema i disposici\303\263 de v\303\255deo a la pantalla.",
+   "Aplica un factor de correcci\303\263 de relaci\303\263 d'aspecte a la superposici\303\263 quan s"
+   "'usa una horientaci\303\263 de pantalla horitzontal. Els valors positius incrementen (mentre que"
+   " els valors negatius decreixen) l'ampl\303\240ria efectiva de la superposici\303\263.",
+   "Aplica un factor de correcci\303\263 de relaci\303\263 d'aspecte a la superposici\303\263 quan s"
+   "'usa una orientaci\303\263 de pantalla vertical. Els valors positius incrementen (mentre que els"
+   " valors negatius decreixen) l'altura efectiva de la superposici\303\263.",
+   "Posa en pausa el contingut quan qualssevol controlador es desconnecte.",
+   "Els continguts escanejats que coincidisquen amb la base de dades seran mostrats ac\303\255.",
+   "Canvia els ajustos de les llistes de reproducci\303\263.",
+   "Baixa miniatures per als elements de la llista de reproducci\303\263 seleccionada.",
+   "Canvia els ajustos de la gesti\303\263 d'energia del sistema.",
+   "Tanca Retroarch. Guardar la configuraci\303\263 a l'eixir est\303\240 activat.",
+   "Tanca Retroarch. Guardar la configuraci\303\263 a l'eixir est\303\240 desactivat.",
+   "Canvia els ajustos de l'enregistrament.",
+   "Reiniciar Retroarch.",
+   "Canvia els ajustos dels assoliments.",
+   "Determina el nombre de fotogrames a executar amb antelaci\303\263. Poden haver fluctuacions de s"
+   "enyal si el nombre de fotogrames endarrerits supera al valor intern del joc.",
+   "Fa desapar\303\250ixer el missatge d'av\303\255s que es mostra a l'usar la reducci\303\263 predi"
+   "ctiva de lat\303\250ncia si el nucli no es compatible amb els guardats r\303\240pids.",
+   "El nucli actual \303\251s imcompatible amb la reducci\303\263 predictiva de lat\303\250ncia per "
+   "mancar de suport de desats r\303\240pids determin\303\255stics.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
 #endif
-#ifdef HAVE_QT
 #endif
-#ifdef HAVE_GAME_AI
+   "Canvia els ajustos de guardat.",
+   "For\303\247a una orientaci\303\263 espec\303\255fica de la pantalla respecte a la del sistema op"
+   "eratiu.",
+   "Configura el programa.",
+   "Vore els ajustos 'Configuraci\303\263'.",
+   "Mostra els ajustos de controladors.",
+   "Vore els ajustos de 'Regulador de fotogrames'.",
+   "Vore els ajustos de 'Gesti\303\263 d'energia'.",
+   "Mostra els ajustos de v\303\255deo.",
+   "Canvia la visibilitat dels elements al men\303\272 d'Ajustos.",
+   "Mostra els ajustos avan\303\247ats per a usuaris experts.",
+   "Fa apar\303\250ixer un men\303\272 en forma de la t\303\255pica finestra de programari d'ordinad"
+   "or.",
+   "Instal\302\267la o restaura un nucli des del directori de \"Baixades\".",
+   "Evita que el salvapantalles del vostre sistema s'active.",
+   "Bescanvia tots els nuclis vells i instal\302\267lats manualment amb les \303\272ltimes versions "
+   "de la Google Play Store quan estiguen disponibles.",
+   "Vore informaci\303\263 espec\303\255fica sobre el maquinari.",
+   "Mostra la barra del men\303\272 a la finestra.",
+   "Actualitza tot els nuclis instal\302\267lats a la seua \303\272ltima versi\303\263 disponible.",
+   "Canvia els ajustos de la interf\303\255cie de l'usuari.",
+   "Valor de punt flotant per a la relaci\303\263 d'aspecte de v\303\255deo (amplada/altura).",
+   "Ajusta la relaci\303\263 d'aspecte de la imatge.",
+   "Retalla uns quants p\303\255xels a les vores de la imatge que de vegades els desenvolupadors sol"
+   "en deixar en blanc, o que tamb\303\251 la imatge puga contenir p\303\255xels de residu. (cal rei"
+   "niciar)",
+   "Els gestors de finestres empraran la composici\303\263 per aplicar efectes visuals, detectar fin"
+   "estres que no responguen, entre d'altres coses.",
+   "Aplica un filtre de v\303\255deo processat per la CPU. Pot comportar un major consum de recursos"
+   " de maquinari. Alguns filtres de v\303\255deo nom\303\251s funcionen per a nuclis que usen 32 o "
+   "16 bits de color.",
+   "Atura qualsevol filtre de v\303\255deo que estiga processant la CPU.",
+   "For\303\247a la resoluci\303\263 a la mida de la pantalla. Si es fica valor 0, s'usar\303\240 un"
+   " de fixe de 3840 \303\227 2160.",
+   "For\303\247a la desactivaci\303\263 del suport de l'FBO (Frame Buffer Object) sRGB. Esta opci"
+   "\303\263 pot minvar problemes de v\303\255deo amb el suport d'FBO sRGB en alguns controladors Op"
+   "enGL d'Intel en Windows.",
+   "Canvia els ajustos del mode de pantalla entrega.",
+   "Ajusta la mida d'amplaria personalitzada de la imatge per al mode pantalla completa. No modifica"
+   "nt el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "Ajusta la mida d'al\303\247ada personalitzada de la imatge per al mode pantalla completa. No mod"
+   "ificant el valor, s'usar\303\240 la resoluci\303\263 de l'escriptori.",
+   "Escull quina targeta gr\303\240fica vols usar.",
+   "La imatge de captures de pantalla se voran amb els shaders aplicats per la GPU, si es possible.",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
+   "Establix quants fotogrames pot moure la CPU anticipant-se a la GPU quan s'usa \"Sincronitzaci"
+   "\303\263 rigorosa de la GPU\".",
+   "Canvia els ajustos de v\303\255deo de l'HDR.",
+   "Escull quina pantalla vas a usar.",
+   "Canvia els ajustos de l'eixida de v\303\255deo.",
+   "Ajusta el retall del sobreescalat de la imatge reduint un nombre espec\303\255fic de l\303\255ni"
+   "es d'escalat (partint des de la part inferior de la pantalla). Pot provocar defectes d'escalat.",
+   "Ajusta el retall del sobreescalat de la imatge reduint un nombre espec\303\255fic de l\303\255ni"
+   "es d'escalat (partint des de la part superior de la pantalla). Pot provocar defectes d'escalat.",
+   "Vore l'estimaci\303\263 exacta del grau d'actualitzaci\303\263 de refresc d'imatge de la pantall"
+   "a en hercis (Hz).",
+   "Vore la freq\303\274\303\250ncia del grau d'actualitzaci\303\263 de refresc d'imatge recollit pe"
+   "l controlador de v\303\255deo.",
+   "For\303\247a una rotaci\303\263 espec\303\255fica de la imatge de v\303\255deo. S'acollir\303"
+   "\240 a la predeterminada pel nucli.",
+   "Canvia els ajustos de mida de l'escalat d'imatge.",
+   "Canvia els ajustos d'eixida de v\303\255deo.",
+   "Retardar la c\303\240rrega autom\303\240tica de shaders en milisegons. Pot solucionar alguns err"
+   "ors gr\303\240fics que poden fer aparici\303\263 a l'usar programari de captura de pantalla.",
+   "D\303\263na un context privat als nuclis renderitzats per maquinari. Aix\303\262 alforra tragina"
+   "r canvis en l'estat del maquinari entre fotogrames.",
+   "Canvia els ajustos de sincronitzaci\303\263 de v\303\255deo.",
+   "Millora el rendiment del joc a costa d'un augment de la lat\303\250ncia i sacseig en la imatge. "
+   "Usar nom\303\251s si la m\303\240xima velocitat no pot ser obtinguda de cap altra manera.",
+   "Establix l'al\303\247ada personalitzada de l'\303\240rea de visualitzaci\303\263. Este valor s'u"
+   "sar\303\240 si ha sigut escollit \302\253Personalitzat\302\273 a l'ajust \302\253Relaci\303\263 "
+   "d'aspecte\302\273.",
+   "Establix l'amplada personalitzada de l'\303\240rea de visualitzaci\303\263. Este valor s'usar"
+   "\303\240 si ha sigut escollit \302\253Personalitzat\302\273 a l'ajust \302\253Relaci\303\263 d'a"
+   "specte\302\273.",
+   "Sincronitza l'eixida de v\303\255deo de la targeta gr\303\240fica amb la freq\303\274\303\250nci"
+   "a de refresc d'imatge d'actualitzaci\303\263 de la pantalla. Es recomana activar-lo.",
+   "For\303\247a la sincronitzaci\303\263 entre CPU i GPU. Reduix la lat\303\250ncia a canvi de p"
+   "\303\250rdua de rendiment.",
+   "Si s'est\303\240 usant el mode de pantalla completa, for\303\247a l'\303\272s d'una finestra a m"
+   "ida completa de la pantalla per no haver de canviar entre modes de v\303\255deo.",
+   "Canvia els ajustos del mode finestra en pantalla.",
+   "Ajusta l'al\303\247ada m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'acor"
+   "d al valor d'\302\253Al\303\247ada en la finestra\302\273.",
+   "Ajusta l'ampl\303\240ria m\303\240xima de la finestra al reescalar-la autom\303\240ticament d'ac"
+   "ord al valor d'\302\253Escalat en la finestra\302\273.",
+   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valo"
+   "rs d'\302\253Ample de la finestra\302\273 i \302\253Al\303\247ada de la finestra\302\273. Si es "
+   "desactiva esta opci\303\263, la mida de la finestra canviar\303\240 de manera din\303\240mica se"
+   "gons l'ajust \302\253Escala en la finestra\302\273.",
+   "Ajusta l'al\303\247\303\240ria personalitzada per a la finestra.",
+   "For\303\247a un reajustament horitzontal de la imatge de v\303\255deo. S'aplicar\303\240 de mane"
+   "ra global.",
+   "For\303\247a un reajustament vertical de la imatge de v\303\255deo. S'aplicar\303\240 de manera "
+   "global.",
+   "Establix la transpar\303\250ncia de la finestra.",
+   "Mostra tots els continguts a una finestra de mida fixa, amb unes dimensions establides pels valo"
+   "rs d'\302\253Ample de la finestra\302\273 i \302\253Al\303\247ada de la finestra\302\273, guarda"
+   "nt la mida i posici\303\263 de la finestra actual al tancar RetroArch. Si es desactiva esta opci"
+   "\303\263, la mida de la finestra canviar\303\240 de manera din\303\240mica segons l'ajust \302"
+   "\253Escala en la finestra\302\273.",
+   "Ajusta la mida de la finestra al m\303\272ltiple especificat de la mida de l''\303\240rea de vis"
+   "ualitzaci\303\263 del n\303\272cli.",
+   "Mostra la barra de t\303\255tol i les voreres de la finestra.",
+   "Ajusta una amplada personalitzada per a la finestra.",
+   "Impedix capgirar-se de l'interval sol\302\267licitat pel nucli. Recomanat per a pantalles amb un"
+   "a freq\303\274\303\250ncia de refresc d'imatge variable (G-Sync, FreeSync, HDMI 2.1 VRR).",
+   "Controller profile saved as \"%s\".",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-loading save state from \"%s\" succeeded.",
+   "bringing_up_command_interface_at_port",
+   "RetroAchievements: Logged in as \"%s\".",
+   "Compilador",
+   "Error a l'esborrar el nucli de la llista 'Nuclis sense continguts': ",
+   "Error a l'afegir el nucli a la llista 'Nuclis sense continguts': ",
+   "Configurat %s al port %u",
+   "Desconnectat %s del port %u",
+   "No ha sigut configurat %s (%u/%u) usant l'opci\303\263 secund\303\240ria",
+   "No ha sigut configurat %s (%u/%u)",
+   "disconnect_device_from_a_valid_port",
+   "failed_to_start_audio_driver",
+   "found_last_state_slot",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
+   "Client banned: \"%s\"",
+   "Your nickname changed to \"%s\"",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Client kicked: \"%s\"",
+   "Netplay peer \"%s\" paused",
+   "\"%s\" has disconnected",
+   "Unrecognized command \"%s\" received.\n",
+   "Esperant al client...",
+};
 
-
-
-
-
+/* Contiguity check: char members have alignment 1, so any
+ * compiler that pads this struct fails here instead of
+ * misindexing at runtime. */
+typedef char msg_hash_val_blob_check[
+      (sizeof(msg_hash_val_blob) == (26528u
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+       + 77u
+       + 125u
 #endif
-#ifdef HAVE_SMBCLIENT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   "Xarxa compartida SMB"
-   )
 #endif
+      )) ? 1 : -1];
+
+static const uint32_t msg_hash_val_ids[] =
+{
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SENSOR_ORIENTATION_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   (uint32_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   (uint32_t)MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   (uint32_t)MSG_DEVICE_NOT_CONFIGURED_NR,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
+   (uint32_t)MSG_WAITING_FOR_CLIENT,
+};

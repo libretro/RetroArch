@@ -50,6 +50,7 @@
 #endif
 
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #ifdef _XBOX
@@ -434,6 +435,8 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    LPGUID selected_device = NULL;
    WAVEFORMATEX wf        = {0};
    DSBUFFERDESC bufdesc   = {0};
+   bool want_float        = (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    dsound_t *ds           = (dsound_t*)calloc(1, sizeof(*ds));
 
    if (!ds)
@@ -493,7 +496,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       goto error;
 #endif
 
-   dsound_set_format(&wf, true, 2, rate);
+   dsound_set_format(&wf, want_float, 2, rate);
    RARCH_DBG("[DirectSound] Requesting %u-bit %u-channel client with %s samples at %uHz %ums.\n",
          wf.wBitsPerSample,
          wf.nChannels,
@@ -529,6 +532,11 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
 
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
    {
+      /* Only a float request has a lower format to fall back to. An int16
+       * request that fails has nowhere lower to go, so it errors out. */
+      if (!want_float)
+         goto error;
+
       RARCH_WARN("[DirectSound] Failed to create float buffer, falling back to 16-bit PCM.\n");
 
       dsound_set_format(&wf, false, 2, rate);
@@ -548,7 +556,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
       ds->use_float = false;
    }
    else
-      ds->use_float = true;
+      ds->use_float = want_float;
 
    RARCH_LOG("[DirectSound] Initialized %u-bit %s buffer, %u bytes, latency %u ms.\n",
          wf.wBitsPerSample,

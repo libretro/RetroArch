@@ -1,1305 +1,667 @@
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-
-/*
-##### NOTE FOR TRANSLATORS ####
-
-PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
-
-Translations are handled using the localization platform Crowdin:
-https://crowdin.com/project/retroarch
-
-Translations from Crowdin are applied automatically and will overwrite
-any changes made to the other localization files.
-As a result, any submissions directly altering `msg_hash_*.h` files
-other than `msg_hash_us.h` will be rejected.
-*/
-
-/* Top-Level Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Hovedmenu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "Indstillinger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "Favoritter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "Billeder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   "Musik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Videoer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Udforsk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importer indhold"
-   )
-
-/* Main Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "Hurtig Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Få hurtigt adgang til alle relevante indstillinger i spillet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Indlæs kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Vælg kerne der skal bruges."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Indlæs indhold"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Vælg hvilket indhold der skal startes."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Indlæs disk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Indlæs en fysisk medie disk. Vælg først kernen (Indlæs kerne) til brug med disken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Dump disk"
-   )
-MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
-   MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Dump den fysiske disk til intern opbevaring. Det vil blive gemt som en diskafbildningsfil."
-   )
-#ifdef HAVE_LAKKA
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Spilleliste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Scannet indhold der matcher databasen vil blive vist her."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Importer indhold"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Opret og opdater spillelister ved at scanne indhold."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Vis skrivebords menu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Åbn den traditionelle skrivebords menu."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Vis alle konfigurationsrelaterede indstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Opdater online"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Hent tilføjelser, komponenter og indhold til RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY,
-   "Deltag i eller vær vært for en netplay session."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "Indstillinger"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS,
-   "Indstil programmet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Vis systemoplysninger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Konfigurationsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Håndter og opret konfigurationsfiler."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "Hjælp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Læs mere om, hvordan programmet virker."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Luk"
-   )
-
-/* Main Menu > Load Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Hent en kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Hent og installer en kerne fra onlineopdateringsprogrammet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Installer eller gendan en kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Installér eller gendan en kerne fra mappen 'Downloads'."
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Start Videoprocessor"
-   )
-
-/* Main Menu > Load Content */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Start Mappe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Gennemse Arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Indlæs Arkiv"
-   )
-
-/* Main Menu > Load Content > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   "Favoritter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "Indhold tilføjet til 'Favoritter' vises her."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   "Musik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Musik som tidligere er blevet afspillet vises her."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "Billeder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Billeder som tidligere er blevet set vil blive vist her."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "Videoer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Videoer som tidligere er blevet afspillet vil blive vist her."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   "Udforsk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Gennemse alt indhold, der matcher databasen via en kategoriseret søgegrænseflade."
-   )
-
-/* Main Menu > Online Updater */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Kerne downloader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Opdater installerede kerner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Opdater alle installerede kerner til den nyeste tilgængelige version."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Skift kerner til Play Butik-versioner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Erstat alle ældre og manuelt installerede kerner med de nyeste versioner fra Play Butik, hvor de er tilgængelige."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Opdatering af miniaturebilleder for spillelister"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Download miniaturer for poster i den valgte spilleliste."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Indholdsdownloader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Opdater kerneinfofiler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Opdater aktiver"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Opdater controllerprofiler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Opdater snydekoder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Opdater databaser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Opdater overlays"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "Opdater GLSL Shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "Opdater Cg Shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "Opdater Slang Shaders"
-   )
-
-/* Main Menu > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "Kerne information"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "Se information vedrørende applikationen/kerne."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Disk information"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Se information om indsatte mediediske."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Netværksinformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Vis netværksgrænseflade(r) og tilknyttede IP-adresser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Systeminformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Se information specifikt for enheden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   "Database manager"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   "Se databaser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   "Markørhåndtering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "Se tidligere søgninger."
-   )
-
-/* Main Menu > Information > Core Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "Kernenavn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "Kerneetiket"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   "Systemnavn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   "Systemproducent"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "Kategorier"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "Forfatter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   "Rettigheder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   "Licens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "Understøttede udvidelser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Påkrævet Grafik API"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Mangler, Påkrævet:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "Mangler, Valgfri:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Tilstede, Påkrævet:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "Tilstede, Valgfri:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Lås installeret kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Slet kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Fjern denne kerne fra disken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Sikkerhedskopiér kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Opret en arkiveret sikkerhedskopi af den aktuelt installerede kerne."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "Gendan sikkerhedskopi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "Installer en tidligere version af kernen fra en liste over arkiverede sikkerhedskopier."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   "Slet sikkerhedskopi"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "Fjern en fil fra listen over arkiverede sikkerhedskopier."
-   )
-
-/* Main Menu > Information > System Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   "Build dato"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   "Git version"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   "CPU model"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   "CPU funktioner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU arkitektur"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Frontend identifikator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   "Strømkilde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   "Video kontekst driver"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Skærmbredde (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Skærmhøjde (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Skærmens DPI"
-   )
-
-/* Main Menu > Information > Database Manager > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Præstationer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Co-op Understøttet"
-   )
-
-/* Main Menu > Configuration File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Indlæs konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   "Gem aktuel konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "Gem ny konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Nulstil til standardindstillinger"
-   )
-
-/* Main Menu > Help */
-
-/* Main Menu > Help > Basic Menu Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "Rul Op"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "Rul Ned"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "Bekræft"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "Åbn/luk menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "Luk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "Slå Tastatur Til/Fra"
-   )
-
-/* Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   "Drivere"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Skift drivere, der bruges af systemet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Skift indstillinger for videooutput."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Lyd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Skift controller, tastatur og mus indstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   "Latenstid"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Skift indstillinger relateret til video, lyd og input latenstid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "Kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Skift kerneindstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "Konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Skift standardindstillinger for konfigurationsfiler."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "Gemmer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Skift gemmeindstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "Logning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Skift logføringsindstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Filhåndtering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Skift indstillingerne for spoling tilbage, spoling frem og slow motion."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "Optager"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Skift optagelsesindstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Ændre skærmoverlejring og tastaturoverlejring og notifikationsindstillinger på skærmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   "Brugergrænseflade"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "Skift indstillinger for brugergrænseflade."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "AI Tjeneste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Skift indstillinger for AI-tjenesten (Oversættelse/TTS/Misc)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   "Tilgængelighed"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Skift indstillinger for tilgængelighedsfortælleren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Strømstyring"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Skift indstillinger for strømstyring."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Præstationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Skift indstillinger for præstationer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   "Netværk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Skift server og netværksindstillinger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "Spilleliste"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Skift indstillinger for spillelister."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   "Bruger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "Mappe"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Skift standardmapper hvor filer er placeret."
-   )
-
-/* Core option category placeholders for icons */
-
-#ifdef HAVE_MIST
+/* THIS FILE IS GENERATED by intl/json2h.py - do not edit.
+ * Packed message table; source of truth is the Crowdin
+ * project (see intl/crowdin_sync.py). */
+/* Pure-ASCII source: every non-ASCII byte is a fixed 3-digit octal
+ * escape, so no execution-charset pragma is needed and the encoded
+ * UTF-8 bytes survive any compiler codepage (including MSVC 2003-2010,
+ * which have no way to consume raw UTF-8 source reliably).
+ * C4045 is disabled for old MSVC: non-final chunk members are sized
+ * without a NUL slot, which is valid C89; the sizeof compile check
+ * below still catches any real size mismatch. */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#pragma warning(disable:4045)
 #endif
 
-/* Settings > Drivers */
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   "Lyd"
-   )
-#ifdef HAVE_MICROPHONE
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   "Lyd resampler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Lyd resampler driver der skal bruges."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   "Kamera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Placering"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Optag"
-   )
-
-/* Settings > Video */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Output native, lavopløsningssignaler til brug med CRT-skærme."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Skift indstillinger for videooutput."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Fuldskærmstilstand"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Skift indstillinger for fuldskærmstilstand."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Vinduestilstand"
-   )
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-#endif
-#endif
-
-/* Settings > Video > CRT SwitchRes */
-
-
-/* Settings > Video > Output */
-
-#if defined (WIIU)
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-#endif
-
-/* Settings > Video > Fullscreen Mode */
-
-
-/* Settings > Video > Windowed Mode */
-
-
-/* Settings > Video > Scaling */
-
-#if defined(DINGUX)
-#endif
-#if defined(RARCH_MOBILE)
-#endif
-
-/* Settings > Video > HDR */
-
-
-
-/* Settings > Video > Synchronization */
-
-
-/* Settings > Audio */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Skift indstillinger for lydudgang."
-   )
-#ifdef HAVE_MICROPHONE
-#endif
-
-/* Settings > Audio > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Lyd"
-   )
-
-#ifdef HAVE_MICROPHONE
-/* Settings > Audio > Input */
-#endif
-
-/* Settings > Audio > Resampler */
-
-
-/* Settings > Audio > Synchronization */
-
-
-/* Settings > Audio > MIDI */
-
-
-/* Settings > Audio > Mixer Settings > Mixer Stream */
-
-
-/* Settings > Audio > Menu Sounds */
-
-
-/* Settings > Input */
-
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-#endif
-#ifdef ANDROID
-#endif
-
-
-
-/* Settings > Input > Haptic Feedback/Vibration */
-
-
-/* Settings > Input > Menu Controls */
-
-
-/* Settings > Input > Hotkeys */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Luk"
-   )
-
-
-
-
-
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "AI Tjeneste"
-   )
-
-
-/* Settings > Input > Port # Controls */
-
-
-/* Settings > Latency */
-
-#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-#endif
-
-/* Settings > Core */
-
-#ifndef HAVE_DYNAMIC
-#endif
-#ifdef HAVE_MIST
-
-
-
-
-
-
-
-#endif
-/* Settings > Configuration */
-
-
-/* Settings > Saving */
-
-
-/* Settings > Logging */
-
-
-/* Settings > File Browser */
-
-
-/* Settings > Frame Throttle */
-
-
-/* Settings > Frame Throttle > Rewind */
-
-
-/* Settings > Frame Throttle > Frame Time Counter */
-
-
-/* Settings > Recording */
-
-
-/* Settings > On-Screen Display */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay */
-
-
-#if defined(ANDROID)
-#endif
-
-/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-
-/* Settings > On-Screen Display > On-Screen Notifications */
-
-
-/* Settings > User Interface */
-
-#ifdef _3DS
-#endif
-
-/* Settings > User Interface > Menu Item Visibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   "Hurtig Menu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   "Indstillinger"
-   )
-#ifdef HAVE_LAKKA
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   "Hovedmenu"
-   )
-
-/* Settings > User Interface > Menu Item Visibility > Quick Menu */
-
-
-/* Settings > User Interface > Views > Settings */
-
-
-
-/* Settings > User Interface > Appearance */
-
-
-/* Settings > AI Service */
-
-
-/* Settings > Accessibility */
-
-
-/* Settings > Power Management */
-
-/* Settings > Achievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Præstationer"
-   )
-
-/* Settings > Achievements > Appearance */
-
-
-/* Settings > Achievements > Visibility */
-
-
-/* Settings > Network */
-
-
-/* Settings > Network > Updater */
-
-
-/* Settings > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   "Kerne:"
-   )
-
-/* Settings > Playlists > Playlist Management */
-
-
-/* Settings > User */
-
-
-/* Settings > User > Privacy */
-
-
-/* Settings > User > Accounts */
-
-
-/* Settings > User > Accounts > RetroAchievements */
-
-
-/* Settings > User > Accounts > YouTube */
-
-
-/* Settings > User > Accounts > Twitch */
-
-
-/* Settings > User > Accounts > Facebook Gaming */
-
-
-/* Settings > User > Accounts > Kick */
-
-
-/* Settings > Directory */
-
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Start Mappe"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Spilleliste"
-   )
-
-#ifdef HAVE_MIST
-/* Settings > Steam */
-
-
-
-#endif
-
-/* Music */
-
-/* Music > Quick Menu */
-
-
-/* Netplay */
-
-
-/* Netplay > Host */
-
-
-/* Import Content */
-
-
-/* Import Content > Scan File */
-
-
-/* Import Content > Content Scan */
-
-
-/* Explore tab */
-
-/* Playlist > Playlist Item */
-
-
-/* Playlist Item > Set Core Association */
-
-
-/* Playlist Item > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   "Kerne"
-   )
-
-/* Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Præstationer"
-   )
-
-/* Quick Menu > Options */
-
-
-/* Quick Menu > Options > Manage Core Options */
-
-
-/* Quick Menu > Controls */
-
-
-/* Quick Menu > Controls > Manage Remap Files */
-
-
-/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
-
-
-/* Quick Menu > Cheats */
-
-
-/* Quick Menu > Cheats > Start or Continue Cheat Search */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Replace) */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Append) */
-
-
-/* Quick Menu > Cheats > Cheat Details */
-
-
-/* Quick Menu > Disc Control */
-
-
-/* Quick Menu > Shaders */
-
-
-
-/* Quick Menu > Shaders > Shader Parameters */
-
-
-/* Quick Menu > Overrides */
-
-
-/* Quick Menu > Achievements */
-
-
-/* Quick Menu > Information */
-
-
-/* Miscellaneous UI Items */
-
-
-/* Settings Options */
-
-
-/* RGUI: Settings > User Interface > Appearance */
-
-
-/* RGUI: Settings Options */
-
-
-/* XMB: Settings > User Interface > Appearance */
-
-
-/* XMB: Settings Options */
-
-
-/* Ozone: Settings > User Interface > Appearance */
-
-
-
-
-/* MaterialUI: Settings > User Interface > Appearance */
-
-
-/* MaterialUI: Settings Options */
-
-
-/* Qt (Desktop Menu) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   "Indstillinger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   "&Hjælp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Indlæs kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "Spilleliste"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Filhåndtering"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE,
-   "Kerne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   "Kerne:"
-   )
-
-/* Unsorted */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER,
-   "Bruger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP,
-   "Hjælp"
-   )
-
-/* Discord Status */
-
-
-/* Notifications */
-
-
-
-
-/* Lakka */
-
-
-/* Environment Specific Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Genstart RetroArch"
-   )
-#ifdef HAVE_LIBNX
-#endif
+static const struct
+{
+   char s_d9685b01[10];
+   char s_9932960f[14];
+   char s_2cb9dc71[11];
+   char s_ae50c550[9];
+   char s_b30d3e14[9];
+   char s_42b8ffbf[6];
+   char s_bcddf275[8];
+   char s_99eb425d[8];
+   char s_7632d987[17];
+   char s_d21c686b[21];
+   char s_36265c93[12];
+   char s_544da5c1[63];
+   char s_193e1462[49];
+   char s_d7f2cfac[14];
+   char s_35f2309a[29];
+   char s_e3d18a3d[16];
+   char s_c6e1f92b[40];
+   char s_d15b342a[13];
+   char s_2f5a9518[87];
+   char s_6ebb6a00[10];
+   char s_ccbacaee[91];
+   char s_b3cc8a43[12];
+   char s_d34eb231[58];
+   char s_061657e6[17];
+   char s_243da114[53];
+   char s_6155456e[18];
+   char s_4a3d27dc[39];
+   char s_ce5f3353[22];
+   char s_87ee250e[25];
+   char s_a11934f5[21];
+   char s_1938dce6[34];
+   char s_2f9a064c[7];
+   char s_8d99673a[41];
+   char s_ed013a05[21];
+   char s_4b009af3[41];
+   char s_198c91d3[50];
+   char s_e2c6c781[15];
+   char s_f28ded2f[57];
+   char s_4aaeeb99[14];
+   char s_e8aee6c7[20];
+   char s_9eb26572[23];
+   char s_95cf0994[4];
+   char s_d31f6d88[14];
+   char s_f2a19576[60];
+   char s_01a73130[32];
+   char s_46c57dde[57];
+   char s_941e50fb[12];
+   char s_164566fb[15];
+   char s_6107eb09[14];
+   char s_550b1e93[11];
+   char s_64d24441[46];
+   char s_c0d9bee1[6];
+   char s_dec53d8f[51];
+   char s_d2224db6[9];
+   char s_ad7da224[57];
+   char s_c175c697[8];
+   char s_df614545[62];
+   char s_fd3e287f[8];
+   char s_44040aad[84];
+   char s_145f5880[17];
+   char s_5eee10e5[28];
+   char s_6e9f0493[71];
+   char s_ea80654d[38];
+   char s_8bbf7ffb[116];
+   char s_64dd7209[49];
+   char s_061c8cb7[57];
+   char s_f03e9c42[19];
+   char s_51cbf8f0[23];
+   char s_95cbebbd[16];
+   char s_6b80a1bc[27];
+   char s_99a77122[19];
+   char s_4a5b7672[18];
+   char s_eb3c8b7f[17];
+   char s_8fa79de5[21];
+   char s_eb0d7f1d[19];
+   char s_6ae93e68[22];
+   char s_881efe76[18];
+   char s_a64647a4[48];
+   char s_5d29b870[17];
+   char s_7b51019e[39];
+   char s_89920317[21];
+   char s_7279e585[57];
+   char s_bab74532[18];
+   char s_ffd591e0[38];
+   char s_f0ce97f7[17];
+   char s_0ef5e125[14];
+   char s_06f25fc0[19];
+   char s_16b9856e[25];
+   char s_78071664[10];
+   char s_78c58363[12];
+   char s_8f133960[11];
+   char s_38b82e6c[16];
+   char s_babee9c1[11];
+   char s_1e4264a1[10];
+   char s_04ecbe77[12];
+   char s_49c9bf91[7];
+   char s_8d30abf0[26];
+   char s_525068d3[22];
+   char s_51844cc2[21];
+   char s_e1a8f707[18];
+   char s_66df5c89[22];
+   char s_f70406ce[19];
+   char s_d7f2e719[23];
+   char s_8cefb843[11];
+   char s_684b0cb1[30];
+   char s_97242f99[24];
+   char s_dc427c47[69];
+   char s_b95e3404[22];
+   char s_791acb32[88];
+   char s_177845b3[20];
+   char s_1d47af21[58];
+   char s_7d2035c4[11];
+   char s_43ac80a0[12];
+   char s_f8fa3e2f[10];
+   char s_b3565d3d[15];
+   char s_9af4bf52[15];
+   char s_8fe41f79[23];
+   char s_ebe994b4[12];
+   char s_d9b00fbd[22];
+   char s_cd916c68[18];
+   char s_5c7bbce1[18];
+   char s_8356c98c[14];
+   char s_36109f2c[14];
+   char s_046d0e21[20];
+   char s_7fc52043[7];
+   char s_8584f1d6[8];
+   char s_14ec7b7e[9];
+   char s_c7a999e6[14];
+   char s_00614813[4];
+   char s_9509d1c2[22];
+   char s_3674ba44[8];
+   char s_3f2095b2[39];
+   char s_67d549fd[37];
+   char s_79b8ce4a[64];
+   char s_19d092ed[37];
+   char s_49b0b12a[4];
+   char s_a7d61696[49];
+   char s_84d3d068[10];
+   char s_a2fb1996[65];
+   char s_734d2a61[6];
+   char s_92cf524f[26];
+   char s_e4e54370[14];
+   char s_f496371e[53];
+   char s_e7a63560[7];
+   char s_f05210ce[26];
+   char s_8cb3b95f[8];
+   char s_aadb028d[32];
+   char s_aa39aae6[72];
+   char s_5dc056f8[92];
+   char s_260261d6[12];
+   char s_302fdd56[14];
+   char s_7277e127[19];
+   char s_78474a95[44];
+   char s_2e5078b2[12];
+   char s_17385b20[63];
+   char s_4ad41e20[16];
+   char s_5a8511ce[54];
+   char s_56e21ee1[14];
+   char s_0e319bcf[39];
+   char s_3a0a3fef[15];
+   char s_62144cdf[14];
+   char s_2b36bd4d[39];
+   char s_1b8a5cb5[8];
+   char s_60a8a963[31];
+   char s_87d88aa2[9];
+   char s_a5ffd3d0[40];
+   char s_8d94cfea[12];
+   char s_70a53ed8[38];
+   char s_3a9d7557[7];
+   char s_b92166cd[6];
+   char s_fe3fb37b[45];
+   char s_daead8a5[4];
+   char s_5b2d8d2f[14];
+   char s_6ade80dd[38];
+   char s_502f623c[7];
+   char s_31b177ec[10];
+   char s_721e7bb2[6];
+   char s_020e2bc5[20];
+   char s_0d96ed73[45];
+   char s_ebf10493[16];
+   char s_bdeebb68[35];
+   char s_dcf2e800[4];
+   char s_87071f08[4];
+   char s_735c53f7[12];
+   char s_9da5609f[10];
+   char s_565cbabb[14];
+   char s_96ee0cfb[9];
+   char s_5bbcf84b[7];
+   char s_5f612db6[12];
+   char s_6090802e[12];
+   char s_225da616[6];
+   char s_314e7dec[14];
+   char s_5f15f7a7[14];
+   char s_7534cfc9[8];
+   char s_2aeb5474[14];
+   char s_b71e6907[12];
+   char s_08785e85[15];
+   char s_6d025795[6];
+   char s_e8a86d57[7];
+   char s_b6172513[9];
+   char s_e2f9cd07[7];
+   char s_e2f27171[7];
+   char s_ec502f2a[19];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "Retroflag Safe Shutdown"
-#else
-   "Retroflag Safe Shutdown (Reboot required)"
-#endif
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "For use with compatible Retroflag case."
-#else
-   "For use with compatible Retroflag case. Reboot is required when changing."
-#endif
-   )
-#endif
-#ifdef HAVE_LAKKA_SWITCH
+   char s_addc7f89[77];
+   char s_96c461f7[125];
 #endif
 #endif
-#ifdef HAVE_LAKKA_SWITCH
+} msg_hash_da_blob =
+{
+   "Hovedmenu",
+   "Indstillinger",
+   "Favoritter",
+   "Historik",
+   "Billeder",
+   "Musik",
+   "Videoer",
+   "Udforsk",
+   "Importer indhold",
+   "Start Videoprocessor",
+   "Hurtig Menu",
+   "F\303\245 hurtigt adgang til alle relevante indstillinger i spillet.",
+   "Vis alle konfigurationsrelaterede indstillinger.",
+   "Indl\303\246s kerne",
+   "V\303\246lg kerne der skal bruges.",
+   "Indl\303\246s indhold",
+   "V\303\246lg hvilket indhold der skal startes.",
+   "Indl\303\246s disk",
+   "Indl\303\246s en fysisk medie disk. V\303\246lg f\303\270rst kernen (Indl\303\246s kerne) til br"
+   "ug med disken.",
+   "Dump disk",
+   "Dump den fysiske disk til intern opbevaring. Det vil blive gemt som en diskafbildningsfil.",
+   "Spilleliste",
+   "Scannet indhold der matcher databasen vil blive vist her.",
+   "Importer indhold",
+   "Opret og opdater spillelister ved at scanne indhold.",
+   "Konfigurationsfil",
+   "H\303\245ndter og opret konfigurationsfiler.",
+   "Indl\303\246s konfiguration",
+   "Gem aktuel konfiguration",
+   "Gem ny konfiguration",
+   "Nulstil til standardindstillinger",
+   "Hj\303\246lp",
+   "L\303\246s mere om, hvordan programmet virker.",
+   "Vis skrivebords menu",
+   "\303\205bn den traditionelle skrivebords menu.",
+   "Deltag i eller v\303\246r v\303\246rt for en netplay session.",
+   "Opdater online",
+   "Hent tilf\303\270jelser, komponenter og indhold til RetroArch.",
+   "Indstillinger",
+   "Indstil programmet.",
+   "Vis systemoplysninger.",
+   "Luk",
+   "Hent en kerne",
+   "Hent og installer en kerne fra onlineopdateringsprogrammet.",
+   "Installer eller gendan en kerne",
+   "Install\303\251r eller gendan en kerne fra mappen 'Downloads'.",
+   "Start Mappe",
+   "Gennemse Arkiv",
+   "Indl\303\246s Arkiv",
+   "Favoritter",
+   "Indhold tilf\303\270jet til 'Favoritter' vises her.",
+   "Musik",
+   "Musik som tidligere er blevet afspillet vises her.",
+   "Billeder",
+   "Billeder som tidligere er blevet set vil blive vist her.",
+   "Videoer",
+   "Videoer som tidligere er blevet afspillet vil blive vist her.",
+   "Udforsk",
+   "Gennemse alt indhold, der matcher databasen via en kategoriseret s\303\270gegr\303\246nseflade.",
+   "Kerne downloader",
+   "Opdater installerede kerner",
+   "Opdater alle installerede kerner til den nyeste tilg\303\246ngelige version.",
+   "Skift kerner til Play Butik-versioner",
+   "Erstat alle \303\246ldre og manuelt installerede kerner med de nyeste versioner fra Play Butik, "
+   "hvor de er tilg\303\246ngelige.",
+   "Opdatering af miniaturebilleder for spillelister",
+   "Download miniaturer for poster i den valgte spilleliste.",
+   "Indholdsdownloader",
+   "Opdater kerneinfofiler",
+   "Opdater aktiver",
+   "Opdater controllerprofiler",
+   "Opdater snydekoder",
+   "Opdater databaser",
+   "Opdater overlays",
+   "Opdater GLSL Shaders",
+   "Opdater Cg Shaders",
+   "Opdater Slang Shaders",
+   "Kerne information",
+   "Se information vedr\303\270rende applikationen/kerne.",
+   "Disk information",
+   "Se information om indsatte mediediske.",
+   "Netv\303\246rksinformation",
+   "Vis netv\303\246rksgr\303\246nseflade(r) og tilknyttede IP-adresser.",
+   "Systeminformation",
+   "Se information specifikt for enheden.",
+   "Database manager",
+   "Se databaser.",
+   "Mark\303\270rh\303\245ndtering",
+   "Se tidligere s\303\270gninger.",
+   "Kernenavn",
+   "Kerneetiket",
+   "Systemnavn",
+   "Systemproducent",
+   "Kategorier",
+   "Forfatter",
+   "Rettigheder",
+   "Licens",
+   "Underst\303\270ttede udvidelser",
+   "P\303\245kr\303\246vet Grafik API",
+   "Mangler, P\303\245kr\303\246vet:",
+   "Mangler, Valgfri:",
+   "Tilstede, P\303\245kr\303\246vet:",
+   "Tilstede, Valgfri:",
+   "L\303\245s installeret kerne",
+   "Slet kerne",
+   "Fjern denne kerne fra disken.",
+   "Sikkerhedskopi\303\251r kerne",
+   "Opret en arkiveret sikkerhedskopi af den aktuelt installerede kerne.",
+   "Gendan sikkerhedskopi",
+   "Installer en tidligere version af kernen fra en liste over arkiverede sikkerhedskopier.",
+   "Slet sikkerhedskopi",
+   "Fjern en fil fra listen over arkiverede sikkerhedskopier.",
+   "Build dato",
+   "Git version",
+   "CPU model",
+   "CPU funktioner",
+   "CPU arkitektur",
+   "Frontend identifikator",
+   "Str\303\270mkilde",
+   "Video kontekst driver",
+   "Sk\303\246rmbredde (mm)",
+   "Sk\303\246rmh\303\270jde (mm)",
+   "Sk\303\246rmens DPI",
+   "Pr\303\246stationer",
+   "Co-op Underst\303\270ttet",
+   "Rul Op",
+   "Rul Ned",
+   "Bekr\303\246ft",
+   "\303\205bn/luk menu",
+   "Luk",
+   "Sl\303\245 Tastatur Til/Fra",
+   "Drivere",
+   "Skift drivere, der bruges af systemet.",
+   "Skift indstillinger for videooutput.",
+   "Output native, lavopl\303\270sningssignaler til brug med CRT-sk\303\246rme.",
+   "Skift indstillinger for videooutput.",
+   "Lyd",
+   "Skift controller, tastatur og mus indstillinger.",
+   "Latenstid",
+   "Skift indstillinger relateret til video, lyd og input latenstid.",
+   "Kerne",
+   "Skift kerneindstillinger.",
+   "Konfiguration",
+   "Skift standardindstillinger for konfigurationsfiler.",
+   "Gemmer",
+   "Skift gemmeindstillinger.",
+   "Logning",
+   "Skift logf\303\270ringsindstillinger.",
+   "Skift indstillingerne for spoling tilbage, spoling frem og slow motion.",
+   "\303\206ndre sk\303\246rmoverlejring og tastaturoverlejring og notifikationsindstillinger p\303"
+   "\245 sk\303\246rmen.",
+   "Hurtig Menu",
+   "Indstillinger",
+   "Brugergr\303\246nseflade",
+   "Skift indstillinger for brugergr\303\246nseflade.",
+   "AI Tjeneste",
+   "Skift indstillinger for AI-tjenesten (Overs\303\246ttelse/TTS/Misc).",
+   "Tilg\303\246ngelighed",
+   "Skift indstillinger for tilg\303\246ngelighedsfort\303\246lleren.",
+   "Str\303\270mstyring",
+   "Skift indstillinger for str\303\270mstyring.",
+   "Filh\303\245ndtering",
+   "Pr\303\246stationer",
+   "Skift indstillinger for pr\303\246stationer.",
+   "Optager",
+   "Skift optagelsesindstillinger.",
+   "Netv\303\246rk",
+   "Skift server og netv\303\246rksindstillinger.",
+   "Spilleliste",
+   "Skift indstillinger for spillelister.",
+   "Bruger",
+   "Mappe",
+   "Skift standardmapper hvor filer er placeret.",
+   "Lyd",
+   "Lyd resampler",
+   "Lyd resampler driver der skal bruges.",
+   "Kamera",
+   "Placering",
+   "Optag",
+   "Fuldsk\303\246rmstilstand",
+   "Skift indstillinger for fuldsk\303\246rmstilstand.",
+   "Vinduestilstand",
+   "Skift indstillinger for lydudgang.",
+   "Lyd",
+   "Luk",
+   "AI Tjeneste",
+   "Hovedmenu",
+   "Pr\303\246stationer",
+   "Historik",
+   "Kerne:",
+   "Start Mappe",
+   "Spilleliste",
+   "Kerne",
+   "Pr\303\246stationer",
+   "Indstillinger",
+   "&Hj\303\246lp",
+   "Indl\303\246s kerne",
+   "Spilleliste",
+   "Filh\303\245ndtering",
+   "Kerne",
+   "Kerne:",
+   "Historik",
+   "Bruger",
+   "Hj\303\246lp",
+   "Genstart RetroArch",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
 #endif
-#ifdef GEKKO
 #endif
-#ifdef UDEV_TOUCH_SUPPORT
-#endif
-#ifdef HAVE_ODROIDGO2
-#else
-#endif
-#ifdef _3DS
-#endif
-#ifdef HAVE_QT
-#endif
-#ifdef HAVE_GAME_AI
+};
 
-
-
-
-
+/* Contiguity check: char members have alignment 1, so any
+ * compiler that pads this struct fails here instead of
+ * misindexing at runtime. */
+typedef char msg_hash_da_blob_check[
+      (sizeof(msg_hash_da_blob) == (5030u
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+       + 77u
+       + 125u
 #endif
-#ifdef HAVE_SMBCLIENT
 #endif
+      )) ? 1 : -1];
+
+static const uint32_t msg_hash_da_ids[] =
+{
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+};

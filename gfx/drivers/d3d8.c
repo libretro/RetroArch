@@ -3203,6 +3203,80 @@ static uint32_t d3d8_get_flags(void *data)
    return flags;
 }
 
+/* --- GPU-native BCn compressed-texture upload --- */
+/* Direct3D 8 samples DXT1/DXT3/DXT5 == BC1/BC2/BC3. */
+static D3DFORMAT d3d8_bc_to_d3dfmt(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return D3DFMT_DXT1;
+      case TEXTURE_GPU_FORMAT_BC2: return D3DFMT_DXT3;
+      case TEXTURE_GPU_FORMAT_BC3: return D3DFMT_DXT5;
+      default:                     break;
+   }
+   return D3DFMT_UNKNOWN;
+}
+
+static bool d3d8_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   d3d8_video_t *d3d = (d3d8_video_t*)data;
+   D3DFORMAT     f   = d3d8_bc_to_d3dfmt(fmt);
+   if (!d3d || !d3d->d3d8 || f == D3DFMT_UNKNOWN)
+      return false;
+   return SUCCEEDED(IDirect3D8_CheckDeviceFormat(d3d->d3d8,
+         D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8,
+         0, D3DRTYPE_TEXTURE, f));
+}
+
+static uintptr_t d3d8_load_texture_compressed(void *data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d8_video_t      *d3d   = (d3d8_video_t*)data;
+   LPDIRECT3DTEXTURE8 tex   = NULL;
+   D3DFORMAT          f;
+   unsigned           i;
+   unsigned           block_bytes;
+
+   /* Regular texture loads on this driver marshal to the video thread;
+    * the compressed path does not yet, so under threading decline here
+    * and let the CPU-decode fallback go through the marshalled path. */
+   if (threaded)
+      return 0;
+   (void)filter_type;
+
+   if (!d3d || !d3d->dev || !tc || tc->num_mips == 0)
+      return 0;
+   if ((f = d3d8_bc_to_d3dfmt(tc->format)) == D3DFMT_UNKNOWN)
+      return 0;
+   block_bytes = (tc->format == TEXTURE_GPU_FORMAT_BC1) ? 8 : 16;
+
+   if (FAILED(IDirect3DDevice8_CreateTexture(d3d->dev,
+               tc->mips[0].width, tc->mips[0].height, tc->num_mips,
+               0, f, D3DPOOL_MANAGED, &tex)))
+      return 0;
+
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      D3DLOCKED_RECT lr;
+      if (SUCCEEDED(IDirect3DTexture8_LockRect(tex, i, &lr, NULL, 0)))
+      {
+         unsigned       blocks_w  = (tc->mips[i].width  + 3) >> 2;
+         unsigned       blocks_h  = (tc->mips[i].height + 3) >> 2;
+         unsigned       row_bytes = blocks_w * block_bytes;
+         const uint8_t *src       = (const uint8_t*)tc->mips[i].data;
+         uint8_t       *dst       = (uint8_t*)lr.pBits;
+         unsigned       r;
+         for (r = 0; r < blocks_h; r++)
+            memcpy(dst + r * lr.Pitch, src + r * row_bytes, row_bytes);
+         IDirect3DTexture8_UnlockRect(tex, i);
+      }
+   }
+
+   return (uintptr_t)tex;
+}
+
 static const video_poke_interface_t d3d_poke_interface = {
    d3d8_get_flags,
    d3d8_load_texture,
@@ -3234,7 +3308,9 @@ static const video_poke_interface_t d3d_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   d3d8_supports_texture_format,
+   d3d8_load_texture_compressed
 };
 
 static void d3d8_get_poke_interface(void *data,

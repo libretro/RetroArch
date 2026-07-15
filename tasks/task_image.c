@@ -29,6 +29,7 @@
 
 #include "../configuration.h"
 #include "../gfx/video_driver.h"
+#include "../gfx/gfx_display.h"
 
 enum image_status_enum
 {
@@ -222,6 +223,16 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    /* Set image size */
    image->size                     = len;
 
+   /* The decoders bake the output channel order from supports_rgba.
+    * It was captured when this load was queued, but VIDEO_FLAG_USE_RGBA
+    * is cleared on every video reinit (core start/stop), so a value
+    * sampled in that window can disagree with the driver's actual upload
+    * format and yield R/B-swapped images.  Re-sample it here, once, at
+    * decode start (after any reinit has settled) - not in the per-chunk
+    * decode loop, where it would lock display_lock on every iteration. */
+   image->ti.supports_rgba = (video_driver_get_disp_flags()
+         & VIDEO_FLAG_USE_RGBA) ? true : false;
+
    /* Set task iteration duration */
    if (settings)
       refresh_rate = settings->floats.video_refresh_rate;
@@ -382,6 +393,11 @@ bool task_image_load_handler(retro_task_t *task)
 
       if (img)
       {
+         /* malloc (not calloc) above: this is a raw-built image that never
+          * goes through image_texture_load, so the compressed descriptor
+          * must be cleared explicitly or video_driver_texture_load() will
+          * dereference a garbage pointer. */
+         img->compressed = NULL;
          if (image->upscale_threshold > 0)
          {
             if (   ((image->ti.width  > 0)
@@ -489,6 +505,7 @@ bool task_push_image_load(const char *fullpath,
    image->ti.width                   = 0;
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
+   image->ti.compressed              = NULL;
    /* NOTE: Come back to this if this causes problems */
    image->ti.supports_rgba           = supports_rgba;
 
@@ -508,6 +525,9 @@ bool task_push_image_load(const char *fullpath,
          break;
       case IMAGE_TYPE_WEBP:
          nbio->type = NBIO_TYPE_WEBP;
+         break;
+      case IMAGE_TYPE_WEBM:
+         nbio->type = NBIO_TYPE_WEBM;
          break;
       default:
          nbio->type = NBIO_TYPE_NONE;
@@ -576,7 +596,7 @@ static void cb_task_icon_load(retro_task_t *task,
    if (!img || img->width < 1 || img->height < 1 || !img->pixels)
       goto end;
 
-   video_driver_texture_load(img, TEXTURE_FILTER_LINEAR,
+   video_driver_texture_load(img, gfx_display_texture_filter(),
          tag->target);
 
 end:

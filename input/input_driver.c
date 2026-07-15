@@ -88,6 +88,7 @@
 
 /* Depends on ASCII character values */
 #define ISPRINT(c) (((int)(c) >= ' ' && (int)(c) <= '~') ? 1 : 0)
+#define IS_UTF8_CONTINUATION(c) ((((uint8_t)(c)) & 0xc0) == 0x80)
 
 #define INPUT_REMOTE_KEY_PRESSED(input_st, key, port) (input_st->remote_st_ptr.buttons[(port)] & (UINT64_C(1) << (key)))
 
@@ -298,7 +299,7 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef ANDROID
    &android_joypad,
 #endif
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
+#if defined(HAVE_SDL3) || defined(HAVE_SDL) || defined(HAVE_SDL2)
    &sdl_joypad,
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
@@ -622,7 +623,7 @@ const input_device_driver_t *input_joypad_init_driver(
       }
    }
    /* Fall back to first available driver */
-   return input_joypad_init_first(data); 
+   return input_joypad_init_first(data);
 }
 
 static bool input_driver_button_combo_hold(
@@ -3401,7 +3402,7 @@ void input_overlay_load_active(
 /**
  * input_overlay_next_move_touch_masks
  * @ol : Overlay handle.
- * 
+ *
  * Finds similar descs in the next overlay (i.e. same location and type)
  * and moves touch masks from active overlay to next.
  */
@@ -4909,25 +4910,27 @@ static bool input_keyboard_line_event(
    }
    else if (c == '\b' || c == '\x7f') /* 0x7f is ASCII for del */
    {
-      if (state->ptr)
+      if (state->ptr && state->buffer)
       {
-         unsigned i;
+         size_t ptr = state->ptr;
 
-         for (i = 0; i < input_st->osk_last_codepoint_len; i++)
+         while (state->ptr)
          {
-            memmove(state->buffer + state->ptr - 1,
-                  state->buffer + state->ptr,
-                  state->size - state->ptr + 1);
             state->ptr--;
-            state->size--;
+            if (!IS_UTF8_CONTINUATION(state->buffer[state->ptr]))
+               break;
          }
+
+         memmove(state->buffer + state->ptr,
+               state->buffer + ptr,
+               state->size - ptr + 1);
+         state->size -= ptr - state->ptr;
 
          word     = state->buffer;
       }
    }
    else if (ISPRINT(c))
    {
-      /* Handle left/right here when suitable */
       char *newbuf = (char*)
          realloc(state->buffer, state->size + 2);
       if (!newbuf)
@@ -6608,14 +6611,14 @@ static void input_keys_pressed(
       else
          input_st->flags |= INP_FLAG_BLOCK_HOTKEY;
    }
-      
+
 #ifdef HAVE_MENU
    /* Prevent triggering menu actions after binding */
    if (     !(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
          && menu_state_get_ptr()->input_driver_flushing_input)
       input_st->flags |= INP_FLAG_WAIT_INPUT_RELEASE;
 #endif
-   
+
    /* Check libretro input if emulated device type is active,
     * except device type must be always active in menu. */
    if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
@@ -8067,17 +8070,13 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (display_kb && input && input->input_state)
       {
-         /* Allow arrows, LCtrl as OK, character map switches,
+         /* Allow LCtrl as OK, character map switches,
           * and set RetroPad Select bit when pressing Escape
           * in order to clear the input window and close it. */
          unsigned i;
          unsigned ids[][2] =
          {
             {RETROK_LCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
-            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
-            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
-            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
-            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
             {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
@@ -8318,11 +8317,46 @@ void input_keyboard_event(bool down, unsigned code,
    }
    else if (input_st->keyboard_line.enabled)
    {
+      input_keyboard_line_t *line = &input_st->keyboard_line;
+
       if (!down)
          return;
 
-      if (!input_keyboard_line_event(input_st,
-            &input_st->keyboard_line, character))
+      switch (code)
+      {
+         case RETROK_LEFT:
+            if (line->ptr && line->buffer)
+            {
+               while (line->ptr)
+               {
+                  line->ptr--;
+                  if (!IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
+                     break;
+               }
+            }
+            return;
+         case RETROK_RIGHT:
+            if (line->buffer && line->ptr < line->size)
+            {
+               while (line->ptr < line->size)
+               {
+                  line->ptr++;
+                  if ((line->ptr >= line->size) || !IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
+                     break;
+               }
+            }
+            return;
+         case RETROK_UP:
+            line->ptr = 0;
+            return;
+         case RETROK_DOWN:
+            line->ptr = line->size;
+            return;
+         default:
+            break;
+      }
+
+      if (!input_keyboard_line_event(input_st, line, character))
          return;
 
       /* Line is complete, can free it now. */

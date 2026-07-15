@@ -1088,7 +1088,7 @@ size_t menu_entries_get_title(char *s, size_t len)
          const char *path      = NULL;
          unsigned menu_type    = 0;
 
-         if (     string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
+         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
                && !path_is_empty(RARCH_PATH_CONTENT))
          {
             char content_label[NAME_MAX_LENGTH];
@@ -2775,7 +2775,8 @@ void menu_driver_get_last_shader_pass_path(
          directory, file_name);
 }
 
-int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+static int menu_shader_manager_clear_num_passes_internal(
+      struct video_shader *shader, bool apply_changes)
 {
    if (shader)
    {
@@ -2784,10 +2785,16 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
       menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       video_shader_resolve_parameters(shader);
       shader->flags              |= SHDR_FLAG_MODIFIED;
-      command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+      if (apply_changes)
+         command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    }
 
    return 0;
+}
+
+int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+{
+   return menu_shader_manager_clear_num_passes_internal(shader, true);
 }
 
 int menu_shader_manager_clear_parameter(struct video_shader *shader,
@@ -3364,7 +3371,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                     || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && label && *label)
-      filter_enabled =    string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+      filter_enabled =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -6796,6 +6803,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
                free(menu_st->thumbnail_path_data);
             menu_st->thumbnail_path_data    = NULL;
 
+            /* The menu driver's free() above has reset every
+             * gfx_thumbnail_t, so the animated-thumbnail decode
+             * worker is idle and can be torn down (it is recreated
+             * lazily if the menu comes back). */
+            gfx_thumbnail_anim_worker_deinit();
+
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
             menu_st->driver_data->core_buf  = NULL;
@@ -7043,7 +7056,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(menu_shader);
+   menu_shader_manager_clear_num_passes_internal(menu_shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -7088,7 +7101,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(shader);
+   menu_shader_manager_clear_num_passes_internal(shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -7236,7 +7249,7 @@ static int generic_menu_iterate(
          break;
       case ITERATE_TYPE_CONFIRM:
          strlcpy(menu->menu_state_msg,
-               msg_hash_to_str(menu_st->dialog_st.confirm_msg),
+               msg_hash_to_str((enum msg_hash_enums)menu_st->dialog_st.confirm_msg),
                sizeof(menu->menu_state_msg));
 
 #ifdef HAVE_ACCESSIBILITY
@@ -8169,7 +8182,7 @@ size_t menu_update_fullscreen_thumbnail_label(
    /* > State slot label */
    else if (   is_quick_menu
             && (
-               string_is_equal(selected_entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR)
                )

@@ -168,7 +168,10 @@ bool content_undo_load_state(void)
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
-   if (!core_info_current_supports_savestate())
+   /* The undo buffer holds a state this core produced during this
+    * session - its existence outranks (possibly stale) metadata. */
+   if (   !core_info_current_supports_savestate()
+       && !undo_load_buf.data)
    {
       RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));
@@ -565,7 +568,13 @@ static void task_save_handler(retro_task_t *task)
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
+      {
+         RARCH_ERR("[State] save task could not open \"%s\" for writing "
+               "(slot %d). The auto-index slot was already advanced, so "
+               "this leaves an advanced slot with no save file.\n",
+               state->path, state->state_slot);
          return;
+      }
    }
 
    if (!state->data)
@@ -611,11 +620,20 @@ static void task_save_handler(retro_task_t *task)
       }
 
       task_set_error(task, strdup(msg));
+      RARCH_ERR("[State] save task FAILED for slot %d, path \"%s\" "
+            "(wrote %d of %d bytes%s).\n",
+            state->state_slot, state->path,
+            (int)state->written, (int)state->size,
+            ((flg & RETRO_TASK_FLG_CANCELLED) > 0) ? ", cancelled" : "");
       task_save_handler_finished(task, state);
    }
    else if (state->written == state->size)
    {
       char       *msg      = NULL;
+
+      RARCH_LOG("[State] save task COMPLETED for slot %d, path \"%s\" "
+            "(%d bytes).\n",
+            state->state_slot, state->path, (int)state->size);
 
       task_free_title(task);
 
@@ -1632,7 +1650,16 @@ bool content_load_state(const char *path,
    save_task_state_t *state        = NULL;
    settings_t *settings            = config_get_ptr();
 
-   if (!core_info_current_supports_savestate())
+   /* Loading is gated by the artifact, not by save-capability: a state
+    * file the user produced outranks (possibly stale) core metadata, and
+    * a core may be able to restore in situations where it cannot
+    * currently serialize - e.g. from a game's own main menu, where
+    * retro_serialize_size() is legitimately 0 but retro_unserialize()
+    * performs a full restore. retro_unserialize() is the final arbiter
+    * and fails gracefully. */
+   if (   !core_info_current_supports_savestate()
+       && !load_to_backup_buffer
+       && !path_is_valid(path))
    {
       RARCH_LOG("[State] %s\n",
             msg_hash_to_str(MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES));

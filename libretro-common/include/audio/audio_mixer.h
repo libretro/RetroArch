@@ -85,6 +85,15 @@ void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val);
 
 void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bool override);
 
+/* s16 (fixed-point) mixer pipeline: parallel to the float API above,
+ * no int16<->float round-trip. Voices played via audio_mixer_play_s16
+ * are mixed only by audio_mixer_mix_s16, and vice versa. */
+void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames, float volume_override, bool override);
+
+audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
+      bool repeat, float volume, enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb);
+
 RETRO_END_DECLS
 
 #endif

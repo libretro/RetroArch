@@ -747,7 +747,7 @@ static bool take_screenshot_raw(
 
             if ((buf = (uint32_t*)calloc(1, size)))
             {
-               screenshot_rotate(buf, copy.buffer, size,
+               screenshot_rotate(buf, (uint32_t*)copy.buffer, size,
                      &width, &height, &pitch,
                      sys_info->rotation);
                memcpy(copy.buffer, buf, size);

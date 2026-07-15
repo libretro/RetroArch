@@ -73,7 +73,7 @@ int action_cancel_pop_default(const char *path,
             string_is_equal(menu_label,
                MENU_ENUM_LABEL_PLAYLISTS_TAB_STR)
          || string_is_equal(menu_label,
-               MENU_ENUM_LABEL_MENU_WALLPAPER_STR)
+               msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER))
          )
          filebrowser_clear_type();
    }
@@ -146,15 +146,15 @@ static int action_cancel_core_content(const char *path,
          return 0;
       }
 
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    }
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_DIRS_LIST_STR))
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS_STR))
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_CONTENT_LIST_STR))
    {
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
 #ifdef HAVE_NETWORKING
       /* Allow going back from sub-categories within the Content Downloader. */
       action_ok_core_content_dirs_list(
@@ -164,9 +164,9 @@ static int action_cancel_core_content(const char *path,
 #endif
    }
    else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DEFERRED_CORE_SYSTEM_FILES_LIST_STR))
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ONLINE_UPDATER_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ONLINE_UPDATER), 0);
    else
-      menu_entries_flush_stack(MENU_ENUM_LABEL_ADD_CONTENT_LIST_STR, 0);
+      menu_entries_flush_stack(msg_hash_to_str(MENU_ENUM_LABEL_ADD_CONTENT_LIST), 0);
 
    return 0;
 }

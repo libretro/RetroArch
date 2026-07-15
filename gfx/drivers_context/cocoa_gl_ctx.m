@@ -35,6 +35,8 @@
 #endif
 
 #include <retro_timers.h>
+#include <retro_atomic.h>
+#include <pthread.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
@@ -80,8 +82,24 @@ static unsigned g_gl_major          = 0;
 static GLKView *glk_view            = NULL;
 #endif
 
+/* Backing-size publication for threaded video.
+ * check_window / get_video_size run on the video worker thread when
+ * threaded video is active, but -[NSView frame]/-convertRectToBacking:
+ * and -[UIView bounds] are main-thread-only.  The main thread publishes
+ * the current backing size here (packed as (w << 16) | h) via
+ * cocoa_gl_gfx_ctx_publish_size(); the worker thread reads it lock-free.
+ * With non-threaded video the publisher and reader are the same (main)
+ * thread, so behaviour is unchanged.  16 bits per axis is sufficient for
+ * any backing dimension (<= 65535). */
+static retro_atomic_size_t cocoa_gl_backing_size;
+
 /* Forward declaration */
 CocoaView *cocoaview_get(void);
+void cocoa_gl_gfx_ctx_publish_size(void);
+/* Defined in ui/drivers/cocoa/cocoa_common.m.  Declared locally (same
+ * pattern as the cocoa_gl_gfx_ctx_update() extern in -setFrame:) to
+ * avoid touching the CRLF-formatted cocoa_common.h. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
 
 static uint32_t cocoa_gl_gfx_ctx_get_flags(void *data)
 {
@@ -133,6 +151,9 @@ void cocoa_gl_gfx_ctx_update(void)
 {
    [g_ctx    update];
    [g_hw_ctx update];
+   /* Runs on the main thread (via -[CocoaView setFrame:]); refresh the
+    * published backing size so the worker thread observes the resize. */
+   cocoa_gl_gfx_ctx_publish_size();
 }
 #else
 #if defined(HAVE_COCOATOUCH)
@@ -168,6 +189,15 @@ void glkitview_bind_fbo(void)
 #endif
 
 
+#ifdef OSX
+static void cocoa_gl_gfx_ctx_destroy_mainthread(void *userdata)
+{
+   [g_ctx clearDrawable];
+   if (g_hw_ctx)
+      [g_hw_ctx clearDrawable];
+}
+#endif
+
 static void cocoa_gl_gfx_ctx_destroy(void *data)
 {
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
@@ -175,10 +205,12 @@ static void cocoa_gl_gfx_ctx_destroy(void *data)
    if (!cocoa_ctx)
       return;
 #ifdef OSX
+   /* clearCurrentContext operates on the CALLING thread's current-
+    * context slot and must stay here (the render thread); clearDrawable
+    * detaches the NSView and is AppKit, so it is marshaled to the main
+    * thread. */
    [GLContextClass clearCurrentContext];
-   [g_ctx clearDrawable];
-   if (g_hw_ctx)
-      [g_hw_ctx clearDrawable];
+   cocoa_main_thread_sync(cocoa_gl_gfx_ctx_destroy_mainthread, NULL);
    [GLContextClass clearCurrentContext];
 #else
    /* Clean up GLKView's framebuffer resources while context is still valid.
@@ -267,6 +299,45 @@ static void cocoa_gl_gfx_ctx_get_video_size(void *data,
 }
 #endif
 
+/* Live backing-size query.  Touches AppKit/UIKit and MUST run on the
+ * main thread.  Selects the same implementation the vtable previously
+ * exposed directly. */
+static void cocoa_gl_live_video_size(unsigned *width, unsigned *height)
+{
+#if MAC_OS_X_VERSION_10_7 && defined(OSX)
+   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(NULL, width, height);
+#else
+   cocoa_gl_gfx_ctx_get_video_size(NULL, width, height);
+#endif
+}
+
+/* Publish the current backing size for cross-thread readers.
+ * MUST be called on the main thread (resize/layout hooks, or the
+ * non-threaded caller path below). */
+void cocoa_gl_gfx_ctx_publish_size(void)
+{
+   unsigned w = 0;
+   unsigned h = 0;
+   cocoa_gl_live_video_size(&w, &h);
+   retro_atomic_store_release_size(&cocoa_gl_backing_size,
+         (size_t)(((size_t)(w & 0xFFFF) << 16) | (size_t)(h & 0xFFFF)));
+}
+
+/* Thread-safe backing-size getter used by the vtable and check_window.
+ * On the main thread it refreshes the published value from AppKit first
+ * (preserving exact non-threaded behaviour); on the worker thread it
+ * reads the last value published by the main thread, lock-free. */
+static void cocoa_gl_gfx_ctx_get_video_size_ts(void *data,
+      unsigned *width, unsigned *height)
+{
+   size_t packed;
+   if (pthread_main_np() != 0)
+      cocoa_gl_gfx_ctx_publish_size();
+   packed  = retro_atomic_load_acquire_size(&cocoa_gl_backing_size);
+   *width  = (unsigned)((packed >> 16) & 0xFFFF);
+   *height = (unsigned)(packed & 0xFFFF);
+}
+
 static float cocoa_gl_gfx_ctx_get_refresh_rate(void *data)
 {
    /* Body consolidated into cocoa_common.m.  Kept as a named
@@ -311,11 +382,7 @@ static void cocoa_gl_gfx_ctx_check_window(void *data, bool *quit,
 
    *quit                       = false;
 
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up(data, &new_width, &new_height);
-#else
-   cocoa_gl_gfx_ctx_get_video_size(data, &new_width, &new_height);
-#endif
+   cocoa_gl_gfx_ctx_get_video_size_ts(data, &new_width, &new_height);
 
    if (new_width != *width || new_height != *height)
    {
@@ -370,9 +437,35 @@ static bool cocoa_gl_gfx_ctx_bind_api(void *data, enum gfx_ctx_api api,
 }
 
 #ifdef OSX
-static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+#if defined(HAVE_COCOA_METAL)
+static void cocoa_gl_gfx_ctx_init_mainthread(void *userdata)
 {
+   [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
+}
+#endif
+
+typedef struct
+{
+   void    *data;
+   unsigned width;
+   unsigned height;
+   bool     fullscreen;
+} cocoa_gl_set_video_mode_args_t;
+
+/* Everything in here touches AppKit (context/view attachment, window
+ * and fullscreen surgery) and MUST run on the main thread.  With
+ * threaded video, cocoa_gl_gfx_ctx_set_video_mode below marshals this
+ * over via cocoa_main_thread_sync(); non-threaded callers are already
+ * on the main thread and call straight through.  Making the GL context
+ * current is deliberately NOT done here: current-context state is
+ * per-thread and must be bound on the render (calling) thread. */
+static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
+{
+   cocoa_gl_set_video_mode_args_t *args = (cocoa_gl_set_video_mode_args_t*)userdata;
+   void *data                  = args->data;
+   unsigned width              = args->width;
+   unsigned height             = args->height;
+   bool fullscreen             = args->fullscreen;
 #if defined(HAVE_COCOA_METAL)
    gfx_ctx_mode_t mode;
    NSView *g_view              = apple_platform.renderView;
@@ -476,11 +569,6 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       if ([win respondsToSelector:@selector(setColorSpace:)])
          [win setColorSpace:[NSColorSpace sRGBColorSpace]];
    }
-#ifdef OSX
-   [g_ctx makeCurrentContext];
-#else
-   [EAGLContext setCurrentContext:g_ctx];
-#endif
 
 #ifdef HAVE_COCOA_METAL
    mode.width           = width;
@@ -611,6 +699,28 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
    has_went_fullscreen = fullscreen;
 #endif
 
+   /* Seed/refresh the published backing size while still on the main
+    * thread, so a threaded-video worker never observes the initial 0x0
+    * before the first resize/layout event fires. */
+   cocoa_gl_gfx_ctx_publish_size();
+}
+
+static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   cocoa_gl_set_video_mode_args_t args;
+
+   args.data       = data;
+   args.width      = width;
+   args.height     = height;
+   args.fullscreen = fullscreen;
+
+   cocoa_main_thread_sync(cocoa_gl_gfx_ctx_set_video_mode_mainthread, &args);
+
+   /* Bind the context on the calling (render) thread: with threaded
+    * video that is the worker thread that will issue all GL commands. */
+   [g_ctx makeCurrentContext];
+
    return true;
 }
 
@@ -627,16 +737,28 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 #endif
 
 #if defined(HAVE_COCOA_METAL)
-   [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL];
+   /* setViewType creates/attaches the render view (AppKit); marshal to
+    * the main thread when the underlying driver init runs on the video
+    * worker thread. */
+   cocoa_main_thread_sync(cocoa_gl_gfx_ctx_init_mainthread, NULL);
 #endif
 
    return cocoa_ctx;
 }
 #else
-static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
-      unsigned width, unsigned height, bool fullscreen)
+#if defined(HAVE_COCOA_METAL)
+static void cocoa_gl_gfx_ctx_init_es_mainthread(void *userdata)
 {
-   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
+   [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+}
+#endif
+
+/* EAGLContext creation and the GLKView association are UIKit-adjacent
+ * and are kept on the main thread; binding the context current happens
+ * on the calling (render) thread in the wrapper below. */
+static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
+{
+   cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)userdata;
 
    /* In the normal reinit flow -destroy runs before -set_video_mode and
     * both statics are already nil here; guard defensively so an iOS-MRR
@@ -663,13 +785,22 @@ static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
       g_ctx         = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
 #endif
 
-#ifdef OSX
-   [g_ctx makeCurrentContext];
-#else
-   [EAGLContext setCurrentContext:g_ctx];
-#endif
-
    glk_view.context = g_ctx;
+
+   /* Seed/refresh the published backing size while still on the main
+    * thread, so a threaded-video worker never observes the initial 0x0
+    * before the first layout event fires. */
+   cocoa_gl_gfx_ctx_publish_size();
+}
+
+static bool cocoa_gl_gfx_ctx_set_video_mode(void *data,
+      unsigned width, unsigned height, bool fullscreen)
+{
+   cocoa_main_thread_sync(cocoa_gl_gfx_ctx_set_video_mode_mainthread, data);
+
+   /* Bind the context on the calling (render) thread: with threaded
+    * video that is the worker thread that will issue all GL commands. */
+   [EAGLContext setCurrentContext:g_ctx];
 
    /* TODO: Maybe iOS users should be able to
     * show/hide the status bar here? */
@@ -693,8 +824,10 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
       case GFX_CTX_OPENGL_ES_API:
 #if defined(HAVE_COCOA_METAL)
          /* The Metal build supports both the OpenGL
-          * and Metal video drivers */
-         [apple_platform setViewType:APPLE_VIEW_TYPE_OPENGL_ES];
+          * and Metal video drivers.  setViewType creates/attaches the
+          * render view (UIKit); marshal to the main thread when the
+          * underlying driver init runs on the video worker thread. */
+         cocoa_main_thread_sync(cocoa_gl_gfx_ctx_init_es_mainthread, NULL);
 #endif
          break;
       case GFX_CTX_NONE:
@@ -730,11 +863,7 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_bind_api,
    cocoa_gl_gfx_ctx_swap_interval,
    cocoa_gl_gfx_ctx_set_video_mode,
-#if MAC_OS_X_VERSION_10_7 && defined(OSX)
-   cocoa_gl_gfx_ctx_get_video_size_osx10_7_and_up,
-#else
-   cocoa_gl_gfx_ctx_get_video_size,
-#endif
+   cocoa_gl_gfx_ctx_get_video_size_ts,
    cocoa_gl_gfx_ctx_get_refresh_rate,
    cocoa_gl_gfx_ctx_get_video_output_size,
    NULL, /* get_video_output_prev */

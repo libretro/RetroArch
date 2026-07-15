@@ -1084,7 +1084,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_AUDIO_DSP_PLUGIN:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN);
          info.enum_idx      = MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1098,7 +1098,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_FILTER:
          filebrowser_clear_type();
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_VIDEO_FILTER_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER);
          info.enum_idx      = MENU_ENUM_LABEL_VIDEO_FILTER;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1112,7 +1112,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_OVERLAY_PRESET:
          filebrowser_set_type(FILEBROWSER_SELECT_OVERLAY);
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_OVERLAY_PRESET_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_OVERLAY_PRESET);
          info.enum_idx      = MENU_ENUM_LABEL_OVERLAY_PRESET;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1155,7 +1155,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_VIDEO_FONT:
          filebrowser_set_type(FILEBROWSER_SELECT_VIDEO_FONT);
          info.directory_ptr = idx;
-         info_label         = MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
          info.enum_idx      = MENU_ENUM_LABEL_VIDEO_FONT_PATH;
          dl_type            = DISPLAYLIST_FILE_BROWSER_SELECT_FILE;
 
@@ -1889,7 +1889,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_CONTENT_SETTINGS:
          info.list          = MENU_LIST_GET_SELECTION(menu_list, 0);
          info_path          = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS);
-         info_label         = MENU_ENUM_LABEL_CONTENT_SETTINGS_STR;
+         info_label         = msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS);
          info.enum_idx      = MENU_ENUM_LABEL_CONTENT_SETTINGS;
          menu_entries_append(menu_stack, info_path, info_label,
                MENU_ENUM_LABEL_CONTENT_SETTINGS,
@@ -1915,6 +1915,148 @@ int generic_action_ok_displaylist_push(
    menu_displaylist_info_free(&info);
    return -1;
 }
+
+/* Data-driven displaylist-push actions: the former ~114
+ * STATIC_DEFAULT_ACTION_OK_FUNC wrappers each tail-called
+ * generic_action_ok_displaylist_push with a constant list id.
+ * This table carries { label enum, list id } and one handler
+ * dispatches from it. */
+typedef struct ok_dl_map
+{
+   uint32_t enum_idx;
+   uint32_t dl_id;
+} ok_dl_map_t;
+
+static const ok_dl_map_t ok_dl_map[] = {
+   { MENU_ENUM_LABEL_CHEAT_START_OR_CONT, ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_SHADER_PRESET, ACTION_OK_DL_SHADER_PRESET },
+   { MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND, ACTION_OK_DL_SHADER_PRESET_PREPEND },
+   { MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND, ACTION_OK_DL_SHADER_PRESET_APPEND },
+   { MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_MANAGER, ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST },
+   { MENU_ENUM_LABEL_AUDIO_MIXER_SETTINGS, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_PL_THUMBNAILS_UPDATER_LIST, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST },
+   { MENU_ENUM_LABEL_VIDEO_FONT_PATH, ACTION_OK_DL_VIDEO_FONT },
+   { MENU_ENUM_LABEL_GOTO_FAVORITES, ACTION_OK_DL_FAVORITES_LIST },
+   { MENU_ENUM_LABEL_GOTO_MUSIC, ACTION_OK_DL_MUSIC_LIST },
+   { MENU_ENUM_LABEL_GOTO_IMAGES, ACTION_OK_DL_IMAGES_LIST },
+   { MENU_ENUM_LABEL_GOTO_VIDEO, ACTION_OK_DL_VIDEO_LIST },
+   { MENU_ENUM_LABEL_GOTO_EXPLORE, ACTION_OK_DL_EXPLORE_LIST },
+   { MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES, ACTION_OK_DL_CONTENTLESS_CORES_LIST },
+   { MENU_ENUM_LABEL_BROWSE_START, ACTION_OK_DL_BROWSE_URL_START },
+   { MENU_ENUM_LABEL_ADD_TO_PLAYLIST, ACTION_OK_DL_ADD_TO_PLAYLIST },
+   { MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU, ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU },
+   { MENU_ENUM_LABEL_ACCOUNTS_LIST, ACTION_OK_DL_ACCOUNTS_LIST },
+   { MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_AI_SERVICE_SETTINGS, ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_SETTINGS, ACTION_OK_DL_INPUT_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_MENU_SETTINGS, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS, ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS, ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS, ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_DRIVER_SETTINGS, ACTION_OK_DL_DRIVER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_SETTINGS, ACTION_OK_DL_VIDEO_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS, ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, ACTION_OK_DL_VIDEO_WINDOWED_MODE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS, ACTION_OK_DL_VIDEO_SCALING_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_AUDIO_SETTINGS, ACTION_OK_DL_AUDIO_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS, ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST, ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST },
+   { MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_LATENCY_SETTINGS, ACTION_OK_DL_LATENCY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CORE_SETTINGS, ACTION_OK_DL_CORE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST },
+   { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST },
+   { MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_PLAYLIST_SETTINGS, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST, ACTION_OK_DL_PLAYLIST_MANAGER_LIST },
+   { MENU_ENUM_LABEL_RECORDING_SETTINGS, ACTION_OK_DL_RECORDING_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST },
+   { MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST },
+   { MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST },
+   { MENU_ENUM_LABEL_ACCOUNTS_TWITCH, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST },
+   { MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST },
+   { MENU_ENUM_LABEL_ACCOUNTS_KICK, ACTION_OK_DL_ACCOUNTS_KICK_LIST },
+   { MENU_ENUM_LABEL_DUMP_DISC, ACTION_OK_DL_DUMP_DISC_LIST },
+   { MENU_ENUM_LABEL_LOAD_DISC, ACTION_OK_DL_LOAD_DISC_LIST },
+   { MENU_ENUM_LABEL_SAVESTATE_LIST, ACTION_OK_DL_SAVESTATE_LIST },
+   { MENU_ENUM_LABEL_STATE_SLOT_RUN, ACTION_OK_DL_SAVESTATE_LIST },
+   { MENU_ENUM_LABEL_CORE_OPTIONS, ACTION_OK_DL_CORE_OPTIONS_LIST },
+   { MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST },
+   { MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST, ACTION_OK_DL_REMAP_FILE_MANAGER_LIST },
+   { MENU_ENUM_LABEL_BROWSE_URL_LIST, ACTION_OK_DL_BROWSE_URL_LIST },
+   { MENU_ENUM_LABEL_CORE_LIST, ACTION_OK_DL_CORE_LIST },
+   { MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, ACTION_OK_DL_SIDELOAD_CORE_LIST },
+   { MENU_ENUM_LABEL_SUBSYSTEM_LOAD, ACTION_OK_DL_SUBSYSTEM_LOAD },
+   { MENU_ENUM_LABEL_CONFIGURATIONS, ACTION_OK_DL_CONFIGURATIONS_LIST },
+   { MENU_ENUM_LABEL_SAVING_SETTINGS, ACTION_OK_DL_SAVING_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS, ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_LOGGING_SETTINGS, ACTION_OK_DL_LOGGING_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS, ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS, ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_REWIND_SETTINGS, ACTION_OK_DL_REWIND_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS, ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS, ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS, ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS, ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_MENU_SETTINGS, ACTION_OK_DL_MENU_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS, ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS, ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST },
+   { MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS, ACTION_OK_DL_SETTINGS_VIEWS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS, ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS, ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CPU_PERFPOWER, ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CPU_POLICY_ENTRY, ACTION_OK_DL_CPU_POLICY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_MENU_SOUNDS, ACTION_OK_DL_MENU_SOUNDS_LIST },
+   { MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS, ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_UPDATER_SETTINGS, ACTION_OK_DL_UPDATER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_BLUETOOTH_SETTINGS, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_WIFI_SETTINGS, ACTION_OK_DL_WIFI_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_WIFI_NETWORK_SCAN, ACTION_OK_DL_WIFI_NETWORKS_LIST },
+   { MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_NETPLAY_KICK, ACTION_OK_DL_NETPLAY_KICK_LIST },
+   { MENU_ENUM_LABEL_NETPLAY_BAN, ACTION_OK_DL_NETPLAY_BAN_LIST },
+   { MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST },
+   { MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_NETWORK_SETTINGS, ACTION_OK_DL_NETWORK_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_LAKKA_SERVICES, ACTION_OK_DL_LAKKA_SERVICES_LIST },
+   { MENU_ENUM_LABEL_USER_SETTINGS, ACTION_OK_DL_USER_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_DIRECTORY_SETTINGS, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_PRIVACY_SETTINGS, ACTION_OK_DL_PRIVACY_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_MIDI_SETTINGS, ACTION_OK_DL_MIDI_SETTINGS_LIST },
+   { MENU_ENUM_LABEL_CORE_MANAGER_LIST, ACTION_OK_DL_CORE_MANAGER_LIST },
+};
+
+static int action_ok_dl_from_map(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   size_t i;
+   /* The ok callback signature carries no enum_idx; the previous
+    * lookup keyed on 'type', but for these entries 'type' is the
+    * menu_settings_type (MENU_SETTING_ACTION), never the label enum,
+    * so every row missed and fell through to the archive/file browser.
+    * Key on the entry's canonical label instead, which is what the
+    * bind path matched on. */
+   for (i = 0; i < ARRAY_SIZE(ok_dl_map); i++)
+      if (string_is_equal(label,
+            msg_hash_to_str((enum msg_hash_enums)ok_dl_map[i].enum_idx)))
+         return generic_action_ok_displaylist_push(path, NULL,
+               label, type, idx, entry_idx,
+               (unsigned)ok_dl_map[i].dl_id);
+   return generic_action_ok_displaylist_push(path, NULL,
+         label, type, idx, entry_idx, ACTION_OK_DL_OPEN_ARCHIVE);
+}
+
 
 /**
  * menu_content_find_first_core:
@@ -2193,8 +2335,8 @@ static int set_path_generic(const char *label, const char *action_path)
    {
       if (setting->value.target.string)
          strlcpy(setting->value.target.string, action_path, setting->size);
-      if (setting->change_handler)
-         setting->change_handler(setting);
+      if (setting->actions->change)
+         setting->actions->change(setting);
       return menu_setting_generic(setting, 0, false);
    }
 
@@ -2449,7 +2591,11 @@ static int generic_action_ok(const char *path,
          }
          break;
       case ACTION_OK_SUBSYSTEM_ADD:
-         flush_type = MENU_SETTINGS;
+         /* Return to the subsystem list (which rebuilds to offer the
+          * next required ROM, or the Load entry once all are set)
+          * instead of flushing all the way back to the main menu. */
+         flush_char = msg_hash_to_str(
+               MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST);
          content_add_subsystem(action_path);
          break;
       case ACTION_OK_SET_DIRECTORY:
@@ -2632,8 +2778,8 @@ static int action_ok_set_path_overlay_carchive(const char *path,
       if (setting->value.target.string)
          strlcpy(setting->value.target.string,
                action_path, setting->size);
-      if (setting->change_handler)
-         setting->change_handler(setting);
+      if (setting->actions->change)
+         setting->actions->change(setting);
    }
 
    menu_entries_flush_stack(MENU_ENUM_LABEL_DEFERRED_ONSCREEN_OVERLAY_SETTINGS_LIST_STR, 0);
@@ -2695,7 +2841,8 @@ static int action_ok_file_load(const char *path,
       }
 
       content_add_subsystem(full_path_new);
-      menu_entries_flush_stack(NULL, MENU_SETTINGS);
+      menu_entries_flush_stack(msg_hash_to_str(
+            MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST), 0);
       return 0;
    }
 
@@ -3503,8 +3650,8 @@ static void menu_input_st_string_cb_save_preset(void *userdata,
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -3776,8 +3923,8 @@ static void menu_input_st_string_cb_cheat_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -3803,10 +3950,30 @@ DEFAULT_ACTION_DIALOG_START(action_ok_disable_kiosk_mode,
    msg_hash_to_str(MSG_INPUT_KIOSK_MODE_PASSWORD),
    (unsigned)entry_idx,
    menu_input_st_string_cb_disable_kiosk_mode)
-DEFAULT_ACTION_DIALOG_START(action_ok_rename_entry,
-   msg_hash_to_str(MSG_INPUT_RENAME_ENTRY),
-   (unsigned)entry_idx,
-   menu_input_st_string_cb_rename_entry)
+static int action_ok_rename_entry(const char *path,
+      const char *label_setting, unsigned type, size_t idx, size_t entry_idx)
+{
+   menu_input_ctx_line_t line;
+   playlist_t *playlist;
+   const struct playlist_entry *entry = NULL;
+
+   line.label                         = msg_hash_to_str(MSG_INPUT_RENAME_ENTRY);
+   line.label_setting                 = label_setting;
+   line.type                          = type;
+   line.idx                           = (unsigned)entry_idx;
+   line.cb                            = menu_input_st_string_cb_rename_entry;
+
+   if (!menu_input_dialog_start(&line))
+      return -1;
+
+   if ((playlist = playlist_get_cached()))
+      playlist_get_index(playlist, entry_idx, &entry);
+   if (entry && entry->label && *entry->label)
+      input_keyboard_line_append(&input_state_get_ptr()->keyboard_line,
+            entry->label, strlen(entry->label));
+
+   return 0;
+}
 
 
 static int generic_action_ok_remap_file_operation(const char *path,
@@ -3983,8 +4150,8 @@ static void menu_input_st_string_cb_remap_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -4121,8 +4288,8 @@ static void menu_input_st_string_cb_config_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -4156,8 +4323,8 @@ static void menu_input_st_string_cb_override_file_save_as(
       {
          if (setting->value.target.string)
             strlcpy(setting->value.target.string, str, setting->size);
-         if (setting->change_handler)
-            setting->change_handler(setting);
+         if (setting->actions->change)
+            setting->actions->change(setting);
          menu_setting_generic(setting, 0, false);
       }
       else if (label && *label)
@@ -4399,7 +4566,7 @@ static int action_ok_load_core_deferred(const char *path,
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_net_retropad_core, CORE_TYPE_NETRETROPAD)
 DEFAULT_ACTION_OK_START_BUILTIN_CORE(action_ok_start_video_processor_core, CORE_TYPE_VIDEO_PROCESSOR)
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
 static int action_ok_file_load_ffmpeg(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -4418,12 +4585,15 @@ static int action_ok_file_load_ffmpeg(const char *path,
          sizeof(new_path));
 
    /* TODO/FIXME - should become runtime optional */
-#ifdef HAVE_MPV
+#if defined(HAVE_MPV)
    return default_action_ok_load_content_with_core_from_menu(
          new_path, CORE_TYPE_MPV);
-#else
+#elif defined(HAVE_FFMPEG)
    return default_action_ok_load_content_with_core_from_menu(
          new_path, CORE_TYPE_FFMPEG);
+#else
+   return default_action_ok_load_content_with_core_from_menu(
+         new_path, CORE_TYPE_WEBM);
 #endif
 }
 #endif
@@ -6651,29 +6821,13 @@ static int action_ok_delete_entry(const char *path,
    return 0;
 }
 
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_browse_url_start, ACTION_OK_DL_BROWSE_URL_START)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_favorites, ACTION_OK_DL_FAVORITES_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_images, ACTION_OK_DL_IMAGES_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_video, ACTION_OK_DL_VIDEO_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_music, ACTION_OK_DL_MUSIC_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_explore, ACTION_OK_DL_EXPLORE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_goto_contentless_cores, ACTION_OK_DL_CONTENTLESS_CORES_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_manager, ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_parent_directory_push, ACTION_OK_DL_PARENT_DIRECTORY_PUSH)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_push, ACTION_OK_DL_DIRECTORY_PUSH)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_configurations_list, ACTION_OK_DL_CONFIGURATIONS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_saving_list, ACTION_OK_DL_SAVING_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cloud_sync_list, ACTION_OK_DL_CLOUD_SYNC_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_ban_list, ACTION_OK_DL_NETPLAY_BAN_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_lobby_filters_list, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 #ifdef HAVE_BLUETOOTH
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_bluetooth_list, ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST)
@@ -6686,58 +6840,22 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_wifi_networks_list, ACTION_OK_DL_WIFI_NE
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_compressed_archive_push_detect_core, ACTION_OK_DL_COMPRESSED_ARCHIVE_PUSH_DETECT_CORE)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_logging_list, ACTION_OK_DL_LOGGING_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_frame_throttle_list, ACTION_OK_DL_FRAME_THROTTLE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_frame_time_counter_list, ACTION_OK_DL_FRAME_TIME_COUNTER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rewind_list, ACTION_OK_DL_REWIND_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheat, ACTION_OK_DL_CHEAT_DETAILS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheat_start_or_cont, ACTION_OK_DL_CHEAT_SEARCH_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_display_list, ACTION_OK_DL_ONSCREEN_DISPLAY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_notifications_views_list, ACTION_OK_DL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_onscreen_overlay_list, ACTION_OK_DL_ONSCREEN_OVERLAY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_lightgun_settings_list, ACTION_OK_DL_OVERLAY_LIGHTGUN_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_mouse_settings_list, ACTION_OK_DL_OVERLAY_MOUSE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_list, ACTION_OK_DL_OSK_OVERLAY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_list, ACTION_OK_DL_MENU_SETTINGS_LIST)
 #ifdef _3DS
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_bottom_list, ACTION_OK_DL_MENU_BOTTOM_SETTINGS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_quick_menu_override_options, ACTION_OK_DL_QUICK_MENU_OVERRIDE_OPTIONS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_views_list, ACTION_OK_DL_MENU_VIEWS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_settings_views_list, ACTION_OK_DL_SETTINGS_VIEWS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_quick_menu_views_list, ACTION_OK_DL_QUICK_MENU_VIEWS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_power_management_list, ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cpu_perfpower_list, ACTION_OK_DL_CPU_PERFPOWER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cpu_policy_entry, ACTION_OK_DL_CPU_POLICY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_sounds_list, ACTION_OK_DL_MENU_SOUNDS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_interface_list, ACTION_OK_DL_USER_INTERFACE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_file_browser_list, ACTION_OK_DL_MENU_FILE_BROWSER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_retro_achievements_list, ACTION_OK_DL_RETRO_ACHIEVEMENTS_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_appearance_list, ACTION_OK_DL_CHEEVOS_APPEARANCE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheevos_visibility_list, ACTION_OK_DL_CHEEVOS_VISIBILITY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_updater_list, ACTION_OK_DL_UPDATER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_services, ACTION_OK_DL_LAKKA_SERVICES_LIST)
 #ifdef HAVE_LAKKA_SWITCH
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_switch_options, ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_user_list, ACTION_OK_DL_USER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_directory_list, ACTION_OK_DL_DIRECTORY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_privacy_list, ACTION_OK_DL_PRIVACY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_midi_list, ACTION_OK_DL_MIDI_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
 #ifdef HAVE_AUDIOMIXER
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_mixer_stream_actions, ACTION_OK_DL_MIXER_STREAM_SETTINGS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_browse_url_list, ACTION_OK_DL_BROWSE_URL_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_core_list, ACTION_OK_DL_CORE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_sideload_core_list, ACTION_OK_DL_SIDELOAD_CORE_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheat_file, ACTION_OK_DL_CHEAT_FILE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cheat_file_append, ACTION_OK_DL_CHEAT_FILE_APPEND)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_playlist_collection, ACTION_OK_DL_PLAYLIST_COLLECTION)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_disk_image_append_list, ACTION_OK_DL_DISK_IMAGE_APPEND_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_add_list, ACTION_OK_DL_SUBSYSTEM_ADD_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_add_load, ACTION_OK_DL_SUBSYSTEM_LOAD)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_record_configfile, ACTION_OK_DL_RECORD_CONFIGFILE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_stream_configfile, ACTION_OK_DL_STREAM_CONFIGFILE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_remap_file, ACTION_OK_DL_REMAP_FILE)
@@ -6752,79 +6870,33 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_audio_dsp_plugin, ACTION_OK_DL_AUDIO_DSP
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_filter, ACTION_OK_DL_VIDEO_FILTER)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_overlay_preset, ACTION_OK_DL_OVERLAY_PRESET)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_osk_overlay_preset, ACTION_OK_DL_OSK_OVERLAY_PRESET)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_video_font, ACTION_OK_DL_VIDEO_FONT)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rpl_entry, ACTION_OK_DL_RPL_ENTRY)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive, ACTION_OK_DL_OPEN_ARCHIVE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_open_archive_detect_core, ACTION_OK_DL_OPEN_ARCHIVE_DETECT_CORE)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_file_load_music, ACTION_OK_DL_MUSIC)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_list, ACTION_OK_DL_ACCOUNTS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_driver_settings_list, ACTION_OK_DL_DRIVER_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_crt_switchres_settings_list, ACTION_OK_DL_CRT_SWITCHRES_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_settings_list, ACTION_OK_DL_VIDEO_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_fullscreen_mode_settings_list, ACTION_OK_DL_VIDEO_FULLSCREEN_MODE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_synchronization_settings_list, ACTION_OK_DL_VIDEO_SYNCHRONIZATION_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_windowed_mode_settings_list, ACTION_OK_DL_VIDEO_WINDOWED_MODE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_scaling_settings_list, ACTION_OK_DL_VIDEO_SCALING_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_hdr_settings_list, ACTION_OK_DL_VIDEO_HDR_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_video_output_settings_list, ACTION_OK_DL_VIDEO_OUTPUT_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_configuration_settings_list, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_settings_list, ACTION_OK_DL_CORE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_restore_backup_list, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_settings_list, ACTION_OK_DL_AUDIO_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_output_settings_list, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST)
 #ifdef HAVE_MICROPHONE
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_microphone_settings_list, ACTION_OK_DL_MICROPHONE_SETTINGS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_synchronization_settings_list, ACTION_OK_DL_AUDIO_SYNCHRONIZATION_SETTINGS_LIST)
 #ifdef HAVE_AUDIOMIXER
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_mixer_settings_list, ACTION_OK_DL_AUDIO_MIXER_SETTINGS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_ai_service_settings_list, ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST)
 #ifdef HAVE_SMBCLIENT
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accessibility_settings_list, ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_settings_list, ACTION_OK_DL_INPUT_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_menu_settings_list, ACTION_OK_DL_INPUT_MENU_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_turbo_fire_settings_list, ACTION_OK_DL_INPUT_TURBO_FIRE_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_haptic_feedback_settings_list, ACTION_OK_DL_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_sensor_settings_list, ACTION_OK_DL_INPUT_SENSOR_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_latency_settings_list, ACTION_OK_DL_LATENCY_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_recording_settings_list, ACTION_OK_DL_RECORDING_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_settings_list, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_playlist_manager_list, ACTION_OK_DL_PLAYLIST_MANAGER_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_retropad_binds_list, ACTION_OK_DL_INPUT_RETROPAD_BINDS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_input_hotkey_binds_list, ACTION_OK_DL_INPUT_HOTKEY_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_youtube_list, ACTION_OK_DL_ACCOUNTS_YOUTUBE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_twitch_list, ACTION_OK_DL_ACCOUNTS_TWITCH_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_facebook_list, ACTION_OK_DL_ACCOUNTS_FACEBOOK_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_kick_list, ACTION_OK_DL_ACCOUNTS_KICK_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_dump_disc_list, ACTION_OK_DL_DUMP_DISC_LIST)
 #ifdef HAVE_LAKKA
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_eject_disc, ACTION_OK_DL_EJECT_DISC)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_load_disc_list, ACTION_OK_DL_LOAD_DISC_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rgui_menu_theme_preset, ACTION_OK_DL_RGUI_MENU_THEME_PRESET)
 #ifdef HAVE_NETWORKING
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_pl_thumbnails_updater_list, ACTION_OK_DL_PL_THUMBNAILS_UPDATER_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_manual_content_scan_list, ACTION_OK_DL_MANUAL_CONTENT_SCAN_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_manual_content_scan_dat_file, ACTION_OK_DL_MANUAL_CONTENT_SCAN_DAT_FILE)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_list, ACTION_OK_DL_CORE_MANAGER_LIST)
 #ifdef HAVE_MIST
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_steam_settings_list, ACTION_OK_DL_STEAM_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_manager_steam_list, ACTION_OK_DL_CORE_MANAGER_STEAM_LIST)
 #endif
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_option_override_list, ACTION_OK_DL_CORE_OPTION_OVERRIDE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_remap_file_manager_list, ACTION_OK_DL_REMAP_FILE_MANAGER_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_savestate_list, ACTION_OK_DL_SAVESTATE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_state_slot_run, ACTION_OK_DL_SAVESTATE_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_options_list, ACTION_OK_DL_CORE_OPTIONS_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_list, ACTION_OK_DL_ADD_TO_PLAYLIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_add_to_playlist_quickmenu, ACTION_OK_DL_ADD_TO_PLAYLIST_QUICKMENU)
 #ifdef HAVE_CHEEVOS
 DEFAULT_ACTION_OK_FUNC(action_ok_push_achievements_hardcore_pause_list, ACTION_OK_DL_ACHIEVEMENTS_HARDCORE_PAUSE_LIST)
 #endif
@@ -6956,7 +7028,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task, void *task_data,
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (err)
@@ -7037,7 +7109,7 @@ static void netplay_refresh_lan_cb(const void *data)
 
    /* Don't push the results if we left the netplay menu */
    if (     !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_TAB_STR)
-         && !string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
       return;
 
    if (!hosts || !hosts->size)
@@ -7184,21 +7256,28 @@ int action_ok_push_filebrowser_list_dir_select(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    menu_entry_t entry;
+   char current_value[PATH_MAX_LENGTH];
 #if IOS
    char tmp[PATH_MAX_LENGTH];
 #endif
-   char current_value[PATH_MAX_LENGTH];
    struct menu_state *menu_st = menu_state_get_ptr();
    menu_handle_t *menu        = menu_st->driver_data;
+   rarch_setting_t *setting   = menu_setting_find(label);
 
    if (!menu)
       return -1;
 
    /* Start browsing from current directory */
-   MENU_ENTRY_INITIALIZE(entry);
-   entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
-   menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
-   strlcpy(current_value, entry.value, sizeof(current_value));
+   current_value[0] = '\0';
+   if (setting && setting->value.target.string)
+      strlcpy(current_value, setting->value.target.string, sizeof(current_value));
+   else
+   {
+      MENU_ENTRY_INITIALIZE(entry);
+      entry.flags    |= MENU_ENTRY_FLAG_VALUE_ENABLED;
+      menu_entry_get(&entry, 0, menu_st->selection_ptr, NULL, true);
+      strlcpy(current_value, entry.value, sizeof(current_value));
+   }
 #if IOS
    fill_pathname_expand_special(tmp, current_value, sizeof(tmp));
    if (!path_is_directory(tmp))
@@ -7304,8 +7383,8 @@ static int action_ok_push_dropdown_setting_uint_item_special(const char *path,
 
    *setting->value.target.unsigned_integer = value;
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   if (setting->actions->change)
+      setting->actions->change(setting);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -7337,7 +7416,7 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          }
          break;
       case ST_STRING_OPTIONS:
-         if (setting->get_string_representation)
+         if (setting->actions->repr)
          {
             const char *tok       = setting->values;
             unsigned tok_idx      = 0;
@@ -7371,8 +7450,8 @@ static int generic_action_ok_dropdown_setting(const char *path, const char *labe
          break;
    }
 
-   if (setting->change_handler)
-      setting->change_handler(setting);
+   if (setting->actions->change)
+      setting->actions->change(setting);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }
@@ -9088,7 +9167,7 @@ static int action_ok_playlist_refresh(const char *path,
             settings->bools.playlist_portable_paths ?
             settings->paths.directory_menu_content : NULL);
 
-      task_push_manual_content_scan(true);
+      task_push_manual_content_scan(false);
    }
    return 0;
 }
@@ -9255,7 +9334,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_RECORDING,           action_ok_stop_recording},
          {MENU_ENUM_LABEL_QUICK_MENU_STOP_STREAMING,           action_ok_stop_streaming},
 #ifdef HAVE_CHEATS
-         {MENU_ENUM_LABEL_CHEAT_START_OR_CONT,                 action_ok_cheat_start_or_cont},
          {MENU_ENUM_LABEL_CHEAT_ADD_NEW_TOP,                   action_ok_cheat_add_top},
          {MENU_ENUM_LABEL_CHEAT_RELOAD_CHEATS,                 action_ok_cheat_reload_cheats},
          {MENU_ENUM_LABEL_CHEAT_ADD_NEW_BOTTOM,                action_ok_cheat_add_bottom},
@@ -9322,14 +9400,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SWITCH_CPU_PROFILE,                  action_ok_push_default},
 #endif
          {MENU_ENUM_LABEL_MENU_WALLPAPER,                      action_ok_menu_wallpaper},
-         {MENU_ENUM_LABEL_VIDEO_FONT_PATH,                     action_ok_video_font},
-         {MENU_ENUM_LABEL_GOTO_FAVORITES,                      action_ok_goto_favorites},
-         {MENU_ENUM_LABEL_GOTO_MUSIC,                          action_ok_goto_music},
-         {MENU_ENUM_LABEL_GOTO_IMAGES,                         action_ok_goto_images},
-         {MENU_ENUM_LABEL_GOTO_VIDEO,                          action_ok_goto_video},
-         {MENU_ENUM_LABEL_GOTO_EXPLORE,                        action_ok_goto_explore},
-         {MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES,              action_ok_goto_contentless_cores},
-         {MENU_ENUM_LABEL_BROWSE_START,                        action_ok_browse_url_start},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE,                   action_ok_load_core},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,action_ok_core_deferred_set},
          {MENU_ENUM_LABEL_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION_CURRENT_CORE,action_ok_core_deferred_set},
@@ -9358,8 +9428,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_SET_CORE_ASSOCIATION,                action_ok_set_core_association},
          {MENU_ENUM_LABEL_RESET_CORE_ASSOCIATION,              action_ok_reset_core_association},
          {MENU_ENUM_LABEL_ADD_TO_FAVORITES,                    action_ok_add_to_favorites},
-         {MENU_ENUM_LABEL_ADD_TO_PLAYLIST,                     action_ok_push_add_to_playlist_list},
-         {MENU_ENUM_LABEL_ADD_TO_PLAYLIST_QUICKMENU,           action_ok_push_add_to_playlist_quickmenu},
          {MENU_ENUM_LABEL_RESTART_CONTENT,                     action_ok_restart_content},
          {MENU_ENUM_LABEL_TAKE_SCREENSHOT,                     action_ok_screenshot},
          {MENU_ENUM_LABEL_RENAME_ENTRY,                        action_ok_rename_entry},
@@ -9390,25 +9458,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_RGUI
          {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,              action_ok_rgui_menu_theme_preset},
 #endif
-         {MENU_ENUM_LABEL_ACCOUNTS_LIST,                       action_ok_push_accounts_list},
-         {MENU_ENUM_LABEL_ACCESSIBILITY_SETTINGS,              action_ok_push_accessibility_settings_list},
-         {MENU_ENUM_LABEL_AI_SERVICE_SETTINGS,                 action_ok_push_ai_service_settings_list},
-         {MENU_ENUM_LABEL_INPUT_SETTINGS,                      action_ok_push_input_settings_list},
-         {MENU_ENUM_LABEL_INPUT_MENU_SETTINGS,                 action_ok_push_input_menu_settings_list},
-         {MENU_ENUM_LABEL_INPUT_TURBO_FIRE_SETTINGS,           action_ok_push_input_turbo_fire_settings_list},
-         {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,      action_ok_push_input_haptic_feedback_settings_list},
-         {MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,              action_ok_push_input_sensor_settings_list},
-         {MENU_ENUM_LABEL_DRIVER_SETTINGS,                     action_ok_push_driver_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_SETTINGS,                      action_ok_push_video_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_SYNCHRONIZATION_SETTINGS,      action_ok_push_video_synchronization_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,      action_ok_push_video_fullscreen_mode_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS,        action_ok_push_video_windowed_mode_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_SCALING_SETTINGS,              action_ok_push_video_scaling_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS,                  action_ok_push_video_hdr_settings_list},
-         {MENU_ENUM_LABEL_VIDEO_OUTPUT_SETTINGS,               action_ok_push_video_output_settings_list},
-         {MENU_ENUM_LABEL_CRT_SWITCHRES_SETTINGS,              action_ok_push_crt_switchres_settings_list},
-         {MENU_ENUM_LABEL_AUDIO_SETTINGS,                      action_ok_push_audio_settings_list},
-         {MENU_ENUM_LABEL_AUDIO_SYNCHRONIZATION_SETTINGS,      action_ok_push_audio_synchronization_settings_list},
          {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,             action_ok_push_manual_content_scan_dir_select},
          {MENU_ENUM_LABEL_SCAN_METHOD,                         action_ok_scan_method},
          {MENU_ENUM_LABEL_SCAN_USE_DB,                         action_ok_scan_use_db},
@@ -9445,46 +9494,23 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME,                  action_ok_cheevos_toggle_hardcore_mode},
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_CANCEL,           action_ok_close_submenu },
          {MENU_ENUM_LABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,  action_ok_close_submenu },
-         {MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,            action_ok_push_manual_content_scan_list},
-         {MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS,               action_ok_push_audio_output_settings_list},
 #ifdef HAVE_MICROPHONE
          {MENU_ENUM_LABEL_MICROPHONE_SETTINGS,                 action_ok_push_microphone_settings_list},
 #endif
-         {MENU_ENUM_LABEL_LATENCY_SETTINGS,                    action_ok_push_latency_settings_list},
-         {MENU_ENUM_LABEL_CORE_SETTINGS,                       action_ok_push_core_settings_list},
          {MENU_ENUM_LABEL_CORE_INFORMATION,                    action_ok_push_core_information_list},
          {MENU_ENUM_LABEL_CORE_MANAGER_ENTRY,                  action_ok_push_core_information_list},
 #ifdef HAVE_MIST
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,            action_ok_push_core_information_steam_list},
 #endif
-         {MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,            action_ok_push_core_restore_backup_list},
-         {MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,             action_ok_push_core_delete_backup_list},
-         {MENU_ENUM_LABEL_CONFIGURATION_SETTINGS,              action_ok_push_configuration_settings_list},
-         {MENU_ENUM_LABEL_PLAYLIST_SETTINGS,                   action_ok_push_playlist_settings_list},
-         {MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST,               action_ok_push_playlist_manager_list},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_REFRESH_PLAYLIST,   action_ok_playlist_refresh},
-         {MENU_ENUM_LABEL_RECORDING_SETTINGS,                  action_ok_push_recording_settings_list},
-         {MENU_ENUM_LABEL_INPUT_RETROPAD_BINDS,                action_ok_push_input_retropad_binds_list},
-         {MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS,                  action_ok_push_input_hotkey_binds_list},
          {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,         action_ok_push_accounts_cheevos_list},
-         {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                    action_ok_push_accounts_youtube_list},
-         {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                     action_ok_push_accounts_twitch_list},
-         {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                   action_ok_push_accounts_facebook_list},
-         {MENU_ENUM_LABEL_ACCOUNTS_KICK,                       action_ok_push_accounts_kick_list},
-         {MENU_ENUM_LABEL_DUMP_DISC,                           action_ok_push_dump_disc_list},
 #ifdef HAVE_LAKKA
          {MENU_ENUM_LABEL_EJECT_DISC,                          action_ok_push_eject_disc},
 #endif
-         {MENU_ENUM_LABEL_LOAD_DISC,                           action_ok_push_load_disc_list},
          {MENU_ENUM_LABEL_SHADER_OPTIONS,                      action_ok_push_default},
-         {MENU_ENUM_LABEL_SAVESTATE_LIST,                      action_ok_push_savestate_list},
-         {MENU_ENUM_LABEL_STATE_SLOT_RUN,                      action_ok_push_state_slot_run},
-         {MENU_ENUM_LABEL_CORE_OPTIONS,                        action_ok_push_core_options_list},
-         {MENU_ENUM_LABEL_CORE_OPTION_OVERRIDE_LIST,           action_ok_push_core_option_override_list},
-         {MENU_ENUM_LABEL_REMAP_FILE_MANAGER_LIST,             action_ok_push_remap_file_manager_list},
          {MENU_ENUM_LABEL_CORE_CHEAT_OPTIONS,                  action_ok_push_default},
          {MENU_ENUM_LABEL_CORE_INPUT_REMAPPING_OPTIONS,        action_ok_push_default},
          {MENU_ENUM_LABEL_DISC_INFORMATION,                    action_ok_push_default},
@@ -9532,46 +9558,13 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_OVERRIDE_FILE_SAVE_AS,               action_ok_override_file_save_as},
          {MENU_ENUM_LABEL_OVERRIDE_UNLOAD,                     action_ok_override_unload},
          {MENU_ENUM_LABEL_PLAYLISTS_TAB,                       action_ok_content_collection_list},
-         {MENU_ENUM_LABEL_BROWSE_URL_LIST,                     action_ok_browse_url_list},
-         {MENU_ENUM_LABEL_CORE_LIST,                           action_ok_core_list},
-         {MENU_ENUM_LABEL_SIDELOAD_CORE_LIST,                  action_ok_sideload_core_list},
          {MENU_ENUM_LABEL_DISK_IMAGE_APPEND,                   action_ok_disk_image_append_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_ADD,                       action_ok_subsystem_add_list},
-         {MENU_ENUM_LABEL_SUBSYSTEM_LOAD,                      action_ok_subsystem_add_load},
-         {MENU_ENUM_LABEL_CONFIGURATIONS,                      action_ok_configurations_list},
-         {MENU_ENUM_LABEL_SAVING_SETTINGS,                     action_ok_saving_list},
-         {MENU_ENUM_LABEL_CLOUD_SYNC_SETTINGS,                 action_ok_cloud_sync_list},
-         {MENU_ENUM_LABEL_LOGGING_SETTINGS,                    action_ok_logging_list},
-         {MENU_ENUM_LABEL_FRAME_THROTTLE_SETTINGS,             action_ok_frame_throttle_list},
-         {MENU_ENUM_LABEL_FRAME_TIME_COUNTER_SETTINGS,         action_ok_frame_time_counter_list},
-         {MENU_ENUM_LABEL_REWIND_SETTINGS,                     action_ok_rewind_list},
-         {MENU_ENUM_LABEL_ONSCREEN_DISPLAY_SETTINGS,           action_ok_onscreen_display_list},
-         {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,     action_ok_onscreen_notifications_list},
-         {MENU_ENUM_LABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,action_ok_onscreen_notifications_views_list},
-         {MENU_ENUM_LABEL_ONSCREEN_OVERLAY_SETTINGS,           action_ok_onscreen_overlay_list},
-         {MENU_ENUM_LABEL_OVERLAY_LIGHTGUN_SETTINGS,           action_ok_overlay_lightgun_settings_list},
-         {MENU_ENUM_LABEL_OVERLAY_MOUSE_SETTINGS,              action_ok_overlay_mouse_settings_list},
-         {MENU_ENUM_LABEL_OSK_OVERLAY_SETTINGS,                action_ok_osk_overlay_list},
-         {MENU_ENUM_LABEL_MENU_SETTINGS,                       action_ok_menu_list},
 #ifdef _3DS
          {MENU_ENUM_LABEL_MENU_BOTTOM_SETTINGS,                action_ok_menu_bottom_list},
 #endif
-         {MENU_ENUM_LABEL_MENU_VIEWS_SETTINGS,                 action_ok_menu_views_list},
-         {MENU_ENUM_LABEL_QUICK_MENU_OVERRIDE_OPTIONS,         action_ok_quick_menu_override_options},
-         {MENU_ENUM_LABEL_SETTINGS_VIEWS_SETTINGS,             action_ok_settings_views_list},
-         {MENU_ENUM_LABEL_QUICK_MENU_VIEWS_SETTINGS,           action_ok_quick_menu_views_list},
-         {MENU_ENUM_LABEL_USER_INTERFACE_SETTINGS,             action_ok_user_interface_list},
-         {MENU_ENUM_LABEL_POWER_MANAGEMENT_SETTINGS,           action_ok_power_management_list},
-         {MENU_ENUM_LABEL_CPU_PERFPOWER,                       action_ok_cpu_perfpower_list},
-         {MENU_ENUM_LABEL_CPU_POLICY_ENTRY,                    action_ok_cpu_policy_entry},
-         {MENU_ENUM_LABEL_MENU_SOUNDS,                         action_ok_menu_sounds_list},
-         {MENU_ENUM_LABEL_MENU_FILE_BROWSER_SETTINGS,          action_ok_menu_file_browser_list},
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,   action_ok_open_uwp_permission_settings},
          {MENU_ENUM_LABEL_FILE_BROWSER_OPEN_PICKER,            action_ok_open_picker},
-         {MENU_ENUM_LABEL_RETRO_ACHIEVEMENTS_SETTINGS,         action_ok_retro_achievements_list},
-         {MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_SETTINGS,         action_ok_cheevos_appearance_list},
-         {MENU_ENUM_LABEL_CHEEVOS_VISIBILITY_SETTINGS,         action_ok_cheevos_visibility_list},
-         {MENU_ENUM_LABEL_UPDATER_SETTINGS,                    action_ok_updater_list},
 #ifdef HAVE_BLUETOOTH
          {MENU_ENUM_LABEL_BLUETOOTH_SETTINGS,                  action_ok_bluetooth_list},
 #endif
@@ -9583,23 +9576,11 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
          {MENU_ENUM_LABEL_CONNECT_NETPLAY_ROOM,                action_ok_netplay_connect_room},
 #endif
-         {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
-         {MENU_ENUM_LABEL_NETPLAY_KICK,                        action_ok_netplay_kick_list},
-         {MENU_ENUM_LABEL_NETPLAY_BAN,                         action_ok_netplay_ban_list},
-         {MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,               action_ok_netplay_lobby_filters_list},
-         {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
-         {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
-         {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
 #endif
-         {MENU_ENUM_LABEL_USER_SETTINGS,                       action_ok_user_list},
-         {MENU_ENUM_LABEL_DIRECTORY_SETTINGS,                  action_ok_directory_list},
-         {MENU_ENUM_LABEL_PRIVACY_SETTINGS,                    action_ok_privacy_list},
-         {MENU_ENUM_LABEL_MIDI_SETTINGS,                       action_ok_midi_list},
          {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},
-         {MENU_ENUM_LABEL_CORE_MANAGER_LIST,                   action_ok_push_core_manager_list},
 #ifdef HAVE_MIST
          {MENU_ENUM_LABEL_STEAM_SETTINGS,                      action_ok_steam_settings_list},
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_LIST,             action_ok_push_core_manager_steam_list},
@@ -9609,6 +9590,18 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_EXPLORE_TAB,                         action_ok_push_default},
          {MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB,               action_ok_push_default},
       };
+
+      {
+         size_t m;
+         for (m = 0; m < ARRAY_SIZE(ok_dl_map); m++)
+         {
+            if (cbs->enum_idx == ok_dl_map[m].enum_idx)
+            {
+               BIND_ACTION_OK(cbs, action_ok_dl_from_map);
+               return 0;
+            }
+         }
+      }
 
       for (i = 0; i < ARRAY_SIZE(ok_list); i++)
       {
@@ -9976,15 +9969,15 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   || string_is_equal(menu_label,
                      MENU_ENUM_LABEL_SUBSYSTEM_ADD_STR)
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_XMB_FONT_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_OZONE_FONT_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN_STR)
+                     msg_hash_to_str(MENU_ENUM_LABEL_AUDIO_DSP_PLUGIN))
                   || string_is_equal(menu_label,
-                     MENU_ENUM_LABEL_VIDEO_FILTER_STR))
+                     msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FILTER)))
                BIND_ACTION_OK(cbs, action_ok_directory_push);
             else
                BIND_ACTION_OK(cbs, action_ok_push_random_dir);
@@ -10218,7 +10211,7 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
             }
             break;
          case FILE_TYPE_MOVIE:
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
             /* TODO/FIXME - handle scan case */
             BIND_ACTION_OK(cbs, action_ok_file_load_ffmpeg);
 #endif

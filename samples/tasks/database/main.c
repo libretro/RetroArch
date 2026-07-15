@@ -34,6 +34,13 @@ const char *msg_hash_to_str_us(int msg)
    return "";
 }
 
+/* The string-table index builder (added by the msg_hash strtab refactor).
+ * With msg_hash_to_str_us() stubbed above, the index is never consulted, so
+ * this can be an empty stub rather than linking intl/msg_hash_us.c. */
+void msg_hash_us_index_init(void)
+{
+}
+
 void *config_get_ptr(void)
 {
    /* core_info_current_supports_savestate_level dereferences the

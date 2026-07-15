@@ -2878,6 +2878,24 @@ void core_info_qsort(core_info_list_t *core_info_list,
    }
 }
 
+/* Optional runtime probe supplied by the frontend. Returns true when a
+ * core is currently running and reports a nonzero serializable size, i.e.
+ * savestates demonstrably work regardless of what the info file declares.
+ *
+ * core_info.c must stay linkable standalone (it is pulled into reduced
+ * builds such as the database-task CI sample, which do not provide the
+ * runloop/retroarch backend). Depending on runloop_get_flags() /
+ * core_serialize_size() directly would drag that backend in, so the
+ * runtime check is injected as a seam instead: it is NULL until the
+ * frontend registers it, and the override below simply does not fire in
+ * builds that never register one. */
+static core_info_savestate_probe_t core_info_savestate_probe = NULL;
+
+void core_info_set_savestate_probe(core_info_savestate_probe_t probe)
+{
+   core_info_savestate_probe = probe;
+}
+
 /* PERF-1: Common helper for all savestate support level checks */
 static bool core_info_current_supports_savestate_level(uint32_t min_level)
 {
@@ -2889,6 +2907,25 @@ static bool core_info_current_supports_savestate_level(uint32_t min_level)
     * by default that all savestate functionality
     * is supported */
    if (!p_coreinfo->current)
+      return true;
+   if (p_coreinfo->current->savestate_support_level >= min_level)
+      return true;
+   /* The info file claims this level is unsupported. Info files can go
+    * stale in the blocking direction: a core that gains serialization
+    * support keeps being rejected here until its metadata is updated,
+    * even though the implementation works (and the API itself has no
+    * capability flag to consult - a nonzero retro_serialize_size() from
+    * the running core is the only ground truth available).
+    *
+    * For BASIC support (user-initiated save/load), let the running core
+    * override stale metadata: if it reports a nonzero serializable size,
+    * savestates demonstrably work. Higher support levels (rewind,
+    * run-ahead, netplay) still require explicit metadata, since those
+    * engage automatic high-frequency serialization that a bare nonzero
+    * size does not prove safe or fast enough. */
+   if (min_level <= CORE_INFO_SAVESTATE_BASIC
+         && core_info_savestate_probe
+         && core_info_savestate_probe())
       return true;
    return p_coreinfo->current->savestate_support_level >= min_level;
 }

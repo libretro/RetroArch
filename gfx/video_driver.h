@@ -33,6 +33,7 @@
 
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
+#include <formats/image.h>
 
 #include "../configuration.h"
 #include "../input/input_driver.h"
@@ -663,6 +664,16 @@ typedef struct video_poke_interface
    void (*set_hdr_expand_gamut)(void *data, unsigned expand_gamut);
    void (*set_hdr_scanlines)(void *data, bool scanlines);
    void (*set_hdr_subpixel_layout)(void *data, unsigned subpixel_layout);
+
+   /* Optional GPU-native compressed-texture path (BCn/ETC/ASTC).
+    * Drivers that can sample the format implement both; leaving them
+    * NULL (the default) makes video_driver_texture_load() fall back to
+    * a CPU decode + the normal RGBA8 load_texture. */
+   bool      (*supports_texture_format)(void *data,
+         enum texture_gpu_format fmt);
+   uintptr_t (*load_texture_compressed)(void *video_data,
+         const struct texture_compressed *tc, bool threaded,
+         enum texture_filter_type filter_type);
 } video_poke_interface_t;
 
 /* msg is for showing a message on the screen

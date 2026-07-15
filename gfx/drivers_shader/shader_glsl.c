@@ -410,6 +410,30 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    else if (glsl_core)
    {
       unsigned version_no = 0;
+#ifdef HAVE_OPENGLES
+      /* glsl_core (the glcore/gl3 driver) uses modern in/out stock
+       * shaders.  On GLES a desktop "#version 130" is rejected outright
+       * ("GLSL 1.30 is not supported"), which broke every GLSL shader on
+       * the glcore driver; emit an "... es" version instead, mirroring
+       * the user-shader mapping above. */
+      if (gl_check_capability(GL_CAPS_GLES3_SUPPORTED))
+      {
+         unsigned gl_ver = glsl_major * 100 + glsl_minor * 10;
+         if      (gl_ver >= 320)
+            version_no = 320;
+         else if (gl_ver >= 310)
+            version_no = 310;
+         else
+            version_no = 300;
+         snprintf(version, sizeof(version), "#version %u es\n", version_no);
+         RARCH_LOG("[GLSL] Using GLSL version %u es.\n", version_no);
+      }
+      else
+      {
+         snprintf(version, sizeof(version), "#version 100\n");
+         RARCH_LOG("[GLSL] Using GLSL version 100.\n");
+      }
+#else
       unsigned gl_ver     = glsl_major * 100 + glsl_minor * 10;
 
       if (gl_ver >= 300)
@@ -421,6 +445,7 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
 
       snprintf(version, sizeof(version), "#version %u\n", version_no);
       RARCH_LOG("[GLSL] Using GLSL version %u.\n", version_no);
+#endif
    }
 
    source[0] = version;

@@ -656,14 +656,33 @@ static int frontend_switch_parse_drive_list(void *data, bool load_content)
 
 static uint64_t frontend_switch_get_free_mem(void)
 {
+#ifdef HAVE_LIBNX
+   /* mallinfo() only sees newlib's own arena, not the memory the
+    * kernel has actually handed this process. Ask the kernel: free
+    * == the process's total memory region minus what it is using. */
+   uint64_t total = 0;
+   uint64_t used  = 0;
+   if (R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize, CUR_PROCESS_HANDLE, 0)) &&
+       R_SUCCEEDED(svcGetInfo(&used,  InfoType_UsedMemorySize,  CUR_PROCESS_HANDLE, 0)))
+      return (total > used) ? (total - used) : 0;
+   return 0;
+#else
    struct mallinfo mem_info = mallinfo();
    return mem_info.fordblks;
+#endif
 }
 
 static uint64_t frontend_switch_get_total_mem(void)
 {
+#ifdef HAVE_LIBNX
+   uint64_t total = 0;
+   if (R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize, CUR_PROCESS_HANDLE, 0)))
+      return total;
+   return 0;
+#else
    struct mallinfo mem_info = mallinfo();
    return mem_info.usmblks;
+#endif
 }
 
 static enum frontend_powerstate

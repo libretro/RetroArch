@@ -51,11 +51,23 @@ struct iir_data
    float b0, b1, b2;
    float a0, a1, a2;
 
+   /* Deterministic int16 path: normalized coefficients (b/a0, a/a0) in Q24,
+    * and per-channel state.  The feedback history yn1/yn2 is kept in Q16
+    * int64 so the recursion runs at higher-than-int16 precision (no
+    * in-loop quantization noise) and cannot overflow on boost/overshoot. */
+   int32_t nb0_q, nb1_q, nb2_q, na1_q, na2_q;
+
    struct
    {
       float xn1, xn2;
       float yn1, yn2;
    } l, r;
+
+   struct
+   {
+      int32_t xn1, xn2;
+      int64_t yn1, yn2;
+   } li, ri;
 };
 
 static void iir_free(void *data)
@@ -121,6 +133,69 @@ static void iir_process(void *data, struct dspfilter_output *output,
    iir->r.xn2 = xn2_r;
    iir->r.yn1 = yn1_r;
    iir->r.yn2 = yn2_r;
+}
+
+/* Deterministic int16 Direct Form I biquad.  Forward terms accumulate to Q40
+ * (int64), the a0-normalized Q24 coefficients multiply the Q16 feedback
+ * history, and a single symmetric rounding produces the int16 output while
+ * the Q16 history is retained for the next iteration. */
+static void iir_process_i16(void *data,
+      struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   unsigned i;
+   struct iir_data *iir = (struct iir_data*)data;
+   int16_t *out;
+   int32_t nb0   = iir->nb0_q;
+   int32_t nb1   = iir->nb1_q;
+   int32_t nb2   = iir->nb2_q;
+   int32_t na1   = iir->na1_q;
+   int32_t na2   = iir->na2_q;
+   int32_t xn1_l = iir->li.xn1, xn2_l = iir->li.xn2;
+   int64_t yn1_l = iir->li.yn1, yn2_l = iir->li.yn2;
+   int32_t xn1_r = iir->ri.xn1, xn2_r = iir->ri.xn2;
+   int64_t yn1_r = iir->ri.yn1, yn2_r = iir->ri.yn2;
+
+   output->samples = input->samples;
+   output->frames  = input->frames;
+   out             = output->samples;
+
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      int32_t in_l = out[0];
+      int32_t in_r = out[1];
+      int64_t fwd, acc;
+      int32_t v;
+
+      fwd = (int64_t)nb0 * in_l + (int64_t)nb1 * xn1_l + (int64_t)nb2 * xn2_l;
+      acc = (fwd << 16) - (int64_t)na1 * yn1_l - (int64_t)na2 * yn2_l;
+      v   = (acc >= 0) ?  (int32_t)(( acc + (1LL << 39)) >> 40)
+                       : -(int32_t)((-acc + (1LL << 39)) >> 40);
+      if      (v >  32767) v =  32767;
+      else if (v < -32768) v = -32768;
+      xn2_l = xn1_l; xn1_l = in_l;
+      yn2_l = yn1_l;
+      yn1_l = (acc >= 0) ?  (( acc + (1LL << 23)) >> 24)
+                         : -((-acc + (1LL << 23)) >> 24);
+      out[0] = (int16_t)v;
+
+      fwd = (int64_t)nb0 * in_r + (int64_t)nb1 * xn1_r + (int64_t)nb2 * xn2_r;
+      acc = (fwd << 16) - (int64_t)na1 * yn1_r - (int64_t)na2 * yn2_r;
+      v   = (acc >= 0) ?  (int32_t)(( acc + (1LL << 39)) >> 40)
+                       : -(int32_t)((-acc + (1LL << 39)) >> 40);
+      if      (v >  32767) v =  32767;
+      else if (v < -32768) v = -32768;
+      xn2_r = xn1_r; xn1_r = in_r;
+      yn2_r = yn1_r;
+      yn1_r = (acc >= 0) ?  (( acc + (1LL << 23)) >> 24)
+                         : -((-acc + (1LL << 23)) >> 24);
+      out[1] = (int16_t)v;
+   }
+
+   iir->li.xn1 = xn1_l; iir->li.xn2 = xn2_l;
+   iir->li.yn1 = yn1_l; iir->li.yn2 = yn2_l;
+   iir->ri.xn1 = xn1_r; iir->ri.xn2 = xn2_r;
+   iir->ri.yn1 = yn1_r; iir->ri.yn2 = yn2_r;
 }
 
 #define CHECK(x) if (strcmp(str, #x) == 0) return x
@@ -345,6 +420,16 @@ static void *iir_init(const struct dspfilter_info *info,
    config->free(type);
 
    iir_filter_init(iir, info->input_rate, freq, qual, gain, filter);
+
+   /* Precompute a0-normalized Q24 coefficients for the int16 path. */
+   {
+      double inv_a0 = (iir->a0 != 0.0f) ? 1.0 / (double)iir->a0 : 0.0;
+      iir->nb0_q = (int32_t)floor((double)iir->b0 * inv_a0 * 16777216.0 + 0.5);
+      iir->nb1_q = (int32_t)floor((double)iir->b1 * inv_a0 * 16777216.0 + 0.5);
+      iir->nb2_q = (int32_t)floor((double)iir->b2 * inv_a0 * 16777216.0 + 0.5);
+      iir->na1_q = (int32_t)floor((double)iir->a1 * inv_a0 * 16777216.0 + 0.5);
+      iir->na2_q = (int32_t)floor((double)iir->a2 * inv_a0 * 16777216.0 + 0.5);
+   }
    return iir;
 }
 
@@ -356,6 +441,8 @@ static const struct dspfilter_implementation iir_plug = {
    DSPFILTER_API_VERSION,
    "IIR",
    "iir",
+
+   iir_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

@@ -159,7 +159,7 @@ bool linux_terminal_disable_input(void)
 
 static void linux_poll_illuminance_sensor(void *data)
 {
-   linux_illuminance_sensor_t *sensor = data;
+   linux_illuminance_sensor_t *sensor = (linux_illuminance_sensor_t*)data;
 
    if (!data)
       return;

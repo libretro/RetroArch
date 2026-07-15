@@ -62,6 +62,12 @@
 #define SUPPORTS_SDL2 false
 #endif
 
+#ifdef HAVE_SDL3
+#define SUPPORTS_SDL3 true
+#else
+#define SUPPORTS_SDL3 false
+#endif
+
 #ifdef HAVE_THREADS
 #define SUPPORTS_THREAD true
 #else
@@ -408,6 +414,24 @@
 #define SUPPORTS_RWEBP true
 #else
 #define SUPPORTS_RWEBP false
+#endif
+
+#ifdef HAVE_RWEBM
+#define SUPPORTS_RWEBM true
+#else
+#define SUPPORTS_RWEBM false
+#endif
+
+#ifdef HAVE_RVP9
+#define SUPPORTS_RVP9 true
+#else
+#define SUPPORTS_RVP9 false
+#endif
+
+#ifdef HAVE_RDDS
+#define SUPPORTS_RDDS true
+#else
+#define SUPPORTS_RDDS false
 #endif
 
 #ifdef HAVE_CORETEXT

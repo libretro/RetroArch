@@ -102,6 +102,26 @@ enum settings_glob_flags
    SETTINGS_FLG_SKIP_WINDOW_POSITIONS = (1 << 1)
 };
 
+/* Narrator (TTS) engine for the Linux/Unix accessibility path.
+ * espeak is index 0 / default so existing setups are unaffected. */
+enum accessibility_narrator_engine_enum
+{
+   ACCESSIBILITY_NARRATOR_ENGINE_ESPEAK = 0,
+   ACCESSIBILITY_NARRATOR_ENGINE_SPEECH_DISPATCHER,
+   ACCESSIBILITY_NARRATOR_ENGINE_LAST
+};
+
+/* Requested output sample format for audio drivers that can negotiate it
+ * (WASAPI, DirectSound, XAudio2, ALSA, SDL2, ...). A hint only: drivers that
+ * support just one format ignore it, and any driver may fall back if the
+ * device rejects the requested format. */
+enum audio_format_negotiation_enum
+{
+   AUDIO_FORMAT_NEGOTIATION_INT16 = 0,
+   AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   AUDIO_FORMAT_NEGOTIATION_LAST
+};
+
 typedef struct settings
 {
    struct
@@ -183,6 +203,7 @@ typedef struct settings
       unsigned audio_output_sample_rate;
       unsigned audio_block_frames;
       unsigned audio_latency;
+      unsigned audio_format_negotiation;
 
 #ifdef HAVE_WASAPI
       unsigned audio_wasapi_sh_buffer_length;
@@ -293,6 +314,7 @@ typedef struct settings
 
       /* Accessibility */
       unsigned accessibility_narrator_speech_speed;
+      unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
       unsigned menu_timedate_date_separator;
@@ -462,6 +484,7 @@ typedef struct settings
       float cheevos_appearance_padding_v;
 
       float audio_max_timing_skew;
+      float audio_rate_control_delta;
       float audio_volume; /* dB scale. */
       float audio_mixer_volume; /* dB scale. */
 
@@ -730,6 +753,7 @@ typedef struct settings
       bool audio_rate_control;
       bool audio_fastforward_mute;
       bool audio_fastforward_speedup;
+      bool audio_fastpath_s16;
       bool audio_rewind_mute;
 #ifdef IOS
       bool audio_respect_silent_mode;
@@ -737,7 +761,6 @@ typedef struct settings
 
 #ifdef HAVE_WASAPI
       bool audio_wasapi_exclusive_mode;
-      bool audio_wasapi_float_format;
 #endif
 
 #ifdef HAVE_MICROPHONE
@@ -836,6 +859,7 @@ typedef struct settings
       bool menu_navigation_browser_filter_supported_extensions_enable;
       bool menu_show_advanced_settings;
       bool menu_linear_filter;
+      bool menu_texture_mipmapping;
       bool menu_horizontal_animation;
       bool menu_scroll_fast;
       bool menu_show_online_updater;
@@ -872,6 +896,7 @@ typedef struct settings
       bool menu_materialui_dual_thumbnail_list_view_enable;
       bool menu_materialui_thumbnail_background_enable;
       bool menu_thumbnail_background_enable;
+      bool menu_thumbnail_preview_audio;
       bool menu_rgui_background_filler_thickness_enable;
       bool menu_rgui_border_filler_thickness_enable;
       bool menu_rgui_border_filler_enable;

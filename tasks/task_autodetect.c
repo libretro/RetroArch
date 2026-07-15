@@ -45,13 +45,6 @@
 #include "../retroarch.h"
 #include "../runloop.h"
 
-enum autoconfig_handle_flags
-{
-   AUTOCONF_FLAG_AUTOCONFIG_ENABLED     = (1 << 0),
-   AUTOCONF_FLAG_SUPPRESS_NOTIFICATIONS = (1 << 1),
-   AUTOCONF_FLAG_SUPPRESS_FAILURE_NOTIF = (1 << 2)
-};
-
 typedef struct
 {
    char *dir_autoconfig;
@@ -747,6 +740,9 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
       else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
             "sdl2"))
          fallback_device_name = "Standard Gamepad";
+      else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
+            "sdl3"))
+         fallback_device_name = "Gamepad";
 #ifdef HAVE_TEST_DRIVERS
       else if (string_is_equal(autoconfig_handle->device_info.joypad_driver,
             "test"))
@@ -765,6 +761,7 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
           * below).  A stack buffer of matching size sidesteps both
           * issues. */
          char name_backup[sizeof(autoconfig_handle->device_info.name)];
+         bool fallback_matched;
 
          strlcpy(name_backup, autoconfig_handle->device_info.name,
                sizeof(name_backup));
@@ -773,15 +770,15 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
                fallback_device_name,
                sizeof(autoconfig_handle->device_info.name));
 
-         /* This is not a genuine match - leave
-          * match_found set to 'false' regardless
-          * of the outcome */
-         input_autoconfigure_scan_config_files_internal(
-               autoconfig_handle);
+         /* Apply the fallback built-in profile. */
+         fallback_matched = input_autoconfigure_scan_config_files_internal(autoconfig_handle);
 
          strlcpy(autoconfig_handle->device_info.name,
                name_backup,
                sizeof(autoconfig_handle->device_info.name));
+
+         if (fallback_matched && (autoconfig_handle->flags & AUTOCONF_FLAG_HAS_STANDARD_MAPPING))
+            match_found = true;
       }
    }
 
@@ -867,6 +864,35 @@ bool input_autoconfigure_connect(
       unsigned vid,
       unsigned pid)
 {
+   return input_autoconfigure_connect_ex(name, display_name, phys,
+         driver, port, vid, pid, 0);
+}
+
+/**
+ * Queues an asynchronous task to autoconfigure a newly connected device.
+ *
+ * @param name Device name reported by the driver, used for name-based profile matching. May be NULL.
+ * @param display_name Human-readable name, or NULL to use the matched profile.
+ * @param phys Physical location string (e.g. USB path), or NULL.
+ * @param driver Joypad driver identifier (e.g. "sdl3", "udev").
+ * @param port Input port to configure (0 .. MAX_INPUT_DEVICES-1).
+ * @param vid USB vendor ID, or 0 if unknown.
+ * @param pid USB product ID, or 0 if unknown.
+ * @param flags An enum autoconfig_handle_flags bitmask seeding the initial state.
+ *
+ * @return true if the autoconfigure task was queued, false otherwise.
+ * @see input_autoconfigure_connect()
+ */
+bool input_autoconfigure_connect_ex(
+      const char *name,
+      const char *display_name,
+      const char *phys,
+      const char *driver,
+      unsigned port,
+      unsigned vid,
+      unsigned pid,
+      uint8_t flags)
+{
    task_finder_data_t find_data;
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
@@ -907,6 +933,7 @@ bool input_autoconfigure_connect(
    autoconfig_handle->device_info.joypad_driver[0] = '\0';
    autoconfig_handle->device_info.autoconfigured   = false;
    autoconfig_handle->device_info.name_index       = 0;
+   autoconfig_handle->flags                        = flags;
    if (autoconfig_enabled)
       autoconfig_handle->flags |= AUTOCONF_FLAG_AUTOCONFIG_ENABLED;
    if (!notification_show_autoconfig)

@@ -7254,6 +7254,215 @@ static bool d3d12_get_current_software_framebuffer(
    return true;
 }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+static DXGI_FORMAT d3d12_dxgi_from_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return DXGI_FORMAT_BC1_UNORM;
+      case TEXTURE_GPU_FORMAT_BC2: return DXGI_FORMAT_BC2_UNORM;
+      case TEXTURE_GPU_FORMAT_BC3: return DXGI_FORMAT_BC3_UNORM;
+      case TEXTURE_GPU_FORMAT_BC7: return DXGI_FORMAT_BC7_UNORM;
+      default:                     break;
+   }
+   return DXGI_FORMAT_UNKNOWN;
+}
+
+static bool d3d12_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt)
+{
+   d3d12_video_t*                    d3d12 = (d3d12_video_t*)data;
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
+   DXGI_FORMAT                       dxgi  = d3d12_dxgi_from_gpu_format(fmt);
+   if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
+      return false;
+   memset(&fs, 0, sizeof(fs));
+   fs.Format = dxgi;
+   if (FAILED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
+         D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs))))
+      return false;
+   return (fs.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) != 0;
+}
+
+static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
+      const struct texture_compressed* tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d12_video_t*        d3d12       = (d3d12_video_t*)video_data;
+   d3d12_texture_t*      texture     = NULL;
+   D3D12Device           device;
+   DXGI_FORMAT           dxgi;
+   D3D12_HEAP_PROPERTIES heap_props;
+   D3D12_RESOURCE_DESC   tex_desc;
+   D3D12_RESOURCE_DESC   buf_desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[IMAGE_MAX_MIPS];
+   UINT                  num_rows[IMAGE_MAX_MIPS];
+   UINT64                row_sizes[IMAGE_MAX_MIPS];
+   UINT64                total_bytes = 0;
+   D3D12CommandAllocator alloc       = NULL;
+   D3D12GraphicsCommandList cmd       = NULL;
+   uint8_t*              mapped      = NULL;
+   D3D12_RANGE           norange;
+   unsigned              i;
+   unsigned              block_bytes = 16;
+   HRESULT               hr;
+
+   (void)threaded;
+   if (!d3d12 || !d3d12->device || !tc || tc->num_mips == 0)
+      return 0;
+   dxgi = d3d12_dxgi_from_gpu_format(tc->format);
+   if (dxgi == DXGI_FORMAT_UNKNOWN)
+      return 0;
+   if (tc->format == TEXTURE_GPU_FORMAT_BC1)
+      block_bytes = 8;
+   device = d3d12->device;
+
+   if (!(texture = (d3d12_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+      texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+   else
+      texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->srv_heap = &d3d12->desc.srv_heap;
+
+   /* Default-heap texture with the file's pre-baked mip count.  No UAV
+    * flags: the driver's compute mip generation cannot write BC blocks. */
+   memset(&tex_desc, 0, sizeof(tex_desc));
+   tex_desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Width            = tc->mips[0].width;
+   tex_desc.Height           = tc->mips[0].height;
+   tex_desc.DepthOrArraySize = 1;
+   tex_desc.MipLevels        = (UINT16)tc->num_mips;
+   tex_desc.Format           = dxgi;
+   tex_desc.SampleDesc.Count = 1;
+   tex_desc.Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags            = D3D12_RESOURCE_FLAG_NONE;
+   texture->desc             = tex_desc;
+
+   memset(&heap_props, 0, sizeof(heap_props));
+   heap_props.Type             = D3D12_HEAP_TYPE_DEFAULT;
+   heap_props.CreationNodeMask = 1;
+   heap_props.VisibleNodeMask  = 1;
+   hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
+         D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST,
+         NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
+   if (FAILED(hr) || !texture->handle)
+   {
+      free(texture);
+      return 0;
+   }
+
+   device->lpVtbl->GetCopyableFootprints(device, &tex_desc, 0, tc->num_mips,
+         0, layouts, num_rows, row_sizes, &total_bytes);
+
+   memset(&buf_desc, 0, sizeof(buf_desc));
+   buf_desc.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Width            = total_bytes;
+   buf_desc.Height           = 1;
+   buf_desc.DepthOrArraySize = 1;
+   buf_desc.MipLevels        = 1;
+   buf_desc.Format           = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count = 1;
+   buf_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   heap_props.Type           = D3D12_HEAP_TYPE_UPLOAD;
+   hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
+         D3D12_HEAP_FLAG_NONE, &buf_desc, D3D12_RESOURCE_STATE_GENERIC_READ,
+         NULL, uuidof(ID3D12Resource), (void**)&texture->upload_buffer);
+   if (FAILED(hr) || !texture->upload_buffer)
+   {
+      d3d12_release_texture(texture);
+      free(texture);
+      return 0;
+   }
+
+   norange.Begin = 0;
+   norange.End   = 0;
+   if (FAILED(texture->upload_buffer->lpVtbl->Map(texture->upload_buffer, 0,
+         &norange, (void**)&mapped)) || !mapped)
+   {
+      d3d12_release_texture(texture);
+      free(texture);
+      return 0;
+   }
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      unsigned       blocks_w  = (tc->mips[i].width + 3u) >> 2;
+      unsigned       src_pitch = blocks_w * block_bytes;
+      const uint8_t* src       = (const uint8_t*)tc->mips[i].data;
+      uint8_t*       dst       = mapped + layouts[i].Offset;
+      UINT           r;
+      for (r = 0; r < num_rows[i]; r++)
+         memcpy(dst + (size_t)r * layouts[i].Footprint.RowPitch,
+                src + (size_t)r * src_pitch, (size_t)row_sizes[i]);
+   }
+   texture->upload_buffer->lpVtbl->Unmap(texture->upload_buffer, 0, NULL);
+
+   /* One-shot copy on a temporary DIRECT command list, executed on the
+    * driver's queue and fence-waited (mirrors the unload synchronisation). */
+   device->lpVtbl->CreateCommandAllocator(device,
+         D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
+         (void**)&alloc);
+   device->lpVtbl->CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+         alloc, NULL, uuidof(ID3D12GraphicsCommandList), (void**)&cmd);
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      D3D12_TEXTURE_COPY_LOCATION src_loc;
+      D3D12_TEXTURE_COPY_LOCATION dst_loc;
+      src_loc.pResource        = texture->upload_buffer;
+      src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+      src_loc.PlacedFootprint  = layouts[i];
+      dst_loc.pResource        = texture->handle;
+      dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      dst_loc.SubresourceIndex = i;
+      cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, NULL);
+   }
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   cmd->lpVtbl->Close(cmd);
+   {
+      D3D12CommandList lists[1];
+      lists[0] = (D3D12CommandList)cmd;
+      d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1, lists);
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+            d3d12->queue.fence, ++d3d12->queue.fenceValue);
+      if (d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+            < d3d12->queue.fenceValue)
+      {
+         d3d12->queue.fence->lpVtbl->SetEventOnCompletion(d3d12->queue.fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+   Release(cmd);
+   Release(alloc);
+   Release(texture->upload_buffer);
+   texture->upload_buffer = NULL;
+
+   {
+      D3D12_SHADER_RESOURCE_VIEW_DESC srv;
+      memset(&srv, 0, sizeof(srv));
+      srv.Format                  = dxgi;
+      srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      srv.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+      srv.Texture2D.MipLevels     = tc->num_mips;
+      texture->cpu_descriptor[0]  = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      device->lpVtbl->CreateShaderResourceView(device, texture->handle,
+            &srv, texture->cpu_descriptor[0]);
+      texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr
+            - texture->srv_heap->cpu.ptr + texture->srv_heap->gpu.ptr;
+   }
+
+   texture->size_data.x = (float)tc->mips[0].width;
+   texture->size_data.y = (float)tc->mips[0].height;
+   texture->size_data.z = 1.0f / (float)tc->mips[0].width;
+   texture->size_data.w = 1.0f / (float)tc->mips[0].height;
+   texture->dirty       = false;
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -7292,14 +7501,16 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_set_hdr_paper_white_nits,
    d3d12_set_hdr_expand_gamut,
    d3d12_set_hdr_scanlines,
-   d3d12_set_hdr_subpixel_layout
+   d3d12_set_hdr_subpixel_layout,
 #else
       NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
 #endif
+   d3d12_gfx_supports_texture_format,
+   d3d12_gfx_load_texture_compressed
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

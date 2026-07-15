@@ -543,8 +543,15 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
+   /* Only throttle to the compositor frame callback when actually
+    * vsync-pacing. A swap interval of 0 (fast-forward, or vsync
+    * disabled) means we explicitly do not want to wait for the
+    * display cadence; blocking on the frame callback here would gate
+    * unthrottled frames on vsync-rate callbacks and stall the core. */
+   bool frame_throttle            = (max_swapchain_images <= 2)
+      && (wl->egl.interval != 0);
 
-   if (max_swapchain_images <= 2)
+   if (frame_throttle)
    {
       /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
@@ -553,7 +560,7 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 
    egl_swap_buffers(&wl->egl);
 
-   if (max_swapchain_images <= 2)
+   if (frame_throttle)
    {
       /* Wait for the frame callback we set earlier. */
       struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};

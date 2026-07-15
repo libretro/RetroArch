@@ -270,7 +270,6 @@ static void *sixel_gfx_init(const video_info_t *video,
    void *ctx_data                       = NULL;
    const char *scale_str                = NULL;
    settings_t *settings                 = config_get_ptr();
-   bool video_font_enable               = settings->bools.video_font_enable;
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
 
    if (!sixel)
@@ -310,7 +309,6 @@ static void *sixel_gfx_init(const video_info_t *video,
       *input_data = NULL;
    }
 
-   if (video_font_enable)
       font_driver_init_osd(sixel,
             video,
             false,

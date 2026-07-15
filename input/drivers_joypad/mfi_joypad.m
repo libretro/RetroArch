@@ -817,23 +817,40 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
         if (enable_device_vibration && pad == 0)
         {
             NSError *error;
-            id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG
-                  ? apple_gamecontroller_device_haptics_strong_player()
-						: apple_gamecontroller_device_haptics_weak_player());
-            if (player)
+            /* CoreHaptics raises an NSException (Haptic_RaiseException)
+             * instead of populating the error out-param when a player or
+             * engine method is invoked while the engine is not running,
+             * e.g. after it auto-stops on backgrounding / audio-session
+             * interruption and a rumble request races in before the
+             * stopped/reset handler tears down the stale player. There is
+             * no public API to query the running state, so guard the whole
+             * acquire+play sequence (the lazy player getters start/recreate
+             * the engine and can throw too) and fail the rumble silently. */
+            @try
             {
-                if (strength == 0)
-                    [player stopAtTime:0 error:&error];
-                else
+                id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG
+                      ? apple_gamecontroller_device_haptics_strong_player()
+                      : apple_gamecontroller_device_haptics_weak_player());
+                if (player)
                 {
-                    float str = (float)strength / 65535.0f;
-                    CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
-                       initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
-                                     value:str relativeTime:0];
-                    [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
-                    if (!error)
-                        [player startAtTime:0 error:&error];
+                    if (strength == 0)
+                        [player stopAtTime:0 error:&error];
+                    else
+                    {
+                        float str = (float)strength / 65535.0f;
+                        CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
+                           initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                                         value:str relativeTime:0];
+                        [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
+                        if (!error)
+                            [player startAtTime:0 error:&error];
+                    }
                 }
+            }
+            @catch (NSException *exception)
+            {
+                RARCH_ERR("[MFI] Device haptics exception: %s\n",
+                      [[exception reason] UTF8String]);
             }
         }
     }
@@ -847,24 +864,37 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
           if (rumble)
           {
              NSError *error;
-             id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG ? rumble.strongPlayer : rumble.weakPlayer);
-             if (player)
+             /* Same CoreHaptics throw hazard as the device path above:
+              * the strongPlayer/weakPlayer getters lazily (re)create the
+              * engine and player, and start/sendParameters/stop throw an
+              * NSException when the engine is not running. Guard the whole
+              * sequence. */
+             @try
              {
-                if (strength == 0)
-                   [player stopAtTime:0 error:&error];
-                else
+                id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG ? rumble.strongPlayer : rumble.weakPlayer);
+                if (player)
                 {
-                   CHHapticDynamicParameter *param = NULL;
-                   float str = (float)strength / 65535.0f;
-                   param = [[CHHapticDynamicParameter alloc]
-                      initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
-                                    value:str
-                             relativeTime:0];
-                   [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
-                   if (!error)
-                      [player startAtTime:0 error:&error];
+                   if (strength == 0)
+                      [player stopAtTime:0 error:&error];
+                   else
+                   {
+                      CHHapticDynamicParameter *param = NULL;
+                      float str = (float)strength / 65535.0f;
+                      param = [[CHHapticDynamicParameter alloc]
+                         initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                                       value:str
+                                relativeTime:0];
+                      [player sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
+                      if (!error)
+                         [player startAtTime:0 error:&error];
+                   }
+                   return !error;
                 }
-                return !error;
+             }
+             @catch (NSException *exception)
+             {
+                RARCH_ERR("[MFI] Controller haptics exception: %s\n",
+                      [[exception reason] UTF8String]);
              }
           }
        }

@@ -19,6 +19,11 @@
 #include <limits.h>
 #include <math.h>
 
+#ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
+#include <pthread.h>
+#endif
+
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -81,8 +86,40 @@ static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-   while (pkt->type != thr->reply_cmd)
-      scond_wait(thr->cond_cmd, thr->lock);
+#ifdef __APPLE__
+   /* On Apple platforms the worker thread marshals main-thread-only
+    * AppKit/UIKit work (context/view attachment during CMD_INIT,
+    * window surgery during set-video-mode, ...) back to the main
+    * thread via cocoa_main_thread_sync() (ui/drivers/cocoa/
+    * cocoa_common.m).  A bare condvar wait here would deadlock that
+    * handshake: the worker blocks waiting for the main thread to run
+    * its block, while the main thread blocks here waiting for the
+    * worker's reply.  Instead, when waiting on the main thread, pump
+    * the private trampoline runloop mode between short condvar waits
+    * so those marshaled blocks can drain.  Pumping ONLY the private
+    * mode guarantees nothing else (draw observers, timers, input
+    * sources) runs reentrantly under this wait.  The mode string must
+    * stay in sync with cocoa_main_thread_sync(). */
+   if (pthread_main_np() != 0)
+   {
+      while (pkt->type != thr->reply_cmd)
+      {
+         if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
+         {
+            slock_unlock(thr->lock);
+            CFRunLoopRunInMode(
+                  CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+                  0.001, false);
+            slock_lock(thr->lock);
+         }
+      }
+   }
+   else
+#endif
+   {
+      while (pkt->type != thr->reply_cmd)
+         scond_wait(thr->cond_cmd, thr->lock);
+   }
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
@@ -661,10 +698,37 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_MENU
       if (thr->texture.enable)
       {
-         do
+#ifdef __APPLE__
+         /* Same rationale as video_thread_wait_reply(): this wait is
+          * unbounded and runs on the main thread, and the worker may
+          * marshal main-thread-only work (e.g. Vulkan swapchain
+          * recreation on resize) via cocoa_main_thread_sync() before
+          * clearing frame.updated.  Pump the private trampoline mode
+          * so that work can drain.  The timed frame-pacing wait above
+          * needs no such treatment: it breaks after at most one frame
+          * period and the main runloop then drains common modes. */
+         if (pthread_main_np() != 0)
          {
-            scond_wait(thr->cond_cmd, thr->lock);
-         } while (thr->frame.updated);
+            do
+            {
+               if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
+               {
+                  slock_unlock(thr->lock);
+                  CFRunLoopRunInMode(
+                        CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
+                        0.001, false);
+                  slock_lock(thr->lock);
+               }
+            } while (thr->frame.updated);
+         }
+         else
+#endif
+         {
+            do
+            {
+               scond_wait(thr->cond_cmd, thr->lock);
+            } while (thr->frame.updated);
+         }
       }
 #endif
       thr->hit_count++;
@@ -1290,6 +1354,36 @@ static uint32_t thread_get_flags(void *data)
    return 0;
 }
 
+static bool thread_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->supports_texture_format)
+      return thr->poke->supports_texture_format(thr->driver_data, fmt);
+   return false;
+}
+
+/* Forward the compressed upload with 'threaded' passed through, exactly as
+ * thread_load_texture does. The underlying driver decides whether to marshal
+ * the GPU work onto the video thread; the descriptor stays alive because
+ * video_thread_texture_handle is synchronous. */
+static uintptr_t thread_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->load_texture_compressed)
+      return thr->poke->load_texture_compressed(thr->driver_data,
+         tc, threaded, filter_type);
+   return 0;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -1316,7 +1410,9 @@ static const video_poke_interface_t thread_poke = {
    thread_set_hdr_paper_white_nits,
    thread_set_hdr_expand_gamut,
    thread_set_hdr_scanlines,
-   thread_set_hdr_subpixel_layout
+   thread_set_hdr_subpixel_layout,
+   thread_supports_texture_format,
+   thread_load_texture_compressed
 };
 
 static void video_thread_get_poke_interface(void *data,

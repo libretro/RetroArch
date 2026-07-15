@@ -39,6 +39,7 @@
 #include <audio/audio_mixer.h>
 #endif
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 
 #include "audio_defines.h"
 
@@ -206,17 +207,30 @@ typedef struct
 #endif
 
    /**
-    * A scratch buffer for processed audio output to be converted to 16-bit,
-    * so that it can be sent to the driver.
+    * The driver's int16 output staging buffer. Holds the final 16-bit samples
+    * that are sent to the audio driver and to recording, from whichever source
+    * produced them: the float->s16 conversion of the float resampler's output,
+    * the integer s16 resampler writing here directly, or the single-sample
+    * callback. Only the float path performs an int16 conversion into it; the
+    * other producers write s16 directly.
     */
-   int16_t *output_samples_conv_buf;
-   size_t output_samples_conv_buf_length;
+   int16_t *output_samples_int16;
+   size_t output_samples_int16_length;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
    const retro_resampler_t *resampler;
 
    void *resampler_data;
+
+   /* Optional deterministic integer (s16) resampler, used by the fast path
+    * in audio_driver_flush() when the selected resampler has an int16
+    * implementation ("sinc", "nearest", "CC") and no float-domain stage is
+    * active.  NULL otherwise.  The process/free entry points are selected
+    * alongside the handle so the fast path is backend-agnostic. */
+   void *resampler_data_int16;
+   void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
+   void (*resampler_int16_free)(void *);
 
    /**
     * The current audio driver.
@@ -230,6 +244,9 @@ typedef struct
     */
    float *input_data;
    float *synth_buf;
+   /* int16 scratch for the s16 fast path: running a fully-int16 DSP chain
+    * and/or summing an in-process synth without an int16<->float round-trip. */
+   int16_t *input_data_int16;
    size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
@@ -299,6 +316,16 @@ typedef struct
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
+
+   /* Last-flush sample-format diagnostics for the on-screen statistics
+    * overlay. stat_core_is_float records whether the core delivered float
+    * (audio_driver_sample_batch_float) or int16 (audio_driver_sample_batch)
+    * samples; stat_frontend_is_float records whether the frontend processed
+    * that audio through the float resampler path (true) or an integer path
+    * (false: either the write_raw raw-int16 fast path or the deterministic
+    * s16 resampler path). */
+   bool     stat_core_is_float;
+   bool     stat_frontend_is_float;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -405,6 +432,17 @@ void audio_driver_sample(int16_t left, int16_t right);
  * Returns: amount of frames sampled.
  **/
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
+
+/**
+ * audio_driver_sample_batch_float:
+ *
+ * Float counterpart of audio_driver_sample_batch(), handed to a core via
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT. Samples are interleaved
+ * stereo float normalized to [-1.0, 1.0].
+ *
+ * @return Number of frames processed.
+ **/
+size_t audio_driver_sample_batch_float(const float *data, size_t frames);
 
 #ifdef HAVE_REWIND
 /**

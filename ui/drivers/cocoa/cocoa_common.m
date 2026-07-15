@@ -16,7 +16,11 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
+#include <pthread.h>
+#include <dispatch/dispatch.h>
+#include <CoreFoundation/CoreFoundation.h>
 
+#include <retro_atomic.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 #include <defines/cocoa_defines.h>
@@ -547,6 +551,15 @@ void rarch_stop_draw_observer(void)
    void cocoa_gl_gfx_ctx_update(void);
    cocoa_gl_gfx_ctx_update();
 #endif
+#if defined(HAVE_VULKAN)
+   /* Main thread: refresh the Vulkan ctx published backing size so a
+    * threaded-video worker observes the resize. No-op when Vulkan is not
+    * the active driver (value goes unread). */
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* Stop the annoying sound when pressing a key. */
@@ -686,6 +699,21 @@ void rarch_stop_draw_observer(void)
 - (void)viewWillLayoutSubviews
 {
    [self adjustViewFrameForSafeArea];
+#if defined(HAVE_OPENGL)
+   /* Runs on the main thread; refresh the published backing size so a
+    * threaded-video worker observes orientation/safe-area changes. Safe
+    * to call when GL is not the active driver (value goes unread). */
+   {
+      void cocoa_gl_gfx_ctx_publish_size(void);
+      cocoa_gl_gfx_ctx_publish_size();
+   }
+#endif
+#if defined(HAVE_VULKAN)
+   {
+      void cocoa_vk_gfx_ctx_publish_size(void);
+      cocoa_vk_gfx_ctx_publish_size();
+   }
+#endif
 }
 
 /* NOTE: This version runs on iOS6+. */
@@ -874,23 +902,122 @@ void *cocoa_screen_get_chosen(void)
     return ((BRIDGE void*)[screens objectAtIndex:monitor_index]);
 }
 
+/* Main-thread trampoline for threaded video.
+ *
+ * AppKit/UIKit calls (context/view attachment, window surgery, NSCursor,
+ * ...) are main-thread-only, but with threaded video the underlying
+ * driver's init/set_video_mode/destroy run on the video worker thread.
+ * cocoa_main_thread_sync() runs func(userdata) on the main thread and
+ * blocks the caller until it completes; when already on the main thread
+ * it simply calls straight through, so the non-threaded path is
+ * unchanged.
+ *
+ * The block is scheduled in BOTH kCFRunLoopCommonModes and a private
+ * runloop mode:
+ *  - common modes drain it whenever the main loop is running normally
+ *    (e.g. show_mouse from the worker mid-session);
+ *  - the private mode is pumped by video_thread_wait_reply() in
+ *    gfx/video_thread_wrapper.c while the main thread is blocked
+ *    waiting on the worker's command reply (CMD_INIT etc.).  Pumping
+ *    only the private mode there guarantees no observers/timers/sources
+ *    from other modes (in particular the RetroArch draw observer) run
+ *    reentrantly under the wait.
+ * The mode string literal below must stay in sync with the one in
+ * video_thread_wrapper.c. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
+{
+   dispatch_semaphore_t done;
+   CFRunLoopRef main_loop;
+   CFArrayRef modes;
+   const void *mode_entries[2];
+
+   if (pthread_main_np() != 0)
+   {
+      func(userdata);
+      return;
+   }
+
+   done            = dispatch_semaphore_create(0);
+   main_loop       = CFRunLoopGetMain();
+   mode_entries[0] = kCFRunLoopCommonModes;
+   mode_entries[1] = CFSTR("com.libretro.RetroArch.MainThreadTrampoline");
+   modes           = CFArrayCreate(kCFAllocatorDefault, mode_entries, 2,
+         &kCFTypeArrayCallBacks);
+
+   CFRunLoopPerformBlock(main_loop, modes, ^{
+      func(userdata);
+      dispatch_semaphore_signal(done);
+   });
+   CFRunLoopWakeUp(main_loop);
+
+   /* Wait for completion.  Waiting forever (with periodic diagnostics)
+    * is deliberate: falling back to running func() on this thread after
+    * a timeout would risk double-execution once the main thread finally
+    * drains the block, which is far worse than a loggable stall. */
+   while (dispatch_semaphore_wait(done,
+            dispatch_time(DISPATCH_TIME_NOW, (int64_t)5 * NSEC_PER_SEC)))
+      RARCH_ERR("[Cocoa]: Main-thread trampoline stalled; main runloop is not draining scheduled blocks.\n");
+
+   CFRelease(modes);
+#if OS_OBJECT_USE_OBJC
+   RARCH_RELEASE(done);
+#else
+   dispatch_release(done);
+#endif
+}
+
+#ifdef OSX
+static void cocoa_show_mouse_mainthread_show(void *userdata)
+{
+   [NSCursor unhide];
+}
+
+static void cocoa_show_mouse_mainthread_hide(void *userdata)
+{
+   [NSCursor hide];
+}
+#endif
+
 bool cocoa_has_focus(void *data)
 {
 #if defined(HAVE_COCOATOUCH)
     /* if we are running, we are foregrounded */
     return true;
 #else
-    return [NSApp isActive];
+    /* -[NSApplication isActive] is AppKit and main-thread-only, but with
+     * threaded video this is queried from the video worker thread every
+     * frame.  Main thread: query live and publish; worker thread: read
+     * the last published value lock-free.  Encoding: 0 = never published
+     * (treated as focused, matching the safe iOS behaviour), 1 = not
+     * focused, 2 = focused.
+     * KNOWN LIMITATION (threaded video): if nothing on the main thread
+     * calls this, the cache stays at 0 and focus reads as always-true,
+     * i.e. pause-on-focus-loss may not trigger.  Proper fix is
+     * publishing from NSApplication did-become/resign-active
+     * notifications; kept out of this validation patch. */
+    static retro_atomic_size_t focus_state;
+    if (pthread_main_np() != 0)
+    {
+       size_t v = [NSApp isActive] ? 2 : 1;
+       retro_atomic_store_release_size(&focus_state, v);
+       return (v == 2);
+    }
+    return (retro_atomic_load_acquire_size(&focus_state) != 1);
 #endif
 }
 
 void cocoa_show_mouse(void *data, bool state)
 {
 #ifdef OSX
+    /* NSCursor is AppKit and must be driven from the main thread; with
+     * threaded video this can be reached from the video worker thread,
+     * so route it through the trampoline (direct call when already on
+     * the main thread). */
     if (state)
-        [NSCursor unhide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_show, NULL);
     else
-        [NSCursor hide];
+        cocoa_main_thread_sync(cocoa_show_mouse_mainthread_hide, NULL);
 #endif
 }
 

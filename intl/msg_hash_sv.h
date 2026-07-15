@@ -1,15021 +1,11359 @@
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-
-/*
-##### NOTE FOR TRANSLATORS ####
-
-PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
-
-Translations are handled using the localization platform Crowdin:
-https://crowdin.com/project/retroarch
-
-Translations from Crowdin are applied automatically and will overwrite
-any changes made to the other localization files.
-As a result, any submissions directly altering `msg_hash_*.h` files
-other than `msg_hash_us.h` will be rejected.
-*/
-
-/* Top-Level Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "Huvudmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "Inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "Favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "Bilder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   "Musik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "Videor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "Utforska"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "Innehållslösa kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "Importera innehåll"
-   )
-
-/* Main Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "Snabbmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "Snabbåtkomst till alla relevanta spelinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "Läs in kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST,
-   "Välj vilken kärna som ska användas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "Läs ur kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "Frigör inläst kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "Bläddra efter en libretro-kärnimplementation. Var webbläsaren startar beror på sökvägen till dina kärnor. Om den är tom, börjar den i rotmappen.\nOm kärnmappen är en katalog, kommer menyn att använda den som översta mapp. Om sökvägen till kärnmappen är en fullständig sökväg, börjar den i mappen där filen finns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "Läs in innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "Välj vilket innehåll som ska startas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "Bläddra efter innehåll. För att ladda innehåll behöver du en 'Kärna' att använda och en innehållsfil.\nFör att styra var filhanteraren börjar söka efter innehåll, ställ in 'Filhanterarkatalog'. Om den inte är inställd kommer den att starta i root.\nFilhanteraren kommer att filtrera ut tillägg för den senaste Kärnan i 'Ladda Kärna' och använda den Kärnan när innehåll laddas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "Läs in skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_DISC,
-   "Läs in en fysisk medieskiva. Välj först kärnan (Läs in kärna) att använda med skivan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "Dumpa skiva"
-   )
-MSG_HASH( /* FIXME Is a specific image format used? Is it determined automatically? User choice? */
-   MENU_ENUM_SUBLABEL_DUMP_DISC,
-   "Dumpar den fysiska medieskivan till intern lagring. Den kommer att sparas som en skivavbildningsfil."
-   )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "Mata ut skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_EJECT_DISC,
-   "Matar ut skivan från fysisk CD/DVD-enhet."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
-   "Visar spellistor med genomsökt innehåll som matchar databasen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "Importera innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
-   "Skapa eller uppdatera spellistor genom att söka igenom innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "Visa skrivbordsmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_WIMP,
-   "Öppna traditionell skrivbordsmeny."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
-   "Inaktivera kioskläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   "Visar även dolda konfigurationsrelaterade inställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "Online-uppdaterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
-   "Hämtar ner tillägg, komponenter och innehåll för RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY,
-   "Gå med i eller bli värd för Netplay-session."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "Inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS,
-   "Konfigurera programmet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "Visar lista med systeminformation."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "Konfigurationsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
-   "Hantera och skapa konfigurationsfiler."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "Hjälp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HELP_LIST,
-   "Läs mer om hur programmet fungerar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "Starta om"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "Starta om RetroArch-programmet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
-   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
-   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut är inaktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
-   "Avsluta RetroArch. Döda programmet på ett hårt sätt (SIGKILL, etc.) kommer att terminera RetroArch utan att spara konfigurationen i något fall. På Unix-liknande system tillåter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigurationen sparas om aktiverad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
-   "Synkronisera nu"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
-   "Starta molnsynkronisering manuellt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-   "Lös konflikter: Behåll lokal"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
-   "Lös alla konflikter genom att ladda upp lokala filer till servern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-   "Lös konflikter: Behåll server"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
-   "Lös alla konflikter genom att ladda ner serverfiler, ersätter lokala kopior."
-   )
-
-/* Main Menu > Load Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "Hämta ner en kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
-   "Hämtar ner och installerar kärna från online-uppdateraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "Installera/Återställ kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
-   "Installera eller återställ en kärna från 'Hämtningar'-katalogen."
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "Starta videoprocessor"
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "Starta fjärrstyrd RetroPad"
-   )
-
-/* Main Menu > Load Content */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "Startkatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "Hämtningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "Bläddra i arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "Läs in arkiv"
-   )
-
-/* Main Menu > Load Content > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   "Favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
-   "Visar innehåll som lagts till i 'Favoriter'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   "Musik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_MUSIC,
-   "Visar musik som tidigare har spelats."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "Bilder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_IMAGES,
-   "Visar bilder som tidigare har blivit sedd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "Videor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_VIDEO,
-   "Visar videor som tidigare har spelats."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   "Utforska"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
-   "Bläddra bland alla innehålls-filer som matchar databasen via ett kategoriserat sökgränssnitt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "Innehållslösa kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
-   "Installerade kärnor som kan fungera utan att läsa in innehåll visas här."
-   )
-
-/* Main Menu > Online Updater */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "Hämta kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "Uppdatera installerade kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
-   "Uppdaterar alla installerade kärnor till den senaste tillgängliga versionen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
-   "Byt kärnor till Play-butiksversioner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
-   "Ersätt alla äldre och manuellt installerade kärnor med de senaste versionerna från Play-butik, om möjligt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
-   "Uppdatera spellisteminiatyrer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
-   "Hämtar ner miniatyrer för poster i den valda spellistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "Hämta ner innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
-   "Hämta ner gratis innehåll för vald kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Hämta ner kärnsystemfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
-   "Hämta ner hjälpfiler som system kräver för en korrekt/optimal kärndrift."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "Uppdatera kärninfofiler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "Uppdatera resurser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "Uppdatera spelkontrollsprofiler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "Uppdatera fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "Uppdatera databaser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
-   "Uppdatera överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "Uppdatera GLSL-shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "Uppdatera Cg-shaders"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "Uppdatera Slang-shaders"
-   )
-
-/* Main Menu > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "Kärninformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFORMATION,
-   "Visa information om applikationen/kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "Skivinformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISC_INFORMATION,
-   "Visa information om inmatade skivor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "Nätverksinformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
-   "Visa nätverksgränssnitt och tillhörande IP-adresser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "Systeminformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
-   "Visa information som är specifik för enheten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   "Databashanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   "Visa databaser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   "Markörhanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "Visa tidigare sökningar."
-   )
-
-/* Main Menu > Information > Core Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "Kärnnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "Kärnetikett"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "Kärnversion"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   "Systemets namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   "Systemtillverkare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "Kategorier"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "Upphovsperson"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   "Behörigheter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   "Licens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "Filformat som stöds"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
-   "Kräver grafik-API"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
-   "Fullständig sökväg"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "Spara tillstånd-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "Grundläggande (Spara/Läs in)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "Serialiserad (Spara/Läs in, Spola tillbaka)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
-   "Deterministisk (Spara/Läs in, Spola tillbaka, Run-Ahead, Netplay)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
-   "Observera: 'Systemfiler finns i innehållskatalogen' är aktiverad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
-   "Letar i: %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "Saknas, krävs:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "Saknas, valfri:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "Finns, krävs:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "Finns, valfri:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "Lås installerad kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LOCK,
-   "Förhindrar modifiering av den nuvarande installerade kärnan. Kan användas för att undvika oönskade uppdateringar när innehållet kräver en specifik kärnversion (t.ex. Arcade ROM-uppsättningar) eller när kärnans eget format för sparning ändras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
-   "Uteslut från 'Innehållslösa kärnor'-menyn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
-   "Förhindra att denna kärna visas i fliken/menyn 'Innehållslösa kärnor'. Gäller endast när visningsläget är inställt på 'Anpassat'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "Ta bort kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE,
-   "Ta bort denna kärna från disken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "Säkerhetskopiera kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
-   "Spara en säkerhetskopia av den aktuella installerade kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "Återställ säkerhetskopia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
-   "Installera en tidigare version av kärnan från en lista över sparade säkerhetskopior."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   "Ta bort säkerhetskopia"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
-   "Ta bort en fil från listan över sparade säkerhetskopior."
-   )
-
-/* Main Menu > Information > System Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   "Kompileringsdatum"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "RetroArch-version"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   "Git-version"
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
-   "Kompilator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   "CPU-modell"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   "CPU-funktioner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "CPU-arkitektur"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "CPU-kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
-   "JIT tillgänglig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
-   "Bundle-identifierare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "Frontend-identifierare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   "Energikälla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   "Drivrutin för videokontext"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "Skärmbredd (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "Skärmhöjd (mm)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "Skärmens DPI"
-   )
-
-/* Main Menu > Information > Database Manager > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   "Namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   "Beskrivning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "Prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   "Kategori"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   "Språk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
-   "Konsolexklusiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
-   "Plattformsexklusiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   "Poäng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   "Spelkontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
-   "Konststil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
-   "Spelsätt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
-   "Berättande"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
-   "Tempo"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
-   "Perspektiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "Inställning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   "Visuellt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   "Fordon"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "Utgivare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   "Utvecklare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   "Ursprung"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
-   "TGDB-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
-   "Famitsu Magazine-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
-   "Edge Magazine-recension"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
-   "Edge Magazine-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
-   "Edge Magazine-utgåva"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
-   "Utgivningsmånad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
-   "Utgivningsår"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   "BBFC-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   "ESRB-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   "ELSPA-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   "PEGI-klassificering"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
-   "Förbättringshårdvara"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   "CERO-betyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   "Serienummer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "Analog inmatning stöds"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "Rumble stöds"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "Co-op stöds"
-   )
-
-/* Main Menu > Configuration File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "Läs in konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATIONS,
-   "Läs in befintlig konfiguration och ersätt aktuella värden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
-   "Spara nuvarande konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
-   "Skriv över nuvarande konfigurationsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
-   "Spara som ny konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
-   "Sparar nuvarande konfiguration till ny separat fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
-   "Spara konfiguration som"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
-   "Spara aktuell konfiguration som anpassad konfigurationsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
-   "Spara huvudkonfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
-   "Spara aktuell konfiguration som huvudkonfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "Återställ grundinställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
-   "Återställer nuvarande konfigurations grundvärden."
-   )
-
-/* Main Menu > Help */
-
-/* Main Menu > Help > Basic Menu Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "Rulla upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "Rulla ner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "Bekräfta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   "Starta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "Visa/dölj meny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "Visa/dölj tangentbord"
-   )
-
-/* Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   "Drivrutiner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
-   "Ändra drivrutiner som används av systemet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
-   "Ändra inställningar för videoutmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "Ljud"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
-   "Ändra ljudingång/utgångsinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "Inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
-   "Ändra inställningar för spelkontroller, tangentbord och mus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
-   "Latens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
-   "Ändra inställningar kopplade till ljud-, video- och inmatningsfördröjning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "Kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "Ändra inställningar för kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "Konfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
-   "Ändra grundinställningar för konfigurationsfiler."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "Sparningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
-   "Ändra inställningar för sparande av filer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   "Molnsynkronisering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
-   "Ändra inställningar för molnsynkronisering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
-   "Aktivera molnsynkronisering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
-   "Försök att synkronisera konfigurationer, SRAM och tillstånd till en molnlagringsleverantör."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
-   "Destruktiv molnsynkning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
-   "Synk: Sparningar/Tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
-   "Synk: Konfigurationsfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
-   "Synk: Miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
-   "Synk: Systemfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
-   "När aktiverad kommer sparningar/tillstånd att synkas till molnet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
-   "När aktiverad kommer konfigurationsfiler synkas till molnet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
-   "När aktiverad kommer miniatyrbilder att synkas till molnet. Rekommenderas inte alltid förutom för stora samlingar av anpassade miniatyrbilder, annars är miniatyrbildshämtaren ett bättre val."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
-   "När aktiverad kommer systemfiler att synkas till molnet. Detta kan kraftigt öka tiden det tar att synka. Använd med försiktighet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
-   "Inaktiverat flyttas filer till en säkerhetskopia innan de skrivs över eller raderas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
-   "Synkroniseringsläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
-   "Automatiskt: Synkronisering vid uppstart av RetroArch och när kärnor läses ur. Manuellt: Synkronisering endast när knappen ”Synkronisera nu” trycks in manuellt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
-   "Automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
-   "Manuellt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
-   "Backend för molnsynk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
-   "Vilket nätverksprotokoll för molnlagring som ska användas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
-   "URL till molnlagring"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
-   "URL-adressen för API-ingången till molnlagringstjänsten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
-   "Användarnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
-   "Ditt användarnamn för ditt molnlagringskonto."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   "Lösenord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
-   "Ditt lösenord för ditt molnlagringskonto."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
-   "Åtkomstnyckel-ID"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
-   "Ditt åtkomstnyckel-ID för ditt molnlagringskonto."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   "Hemlig åtkomstnyckel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
-   "Din hemliga åtkomstnyckel för ditt molnlagringskonto."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
-   "Din S3-slutpunkts-URL för molnlagring."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "Loggning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
-   "Ändra loggningsinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "Filhanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
-   "Ändra inställningar för filutforskare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
-   "Konfigurationsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
-   "Komprimerad arkivfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
-   "Konfigurationsfil för Inspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
-   "Databasmarkörfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_CONFIG,
-   "Konfigurationsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
-   "Förinställd Shaderfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
-   "Shaderfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
-   "Ommappningsfil för spelkontroller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
-   "Fuskfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
-   "Överläggsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
-   "Databasfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
-   "TrueType-typsnittsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
-   "Vanlig fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
-   "Video. Välj den för att öppna denna fil med videospelaren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
-   "Musik. Välj den för att öppna denna fil med musikspelaren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
-   "Bildfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
-   "Bild. Välj den för att öppna denna fil med bildvisaren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
-   "Libretro-kärna. Genom att välja detta kommer denna kärna att associeras med spelet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
-   "Libretro-kärna. Välj denna fil för att RetroArch ska läsa in den här kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
-   "Katalog. Markera den för att öppna den här katalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
-   "Bildfrekvensstrypning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
-   "Ändra inställningar för Spola bakåt, Snabbspola framåt och Slow-motion."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "Inspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "Ändra inställningar för inspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
-   "Skärmvisning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
-   "Ändra inställningar för bild- och tangentbordsöverlägg samt skärmmeddelanden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   "Användargränssnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
-   "Ändra inställningar för användargränssnittet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "AI-tjänst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
-   "Ändra inställningar för AI-tjänsten (Översättning/TTT/Diverse)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   "Tillgänglighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
-   "Ändra inställningar för hjälpmedelsberättaren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "Energihantering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
-   "Ändra inställningar kopplade till strömförsörjning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
-   "Ändra inställningar för prestationer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   "Nätverk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
-   "Ändra server- och nätverksinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
-   "Ändra inställningar för spellistor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   "Användare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_SETTINGS,
-   "Ändra inställningar för integritet, konto och användarnamn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "Katalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
-   "Ändra standardkataloger där filerna finns."
-   )
-
-/* Core option category placeholders for icons */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
-   "Hack"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   "Mappning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   "Prestanda"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   "Ljud"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   "Lagring"
-   )
-
-#ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
-   "Ändra inställningar kopplade till Steam."
-   )
+/* THIS FILE IS GENERATED by intl/json2h.py - do not edit.
+ * Packed message table; source of truth is the Crowdin
+ * project (see intl/crowdin_sync.py). */
+/* Pure-ASCII source: every non-ASCII byte is a fixed 3-digit octal
+ * escape, so no execution-charset pragma is needed and the encoded
+ * UTF-8 bytes survive any compiler codepage (including MSVC 2003-2010,
+ * which have no way to consume raw UTF-8 source reliably).
+ * C4045 is disabled for old MSVC: non-final chunk members are sized
+ * without a NUL slot, which is valid C89; the sizeof compile check
+ * below still catches any real size mismatch. */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#pragma warning(disable:4045)
 #endif
 
-/* Settings > Drivers */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "Inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DRIVER,
-   "Inmatningsdrivrutin som ska användas. Vissa videodrivrutiner tvingar fram en annan inmatningsdrivrutin. (Omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
-   "Udev-drivrutinen läser evdev-händelser för tangentbordsstöd. Den stöder också tangentbordsåteruppringning, möss och pekplattor.\nSom standard i de flesta distros är /dev/input-noder endast root (läge 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
-   "Drivrutinen för linuxraw-inmatningen kräver en aktiv TTY. Tangentbordshändelser läses direkt från TTY vilket gör det enklare, men inte lika flexibelt som udev. Möss, etc, stöds inte alls. Den här drivrutinen använder det äldre joystick-APIet (/dev/input/js*)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
-   "Inmatningsdrivrutin. Videodrivrutinen kan tvinga fram en annan drivrutin för inmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   "Spelkontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
-   "Drivrutin för handkontroller att använda. (kräver omstart)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
-   "DirectInput spelkontrolldrivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
-   "Human Interface Device-drivrutin på låg nivå."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
-   "Raw Linux-drivrutin, använder äldre joystick API. Använd udev i stället om det är möjligt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
-   "Linux-drivrutiner för handkontroller anslutna till parallellport via specialadaptrar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
-   "Spelkontroll-drivrutin baserad på SDL-bibliotek."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
-   "Spelkontrolldrivrutin med udev-gränssnitt, rekommenderas generellt. Använder det senaste evdev joypad-APIet för joystick-stöd. Den stöder hotplugging och force-feedback.\nSom standard i de flesta distros är /dev/input-noder endast root (läge 600). Du kan konfigurera en udev-regel som gör dessa tillgängliga för icke-root."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
-   "XInput spelkontrolldrivrutin. Mest för Xbox-kontroller."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
-   "OpenGL 1.x drivrutin. Lägsta krav: OpenGL 1.1. Stöder inte shaders. Använd senare OpenGL-drivrutiner istället, om det är möjligt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
-   "OpenGL 2.x drivrutin. Denna drivrutin gör att libretro GL-kärnor kan användas utöver mjukvaru-renderade kärnor. Lägsta krav: OpenGL 2.0 eller OpenGLES 2.0. Stöder GLSL shader-formatet. Använd glcore-drivrutinen istället, om det är möjligt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
-   "OpenGL 3.x drivrutin. Denna drivrutin gör att libretro GL-kärnor kan användas utöver mjukvaru-renderade kärnor. Lägsta krav: OpenGL 3.2 eller OpenGLES 3.0+. Stöder Slang shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
-   "Vulkan drivrutinen. Denna drivrutin gör att libretro Vulkan-kärnor kan användas utöver mjukvaru-renderade kärnor. Lägsta krav: Vulkan 1.0. Stöder HDR och Slang shaders."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
-   "SDL 1.2 mjukvarurenderad drivrutin. Prestanda anses vara undermålig. Överväg att använda den endast som en sista utväg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
-   "SDL 2-programvara-renderad drivrutin. Prestanda för mjukvarurenderade libretro-kärnimplementeringar är beroende av din plattforms SDL-implementering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
-   "Metal-drivrutin för Apple-plattformar. Stöder Slang shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
-   "Direct3D 8-drivrutin utan stöd för Shader."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
-   "Direct3D 9-drivrutin med stöd för det äldre Cg Shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
-   "Direct3D 9-drivrutin med stöd för HLSL Shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
-   "Direct3D 10-drivrutin med stöd för Slang Shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
-   "Direct3D 11-drivrutin med stöd för HDR och Slang Shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
-   "Direct3D 12-drivrutin med stöd för HDR och Slang Shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
-   "DispmanX-drivrutin. Använder DispmanX APIn för Videocore IV GPU i Raspberry Pi 0..3. Inget stöd för överlägg eller shaders."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
-   "LibCACA-drivrutin. Ger teckenutmatning istället för grafik. Rekommenderas inte för praktisk användning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
-   "En lågnivå Exynos-videodrivrutin som använder G2D-blocket i Samsung Exynos SoC för blit-operationer. Prestandan för mjukvarurenderade kärnor bör vara optimal."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
-   "Enkel DRM-videodrivrutin. Detta är en lågnivå videodrivrutin som använder libdrm för maskinvaruskalning med hjälp av GPU-överlägg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
-   "En lågnivå Sunxi-videodrivrutin som använder G2D-blocket i Allwinner SoC:er."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
-   "Wii U-drivrutin. Stöder Slang shaders."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
-   "Switch-drivrutin. Stöder GLSL shader-formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
-   "OpenVG-drivrutin. Använder OpenVG-maskinvaruaccelererat 2D-vektorgrafik-API."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
-   "GDI-drivrutin. Använder ett äldre Windows-gränssnitt. Rekommenderas inte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
-   "Nuvarande videodrivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   "Ljud"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
-   "RSound-drivrutin för nätverksbaserade ljudsystem."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
-   "Äldre Open Sound System-drivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
-   "Standard ALSA-drivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
-   "ALSA-drivrutin med stöd för trådning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
-   "ALSA-drivrutin implementerad utan beroenden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
-   "Ljudsystem RoarAudio-drivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
-   "OpenAL-drivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
-   "OpenSL-drivrutin."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
-   "DirectSound-drivrutin. DirectSound används huvudsakligen från Windows 95 till Windows XP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
-   "Windows Audio Session API-drivrutin. WASAPI används huvudsakligen från Windows 7 och senare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
-   "PulseAudio-drivrutin. Om systemet använder PulseAudio, se till att använda denna drivrutin istället för t.ex. ALSA."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
-   "PipeWire-drivrutin. Om systemet använder PipeWire, se till att använda den här drivrutinen istället för t.ex. PulseAudio."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
-   "Drivrutinen för Jack Audio anslutningssats."
-   )
-#ifdef HAVE_MICROPHONE
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
-   "Mikrofon"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
-   "Mikrofonomsamplare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
-   "Mikrofonomsamplare att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
-   "Mikrofon bildrutsblock"
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
-   "Ljudomsamplare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
-   "Ljudomsamplare att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
-   "Fönstrad Sinc implementering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
-   "Invecklad kosinus implementering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
-   "Närmsta omsamplings implementering. Denna omsampling ignorerar kvalitetsinställningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   "Kamera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "Plats"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "Meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_DRIVER,
-   "Drivrutin för meny att använda. (kräver omstart)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
-   "XMB är ett RetroArch GUI som ser ut som en 7:e generationens konsolmeny. Det kan stödja samma funktioner som Ozone."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
-   "Ozone är standard GUI för RetroArch på de flesta plattformar. Det är optimerat för navigering med en spelkontroll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
-   "RGUI är ett enkelt inbyggt GUI för RetroArch. Det har de lägsta prestandakraven bland menydrivrutinerna och kan användas på skärmar med låg upplösning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
-   "På mobila enheter använder RetroArch det mobila användargränssnittet, MaterialUI, som standard. Det här gränssnittet är designat kring pekskärms- och pekarenheter, som en mus/styrkula."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "Inspelning"
-   )
-
-/* Settings > Video */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
-   "Sänd ut ursprungliga, lågupplösta signaler för användning med CRT-skärmar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   "Utmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
-   "Ändra inställningar för videoutmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Helskärmsläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "Ändra inställningar för helskärmsläge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Fönsterläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
-   "Ändra inställningar för fönsterläge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "Skalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
-   "Ändra inställningar för videoskalning."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
-   "Ändra HDR-inställningar för video."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Synkronisering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "Ändra inställningar för videosynkronisering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
-   "Stäng av skärmsläckare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
-   "Förhindra systemets skärmsläckare från att bli aktiv."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
-   "Stänger av skärmsläckaren. Det är ett förslag som inte nödvändigtvis måste respekteras av videodrivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
-   "Trådad video"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_THREADED,
-   "Förbättrar prestanda till priset av latens och mer videolagg. Använd endast om full hastighet inte kan uppnås på annat sätt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
-   "Använd trådad videodrivrutin. Att använda detta kan förbättra prestandan till den möjliga kostnaden för latens och mer videolagg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
-   "Insättning av svart bildruta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
-   "VARNING: Snabbt flimmer kan orsaka kvarstående bild på vissa skärmar. Använd på egen risk // Infoga svarta ramar mellan bildrutorna. Kan kraftigt minska rörelseoskärpa genom att emulera CRT-scanning, men på bekostnad av ljusstyrkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
-   "Infogar svart(a) ram(ar) mellan bildrutorna för ökad rörelseklarhet. Använd endast det alternativ som är avsett för din aktuella bildskärms uppdateringsfrekvens. Används inte vid uppdateringsfrekvenser som inte är multiplar av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, subframes, Frame Delay eller Sync to Exact Content Framerate. Att låta systemets VRR vara på är ok, men inte med den inställningen. Om du märker - någon - tillfällig bildretention bör [...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
-   "Infoga svart bildruta - Mörka bildrutor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
-   "Justera antalet svarta bildrutor i den totala BFI-sekvensen för utskanning. Fler motsvarar högre rörelseklarhet, färre motsvarar högre ljusstyrka. Inte tillämpligt vid 120 Hz eftersom det bara finns totalt 1 BFI-bildruta att arbeta med. Inställningar som är högre än möjligt begränsar dig till det högsta möjliga för din valda uppdateringsfrekvens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
-   "Justerar antalet svarta bildrutor som visas i BFI-sekvensen. Fler svarta bildrutor ökar rörelseklarheten men minskar ljusstyrkan. Inte tillämpligt vid 120 Hz eftersom det bara finns en enda extra 60 Hz-bildruta, så den måste vara svart, annars skulle BFI inte vara aktiv alls."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
-   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande skanningslinje över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
-   "Infogar extra shader-ram(ar) mellan bildrutorna för eventuella shader-effekter som är utformade för att köras snabbare än innehållshastigheten. Använd endast det alternativ som är avsett för din aktuella bildskärmsuppdateringsfrekvens. Används inte vid uppdateringsfrekvenser som inte är multiplar av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, BFI, Frame Delay eller Sync to Exact Content Framerate. Att låta systemets VRR vara på är ok, men inte den inst[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
-   "Rullande skanningslinjesimulering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
-   "VARNING: Snabbt flimmer kan orsaka bildbeständighet på vissa skärmar. Använd på egen risk // Simulerar en grundläggande rullande skanningslinje över flera underrutor genom att dela upp skärmen vertikalt och rendera varje del av skärmen beroende på hur många underrutor det finns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
-   "Simulerar en grundläggande rullande skanningslinje över flera subframes genom att dela upp skärmen vertikalt och rendera varje del av skärmen enligt hur många subframes det finns från toppen av skärmen och nedåt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
-   "Bilinjär-filtrering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
-   "Lägg till en liten oskärpa i bilden för att mjuka upp hårda pixelkanter. Det här alternativet har mycket liten inverkan på prestandan. Bör inaktiveras när Shaders används."
-   )
-#if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Bildinterpolation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
-   "Ange bildinterpoleringsmetod vid skalning av innehåll via intern IPU. 'Bikubisk' eller 'Bilinjär' rekommenderas när du använder CPU-drivna videofilter. Det här alternativet påverkar inte prestandan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
-   "Bikubisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
-   "Bilinjär"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
-   "Närmsta granne"
-   )
-#if defined(RS90) || defined(MIYOO)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Bildinterpolation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
-   "Ange bildinterpolationsmetod när 'Heltalsskala' är inaktiverad. 'Närmsta granne' har minst prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
-   "Närmsta granne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
-   "Semi-linjär"
-   )
-#endif
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
-   "Autoshader-fördröjning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
-   "Fördröj automatisk inläsning av Shaders (i ms). Kan kringgå grafiska fel när programvara för skärminspelning används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
-   "Videofilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER,
-   "Använd ett CPU-drivet videofilter. Kan innebära en hög prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 32-bitars eller 16-bitars färg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
-   "Använd ett CPU-drivet videofilter. Kan komma till en hög prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 32-bitars eller 16-bitars färg. Dynamiskt länkade videofilterbibliotek kan väljas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
-   "Använd ett CPU-drivet videofilter. Kan innebära en hög prestandakostnad. Vissa videofilter kanske bara fungerar för kärnor som använder 32-bitars eller 16-bitars färg. Inbyggda videofilterbibliotek kan väljas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
-   "Ta bort videofilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
-   "Stäng av alla aktiva CPU-drivna videofilter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
-   "Aktivera helskärm utan hänsyn till notch på Android och iOS-enheter"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Använd Metal-argumentbuffertar (kräver omstart)"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
-   "Försök att förbättra prestandan genom att använda Metal-argumentbuffertar. Vissa kärnor kan kräva detta. Detta kan göra att vissa shaders slutar fungera, särskilt på äldre hårdvara eller operativsystem."
-)
-
-/* Settings > Video > CRT SwitchRes */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
-   "Endast för CRT-skärmar. Försöker att använda exakt kärna/spelupplösning och uppdateringsfrekvens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
-   "CRT Superupplösning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
-   "Växla mellan inbyggda och ultravida superupplösningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
-   "Horisontell centrering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
-   "Gå igenom dessa alternativ om bilden inte är korrekt centrerad på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
-   "Horisontell storlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
-   "Bläddra igenom dessa alternativ för att justera de horisontella inställningarna och ändra bildstorleken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
-   "Vertikal centrering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
-   "Gå igenom dessa alternativ om bilden inte är korrekt centrerad på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
-   "Använd högupplöst meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
-   "Växla till högupplöst modell för användning med högupplösta menyer när inget innehåll är laddat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Anpassad uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
-   "Använd en anpassad uppdateringsfrekvens som anges i konfigurationsfilen om det behövs."
-   )
-
-/* Settings > Video > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
-   "Skärmindex"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
-   "Välj vilken skärm som ska användas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
-   "Vilken bildskärm att föredra. 0 (standard) betyder att ingen speciell bildskärm är att föredra, 1 och uppåt (1 är den första bildskärmen), föreslår att RetroArch använder just den bildskärmen."
-   )
-#if defined (WIIU)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
-   "Optimera för Wii U GamePad (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
-   "Använd en exakt 2x skala av GamePad som visningsport. Inaktivera för att visa med den ursprungliga TV-upplösningen."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
-   "Videorotation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
-   "Framtvingar en särskild rotation av videon. Rotationen läggs till rotationer som kärnan ställer in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
-   "Skärmorientering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
-   "Framtvingar en särskild skärmorientering från operativsystemet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
-   "GPU-index"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
-   "Välj vilket grafikkort att använda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
-   "Horisontell skärmförskjutning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
-   "Framtvingar en särskild förskjutning horisontellt till videon. Förskjutningen tillämpas globalt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
-   "Vertikal skärmförskjutning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
-   "Framtvingar en särskild förskjutning vertikalt till videon. Förskjutningen tillämpas globalt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
-   "Vertikal uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
-   "Uppskattad uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
-   "Den noggrant uppskattade uppdateringsfrekvensen för skärmen i Hz."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
-   "Den exakta uppdateringsfrekvensen för din bildskärm (Hz). Detta används för att beräkna ljudingångshastigheten med formeln:\naudio_input_rate = spelets ingångshastighet * skärmens uppdateringsfrekvens / spelets uppdateringsfrekvens\nOm kärnan inte rapporterar några värden kommer NTSC-standardvärden att antas för kompatibilitet.\nDetta värde bör förbli i närheten av 60Hz för att undvika stora tonhöjdsförändringar. Om din skärm inte körs vid eller nära 60Hz, inaktivera VSyn[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
-   "Ange uppdateringsfrekvens som rapporteras från skärmen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
-   "Uppdateringsfrekvensen som rapporterats av bildskärmsdrivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Auto uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
-   "Byt skärmens uppdateringshastighet automatiskt baserat på aktuellt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
-   "Endast i exklusivt helskärmsläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
-   "Endast i fönster med helskärmsläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
-   "Alla helskärmslägen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Automatisk uppdateringsfrekvens PAL-tröskel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
-   "Maximal uppdateringsfrekvens för att betraktas som PAL."
-   )
-#if defined(DINGUX) && defined(DINGUX_BETA)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
-   "Vertikal uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
-   "Ställ in skärmens vertikala uppdateringsfrekvens. '50 Hz' kommer att möjliggöra jämn video när du kör PAL-innehåll."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
-   "Tvångsinaktivera sRGB FBO"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
-   "Tvångsinaktivera stöd för sRGB FBO. Vissa Intel OpenGL-drivrutiner på Windows har videoproblem med sRGB FBOer. Att aktivera detta kan lösa det."
-   )
-
-/* Settings > Video > Fullscreen Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
-   "Helskärmsvisning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
-   "Visning i helskärm. Kan ändras vid körtid. Kan åsidosättas med en kommandoradsväxel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
-   "Fönster i helskärmsläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
-   "Om helskärm, föredrar att använda ett helskärmsfönster som förhindrar att visningsläge ändras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "Bredd för helskärm"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
-   "Ställ in anpassad breddstorlek för helskärmsläget utan fönster. Om du låter den vara oinställd används skrivbordsupplösningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "Höjd för helskärm"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
-   "Ställ in anpassad höjdstorlek för helskärmsläge utan fönster. Om du låter den vara oinställd används skrivbordsupplösningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
-   "Framtvinga upplösning på UWP"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
-   "Tvinga upp upplösningen till helskärmsstorleken, om den är inställd på 0, kommer ett fast värde på 3840 x 2160 att användas."
-   )
-
-/* Settings > Video > Windowed Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
-   "Fönsterskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
-   "Ställ in fönsterstorleken till den angivna multipeln av kärnans visningsportstorlek."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
-   "Fönsteropacitet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
-   "Ställ in fönstrets transparens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Visa fönsterdekorationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
-   "Visa fönstrets titelrad och ramar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "Visa menyfält"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
-   "Visa fönstermenyfält."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
-   "Kom ihåg fönsterposition/storlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
-   "Visa allt innehåll i ett fönster i fast storlek av dimensioner som anges av 'Fönster Bredd' och 'Fönster Höjd', och spara aktuell fönsterstorlek och position vid stängning av RetroArch. Inaktiverad kommer fönsterstorleken att ställas in dynamiskt baserat på 'Fönsterskala'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Använd anpassad fönsterstorlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
-   "Visa allt innehåll i ett fönster i fast storlek av dimensioner som anges av 'Fönster Bredd' och 'Fönster Höjd'. Inaktiverad kommer fönsterstorleken att ställas in dynamiskt baserat på 'Fönsterskala'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   "Fönsterbredd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
-   "Ange den anpassade bredden för visningsfönstret."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "Fönsterhöjd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
-   "Ange den anpassade höjden för visningsfönstret."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Maximal fönsterbredd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
-   "Ange den maximala bredden på visningsfönstret när storleken ändras automatiskt baserat på 'Fönsterskala'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Maximal fönsterhöjd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
-   "Ange den maximala höjden på visningsfönstret när storleken ändras automatiskt baserat på 'Fönsterskala'."
-   )
-
-/* Settings > Video > Scaling */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
-   "Heltalsskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
-   "Skala video endast i heltalssteg. Basstorleken beror på core-rapporterad geometri och bildförhållande."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
-   "Axel för heltalsskalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
-   "Skala antingen höjd eller bredd, eller både höjd och bredd. Halva steg gäller endast för källor med hög upplösning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
-   "Heltalsskalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
-   "Avrunda nedåt eller uppåt till närmaste heltal. ”Smart” går ner till underskala när bilden beskärs för mycket och återgår slutligen till icke-heltalsskalning om underskalningsmarginalerna är för stora."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
-   "Underskala"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
-   "Överskala"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   "Bildformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
-   "Ställ in bildformat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
-   "Konfigurera bildformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
-   "Flyttalsvärde för bildformat (bredd/höjd)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "Konfig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
-   "Kärnspecifik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-   "Anpassa"
-   )
-#if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Behåll bildformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "Upprätthåll 1:1 pixel bildformatet vid skalning av innehåll via intern IPU. Inaktiverad kommer bilden att sträckas ut för att fylla hela skärmen."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
-   "Anpassa bildformat (X-position)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
-   "Anpassad visningsförskjutning som används för att definiera visningsområdets X-axelposition."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Anpassa bildformat (Y-position)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
-   "Anpassad visningsförskjutning som används för att definiera visningsområdets Y-axelposition."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
-   "Horisontell position för innehåll när visningsområdet är bredare än innehållets bredd. 0,0 är längst till vänster, 0,5 är i mitten och 1,0 är längst till höger."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
-   "Vertikal position för innehåll när visningsområdet är högre än innehållets höjd. 0,0 är överst, 0,5 är i mitten, 1,0 är nederst."
-   )
-#if defined(RARCH_MOBILE)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
-   "Horisontell position för innehåll när visningsområdet är bredare än innehållets bredd. 0,0 är längst till vänster, 0,5 är i mitten, 1,0 är längst till höger. (Stående orientering)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
-   "Vertikal position för innehåll när visningsområdet är högre än innehållets höjd. 0,0 är överst, 0,5 är i mitten, 1,0 är nederst. (Stående orientering)"
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Anpassa bildformat (Bredd)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
-   "Anpassad visningsportbredd som används om bildformatet är inställt på 'Anpassa bildformat'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Anpassa bildformat (Höjd)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
-   "Anpassad visningsporthöjd som används om bildformatet är inställt på 'Anpassa bildformat'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
-   "Beskär överskanning (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
-   "Beskär några pixlar runt skärmens kant, som vanligen lämnas tomma av utvecklare och som ibland också innehåller skräppixlar."
-   )
-
-/* Settings > Video > HDR */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
-   "Ställ in HDR-utgångsläge om skärmen stöder det. Observera: scRGB kan mjuka upp strikta CRT-skuggmasker eftersom operativsystemets compositor konverterar till HDR10 efter att masken har tillämpats."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
-   "Av"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
-   "Ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
-   "Ljusstyrka på menyn i cd/m2 (nits) vid användning av en HDR-skärm. Endast synlig när HDR är aktiverat i Inställningar > Video > HDR."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
-   "Ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
-   "Färgförstärkning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
-   "Noggrann"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
-   "Expanderad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
-   "Bred"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
-   "Skanningslinjer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
-   "Aktivera HDR-skanningslinjer. Skanningslinjer är den främsta anledningen till att använda HDR i RetroArch, eftersom en korrekt implementering av skanningslinjer stänger av större delen av skärmen och HDR återställer en del av den förlorade ljusstyrkan. Om du behöver mer kontroll över dina skanningslinjer kan du använda de anpassade skuggare som RetroArch tillhandahåller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
-   "Subpixel-layout"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
-   "Välj din skärms subpixel-layout, detta påverkar endast skanningslinjer. Om du inte vet vad din skärms subpixel-layout är, se Rtings.com för din skärms ”subpixel-layout”"
-   )
-
-
-/* Settings > Video > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
-   "Vertikal synkronisering (Vsync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
-   "Synkronisera videoutmatningen från grafikkortet till bildskärmens uppdateringsfrekvens. Rekommenderas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
-   "VSynk bytesintervall"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
-   "Använd ett anpassat bytesintervall för VSynk. Minskar effektivt bildskärmens uppdateringsfrekvens med den angivna faktorn. 'Auto' ställer in faktorn baserat på kärnrapporterad bildhastighet, vilket ger förbättrad bildtakt när du kör t.ex. 30 fps innehåll på en 60 Hz skärm eller 60 fps innehåll på en 120 Hz skärm."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
-   "Adaptiv VSynk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
-   "VSync är aktiverat tills prestandan sjunker under den önskade uppdateringsfrekvensen. Kan minimera hackighet när prestandan sjunker under realtid och vara mer energieffektivt. Inte kompatibelt med ”Bildrutefördröjning”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
-   "Bildrutefördröjning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
-   "Minskar latensen på bekostnad av en högre risk för att videon hackar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
-   "Ställer in hur många millisekunder som ska sovas innan kärnan körs efter videopresentation. Minskar latensen på bekostnad av högre risk för stuttering.\nVärden 20 och högre behandlas som procentandelar för bildtid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
-   "Automatisk bildfördröjning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
-   "Justera effektiv 'Bildrutefördröjning' dynamiskt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
-   "Försök att hålla önskat mål för 'Bildrutefördröjning' och minimera bildförluster. Utgångspunkten är 3/4 av bildrutans tid när bildfördröjningen är 0 (Auto)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   "effektiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
-   "Hård GPU-synk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
-   "Hårdsynkronisera CPU och GPU. Minskar latens på bekostnad av prestanda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
-   "Hård GPU-synk Bildrutor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
-   "Ställ in hur många bildrutor CPUn kan köra före GPUn när 'Hård GPU-synk' används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
-   "Ställer in hur många bildrutor CPU:n kan köra i förväg för GPU:n när ”Hård GPU-synk” används. Max är 3.\n 0: Synkronisera med GPU omedelbart.\n 1: Synkronisera med föregående bildruta.\n 2: Etc ..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
-   "Synkronisera exakt till innehållets bildhastighet (G-Sync, FreeSync)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
-   "Ingen avvikelse från kärnans efterfrågade timing. Använd för skärmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
-   "Synkronisera till exakt innehållsframerate. Det här alternativet motsvarar att tvinga fram x1-hastighet samtidigt som snabbspolning tillåts. Ingen avvikelse från den begärda uppdateringsfrekvensen, inget ljud Dynamic Rate Control."
-   )
-
-/* Settings > Audio */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   "Utmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
-   "Ändra inställningar för ljudutgången."
-   )
-#ifdef HAVE_MICROPHONE
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
-   "Mikrofon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
-   "Ändra inställningar för ljudingången."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Synkronisering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "Ändra inställningar för ljudsynkronisering."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
-   "Ändra inställningar för MIDI."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "Ändra inställningar för ljudmixer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   "Menyljud"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SOUNDS,
-   "Ändra inställningar för menyljud."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   "Tysta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "Stäng av ljudet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   "Mixer Tyst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "Stäng av ljudet från mixer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
-   "Respektera tyst läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
-   "Stäng av allt ljud i tyst läge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
-   "Tyst ljud vid snabbspolning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
-   "Stäng av ljudet automatiskt när snabbspolning framåt används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
-   "Uppsnabbat ljud vid snabbspolning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   "Snabba upp ljudet vid snabbspolning framåt. Förhindrar knastrande men ändrar tonhöjd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
-   "Tyst ljud vid tillbakaspolning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
-   "Tysta ljudet automatiskt vid tillbakaspolning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
-   "Volymökning (dB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
-   "Ljudvolym (i dB). 0 dB är normal volym och ingen förstärkning tillämpas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
-   "Ljudvolym, uttryckt i dB. 0 dB är normal volym, där ingen förstärkning tillämpas. Förstärkningen kan kontrolleras under körning med Volym upp / Volym ner."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
-   "Mixer-volymförstärkning (dB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
-   "Global ljudmixervolym (i dB). 0 dB är normal volym, och ingen förstärkning tillämpas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "DSP-insticksmodul"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
-   "Insticksmodul för DSP-ljud som bearbetar ljud innan det skickas till drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
-   "Ta bort DSP-insticksmodulen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
-   "Inaktiverar DSP-insticksmoduler som är aktiva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "WASAPI Exklusivt läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
-   "Tillåt WASAPI-drivrutinen att ta exklusiv kontroll över ljudenheten. Om detta är inaktiverat kommer den att använda delat läge istället."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
-   "WASAPI Float-format"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
-   "Använd floatformat för WASAPI-drivrutinen, om det stöds av din ljudenhet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI delad buffertlängd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
-   "Mellanbuffertlängd (i rutor) vid användning av WASAPI-drivrutinen i delningsläge."
-   )
-
-/* Settings > Audio > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "Ljud"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
-   "Aktivera ljudutgång."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   "Enhet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
-   "Åsidosätt den förvalda ljudenheten som ljuddrivrutinen använder. Detta är beroende av drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
-   "Åsidosätt den förvalda ljudenheten som ljuddrivrutinen använder. Detta är beroende av drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
-   "Anpassat PCM-enhetsvärde för ALSA-drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
-   "Anpassat sökvägsvärde för OSS-drivrutinen (t.ex. /dev/dsp)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
-   "Anpassat portnamnsvärde för JACK-drivrutinen (t.ex. system:playback1,system:playback_2)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
-   "Anpassad IP-adress för en RSound-server för RSound-drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
-   "Ljudfördröjning (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
-   "Maximal ljudfördröjning i millisekunder. Drivrutinen strävar efter att hålla den faktiska latensen på 50 % av detta värde. Det kan hända att värdet inte uppfylls om ljuddrivrutinen inte kan tillhandahålla den angivna latensen."
-   )
-
-#ifdef HAVE_MICROPHONE
-/* Settings > Audio > Input */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-   "Mikrofon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
-   "Aktivera ljudinmatning i kärnor som stöds. Har ingen overhead om kärnan inte använder en mikrofon."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-   "Enhet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
-   "Åsidosätt den förvalda inmatningsenheten som mikrofondrivrutinen använder. Detta är beroende av drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
-   "Åsidosätt den förvalda inmatningsenheten som mikrofondrivrutinen använder. Detta är beroende av drivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
-   "Omsamplarkvalitet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
-   "Sänk detta värde för att gynna prestanda/lägre latens över ljudkvalitet, öka för bättre ljudkvalitet på bekostnad av prestanda/lägre latens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
-   "Standard inmatningsfrekvens (Hz)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
-   "Ljudinmatningens samplingsfrekvens, används om en kärna inte begär ett specifikt värde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
-   "Latens ljudinmatning (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
-   "Önskad fördröjning för ljudinmatning i millisekunder. Kanske inte blir hedrad om mikrofondrivrutinen inte kan ge angiven fördröjning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "WASAPI Exklusivt läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
-   "Tillåt RetroArch att ta exklusiv kontroll över mikrofonenheten när WASAPI-mikrofondrivrutinen används. Om inaktiverad kommer RetroArch att använda delat läge istället."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "WASAPI Float-format"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
-   "Använd inmatning med flyttal för WASAPI-drivrutinen, om detta stöds av din ljudenhet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "WASAPI delad buffertlängd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
-   "Mellanbuffertlängd (i rutor) vid användning av WASAPI-drivrutinen i delningsläge."
-   )
-#endif
-
-/* Settings > Audio > Resampler */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
-   "Omsamplarkvalitet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
-   "Sänk detta värde för att gynna prestanda/lägre latens över ljudkvalitet, öka för bättre ljudkvalitet på bekostnad av prestanda/lägre latens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
-   "Utmatningsfrekvens (Hz)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
-   "Samplingsfrekvens för ljudutgång."
-   )
-
-/* Settings > Audio > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "Synkronisering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNC,
-   "Synkronisera ljud. Rekommenderas."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
-   "Den maximala förändringen i ljudinmatningshastighet. Om du ökar detta möjliggörs mycket stora förändringar i timing på bekostnad av en felaktig ljudtonhöjd (t.ex. körning av PAL-kärnor på NTSC-skärmar)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
-   "Maximum audio timing skew.\nDefinierar den maximala förändringen i ingångshastighet. Du kanske vill öka detta för att möjliggöra mycket stora förändringar i timing, till exempel att köra PAL-kärnor på NTSC-skärmar, på bekostnad av felaktig ljudhöjd.\nIngångshastighet definieras som:\ninput rate * (1,0 +/- (max timing skew))"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
-   "Dynamisk ljudfrekvenskontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
-   "Hjälper till att jämna ut brister i timing när ljud och video synkroniseras. Tänk på att korrekt synkronisering är nästan omöjlig att få till om den är inaktiverad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
-   "Om detta värde sätts till 0 inaktiveras hastighetskontrollen. Alla andra värden styr delta för ljudfrekvensreglering.\nDefinierar hur mycket ingångsfrekvensen kan justeras dynamiskt. Inmatningshastigheten definieras som:\\inmatningshastighet * (1,0 +/- (hastighetskontroll delta))"
-   )
-
-/* Settings > Audio > MIDI */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   "Inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_INPUT,
-   "Välj inmatningsenhet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MIDI_INPUT,
-   "Ställer in inmatningsenhet (drivrutinspecifik). När den är inställd på 'Off' kommer MIDI-ingången att inaktiveras. Enhetsnamn kan också skrivas in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   "Utmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
-   "Välj utmatningsenhet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
-   "Ställer in utmatningsenhet (drivrutinsspecifik). När den är inställd på 'Off' kommer MIDI-utgången att inaktiveras. Enhetsnamn kan också skrivas in.\nNär MIDI-utgång är aktiverad och kärna och spel/app stöder MIDI-utgång, kommer en del eller alla ljud (beroende på spel/app) att genereras av MIDI-enhet. I händelse av 'null' MIDI-drivrutin betyder detta att dessa ljud inte kommer att höras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   "Volym"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIDI_VOLUME,
-   "Ange utmatningsvolym (%)."
-   )
-
-/* Settings > Audio > Mixer Settings > Mixer Stream */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_MIXER_STREAM,
-   "Mixer ström #%d: %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   "Spela"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
-   "Kommer att starta uppspelningen av ljudströmmen. När det är klart kommer det att ta bort den aktuella ljudströmmen från minnet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   "Spela (Loopad)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
-   "Kommer att starta uppspelningen av ljudströmmen. När den är klar kommer den att loopa och spela upp spåret igen från början."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "Spela (Sekventiell)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
-   "Kommer att starta uppspelningen av ljudströmmen. När den är klar, hoppar den till nästa ljudström i sekventiell ordning och upprepar detta beteende. Användbar som uppspelningsläge för album."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   "Stopp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
-   "Detta kommer att stoppa uppspelningen av ljudströmmen, men inte ta bort den från minnet. Den kan startas igen genom att välja 'Spela'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   "Ta bort"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
-   "Detta kommer att stoppa uppspelningen av ljudströmmen och ta bort den helt från minnet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   "Volym"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
-   "Justera volymen på ljudströmmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
-   "Tillstånd: Inte tillgängligt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
-   "Tillstånd: Stoppad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
-   "Tillstånd: Spelar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
-   "Tillstånd: Spelar (slinga)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
-   "Tillstånd: Spelar (sekventiellt)"
-   )
-
-/* Settings > Audio > Menu Sounds */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
-   "Spela samtidiga ljudströmmar även i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "Aktivera för 'OK'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "Aktivera för 'Avbryt'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
-   "Aktivera för 'Meddelande'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
-   "Aktivera för 'BGM'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
-   "Aktivera för 'Scroll'"
-   )
-
-/* Settings > Input */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
-   "Max användare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
-   "Pollningsbeteende (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
-   "Påverkar hur inmatningspollning görs i RetroArch. Om du ställer in den på ”Tidig” eller ”Sen” kan det resultera i mindre fördröjning, beroende på din konfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
-   "Påverkar hur input polling utförs i RetroArch.\nEarly - Input polling utförs innan ramen bearbetas.\nNormal - Input polling utförs när polling begärs.\nLate - Input polling utförs vid första begäran om inputstatus per ram.\nAtt ställa in den på 'Early' eller 'Late' kan resultera i mindre latens, beroende på din konfiguration. Kommer att ignoreras när du använder netplay."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
-   "Mappa om kontroller för denna kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   "Åsidosätt nuvarande med de ommappade bindningarna för den nuvarande kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Sortera ommappningar efter gamepad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
-   "Ommappningar tillämpas endast till aktiv gamepad till vilken de sparades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
-   "Autokonfig"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
-   "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play-stil."
-   )
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
-   "Inaktivera Windows-snabbtangenter (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
-   "Behåll kombinationer med Win-tangenten inuti programmet."
-   )
-#endif
-#ifdef ANDROID
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Välj fysiskt tangentbord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Använd denna enhet som ett fysiskt tangentbord och inte som en spelkontroll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
-   "Om RetroArch identifierar ett hårdvarutangentbord som någon form av gamepad, kan den här inställningen användas för att tvinga RetroArch att behandla den felidentifierade enheten som ett tangentbord.\nDetta kan vara användbart om du försöker emulera en dator i någon Android TV-enhet och även äger ett fysiskt tangentbord som kan fästas på lådan."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
-   "Hjälpsensorinmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
-   "Aktivera inmatning från accelerometer, gyroskop och belysningsstyrka sensorer, om det stöds av den aktuella hårdvaran. Kan påverka prestanda och/eller öka strömförbrukningen på vissa plattformar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
-   "Fånga muspekaren automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
-   "Aktivera automatiskt greppad mus vid applikationsfokus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
-   "Automatiskt 'Spelfokus'-läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
-   "Aktivera alltid 'Spelfokus' -läget när innehåll startar eller återupptas. När inställt på \"Identifiera\" kommer alternativet att aktiveras om kärnan implementerar frontendens funktioner för tangentbordsåteranrop."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   "PÅ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   "Identifiera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
-   "Pausa innehåll vid frånkoppling av styrenhet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
-   "Pausa innehållet när någon spelkontroll kopplas från. Återuppta med Start."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Tröskelvärde för inmatningsknappsaxel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
-   "Hur långt en spak måste lutas för att resultera i en knapptryckning vid användning av 'Analog till Digital'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
-   "Analog dödzon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
-   "Ignorera analoga spakrörelser under dödzon-värde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
-   "Analog känslighet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   "Känslighet för accelerometer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-   "Känslighet för gyroskop"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
-   "Justera känsligheten för analoga spakar."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
-   "Justera känsligheten för accelerometern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
-   "Sensororientering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
-   "Rotera accelerometerns och gyroskopets axlar så att de matchar enhetens orientering."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
-   "Justera känsligheten för gyroskopet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
-   "Bind tidsgräns"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
-   "Antal sekunder att vänta för att gå vidare till nästa bindning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
-   "Intryckt vid bind"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
-   "Antal sekunder att behålla en inmatning intryckt för att binda den."
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_PRESS,
-   "Tryck på tangentbord, mus eller spelkontroll"
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_RELEASE,
-   "Släpp tangenter och knappar!"
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_TIMEOUT,
-   "Tidsgräns"
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_HOLD,
-   "Håll in"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "Turbo-avfyrning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
-   "Inaktiverad stoppar alla turboavtryckningsoperationer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   "Turboperiod"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
-   "Perioden i bildrutor när turboaktiverade knappar trycks ner."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
-   "Antalet bildrutor från Turboperiod som knapparna hålls ner för. Om detta antal är lika med eller större än Turboperiod, kommer knapparna aldrig att släppas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
-   "Halv period"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
-   "Turboläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
-   "Välj det allmänna beteendet för turbo-läget."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
-   "Klassisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
-   "Klassisk (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
-   "En knapp (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "En knapp (intryckt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
-   "Klassiskt läge, manövrering med två knappar. Håll in en knapp och tryck på Turbo-knappen för att aktivera tryck-släpp-sekvensen.\nTurbo-bindning kan tilldelas i Inställningar/Inmatning/Port X Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
-   "Klassiskt växlingsläge, tvåknappsmanövrering. Håll in en knapp och tryck på Turbo-knappen för att aktivera turbo för den knappen. För att inaktivera turbo: håll in knappen och tryck på Turbo-knappen igen.\nTurbo-bindning kan tilldelas i Inställningar/Inmatning/Port X Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
-   "Växlingsläge. Tryck en gång på Turbo-knappen för att aktivera trycksekvensen för den valda standardknappen, tryck en gång till för att stänga av den.\nTurbo-bindning kan tilldelas i Inställningar/Inmatning/Port X Controls."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
-   "Håll-läge. Tryck-släpp-sekvensen för den valda standardknappen är aktiv så länge som Turbo-knappen hålls nedtryckt.\nTurbo-bindning kan tilldelas i Inställningar/Inmatning/Port X Controls.\nFör att efterlikna autofire-funktionen från hemdatortiden, ställ in Bindning och Knapp på samma styrspaksavfyrningsknapp."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
-   "Turbo-bindning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
-   "Turbo aktiverar RetroPad-bindning. Tom använder den portspecifika bindningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
-   "Turbo-knapp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
-   "Målknapp för turbo i \"En knapp\"-läget."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
-   "Om den är aktiverad kan digitala riktningsinmatningar (även kända som d-pad eller ”hatswitch”) vara turbo."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "Turbo-avfyrning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
-   "Ändra inställningar för turboavtryckare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "Haptisk feedback/vibration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
-   "Ändra inställningar för haptisk feedback och vibration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
-   "Rörelse-/ljussensorer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
-   "Ändra inställningarna för accelerometer, gyroskop och belysningsstyrka."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
-   "Menykontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
-   "Ändra inställningar för menykontroller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "Kortkommandon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
-   "Ändra inställningar och tilldelningar för snabbtangenter, som att visa/dölja menyn under spel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
-   "RetroPad-bindningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
-   "Ändra hur den virtuella RetroPad mappas till en fysisk inmatningsenhet. Om en inmatningsenhet känns igen och automatiskt konfigurerad på rätt sätt behöver användare förmodligen inte använda den här menyn.\nOBS: För kärnspecifika ändringar, använd 'Spelkontroller' i Snabbmenyn istället."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
-   "Libretro använder en virtuell gamepad-abstraktion känd som \"RetroPad\" för att kommunicera från frontends (som RetroArch) till kärnor och vice versa. Den här menyn bestämmer hur den virtuella RetroPad mappas till de fysiska inmatningsenheterna och vilka virtuella ingångsportar dessa enheter upptar.\nOm en fysisk inmatningsenhet känns igen och autokonfigureras korrekt, behöver användare förmodligen inte använda den här menyn alls, och för kärnspecifika ändringar, använd 'Spelko[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
-   "Port %u kontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
-   "Ändra hur den virtuella RetroPad är mappad till den fysiska inmatningsenhet för denna virtuella port."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
-   "Ändra kärnspecifika inmatningsmappningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Åtgärd för Android kopplas från"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
-   "Lösning för kontroller som kopplas bort och återansluts. Förhindrar 2 spelare med identiska kontroller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
-   "Bekräfta avslutning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
-   "Kräv att snabbtangenten för avslutning trycks ner två gånger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
-   "Bekräfta stängning av innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
-   "Kräv att snabbtangenten för stäng innehåll trycks ner två gånger."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
-   "Bekräfta omstart av innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIRM_RESET,
-   "Kräv att snabbtangenten för omstart av innehåll trycks ner två gånger."
-   )
-
-
-/* Settings > Input > Haptic Feedback/Vibration */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
-   "Vibrera vid knapptryck"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
-   "Aktivera enhetsvibration (för kärnor som stöds)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
-   "Vibrationsstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
-   "Ange storleken på haptiska återkopplingseffekter."
-   )
-
-/* Settings > Input > Menu Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
-   "Enhetliga menykontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
-   "Använd samma spelkontroller för både menyn och spelet. Gäller tangentbordet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
-   "Växla knappar för OK och Avbryt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
-   "Byt plats på OK/Avbryt-knappen. Inaktiv är det Japansk knapporientering, aktiv är det Västerländsk."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
-   "Växla rullningsknappar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
-   "Byt plats på knapparna för att scrolla. Inaktiv scrollas 10 objekt med L/R och i alfabetisk ordning med L2/R2."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
-   "Alla kontrollerar menyn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
-   "Tillåt alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
-   "Spellistor med ett klick"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
-   "Hoppa över 'Kör'-menyn när du startar spellistposter. Tryck på D-Pad medan du håller OK för att komma åt 'Kör'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
-   "Tillåt bakåt från flikar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
-   "Återgå till huvudmenyn från flikar/sidofält när Bakåt trycks."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
-   "Rullningsacceleration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
-   "Markörens maximala hastighet när du håller en riktning för att rulla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
-   "Rullningsfördröjning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
-   "Initial fördröjning i millisekunder när du håller en riktning för att rulla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
-   "Inaktivera info-knapp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
-   "Förhindra menyinformationsfunktion."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
-   "Inaktivera Sökknapp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
-   "Förhindra menysökningsfunktion."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Inaktivera vänster analog i meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
-   "Förhindra inmatning från analog spak i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Inaktivera höger analog i meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
-   "Förhindra högerspaksinmatning för menyn. Höger analogspak växlar miniatyrbilder i spellistor."
-   )
-
-/* Settings > Input > Hotkeys */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
-   "Snabbknappsaktivering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
-   "När tilldelad knapp för 'Snabbknappsaktivering' hålls nedtryckt identifieras snabbknappar. Det här möjliggör att spelkontrollsknappar kan användas till snabbknappsfunktioner utan att påverka normal inmatning. Tilldelad spelkontrollsknapp kommer inte krävas, men kan användas, för aktivering av tangentbordssnabbknappar och vice versa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
-   "Är 'Snabbknappsaktivering' tilldelad, till antingen tangentbord, spelkontroll eller joystick, kommer snabbknappar endast vara aktiv medans tilldelad knapp hålls nedtryckt.\nDetta är användbart för RETRO_KEYBOARD-centrerade implementeringar som efterfrågar ett stort område av tangentbordet, där det inte är önskvärt att snabbknappar kommer i vägen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
-   "Snabbknappsfördröjning (Bildrutor)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
-   "Försena snabbknappsaktivering med antal bildrutor innan normal inmatning växlar till snabbknappsaktivering när tilldelad knapp hålls nedtryckt. Tillåter att knapp som redan tilldelats normal inmatning (t.ex. RetroPad 'Select') även tilldelas 'Snabbknappsaktivering'."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
-   "Blockera alla snabbtangenter från både tangentbord och kontrollerenheter om någon av dessa har ”Snabbknappsaktivering” inställt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Snabbtangenter för Följ spelare 1"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
-   "Snabbtangenter är kopplade till kärnport 1, även om kärnport 1 omdirigeras till en annan användare. Observera! Snabbtangenterna på tangentbordet fungerar inte om kärnport 1 omdirigeras till någon annan användare än > 1 (tangentbordsinmatningen kommer från användare 1)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Visa/dölj meny (spelkontroll kombo)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
-   "Spelkontrolls knappkombination för att visa/dölj menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
-   "Visa/dölj meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
-   "Växlar den aktuella skärmen mellan meny och innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
-   "Avsluta (spelkontroll kombo)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
-   "Spelkontrollers knappkombination för att avsluta RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
-   "Stänger RetroArch och ser till att alla sparade data och konfigurationsfiler sparas på hårddisken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "Stäng Innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
-   "Stänger aktuellt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "Starta om innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RESET,
-   "Startar om aktuellt innehåll från början."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
-   "Snabbspola framåt (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
-   "Växlar mellan snabb och normal hastighet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Snabbspola framåt (nedtryckt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
-   "Tillämpar 'Snabbspola framåt' när den hålls nedtryckt. Innehåll återgår till normal hastighet när knapp släpps."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
-   "Slow motion (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
-   "Växlar mellan slow motion och normal hastighet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Slow motion (nedtryckt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
-   "Tillämpar 'Slow motion' när den hålls nedtryckt. Innehåll återgår till normal hastighet när knapp släpps."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
-   "Spola tillbaka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
-   "Pausa"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
-   "Växlar innehåll mellan pausade och icke-pausade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
-   "Avancera bildruta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
-   "Avancerar innehållet med en bildruta när pausad."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
-   "Ljud av"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
-   "Slår på/av ljudutgången."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "Volym upp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
-   "Ökar utgående ljudvolymnivå."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "Volym ner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
-   "Minskar utgående ljudvolymnivå."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "Läs in tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
-   "Läser in sparat tillstånd från aktuellt vald plats."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "Spara tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
-   "Sparar tillståndet till den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
-   "Nästa Spara tillstånd-plats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
-   "Ökar index för att välja slot till att spara tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
-   "Föregående Spara tillstånd-plats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
-   "Minskar index för att välja slot till att spara tillstånd."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
-   "Mata skiva (In/Ut)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
-   "Om det virtuella skivfacket är stängt, öppnas det och den laddade skivan tas ut. Annars sätts skivan som är vald in och skivfacket stängs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
-   "Nästa skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
-   "Ökar det aktuella valda skivindexet och gör en fördröjd insättning om den virtuella skivfacket är stängt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
-   "Föregående skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
-   "Minskar det aktuella valda skivindexet och gör en fördröjd insättning om den virtuella skivfacket är stängt."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
-   "Shaders (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
-   "Slår på/av den för närvarande valda shadern."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
-   "Shaders (Håll)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
-   "Håller den valda shadern på/av vid nedtryckt tangent."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
-   "Nästa Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
-   "Läser in och tillämpar nästa shader-förvalsfil i roten av katalogen 'Video Shaders'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
-   "Föregående Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
-   "Läser in och tillämpar föregående shader-förvalsfil i roten av katalogen 'Video Shaders'."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
-   "Fusk (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
-   "Slår på/av det valda fusket."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
-   "Nästa Fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
-   "Ökar index till nästa fusk i listan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
-   "Föregående Fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
-   "Minskar index till föregående fusk i listan."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   "Ta skärmdump"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
-   "Tar en skärmdump av det aktuella innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
-   "Inspelning (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
-   "Startar/stoppar inspelning av den aktuella sessionen till en lokal videofil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
-   "Strömning (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
-   "Startar/stoppar stream av den aktuella sessionen till en online videoplattform."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
-   "Spela repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
-   "Spela reprisfilen från den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
-   "Spela in repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
-   "Spela in reprisfil till den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
-   "Stoppa Inspelning/Repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
-   "Stoppar inspelning/uppspelning av aktuell repris."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
-   "Spara kontrollpunkt för återuppspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
-   "Verkställer en kontrollpunkt till aktuellt uppspelade återuppspelningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
-   "Föregående kontrollpunkt för återuppspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
-   "Spolar tillbaka återuppspelningen till tidigare automatiskt eller manuellt sparade kontrollpunkten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
-   "Nästa kontrollpunkt för återuppspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
-   "Snabbspolar återuppspelningen till nästa automatiskt eller manuellt sparade kontrollpunkten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
-   "Nästa återuppspelningsplats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
-   "Ökar det valda platsindexet för återuppspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
-   "Föregående återuppspelningsplats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
-   "Minskar det valda platsindexet för återuppspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Turboavfyrning (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
-   "Växlar turboavfyrning på/av."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Fånga muspekaren (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
-   "Fångar eller släpper musen. När den fångas döljs systemmarkören och begränsas till RetroArch-visningsfönstret, vilket förbättrar relativ musinmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Spelfokus (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
-   "Slår på/av läget ”Spelfokus”. När innehållet har fokus inaktiveras snabbtangenterna (alla tangentbordsdata skickas till den körande kärnan) och musen fångas upp."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Helskärm (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
-   "Växlar visningsläge mellan Helskärm och Fönster."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
-   "Skrivbordsmeny (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
-   "Öppnar det kompletterande WIMP (Windows, Icons, Menus, Pointer) skrivbordsanvändargränssnittet."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Synkronisera till exakt bildhastighet för innehållet (På/Av)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   "Slår på/av synkronisering till exakt innehållsbildhastighet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
-   "Run-Ahead (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
-   "Slår på/av Run-Ahead."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
-   "Preemptive Frames (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
-   "Slår på/av Preemptive Frames."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
-   "Visa bilder/s (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
-   "Slår på/av statusindikatorn 'Bilder/s'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
-   "Visa teknisk statistik (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
-   "Slår på/av visningen av teknisk statistik på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
-   "Tangentbordsöverlägg (Växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OSK,
-   "Slår på/av tangentbord överlagret."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
-   "Nästa överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
-   "Växlar till nästa tillgängliga layout för det för närvarande aktiva skärmöverlagring."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "AI-tjänst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
-   "Fångar en bild av aktuellt innehåll för att översätta och/eller läsa upp text på skärmen. 'AI-tjänst' måste vara aktiverad och konfigurerad."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Netplay Ping (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
-   "Slår på/av pingräknaren för aktuellt Netplay."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Netplay Hosting (På/Av)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
-   "Slår på/av Netplay Hosting."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
-   "Netplay Spela/Åskådarläge (växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
-   "Växlar aktuell Netplay-session mellan 'Spela' och 'Åskådare'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Netplay Spelarchatt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
-   "Skickar ett chattmeddelande till den aktuella Netplay sessionen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Tona ut Netplay-chatt (Växla)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
-   "Växlar mellan tonande eller statiska Netplay chattmeddelanden."
-   )
-
-/* Settings > Input > Port # Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-   "Enhetstyp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
-   "Specificerar den emulerade spelkontrollstypen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
-   "Analog till Digital typ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
-   "Använd angiven analog spak för D-Pad-inmatning. Läget 'Tvingad' åsidosätter den ursprungliga analoga inmatningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
-   "Mappa angiven analog spak för D-Pad-inmatning.\nOm kärnan har inbyggt analogt stöd, kommer D-Pad-mappning att inaktiveras om inte alternativet '(Tvingad)' är valt.\nOm D-Pad-mappning är påtvingad kommer kärnan inte att få någon analog inmatning från angiven spak."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
-   "Enhetindex"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
-   "Den fysiska kontrollern som den känns igen av RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
-   "Den här kontrollenheten kommer att tilldelas den här spelaren, enligt reservationsläget."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
-   "Ingen reservation"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
-   "Föredragen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
-   "Reserverad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
-   "Typ av enhetsreservation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
-   "Föredragen: om angiven enhet finns, kommer den att allokeras till denna spelare. Reserverad: ingen annan styrenhet kommer att tilldelas för denna spelare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
-   "Mappad Port"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
-   "Anger vilken kärnport som ska ta emot inmatning från frontend-kontrollerport %u."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
-   "Ställ in alla kontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
-   "Tilldela alla riktningar och knappar, en efter en, i den ordning de visas i den här menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
-   "Återställ grund kontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
-   "Nollställ bindningsinställningar för inmatningar till deras standardvärden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
-   "Spara spelkontrolls-profil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
-   "Spara en autokonfigurationsfil som kommer att användas automatiskt när den här styrenheten upptäcks igen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
-   "Musindex"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
-   "Den fysiska musen som den identifieras av RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
-   "B-knapp (Nedre)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
-   "Y-knapp (Vänstra)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
-   "Select-knapp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
-   "Start-knapp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
-   "D-Pad Upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
-   "D-Pad Ner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
-   "D-Pad Vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
-   "D-Pad Höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
-   "A-knapp (Högra)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
-   "X-knapp (Övre)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
-   "L-knapp (Axel)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
-   "R-knapp (Axel)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
-   "L2-knapp (Trigger)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
-   "R2-knapp (Trigger)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
-   "L3-knapp (Spak)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
-   "R3-knapp (Spak)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
-   "Vänster Analog X+ (Höger)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
-   "Vänster Analog X- (Vänster)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
-   "Vänster Analog Y+ (Ner)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
-   "Vänster Analog Y- (Upp)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
-   "Höger Analog X+ (Höger)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
-   "Höger Analog X- (Vänster)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
-   "Höger Analog Y+ (Ner)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
-   "Höger Analog Y- (Upp)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
-   "Pistol Avtryckare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
-   "Ladda om pistol"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
-   "Pistol knapp A"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
-   "Pistol knapp B"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
-   "Pistol knapp C"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
-   "Pistol Start"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
-   "Pistol Select"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
-   "Pistol D-Pad Upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
-   "Pistol D-Pad Ner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
-   "Pistol D-Pad Vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
-   "Pistol D-Pad Höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "Turbo-avfyrning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
-   "Håll in"
-   )
-
-/* Settings > Latency */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
-   "[Run-Ahead inte tillgängligt]"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
-   "Den nuvarande kärnan är inte kompatibel med run-ahead på grund av bristande stöd för deterministisk sparning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
-   "Antal bildrutor för Run-Ahead"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
-   "Antalet bildrutor som ska köras i förväg (Run-Ahead). Orsakar problem i spelet, t. ex. hackighet, om antalet fördröjda bildrutor i spelet överskrids."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
-   "Kör ytterligare kärnlogik för att minska latenstiden. Enstaka instans körs till en framtida bildruta och laddar sedan om det aktuella tillståndet. Andra instans behåller en kärninstans för enbart video i en framtida bildruta för att undvika problem med ljudstatus. Preemptive Frames kör tidigare bildrutor med ny indata när det behövs, för effektivitet."
-   )
-#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
-   "Kör ytterligare kärnlogik för att minska latenstiden. Enstaka instans körs till en framtida bildruta och läser sedan om det aktuella tillståndet. Preemptive Frames kör tidigare bildrutor med ny indata när det behövs, för effektivitet."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
-   "Enstaka instansläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
-   "Läge för andra instans"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
-   "Läge för preemptive frames"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj varningar för Run-Ahead"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
-   "Dölj varningsmeddelandet som visas när du använder Run-Ahead och kärnan inte har stöd för sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
-   "Antal preemptive frames"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
-   "Antalet bildrutor att spela upp igen. Orsakar problem i spel såsom jitter om antalet laggade bildrutor internt för spelet överstigs."
-   )
-
-/* Settings > Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
-   "Delad kontext för hårdvara"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
-   "Ge hårdvarurenderade kärnor en egen privat kontext. Undviker att behöva anta att hårdvaran ändrar tillstånd mellan bildrutor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
-   "Tillåt kärnor att byta videodrivrutin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
-   "Tillåt kärnor att byta till en annan videodrivrutin än den som för närvarande är laddad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
-   "Läs in dummy när kärnan stänger ner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
-   "Vissa kärnor har en avstängningsfunktion, att ladda en dummykärna förhindrar att RetroArch stängs av."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
-   "Vissa kärnor kan ha en avstängningsfunktion. Om det här alternativet lämnas inaktiverat, skulle valet av avstängningsproceduren utlösa att RetroArch stängs av.\nAtt aktivera det här alternativet kommer att ladda en dummykärna istället så att vi stannar kvar i menyn och RetroArch stängs inte av."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
-   "Starta en kärna automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
-   "Kategorier för kärnalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
-   "Tillåter kärnor att visa alternativ i kategoribaserade undermenyer. OBS: Kärnan måste laddas om för att ändringar ska börja gälla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
-   "Mellanlagra infofiler för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
-   "Behåller en ihållande lokal cache av installerad kärninformation. Minskar inläsningstiderna avsevärt på plattformar med långsam diskåtkomst."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
-   "Kringgå kärninformationens funktioner för sparade tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
-   "Anger om funktioner för att spara kärninformation ska ignoreras, vilket gör det möjligt att experimentera med relaterade funktioner (run ahead, spola tillbaka etc.)."
-   )
+static const struct
+{
+   char s_9a250c33[30];
+   char s_dec692c9[33];
+   char s_9a250c34[30];
+   char s_dec69307[37];
+   char s_9a250c36[30];
+   char s_9a250c3a[29];
+   char s_355555a9[24];
+   char s_cd0c29a1[24];
+   char s_9e68453d[15];
+   char s_50eafafc[17];
+   char s_0a93aac7[33];
+   char s_a348e002[18];
+   char s_8b76da8c[32];
+   char s_aef2ab27[17];
+   char s_034718ab[20];
+   char s_4e018dc9[18];
+   char s_409a0377[16];
+   char s_76fae827[35];
+   char s_76fae86c[35];
+   char s_76fae911[35];
+   char s_56581215[36];
+   char s_6b45243b[18];
+   char s_ea6df2a1[108];
+   char s_bfb33e98[82];
+   char s_87603f77[10];
+   char s_8630802e[21];
+   char s_baa6d7fc[26];
+   char s_58b116d3[13];
+   char s_69039805[5];
+   char s_aaea6e1b[11];
+   char s_b3841fa4[37];
+   char s_d7d5e8f7[10];
+   char s_23b2ac5a[220];
+   char s_37033dd5[104];
+   char s_534835b5[49];
+   char s_534cf44d[91];
+   char s_5f9d9369[64];
+   char s_6e51030f[66];
+   char s_d32da23d[18];
+   char s_551f3071[25];
+   char s_1f6e5f89[41];
+   char s_212963fd[92];
+   char s_5523ef09[45];
+   char s_38e226a5[36];
+   char s_239aa255[127];
+   char s_fa198259[120];
+   char s_55288d64[32];
+   char s_41d19ccb[52];
+   char s_d32da48f[18];
+   char s_d1558b35[45];
+   char s_4c378b95[95];
+   char s_c435566b[339];
+   char s_793f841a[284];
+   char s_b4ed19c0[34];
+   char s_3a147fac[89];
+   char s_a4a373a7[31];
+   char s_61afc6bd[163];
+   char s_550d5320[193];
+   char s_d179d08d[173];
+   char s_70c7c198[334];
+   char s_a4d0f03f[307];
+   char s_1aa5e88e[360];
+   char s_5d67fad5[294];
+   char s_4081ac3b[9];
+   char s_1d921fac[22];
+   char s_513ae2ac[19];
+   char s_11786a7f[83];
+   char s_952ec37c[87];
+   char s_51a9df54[19];
+   char s_17671a2b[57];
+   char s_117a0f2d[23];
+   char s_40f0ecd9[9];
+   char s_95f7b8d6[59];
+   char s_cdf5ba47[62];
+   char s_bf709068[62];
+   char s_201dd59e[99];
+   char s_2409f1f8[16];
+   char s_30330589[12];
+   char s_3e97494e[12];
+   char s_f319134a[35];
+   char s_418f98ab[36];
+   char s_7607974d[11];
+   char s_bdf1165f[25];
+   char s_6a15d029[19];
+   char s_3817de39[367];
+   char s_16ae54ac[272];
+   char s_b3e89428[271];
+   char s_7af11c30[89];
+   char s_91bc1342[293];
+   char s_78cabcca[384];
+   char s_0e85a0d1[44];
+   char s_ff583ef3_0[500];
+   char s_ff583ef3_1[31];
+   char s_285ad699[35];
+   char s_a6f4e7fa[49];
+   char s_0cd5a7bf[97];
+   char s_bd0f864d[87];
+   char s_a6f51628[50];
+   char s_8598f359[332];
+   char s_5702032d[57];
+   char s_131d086f[286];
+   char s_ddad8b7f[293];
+   char s_99bfa829[398];
+   char s_b14a1674[150];
+   char s_54241480[193];
+   char s_ceafef5e[120];
+   char s_c073450a[160];
+   char s_e6cd4ada[118];
+   char s_3f5ab0a6[155];
+   char s_39308167[407];
+   char s_60255deb_0[500];
+   char s_60255deb_1[15];
+   char s_f39c636f[401];
+   char s_4c991c18[392];
+   char s_4b299805[154];
+   char s_1bd35af2[37];
+   char s_24e40f00[275];
+   char s_1382c258[220];
+   char s_4caab10c[243];
+   char s_03580e17[163];
+   char s_1d269383[163];
+   char s_34c6f6e4[68];
+   char s_4dc69fe8[449];
+   char s_138c1cdf[167];
+   char s_a7206ebc[116];
+   char s_80558e85[209];
+   char s_cb88fe26[289];
+   char s_0836e741[232];
+   char s_101e8527[323];
+   char s_ad523771[76];
+   char s_7e97e2f6[306];
+   char s_9eebc6cc[54];
+   char s_5fdad539[282];
+   char s_353c64eb_0[500];
+   char s_353c64eb_1[93];
+   char s_33a76811[104];
+   char s_e180f55d[108];
+   char s_11aa0e91[60];
+   char s_11aa0e92[68];
+   char s_11aa0e93[68];
+   char s_e1814648[45];
+   char s_246d2ab2[67];
+   char s_f4657d5b[58];
+   char s_74276879[130];
+   char s_5468c818[139];
+   char s_4bea979b[166];
+   char s_5468d309[77];
+   char s_ad397ac8[251];
+   char s_5468d3f9[136];
+   char s_479aa7f0[194];
+   char s_12571028[71];
+   char s_64fa1377[26];
+   char s_e189c949[125];
+   char s_e189c94a[153];
+   char s_12cc52ac[80];
+   char s_6c7809c7[48];
+   char s_ad397cb2[78];
+   char s_7354d146[176];
+   char s_e18c0fd3[40];
+   char s_2d9d0a50[229];
+   char s_0e7699a6[218];
+   char s_16721de3[224];
+   char s_abab74fb[172];
+   char s_c0a60ee2[211];
+   char s_14a6bfe2[256];
+   char s_4b0e8809[206];
+   char s_efd6795c_0[500];
+   char s_efd6795c_1[30];
+   char s_7a7a3d56[221];
+   char s_378ad7dc[205];
+   char s_95f467be[298];
+   char s_49088c17[176];
+   char s_ae87ea53[260];
+   char s_9834febe[455];
+   char s_93805cc8_0[499];
+   char s_93805cc8_1[12];
+   char s_b495662b[137];
+   char s_9953f4e2[236];
+   char s_de76d2dc[21];
+   char s_79e212bd[5];
+   char s_6342700c[11];
+   char s_d5d519ef[8];
+   char s_cd77e985[26];
+   char s_6be7f013[13];
+   char s_9f689905[16];
+   char s_5edaf90a[16];
+   char s_27ea651d[6];
+   char s_1997a873[24];
+   char s_fc24216f[16];
+   char s_728aa9b3[17];
+   char s_929e8e7a[21];
+   char s_9b914f7f[24];
+   char s_4ad41e20[16];
+   char s_24c106e6[10];
+   char s_0ae2f7f3[14];
+   char s_38193683[7];
+   char s_314e7dec[13];
+   char s_5b62430e[40];
+   char s_d15cd993[51];
+   char s_cc9c4921[45];
+   char s_7136ec46[60];
+   char s_65d202a6[65];
+   char s_768576a0[44];
+   char s_061657e6[20];
+   char s_7632d987[20];
+   char s_d6591125[23];
+   char s_dac26dd6[23];
+   char s_0ebab8b7[19];
+   char s_b562e394[19];
+   char s_e914b65b[29];
+   char s_0c7e02de[29];
+   char s_29398124[23];
+   char s_cab81c29[25];
+   char s_826b2d88[21];
+   char s_0615a7c8[10];
+   char s_67924166[27];
+   char s_192162ee[15];
+   char s_5a0954bf[27];
+   char s_2e5078b2[11];
+   char s_71b54013[12];
+   char s_35a1323d[9];
+   char s_f72667c9[11];
+   char s_adce4374[15];
 #ifndef HAVE_DYNAMIC
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "Läs alltid om kärna när innehåll ska köras"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
-   "Starta om RetroArch när innehåll startas, även när den begärda kärnan redan är laddad. Detta kan förbättra systemets stabilitet, på bekostnad av ökade laddningstider."
-   )
+   char s_e011fe61[48];
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
-   "Tillåt Rotation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
-   "Tillåt kärnor att ställa in rotationen. När den är inaktiverad ignoreras rotationsförfrågningar. Användbar för inställningar som manuellt roterar skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
-   "Hantera kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
-   "Utför offlineunderhållsuppgifter på installerade kärnor (säkerhetskopiering, återställning, radering, etc.) och visa kärninformation."
-   )
-#ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
-   "Hantera kärnor"
-   )
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
-   "Installera/Avinstallera kärnor distribuerade via Steam."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
-   "Installera kärna"
-)
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
-   "Avinstallera kärna"
-)
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Visa 'Hantera kärnor'"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
-   "Visa alternativet 'Hantera kärnor' i huvudmenyn."
-)
-
-MSG_HASH(
-   MSG_CORE_STEAM_INSTALLING,
-   "Installerar kärna: "
-)
-
-MSG_HASH(
-   MSG_CORE_STEAM_UNINSTALLED,
-   "Kärnan kommer att avinstallera när RetroArch avslutas."
-)
-
-MSG_HASH(
-   MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
-   "Kärnan hämtas ner för tillfället"
-)
-#endif
-/* Settings > Configuration */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
-   "Spara konfiguration vid Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
-   "Spara ändringar i konfigurationsfilen vid avslut."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
-   "Spara ändringar i konfigurationsfilen vid avslut. Användbar för ändringar som görs i menyn. Skriver över konfigurationsfilen, #include's och kommentarer bevaras inte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
-   "Spara ommappningsfiler vid Avsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
-   "Spara ändringar i alla aktiva ommappningsfiler vid Stäng innehåll eller Avsluta RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
-   "Läs in innehållsspecifika kärnalternativ automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
-   "Läs in anpassade kärnalternativ som standard vid uppstart."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
-   "Läs automatiskt in åsidosättningsfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
-   "Läs in anpassad konfiguration vid uppstart."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
-   "Läs in ommappningsfiler automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
-   "Läs in anpassade kontroller vid uppstart."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
-   "Läs in filer för initiala skivindex automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
-   "Byt till senaste använda skivan vid start av flerskivsinnehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
-   "Läs in shaderförval automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
-   "Använd global kärnalternativsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
-   "Spara alla kärnalternativ i gemensam fil (retroarch-core-options.cfg). Inaktiverad kommer alternativ för varje kärna att skrivas till kärnspecifik fil i 'Konfigurationer'-katalogen."
-   )
-
-/* Settings > Saving */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
-   "Sparad fil: Sortera in i mappar efter kärnnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
-   "Sortera sparade filer i mappar med namn efter använd kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
-   "Sparat tillstånd: Sortera in i mappar efter kärnnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
-   "Sortera sparade tillstånd i mappar med namn efter den använda kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Sparad fil: Sortera in i mappar efter innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
-   "Sortera sparade filer i mappar med namn efter katalogen som innehållet finns i."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sparat tillstånd: Sortera in i mappar efter innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
-   "Sortera sparade tillstånd i mappar med namn efter den katalog där innehållet finns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
-   "Sparad fil: Skriv inte över SaveRAM vid Läser in sparat tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
-   "Blockera SaveRAM från att skrivas över när sparade tillstånd läses in. Kan potentiellt innebära buggiga spel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
-   "Sparad fil: Intervall för SaveRAM Autosave"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
-   "Spara automatiskt icke-flyktigt SaveRAM vid fasta intervaller (i sekunder)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
-   "Autosparar det icke-flyktiga SRAM-minnet med jämna mellanrum. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 inaktiverar autosparning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
-   "Återuppspelning: Intervall för kontrollpunkt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
-   "Automatisk bokmärkning av speltillstånd under uppspelning av inspelning med ett regelbundet intervall (i sekunder)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
-   "Sparar automatiskt speltillståndet under inspelning av repriser med ett regelbundet intervall. Detta är inaktiverat som standard om inget annat anges. Intervallet mäts i sekunder. Ett värde på 0 avaktiverar inspelning av kontrollpunkter."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Huruvida kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
-   "Om kontrollpunkter som lagrats i återuppspelningar ska avserialiseras under normal uppspelning. Bör ställas in på true för de flesta kärnor, men vissa kan uppvisa ojämnt beteende vid avserialisering av innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
-   "Sparat tillstånd: Öka index automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
-   "Innan ett sparat tillstånd skapas, ökas sparat tillstånd-index automatiskt. När innehåll laddas in kommer indexet att sättas till det högsta befintliga indexet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
-   "Återuppspelning: Öka index automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
-   "Innan en återuppspelning görs ökas återuppspelningsindexet automatiskt. När innehåll läses in kommer indexet att ställas in på det högsta befintliga indexet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
-   "Sparat tillstånd: Maximal automatisk ökning att behålla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
-   "Begränsa antalet sparade tillstånd som skapas när ”Öka index automatiskt” är aktiverat. Om gränsen överskrids när ett nytt tillstånd sparas, raderas det befintliga tillståndet med lägst index. Värdet ”0” innebär att ett obegränsat antal tillstånd sparas."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
-   "Begränsa antalet återuppspelningar som skapas när ”Öka index automatiskt” är aktiverat. Om gränsen överskrids när en ny återuppspelning spelas in kommer den befintliga återuppspelningen med lägst index att raderas. Värdet ”0” innebär att ett obegränsat antal återuppspelningar spelas in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
-   "Sparat tillstånd: Automatisk sparning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
-   "Spara automatiskt tillståndet när innehållet stängs. Detta sparade tillstånd läses in vid start om ”Automatisk inläsning” är aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
-   "Sparat tillstånd: Automatisk inläsning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
-   "Läser automatiskt in det automatiskt sparade tillståndet vid uppstart."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
-   "Sparat tillstånd: Miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
-   "Visa miniatyrbilder för sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
-   "Sparad fil: Komprimering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
-   "Skriv icke-flyktiga SaveRAM-filer i ett arkiverat format. Minskar filstorleken dramatiskt på bekostnad av (försumbart) ökade spar-/inläsningstider.\nGäller endast kärnor som möjliggör sparande via standardgränssnittet libretro SaveRAM."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
-   "Sparat tillstånd: Komprimering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
-   "Lagrar dina sparade tillståndsfiler i ett arkiverat format. Minskar dramatiskt filstorleken på bekostnad av längre spar- och inläsningstider."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Spara fil: Skriv till innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
-   "Använd innehållskatalog som katalog för sparade filer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Sparat tillstånd: Skriv till innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
-   "Använd innehållskatalog som katalog för sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Systemfiler finns i innehållskatalogen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
-   "Använd innehållskatalog som katalog för system/BIOS."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Skärmdump: Sortera in i mappar efter innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
-   "Sortera skärmbilder i mappar med namn efter katalogen som innehållet finns i."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Skärmdump: Skriv till innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
-   "Använd innehållskatalog som katalog för skärmbilder."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
-   "Skärmdump: Använd GPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
-   "Skärmdumpar fångar GPU-skuggat material om det finns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
-   "Spara körtidslogg (per kärna)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
-   "Håll reda på hur länge varje innehållspost har körts, med poster separerade efter kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Spara körtidslogg (aggregerat)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
-   "Håll reda på hur länge varje innehållsobjekt har körts, registrerat som den sammanlagda summan över alla kärnor."
-   )
-
-/* Settings > Logging */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
-   "Utförlighetsnivå för loggning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
-   "Logga händelser till en terminal eller fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
-   "Loggningsnivå för Frontend"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
-   "Ange loggnivå för frontend. Om en loggnivå som utfärdats av frontend är under detta värde, ignoreras den."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
-   "Loggningsnivå för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
-   "Ange loggnivå för kärnor. Om en loggnivå som utfärdats av en kärna är under detta värde ignoreras den."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
-   "Ställer in loggnivån för libretro-kärnor (GET_LOG_INTERFACE). Om en loggnivå som utfärdas av en libretro-kärna är lägre än libretro_log-nivån ignoreras den. DEBUG-loggar ignoreras alltid om inte verbose-läget är aktiverat (--verbose).\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
-   "0 (Felsök)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
-   "2 (Varning)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
-   "3 (Fel)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
-   "Logga till fil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOG_TO_FILE,
-   "Omdirigera meddelanden i systemhändelseloggen till filen. Kräver att 'Logging Verbosity' är aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
-   "Tidsstämpla loggfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
-   "Vid loggning till fil, dirigera utdata från varje RetroArch session till en ny tidsstämplad fil. Inaktiverad skrivs loggen över varje gång RetroArch startas om."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
-   "Räkna körningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
-   "Körräknare för RetroArch och kärnor. Räknardata kan hjälpa till att fastställa systemets flaskhalsar och finjustera prestanda."
-   )
-
-/* Settings > File Browser */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
-   "Visa dolda filer och mappar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
-   "Visa dolda filer och kataloger i filbläddraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Filtrera okända filformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
-   "Filtrera filer som visas i filbläddraren till filändelser som stöds."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
-   "Filtrera efter kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
-   "Filtrera filer som visas i filbläddraren efter aktuell kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
-   "Kom ihåg senaste använda startkatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
-   "Öppna filbläddraren på den senast använda platsen när du laddar innehåll från startkatalogen. Obs: Platsen återställs till standard när RetroArch startas om."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
-   "Föreslå alltid kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
-   "Föreslå tillgängliga kärnor även när en kärna lästs in manuellt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
-   "Använd intern mediaspelare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
-   "Visa filer som stöds av mediaspelaren i filbläddraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
-   "Använd inbyggd bildvisare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
-   "Visa filer som stöds av bildvisaren i filbläddraren."
-   )
-
-/* Settings > Frame Throttle */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
-   "Spola tillbaka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
-   "Ändra inställningar för bakåtspolning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
-   "Räknare för bildtider"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
-   "Snabbspola framåt-hastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
-   "Den maximala hastighet med vilken innehållet körs när snabbspolning används (t.ex. 5.0x för innehåll med 60 bilder/s= 300 bildfrekvensgräns). Om den är inställd på 0.0x är snabbspolningsförhållandet obegränsat (ingen bildfrekvensgräns)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
-   "Den maximala hastighet med vilken innehållet körs när snabbspolning används. (T.ex. 5.0 för 60 bilder/s innehåll => 300 bilder/s tak).\nRetroArch kommer att gå i viloläge för att säkerställa att den maximala hastigheten inte överskrids. Lita inte på att detta tak är helt korrekt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
-   "Snabbspola framåt-bildrutsöverhopp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
-   "Hoppa över bildrutor enligt snabbspolningshastigheten. Detta sparar ström och möjliggör användning av bildrutebegränsning från tredje part."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
-   "Slow motion hastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
-   "Den hastighet som innehållet spelas upp i när slowmotion används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Stryp menyns bildfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
-   "Säkerställer att bildfrekvensen begränsas när du är inne i menyn."
-   )
-
-/* Settings > Frame Throttle > Rewind */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
-   "Spola tillbaka-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_ENABLE,
-   "Återgå till en tidigare punkt i den senaste spelningen. Detta orsakar en allvarlig prestandaförlust när du spelar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
-   "Spola tillbaka bildrutor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
-   "Antalet bildrutor som ska spolas tillbaka per steg. Högre värden ökar återspolningshastigheten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
-   "Buffertstorlek för tillbakaspolning (MB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
-   "Den minnesmängd (i MB) som ska reserveras för återspolningsbufferten. Om du ökar detta kommer mängden återspolningshistorik att öka."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
-   "Stegstorlek för återspolningsbuffert (MB)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
-   "Varje gång som tillbakaspolningsbuffertens storleksvärde ökas eller minskas, kommer det att ändras med denna mängd."
-   )
-
-/* Settings > Frame Throttle > Frame Time Counter */
-
-
-/* Settings > Recording */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
-   "Inspelningskvalitet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
-   "Låg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
-   "Hög"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
-   "Förlustfri"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
-   "WebM Snabb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
-   "WebM Hög kvalitet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
-   "Anpassad inspelningskonfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
-   "Inspelnings-trådar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
-   "Använd inspelning med efterfilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
-   "Fånga bilden efter att filter (men inte shaders) har tillämpats. Videon kommer att se lika snygg ut som det du ser på din skärm."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
-   "Använd GPU-inspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
-   "Spela in GPU-skuggade material om tillgängligt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
-   "Streamingläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
-   "Lokal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
-   "Streamingkvalitet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
-   "Låg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
-   "Hög"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
-   "Anpassad streamingkonfiguration"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
-   "Stream Titel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
-   "Stream UDP Port"
-   )
-
-/* Settings > On-Screen Display */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
-   "Skärmöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
-   "Justera ramar och skärm-spelkontroller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Videolayout"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
-   "Justera videolayout."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Skärmmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
-   "Hantera meddelanden som visas på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Synlighet för meddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
-   "Slå på/av synligheten för specifika typer av meddelanden."
-   )
-
-/* Settings > On-Screen Display > On-Screen Overlay */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
-   "Visa överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
-   "Överlägg används för kantramar och spelkontroller på skärmen."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
-   "Visa överlägg bakom meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
-   "Visa överlägg bakom inte framför meny."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
-   "Dölj överlägg i meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
-   "Dölj överlägg  i meny och visa igen när meny stängs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Dölj överlägg när spelkontroll är ansluten"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
-   "Dölj överlägg när en fysisk spelkontroll är ansluten till port 1, och visa igen när spelkontroll kopplas från."
-   )
-#if defined(ANDROID)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
-   "Dölj överlägg när en fysisk spelkontroll är ansluten till port 1. Överlägg visas inte automatiskt när spelkontroll kopplas från."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
-   "Visa inmatningar på överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
-   "Visa registrerade ingångar på överlägget på skärmen. ”Touched” markerar överläggselement som trycks/klickas på. ”Fysisk (styrenhet)” visar faktiska indata som skickas till kärnorna, vanligtvis från en ansluten styrenhet/tangentbord."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
-   "Fysiska (spelkontroller)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Visa inmatningar från Port"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
-   "Välj port för inmatningsenhet att övervaka när 'Visa inmatningar på överlägg' är satt till 'Fysisk (Kontroller)'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "Visa muspekare med överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
-   "Visa muspekaren när ett skärmöverlägg används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
-   "Autorotera överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
-   "Om det stöds av aktuell överläggning, rotera automatiskt layouten så att den matchar skärmens orientering/bildförhållande."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
-   "Autoskala överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
-   "Justera automatiskt överlagringsskalan och avståndet mellan element i användargränssnittet för att matcha skärmens bildförhållande. Ger bästa resultat med överkontrollör."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-   "Diagonal känslighet för riktningsknappar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
-   "Justera storleken på de diagonala zonerna. Ställ in på 100% för 8-vägssymmetri."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
-   "Överlappningskänslighet för ABXY"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
-   "Justera storleken på överlappningszonerna i handlingsknappens diamant. Ställ in på 100% för 8-vägssymmetri."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-   "Analog återställningszon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
-   "Inmatningen för den analoga spaken kommer att vara relativ till första beröringen om den trycks in inom denna zon."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY,
-   "Överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
-   "Läs automatiskt in föredraget överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
-   "Föredra inläsning av överlägg baserat på systemnamn innan det återgår till standardförinställningen. Ignoreras om en åsidosättning har angetts för förinställningen för överlägg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
-   "Opacitet för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
-   "Opacitet för alla användargränssnittselement i överlägget."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
-   "Förinställt överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
-   "Välj ett överlägg från filbläddraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
-   "(Liggande) Skala för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
-   "Skala för alla användargränssnittselement i överlägget när du använder liggande bildskärmsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "(Liggande) Justera överläggsförhållande"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
-   "Tillämpa en korrigeringsfaktor för bildförhållande på överlägget när du använder liggande bildskärmsorientering. Positiva värden ökar (medan negativa värden minskar) den effektiva överlagringsbredden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "(Liggande) Horisontell separation för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
-   "Om det stöds av det aktuellt förvalet, justera avståndet mellan elementen i användargränssnittet i den vänstra och högra halvan av ett överlägg när du använder liggande visningsorienteringar. Positiva värden ökar (medan negativa värden minskar) separationen mellan de två halvorna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "(Liggande) Vertikal separation för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
-   "Om det stöds av den aktuella förinställningen, justera avståndet mellan användargränssnittselementen i den övre och nedre halvan av ett överlägg när du använder liggande bildskärmsorientering. Positiva värden ökar (medan negativa värden minskar) separationen mellan de två halvorna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
-   "(Liggande) X-förskjutning överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
-   "Horisontell förskjutning av överlägget när du använder liggande bildskärmsorientering. Positiva värden flyttar överlägget till höger, negativa värden till vänster."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "(Liggande) Y-förskjutning överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
-   "Vertikal förskjutning av överlägget vid användning av liggande bildskärmsorientering. Positiva värden flyttar överlägget uppåt; negativa värden nedåt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
-   "(Stående) Skala för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
-   "Skala för alla användargränssnittselement i överlägget när du använder stående bildskärmsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "(Stående) Justera överläggsförhållande"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
-   "Tillämpa en korrigeringsfaktor för bildförhållande på överlägget när du använder stående bildskärmsorientering. Positiva värden ökar (medan negativa värden minskar) den effektiva höjden på överlägget."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
-   "(Stående) Horisontell separation för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
-   "Om det stöds av den aktuella förinställningen, justera avståndet mellan användargränssnittselementen i den vänstra och högra halvan av ett överlägg när du använder stående bildskärmsorientering. Positiva värden ökar (medan negativa värden minskar) separationen mellan de två halvorna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "(Stående) Vertikal separation för överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
-   "Om det stöds av den aktuella förinställningen, justera avståndet mellan användargränssnittselementen i den övre och nedre halvan av ett överlägg när du använder stående bildskärmsorientering. Positiva värden ökar (medan negativa värden minskar) separationen mellan de två halvorna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
-   "(Stående) X-förskjutning överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
-   "Horisontell förskjutning av överlägget när du använder stående bildskärmsorientering. Positiva värden flyttar överlägget till höger, negativa värden till vänster."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
-   "(Stående) Y-förskjutning överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
-   "Vertikal förskjutning av överlägget vid användning av stående bildskärmsorientering. Positiva värden flyttar överlägget uppåt; negativa värden nedåt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
-   "Tangentbordsöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
-   "Välj och justera ett tangentbordsöverlägg."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
-   "Aktivera överlägg för ljuspistol, mus och pekare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
-   "Använd alla pekinmatningar som inte trycker på överläggskontroller för att skapa pekenhetsinmatningar för kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
-   "Överlägg ljuspistol"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
-   "Konfigurera ljuspistolens inmatning som skickas från överlägget."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
-   "Överlägg mus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
-   "Konfigurera musinmatning som skickas från överlägget. Obs: 1-, 2- och 3-fingertryckningar skickar vänster-, höger- och mittknappsklick."
-   )
-
-/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
-   "Förinställt tangentbordsöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
-   "Välj ett tangentbordsöverlägg från filbläddraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
-   "Auto-skala tangentbordsöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
-   "Justera tangentbordsöverlägret till dess ursprungliga bildformat. Inaktivera för att fylla skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
-   "Opacitet för tangentbordsöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
-   "Opacitet för alla användargränssnittselement i tangentbordsöverlägget."
-   )
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
-   "Port för ljuspistol"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
-   "Ställ in kärnporten att ta emot inmatning från överläggsljuspistolen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
-   "Alla"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
-   "Skicka avtryckarinmatning med pekarinmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   "Avtryckarfördröjning (bildrutor)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
-   "Fördröj avtryckarinmatning för att ge markören tid att röra sig. Denna fördröjning används också för att vänta på rätt antal multitouch-tryckningar."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
-   "Välj inmatning som ska skickas när två pekare är på skärmen. Utlösarfördröjning ska vara större än noll för att skilja från annan inmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
-   "Välj inmatning som ska skickas när tre pekare är på skärmen. Utlösarfördröjning ska vara större än noll för att skilja från annan inmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
-   "Välj den inmatning som ska skickas när fyra pekare visas på skärmen. Utlösarfördröjningen bör vara inte vara noll för att skilja den från andra inmatningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
-   "Tillåt utanför skärmen"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
-   "Tillåt sikte utanför gränserna. Inaktivera för att begränsa sikte utanför skärmen till gränsen för spelområdet."
-   )
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
-   "Mushastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
-   "Justera markörens rörelsehastighet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Långt tryck för att dra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
-   "Tryck länge på skärmen för att börja hålla en knapp."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-   "Tröskelvärde för lång tryckning (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
-   "Justera den hålltid som krävs för en lång tryckning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Dubbeltryck för att dra"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
-   "Dubbeltryck på skärmen för att börja hålla en knapp vid det andra trycket. Lägger till latens till musklick."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Tröskelvärde för dubbeltryckning (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
-   "Justera den tillåtna tiden mellan tryckningarna när en dubbeltryckning upptäcks."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
-   "Använd andra pekning som en musknapp vid kontroll av markören."
-   )
-
-/* Settings > On-Screen Display > On-Screen Notifications */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
-   "Skärmmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
-   "Visa Skärm-meddelanden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
-   "Grafikwidgetar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
-   "Använd dekorerade animationer, meddelanden, indikatorer och kontroller."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
-   "Skala grafikwidgetar automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
-   "Ändra automatiskt storlek på dekorerade meddelanden, indikatorer och kontroller baserat på aktuell menyskala."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Åsidosätt skalning av grafikwidgetar (helskärm)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
-   "Tillämpa en manuell skalningsfaktor när du ritar grafikwidgetar i helskärmsläge. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Åsidosätt skalning av grafikwidgetar (fönsterläge)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
-   "Använd en manuell skalningsfaktor när du ritar grafikwidgetar i fönsterläge. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FPS_SHOW,
-   "Visa bildfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FPS_SHOW,
-   "Visa aktuella bilder per sekund på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
-   "Bildfrekvensens uppdateringsintervall (i bildrutor)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
-   "Bildfrekvensen uppdateras med det inställda intervallet i bildrutor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
-   "Visa bildruteräknare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
-   "Visa aktuell bildrutsräkning på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
-   "Visa Statistik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
-   "Visa teknisk statistik på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
-   "Visa Minnesanvändning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MEMORY_SHOW,
-   "Visa systemets använd och total mängd minne på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
-   "Uppdateringsintervall för minnesanvändning (i bildrutor)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
-   "Minnesanvändningen uppdateras med inställt intervall i bildrutor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
-   "Visa Netplay Ping"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
-   "Visa pingen för den aktuella Netplay sessionen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "\"Läs in innehåll\"-meddelande vid uppstart"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
-   "Visa en kort animering med återkoppling vid start när innehåll läses in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
-   "Meddelanden om inmatningsanslutning (Autoconfig)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-   "Meddelanden om inmatningsfel (Autoconfig)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Fuskkodsmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
-   "Visa ett meddelande på skärmen när fuskkoder tillämpas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "Patchmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
-   "Visa ett meddelande på skärmen när ROM soft-patchas."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
-   "Visa ett meddelande på skärmen när spelkontroller ansluts/kopplas från."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
-   "Visa ett meddelande på skärmen när inmatningsenheter inte kunde konfigureras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Meddelanden vid inlästa inmatningsommappningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
-   "Visa ett meddelande på skärmen vid inläsning av ommappningsfiler för inmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "Meddelanden vid inläsning av konfigurationsåsidosättning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
-   "Visa ett meddelande på skärmen vid inläsning av filer för åsidosättning av konfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "Notifieringar för initial skivåterställning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
-   "Visa ett meddelande på skärmen när du automatiskt återställer den senast använda skivan vid start av flerskivsinnehåll som lästs in via M3U-spellistor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
-   "Meddelanden om skivkontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
-   "Visar ett meddelande på skärmen när du matar in och tar ut skivor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
-   "Meddelanden om sparade tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
-   "Visa ett meddelande på skärmen när du sparar och läser in sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
-   "Skärmdumpsmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
-   "Visa ett meddelande på skärmen när en skärmdump tas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "Tidsgräns för skärmdumpsmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
-   "Definiera varaktigheten för skärm-meddelandet om skärmdump."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
-   "Snabb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
-   "Mycket snabb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
-   "Omedelbar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Skärmdump Blixt-effekt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
-   "Visa en vit blinkande effekt på skärmen med önskad längd när en skärmdump tas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
-   "PÅ (Normal)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
-   "PÅ (Snabb)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
-   "Meddelanden för uppdateringsfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
-   "Visa ett meddelande på skärmen när uppdateringsfrekvensen ställs in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Meddelanden för Extra Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
-   "Visa icke-nödvändiga Netplay-meddelanden på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Meddelanden för endast-meny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
-   "Visa meddelanden endast när menyn är öppen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
-   "Typsnitt för meddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
-   "Välj typsnittet för skärmmeddelanden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
-   "Meddelandestorlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
-   "Ange teckenstorleken i punkter. När widgetar används har denna storlek endast effekt på statistikvisningen på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
-   "Meddelandeposition (horisontellt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
-   "Ange anpassad X-axelposition för skärmtext. 0 är den vänstra kanten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
-   "Meddelandeposition (vertikalt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
-   "Ange anpassad Y-axelposition för skärmtext. 0 är den nedre kanten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
-   "Meddelandefärg (röd)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
-   "Ställer in det röda värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
-   "Meddelandefärg (grön)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
-   "Ställer in det gröna värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
-   "Meddelandefärg (blå)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
-   "Ställer in det blåa värdet för textfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "Meddelandebakgrund"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
-   "Aktiverar en bakgrundsfärg för skärmmeddelanden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Meddelandens bakgrundsfärg (röd)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
-   "Ställer in det röda värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Meddelandens bakgrundsfärg (grön)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
-   "Ställer in det gröna värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Meddelandens bakgrundsfärg (blå)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
-   "Ställer in det blåa värdet för bakgrundsfärgen för skärmmeddelanden. Giltiga värden är mellan 0 och 255."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Bakgrundsopacitet för meddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
-   "Ställer in opaciteten för OSD-bakgrundsfärgen. Giltiga värden ligger mellan 0,0 och 1,0."
-   )
-
-/* Settings > User Interface */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
-   "Utseende"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SETTINGS,
-   "Ändra inställningar för menyskärmens utseende."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
-   "Synlighet för menyobjekt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
-   "Välj synligheten för menyalternativ i RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
-   "Pausa innehåll när menyn är aktiv"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
-   "Pausa innehållet om menyn är aktiv."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
-   "Pausa innehåll vid inaktivitet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
-   "Pausa innehåll när RetroArch inte är det aktiva fönstret."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
-   "Avsluta vid Stäng innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
-   "Avsluta RetroArch automatiskt vid Stäng innehåll. 'CLI' avslutas bara när innehållet startas via kommandoraden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
-   "Återuppta innehållet efter att använt Spara tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
-   "Stäng automatiskt menyn och återuppta innehållet efter att ha sparat eller läst in ett tillstånd. Inaktivering kan förbättra prestandan för sparad status på mycket långsamma enheter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
-   "Återuppta innehåll efter skivbyte"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
-   "Stäng automatiskt menyn och återuppta innehållet efter att matat in eller läst in en ny skiva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
-   "Navigering börjar om från början"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
-   "Börja om från början och/eller slutet när listans slut har nåtts horisontellt eller vertikalt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
-   "Visa Avancerade inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
-   "Visa avancerade inställningar för avancerade användare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   "Kioskläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   "Skyddar installationen genom att dölja alla konfigurationsrelaterade inställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
-   "Ange lösenord för att inaktivera kioskläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
-   "Att ange ett lösenord när kioskläget aktiveras gör det möjligt att senare inaktivera kioskläget från menyn, genom att gå till huvudmenyn, välja Inaktivera Kioskläge och ange lösenordet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
-   "Mus-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
-   "Tillåt att menyn styrs med en mus."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
-   "Touch-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_POINTER_ENABLE,
-   "Tillåt att menyn styrs med en pekskärm."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
-   "Trådade uppgifter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   "Utför uppgifter på en separat tråd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
-   "Menyskärmsläckarens tidsgräns"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
-   "Medan menyn är aktiv kommer en skärmsläckare att kunna visas efter den angivna perioden av inaktivitet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
-   "Animera menyskärmsläckare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
-   "Aktivera en animeringseffekt medan menyskärmsläckaren är aktiv. Har en väldigt låg påverkan på prestanda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
-   "Snö"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
-   "Stjärnfält"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
-   "Virvel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
-   "Menyskärmsläckarens animeringshastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
-   "Justera hastigheten på menyskärmsläckarens animationseffekt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
-   "Inaktivera skrivbordskomposition"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
-   "Fönsterhanterare använder komposition för att tillämpa visuella effekter, upptäcka fönster som inte svarar och mycket annat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
-   "Inaktivera komposition med tvång. Inaktivering är endast giltig på Windows Vista/7 för tillfället."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
-   "Starta UI Companion vid uppstart"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
-   "Starta User Interface companion-drivrutinen vid uppstart (om tillgänglig)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
-   "Skrivbordsmeny (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
-   "Öppna skrivbordsmenyn vid start"
-   )
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
-   "3DS Utseende bottenskärm"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
-   "Ändra inställningar för den nedre skärmens utseende."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
-   "Programikon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
-   "Ändra programikon."
-   )
-
-/* Settings > User Interface > Menu Item Visibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   "Snabbmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
-   "Växla synligheten för menyobjekt i Snabbmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   "Inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
-   "Växla synligheten för menyobjekt i menyn Inställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
-   "Visa 'Läs in kärna'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
-   "Visa alternativet 'Läs in kärna' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-   "Visa 'Läs in innehåll'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
-   "Visa alternativet 'Läs in innehåll' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
-   "Visa 'Läs in skiva'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
-   "Visa alternativet 'Läs in skiva' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
-   "Visa 'Dumpa skiva'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
-   "Visa alternativet 'Dumpa skiva' i huvudmenyn."
-   )
+   char s_4e447c6c[36];
+   char s_d9a51d02[12];
+   char s_12e77e8f[9];
+   char s_af6007a1[19];
+   char s_da068369[6];
+   char s_daead8a5[5];
+   char s_48c208ee[18];
+   char s_a38cafbb[28];
+   char s_dcf2e800[5];
+   char s_f4740f16[28];
+   char s_d95f1db1[34];
+   char s_aafc147d[11];
+   char s_792e0069[23];
+   char s_76e73138[11];
+   char s_e2062515[31];
+   char s_ad791974[6];
+   char s_b271ae95[24];
+   char s_fb84857a[10];
+   char s_3943c7ae[30];
+   char s_5b2d8d2f[15];
+   char s_affd948c[18];
+   char s_d2d4c381[22];
+   char s_a95aa0fc[31];
+   char s_49b0b12a[5];
+   char s_13d32d54[31];
+   char s_91e41658[19];
+   char s_30375dfa[28];
+   char s_02027672[34];
+   char s_8c7495e3[20];
+   char s_ad7c73f6[15];
+   char s_30acd6fb[15];
+   char s_04b30c51[18];
+   char s_e5aeacf9[23];
+   char s_24976a5b[20];
+   char s_5209cc72[27];
+   char s_9f1f3534[44];
+   char s_e66b1cb9[42];
+   char s_1bf49fce[37];
+   char s_11e34db0[34];
+   char s_0058b881[9];
+   char s_14ec7b7e[10];
+   char s_00614813[8];
+   char s_8584f1d6[10];
+   char s_7fc52043[10];
+   char s_0cadcd1e[7];
+   char s_9509d1c2[23];
+   char s_c7a999e6[16];
+   char s_f0c9c4c0[21];
+   char s_95a3cbcb[69];
+   char s_efe3b3e1[21];
+   char s_25babaa7[7];
+   char s_b819d3cc[13];
+   char s_c2f41987[13];
+   char s_327b2550[9];
+   char s_bbb615a1[27];
+   char s_314539a4[21];
+   char s_213c44cf[15];
+   char s_502f623c[7];
+   char s_b6cd2ff0[49];
+   char s_40e7aacd[5];
+   char s_fe2b08f2[13];
+   char s_75661984[23];
+   char s_c0713a6f[33];
+   char s_d0d415f0[33];
+   char s_d190cd32[29];
+   char s_5183d530[29];
+   char s_870cb022[48];
+   char s_8fa5e6c4[26];
+   char s_c64294aa[21];
+   char s_dc5604d6[22];
+   char s_5b50a147[4];
+   char s_49e911b8[25];
+   char s_8946d659[25];
+   char s_4abf7993[21];
+   char s_62faea0d[10];
+   char s_73a2b0bf[19];
+   char s_f3302ed7[17];
+   char s_80ca896b[20];
+   char s_5b51050b[12];
+   char s_f6f3a242[13];
+   char s_5b522dec[18];
+   char s_b87e5f63[21];
+   char s_6419decb[26];
+   char s_4b187f62[29];
+   char s_0f520b2d[18];
+   char s_12b09c0a[10];
+   char s_c61255f9[29];
+   char s_a1035074[23];
+   char s_715c841a[27];
+   char s_0bb103fc[34];
+   char s_3f8cc353[34];
+   char s_375d69d5[18];
+   char s_2cde5937[12];
+   char s_068a511b[36];
+   char s_91b09d64[22];
+   char s_67e4657f[38];
+   char s_f30ab1c8[24];
+   char s_c90e4caf[14];
+   char s_6afa2137[28];
+   char s_d75d3923[28];
+   char s_b133119b[28];
+   char s_52f59df6[28];
+   char s_6afa217c[28];
+   char s_ca3e5141[28];
+   char s_6afa2221[28];
+   char s_ca3e6686[28];
+   char s_ca3e6d25[28];
+   char s_23fb75d2[36];
+   char s_d2a031dd[19];
+   char s_d548b1ad[36];
+   char s_fd67817e[36];
+   char s_c689058d[10];
+   char s_5b5a1fce[4];
+   char s_c6b512c9[7];
+   char s_8e0547d6[18];
+   char s_d082b54c[13];
+   char s_b7ed78f3[17];
+   char s_191b3f1d[19];
+   char s_3cf1ea50[17];
+   char s_32550f71[17];
+   char s_470f1e1b[19];
+   char s_2961a90e[17];
+   char s_9506b932[19];
+   char s_097506c1[30];
+   char s_097506cf[27];
+   char s_00641f14[9];
+   char s_ff48fdea[22];
+   char s_ad1b6060[18];
+   char s_2c210d06[36];
+   char s_565cbabb[13];
+   char s_e8ea0b2e[17];
+   char s_7fa7d966[15];
+   char s_ebfba087[20];
+   char s_53f57122[11];
+   char s_d2a3ce97[6];
+   char s_4e6fcacf[19];
+   char s_02f2d1bf[17];
+   char s_a3a48883[16];
+   char s_9b90e4dd[13];
+   char s_a288f873[32];
+   char s_ea328054[16];
+   char s_a0f40b5a[9];
+   char s_a8833b4e[14];
+   char s_edbe1fc5[12];
+   char s_cd83dfce[12];
+   char s_2897f730[23];
+   char s_3425a408[22];
+   char s_4a4fe394[44];
+   char s_f3e8583c[38];
+   char s_7105ee42[44];
+   char s_cc846b8d[18];
+   char s_cc5a2e40[24];
+   char s_572a869b[19];
+   char s_176b2dac[10];
+   char s_c86e4ca9[23];
+   char s_b9de718e[24];
+   char s_17d978b1[22];
+   char s_76d92467[24];
+   char s_460fbbcc[6];
+   char s_215e6dd8[17];
+   char s_b0096460[18];
+   char s_0a05438c[24];
+   char s_1324c306[22];
+   char s_152cd261[28];
+   char s_7d00b7ed[10];
+   char s_7bd7aa88[31];
+   char s_0674b554[32];
+   char s_d4c7eb99[22];
+   char s_780eb7cb[19];
+   char s_7505029f[26];
+   char s_fb12e29b[21];
+   char s_96114701[12];
+   char s_05dabad8[9];
+   char s_6c74f3ea[16];
+   char s_5dd46898[28];
+   char s_1a1260db[18];
+   char s_1b34e389[21];
+   char s_18996eed[21];
+   char s_6322a8fa[14];
+   char s_ce5f3353[22];
+   char s_6155456e[18];
+   char s_e4e54370[14];
+   char s_e78c87a1[32];
+   char s_f33a0acb[34];
+   char s_8b47a498[21];
+   char s_f445b2f8[31];
+   char s_2a7ec0c3[10];
+   char s_ec59110b[24];
+   char s_9d8cfc8b[10];
+   char s_638978e9[17];
+   char s_d39fc80f[19];
+   char s_ac35d688[18];
+   char s_43c4664e[17];
+   char s_c03808ea[14];
+   char s_8c2cbcbd[37];
+   char s_225da616[7];
+   char s_304c0542[8];
+   char s_d6f91d43[16];
+   char s_0fd30a6d[5];
+   char s_f9d105bf[14];
+   char s_7c9bfdda[12];
+   char s_4e254ff1[8];
+   char s_5ff40648[15];
+   char s_7d19b727[32];
+   char s_be87312d[32];
+   char s_36265c93[10];
+   char s_6f6d3a5c[27];
+   char s_5ac8bccf[31];
+   char s_fe27a4a1[16];
+   char s_36442b35[17];
+   char s_b3fd357c[22];
+   char s_c253a614[16];
+   char s_9bdbcd98[14];
+   char s_e39d2cb2[14];
+   char s_3391ca83[13];
+   char s_86ec481f[15];
+   char s_4a7bf997[24];
+   char s_b054c007[18];
+   char s_4e3bbebd[20];
+   char s_b055912b[24];
+   char s_02056693[22];
+   char s_017e8c85[50];
+   char s_342dd239[14];
+   char s_01c4f556[20];
+   char s_63a07f7e[15];
+   char s_1e1c0557[12];
+   char s_feb1c160[5];
+   char s_b2e4b4c3[14];
+   char s_97242f99[25];
+   char s_8cefb843[15];
+   char s_177845b3[24];
+   char s_8fe1a777[17];
+   char s_881efe76[17];
+   char s_1e4264a1[14];
+   char s_58072ab5[34];
+   char s_babee9c1[11];
+   char s_78c58363[13];
+   char s_78071664[10];
+   char s_78083010[22];
+   char s_cc781d49[13];
+   char s_19e9df3c[68];
+   char s_0a2e0504[12];
+   char s_49c9bf91[7];
+   char s_04ecbe77[14];
+   char s_525068d3[19];
+   char s_18cc5aec[31];
+   char s_34083fbc[64];
+   char s_b0b9ca3e[67];
+   char s_66ed0f42[6];
+   char s_ba582576[45];
+   char s_33ed5ede[23];
+   char s_8d30abf0[21];
+   char s_38b82e6c[18];
+   char s_8f133960[15];
+   char s_9c5329ad[15];
+   char s_d7f2cfac[15];
+   char s_87e07c0e[15];
+   char s_d7f2e719[24];
+   char s_e567aa86[16];
+   char s_93e2fd9c[16];
+   char s_8ea1aafd[27];
+   char s_8f76f01e[27];
+   char s_16eade0c[32];
+   char s_a49f04f3[20];
+   char s_a4a09683[24];
+   char s_b95e3404[28];
+   char s_734d2a61[7];
+   char s_a7a97316[46];
+   char s_8b421107[29];
+   char s_543b5a62[25];
+   char s_d1dc5a72[42];
+   char s_1d9a045d[55];
+   char s_9ada0438[37];
+   char s_eb66d46b[26];
+   char s_145f5880[15];
+   char s_b1b9fd35[38];
+   char s_0cc72b4d[28];
+   char s_9af4bf52[15];
+   char s_e5d096ab[12];
+   char s_b3d0e60e[22];
+   char s_044f35cc[22];
+   char s_a64d0cc9[25];
+   char s_a75b4160[15];
+   char s_b5474009[11];
+   char s_cdfc64f8[21];
+   char s_47501076[18];
+   char s_0bf629fd[8];
+   char s_fa394f51[18];
+   char s_a1b1122f[15];
+   char s_68922838[15];
+   char s_64595fb0[14];
+   char s_beaf53f1[17];
+   char s_c3fd1e84[14];
+   char s_0f2da3af[17];
+   char s_f4875576[19];
+   char s_df3def90[26];
+   char s_22600fe7[20];
+   char s_dd6afca3[21];
+   char s_4bcbcc14[30];
+   char s_e97bb565[20];
+   char s_da7a38eb[23];
+   char s_06f25fc0[17];
+   char s_0a176c2e[22];
+   char s_f0ce97f7[17];
+   char s_704e200c[8];
+   char s_a82728ec[17];
+   char s_7ca0c97c[32];
+   char s_328dfd67[17];
+   char s_6831e4b8[18];
+   char s_b48bf607[12];
+   char s_fe9eade8[11];
+   char s_eae59928[24];
+   char s_b92166cd[8];
+   char s_a30b8bc0[12];
+   char s_bf1e05df[7];
+   char s_38205220[16];
+   char s_bf21615a[7];
+   char s_15f24ff4[7];
+   char s_ec7e8026[7];
+   char s_5d29b870[16];
+   char s_08e9410c[17];
+   char s_d95824aa[19];
+   char s_639f529e[14];
+   char s_4927597c[14];
+   char s_77b74366[14];
+   char s_3b7e9d77[9];
+   char s_10342503[12];
+   char s_d31f6d88[21];
+   char s_f03e9c42[21];
+   char s_7088df5e[28];
+   char s_3aff8242[22];
+   char s_ca087dbf[13];
+   char s_2d63d454[18];
+   char s_3674ba44[12];
+   char s_6b38a08b[40];
+   char s_3e073ed3[40];
+   char s_6ebb6a00[12];
+   char s_f4116974[18];
+   char s_01d9ae7b[21];
+   char s_c12910d3[10];
+   char s_40a4eb2b[51];
+   char s_92c32104[19];
+   char s_8089e40c[30];
+   char s_99eaf2ff[5];
+   char s_1906f1fc[19];
+   char s_5cb15718[16];
+   char s_1792565e[15];
+   char s_8cfdee2a[24];
+   char s_40582c14[21];
+   char s_c9afcfe6[17];
+   char s_75d123f3[16];
+   char s_b84a6df0[16];
+   char s_35da9191[12];
+   char s_580f7fc4[13];
+   char s_3646f8e0[12];
+   char s_8f2a984c[18];
+   char s_04be5b68[15];
+   char s_05dca252[11];
+   char s_6a95fdaa[17];
+   char s_e03017dc[25];
+   char s_db16b335[18];
+   char s_10358d4e[15];
+   char s_0ad18744[13];
+   char s_0b7c8e91[20];
+   char s_0bf63b67[13];
+   char s_36b2a31c[13];
+   char s_b2edd9fe[19];
+   char s_721da345[17];
+   char s_d235c6fc[11];
+   char s_cd756e23[12];
+   char s_14755194[15];
+   char s_f910f918[12];
+   char s_2976d474[12];
+   char s_9eed897f[5];
+   char s_1e1182e5[19];
+   char s_91f69bb0[10];
+   char s_52fded9c[14];
+   char s_a578b37f[10];
+   char s_99eb425d[9];
+   char s_c6358575[39];
+   char s_411a3db3[7];
+   char s_e645f7ac[37];
+   char s_a779dce9[29];
+   char s_941e50fb[13];
+   char s_2cb9dc71[10];
+   char s_ea741899[10];
+   char s_3eb95fb2[28];
+   char s_2841f912[22];
+   char s_f4c45eef[40];
+   char s_16db20a9[42];
+   char s_988f00b1[18];
+   char s_cb7ae477[52];
+   char s_5333adbc[22];
+   char s_a46a4178[22];
+   char s_1c0f54f0[24];
+   char s_97c02a5a[18];
+   char s_998d1a40[29];
+   char s_c6622b4d[10];
+   char s_3ca7402d[21];
+   char s_5ebe01e7[23];
+   char s_ad8d5812[56];
+   char s_8055d56c[35];
+   char s_c4842e2d[24];
+   char s_fd3e287f[9];
+   char s_550b1e93[10];
+   char s_d2224db6[7];
+   char s_c0d9bee1[6];
+   char s_c175c697[7];
+   char s_9ef5d822[5];
+   char s_2cc6ab9d[25];
+   char s_e2f27171[7];
+   char s_2f9a064c[7];
+   char s_96ee0cfb[9];
+   char s_ae50c550[9];
+   char s_a39026ee[29];
+   char s_1480c7fc[28];
+   char s_2e7dbc66[17];
+   char s_74eeda27[23];
+   char s_b30d3e14[7];
+   char s_af315ae7[50];
+   char s_87994f40[24];
+   char s_6f199f35[24];
+   char s_b1e1d992[15];
+   char s_798643f5[30];
+   char s_b61d0a2d[28];
+   char s_c68080b6[25];
+   char s_b87232ce[25];
+   char s_231308e8[28];
+   char s_27db7cc0[26];
+   char s_700d45a9[23];
+   char s_2a30a561[23];
+   char s_6ae6f953[19];
+   char s_e28bc72f[11];
+   char s_0b2a8528[30];
+   char s_ea5757a0[12];
+   char s_f9ee4a82[3];
+   char s_7beff2c4[4];
+   char s_df1031f3[30];
+   char s_0c841ecc[26];
+   char s_b5083690[29];
+   char s_9d0bdbfa[18];
+   char s_8b9af73a[16];
+   char s_66389548[32];
+   char s_926f9e93[41];
+   char s_18029d7e[11];
+   char s_17b96f39[25];
+   char s_d9f6c8e8[10];
+   char s_0d5e69d1[22];
+   char s_998970f0[34];
+   char s_3518bec3[32];
+   char s_54e5819b[21];
+   char s_009a10e3[10];
+   char s_22c19b64[27];
+   char s_58de51be[9];
+   char s_cde2111a[14];
+   char s_aded1e43[37];
+   char s_1c82054d[36];
+   char s_d458f013[37];
+   char s_56e1b31e[17];
+   char s_56e1b31f[16];
+   char s_597c4715[10];
+   char s_56e1b329[15];
+   char s_3318187b[19];
+   char s_3318187c[16];
+   char s_59807d68[15];
+   char s_56e1b32f[15];
+   char s_33181941[19];
+   char s_33181942[16];
+   char s_89fef1fb[13];
+   char s_cbeca73d[13];
+   char s_8a16fa6b[12];
+   char s_331819c2[10];
+   char s_56e1b335[16];
+   char s_56e1b336[19];
+   char s_313d15c0[9];
+   char s_e9f0dd82[41];
+   char s_72765a06[15];
+   char s_72765a07[15];
+   char s_72765a08[15];
+   char s_b37addc8[17];
+   char s_b37f141b[22];
+   char s_23d05f0e[20];
+   char s_c30b67b5[17];
+   char s_e7c0ed0f[16];
+   char s_ea15eb78[14];
+   char s_73bb2346[13];
+   char s_97eb860c[18];
+   char s_7c68a1ee[15];
+   char s_7febe11e[37];
+   char s_da2acf5c[15];
+   char s_735c53f7[11];
+   char s_7841d5c4[18];
+   char s_41b61e1c[12];
+   char s_bacd98a3[14];
+   char s_f8b9e275[17];
+   char s_8bc79213[19];
+   char s_574cdfa6[13];
+   char s_574e2d44[19];
+   char s_63fbe677[22];
+   char s_7019eccd[31];
+   char s_54a56927[28];
+   char s_625bf607[23];
+   char s_e6ec28da[18];
+   char s_4f7fa8b9[19];
+   char s_b3a9ff57[19];
+   char s_f4eaed02[27];
+   char s_a9f5617a[25];
+   char s_50e34bc5[19];
+   char s_00ea00d3[16];
+   char s_b43e2e98[8];
+   char s_f858d2c9[31];
+   char s_7b4aa4e9[38];
+   char s_2f4cd458[25];
+   char s_fc2d1328[22];
+   char s_e5a6dde5[20];
+   char s_c56f6b97[43];
+   char s_0d38382a[32];
+   char s_b2f8c11d[18];
+   char s_2b2decbc[6];
+   char s_db9eb3c7[13];
+   char s_d4f2cc9b[27];
+   char s_160873b5[49];
+   char s_87071f08[8];
+   char s_08b5bffb[20];
+   char s_5d93fbb0[16];
+   char s_a9323d96[36];
+   char s_3b6fd3ae[30];
+   char s_3c55b220[20];
+   char s_ec502f2a[20];
+   char s_c70e3826[15];
+   char s_75af4246[19];
+   char s_a7c46427[42];
+   char s_21c5b854[17];
+   char s_cbdeb67b[14];
+   char s_bd92cd5a[16];
+   char s_bd95eeb2[14];
+   char s_bd973c50[20];
+   char s_8976cc55[17];
+   char s_dd9a9026[24];
+   char s_d6d350e0[21];
+   char s_bd250a0a[36];
+   char s_1540e1a2[30];
+   char s_7bbc8e49[32];
+   char s_75408168[20];
+   char s_8c477d6f[24];
+   char s_44b4bf9f[24];
+   char s_652788cc[10];
+   char s_0cc981b9[10];
+   char s_6b84e5e6[64];
+   char s_baff47af[6];
+   char s_baff47b0[6];
+   char s_3cba0b76[15];
+   char s_35a751e3[17];
+   char s_4dc18d17[9];
+   char s_e354f00a[6];
+   char s_0eed526e[6];
+   char s_4e61b8dd[6];
+   char s_803347cb[12];
+   char s_6f8b74f8[12];
+   char s_267cef24[34];
+   char s_727b11f4[36];
+   char s_21ec213c[27];
+   char s_030a629f[22];
+   char s_8bc5b398[21];
+   char s_0c353c96[27];
+   char s_629528b9[43];
+   char s_b662d01f[16];
+   char s_f6cc615c[24];
+   char s_46d040e3[48];
+   char s_8dc6f512[26];
+   char s_c4a9bd3e[21];
+   char s_51d76325[5];
+   char s_4d00e91b[35];
+   char s_68207d70[41];
+   char s_4c443d28[25];
+   char s_cf8bcdce[41];
+   char s_2be118c6[26];
+   char s_9dd66391[13];
+   char s_d73ce37f[52];
+   char s_3593d1fb[32];
+   char s_4c8f0777[25];
+   char s_800197ff[28];
+   char s_7785c81e[30];
+   char s_38cf005e[35];
+   char s_7e9108fa[6];
+   char s_f455cf63[4];
+   char s_ce89e465[23];
+   char s_88226df7[29];
+   char s_4c92f60e[28];
+   char s_9c702ee1[38];
+   char s_b8b18b90[12];
+   char s_efa8d516[35];
+   char s_d7c1d887[20];
+   char s_8c49943c[17];
+   char s_d2c6b214[27];
+   char s_dad749ea[22];
+   char s_90402655[31];
+   char s_956c0935[26];
+   char s_eae8c57c[18];
+   char s_a7da7dc1[23];
+   char s_980ef0e8[10];
+   char s_fcf05466[18];
+   char s_da16c634[15];
+   char s_d042d680[6];
+   char s_16cacb01[11];
+   char s_75851363[16];
+   char s_f07432ff[15];
+   char s_df29ad9e[12];
+   char s_e59fc3c9[16];
+   char s_7dcf9e78[16];
+   char s_f07a5367[11];
+   char s_feaf16c5[12];
+   char s_dedb2642[25];
+   char s_ff1b8ce5[19];
+   char s_bd07998f[17];
+   char s_4e2f19db[22];
+   char s_9e66791a[13];
+   char s_f3076af9[4];
+   char s_84d3d068[7];
+   char s_2ff647c2[26];
+   char s_650d0e34[36];
+   char s_706c1104[16];
+   char s_88ff9936[26];
+   char s_30a27169[23];
+   char s_1939e675[23];
+   char s_8cf87433[23];
+   char s_78a4033f[19];
+   char s_cf8bbd75[8];
+   char s_e4c4c0a2[17];
+   char s_9f6b2d03[27];
+   char s_72f288e3[8];
+   char s_6107eb09[14];
+   char s_b6172513[9];
+   char s_e3d18a3d[18];
+   char s_d15b342a[14];
+   char s_fdd6e708[19];
+   char s_cafa647f[14];
+   char s_31b177ec[6];
+   char s_8cb3b95f[9];
+   char s_ded23b48[21];
+   char s_074440cb[15];
+   char s_bfe3f81e[23];
+   char s_a624fe50[33];
+   char s_ea2e0a76[12];
+   char s_ea478739[8];
+   char s_dc362405[12];
+   char s_e2f51ded[12];
+   char s_d9685b01[10];
+   char s_74b6dd31[8];
+   char s_3e39918c[15];
+   char s_96380b84[16];
+   char s_981e8bbb[14];
+   char s_16846b20[17];
+   char s_4441ee26[17];
+   char s_5eeb3a8a[32];
+   char s_a497674d[24];
+   char s_7dea99f5[22];
+   char s_da90bf11[21];
+   char s_83f3b962[29];
+   char s_328b6ccc[14];
+   char s_69694866[27];
+   char s_8a9a3ae4[9];
+   char s_c42c1d33[30];
+   char s_fad5d518[39];
+   char s_31db9df6[7];
+   char s_5c160fe2[25];
+   char s_c2f915b2[4];
+   char s_3a0abeb9[3];
+   char s_867c965b[28];
+   char s_16ff0a79[10];
+   char s_c3121580[5];
+   char s_ac1af256[9];
+   char s_588e6899[11];
+   char s_588f29bc[13];
+   char s_6ab8fcc2[12];
+   char s_58960843[11];
+   char s_d7149be9[11];
+   char s_2978f0ec[11];
+   char s_954d16c1[10];
+   char s_a72ca64c[11];
+   char s_8d566802[10];
+   char s_25b24689[6];
+   char s_781542e6[14];
+   char s_e32f71a6[18];
+   char s_b3165c24[12];
+   char s_3c371cf3[5];
+   char s_911d0106[16];
+   char s_0510a954[4];
+   char s_e1a10790[20];
+   char s_3dd406ba[20];
+   char s_f2ae4c72[21];
+   char s_f4c55ac6[5];
+   char s_f4c9faa6[3];
+   char s_8e620fa7[5];
+   char s_74b12047[32];
+   char s_bc514c4d[24];
+   char s_b6fadee1[19];
+   char s_00b6e1bd[24];
+   char s_906aff13[3];
+   char s_71b1c8e1[13];
+   char s_aa80cd37[15];
+   char s_7236c14f[14];
+   char s_006dbffd[3];
+   char s_d3574e33[12];
+   char s_9d0bdde1[15];
+   char s_eded64b9[14];
+   char s_d86adca1[23];
+   char s_a17f6a67[59];
+   char s_9da5609f[10];
+   char s_269e5dff[14];
+   char s_25464734[28];
+   char s_136eaaf4[22];
+   char s_8d3a8b68[5];
+   char s_68d27147[11];
+   char s_f02f73fc[26];
+   char s_3a0a3fef[13];
+   char s_1e09db79[16];
+   char s_0d2d8eef[11];
+   char s_400523e5[22];
+   char s_989836e4[34];
+   char s_03ce40b4[24];
+   char s_ba248c4b[36];
+   char s_2696c793[46];
+   char s_615c8cdc[16];
+   char s_35c29e50[33];
+   char s_8b835c60[7];
+   char s_6f947f94[41];
+   char s_202067d4[23];
+   char s_72898bf0[11];
+   char s_e3f09f98[16];
+   char s_95c85ee0[21];
+   char s_dd8ce9f3[12];
+   char s_6ca737be[16];
+   char s_6dbc522b[20];
+   char s_a5843c01[25];
+   char s_60864187[35];
+   char s_d5a026f2[19];
+   char s_9b514f32[18];
+   char s_e0747272[40];
+   char s_39557f42[29];
+   char s_663c026b[14];
+   char s_d05c8ee3[22];
+   char s_13bce77f[19];
+   char s_1b2ee6c4[32];
+   char s_26e9cde7[38];
+   char s_b539ec6c[16];
+   char s_f89e1cbc[58];
+   char s_26bef802[11];
+   char s_9dfc61bc[28];
+   char s_bd50c8e2[5];
+   char s_676ad14c[42];
+   char s_73897039[13];
+   char s_5bb9bd63[7];
+   char s_7f5c6d63[33];
+   char s_c2aa7439[23];
+   char s_5b3c8098[22];
+   char s_ceb820ad[9];
+   char s_63af41a7[25];
+   char s_d02afc79[25];
+   char s_7a2033d4[19];
+   char s_f228c6c5[14];
+   char s_11926382[19];
+   char s_645ae416[25];
+   char s_df92f5b5[44];
+   char s_dcbf8b04[22];
+   char s_dcbffdfe[21];
+   char s_7816d5d5[26];
+   char s_2b1f17e8[25];
+   char s_36c3acc7[17];
+   char s_b4c3612a[27];
+   char s_f638f238[17];
+   char s_f3358a59[22];
+   char s_0d7d9688[25];
+   char s_b00815b8[9];
+   char s_1ef8917a[20];
+   char s_ada81f6a[23];
+   char s_c85198e6[27];
+   char s_d264a13e[19];
+   char s_d3213ff3[23];
+   char s_ac60056b[14];
+   char s_1ad09b45[24];
+   char s_87064238[37];
+   char s_2a273dd7[15];
+   char s_5e5fc0ee[19];
+   char s_67b6077f[19];
+   char s_1107487a[23];
+   char s_2cb3ae18[19];
+   char s_1193e37b[44];
+   char s_729a38da[26];
+   char s_4ca32b24[14];
+   char s_9b2a97d9[15];
+   char s_94ce603f[33];
+   char s_0c1e1a65[39];
+   char s_8ed62097[51];
+   char s_6b9ce765[55];
+   char s_7742d553[36];
+   char s_813d8d09[42];
+   char s_a771be4c[17];
+   char s_204201cb[19];
+   char s_5e8d5121[14];
+   char s_b201bb70[43];
+   char s_b66840e9[23];
+   char s_8be7813a[10];
+   char s_1757647b[10];
+   char s_273a9f02[6];
+   char s_e1a8f707[16];
+   char s_51844cc2[16];
+   char s_df610c7f[6];
+   char s_3acb0241[15];
+   char s_bacce639[20];
+   char s_40084357[8];
+   char s_df62d56f[6];
+   char s_4a1166e1[6];
+   char s_9f2cc577[10];
+   char s_42b8ffbf[6];
+   char s_64702d9a[27];
+   char s_e829b8da[36];
+   char s_60ff701a[9];
+   char s_96e64a19[17];
+   char s_af36f3b0[29];
+   char s_73312855[15];
+   char s_e4405788[24];
+   char s_6c4b8962[22];
+   char s_388ef77f[31];
+   char s_52fbb99d[31];
+   char s_2950bbb6[37];
+   char s_f62b34ed[83];
+   char s_6951a166[22];
+   char s_9d8a8d82[25];
+   char s_1cfe55cb[33];
+   char s_38311095[21];
+   char s_b9e684ee[27];
+   char s_cd66ffc9[26];
+   char s_788f3ba8[21];
+   char s_7481bc33[14];
+   char s_6124fb03[32];
+   char s_3ea5e8ac[40];
+   char s_5c487242[13];
+   char s_d95b4346[17];
+   char s_1adb7f60[75];
+   char s_21e6be74[19];
+   char s_4327ffcc[27];
+   char s_737c9877[18];
+   char s_30ba6e91[23];
+   char s_216de9d9[30];
+   char s_216de9da[12];
+   char s_216de9db[34];
+   char s_216de9dc[12];
+   char s_b9e4eae3[8];
+   char s_4037367a[25];
+   char s_9528d92a[14];
+   char s_2bc31697[16];
+   char s_69e645f2[18];
+   char s_d48223f9[26];
+   char s_28adc26d[34];
+   char s_0b9c6082[30];
+   char s_b80a2fc4[16];
+   char s_02b33f2e[39];
+   char s_d3b03946[13];
+   char s_7567faa8[23];
+   char s_ea0de502[12];
+   char s_fe173d74[29];
+   char s_fc6b5794[5];
+   char s_c4a36191[7];
+   char s_51f16286[6];
+   char s_f2b20651[19];
+   char s_8dfe6a83[27];
+   char s_11c0c1c0[28];
+   char s_14ca78c0[23];
+   char s_04e3886f[39];
+   char s_1d4d1099[28];
+   char s_c19bc96b[54];
+   char s_fc6e3a57[17];
+   char s_8594979d[20];
+   char s_c4ab544b[19];
+   char s_07058269[22];
+   char s_f8cb645b[13];
+   char s_e36de8fd[6];
+   char s_89920317[21];
+   char s_9e49780c[32];
+   char s_5703c323[22];
+   char s_ce445b41[34];
+   char s_87d88aa2[9];
+   char s_aadf6541[33];
+   char s_c3168ee5[4];
+   char s_e2f5e678[6];
+   char s_e53de5dd[49];
+   char s_4e0dc3eb[42];
+   char s_17e361a4[20];
+   char s_883e5f82[60];
+   char s_e738b2b9[28];
+   char s_686b74ae[31];
+   char s_92e516dc[17];
+   char s_3bc50248[38];
+   char s_5621f902[48];
+   char s_2c9c9a5d[34];
+   char s_278d1ecc[23];
+   char s_ba69b8b1[39];
+   char s_7cfc693e[6];
+   char s_6a74add1[10];
+   char s_37226be3[13];
+   char s_6a8b9b19[24];
+   char s_8a340ca6[12];
+   char s_fb0fc8c1[13];
+   char s_ddcb974d[47];
+   char s_fa3fe57f[29];
+   char s_747a88a0[14];
+   char s_6c78e4f7[27];
+   char s_c48f08f7[31];
+   char s_7a69d62d[13];
+   char s_7ba664e0[27];
+   char s_8a8db2b5[45];
+   char s_76d26f12[36];
+   char s_d9d847b8[35];
+   char s_7a6a492f[17];
+   char s_cf28bcf5[21];
+   char s_821edb57[29];
+   char s_5f080876[28];
+   char s_9358d8ba[26];
+   char s_d92341ca[31];
+   char s_c813b6c6[15];
+   char s_fd533325[25];
+   char s_ed43994d[32];
+   char s_78ccdecc[31];
+   char s_15345f7c[23];
+   char s_b78a0248[24];
+   char s_3a15d6a9[17];
+   char s_b5896acf[45];
+   char s_9c41f685[52];
+   char s_1226e190[29];
+   char s_94d6c2ce[23];
+   char s_a1724dce[26];
+   char s_25e86ee3[3];
+   char s_c3168f05[4];
+   char s_e2c6c781[19];
+   char s_a670da0a[14];
+   char s_ee71e86e[18];
+   char s_46f50d5b[27];
+   char s_d894f9b6[17];
+   char s_27b523c8[12];
+   char s_164566fb[17];
+   char s_c6e67d8a[23];
+   char s_f0fb57ce[37];
+   char s_e2ff8b88[37];
+   char s_a03291c6[23];
+   char s_d5e9dd0a[11];
+   char s_e6e43c7d[44];
+   char s_c1ddd207[44];
+   char s_ded83500[43];
+   char s_690802fe[11];
+   char s_7895cc5b[22];
+   char s_e46faa42[15];
+   char s_d654f042[25];
+   char s_568de57c[25];
+   char s_220af7db[33];
+   char s_4f4b99a5[33];
+   char s_30bf38ba[17];
+   char s_2724d7b1[38];
+   char s_fa1dd6bb[38];
+   char s_b86b4820[50];
+   char s_2d10754a[50];
+   char s_153af9d2[38];
+   char s_8cf7b8bc[38];
+   char s_2b1792c1[47];
+   char s_7e1d6fcb[47];
+   char s_babe2132[26];
+   char s_babfc9e6[28];
+   char s_a0c2e468[28];
+   char s_662eb10a[24];
+   char s_d6198fde[18];
+   char s_9e5d0200[13];
+   char s_9fd6f744[11];
+   char s_a2bb0576[11];
+   char s_fab0ac6c[10];
+   char s_a51249d0[14];
+   char s_f1776a70[16];
+   char s_20f9b0a6[15];
+   char s_bcdb0c89[9];
+   char s_857c70d0[15];
+   char s_8b46649c[43];
+   char s_8d64f69e[30];
+   char s_3aeaaf8d[42];
+   char s_cdf9c447[47];
+   char s_24c0f6f7[50];
+   char s_e2c5d19c[49];
+   char s_3b80240f[35];
+   char s_00a1f0c0[8];
+   char s_ab6bb0e4[17];
+   char s_972ad723[11];
+   char s_853efa07[9];
+   char s_609cb392[5];
+   char s_7f10fcd2[6];
+   char s_1225f32b[18];
+   char s_89034b68[9];
+   char s_7206ddda[6];
+   char s_69a447f7[10];
+   char s_9fcdb5e7[17];
+   char s_6799135b[46];
+   char s_9c6cf201[56];
+   char s_012938fb[19];
+   char s_a747cdc9[48];
+   char s_2f169651[21];
+   char s_73674a86[18];
+   char s_705eee28[37];
+   char s_62af62ac[32];
+   char s_12b25a4b[47];
+   char s_97379d00[18];
+   char s_0f1d488a[10];
+   char s_b3cc8a43[11];
+   char s_d10cfac6[54];
+   char s_99eec88b[22];
+   char s_6090802e[11];
+   char s_fd7b6a38[27];
+   char s_d244fe96[16];
+   char s_5e511971[21];
+   char s_1aebff8d[3];
+   char s_fd7bb9e2[33];
+   char s_e9b3e6ae[22];
+   char s_2fe091e5[7];
+   char s_313105c8[23];
+   char s_e3530b74[7];
+   char s_ee8b2d27[16];
+   char s_1078c6c0[15];
+   char s_6a83206c[26];
+   char s_b514ae30[26];
+   char s_b0c5ea29[18];
+   char s_86e656d3[15];
+   char s_f48ed33e[29];
+   char s_541a3887[21];
+   char s_fa6d4901[21];
+   char s_4e2d78a1[18];
+   char s_7ea8ec8f[19];
+   char s_e1606ab3[20];
+   char s_7772fc51[31];
+   char s_29889f9f[16];
+   char s_1360da58[11];
+   char s_99f3b063[21];
+   char s_f632c879[6];
+   char s_31fa147f[21];
+   char s_db555f31[20];
+   char s_da458863[10];
+   char s_020004eb[11];
+   char s_8d94cfea[11];
+   char s_72f86f8f[30];
+   char s_0f49d986[57];
+   char s_bcc17320[38];
+   char s_ce39f356[35];
+   char s_a8618aba[31];
+   char s_5bbcf84b[8];
+   char s_62c35c34[15];
+   char s_9d544d44[45];
+   char s_3dabafc0[11];
+   char s_aaccb3e6[9];
+   char s_20d15d46[44];
+   char s_7a24b32c[36];
+   char s_2010df6a[13];
+   char s_64dd7209[30];
+   char s_77155e0f[12];
+   char s_3936fe87[78];
+   char s_393985fc[23];
+   char s_56e21ee1[16];
+   char s_b152eb42[24];
+   char s_f70406ce[15];
+   char s_66df5c89[15];
+   char s_ca981b76[10];
+   char s_5c3ed998[34];
+   char s_26d7f366[19];
+   char s_26e72a47[22];
+   char s_04390070[19];
+   char s_2324cc29[16];
+   char s_0d299e52[10];
+   char s_92830f70[17];
+   char s_9ecf53d5[27];
+   char s_b67675ad[10];
+   char s_3361e11d[54];
+   char s_9b3ca94b[52];
+   char s_6d025795[7];
+   char s_3181d160[17];
+   char s_9433fa60[16];
+   char s_a38500d8[13];
+   char s_76ac1944[23];
+   char s_ded7e809[25];
+   char s_d8820ed7[38];
+   char s_4c11d465[15];
+   char s_50a04cd9[14];
+   char s_b893853f[7];
+   char s_11121f30[17];
+   char s_01badaa0[21];
+   char s_6127cc52[27];
+   char s_9d52f73c[14];
+   char s_bc30b87a[16];
+   char s_2fd5302f[28];
+   char s_2dff21ec[30];
+   char s_a2a28187[20];
+   char s_674d9226[27];
+   char s_6d034072[9];
+   char s_5dff78c4[29];
+   char s_0d7321f6[4];
+   char s_da05709b[8];
+   char s_9cfaa012[22];
+   char s_39b2f935[15];
+   char s_f585917a[29];
+   char s_2942bc3c[40];
+   char s_0a3c5b6b[41];
+   char s_c46fdd49[41];
+   char s_a2fd58a6[34];
+   char s_99e7641c[17];
+   char s_6d04fa26[6];
+   char s_dc2e5316[10];
+   char s_6d0744cc[8];
+   char s_e4b4fc92[20];
+   char s_2aeb5474[15];
+   char s_dc83c30e[27];
+   char s_7f6cd38e[5];
+   char s_cdfd863e[21];
+   char s_75332606[10];
+   char s_e475c03b[6];
+   char s_7533c800[7];
+   char s_3baf3619[9];
+   char s_6cc148e7[19];
+   char s_74b77b4a[16];
+   char s_7534cfc9[8];
+   char s_36259b63[13];
+   char s_37368130[14];
+   char s_d51f54a2[14];
+   char s_b35f573c[6];
+   char s_1cad7751[9];
+   char s_753c8d3b[6];
+   char s_0029bb07[16];
+   char s_82847606[19];
+   char s_036acd54[49];
+   char s_a0a191ca[45];
+   char s_aee9789b[17];
+   char s_e42992fb[26];
+   char s_a1f8401f[28];
+   char s_153a031d[48];
+   char s_c0267103[29];
+   char s_c4994969[22];
+   char s_c471147e[33];
+   char s_5f152b98[6];
+   char s_7ea47472[12];
+   char s_cb75ab99[6];
+   char s_554a395a[33];
+   char s_43a38c95[49];
+   char s_7c9d646a[13];
+   char s_5f15f7a7[15];
+   char s_b6761774[18];
+   char s_f24476fa[11];
+   char s_97d90c67[11];
+   char s_6d08238d[5];
+   char s_033bf99f[13];
+   char s_8076aea7[13];
+   char s_a00583cf[13];
+   char s_e8a86d57[8];
+   char s_725702e3[9];
+   char s_30834c9e[10];
+   char s_20e22740[53];
+   char s_2fb24663[21];
+   char s_e8ae394f[6];
+   char s_e8af52fb[10];
+   char s_1c540479[32];
+   char s_2e777e81[10];
+   char s_eb2ec2a4[7];
+   char s_d93c753a[8];
+   char s_8b317468[13];
+   char s_3461c875[19];
+   char s_0e57428f[12];
+   char s_167928a7[17];
+   char s_acce6b35[21];
+   char s_b580a42f[22];
+   char s_e5a649a5[16];
+   char s_5633a523[62];
+   char s_6d0ae29b[6];
+   char s_21083aca[12];
+   char s_213b38be[12];
+   char s_490eddc7[11];
+   char s_2237e69e[11];
+   char s_e5d4f181[16];
+   char s_7217fd0f[15];
+   char s_abfa790d[18];
+   char s_6d0b3292[6];
+   char s_08785e85[13];
+   char s_3313a0d7[7];
+   char s_094e2bc9[4];
+   char s_b71e6907[11];
+   char s_d725639f[12];
+   char s_ea5b5020[8];
+   char s_fef383d2[30];
+   char s_4707850d[11];
+   char s_cbddcf50[12];
+   char s_9abb40fc[28];
+   char s_a9dc9f21[82];
+   char s_6c786a36[30];
+   char s_6d0ca7a7[5];
+   char s_25486b43[7];
+   char s_37708c23[6];
+   char s_78b36202[8];
+   char s_eb9ccf03[18];
+   char s_a85eb9f5[30];
+   char s_e9c54ff4[30];
+   char s_8b826990[12];
+   char s_900848a8[24];
+   char s_a6efd66c[22];
+   char s_f8b4c7cd[34];
+   char s_6d24f146[29];
+   char s_3fa8bb7e[19];
+   char s_ab4776a4[23];
+   char s_ae4fb605[25];
+   char s_a81b969f[36];
+   char s_35dc82a3[18];
+   char s_f128ee26[34];
+   char s_198913d1[54];
+   char s_9a4eff21[36];
+   char s_3b5c8db2[42];
+   char s_bbfba1e6[32];
+   char s_5df4f448[34];
+   char s_cb2c6b22[15];
+   char s_4931fd42[25];
+   char s_ffb12f4f[24];
+   char s_5cfaa89a[21];
+   char s_a7cc047b[39];
+   char s_3f33ad82[18];
+   char s_f5b2df8f[16];
+   char s_d61df2ba[18];
+   char s_8c9d24c7[18];
+   char s_260261d6[10];
+   char s_3e2bdc96[29];
+   char s_95cf0994[8];
+   char s_4fc73be8[20];
+   char s_36109f2c[13];
+   char s_cf24fcc2[24];
+   char s_8d13ec48[10];
+   char s_b93afb41[11];
+   char s_47f4eb8e[9];
+   char s_d3a2aa7d[11];
+   char s_3413595a[15];
+   char s_70bac144[15];
+   char s_046d0e21[13];
+   char s_bdc1c274[12];
+   char s_d58bd5c3[12];
+   char s_06650b16[11];
+   char s_6c06b558[22];
+   char s_00966fb4[20];
+   char s_00dfe961[24];
+   char s_2742a469[12];
+   char s_a708b2f4[24];
+   char s_17983560[11];
+   char s_3af38d58[23];
+   char s_e8ad0320[10];
+   char s_887214f4[7];
+   char s_0472da71[5];
+   char s_cbdfd37c[12];
+   char s_f019e498[9];
+   char s_f1382b82[6];
+   char s_0e740679[20];
+   char s_a986c4da[11];
+   char s_69f2e90c[19];
+   char s_4ceac87e[9];
+   char s_387a4176[17];
+   char s_28863bc1[14];
+   char s_f751c497[14];
+   char s_9329c64c[7];
+   char s_f8883f70[12];
+   char s_09ba892e[13];
+   char s_58b9d895[11];
+   char s_0a2aa953[7];
+   char s_ffd0dac4[9];
+   char s_80a2b273[10];
+   char s_91dd478e[19];
+   char s_865cee49[13];
+   char s_1b8a5cb5[11];
+   char s_6f9583dc[34];
+   char s_721e7bb2[11];
+   char s_91df2193[16];
+   char s_9335605c[15];
+   char s_ca631dbd[40];
+   char s_a90c6e87[21];
+   char s_a90e173b[23];
+   char s_a6b615f1[25];
+   char s_00873ba1[51];
+   char s_a2e7d931[35];
+   char s_a2e9ce82[34];
+   char s_cb3862de[30];
+   char s_beb8ad9d[25];
+   char s_e5e3cac2[41];
+   char s_4f9b9b72[33];
+   char s_4f9d90c3[25];
+   char s_23a549c0[35];
+   char s_9033d924[49];
+   char s_ac55f414[38];
+   char s_ac57e965[36];
+   char s_ddf3c771[9];
+   char s_008141e4[41];
+   char s_1ece29a0[47];
+   char s_ef4c4376[23];
+   char s_632691cf[29];
+   char s_1938dce6[32];
+   char s_302ec787[12];
+   char s_59980356[10];
+   char s_f1f74dd3[11];
+   char s_7e65d975[20];
+   char s_62144cdf[13];
+   char s_18cc9d04[42];
+   char s_c271695f[44];
+   char s_f5338957[21];
+   char s_82a25202[25];
+   char s_749f0441[15];
+   char s_5c821ce2[18];
+   char s_d90b137a[17];
+   char s_4a32f316[17];
+   char s_b8199d1f[16];
+   char s_ac709442[16];
+   char s_5f421d29[23];
+   char s_443e29a5[20];
+   char s_ccfe26d1[13];
+   char s_728ca1d3[3];
+   char s_5f612db6[13];
+   char s_9f29f708[20];
+   char s_a9145c83[10];
+   char s_22f52844[12];
+   char s_06842e2b[14];
+   char s_d7677494[15];
+   char s_0687039a[14];
+   char s_d6fd403f[16];
+   char s_c2234c3e[14];
+   char s_e6b624b6[17];
+   char s_ed6b98bf[13];
+   char s_ec1c0efd[8];
+   char s_228e251b[10];
+   char s_9bf2d834[15];
+   char s_f500027b[8];
+   char s_7f2f8cd6[11];
+   char s_65b61fcc[10];
+   char s_e7421530[14];
+   char s_d019b366[13];
+   char s_a1558f31[12];
+   char s_dda9087d[13];
+   char s_7ec78dd0[16];
+   char s_584e4006[15];
+   char s_4fbdf89c[12];
+   char s_48120452[11];
+   char s_0dade48b[11];
+   char s_5905ee97[21];
+   char s_b30b56ad[3];
+   char s_b30d4c07[5];
+   char s_b30e1084[13];
+   char s_b51fe924[13];
+   char s_9f8ecd1b[13];
+   char s_b5e77585[7];
+   char s_2c04084b[17];
+   char s_404e69aa[10];
+   char s_3f9035ee[24];
+   char s_19347691[25];
+   char s_bd8bf83a[6];
+   char s_085b8f97[14];
+   char s_0ea29469[24];
+   char s_25e87d9d[5];
+   char s_f5d28451[29];
+   char s_b5310903[25];
+   char s_7cfd93a9[21];
+   char s_9a0b2e21[14];
+   char s_3b95fccc[31];
+   char s_00119310[31];
+   char s_1127e777[31];
+   char s_3c44f8dd[21];
 #ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
-   "Visa 'Mata ut skiva'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
-   "Visa alternativet 'Mata ut skiva' i huvudmenyn."
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
-   "Visa 'Online-uppdaterare'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
-   "Visa alternativet 'Online-uppdaterare' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
-   "Visa 'Hämta ner kärna'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
-   "Visa möjligheten att uppdatera kärnor (och kärninfofiler) i 'Online-uppdaterare'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
-   "Visa 'Information'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
-   "Visa alternativet 'Information' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
-   "Visa 'Konfigurationsfil'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
-   "Visa alternativet 'Konfigurationsfil' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
-   "Visa 'Hjälp'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
-   "Visa alternativet 'Hjälp' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
-   "Visa 'Avsluta RetroArch'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
-   "Visa alternativet 'Avsluta RetroArch' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
-   "Visa 'Starta om RetroArch'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
-   "Visa alternativet 'Starta om RetroArch' i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
-   "Visa 'Inställningar'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
-   "Visa 'Inställningar'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Ange lösenord för att aktivera 'Inställningar'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
-   "Om du anger ett lösenord när du döljer inställningsfliken kan du senare återställa den från menyn genom att gå till fliken Huvudmeny, välja ”Aktivera inställningsfliken” och ange lösenordet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
-   "Visa 'Favoriter'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
-   "Visa 'Favoriter'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
-   "Visa favoriter först"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
-   "Visa 'Favoriter' före 'Historik'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
-   "Visa 'Bilder'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
-   "Visa 'Bilder'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
-   "Visa 'Musik'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
-   "Visa 'Musik'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
-   "Visa 'Videor'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
-   "Visa 'Videor'-menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
-   "Visa 'Netplay'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
-   "Visa 'Historik'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
-   "Visa senaste historikmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
-   "Visa 'Importera Innehåll'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
-   "Visa 'Importera innehåll' inne i huvudmenyn eller spellistor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   "Huvudmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
-   "Spellistsmeny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
-   "Visa 'Spellistor'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
-   "Visa spellistorna i huvudmenyn. Ignoreras i GLUI om flikar och navfält för spellistor är aktiverade."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
-   "Visa spellistflikar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
-   "Visa spellisteflikar. Påverkar inte RGUI. Navigeringsfältet måste vara aktiverat i GLUI."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
-   "Visa 'Utforska'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
-   "Visa alternativ för innehållsutforskaren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Visa 'Innehållslösa kärnor'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
-   "Ange vilken typ av kärna (om någon) som ska visas i menyn 'Innehållslösa kärnor'. När inställningen är ’Anpassad’ kan synligheten för enskilda kärnor växlas via menyn ”Hantera kärnor”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
-   "Alla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
-   "En gång"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
-   "Anpassad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
-   "Visa tid och datum"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
-   "Visa aktuellt datum och/eller tid i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
-   "Tid och datum-format"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
-   "Ändra hur aktuellt datum och/eller aktuell tid visas inne i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
-   "Datumseparator"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
-   "Ange tecken som ska användas som avgränsare mellan år/månad/dag komponenter när aktuellt datum visas i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
-   "Visa 'Batteri-nivå'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
-   "Visa aktuell batterinivå i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
-   "Visa 'Kärnnamn'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_ENABLE,
-   "Visa aktuell kärnas namn i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
-   "Visa Meny-undertitlar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
-   "Visa ytterligare information för menyobjekt."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
-   "Visa Startskärm"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
-   "Visa startskärmen i menyn. Detta sätts automatiskt till false när programmet startas för första gången."
-   )
-
-/* Settings > User Interface > Menu Item Visibility > Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
-   "Visa 'Återuppta'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
-   "Visar alternativet att återuppta innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
-   "Visa 'Stäng Innehåll'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Visa 'Spara tillstånd'-undermeny"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
-   "Visa alternativ för sparade tillstånd i en undermeny."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Visa 'Spara/Läs in tillstånd'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
-   "Visa alternativen för att spara/läs in ett tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
-   "Visa 'Repris-kontroller'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
-   "Visa alternativen för inspelning/uppspelning av reprisfiler."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
-   "Visa 'Ångra Spara/Läs in tillstånd'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
-   "Visa 'Kärnalternativ'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
-   "Visa alternativet 'Kärnalternativ'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "Visa 'Skriv alternativ till disk'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
-   "Visa posten ”Skriv alternativ till disk” i menyn ”Alternativ > Hantera kärnalternativ”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
-   "Visa 'Spelkontroller'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
-   "Visa alternativet 'Spelkontroller'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   "Visa 'Ta skärmdump'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
-   "Visa alternativet 'Ta skärmdump'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
-   "Visa 'Starta inspelning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
-   "Visa alternativet 'Starta inspelning'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
-   "Visa 'Starta streaming'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
-   "Visa alternativet 'Börja strömma'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
-   "Visa 'Skärmöverlägg'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
-   "Visa alternativet 'Skärmöverlägg'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
-   "Visa 'Video Layout'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
-   "Visa alternativet 'Video Layout'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
-   "Visa 'Latens'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
-   "Visa alternativet 'Latens'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
-   "Visa 'Tillbakaspolning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
-   "Visa alternativet 'Tillbakaspolning'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "Visa 'Spara kärnåsidosättningar'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
-   "Visa alternativet 'Spara kärnåsidosättningar' i menyn 'Åsidosättningar'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "Visa 'Spara åsidosättningar för innehållskatalog'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
-   "Visa alternativet 'Spara åsidosättningar för innehållskatalog' i menyn 'Åsidosättningar'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "Visa 'Åsidosättningar för sparat spel'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
-   "Visa alternativet 'Åsidosättningar för sparat spel' i menyn 'Åsidosättningar'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
-   "Visa 'Fusk'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
-   "Visa alternativet 'Fusk'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
-   "Visa 'Shaders'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
-   "Visa alternativet 'Shaders'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Visa 'Lägg till i Favoriter'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
-   "Visa alternativet 'Lägg till i favoriter'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   "Visa 'Lägg till i spellista'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
-   "Visa alternativet 'Lägg till i spellista'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Visa 'Ställ in kärnassociation'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
-   "Visa alternativet 'Ställ in kärnassociation' när innehåll inte körs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Visa 'Återställ kärnassociation'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
-   "Visa alternativet 'Återställ kärnassociation' när innehåll inte körs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Visa 'Hämta ner miniatyrer'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
-   "Visa alternativet 'Hämta ner miniatyrer' när innehåll inte körs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
-   "Visa 'Information'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
-   "Visa alternativet 'Information'."
-   )
-
-/* Settings > User Interface > Views > Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
-   "Visa 'Drivrutiner'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
-   "Visar inställningar för drivrutiner."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
-   "Visa 'Video'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
-   "Visar inställningar för video."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
-   "Visa 'Ljud'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
-   "Visar inställningar för ljud."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
-   "Show 'Inmatning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
-   "Visar inställningar för inmatning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
-   "Visa 'Latens'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
-   "Visar inställningar för latens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
-   "Visa 'Kärna'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
-   "Visar inställningar för kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
-   "Visa 'Konfiguration'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
-   "Visar inställningar för konfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
-   "Visa 'Sparningar'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
-   "Visa inställningar för 'Sparningar'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
-   "Visa 'Loggning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
-   "Visar inställningar för loggning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
-   "Visa 'Filhanterare'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
-   "Visar inställningar för filhanterare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Visa 'Bildfrekvensstrypning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
-   "Visa inställningar för 'Bildfrekvensstrypning'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
-   "Visa 'Inspelning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
-   "Visar inställningar för inspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Visa 'Skärmvisning'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
-   "Visa inställningar för skärmvisning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
-   "Visa 'Användargränssnitt'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
-   "Visar inställningar för användargränssnitt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
-   "Visa 'AI-tjänst'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
-   "Visar inställningar för AI-tjänst."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
-   "Visa 'Tillgänglighet'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
-   "Visa inställningar för tillgänglighet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Visa 'Energihantering'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
-   "Visa inställningar för 'Energihantering'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Visa 'Prestationer'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
-   "Visa inställningar för 'Prestationer'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
-   "Visa 'Nätverk'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
-   "Visa inställningar för 'Nätverk'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
-   "Visa 'Spellistor'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
-   "Visa inställningar för 'Spellistor'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
-   "Visa 'Användare'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
-   "Visa inställningar för 'Användare'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
-   "Visa 'Katalog'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
-   "Visa inställningar för 'Katalog'."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
-   "Visa 'Steam'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
-   "Visa inställningar för 'Steam'."
-   )
-
-/* Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
-   "Skalfaktor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
-   "Skala storleken på användargränssnittets element i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
-   "Bakgrundsbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
-   "Välj en bild att ställa in som menybakgrund. Manuella och dynamiska bilder kommer att åsidosätta 'Färgtema'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER_OPACITY,
-   "Bakgrundsgenomskinlighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WALLPAPER_OPACITY,
-   "Ändra bakgrundsbildens opacitet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
-   "Genomskinlighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
-   "Ändra förinställda menybakgrundens opacitet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "Använd föredraget färgtema för systemet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
-   "Använd operativsystemets färgtema (om något). Åsidosätter temainställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS,
-   "Primär miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS,
-   "Typ av miniatyr som ska visas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "Miniatyrbilders uppskalningströskel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
-   "Uppskala automatiskt miniatyrbilder med en bredd/höjd som är mindre än det angivna värdet. Förbättrar bildkvalitén. Har en måttlig inverkan på prestanda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
-   "Miniatyrbildsbakgrunder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
-   "Möjliggör utfyllnad av oanvänt utrymme i miniatyrbilder med en solid bakgrund. Detta säkerställer en enhetlig visningsstorlek för alla bilder, vilket förbättrar menyutseendet när du tittar på miniatyrbilder av blandat innehåll med olika basmått."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
-   "Rull-textanimering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
-   "Välj metod för horisontell rullning som används för att visa lång menytext."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
-   "Rull-texthastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
-   "Animeringshastigheten vid rullning av lång menytext."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
-   "Mjuk Rull-text"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
-   "Använd mjuk rullande animation när lång menytext visas. Har en liten prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
-   "Kom ihåg val vid byte av flikar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
-   "Kom ihåg föregående markörposition i flikar. RGUI har inga flikar, men Spellistor och Inställningar beter sig som sådana."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
-   "Alltid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
-   "Endast för Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
-   "Endast för Huvudmeny och Inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
-   "Uppstartssida"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
-   "Initial menysida vid uppstart."
-   )
-
-/* Settings > AI Service */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
-   "Utmatning från AI-tjänst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
-   "Visa översättningen som ett textöverlägg (Bildläge), spela upp som text-till-tal (Tal) eller använd en systemberättare som NVDA (Berättare)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
-   "Bakände för AI-tjänst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
-   "Välj vilken översättningsbakände att använda. HTTP använder en fjärrserver på den konfigurerade webbadressen. Apple använder OCR-enhet och översättning (macOS/iOS)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
-   "AI-tjänst URL"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
-   "En http:// URL som pekar på den översättningstjänst som ska användas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
-   "AI-tjänst aktiverad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
-   "Aktivera AI-tjänsten så att den körs när snabbtangenten AI-tjänst trycks in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
-   "Pausa under översättning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
-   "Pausa kärnan medan skärmen översatts."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
-   "Källspråk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
-   "Det språk som tjänsten ska översätta från. Om den är inställd på ”Standard” försöker den automatiskt känna av språket. Om du ställer in det på ett specifikt språk blir översättningen mer exakt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
-   "Målspråk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
-   "Det språk som tjänsten ska översätta till. ”Standard” är engelska."
-   )
-
-/* Settings > Accessibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
-   "Aktivera hjälpmedel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
-   "Aktivera text-till-tal för att underlätta navigering i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "Text-till-tal-hastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
-   "Hastigheten för text-till-tal-rösten."
-   )
-
-/* Settings > Power Management */
-
-/* Settings > Achievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "Prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
-   "Samla prestationframgångar i klassiska spel. För mer information, besök 'https://retroachievements.org'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Hardcore-läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Inaktiverar fusk, spola tillbaka, slowmotion och läsa in sparade tillstånd. Prestationer som uppnås i hardcore-läget är unikt markerade så att du kan visa andra vad du har uppnått utan emulatorns hjälpfunktioner. Om du växlar den här inställningen under spelets gång startas spelet om."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
-   "Topplistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
-   "Skickar regelbundet kontextuell spelinformation till RetroAchievements webbplats. Har ingen effekt om ”Hardcore-läge” är aktiverat."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
-   "Prestationsemblem"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
-   "Visa emblem i prestationslistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
-   "Testa inofficiella prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
-   "Använd inofficiella prestationer och/eller betafunktioner för teständamål."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Lås upp ljud"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
-   "Spela upp ett ljud när en prestation låses upp."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
-   "Automatisk skärmdump"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
-   "Ta automatiskt en skärmbild när en prestation tjänas."
-   )
-MSG_HASH( /* suggestion for translators: translate as 'Play Again Mode' */
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
-   "Encore-läge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
-   "Starta sessionen med alla prestationer aktiva (även de som tidigare har låsts upp)."
-   )
-
-/* Settings > Achievements > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
-   "Utseende"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
-   "Ändra position och förskjutningar för prestationsmeddelanden på skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
-   "Ställ in det hörn/den kant på skärmen som meddelanden om prestationer ska visas från."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
-   "Överkant Vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
-   "Överkant Mitten"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
-   "Överkant Höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
-   "Underkant Vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
-   "Underkant Mitten"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
-   "Underkant Höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "Justerad utfyllnad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
-   "Ange om prestationsmeddelanden ska överensstämma med andra typer av skärmmeddelanden. Inaktivera för att ställa in manuella utfyllnads-/positionsvärden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
-   "Manuell horisontell utfyllnad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
-   "Avstånd från vänster/höger skärmkant, vilket kan kompensera för skärmens overscan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
-   "Manuell vertikal utfyllnad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
-   "Avstånd från skärmens övre/nedre kant, vilket kan kompensera för skärmens overscan."
-   )
-
-/* Settings > Achievements > Visibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
-   "Synlighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
-   "Ändra vilka meddelanden och element på skärmen som visas. Inaktiverar inte funktionalitet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
-   "Sammandrag av uppstart"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
-   "Alla identifierade spel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
-   "Spel med prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
-   "Upplåsningsmeddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
-   "Visar ett meddelande när en prestation är upplåst."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
-   "Mästerliga meddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
-   "Visar ett meddelande när alla prestationer för ett spel är upplåsta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
-   "Indikatorer för aktiva utmatningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
-   "Visa indikationer på skärmen samtidigt som vissa prestationer kan tjänas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   "Förloppsindikator"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
-   "Visa en indikationer på skärmen när framsteg görs mot vissa prestationer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
-   "Meddelanden om starter för topplista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
-   "Visar en beskrivning av en topplista när den blir aktiv."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Meddelanden om insändningar för topplista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
-   "Visar ett meddelande med det värde som skickas in när ett topplisteförsök har slutförts."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-   "Meddelanden om misslyckanden för topplista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
-   "Visar ett meddelande när ett topplisteförsök misslyckas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
-   "Topplistespårare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
-   "Visar spårare på skärmen med aktuellt värde för aktiva ledartavlor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Inloggningsmeddelande"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
-   "Visar meddelanden kopplade till RetroAchievements kontoinloggning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
-   "Utförliga meddelanden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
-   "Visar ytterligare diagnostik och felmeddelanden."
-   )
-
-/* Settings > Network */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
-   "Annonsera Netplay publikt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
-   "Om netplay-spel ska annonseras offentligt. Om inställningen är avaktiverad måste klienter ansluta manuellt i stället för att använda den publika lobbyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Använd reläserver"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Vidarebefordra nätverksanslutningar via en mellanliggande server. Användbart om värden ligger bakom en brandvägg eller har problem med NAT/UPnP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Plats för reläserver"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Välj en specifik reläserver att använda. Geografiskt närmare platser tenderar att ha lägre latens."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Anpassad adress för reläserver"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Ange adressen till din anpassade reläserver här. Format: adress eller adress|port."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
-   "Nordamerika (östkusten, USA)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
-   "Västeuropa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
-   "Sydamerika (sydöstra, Brazilien)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
-   "Sydostasien"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-   "Serveradress"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
-   "Adressen för värden att ansluta till."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
-   "Netplay TCP-port"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
-   "Porten för värdens IP-adress. Kan vara antingen en TCP eller UDP-port."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
-   "Max samtidiga anslutningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
-   "Det maximala antalet aktiva anslutningar som värden accepterar innan nya anslutningar avvisas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
-   "Ping begränsning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
-   "Den maximala anslutningsfördröjningen (ping) som värden accepterar. Ställ in den på 0 för ingen gräns."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
-   "Serverlösenord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
-   "Lösenordet som används av klienter för att ansluta till värden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
-   "Serverlösenord för endast åskådare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
-   "Lösenordet som används av klienter för att ansluta till värden som en åskådare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
-   "Åskådarläge för Netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
-   "Starta netplay i åskådarläge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
-   "Huruvida netplay ska startas i åskådarläge. Om inställt på true kommer netplay att starta i åskådarläge. Det går alltid att ändra läge senare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
-   "Tona ut chatt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
-   "Tona ut chattmeddelanden över tid."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
-   "Chattfärg (Nicknamn)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
-   "Format: #RRGGBB eller RRGGBB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
-   "Chattfärg (Meddelande)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
-   "Format: #RRGGBB eller RRGGBB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
-   "Tillåt pausning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
-   "Tillåt spelare att pausa under Netplay."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Tillåt klienter i slavläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Tillåt anslutningar i slavläge. Klienter i slavläge kräver mycket lite processorkraft på båda sidor, men kommer att drabbas avsevärt av nätverksfördröjning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Tillåt inte klienter i icke-slavläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Tillåt inte anslutningar som inte är i slavläge. Rekommenderas inte, utom för mycket snabba nätverk med mycket svaga maskiner."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Kontrollbildrutor för netplay"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Hur ofta (i bildrutor) som netplay ska kontrollera att värden och klienten är synkroniserade."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Frekvensen i bildrutor med vilken netplay kommer att verifiera att värden och klienten är synkroniserade. Med de flesta kärnor har detta värde ingen synlig effekt och kan ignoreras. Med icke-bestämbara kärnor avgör detta värde hur ofta netplay-peers kommer att synkroniseras. Med buggiga kärnor kommer det att orsaka allvarliga prestandaproblem om detta värde sätts till något annat än noll. Ställ in på noll för att inte utföra några kontroller. Detta värde används endast på ne[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Bildrutor för inmatningslatens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Antalet bildrutor med inmatningslatens som netplay ska använda för att dölja nätverkslatens. Minskar jitter och gör netplay mindre CPU-krävande, men på bekostnad av märkbar fördröjning i inmatningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Antalet bildrutor med inmatningsfördröjning som netplay ska använda för att dölja nätverksfördröjning.\nNär det här alternativet används i netplay fördröjer det lokal inmatning så att den bildruta som körs ligger närmare de bildrutor som tas emot från nätverket. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av en märkbar fördröjning av inmatningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Bildruteintervall för inmatningslatens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Det intervall av bildrutor med inmatningslatens som kan användas för att dölja nätverkslatens. Minskar jitter och gör netplay mindre CPU-krävande, men på bekostnad av oförutsägbar fördröjning i inmatningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Det intervall av bildrutor med inmatningslatens som kan användas av netplay för att dölja nätverkslatens.\nOm det är inställt kommer netplay att justera antalet bildrutor med inmatningslatens dynamiskt för att balansera CPU-tid, inmatningslatens och nätverkslatens. Detta minskar jitter och gör netplay mindre CPU-intensivt, men till priset av oförutsägbar inmatningsfördröjning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
-   "Netplay NAT-traversering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
-   "När du är värd, försök att lyssna efter anslutningar från det offentliga Internet med hjälp av UPnP eller liknande tekniker för att komma ut från LAN."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
-   "Delning av digital inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
-   "Begär enhet %u"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
-   "Begär att få spela med den angivna inmatningsenheten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
-   "Nätverkskommandon"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
-   "Nätverkskommandoport"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
-   "Nätverksspelkontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
-   "Port för nätverksspelkontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
-   "Spelare %d Nätverksspelkontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
-   "Kommandon för stdin"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
-   "stdin kommandogränssnitt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
-   "Hämta miniatyrbilder vid behov"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
-   "Hämta automatiskt ner saknade miniatyrbilder när du bläddrar i spellistor. Har en stor prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
-   "Inställningar för uppdaterare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
-   "Åtkomst till inställningar för kärnuppdatering"
-   )
-
-/* Settings > Network > Updater */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
-   "URL för Buildbot-kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
-   "URL till katalog för kärnuppdaterare på libretros buildbot."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
-   "URL för Buildbot-resurser"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
-   "URL till katalog för resursuppdaterare på libretros buildbot."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "Packa automatiskt upp hämtade arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
-   "Efter hämtning så packas automatiskt filer upp som finns i de hämtade arkiven."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Visa experimentella kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
-   "Inkludera 'experimentella' kärnor i Hämta ner kärnor-listan. Dessa är vanligen endast för utveckling/teständamål, och rekommenderas inte för allmän användning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
-   "Säkerhetskopiera kärnor vid uppdatering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
-   "Skapa automatiskt en säkerhetskopia av installerade kärnor när en online-uppdatering utförs. Möjliggör enkel återställning till en fungerande kärna om en uppdatering introducerar en försämring."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "Storlek för säkerhetskopieringshistorik för kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
-   "Ange hur många automatiskt genererade säkerhetskopior som ska sparas för varje installerad kärna. När denna gräns har uppnåtts kommer den äldsta säkerhetskopian att raderas när en ny säkerhetskopia skapas via en onlineuppdatering. Manuella säkerhetskopior av kärnor påverkas inte av denna inställning."
-   )
-
-/* Settings > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
-   "Underhåll en spellista med nyligen använda spel, bilder, musik och videor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
-   "Historik storlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
-   "Begränsa antalet poster i den senaste spellistan för spel, bilder, musik och videor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
-   "Favoriters storlek"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
-   "Begränsa antalet poster i spellistan ”Favoriter”. När gränsen har nåtts förhindras nya poster att läggas till tills gamla poster har tagits bort. Om du ställer in ett värde på -1 tillåts ”obegränsade” poster.\nVARNING: Om du minskar värdet raderas befintliga poster!"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
-   "Tillåt att byta namn på poster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
-   "Tillåt att poster i spellistan byter namn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
-   "Tillåt att ta bort poster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
-   "Tillåt att poster i spellistan tas bort."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
-   "Sortera spellistor alfabetiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
-   "Sortera innehållsspellistor i alfabetisk ordning, med undantag för spellistorna ”Historik”, ”Bilder”, ”Musik” och ”Videor”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
-   "Spara spellistor med gamla formatet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
-   "Skriv spellistor med föråldrat klartextformat. När funktionen är inaktiverad formateras spellistorna med JSON."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
-   "Komprimera spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
-   "Arkivera spellist-data vid skrivning till disk. Detta reducerar filstorlek och laddningstider på bekostnad av (försumbart) ökad CPU-användning. Kan användas med spellistor i antingen gamla eller nya formatet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
-   "Visa associerade kärnor i spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
-   "Visa underetiketter för spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
-   "Visa ytterligare information för varje spellistepost, t. ex. aktuell kärnassociation och körtid (om tillgänglig). Har en varierande prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
-   "Visa innehållsspecifika ikoner i historik och favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
-   "Visa specifika ikoner för varje post i historik- och favoritspellistan. Har en varierande prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
-   "Kärna:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
-   "Speltid:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
-   "Senast spelad:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
-   "Spelantal:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
-   "sekund"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
-   "sekunder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
-   "minut"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
-   "minuter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
-   "timme"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
-   "timmar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
-   "dag"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
-   "dagar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
-   "vecka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
-   "veckor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
-   "månad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
-   "månader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
-   "år"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
-   "år"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
-   "sedan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
-   "Visa index för spellistepost"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
-   "Visa postens nummer när du visar spellistor. Visningsformatet beror på den valda menydrivrutinen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Stil för datum och tid för 'Senast spelad'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
-   "Ställ in stilen för datum och tid som visas för tidsstämpelinformation för ”Senast spelad”. Alternativet ”(AM/PM)” har en liten påverkan på prestandan på vissa plattformar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "Luddig arkivmatchning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
-   "Vid sökning i spellistor efter poster som är associerade med komprimerade filer matchas endast arkivets filnamn istället för [filnamn]+[innehåll]. Aktivera detta för att undvika dubbla poster i innehållshistoriken när du laddar komprimerade filer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
-   "Sök igenom utan kärnmatchning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
-   "Tillåt att innehåll söks igenom och läggs till i en spellista utan att det finns en kärna installerad som stöder detta."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
-   "Sök igenom CRC-kontrollsummor vid möjliga dubbletter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
-   "Ibland duplicerar ISO:s serienummer, särskilt med PSP/PSN-titlar. Att enbart förlita sig på serienumret kan ibland leda till att skannern placerar innehållet i fel system. Detta lägger till en CRC-kontroll, vilket saktar ner skanningen avsevärt, men kan vara mer exakt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
-   "Hantera Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
-   "Genomför underhållsåtgärder på spellistor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
-   "Portabla spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
-   "Om alternativet är aktiverat och ”Filbläddrare”-katalogen också är vald sparas det aktuella värdet för parametern ”Filbläddrare” i spellistan. När spellistan laddas på ett annat system där samma alternativ är aktiverat jämförs värdet på parametern ”Filbläddrare” med spellistans värde; om det skiljer sig åt fixas spellistans sökvägar automatiskt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
-   "Använd filnamn för miniatyrbildsmatchning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
-   "När den är aktiverad kommer miniatyrbilder att hittas utifrån postens filnamn, snarare än dess etikett."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
-   "Tillåt alla bildtyper som stöds för miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
-   "När den är aktiverad kan lokala miniatyrbilder läggas till i alla bildtyper som stöds av RetroArch (t. ex. jpeg). Kan ha en mindre inverkan på prestandan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANAGE,
-   "Hantera"
-   )
-
-/* Settings > Playlists > Playlist Management */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
-   "Standardkärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
-   "Ange vilken kärna som ska användas när innehåll startas via en spellistepost som inte har någon befintlig kärn-association."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
-   "Återställ kärnassociationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
-   "Ta bort befintliga kärnassociationer för alla spellisteposter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-   "Visningsläge för Titlar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
-   "Ändra hur innehållsetiketterna visas i den här spellistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
-   "Sorteringsmetod"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
-   "Bestäm hur posterna ska sorteras i den här spellistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
-   "Rensa Spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
-   "Validera kärnassociationer och ta bort ogiltiga och duplicerade poster."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
-   "Uppdatera spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
-   "Radera Spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
-   "Ta bort spellistan från filsystem."
-   )
-
-/* Settings > User */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
-   "Sekretess"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
-   "Ändra sekretessinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
-   "Konton"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
-   "Hantera aktuella konfigurerade konton."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
-   "Användarnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
-   "Ange ditt användarnamn här. Detta kommer bland annat att användas för Netplay-sessioner."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
-   "Språk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_USER_LANGUAGE,
-   "Ställ in språket för användargränssnittet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
-   "Lokalanpassar menyn och alla meddelanden på skärmen enligt det språk du har valt här. Kräver en omstart för att ändringarna ska träda i kraft.\nÖversättningens fullständighet visas bredvid varje alternativ. Om ett språk inte är implementerat för ett menyalternativ återgår vi till engelska."
-   )
-
-/* Settings > User > Privacy */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
-   "Tillåt kamera"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
-   "Tillåt kärnor att komma åt kameran."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
-   "Tillåt plats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
-   "Tillåt kärnor att komma åt din plats."
-   )
-
-/* Settings > User > Accounts */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Samla prestationframgångar i klassiska spel. För mer information, besök 'https://retroachievements.org'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
-   "Inloggningsuppgifter för ditt RetroAchievements-konto. Besök retroachievements.org och registrera dig för ett gratis konto.\nNNär du är klar med registreringen måste du ange användarnamn och lösenord i RetroArch."
-   )
-
-/* Settings > User > Accounts > RetroAchievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
-   "Användarnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
-   "Ange ditt användarnamn för RetroAchievements-kontot."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
-   "Lösenord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
-   "Ange lösenordet för ditt RetroAchievements-konto. Max längd: 255 tecken."
-   )
-
-/* Settings > User > Accounts > YouTube */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-   "Strömningsnyckel för YouTube"
-   )
-
-/* Settings > User > Accounts > Twitch */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
-   "Strömningsnyckel för Twitch"
-   )
-
-/* Settings > User > Accounts > Facebook Gaming */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
-   "Strömningsnyckel för Facebook Gaming"
-   )
-
-/* Settings > User > Accounts > Kick */
-
-
-/* Settings > Directory */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
-   "BIOS-filer, uppstarts-ROMar och andra systemspecifika filer lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "Hämtningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
-   "Hämtade filer lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
-   "Resurser"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
-   "Menyresurser som används av RetroArch lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
-   "Dynamiska bakgrunder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
-   "Bakgrundsbilder som används i menyn lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
-   "Miniatyrer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
-   "Omslagsbilder, skärmbilder och miniatyrbilder för titelskärmar lagras i denna katalog."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "Startkatalog"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
-   "Ställ in startkatalog för filbläddraren."
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
-   "Konfigurationsfiler"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
-   "Standardkonfigurationsfilen lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
-   "Kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
-   "Libretro-kärnor lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
-   "Kärninformation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
-   "Informationsfiler för applikationer/kärnor lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
-   "Databaser"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
-   "Databaser lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
-   "Fuskfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
-   "Fuskfiler lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
-   "Videofilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
-   "CPU-baserade videofilter lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
-   "Ljudfilter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
-   "DSP-ljudfilter lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
-   "GPU-baserade videoshaders lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
-   "Inspelningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
-   "Inspelningar lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
-   "Inspelning Configs"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
-   "Inspelningskonfigurationer lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
-   "Överlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
-   "Överlägg lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
-   "Tangentbordsöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
-   "Tangentbordsöverlägg lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
-   "Videolayouter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
-   "Videolayouter lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
-   "Skärmdumpar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
-   "Skärmbilder lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
-   "Spelkontrollsprofiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
-   "Spelkontrollsprofiler som automatisk konfigurerar spelkontroller lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
-   "Ommappningar för inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
-   "Ommappningar för inmatning lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
-   "Spellistor lagras i denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
-   "Favoritspellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
-   "Spara favoritspellista till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
-   "Historikspellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
-   "Spara historikspellistan till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   "Bildspellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
-   "Spara spellista för bildhistorik till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   "Musikspellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
-   "Spara musikspellistan till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   "Videospellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
-   "Spara videospellistan till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
-   "Körningslogg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
-   "Körtidsloggar lagras i den här katalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
-   "Spara filer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
-   "Spara alla sparningsfiler till denna katalog. Om den inte är inställd försöker den spara i innehållsfilens arbetskatalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
-   "Spara alla filer (*.srm) till denna katalog. Detta inkluderar relaterade filer som .rt, .psrm, etc... Detta kommer att åsidosättas av explicita kommandoradsval."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
-   "Sparade tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
-   "Dina sparade tillstånd och inspelningar lagras i denna mapp. Om den inte är inställd hit så kommer den att försöka spara filerna i mappen där spelinnehållet är placerat."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
-   "Arkiverat innehåll kommer tillfälligt att extraheras till denna katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOG_DIR,
-   "System händelselogg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOG_DIR,
-   "Loggar för systemhändelser lagras i denna katalog."
-   )
-
-#ifdef HAVE_MIST
-/* Settings > Steam */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
-   "Aktivera Rich Presence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
-   "Dela din aktuella status i RetroArch på Steam."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
-   "Innehållsformat för Rich Presence"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
-   "Bestäm vilken information som är relaterad till innehållet som ska delas."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
-   "Innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
-   "Kärnnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
-   "Systemnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
-   "Innehåll (Systemnamn)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
-   "Innehåll (Kärnnamn)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
-   "Innehåll (Systemnamn - Kärnnamn)"
-   )
-#endif
-
-/* Music */
-
-/* Music > Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
-   "Lägg till i Mixer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
-   "Lägg till i Mixer och spela"
-   )
-
-/* Netplay */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
-   "Värd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Anslut till Netplay-värd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Ange Netplay-serveradress och anslut i klientläge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Koppla från Netplay-värd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Koppla från en aktiv Netplay anslutning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
-   "Filter för lobbyn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
-   "Endast anslutningsbara rum"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
-   "Endast installerade kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
-   "Lösenordsskyddade rum"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Uppdatera Netplay-värdlistan"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Leta efter netplay-värdar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Uppdatera Netplay-listan för LAN"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Leta efter netplay-värdar på LAN."
-   )
-
-/* Netplay > Host */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Starta Netplay-värd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Starta netplay i värdläge (server)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
-   "Stoppa Netplay-värd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
-   "Sparka ut klient"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_KICK,
-   "Sparka ut en klient från ditt aktuella värdrum."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
-   "Bannlys klient"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_BAN,
-   "Bannlys en klient från ditt aktuella värdrum."
-   )
-
-/* Import Content */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
-   "Sök igenom katalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
-   "Skannar i en katalog efter innehåll som matchar databasen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
-   "Välj detta för att skanna den aktuella katalogen efter innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_FILE,
-   "Sök igenom fil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_FILE,
-   "Söker igenom en fil efter innehåll som matchar databasen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
-   "Sök igenom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
-   "Genomsökningsmetod"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_METHOD,
-   "Automatiskt eller anpassad med detaljerade alternativ."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
-   "Databaskontroll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_USE_DB,
-   "Strikt lägger endast till objekt som matchar en databaspost, Avslappnat lägger även till filer med korrekt filändelse men utan CRC/serienummermatchning, Anpassad DAT kontrollerar mot en XML-fil som tillhandahålls av användaren istället för databaser, Ingen ignorerar databaser och använder endast filändelser."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
-   "Databas att matcha"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
-   "Matchning kan begränsas till en specifik databas, eller till den absolut första databasen som matchar, för att snabba upp genomsökningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
-   "Spellista att uppdatera"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
-   "Resultaten läggs till i denna spellista. Vid inställningen Auto - Alla kan flera systemspellistor uppdateras. Anpassa utan databasreferens länkar inte posterna till någon databas i spellistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
-   "Sök igenom en enda fil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
-   "Söker igenom endast en enda fil istället för en katalog. Välj innehållsplats igen efter att detta ändrats."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
-   "Hoppa över databasreferenser från spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
-   "Vid anpassade spellistnamn ska du alltid använda spellistnamnet för miniatyrbildssökning, även om det finns en matchning i databasen."
-   )
-
-/* Import Content > Scan File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
-   "Lägg till i Mixer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
-   "Lägg till i Mixer och spela"
-   )
-
-/* Import Content > Content Scan */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
-   "Namn för anpassad spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Standardkärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-   "Välj en standardkärna att använda vid start av genomsökt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "Filnamnstillägg"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
-   "Lista över filtyper som ska inkluderas i sökningen, separerade med mellanslag. Om tom, innehåller alla filtyper, eller om en kärna anges, alla filer som stöds av kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "Sök igenom rekursivt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
-   "När den är aktiverad kommer alla underkataloger i den angivna ”Innehållskatalog” att ingå i sökningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "Sök igenom inuti arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
-   "När detta är aktiverat kommer arkivfiler (.zip, .7z, etc.) att genomsökas efter giltigt/stödd innehåll. Kan ha en betydande inverkan på genomsökningsprestandan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
-   "Arkad DAT-fil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
-   "Välj en Logiqx eller MAME List XML DAT-fil för att möjliggöra automatisk namngivning av genomsökt arkadinnehåll (MAME, FinalBurn Neo, etc.)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
-   "Arkad DAT-filter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "Skriv över befintlig spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
-   "När denna funktion är aktiverad raderas alla befintliga spellistor innan innehållet söks igenom. När funktionen är inaktiverad behålls befintliga spellistor och endast innehåll som saknas i spellistan läggs till."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
-   "Validera befintliga poster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
-   "När funktionen är aktiverad kommer poster i en befintlig spellista att verifieras innan nytt innehåll söks igenom. Poster som hänvisar till innehåll som saknas och/eller filer med ogiltiga tillägg tas bort."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
-   "Starta genomsökning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
-   "Sök igenom valt innehåll."
-   )
-
-/* Explore tab */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
-   "Initierar lista..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
-   "Utgivet år"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
-   "Spelarantal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
-   "Tagg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
-   "Sök namn ..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
-   "Visa Alla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
-   "Ytterligare filter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
-   "Alla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
-   "Lägg till ytterligare filter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
-   "%u objekt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
-   "Efter utvecklare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
-   "Efter utgivare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
-   "Efter utgivningsår"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
-   "Efter spelarantal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
-   "Efter genre"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
-   "Efter prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
-   "Efter kategori"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
-   "Efter språk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
-   "Efter region"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
-   "Efter konsolen exklusiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
-   "Efter Plattform exklusiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
-   "Efter rumble"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
-   "Efter poäng"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
-   "Efter media"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
-   "Efter spelkontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
-   "Efter konststil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
-   "Efter Spelsätt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
-   "Efter berättande"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
-   "Efter takt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
-   "Efter perspektiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
-   "Efter inställning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
-   "Efter visuellt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
-   "Efter motor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
-   "Efter ursprung"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
-   "Efter franchise"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
-   "Efter tagg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
-   "Efter systemnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
-   "Ställ in intervallfilter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_VIEW,
-   "Visa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
-   "Spara som vy"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
-   "Radera vy"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
-   "Ange namn för ny vy"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
-   "Visa redan befintliga med samma namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
-   "Vy sparad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
-   "Vy raderad"
-   )
-
-/* Playlist > Playlist Item */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN,
-   "Kör"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RUN,
-   "Starta innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
-   "Byt namn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RENAME_ENTRY,
-   "Byt namn på titeln för posten."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   "Ta bort"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DELETE_ENTRY,
-   "Ta bort denna post från spellistan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
-   "Lägg till i Favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
-   "Lägg till Innehållet i 'Favoriter'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
-   "Lägg till i spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
-   "Skapa ny spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
-   "Ställ in kärnassociation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
-   "Ställ in kärna associerad med detta innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
-   "Återställ kärnassociation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
-   "Återställ kärnan som är kopplad till detta innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
-   "Hämta ner miniatyrer"
-   )
-
-/* Playlist Item > Set Core Association */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
-   "Nuvarande kärna"
-   )
-
-/* Playlist Item > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   "Namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
-   "Filsökväg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
-   "Objekt: %lu/%lu"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   "Kärna"
-   )
-MSG_HASH( /* FIXME Unused? */
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
-   "Speltid"
-   )
-MSG_HASH( /* FIXME Unused? */
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
-   "Senast spelad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
-   "Databas"
-   )
-
-/* Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
-   "Återuppta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESUME_CONTENT,
-   "Återuppta innehållet och lämna snabbmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
-   "Återställ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
-   "Stäng Innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
-   "Stäng innehållet. Eventuella osparade ändringar kan gå förlorade."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   "Ta skärmdump"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
-   "Ta en bild av skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STATE_SLOT,
-   "Tillståndsplats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_STATE_SLOT,
-   "Ändra den för närvarande valda status platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_STATE,
-   "Spara tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_STATE,
-   "Spara ett tillstånd av spelet till den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SAVE_STATE,
-   "Spara ett tillstånd till aktuella valda platsen. Observera: sparade tillstånd är oftast inte portabla och kanske inte fungerar andra versioner av denna kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_STATE,
-   "Läs in tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_STATE,
-   "Läs in ett sparat tillstånd från den aktuella valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOAD_STATE,
-   "Läs in ett sparat tillstånd från aktuella valda platsen. Observera: kanske inte fungerar om tillståndet sparades med en annan version av kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
-   "Ångra Läs in tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
-   "Om ett tillstånd har lästs in återgår innehållet till det tillstånd som gällde före inläsningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
-   "Ångra Spara tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
-   "Om ett tillstånd blev överskrivet kommer den att återgå till det tidigare sparade tillståndet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
-   "Återuppspelningsplats"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REPLAY_SLOT,
-   "Ändra den för närvarande valda tillståndsplatsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
-   "Spela repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_PLAY_REPLAY,
-   "Spela reprisfilen från den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
-   "Spela in repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORD_REPLAY,
-   "Spela in reprisfil till den för närvarande valda platsen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
-   "Stoppa Inspelning/Repris"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_HALT_REPLAY,
-   "Stoppar inspelning/uppspelning av aktuell återuppspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
-   "Lägg till i Favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
-   "Lägg till Innehållet i 'Favoriter'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
-   "Starta inspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
-   "Starta videoinspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
-   "Stoppa inspelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
-   "Stoppa videoinspelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
-   "Börja strömma"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
-   "Starta strömning till valt mål."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
-   "Stoppa strömning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
-   "Avsluta ström."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
-   "Sparade tillstånd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
-   "Åtkomst till alternativ för sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
-   "Kärnalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS,
-   "Ändra alternativen för innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
-   "Spelkontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
-   "Ändra kontrollerna för innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
-   "Fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
-   "Konfigurera fuskkoder."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
-   "Skivhantering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_OPTIONS,
-   "Skivavbildshantering."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
-   "Ställ in shaders för att förbättra bilden visuellt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
-   "Åsidosättningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
-   "Alternativ för att åsidosätta global konfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "Prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
-   "Visa prestationer och relaterade inställningar."
-   )
-
-/* Quick Menu > Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
-   "Hantera kärnalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
-   "Spara eller ta bort alternativåsidosättningar för aktuella innehållet."
-   )
-
-/* Quick Menu > Options > Manage Core Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Spara spelalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Spara kärnalternativ som tillämpas endast för det aktuella innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort spelalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort kärnalternativ som tillämpas endast för det aktuella innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Alternativ för spara innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
-   "Spara kärnalternativ som tillämpas för allt innehåll inläst från samma katalog som den aktuella filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort alternativ för innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
-   "Ta bort kärnalternativ som tillämpas för allt innehåll inläst från samma katalog som den aktuella filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
-   "Aktiv alternativfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
-   "Den aktuella alternativfilen som används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
-   "Nollställ kärnalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
-   "Ställ in alla alternativ för den aktuella kärnan till standardvärden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
-   "Skriv alternativ till disk"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
-   "Tvinga aktuella inställningar att skrivas till den aktiva alternativfilen. Säkerställer att alternativ bevaras i händelse av att en kärnbugg orsakar felaktig avstängning av frontend."
-   )
-
-/* Quick Menu > Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
-   "Hantera ommappningsfiler"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
-   "Läs in, spara eller ta bort ommappningsfiler för inmatning för aktuellt innehåll."
-   )
-
-/* Quick Menu > Controls > Manage Remap Files */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
-   "Aktiv ommappningsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
-   "Aktuell ommappningsfil som används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
-   "Läs in ommappningsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
-   "Läs in och ersätt nuvarande inmatningsmappningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
-   "Spara ommappningsfil som"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
-   "Spara aktuella inmatningsmappningar som en ny ommappningsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
-   "Spara ommappningsfil för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
-   "Spara en ommappningsfil som tillämpas för allt innehåll inläst med denna kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
-   "Ta bort ommappningsfil för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
-   "Ta bort ommappningsfilen som tillämpas för allt innehåll inläst med denna kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Spara ommappningsfil i innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
-   "Spara en ommappningsfil som tillämpas för allt innehåll inläst från samma katalog som aktuella filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Ta bort ommappningsfil i spelets innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
-   "Ta bort ommappningsfil som tillämpas för allt innehåll inläst från samma katalog som aktuella filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
-   "Spara spelommappningsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
-   "Spara en ommappningsfil som tillämpas endast för det aktuella innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
-   "Ta bort fil för spelommappningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
-   "Ta bort ommappningsfilen som tillämpas endast för det aktuella innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
-   "Nollställ inmatningsmappning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
-   "Ställ in alla inmatningsalternativ till standardvärden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
-   "Uppdatera ommappningsfil för inmatning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
-   "Skriv över aktiva ommappningsfilen med aktuella alternativ för ommappning av inmatning."
-   )
-
-/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMAP_FILE,
-   "Ommappningsfil"
-   )
-
-/* Quick Menu > Cheats */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
-   "Starta eller fortsätt fusksökning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
-   "Läs in fuskfil (ersätt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
-   "Läs in en fuskfil och ersätt befintliga fusk."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
-   "Läs in fuskfil (lägg till)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
-   "Läs in en fuskfil och lägg till i befintliga fusk."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
-   "Läs om spelspecifika fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
-   "Spara fuskfil som"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
-   "Spara aktuella fusk som en fuskfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
-   "Lägg till nytt fusk överst"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
-   "Lägg till nytt fusk nederst"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
-   "Radera alla fusk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
-   "Tillämpa fusk automatiskt under spelinläsning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
-   "Tillämpa fusk automatiskt när spelet läses in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
-   "Verkställ efter växling"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
-   "Tillämpa fusk direkt efter växling."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
-   "Tillämpa ändringar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
-   "Fuskändringar kommer aktiveras direkt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT,
-   "Fusk"
-   )
-
-/* Quick Menu > Cheats > Start or Continue Cheat Search */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
-   "Starta eller starta om fusksökning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
-   "Tryck Vänster eller Höger för att ändra bitstorlek."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
-   "Tryck vänster eller höger för att ändra värde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
-   "Lika med %u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
-   "Mindre än innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
-   "Mindre än eller lika med innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
-   "Större än innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
-   "Större än eller lika med innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
-   "Lika med innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
-   "Inte lika med innan"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
-   "Tryck vänster eller höger för att ändra värde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
-   "Lika med innan +%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
-   "Sök i minnet efter värden"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
-   "Tryck vänster eller höger för att ändra värde."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
-   "Lika med innan -%u (%X)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
-   "Ta bort matchning #"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
-   "Skapa kodmatchning #"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
-   "Matchadress: %08X Mask: %02X"
-   )
-
-/* Quick Menu > Cheats > Load Cheat File (Replace) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
-   "Fuskfil (ersätt)"
-   )
-
-/* Quick Menu > Cheats > Load Cheat File (Append) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
-   "Fuskfil (lägg till)"
-   )
-
-/* Quick Menu > Cheats > Cheat Details */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
-   "Fuskdetaljer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_IDX,
-   "Fuskposition i listan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
-   "Aktiverad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   "Beskrivning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
-   "Hanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
-   "Sökstorlek för minne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
-   "Typ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
-   "Värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
-   "Minnesadress"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
-   "Bläddra adress: %08X"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
-   "Mask för minnesadress"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
-   "Adressbitmask när minnesstorlek för sökning < 8-bitars."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
-   "Antal iterationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
-   "Antal gånger fusket kommer att tillämpas. Använd tillsammans med de andra två alternativen för ”Iteration” för att påverka stora minnesområden."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "Adressökning vid varje iteration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
-   "Efter varje iteration kommer ”Minnesadress” att ökas med detta tal gånger ”Sökstorlek för minne”."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
-   "Värdeökning vid varje iteration"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
-   "Efter varje iteration kommer ”Värde” att ökas med denna mängd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
-   "Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
-   "Rumble-port"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
-   "Primär Rumble-styrka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
-   "Tidslängd för primär Rumble (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
-   "Sekundär Rumble-styrka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
-   "Tidslängd för sekundär Rumble (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
-   "Kod"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
-   "Lägg till nytt fusk efter denna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
-   "Lägg till nytt fusk före denna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
-   "Kopiera detta fusk efter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
-   "Kopiera detta fusk före"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
-   "Ta bort detta fusk"
-   )
-
-/* Quick Menu > Disc Control */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_INDEX,
-   "Aktuellt skivindex"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_INDEX,
-   "Välj aktuell skiva från listan över tillgängliga avbildningar. Virtuella skivfacket kommer vara stängt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
-   "Mata ut skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
-   "Öppna virtuellt skivfack."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
-   "Sätt i skiva"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
-   "Stäng virtuellt skivfack."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
-   "Läs in ny skiva"
-   )
-
-/* Quick Menu > Shaders */
-
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
-   "Aktivera pipeline för video shader."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
-   "Bevaka shader-filer för ändringar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
-   "Tillämpa automatiskt ändringar som gjorts i shader-filer på disken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
-   "Bevaka shader-filer för nya ändringar. När du har sparat ändringar i en shader på disken kommer den automatiskt att kompileras om och tillämpas på innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Kom ihåg senast använda Shader-katalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
-   "Öppna filbläddrare vid senast använda katalog när shader-förval och pass läses in."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
-   "Läs in förinställd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
-   "Läs in en förinställd Shader. Shader pipelinen kommer automatiskt att konfigureras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
-   "Läs in en shader-förinställning direkt. Shader-menyn uppdateras i enlighet med detta.\nSkaleringsfaktorn som visas i menyn är tillförlitlig endast om förinställningen använder enkla skalningsmetoder (dvs. källskalning, samma skalningsfaktor för X/Y)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
-   "Lägg till förinställning före"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
-   "Lägg till förinställning före den aktuella inlästa förinställningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
-   "Lägg till förval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
-   "Lägg till förval till de redan inlästa förvalen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
-   "Hantera förval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
-   "Spara eller ta bort shader-förval."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
-   "Aktiv förvalsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
-   "Aktuellt shader-förval som används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
-   "Tillämpa ändringar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
-   "Ändringar i shaderkonfigurationen träder i kraft omedelbart. Använd detta om du har ändrat antalet shaderpass, filtrering, FBO-skala etc."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
-   "När du har ändrat shaderinställningar, t.ex. antal shaderpass, filtrering, FBO-skala, använder du detta för att tillämpa ändringarna.\nAtt ändra dessa shaderinställningar är en ganska dyr operation så det måste göras uttryckligen.\nNär du tillämpar shaders sparas shaderinställningarna i en tillfällig fil (retroarch.slangp/.cgp/.glslp) och läses in. Filen finns kvar efter att RetroArch har avslutats och sparas i Shader-katalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
-   "Shader parametrar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
-   "Modifiera den aktuella shadern direkt. Ändringar sparas inte i den förinställda filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
-   "Shaderpass"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
-   "Öka eller minska antalet shader-pipeline-pass. Separata shaders kan kopplas till varje pipeline-pass och dess skala och filtrering kan konfigureras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
-   "RetroArch gör det möjligt att blanda och matcha olika shaders med godtyckliga shaderpass, med anpassade hårdvarufilter och skalfaktorer.\nDetta alternativ anger antalet shaderpass som ska användas. Om du ställer in det på 0 och använder Apply Shader Changes använder du en ”tom” shader."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
-   "Sökväg till shader. Alla shaders måste vara av samma typ (t.ex. Cg, GLSL eller Slang). Ställ in Shader Directory för att ange var webbläsaren börjar leta efter shaders."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
-   "Hårdvarufilter för detta pass. Om ”Default” är inställt kommer filtret att vara antingen ”Linear” eller ”Nearest” beroende på inställningen ”Bilinear Filtering” under Video settings."
-  )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCALE,
-   "Skala"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
-   "Skala för detta pass. Skalfaktorn ackumuleras, dvs. 2x för första passet och 2x för andra passet ger dig en total skala på 4x.\nOm det finns en skalfaktor för sista passet sträcks resultatet till skärmen med standardfiltret, beroende på inställningen Bilineär filtrering under Videoinställningar.\nOm ”Standard” är inställt används antingen 1x skala eller sträckning till fullskärm beroende på om det inte är sista passet eller inte."
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Enkla förinställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
-   "Spara en shader-förinställning som har en länk till den ursprungliga förinställningen och som endast innehåller de parameterändringar som du har gjort."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
-   "Spara aktuellt förval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
-   "Spara aktuellt shader-förval."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Spara förval som"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
-   "Spara de aktuella shaderinställningarna som en ny shaderförinställning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-   "Spara globalt förval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
-   "Spara de aktuella shaderinställningarna som global standardinställning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
-   "Spara kärnförval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
-   "Spara de aktuella shaderinställningarna som standard för den här kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "Spara förval för innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
-   "Spara de aktuella shaderinställningarna som standard för alla filer i den aktuella innehållskatalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "Förval för sparat spel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
-   "Spara de aktuella shaderinställningarna som standardinställningar för innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
-   "Inga automatiska shader-förinställningar hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-   "Ta bort globalt förval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
-   "Ta bort den globala förinställningen, som används av allt innehåll och alla kärnor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
-   "Ta bort kärnförval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
-   "Ta bort förinställningen för kärna, som används av allt innehåll som körs med den för närvarande inlästa kärnan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "Ta bort förval för innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
-   "Ta bort förvalet för innehållskatalogen, som används av allt innehåll i den aktuella arbetskatalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Ta bort spelförval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
-   "Ta bort förinställningen för spel, som endast används för det specifika spelet i fråga."
-   )
-
-/* Quick Menu > Shaders > Shader Parameters */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
-   "Inga shader-parametrar"
-   )
-
-/* Quick Menu > Overrides */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
-   "Aktiv åsidosättningsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
-   "Den aktuella åsidosättningsfilen som används."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
-   "Läs in åsidosättningsfil"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
-   "Läs in och ersätt aktuell konfiguration."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
-   "Spara åsidosättningar som"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
-   "Spara aktuell konfiguration som en ny åsidosättningsfil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Spara åsidosättningar för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Spara en åsidosatt konfigurationsfil som kommer att gälla för allt innehåll som laddas med denna kärna. Kommer att ha företräde framför huvudkonfigurationen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Ta bort åsidosättningar för kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
-   "Ta bort den åsidosättande konfigurationsfilen som kommer att gälla för allt innehåll som läses in med denna kärna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Spara åsidosättningar för innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Spara en överordnad konfigurationsfil som kommer att gälla för allt innehåll som laddas från samma katalog som den aktuella filen. Kommer att ha företräde framför huvudkonfigurationen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Ta bort åsidosättningar för innehållskatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
-   "Ta bort den åsidosättande konfigurationsfilen som gäller för allt innehåll som läses in från samma katalog som den aktuella filen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Åsidosättning för sparade spel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Spara en åsidosättande konfigurationsfil som endast gäller för det aktuella innehållet. Har företräde framför huvudkonfigurationen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Ta bort åsidosättningar för spel"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
-   "Ta bort konfigurationsfil för åsidosättningar som tillämpas endast på aktuellt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
-   "Läs ur åsidosättning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
-   "Nollställ alla alternativ till globala konfigurationsvärden."
-   )
-
-/* Quick Menu > Achievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
-   "Inga prestationer att visa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
-   "Avbryt paus för hardcore-läget för prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
-   "Lämna hardcore-läget för prestationer aktiverat för den aktuella sessionen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
-   "Avbryt återupptagning av hardcore-läget för prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
-   "Lämna hardcore-läget för prestationer inaktiverat för den aktuella sessionen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
-   "Återupptagning av hardcore-läget för prestationer inaktiverat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
-   "Du måste läsa om kärnan för att återuppta hardcore-läget för prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
-   "Pausa hardcore-läget för prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
-   "Pausa hardcore-läget för prestationer för den aktuella sessionen. Den här åtgärden aktiverar fusk, spola tillbaka, slowmotion och läsa in sparade tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
-   "Återuppta hardcore-läget för prestationer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
-   "Återuppta hardcore-läget för prestationer för den aktuella sessionen. Den här åtgärden inaktiverar fusk, spola tillbaka, slowmotion och ladda sparade tillstånd och återställer det aktuella spelet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
-   "RetroAchievements-servern går inte att nå"
-)
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
-   "En eller flera upplåsningar av prestationer nådde inte fram till servern. Upplåsningarna kommer att försöka igen så länge du lämnar appen öppen."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
-   "RetroAchievements server går inte att nå. Kommer att försöka igen tills det lyckas eller appen stängs."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
-   "Alla väntande förfrågningar har synkroniserats till RetroAchievements-servern."
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
-   "Identifierar spelet"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
-   "Hämtar speldata"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
-   "Startar session"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
-   "Inte inloggad"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
-   "Nätverksfel"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
-   "Okänt spel"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
-   "Prestationer kan inte aktiveras med denna kärna"
-)
-
-/* Quick Menu > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
-   "Kontrollsumma för RetroAchievements"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
-   "Databaspost"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
-   "Visa databasinformation för aktuellt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
-   "Inga poster att visa"
-   )
-
-/* Miscellaneous UI Items */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
-   "Inga kärnor tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
-   "Inga kärnalternativ tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
-   "Ingen kärninformation tillgänglig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
-   "Inga kärnsäkerhetskopior är tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
-   "Inga favoriter tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
-   "Ingen historik tillgänglig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
-   "Inga bilder tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
-   "Ingen musik tillgänglig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
-   "Inga videor tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
-   "Ingen information tillgänglig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
-   "Inga poster i spellistan finns tillgängliga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
-   "Inga inställningar hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
-   "Inga Bluetoothenheter hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
-   "Inga nätverk hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_CORE,
-   "Ingen kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SEARCH,
-   "Sök"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
-   "Växla miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
-   "Välj slumpmässigt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
-   "Tillbaka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
-   "Föräldrakatalog"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
-   "Gå bakåt till föräldrakatalogen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
-   "Katalogen hittades inte"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_ITEMS,
-   "Inga föremål"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SELECT_FILE,
-   "Välj fil"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
-   "90 gr."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
-   "180 gr."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
-   "270 gr."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
-   "90 gr."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
-   "180 gr."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
-   "270 gr."
-   )
-
-/* Settings Options */
-
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_UNKNOWN_COMPILER,
-   "Okänd kompilator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
-   "Dela"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
-   "Rösta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
-   "Analog ingångsdelning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
-   "Medelvärde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
-   "Ingen inställning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
-   "Studsa vänster/höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
-   "Rulla åt vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
-   "Bildläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
-   "Talläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
-   "Berättarläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
-   "Historik & Favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
-   "Alla spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
-   "Historik och favoriter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
-   "Alltid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
-   "Aldrig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
-   "Per kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
-   "Aggregera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
-   "Laddad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
-   "Laddar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
-   "Urladdning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
-   "Ingen källa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
-   "Välj det här för att ställa in detta som katalog."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
-   "RetroPad med Analog"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UNKNOWN,
-   "Okänd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
-   "Ner + Y + L1 + R1"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HOLD_START,
-   "Start intryckt (2 sekunder)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
-   "Select intryckt (2 sekunder)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
-   "Ner + Select"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
-   "Ändringar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
-   "Ändras inte"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
-   "Ökar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
-   "Minskar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
-   "= Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
-   "!= Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
-   "< Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
-   "> Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
-   "Ökar med Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
-   "Minskar med Rumble-värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_RUMBLE_PORT_16,
-   "Alla"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
-   "Sätt till värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
-   "Öka med värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
-   "Minska med värde"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
-   "Kör nästa fusk om värde = minne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
-   "Kör nästa fusk om värde != minne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
-   "Kör nästa fusk om värde < minne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
-   "Kör nästa fusk om värde > minne"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
-   "1-Bit, Maximalt värde = 0x01"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
-   "2-Bit, Maximalt värde = 0x03"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
-   "4-Bit, Maximalt värde = 0x0F"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
-   "8-Bit, Maximalt värde= 0xFF"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
-   "16-Bit, Maximalt värde = 0xFFFF"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
-   "32-Bit, Maximalt värde = 0xFFFFFFFF"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
-   "System förinställt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
-   "Alfabetisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
-   "Visa hela titel etiketter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
-   "Ta bort () innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
-   "Ta bort [] innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
-   "Ta bort () och []"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
-   "Behåll region"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
-   "Behåll skivindex"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
-   "Behåll region och skivindex"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
-   "System förinställt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
-   "Omslagsbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
-   "Skärmdump"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
-   "Titelskärm"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
-   "Innehållslogotyp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
-   "Snabb"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ON,
-   "PÅ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OFF,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_YES,
-   "Ja"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO,
-   "Nej"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TRUE,
-   "Sant"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FALSE,
-   "Falskt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ENABLED,
-   "Aktiverad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISABLED,
-   "Inaktiverad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
-   "Låst"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
-   "Upplåst"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY,
-   "Inofficiell"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
-   "Stöds inte"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
-   "Nyligen upplåst"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
-   "Nästan där"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
-   "Aktiva utmaningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
-   "Endast spårare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
-   "Endast meddelanden"
-)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DONT_CARE,
-   "Standard"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LINEAR,
-   "Linjär"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NEAREST,
-   "Närmsta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN,
-   "Huvudsaklig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT,
-   "Innehåll"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
-   "<Automatiskt>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
-   "<Ospecificerat>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
-   "Helt automatiskt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
-   "Strikt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
-   "Avslappnat"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
-   "Anpassad DAT (Strikt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
-   "Anpassad DAT (Avslappnad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
-   "<Automatiskt/Alla>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
-   "<Automatiskt/Första matchning>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
-   "<Automatiskt/Systemnamn>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
-   "Vänster Analog"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
-   "Vänster Analog (Tvingad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
-   "Höger Analog"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
-   "Höger Analog (Tvingad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
-   "Vänster + höger analoga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
-   "Vänster + höger analoga (tvingad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
-   "Twin-Stick-analoga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
-   "Twin-Stick-analoga (tvingad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEY,
-   "Knapp %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
-   "Mus 1"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
-   "Mus 2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
-   "Mus 3"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
-   "Mus 4"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
-   "Mus 5"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
-   "Mushjul Upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
-   "Mushjul Ner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
-   "Mushjul Vänster"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
-   "Mushjul Höger"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
-   "Tidig"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
-   "Sen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
-   "sedan"
-   )
-
-/* RGUI: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Bakgrundsfyllnad Fet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
-   "Öka storlek på bakgrundsfyllnadens schackbrädsrutor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Kantfyllnad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Kantfyllnad Fet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
-   "Öka storlek på kantfyllnadens schackbrädsrutor."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
-   "Visa menyram."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Använd fullbreddslayout"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
-   "Ändra storlek och placera menyposter för att utnyttja tillgängligt skärmutrymme på bästa sätt. Inaktivera detta för att använda klassisk tvåkolumnslayout med fast bredd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
-   "Linjärt filter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
-   "Lägger till en liten oskärpa till menyn för att mjuka upp hårda pixelkanter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Intern uppskalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
-   "Uppskalar menygränssnittet innan det ritas upp på skärmen. När det används med ”Linjärt menyfilter” aktiverat, tar det bort skalningsartefakter (ojämna bildpunkter) samtidigt som bilden förblir skarp. Har en betydande inverkan på prestandan som ökar med uppskalningsnivån."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "Bildformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
-   "Välj bildformat för meny. Bredbildsformat ökar den horisontella upplösningen i menygränssnittet. (Kan kräva en omstart om 'Lås bildformat' är inaktiverad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Lås bildformat"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
-   "Säkerställer att menyn alltid visas med rätt bildformat. Inaktiverad kommer snabbmenyn att sträckas ut för att matcha det för närvarande laddade innehållet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
-   "Färgtema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
-   "Välj ett annat färgtema. Om du väljer ”Anpassad” kan du använda förinställda filer för menyteman."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
-   "Anpassat temaförval"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
-   "Välj ett förinställt menytema från filbläddraren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
-   "Genomskinlighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
-   "Aktivera bakgrundsvisning av innehåll när snabbmenyn är aktiv. Om du inaktiverar transparens kan temafärgerna ändras."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
-   "Skuggeffekter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
-   "Aktivera skuggor för menytext, ramar och miniatyrer. Har en blygsam prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
-   "Animerad bakgrund"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
-   "Aktivera animeringseffekt för bakgrundspartiklar. Har en betydande prestandapåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
-   "Animerad bakgrunds hastighet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
-   "Justera hastigheten på animationseffekterna för bakgrundspartiklar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
-   "Bakgrundsanimering för skärmsläckare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
-   "Visa partikelanimationseffekt i bakgrunden när menyskärmsläckaren är aktiv."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
-   "Visa miniatyrbilder för spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
-   "Aktivera visning av nedskalade miniatyrbilder inline när du visar spellistor. Växlingsbar med RetroPad Select. När funktionen är inaktiverad kan miniatyrbilderna fortfarande växlas till helskärm med RetroPad Start."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
-   "Övre miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
-   "Nedre miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
-   "Växla miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Nedskalningsmetod för miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
-   "Omsamplingsmetod som används när stora miniatyrbilder krymps för att passa skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
-   "Miniatyrbildsfördröjning (ms)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
-   "Tillämpar en tidsfördröjning mellan valet av en spellistepost och laddningen av dess tillhörande miniatyrbilder. Om du ställer in detta till ett värde på minst 256 ms möjliggörs snabb och fördröjningsfri rullning även på de långsammaste enheterna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
-   "Utökat ASCII-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
-   "Aktivera visning av icke-standardiserade ASCII-tecken. Krävs för kompatibilitet med vissa icke-engelska västerländska språk. Har en måttlig prestationspåverkan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
-   "Skifta ikoner/text"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
-   "Använd ikoner istället för PÅ/AV-text för att representera 'omkopplare' menyinställningar."
-   )
-
-/* RGUI: Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
-   "Närmsta granne (Snabb)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
-   "Bilinjär"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
-   "Sinc/Lanczos3 (Långsam)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
-   "16:9 (Centrerad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
-   "16:10 (Centrerad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
-   "21:9 (Centrerad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
-   "3:2 (Centrerad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
-   "5:3 (Centrerad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
-   "Anpassa till skärm"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
-   "Heltalsskala"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
-   "Fyll skärm (Sträckt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
-   "Klassisk röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
-   "Klassisk orange"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
-   "Klassisk gul"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,
-   "Klassisk grön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
-   "Klassisk blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET,
-   "Klassisk violett"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY,
-   "Klassisk grå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
-   "Äldre röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
-   "Mörklila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   "Midnattsblå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
-   "Gyllene"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   "Elektrisk blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
-   "Äppelgrön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
-   "Vulkanröd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
-   "Gruvbox Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   "Solarized Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
-   "Solarized Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
-   "Tango Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT,
-   "Tango Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
-   "Grå Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
-   "Grå Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
-   "Snö (Lätt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
-   "Snö (Tungt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
-   "Regn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
-   "Virvel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
-   "Stjärnfält"
-   )
-
-/* XMB: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
-   "Sekundär miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
-   "Typ av miniatyrbild att visa till vänster."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
-   "Miniatyrbild för ikon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
-   "Typ av miniatyrbild för spellisteikon att visa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
-   "Dynamisk bakgrund"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
-   "Läs in en ny bakgrundsbild dynamiskt beroende på kontext."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
-   "Horisontell animering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
-   "Aktivera horisontell animering för menyn. Detta kommer att påverka prestandan."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
-   "Animeringen som aktiveras vid rullning mellan flikar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-   "Animering för flytta uppåt/neråt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
-   "Animationen som aktiveras när du flyttar uppåt eller nedåt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "Animering för huvudmenyns öppna/stänga"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
-   "Animationen som aktiveras när ett undermeny öppnas."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
-   "Alfafaktor för färgtema"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
-   "Aktuell menyikon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
-   "Aktuell menyikon kan döljas, under den horisontella menyn eller i sidhuvudets titel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
-   "Titel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_FONT,
-   "Typsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_FONT,
-   "Välj ett annat huvudsakligt teckensnitt som ska användas av menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
-   "Teckenfärg (röd)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
-   "Teckenfärg (grön)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
-   "Teckenfärg (blå)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_LAYOUT,
-   "Välj en annan layout för XMB-gränssnittet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_THEME,
-   "Ikontema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_THEME,
-   "Välj ett annat ikontema för RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
-   "Skifta ikoner/text"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
-   "Använd ikoner istället för PÅ/AV-text för att representera 'omkopplare' menyinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
-   "Skuggeffekter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
-   "Rita skuggor för ikoner, miniatyrbilder och bokstäver. Detta kommer att påverka prestandan något."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
-   "Shader-rörledning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
-   "Välj en animerad bakgrundseffekt. Kan vara GPU-intensiv beroende på effekten. Om prestandan är otillfredsställande kan du antingen stänga av den eller återgå till en enklare effekt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
-   "Färgtema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
-   "Välj ett annat bakgrundsfärg tema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
-   "Vertikal disposition för minatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
-   "Visa den vänstra miniatyrbilden under den högra, på den högra sidan av skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "Miniatyrskalfaktor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
-   "Minska visningsstorlek för miniatyrbild genom att skala maximal tillåten bredd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
-   "Vertikal toningsfaktor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
-   "Visa titelrubrik"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
-   "Titelmarginal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
-   "Horisontell förskjutning av titelmarginal"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Aktivera inställningsflik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
-   "Visa inställningsfliken som innehåller programinställningar."
-   )
-
-/* XMB: Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
-   "Ribbon (Förenklad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
-   "Enkel snö"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
-   "Snö"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
-   "Snöflingor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
-   "Anpassa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
-   "Monokrom"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
-   "Monokrom inverterad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
-   "Systematisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
-   "Automatisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
-   "Automatisk inverterad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
-   "Äppelgrön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
-   "Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
-   "Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
-   "Morgon blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
-   "Solstråle"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
-   "Mörklila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
-   "Elektrisk blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
-   "Gyllene"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
-   "Äldre röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
-   "Midnattsblå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
-   "Bakgrundsbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
-   "Under havet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
-   "Vulkanröd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME,
-   "Limegrön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW,
-   "Pikachu Gul"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
-   "Cube Lila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED,
-   "Family Röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
-   "Iskall"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
-   "Grå Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
-   "Grå Ljus"
-   )
-
-/* Ozone: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT,
-   "Typsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT,
-   "Välj ett annat huvudsakligt teckensnitt som ska användas av menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
-   "Typsnittsskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
-   "Ange om teckenstorleken i menyn ska ha egen skalning och om den ska skalas globalt eller med separata värden för varje del av menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
-   "Globalt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
-   "Separata värden"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
-   "Skalningsfaktor för typsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
-   "Skala typsnittsstorleken linjärt över hela menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
-   "Skalningsfaktor för titeltypsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
-   "Skala typsnittsstorleken för titeltexten i menyrubriken."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
-   "Skalfaktor för vänstra sidofältets typsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
-   "Skala typsnittsstorleken för text i vänstra sidofältet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
-   "Skalfaktor för typsnittet för etiketter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
-   "Skala teckenstorleken för etiketterna för menyalternativ och spellistposter. Påverkar även textstorleken i hjälpfönstren."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-   "Faktor för typsnittsskalning för underetiketter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
-   "Skala teckenstorleken för underetiketterna för menyalternativ och spellistposter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
-   "Faktor för typsnittsskalning för tid och datum"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
-   "Skala teckenstorleken för tids- och datumindikatorn i det övre högra hörnet av menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Faktor för typsnittsskalning för menyfot"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
-   "Skala teckenstorleken för texten i menyfoten. Påverkar även textstorleken i den högra miniatyrbildsfältet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
-   "Dölj sidofältet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
-   "Har alltid det vänstra sidofältet hopfällt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Korta ner namn för spellistor (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
-   "Ta bort tillverkarens namn från spellistorna. Till exempel, 'Sony - PlayStation' blir 'PlayStation'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Sortera spellistor efter avkortat namn (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
-   "Spellistorna kommer att sorteras om i alfabetisk ordning efter att tillverkarkomponenten i deras namn har tagits bort."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
-   "Sekundär miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
-   "Ersätt panelen med innehållsmetadata med en annan miniatyrbild."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
-   "Använd tickertext för innehållets metadata"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
-   "När den är aktiverad kommer varje metadataobjekt som visas i spellistornas högra sidofält (associerad kärna, speltid) att uppta en enda rad; strängar som överskrider sidofältets bredd kommer att visas som rullande tickertext. När den är inaktiverad visas varje innehållsmetadata statiskt, omslaget så att det upptar så många rader som krävs."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Miniatyrskalfaktor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
-   "Skala storleken på miniatyrfältet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
-   "Utfyllnadsfaktor"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
-   "Skala storleken på horisontell utfyllnad."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
-   "Rubrikikon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
-   "Rubrikikon kan vara dold, dynamisk beroende på navigering eller fast till klassisk Invader."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
-   "Rubrikavgränsare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
-   "Alternativ bredd för avgränsare för rubrik och sidfot."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
-   "Dynamisk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
-   "Fast"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
-   "Ingen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
-   "Maximalt"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
-   "Färgtema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
-   "Välj ett annat färgtema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
-   "Simpel vit"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
-   "Simpel svart"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
-   "Solarized Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
-   "Solarized Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
-   "Grå Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
-   "Grå Ljus"
-   )
-
-
-/* MaterialUI: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
-   "Ikoner"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
-   "Visa ikoner till vänster om menyposterna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
-   "Skifta ikoner/text"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
-   "Använd ikoner istället för PÅ/AV-text för att representera 'omkopplare' menyinställningar."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Spellistikoner (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
-   "Visa systemspecifika ikoner i spellistorna."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Optimera landskapslayout"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
-   "Justera menylayouten automatiskt för att bättre passa skärmen när du använder liggande visningsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
-   "Visa navigeringsfältet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
-   "Visa permanenta menynavigeringsgenvägar på skärmen. Möjliggör snabb växling mellan menykategorier. Rekommenderas för pekskärmsenheter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "Autorotera navigationsfältet"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
-   "Flytta automatiskt navigeringsfältet till höger sida av skärmen när du använder liggande visningsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
-   "Färgtema"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
-   "Välj ett annat bakgrundsfärg tema."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Övergångsanimation"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
-   "Aktivera mjuka animeringseffekter när du navigerar mellan olika nivåer i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Stående miniatyrvy"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
-   "Ange miniatyrvisningsläge för spellistan när du använder stående visningsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Liggande miniatyrvy"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
-   "Ange miniatyrvisningsläge för spellistan när du använder liggande visningsorientering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Visa sekundär miniatyrbild i listvyer"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
-   "Visar en sekundär miniatyrbild när du använder miniatyrvisningslägen av typen 'Lista'. Den här inställningen gäller endast när skärmen har tillräcklig fysisk bredd för att visa två miniatyrer."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Miniatyrbildsbakgrunder"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
-   "Möjliggör utfyllnad av oanvänt utrymme i miniatyrbilder med en solid bakgrund. Detta säkerställer en enhetlig visningsstorlek för alla bilder, vilket förbättrar menyutseendet när du tittar på miniatyrbilder av blandat innehåll med olika basmått."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
-   "Primär miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
-   "Huvudtyp av miniatyrbild som ska associeras med varje spellistepost. Fungerar vanligtvis som innehållsikon."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
-   "Sekundär miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
-   "Hjälptyp av miniatyrbild som ska associeras med varje spellistepost. Användningen beror på det aktuella visningsläget för miniatyrbilder i spellistan."
-   )
-
-/* MaterialUI: Settings Options */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
-   "Blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
-   "Blågrå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
-   "Mörkblå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
-   "Grön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
-   "Röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
-   "Gul"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
-   "Material UI Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
-   "Ozone Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
-   "Gruvbox Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
-   "Solarized Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
-   "Cutie Blå"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
-   "Cutie Turkos"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
-   "Cutie Grön"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
-   "Cutie Rosa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
-   "Cutie Lila"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
-   "Cutie Röd"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
-   "Grå Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
-   "Grå Ljus"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
-   "Tona"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
-   "Glid"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
-   "Lista (Liten)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
-   "Lista (Medium)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
-   "Dubbel ikon"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
-   "Lista (Liten)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
-   "Lista (Medium)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
-   "Lista (stor)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
-   "AV"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
-   "PÅ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
-   "Exkludera miniatyrvisningar"
-   )
-
-/* Qt (Desktop Menu) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
-   "&Arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
-   "&Läs in kärna..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
-   "Läs &ur kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
-   "A&vsluta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
-   "&Redigera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
-   "&Sök"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
-   "&Visa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
-   "Stängda dockor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
-   "Shader parametrar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
-   "&Inställningar..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
-   "Kom ihåg dockpositioner:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
-   "Kom ihåg fönstergeometri:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
-   "Kom ihåg senaste filk i innehållsbläddraren:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
-   "Tema:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
-   "Mörk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
-   "Anpassad..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   "Inställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
-   "&Verktyg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   "&Hjälp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
-   "Om RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
-   "Dokumentation"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
-   "Läs in anpassad kärna..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "Läs in kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
-   "Läser in kärna..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NAME,
-   "Namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "Spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "Filhanterare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
-   "Toppen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
-   "Upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
-   "Innehållsbläddrare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
-   "Omslagsbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
-   "Skärmdump"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
-   "Titelskärm"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
-   "Logotyp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
-   "Alla spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE,
-   "Kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
-   "Kärninformation"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
-   "<fråga mig>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_WARNING,
-   "Varning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ERROR,
-   "Fel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
-   "Nätverksfel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
-   "Starta om programmet för att ändringarna ska börja gälla."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOG,
-   "Logg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
-   "%1 objekt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
-   "Dra och släpp bilden här"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
-   "Visa inte detta igen"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_STOP,
-   "Stopp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
-   "Associera kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
-   "Dolda spellistor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_HIDE,
-   "Dölj"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
-   "Highlight färg:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
-   "V&älj..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
-   "Välj färg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
-   "Välj tema"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
-   "Anpassat tema"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
-   "Sökväg till filen är tom."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
-   "Filen är tom."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
-   "Kunde inte öppna filen för att läsa."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
-   "Kunde inte öppna filen för att skriva."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
-   "Filen existerar inte."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
-   "Föreslå inläst kärna först:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_VIEW,
-   "Visa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
-   "Ikoner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
-   "Lista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
-   "Rensa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
-   "Förlopp:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
-   "Max antal listposter för \"Alla spellistor\":"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   "Max antal rutnätsposter för \"Alla spellistor\":"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
-   "Visa dolda filer och mappar:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
-   "Ny spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
-   "Ange namn för ny spellista:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
-   "Radera Spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
-   "Byt namn Spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
-   "Är du säker på att du vill radera spellistan \"%1\"?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_QUESTION,
-   "Fråga"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
-   "Kunde inte radera fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
-   "Kunde inte döpa om fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
-   "Samlar in en lista över filer..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
-   "Lägger till filer i spellista..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
-   "Spellistpost"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
-   "Namn:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
-   "Sökväg:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
-   "Kärna:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
-   "Databas:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
-   "Tillägg:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
-   "(blankstegsseparerade; inkluderar alla som standard)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
-   "Filtrera inuti arkiv"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
-   "(används för att hitta miniatyrbilder)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
-   "Är du säker på att du vill radera objektet \"%1\"?"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
-   "Välj en spellista först."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DELETE,
-   "Radera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
-   "Lägg till post..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
-   "Lägg till fil(er)..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER,
-   "Lägg till mapp..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_EDIT,
-   "Redigera"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
-   "Välj filer"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
-   "Välj mapp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
-   "<flera>"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
-   "Fel vid uppdatering av spellistepost."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
-   "Fyll i alla nödvändiga fält."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
-   "Uppdatera RetroArch (nightly)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
-   "RetroArch uppdaterades. Starta om programmet för att ändringarna ska ta effekt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
-   "Uppdateringen misslyckades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
-   "Bidragsgivare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
-   "Aktuell shader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
-   "Flytta ner"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
-   "Flytta upp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD,
-   "Läs in"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SAVE,
-   "Spara"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   "Ta bort"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
-   "Ta bort pass"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_APPLY,
-   "Tillämpa"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
-   "Lägg till pass"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
-   "Töm alla pass"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
-   "Inga shader-pass."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
-   "Nollställ pass"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
-   "Nollställ alla pass"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
-   "Återställ parameter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
-   "Hämta miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
-   "En hämtning pågår redan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
-   "Starta med spellista:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
-   "Miniatyrbild"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
-   "Cachegräns för miniatyrbilder:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
-   "Storleksgräns för dra och släpp miniatyrbild:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
-   "Hämta alla miniatyrbilder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
-   "Hela systemet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
-   "Denna spellista"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
-   "Miniatyrbilder hämtades ner."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
-   "Lyckades: %1 Misslyckades: %2"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
-   "Kärnalternativ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESET,
-   "Återställ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
-   "Återställ alla"
-   )
-
-/* Unsorted */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
-   "Inställningar för kärnuppdateraren"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
-   "Kärnräknare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
-   "Frontend-räknare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
-   "Horisontell meny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
-   "Skärmöverlägg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "Historik"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
-   "Välj innehåll från spellistan med senaste historik."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
-   "När innehåll läses in sparas innehåll och libretro core-kombinationer i historiken.\nHistoriken sparas i en fil i samma katalog som konfigurationsfilen för RetroArch. Om ingen konfigurationsfil lästs in vid uppstart sparas eller läses inte historiken in och den finns inte i huvudmenyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
-   "Delsystem"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
-   "Kom åt inställningar för undersystemet för aktuellt innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
-   "Aktuellt Innehåll: %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
-   "Inga Netplay värdar hittades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
-   "Inga netplay-klienter hittades."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
-   "Inga prestandaräknare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
-   "Inga spellistor."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
-   "Ansluten"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
-   "Port %d Enhetsnamn: %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
-   "Enhetens skärmnamn: %s\nEnhetens konfigurationsnamn: %s\nEnhets-VID/PID: %d/%d"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
-   "Fuskinställningar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
-   "Starta eller fortsätt fusksökning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
-   "Spela i Media Player"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SECONDS,
-   "sekunder"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_START_CORE,
-   "Starta kärna"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_START_CORE,
-   "Starta kärnan utan innehåll."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
-   "Föreslagna kärnor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
-   "Kan inte läsa komprimerad fil."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER,
-   "Användare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_KEYBOARD,
-   "Tgb"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Säger till videodrivrutinen att uttryckligen använda ett specificerat buffringsläge."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
-   "Maximalt antal swapchain-bilder. Detta kan tala om för videodrivrutinen att den ska använda ett specifikt videobuffringsläge.\nEnkel buffring - 1\nDubbel buffring - 2\nTrippel buffring - 3\nAtt välja rätt buffringsläge kan ha stor inverkan på latensen."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
-   "Hårdsynkronisera CPU och GPU. Minskar latens på bekostnad av prestanda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
-   "Max bildrutelatens"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
-   "Säger till videodrivrutinen att uttryckligen använda ett specificerat buffringsläge."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
-   "Ändrar den förinställda shader som för närvarande används i menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
-   "Förinställd Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
-   "Förinställd Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
-   "Förinställd Shader"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
-   "Bläddra URL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BROWSE_URL,
-   "URL-sökväg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   "Starta"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
-   "Nicknamn: %s"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
-   "Letar efter kompatibelt innehåll..."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
-   "Ingen kärna hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
-   "Inga spellistor hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
-   "Kompatibelt innehåll hittades"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
-   "Det gick inte att hitta något matchande innehåll med hjälp av CRC eller filnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP,
-   "Hjälp"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
-   "Rensa"
-   )
-
-/* Discord Status */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
-   "I meny"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
-   "I spel"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
-   "I spel (Pausad)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
-   "Spelar"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
-   "Pausad"
-   )
-
-/* Notifications */
-
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   "Netplay kommer starta när innehållet har lästs in."
-   )
-MSG_HASH(
-   MSG_NETPLAY_NEED_CONTENT_LOADED,
-   "Innehållet måste läsas in innan netplay kan startas."
-   )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
-   "Kunde inte hitta en lämplig kärna eller innehållsfil, läs in manuellt."
-   )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
-   "Din grafikdrivrutin är inte kompatibel med aktuella videodrivrutinen i RetroArch, faller tillbaka på drivrutinen %s. Starta om RetroArch för att ändringen ska ta effekt."
-   )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
-   "Kärninstallation lyckades"
-   )
-MSG_HASH( /* FIXME Should be MSG_ */
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
-   "Kärninstallation misslyckades"
-   )
-MSG_HASH(
-   MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
-   "Tryck höger 5 gånger för att radera alla fusk."
-   )
-MSG_HASH(
-   MSG_AUDIO_MIXER_VOLUME,
-   "Global ljudmixervolym"
-   )
-MSG_HASH(
-   MSG_NETPLAY_LAN_SCAN_COMPLETE,
-   "Netplay-sökning färdigställd."
-   )
-MSG_HASH(
-   MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
-   "Tyvärr, inte implementerat: kärnor som inte efterfrågar innehåll kan inte delta i netplay."
-   )
-MSG_HASH(
-   MSG_NATIVE,
-   "Inbyggd"
-   )
-MSG_HASH(
-   MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
-   "Okänt netplay-kommando togs emot"
-   )
-MSG_HASH(
-   MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
-   "Filen finns redan. Sparar till reservbuffert"
-   )
-MSG_HASH(
-   MSG_GOT_CONNECTION_FROM,
-   "Fick anslutning från: \"%s\""
-   )
-MSG_HASH(
-   MSG_GOT_CONNECTION_FROM_NAME,
-   "Fick anslutning från: \"%s (%s)\""
-   )
-MSG_HASH(
-   MSG_PUBLIC_ADDRESS,
-   "Portmappning för Netplay lyckades"
-   )
-MSG_HASH(
-   MSG_PRIVATE_OR_SHARED_ADDRESS,
-   "Externt nätverk har en privat eller delad adress. Överväg att använda en reläserver."
-   )
-MSG_HASH(
-   MSG_UPNP_FAILED,
-   "Netplay UPnP-portmappning misslyckades"
-   )
-MSG_HASH(
-   MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
-   "Inga argument angavs och ingen meny inbyggd, visar hjälp..."
-   )
-MSG_HASH(
-   MSG_WAITING_FOR_CLIENT,
-   "Väntar på klient..."
-   )
-MSG_HASH(
-   MSG_ROOM_NOT_CONNECTABLE,
-   "Ditt rum är inte möjligt att ansluta till från internet."
-   )
-MSG_HASH(
-   MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
-   "Du har lämnat spelet"
-   )
-MSG_HASH(
-   MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
-   "Du är ansluten, som spelare %u"
-   )
-MSG_HASH(
-   MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
-   "Du är ansluten, med inmatningsenheter %.*s"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLAYER_S_LEFT,
-   "Spelare %.*s har lämnat spelet"
-   )
-MSG_HASH(
-   MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
-   "%.*s är ansluten, som spelare %u"
-   )
-MSG_HASH(
-   MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
-   "%.*s är ansluten, med inmatningsenheter %.*s"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLAYERS_INFO,
-   "%d spelare"
-   )
-MSG_HASH(
-   MSG_NETPLAY_SPECTATORS_INFO,
-   "%d spelare (%d åskådare)"
-   )
-MSG_HASH(
-   MSG_NETPLAY_NOT_RETROARCH,
-   "Ett försök till Netplay-anslutning misslyckades eftersom motparten inte kör RetroArch eller kör en gammal version av RetroArch."
-   )
-MSG_HASH(
-   MSG_NETPLAY_OUT_OF_DATE,
-   "En netplay-peer kör en gammal version av RetroArch. Det går inte att ansluta."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_VERSIONS,
-   "VARNING: En netplay-peer kör en annan version av RetroArch. Om problem uppstår, använd samma version."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_CORES,
-   "En netplay-peer kör en annan kärna. Det går inte att ansluta."
-   )
-MSG_HASH(
-   MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
-   "VARNING: En netplay-peer kör en annan version av kärnan. Om problem uppstår ska du använda samma version."
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENDIAN_DEPENDENT,
-   "Denna kärna stöder inte netplay mellan dessa plattformar"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PLATFORM_DEPENDENT,
-   "Denna kärna stöder inte netplay mellan olika plattformar"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_PASSWORD,
-   "Ange Netplay-serverlösenord:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_ENTER_CHAT,
-   "Ange Netplay-chattmeddelande:"
-   )
-MSG_HASH(
-   MSG_DISCORD_CONNECTION_REQUEST,
-   "Tillåta anslutning för användare:"
-   )
-MSG_HASH(
-   MSG_NETPLAY_INCORRECT_PASSWORD,
-   "Felaktigt lösenord"
-   )
-MSG_HASH(
-   MSG_NETPLAY_SERVER_NAMED_HANGUP,
-   "\"%s\" har kopplat från"
-   )
-MSG_HASH(
-   MSG_NETPLAY_SERVER_HANGUP,
-   "En netplay-klient har kopplat från"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CLIENT_HANGUP,
-   "Netplay frånkopplad"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
-   "Du har inte behörighet att spela"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
-   "Detfinns inga lediga spelarplatser"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
-   "De begärda inmatningsenheterna är inte tillgängliga"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CANNOT_PLAY,
-   "Kan inte växla till spelläget"
-   )
-MSG_HASH(
-   MSG_NETPLAY_PEER_PAUSED,
-   "Netplay-peer ”%s” pausad"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CHANGED_NICK,
-   "Ditt nicknamn ändrades till \"%s\""
-   )
-MSG_HASH(
-   MSG_NETPLAY_KICKED_CLIENT_S,
-   "Sparkade klient: \"%s\""
-   )
-MSG_HASH(
-   MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   "Misslyckades sparka klient: \"%s\""
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED_CLIENT_S,
-   "Blockerade klient: \"%s\""
-   )
-MSG_HASH(
-   MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   "Misslyckades blockera klient: \"%s\""
-   )
-MSG_HASH(
-   MSG_NETPLAY_STATUS_PLAYING,
-   "Spelar"
-   )
-MSG_HASH(
-   MSG_NETPLAY_STATUS_SPECTATING,
-   "Åskådar"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CLIENT_DEVICES,
-   "Enheter"
-   )
-MSG_HASH(
-   MSG_NETPLAY_CHAT_SUPPORTED,
-   "Chatt stöds"
-   )
-MSG_HASH(
-   MSG_NETPLAY_SLOWDOWNS_CAUSED,
-   "Fördröjningar orsakade"
-   )
-
-MSG_HASH(
-   MSG_AUDIO_VOLUME,
-   "Ljudvolym"
-   )
-MSG_HASH(
-   MSG_AUTODETECT,
-   "Autoupptäck"
-   )
-MSG_HASH(
-   MSG_CAPABILITIES,
-   "Förmågor"
-   )
-MSG_HASH(
-   MSG_CONNECTING_TO_NETPLAY_HOST,
-   "Ansluter till Netplay-värd"
-   )
-MSG_HASH(
-   MSG_CONNECTING_TO_PORT,
-   "Ansluter till port"
-   )
-MSG_HASH(
-   MSG_CONNECTION_SLOT,
-   "Anslutningsplats"
-   )
-MSG_HASH(
-   MSG_FETCHING_CORE_LIST,
-   "Hämtar kärnlista..."
-   )
-MSG_HASH(
-   MSG_CORE_LIST_FAILED,
-   "Hämta kärnlista misslyckad!"
-   )
-MSG_HASH(
-   MSG_LATEST_CORE_INSTALLED,
-   "Senaste version redan installerad: "
-   )
-MSG_HASH(
-   MSG_UPDATING_CORE,
-   "Uppdaterar kärna: "
-   )
-MSG_HASH(
-   MSG_DOWNLOADING_CORE,
-   "Hämtar ner kärna: "
-   )
-MSG_HASH(
-   MSG_EXTRACTING_CORE,
-   "Extraherar kärna: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALLED,
-   "Kärna installerad: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALL_FAILED,
-   "Misslyckades installera kärna: "
-   )
-MSG_HASH(
-   MSG_SCANNING_CORES,
-   "Söker igenom kärnor..."
-   )
-MSG_HASH(
-   MSG_CHECKING_CORE,
-   "Kontrollerar kärna: "
-   )
-MSG_HASH(
-   MSG_ALL_CORES_UPDATED,
-   "Alla installerade kärnor är senaste versionen"
-   )
-MSG_HASH(
-   MSG_ALL_CORES_SWITCHED_PFD,
-   "Alla kärnor som stöds ersatta till Play-butiksversioner"
-   )
-MSG_HASH(
-   MSG_NUM_CORES_UPDATED,
-   "Kärnor uppdaterade: "
-   )
-MSG_HASH(
-   MSG_NUM_CORES_LOCKED,
-   "Kärnor överhoppade: "
-   )
-MSG_HASH(
-   MSG_CORE_UPDATE_DISABLED,
-   "Kärnuppdatering inaktiverad - kärnan är låst: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_RESETTING_CORES,
-   "Återställer kärnor: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_CORES_RESET,
-   "Kärnor återställd: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
-   "Rensar spellista: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
-   "Spellista rensad: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
-   "Uppdatering misslyckades - spellistan innehåller inga giltiga sökposter: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
-   "Uppdatering misslyckades - ogiltig/saknad innehållskatalog: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
-   "Uppdatering misslyckades - ogiltigt/saknat systemnamn: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
-   "Uppdatering misslyckades - ogiltig kärna: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
-   "Uppdatering misslyckades - ogiltig/saknad arcade DAT-fil: "
-   )
-MSG_HASH(
-   MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
-   "Uppdatering misslyckades - arcade DAT-filen är för stor (otillräckligt med minne): "
-   )
-MSG_HASH(
-   MSG_ADDED_TO_FAVORITES,
-   "Tillagd i favoriter"
-   )
-MSG_HASH(
-   MSG_ADD_TO_FAVORITES_FAILED,
-   "Misslyckades med att lägga till favorit: spellistan full"
-   )
-MSG_HASH(
-   MSG_ADDED_TO_PLAYLIST,
-   "Lades till i spellistan"
-   )
-MSG_HASH(
-   MSG_ADD_TO_PLAYLIST_FAILED,
-   "Misslyckades med att lägga till i spellista: spellistan är full"
-   )
-MSG_HASH(
-   MSG_SET_CORE_ASSOCIATION,
-   "Kärnuppsättning: "
-   )
-MSG_HASH(
-   MSG_RESET_CORE_ASSOCIATION,
-   "Kärnassociering för spellisteposten har återställts."
-   )
-MSG_HASH(
-   MSG_APPLICATION_DIR,
-   "Programkatalog"
-   )
-MSG_HASH(
-   MSG_APPLYING_CHEAT,
-   "Tillämpar fuskändringar."
-   )
-MSG_HASH(
-   MSG_APPLYING_PATCH,
-   "Tillämpar patch: %s"
-   )
-MSG_HASH(
-   MSG_APPLYING_SHADER,
-   "Tillämpar shader"
-   )
-MSG_HASH(
-   MSG_AUDIO_MUTED,
-   "Ljudet tystat."
-   )
-MSG_HASH(
-   MSG_AUDIO_UNMUTED,
-   "Ljudet aktiverat."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_ERROR_SAVING,
-   "Fel vid sparande av handkontrollerprofil."
-   )
-MSG_HASH(
-   MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   "Kontrollerprofil sparad som \"%s\"."
-   )
-MSG_HASH(
-   MSG_AUTOSAVE_FAILED,
-   "Kunde inte initiera automatisk sparning."
-   )
-MSG_HASH(
-   MSG_AUTO_SAVE_STATE_TO,
-   "Spara tillstånd automatiskt till"
-   )
-MSG_HASH(
-   MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   "Tar upp kommandogränssnitt på port"
-   )
-MSG_HASH(
-   MSG_CANNOT_INFER_NEW_CONFIG_PATH,
-   "Kan inte sluta sig till ny konfigurationssökväg. Använd aktuell tid."
-   )
-MSG_HASH(
-   MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
-   "Jämför med kända magic numbers..."
-   )
-MSG_HASH(
-   MSG_COMPILED_AGAINST_API,
-   "Kompilerad mot API"
-   )
-MSG_HASH(
-   MSG_CONFIG_DIRECTORY_NOT_SET,
-   "Konfigurationskatalog inte inställd. Kan inte spara ny konfiguration."
-   )
-MSG_HASH(
-   MSG_CONNECTED_TO,
-   "Ansluten till"
-   )
-MSG_HASH(
-   MSG_CONTENT_CRC32S_DIFFER,
-   "Innehållets CRC32 skiljer sig. Kan inte använda olika spel."
-   )
-MSG_HASH(
-   MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
-   "Värden kör ett annat spel."
-   )
-MSG_HASH(
-   MSG_PING_TOO_HIGH,
-   "Din pingtid är för hög för denna värd."
-   )
-MSG_HASH(
-   MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
-   "Inläsning av innehåll hoppades över. Implementeringen läser in det själv."
-   )
-MSG_HASH(
-   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Kärnan har inget stöd för sparat tillstånd."
-   )
-MSG_HASH(
-   MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
-   "Kärnan har inte stöd för att ångra sparade tillstånd."
-   )
-MSG_HASH(
-   MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
-   "Kärnan har inte stöd för Disc Control."
-   )
-MSG_HASH(
-   MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
-   "Kärnans alternativfil skapades."
-   )
-MSG_HASH(
-   MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
-   "Kärnans alternativfil togs bort."
-   )
-MSG_HASH(
-   MSG_CORE_OPTIONS_RESET,
-   "Alla kärnalternativ nollställda till standard."
-   )
-MSG_HASH(
-   MSG_CORE_OPTIONS_FLUSHED,
-   "Kärnalternativ sparades till:"
-   )
-MSG_HASH(
-   MSG_CORE_OPTIONS_FLUSH_FAILED,
-   "Misslyckades med att spara kärnalternativen till:"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
-   "Kunde inte hitta någon nästa drivrutin"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
-   "Kunde inte hitta ett kompatibelt system."
-   )
-MSG_HASH(
-   MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
-   "Kunde inte hitta ett giltigt dataspår"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_OPEN_DATA_TRACK,
-   "Kunde inte öppna dataspåret"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_READ_CONTENT_FILE,
-   "Kunde inte läsa innehållsfilen"
-   )
-MSG_HASH(
-   MSG_COULD_NOT_READ_MOVIE_HEADER,
-   "Kunde inte läsa filmhuvud."
-   )
-MSG_HASH(
-   MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-   "Kunde inte läsa tillstånd från film."
-   )
-MSG_HASH(
-   MSG_CRC32_CHECKSUM_MISMATCH,
-   "CRC32-kontrollsumman stämmer inte överens mellan innehållsfilen och kontrollsumman för sparat innehåll i uppspelningsfilens huvud. Uppspelningen kommer med stor sannolikhet att desynkroniseras vid uppspelning."
-   )
-MSG_HASH(
-   MSG_CUSTOM_TIMING_GIVEN,
-   "Anpassad timing angiven"
-   )
-MSG_HASH(
-   MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
-   "Dekomprimering pågår redan."
-   )
-MSG_HASH(
-   MSG_DECOMPRESSION_FAILED,
-   "Dekomprimeringen misslyckades."
-   )
-MSG_HASH(
-   MSG_DETECTED_VIEWPORT_OF,
-   "Upptäckte visningsområde för"
-   )
-MSG_HASH(
-   MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
-   "Hittade inte någon giltig innehållspatch."
-   )
-MSG_HASH(
-   MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-   "Koppla från enhet från en giltig port."
-   )
-MSG_HASH(
-   MSG_DOWNLOADING,
-   "Hämtar ner"
-   )
-MSG_HASH(
-   MSG_DOWNLOAD_FAILED,
-   "Hämtningen misslyckades"
-   )
-MSG_HASH(
-   MSG_ERROR,
-   "Fel"
-   )
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
-   "Libretros kärna kräver innehåll men ingenting tillhandahölls."
-   )
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
-   "Libretros kärna kräver speciellt innehåll men ingenting tillhandahölls."
-   )
-MSG_HASH(
-   MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
-   "Kärnan har inte stöd för VFS och inläsning från lokal kopia misslyckades"
-   )
-MSG_HASH(
-   MSG_ERROR_PARSING_ARGUMENTS,
-   "Fel vid tolkning av argument."
-   )
-MSG_HASH(
-   MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
-   "Fel vid sparning av kärnans alternativfil."
-   )
-MSG_HASH(
-   MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
-   "Fel vid borttagning av kärnans alternativfil."
-   )
-MSG_HASH(
-   MSG_ERROR_SAVING_REMAP_FILE,
-   "Fel vid sparning av ommappningsfil."
-   )
-MSG_HASH(
-   MSG_ERROR_REMOVING_REMAP_FILE,
-   "Fel vid borttagning av ommappningsfil."
-   )
-MSG_HASH(
-   MSG_ERROR_SAVING_SHADER_PRESET,
-   "Fel vid sparning av shader-förval."
-   )
-MSG_HASH(
-   MSG_EXTERNAL_APPLICATION_DIR,
-   "Extern programkatalog"
-   )
-MSG_HASH(
-   MSG_EXTRACTING,
-   "Extraherar"
-   )
-MSG_HASH(
-   MSG_EXTRACTING_FILE,
-   "Extraherar fil"
-   )
-MSG_HASH(
-   MSG_FAILED_SAVING_CONFIG_TO,
-   "Misslyckades med att spara konfig till"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
-   "Misslyckades med att acceptera inkommande åskådare."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
-   "Misslyckades med att tilldela minne för korrigerat innehåll..."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPLY_SHADER,
-   "Misslyckades med att tillämpa shader."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPLY_SHADER_PRESET,
-   "Misslyckades med att tillämpa shader förinställning:"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_BIND_SOCKET,
-   "Misslyckades med att binda uttag."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CREATE_THE_DIRECTORY,
-   "Misslyckades med att skapa katalogen."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   "Misslyckades med att extrahera innehåll från komprimerad fil"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
-   "Misslyckades med att få smeknamn från klient."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD,
-   "Misslyckades med att läsa."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_CONTENT,
-   "Misslyckades med att läsa in innehåll."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
-   "Misslyckades med att läsa in från spellista."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_MOVIE_FILE,
-   "Misslyckades med att läsa filmfil."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_OVERLAY,
-   "Misslyckades med att läsa in överlägg."
-   )
-MSG_HASH(
-   MSG_OSK_OVERLAY_NOT_SET,
-   "Tangentbordsöverlägg är inte inställt."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_STATE,
-   "Misslyckades med att läsa in tillstånd från"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
-   "Misslyckades med att öppna libretro-kärna"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_PATCH,
-   "Misslyckades med att patcha"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
-   "Misslyckades med att ta emot rubrik från klient."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_NICKNAME,
-   "Misslyckades med att ta emot smeknamn."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
-   "Misslyckades med att ta emot smeknamn från värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
-   "Misslyckades med att ta emot smeknamnsstorlek från värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
-   "Misslyckades med att ta emot SRAM-data från värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
-   "Misslyckades med att ta bort temporärfilen"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SAVE_SRAM,
-   "Det gick inte att spara SRAM"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_LOAD_SRAM,
-   "Det gick inte att läsa in SRAM"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SAVE_STATE_TO,
-   "Misslyckades att spara tillstånd till"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_NICKNAME,
-   "Misslyckades att skicka nicknamn."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_NICKNAME_SIZE,
-   "Misslyckades att skicka nicknamnsstorlek."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
-   "Misslyckades med att skicka smeknamn till klient."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
-   "Misslyckades med att skicka smeknamn till värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
-   "Misslyckades med att skicka SRAM-data till klient."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_START_AUDIO_DRIVER,
-   "Misslyckades med att starta ljuddrivrutin. Fortsätter utan ljud."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_START_MOVIE_RECORD,
-   "Misslyckades med att starta filminspelning."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_START_RECORDING,
-   "Misslyckades med att starta inspelning."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_TAKE_SCREENSHOT,
-   "Misslyckades med att ta skärmbild."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_UNDO_LOAD_STATE,
-   "Misslyckades med att ångra inläst tillstånd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_UNDO_SAVE_STATE,
-   "Misslyckades att ångra sparat tillstånd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_UNMUTE_AUDIO,
-   "Misslyckades med att starta ljudet igen."
-   )
-MSG_HASH(
-   MSG_FATAL_ERROR_RECEIVED_IN,
-   "Ödesdigert fel påträffades i"
-   )
-MSG_HASH(
-   MSG_FILE_NOT_FOUND,
-   "Filen hittas ej"
-   )
-MSG_HASH(
-   MSG_FOUND_AUTO_SAVESTATE_IN,
-   "Hittade automatiskt sparat tillstånd i"
-   )
-MSG_HASH(
-   MSG_FOUND_DISK_LABEL,
-   "Hittade skivetikett"
-   )
-MSG_HASH(
-   MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
-   "Hittade första dataspåret på fil"
-   )
-MSG_HASH(
-   MSG_FOUND_LAST_STATE_SLOT,
-   "Hittade senaste tillståndsplats"
-   )
-MSG_HASH(
-   MSG_FOUND_LAST_REPLAY_SLOT,
-   "Hittade senaste återuppspelningsplatsen"
-   )
-MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
-   "Inte från aktuell inspelning"
-   )
-MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
-   "Inte kompatibel med återuppspelning"
-   )
-MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
-   "Kan inte läsa in framtida tillstånd under uppspelning"
-   )
-MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
-   "Felaktigt tidslinjefel under uppspelning"
-   )
-MSG_HASH(
-   MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
-   "Felaktig tidslinje; skriver över inspelning"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
-   "Spola bakåt"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
-   "Tillbakaspolning misslyckades"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
-   "Spola framåt"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
-   "Framåtspolning misslyckades"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_FRAME,
-   "Spolning färdig"
-   )
-MSG_HASH(
-   MSG_REPLAY_SEEK_TO_FRAME_FAILED,
-   "Spolning misslyckades"
-   )
-MSG_HASH(
-   MSG_FOUND_SHADER,
-   "Hittade shader"
-   )
-MSG_HASH(
-   MSG_FRAMES,
-   "Bildrutor"
-   )
-MSG_HASH(
-   MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Spelspecifika kärnalternativ hittades i"
-   )
-MSG_HASH(
-   MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
-   "Mappspecifika kärnalternativ hittades i"
-   )
-MSG_HASH(
-   MSG_GOT_INVALID_DISK_INDEX,
-   "Fick ogiltigt skivindex."
-   )
-MSG_HASH(
-   MSG_GRAB_MOUSE_STATE,
-   "Tillstånd för musfångst"
-   )
-MSG_HASH(
-   MSG_GAME_FOCUS_ON,
-   "Game Focus aktiv"
-   )
-MSG_HASH(
-   MSG_GAME_FOCUS_OFF,
-   "Game Focus inaktiv"
-   )
-MSG_HASH(
-   MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
-   "Libretro core är hårdvarurenderad. Måste använda post-shaded inspelning också."
-   )
-MSG_HASH(
-   MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
-   "Uppblåst kontrollsumma matchade inte CRC32."
-   )
-MSG_HASH(
-   MSG_INPUT_CHEAT,
-   "Mata in fusk"
-   )
-MSG_HASH(
-   MSG_INPUT_CHEAT_FILENAME,
-   "Filnamn för inmatningsfusk"
-   )
-MSG_HASH(
-   MSG_INPUT_PRESET_FILENAME,
-   "Filnamn för inmatningsförval"
-   )
-MSG_HASH(
-   MSG_INPUT_OVERRIDE_FILENAME,
-   "Filnamn för inmatningsåsidosättning"
-   )
-MSG_HASH(
-   MSG_INPUT_REMAP_FILENAME,
-   "Filnamn för inmatningsommappning"
-   )
-MSG_HASH(
-   MSG_INPUT_RENAME_ENTRY,
-   "Döp om titel"
-   )
-MSG_HASH(
-   MSG_INTERFACE,
-   "Gränssnitt"
-   )
-MSG_HASH(
-   MSG_INTERNAL_STORAGE,
-   "Intern lagring"
-   )
-MSG_HASH(
-   MSG_REMOVABLE_STORAGE,
-   "Flyttbar lagring"
-   )
-MSG_HASH(
-   MSG_INVALID_NICKNAME_SIZE,
-   "Ogiltig nicknamnsstorlek."
-   )
-MSG_HASH(
-   MSG_IN_BYTES,
-   "i bytes"
-   )
-MSG_HASH(
-   MSG_IN_MEGABYTES,
-   "i megabytes"
-   )
-MSG_HASH(
-   MSG_IN_GIGABYTES,
-   "i gigabyte"
-   )
-MSG_HASH(
-   MSG_LIBRETRO_ABI_BREAK,
-   "är kompilerad mot en annan version av libretro än denna libretro-implementation."
-   )
-MSG_HASH(
-   MSG_LIBRETRO_FRONTEND,
-   "Frontend för libretro"
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT,
-   "Läste in tillstånd från plats: %d."
-   )
-MSG_HASH(
-   MSG_LOADED_STATE_FROM_SLOT_AUTO,
-   "Läste in tillstånd från plats: Auto."
-   )
-MSG_HASH(
-   MSG_LOADING,
-   "Läser in"
-   )
-MSG_HASH(
-   MSG_FIRMWARE,
-   "En eller flera firmwarefiler saknas"
-   )
-MSG_HASH(
-   MSG_LOADING_CONTENT_FILE,
-   "Läser in innehållsfil"
-   )
-MSG_HASH(
-   MSG_LOADING_HISTORY_FILE,
-   "Läser in historikfil"
-   )
-MSG_HASH(
-   MSG_LOADING_FAVORITES_FILE,
-   "Läser in favoriterfil"
-   )
-MSG_HASH(
-   MSG_LOADING_STATE,
-   "Läser in tillstånd"
-   )
-MSG_HASH(
-   MSG_MEMORY,
-   "Minne"
-   )
-MSG_HASH(
-   MSG_MOVIE_RECORD_STOPPED,
-   "Stoppar filminspelning."
-   )
-MSG_HASH(
-   MSG_NETPLAY_FAILED,
-   "Misslyckades med att initiera netplay."
-   )
-MSG_HASH(
-   MSG_NETPLAY_UNSUPPORTED,
-   "Kärnan har inte stöd för netplay."
-   )
-MSG_HASH(
-   MSG_NO_CONTENT_STARTING_DUMMY_CORE,
-   "Inget innehåll, startar dummykärna."
-   )
-MSG_HASH(
-   MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
-   "Inget sparat tillstånd har ännu blivit överskriven."
-   )
-MSG_HASH(
-   MSG_NO_STATE_HAS_BEEN_LOADED_YET,
-   "Inget tillstånd har lästs in än."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_ERROR_SAVING,
-   "Fel vid sparning av åsidosättningar."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_ERROR_REMOVING,
-   "Fel vid borttagning av åsidosättningar."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_SAVED_SUCCESSFULLY,
-   "Åsidosättningar sparades."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
-   "Åsidosättningar togs bort."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
-   "Åsidosättningar lästes ur."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_NOT_SAVED,
-   "Inget att spara. Åsidosättningar inte sparade."
-   )
-MSG_HASH(
-   MSG_OVERRIDES_ACTIVE_NOT_SAVING,
-   "Sparar inte. Åsidosättningar aktiva."
-   )
-MSG_HASH(
-   MSG_PAUSED,
-   "Pausad."
-   )
-MSG_HASH(
-   MSG_READING_FIRST_DATA_TRACK,
-   "Läser första dataspåret..."
-   )
-MSG_HASH(
-   MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
-   "Inspelning avslutad på grund av storleksändring."
-   )
-MSG_HASH(
-   MSG_RECORDING_TO,
-   "Spelar in till"
-   )
-MSG_HASH(
-   MSG_REDIRECTING_CHEATFILE_TO,
-   "Dirigerar om fuskfil till"
-   )
-MSG_HASH(
-   MSG_REDIRECTING_SAVEFILE_TO,
-   "Omdirigerar sparad fil till"
-   )
-MSG_HASH(
-   MSG_REDIRECTING_SAVESTATE_TO,
-   "Omdirigerar sparat tillstånd till"
-   )
-MSG_HASH(
-   MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
-   "Ommappningsfil sparades."
-   )
-MSG_HASH(
-   MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
-   "Ommappningsfil togs bort."
-   )
-MSG_HASH(
-   MSG_REMAP_FILE_RESET,
-   "Alla alternativ för inmatningsommappningar återställda till standard."
-   )
-MSG_HASH(
-   MSG_REMOVING_TEMPORARY_CONTENT_FILE,
-   "Tar bort temporär innehållsfil"
-   )
-MSG_HASH(
-   MSG_RESET,
-   "Återställ"
-   )
-MSG_HASH(
-   MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
-   "Startar om inspelning på grund av ominitiering av drivrutin."
-   )
-MSG_HASH(
-   MSG_RESTORED_OLD_SAVE_STATE,
-   "Återställde äldre sparat tillstånd."
-   )
-MSG_HASH(
-   MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
-   "Återställer katalog för sparade filer till"
-   )
-MSG_HASH(
-   MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
-   "Återställer katalogen för sparade tillståndsfiler till"
-   )
-MSG_HASH(
-   MSG_REWINDING,
-   "Spolar tillbaka."
-   )
-MSG_HASH(
-   MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
-   "Buffertkapaciteten räcker inte till."
-   )
-MSG_HASH(
-   MSG_REWIND_UNSUPPORTED,
-   "Tillbakaspolning inte tillgänglig på grund av att denna kärna saknas serialiserat stöd för sparade tillstånd."
-   )
-MSG_HASH(
-   MSG_REWIND_INIT,
-   "Initierar tillbakaspolningsbuffert med storlek"
-   )
-MSG_HASH(
-   MSG_REWIND_INIT_FAILED,
-   "Misslyckades med att initiera tillbakaspolningsbuffert. Tillbakaspolning kommer inaktiveras."
-   )
-MSG_HASH(
-   MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
-   "Implementation använder trådat ljud. Kan inte använda tillbakaspolning."
-   )
-MSG_HASH(
-   MSG_REWIND_REACHED_END,
-   "Nådde slutet på tillbakaspolningsbufferten."
-   )
-MSG_HASH(
-   MSG_SAVED_NEW_CONFIG_TO,
-   "Sparade konfiguration till"
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT,
-   "Sparade tillstånd till plats: %d."
-   )
-MSG_HASH(
-   MSG_SAVED_STATE_TO_SLOT_AUTO,
-   "Sparade tillstånd till plats: Auto."
-   )
-MSG_HASH(
-   MSG_SAVED_SUCCESSFULLY_TO,
-   "Sparades till"
-   )
-MSG_HASH(
-   MSG_SAVING_RAM_TYPE,
-   "Sparar RAM-typ"
-   )
-MSG_HASH(
-   MSG_SAVING_STATE,
-   "Sparar tillstånd"
-   )
-MSG_HASH(
-   MSG_SCANNING,
-   "Söker igenom"
-   )
-MSG_HASH(
-   MSG_SCANNING_OF_DIRECTORY_FINISHED,
-   "Genomsökning av katalog färdig."
-   )
-MSG_HASH(
-   MSG_SCANNING_NO_DATABASE,
-   "Genomsökningen misslyckades, ingen databas hittades."
-   )
-MSG_HASH(
-   MSG_SENDING_COMMAND,
-   "Skickar kommando"
-   )
-MSG_HASH(
-   MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
-   "Flera patchar är explicit definierade, ignorerar alla..."
-   )
-MSG_HASH(
-   MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
-   "Shader-förval sparades."
-   )
-MSG_HASH(
-   MSG_FAST_FORWARD,
-   "Snabbspolning."
-   )
-MSG_HASH(
-   MSG_SLOW_MOTION_REWIND,
-   "Tillbakaspolning i slow-motion."
-   )
-MSG_HASH(
-   MSG_SKIPPING_SRAM_LOAD,
-   "Hoppar över SRAM-inläsning."
-   )
-MSG_HASH(
-   MSG_SRAM_WILL_NOT_BE_SAVED,
-   "SRAM kommer inte att sparas."
-   )
-MSG_HASH(
-   MSG_BLOCKING_SRAM_OVERWRITE,
-   "Blockerar SRAM-överskrivning"
-   )
-MSG_HASH(
-   MSG_STARTING_MOVIE_PLAYBACK,
-   "Startar uppspelning av film."
-   )
-MSG_HASH(
-   MSG_STARTING_MOVIE_RECORD_TO,
-   "Startar filminspelning till"
-   )
-MSG_HASH(
-   MSG_STATE_SIZE,
-   "Tillståndsstorlek"
-   )
-MSG_HASH(
-   MSG_STATE_SLOT,
-   "Tillståndsplats"
-   )
-MSG_HASH(
-   MSG_REPLAY_SLOT,
-   "Återuppspelningsplats"
-   )
-MSG_HASH(
-   MSG_TAKING_SCREENSHOT,
-   "Tar skärmdump."
-   )
-MSG_HASH(
-   MSG_SCREENSHOT_SAVED,
-   "Skärmdump sparad"
-   )
-MSG_HASH(
-   MSG_ACHIEVEMENT_UNLOCKED,
-   "Prestation upplåst"
-   )
-MSG_HASH(
-   MSG_RARE_ACHIEVEMENT_UNLOCKED,
-   "Sällsynt prestation upplåst"
-   )
-MSG_HASH(
-   MSG_LEADERBOARD_STARTED,
-   "Topplisteförsök startat"
-   )
-MSG_HASH(
-   MSG_LEADERBOARD_FAILED,
-   "Topplisteförsök misslyckades"
-   )
-MSG_HASH(
-   MSG_LEADERBOARD_SUBMISSION,
-   "Skickade in %s för %s" /* Submitted [value] for [leaderboard name] */
-   )
-MSG_HASH(
-   MSG_LEADERBOARD_BEST,
-   "Bästa: %s" /* Best: [value] */
-   )
-MSG_HASH(
-   MSG_CHANGE_THUMBNAIL_TYPE,
-   "Ändra miniatyrbildstyp"
-   )
-MSG_HASH(
-   MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
-   "Helskärmsminiatyrer"
-   )
-MSG_HASH(
-   MSG_TOGGLE_CONTENT_METADATA,
-   "Växla metadata"
-   )
-MSG_HASH(
-   MSG_NO_THUMBNAIL_AVAILABLE,
-   "Ingen miniatyrbild tillgänglig"
-   )
-MSG_HASH(
-   MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
-   "Alla möjliga hämtningar av miniatyrbilder har redan provats för den här spellisteposten."
-   )
-MSG_HASH(
-   MSG_PRESS_AGAIN_TO_QUIT,
-   "Tryck igen för att avsluta..."
-   )
-MSG_HASH(
-   MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
-   "Tryck igen för att stänga innehållet..."
-   )
-MSG_HASH(
-   MSG_PRESS_AGAIN_TO_RESET,
-   "Tryck igen för att starta om..."
-   )
-MSG_HASH(
-   MSG_TO,
-   "till"
-   )
-MSG_HASH(
-   MSG_UNDID_LOAD_STATE,
-   "Ångrade inläsningstillstånd."
-   )
-MSG_HASH(
-   MSG_UNKNOWN,
-   "Okänd"
-   )
-MSG_HASH(
-   MSG_UNPAUSED,
-   "Opausad."
-   )
-MSG_HASH(
-   MSG_UNRECOGNIZED_COMMAND,
-   "Okänt kommando \"%s\" togs emot.\n"
-   )
-MSG_HASH(
-   MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
-   "Använder kärnnamnet för ny konfiguration."
-   )
-MSG_HASH(
-   MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
-   "Använder libretros dummy-kärna. Hoppar över inspelning."
-   )
-MSG_HASH(
-   MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
-   "Anslut enhet från en giltig port."
-   )
-MSG_HASH(
-   MSG_VALUE_REBOOTING,
-   "Startar om..."
-   )
-MSG_HASH(
-   MSG_VALUE_SHUTTING_DOWN,
-   "Stänger ner..."
-   )
-MSG_HASH(
-   MSG_VERSION_OF_LIBRETRO_API,
-   "Version av libretro API"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FROM,
-   "Läs automatiskt in sparade tillstånd från"
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_FAILED,
-   "Misslyckades med att automatiskt läsa in sparat tillstånd från \"%s\"."
-   )
-MSG_HASH(
-   MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   "Automatisk inläsning av sparat tillstånd från \"%s\" lyckades."
-   )
-MSG_HASH(
-   MSG_DEVICE_CONFIGURED_IN_PORT_NR,
-   "%s konfigurerad i port %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
-   "%s kopplades från port %u"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_NR,
-   "%s (%u/%u) är inte konfigurerad"
-   )
-MSG_HASH(
-   MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
-   "%s (%u/%u) inte konfigurerad, faller tillbaka"
-   )
-MSG_HASH(
-   MSG_BLUETOOTH_SCAN_COMPLETE,
-   "Bluetooth-genomsökning slutförd."
-   )
-MSG_HASH(
-   MSG_BLUETOOTH_PAIRING_REMOVED,
-   "Parkoppling borttagen. Starta om RetroArch för att ansluta/para igen."
-   )
-MSG_HASH(
-   MSG_WIFI_SCAN_COMPLETE,
-   "Wi-Fi-genomsökning slutförd."
-   )
-MSG_HASH(
-   MSG_SCANNING_BLUETOOTH_DEVICES,
-   "Söker efter bluetooth-enheter..."
-   )
-MSG_HASH(
-   MSG_SCANNING_WIRELESS_NETWORKS,
-   "Söker efter trådlösa nätverk..."
-   )
-MSG_HASH(
-   MSG_ENABLING_WIRELESS,
-   "Aktiverar Wi-Fi..."
-   )
-MSG_HASH(
-   MSG_DISABLING_WIRELESS,
-   "Inaktiverar Wi-Fi..."
-   )
-MSG_HASH(
-   MSG_DISCONNECTING_WIRELESS,
-   "Kopplar från Wi-Fi..."
-   )
-MSG_HASH(
-   MSG_NETPLAY_LAN_SCANNING,
-   "Letar efter netplay-värdar..."
-   )
-MSG_HASH(
-   MSG_PREPARING_FOR_CONTENT_SCAN,
-   "Förbereder för innehållssökning..."
-   )
-MSG_HASH(
-   MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
-   "Ange lösenord"
-   )
-MSG_HASH(
-   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
-   "Lösenord korrekt."
-   )
-MSG_HASH(
-   MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
-   "Lösenord felaktigt."
-   )
-MSG_HASH(
-   MSG_INPUT_KIOSK_MODE_PASSWORD,
-   "Ange lösenord"
-   )
-MSG_HASH(
-   MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
-   "Lösenord korrekt."
-   )
-MSG_HASH(
-   MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
-   "Lösenord felaktigt."
-   )
-MSG_HASH(
-   MSG_CONFIG_OVERRIDE_LOADED,
-   "Åsidosättning av konfiguration inläst."
-   )
-MSG_HASH(
-   MSG_GAME_REMAP_FILE_LOADED,
-   "Ommappningsfil för spel inläst."
-   )
-MSG_HASH(
-   MSG_DIRECTORY_REMAP_FILE_LOADED,
-   "Ommappningsfil för innehållskatalog inläst."
-   )
-MSG_HASH(
-   MSG_CORE_REMAP_FILE_LOADED,
-   "Ommappningsfil för kärna inläst."
-   )
-MSG_HASH(
-   MSG_REMAP_FILE_FLUSHED,
-   "Ommappningsalternativ för inmatning sparades till:"
-   )
-MSG_HASH(
-   MSG_REMAP_FILE_FLUSH_FAILED,
-   "Misslyckades med att spara ommappningsalternativ för inmatning till:"
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_ENABLED,
-   "Run-Ahead aktiverat. Latensbildrutor borttagna: %u."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
-   "Run-Ahead aktiverat med sekundär instans. Latensbildrutor borttagna: %u."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_DISABLED,
-   "Run-Ahead inaktiverat."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Run-Ahead har inaktiverats för att denna kärna saknar stöd för sparade tillstånd."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
-   "Run-Ahead är inte tillgänglig på grund av bristande stöd i denna kärna för deterministisk sparning av tillstånd."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
-   "Misslyckades med att spara tillstånd. Run-Ahead har inaktiverats."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
-   "Misslyckades med att läsa in tillstånd. Run-Ahead har inaktiverats."
-   )
-MSG_HASH(
-   MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
-   "Misslyckades med att skapa sekundär instans. Run-Ahead kommer nu endast använda en instans."
-   )
-MSG_HASH(
-   MSG_PREEMPT_ENABLED,
-   "Preemptive Frames aktiverat. Latensbildrutor borttagna: %u."
-   )
-MSG_HASH(
-   MSG_PREEMPT_DISABLED,
-   "Preemptive Frames inaktiverat."
-   )
-MSG_HASH(
-   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
-   "Preemptive Frames har inaktiverats därför att denna kärna inte har stöd för sparade tillstånd."
-   )
-MSG_HASH(
-   MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
-   "Preemptive Frames är inte tillgängligt eftersom denna kärna saknar stöd för deterministisk sparning av tillstånd."
-   )
-MSG_HASH(
-   MSG_PREEMPT_FAILED_TO_ALLOCATE,
-   "Det gick inte att allokera minne för Preemptive Frames."
-   )
-MSG_HASH(
-   MSG_PREEMPT_FAILED_TO_SAVE_STATE,
-   "Det gick inte att spara tillståndet. Preemptive Frames har inaktiverats."
-   )
-MSG_HASH(
-   MSG_PREEMPT_FAILED_TO_LOAD_STATE,
-   "Det gick inte att läsa in tillståndet. Preemptive Frames har inaktiverats."
-   )
-MSG_HASH(
-   MSG_SCANNING_OF_FILE_FINISHED,
-   "Genomsökning av fil genomförd."
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_SUCCESS,
-   "Startade sökning efter fusk."
-   )
-MSG_HASH(
-   MSG_CHEAT_INIT_FAIL,
-   "Misslyckades med att starta sökning efter fusk."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_NOT_INITIALIZED,
-   "Sökningen har inte initierats/startats."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_FOUND_MATCHES,
-   "Nya matchantal = %u"
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
-   "Lade till %u matchningar."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
-   "Misslyckades med att lägga till matchningar."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
-   "Skapade kod från matchning."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
-   "Misslyckades med att skapa kod."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
-   "Tog bort matchning."
-   )
-MSG_HASH(
-   MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   "Slut på plats. Maximalt antal samtidiga fusk är 100."
-   )
-MSG_HASH(
-   MSG_CHEAT_ADD_TOP_SUCCESS,
-   "Nytt fusk lades till överst i listan."
-   )
-MSG_HASH(
-   MSG_CHEAT_ADD_BOTTOM_SUCCESS,
-   "Nytt fusk lades till nederst i listan."
-   )
-MSG_HASH(
-   MSG_CHEAT_DELETE_ALL_SUCCESS,
-   "Alla fusk borttagna."
-   )
-MSG_HASH(
-   MSG_CHEAT_ADD_BEFORE_SUCCESS,
-   "Nytt fusk lades till före denna."
-   )
-MSG_HASH(
-   MSG_CHEAT_ADD_AFTER_SUCCESS,
-   "Nytt fusk lades till efter denna."
-   )
-MSG_HASH(
-   MSG_CHEAT_COPY_BEFORE_SUCCESS,
-   "Fusk kopierat till före denna."
-   )
-MSG_HASH(
-   MSG_CHEAT_COPY_AFTER_SUCCESS,
-   "Fusk kopierat till efter denna."
-   )
-MSG_HASH(
-   MSG_CHEAT_DELETE_SUCCESS,
-   "Fusk raderat."
-   )
-MSG_HASH(
-   MSG_DISK_CLOSED,
-   "Stängde virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_CLOSE,
-   "Misslyckades med att stänga virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_DISK_EJECTED,
-   "Matade ut virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_VIRTUAL_DISK_TRAY_EJECT,
-   "Misslyckades med att mata ut virtuell skivsläde."
-   )
-MSG_HASH(
-   MSG_REMOVED_DISK_FROM_TRAY,
-   "Tog bort skiva från släde."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
-   "Misslyckades med att ta bort skiva från facket."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NO_DISK,
-   "Ingen skiva vald"
-   )
-MSG_HASH(
-   MSG_APPENDED_DISK,
-   "Lade till skivan på slutet"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_APPEND_DISK,
-   "Misslyckades med att lägga till skivan"
-   )
-MSG_HASH(
-   MSG_SETTING_DISK_IN_TRAY,
-   "Matar in skiva i släden"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_SET_INITIAL_DISK,
-   "Misslyckades med att ställa in sista använda skiva."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_CLIENT,
-   "Misslyckades med att ansluta till klient."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_CONNECT_TO_HOST,
-   "Misslyckades med att ansluta till värd."
-   )
-MSG_HASH(
-   MSG_NETPLAY_HOST_FULL,
-   "Netplay-värden är full."
-   )
-MSG_HASH(
-   MSG_NETPLAY_BANNED,
-   "Du är bannlyst från denna värd."
-   )
-MSG_HASH(
-   MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
-   "Misslyckades med att ta bort rubrik från värd."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_LOGGED_IN_AS_USER,
-   "RetroAchievements: Inloggad som \"%s\"."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
-   "Du måste pausa eller inaktivera Hardcore-läget för prestationer för att läsa in tillstånd."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
-   "Du måste pausa eller inaktivera hardcoreläget för prestationer för att läsa in srm-sparningar."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
-   "Ett sparat tillstånd lästes in. Hardcore-läget för prestationer inaktiverades för aktuell session."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
-   "Ett fusk aktiverades. Hardcore-läget för prestationer inaktiverades för aktuell session."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
-   "Hardcore-läget för prestationer ändrades av värden."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
-   "Netplay-värden behöver uppdateras. Hardcore-läget för prestationer inaktiverades för aktuell session."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_MASTERED_GAME,
-   "Bemästrat: %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_COMPLETED_GAME,
-   "Klarade av %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
-   "Hardcore-läget för prestationer aktiverades, sparade tillstånd och tillbakaspolning inaktiverades."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
-   "Detta spel har inga prestationer."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
-   "Alla %d prestationer har aktiverats för denna session"
-)
-MSG_HASH(
-   MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
-   "Aktiverade %d inofficiella prestationer"
-)
-MSG_HASH(
-   MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
-   "Du har låst upp %d av %d prestationer"
-)
-MSG_HASH(
-   MSG_CHEEVOS_UNSUPPORTED_COUNT,
-   "%d stöds inte"
-)
-MSG_HASH(
-   MSG_CHEEVOS_UNSUPPORTED_WARNING,
-   "Prestationer som inte stöds upptäcktes. Prova en annan kärna eller uppdatera RetroArch."
-)
-MSG_HASH(
-   MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
-   "Åskådarläge för %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
-   "Hardcore pausad. Manuell inställning av fördröjning av bildrutor för video är inte tillåten."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
-   "Hardcore pausad. vsync swap-intervall över 1 tillåts inte."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
-   "Hardcore pausad. Infogning av svarta bildrutor är inte tillåtet."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
-   "Hardcore pausat. Inställningen tillåts inte: %s=%s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
-   "Hardcore pausat. Du kan inte tjäna hardcore-prestationer för %s med %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
-   "RetroAchievements: Spelet kunde inte identifieras."
-   )
-MSG_HASH(
-   MSG_CHEEVOS_GAME_LOAD_FAILED,
-   "Spelinläsning för RetroAchievements misslyckades: %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
-   "Mediabyte för RetroAchievements misslyckades: %s"
-   )
-MSG_HASH(
-   MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
-   "Inloggningen för RetroAchievements har gått ut. Ange ditt lösenord igen och läs om spelet."
-   )
-MSG_HASH(
-   MSG_RESAMPLER_QUALITY_LOWEST,
-   "Lägsta"
-   )
-MSG_HASH(
-   MSG_RESAMPLER_QUALITY_LOWER,
-   "Lägre"
-   )
-MSG_HASH(
-   MSG_RESAMPLER_QUALITY_HIGHER,
-   "Högre"
-   )
-MSG_HASH(
-   MSG_RESAMPLER_QUALITY_HIGHEST,
-   "Högsta"
-   )
-MSG_HASH(
-   MSG_MISSING_ASSETS,
-   "Varning: Saknade resurser, använd online-uppdateraren om tillgänglig."
-   )
-MSG_HASH(
-   MSG_RGUI_MISSING_FONTS,
-   "Varning: Saknade typsnitt för valt språk, använd online-uppdateraren om tillgänglig."
-   )
-MSG_HASH(
-   MSG_RGUI_INVALID_LANGUAGE,
-   "Varning: Språket stöds inte - använder engelska."
-   )
-MSG_HASH(
-   MSG_DUMPING_DISC,
-   "Dumpar skiva..."
-   )
-MSG_HASH(
-   MSG_DRIVE_NUMBER,
-   "Enhet %d"
-   )
-MSG_HASH(
-   MSG_LOAD_CORE_FIRST,
-   "Läs in en kärna först."
-   )
-MSG_HASH(
-   MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
-   "Misslyckades med att läsa från enhet. Dumpning avbröts."
-   )
-MSG_HASH(
-   MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
-   "Misslyckades med att skriva till disk. Dumpning avbröts."
-   )
-MSG_HASH(
-   MSG_NO_DISC_INSERTED,
-   "Ingen skiva har matats in i enheten."
-   )
-MSG_HASH(
-   MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
-   "Förval för shader togs bort."
-   )
-MSG_HASH(
-   MSG_ERROR_REMOVING_SHADER_PRESET,
-   "Fel vid borttagning av shader-förval."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
-   "Ogiltig arcade DAT-fil vald."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
-   "Vald arcade DAT-fil är för stor (otillräckligt med ledigt minne)."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
-   "Misslyckades med att läsa in arcade DAT-fil (ogiltigt format?)"
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
-   "Ogiltig konfiguration för manuell genomsökning."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
-   "Inget giltigt innehåll hittades."
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_START,
-   "Söker igenom innehåll: "
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
-   "Kontrollerar aktuella poster: "
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
-   "Söker igenom: "
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
-   "Städar upp M3U-poster: "
-   )
-MSG_HASH(
-   MSG_MANUAL_CONTENT_SCAN_END,
-   "Genomsökning färdig: "
-   )
-MSG_HASH(
-   MSG_CORE_BACKUP_SCANNING_CORE,
-   "Söker igenom kärna: "
-   )
-MSG_HASH(
-   MSG_CORE_BACKUP_ALREADY_EXISTS,
-   "Säkerhetskopia av installerad kärna finns redan: "
-   )
-MSG_HASH(
-   MSG_BACKING_UP_CORE,
-   "Säkerhetskopierar kärna: "
-   )
-MSG_HASH(
-   MSG_PRUNING_CORE_BACKUP_HISTORY,
-   "Tar bort föråldrade säkerhetskopior: "
-   )
-MSG_HASH(
-   MSG_CORE_BACKUP_COMPLETE,
-   "Säkerhetskopiering av kärna slutförd: "
-   )
-MSG_HASH(
-   MSG_CORE_RESTORATION_ALREADY_INSTALLED,
-   "Vald säkerhetskopia för kärna redan installerad: "
-   )
-MSG_HASH(
-   MSG_RESTORING_CORE,
-   "Återställer kärna: "
-   )
-MSG_HASH(
-   MSG_CORE_RESTORATION_COMPLETE,
-   "Kärnåterställningen färdig: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
-   "Vald kärnfil är redan installerad: "
-   )
-MSG_HASH(
-   MSG_INSTALLING_CORE,
-   "Installerar kärna: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALLATION_COMPLETE,
-   "Kärninstallationen färdig: "
-   )
-MSG_HASH(
-   MSG_CORE_RESTORATION_INVALID_CONTENT,
-   "Ogiltig kärnfil vald: "
-   )
-MSG_HASH(
-   MSG_CORE_BACKUP_FAILED,
-   "Säkerhetskopiering av kärna misslyckades: "
-   )
-MSG_HASH(
-   MSG_CORE_RESTORATION_FAILED,
-   "Återställning av kärna misslyckades: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALLATION_FAILED,
-   "Installation av kärna misslyckades: "
-   )
-MSG_HASH(
-   MSG_CORE_RESTORATION_DISABLED,
-   "Återställning av kärna inaktiverad - kärnan är låst: "
-   )
-MSG_HASH(
-   MSG_CORE_INSTALLATION_DISABLED,
-   "Kärninstallation inaktiverad - kärnan är låst: "
-   )
-MSG_HASH(
-   MSG_CORE_LOCK_FAILED,
-   "Misslyckades med att låsa kärnan: "
-   )
-MSG_HASH(
-   MSG_CORE_UNLOCK_FAILED,
-   "Misslyckades med att låsa upp kärnan: "
-   )
-MSG_HASH(
-   MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
-   "Misslyckades att ta bort kärna från listan 'Innehållslösa kärnor': "
-   )
-MSG_HASH(
-   MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
-   "Misslyckades att lägga till kärna i listan 'Innehållslösa kärnor': "
-   )
-MSG_HASH(
-   MSG_CORE_DELETE_DISABLED,
-   "Kärnborttagning inaktiverad - kärnan är låst: "
-   )
-MSG_HASH(
-   MSG_UNSUPPORTED_VIDEO_MODE,
-   "Videoläget stöds inte"
-   )
-MSG_HASH(
-   MSG_CORE_INFO_CACHE_UNSUPPORTED,
-   "Kan inte skriva till kärnans informationskatalog - kärninfocachen kommer att inaktiveras"
-   )
-MSG_HASH(
-   MSG_FOUND_ENTRY_STATE_IN,
-   "Hittade ingångstillstånd i"
-   )
-MSG_HASH(
-   MSG_LOADING_ENTRY_STATE_FROM,
-   "Läser in ingångstillstånd från"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_ENTER_GAMEMODE,
-   "Misslyckades med att gå in i GameMode"
-   )
-MSG_HASH(
-   MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
-   "Misslyckades med att gå in i GameMode - kontrollera att GameMode-daemon är installerad och körs"
-   )
-MSG_HASH(
-   MSG_VRR_RUNLOOP_ENABLED,
-   "Synkronisera till innehållets exakta bildfrekvens aktiverat."
-   )
-MSG_HASH(
-   MSG_VRR_RUNLOOP_DISABLED,
-   "Synkronisera till innehållets exakta bildfrekvens inaktiverat."
-   )
-MSG_HASH(
-   MSG_VIDEO_REFRESH_RATE_CHANGED,
-   "Videouppdateringsfrekvens ändrad till %s Hz."
-   )
-
-
-/* Lakka */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
-   "Uppdatera Lakka"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
-   "Frontend-namn"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_REBOOT,
-   "Starta om"
-   )
-
-/* Environment Specific Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
-   "Delade Joy-Con"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
-   "Åsidosätt skalning av grafikwidgetar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
-   "Tillämpa en manuell skalningsfaktor vid ritning av grafikwidgetar. Gäller endast när ”Skala grafikwidgetar automatiskt” är inaktiverat. Kan användas för att öka eller minska storleken på dekorerade meddelanden, indikatorer och kontroller oberoende av själva menyn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
-   "Skärmupplösning"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_DEFAULT,
-   "Skärmupplösning: Standard"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_NO_DESC,
-   "Skärmupplösning: %dx%d"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_DESC,
-   "Skärmupplösning: %dx%d - %s"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
-   "Verkställer: Standard"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
-   "Verkställer: %dx%d\nSTART för att starta om"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_APPLYING_DESC,
-   "Verkställer: %dx%d - %s\nSTART för att starta om"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
-   "Återställer till: Standard"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
-   "Återställer till: %dx%d"
-   )
-MSG_HASH(
-   MSG_SCREEN_RESOLUTION_RESETTING_DESC,
-   "Återställer till: %dx%d - %s"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
-   "Ange upplösningen för skärm (omstart krävs)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHUTDOWN,
-   "Stäng av"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Aktivera extern filåtkomst"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Öppna Windows-inställningar för filåtkomstbehörighet"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
-   "Öppna Windows inställningar för behörighet för att aktivera funktionen broadFileSystemAccess."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
-   "Öppna..."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
-   "Öppna en annan katalog med hjälp av systemets filväljare"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
-   "Flimmerfilter"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
-   "Videogamma"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
-   "Mjukt filter"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
-   "Sök efter bluetooth-enheter och anslut dem."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   "Sök efter trådlösa nätverk och etablera anslutning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
-   "Aktivera Wi-Fi"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
-   "Anslut till nätverk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
-   "Anslut till nätverk"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
-   "Koppla från"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Överskanningskorrigering (Topp)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
-   "Justera beskärning av överskanning av skärmen genom att minska bildstorleken med ett angivet antal skanningslinjer (tagen från skärmens övre del). Kan orsaka skalningsartefakter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Överskanningskorrigering (Botten)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
-   "Justera beskärning av överskanning av skärmen genom att minska bildstorleken med ett angivet antal skanlinjer (tagen från skärmens nedre kant). Kan orsaka skalningsartefakter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
-   "Långvarigt prestandaläge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
-   "CPU-prestanda och ström"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
-   "Styrande läge"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "Manuell"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
-   "Gör det möjligt att manuellt justera varje detalj i varje CPU: regulator, frekvenser etc. Rekommenderas endast för avancerade användare."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Prestanda (hanterad)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
-   "Standard och rekommenderat läge. Maximal prestanda vid spel och strömsparläge vid paus eller menybläddring."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
-   "Anpassad hanterad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
-   "Gör det möjligt att välja vilka styrande faktorer som ska användas i menyer och under spel. Prestanda, Ondemand eller Schedutil rekommenderas under spel."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "Maximal prestanda"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
-   "Alltid maximal prestanda: högsta frekvenser för bästa upplevelse."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "Minimal ström"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
-   "Använd den lägsta tillgängliga frekvensen för att spara ström. Användbart på batteridrivna enheter, men prestandan försämras avsevärt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Balanserad"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
-   "Anpassar sig till den aktuella arbetsbelastningen. Fungerar bra med de flesta enheter och emulatorer och hjälper till att spara ström. Krävande spel och kärnor kan drabbas av prestandaförsämring på vissa enheter."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
-   "Minimal frekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
-   "Maximal frekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
-   "Minimum kärnfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
-   "Maximal kärnfrekvens"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
-   "CPU-regulator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
-   "Kärnregulator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
-   "Menyregulator"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
-   "Spelläge"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
-   "Kan förbättra prestanda, minska fördröjningar och åtgärda problem med knastrande ljud. Du behöver https://github.com/FeralInteractive/gamemode för att detta ska fungera."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
-   "Om du aktiverar Linux GameMode kan du förbättra latensen, åtgärda problem med sprakande ljud och maximera den totala prestandan genom att automatiskt konfigurera CPU och GPU för bästa prestanda.\nProgramvaran GameMode måste installeras för att detta ska fungera. Se https://github.com/FeralInteractive/gamemode för information om hur du installerar GameMode."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
-   "Använd PAL60-läget"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "Starta om RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
-   "Avsluta och starta sedan om RetroArch. Krävs för aktivering av vissa menyinställningar (t. ex. vid byte av menydrivrutin)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
-   "Blockera bildrutor"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
-   "Föredra främre tryck"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
-   "Använd främre istället för bakre tryck."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
-   "Tryck"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
-   "Mappning för tangentbordskontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
-   "Mappningstyp för tangentbordskontroller"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
-   "Litet tangentbord"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
-   "Tidsgräns för inmatningsblock"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
-   "Antalet millisekunders väntetid för att få ett komplett inmatningsprov. Använd det om du har problem med samtidiga knapptryckningar (endast Android)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
-   "Visa 'Starta om'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
-   "Visa alternativet 'Starta om'."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
-   "Visa 'Stäng av'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
-   "Visa alternativet 'Stäng av'."
-   )
-MSG_HASH(
-   MSG_ROOM_PASSWORDED,
-   "Lösenordsskyddat"
-   )
-MSG_HASH(
-   MSG_INTERNET_RELAY,
-   "Internet (relä)"
-   )
-MSG_HASH(
-   MSG_INTERNET_NOT_CONNECTABLE,
-   "Internet (inte anslutningsbart)"
-   )
-MSG_HASH(
-   MSG_LOCAL,
-   "Lokal"
-   )
-MSG_HASH(
-   MSG_READ_WRITE,
-   "Status för intern lagring: Läs/skriv"
-   )
-MSG_HASH(
-   MSG_READ_ONLY,
-   "Status för intern lagring: Skrivskyddad"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
-   "Skärmens ljusstyrka"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
-   "Öka eller minska skärmens ljusstyrka."
-   )
-#ifdef HAVE_LIBNX
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
-   "Överklocka CPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
-   "Överklocka Switch CPUn."
-   )
-#endif
-#ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
-   "Ange tillståndet för Bluetooth."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
-   "Tjänster"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
-   "Hantera tjänster på operativsystemsnivå."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
-   "Dela nätverksmappar genom SMB-protokollet."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SSH_ENABLE,
-   "Använd SSH för att komma åt kommandoraden utifrån."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
-   "Wi-Fi accesspunkt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
-   "Aktivera/Inaktivera Wi-Fi accesspunkt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMEZONE,
-   "Tidszon"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_TIMEZONE,
-   "Välj din tidszon för att justera datum och tid till din plats."
-   )
 #ifdef HAVE_RETROFLAG
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "Retroflag Safe Shutdown"
+   char s_addc7f89[77];
+#endif
+#endif
+   char s_8dec52be[40];
+   char s_8fa632ab[12];
+   char s_7614d29f[48];
+   char s_b191aa47[42];
+   char s_71fe510f[41];
+   char s_7201eede[39];
+   char s_091f50ec[19];
+   char s_fe3e1d48[32];
+   char s_6f16fab3[19];
+   char s_53b632e1[59];
+   char s_f246e141[34];
+   char s_dff02a9f[24];
+   char s_87ee250e[30];
+   char s_91e11405[47];
+   char s_04681a15[36];
+   char s_046a0f66[34];
+   char s_18fce787[25];
+   char s_6f02b5b0[25];
+   char s_a11934f5[27];
+   char s_69b36417[17];
+   char s_e7a63560[11];
+   char s_42066550[6];
+   char s_fcac9b51[19];
+   char s_3b1a2a90[19];
+   char s_6aa6b870[32];
+   char s_68fc7d61[20];
+   char s_a511a1be[12];
+   char s_0500fecc[16];
+   char s_594c166d[20];
+   char s_5f6853c5[17];
+   char s_df763da7[8];
+   char s_69dad0e6[46];
+   char s_1532af95[55];
+   char s_03fb590d[24];
+   char s_7c2f8b04[24];
+   char s_fdbd73a3[25];
+   char s_6cead93e[16];
+   char s_3ea0b950[22];
+   char s_7de07c51[26];
+   char s_99aa56bf[11];
+   char s_d61d87cd[6];
+   char s_dfa54036[7];
+   char s_5d4e7834[32];
+   char s_b03e11ed[41];
+   char s_bcf3997a[13];
+   char s_fd9cfe13[18];
+   char s_2afa843b[18];
+   char s_4ab87404[6];
+   char s_82f759de[5];
+   char s_e2055017[9];
+   char s_bb2de2c7[10];
+   char s_4aaeeb99[15];
+   char s_ce327e00[23];
+   char s_b861d3d4[20];
+   char s_f469be52[18];
+   char s_adaa5dca[12];
+   char s_97ede950[21];
+   char s_14c81b21[14];
+   char s_89e8800d[15];
+   char s_a209b077[19];
+   char s_252b79db[20];
+   char s_73818858[29];
+   char s_ae377fc8[17];
+   char s_e2f1c348[14];
+   char s_02afc25f[16];
+   char s_8644c442[16];
+   char s_51af78aa[21];
+   char s_d729541d[18];
+   char s_b160f7a1[23];
+   char s_cd5ff0f5[18];
+   char s_8b92e740[18];
+   char s_aeef8db2[13];
+   char s_14d20957[18];
+   char s_f4ad0f27[28];
+   char s_af1fcb4f[13];
+   char s_9932960f[15];
+   char s_302fdd56[15];
+   char s_22a76378[27];
+   char s_2630397c[21];
+   char s_e4fd75b4[20];
+   char s_3c518be3[11];
+   char s_6bb9189a[5];
+   char s_0f80075d[12];
+   char s_d3906073[36];
+   char s_c561b96e[31];
+   char s_6262776d[5];
+   char s_25f1508f[9];
+   char s_93bae0e3[9];
+   char s_62458ec6[28];
+   char s_ed013a05[20];
+   char s_33f012e4[10];
+   char s_3613967e[31];
+   char s_01a73130[30];
+   char s_44ebca0d[27];
+   char s_608ac5a1[22];
+   char s_e2ffc38b[56];
+   char s_9d7898f7[48];
+   char s_00ea07cc[63];
+   char s_3be90bd8[55];
+   char s_369df8fa[56];
+   char s_467f06c1[5];
+   char s_7d65b67e[14];
+   char s_d7fc4c9c[28];
+   char s_d21c686b[22];
+   char s_f465878a[17];
+   char s_a35a9e13[15];
+   char s_64a91b83[21];
+   char s_206b1acd[8];
+   char s_b00e1e16[15];
+   char s_b24d8753[13];
+   char s_d748f469[32];
+   char s_9f006f5c[23];
+   char s_7fec5ca7[10];
+   char s_9374b989[20];
+   char s_7943e750[26];
+   char s_cec8f66d[27];
+   char s_ea80654d[38];
+   char s_be8e02b4[40];
+   char s_bab74532[18];
+   char s_7d2035c4[18];
+   char s_b3565d3d[15];
+   char s_f8fa3e2f[11];
+   char s_8356c98c[14];
+   char s_5c7bbce1[17];
+   char s_cd916c68[17];
+   char s_8fe41f79[23];
+   char s_2c296537[14];
+   char s_43ac80a0[12];
+   char s_ebe994b4[13];
+   char s_1c62c301[7];
+   char s_a8bb35b6[7];
+   char s_6d353bd6[11];
+   char s_3f874a40[13];
+   char s_da093426[18];
+   char s_d9b00fbd[28];
+   char s_9c6ed9ca[14];
+   char s_68664e16[19];
+   char s_d4aabe7f[21];
+   char s_4674fab3[11];
+   char s_904219cb[21];
+   char s_b235ee15[19];
+   char s_62109a32[12];
+   char s_f6affed3[18];
+   char s_7a911960[11];
+   char s_a436c403[12];
+   char s_875b5c6b[6];
+   char s_9dcc1f02[15];
+   char s_49f54c1b[19];
+   char s_ccf131c5[21];
+   char s_6bcbf80c[6];
+   char s_f92cf1f5[6];
+   char s_fff21e47[4];
+   char s_214b2135[7];
+   char s_28104d87[6];
+   char s_c4c18f49[8];
+   char s_cb86bb9b[6];
+   char s_b10510dd[9];
+   char s_b7ca3d2f[7];
+   char s_2369a893[9];
+   char s_2a2ed4e5[7];
+   char s_59de5c43[7];
+   char s_60a38895[6];
+   char s_db01e988[4];
+   char s_e1c715da[4];
+   char s_e2f93e68[5];
+   char s_47d26662[12];
+   char s_0ca3b319[9];
+   char s_8c15b43a[18];
+   char s_c8370855[18];
+   char s_f90272bb[20];
+   char s_41713ab9[19];
+   char s_f808254b[29];
+   char s_77e3256e[30];
+   char s_eea0ed20[16];
+   char s_7f75b005[33];
+   char s_c7e66e0a[33];
+   char s_48da4695[15];
+   char s_2fa1d6ef[32];
+   char s_9914967d[26];
+   char s_04f1138c[24];
+   char s_91887598[7];
+   char s_1b88da11[12];
+   char s_a685766d[32];
+   char s_95cbebbd[19];
+   char s_6b80a1bc[32];
+   char s_eb0d7f1d[21];
+   char s_99a77122[15];
+   char s_51cbf8f0[25];
+   char s_4a5b7672[20];
+   char s_8fa79de5[23];
+   char s_5eee10e5[31];
+   char s_79a4338e[16];
+   char s_eb3c8b7f[21];
+   char s_6ae93e68[24];
+   char s_e2f9cd07[11];
+   char s_7277e127[21];
+   char s_8203db0a[7];
+   char s_3a9d7557[11];
+   char s_a158a19e[27];
+   char s_1d39f4b7[28];
+   char s_c512fde9[40];
+   char s_e8636306[23];
+   char s_d6fb8efe[14];
+   char s_2f86932b[17];
+   char s_b2f7627c[23];
+   char s_ad5ff591[7];
+   char s_a79acb40[14];
+   char s_adcf82d6[8];
+   char s_c79d5013[11];
+   char s_133cc3d1[45];
+   char s_71ebd242[26];
+   char s_9a90acec[22];
+   char s_0ef856cb[35];
+   char s_22ee45f4[38];
+   char s_4577a14d[41];
+   char s_4bceefff[30];
+   char s_752ce8b2[39];
+#ifdef HAVE_ODROIDGO2
 #else
-   "Retroflag Safe Shutdown (Reboot required)"
+   char s_e07e844d[25];
 #endif
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "For use with compatible Retroflag case."
+   char s_f4341e25[33];
+   char s_b9d37039[174];
+   char s_d0a04fe4[12];
+   char s_c682e4e2[12];
+   char s_05c5a263[14];
+   char s_ed22c5f1[20];
+   char s_49f9815b[18];
+   char s_ddc4f021[26];
+   char s_ddc6b80f[18];
+   char s_f5ab35c0[31];
+   char s_3c70d08d[27];
+   char s_6083fff7[22];
+   char s_44e1c38f[29];
+   char s_57047267[9];
+   char s_f417f6f1[18];
+   char s_020e2bc5[16];
+   char s_59f183c8[21];
+   char s_59f183c9[21];
+   char s_6b395e21[11];
+   char s_71747541[10];
+   char s_b45e4c28[23];
+   char s_e92f8e07[24];
+   char s_e9bca139[15];
+   char s_59dc5d76[25];
+   char s_78198818[20];
+   char s_a12ce1bf[9];
+   char s_bfa23080[11];
+   char s_ec326380[5];
+   char s_8fc1e4da[3];
+   char s_14ed14d0[11];
+   char s_5c87e95b[16];
+   char s_bb929824[16];
+   char s_5741c1d0[14];
+   char s_a1a7717d[19];
+   char s_1fba8831[35];
+   char s_ff960910[19];
+   char s_17690f5a[36];
+   char s_f8c85dc2[35];
+   char s_75537d84[35];
+   char s_b38ecfa8[23];
+   char s_25c645b1[24];
+   char s_0571321b[23];
+   char s_4b582a0b[34];
+   char s_4b582a0c[31];
+   char s_61213f1d[12];
+   char s_95e4b29f[71];
+   char s_317b17ed[8];
+   char s_94c8d15f[8];
+   char s_1f66aac3[7];
+   char s_57665cff[10];
+   char s_0e2c0fca[35];
+   char s_93ac5ec8[33];
+   char s_6cdf4f07[35];
+   char s_b3d1e989[8];
+   char s_50eb4c56[5];
+   char s_a023adce[12];
+   char s_c2280f28[5];
+   char s_18089aa6[11];
+   char s_bdd10920[19];
+   char s_205caaf6[8];
+   char s_eb4eab83[5];
+   char s_c6d5bcb5[5];
+   char s_74dcbca5[20];
+   char s_3ea80887[20];
+   char s_c0cdc638[30];
+   char s_afd69a70[32];
+   char s_22735e37[57];
+   char s_6c40d14e[14];
+   char s_b0fa9d95[8];
+   char s_fb9fb1b5[8];
+   char s_f886ffa5[7];
+   char s_6c1369c6[14];
+   char s_4d7e9b13[13];
+   char s_2f05bb87[26];
+   char s_2bc278b3[16];
+   char s_5038a3f6[11];
+   char s_f57f6158[11];
+   char s_69b801ef[9];
+   char s_52e3d6ea[34];
+   char s_f5911f43[25];
+   char s_55f488d2[11];
+   char s_d5901b68[18];
+   char s_c49aa167[22];
+   char s_f708ba7e[19];
+   char s_fe3bb531[18];
+   char s_50b70201[16];
+   char s_5eb2c0b4[34];
+   char s_9e4c02bc[21];
+   char s_9e4df80d[20];
+   char s_6a745184[24];
+   char s_7ead653d[39];
+   char s_1f27c9a8[18];
+   char s_8841e63d[19];
+   char s_b8e8ddb7[23];
+   char s_8843db8e[25];
+   char s_a9711945[22];
+   char s_bdaa2cfe[37];
+   char s_ec9ccdc3[25];
+   char s_8bf6ccd4[41];
+   char s_552163d9[29];
+   char s_ef3d53d8[21];
+   char s_6dcc2f9f[13];
+   char s_48431da6[8];
+   char s_21d7a1f6[6];
+   char s_d2fe3ed2[18];
+   char s_45816e1d[21];
+   char s_730df420[15];
+   char s_bcddf275[7];
+   char s_258060bf[14];
+   char s_f90edcc2[50];
+   char s_92a02470[27];
+   char s_b7ef9e17[27];
+   char s_8f37930f[32];
+   char s_8f379310[32];
+   char s_6c52dfb1[32];
+   char s_84c46931[27];
+   char s_ebf10493[14];
+   char s_a64b3a0b[22];
+   char s_83e8dc72[22];
+   char s_7cf985f0[33];
+   char s_0f5266ce[14];
+   char s_ea2674d3[32];
+   char s_ea2674d4[29];
+   char s_2d8cb7ce[17];
+   char s_68190518[35];
+   char s_b9e24170[26];
+   char s_30140cb5[14];
+   char s_25a21976[70];
+   char s_7f2380a0[13];
+   char s_e0609921[15];
+   char s_b3c7fa93[21];
+   char s_f6a0db44[21];
+   char s_0ca1128d[17];
+   char s_65e6ea7c[6];
+   char s_232d9d6e[6];
+   char s_26928c45[9];
+   char s_b878faaf[11];
+   char s_af483c4f[22];
+   char s_490a6c83[8];
+   char s_9ccb925f[9];
+   char s_92b879ff[20];
+   char s_650f496e[12];
+   char s_3e3caa7d[27];
+   char s_8d5d41b3[10];
+   char s_988f5574[12];
+   char s_b736ca94[6];
+   char s_9828524b[10];
+   char s_e0cd1164[15];
+   char s_15b274c8[12];
+   char s_db6048a2[10];
+   char s_680d31ab[8];
+   char s_4cfcae06[11];
+   char s_ed2766fc[10];
+   char s_ce7c87e4[7];
+   char s_28c6d661[12];
+   char s_9ea5154a[5];
+   char s_b73b4ef9[10];
+   char s_228341ad[13];
+   char s_f6e6b693[12];
+   char s_522b2492[12];
+   char s_9eef0306[14];
+   char s_13904abd[11];
+   char s_2c2fc2c9[12];
+   char s_368db7bb[11];
+   char s_b8a131f0[19];
+   char s_550ef26d[14];
+   char s_fd7a891b[19];
+   char s_f9dd6e61[9];
+   char s_f4b6d13e[38];
+   char s_25e89959[3];
+   char s_a7468d68[31];
+   char s_aa0659db[21];
+   char s_49757b91[21];
+   char s_660eb9c4[21];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_5508c468[64];
+   char s_e59c4ded[40];
+   char s_5a8511ce[52];
+   char s_579b5e71[39];
+   char s_0367a7dc[108];
+   char s_4f75c71a[49];
+   char s_3e72b1fc[165];
+   char s_911970c1[79];
+   char s_11ba95cf[207];
+   char s_28866934[81];
+   char s_a61feb54[81];
+   char s_820e384e[154];
+   char s_243da114[67];
+   char s_f4805a53[38];
+   char s_9211eac4[38];
+   char s_0fd668d7[176];
+   char s_657b9c76[82];
+   char s_703e1cd4[149];
+   char s_78309ded[41];
+   char s_17385b20[70];
+   char s_816633c1[215];
+   char s_06d75b77[76];
+   char s_bd956922[75];
+#ifndef HAVE_DYNAMIC
+   char s_08ce894f[178];
+#endif
+   char s_984f7ada[108];
+   char s_f7cc6630[20];
+   char s_310ec7bd[63];
+   char s_20cc6597[104];
+   char s_66e9521c[83];
+   char s_a95c1929[48];
+   char s_23b8ca2e[22];
+   char s_daf6d7e2[45];
+   char s_042502c4[66];
+   char s_90ae9a9f[90];
+   char s_c9235dab[39];
+   char s_98b02857[236];
+   char s_6c3c586d[216];
+   char s_950e7a66[30];
+   char s_ce113b1c[38];
+   char s_272471c3[90];
+   char s_cb649822[18];
+   char s_95821d83[36];
+   char s_bdeebb68[42];
+   char s_f9005edc[175];
+   char s_6ade80dd[29];
+   char s_b5ccfdfa[151];
+   char s_8a24406f[34];
+   char s_8c6b0fea[47];
+   char s_5977d6d8[43];
+   char s_cb67f2a4[34];
+   char s_3c3598a9[47];
+   char s_4b78ee7f[77];
+   char s_aed11d67[143];
+   char s_dbe6e749[77];
+   char s_ed8a1060[85];
+   char s_822fa422[76];
+   char s_a8d552a7[45];
+   char s_6112ec7c[43];
+   char s_f6adf4ee[35];
+   char s_9b87fbf9[116];
+   char s_27aef25c[45];
+   char s_3502008f[40];
+   char s_a49df80f[64];
+   char s_986d445e[75];
+   char s_680226fd[39];
+   char s_16a53432[59];
+   char s_96bda3d0[50];
+   char s_4f627df2[38];
+   char s_af2a7718[40];
+   char s_4be2cc7b[34];
+   char s_6cc5ba39[48];
+   char s_5ac97310[53];
+   char s_547057db[36];
+   char s_cd5f01df[23];
+   char s_d4d3746a[110];
+   char s_f6dc4041[70];
+   char s_7c7bb683[156];
+   char s_dd416951[52];
+   char s_9a1af409[52];
+   char s_9813eaa4[52];
+   char s_0d18752c[56];
+   char s_0339e08c[91];
+   char s_11a7b0a0[159];
+   char s_f6e584ef[90];
+   char s_f6e584fd[90];
+   char s_c9868f82[78];
+   char s_05186758[57];
+   char s_6f85964e[33];
+   char s_19918b34[77];
+   char s_6623e069[108];
+   char s_6d185794[298];
+   char s_e7f367f5[76];
+   char s_ac45efa3[138];
+   char s_a175150b[86];
+   char s_a85861e1[79];
+   char s_71a5abbc[50];
+   char s_ce155902[55];
+   char s_3848eade[49];
+   char s_d564beb6[67];
+   char s_5b0fc8c2[60];
+   char s_70894faa[58];
+   char s_81c5d370[94];
+   char s_0cd2543b[73];
+   char s_6d9948ee[73];
+   char s_a1358509[78];
+   char s_e08d9e1a[94];
+   char s_2e28a155[54];
+   char s_40e095c6[71];
+   char s_6fc5fb8e[52];
+   char s_19b6373a[87];
+   char s_f63531f4[62];
+   char s_f83d414f[96];
+   char s_65e89a5b[44];
+   char s_1757ee76[68];
+   char s_11fd7702[79];
+   char s_170da980[40];
+   char s_c23869c7[56];
+   char s_60f69a39[47];
+   char s_7ad46c0d[62];
+   char s_00f712c9[169];
+   char s_555cd658[36];
+   char s_203e9e86[68];
+   char s_29c35489[134];
+   char s_2ae5d737[197];
+   char s_2860949b[60];
+   char s_4c0a8b68[48];
+   char s_de265901[62];
+   char s_4a3d27dc[39];
+   char s_f496371e[53];
+   char s_d0746a0f[51];
+   char s_12bc32b9[72];
+   char s_d20d86c6[66];
+   char s_13c7dae6[76];
+   char s_3ecc1739[34];
+   char s_2cabe957[43];
+   char s_e350bbbd[286];
+   char s_63855376[45];
+   char s_49a8967c[87];
+   char s_3cd90058[54];
+   char s_dc94fdb6[42];
+   char s_66019995[95];
+   char s_5a07751b[120];
+   char s_544da5c1[54];
+   char s_7f1e2e0a[63];
+   char s_66517e7d[205];
+   char s_040bd4cf[44];
+   char s_45f51ee3[24];
+   char s_a16db3aa[35];
+   char s_c837d642[28];
+   char s_84c3b006[21];
+   char s_e9815ce0[28];
+   char s_78b01731[20];
+   char s_0ce62f85[38];
+   char s_c005b3b5[104];
+   char s_ef7ad96b[92];
+   char s_993d7399[38];
+   char s_c46f9c81[29];
+   char s_0d074e33[206];
+   char s_794c1ee7[21];
+   char s_b9147244[34];
+   char s_e04176ec[42];
+   char s_e0863b45[39];
+   char s_43d00e0e[23];
+   char s_dc427c47[63];
+   char s_684b0cb1[35];
+   char s_1d47af21[60];
+   char s_6b3cfbe5[35];
+   char s_a64647a4[43];
+   char s_67b81e63[149];
+   char s_d5475a6a[170];
+   char s_89c3a7db[38];
+   char s_35f2309a[39];
+   char s_a607c53c[24];
+   char s_35f24807[257];
+   char s_c8781974[142];
+   char s_daa8dfca[38];
+   char s_d3bff7ab[189];
+   char s_d4953ccc[74];
+   char s_e00d4e7a[139];
+   char s_5bee81e1[43];
+   char s_5bf01371[75];
+   char s_791acb32[89];
+   char s_92cf524f[35];
+   char s_48e88dc4[141];
+   char s_3d233cd0[73];
+   char s_9198f1a0[205];
+   char s_165e564b[317];
+   char s_c3968f26[82];
+   char s_a2b65159[63];
+   char s_9831f77b[170];
+   char s_79b8ce4a[81];
+   char s_a1a8257e[107];
+   char s_282f7955[109];
+   char s_d5231783[105];
+   char s_a68d6d11[57];
+   char s_74022c02[89];
+   char s_8abad013[79];
+   char s_a39ca959[79];
+   char s_16b9856e[26];
+   char s_0ef5e125[16];
+   char s_b714023a[37];
+   char s_b0d3045a[36];
+   char s_fe3fb37b[45];
+   char s_7b51019e[37];
+   char s_f743a358[109];
+   char s_aa6534cc[22];
+   char s_51d334ea[27];
+   char s_95de8c94[27];
+   char s_f2a19576[62];
+   char s_b2a8d230[46];
+   char s_11c7fa0c[78];
+   char s_3f2095b2[45];
+   char s_711cd0b9[95];
+   char s_4db83281[107];
+   char s_ccbacaee[101];
+   char s_d721d862[60];
+   char s_ef4a2ca9[61];
+   char s_a8b02d9a[147];
+   char s_8a8a4bd7[252];
+   char s_aa30afc7[60];
+   char s_6775eaa0[58];
+   char s_37f2ecc0[64];
+   char s_3ecf5d5d[109];
+   char s_60e61f17[111];
+   char s_368efbdf[46];
+   char s_b462c6e5[70];
+   char s_5bdf892a[44];
+   char s_aa39aae6[77];
+   char s_deab66ee[112];
+   char s_5ce79fca[178];
+   char s_6563cb1b[75];
+   char s_877a8cd5[77];
+   char s_6ff78e00[61];
+   char s_693db7da[186];
+   char s_d43521db[77];
+   char s_44040aad[98];
+   char s_64d24441[46];
+   char s_ad7da224[43];
+   char s_dec53d8f[38];
+   char s_df614545[39];
+   char s_0822000b[59];
+   char s_8d99673a[37];
+   char s_7fd5ef69[77];
+   char s_7d9ab595[49];
+   char s_9eb26572[35];
+   char s_50707595[66];
+   char s_976074ee[119];
+   char s_5c8a1d63[84];
+   char s_744c0f80[53];
+   char s_2aa39081[43];
+   char s_e85b309d[79];
+   char s_cd94bb16[222];
+   char s_a17a67e1[56];
+   char s_1c4b447a[92];
+   char s_df4225b9[80];
+   char s_a5b7b768[70];
+   char s_d0b943e8[68];
+   char s_4f2077b6[154];
+   char s_5b920f01[113];
+   char s_5d20ea2c[58];
+   char s_b339b327[157];
+   char s_a9e0aaa3[92];
+   char s_bd0737d6[47];
+   char s_c4ade6bf[37];
+   char s_c245fbde[48];
+   char s_7566a771[99];
+   char s_1e07f209[34];
+   char s_475ff311[122];
+   char s_2e4a5d12[59];
+   char s_13005dc8[99];
+   char s_6da9b571[273];
+   char s_c2827177[137];
+   char s_09f2837b[282];
+   char s_0b56ad4c[58];
+   char s_c312b1ca[43];
+   char s_35c689e5[151];
+   char s_65b253f2[47];
+   char s_0ad88e8a[39];
+   char s_c09d0211[31];
+   char s_e62a60a3[29];
+   char s_79381041[145];
+   char s_5d310fd4[113];
+   char s_5d325d72[115];
+   char s_23b87da5[346];
+   char s_80d9d1fb[121];
+   char s_1dc7d995[43];
+   char s_24c62bf5[42];
+   char s_ecbb9248[51];
+   char s_603f8de7[53];
+   char s_a11a7d85[174];
+   char s_e25b6b30[161];
+   char s_4b347c28[50];
+   char s_0832c8b3[55];
+   char s_109af481[57];
+   char s_bcea0a06[28];
+   char s_4263d137[64];
+   char s_16cae8d7[65];
+   char s_3ad59606[30];
+   char s_07b5d4d6[50];
+   char s_f12f9f93[65];
+   char s_be33bd85[95];
+   char s_1cff5dd8[38];
+   char s_b8c82a8b[94];
+   char s_30fd562a[62];
+   char s_7cddce75[60];
+   char s_8c424989[32];
+   char s_0eccc5a3[101];
+   char s_6fef0176[102];
+   char s_d1d83069[77];
+   char s_4b0479de[60];
+   char s_96a2bbc4[54];
+   char s_0492441c[52];
+   char s_5a7cfb4e[45];
+   char s_fc0122d8[126];
+   char s_16ee5cf4[24];
+   char s_a088b615[75];
+   char s_d9153542[61];
+   char s_8e48ec69[47];
+   char s_cd43c108[56];
+   char s_cd46e260[89];
+   char s_cd482ffe[95];
+   char s_49336383[49];
+   char s_e92351d4[114];
+   char s_8e22cdce[49];
+   char s_86477a78[62];
+   char s_b67ffc50[60];
+   char s_692d0c77[58];
+   char s_3e62f1d6[80];
+   char s_79b7fb9d[31];
+   char s_503d814d[99];
+   char s_74d87c7a[34];
+   char s_12adb1e7[32];
+   char s_070529d4[64];
+   char s_30d1fc05[53];
+   char s_13ed6d52[104];
+   char s_ad9b9762[114];
+   char s_623a09ea[118];
+   char s_ba59df8d[130];
+   char s_4b824ac6[182];
+   char s_c384b984[42];
+   char s_9db5ae27[85];
+   char s_bc47004d[68];
+   char s_980b7c0a[58];
+   char s_cc27d9d1[118];
+   char s_9f1584c0[122];
+   char s_791ba074[167];
+   char s_8dcc2dac[75];
+   char s_cc3c2510[153];
+   char s_d86bb549[162];
+   char s_f139b159[46];
+   char s_223aff92[154];
+   char s_304c82d9[65];
+   char s_03a0c15e[84];
+   char s_5d042256[115];
+   char s_6b0c11bc[57];
+   char s_3ca0fdf4[59];
+   char s_5525e07f[38];
+   char s_c4ad61ad[121];
+   char s_ece34ee9[252];
+   char s_8b8a59ad[122];
+   char s_f426bf8c[52];
+   char s_f88b978c[180];
+   char s_47df0525[61];
+   char s_03e272fc[52];
+   char s_5c2cc60f[80];
+   char s_d6d8d4be[83];
+   char s_e86d2704[75];
+   char s_dda608b5[301];
+   char s_6f5a032a[52];
+   char s_9530e802[110];
+   char s_e0bb7a18[204];
+   char s_a18eb603[43];
+   char s_d5b9f1e3[39];
+   char s_aaa55caa[86];
+   char s_6a44b3af[75];
+   char s_a7d61696[64];
+   char s_f9db39ef[102];
+   char s_b5bb6ba7[114];
+   char s_0e9b7c2d[79];
+   char s_2447fa4c[42];
+   char s_4eca03a5[164];
+   char s_2abe1077[55];
+   char s_351f1b66[44];
+   char s_0ea19c95[49];
+   char s_43cd6373[62];
+   char s_a7fd96b0[81];
+   char s_1d42d613[105];
+   char s_eaa7274b[44];
+   char s_10994fc9[89];
+   char s_bde8a108[62];
+   char s_a2fb1996[79];
+   char s_394e4cd7[44];
+   char s_ba790123[156];
+   char s_4f62aa21[66];
+   char s_b29c2c63[41];
+   char s_29e30d50[69];
+   char s_e48979b1[111];
+   char s_bbfb5541[55];
+   char s_c6e1f92b[40];
+   char s_2f5a9518[93];
+   char s_1bc265b6[64];
+   char s_dac18a2d[41];
+   char s_aadb028d[32];
+   char s_960888b6[53];
+   char s_e29f9539[106];
+   char s_824e2e0c[165];
+   char s_c5a7263e[45];
+   char s_d9b9d57a[72];
+   char s_858f09e9[147];
+   char s_dfc23214[176];
+   char s_fa6b7e78[222];
+   char s_eea265bb[168];
+   char s_8f3929a3[112];
+   char s_91e03bff[28];
+   char s_f4d41494[214];
+   char s_cfb4dee1[115];
+   char s_2b208bc6[205];
+   char s_37ab0764[43];
+   char s_fb474310[113];
+   char s_e0217ae7[37];
+   char s_80d23abe[91];
+   char s_78f48c28[91];
+   char s_7e1918a0[82];
+   char s_85710575[44];
+   char s_c220b5bb[143];
+   char s_bcca484f[97];
+   char s_1205716b[258];
+   char s_b3c6310f[60];
+   char s_b1305e15[68];
+   char s_2b2a7762[68];
+   char s_193e1462[59];
+   char s_6895dfd6[52];
+   char s_788364f5[86];
+   char s_dd9ff22a[71];
+   char s_db495a9d[42];
+   char s_ddc672a7[48];
+   char s_ccea261d[139];
+   char s_f754a0d3[81];
+   char s_4fe7b3d2[105];
+   char s_137f3462[113];
+   char s_bff3f5b9[99];
+   char s_e6535ec1[197];
+   char s_a67ad98a[81];
+   char s_3b9207be[128];
+   char s_823a7f9e[163];
+   char s_ad131006[165];
+   char s_039b790e[56];
+   char s_e915aba1[14];
+   char s_0bd86aec[51];
+   char s_2d78e959[168];
+   char s_6ea6ac6f[180];
+   char s_29a8b1f5[221];
+   char s_e6600c20[288];
+   char s_52a0cc20[88];
+   char s_d938c460[80];
+   char s_b5f676b0[70];
+   char s_494c7159[89];
+   char s_236ddb2d[97];
+   char s_d27e63b2[262];
+   char s_32728f95[88];
+   char s_c4eae01a[123];
+   char s_bb0852aa[193];
+   char s_09cf66f0[61];
+   char s_3f3b7c6a[113];
+   char s_782ab67a[64];
+   char s_3f190491[107];
+   char s_a5bae327[82];
+   char s_7963c9c6[74];
+   char s_ee3a489b[51];
+   char s_236bd8d5[52];
+   char s_dfdbf027[85];
+   char s_63081642[46];
+   char s_01efec73[41];
+   char s_d3fc9970[46];
+   char s_740bd7c4[52];
+   char s_f052dae3[77];
+   char s_c5a76d72[49];
+   char s_c5a7e06c[48];
+   char s_37d36d03[53];
+   char s_eadbaf16[52];
+   char s_54eaf5f5[31];
+   char s_7de5d198[54];
+   char s_3b573ee6[31];
+   char s_dc1d6cc7[46];
+   char s_aebcb136[126];
+   char s_8b636a26[37];
+   char s_8f707459[31];
+   char s_2b908073[258];
+   char s_97c62766[163];
+   char s_6f458a85[92];
+   char s_41702fdc[54];
+   char s_85dd50ad[81];
+   char s_0a583569[83];
+   char s_5b821b48[51];
+   char s_5c6a50d2[114];
+   char s_84127a47[73];
+   char s_a47f53ed[113];
+   char s_cbdab193[278];
+   char s_d8e11f05[295];
+   char s_94597253[291];
+   char s_70e21550[54];
+   char s_f3e3ccc1[63];
+   char s_0ca85937[54];
+   char s_9ce2f939[82];
+   char s_a9d2ffe8[23];
+   char s_f2b2b8e9[23];
+   char s_4be9dc09[33];
+   char s_0295f370[26];
+   char s_c2717b6d[133];
+   char s_fa87996f[131];
+   char s_a83d6467[199];
+   char s_28f025c5[90];
+   char s_c273445d[138];
+   char s_32f9494f[35];
+   char s_e5f2a7a5[36];
+   char s_dc469b88[72];
+   char s_aa93eec8[100];
+   char s_198c91d3[48];
+   char s_59508007[41];
+   char s_b51b23de[167];
+   char s_4e8c7cc3[48];
+   char s_f3f14b36[29];
+   char s_721af2d0[29];
+   char s_3e7327ad[96];
+   char s_be3d7079[85];
+   char s_ff04d19c[42];
+   char s_8fd135b7[52];
+   char s_61771e16[38];
+   char s_57922b21[36];
+   char s_71e4e031[210];
+   char s_7ef3d15a[218];
+   char s_a166bef0[40];
+   char s_20212574[50];
+   char s_48f7693a[96];
+   char s_91a3e1a5[110];
+   char s_19a250ff[104];
+   char s_02a16c68[160];
+   char s_b3502258[93];
+   char s_49ea5fc5[68];
+   char s_4cf6b4e0[49];
+   char s_da518d67[159];
+   char s_1195a4db[36];
+   char s_ce069670[28];
+   char s_77c6c6f2[56];
+   char s_126432dc[132];
+   char s_bc33055d[86];
+   char s_be8c2b47[33];
+   char s_02526a85[73];
+   char s_8b64010b[149];
+   char s_7279e585[56];
+   char s_8bb9f63a[110];
+   char s_a5ffd3d0[44];
+   char s_d2ae640b[76];
+   char s_8e5bac99[81];
+   char s_28a346d2[60];
+   char s_998cef30[96];
+   char s_f2c17467[70];
+   char s_e50c6c1c[57];
+   char s_0f860e4a[56];
+   char s_474dc3f6[73];
+   char s_43927730[84];
+   char s_1a0d188b[82];
+   char s_14fd9cfa[57];
+   char s_b32e0a9f[63];
+   char s_aad983c7[85];
+   char s_1e197ffb[160];
+   char s_85aab1ad[47];
+   char s_f28ded2f[64];
+   char s_5dc056f8[84];
+   char s_6b12dfdc[44];
+   char s_3fb95f49[61];
+   char s_8fe476a4[41];
+   char s_333de576[21];
+   char s_8950b378[47];
+   char s_d9e33a3c[76];
+   char s_281dd836[55];
+   char s_a616c1f4[46];
+   char s_638533eb[215];
+   char s_cd6693b5[219];
+   char s_80174fae[195];
+   char s_4c1871ec[35];
+   char s_2fe54949[68];
+   char s_f4209df0[141];
+   char s_df00cbb0[64];
+   char s_66550b2a[43];
+   char s_27da6149[111];
+   char s_5efc8d53[111];
+   char s_c863f25f[176];
+   char s_b16d53a9[176];
+   char s_c3f409ce[297];
+   char s_c890b938[303];
+   char s_b67a1480[162];
+   char s_444735aa[162];
+   char s_36a0546f[299];
+   char s_199db3b9[299];
+   char s_ffdc6de0[49];
+   char s_ffde1694[43];
+   char s_632d1a56[59];
+   char s_6eda8c78[63];
+   char s_e5ca838c[47];
+   char s_dac68b37[69];
+   char s_a3a3b9fe[135];
+   char s_96cf264a[112];
+   char s_98edb84c[52];
+   char s_d66af37b[128];
+   char s_4a9abbb5[59];
+   char s_3580dc25[84];
+   char s_d0364fca[90];
+   char s_d70067fd[58];
+   char s_7a3b4611[93];
+   char s_21d6e6d9[58];
+   char s_79553ba5[27];
+   char s_a5b1e615[43];
+   char s_03195749[357];
+   char s_d78d776f[119];
+   char s_ee99b729[37];
+   char s_94b84bf7[102];
+   char s_802613d6[38];
+   char s_6b5b3e1a[62];
+   char s_fb9a3cb9[80];
+   char s_a6fec2ae[134];
+   char s_d34eb231[65];
+   char s_e0bdee74[160];
+   char s_9fd2f8b9[214];
+   char s_a5aeccdc[35];
+   char s_bfe5a026[42];
+   char s_bfe5efd0[44];
+   char s_d72464dc[256];
+   char s_6b2c2495[73];
+   char s_abf90aae[130];
+   char s_b48e1eda[62];
+   char s_4113227d[48];
+   char s_64e37a7f[65];
+   char s_cac7ba4d[57];
+   char s_e124c89f[380];
+   char s_70a53ed8[39];
+   char s_78c7d8fd[100];
+   char s_d86c49f4[111];
+   char s_d4095cc4[156];
+   char s_49a0a568[142];
+   char s_e75f4bb2[189];
+   char s_e33b9334[108];
+   char s_7ff41c9a[115];
+   char s_fb6c33d8[60];
+   char s_061c8cb7[59];
+   char s_86dc83bd[42];
+   char s_0e319bcf[57];
+   char s_c11a10f0[136];
+   char s_e8bf64a4[32];
+   char s_b4bf3f71[55];
+   char s_b91e9f23[44];
+   char s_66664762[44];
+   char s_9b335d3e[26];
+   char s_66ac6d9a[36];
+   char s_3902b07b[97];
+   char s_b72fefb4[69];
+   char s_08cb2bec[33];
+   char s_b116e012[37];
+   char s_be00a9b3[62];
+   char s_b96a264d[76];
+   char s_41654451[45];
+   char s_19e57914[56];
+   char s_49d3ca7f[96];
+   char s_e459fd8f[78];
+   char s_85678c20[84];
+   char s_389c9954[57];
+   char s_e95fc076[74];
+   char s_d0fbd490[29];
+   char s_c5d2f4b0[39];
+   char s_7c5226bd[37];
+   char s_d99ba008[35];
+   char s_e072c830[24];
+   char s_96f1fa3d[34];
+   char s_8d6d6fa8[24];
+   char s_43eca1b5[16];
+   char s_dd51dec4[49];
+   char s_00961284[116];
+   char s_a5962f42[77];
+   char s_0c7750cd[79];
+   char s_f3b31ef1[49];
+   char s_331c623c[51];
+   char s_279c08f7[37];
+   char s_60a8a963[39];
+   char s_b1614981[60];
+   char s_e88a66eb[90];
+   char s_b1b849f5[37];
+   char s_b1b9f2a9[52];
+   char s_ac857f5f[86];
+   char s_9c077f8f[106];
+   char s_b298ccdf[86];
+   char s_b29ac230[78];
+   char s_e95fac0c[58];
+   char s_03d6fa4b[62];
+   char s_af063b30[107];
+   char s_557fcba0[85];
+   char s_5581c0f1[77];
+   char s_68c3966e[94];
+   char s_c07e8fd2[138];
+   char s_f660f282[122];
+   char s_f662e7d3[95];
+   char s_24b9a99f[33];
+   char s_e391b0d2[168];
+   char s_b464a65a[103];
+   char s_c00d444e[118];
+   char s_c05d1aac[311];
+   char s_caa797e4[54];
+   char s_72d7857d[58];
+   char s_1f084654[53];
+   char s_3ca87244[32];
+   char s_01be7381[46];
+   char s_2b36bd4d[41];
+   char s_5deae9b2[140];
+   char s_c840d2cd[121];
+   char s_14b5b145[119];
+   char s_c7c09eb0[100];
+   char s_7d4adfaf[43];
+   char s_6f122164[44];
+   char s_61942cf6[52];
+   char s_6b7e9271[109];
+   char s_68b6e245[55];
+   char s_3bb4fbf9[110];
+   char s_f865440b[20];
+   char s_7e3df202[367];
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   char s_c565bc2d[245];
+#endif
+   char s_5c75640f[44];
+   char s_59bd45fa[156];
+   char s_05e0fc7e[116];
+   char s_d3921d65[115];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_96c461f7[125];
+#endif
+#endif
+   char s_0a8d4a2c[58];
+   char s_d4c47f59[127];
+   char s_86d4b7cd[63];
+   char s_b775da75[168];
+   char s_5ae6337d[73];
+   char s_5ae9d14c[148];
+   char s_f207335a[179];
+   char s_9f7d37f6[146];
+   char s_7ede2061[50];
+   char s_98d47f8f[278];
+   char s_9385fbef[45];
+   char s_efb7504d[60];
+   char s_70d6077c[41];
+   char s_31124733[193];
+   char s_2d24a503[166];
+   char s_2d269a54[140];
+   char s_db671d75[244];
+   char s_8d29fede[52];
+   char s_a9c51063[52];
+   char s_879ee2c5[72];
+   char s_f05210ce[46];
+   char s_0c73c0ff[142];
+   char s_78c3a30f[60];
+   char s_63005fba[60];
+   char s_34a76adb[55];
+   char s_88021a14[138];
+   char s_fe1a9203[276];
+   char s_2222a23b[113];
+   char s_8213bb32[197];
+   char s_48462dac[320];
+   char s_631de1a2[126];
+   char s_d8fa9cdb[57];
+   char s_c2d7c9a8[37];
+   char s_42bb4ac1[67];
+   char s_0e0af329[48];
+   char s_e8aee6c7[24];
+   char s_9754ee6e[42];
+   char s_59a0ee82[41];
+   char s_b4265580[38];
+   char s_96924038[32];
+   char s_611059be[41];
+   char s_59e667cf[34];
+   char s_8fb7e97b[36];
+   char s_6473e665[39];
+   char s_c66a9489[40];
+   char s_60f20686[50];
+   char s_971f6236[37];
+   char s_a55bf936[34];
+   char s_c519f84d[36];
+   char s_48aefa30[37];
+   char s_5d383a58[40];
+   char s_dcf8bd8b[39];
+   char s_bce9b94f[44];
+   char s_d32f5a63[38];
+   char s_9177176e[39];
+   char s_97d77020[34];
+   char s_59f05605[39];
+   char s_e21d8d55[48];
+   char s_9807adbd[33];
+   char s_35ff46c4[59];
+   char s_288b93a6[49];
+   char s_2c1469aa[142];
+   char s_474b1a98[56];
+   char s_934cf7a1[71];
+   char s_d512ad1c[59];
+   char s_4555fdb4[49];
+   char s_4b009af3[36];
+   char s_46c57dde[70];
+   char s_7eb20ecf[69];
+   char s_f3bfa8b9[81];
+   char s_5fe2cee5[62];
+   char s_29a692ba[87];
+   char s_4b99ff86[73];
+   char s_76ebe1a8[80];
+   char s_9b51352c[31];
+   char s_12510638[50];
+   char s_ac067981[37];
+   char s_82d064b1[27];
+   char s_c50aa955[67];
+   char s_1a8301fe[58];
+   char s_8bbf7ffb[112];
+   char s_e74a8da2[56];
+   char s_889ada6f[84];
+   char s_ffd591e0[48];
+   char s_a51ab538[24];
+   char s_55d6cc44[39];
+   char s_f2963d2d[31];
+   char s_4c592ae1[90];
+   char s_52ac4fb9[109];
+   char s_a39b8870[115];
+   char s_52a12789[43];
+   char s_dcb85773[68];
+   char s_2beab583[24];
+   char s_a1c071eb[106];
+   char s_0d9ceefa[100];
+   char s_c4acbf9b[51];
+   char s_6e9f0493[79];
+   char s_78474a95[51];
+   char s_a18602f8[48];
+   char s_5a1f9d45[64];
+   char s_611538cc[55];
+   char s_62584165[57];
+   char s_84cf9517[168];
+   char s_68d467b3[220];
+   char s_4dc951a2[112];
+   char s_1d92d9e0[158];
+   char s_17e15f27[141];
+   char s_adc676fb[69];
+   char s_c6e32f19[145];
+   char s_dcdfbf2c[229];
+   char s_74a4dfd9[166];
+   char s_f815af2a[46];
+   char s_8759e741[22];
+   char s_1ec5857f[57];
+   char s_0d6c1630[80];
+   char s_07e1d73b[364];
+   char s_14f1606d[241];
+   char s_5e14cb20[132];
+#ifdef HAVE_ODROIDGO2
 #else
-   "For use with compatible Retroflag case. Reboot is required when changing."
+   char s_c38ef33b[49];
 #endif
-   )
+   char s_ab839b13[131];
+   char s_17663212[175];
+   char s_e4aa2e10[49];
+   char s_d60aa85f[46];
+   char s_2d09f049[25];
+   char s_e670cb8f[41];
+   char s_e672937d[124];
+   char s_055c296e[133];
+   char s_fc2d67bb[149];
+   char s_43946ee5[73];
+   char s_5492b73d[52];
+   char s_123f401f[91];
+   char s_0d96ed73[44];
+   char s_9f0fd076[136];
+   char s_9f0fd077[135];
+   char s_7a2050af[38];
+   char s_d2859556[49];
+   char s_ef13be35[56];
+   char s_f2687ca7[74];
+   char s_698d5124[89];
+   char s_7e43d750[203];
+   char s_456fcbc9[387];
+   char s_82fab47a[38];
+   char s_72e21512[180];
+   char s_66f2b57e[38];
+   char s_a776daeb[88];
+   char s_88095324[88];
+   char s_c0f9a2df[114];
+   char s_ed06873e[52];
+   char s_e08b7fc8[115];
+   char s_9448a1b0[93];
+   char s_2ca2fa72[114];
+   char s_734b66d6[109];
+   char s_dd15c29f[110];
+   char s_0b409b89[109];
+   char s_34400c79[73];
+   char s_34400c7a[70];
+   char s_4a09218b[39];
+   char s_19d092ed[43];
+   char s_1eebf4f8[181];
+   char s_2f2ca2b6[185];
+   char s_2c9be635[133];
+   char s_b5a603de[68];
+   char s_d9c2db25[67];
+   char s_7c07f6fc[104];
+   char s_36667d81[106];
+   char s_eec252b5[124];
+   char s_f4e4e921[217];
+   char s_7968f59d[42];
+   char s_58c80718[291];
+   char s_67d549fd[43];
+   char s_afac733c[37];
+   char s_3aaf6bf1[126];
+   char s_ae3f2a01[50];
+   char s_5bc3f240[150];
+   char s_db5f84d6[90];
+   char s_ad8283d5[87];
+   char s_9847d52c[53];
+   char s_99bbf91f[38];
+   char s_19d9726f[36];
+   char s_812153e8[73];
+   char s_27d53122[76];
+   char s_1aecfa2a[124];
+   char s_1aeeef7b[94];
+   char s_9330dc72[89];
+   char s_a769f02b[107];
+   char s_e84a3a16[75];
+   char s_23c22a2b[77];
+   char s_c9a8c2e5[31];
+   char s_23c41f7c[86];
+   char s_261210b3[74];
+   char s_3a4b246c[106];
+   char s_2ceab671[159];
+   char s_977f8e82[89];
+   char s_3c679f0a[291];
+   char s_5b059407[132];
+   char s_36033606[181];
+   char s_2e69508b[331];
+   char s_7e96b5ce[48];
+   char s_3547866d[131];
+   char s_c2314d30[215];
+   char s_73658ec1[175];
+   char s_73658ec2[142];
+   char s_8010a29e[96];
+   char s_81120e85[96];
+   char s_9506fc7d[97];
+   char s_9506fc7e[97];
+   char s_47ae341f[105];
+   char s_48696c85[74];
+   char s_3c13e61f[103];
+   char s_d96182c1[42];
+   char s_93bbb839[112];
+   char s_4d0b4ce0[112];
+   char s_f99a7d5e[209];
+   char s_f83a493c[51];
+   char s_ac90aac1[101];
+   char s_ac90aac2[98];
+   char s_3370e7fc[34];
+   char s_09581fc6[285];
+   char s_74e69f4b[88];
+   char s_5562855e[36];
+   char s_75325963[51];
+   char s_6ac06624[143];
+   char s_7059a595[56];
+   char s_cf0b487b[86];
+   char s_c4928773[69];
+   char s_4059cb1a[46];
+   char s_d9bcee6b[64];
+   char s_934171e1[37];
+   char s_9bb1a0de[189];
+   char s_9a2d3f1b[102];
+   char s_1ba1d249[97];
+   char s_57dccf4f[41];
+   char s_fa863aac[85];
+   char s_007587a5[65];
+   char s_52c66e88[20];
+   char s_63a238b1[20];
+   char s_fef5e730[24];
+   char s_06fb676c[58];
+   char s_7ba0622b[66];
+   char s_dd290e03[9];
+   char s_4bc02672[58];
+   char s_25f63cc5[48];
+   char s_b8fa9776[28];
+   char s_087fca9d[15];
+   char s_25e53d33[27];
+   char s_26cce51e[21];
+   char s_07dd4745[18];
+   char s_aaaaf898[22];
+   char s_4173591b[15];
+   char s_c2b63d3e[18];
+   char s_846c3994[10];
+   char s_67ac1ac9[42];
+   char s_2a9c73f3[34];
+   char s_49ef28fd[13];
+   char s_05e3f715[72];
+   char s_a9f7cc04[45];
+   char s_631c5635[64];
+   char s_6c868497[41];
+   char s_ac3c4c54[34];
+   char s_a7a47ea6[28];
+   char s_09a5996c[30];
+   char s_73c9507b[71];
+   char s_825152dd[35];
+   char s_19e809ad[37];
+   char s_0256d7eb[72];
+   char s_531b0e75[11];
+   char s_b47316d5[24];
+   char s_b9a272c1[34];
+   char s_309b8282[34];
+   char s_2a345bc4[39];
+   char s_7058f002[39];
+   char s_e457fab3[32];
+   char s_b20208b4[32];
+   char s_9dd9fdee[50];
+   char s_187dc6d2[21];
+   char s_5e0b473a[14];
+   char s_44ce4afe[49];
+   char s_fa1942bb[30];
+   char s_5aeda955[46];
+   char s_839395b2[26];
+   char s_3267601f[55];
+   char s_35b0efd4[32];
+   char s_321ebfd1[29];
+   char s_80d9fc3b[20];
+   char s_6a708aa4[20];
+   char s_8db0184a[41];
+   char s_08abd26f[22];
+   char s_48f0233f[55];
+   char s_510c1140[50];
+   char s_3b592d2d[14];
+   char s_ec5751c3[34];
+   char s_af4b70f4[55];
+   char s_d9afe3b5[51];
+   char s_312fd783[56];
+   char s_96df643a[104];
+   char s_150b4ebe[92];
+   char s_0d212ca9[102];
+   char s_be02ba0f[107];
+   char s_059f98c0[67];
+   char s_b077bb95[99];
+   char s_48720114[53];
+   char s_853088a2[73];
+   char s_2e919cd0[61];
+   char s_8244c736[100];
+   char s_1af7df08[97];
+   char s_db1e4390[38];
+   char s_27af84c0[95];
+   char s_867e4ca5[15];
+   char s_a897b5ef[39];
+   char s_c09a1582[23];
+   char s_674d3ec6[40];
+   char s_1da9a108[15];
+   char s_11441b55[91];
+   char s_ff23bc4d[37];
+   char s_3af3e017[19];
+   char s_f7e279a6[11];
+   char s_12a68ed0[71];
+   char s_d7065ee8[42];
+   char s_89aa2160[14];
+   char s_76c4c7ce[28];
+   char s_79eac1d9[19];
+   char s_0ca1ef5c[17];
+   char s_7f5044a4[62];
+   char s_20296ebc[79];
+   char s_3301eae2[29];
+   char s_f0b48289[52];
+   char s_19b9a241[42];
+   char s_92998c8d[45];
+   char s_ca731381[23];
+   char s_6b6a247d[51];
+   char s_6704b41f[42];
+   char s_a1aa860c[48];
+   char s_e15fc32e[59];
+   char s_fe3554da[91];
+   char s_1c95dd25[38];
+   char s_94d31e5d[30];
+   char s_c021aafc[52];
+   char s_f9ad51a9[38];
+   char s_a3940c93[21];
+   char s_2fb7ea2e[33];
+   char s_4b3a4173[30];
+   char s_cd621c40[37];
+   char s_a65663f9[33];
+   char s_3290a333[34];
+   char s_42e027a9[31];
+   char s_6d1e6304[51];
+   char s_581bc3a1[49];
+   char s_04cf17ef[36];
+   char s_628fcf0d[53];
+   char s_b3f00b45[33];
+   char s_df3e97e4[60];
+   char s_fb59e491[41];
+   char s_96e03bed[24];
+   char s_824867fd[73];
+   char s_e5668863[41];
+   char s_0638fe80[73];
+   char s_902526ad[51];
+   char s_e487a402[41];
+   char s_3b5b6155[41];
+   char s_13f7f56e[39];
+   char s_4c6e5a10[30];
+   char s_576b8046[33];
+   char s_5eafa434[28];
+   char s_7f1e25bf[40];
+   char s_ed9e4f6f[215];
+   char s_30da3845[24];
+   char s_d50c6bf1[30];
+   char s_64a038aa[31];
+   char s_697f59c0[32];
+   char s_05437279[26];
+   char s_c0cae103[27];
+   char s_71d52dde[46];
+   char s_c6615fcf[33];
+   char s_40978704[44];
+   char s_61ada7bb[47];
+   char s_a5f7f005[21];
+   char s_76086c40[23];
+   char s_4b6a946a[41];
+   char s_2603520a[37];
+   char s_88727270[59];
+   char s_42cf10ff[58];
+   char s_db16e78f[30];
+   char s_d28086c9[31];
+   char s_eeabb721[12];
+   char s_056d83e9[21];
+   char s_c8991447[25];
+   char s_38e7fc6d[9];
+   char s_a3030e21[16];
+   char s_e3834478[19];
+   char s_d0f27355[4];
+   char s_faafda68[66];
+   char s_b69a6428[76];
+   char s_720c9bdc[78];
+   char s_973bf41d[30];
+   char s_07d69dad[47];
+   char s_ed18242e[39];
+   char s_4c709183[39];
+   char s_ccc5138e[44];
+   char s_6b27e52f[36];
+   char s_adf53ee4[36];
+   char s_1d1dd59f[22];
+   char s_9759de44[11];
+   char s_95b098ec[20];
+   char s_95b223c3[15];
+   char s_d8f36eee[39];
+   char s_b0e4eb88[54];
+   char s_9589cc66[65];
+   char s_a0cd3533[40];
+   char s_135957cd[39];
+   char s_96b546df[56];
+   char s_731e9836[34];
+   char s_ffb4111b[42];
+   char s_a363d07a[41];
+   char s_9e5bd759[38];
+   char s_8d7296ed[39];
+   char s_21580d7c[99];
+   char s_fc5e1d2c[63];
+   char s_51b22327[48];
+   char s_2f6a6e51[28];
+   char s_dd3e560b[41];
+   char s_805b6635[47];
+   char s_2891880f[36];
+   char s_88a97252[42];
+   char s_bcf709c3[32];
+   char s_5bd95c11[47];
+   char s_ac935d4d[44];
+   char s_1cf93e21[28];
+   char s_7530ae6d[50];
+   char s_2814f14c[49];
+   char s_e4a3fbd9[39];
+   char s_c06e36e9[51];
+   char s_112c5cc3[59];
+   char s_c7f2d70f[52];
+   char s_8451049b[49];
+   char s_f7a5b540[44];
+   char s_53a0a0f2[29];
+   char s_1ea66462[39];
+   char s_cb85bda0[34];
+   char s_21c31f5a[42];
+   char s_55479240[50];
+   char s_db6ac45f[49];
+   char s_d7c90346[51];
+   char s_e4f79c50[54];
+   char s_8d677b5b[66];
+   char s_e68913bc[44];
+   char s_f878311b[40];
+   char s_0c40dc73[36];
+   char s_08e69926[48];
+   char s_74c31635[43];
+   char s_94ba5ea0[41];
+   char s_7b7b7f6d[15];
+   char s_89c4cc58[32];
+   char s_27bf01b6[22];
+   char s_e9eb2822[45];
+   char s_ed159cd6[16];
+   char s_fa458d88[36];
+   char s_7ccec78e[41];
+   char s_308c47e4[40];
+   char s_525bf430[20];
+   char s_73cc16ae[29];
+   char s_6c57fef6[36];
+   char s_f9e55fc7[41];
+   char s_e533ddbb[33];
+   char s_b5ca089d[15];
+   char s_f18caa49[10];
+   char s_076faabe[19];
+   char s_ba683b80[17];
+   char s_6406a780[34];
+   char s_c01ceb8c[41];
+   char s_45130077[28];
+   char s_856bdef7[33];
+   char s_a3b849dc[25];
+   char s_8d09bbaf[27];
+   char s_b7b83070[84];
+   char s_0a4aab6c[45];
+   char s_46f6a65d[9];
+   char s_265dbfa3[46];
+   char s_b0e45a57[30];
+   char s_543fcabd[11];
+   char s_59212b5f[13];
+   char s_f26b6cff[28];
+   char s_a9f3b2c3[15];
+   char s_0e7aca8a[21];
+   char s_ab1afe7c[19];
+   char s_026b7f11[15];
+   char s_3b7c0dd8[21];
+   char s_b43a100a[19];
+   char s_51df877a[39];
+   char s_136098cd[31];
+   char s_f482576f[34];
+   char s_0408afc3[14];
+   char s_654f5308[21];
+   char s_c4a8e97c[12];
+   char s_5317d41c[15];
+   char s_e64e0e41[32];
+   char s_45043730[17];
+   char s_d3ec8171[26];
+   char s_5d7ba688[8];
+   char s_f7c174e0[11];
+   char s_01a4c762[12];
+   char s_ba4d8b17[25];
+   char s_ffed014a[23];
+   char s_1295b61f[36];
+   char s_debd302d[11];
+   char s_8bd09b44[31];
+   char s_1a5de3f6[26];
+   char s_1d77112b[23];
+   char s_00a5b29d[83];
+   char s_2471a06d[23];
+   char s_98e55de8[38];
+   char s_03d08020[40];
+   char s_e9fb0749[10];
+   char s_7d2afbe2[24];
+   char s_55f9c8cd[35];
+   char s_f7c1ff1a[23];
+   char s_e01973d9[22];
+   char s_e8e6cf09[21];
+   char s_9033e61a[26];
+   char s_d16f3816[6];
+   char s_a602dd84[29];
+   char s_aa7139c6[64];
+   char s_4ae9f9f9[69];
+   char s_5123ee7d[24];
+   char s_3692d4a2[50];
+   char s_08f50667[34];
+   char s_eebc54d1[16];
+   char s_583a8462[25];
+   char s_3c214e5f[31];
+   char s_2ada2134[26];
+   char s_00fc26e4[6];
+   char s_7c4c8dd7[72];
+   char s_1943a9c7[24];
+   char s_030cab12[8];
+   char s_da69a32f[35];
+   char s_b1e9bfbf[24];
+   char s_1de3d99f[32];
+   char s_dad076ef[55];
+   char s_bff0b58f[35];
+   char s_69a0990c[34];
+   char s_28bbcc15[34];
+   char s_59ac0f0c[13];
+   char s_03c57bc8[8];
+   char s_f9a13828[21];
+   char s_f5ab7ff9[65];
+   char s_d277f01e[110];
+   char s_680d4c36[105];
+   char s_0c53fe6c[59];
+   char s_5b678bc4[30];
+   char s_a6abc697[30];
+   char s_e3bb7f4c[39];
+   char s_d15060ee[35];
+   char s_a068841f[33];
+   char s_be840037[26];
+   char s_11d0d482[20];
+   char s_4d7ee7e2[22];
+   char s_9d7c6772[31];
+   char s_4bc518be[33];
+   char s_c8812645[56];
+   char s_dd3ee761[132];
+   char s_f9aa7e70[80];
+   char s_509dd374[29];
+   char s_a1aa4c42[59];
+   char s_ef0f5f52[11];
+   char s_52453850[32];
+   char s_9cfca240[36];
+   char s_bab020a4[23];
+   char s_4118132b[25];
+   char s_daafc17a[27];
+   char s_cdfe701e[7];
+   char s_3d1657dc[10];
+   char s_529fb939[34];
+   char s_35e8cecb[46];
+   char s_b1b24b70[37];
+   char s_6933100b[32];
+   char s_3f47f1dd[44];
+   char s_12552dca[22];
+   char s_7d819a1a[61];
+   char s_3589d4e0[38];
+   char s_2dc9eea7[37];
+   char s_992592e3[55];
+   char s_52d42c75[36];
+   char s_a181214b[32];
+   char s_8ab54d62[93];
+   char s_aa554847[23];
+   char s_ac2c797c[22];
+   char s_80528b14[43];
+   char s_eae21890[39];
+   char s_1451fe0d[42];
+   char s_7b63412e[39];
+   char s_a2fc92a0[49];
+   char s_fa927f93[29];
+   char s_e6ffd274[28];
+   char s_07c4c4ad[30];
+   char s_07b7b10d[8];
+   char s_a2126da9[44];
+   char s_bd039188[19];
+   char s_9c7aa654[23];
+   char s_e43d27b3[19];
+   char s_fbd2d537[87];
+   char s_bd8967e3[62];
+   char s_58cc2bb3[44];
+   char s_b2cbc102[59];
+   char s_8095226f[56];
+   char s_e9681e93[76];
+   char s_ca174246[24];
+   char s_5fb718e2[120];
+   char s_7475b408[101];
+   char s_d4d1097f[31];
+   char s_2f4652b2[60];
+   char s_958a2152[57];
+   char s_7782b00d[77];
+   char s_e35f2d1c[74];
+   char s_9bcb3d77[39];
+   char s_c9d43668[43];
+   char s_bc890b1b[31];
+   char s_4db3e9db[33];
+   char s_dd03b3c1[90];
+   char s_6095bb1c[41];
+   char s_263efdcf[35];
+   char s_eebb17f1[30];
+   char s_49a2e6d9[30];
+   char s_d6c12228[41];
+   char s_af784f91[39];
+   char s_f1337004[51];
+   char s_ada3890a[15];
+   char s_bc246801[26];
+   char s_a4cc718b[28];
+   char s_73cbad2c[35];
+   char s_b8465da9[52];
+   char s_28d65904[70];
+   char s_26f0c974[26];
+   char s_b27c79a1[73];
+   char s_1dd03015[25];
+   char s_8edd50dc[17];
+   char s_bfe46ab9[29];
+   char s_636a9fed[33];
+   char s_33548695[56];
+   char s_25b8d855[30];
+   char s_30f225bd[41];
+   char s_ba906059[37];
+   char s_703ef402[45];
+   char s_bde3f1ab[17];
+   char s_e2cb37cf[22];
+   char s_868dc286[14];
+   char s_cc9c244a[29];
+   char s_4d389164[13];
+   char s_0a69cd68[30];
+   char s_d4235459[23];
+   char s_51000154[7];
+   char s_71002c49[8];
+   char s_bceed8c6[7];
+   char s_5ac9f1fb[8];
+   char s_d1d693ee[12];
+   char s_d13f6ed2[57];
+   char s_676d783e[62];
+   char s_c9e2427f[40];
+   char s_a15486f0[23];
+   char s_f38897e5[46];
+   char s_7200d586[59];
+   char s_7eb26812[17];
+   char s_b076cae0[38];
+   char s_f6783947[47];
+   char s_670757eb[93];
+   char s_ca65c51c[75];
+   char s_b2199155[46];
+   char s_b62a855c[116];
+   char s_f36c86cb[52];
+   char s_bc83f4e4[89];
+   char s_c6eae7b5[60];
+   char s_594be7a3[18];
+   char s_d8a50a58[120];
+   char s_3112d333[87];
+   char s_636e37aa[23];
+   char s_1490e77d[52];
+   char s_2f16f307[74];
+   char s_6f3d7be7[94];
+   char s_424b76b8[70];
+   char s_ae27f3c7[67];
+   char s_4ee7da1e[27];
+   char s_a9201ac1[35];
+   char s_cc502c99[37];
+   char s_06066784[14];
+   char s_61df6113[15];
+   char s_c49c2d33[18];
+   char s_0425885c[14];
+   char s_8fd932f3[34];
+   char s_489c92d7[25];
+   char s_c28d628c[54];
+   char s_bdc78c0d[34];
+   char s_850e7bf8[33];
+   char s_710d99e5[36];
+   char s_efceecfb[18];
+   char s_60038fe5[23];
+   char s_91ec0bdf[50];
+   char s_7ae34c3b[45];
+   char s_9d27d322[28];
+   char s_fec3d03c[30];
+   char s_b8078f78[25];
+   char s_a51503d6[29];
+   char s_778b9d70[31];
+   char s_bff4c02c[26];
+   char s_fb888c0b[43];
+   char s_11a3a251[17];
+   char s_7f693288[25];
+   char s_a7cf23bb[20];
+   char s_6adfd40f[58];
+   char s_296c6849[31];
+   char s_75bc15aa[25];
+   char s_50ebaaa1[30];
+   char s_842b54ed[32];
+   char s_b30573ed[95];
+   char s_914b3efd[29];
+   char s_8f35069c[29];
+   char s_6cc672f6[28];
+   char s_1a5c7ca6[19];
+   char s_1a5c880d[17];
+   char s_7b23d9e6[16];
+   char s_c182bd2e[5];
+   char s_0110d0c7[16];
+   char s_c6156015[21];
+   char s_0e625dbe[32];
+   char s_9d2c8cfb[7];
+   char s_7675f215[18];
+   char s_843b6a7b[34];
+   char s_4d7ff150[9];
+   char s_88494936[33];
+   char s_29c753ae[24];
+   char s_afe38a0f[20];
+   char s_2f98e072[39];
+   char s_a2250ebd[45];
+   char s_cc5d39b1[59];
+   char s_2bf9a406[35];
+   char s_94fc1cd0[14];
+   char s_2aaf8414[16];
+   char s_28a4c280[24];
+   char s_d085ad84[46];
+   char s_4f18c9d0[50];
+   char s_4f3bb585[50];
+   char s_5876788a[64];
+   char s_b7248c5d[62];
+   char s_a7ae1b42[22];
+   char s_2dbb6496[31];
+} msg_hash_sv_blob =
+{
+   "1-Bit, Maximalt v\303\244rde = 0x01",
+   "16-Bit, Maximalt v\303\244rde = 0xFFFF",
+   "2-Bit, Maximalt v\303\244rde = 0x03",
+   "32-Bit, Maximalt v\303\244rde = 0xFFFFFFFF",
+   "4-Bit, Maximalt v\303\244rde = 0x0F",
+   "8-Bit, Maximalt v\303\244rde= 0xFF",
+   "Lika med innan -%u (%X)",
+   "Lika med innan +%u (%X)",
+   "Lika med innan",
+   "Lika med %u (%X)",
+   "St\303\266rre \303\244n eller lika med innan",
+   "St\303\266rre \303\244n innan",
+   "Mindre \303\244n eller lika med innan",
+   "Mindre \303\244n innan",
+   "Inte lika med innan",
+   "Minska med v\303\244rde",
+   "\303\226ka med v\303\244rde",
+   "K\303\266r n\303\244sta fusk om v\303\244rde = minne",
+   "K\303\266r n\303\244sta fusk om v\303\244rde > minne",
+   "K\303\266r n\303\244sta fusk om v\303\244rde < minne",
+   "K\303\266r n\303\244sta fusk om v\303\244rde != minne",
+   "S\303\244tt till v\303\244rde",
+   "RetroAchievements server g\303\245r inte att n\303\245. Kommer att f\303\266rs\303\266ka igen ti"
+   "lls det lyckas eller appen st\303\244ngs.",
+   "Alla v\303\244ntande f\303\266rfr\303\245gningar har synkroniserats till RetroAchievements-serve"
+   "rn.",
+   "Radera vy",
+   "Ange namn f\303\266r ny vy",
+   "St\303\244ll in intervallfilter",
+   "Spara som vy",
+   "Visa",
+   "Vy raderad",
+   "Visa redan befintliga med samma namn",
+   "Vy sparad",
+   "Inloggningsuppgifter f\303\266r ditt RetroAchievements-konto. Bes\303\266k retroachievements.org"
+   " och registrera dig f\303\266r ett gratis konto.\nNN\303\244r du \303\244r klar med registrering"
+   "en m\303\245ste du ange anv\303\244ndarnamn och l\303\266senord i RetroArch.",
+   "\303\205sidos\303\244tt den f\303\266rvalda ljudenheten som ljuddrivrutinen anv\303\244nder. Det"
+   "ta \303\244r beroende av drivrutinen.",
+   "Anpassat PCM-enhetsv\303\244rde f\303\266r ALSA-drivrutinen.",
+   "Anpassat portnamnsv\303\244rde f\303\266r JACK-drivrutinen (t.ex. system:playback1,system:playba"
+   "ck_2).",
+   "Anpassat s\303\266kv\303\244gsv\303\244rde f\303\266r OSS-drivrutinen (t.ex. /dev/dsp).",
+   "Anpassad IP-adress f\303\266r en RSound-server f\303\266r RSound-drivrutinen.",
+   "OpenAL-drivrutin.",
+   "Standard ALSA-drivrutin.",
+   "ALSA-drivrutin med st\303\266d f\303\266r tr\303\245dning.",
+   "DirectSound-drivrutin. DirectSound anv\303\244nds huvudsakligen fr\303\245n Windows 95 till Wind"
+   "ows XP.",
+   "Drivrutinen f\303\266r Jack Audio anslutningssats.",
+   "\303\204ldre Open Sound System-drivrutin.",
+   "PipeWire-drivrutin. Om systemet anv\303\244nder PipeWire, se till att anv\303\244nda den h\303"
+   "\244r drivrutinen ist\303\244llet f\303\266r t.ex. PulseAudio.",
+   "PulseAudio-drivrutin. Om systemet anv\303\244nder PulseAudio, se till att anv\303\244nda denna d"
+   "rivrutin ist\303\244llet f\303\266r t.ex. ALSA.",
+   "Ljudsystem RoarAudio-drivrutin.",
+   "RSound-drivrutin f\303\266r n\303\244tverksbaserade ljudsystem.",
+   "OpenSL-drivrutin.",
+   "ALSA-drivrutin implementerad utan beroenden.",
+   "Windows Audio Session API-drivrutin. WASAPI anv\303\244nds huvudsakligen fr\303\245n Windows 7 o"
+   "ch senare.",
+   "Maximum audio timing skew.\nDefinierar den maximala f\303\266r\303\244ndringen i ing\303\245ngsh"
+   "astighet. Du kanske vill \303\266ka detta f\303\266r att m\303\266jligg\303\266ra mycket stora f"
+   "\303\266r\303\244ndringar i timing, till exempel att k\303\266ra PAL-k\303\244rnor p\303\245 NTS"
+   "C-sk\303\244rmar, p\303\245 bekostnad av felaktig ljudh\303\266jd.\nIng\303\245ngshastighet defi"
+   "nieras som:\ninput rate * (1,0 +/- (max timing skew))",
+   "Om detta v\303\244rde s\303\244tts till 0 inaktiveras hastighetskontrollen. Alla andra v\303\244"
+   "rden styr delta f\303\266r ljudfrekvensreglering.\nDefinierar hur mycket ing\303\245ngsfrekvense"
+   "n kan justeras dynamiskt. Inmatningshastigheten definieras som:\\inmatningshastighet * (1,0 +/- "
+   "(hastighetskontroll delta))",
+   "Invecklad kosinus implementering.",
+   "N\303\244rmsta omsamplings implementering. Denna omsampling ignorerar kvalitetsinst\303\244llnin"
+   "gen.",
+   "F\303\266nstrad Sinc implementering.",
+   "Ljudvolym, uttryckt i dB. 0 dB \303\244r normal volym, d\303\244r ingen f\303\266rst\303\244rkni"
+   "ng till\303\244mpas. F\303\266rst\303\244rkningen kan kontrolleras under k\303\266rning med Voly"
+   "m upp / Volym ner.",
+   "Autosparar det icke-flyktiga SRAM-minnet med j\303\244mna mellanrum. Detta \303\244r inaktiverat"
+   " som standard om inget annat anges. Intervallet m\303\244ts i sekunder. Ett v\303\244rde p\303"
+   "\245 0 inaktiverar autosparning.",
+   "Spara \303\244ndringar i konfigurationsfilen vid avslut. Anv\303\244ndbar f\303\266r \303\244ndr"
+   "ingar som g\303\266rs i menyn. Skriver \303\266ver konfigurationsfilen, #include's och kommentar"
+   "er bevaras inte.",
+   "Bl\303\244ddra efter en libretro-k\303\244rnimplementation. Var webbl\303\244saren startar beror"
+   " p\303\245 s\303\266kv\303\244gen till dina k\303\244rnor. Om den \303\244r tom, b\303\266rjar d"
+   "en i rotmappen.\nOm k\303\244rnmappen \303\244r en katalog, kommer menyn att anv\303\244nda den "
+   "som \303\266versta mapp. Om s\303\266kv\303\244gen till k\303\244rnmappen \303\244r en fullst"
+   "\303\244ndig s\303\266kv\303\244g, b\303\266rjar den i mappen d\303\244r filen finns.",
+   "Vissa k\303\244rnor kan ha en avst\303\244ngningsfunktion. Om det h\303\244r alternativet l\303"
+   "\244mnas inaktiverat, skulle valet av avst\303\244ngningsproceduren utl\303\266sa att RetroArch "
+   "st\303\244ngs av.\nAtt aktivera det h\303\244r alternativet kommer att ladda en dummyk\303\244rn"
+   "a ist\303\244llet s\303\245 att vi stannar kvar i menyn och RetroArch st\303\244ngs inte av.",
+   "\303\204r 'Snabbknappsaktivering' tilldelad, till antingen tangentbord, spelkontroll eller joyst"
+   "ick, kommer snabbknappar endast vara aktiv medans tilldelad knapp h\303\245lls nedtryckt.\nDetta"
+   " \303\244r anv\303\244ndbart f\303\266r RETRO_KEYBOARD-centrerade implementeringar som efterfr"
+   "\303\245gar ett stort omr\303\245de av tangentbordet, d\303\244r det inte \303\244r \303\266nskv"
+   "\303\244rt att snabbknappar kommer i v\303\244gen.",
+   "Den maximala hastighet med vilken inneh\303\245llet k\303\266rs n\303\244r snabbspolning anv\303"
+   "\244nds. (T.ex. 5.0 f\303\266r 60 bilder/s inneh\303\245ll => 300 bilder/s tak).\nRetroArch komm"
+   "er att g\303\245 i vilol\303\244ge f\303\266r att s\303\244kerst\303\244lla att den maximala has"
+   "tigheten inte \303\266verskrids. Lita inte p\303\245 att detta tak \303\244r helt korrekt.",
+   "Fuskfil.",
+   "Komprimerad arkivfil.",
+   "Konfigurationsfil.",
+   "Libretro-k\303\244rna. V\303\244lj denna fil f\303\266r att RetroArch ska l\303\244sa in den h"
+   "\303\244r k\303\244rnan.",
+   "Libretro-k\303\244rna. Genom att v\303\244lja detta kommer denna k\303\244rna att associeras med"
+   " spelet.",
+   "Databasmark\303\266rfil.",
+   "Katalog. Markera den f\303\266r att \303\266ppna den h\303\244r katalogen.",
+   "TrueType-typsnittsfil.",
+   "Bildfil.",
+   "Bild. V\303\244lj den f\303\266r att \303\266ppna denna fil med bildvisaren.",
+   "Video. V\303\244lj den f\303\266r att \303\266ppna denna fil med videospelaren.",
+   "Musik. V\303\244lj den f\303\266r att \303\266ppna denna fil med musikspelaren.",
+   "\303\226ppna Windows inst\303\244llningar f\303\266r beh\303\266righet f\303\266r att aktivera f"
+   "unktionen broadFileSystemAccess.",
+   "\303\226verl\303\244ggsfil.",
+   "Vanlig fil.",
+   "Databasfil.",
+   "Konfigurationsfil f\303\266r Inspelning.",
+   "Ommappningsfil f\303\266r spelkontroller.",
+   "Shaderfil.",
+   "F\303\266rinst\303\244lld Shaderfil.",
+   "Konfigurationsfil.",
+   "Om du aktiverar Linux GameMode kan du f\303\266rb\303\244ttra latensen, \303\245tg\303\244rda pr"
+   "oblem med sprakande ljud och maximera den totala prestandan genom att automatiskt konfigurera CP"
+   "U och GPU f\303\266r b\303\244sta prestanda.\nProgramvaran GameMode m\303\245ste installeras f"
+   "\303\266r att detta ska fungera. Se https://github.com/FeralInteractive/gamemode f\303\266r info"
+   "rmation om hur du installerar GameMode.",
+   "Mappa angiven analog spak f\303\266r D-Pad-inmatning.\nOm k\303\244rnan har inbyggt analogt st"
+   "\303\266d, kommer D-Pad-mappning att inaktiveras om inte alternativet '(Tvingad)' \303\244r valt"
+   ".\nOm D-Pad-mappning \303\244r p\303\245tvingad kommer k\303\244rnan inte att f\303\245 n\303"
+   "\245gon analog inmatning fr\303\245n angiven spak.",
+   "Drivrutinen f\303\266r linuxraw-inmatningen kr\303\244ver en aktiv TTY. Tangentbordsh\303\244nde"
+   "lser l\303\244ses direkt fr\303\245n TTY vilket g\303\266r det enklare, men inte lika flexibelt "
+   "som udev. M\303\266ss, etc, st\303\266ds inte alls. Den h\303\244r drivrutinen anv\303\244nder d"
+   "et \303\244ldre joystick-APIet (/dev/input/js*).",
+   "Inmatningsdrivrutin. Videodrivrutinen kan tvinga fram en annan drivrutin f\303\266r inmatning.",
+   "Udev-drivrutinen l\303\244ser evdev-h\303\244ndelser f\303\266r tangentbordsst\303\266d. Den st"
+   "\303\266der ocks\303\245 tangentbords\303\245teruppringning, m\303\266ss och pekplattor.\nSom st"
+   "andard i de flesta distros \303\244r /dev/input-noder endast root (l\303\244ge 600). Du kan konf"
+   "igurera en udev-regel som g\303\266r dessa tillg\303\244ngliga f\303\266r icke-root.",
+   "P\303\245verkar hur input polling utf\303\266rs i RetroArch.\nEarly - Input polling utf\303\266r"
+   "s innan ramen bearbetas.\nNormal - Input polling utf\303\266rs n\303\244r polling beg\303\244rs."
+   "\nLate - Input polling utf\303\266rs vid f\303\266rsta beg\303\244ran om inputstatus per ram.\nA"
+   "tt st\303\244lla in den p\303\245 'Early' eller 'Late' kan resultera i mindre latens, beroende p"
+   "\303\245 din konfiguration. Kommer att ignoreras n\303\244r du anv\303\244nder netplay.",
+   "Anv\303\244nd fr\303\244mre ist\303\244llet f\303\266r bakre tryck.",
+   "Libretro anv\303\244nder en virtuell gamepad-abstraktion k\303\244nd som \"RetroPad\" f\303\266r"
+   " att kommunicera fr\303\245n frontends (som RetroArch) till k\303\244rnor och vice versa. Den h"
+   "\303\244r menyn best\303\244mmer hur den virtuella RetroPad mappas till de fysiska inmatningsenh"
+   "eterna och vilka virtuella ing\303\245ngsportar dessa enheter upptar.\nOm en fysisk inmatningsen"
+   "het k\303\244nns igen och autokonfigureras korrekt, beh\303\266ver anv\303\244ndare f\303\266rmo"
+   "dligen inte anv\303\244nda den h\303\244r menyn alls, och f\303\266r k\303\244rnspecifika \303"
+   "\244ndringar, anv\303\244nd 'Spelkontr",
+   "oller' i Snabbmenyn ist\303\244llet.",
+   "DirectInput spelkontrolldrivrutin.",
+   "Human Interface Device-drivrutin p\303\245 l\303\245g niv\303\245.",
+   "Raw Linux-drivrutin, anv\303\244nder \303\244ldre joystick API. Anv\303\244nd udev i st\303\244l"
+   "let om det \303\244r m\303\266jligt.",
+   "Linux-drivrutiner f\303\266r handkontroller anslutna till parallellport via specialadaptrar.",
+   "Spelkontroll-drivrutin baserad p\303\245 SDL-bibliotek.",
+   "Spelkontrolldrivrutin med udev-gr\303\244nssnitt, rekommenderas generellt. Anv\303\244nder det s"
+   "enaste evdev joypad-APIet f\303\266r joystick-st\303\266d. Den st\303\266der hotplugging och for"
+   "ce-feedback.\nSom standard i de flesta distros \303\244r /dev/input-noder endast root (l\303\244"
+   "ge 600). Du kan konfigurera en udev-regel som g\303\266r dessa tillg\303\244ngliga f\303\266r ic"
+   "ke-root.",
+   "XInput spelkontrolldrivrutin. Mest f\303\266r Xbox-kontroller.",
+   "St\303\244ller in loggniv\303\245n f\303\266r libretro-k\303\244rnor (GET_LOG_INTERFACE). Om en "
+   "loggniv\303\245 som utf\303\244rdas av en libretro-k\303\244rna \303\244r l\303\244gre \303\244n"
+   " libretro_log-niv\303\245n ignoreras den. DEBUG-loggar ignoreras alltid om inte verbose-l\303"
+   "\244get \303\244r aktiverat (--verbose).\nDEBUG = 0\nINFO = 1\nWARN = 2\nERROR = 3",
+   "N\303\244r inneh\303\245ll l\303\244ses in sparas inneh\303\245ll och libretro core-kombinatione"
+   "r i historiken.\nHistoriken sparas i en fil i samma katalog som konfigurationsfilen f\303\266r R"
+   "etroArch. Om ingen konfigurationsfil l\303\244sts in vid uppstart sparas eller l\303\244ses inte"
+   " historiken in och den finns inte i huvudmenyn.",
+   "Bl\303\244ddra efter inneh\303\245ll. F\303\266r att ladda inneh\303\245ll beh\303\266ver du en "
+   "'K\303\244rna' att anv\303\244nda och en inneh\303\245llsfil.\nF\303\266r att styra var filhante"
+   "raren b\303\266rjar s\303\266ka efter inneh\303\245ll, st\303\244ll in 'Filhanterarkatalog'. Om "
+   "den inte \303\244r inst\303\244lld kommer den att starta i root.\nFilhanteraren kommer att filtr"
+   "era ut till\303\244gg f\303\266r den senaste K\303\244rnan i 'Ladda K\303\244rna' och anv\303"
+   "\244nda den K\303\244rnan n\303\244r inneh\303\245ll laddas.",
+   "L\303\244s in ett sparat tillst\303\245nd fr\303\245n aktuella valda platsen. Observera: kanske "
+   "inte fungerar om tillst\303\245ndet sparades med en annan version av k\303\244rnan.",
+   "P\303\245 mobila enheter anv\303\244nder RetroArch det mobila anv\303\244ndargr\303\244nssnittet"
+   ", MaterialUI, som standard. Det h\303\244r gr\303\244nssnittet \303\244r designat kring peksk"
+   "\303\244rms- och pekarenheter, som en mus/styrkula.",
+   "Ozone \303\244r standard GUI f\303\266r RetroArch p\303\245 de flesta plattformar. Det \303\244r"
+   " optimerat f\303\266r navigering med en spelkontroll.",
+   "RGUI \303\244r ett enkelt inbyggt GUI f\303\266r RetroArch. Det har de l\303\244gsta prestandakr"
+   "aven bland menydrivrutinerna och kan anv\303\244ndas p\303\245 sk\303\244rmar med l\303\245g upp"
+   "l\303\266sning.",
+   "XMB \303\244r ett RetroArch GUI som ser ut som en 7:e generationens konsolmeny. Det kan st\303"
+   "\266dja samma funktioner som Ozone.",
+   "St\303\244ller in inmatningsenhet (drivrutinspecifik). N\303\244r den \303\244r inst\303\244lld "
+   "p\303\245 'Off' kommer MIDI-ing\303\245ngen att inaktiveras. Enhetsnamn kan ocks\303\245 skrivas"
+   " in.",
+   "St\303\244ller in utmatningsenhet (drivrutinsspecifik). N\303\244r den \303\244r inst\303\244lld"
+   " p\303\245 'Off' kommer MIDI-utg\303\245ngen att inaktiveras. Enhetsnamn kan ocks\303\245 skriva"
+   "s in.\nN\303\244r MIDI-utg\303\245ng \303\244r aktiverad och k\303\244rna och spel/app st\303"
+   "\266der MIDI-utg\303\245ng, kommer en del eller alla ljud (beroende p\303\245 spel/app) att gene"
+   "reras av MIDI-enhet. I h\303\244ndelse av 'null' MIDI-drivrutin betyder detta att dessa ljud int"
+   "e kommer att h\303\266ras.",
+   "Frekvensen i bildrutor med vilken netplay kommer att verifiera att v\303\244rden och klienten "
+   "\303\244r synkroniserade. Med de flesta k\303\244rnor har detta v\303\244rde ingen synlig effekt"
+   " och kan ignoreras. Med icke-best\303\244mbara k\303\244rnor avg\303\266r detta v\303\244rde hur"
+   " ofta netplay-peers kommer att synkroniseras. Med buggiga k\303\244rnor kommer det att orsaka al"
+   "lvarliga prestandaproblem om detta v\303\244rde s\303\244tts till n\303\245got annat \303\244n n"
+   "oll. St\303\244ll in p\303\245 noll f\303\266r att inte utf\303\266ra n\303\245gra kontroller. D"
+   "etta v\303\244rde anv\303\244nds endast p\303\245 ne",
+   "tplay-v\303\244rden.",
+   "Antalet bildrutor med inmatningsf\303\266rdr\303\266jning som netplay ska anv\303\244nda f\303"
+   "\266r att d\303\266lja n\303\244tverksf\303\266rdr\303\266jning.\nN\303\244r det h\303\244r alte"
+   "rnativet anv\303\244nds i netplay f\303\266rdr\303\266jer det lokal inmatning s\303\245 att den "
+   "bildruta som k\303\266rs ligger n\303\244rmare de bildrutor som tas emot fr\303\245n n\303\244tv"
+   "erket. Detta minskar jitter och g\303\266r netplay mindre CPU-intensivt, men till priset av en m"
+   "\303\244rkbar f\303\266rdr\303\266jning av inmatningen.",
+   "Det intervall av bildrutor med inmatningslatens som kan anv\303\244ndas av netplay f\303\266r at"
+   "t d\303\266lja n\303\244tverkslatens.\nOm det \303\244r inst\303\244llt kommer netplay att juste"
+   "ra antalet bildrutor med inmatningslatens dynamiskt f\303\266r att balansera CPU-tid, inmatnings"
+   "latens och n\303\244tverkslatens. Detta minskar jitter och g\303\266r netplay mindre CPU-intensi"
+   "vt, men till priset av of\303\266ruts\303\244gbar inmatningsf\303\266rdr\303\266jning.",
+   "Huruvida netplay ska startas i \303\245sk\303\245darl\303\244ge. Om inst\303\244llt p\303\245 tr"
+   "ue kommer netplay att starta i \303\245sk\303\245darl\303\244ge. Det g\303\245r alltid att \303"
+   "\244ndra l\303\244ge senare.",
+   "G\303\245 bak\303\245t till f\303\266r\303\244ldrakatalogen.",
+   "Avsluta RetroArch. D\303\266da programmet p\303\245 ett h\303\245rt s\303\244tt (SIGKILL, etc.) "
+   "kommer att terminera RetroArch utan att spara konfigurationen i n\303\245got fall. P\303\245 Uni"
+   "x-liknande system till\303\245ter SIGINT/SIGTERM en ren deinitiering som inkluderar att konfigur"
+   "ationen sparas om aktiverad.",
+   "Om kontrollpunkter som lagrats i \303\245teruppspelningar ska avserialiseras under normal uppspe"
+   "lning. B\303\266r st\303\244llas in p\303\245 true f\303\266r de flesta k\303\244rnor, men vissa"
+   " kan uppvisa oj\303\244mnt beteende vid avserialisering av inneh\303\245ll.",
+   "Sparar automatiskt speltillst\303\245ndet under inspelning av repriser med ett regelbundet inter"
+   "vall. Detta \303\244r inaktiverat som standard om inget annat anges. Intervallet m\303\244ts i s"
+   "ekunder. Ett v\303\244rde p\303\245 0 avaktiverar inspelning av kontrollpunkter.",
+   "Spara alla filer (*.srm) till denna katalog. Detta inkluderar relaterade filer som .rt, .psrm, e"
+   "tc... Detta kommer att \303\245sidos\303\244ttas av explicita kommandoradsval.",
+   "Spara ett tillst\303\245nd till aktuella valda platsen. Observera: sparade tillst\303\245nd \303"
+   "\244r oftast inte portabla och kanske inte fungerar andra versioner av denna k\303\244rna.",
+   "V\303\244lj detta f\303\266r att skanna den aktuella katalogen efter inneh\303\245ll.",
+   "N\303\244r du har \303\244ndrat shaderinst\303\244llningar, t.ex. antal shaderpass, filtrering, "
+   "FBO-skala, anv\303\244nder du detta f\303\266r att till\303\244mpa \303\244ndringarna.\nAtt \303"
+   "\244ndra dessa shaderinst\303\244llningar \303\244r en ganska dyr operation s\303\245 det m\303"
+   "\245ste g\303\266ras uttryckligen.\nN\303\244r du till\303\244mpar shaders sparas shaderinst\303"
+   "\244llningarna i en tillf\303\244llig fil (retroarch.slangp/.cgp/.glslp) och l\303\244ses in. Fi"
+   "len finns kvar efter att RetroArch har avslutats och sparas i Shader-katalogen.",
+   "Bevaka shader-filer f\303\266r nya \303\244ndringar. N\303\244r du har sparat \303\244ndringar i"
+   " en shader p\303\245 disken kommer den automatiskt att kompileras om och till\303\244mpas p\303"
+   "\245 inneh\303\245llet.",
+   "St\303\244nger av sk\303\244rmsl\303\244ckaren. Det \303\244r ett f\303\266rslag som inte n\303"
+   "\266dv\303\244ndigtvis m\303\245ste respekteras av videodrivrutinen.",
+   "Klassiskt l\303\244ge, man\303\266vrering med tv\303\245 knappar. H\303\245ll in en knapp och tr"
+   "yck p\303\245 Turbo-knappen f\303\266r att aktivera tryck-sl\303\244pp-sekvensen.\nTurbo-bindnin"
+   "g kan tilldelas i Inst\303\244llningar/Inmatning/Port X Controls.",
+   "Klassiskt v\303\244xlingsl\303\244ge, tv\303\245knappsman\303\266vrering. H\303\245ll in en knap"
+   "p och tryck p\303\245 Turbo-knappen f\303\266r att aktivera turbo f\303\266r den knappen. F\303"
+   "\266r att inaktivera turbo: h\303\245ll in knappen och tryck p\303\245 Turbo-knappen igen.\nTurb"
+   "o-bindning kan tilldelas i Inst\303\244llningar/Inmatning/Port X Controls.",
+   "V\303\244xlingsl\303\244ge. Tryck en g\303\245ng p\303\245 Turbo-knappen f\303\266r att aktivera"
+   " trycksekvensen f\303\266r den valda standardknappen, tryck en g\303\245ng till f\303\266r att s"
+   "t\303\244nga av den.\nTurbo-bindning kan tilldelas i Inst\303\244llningar/Inmatning/Port X Contr"
+   "ols.",
+   "H\303\245ll-l\303\244ge. Tryck-sl\303\244pp-sekvensen f\303\266r den valda standardknappen \303"
+   "\244r aktiv s\303\245 l\303\244nge som Turbo-knappen h\303\245lls nedtryckt.\nTurbo-bindning kan"
+   " tilldelas i Inst\303\244llningar/Inmatning/Port X Controls.\nF\303\266r att efterlikna autofire"
+   "-funktionen fr\303\245n hemdatortiden, st\303\244ll in Bindning och Knapp p\303\245 samma styrsp"
+   "aksavfyrningsknapp.",
+   "Starta User Interface companion-drivrutinen vid uppstart (om tillg\303\244nglig).",
+   "Lokalanpassar menyn och alla meddelanden p\303\245 sk\303\244rmen enligt det spr\303\245k du har"
+   " valt h\303\244r. Kr\303\244ver en omstart f\303\266r att \303\244ndringarna ska tr\303\244da i "
+   "kraft.\n\303\226vers\303\244ttningens fullst\303\244ndighet visas bredvid varje alternativ. Om e"
+   "tt spr\303\245k inte \303\244r implementerat f\303\266r ett menyalternativ \303\245terg\303\245r"
+   " vi till engelska.",
+   "V\303\244lj det h\303\244r f\303\266r att st\303\244lla in detta som katalog.",
+   "Justerar antalet svarta bildrutor som visas i BFI-sekvensen. Fler svarta bildrutor \303\266kar r"
+   "\303\266relseklarheten men minskar ljusstyrkan. Inte till\303\244mpligt vid 120 Hz eftersom det "
+   "bara finns en enda extra 60 Hz-bildruta, s\303\245 den m\303\245ste vara svart, annars skulle BF"
+   "I inte vara aktiv alls.",
+   "Infogar svart(a) ram(ar) mellan bildrutorna f\303\266r \303\266kad r\303\266relseklarhet. Anv"
+   "\303\244nd endast det alternativ som \303\244r avsett f\303\266r din aktuella bildsk\303\244rms "
+   "uppdateringsfrekvens. Anv\303\244nds inte vid uppdateringsfrekvenser som inte \303\244r multipla"
+   "r av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, subframes, Frame De"
+   "lay eller Sync to Exact Content Framerate. Att l\303\245ta systemets VRR vara p\303\245 \303\244"
+   "r ok, men inte med den inst\303\244llningen. Om du m\303\244rker - n\303\245gon - tillf\303\244l"
+   "lig bildretention b\303\266r ",
+   "du inaktivera vid 120 Hz och f\303\266r h\303\266gre Hz justera inst\303\244llningen f\303\266r "
+   "m\303\266rka bilder nedan.",
+   "Inaktivera komposition med tv\303\245ng. Inaktivering \303\244r endast giltig p\303\245 Windows "
+   "Vista/7 f\303\266r tillf\303\244llet.",
+   "LibCACA-drivrutin. Ger teckenutmatning ist\303\244llet f\303\266r grafik. Rekommenderas inte f"
+   "\303\266r praktisk anv\303\244ndning.",
+   "Direct3D 10-drivrutin med st\303\266d f\303\266r Slang Shader-formatet.",
+   "Direct3D 11-drivrutin med st\303\266d f\303\266r HDR och Slang Shader-formatet.",
+   "Direct3D 12-drivrutin med st\303\266d f\303\266r HDR och Slang Shader-formatet.",
+   "Direct3D 8-drivrutin utan st\303\266d f\303\266r Shader.",
+   "Direct3D 9-drivrutin med st\303\266d f\303\266r det \303\244ldre Cg Shader-formatet.",
+   "Direct3D 9-drivrutin med st\303\266d f\303\266r HLSL Shader-formatet.",
+   "DispmanX-drivrutin. Anv\303\244nder DispmanX APIn f\303\266r Videocore IV GPU i Raspberry Pi 0.."
+   "3. Inget st\303\266d f\303\266r \303\266verl\303\244gg eller shaders.",
+   "Enkel DRM-videodrivrutin. Detta \303\244r en l\303\245gniv\303\245 videodrivrutin som anv\303"
+   "\244nder libdrm f\303\266r maskinvaruskalning med hj\303\244lp av GPU-\303\266verl\303\244gg.",
+   "En l\303\245gniv\303\245 Exynos-videodrivrutin som anv\303\244nder G2D-blocket i Samsung Exynos "
+   "SoC f\303\266r blit-operationer. Prestandan f\303\266r mjukvarurenderade k\303\244rnor b\303\266"
+   "r vara optimal.",
+   "GDI-drivrutin. Anv\303\244nder ett \303\244ldre Windows-gr\303\244nssnitt. Rekommenderas inte.",
+   "OpenGL 2.x drivrutin. Denna drivrutin g\303\266r att libretro GL-k\303\244rnor kan anv\303\244nd"
+   "as ut\303\266ver mjukvaru-renderade k\303\244rnor. L\303\244gsta krav: OpenGL 2.0 eller OpenGLES"
+   " 2.0. St\303\266der GLSL shader-formatet. Anv\303\244nd glcore-drivrutinen ist\303\244llet, om d"
+   "et \303\244r m\303\266jligt.",
+   "OpenGL 1.x drivrutin. L\303\244gsta krav: OpenGL 1.1. St\303\266der inte shaders. Anv\303\244nd "
+   "senare OpenGL-drivrutiner ist\303\244llet, om det \303\244r m\303\266jligt.",
+   "OpenGL 3.x drivrutin. Denna drivrutin g\303\266r att libretro GL-k\303\244rnor kan anv\303\244nd"
+   "as ut\303\266ver mjukvaru-renderade k\303\244rnor. L\303\244gsta krav: OpenGL 3.2 eller OpenGLES"
+   " 3.0+. St\303\266der Slang shader-formatet.",
+   "Metal-drivrutin f\303\266r Apple-plattformar. St\303\266der Slang shader-formatet.",
+   "Nuvarande videodrivrutin.",
+   "SDL 1.2 mjukvarurenderad drivrutin. Prestanda anses vara underm\303\245lig. \303\226verv\303\244"
+   "g att anv\303\244nda den endast som en sista utv\303\244g.",
+   "SDL 2-programvara-renderad drivrutin. Prestanda f\303\266r mjukvarurenderade libretro-k\303\244r"
+   "nimplementeringar \303\244r beroende av din plattforms SDL-implementering.",
+   "En l\303\245gniv\303\245 Sunxi-videodrivrutin som anv\303\244nder G2D-blocket i Allwinner SoC:er"
+   ".",
+   "Switch-drivrutin. St\303\266der GLSL shader-formatet.",
+   "OpenVG-drivrutin. Anv\303\244nder OpenVG-maskinvaruaccelererat 2D-vektorgrafik-API.",
+   "Vulkan drivrutinen. Denna drivrutin g\303\266r att libretro Vulkan-k\303\244rnor kan anv\303\244"
+   "ndas ut\303\266ver mjukvaru-renderade k\303\244rnor. L\303\244gsta krav: Vulkan 1.0. St\303\266d"
+   "er HDR och Slang shaders.",
+   "Wii U-drivrutin. St\303\266der Slang shaders.",
+   "Anv\303\244nd ett CPU-drivet videofilter. Kan komma till en h\303\266g prestandakostnad. Vissa v"
+   "ideofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars eller 16-"
+   "bitars f\303\244rg. Dynamiskt l\303\244nkade videofilterbibliotek kan v\303\244ljas.",
+   "Anv\303\244nd ett CPU-drivet videofilter. Kan inneb\303\244ra en h\303\266g prestandakostnad. Vi"
+   "ssa videofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars elle"
+   "r 16-bitars f\303\244rg. Inbyggda videofilterbibliotek kan v\303\244ljas.",
+   "St\303\244ller in hur m\303\245nga millisekunder som ska sovas innan k\303\244rnan k\303\266rs e"
+   "fter videopresentation. Minskar latensen p\303\245 bekostnad av h\303\266gre risk f\303\266r stu"
+   "ttering.\nV\303\244rden 20 och h\303\266gre behandlas som procentandelar f\303\266r bildtid.",
+   "F\303\266rs\303\266k att h\303\245lla \303\266nskat m\303\245l f\303\266r 'Bildrutef\303\266rdr"
+   "\303\266jning' och minimera bildf\303\266rluster. Utg\303\245ngspunkten \303\244r 3/4 av bildrut"
+   "ans tid n\303\244r bildf\303\266rdr\303\266jningen \303\244r 0 (Auto).",
+   "St\303\244ller in hur m\303\245nga bildrutor CPU:n kan k\303\266ra i f\303\266rv\303\244g f\303"
+   "\266r GPU:n n\303\244r \342\200\235H\303\245rd GPU-synk\342\200\235 anv\303\244nds. Max \303\244"
+   "r 3.\n 0: Synkronisera med GPU omedelbart.\n 1: Synkronisera med f\303\266reg\303\245ende bildru"
+   "ta.\n 2: Etc ...",
+   "Maximalt antal swapchain-bilder. Detta kan tala om f\303\266r videodrivrutinen att den ska anv"
+   "\303\244nda ett specifikt videobuffringsl\303\244ge.\nEnkel buffring - 1\nDubbel buffring - 2\nT"
+   "rippel buffring - 3\nAtt v\303\244lja r\303\244tt buffringsl\303\244ge kan ha stor inverkan p"
+   "\303\245 latensen.",
+   "Vilken bildsk\303\244rm att f\303\266redra. 0 (standard) betyder att ingen speciell bildsk\303"
+   "\244rm \303\244r att f\303\266redra, 1 och upp\303\245t (1 \303\244r den f\303\266rsta bildsk"
+   "\303\244rmen), f\303\266resl\303\245r att RetroArch anv\303\244nder just den bildsk\303\244rmen.",
+   "Den exakta uppdateringsfrekvensen f\303\266r din bildsk\303\244rm (Hz). Detta anv\303\244nds f"
+   "\303\266r att ber\303\244kna ljuding\303\245ngshastigheten med formeln:\naudio_input_rate = spel"
+   "ets ing\303\245ngshastighet * sk\303\244rmens uppdateringsfrekvens / spelets uppdateringsfrekven"
+   "s\nOm k\303\244rnan inte rapporterar n\303\245gra v\303\244rden kommer NTSC-standardv\303\244rde"
+   "n att antas f\303\266r kompatibilitet.\nDetta v\303\244rde b\303\266r f\303\266rbli i n\303\244r"
+   "heten av 60Hz f\303\266r att undvika stora tonh\303\266jdsf\303\266r\303\244ndringar. Om din sk"
+   "\303\244rm inte k\303\266rs vid eller n\303\244ra 60Hz, inaktivera VSynk o",
+   "ch l\303\244mna detta som standard.",
+   "Simulerar en grundl\303\244ggande rullande skanningslinje \303\266ver flera subframes genom att "
+   "dela upp sk\303\244rmen vertikalt och rendera varje del av sk\303\244rmen enligt hur m\303\245ng"
+   "a subframes det finns fr\303\245n toppen av sk\303\244rmen och ned\303\245t.",
+   "H\303\245rdvarufilter f\303\266r detta pass. Om \342\200\235Default\342\200\235 \303\244r inst"
+   "\303\244llt kommer filtret att vara antingen \342\200\235Linear\342\200\235 eller \342\200\235Ne"
+   "arest\342\200\235 beroende p\303\245 inst\303\244llningen \342\200\235Bilinear Filtering\342\200"
+   "\235 under Video settings.",
+   "RetroArch g\303\266r det m\303\266jligt att blanda och matcha olika shaders med godtyckliga shad"
+   "erpass, med anpassade h\303\245rdvarufilter och skalfaktorer.\nDetta alternativ anger antalet sh"
+   "aderpass som ska anv\303\244ndas. Om du st\303\244ller in det p\303\245 0 och anv\303\244nder Ap"
+   "ply Shader Changes anv\303\244nder du en \342\200\235tom\342\200\235 shader.",
+   "S\303\266kv\303\244g till shader. Alla shaders m\303\245ste vara av samma typ (t.ex. Cg, GLSL el"
+   "ler Slang). St\303\244ll in Shader Directory f\303\266r att ange var webbl\303\244saren b\303"
+   "\266rjar leta efter shaders.",
+   "L\303\244s in en shader-f\303\266rinst\303\244llning direkt. Shader-menyn uppdateras i enlighet "
+   "med detta.\nSkaleringsfaktorn som visas i menyn \303\244r tillf\303\266rlitlig endast om f\303"
+   "\266rinst\303\244llningen anv\303\244nder enkla skalningsmetoder (dvs. k\303\244llskalning, samm"
+   "a skalningsfaktor f\303\266r X/Y).",
+   "Skala f\303\266r detta pass. Skalfaktorn ackumuleras, dvs. 2x f\303\266r f\303\266rsta passet oc"
+   "h 2x f\303\266r andra passet ger dig en total skala p\303\245 4x.\nOm det finns en skalfaktor f"
+   "\303\266r sista passet str\303\244cks resultatet till sk\303\244rmen med standardfiltret, beroen"
+   "de p\303\245 inst\303\244llningen Biline\303\244r filtrering under Videoinst\303\244llningar.\nO"
+   "m \342\200\235Standard\342\200\235 \303\244r inst\303\244llt anv\303\244nds antingen 1x skala el"
+   "ler str\303\244ckning till fullsk\303\244rm beroende p\303\245 om det inte \303\244r sista passe"
+   "t eller inte.",
+   "Infogar extra shader-ram(ar) mellan bildrutorna f\303\266r eventuella shader-effekter som \303"
+   "\244r utformade f\303\266r att k\303\266ras snabbare \303\244n inneh\303\245llshastigheten. Anv"
+   "\303\244nd endast det alternativ som \303\244r avsett f\303\266r din aktuella bildsk\303\244rmsu"
+   "ppdateringsfrekvens. Anv\303\244nds inte vid uppdateringsfrekvenser som inte \303\244r multiplar"
+   " av 60 Hz, t. ex. 144 Hz, 165 Hz osv. Kombinera inte med Swap Interval > 1, BFI, Frame Delay ell"
+   "er Sync to Exact Content Framerate. Att l\303\245ta systemets VRR vara p\303\245 \303\244r ok, m"
+   "en inte den inst",
+   "\303\244llningen.",
+   "Anv\303\244nd tr\303\245dad videodrivrutin. Att anv\303\244nda detta kan f\303\266rb\303\244ttra"
+   " prestandan till den m\303\266jliga kostnaden f\303\266r latens och mer videolagg.",
+   "Synkronisera till exakt inneh\303\245llsframerate. Det h\303\244r alternativet motsvarar att tvi"
+   "nga fram x1-hastighet samtidigt som snabbspolning till\303\245ts. Ingen avvikelse fr\303\245n de"
+   "n beg\303\244rda uppdateringsfrekvensen, inget ljud Dynamic Rate Control.",
+   "Mixer str\303\266m #%d: %s",
+   "Alla",
+   "\303\204ndringar",
+   "Minskar",
+   "Minskar med Rumble-v\303\244rde",
+   "\303\204ndras inte",
+   "= Rumble-v\303\244rde",
+   "> Rumble-v\303\244rde",
+   "\303\226kar",
+   "\303\226kar med Rumble-v\303\244rde",
+   "< Rumble-v\303\244rde",
+   "!= Rumble-v\303\244rde",
+   "Aktivera hj\303\244lpmedel",
+   "Text-till-tal-hastighet",
+   "Tillg\303\244nglighet",
+   "L\303\266senord",
+   "Anv\303\244ndarnamn",
+   "Konton",
+   "Prestationer",
+   "Pausa hardcore-l\303\244get f\303\266r prestationer",
+   "Avbryt paus f\303\266r hardcore-l\303\244get f\303\266r prestationer",
+   "\303\205teruppta hardcore-l\303\244get f\303\266r prestationer",
+   "Avbryt \303\245terupptagning av hardcore-l\303\244get f\303\266r prestationer",
+   "\303\205terupptagning av hardcore-l\303\244get f\303\266r prestationer inaktiverat",
+   "RetroAchievements-servern g\303\245r inte att n\303\245",
+   "Importera inneh\303\245ll",
+   "Importera inneh\303\245ll",
+   "L\303\244gg till i Favoriter",
+   "L\303\244gg till i Favoriter",
+   "L\303\244gg till i Mixer",
+   "L\303\244gg till i Mixer",
+   "L\303\244gg till i Mixer och spela",
+   "L\303\244gg till i Mixer och spela",
+   "L\303\244gg till i spellista",
+   "Bak\303\244nde f\303\266r AI-tj\303\244nst",
+   "AI-tj\303\244nst aktiverad",
+   "Bildl\303\244ge",
+   "Utmatning fr\303\245n AI-tj\303\244nst",
+   "Ber\303\244ttarl\303\244ge",
+   "Pausa under \303\266vers\303\244ttning",
+   "AI-tj\303\244nst",
+   "K\303\244llspr\303\245k",
+   "Tall\303\244ge",
+   "M\303\245lspr\303\245k",
+   "AI-tj\303\244nst URL",
+#ifndef HAVE_DYNAMIC
+   "L\303\244s alltid om k\303\244rna n\303\244r inneh\303\245ll ska k\303\266ras",
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_TIMEZONE,
-   "Visar en lista över tillgängliga tidszoner. Efter att du valt en tidszon justeras tid och datum till den valda tidszonen. Det antar, att system/hårdvaruklockan är inställd på UTC."
-   )
-#ifdef HAVE_LAKKA_SWITCH
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
-   "Alternativ för Nintendo Switch"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
-   "Hantera specifika alternativ för Nintendo Switch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
-   "Överklocka CPU"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
-   "Aktivera CPU-överklockningsfrekvenser"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
-   "CEC-stöd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
-   "Aktivera CPU-handskakning med TV vid dockning"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
-   "Inaktivera Bluetooth ERTM"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
-   "Inaktivera Bluetooth ERTM för att fixa parkoppling av vissa enheter"
-   )
+   "\303\205tg\303\244rd f\303\266r Android kopplas fr\303\245n",
+   "Programikon",
+   "Resurser",
+   "Blockera bildrutor",
+   "Enhet",
+   "Ljud",
+   "DSP-insticksmodul",
+   "Ta bort DSP-insticksmodulen",
+   "Ljud",
+   "Tyst ljud vid snabbspolning",
+   "Uppsnabbat ljud vid snabbspolning",
+   "Ljudfilter",
+   "Ljudf\303\266rdr\303\266jning (ms)",
+   "Mixer Tyst",
+   "Mixer-volymf\303\266rst\303\244rkning (dB)",
+   "Tysta",
+   "Utmatningsfrekvens (Hz)",
+   "Utmatning",
+   "Dynamisk ljudfrekvenskontroll",
+   "Ljudomsamplare",
+   "Omsamplarkvalitet",
+   "Respektera tyst l\303\244ge",
+   "Tyst ljud vid tillbakaspolning",
+   "Ljud",
+   "Tillst\303\245nd: Inte tillg\303\244ngligt",
+   "Tillst\303\245nd: Spelar",
+   "Tillst\303\245nd: Spelar (slinga)",
+   "Tillst\303\245nd: Spelar (sekventiellt)",
+   "Tillst\303\245nd: Stoppad",
+   "Synkronisering",
+   "Synkronisering",
+   "Volym\303\266kning (dB)",
+   "WASAPI Exklusivt l\303\244ge",
+   "WASAPI Float-format",
+   "WASAPI delad buffertl\303\244ngd",
+   "Sparad fil: Intervall f\303\266r SaveRAM Autosave",
+   "L\303\244s automatiskt in \303\245sidos\303\244ttningsfiler",
+   "L\303\244s in ommappningsfiler automatiskt",
+   "L\303\244s in shaderf\303\266rval automatiskt",
+   "Tillbaka",
+   "Bekr\303\244fta",
+   "Avsluta",
+   "Rulla ner",
+   "Rulla upp",
+   "Starta",
+   "Visa/d\303\266lj tangentbord",
+   "Visa/d\303\266lj meny",
+   "Visa 'Batteri-niv\303\245'",
+   "Sparad fil: Skriv inte \303\266ver SaveRAM vid L\303\244ser in sparat tillst\303\245nd",
+   "Sk\303\244rmens ljusstyrka",
+   "Starta",
+   "URL-s\303\266kv\303\244g",
+   "Bl\303\244ddra URL",
+   "Ansluten",
+   "URL f\303\266r Buildbot-resurser",
+   "Bundle-identifierare",
+   "Till\303\245t kamera",
+   "Kamera",
+   "Prestationer kan inte aktiveras med denna k\303\244rna",
+   "Fusk",
+   "Minnesadress",
+   "Mask f\303\266r minnesadress",
+   "L\303\244gg till nytt fusk efter denna",
+   "L\303\244gg till nytt fusk f\303\266re denna",
+   "L\303\244gg till nytt fusk nederst",
+   "L\303\244gg till nytt fusk \303\266verst",
+   "Till\303\244mpa fusk automatiskt under spelinl\303\244sning",
+   "Verkst\303\244ll efter v\303\244xling",
+   "Till\303\244mpa \303\244ndringar",
+   "Bl\303\244ddra adress: %08X",
+   "Kod",
+   "Kopiera detta fusk efter",
+   "Kopiera detta fusk f\303\266re",
+   "Skapa kodmatchning #",
+   "Fuskfiler",
+   "Ta bort detta fusk",
+   "Radera alla fusk",
+   "Ta bort matchning #",
+   "Beskrivning",
+   "Fuskdetaljer",
+   "Fuskfil (ers\303\244tt)",
+   "Fuskfil (l\303\244gg till)",
+   "L\303\244s in fuskfil (ers\303\244tt)",
+   "L\303\244s in fuskfil (l\303\244gg till)",
+   "Spara fuskfil som",
+   "Hanterare",
+   "Matchadress: %08X Mask: %02X",
+   "S\303\266kstorlek f\303\266r minne",
+   "L\303\244s om spelspecifika fusk",
+   "Adress\303\266kning vid varje iteration",
+   "V\303\244rde\303\266kning vid varje iteration",
+   "Antal iterationer",
+   "Rumble-port",
+   "Tidsl\303\244ngd f\303\266r prim\303\244r Rumble (ms)",
+   "Prim\303\244r Rumble-styrka",
+   "Tidsl\303\244ngd f\303\266r sekund\303\244r Rumble (ms)",
+   "Sekund\303\244r Rumble-styrka",
+   "Rumble-v\303\244rde",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "S\303\266k i minnet efter v\303\244rden",
+   "Starta eller forts\303\244tt fusks\303\266kning",
+   "Fuskinst\303\244llningar",
+   "Starta eller forts\303\244tt fusks\303\266kning",
+   "Starta eller starta om fusks\303\266kning",
+   "Aktiverad",
+   "Typ",
+   "V\303\244rde",
+   "Aktiva utmaningar",
+   "N\303\244stan d\303\244r",
+   "Underkant Mitten",
+   "Underkant V\303\244nster",
+   "Underkant H\303\266ger",
+   "\303\226verkant Mitten",
+   "\303\226verkant V\303\244nster",
+   "\303\226verkant H\303\266ger",
+   "Justerad utfyllnad",
+   "Manuell horisontell utfyllnad",
+   "Manuell vertikal utfyllnad",
+   "Utseende",
+   "Automatisk sk\303\244rmdump",
+   "Prestationsemblem",
+   "Indikatorer f\303\266r aktiva utmatningar",
+   "Prestationer",
+   "H\303\244mtar speldata",
+   "Hardcore-l\303\244ge",
+   "Identifierar spelet",
+   "Topplistor",
+   "L\303\245st",
+   "Endast meddelanden",
+   "Nyligen uppl\303\245st",
+   "Startar session",
+   "Encore-l\303\244ge",
+   "Testa inofficiella prestationer",
+   "Endast sp\303\245rare",
+   "Uppl\303\245st",
+   "L\303\245s upp ljud",
+   "Inofficiell",
+   "St\303\266ds inte",
+   "Utf\303\266rliga meddelanden",
+   "Inloggningsmeddelande",
+   "Meddelanden om misslyckanden f\303\266r topplista",
+   "Meddelanden om starter f\303\266r topplista",
+   "Meddelanden om ins\303\244ndningar f\303\266r topplista",
+   "Topplistesp\303\245rare",
+   "M\303\244sterliga meddelanden",
+   "F\303\266rloppsindikator",
+   "Synlighet",
+   "Sammandrag av uppstart",
+   "Alla identifierade spel",
+   "Spel med prestationer",
+   "Uppl\303\245sningsmeddelanden",
+   "Rensa",
+   "St\303\244ng Inneh\303\245ll",
+   "\303\205tkomstnyckel-ID",
+   "Destruktiv molnsynkning",
+   "Backend f\303\266r molnsynk",
+   "Aktivera molnsynkronisering",
+   "L\303\266senord",
+   "L\303\266s konflikter: Beh\303\245ll lokal",
+   "L\303\266s konflikter: Beh\303\245ll server",
+   "Hemlig \303\245tkomstnyckel",
+   "Molnsynkronisering",
+   "Synk: Konfigurationsfiler",
+   "Synkroniseringsl\303\244ge",
+   "Automatiskt",
+   "Manuellt",
+   "Synkronisera nu",
+   "Synk: Sparningar/Tillst\303\245nd",
+   "Synk: Systemfiler",
+   "Synk: Miniatyrbilder",
+   "URL till molnlagring",
+   "Anv\303\244ndarnamn",
+   "L\303\244s in konfiguration",
+   "Konfigurationsfil",
+   "Konfiguration",
+   "Spara konfiguration vid Avsluta",
+   "Bekr\303\244fta st\303\244ngning av inneh\303\245ll",
+   "Bekr\303\244fta avslutning",
+   "Bekr\303\244fta omstart av inneh\303\245ll",
+   "Inneh\303\245ll",
+   "Inneh\303\245llsl\303\266sa k\303\244rnor",
+   "Databaser",
+   "Favoritspellista",
+   "Favoriters storlek",
+   "Historikspellista",
+   "Historik storlek",
+   "Bildspellista",
+   "Kontrollsumma f\303\266r RetroAchievements",
+   "K\303\244rna",
+   "Databas",
+   "Objekt: %lu/%lu",
+   "Namn",
+   "Senast spelad",
+   "Fils\303\266kv\303\244g",
+   "Speltid",
+   "Musikspellista",
+   "Spara k\303\266rtidslogg (per k\303\244rna)",
+   "Spara k\303\266rtidslogg (aggregerat)",
+   "Snabbmeny",
+   "Visa 'Importera Inneh\303\245ll'",
+   "Visa 'Inneh\303\245llsl\303\266sa k\303\244rnor'",
+   "Visa 'Utforska'",
+   "Visa 'Favoriter'",
+   "Visa favoriter f\303\266rst",
+   "Visa 'Historik'",
+   "Visa 'Bilder'",
+   "Visa 'Latens'",
+   "Visa 'Musik'",
+   "Visa 'Netplay'",
+   "Visa 'Sk\303\244rm\303\266verl\303\244gg'",
+   "Visa 'Spellistor'",
+   "Visa spellistflikar",
+   "Visa 'Tillbakaspolning'",
+   "Visa 'Inst\303\244llningar'",
+   "Ange l\303\266senord f\303\266r att aktivera 'Inst\303\244llningar'",
+   "Visa 'Videor'",
+   "Visa 'Video Layout'",
+   "Videospellista",
+   "H\303\244mtningar",
+   "Fusk",
+   "K\303\244rnr\303\244knare",
+   "S\303\244kerhetskopiera k\303\244rna",
+   "Ta bort k\303\244rna",
+   "Ta bort s\303\244kerhetskopia",
+   "Visa 'K\303\244rnnamn'",
+   "K\303\244rninformation",
+   "Upphovsperson",
+   "Mellanlagra infofiler f\303\266r k\303\244rna",
+   "Kategorier",
+   "K\303\244rnetikett",
+   "K\303\244rnnamn",
+   "Fullst\303\244ndig s\303\266kv\303\244g",
+   "K\303\244rnversion",
+   "Observera: 'Systemfiler finns i inneh\303\245llskatalogen' \303\244r aktiverad.",
+   "Letar i: %s",
+   "Licens",
+   "Beh\303\266righeter",
+   "Kr\303\244ver grafik-API",
+   "Grundl\303\244ggande (Spara/L\303\244s in)",
+   "Kringg\303\245 k\303\244rninformationens funktioner f\303\266r sparade tillst\303\245nd",
+   "Deterministisk (Spara/L\303\244s in, Spola tillbaka, Run-Ahead, Netplay)",
+   "Ingen",
+   "Serialiserad (Spara/L\303\244s in, Spola tillbaka)",
+   "Spara tillst\303\245nd-st\303\266d",
+   "Filformat som st\303\266ds",
+   "Systemtillverkare",
+   "Systemets namn",
+   "Spelkontroller",
+   "L\303\244s in k\303\244rna",
+   "L\303\244s ur k\303\244rna",
+   "L\303\245s installerad k\303\244rna",
+   "Hantera k\303\244rnor",
+   "K\303\244rnalternativ",
+   "Skriv alternativ till disk",
+   "Nollst\303\244ll k\303\244rnalternativ",
+   "Kategorier f\303\266r k\303\244rnalternativ",
+   "Aktiv alternativfil",
+   "Hantera k\303\244rnalternativ",
+   "\303\205terst\303\244ll s\303\244kerhetskopia",
+   "K\303\244rna",
+   "Uteslut fr\303\245n 'Inneh\303\245llsl\303\266sa k\303\244rnor'-menyn",
+   "Starta en k\303\244rna automatiskt",
+   "F\303\266resl\303\245 alltid k\303\244rnor",
+   "S\303\244kerhetskopiera k\303\244rnor vid uppdatering",
+   "Storlek f\303\266r s\303\244kerhetskopieringshistorik f\303\266r k\303\244rnor",
+   "Packa automatiskt upp h\303\244mtade arkiv",
+   "URL f\303\266r Buildbot-k\303\244rnor",
+   "H\303\244mta k\303\244rnor",
+   "Inst\303\244llningar f\303\266r k\303\244rnuppdateraren",
+   "Visa experimentella k\303\244rnor",
+   "CPU-arkitektur",
+   "CPU-k\303\244rnor",
+   "Maximal k\303\244rnfrekvens",
+   "Minimum k\303\244rnfrekvens",
+   "CPU-prestanda och str\303\266m",
+   "Styrande l\303\244ge",
+   "Balanserad",
+   "Prestanda (hanterad)",
+   "Anpassad hanterad",
+   "Manuell",
+   "Maximal prestanda",
+   "Minimal str\303\266m",
+   "K\303\244rnregulator",
+   "CPU-regulator",
+   "Maximal frekvens",
+   "Menyregulator",
+   "Minimal frekvens",
+   "Skapa ny spellista",
+   "Anv\303\244nd h\303\266guppl\303\266st meny",
+   "Horisontell storlek",
+   "CRT Superuppl\303\266sning",
+   "Anpassad uppdateringsfrekvens",
+   "Vertikal centrering",
+   "Horisontell centrering",
+   "Mark\303\266rhanterare",
+   "V\303\244xla miniatyrbilder",
+   "Databashanterare",
+   "Ta bort",
+   "Radera Spellista",
+   "Skrivbordsmeny (omstart kr\303\244vs)",
+   "Nuvarande k\303\244rna",
+   "Ingen reservation",
+   "F\303\266redragen",
+   "Reserverad",
+   "Katalogen hittades inte",
+   "Katalog",
+   "Inaktiverad",
+   "I spel",
+   "I spel (Pausad)",
+   "I meny",
+   "Pausad",
+   "Spelar",
+   "Skivinformation",
+   "L\303\244s in ny skiva",
+   "Aktuellt skivindex",
+   "Skivhantering",
+   "Mata ut skiva",
+   "S\303\244tt i skiva",
+   "Standard",
+   "H\303\244mtningar",
+   "H\303\244mta ner en k\303\244rna",
+   "H\303\244mta ner inneh\303\245ll",
+   "H\303\244mta ner k\303\244rnsystemfiler",
+   "H\303\244mta ner miniatyrer",
+   "Ner + Select",
+   "Ner + Y + L1 + R1",
+   "Drivrutiner",
+   "Till\303\245t k\303\244rnor att byta videodrivrutin",
+   "L\303\244s in dummy n\303\244r k\303\244rnan st\303\244nger ner",
+   "Dumpa skiva",
+   "Dynamisk bakgrund",
+   "Dynamiska bakgrunder",
+   "Aktiverad",
+   "Aktivera enhetsvibration (f\303\266r k\303\244rnor som st\303\266ds)",
+   "Ytterligare filter",
+   "L\303\244gg till ytterligare filter",
+   "Alla",
+   "Efter prestationer",
+   "Efter konststil",
+   "Efter kategori",
+   "Efter konsolen exklusiv",
+   "Efter spelkontroller",
+   "Efter utvecklare",
+   "Efter franchise",
+   "Efter Spels\303\244tt",
+   "Efter genre",
+   "Efter spr\303\245k",
+   "Efter media",
+   "Efter ber\303\244ttande",
+   "Efter ursprung",
+   "Efter takt",
+   "Efter perspektiv",
+   "Efter Plattform exklusiv",
+   "Efter spelarantal",
+   "Efter utgivare",
+   "Efter region",
+   "Efter utgivnings\303\245r",
+   "Efter rumble",
+   "Efter po\303\244ng",
+   "Efter inst\303\244llning",
+   "Efter systemnamn",
+   "Efter tagg",
+   "Efter motor",
+   "Efter visuellt",
+   "Spelarantal",
+   "Utgivet \303\245r",
+   "Tagg",
+   "Initierar lista...",
+   "%u objekt",
+   "S\303\266k namn ...",
+   "Visa Alla",
+   "Utforska",
+   "Str\303\266mningsnyckel f\303\266r Facebook Gaming",
+   "Falskt",
+   "Snabbspola fram\303\245t-bildruts\303\266verhopp",
+   "Snabbspola fram\303\245t-hastighet",
+   "Startkatalog",
+   "Favoriter",
+   "\303\226ppna...",
+   "Aktivera extern fil\303\245tkomst",
+   "Filtrera efter k\303\244rna",
+   "Alternativ f\303\266r spara inneh\303\245llskatalog",
+   "Ta bort alternativ f\303\266r inneh\303\245llskatalog",
+   "Visa bildfrekvens",
+   "Bildfrekvensens uppdateringsintervall (i bildrutor)",
+   "Visa bildruter\303\244knare",
+   "Bildfrekvensstrypning",
+   "R\303\244knare f\303\266r bildtider",
+   "Frontend-r\303\244knare",
+   "Loggningsniv\303\245 f\303\266r Frontend",
+   "Spell\303\244ge",
+   "Spara spelalternativ",
+   "Ta bort spelalternativ",
+   "L\303\244s in inneh\303\245llsspecifika k\303\244rnalternativ automatiskt",
+   "Anv\303\244nd global k\303\244rnalternativsfil",
+   "Inneh\303\245llsl\303\266sa k\303\244rnor",
+   "Utforska",
+   "Favoriter",
+   "Bilder",
+   "Musik",
+   "Videor",
+   "Hack",
+   "Stoppa Inspelning/Repris",
+   "Hj\303\244lp",
+   "Hj\303\244lp",
+   "Historik",
+   "Historik",
+   "Select intryckt (2 sekunder)",
+   "Start intryckt (2 sekunder)",
+   "Horisontell meny",
+   "Miniatyrbild f\303\266r ikon",
+   "Bilder",
+   "L\303\244s in filer f\303\266r initiala skivindex automatiskt",
+   "Analog till Digital typ",
+   "Alla kontrollerar menyn",
+   "Analog d\303\266dzon",
+   "V\303\244nster Analog X- (V\303\244nster)",
+   "V\303\244nster Analog X+ (H\303\266ger)",
+   "V\303\244nster Analog Y- (Upp)",
+   "V\303\244nster Analog Y+ (Ner)",
+   "H\303\266ger Analog X- (V\303\244nster)",
+   "H\303\266ger Analog X+ (H\303\266ger)",
+   "H\303\266ger Analog Y- (Upp)",
+   "H\303\266ger Analog Y+ (Ner)",
+   "Analog k\303\244nslighet",
+   "Autokonfig",
+   "Automatiskt 'Spelfokus'-l\303\244ge",
+   "Identifiera",
+   "AV",
+   "P\303\205",
+   "F\303\245nga muspekaren automatiskt",
+   "St\303\244ll in alla kontroller",
+   "\303\205terst\303\244ll grund kontroller",
+   "Intryckt vid bind",
+   "Bind tidsgr\303\244ns",
+   "Tidsgr\303\244ns f\303\266r inmatningsblock",
+   "Tr\303\266skelv\303\244rde f\303\266r inmatningsknappsaxel",
+   "Enhetindex",
+   "Typ av enhetsreservation",
+   "Enhetstyp",
+   "Inaktivera info-knapp",
+   "Inaktivera v\303\244nster analog i meny",
+   "Inaktivera h\303\266ger analog i meny",
+   "Inaktivera S\303\266kknapp",
+   "Inmatning",
+   "Haptisk feedback/vibration",
+   "H\303\245ll in",
+   "Kortkommandon",
+   "Snabbknappsf\303\266rdr\303\266jning (Bildrutor)",
+   "Snabbtangenter f\303\266r F\303\266lj spelare 1",
+   "Mappning f\303\266r tangentbordskontroller",
+   "A-knapp (H\303\266gra)",
+   "B-knapp (Nedre)",
+   "D-Pad Ner",
+   "L-knapp (Axel)",
+   "L2-knapp (Trigger)",
+   "L3-knapp (Spak)",
+   "D-Pad V\303\244nster",
+   "R-knapp (Axel)",
+   "R2-knapp (Trigger)",
+   "R3-knapp (Spak)",
+   "D-Pad H\303\266ger",
+   "Select-knapp",
+   "Start-knapp",
+   "D-Pad Upp",
+   "X-knapp (\303\226vre)",
+   "Y-knapp (V\303\244nstra)",
+   "Knapp %s",
+   "Mappningstyp f\303\266r tangentbordskontroller",
+   "Pistol knapp A",
+   "Pistol knapp B",
+   "Pistol knapp C",
+   "Pistol D-Pad Ner",
+   "Pistol D-Pad V\303\244nster",
+   "Pistol D-Pad H\303\266ger",
+   "Pistol D-Pad Upp",
+   "Ladda om pistol",
+   "Pistol Select",
+   "Pistol Start",
+   "Pistol Avtryckare",
+   "Max anv\303\244ndare",
+   "Visa/d\303\266lj meny (spelkontroll kombo)",
+   "Menykontroller",
+   "AI-tj\303\244nst",
+   "F\303\266reg\303\245ende Fusk",
+   "N\303\244sta Fusk",
+   "Fusk (v\303\244xla)",
+   "St\303\244ng Inneh\303\245ll",
+   "Mata skiva (In/Ut)",
+   "N\303\244sta skiva",
+   "F\303\266reg\303\245ende skiva",
+   "Snabbknappsaktivering",
+   "Snabbspola fram\303\245t (nedtryckt)",
+   "Snabbspola fram\303\245t (v\303\244xla)",
+   "Visa bilder/s (v\303\244xla)",
+   "Avancera bildruta",
+   "Helsk\303\244rm (v\303\244xla)",
+   "Spelfokus (v\303\244xla)",
+   "F\303\245nga muspekaren (v\303\244xla)",
+   "Stoppa Inspelning/Repris",
+   "L\303\244s in tillst\303\245nd",
+   "Visa/d\303\266lj meny",
+   "Ljud av",
+   "Tona ut Netplay-chatt (V\303\244xla)",
+   "Netplay Spela/\303\205sk\303\245darl\303\244ge (v\303\244xla)",
+   "Netplay Hosting (P\303\245/Av)",
+   "Netplay Ping (v\303\244xla)",
+   "Netplay Spelarchatt",
+   "N\303\244sta kontrollpunkt f\303\266r \303\245teruppspelning",
+   "Tangentbords\303\266verl\303\244gg (V\303\244xla)",
+   "N\303\244sta \303\266verl\303\244gg",
+   "Pausa",
+   "Spela repris",
+   "Preemptive Frames (v\303\244xla)",
+   "F\303\266reg\303\245ende kontrollpunkt f\303\266r \303\245teruppspelning",
+   "Avsluta",
+   "Inspelning (v\303\244xla)",
+   "Spela in repris",
+   "F\303\266reg\303\245ende \303\245teruppspelningsplats",
+   "N\303\244sta \303\245teruppspelningsplats",
+   "Starta om inneh\303\245ll",
+   "Starta om RetroArch",
+   "Spola tillbaka",
+   "Run-Ahead (v\303\244xla)",
+   "Spara kontrollpunkt f\303\266r \303\245teruppspelning",
+   "Spara tillst\303\245nd",
+   "Ta sk\303\244rmdump",
+   "Shaders (H\303\245ll)",
+   "N\303\244sta Shader",
+   "F\303\266reg\303\245ende Shader",
+   "Shaders (v\303\244xla)",
+   "Slow motion (nedtryckt)",
+   "Slow motion (v\303\244xla)",
+   "F\303\266reg\303\245ende Spara tillst\303\245nd-plats",
+   "N\303\244sta Spara tillst\303\245nd-plats",
+   "Visa teknisk statistik (v\303\244xla)",
+   "Str\303\266mning (v\303\244xla)",
+   "Turboavfyrning (v\303\244xla)",
+   "Skrivbordsmeny (v\303\244xla)",
+   "Volym ner",
+   "Volym upp",
+   "Synkronisera till exakt bildhastighet f\303\266r inneh\303\245llet (P\303\245/Av)",
+   "Mus 4",
+   "Mus 5",
+   "Mushjul H\303\266ger",
+   "Mushjul V\303\244nster",
+   "Musindex",
+   "Mus 1",
+   "Mus 3",
+   "Mus 2",
+   "Mushjul Ner",
+   "Mushjul Upp",
+   "Auto-skala tangentbords\303\266verl\303\244gg",
+   "\303\226verlappningsk\303\244nslighet f\303\266r ABXY",
+   "Analog \303\245terst\303\244llningszon",
+   "Autorotera \303\266verl\303\244gg",
+   "Autoskala \303\266verl\303\244gg",
+   "Visa \303\266verl\303\244gg bakom meny",
+   "Diagonal k\303\244nslighet f\303\266r riktningsknappar",
+   "Visa \303\266verl\303\244gg",
+   "D\303\266lj \303\266verl\303\244gg i meny",
+   "D\303\266lj \303\266verl\303\244gg n\303\244r spelkontroll \303\244r ansluten",
+   "Till\303\245t utanf\303\266r sk\303\244rmen",
+   "Port f\303\266r ljuspistol",
+   "Alla",
+   "Avtryckarf\303\266rdr\303\266jning (bildrutor)",
+   "Tr\303\266skelv\303\244rde f\303\266r dubbeltryckning (ms)",
+   "Dubbeltryck f\303\266r att dra",
+   "Tr\303\266skelv\303\244rde f\303\266r l\303\245ng tryckning (ms)",
+   "L\303\245ngt tryck f\303\266r att dra",
+   "Mushastighet",
+   "Aktivera \303\266verl\303\244gg f\303\266r ljuspistol, mus och pekare",
+   "Visa inmatningar p\303\245 \303\266verl\303\244gg",
+   "Fysiska (spelkontroller)",
+   "Visa inmatningar fr\303\245n Port",
+   "Visa muspekare med \303\266verl\303\244gg",
+   "Pollningsbeteende (omstart kr\303\244vs)",
+   "Tidig",
+   "Sen",
+   "F\303\266redra fr\303\244mre tryck",
+   "Avsluta (spelkontroll kombo)",
+   "Ommappningar f\303\266r inmatning",
+   "Mappa om kontroller f\303\266r denna k\303\244rna",
+   "Mappad Port",
+   "Sortera ommappningar efter gamepad",
+   "RetroPad-bindningar",
+   "Vibrationsstyrka",
+   "Spara spelkontrolls-profil",
+   "Hj\303\244lpsensorinmatning",
+   "K\303\244nslighet f\303\266r accelerometer",
+   "K\303\244nslighet f\303\266r gyroskop",
+   "Sensororientering",
+   "R\303\266relse-/ljussensorer",
+   "Inmatning",
+   "Litet tangentbord",
+   "Delade Joy-Con",
+   "Tryck",
+   "Tryckskala",
+   "Turbo-avfyrning",
+   "Turbo-bindning",
+   "Turbo-knapp",
+   "Turbo-avfyrning",
+   "Turbo-avfyrning",
+   "Turbol\303\244ge",
+   "Turboperiod",
+   "Enhetliga menykontroller",
+   "Port %u kontroller",
+   "JIT tillg\303\244nglig",
+   "Spelkontrollsprofiler",
+   "Spelkontroll",
+   "Tgb",
+   "Latens",
+   "V\303\244nster + h\303\266ger analoga",
+   "V\303\244nster + h\303\266ger analoga (tvingad)",
+   "V\303\244nster Analog",
+   "V\303\244nster Analog (Tvingad)",
+   "Sekund\303\244r miniatyrbild",
+   "Sekund\303\244r miniatyrbild",
+   "Sekund\303\244r miniatyrbild",
+   "Nedre miniatyrbild",
+   "K\303\244rnor",
+   "K\303\244rninformation",
+   "Loggningsniv\303\245 f\303\266r k\303\244rna",
+   "Linj\303\244r",
+   "L\303\244s in arkiv",
+   "Historik",
+   "L\303\244s in inneh\303\245ll",
+   "L\303\244s in skiva",
+   "L\303\244s in tillst\303\245nd",
+   "Till\303\245t plats",
+   "Plats",
+   "Loggning",
+   "System h\303\244ndelselogg",
+   "Logga till fil",
+   "Tidsst\303\244mpla loggfiler",
+   "Utf\303\266rlighetsniv\303\245 f\303\266r loggning",
+   "0 (Fels\303\266k)",
+   "3 (Fel)",
+   "2 (Varning)",
+   "Huvudsaklig",
+   "Huvudmeny",
+   "Hantera",
+   "Standardk\303\244rna",
+   "<Ospecificerat>",
+   "Arkad DAT-fil",
+   "Arkad DAT-filter",
+   "Filnamnstill\303\244gg",
+   "Skriv \303\266ver befintlig spellista",
+   "S\303\266k igenom inuti arkiv",
+   "S\303\266k igenom rekursivt",
+   "Starta genoms\303\266kning",
+   "Namn f\303\266r anpassad spellista",
+   "<Automatiskt>",
+   "Validera befintliga poster",
+   "Mappning",
+   "Autorotera navigationsf\303\244ltet",
+   "Visa sekund\303\244r miniatyrbild i listvyer",
+   "Ikoner",
+   "Optimera landskapslayout",
+   "P\303\205",
+   "AV",
+   "Exkludera miniatyrvisningar",
+   "F\303\244rgtema",
+   "Bl\303\245",
+   "Bl\303\245gr\303\245",
+   "Cutie Bl\303\245",
+   "Cutie Turkos",
+   "Cutie Gr\303\266n",
+   "Cutie Rosa",
+   "Cutie Lila",
+   "Cutie R\303\266d",
+   "M\303\266rkbl\303\245",
+   "Gr\303\245 M\303\266rk",
+   "Gr\303\245 Ljus",
+   "Gr\303\266n",
+   "Gruvbox M\303\266rk",
+   "Material UI M\303\266rk",
+   "Ozone M\303\266rk",
+   "R\303\266d",
+   "Solarized M\303\266rk",
+   "Gul",
+   "Liggande miniatyrvy",
+   "St\303\245ende miniatyrvy",
+   "\303\226verg\303\245ngsanimation",
+   "Tona",
+   "AV",
+   "Glid",
+   "Spellistikoner (omstart kr\303\244vs)",
+   "Visa navigeringsf\303\244ltet",
+   "Skifta ikoner/text",
+   "Miniatyrbildsbakgrunder",
+   "AV",
+   "Lista (stor)",
+   "Lista (Medium)",
+   "Lista (Liten)",
+   "AV",
+   "Dubbel ikon",
+   "Lista (Medium)",
+   "Lista (Liten)",
+   "Visa Minnesanv\303\244ndning",
+   "Uppdateringsintervall f\303\266r minnesanv\303\244ndning (i bildrutor)",
+   "Huvudmeny",
+   "Spellistsmeny",
+   "Till\303\245t bak\303\245t fr\303\245n flikar",
+   "Inaktivera kioskl\303\244ge",
+   "Meny",
+   "Kioskl\303\244ge",
+   "Stryp menyns bildfrekvens",
+   "Filhanterare",
+   "Genomskinlighet",
+   "Ljusstyrka",
+   "Horisontell animering",
+   "V\303\244xla knappar f\303\266r OK och Avbryt",
+   "V\303\244xla rullningsknappar",
+   "\303\205teruppta inneh\303\245ll efter skivbyte",
+   "Ange l\303\266senord f\303\266r att inaktivera kioskl\303\244ge",
+   "Linj\303\244rt filter",
+   "Kom ih\303\245g val vid byte av flikar",
+   "Alltid",
+   "Endast f\303\266r Huvudmeny och Inst\303\244llningar",
+   "Endast f\303\266r Spellistor",
+   "Bildformat",
+   "L\303\245s bildformat",
+   "Bakgrundsfyllnad Fet",
+   "Kantfyllnad",
+   "Kantfyllnad Fet",
+   "Ut\303\266kat ASCII-st\303\266d",
+   "Anv\303\244nd fullbreddslayout",
+   "Visa miniatyrbilder f\303\266r spellista",
+   "Intern uppskalning",
+   "Animerad bakgrund",
+   "Bakgrundsanimering f\303\266r sk\303\244rmsl\303\244ckare",
+   "Animerad bakgrunds hastighet",
+   "Skuggeffekter",
+   "V\303\244xla miniatyrbilder",
+   "Skifta ikoner/text",
+   "Miniatyrbildsf\303\266rdr\303\266jning (ms)",
+   "Nedskalningsmetod f\303\266r miniatyrbilder",
+   "Genomskinlighet",
+   "\303\205teruppta inneh\303\245llet efter att anv\303\244nt Spara tillst\303\245nd",
+   "Skalfaktor",
+   "Animera menysk\303\244rmsl\303\244ckare",
+   "Sn\303\266",
+   "Menysk\303\244rmsl\303\244ckarens animeringshastighet",
+   "Stj\303\244rnf\303\244lt",
+   "Virvel",
+   "Menysk\303\244rmsl\303\244ckarens tidsgr\303\244ns",
+   "Rullningsf\303\266rdr\303\266jning",
+   "Rullningsacceleration",
+   "Utseende",
+   "Visa 'Konfigurationsfil'",
+   "Visa 'H\303\244mta ner k\303\244rna'",
+   "Visa 'Dumpa skiva'",
+   "Visa 'Hj\303\244lp'",
+   "Visa 'Information'",
+   "Visa 'L\303\244s in inneh\303\245ll'",
+   "\"L\303\244s in inneh\303\245ll\"-meddelande vid uppstart",
+   "Visa 'L\303\244s in k\303\244rna'",
+   "Visa 'L\303\244s in skiva'",
+   "Visa 'Online-uppdaterare'",
+   "Visa 'Avsluta RetroArch'",
+   "Visa 'Starta om'",
+   "Visa 'Starta om RetroArch'",
+   "Visa 'St\303\244ng av'",
+   "Visa Meny-undertitlar",
+   "Spellistor med ett klick",
+   "Menyljud",
+   "Aktivera f\303\266r 'BGM'",
+   "Aktivera f\303\266r 'Avbryt'",
+   "Aktivera f\303\266r 'Meddelande'",
+   "Aktivera f\303\266r 'OK'",
+   "Aktivera f\303\266r 'Scroll'",
+   "Uppstartssida",
+   "Miniatyrbildsbakgrunder",
+   "Miniatyrbilders uppskalningstr\303\266skel",
+   "Mjuk Rull-text",
+   "Rull-texthastighet",
+   "Rull-textanimering",
+   "Studsa v\303\244nster/h\303\266ger",
+   "Rulla \303\245t v\303\244nster",
+   "Anv\303\244nd f\303\266redraget f\303\244rgtema f\303\266r systemet",
+   "Synlighet f\303\266r menyobjekt",
+   "Bakgrundsbild",
+   "Grafikwidgetar",
+   "Skala grafikwidgetar automatiskt",
+   "\303\205sidos\303\244tt skalning av grafikwidgetar",
+   "\303\205sidos\303\244tt skalning av grafikwidgetar (helsk\303\244rm)",
+   "\303\205sidos\303\244tt skalning av grafikwidgetar (f\303\266nsterl\303\244ge)",
+   "Animering f\303\266r flytta upp\303\245t/ner\303\245t",
+   "Animering f\303\266r huvudmenyns \303\266ppna/st\303\244nga",
+   "Visa titelrubrik",
+   "Miniatyrskalfaktor",
+   "Titelmarginal",
+   "Horisontell f\303\266rskjutning av titelmarginal",
+   "Vertikal toningsfaktor",
+   "Inmatning",
+   "Utmatning",
+   "Volym",
+   "Saknas, valfri:",
+   "Saknas, kr\303\244vs:",
+   "Spela",
+   "Spela (Loopad)",
+   "Spela (Sekventiell)",
+   "Ta bort",
+   "Stopp",
+   "Volym",
+   "Mus-st\303\266d",
+   "Musik",
+   "Filtrera ok\303\244nda filformat",
+   "Navigering b\303\266rjar om fr\303\245n b\303\266rjan",
+   "N\303\244rmsta",
+   "Till\303\245t pausning",
+   "Till\303\245t klienter i slavl\303\244ge",
+   "Bannlys klient",
+   "Chattf\303\244rg (Meddelande)",
+   "Chattf\303\244rg (Nicknamn)",
+   "Kontrollbildrutor f\303\266r netplay",
+   "Kompatibelt inneh\303\245ll hittades",
+   "Letar efter kompatibelt inneh\303\245ll...",
+   "Det gick inte att hitta n\303\245got matchande inneh\303\245ll med hj\303\244lp av CRC eller fil"
+   "namn",
+   "Ingen k\303\244rna hittades",
+   "Inga spellistor hittades",
+   "Anpassad adress f\303\266r rel\303\244server",
+   "Stoppa Netplay-v\303\244rd",
+   "Koppla fr\303\245n Netplay-v\303\244rd",
+   "Anslut till Netplay-v\303\244rd",
+   "Starta Netplay-v\303\244rd",
+   "Tona ut chatt",
+   "Bildrutor f\303\266r inmatningslatens",
+   "Bildruteintervall f\303\266r inmatningslatens",
+   "Serveradress",
+   "Sparka ut klient",
+   "Kunde inte hitta en l\303\244mplig k\303\244rna eller inneh\303\245llsfil, l\303\244s in manuell"
+   "t.",
+   "Filter f\303\266r lobbyn",
+   "Max samtidiga anslutningar",
+   "Ping begr\303\244nsning",
+   "Plats f\303\266r rel\303\244server",
+   "Nordamerika (\303\266stkusten, USA)",
+   "V\303\244steuropa",
+   "Sydamerika (syd\303\266stra, Brazilien)",
+   "Sydostasien",
+   "Anpassa",
+   "Netplay NAT-traversering",
+   "Anv\303\244ndarnamn",
+   "Serverl\303\266senord",
+   "Visa Netplay Ping",
+   "Annonsera Netplay publikt",
+   "Uppdatera Netplay-listan f\303\266r LAN",
+   "Uppdatera Netplay-v\303\244rdlistan",
+   "Beg\303\244r enhet %u",
+   "Till\303\245t inte klienter i icke-slavl\303\244ge",
+   "Nicknamn: %s",
+   "Analog ing\303\245ngsdelning",
+   "Medelv\303\244rde",
+   "Delning av digital inmatning",
+   "Dela",
+   "R\303\266sta",
+   "Ingen",
+   "Ingen inst\303\244llning",
+   "Endast anslutningsbara rum",
+   "Endast installerade k\303\244rnor",
+   "L\303\266senordsskyddade rum",
+   "Serverl\303\266senord f\303\266r endast \303\245sk\303\245dare",
+   "\303\205sk\303\245darl\303\244ge f\303\266r Netplay",
+   "Netplay kommer starta n\303\244r inneh\303\245llet har l\303\244sts in.",
+   "Netplay TCP-port",
+   "Anv\303\244nd rel\303\244server",
+   "N\303\244tverkskommandon",
+   "N\303\244tverkskommandoport",
+   "N\303\244tverksfel",
+   "V\303\244rd",
+   "N\303\244tverksinformation",
+   "H\303\244mta miniatyrbilder vid behov",
+   "N\303\244tverksspelkontroll",
+   "Port f\303\266r n\303\244tverksspelkontroller",
+   "N\303\244tverk",
+   "Spelare %d N\303\244tverksspelkontroll",
+   "Nej",
+   "Ingen",
+   "Meddelanden om inmatningsanslutning (Autoconfig)",
+   "Meddelanden om inmatningsfel (Autoconfig)",
+   "Fuskkodsmeddelanden",
+   "Meddelanden vid inl\303\244sning av konfigurations\303\245sidos\303\244ttning",
+   "Meddelanden om skivkontroll",
+   "Meddelanden f\303\266r Extra Netplay",
+   "Patchmeddelanden",
+   "Meddelanden f\303\266r uppdateringsfrekvens",
+   "Meddelanden vid inl\303\244sta inmatningsommappningar",
+   "Meddelanden om sparade tillst\303\245nd",
+   "Sk\303\244rmdumpsmeddelanden",
+   "Tidsgr\303\244ns f\303\266r sk\303\244rmdumpsmeddelanden",
+   "Snabb",
+   "Omedelbar",
+   "Mycket snabb",
+   "Sk\303\244rmdump Blixt-effekt",
+   "P\303\205 (Snabb)",
+   "P\303\205 (Normal)",
+   "Notifieringar f\303\266r initial skiv\303\245terst\303\244llning",
+   "Meddelanden f\303\266r endast-meny",
+   "Inte inloggad",
+   "Inga prestationer att visa",
+   "Inga Bluetoothenheter hittades",
+   "Ingen k\303\244rna",
+   "Inga k\303\244rnor tillg\303\244ngliga",
+   "Inga k\303\244rns\303\244kerhetskopior \303\244r tillg\303\244ngliga",
+   "Ingen k\303\244rninformation tillg\303\244nglig",
+   "Inga k\303\244rnalternativ tillg\303\244ngliga",
+   "Ingen skiva vald",
+   "Inga poster att visa",
+   "Inga favoriter tillg\303\244ngliga",
+   "Ingen historik tillg\303\244nglig",
+   "Inga bilder tillg\303\244ngliga",
+   "Ingen information tillg\303\244nglig",
+   "Inga f\303\266rem\303\245l",
+   "Ingen musik tillg\303\244nglig",
+   "Inga netplay-klienter hittades.",
+   "Inga Netplay v\303\244rdar hittades.",
+   "Inga n\303\244tverk hittades",
+   "Inga prestandar\303\244knare.",
+   "Inga spellistor.",
+   "Inga poster i spellistan finns tillg\303\244ngliga",
+   "Inga automatiska shader-f\303\266rinst\303\244llningar hittades",
+   "Inga inst\303\244llningar hittades",
+   "Inga shader-parametrar",
+   "Inga videor tillg\303\244ngliga",
+   "AV",
+   "P\303\205",
+   "Online-uppdaterare",
+   "Sk\303\244rmvisning",
+   "Sk\303\244rmmeddelanden",
+   "Synlighet f\303\266r meddelanden",
+   "Sk\303\244rm\303\266verl\303\244gg",
+   "Videolayout",
+   "Bl\303\244ddra i arkiv",
+   "Tangentbords\303\266verl\303\244gg",
+   "Opacitet f\303\266r tangentbords\303\266verl\303\244gg",
+   "F\303\266rinst\303\244llt tangentbords\303\266verl\303\244gg",
+   "Tangentbords\303\266verl\303\244gg",
+   "\303\226verl\303\244gg",
+   "(Liggande) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
+   "(St\303\245ende) Justera \303\266verl\303\244ggsf\303\266rh\303\245llande",
+   "L\303\244s automatiskt in f\303\266redraget \303\266verl\303\244gg",
+   "\303\226verl\303\244gg",
+   "\303\226verl\303\244gg ljuspistol",
+   "\303\226verl\303\244gg mus",
+   "Opacitet f\303\266r \303\266verl\303\244gg",
+   "F\303\266rinst\303\244llt \303\266verl\303\244gg",
+   "(Liggande) Skala f\303\266r \303\266verl\303\244gg",
+   "(St\303\245ende) Skala f\303\266r \303\266verl\303\244gg",
+   "Sk\303\244rm\303\266verl\303\244gg",
+   "(Liggande) X-f\303\266rskjutning \303\266verl\303\244gg",
+   "(St\303\245ende) X-f\303\266rskjutning \303\266verl\303\244gg",
+   "(Liggande) Horisontell separation f\303\266r \303\266verl\303\244gg",
+   "(St\303\245ende) Horisontell separation f\303\266r \303\266verl\303\244gg",
+   "(Liggande) Y-f\303\266rskjutning \303\266verl\303\244gg",
+   "(St\303\245ende) Y-f\303\266rskjutning \303\266verl\303\244gg",
+   "(Liggande) Vertikal separation f\303\266r \303\266verl\303\244gg",
+   "(St\303\245ende) Vertikal separation f\303\266r \303\266verl\303\244gg",
+   "Aktiv \303\245sidos\303\244ttningsfil",
+   "L\303\244s in \303\245sidos\303\244ttningsfil",
+   "Spara \303\245sidos\303\244ttningar som",
+   "L\303\244s ur \303\245sidos\303\244ttning",
+   "D\303\266lj sidof\303\244ltet",
+   "Simpel svart",
+   "Simpel vit",
+   "Gr\303\245 M\303\266rk",
+   "Gr\303\245 Ljus",
+   "Gruvbox M\303\266rk",
+   "Solarized M\303\266rk",
+   "Solarized Ljus",
+   "Typsnitt",
+   "Typsnittsskala",
+   "Faktor f\303\266r typsnittsskalning f\303\266r menyfot",
+   "Skalningsfaktor f\303\266r typsnitt",
+   "Skalfaktor f\303\266r typsnittet f\303\266r etiketter",
+   "Skalfaktor f\303\266r v\303\244nstra sidof\303\244ltets typsnitt",
+   "Faktor f\303\266r typsnittsskalning f\303\266r underetiketter",
+   "Faktor f\303\266r typsnittsskalning f\303\266r tid och datum",
+   "Skalningsfaktor f\303\266r titeltypsnitt",
+   "Globalt",
+   "Separata v\303\244rden",
+   "Rubrikikon",
+   "Dynamisk",
+   "Fast",
+   "Ingen",
+   "Rubrikavgr\303\244nsare",
+   "Maximalt",
+   "Ingen",
+   "F\303\244rgtema",
+   "Utfyllnadsfaktor",
+   "Anv\303\244nd tickertext f\303\266r inneh\303\245llets metadata",
+   "Sortera spellistor efter avkortat namn (omstart kr\303\244vs)",
+   "Miniatyrskalfaktor",
+   "Korta ner namn f\303\266r spellistor (omstart kr\303\244vs)",
+   "Anv\303\244nd PAL60-l\303\244get",
+   "F\303\266r\303\244ldrakatalog",
+   "Pausa inneh\303\245ll n\303\244r menyn \303\244r aktiv",
+   "Pausa inneh\303\245ll vid inaktivitet",
+   "Pausa inneh\303\245ll vid fr\303\245nkoppling av styrenhet",
+   "R\303\244kna k\303\266rningar",
+   "Prestanda",
+   "Spellistor",
+   "Till\303\245t alla bildtyper som st\303\266ds f\303\266r miniatyrbilder",
+   "Komprimera spellistor",
+   "Spellistor",
+   "Till\303\245t att ta bort poster",
+   "Alla spellistor",
+   "Historik & Favoriter",
+   "AV",
+   "Till\303\245t att byta namn p\303\245 poster",
+   "Luddig arkivmatchning",
+   "Alltid",
+   "Historik och favoriter",
+   "Aldrig",
+   "Rensa Spellista",
+   "Standardk\303\244rna",
+   "Visningsl\303\244ge f\303\266r Titlar",
+   "Visa hela titel etiketter",
+   "Beh\303\245ll skivindex",
+   "Beh\303\245ll region",
+   "Beh\303\245ll region och skivindex",
+   "Ta bort [] inneh\303\245ll",
+   "Ta bort () inneh\303\245ll",
+   "Ta bort () och []",
+   "Hantera Spellistor",
+   "Uppdatera spellista",
+   "\303\205terst\303\244ll k\303\244rnassociationer",
+   "Sorteringsmetod",
+   "Alfabetisk",
+   "System f\303\266rinst\303\244llt",
+   "Ingen",
+   "System f\303\266rinst\303\244llt",
+   "Portabla spellistor",
+   "Aggregera",
+   "Per k\303\244rna",
+   "Spellistor",
+   "Visa index f\303\266r spellistepost",
+   "Visa inneh\303\245llsspecifika ikoner i historik och favoriter",
+   "Visa associerade k\303\244rnor i spellistor",
+   "Visa underetiketter f\303\266r spellista",
+   "Sortera spellistor alfabetiskt",
+   "K\303\244rna:",
+   "Senast spelad:",
+   "Stil f\303\266r datum och tid f\303\266r 'Senast spelad'",
+   "Spelantal:",
+   "Speltid:",
+   "Anv\303\244nd filnamn f\303\266r miniatyrbildsmatchning",
+   "Spara spellistor med gamla formatet",
+   "Spela repris",
+   "Uppdatera spellisteminiatyrer",
+   "Touch-st\303\266d",
+   "Enhetens sk\303\244rmnamn: %s\nEnhetens konfigurationsnamn: %s\nEnhets-VID/PID: %d/%d",
+   "Port %d Enhetsnamn: %s",
+   "Energihantering",
+   "Antal preemptive frames",
+   "Finns, valfri:",
+   "Finns, kr\303\244vs:",
+   "Sekretess",
+   "L\303\244gger till filer i spellista...",
+   "L\303\244gg till post...",
+   "L\303\244gg till fil(er)...",
+   "L\303\244gg till mapp...",
+   "Alla spellistor",
+   "Till\303\244mpa",
+   "Associera k\303\244rna",
+   "V\303\244lj en spellista f\303\266rst.",
+   "V&\303\244lj...",
+   "\303\204r du s\303\244ker p\303\245 att du vill radera spellistan \"%1\"?",
+   "\303\204r du s\303\244ker p\303\245 att du vill radera objektet \"%1\"?",
+   "K\303\244rna",
+   "K\303\244rninformation",
+   "K\303\244rnalternativ",
+   "<fr\303\245ga mig>",
+   "Kunde inte radera fil.",
+   "Kunde inte d\303\266pa om fil.",
+   "Fel vid uppdatering av spellistepost.",
+   "Aktuell shader",
+   "Anpassat tema",
+   "Radera",
+   "Radera Spellista",
+   "Visa inte detta igen",
+   "H\303\244mta alla miniatyrbilder",
+   "Hela systemet",
+   "Denna spellista",
+   "En h\303\244mtning p\303\245g\303\245r redan.",
+   "Lyckades: %1 Misslyckades: %2",
+   "H\303\244mta miniatyrbild",
+   "Dra och sl\303\244pp bilden h\303\244r",
+   "Redigera",
+   "Ange namn f\303\266r ny spellista:",
+   "Fel",
+   "<flera>",
+   "Filen existerar inte.",
+   "Filen \303\244r tom.",
+   "S\303\266kv\303\244g till filen \303\244r tom.",
+   "Kunde inte \303\266ppna filen f\303\266r att l\303\244sa.",
+   "Kunde inte \303\266ppna filen f\303\266r att skriva.",
+   "(anv\303\244nds f\303\266r att hitta miniatyrbilder)",
+   "Samlar in en lista \303\266ver filer...",
+   "Dolda spellistor",
+   "D\303\266lj",
+   "%1 objekt",
+   "L\303\244s in",
+   "L\303\244ser in k\303\244rna...",
+   "L\303\244s in k\303\244rna",
+   "L\303\244s in anpassad k\303\244rna...",
+   "Logg",
+   "Inneh\303\245llsbl\303\244ddrare",
+   "&Redigera",
+   "&S\303\266k",
+   "&Arkiv",
+   "A&vsluta",
+   "&L\303\244s in k\303\244rna...",
+   "L\303\244s &ur k\303\244rna",
+   "&Hj\303\244lp",
+   "Om RetroArch",
+   "Bidragsgivare",
+   "Dokumentation",
+   "Rensa",
+   "&Verktyg",
+   "&Visa",
+   "St\303\244ngda dockor",
+   "&Inst\303\244llningar...",
+   "Max antal rutn\303\244tsposter f\303\266r \"Alla spellistor\":",
+   "Max antal listposter f\303\266r \"Alla spellistor\":",
+   "Highlight f\303\244rg:",
+   "Kom ih\303\245g dockpositioner:",
+   "Kom ih\303\245g f\303\266nstergeometri:",
+   "Kom ih\303\245g senaste filk i inneh\303\245llsbl\303\244ddraren:",
+   "Visa dolda filer och mappar:",
+   "Starta med spellista:",
+   "F\303\266resl\303\245 inl\303\244st k\303\244rna f\303\266rst:",
+   "Tema:",
+   "Anpassad...",
+   "M\303\266rk",
+   "Cachegr\303\244ns f\303\266r miniatyrbilder:",
+   "Storleksgr\303\244ns f\303\266r dra och sl\303\244pp miniatyrbild:",
+   "Miniatyrbild",
+   "Inst\303\244llningar",
+   "Shader parametrar",
+   "Flytta ner",
+   "Flytta upp",
+   "Namn",
+   "N\303\244tverksfel",
+   "Ny spellista",
+   "Spellistpost",
+   "K\303\244rna:",
+   "Databas:",
+   "Till\303\244gg:",
+   "(blankstegsseparerade; inkluderar alla som standard)",
+   "Filtrera inuti arkiv",
+   "Namn:",
+   "S\303\266kv\303\244g:",
+   "Fyll i alla n\303\266dv\303\244ndiga f\303\244lt.",
+   "F\303\266rlopp:",
+   "Fr\303\245ga",
+   "Ta bort",
+   "Ta bort pass",
+   "Byt namn Spellista",
+   "\303\205terst\303\244ll",
+   "\303\205terst\303\244ll alla",
+   "Nollst\303\244ll alla pass",
+   "\303\205terst\303\244ll parameter",
+   "Nollst\303\244ll pass",
+   "Starta om programmet f\303\266r att \303\244ndringarna ska b\303\266rja g\303\244lla.",
+   "Spara",
+   "V\303\244lj f\303\244rg",
+   "V\303\244lj filer",
+   "V\303\244lj mapp",
+   "V\303\244lj tema",
+   "L\303\244gg till pass",
+   "T\303\266m alla pass",
+   "Inga shader-pass.",
+   "Stopp",
+   "Filhanterare",
+   "Toppen",
+   "Upp",
+   "Spellistor",
+   "Omslagsbild",
+   "Logotyp",
+   "Miniatyrbilder h\303\244mtades ner.",
+   "Sk\303\244rmdump",
+   "Titelsk\303\244rm",
+   "Uppdateringen misslyckades.",
+   "RetroArch uppdaterades. Starta om programmet f\303\266r att \303\244ndringarna ska ta effekt.",
+   "Uppdatera RetroArch (nightly)",
+   "Visa",
+   "Ikoner",
+   "Lista",
+   "Varning",
+   "\303\205sidos\303\244ttningar",
+   "Visa 'L\303\244gg till i Favoriter'",
+   "Visa 'L\303\244gg till i spellista'",
+   "Visa 'Fusk'",
+   "Visa 'St\303\244ng Inneh\303\245ll'",
+   "Visa 'Spelkontroller'",
+   "Visa 'Skriv alternativ till disk'",
+   "Visa 'H\303\244mta ner miniatyrer'",
+   "Visa 'Information'",
+   "Visa 'K\303\244rnalternativ'",
+   "Visa 'Repris-kontroller'",
+   "Visa '\303\205terst\303\244ll k\303\244rnassociation'",
+   "Visa '\303\205teruppta'",
+   "Visa 'Spara tillst\303\245nd'-undermeny",
+   "Visa 'Spara \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog'",
+   "Visa 'Spara k\303\244rn\303\245sidos\303\244ttningar'",
+   "Visa '\303\205sidos\303\244ttningar f\303\266r sparat spel'",
+   "Visa 'Spara/L\303\244s in tillst\303\245nd'",
+   "Visa 'St\303\244ll in k\303\244rnassociation'",
+   "Visa 'Shaders'",
+   "Visa 'Starta inspelning'",
+   "Visa 'Starta streaming'",
+   "Visa 'Ta sk\303\244rmdump'",
+   "Visa '\303\205ngra Spara/L\303\244s in tillst\303\245nd'",
+   "Starta inspelning",
+   "B\303\266rja str\303\266mma",
+   "Stoppa inspelning",
+   "Stoppa str\303\266mning",
+   "Snabbmeny",
+   "Avsluta vid St\303\244ng inneh\303\245ll",
+   "Avsluta",
+   "V\303\244lj slumpm\303\244ssigt",
+   "Prestationer",
+   "Analog inmatning st\303\266ds",
+   "Konststil",
+   "BBFC-betyg",
+   "Kategori",
+   "CERO-betyg",
+   "Konsolexklusiv",
+   "Spelkontroller",
+   "Co-op st\303\266ds",
+   "Beskrivning",
+   "Databaspost",
+   "Utvecklare",
+   "Edge Magazine-utg\303\245va",
+   "Edge Magazine-betyg",
+   "Edge Magazine-recension",
+   "ELSPA-betyg",
+   "F\303\266rb\303\244ttringsh\303\245rdvara",
+   "ESRB-betyg",
+   "Famitsu Magazine-betyg",
+   "Spels\303\244tt",
+   "Spr\303\245k",
+   "Namn",
+   "Ber\303\244ttande",
+   "Ursprung",
+   "Tempo",
+   "PEGI-klassificering",
+   "Perspektiv",
+   "Plattformsexklusiv",
+   "Utgivare",
+   "Utgivningsm\303\245nad",
+   "Utgivnings\303\245r",
+   "Rumble st\303\266ds",
+   "Po\303\244ng",
+   "Serienummer",
+   "Inst\303\244llning",
+   "TGDB-betyg",
+   "Fordon",
+   "Visuellt",
+   "Starta om",
+   "Inspelning Configs",
+   "Inspelningar",
+   "Inspelning",
+   "Anpassad inspelningskonfiguration",
+   "Inspelning",
+   "Spela in repris",
+   "Ommappningsfil",
+   "Uppdatera ommappningsfil f\303\266r inmatning",
+   "Aktiv ommappningsfil",
+   "L\303\244s in ommappningsfil",
+   "Hantera ommappningsfiler",
+   "Ta bort ommappningsfil i spelets inneh\303\245llskatalog",
+   "Ta bort ommappningsfil f\303\266r k\303\244rna",
+   "Ta bort fil f\303\266r spelommappningar",
+   "Nollst\303\244ll inmatningsmappning",
+   "Spara ommappningsfil som",
+   "Spara ommappningsfil i inneh\303\245llskatalog",
+   "Spara ommappningsfil f\303\266r k\303\244rna",
+   "Spara spelommappningsfil",
+   "Spara ommappningsfiler vid Avsluta",
+   "Ta bort \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog",
+   "Ta bort \303\245sidos\303\244ttningar f\303\266r k\303\244rna",
+   "Ta bort \303\245sidos\303\244ttningar f\303\266r spel",
+   "Byt namn",
+   "\303\205teruppspelning: \303\226ka index automatiskt",
+   "\303\205teruppspelning: Intervall f\303\266r kontrollpunkt",
+   "\303\205teruppspelningsplats",
+   "\303\205terst\303\244ll k\303\244rnassociation",
+   "\303\205terst\303\244ll grundinst\303\244llningar",
+   "\303\205terst\303\244ll",
+   "Starta om",
+   "\303\205teruppta",
+   "RetroPad med Analog",
+   "Prestationer",
+   "Buffertstorlek f\303\266r tillbakaspolning (MB)",
+   "Stegstorlek f\303\266r \303\245terspolningsbuffert (MB)",
+   "Spola tillbaka-st\303\266d",
+   "Spola tillbaka bildrutor",
+   "Spola tillbaka",
+   "16:10 (Centrerad)",
+   "16:9 (Centrerad)",
+   "21:9 (Centrerad)",
+   "3:2 (Centrerad)",
+   "5:3 (Centrerad)",
+   "Fyll sk\303\244rm (Str\303\244ckt)",
+   "Anpassa till sk\303\244rm",
+   "Heltalsskala",
+   "AV",
+   "Startkatalog",
+   "Konfigurationsfiler",
+   "F\303\244rgtema",
+   "\303\204ppelgr\303\266n",
+   "Klassisk bl\303\245",
+   "Klassisk gr\303\266n",
+   "Klassisk gr\303\245",
+   "Klassisk orange",
+   "Klassisk r\303\266d",
+   "Klassisk violett",
+   "Klassisk gul",
+   "Anpassa",
+   "M\303\266rklila",
+   "Elektrisk bl\303\245",
+   "Gyllene",
+   "Gr\303\245 M\303\266rk",
+   "Gr\303\245 Ljus",
+   "Gruvbox M\303\266rk",
+   "Gruvbox Ljus",
+   "\303\204ldre r\303\266d",
+   "Midnattsbl\303\245",
+   "Solarized M\303\266rk",
+   "Solarized Ljus",
+   "Tango M\303\266rk",
+   "Tango Ljus",
+   "Vulkanr\303\266d",
+   "Anpassat temaf\303\266rval",
+   "AV",
+   "Regn",
+   "Sn\303\266 (L\303\244tt)",
+   "Sn\303\266 (Tungt)",
+   "Stj\303\244rnf\303\244lt",
+   "Virvel",
+   "Visa Startsk\303\244rm",
+   "Bilinj\303\244r",
+   "N\303\244rmsta granne (Snabb)",
+   "Sinc/Lanczos3 (L\303\245ngsam)",
+   "Ingen",
+   "H\303\266ger Analog",
+   "H\303\266ger Analog (Tvingad)",
+   "K\303\266r",
+   "L\303\244ge f\303\266r preemptive frames",
+   "L\303\244ge f\303\266r andra instans",
+   "Enstaka instansl\303\244ge",
+   "K\303\266rningslogg",
+   "Antal bildrutor f\303\266r Run-Ahead",
+   "D\303\266lj varningar f\303\266r Run-Ahead",
+   "[Run-Ahead inte tillg\303\244ngligt]",
+   "Spela i Media Player",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
-MSG_HASH(
-   MSG_LOCALAP_SWITCHING_OFF,
-   "Stänger av Wi-Fi-åtkomstpunkt."
-   )
-MSG_HASH(
-   MSG_WIFI_DISCONNECT_FROM,
-   "Kopplar från Wi-Fi '%s'"
-   )
-MSG_HASH(
-   MSG_WIFI_CONNECTING_TO,
-   "Ansluter till Wi-Fi '%s'"
-   )
-MSG_HASH(
-   MSG_WIFI_EMPTY_SSID,
-   "[Inget SSID]"
-   )
-MSG_HASH(
-   MSG_LOCALAP_ALREADY_RUNNING,
-   "Wi-Fi-åtkomstpunkt är redan startad"
-   )
-MSG_HASH(
-   MSG_LOCALAP_NOT_RUNNING,
-   "Wi-Fi-åtkomstpunkt är inte igång"
-   )
-MSG_HASH(
-   MSG_LOCALAP_STARTING,
-   "Startar Wi-Fi-åtkomstpunkt med SSID=%s och lösennyckel=%s"
-   )
-MSG_HASH(
-   MSG_LOCALAP_ERROR_CONFIG_CREATE,
-   "Kunde inte skapa konfigurationsfil för Wi-Fi-åtkomstpunkt."
-   )
-MSG_HASH(
-   MSG_LOCALAP_ERROR_CONFIG_PARSE,
-   "Felaktig konfigurationsfil - kunde inte hitta APNAME eller PASSWORD i %s"
-   )
 #endif
-#ifdef HAVE_LAKKA_SWITCH
+   "Spara fil: Skriv till inneh\303\245llskatalog",
+   "Spara filer",
+   "Sparat tillst\303\245nd: Skriv till inneh\303\245llskatalog",
+   "Sparat tillst\303\245nd: \303\226ka index automatiskt",
+   "Sparat tillst\303\245nd: Automatisk inl\303\244sning",
+   "Sparat tillst\303\245nd: Automatisk sparning",
+   "Sparade tillst\303\245nd",
+   "Sparat tillst\303\245nd: Komprimering",
+   "Sparade tillst\303\245nd",
+   "Sparat tillst\303\245nd: Maximal automatisk \303\266kning att beh\303\245lla",
+   "Sparat tillst\303\245nd: Miniatyrbilder",
+   "Spara konfiguration som",
+   "Spara nuvarande konfiguration",
+   "Spara \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog",
+   "Spara \303\245sidos\303\244ttningar f\303\266r k\303\244rna",
+   "\303\205sidos\303\244ttning f\303\266r sparade spel",
+   "Sparad fil: Komprimering",
+   "Spara huvudkonfiguration",
+   "Spara som ny konfiguration",
+   "Spara tillst\303\245nd",
+   "Sparningar",
+   "Skala",
+   "Databas att matcha",
+   "<Automatiskt/Alla>",
+   "<Automatiskt/F\303\266rsta matchning>",
+   "S\303\266k igenom katalog",
+   "S\303\266k igenom",
+   "S\303\266k igenom fil",
+   "Genoms\303\266kningsmetod",
+   "Helt automatiskt",
+   "Anpassa",
+   "Hoppa \303\266ver databasreferenser fr\303\245n spellista",
+   "S\303\266k igenom CRC-kontrollsummor vid m\303\266jliga dubbletter",
+   "S\303\266k igenom en enda fil",
+   "Spellista att uppdatera",
+   "<Automatiskt/Systemnamn>",
+   "Databaskontroll",
+   "Anpassad DAT (Strikt)",
+   "Anpassad DAT (Avslappnad)",
+   "Avslappnat",
+   "Ingen",
+   "Strikt",
+   "S\303\266k igenom utan k\303\244rnmatchning",
+   "Sk\303\244rmdump: Skriv till inneh\303\245llskatalog",
+   "Sk\303\244rmdumpar",
+   "Sk\303\244rmorientering",
+   "Sk\303\244rmuppl\303\266sning",
+   "Snabb",
+   "S\303\266k",
+   "sekunder",
+   "V\303\244lj fil",
+   "Inst\303\244llningar",
+   "Visa 'Tillg\303\244nglighet'",
+   "Visa 'Prestationer'",
+   "Visa 'AI-tj\303\244nst'",
+   "Visa 'Ljud'",
+   "Visa 'Konfiguration'",
+   "Visa 'K\303\244rna'",
+   "Visa 'Katalog'",
+   "Visa 'Drivrutiner'",
+   "Visa 'Filhanterare'",
+   "Visa 'Bildfrekvensstrypning'",
+   "Show 'Inmatning'",
+   "Visa 'Latens'",
+   "Visa 'Loggning'",
+   "Visa 'N\303\244tverk'",
+   "Visa 'Sk\303\244rmvisning'",
+   "Visa 'Spellistor'",
+   "Visa 'Energihantering'",
+   "Visa 'Inspelning'",
+   "Visa 'Sparningar'",
+   "Visa 'Steam'",
+   "Visa 'Anv\303\244ndare'",
+   "Visa 'Anv\303\244ndargr\303\244nssnitt'",
+   "Visa 'Video'",
+   "Inst\303\244llningar",
+   "Inst\303\244llningar",
+   "St\303\244ll in k\303\244rnassociation",
+   "Till\303\244mpa \303\244ndringar",
+   "Ribbon (F\303\266renklad)",
+   "Enkel sn\303\266",
+   "Sn\303\266",
+   "Sn\303\266flingor",
+   "Bevaka shader-filer f\303\266r \303\244ndringar",
+   "Visa Avancerade inst\303\244llningar",
+   "Alla",
+   "Anpassad",
+   "En g\303\245ng",
+   "Visa dolda filer och mappar",
+   "Visa skrivbordsmeny",
+   "St\303\244ng av",
+   "K\303\244rninstallation misslyckades",
+   "Installera/\303\205terst\303\244ll k\303\244rna",
+   "K\303\244rninstallation lyckades",
+   "Slow motion hastighet",
+   "Sparad fil: Sortera in i mappar efter inneh\303\245llskatalog",
+   "Sparad fil: Sortera in i mappar efter k\303\244rnnamn",
+   "Sparat tillst\303\245nd: Sortera in i mappar efter inneh\303\245llskatalog",
+   "Sparat tillst\303\245nd: Sortera in i mappar efter k\303\244rnnamn",
+   "Sk\303\244rmdump: Sortera in i mappar efter inneh\303\245llskatalog",
+   "Ljud",
+   "Starta k\303\244rna",
+   "Starta fj\303\244rrstyrd RetroPad",
+   "Starta videoprocessor",
+   "Tillst\303\245ndsplats",
+   "Visa Statistik",
+   "Kommandon f\303\266r stdin",
+   "Lagring",
+   "Streamingl\303\244ge",
+   "Stream Titel",
+   "Anpassad streamingkonfiguration",
+   "Aktuellt Inneh\303\245ll: %s",
+   "Delsystem",
+   "F\303\266reslagna k\303\244rnor",
+   "St\303\244ng av sk\303\244rmsl\303\244ckare",
+   "L\303\245ngvarigt prestandal\303\244ge",
+   "Byt k\303\244rnor till Play-butiksversioner",
+   "Systemfiler finns i inneh\303\245llskatalogen",
+   "Systeminformation",
+   "Kompileringsdatum",
+   "CPU-funktioner",
+   "CPU-modell",
+   "Sk\303\244rmens DPI",
+   "Sk\303\244rmh\303\266jd (mm)",
+   "Sk\303\244rmbredd (mm)",
+   "Frontend-identifierare",
+   "Frontend-namn",
+   "Git-version",
+   "Energik\303\244lla",
+   "Laddad",
+   "Laddar",
+   "Urladdning",
+   "Ingen k\303\244lla",
+   "RetroArch-version",
+   "Drivrutin f\303\266r videokontext",
+   "Ta sk\303\244rmdump",
+   "Tr\303\245dade uppgifter",
+   "Prim\303\244r miniatyrbild",
+   "Miniatyrer",
+   "Prim\303\244r miniatyrbild",
+   "\303\226vre miniatyrbild",
+   "Omslagsbild",
+   "Inneh\303\245llslogotyp",
+   "Sk\303\244rmdump",
+   "Titelsk\303\244rm",
+   "sedan",
+   "Datumseparator",
+   "Visa tid och datum",
+   "Tid och datum-format",
+   "sedan",
+   "dagar",
+   "dag",
+   "timmar",
+   "timme",
+   "minuter",
+   "minut",
+   "m\303\245nader",
+   "m\303\245nad",
+   "sekunder",
+   "sekund",
+   "veckor",
+   "vecka",
+   "\303\245r",
+   "\303\245r",
+   "Sant",
+   "Halv period",
+   "Klassisk",
+   "Klassisk (v\303\244xla)",
+   "En knapp (v\303\244xla)",
+   "En knapp (intryckt)",
+   "Twin-Stick-analoga",
+   "Twin-Stick-analoga (tvingad)",
+   "Str\303\266mningsnyckel f\303\266r Twitch",
+   "Stream UDP Port",
+   "Starta UI Companion vid uppstart",
+   "\303\226ppna skrivbordsmenyn vid start",
+   "Visa menyf\303\244lt",
+   "Kan inte l\303\244sa komprimerad fil.",
+   "\303\205ngra L\303\244s in tillst\303\245nd",
+   "\303\205ngra Spara tillst\303\245nd",
+   "Ok\303\244nd",
+   "Ok\303\244nt spel",
+   "Inst\303\244llningar f\303\266r uppdaterare",
+   "Uppdatera resurser",
+   "Uppdatera spelkontrollsprofiler",
+   "Uppdatera Cg-shaders",
+   "Uppdatera fusk",
+   "Uppdatera k\303\244rninfofiler",
+   "Uppdatera databaser",
+   "Uppdatera GLSL-shaders",
+   "Uppdatera installerade k\303\244rnor",
+   "Uppdatera Lakka",
+   "Uppdatera \303\266verl\303\244gg",
+   "Uppdatera Slang-shaders",
+   "Anv\303\244ndare",
+   "Anv\303\244ndargr\303\244nssnitt",
+   "Spr\303\245k",
+   "Anv\303\244ndare",
+   "Anv\303\244nd inbyggd bildvisare",
+   "Anv\303\244nd intern mediaspelare",
+   "Kom ih\303\245g senaste anv\303\244nda startkatalog",
+   "Vibrera vid knapptryck",
+   "Adaptiv VSynk",
+   "Till\303\245t Rotation",
+   "Konfigurera bildformat",
+   "Konfig",
+   "K\303\244rnspecifik",
+   "Anpassa",
+   "Bildformat",
+   "Automatisk uppdateringsfrekvens PAL-tr\303\266skel",
+   "Auto uppdateringsfrekvens",
+   "Alla helsk\303\244rmsl\303\244gen",
+   "Endast i exklusivt helsk\303\244rmsl\303\244ge",
+   "Endast i f\303\266nster med helsk\303\244rmsl\303\244ge",
+   "Infoga svart bildruta - M\303\266rka bildrutor",
+   "Ins\303\244ttning av svart bildruta",
+   "Besk\303\244r \303\266verskanning (omstart kr\303\244vs)",
+#ifdef HAVE_ODROIDGO2
+#else
+   "Kontextspecifik skalning",
 #endif
-#ifdef GEKKO
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
-   "Musskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
-   "Justera x/y-hastighetsskala för Wiimotes ljuspistol."
-   )
+   "Inaktivera skrivbordskomposition",
+   "Din grafikdrivrutin \303\244r inte kompatibel med aktuella videodrivrutinen i RetroArch, faller "
+   "tillbaka p\303\245 drivrutinen %s. Starta om RetroArch f\303\266r att \303\244ndringen ska ta ef"
+   "fekt.",
+   "Videofilter",
+   "Videofilter",
+   "Flimmerfilter",
+   "Ta bort videofilter",
+   "Sk\303\244rmmeddelanden",
+   "Typsnitt f\303\266r meddelanden",
+   "Meddelandestorlek",
+   "Framtvinga uppl\303\266sning p\303\245 UWP",
+   "Tv\303\245ngsinaktivera sRGB FBO",
+   "Bildrutef\303\266rdr\303\266jning",
+   "Automatisk bildf\303\266rdr\303\266jning",
+   "effektiv",
+   "Helsk\303\244rmsvisning",
+   "Helsk\303\244rmsl\303\244ge",
+   "Bredd f\303\266r helsk\303\244rm",
+   "H\303\266jd f\303\266r helsk\303\244rm",
+   "Videogamma",
+   "GPU-index",
+   "Anv\303\244nd GPU-inspelning",
+   "Sk\303\244rmdump: Anv\303\244nd GPU",
+   "H\303\245rd GPU-synk",
+   "H\303\245rd GPU-synk Bildrutor",
+   "F\303\244rgf\303\266rst\303\244rkning",
+   "Noggrann",
+   "Expanderad",
+   "Bred",
+   "Av",
+   "Ljusstyrka",
+   "Skanningslinjer",
+   "Subpixel-layout",
+   "Videolayouter",
+   "Max bildrutelatens",
+   "Meddelandens bakgrundsf\303\244rg (bl\303\245)",
+   "Meddelandebakgrund",
+   "Meddelandens bakgrundsf\303\244rg (gr\303\266n)",
+   "Bakgrundsopacitet f\303\266r meddelanden",
+   "Meddelandens bakgrundsf\303\244rg (r\303\266d)",
+   "Meddelandef\303\244rg (bl\303\245)",
+   "Meddelandef\303\244rg (gr\303\266n)",
+   "Meddelandef\303\244rg (r\303\266d)",
+   "Meddelandeposition (horisontellt)",
+   "Meddelandeposition (vertikalt)",
+   "Sk\303\244rmindex",
+   "Aktivera helsk\303\244rm utan h\303\244nsyn till notch p\303\245 Android och iOS-enheter",
+   "180 gr.",
+   "270 gr.",
+   "90 gr.",
+   "Utmatning",
+   "\303\226verskanningskorrigering (Botten)",
+   "\303\226verskanningskorrigering (Topp)",
+   "Anv\303\244nd inspelning med efterfilter",
+   "Anpassa",
+   "H\303\266g",
+   "F\303\266rlustfri",
+   "L\303\245g",
+   "WebM Snabb",
+   "WebM H\303\266g kvalitet",
+   "Anpassa",
+   "H\303\266g",
+   "L\303\245g",
+   "Inspelningskvalitet",
+   "Inspelnings-tr\303\245dar",
+   "Vertikal uppdateringsfrekvens",
+   "Uppskattad uppdateringsfrekvens",
+   "Ange uppdateringsfrekvens som rapporteras fr\303\245n sk\303\244rmen",
+   "Videorotation",
+   "180 gr.",
+   "270 gr.",
+   "90 gr.",
+   "F\303\266nsterskala",
+   "Heltalsskala",
+   "Axel f\303\266r heltalsskalning",
+   "Heltalsskalning",
+   "\303\226verskala",
+   "Underskala",
+   "Skalning",
+   "Rullande skanningslinjesimulering",
+   "Autoshader-f\303\266rdr\303\266jning",
+   "Shaderpass",
+   "Shader parametrar",
+   "L\303\244s in f\303\266rinst\303\244lld",
+   "L\303\244gg till f\303\266rval",
+   "Aktiv f\303\266rvalsfil",
+   "Hantera f\303\266rval",
+   "L\303\244gg till f\303\266rinst\303\244llning f\303\266re",
+   "Ta bort k\303\244rnf\303\266rval",
+   "Ta bort spelf\303\266rval",
+   "Ta bort globalt f\303\266rval",
+   "Ta bort f\303\266rval f\303\266r inneh\303\245llskatalog",
+   "Spara f\303\266rval som",
+   "Spara k\303\244rnf\303\266rval",
+   "Spara aktuellt f\303\266rval",
+   "F\303\266rval f\303\266r sparat spel",
+   "Spara globalt f\303\266rval",
+   "Spara f\303\266rval f\303\266r inneh\303\245llskatalog",
+   "Enkla f\303\266rinst\303\244llningar",
+   "Kom ih\303\245g senast anv\303\244nda Shader-katalog",
+   "Delad kontext f\303\266r h\303\245rdvara",
+   "Bilinj\303\244r-filtrering",
+   "Mjukt filter",
+   "Anpassa",
+   "Lokal",
+   "Streamingkvalitet",
+   "VSynk bytesintervall",
+   "Synkronisering",
+   "Videor",
+   "Tr\303\245dad video",
+   "Anv\303\244nd Metal-argumentbuffertar (kr\303\244ver omstart)",
+   "Anpassa bildformat (H\303\266jd)",
+   "Anpassa bildformat (Bredd)",
+   "Anpassa bildformat (X-position)",
+   "Anpassa bildformat (Y-position)",
+   "Vertikal synkronisering (Vsync)",
+   "F\303\266nster i helsk\303\244rmsl\303\244ge",
+   "F\303\266nsterl\303\244ge",
+   "Maximal f\303\266nsterh\303\266jd",
+   "Maximal f\303\266nsterbredd",
+   "Anv\303\244nd anpassad f\303\266nsterstorlek",
+   "F\303\266nsterh\303\266jd",
+   "Horisontell sk\303\244rmf\303\266rskjutning",
+   "Vertikal sk\303\244rmf\303\266rskjutning",
+   "F\303\266nsteropacitet",
+   "Kom ih\303\245g f\303\266nsterposition/storlek",
+   "Visa f\303\266nsterdekorationer",
+   "F\303\266nsterbredd",
+   "Synkronisera exakt till inneh\303\245llets bildhastighet (G-Sync, FreeSync)",
+   "Koppla fr\303\245n",
+   "Aktivera Wi-Fi",
+   "Anslut till n\303\244tverk",
+   "Anslut till n\303\244tverk",
+   "Aktuell menyikon",
+   "Ingen",
+   "Titel",
+   "Typsnitt",
+   "Automatisk",
+   "Automatisk inverterad",
+   "Anpassa",
+   "Monokrom",
+   "Monokrom inverterad",
+   "Systematisk",
+   "Aktivera inst\303\244llningsflik",
+   "F\303\244rgtema",
+   "\303\204ppelgr\303\266n",
+   "M\303\266rk",
+   "M\303\266rklila",
+   "Elektrisk bl\303\245",
+   "Family R\303\266d",
+   "Cube Lila",
+   "Gyllene",
+   "Gr\303\245 M\303\266rk",
+   "Gr\303\245 Ljus",
+   "Iskall",
+   "\303\204ldre r\303\266d",
+   "Ljus",
+   "Limegr\303\266n",
+   "Midnattsbl\303\245",
+   "Morgon bl\303\245",
+   "Pikachu Gul",
+   "Bakgrundsbild",
+   "Solstr\303\245le",
+   "Under havet",
+   "Vulkanr\303\266d",
+   "Shader-r\303\266rledning",
+   "Skuggeffekter",
+   "Skifta ikoner/text",
+   "Ikontema",
+   "Vertikal disposition f\303\266r minatyrbild",
+   "Ja",
+   "Str\303\266mningsnyckel f\303\266r YouTube",
+   "F\303\266rinst\303\244lld Shader",
+   "F\303\266rinst\303\244lld Shader",
+   "F\303\266rinst\303\244lld Shader",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "Aktivera text-till-tal f\303\266r att underl\303\244tta navigering i menyn.",
+   "Hastigheten f\303\266r text-till-tal-r\303\266sten.",
+   "\303\204ndra inst\303\244llningar f\303\266r hj\303\244lpmedelsber\303\244ttaren.",
+   "Hantera aktuella konfigurerade konton.",
+   "Samla prestationframg\303\245ngar i klassiska spel. F\303\266r mer information, bes\303\266k 'ht"
+   "tps://retroachievements.org'.",
+   "Visa prestationer och relaterade inst\303\244llningar.",
+   "Pausa hardcore-l\303\244get f\303\266r prestationer f\303\266r den aktuella sessionen. Den h\303"
+   "\244r \303\245tg\303\244rden aktiverar fusk, spola tillbaka, slowmotion och l\303\244sa in spara"
+   "de tillst\303\245nd.",
+   "L\303\244mna hardcore-l\303\244get f\303\266r prestationer aktiverat f\303\266r den aktuella ses"
+   "sionen",
+   "\303\205teruppta hardcore-l\303\244get f\303\266r prestationer f\303\266r den aktuella sessionen"
+   ". Den h\303\244r \303\245tg\303\244rden inaktiverar fusk, spola tillbaka, slowmotion och ladda s"
+   "parade tillst\303\245nd och \303\245terst\303\244ller det aktuella spelet.",
+   "L\303\244mna hardcore-l\303\244get f\303\266r prestationer inaktiverat f\303\266r den aktuella s"
+   "essionen",
+   "Du m\303\245ste l\303\244sa om k\303\244rnan f\303\266r att \303\245teruppta hardcore-l\303\244g"
+   "et f\303\266r prestationer",
+   "En eller flera uppl\303\245sningar av prestationer n\303\245dde inte fram till servern. Uppl\303"
+   "\245sningarna kommer att f\303\266rs\303\266ka igen s\303\245 l\303\244nge du l\303\244mnar appe"
+   "n \303\266ppen.",
+   "Skapa eller uppdatera spellistor genom att s\303\266ka igenom inneh\303\245ll.",
+   "L\303\244gg till Inneh\303\245llet i 'Favoriter'.",
+   "L\303\244gg till Inneh\303\245llet i 'Favoriter'.",
+   "V\303\244lj vilken \303\266vers\303\244ttningsbak\303\244nde att anv\303\244nda. HTTP anv\303"
+   "\244nder en fj\303\244rrserver p\303\245 den konfigurerade webbadressen. Apple anv\303\244nder O"
+   "CR-enhet och \303\266vers\303\244ttning (macOS/iOS).",
+   "Aktivera AI-tj\303\244nsten s\303\245 att den k\303\266rs n\303\244r snabbtangenten AI-tj\303"
+   "\244nst trycks in.",
+   "Visa \303\266vers\303\244ttningen som ett text\303\266verl\303\244gg (Bildl\303\244ge), spela up"
+   "p som text-till-tal (Tal) eller anv\303\244nd en systember\303\244ttare som NVDA (Ber\303\244tta"
+   "re).",
+   "Pausa k\303\244rnan medan sk\303\244rmen \303\266versatts.",
+   "\303\204ndra inst\303\244llningar f\303\266r AI-tj\303\244nsten (\303\226vers\303\244ttning/TTT/"
+   "Diverse).",
+   "Det spr\303\245k som tj\303\244nsten ska \303\266vers\303\244tta fr\303\245n. Om den \303\244r i"
+   "nst\303\244lld p\303\245 \342\200\235Standard\342\200\235 f\303\266rs\303\266ker den automatiskt"
+   " k\303\244nna av spr\303\245ket. Om du st\303\244ller in det p\303\245 ett specifikt spr\303\245"
+   "k blir \303\266vers\303\244ttningen mer exakt.",
+   "Det spr\303\245k som tj\303\244nsten ska \303\266vers\303\244tta till. \342\200\235Standard\342"
+   "\200\235 \303\244r engelska.",
+   "En http:// URL som pekar p\303\245 den \303\266vers\303\244ttningstj\303\244nst som ska anv\303"
+   "\244ndas.",
+#ifndef HAVE_DYNAMIC
+   "Starta om RetroArch n\303\244r inneh\303\245ll startas, \303\244ven n\303\244r den beg\303\244rd"
+   "a k\303\244rnan redan \303\244r laddad. Detta kan f\303\266rb\303\244ttra systemets stabilitet, "
+   "p\303\245 bekostnad av \303\266kade laddningstider.",
 #endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
-   "Tryckskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
-   "Justera x/y-skalan för pekskärmens koordinater för att anpassa den till OS-nivåns skärmskalning."
-   )
-#ifdef UDEV_TOUCH_SUPPORT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
-   "Tryck på VMouse som pekare"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
-   "Aktivera för att vidarebefordra pekhändelser från pekskärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Tryck på VMouse som mus"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
-   "Aktivera virtuell musemulering med hjälp av inmatningshändelser vid beröring."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
-   "Aktivera tillsammans med mus för att använda pekskärmen som pekplatta."
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
-   "Aktivera tillsammans med musen för att använda pekskärmen som en styrkula, vilket ger pekaren tröghet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
-   "Gester för tryck på VMouse"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
-   "Aktivera pekskärmsgester, inklusive tryck, tryck-dra och svep med fingret."
-   )
+   "L\303\266sning f\303\266r kontroller som kopplas bort och \303\245teransluts. F\303\266rhindrar "
+   "2 spelare med identiska kontroller.",
+   "\303\204ndra programikon.",
+   "Menyresurser som anv\303\244nds av RetroArch lagras i denna katalog.",
+   "\303\205sidos\303\244tt den f\303\266rvalda ljudenheten som ljuddrivrutinen anv\303\244nder. Det"
+   "ta \303\244r beroende av drivrutinen.",
+   "Insticksmodul f\303\266r DSP-ljud som bearbetar ljud innan det skickas till drivrutinen.",
+   "Inaktiverar DSP-insticksmoduler som \303\244r aktiva.",
+   "Aktivera ljudutg\303\245ng.",
+   "Spela samtidiga ljudstr\303\266mmar \303\244ven i menyn.",
+   "St\303\244ng av ljudet automatiskt n\303\244r snabbspolning fram\303\245t anv\303\244nds.",
+   "Snabba upp ljudet vid snabbspolning fram\303\245t. F\303\266rhindrar knastrande men \303\244ndra"
+   "r tonh\303\266jd.",
+   "DSP-ljudfilter lagras i denna katalog.",
+   "Maximal ljudf\303\266rdr\303\266jning i millisekunder. Drivrutinen str\303\244var efter att h"
+   "\303\245lla den faktiska latensen p\303\245 50 % av detta v\303\244rde. Det kan h\303\244nda att"
+   " v\303\244rdet inte uppfylls om ljuddrivrutinen inte kan tillhandah\303\245lla den angivna laten"
+   "sen.",
+   "Den maximala f\303\266r\303\244ndringen i ljudinmatningshastighet. Om du \303\266kar detta m\303"
+   "\266jligg\303\266rs mycket stora f\303\266r\303\244ndringar i timing p\303\245 bekostnad av en f"
+   "elaktig ljudtonh\303\266jd (t.ex. k\303\266rning av PAL-k\303\244rnor p\303\245 NTSC-sk\303\244r"
+   "mar).",
+   "St\303\244ng av ljudet fr\303\245n mixer.",
+   "\303\204ndra inst\303\244llningar f\303\266r ljudmixer.",
+   "Global ljudmixervolym (i dB). 0 dB \303\244r normal volym, och ingen f\303\266rst\303\244rkning "
+   "till\303\244mpas.",
+   "St\303\244ng av ljudet.",
+   "Samplingsfrekvens f\303\266r ljudutg\303\245ng.",
+   "\303\204ndra inst\303\244llningar f\303\266r ljudutg\303\245ngen.",
+   "Hj\303\244lper till att j\303\244mna ut brister i timing n\303\244r ljud och video synkroniseras"
+   ". T\303\244nk p\303\245 att korrekt synkronisering \303\244r n\303\244stan om\303\266jlig att f"
+   "\303\245 till om den \303\244r inaktiverad.",
+   "Ljudomsamplare att anv\303\244nda.",
+   "S\303\244nk detta v\303\244rde f\303\266r att gynna prestanda/l\303\244gre latens \303\266ver lj"
+   "udkvalitet, \303\266ka f\303\266r b\303\244ttre ljudkvalitet p\303\245 bekostnad av prestanda/l"
+   "\303\244gre latens.",
+   "St\303\244ng av allt ljud i tyst l\303\244ge.",
+   "Tysta ljudet automatiskt vid tillbakaspolning.",
+   "\303\204ndra ljuding\303\245ng/utg\303\245ngsinst\303\244llningar.",
+   "Synkronisera ljud. Rekommenderas.",
+   "\303\204ndra inst\303\244llningar f\303\266r ljudsynkronisering.",
+   "Ljudvolym (i dB). 0 dB \303\244r normal volym och ingen f\303\266rst\303\244rkning till\303\244m"
+   "pas.",
+   "Till\303\245t WASAPI-drivrutinen att ta exklusiv kontroll \303\266ver ljudenheten. Om detta \303"
+   "\244r inaktiverat kommer den att anv\303\244nda delat l\303\244ge ist\303\244llet.",
+   "Anv\303\244nd floatformat f\303\266r WASAPI-drivrutinen, om det st\303\266ds av din ljudenhet.",
+   "Mellanbuffertl\303\244ngd (i rutor) vid anv\303\244ndning av WASAPI-drivrutinen i delningsl\303"
+   "\244ge.",
+   "Spara automatiskt icke-flyktigt SaveRAM vid fasta intervaller (i sekunder).",
+   "L\303\244s in anpassad konfiguration vid uppstart.",
+   "L\303\244s in anpassade kontroller vid uppstart.",
+   "Visa aktuell batteriniv\303\245 i menyn.",
+   "Blockera SaveRAM fr\303\245n att skrivas \303\266ver n\303\244r sparade tillst\303\245nd l\303"
+   "\244ses in. Kan potentiellt inneb\303\244ra buggiga spel.",
+   "S\303\266k efter bluetooth-enheter och anslut dem.",
+   "\303\226ka eller minska sk\303\244rmens ljusstyrka.",
+   "URL till katalog f\303\266r resursuppdaterare p\303\245 libretros buildbot.",
+   "Arkiverat inneh\303\245ll kommer tillf\303\244lligt att extraheras till denna katalog.",
+   "Till\303\245t k\303\244rnor att komma \303\245t kameran.",
+   "Adressbitmask n\303\244r minnesstorlek f\303\266r s\303\266kning < 8-bitars.",
+   "Till\303\244mpa fusk automatiskt n\303\244r spelet l\303\244ses in.",
+   "Till\303\244mpa fusk direkt efter v\303\244xling.",
+   "Fusk\303\244ndringar kommer aktiveras direkt.",
+   "Fuskfiler lagras i denna katalog.",
+   "L\303\244s in en fuskfil och ers\303\244tt befintliga fusk.",
+   "L\303\244s in en fuskfil och l\303\244gg till i befintliga fusk.",
+   "Spara aktuella fusk som en fuskfil.",
+   "Fuskposition i listan.",
+   "Efter varje iteration kommer \342\200\235Minnesadress\342\200\235 att \303\266kas med detta tal "
+   "g\303\245nger \342\200\235S\303\266kstorlek f\303\266r minne\342\200\235.",
+   "Efter varje iteration kommer \342\200\235V\303\244rde\342\200\235 att \303\266kas med denna m"
+   "\303\244ngd.",
+   "Antal g\303\245nger fusket kommer att till\303\244mpas. Anv\303\244nd tillsammans med de andra t"
+   "v\303\245 alternativen f\303\266r \342\200\235Iteration\342\200\235 f\303\266r att p\303\245verk"
+   "a stora minnesomr\303\245den.",
+   "Tryck v\303\244nster eller h\303\266ger f\303\266r att \303\244ndra v\303\244rde.",
+   "Tryck v\303\244nster eller h\303\266ger f\303\266r att \303\244ndra v\303\244rde.",
+   "Tryck v\303\244nster eller h\303\266ger f\303\266r att \303\244ndra v\303\244rde.",
+   "Tryck V\303\244nster eller H\303\266ger f\303\266r att \303\244ndra bitstorlek.",
+   "St\303\244ll in det h\303\266rn/den kant p\303\245 sk\303\244rmen som meddelanden om prestatione"
+   "r ska visas fr\303\245n.",
+   "Ange om prestationsmeddelanden ska \303\266verensst\303\244mma med andra typer av sk\303\244rmme"
+   "ddelanden. Inaktivera f\303\266r att st\303\244lla in manuella utfyllnads-/positionsv\303\244rde"
+   "n.",
+   "Avst\303\245nd fr\303\245n v\303\244nster/h\303\266ger sk\303\244rmkant, vilket kan kompensera f"
+   "\303\266r sk\303\244rmens overscan.",
+   "Avst\303\245nd fr\303\245n sk\303\244rmens \303\266vre/nedre kant, vilket kan kompensera f\303"
+   "\266r sk\303\244rmens overscan.",
+   "\303\204ndra position och f\303\266rskjutningar f\303\266r prestationsmeddelanden p\303\245 sk"
+   "\303\244rmen.",
+   "Ta automatiskt en sk\303\244rmbild n\303\244r en prestation tj\303\244nas.",
+   "Visa emblem i prestationslistan.",
+   "Visa indikationer p\303\245 sk\303\244rmen samtidigt som vissa prestationer kan tj\303\244nas.",
+   "Samla prestationframg\303\245ngar i klassiska spel. F\303\266r mer information, bes\303\266k 'ht"
+   "tps://retroachievements.org'.",
+   "Inaktiverar fusk, spola tillbaka, slowmotion och l\303\244sa in sparade tillst\303\245nd. Presta"
+   "tioner som uppn\303\245s i hardcore-l\303\244get \303\244r unikt markerade s\303\245 att du kan "
+   "visa andra vad du har uppn\303\245tt utan emulatorns hj\303\244lpfunktioner. Om du v\303\244xlar"
+   " den h\303\244r inst\303\244llningen under spelets g\303\245ng startas spelet om.",
+   "Ange l\303\266senordet f\303\266r ditt RetroAchievements-konto. Max l\303\244ngd: 255 tecken.",
+   "Skickar regelbundet kontextuell spelinformation till RetroAchievements webbplats. Har ingen effe"
+   "kt om \342\200\235Hardcore-l\303\244ge\342\200\235 \303\244r aktiverat.",
+   "Starta sessionen med alla prestationer aktiva (\303\244ven de som tidigare har l\303\245sts upp)"
+   ".",
+   "Anv\303\244nd inofficiella prestationer och/eller betafunktioner f\303\266r test\303\244ndam\303"
+   "\245l.",
+   "Spela upp ett ljud n\303\244r en prestation l\303\245ses upp.",
+   "Ange ditt anv\303\244ndarnamn f\303\266r RetroAchievements-kontot.",
+   "Visar ytterligare diagnostik och felmeddelanden.",
+   "Visar meddelanden kopplade till RetroAchievements kontoinloggning.",
+   "Visar ett meddelande n\303\244r ett topplistef\303\266rs\303\266k misslyckas.",
+   "Visar en beskrivning av en topplista n\303\244r den blir aktiv.",
+   "Visar ett meddelande med det v\303\244rde som skickas in n\303\244r ett topplistef\303\266rs\303"
+   "\266k har slutf\303\266rts.",
+   "Visar sp\303\245rare p\303\245 sk\303\244rmen med aktuellt v\303\244rde f\303\266r aktiva ledart"
+   "avlor.",
+   "Visar ett meddelande n\303\244r alla prestationer f\303\266r ett spel \303\244r uppl\303\245sta.",
+   "Visa en indikationer p\303\245 sk\303\244rmen n\303\244r framsteg g\303\266rs mot vissa prestati"
+   "oner.",
+   "\303\204ndra vilka meddelanden och element p\303\245 sk\303\244rmen som visas. Inaktiverar inte "
+   "funktionalitet.",
+   "Visar ett meddelande n\303\244r en prestation \303\244r uppl\303\245st.",
+   "St\303\244ng inneh\303\245llet. Eventuella osparade \303\244ndringar kan g\303\245 f\303\266rlor"
+   "ade.",
+   "Ditt \303\245tkomstnyckel-ID f\303\266r ditt molnlagringskonto.",
+   "Inaktiverat flyttas filer till en s\303\244kerhetskopia innan de skrivs \303\266ver eller radera"
+   "s.",
+   "Vilket n\303\244tverksprotokoll f\303\266r molnlagring som ska anv\303\244ndas.",
+   "F\303\266rs\303\266k att synkronisera konfigurationer, SRAM och tillst\303\245nd till en molnlag"
+   "ringsleverant\303\266r.",
+   "Ditt l\303\266senord f\303\266r ditt molnlagringskonto.",
+   "L\303\266s alla konflikter genom att ladda upp lokala filer till servern.",
+   "L\303\266s alla konflikter genom att ladda ner serverfiler, ers\303\244tter lokala kopior.",
+   "Din S3-slutpunkts-URL f\303\266r molnlagring.",
+   "Din hemliga \303\245tkomstnyckel f\303\266r ditt molnlagringskonto.",
+   "\303\204ndra inst\303\244llningar f\303\266r molnsynkronisering.",
+   "N\303\244r aktiverad kommer konfigurationsfiler synkas till molnet.",
+   "Automatiskt: Synkronisering vid uppstart av RetroArch och n\303\244r k\303\244rnor l\303\244ses "
+   "ur. Manuellt: Synkronisering endast n\303\244r knappen \342\200\235Synkronisera nu\342\200\235 t"
+   "rycks in manuellt.",
+   "Starta molnsynkronisering manuellt.",
+   "N\303\244r aktiverad kommer sparningar/tillst\303\245nd att synkas till molnet.",
+   "N\303\244r aktiverad kommer systemfiler att synkas till molnet. Detta kan kraftigt \303\266ka ti"
+   "den det tar att synka. Anv\303\244nd med f\303\266rsiktighet.",
+   "N\303\244r aktiverad kommer miniatyrbilder att synkas till molnet. Rekommenderas inte alltid f"
+   "\303\266rutom f\303\266r stora samlingar av anpassade miniatyrbilder, annars \303\244r miniatyrb"
+   "ildsh\303\244mtaren ett b\303\244ttre val.",
+   "URL-adressen f\303\266r API-ing\303\245ngen till molnlagringstj\303\244nsten.",
+   "Ditt anv\303\244ndarnamn f\303\266r ditt molnlagringskonto.",
+   "L\303\244s in befintlig konfiguration och ers\303\244tt aktuella v\303\244rden.",
+   "Hantera och skapa konfigurationsfiler.",
+   "\303\204ndra grundinst\303\244llningar f\303\266r konfigurationsfiler.",
+   "Spara \303\244ndringar i konfigurationsfilen vid avslut.",
+   "Kr\303\244v att snabbtangenten f\303\266r st\303\244ng inneh\303\245ll trycks ner tv\303\245 g"
+   "\303\245nger.",
+   "Kr\303\244v att snabbtangenten f\303\266r avslutning trycks ner tv\303\245 g\303\245nger.",
+   "Kr\303\244v att snabbtangenten f\303\266r omstart av inneh\303\245ll trycks ner tv\303\245 g\303"
+   "\245nger.",
+   "Databaser lagras i denna katalog.",
+   "Spara favoritspellista till denna katalog.",
+   "Begr\303\244nsa antalet poster i spellistan \342\200\235Favoriter\342\200\235. N\303\244r gr\303"
+   "\244nsen har n\303\245tts f\303\266rhindras nya poster att l\303\244ggas till tills gamla poster"
+   " har tagits bort. Om du st\303\244ller in ett v\303\244rde p\303\245 -1 till\303\245ts \342\200"
+   "\235obegr\303\244nsade\342\200\235 poster.\nVARNING: Om du minskar v\303\244rdet raderas befintl"
+   "iga poster!",
+   "Spara historikspellistan till denna katalog.",
+   "Begr\303\244nsa antalet poster i den senaste spellistan f\303\266r spel, bilder, musik och video"
+   "r.",
+   "Spara spellista f\303\266r bildhistorik till denna katalog.",
+   "Spara musikspellistan till denna katalog.",
+   "H\303\245ll reda p\303\245 hur l\303\244nge varje inneh\303\245llspost har k\303\266rts, med pos"
+   "ter separerade efter k\303\244rna.",
+   "H\303\245ll reda p\303\245 hur l\303\244nge varje inneh\303\245llsobjekt har k\303\266rts, regis"
+   "trerat som den sammanlagda summan \303\266ver alla k\303\244rnor.",
+   "Snabb\303\245tkomst till alla relevanta spelinst\303\244llningar.",
+   "Visa 'Importera inneh\303\245ll' inne i huvudmenyn eller spellistor.",
+   "Ange vilken typ av k\303\244rna (om n\303\245gon) som ska visas i menyn 'Inneh\303\245llsl\303"
+   "\266sa k\303\244rnor'. N\303\244r inst\303\244llningen \303\244r \342\200\231Anpassad\342\200"
+   "\231 kan synligheten f\303\266r enskilda k\303\244rnor v\303\244xlas via menyn \342\200\235Hante"
+   "ra k\303\244rnor\342\200\235.",
+   "Visa alternativ f\303\266r inneh\303\245llsutforskaren.",
+   "Visa 'Favoriter'-menyn.",
+   "Visa 'Favoriter' f\303\266re 'Historik'.",
+   "Visa senaste historikmenyn.",
+   "Visa 'Bilder'-menyn.",
+   "Visa alternativet 'Latens'.",
+   "Visa 'Musik'-menyn.",
+   "Visa alternativet 'Sk\303\244rm\303\266verl\303\244gg'.",
+   "Visa spellistorna i huvudmenyn. Ignoreras i GLUI om flikar och navf\303\244lt f\303\266r spellis"
+   "tor \303\244r aktiverade.",
+   "Visa spellisteflikar. P\303\245verkar inte RGUI. Navigeringsf\303\244ltet m\303\245ste vara akti"
+   "verat i GLUI.",
+   "Visa alternativet 'Tillbakaspolning'.",
+   "Visa 'Inst\303\244llningar'-menyn.",
+   "Om du anger ett l\303\266senord n\303\244r du d\303\266ljer inst\303\244llningsfliken kan du sen"
+   "are \303\245terst\303\244lla den fr\303\245n menyn genom att g\303\245 till fliken Huvudmeny, v"
+   "\303\244lja \342\200\235Aktivera inst\303\244llningsfliken\342\200\235 och ange l\303\266senorde"
+   "t.",
+   "Visa 'Videor'-menyn.",
+   "Visa alternativet 'Video Layout'.",
+   "Spara videospellistan till denna katalog.",
+   "H\303\244mtade filer lagras i denna katalog.",
+   "Konfigurera fuskkoder.",
+   "Spara en s\303\244kerhetskopia av den aktuella installerade k\303\244rnan.",
+   "Ta bort denna k\303\244rna fr\303\245n disken.",
+   "Ta bort en fil fr\303\245n listan \303\266ver sparade s\303\244kerhetskopior.",
+   "Visa aktuell k\303\244rnas namn i menyn.",
+   "Visa information om applikationen/k\303\244rnan.",
+   "Beh\303\245ller en ih\303\245llande lokal cache av installerad k\303\244rninformation. Minskar i"
+   "nl\303\244sningstiderna avsev\303\244rt p\303\245 plattformar med l\303\245ngsam disk\303\245tko"
+   "mst.",
+   "Anger om funktioner f\303\266r att spara k\303\244rninformation ska ignoreras, vilket g\303\266r"
+   " det m\303\266jligt att experimentera med relaterade funktioner (run ahead, spola tillbaka etc.)"
+   ".",
+   "\303\204ndra kontrollerna f\303\266r inneh\303\245llet.",
+   "V\303\244lj vilken k\303\244rna som ska anv\303\244ndas.",
+   "Frig\303\266r inl\303\244st k\303\244rna.",
+   "F\303\266rhindrar modifiering av den nuvarande installerade k\303\244rnan. Kan anv\303\244ndas f"
+   "\303\266r att undvika o\303\266nskade uppdateringar n\303\244r inneh\303\245llet kr\303\244ver e"
+   "n specifik k\303\244rnversion (t.ex. Arcade ROM-upps\303\244ttningar) eller n\303\244r k\303\244"
+   "rnans eget format f\303\266r sparning \303\244ndras.",
+   "Utf\303\266r offlineunderh\303\245llsuppgifter p\303\245 installerade k\303\244rnor (s\303\244ke"
+   "rhetskopiering, \303\245terst\303\244llning, radering, etc.) och visa k\303\244rninformation.",
+   "\303\204ndra alternativen f\303\266r inneh\303\245llet.",
+   "Tvinga aktuella inst\303\244llningar att skrivas till den aktiva alternativfilen. S\303\244kerst"
+   "\303\244ller att alternativ bevaras i h\303\244ndelse av att en k\303\244rnbugg orsakar felaktig"
+   " avst\303\244ngning av frontend.",
+   "St\303\244ll in alla alternativ f\303\266r den aktuella k\303\244rnan till standardv\303\244rden"
+   ".",
+   "Till\303\245ter k\303\244rnor att visa alternativ i kategoribaserade undermenyer. OBS: K\303\244"
+   "rnan m\303\245ste laddas om f\303\266r att \303\244ndringar ska b\303\266rja g\303\244lla.",
+   "Den aktuella alternativfilen som anv\303\244nds.",
+   "Spara eller ta bort alternativ\303\245sidos\303\244ttningar f\303\266r aktuella inneh\303\245lle"
+   "t.",
+   "Installera en tidigare version av k\303\244rnan fr\303\245n en lista \303\266ver sparade s\303"
+   "\244kerhetskopior.",
+   "\303\204ndra inst\303\244llningar f\303\266r k\303\244rna.",
+   "F\303\266rhindra att denna k\303\244rna visas i fliken/menyn 'Inneh\303\245llsl\303\266sa k\303"
+   "\244rnor'. G\303\244ller endast n\303\244r visningsl\303\244get \303\244r inst\303\244llt p\303"
+   "\245 'Anpassat'.",
+   "F\303\266resl\303\245 tillg\303\244ngliga k\303\244rnor \303\244ven n\303\244r en k\303\244rna l"
+   "\303\244sts in manuellt.",
+   "Skapa automatiskt en s\303\244kerhetskopia av installerade k\303\244rnor n\303\244r en online-up"
+   "pdatering utf\303\266rs. M\303\266jligg\303\266r enkel \303\245terst\303\244llning till en funge"
+   "rande k\303\244rna om en uppdatering introducerar en f\303\266rs\303\244mring.",
+   "Ange hur m\303\245nga automatiskt genererade s\303\244kerhetskopior som ska sparas f\303\266r va"
+   "rje installerad k\303\244rna. N\303\244r denna gr\303\244ns har uppn\303\245tts kommer den \303"
+   "\244ldsta s\303\244kerhetskopian att raderas n\303\244r en ny s\303\244kerhetskopia skapas via e"
+   "n onlineuppdatering. Manuella s\303\244kerhetskopior av k\303\244rnor p\303\245verkas inte av de"
+   "nna inst\303\244llning.",
+   "Efter h\303\244mtning s\303\245 packas automatiskt filer upp som finns i de h\303\244mtade arkiv"
+   "en.",
+   "URL till katalog f\303\266r k\303\244rnuppdaterare p\303\245 libretros buildbot.",
+   "Inkludera 'experimentella' k\303\244rnor i H\303\244mta ner k\303\244rnor-listan. Dessa \303\244"
+   "r vanligen endast f\303\266r utveckling/test\303\244ndam\303\245l, och rekommenderas inte f\303"
+   "\266r allm\303\244n anv\303\244ndning.",
+   "S\303\244nd ut ursprungliga, l\303\245guppl\303\266sta signaler f\303\266r anv\303\244ndning med"
+   " CRT-sk\303\244rmar.",
+   "V\303\244xla till h\303\266guppl\303\266st modell f\303\266r anv\303\244ndning med h\303\266gupp"
+   "l\303\266sta menyer n\303\244r inget inneh\303\245ll \303\244r laddat.",
+   "Bl\303\244ddra igenom dessa alternativ f\303\266r att justera de horisontella inst\303\244llning"
+   "arna och \303\244ndra bildstorleken.",
+   "Endast f\303\266r CRT-sk\303\244rmar. F\303\266rs\303\266ker att anv\303\244nda exakt k\303\244r"
+   "na/speluppl\303\266sning och uppdateringsfrekvens.",
+   "V\303\244xla mellan inbyggda och ultravida superuppl\303\266sningar.",
+   "Anv\303\244nd en anpassad uppdateringsfrekvens som anges i konfigurationsfilen om det beh\303"
+   "\266vs.",
+   "G\303\245 igenom dessa alternativ om bilden inte \303\244r korrekt centrerad p\303\245 sk\303"
+   "\244rmen.",
+   "G\303\245 igenom dessa alternativ om bilden inte \303\244r korrekt centrerad p\303\245 sk\303"
+   "\244rmen.",
+   "Visa tidigare s\303\266kningar.",
+   "Visa databaser.",
+   "Ta bort denna post fr\303\245n spellistan.",
+   "Ta bort spellistan fr\303\245n filsystem.",
+   "\303\204ndra standardkataloger d\303\244r filerna finns.",
+   "Visa information om inmatade skivor.",
+   "V\303\244lj aktuell skiva fr\303\245n listan \303\266ver tillg\303\244ngliga avbildningar. Virtu"
+   "ella skivfacket kommer vara st\303\244ngt.",
+   "Skivavbildshantering.",
+   "\303\226ppna virtuellt skivfack.",
+   "St\303\244ng virtuellt skivfack.",
+   "H\303\244mtar ner och installerar k\303\244rna fr\303\245n online-uppdateraren.",
+   "H\303\244mta ner gratis inneh\303\245ll f\303\266r vald k\303\244rna.",
+   "H\303\244mta ner hj\303\244lpfiler som system kr\303\244ver f\303\266r en korrekt/optimal k\303"
+   "\244rndrift.",
+   "\303\204ndra drivrutiner som anv\303\244nds av systemet.",
+   "Till\303\245t k\303\244rnor att byta till en annan videodrivrutin \303\244n den som f\303\266r n"
+   "\303\244rvarande \303\244r laddad.",
+   "Vissa k\303\244rnor har en avst\303\244ngningsfunktion, att ladda en dummyk\303\244rna f\303\266"
+   "rhindrar att RetroArch st\303\244ngs av.",
+   "Dumpar den fysiska medieskivan till intern lagring. Den kommer att sparas som en skivavbildnings"
+   "fil.",
+   "L\303\244s in en ny bakgrundsbild dynamiskt beroende p\303\245 kontext.",
+   "Bakgrundsbilder som anv\303\244nds i menyn lagras i denna katalog.",
+   "Hoppa \303\266ver bildrutor enligt snabbspolningshastigheten. Detta sparar str\303\266m och m"
+   "\303\266jligg\303\266r anv\303\244ndning av bildrutebegr\303\244nsning fr\303\245n tredje part.",
+   "Den maximala hastighet med vilken inneh\303\245llet k\303\266rs n\303\244r snabbspolning anv\303"
+   "\244nds (t.ex. 5.0x f\303\266r inneh\303\245ll med 60 bilder/s= 300 bildfrekvensgr\303\244ns). O"
+   "m den \303\244r inst\303\244lld p\303\245 0.0x \303\244r snabbspolningsf\303\266rh\303\245llande"
+   "t obegr\303\244nsat (ingen bildfrekvensgr\303\244ns).",
+   "\303\226ppna en annan katalog med hj\303\244lp av systemets filv\303\244ljare",
+   "\303\226ppna Windows-inst\303\244llningar f\303\266r fil\303\245tkomstbeh\303\266righet",
+   "Filtrera filer som visas i filbl\303\244ddraren efter aktuell k\303\244rna.",
+   "Spara k\303\244rnalternativ som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st f"
+   "r\303\245n samma katalog som den aktuella filen.",
+   "Ta bort k\303\244rnalternativ som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st"
+   " fr\303\245n samma katalog som den aktuella filen.",
+   "Visa aktuella bilder per sekund p\303\245 sk\303\244rmen.",
+   "Bildfrekvensen uppdateras med det inst\303\244llda intervallet i bildrutor.",
+   "Visa aktuell bildrutsr\303\244kning p\303\245 sk\303\244rmen.",
+   "\303\204ndra inst\303\244llningar f\303\266r Spola bak\303\245t, Snabbspola fram\303\245t och Sl"
+   "ow-motion.",
+   "Ange loggniv\303\245 f\303\266r frontend. Om en loggniv\303\245 som utf\303\244rdats av frontend"
+   " \303\244r under detta v\303\244rde, ignoreras den.",
+   "Kan f\303\266rb\303\244ttra prestanda, minska f\303\266rdr\303\266jningar och \303\245tg\303\244"
+   "rda problem med knastrande ljud. Du beh\303\266ver https://github.com/FeralInteractive/gamemode "
+   "f\303\266r att detta ska fungera.",
+   "Spara k\303\244rnalternativ som till\303\244mpas endast f\303\266r det aktuella inneh\303\245lle"
+   "t.",
+   "Ta bort k\303\244rnalternativ som till\303\244mpas endast f\303\266r det aktuella inneh\303\245l"
+   "let.",
+   "L\303\244s in anpassade k\303\244rnalternativ som standard vid uppstart.",
+   "Spara alla k\303\244rnalternativ i gemensam fil (retroarch-core-options.cfg). Inaktiverad kommer"
+   " alternativ f\303\266r varje k\303\244rna att skrivas till k\303\244rnspecifik fil i 'Konfigurat"
+   "ioner'-katalogen.",
+   "Installerade k\303\244rnor som kan fungera utan att l\303\244sa in inneh\303\245ll visas h\303"
+   "\244r.",
+   "Bl\303\244ddra bland alla inneh\303\245lls-filer som matchar databasen via ett kategoriserat s"
+   "\303\266kgr\303\244nssnitt.",
+   "Visar inneh\303\245ll som lagts till i 'Favoriter'.",
+   "Visar bilder som tidigare har blivit sedd.",
+   "Visar musik som tidigare har spelats.",
+   "Visar videor som tidigare har spelats.",
+   "Stoppar inspelning/uppspelning av aktuell \303\245teruppspelning",
+   "L\303\244s mer om hur programmet fungerar.",
+   "Underh\303\245ll en spellista med nyligen anv\303\244nda spel, bilder, musik och videor.",
+   "Typ av miniatyrbild f\303\266r spellisteikon att visa.",
+   "Visar lista med systeminformation.",
+   "Byt till senaste anv\303\244nda skivan vid start av flerskivsinneh\303\245ll.",
+   "Anv\303\244nd angiven analog spak f\303\266r D-Pad-inmatning. L\303\244get 'Tvingad' \303\245sid"
+   "os\303\244tter den ursprungliga analoga inmatningen.",
+   "Till\303\245t alla spelare att styra menyn. Inaktiverad kan endast spelare 1 styra menyn.",
+   "Ignorera analoga spakr\303\266relser under d\303\266dzon-v\303\244rde.",
+   "Justera k\303\244nsligheten f\303\266r analoga spakar.",
+   "Konfigurerar automatiskt spelkontroller som har en profil, Plug-and-Play-stil.",
+   "Aktivera alltid 'Spelfokus' -l\303\244get n\303\244r inneh\303\245ll startar eller \303\245terup"
+   "ptas. N\303\244r inst\303\244llt p\303\245 \"Identifiera\" kommer alternativet att aktiveras om "
+   "k\303\244rnan implementerar frontendens funktioner f\303\266r tangentbords\303\245teranrop.",
+   "Aktivera automatiskt greppad mus vid applikationsfokus.",
+   "Tilldela alla riktningar och knappar, en efter en, i den ordning de visas i den h\303\244r menyn"
+   ".",
+   "Nollst\303\244ll bindningsinst\303\244llningar f\303\266r inmatningar till deras standardv\303"
+   "\244rden.",
+   "Antal sekunder att beh\303\245lla en inmatning intryckt f\303\266r att binda den.",
+   "Antal sekunder att v\303\244nta f\303\266r att g\303\245 vidare till n\303\244sta bindning.",
+   "Antalet millisekunders v\303\244ntetid f\303\266r att f\303\245 ett komplett inmatningsprov. Anv"
+   "\303\244nd det om du har problem med samtidiga knapptryckningar (endast Android).",
+   "Hur l\303\245ngt en spak m\303\245ste lutas f\303\266r att resultera i en knapptryckning vid anv"
+   "\303\244ndning av 'Analog till Digital'.",
+   "Den fysiska kontrollern som den k\303\244nns igen av RetroArch.",
+   "F\303\266redragen: om angiven enhet finns, kommer den att allokeras till denna spelare. Reserver"
+   "ad: ingen annan styrenhet kommer att tilldelas f\303\266r denna spelare.",
+   "Den h\303\244r kontrollenheten kommer att tilldelas den h\303\244r spelaren, enligt reservations"
+   "l\303\244get.",
+   "Specificerar den emulerade spelkontrollstypen.",
+   "F\303\266rhindra menyinformationsfunktion.",
+   "F\303\266rhindra inmatning fr\303\245n analog spak i menyn.",
+   "F\303\266rhindra h\303\266gerspaksinmatning f\303\266r menyn. H\303\266ger analogspak v\303\244x"
+   "lar miniatyrbilder i spellistor.",
+   "F\303\266rhindra menys\303\266kningsfunktion.",
+   "Inmatningsdrivrutin som ska anv\303\244ndas. Vissa videodrivrutiner tvingar fram en annan inmatn"
+   "ingsdrivrutin. (Omstart kr\303\244vs)",
+   "\303\204ndra inst\303\244llningar f\303\266r haptisk feedback och vibration.",
+   "\303\204ndra inst\303\244llningar och tilldelningar f\303\266r snabbtangenter, som att visa/d"
+   "\303\266lja menyn under spel.",
+   "F\303\266rsena snabbknappsaktivering med antal bildrutor innan normal inmatning v\303\244xlar ti"
+   "ll snabbknappsaktivering n\303\244r tilldelad knapp h\303\245lls nedtryckt. Till\303\245ter att "
+   "knapp som redan tilldelats normal inmatning (t.ex. RetroPad 'Select') \303\244ven tilldelas 'Sna"
+   "bbknappsaktivering'.",
+   "Blockera alla snabbtangenter fr\303\245n b\303\245de tangentbord och kontrollerenheter om n\303"
+   "\245gon av dessa har \342\200\235Snabbknappsaktivering\342\200\235 inst\303\244llt.",
+   "Snabbtangenter \303\244r kopplade till k\303\244rnport 1, \303\244ven om k\303\244rnport 1 omdir"
+   "igeras till en annan anv\303\244ndare. Observera! Snabbtangenterna p\303\245 tangentbordet funge"
+   "rar inte om k\303\244rnport 1 omdirigeras till n\303\245gon annan anv\303\244ndare \303\244n > 1"
+   " (tangentbordsinmatningen kommer fr\303\245n anv\303\244ndare 1).",
+   "Spelkontrolls knappkombination f\303\266r att visa/d\303\266lj menyn.",
+   "\303\204ndra inst\303\244llningar f\303\266r menykontroller.",
+   "F\303\245ngar en bild av aktuellt inneh\303\245ll f\303\266r att \303\266vers\303\244tta och/ell"
+   "er l\303\244sa upp text p\303\245 sk\303\244rmen. 'AI-tj\303\244nst' m\303\245ste vara aktiverad"
+   " och konfigurerad.",
+   "Minskar index till f\303\266reg\303\245ende fusk i listan.",
+   "\303\226kar index till n\303\244sta fusk i listan.",
+   "Sl\303\245r p\303\245/av det valda fusket.",
+   "St\303\244nger aktuellt inneh\303\245ll.",
+   "Om det virtuella skivfacket \303\244r st\303\244ngt, \303\266ppnas det och den laddade skivan ta"
+   "s ut. Annars s\303\244tts skivan som \303\244r vald in och skivfacket st\303\244ngs.",
+   "\303\226kar det aktuella valda skivindexet och g\303\266r en f\303\266rdr\303\266jd ins\303\244t"
+   "tning om den virtuella skivfacket \303\244r st\303\244ngt.",
+   "Minskar det aktuella valda skivindexet och g\303\266r en f\303\266rdr\303\266jd ins\303\244ttnin"
+   "g om den virtuella skivfacket \303\244r st\303\244ngt.",
+   "N\303\244r tilldelad knapp f\303\266r 'Snabbknappsaktivering' h\303\245lls nedtryckt identifiera"
+   "s snabbknappar. Det h\303\244r m\303\266jligg\303\266r att spelkontrollsknappar kan anv\303\244n"
+   "das till snabbknappsfunktioner utan att p\303\245verka normal inmatning. Tilldelad spelkontrolls"
+   "knapp kommer inte kr\303\244vas, men kan anv\303\244ndas, f\303\266r aktivering av tangentbordss"
+   "nabbknappar och vice versa.",
+   "Till\303\244mpar 'Snabbspola fram\303\245t' n\303\244r den h\303\245lls nedtryckt. Inneh\303\245"
+   "ll \303\245terg\303\245r till normal hastighet n\303\244r knapp sl\303\244pps.",
+   "V\303\244xlar mellan snabb och normal hastighet.",
+   "Sl\303\245r p\303\245/av statusindikatorn 'Bilder/s'.",
+   "Avancerar inneh\303\245llet med en bildruta n\303\244r pausad.",
+   "V\303\244xlar visningsl\303\244ge mellan Helsk\303\244rm och F\303\266nster.",
+   "Sl\303\245r p\303\245/av l\303\244get \342\200\235Spelfokus\342\200\235. N\303\244r inneh\303"
+   "\245llet har fokus inaktiveras snabbtangenterna (alla tangentbordsdata skickas till den k\303"
+   "\266rande k\303\244rnan) och musen f\303\245ngas upp.",
+   "F\303\245ngar eller sl\303\244pper musen. N\303\244r den f\303\245ngas d\303\266ljs systemmark"
+   "\303\266ren och begr\303\244nsas till RetroArch-visningsf\303\266nstret, vilket f\303\266rb\303"
+   "\244ttrar relativ musinmatning.",
+   "Stoppar inspelning/uppspelning av aktuell repris.",
+   "L\303\244ser in sparat tillst\303\245nd fr\303\245n aktuellt vald plats.",
+   "V\303\244xlar den aktuella sk\303\244rmen mellan meny och inneh\303\245ll.",
+   "Sl\303\245r p\303\245/av ljudutg\303\245ngen.",
+   "V\303\244xlar mellan tonande eller statiska Netplay chattmeddelanden.",
+   "V\303\244xlar aktuell Netplay-session mellan 'Spela' och '\303\205sk\303\245dare'.",
+   "Sl\303\245r p\303\245/av Netplay Hosting.",
+   "Sl\303\245r p\303\245/av pingr\303\244knaren f\303\266r aktuellt Netplay.",
+   "Skickar ett chattmeddelande till den aktuella Netplay sessionen.",
+   "Snabbspolar \303\245teruppspelningen till n\303\244sta automatiskt eller manuellt sparade kontro"
+   "llpunkten.",
+   "Sl\303\245r p\303\245/av tangentbord \303\266verlagret.",
+   "V\303\244xlar till n\303\244sta tillg\303\244ngliga layout f\303\266r det f\303\266r n\303\244rv"
+   "arande aktiva sk\303\244rm\303\266verlagring.",
+   "V\303\244xlar inneh\303\245ll mellan pausade och icke-pausade tillst\303\245nd.",
+   "Spela reprisfilen fr\303\245n den f\303\266r n\303\244rvarande valda platsen.",
+   "Sl\303\245r p\303\245/av Preemptive Frames.",
+   "Spolar tillbaka \303\245teruppspelningen till tidigare automatiskt eller manuellt sparade kontro"
+   "llpunkten.",
+   "St\303\244nger RetroArch och ser till att alla sparade data och konfigurationsfiler sparas p\303"
+   "\245 h\303\245rddisken.",
+   "Startar/stoppar inspelning av den aktuella sessionen till en lokal videofil.",
+   "Spela in reprisfil till den f\303\266r n\303\244rvarande valda platsen.",
+   "Minskar det valda platsindexet f\303\266r \303\245teruppspelning.",
+   "\303\226kar det valda platsindexet f\303\266r \303\245teruppspelning.",
+   "Startar om aktuellt inneh\303\245ll fr\303\245n b\303\266rjan.",
+   "Avsluta och starta sedan om RetroArch. Kr\303\244vs f\303\266r aktivering av vissa menyinst\303"
+   "\244llningar (t. ex. vid byte av menydrivrutin).",
+   "Sl\303\245r p\303\245/av Run-Ahead.",
+   "Verkst\303\244ller en kontrollpunkt till aktuellt uppspelade \303\245teruppspelningen.",
+   "Sparar tillst\303\245ndet till den f\303\266r n\303\244rvarande valda platsen.",
+   "Tar en sk\303\244rmdump av det aktuella inneh\303\245llet.",
+   "H\303\245ller den valda shadern p\303\245/av vid nedtryckt tangent.",
+   "L\303\244ser in och till\303\244mpar n\303\244sta shader-f\303\266rvalsfil i roten av katalogen "
+   "'Video Shaders'.",
+   "L\303\244ser in och till\303\244mpar f\303\266reg\303\245ende shader-f\303\266rvalsfil i roten a"
+   "v katalogen 'Video Shaders'.",
+   "Sl\303\245r p\303\245/av den f\303\266r n\303\244rvarande valda shadern.",
+   "Till\303\244mpar 'Slow motion' n\303\244r den h\303\245lls nedtryckt. Inneh\303\245ll \303\245te"
+   "rg\303\245r till normal hastighet n\303\244r knapp sl\303\244pps.",
+   "V\303\244xlar mellan slow motion och normal hastighet.",
+   "Minskar index f\303\266r att v\303\244lja slot till att spara tillst\303\245nd.",
+   "\303\226kar index f\303\266r att v\303\244lja slot till att spara tillst\303\245nd.",
+   "Sl\303\245r p\303\245/av visningen av teknisk statistik p\303\245 sk\303\244rmen.",
+   "Startar/stoppar stream av den aktuella sessionen till en online videoplattform.",
+   "V\303\244xlar turboavfyrning p\303\245/av.",
+   "\303\226ppnar det kompletterande WIMP (Windows, Icons, Menus, Pointer) skrivbordsanv\303\244ndar"
+   "gr\303\244nssnittet.",
+   "Minskar utg\303\245ende ljudvolymniv\303\245.",
+   "\303\226kar utg\303\245ende ljudvolymniv\303\245.",
+   "Sl\303\245r p\303\245/av synkronisering till exakt inneh\303\245llsbildhastighet.",
+   "Den fysiska musen som den identifieras av RetroArch.",
+   "Justera tangentbords\303\266verl\303\244gret till dess ursprungliga bildformat. Inaktivera f\303"
+   "\266r att fylla sk\303\244rmen.",
+   "Justera storleken p\303\245 \303\266verlappningszonerna i handlingsknappens diamant. St\303\244l"
+   "l in p\303\245 100% f\303\266r 8-v\303\244gssymmetri.",
+   "Inmatningen f\303\266r den analoga spaken kommer att vara relativ till f\303\266rsta ber\303\266"
+   "ringen om den trycks in inom denna zon.",
+   "Om det st\303\266ds av aktuell \303\266verl\303\244ggning, rotera automatiskt layouten s\303\245"
+   " att den matchar sk\303\244rmens orientering/bildf\303\266rh\303\245llande.",
+   "Justera automatiskt \303\266verlagringsskalan och avst\303\245ndet mellan element i anv\303\244n"
+   "dargr\303\244nssnittet f\303\266r att matcha sk\303\244rmens bildf\303\266rh\303\245llande. Ger "
+   "b\303\244sta resultat med \303\266verkontroll\303\266r.",
+   "Visa \303\266verl\303\244gg bakom inte framf\303\266r meny.",
+   "Justera storleken p\303\245 de diagonala zonerna. St\303\244ll in p\303\245 100% f\303\266r 8-v"
+   "\303\244gssymmetri.",
+   "\303\226verl\303\244gg anv\303\244nds f\303\266r kantramar och spelkontroller p\303\245 sk\303"
+   "\244rmen.",
+   "D\303\266lj \303\266verl\303\244gg  i meny och visa igen n\303\244r meny st\303\244ngs.",
+   "D\303\266lj \303\266verl\303\244gg n\303\244r en fysisk spelkontroll \303\244r ansluten till por"
+   "t 1, och visa igen n\303\244r spelkontroll kopplas fr\303\245n.",
+   "Till\303\245t sikte utanf\303\266r gr\303\244nserna. Inaktivera f\303\266r att begr\303\244nsa s"
+   "ikte utanf\303\266r sk\303\244rmen till gr\303\244nsen f\303\266r spelomr\303\245det.",
+   "V\303\244lj den inmatning som ska skickas n\303\244r fyra pekare visas p\303\245 sk\303\244rmen."
+   " Utl\303\266sarf\303\266rdr\303\266jningen b\303\266r vara inte vara noll f\303\266r att skilja "
+   "den fr\303\245n andra inmatningar.",
+   "St\303\244ll in k\303\244rnporten att ta emot inmatning fr\303\245n \303\266verl\303\244ggsljusp"
+   "istolen.",
+   "V\303\244lj inmatning som ska skickas n\303\244r tre pekare \303\244r p\303\245 sk\303\244rmen. "
+   "Utl\303\266sarf\303\266rdr\303\266jning ska vara st\303\266rre \303\244n noll f\303\266r att ski"
+   "lja fr\303\245n annan inmatning.",
+   "F\303\266rdr\303\266j avtryckarinmatning f\303\266r att ge mark\303\266ren tid att r\303\266ra s"
+   "ig. Denna f\303\266rdr\303\266jning anv\303\244nds ocks\303\245 f\303\266r att v\303\244nta p"
+   "\303\245 r\303\244tt antal multitouch-tryckningar.",
+   "Skicka avtryckarinmatning med pekarinmatning.",
+   "V\303\244lj inmatning som ska skickas n\303\244r tv\303\245 pekare \303\244r p\303\245 sk\303"
+   "\244rmen. Utl\303\266sarf\303\266rdr\303\266jning ska vara st\303\266rre \303\244n noll f\303"
+   "\266r att skilja fr\303\245n annan inmatning.",
+   "Anv\303\244nd andra pekning som en musknapp vid kontroll av mark\303\266ren.",
+   "Justera den till\303\245tna tiden mellan tryckningarna n\303\244r en dubbeltryckning uppt\303"
+   "\244cks.",
+   "Dubbeltryck p\303\245 sk\303\244rmen f\303\266r att b\303\266rja h\303\245lla en knapp vid det a"
+   "ndra trycket. L\303\244gger till latens till musklick.",
+   "Justera den h\303\245lltid som kr\303\244vs f\303\266r en l\303\245ng tryckning.",
+   "Tryck l\303\244nge p\303\245 sk\303\244rmen f\303\266r att b\303\266rja h\303\245lla en knapp.",
+   "Justera mark\303\266rens r\303\266relsehastighet.",
+   "Anv\303\244nd alla pekinmatningar som inte trycker p\303\245 \303\266verl\303\244ggskontroller f"
+   "\303\266r att skapa pekenhetsinmatningar f\303\266r k\303\244rnan.",
+   "Visa registrerade ing\303\245ngar p\303\245 \303\266verl\303\244gget p\303\245 sk\303\244rmen. "
+   "\342\200\235Touched\342\200\235 markerar \303\266verl\303\244ggselement som trycks/klickas p\303"
+   "\245. \342\200\235Fysisk (styrenhet)\342\200\235 visar faktiska indata som skickas till k\303"
+   "\244rnorna, vanligtvis fr\303\245n en ansluten styrenhet/tangentbord.",
+   "V\303\244lj port f\303\266r inmatningsenhet att \303\266vervaka n\303\244r 'Visa inmatningar p"
+   "\303\245 \303\266verl\303\244gg' \303\244r satt till 'Fysisk (Kontroller)'.",
+   "Visa muspekaren n\303\244r ett sk\303\244rm\303\266verl\303\244gg anv\303\244nds.",
+   "P\303\245verkar hur inmatningspollning g\303\266rs i RetroArch. Om du st\303\244ller in den p"
+   "\303\245 \342\200\235Tidig\342\200\235 eller \342\200\235Sen\342\200\235 kan det resultera i min"
+   "dre f\303\266rdr\303\266jning, beroende p\303\245 din konfiguration.",
+   "Spelkontrollers knappkombination f\303\266r att avsluta RetroArch.",
+   "Ommappningar f\303\266r inmatning lagras i denna katalog.",
+   "\303\205sidos\303\244tt nuvarande med de ommappade bindningarna f\303\266r den nuvarande k\303"
+   "\244rnan.",
+   "Anger vilken k\303\244rnport som ska ta emot inmatning fr\303\245n frontend-kontrollerport %u.",
+   "Ommappningar till\303\244mpas endast till aktiv gamepad till vilken de sparades.",
+   "\303\204ndra hur den virtuella RetroPad mappas till en fysisk inmatningsenhet. Om en inmatningse"
+   "nhet k\303\244nns igen och automatiskt konfigurerad p\303\245 r\303\244tt s\303\244tt beh\303"
+   "\266ver anv\303\244ndare f\303\266rmodligen inte anv\303\244nda den h\303\244r menyn.\nOBS: F"
+   "\303\266r k\303\244rnspecifika \303\244ndringar, anv\303\244nd 'Spelkontroller' i Snabbmenyn ist"
+   "\303\244llet.",
+   "Ange storleken p\303\245 haptiska \303\245terkopplingseffekter.",
+   "Spara en autokonfigurationsfil som kommer att anv\303\244ndas automatiskt n\303\244r den h\303"
+   "\244r styrenheten uppt\303\244cks igen.",
+   "Aktivera inmatning fr\303\245n accelerometer, gyroskop och belysningsstyrka sensorer, om det st"
+   "\303\266ds av den aktuella h\303\245rdvaran. Kan p\303\245verka prestanda och/eller \303\266ka s"
+   "tr\303\266mf\303\266rbrukningen p\303\245 vissa plattformar.",
+   "Justera k\303\244nsligheten f\303\266r accelerometern.",
+   "Justera k\303\244nsligheten f\303\266r gyroskopet.",
+   "Rotera accelerometerns och gyroskopets axlar s\303\245 att de matchar enhetens orientering.",
+   "\303\204ndra inst\303\244llningarna f\303\266r accelerometer, gyroskop och belysningsstyrka.",
+   "\303\204ndra inst\303\244llningar f\303\266r spelkontroller, tangentbord och mus.",
+   "Justera x/y-skalan f\303\266r peksk\303\244rmens koordinater f\303\266r att anpassa den till OS-"
+   "niv\303\245ns sk\303\244rmskalning.",
+   "Om den \303\244r aktiverad kan digitala riktningsinmatningar (\303\244ven k\303\244nda som d-pad"
+   " eller \342\200\235hatswitch\342\200\235) vara turbo.",
+   "Turbo aktiverar RetroPad-bindning. Tom anv\303\244nder den portspecifika bindningen.",
+   "M\303\245lknapp f\303\266r turbo i \"En knapp\"-l\303\244get.",
+   "Antalet bildrutor fr\303\245n Turboperiod som knapparna h\303\245lls ner f\303\266r. Om detta an"
+   "tal \303\244r lika med eller st\303\266rre \303\244n Turboperiod, kommer knapparna aldrig att sl"
+   "\303\244ppas.",
+   "Inaktiverad stoppar alla turboavtryckningsoperationer.",
+   "\303\204ndra inst\303\244llningar f\303\266r turboavtryckare.",
+   "V\303\244lj det allm\303\244nna beteendet f\303\266r turbo-l\303\244get.",
+   "Perioden i bildrutor n\303\244r turboaktiverade knappar trycks ner.",
+   "Anv\303\244nd samma spelkontroller f\303\266r b\303\245de menyn och spelet. G\303\244ller tangen"
+   "tbordet.",
+   "\303\204ndra hur den virtuella RetroPad \303\244r mappad till den fysiska inmatningsenhet f\303"
+   "\266r denna virtuella port.",
+   "\303\204ndra k\303\244rnspecifika inmatningsmappningar.",
+   "Spelkontrollsprofiler som automatisk konfigurerar spelkontroller lagras i denna katalog.",
+   "Drivrutin f\303\266r handkontroller att anv\303\244nda. (kr\303\244ver omstart)",
+   "\303\204ndra inst\303\244llningar kopplade till ljud-, video- och inmatningsf\303\266rdr\303\266"
+   "jning.",
+   "Typ av miniatyrbild att visa till v\303\244nster.",
+   "Hj\303\244lptyp av miniatyrbild som ska associeras med varje spellistepost. Anv\303\244ndningen "
+   "beror p\303\245 det aktuella visningsl\303\244get f\303\266r miniatyrbilder i spellistan.",
+   "Ers\303\244tt panelen med inneh\303\245llsmetadata med en annan miniatyrbild.",
+   "Libretro-k\303\244rnor lagras i denna katalog.",
+   "Informationsfiler f\303\266r applikationer/k\303\244rnor lagras i denna katalog.",
+   "Ange loggniv\303\245 f\303\266r k\303\244rnor. Om en loggniv\303\245 som utf\303\244rdats av en "
+   "k\303\244rna \303\244r under detta v\303\244rde ignoreras den.",
+   "V\303\244lj inneh\303\245ll fr\303\245n spellistan med senaste historik.",
+   "V\303\244lj vilket inneh\303\245ll som ska startas.",
+   "L\303\244s in en fysisk medieskiva. V\303\244lj f\303\266rst k\303\244rnan (L\303\244s in k\303"
+   "\244rna) att anv\303\244nda med skivan.",
+   "L\303\244s in ett sparat tillst\303\245nd fr\303\245n den aktuella valda platsen.",
+   "Till\303\245t k\303\244rnor att komma \303\245t din plats.",
+   "\303\204ndra loggningsinst\303\244llningar.",
+   "Loggar f\303\266r systemh\303\244ndelser lagras i denna katalog.",
+   "Omdirigera meddelanden i systemh\303\244ndelseloggen till filen. Kr\303\244ver att 'Logging Verb"
+   "osity' \303\244r aktiverat.",
+   "Vid loggning till fil, dirigera utdata fr\303\245n varje RetroArch session till en ny tidsst\303"
+   "\244mplad fil. Inaktiverad skrivs loggen \303\266ver varje g\303\245ng RetroArch startas om.",
+   "Logga h\303\244ndelser till en terminal eller fil.",
+   "V\303\244lj en standardk\303\244rna att anv\303\244nda vid start av genoms\303\266kt inneh\303"
+   "\245ll.",
+   "V\303\244lj en Logiqx eller MAME List XML DAT-fil f\303\266r att m\303\266jligg\303\266ra automa"
+   "tisk namngivning av genoms\303\266kt arkadinneh\303\245ll (MAME, FinalBurn Neo, etc.).",
+   "Lista \303\266ver filtyper som ska inkluderas i s\303\266kningen, separerade med mellanslag. Om "
+   "tom, inneh\303\245ller alla filtyper, eller om en k\303\244rna anges, alla filer som st\303\266d"
+   "s av k\303\244rnan.",
+   "N\303\244r denna funktion \303\244r aktiverad raderas alla befintliga spellistor innan inneh\303"
+   "\245llet s\303\266ks igenom. N\303\244r funktionen \303\244r inaktiverad beh\303\245lls befintli"
+   "ga spellistor och endast inneh\303\245ll som saknas i spellistan l\303\244ggs till.",
+   "N\303\244r detta \303\244r aktiverat kommer arkivfiler (.zip, .7z, etc.) att genoms\303\266kas e"
+   "fter giltigt/st\303\266dd inneh\303\245ll. Kan ha en betydande inverkan p\303\245 genoms\303\266"
+   "kningsprestandan.",
+   "N\303\244r den \303\244r aktiverad kommer alla underkataloger i den angivna \342\200\235Inneh"
+   "\303\245llskatalog\342\200\235 att ing\303\245 i s\303\266kningen.",
+   "S\303\266k igenom valt inneh\303\245ll.",
+   "N\303\244r funktionen \303\244r aktiverad kommer poster i en befintlig spellista att verifieras "
+   "innan nytt inneh\303\245ll s\303\266ks igenom. Poster som h\303\244nvisar till inneh\303\245ll s"
+   "om saknas och/eller filer med ogiltiga till\303\244gg tas bort.",
+   "Flytta automatiskt navigeringsf\303\244ltet till h\303\266ger sida av sk\303\244rmen n\303\244r "
+   "du anv\303\244nder liggande visningsorientering.",
+   "Visar en sekund\303\244r miniatyrbild n\303\244r du anv\303\244nder miniatyrvisningsl\303\244gen"
+   " av typen 'Lista'. Den h\303\244r inst\303\244llningen g\303\244ller endast n\303\244r sk\303"
+   "\244rmen har tillr\303\244cklig fysisk bredd f\303\266r att visa tv\303\245 miniatyrer.",
+   "Visa ikoner till v\303\244nster om menyposterna.",
+   "Justera menylayouten automatiskt f\303\266r att b\303\244ttre passa sk\303\244rmen n\303\244r du"
+   " anv\303\244nder liggande visningsorientering.",
+   "V\303\244lj ett annat bakgrundsf\303\244rg tema.",
+   "Ange miniatyrvisningsl\303\244ge f\303\266r spellistan n\303\244r du anv\303\244nder liggande vi"
+   "sningsorientering.",
+   "Ange miniatyrvisningsl\303\244ge f\303\266r spellistan n\303\244r du anv\303\244nder st\303\245e"
+   "nde visningsorientering.",
+   "Aktivera mjuka animeringseffekter n\303\244r du navigerar mellan olika niv\303\245er i menyn.",
+   "Visa systemspecifika ikoner i spellistorna.",
+   "Visa permanenta menynavigeringsgenv\303\244gar p\303\245 sk\303\244rmen. M\303\266jligg\303\266r"
+   " snabb v\303\244xling mellan menykategorier. Rekommenderas f\303\266r peksk\303\244rmsenheter.",
+   "Anv\303\244nd ikoner ist\303\244llet f\303\266r P\303\205/AV-text f\303\266r att representera 'o"
+   "mkopplare' menyinst\303\244llningar.",
+   "M\303\266jligg\303\266r utfyllnad av oanv\303\244nt utrymme i miniatyrbilder med en solid bakgru"
+   "nd. Detta s\303\244kerst\303\244ller en enhetlig visningsstorlek f\303\266r alla bilder, vilket "
+   "f\303\266rb\303\244ttrar menyutseendet n\303\244r du tittar p\303\245 miniatyrbilder av blandat "
+   "inneh\303\245ll med olika basm\303\245tt.",
+   "Visa systemets anv\303\244nd och total m\303\244ngd minne p\303\245 sk\303\244rmen.",
+   "Minnesanv\303\244ndningen uppdateras med inst\303\244llt intervall i bildrutor.",
+   "\303\205terg\303\245 till huvudmenyn fr\303\245n flikar/sidof\303\244lt n\303\244r Bak\303\245t "
+   "trycks.",
+   "Visar \303\244ven dolda konfigurationsrelaterade inst\303\244llningar.",
+   "Drivrutin f\303\266r meny att anv\303\244nda. (kr\303\244ver omstart)",
+   "Skyddar installationen genom att d\303\266lja alla konfigurationsrelaterade inst\303\244llningar"
+   ".",
+   "S\303\244kerst\303\244ller att bildfrekvensen begr\303\244nsas n\303\244r du \303\244r inne i me"
+   "nyn.",
+   "\303\204ndra inst\303\244llningar f\303\266r filutforskare.",
+   "\303\204ndra f\303\266rinst\303\244llda menybakgrundens opacitet.",
+   "Ljusstyrka p\303\245 menyn i cd/m2 (nits) vid anv\303\244ndning av en HDR-sk\303\244rm. Endast s"
+   "ynlig n\303\244r HDR \303\244r aktiverat i Inst\303\244llningar > Video > HDR.",
+   "Aktivera horisontell animering f\303\266r menyn. Detta kommer att p\303\245verka prestandan.",
+   "Byt plats p\303\245 OK/Avbryt-knappen. Inaktiv \303\244r det Japansk knapporientering, aktiv "
+   "\303\244r det V\303\244sterl\303\244ndsk.",
+   "Byt plats p\303\245 knapparna f\303\266r att scrolla. Inaktiv scrollas 10 objekt med L/R och i a"
+   "lfabetisk ordning med L2/R2.",
+   "St\303\244ng automatiskt menyn och \303\245teruppta inneh\303\245llet efter att matat in eller l"
+   "\303\244st in en ny skiva.",
+   "Att ange ett l\303\266senord n\303\244r kioskl\303\244get aktiveras g\303\266r det m\303\266jlig"
+   "t att senare inaktivera kioskl\303\244get fr\303\245n menyn, genom att g\303\245 till huvudmenyn"
+   ", v\303\244lja Inaktivera Kioskl\303\244ge och ange l\303\266senordet.",
+   "L\303\244gger till en liten osk\303\244rpa till menyn f\303\266r att mjuka upp h\303\245rda pixe"
+   "lkanter.",
+   "Kom ih\303\245g f\303\266reg\303\245ende mark\303\266rposition i flikar. RGUI har inga flikar, m"
+   "en Spellistor och Inst\303\244llningar beter sig som s\303\245dana.",
+   "V\303\244lj bildformat f\303\266r meny. Bredbildsformat \303\266kar den horisontella uppl\303"
+   "\266sningen i menygr\303\244nssnittet. (Kan kr\303\244va en omstart om 'L\303\245s bildformat' "
+   "\303\244r inaktiverad)",
+   "S\303\244kerst\303\244ller att menyn alltid visas med r\303\244tt bildformat. Inaktiverad kommer"
+   " snabbmenyn att str\303\244ckas ut f\303\266r att matcha det f\303\266r n\303\244rvarande laddad"
+   "e inneh\303\245llet.",
+   "\303\226ka storlek p\303\245 bakgrundsfyllnadens schackbr\303\244dsrutor.",
+   "Visa menyram.",
+   "\303\226ka storlek p\303\245 kantfyllnadens schackbr\303\244dsrutor.",
+   "Aktivera visning av icke-standardiserade ASCII-tecken. Kr\303\244vs f\303\266r kompatibilitet me"
+   "d vissa icke-engelska v\303\244sterl\303\244ndska spr\303\245k. Har en m\303\245ttlig prestation"
+   "sp\303\245verkan.",
+   "\303\204ndra storlek och placera menyposter f\303\266r att utnyttja tillg\303\244ngligt sk\303"
+   "\244rmutrymme p\303\245 b\303\244sta s\303\244tt. Inaktivera detta f\303\266r att anv\303\244nda"
+   " klassisk tv\303\245kolumnslayout med fast bredd.",
+   "Aktivera visning av nedskalade miniatyrbilder inline n\303\244r du visar spellistor. V\303\244xl"
+   "ingsbar med RetroPad Select. N\303\244r funktionen \303\244r inaktiverad kan miniatyrbilderna fo"
+   "rtfarande v\303\244xlas till helsk\303\244rm med RetroPad Start.",
+   "Uppskalar menygr\303\244nssnittet innan det ritas upp p\303\245 sk\303\244rmen. N\303\244r det a"
+   "nv\303\244nds med \342\200\235Linj\303\244rt menyfilter\342\200\235 aktiverat, tar det bort skal"
+   "ningsartefakter (oj\303\244mna bildpunkter) samtidigt som bilden f\303\266rblir skarp. Har en be"
+   "tydande inverkan p\303\245 prestandan som \303\266kar med uppskalningsniv\303\245n.",
+   "Aktivera animeringseffekt f\303\266r bakgrundspartiklar. Har en betydande prestandap\303\245verk"
+   "an.",
+   "Visa partikelanimationseffekt i bakgrunden n\303\244r menysk\303\244rmsl\303\244ckaren \303\244r"
+   " aktiv.",
+   "Justera hastigheten p\303\245 animationseffekterna f\303\266r bakgrundspartiklar.",
+   "Aktivera skuggor f\303\266r menytext, ramar och miniatyrer. Har en blygsam prestandap\303\245ver"
+   "kan.",
+   "Anv\303\244nd ikoner ist\303\244llet f\303\266r P\303\205/AV-text f\303\266r att representera 'o"
+   "mkopplare' menyinst\303\244llningar.",
+   "Till\303\244mpar en tidsf\303\266rdr\303\266jning mellan valet av en spellistepost och laddninge"
+   "n av dess tillh\303\266rande miniatyrbilder. Om du st\303\244ller in detta till ett v\303\244rde"
+   " p\303\245 minst 256 ms m\303\266jligg\303\266rs snabb och f\303\266rdr\303\266jningsfri rullnin"
+   "g \303\244ven p\303\245 de l\303\245ngsammaste enheterna.",
+   "Omsamplingsmetod som anv\303\244nds n\303\244r stora miniatyrbilder krymps f\303\266r att passa "
+   "sk\303\244rmen.",
+   "Aktivera bakgrundsvisning av inneh\303\245ll n\303\244r snabbmenyn \303\244r aktiv. Om du inakti"
+   "verar transparens kan temaf\303\244rgerna \303\244ndras.",
+   "St\303\244ng automatiskt menyn och \303\245teruppta inneh\303\245llet efter att ha sparat eller "
+   "l\303\244st in ett tillst\303\245nd. Inaktivering kan f\303\266rb\303\244ttra prestandan f\303"
+   "\266r sparad status p\303\245 mycket l\303\245ngsamma enheter.",
+   "Skala storleken p\303\245 anv\303\244ndargr\303\244nssnittets element i menyn.",
+   "Aktivera en animeringseffekt medan menysk\303\244rmsl\303\244ckaren \303\244r aktiv. Har en v"
+   "\303\244ldigt l\303\245g p\303\245verkan p\303\245 prestanda.",
+   "Justera hastigheten p\303\245 menysk\303\244rmsl\303\244ckarens animationseffekt.",
+   "Medan menyn \303\244r aktiv kommer en sk\303\244rmsl\303\244ckare att kunna visas efter den angi"
+   "vna perioden av inaktivitet.",
+   "Initial f\303\266rdr\303\266jning i millisekunder n\303\244r du h\303\245ller en riktning f\303"
+   "\266r att rulla.",
+   "Mark\303\266rens maximala hastighet n\303\244r du h\303\245ller en riktning f\303\266r att rulla"
+   ".",
+   "\303\204ndra inst\303\244llningar f\303\266r menysk\303\244rmens utseende.",
+   "Visa alternativet 'Konfigurationsfil' i huvudmenyn.",
+   "Visa m\303\266jligheten att uppdatera k\303\244rnor (och k\303\244rninfofiler) i 'Online-uppdate"
+   "rare'.",
+   "Visa alternativet 'Dumpa skiva' i huvudmenyn.",
+   "Visa alternativet 'Hj\303\244lp' i huvudmenyn.",
+   "Visa alternativet 'Information' i huvudmenyn.",
+   "Visa alternativet 'L\303\244s in inneh\303\245ll' i huvudmenyn.",
+   "Visa en kort animering med \303\245terkoppling vid start n\303\244r inneh\303\245ll l\303\244ses"
+   " in.",
+   "Visa alternativet 'L\303\244s in k\303\244rna' i huvudmenyn.",
+   "Visa alternativet 'L\303\244s in skiva' i huvudmenyn.",
+   "Visa alternativet 'Online-uppdaterare' i huvudmenyn.",
+   "Visa alternativet 'Avsluta RetroArch' i huvudmenyn.",
+   "Visa alternativet 'Starta om'.",
+   "Visa alternativet 'Starta om RetroArch' i huvudmenyn.",
+   "Visa alternativet 'St\303\244ng av'.",
+   "Visa ytterligare information f\303\266r menyobjekt.",
+   "Hoppa \303\266ver 'K\303\266r'-menyn n\303\244r du startar spellistposter. Tryck p\303\245 D-Pad"
+   " medan du h\303\245ller OK f\303\266r att komma \303\245t 'K\303\266r'-menyn.",
+   "\303\204ndra inst\303\244llningar f\303\266r menyljud.",
+   "Initial menysida vid uppstart.",
+   "M\303\266jligg\303\266r utfyllnad av oanv\303\244nt utrymme i miniatyrbilder med en solid bakgru"
+   "nd. Detta s\303\244kerst\303\244ller en enhetlig visningsstorlek f\303\266r alla bilder, vilket "
+   "f\303\266rb\303\244ttrar menyutseendet n\303\244r du tittar p\303\245 miniatyrbilder av blandat "
+   "inneh\303\245ll med olika basm\303\245tt.",
+   "Uppskala automatiskt miniatyrbilder med en bredd/h\303\266jd som \303\244r mindre \303\244n det "
+   "angivna v\303\244rdet. F\303\266rb\303\244ttrar bildkvalit\303\251n. Har en m\303\245ttlig inver"
+   "kan p\303\245 prestanda.",
+   "Anv\303\244nd mjuk rullande animation n\303\244r l\303\245ng menytext visas. Har en liten presta"
+   "ndap\303\245verkan.",
+   "Animeringshastigheten vid rullning av l\303\245ng menytext.",
+   "V\303\244lj metod f\303\266r horisontell rullning som anv\303\244nds f\303\266r att visa l\303"
+   "\245ng menytext.",
+   "Anv\303\244nd operativsystemets f\303\244rgtema (om n\303\245got). \303\205sidos\303\244tter tem"
+   "ainst\303\244llningar.",
+   "V\303\244lj synligheten f\303\266r menyalternativ i RetroArch.",
+   "V\303\244lj en bild att st\303\244lla in som menybakgrund. Manuella och dynamiska bilder kommer "
+   "att \303\245sidos\303\244tta 'F\303\244rgtema'.",
+   "Anv\303\244nd dekorerade animationer, meddelanden, indikatorer och kontroller.",
+   "\303\204ndra automatiskt storlek p\303\245 dekorerade meddelanden, indikatorer och kontroller ba"
+   "serat p\303\245 aktuell menyskala.",
+   "Till\303\244mpa en manuell skalningsfaktor vid ritning av grafikwidgetar. G\303\244ller endast n"
+   "\303\244r \342\200\235Skala grafikwidgetar automatiskt\342\200\235 \303\244r inaktiverat. Kan an"
+   "v\303\244ndas f\303\266r att \303\266ka eller minska storleken p\303\245 dekorerade meddelanden,"
+   " indikatorer och kontroller oberoende av sj\303\244lva menyn.",
+   "Till\303\244mpa en manuell skalningsfaktor n\303\244r du ritar grafikwidgetar i helsk\303\244rms"
+   "l\303\244ge. G\303\244ller endast n\303\244r \342\200\235Skala grafikwidgetar automatiskt\342"
+   "\200\235 \303\244r inaktiverat. Kan anv\303\244ndas f\303\266r att \303\266ka eller minska storl"
+   "eken p\303\245 dekorerade meddelanden, indikatorer och kontroller oberoende av sj\303\244lva men"
+   "yn.",
+   "Anv\303\244nd en manuell skalningsfaktor n\303\244r du ritar grafikwidgetar i f\303\266nsterl"
+   "\303\244ge. G\303\244ller endast n\303\244r \342\200\235Skala grafikwidgetar automatiskt\342\200"
+   "\235 \303\244r inaktiverat. Kan anv\303\244ndas f\303\266r att \303\266ka eller minska storleken"
+   " p\303\245 dekorerade meddelanden, indikatorer och kontroller oberoende av sj\303\244lva menyn.",
+   "Animeringen som aktiveras vid rullning mellan flikar.",
+   "Animationen som aktiveras n\303\244r du flyttar upp\303\245t eller ned\303\245t.",
+   "Animationen som aktiveras n\303\244r ett undermeny \303\266ppnas.",
+   "Minska visningsstorlek f\303\266r miniatyrbild genom att skala maximal till\303\245ten bredd.",
+   "V\303\244lj inmatningsenhet.",
+   "V\303\244lj utmatningsenhet.",
+   "\303\204ndra inst\303\244llningar f\303\266r MIDI.",
+   "Ange utmatningsvolym (%).",
+   "Kommer att starta uppspelningen av ljudstr\303\266mmen. N\303\244r det \303\244r klart kommer de"
+   "t att ta bort den aktuella ljudstr\303\266mmen fr\303\245n minnet.",
+   "Kommer att starta uppspelningen av ljudstr\303\266mmen. N\303\244r den \303\244r klar kommer den"
+   " att loopa och spela upp sp\303\245ret igen fr\303\245n b\303\266rjan.",
+   "Kommer att starta uppspelningen av ljudstr\303\266mmen. N\303\244r den \303\244r klar, hoppar de"
+   "n till n\303\244sta ljudstr\303\266m i sekventiell ordning och upprepar detta beteende. Anv\303"
+   "\244ndbar som uppspelningsl\303\244ge f\303\266r album.",
+   "Detta kommer att stoppa uppspelningen av ljudstr\303\266mmen och ta bort den helt fr\303\245n mi"
+   "nnet.",
+   "Detta kommer att stoppa uppspelningen av ljudstr\303\266mmen, men inte ta bort den fr\303\245n m"
+   "innet. Den kan startas igen genom att v\303\244lja 'Spela'.",
+   "Justera volymen p\303\245 ljudstr\303\266mmen.",
+   "Till\303\245t att menyn styrs med en mus.",
+   "Filtrera filer som visas i filbl\303\244ddraren till fil\303\244ndelser som st\303\266ds.",
+   "B\303\266rja om fr\303\245n b\303\266rjan och/eller slutet n\303\244r listans slut har n\303\245"
+   "tts horisontellt eller vertikalt.",
+   "G\303\245 med i eller bli v\303\244rd f\303\266r Netplay-session.",
+   "Till\303\245t spelare att pausa under Netplay.",
+   "Till\303\245t anslutningar i slavl\303\244ge. Klienter i slavl\303\244ge kr\303\244ver mycket li"
+   "te processorkraft p\303\245 b\303\245da sidor, men kommer att drabbas avsev\303\244rt av n\303"
+   "\244tverksf\303\266rdr\303\266jning.",
+   "Bannlys en klient fr\303\245n ditt aktuella v\303\244rdrum.",
+   "Format: #RRGGBB eller RRGGBB",
+   "Format: #RRGGBB eller RRGGBB",
+   "Hur ofta (i bildrutor) som netplay ska kontrollera att v\303\244rden och klienten \303\244r synk"
+   "roniserade.",
+   "Ange adressen till din anpassade rel\303\244server h\303\244r. Format: adress eller adress|port.",
+   "Koppla fr\303\245n en aktiv Netplay anslutning.",
+   "Ange Netplay-serveradress och anslut i klientl\303\244ge.",
+   "Starta netplay i v\303\244rdl\303\244ge (server).",
+   "Tona ut chattmeddelanden \303\266ver tid.",
+   "Antalet bildrutor med inmatningslatens som netplay ska anv\303\244nda f\303\266r att d\303\266lj"
+   "a n\303\244tverkslatens. Minskar jitter och g\303\266r netplay mindre CPU-kr\303\244vande, men p"
+   "\303\245 bekostnad av m\303\244rkbar f\303\266rdr\303\266jning i inmatningen.",
+   "Det intervall av bildrutor med inmatningslatens som kan anv\303\244ndas f\303\266r att d\303\266"
+   "lja n\303\244tverkslatens. Minskar jitter och g\303\266r netplay mindre CPU-kr\303\244vande, men"
+   " p\303\245 bekostnad av of\303\266ruts\303\244gbar f\303\266rdr\303\266jning i inmatningen.",
+   "Adressen f\303\266r v\303\244rden att ansluta till.",
+   "Sparka ut en klient fr\303\245n ditt aktuella v\303\244rdrum.",
+   "Det maximala antalet aktiva anslutningar som v\303\244rden accepterar innan nya anslutningar avv"
+   "isas.",
+   "Den maximala anslutningsf\303\266rdr\303\266jningen (ping) som v\303\244rden accepterar. St\303"
+   "\244ll in den p\303\245 0 f\303\266r ingen gr\303\244ns.",
+   "V\303\244lj en specifik rel\303\244server att anv\303\244nda. Geografiskt n\303\244rmare platser"
+   " tenderar att ha l\303\244gre latens.",
+   "N\303\244r du \303\244r v\303\244rd, f\303\266rs\303\266k att lyssna efter anslutningar fr\303"
+   "\245n det offentliga Internet med hj\303\244lp av UPnP eller liknande tekniker f\303\266r att ko"
+   "mma ut fr\303\245n LAN.",
+   "Ange ditt anv\303\244ndarnamn h\303\244r. Detta kommer bland annat att anv\303\244ndas f\303\266"
+   "r Netplay-sessioner.",
+   "L\303\266senordet som anv\303\244nds av klienter f\303\266r att ansluta till v\303\244rden.",
+   "Visa pingen f\303\266r den aktuella Netplay sessionen.",
+   "Om netplay-spel ska annonseras offentligt. Om inst\303\244llningen \303\244r avaktiverad m\303"
+   "\245ste klienter ansluta manuellt i st\303\244llet f\303\266r att anv\303\244nda den publika lob"
+   "byn.",
+   "Leta efter netplay-v\303\244rdar p\303\245 LAN.",
+   "Leta efter netplay-v\303\244rdar.",
+   "Beg\303\244r att f\303\245 spela med den angivna inmatningsenheten.",
+   "Till\303\245t inte anslutningar som inte \303\244r i slavl\303\244ge. Rekommenderas inte, utom f"
+   "\303\266r mycket snabba n\303\244tverk med mycket svaga maskiner.",
+   "L\303\266senordet som anv\303\244nds av klienter f\303\266r att ansluta till v\303\244rden som e"
+   "n \303\245sk\303\245dare.",
+   "Starta netplay i \303\245sk\303\245darl\303\244ge.",
+   "Porten f\303\266r v\303\244rdens IP-adress. Kan vara antingen en TCP eller UDP-port.",
+   "Vidarebefordra n\303\244tverksanslutningar via en mellanliggande server. Anv\303\244ndbart om v"
+   "\303\244rden ligger bakom en brandv\303\244gg eller har problem med NAT/UPnP.",
+   "Visa n\303\244tverksgr\303\244nssnitt och tillh\303\266rande IP-adresser.",
+   "H\303\244mta automatiskt ner saknade miniatyrbilder n\303\244r du bl\303\244ddrar i spellistor. "
+   "Har en stor prestandap\303\245verkan.",
+   "\303\204ndra server- och n\303\244tverksinst\303\244llningar.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r spelkontroller ansluts/kopplas fr\303"
+   "\245n.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r inmatningsenheter inte kunde konfigurera"
+   "s.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r fuskkoder till\303\244mpas.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen vid inl\303\244sning av filer f\303\266r \303\245si"
+   "dos\303\244ttning av konfiguration.",
+   "Visar ett meddelande p\303\245 sk\303\244rmen n\303\244r du matar in och tar ut skivor.",
+   "Visa icke-n\303\266dv\303\244ndiga Netplay-meddelanden p\303\245 sk\303\244rmen.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r ROM soft-patchas.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r uppdateringsfrekvensen st\303\244lls in.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen vid inl\303\244sning av ommappningsfiler f\303\266r"
+   " inmatning.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r du sparar och l\303\244ser in sparade ti"
+   "llst\303\245nd.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r en sk\303\244rmdump tas.",
+   "Definiera varaktigheten f\303\266r sk\303\244rm-meddelandet om sk\303\244rmdump.",
+   "Visa en vit blinkande effekt p\303\245 sk\303\244rmen med \303\266nskad l\303\244ngd n\303\244r "
+   "en sk\303\244rmdump tas.",
+   "Visa ett meddelande p\303\245 sk\303\244rmen n\303\244r du automatiskt \303\245terst\303\244ller"
+   " den senast anv\303\244nda skivan vid start av flerskivsinneh\303\245ll som l\303\244sts in via "
+   "M3U-spellistor.",
+   "Visa meddelanden endast n\303\244r menyn \303\244r \303\266ppen.",
+   "H\303\244mtar ner till\303\244gg, komponenter och inneh\303\245ll f\303\266r RetroArch.",
+   "\303\204ndra inst\303\244llningar f\303\266r bild- och tangentbords\303\266verl\303\244gg samt s"
+   "k\303\244rmmeddelanden.",
+   "Hantera meddelanden som visas p\303\245 sk\303\244rmen.",
+   "Sl\303\245 p\303\245/av synligheten f\303\266r specifika typer av meddelanden.",
+   "Justera ramar och sk\303\244rm-spelkontroller.",
+   "Justera videolayout.",
+   "Tangentbords\303\266verl\303\244gg lagras i denna katalog.",
+   "Opacitet f\303\266r alla anv\303\244ndargr\303\244nssnittselement i tangentbords\303\266verl\303"
+   "\244gget.",
+   "V\303\244lj ett tangentbords\303\266verl\303\244gg fr\303\245n filbl\303\244ddraren.",
+   "V\303\244lj och justera ett tangentbords\303\266verl\303\244gg.",
+   "Till\303\244mpa en korrigeringsfaktor f\303\266r bildf\303\266rh\303\245llande p\303\245 \303"
+   "\266verl\303\244gget n\303\244r du anv\303\244nder liggande bildsk\303\244rmsorientering. Positi"
+   "va v\303\244rden \303\266kar (medan negativa v\303\244rden minskar) den effektiva \303\266verlag"
+   "ringsbredden.",
+   "Till\303\244mpa en korrigeringsfaktor f\303\266r bildf\303\266rh\303\245llande p\303\245 \303"
+   "\266verl\303\244gget n\303\244r du anv\303\244nder st\303\245ende bildsk\303\244rmsorientering. "
+   "Positiva v\303\244rden \303\266kar (medan negativa v\303\244rden minskar) den effektiva h\303"
+   "\266jden p\303\245 \303\266verl\303\244gget.",
+   "F\303\266redra inl\303\244sning av \303\266verl\303\244gg baserat p\303\245 systemnamn innan det"
+   " \303\245terg\303\245r till standardf\303\266rinst\303\244llningen. Ignoreras om en \303\245sido"
+   "s\303\244ttning har angetts f\303\266r f\303\266rinst\303\244llningen f\303\266r \303\266verl"
+   "\303\244gg.",
+   "\303\226verl\303\244gg lagras i denna katalog.",
+   "Konfigurera ljuspistolens inmatning som skickas fr\303\245n \303\266verl\303\244gget.",
+   "Konfigurera musinmatning som skickas fr\303\245n \303\266verl\303\244gget. Obs: 1-, 2- och 3-fin"
+   "gertryckningar skickar v\303\244nster-, h\303\266ger- och mittknappsklick.",
+   "Opacitet f\303\266r alla anv\303\244ndargr\303\244nssnittselement i \303\266verl\303\244gget.",
+   "V\303\244lj ett \303\266verl\303\244gg fr\303\245n filbl\303\244ddraren.",
+   "Skala f\303\266r alla anv\303\244ndargr\303\244nssnittselement i \303\266verl\303\244gget n\303"
+   "\244r du anv\303\244nder liggande bildsk\303\244rmsorientering.",
+   "Skala f\303\266r alla anv\303\244ndargr\303\244nssnittselement i \303\266verl\303\244gget n\303"
+   "\244r du anv\303\244nder st\303\245ende bildsk\303\244rmsorientering.",
+   "Horisontell f\303\266rskjutning av \303\266verl\303\244gget n\303\244r du anv\303\244nder liggan"
+   "de bildsk\303\244rmsorientering. Positiva v\303\244rden flyttar \303\266verl\303\244gget till h"
+   "\303\266ger, negativa v\303\244rden till v\303\244nster.",
+   "Horisontell f\303\266rskjutning av \303\266verl\303\244gget n\303\244r du anv\303\244nder st\303"
+   "\245ende bildsk\303\244rmsorientering. Positiva v\303\244rden flyttar \303\266verl\303\244gget t"
+   "ill h\303\266ger, negativa v\303\244rden till v\303\244nster.",
+   "Om det st\303\266ds av det aktuellt f\303\266rvalet, justera avst\303\245ndet mellan elementen i"
+   " anv\303\244ndargr\303\244nssnittet i den v\303\244nstra och h\303\266gra halvan av ett \303\266"
+   "verl\303\244gg n\303\244r du anv\303\244nder liggande visningsorienteringar. Positiva v\303\244r"
+   "den \303\266kar (medan negativa v\303\244rden minskar) separationen mellan de tv\303\245 halvorn"
+   "a.",
+   "Om det st\303\266ds av den aktuella f\303\266rinst\303\244llningen, justera avst\303\245ndet mel"
+   "lan anv\303\244ndargr\303\244nssnittselementen i den v\303\244nstra och h\303\266gra halvan av e"
+   "tt \303\266verl\303\244gg n\303\244r du anv\303\244nder st\303\245ende bildsk\303\244rmsorienter"
+   "ing. Positiva v\303\244rden \303\266kar (medan negativa v\303\244rden minskar) separationen mell"
+   "an de tv\303\245 halvorna.",
+   "Vertikal f\303\266rskjutning av \303\266verl\303\244gget vid anv\303\244ndning av liggande bilds"
+   "k\303\244rmsorientering. Positiva v\303\244rden flyttar \303\266verl\303\244gget upp\303\245t; n"
+   "egativa v\303\244rden ned\303\245t.",
+   "Vertikal f\303\266rskjutning av \303\266verl\303\244gget vid anv\303\244ndning av st\303\245ende"
+   " bildsk\303\244rmsorientering. Positiva v\303\244rden flyttar \303\266verl\303\244gget upp\303"
+   "\245t; negativa v\303\244rden ned\303\245t.",
+   "Om det st\303\266ds av den aktuella f\303\266rinst\303\244llningen, justera avst\303\245ndet mel"
+   "lan anv\303\244ndargr\303\244nssnittselementen i den \303\266vre och nedre halvan av ett \303"
+   "\266verl\303\244gg n\303\244r du anv\303\244nder liggande bildsk\303\244rmsorientering. Positiva"
+   " v\303\244rden \303\266kar (medan negativa v\303\244rden minskar) separationen mellan de tv\303"
+   "\245 halvorna.",
+   "Om det st\303\266ds av den aktuella f\303\266rinst\303\244llningen, justera avst\303\245ndet mel"
+   "lan anv\303\244ndargr\303\244nssnittselementen i den \303\266vre och nedre halvan av ett \303"
+   "\266verl\303\244gg n\303\244r du anv\303\244nder st\303\245ende bildsk\303\244rmsorientering. Po"
+   "sitiva v\303\244rden \303\266kar (medan negativa v\303\244rden minskar) separationen mellan de t"
+   "v\303\245 halvorna.",
+   "Den aktuella \303\245sidos\303\244ttningsfilen som anv\303\244nds.",
+   "L\303\244s in och ers\303\244tt aktuell konfiguration.",
+   "Spara aktuell konfiguration som en ny \303\245sidos\303\244ttningsfil.",
+   "Nollst\303\244ll alla alternativ till globala konfigurationsv\303\244rden.",
+   "Har alltid det v\303\244nstra sidof\303\244ltet hopf\303\244llt.",
+   "V\303\244lj ett annat huvudsakligt teckensnitt som ska anv\303\244ndas av menyn.",
+   "Ange om teckenstorleken i menyn ska ha egen skalning och om den ska skalas globalt eller med sep"
+   "arata v\303\244rden f\303\266r varje del av menyn.",
+   "Skala teckenstorleken f\303\266r texten i menyfoten. P\303\245verkar \303\244ven textstorleken i"
+   " den h\303\266gra miniatyrbildsf\303\244ltet.",
+   "Skala typsnittsstorleken linj\303\244rt \303\266ver hela menyn.",
+   "Skala teckenstorleken f\303\266r etiketterna f\303\266r menyalternativ och spellistposter. P\303"
+   "\245verkar \303\244ven textstorleken i hj\303\244lpf\303\266nstren.",
+   "Skala typsnittsstorleken f\303\266r text i v\303\244nstra sidof\303\244ltet.",
+   "Skala teckenstorleken f\303\266r underetiketterna f\303\266r menyalternativ och spellistposter.",
+   "Skala teckenstorleken f\303\266r tids- och datumindikatorn i det \303\266vre h\303\266gra h\303"
+   "\266rnet av menyn.",
+   "Skala typsnittsstorleken f\303\266r titeltexten i menyrubriken.",
+   "Rubrikikon kan vara dold, dynamisk beroende p\303\245 navigering eller fast till klassisk Invade"
+   "r.",
+   "Alternativ bredd f\303\266r avgr\303\244nsare f\303\266r rubrik och sidfot.",
+   "V\303\244lj ett annat f\303\244rgtema.",
+   "Skala storleken p\303\245 horisontell utfyllnad.",
+   "N\303\244r den \303\244r aktiverad kommer varje metadataobjekt som visas i spellistornas h\303"
+   "\266gra sidof\303\244lt (associerad k\303\244rna, speltid) att uppta en enda rad; str\303\244nga"
+   "r som \303\266verskrider sidof\303\244ltets bredd kommer att visas som rullande tickertext. N"
+   "\303\244r den \303\244r inaktiverad visas varje inneh\303\245llsmetadata statiskt, omslaget s"
+   "\303\245 att det upptar s\303\245 m\303\245nga rader som kr\303\244vs.",
+   "Spellistorna kommer att sorteras om i alfabetisk ordning efter att tillverkarkomponenten i deras"
+   " namn har tagits bort.",
+   "Skala storleken p\303\245 miniatyrf\303\244ltet.",
+   "Ta bort tillverkarens namn fr\303\245n spellistorna. Till exempel, 'Sony - PlayStation' blir 'Pl"
+   "ayStation'.",
+   "Pausa inneh\303\245llet om menyn \303\244r aktiv.",
+   "Pausa inneh\303\245ll n\303\244r RetroArch inte \303\244r det aktiva f\303\266nstret.",
+   "Pausa inneh\303\245llet n\303\244r n\303\245gon spelkontroll kopplas fr\303\245n. \303\205terupp"
+   "ta med Start.",
+   "K\303\266rr\303\244knare f\303\266r RetroArch och k\303\244rnor. R\303\244knardata kan hj\303"
+   "\244lpa till att fastst\303\244lla systemets flaskhalsar och finjustera prestanda.",
+   "Visar spellistor med genoms\303\266kt inneh\303\245ll som matchar databasen.",
+   "N\303\244r den \303\244r aktiverad kan lokala miniatyrbilder l\303\244ggas till i alla bildtyper"
+   " som st\303\266ds av RetroArch (t. ex. jpeg). Kan ha en mindre inverkan p\303\245 prestandan.",
+   "Arkivera spellist-data vid skrivning till disk. Detta reducerar filstorlek och laddningstider p"
+   "\303\245 bekostnad av (f\303\266rsumbart) \303\266kad CPU-anv\303\244ndning. Kan anv\303\244ndas"
+   " med spellistor i antingen gamla eller nya formatet.",
+   "Spellistor lagras i denna katalog.",
+   "Till\303\245t att poster i spellistan tas bort.",
+   "Till\303\245t att poster i spellistan byter namn.",
+   "Vid s\303\266kning i spellistor efter poster som \303\244r associerade med komprimerade filer ma"
+   "tchas endast arkivets filnamn ist\303\244llet f\303\266r [filnamn]+[inneh\303\245ll]. Aktivera d"
+   "etta f\303\266r att undvika dubbla poster i inneh\303\245llshistoriken n\303\244r du laddar komp"
+   "rimerade filer.",
+   "Validera k\303\244rnassociationer och ta bort ogiltiga och duplicerade poster.",
+   "Ange vilken k\303\244rna som ska anv\303\244ndas n\303\244r inneh\303\245ll startas via en spell"
+   "istepost som inte har n\303\245gon befintlig k\303\244rn-association.",
+   "\303\204ndra hur inneh\303\245llsetiketterna visas i den h\303\244r spellistan.",
+   "Genomf\303\266r underh\303\245lls\303\245tg\303\244rder p\303\245 spellistor.",
+   "Ta bort befintliga k\303\244rnassociationer f\303\266r alla spellisteposter.",
+   "Best\303\244m hur posterna ska sorteras i den h\303\244r spellistan.",
+   "Om alternativet \303\244r aktiverat och \342\200\235Filbl\303\244ddrare\342\200\235-katalogen oc"
+   "ks\303\245 \303\244r vald sparas det aktuella v\303\244rdet f\303\266r parametern \342\200\235Fi"
+   "lbl\303\244ddrare\342\200\235 i spellistan. N\303\244r spellistan laddas p\303\245 ett annat sys"
+   "tem d\303\244r samma alternativ \303\244r aktiverat j\303\244mf\303\266rs v\303\244rdet p\303"
+   "\245 parametern \342\200\235Filbl\303\244ddrare\342\200\235 med spellistans v\303\244rde; om det"
+   " skiljer sig \303\245t fixas spellistans s\303\266kv\303\244gar automatiskt.",
+   "\303\204ndra inst\303\244llningar f\303\266r spellistor.",
+   "Visa postens nummer n\303\244r du visar spellistor. Visningsformatet beror p\303\245 den valda m"
+   "enydrivrutinen.",
+   "Visa specifika ikoner f\303\266r varje post i historik- och favoritspellistan. Har en varierande"
+   " prestandap\303\245verkan.",
+   "Visa ytterligare information f\303\266r varje spellistepost, t. ex. aktuell k\303\244rnassociati"
+   "on och k\303\266rtid (om tillg\303\244nglig). Har en varierande prestandap\303\245verkan.",
+   "Sortera inneh\303\245llsspellistor i alfabetisk ordning, med undantag f\303\266r spellistorna "
+   "\342\200\235Historik\342\200\235, \342\200\235Bilder\342\200\235, \342\200\235Musik\342\200\235 "
+   "och \342\200\235Videor\342\200\235.",
+   "St\303\244ll in stilen f\303\266r datum och tid som visas f\303\266r tidsst\303\244mpelinformati"
+   "on f\303\266r \342\200\235Senast spelad\342\200\235. Alternativet \342\200\235(AM/PM)\342\200"
+   "\235 har en liten p\303\245verkan p\303\245 prestandan p\303\245 vissa plattformar.",
+   "N\303\244r den \303\244r aktiverad kommer miniatyrbilder att hittas utifr\303\245n postens filna"
+   "mn, snarare \303\244n dess etikett.",
+   "Skriv spellistor med f\303\266r\303\245ldrat klartextformat. N\303\244r funktionen \303\244r ina"
+   "ktiverad formateras spellistorna med JSON.",
+   "Spela reprisfilen fr\303\245n den f\303\266r n\303\244rvarande valda platsen.",
+   "H\303\244mtar ner miniatyrer f\303\266r poster i den valda spellistan.",
+   "Till\303\245t att menyn styrs med en peksk\303\244rm.",
+   "\303\204ndra inst\303\244llningar kopplade till str\303\266mf\303\266rs\303\266rjning.",
+   "Antalet bildrutor att spela upp igen. Orsakar problem i spel s\303\245som jitter om antalet lagg"
+   "ade bildrutor internt f\303\266r spelet \303\266verstigs.",
+   "\303\204ndra sekretessinst\303\244llningar.",
+   "Alternativ f\303\266r att \303\245sidos\303\244tta global konfiguration.",
+   "Visa alternativet 'L\303\244gg till i favoriter'.",
+   "Visa alternativet 'L\303\244gg till i spellista'.",
+   "Visa alternativet 'Fusk'.",
+   "Visa alternativet 'Spelkontroller'.",
+   "Visa posten \342\200\235Skriv alternativ till disk\342\200\235 i menyn \342\200\235Alternativ > "
+   "Hantera k\303\244rnalternativ\342\200\235.",
+   "Visa alternativet 'H\303\244mta ner miniatyrer' n\303\244r inneh\303\245ll inte k\303\266rs.",
+   "Visa alternativet 'Information'.",
+   "Visa alternativet 'K\303\244rnalternativ'.",
+   "Visa alternativen f\303\266r inspelning/uppspelning av reprisfiler.",
+   "Visa alternativet '\303\205terst\303\244ll k\303\244rnassociation' n\303\244r inneh\303\245ll in"
+   "te k\303\266rs.",
+   "Visar alternativet att \303\245teruppta inneh\303\245ll.",
+   "Visa alternativ f\303\266r sparade tillst\303\245nd i en undermeny.",
+   "Visa alternativet 'Spara \303\245sidos\303\244ttningar f\303\266r inneh\303\245llskatalog' i men"
+   "yn '\303\205sidos\303\244ttningar'.",
+   "Visa alternativet 'Spara k\303\244rn\303\245sidos\303\244ttningar' i menyn '\303\205sidos\303"
+   "\244ttningar'.",
+   "Visa alternativet '\303\205sidos\303\244ttningar f\303\266r sparat spel' i menyn '\303\205sidos"
+   "\303\244ttningar'.",
+   "Visa alternativen f\303\266r att spara/l\303\244s in ett tillst\303\245nd.",
+   "Visa alternativet 'St\303\244ll in k\303\244rnassociation' n\303\244r inneh\303\245ll inte k\303"
+   "\266rs.",
+   "Visa alternativet 'Shaders'.",
+   "Visa alternativet 'Starta inspelning'.",
+   "Visa alternativet 'B\303\266rja str\303\266mma'.",
+   "Visa alternativet 'Ta sk\303\244rmdump'.",
+   "Starta videoinspelning.",
+   "Starta str\303\266mning till valt m\303\245l.",
+   "Stoppa videoinspelning.",
+   "Avsluta str\303\266m.",
+   "V\303\244xla synligheten f\303\266r menyobjekt i Snabbmenyn.",
+   "Avsluta RetroArch automatiskt vid St\303\244ng inneh\303\245ll. 'CLI' avslutas bara n\303\244r i"
+   "nneh\303\245llet startas via kommandoraden.",
+   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut \303\244r aktiverat.",
+   "Avsluta RetroArch-programmet. Konfiguration sparas vid avslut \303\244r inaktiverat.",
+   "Visa databasinformation f\303\266r aktuellt inneh\303\245ll.",
+   "Inspelningskonfigurationer lagras i denna katalog.",
+   "Inspelningar lagras i denna katalog.",
+   "\303\204ndra inst\303\244llningar f\303\266r inspelning.",
+   "Spela in reprisfil till den f\303\266r n\303\244rvarande valda platsen.",
+   "Skriv \303\266ver aktiva ommappningsfilen med aktuella alternativ f\303\266r ommappning av inmat"
+   "ning.",
+   "Aktuell ommappningsfil som anv\303\244nds.",
+   "L\303\244s in och ers\303\244tt nuvarande inmatningsmappningar.",
+   "L\303\244s in, spara eller ta bort ommappningsfiler f\303\266r inmatning f\303\266r aktuellt inn"
+   "eh\303\245ll.",
+   "Ta bort ommappningsfil som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st fr\303"
+   "\245n samma katalog som aktuella filen.",
+   "Ta bort ommappningsfilen som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st med "
+   "denna k\303\244rna.",
+   "Ta bort ommappningsfilen som till\303\244mpas endast f\303\266r det aktuella inneh\303\245llet.",
+   "St\303\244ll in alla inmatningsalternativ till standardv\303\244rden.",
+   "Spara aktuella inmatningsmappningar som en ny ommappningsfil.",
+   "Spara en ommappningsfil som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st fr"
+   "\303\245n samma katalog som aktuella filen.",
+   "Spara en ommappningsfil som till\303\244mpas f\303\266r allt inneh\303\245ll inl\303\244st med d"
+   "enna k\303\244rna.",
+   "Spara en ommappningsfil som till\303\244mpas endast f\303\266r det aktuella inneh\303\245llet.",
+   "Spara \303\244ndringar i alla aktiva ommappningsfiler vid St\303\244ng inneh\303\245ll eller Avs"
+   "luta RetroArch.",
+   "Ta bort den \303\245sidos\303\244ttande konfigurationsfilen som g\303\244ller f\303\266r allt in"
+   "neh\303\245ll som l\303\244ses in fr\303\245n samma katalog som den aktuella filen.",
+   "Ta bort den \303\245sidos\303\244ttande konfigurationsfilen som kommer att g\303\244lla f\303"
+   "\266r allt inneh\303\245ll som l\303\244ses in med denna k\303\244rna.",
+   "Ta bort konfigurationsfil f\303\266r \303\245sidos\303\244ttningar som till\303\244mpas endast p"
+   "\303\245 aktuellt inneh\303\245ll.",
+   "Byt namn p\303\245 titeln f\303\266r posten.",
+   "Innan en \303\245teruppspelning g\303\266rs \303\266kas \303\245teruppspelningsindexet automatis"
+   "kt. N\303\244r inneh\303\245ll l\303\244ses in kommer indexet att st\303\244llas in p\303\245 de"
+   "t h\303\266gsta befintliga indexet.",
+   "Huruvida kontrollpunkter som lagrats i \303\245teruppspelningar ska avserialiseras under normal "
+   "uppspelning.",
+   "Automatisk bokm\303\244rkning av speltillst\303\245nd under uppspelning av inspelning med ett re"
+   "gelbundet intervall (i sekunder).",
+   "Begr\303\244nsa antalet \303\245teruppspelningar som skapas n\303\244r \342\200\235\303\226ka in"
+   "dex automatiskt\342\200\235 \303\244r aktiverat. Om gr\303\244nsen \303\266verskrids n\303\244r "
+   "en ny \303\245teruppspelning spelas in kommer den befintliga \303\245teruppspelningen med l\303"
+   "\244gst index att raderas. V\303\244rdet \342\200\2350\342\200\235 inneb\303\244r att ett obegr"
+   "\303\244nsat antal \303\245teruppspelningar spelas in.",
+   "\303\204ndra den f\303\266r n\303\244rvarande valda tillst\303\245ndsplatsen.",
+   "\303\205terst\303\244ll k\303\244rnan som \303\244r kopplad till detta inneh\303\245ll.",
+   "\303\205terst\303\244ller nuvarande konfigurations grundv\303\244rden.",
+   "Starta om RetroArch-programmet.",
+   "\303\205teruppta inneh\303\245llet och l\303\244mna snabbmenyn.",
+   "\303\204ndra inst\303\244llningar f\303\266r prestationer.",
+   "Den minnesm\303\244ngd (i MB) som ska reserveras f\303\266r \303\245terspolningsbufferten. Om du"
+   " \303\266kar detta kommer m\303\244ngden \303\245terspolningshistorik att \303\266ka.",
+   "Varje g\303\245ng som tillbakaspolningsbuffertens storleksv\303\244rde \303\266kas eller minskas"
+   ", kommer det att \303\244ndras med denna m\303\244ngd.",
+   "\303\205terg\303\245 till en tidigare punkt i den senaste spelningen. Detta orsakar en allvarlig"
+   " prestandaf\303\266rlust n\303\244r du spelar.",
+   "Antalet bildrutor som ska spolas tillbaka per steg. H\303\266gre v\303\244rden \303\266kar \303"
+   "\245terspolningshastigheten.",
+   "\303\204ndra inst\303\244llningar f\303\266r bak\303\245tspolning.",
+   "St\303\244ll in startkatalog f\303\266r filbl\303\244ddraren.",
+   "Standardkonfigurationsfilen lagras i denna katalog.",
+   "V\303\244lj ett annat f\303\244rgtema. Om du v\303\244ljer \342\200\235Anpassad\342\200\235 kan "
+   "du anv\303\244nda f\303\266rinst\303\244llda filer f\303\266r menyteman.",
+   "V\303\244lj ett f\303\266rinst\303\244llt menytema fr\303\245n filbl\303\244ddraren.",
+   "Visa startsk\303\244rmen i menyn. Detta s\303\244tts automatiskt till false n\303\244r programme"
+   "t startas f\303\266r f\303\266rsta g\303\245ngen.",
+   "Starta inneh\303\245llet.",
+   "K\303\266r ytterligare k\303\244rnlogik f\303\266r att minska latenstiden. Enstaka instans k\303"
+   "\266rs till en framtida bildruta och laddar sedan om det aktuella tillst\303\245ndet. Andra inst"
+   "ans beh\303\245ller en k\303\244rninstans f\303\266r enbart video i en framtida bildruta f\303"
+   "\266r att undvika problem med ljudstatus. Preemptive Frames k\303\266r tidigare bildrutor med ny"
+   " indata n\303\244r det beh\303\266vs, f\303\266r effektivitet.",
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   "K\303\266r ytterligare k\303\244rnlogik f\303\266r att minska latenstiden. Enstaka instans k\303"
+   "\266rs till en framtida bildruta och l\303\244ser sedan om det aktuella tillst\303\245ndet. Pree"
+   "mptive Frames k\303\266r tidigare bildrutor med ny indata n\303\244r det beh\303\266vs, f\303"
+   "\266r effektivitet.",
+#endif
+   "K\303\266rtidsloggar lagras i den h\303\244r katalogen.",
+   "Antalet bildrutor som ska k\303\266ras i f\303\266rv\303\244g (Run-Ahead). Orsakar problem i spe"
+   "let, t. ex. hackighet, om antalet f\303\266rdr\303\266jda bildrutor i spelet \303\266verskrids.",
+   "D\303\266lj varningsmeddelandet som visas n\303\244r du anv\303\244nder Run-Ahead och k\303\244r"
+   "nan inte har st\303\266d f\303\266r sparade tillst\303\245nd.",
+   "Den nuvarande k\303\244rnan \303\244r inte kompatibel med run-ahead p\303\245 grund av bristande"
+   " st\303\266d f\303\266r deterministisk sparning.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
+#endif
+#endif
+   "Anv\303\244nd inneh\303\245llskatalog som katalog f\303\266r sparade filer.",
+   "Spara alla sparningsfiler till denna katalog. Om den inte \303\244r inst\303\244lld f\303\266rs"
+   "\303\266ker den spara i inneh\303\245llsfilens arbetskatalog.",
+   "Anv\303\244nd inneh\303\245llskatalog som katalog f\303\266r sparade tillst\303\245nd.",
+   "Innan ett sparat tillst\303\245nd skapas, \303\266kas sparat tillst\303\245nd-index automatiskt."
+   " N\303\244r inneh\303\245ll laddas in kommer indexet att s\303\244ttas till det h\303\266gsta be"
+   "fintliga indexet.",
+   "L\303\244ser automatiskt in det automatiskt sparade tillst\303\245ndet vid uppstart.",
+   "Spara automatiskt tillst\303\245ndet n\303\244r inneh\303\245llet st\303\244ngs. Detta sparade t"
+   "illst\303\245nd l\303\244ses in vid start om \342\200\235Automatisk inl\303\244sning\342\200\235"
+   " \303\244r aktiverat.",
+   "Dina sparade tillst\303\245nd och inspelningar lagras i denna mapp. Om den inte \303\244r inst"
+   "\303\244lld hit s\303\245 kommer den att f\303\266rs\303\266ka spara filerna i mappen d\303\244r"
+   " spelinneh\303\245llet \303\244r placerat.",
+   "Lagrar dina sparade tillst\303\245ndsfiler i ett arkiverat format. Minskar dramatiskt filstorlek"
+   "en p\303\245 bekostnad av l\303\244ngre spar- och inl\303\244sningstider.",
+   "\303\205tkomst till alternativ f\303\266r sparade tillst\303\245nd.",
+   "Begr\303\244nsa antalet sparade tillst\303\245nd som skapas n\303\244r \342\200\235\303\226ka in"
+   "dex automatiskt\342\200\235 \303\244r aktiverat. Om gr\303\244nsen \303\266verskrids n\303\244r "
+   "ett nytt tillst\303\245nd sparas, raderas det befintliga tillst\303\245ndet med l\303\244gst ind"
+   "ex. V\303\244rdet \342\200\2350\342\200\235 inneb\303\244r att ett obegr\303\244nsat antal tills"
+   "t\303\245nd sparas.",
+   "Visa miniatyrbilder f\303\266r sparade tillst\303\245nd.",
+   "Spara aktuell konfiguration som anpassad konfigurationsfil.",
+   "Skriv \303\266ver nuvarande konfigurationsfil.",
+   "Spara en \303\266verordnad konfigurationsfil som kommer att g\303\244lla f\303\266r allt inneh"
+   "\303\245ll som laddas fr\303\245n samma katalog som den aktuella filen. Kommer att ha f\303\266r"
+   "etr\303\244de framf\303\266r huvudkonfigurationen.",
+   "Spara en \303\245sidosatt konfigurationsfil som kommer att g\303\244lla f\303\266r allt inneh"
+   "\303\245ll som laddas med denna k\303\244rna. Kommer att ha f\303\266retr\303\244de framf\303"
+   "\266r huvudkonfigurationen.",
+   "Spara en \303\245sidos\303\244ttande konfigurationsfil som endast g\303\244ller f\303\266r det a"
+   "ktuella inneh\303\245llet. Har f\303\266retr\303\244de framf\303\266r huvudkonfigurationen.",
+   "Skriv icke-flyktiga SaveRAM-filer i ett arkiverat format. Minskar filstorleken dramatiskt p\303"
+   "\245 bekostnad av (f\303\266rsumbart) \303\266kade spar-/inl\303\244sningstider.\nG\303\244ller "
+   "endast k\303\244rnor som m\303\266jligg\303\266r sparande via standardgr\303\244nssnittet libret"
+   "ro SaveRAM.",
+   "Spara aktuell konfiguration som huvudkonfiguration.",
+   "Sparar nuvarande konfiguration till ny separat fil.",
+   "Spara ett tillst\303\245nd av spelet till den f\303\266r n\303\244rvarande valda platsen.",
+   "\303\204ndra inst\303\244llningar f\303\266r sparande av filer.",
+   "Matchning kan begr\303\244nsas till en specifik databas, eller till den absolut f\303\266rsta da"
+   "tabasen som matchar, f\303\266r att snabba upp genoms\303\266kningen.",
+   "Skannar i en katalog efter inneh\303\245ll som matchar databasen.",
+   "S\303\266ker igenom en fil efter inneh\303\245ll som matchar databasen.",
+   "Automatiskt eller anpassad med detaljerade alternativ.",
+   "Vid anpassade spellistnamn ska du alltid anv\303\244nda spellistnamnet f\303\266r miniatyrbildss"
+   "\303\266kning, \303\244ven om det finns en matchning i databasen.",
+   "Ibland duplicerar ISO:s serienummer, s\303\244rskilt med PSP/PSN-titlar. Att enbart f\303\266rli"
+   "ta sig p\303\245 serienumret kan ibland leda till att skannern placerar inneh\303\245llet i fel "
+   "system. Detta l\303\244gger till en CRC-kontroll, vilket saktar ner skanningen avsev\303\244rt, "
+   "men kan vara mer exakt.",
+   "S\303\266ker igenom endast en enda fil ist\303\244llet f\303\266r en katalog. V\303\244lj inneh"
+   "\303\245llsplats igen efter att detta \303\244ndrats.",
+   "Resultaten l\303\244ggs till i denna spellista. Vid inst\303\244llningen Auto - Alla kan flera s"
+   "ystemspellistor uppdateras. Anpassa utan databasreferens l\303\244nkar inte posterna till n\303"
+   "\245gon databas i spellistan.",
+   "Strikt l\303\244gger endast till objekt som matchar en databaspost, Avslappnat l\303\244gger "
+   "\303\244ven till filer med korrekt fil\303\244ndelse men utan CRC/serienummermatchning, Anpassad"
+   " DAT kontrollerar mot en XML-fil som tillhandah\303\245lls av anv\303\244ndaren ist\303\244llet "
+   "f\303\266r databaser, Ingen ignorerar databaser och anv\303\244nder endast fil\303\244ndelser.",
+   "Till\303\245t att inneh\303\245ll s\303\266ks igenom och l\303\244ggs till i en spellista utan a"
+   "tt det finns en k\303\244rna installerad som st\303\266der detta.",
+   "Anv\303\244nd inneh\303\245llskatalog som katalog f\303\266r sk\303\244rmbilder.",
+   "Sk\303\244rmbilder lagras i denna katalog.",
+   "Framtvingar en s\303\244rskild sk\303\244rmorientering fr\303\245n operativsystemet.",
+   "Ange uppl\303\266sningen f\303\266r sk\303\244rm (omstart kr\303\244vs)",
+   "Konfigurera programmet.",
+   "Visa inst\303\244llningar f\303\266r tillg\303\244nglighet.",
+   "Visa inst\303\244llningar f\303\266r 'Prestationer'.",
+   "Visar inst\303\244llningar f\303\266r AI-tj\303\244nst.",
+   "Visar inst\303\244llningar f\303\266r ljud.",
+   "Visar inst\303\244llningar f\303\266r konfiguration.",
+   "Visar inst\303\244llningar f\303\266r k\303\244rna.",
+   "Visa inst\303\244llningar f\303\266r 'Katalog'.",
+   "Visar inst\303\244llningar f\303\266r drivrutiner.",
+   "Visar inst\303\244llningar f\303\266r filhanterare.",
+   "Visa inst\303\244llningar f\303\266r 'Bildfrekvensstrypning'.",
+   "Visar inst\303\244llningar f\303\266r inmatning.",
+   "Visar inst\303\244llningar f\303\266r latens.",
+   "Visar inst\303\244llningar f\303\266r loggning.",
+   "Visa inst\303\244llningar f\303\266r 'N\303\244tverk'.",
+   "Visa inst\303\244llningar f\303\266r sk\303\244rmvisning.",
+   "Visa inst\303\244llningar f\303\266r 'Spellistor'.",
+   "Visa inst\303\244llningar f\303\266r 'Energihantering'.",
+   "Visar inst\303\244llningar f\303\266r inspelning.",
+   "Visa inst\303\244llningar f\303\266r 'Sparningar'.",
+   "Visa inst\303\244llningar f\303\266r 'Steam'.",
+   "Visa inst\303\244llningar f\303\266r 'Anv\303\244ndare'.",
+   "Visar inst\303\244llningar f\303\266r anv\303\244ndargr\303\244nssnitt.",
+   "Visar inst\303\244llningar f\303\266r video.",
+   "V\303\244xla synligheten f\303\266r menyobjekt i menyn Inst\303\244llningar.",
+   "St\303\244ll in k\303\244rna associerad med detta inneh\303\245ll.",
+   "\303\204ndringar i shaderkonfigurationen tr\303\244der i kraft omedelbart. Anv\303\244nd detta o"
+   "m du har \303\244ndrat antalet shaderpass, filtrering, FBO-skala etc.",
+   "St\303\244ll in shaders f\303\266r att f\303\266rb\303\244ttra bilden visuellt.",
+   "Till\303\244mpa automatiskt \303\244ndringar som gjorts i shader-filer p\303\245 disken.",
+   "Visa avancerade inst\303\244llningar f\303\266r avancerade anv\303\244ndare.",
+   "Visa dolda filer och kataloger i filbl\303\244ddraren.",
+   "\303\226ppna traditionell skrivbordsmeny.",
+   "Installera eller \303\245terst\303\244ll en k\303\244rna fr\303\245n 'H\303\244mtningar'-katalog"
+   "en.",
+   "Den hastighet som inneh\303\245llet spelas upp i n\303\244r slowmotion anv\303\244nds.",
+   "Sortera sparade filer i mappar med namn efter katalogen som inneh\303\245llet finns i.",
+   "Sortera sparade filer i mappar med namn efter anv\303\244nd k\303\244rna.",
+   "Sortera sparade tillst\303\245nd i mappar med namn efter den katalog d\303\244r inneh\303\245lle"
+   "t finns.",
+   "Sortera sparade tillst\303\245nd i mappar med namn efter den anv\303\244nda k\303\244rnan.",
+   "Sortera sk\303\244rmbilder i mappar med namn efter katalogen som inneh\303\245llet finns i.",
+   "Starta k\303\244rnan utan inneh\303\245ll.",
+   "\303\204ndra den f\303\266r n\303\244rvarande valda status platsen.",
+   "Visa teknisk statistik p\303\245 sk\303\244rmen.",
+   "stdin kommandogr\303\244nssnitt.",
+   "Kom \303\245t inst\303\244llningar f\303\266r undersystemet f\303\266r aktuellt inneh\303\245ll.",
+   "F\303\266rhindra systemets sk\303\244rmsl\303\244ckare fr\303\245n att bli aktiv.",
+   "Ers\303\244tt alla \303\244ldre och manuellt installerade k\303\244rnor med de senaste versioner"
+   "na fr\303\245n Play-butik, om m\303\266jligt.",
+   "Anv\303\244nd inneh\303\245llskatalog som katalog f\303\266r system/BIOS.",
+   "BIOS-filer, uppstarts-ROMar och andra systemspecifika filer lagras i denna katalog.",
+   "Visa information som \303\244r specifik f\303\266r enheten.",
+   "Ta en bild av sk\303\244rmen.",
+   "Utf\303\266r uppgifter p\303\245 en separat tr\303\245d.",
+   "Typ av miniatyr som ska visas.",
+   "Omslagsbilder, sk\303\244rmbilder och miniatyrbilder f\303\266r titelsk\303\244rmar lagras i den"
+   "na katalog.",
+   "Huvudtyp av miniatyrbild som ska associeras med varje spellistepost. Fungerar vanligtvis som inn"
+   "eh\303\245llsikon.",
+   "Ange tecken som ska anv\303\244ndas som avgr\303\244nsare mellan \303\245r/m\303\245nad/dag komp"
+   "onenter n\303\244r aktuellt datum visas i menyn.",
+   "Visa aktuellt datum och/eller tid i menyn.",
+   "\303\204ndra hur aktuellt datum och/eller aktuell tid visas inne i menyn.",
+   "Visa f\303\266nstermenyf\303\244lt.",
+   "Om ett tillst\303\245nd har l\303\244sts in \303\245terg\303\245r inneh\303\245llet till det til"
+   "lst\303\245nd som g\303\244llde f\303\266re inl\303\244sningen.",
+   "Om ett tillst\303\245nd blev \303\266verskrivet kommer den att \303\245terg\303\245 till det tid"
+   "igare sparade tillst\303\245ndet.",
+   "\303\205tkomst till inst\303\244llningar f\303\266r k\303\244rnuppdatering",
+   "Uppdaterar alla installerade k\303\244rnor till den senaste tillg\303\244ngliga versionen.",
+   "\303\204ndra inst\303\244llningar f\303\266r anv\303\244ndargr\303\244nssnittet.",
+   "St\303\244ll in spr\303\245ket f\303\266r anv\303\244ndargr\303\244nssnittet.",
+   "\303\204ndra inst\303\244llningar f\303\266r integritet, konto och anv\303\244ndarnamn.",
+   "Visa filer som st\303\266ds av bildvisaren i filbl\303\244ddraren.",
+   "Visa filer som st\303\266ds av mediaspelaren i filbl\303\244ddraren.",
+   "\303\226ppna filbl\303\244ddraren p\303\245 den senast anv\303\244nda platsen n\303\244r du ladd"
+   "ar inneh\303\245ll fr\303\245n startkatalogen. Obs: Platsen \303\245terst\303\244lls till standa"
+   "rd n\303\244r RetroArch startas om.",
+   "Anpassar sig till den aktuella arbetsbelastningen. Fungerar bra med de flesta enheter och emulat"
+   "orer och hj\303\244lper till att spara str\303\266m. Kr\303\244vande spel och k\303\244rnor kan "
+   "drabbas av prestandaf\303\266rs\303\244mring p\303\245 vissa enheter.",
+   "Standard och rekommenderat l\303\244ge. Maximal prestanda vid spel och str\303\266msparl\303\244"
+   "ge vid paus eller menybl\303\244ddring.",
+   "G\303\266r det m\303\266jligt att v\303\244lja vilka styrande faktorer som ska anv\303\244ndas i"
+   " menyer och under spel. Prestanda, Ondemand eller Schedutil rekommenderas under spel.",
+   "G\303\266r det m\303\266jligt att manuellt justera varje detalj i varje CPU: regulator, frekvens"
+   "er etc. Rekommenderas endast f\303\266r avancerade anv\303\244ndare.",
+   "Alltid maximal prestanda: h\303\266gsta frekvenser f\303\266r b\303\244sta upplevelse.",
+   "Anv\303\244nd den l\303\244gsta tillg\303\244ngliga frekvensen f\303\266r att spara str\303\266m"
+   ". Anv\303\244ndbart p\303\245 batteridrivna enheter, men prestandan f\303\266rs\303\244mras avse"
+   "v\303\244rt.",
+   "VSync \303\244r aktiverat tills prestandan sjunker under den \303\266nskade uppdateringsfrekvens"
+   "en. Kan minimera hackighet n\303\244r prestandan sjunker under realtid och vara mer energieffekt"
+   "ivt. Inte kompatibelt med \342\200\235Bildrutef\303\266rdr\303\266jning\342\200\235.",
+   "Till\303\245t k\303\244rnor att st\303\244lla in rotationen. N\303\244r den \303\244r inaktivera"
+   "d ignoreras rotationsf\303\266rfr\303\245gningar. Anv\303\244ndbar f\303\266r inst\303\244llning"
+   "ar som manuellt roterar sk\303\244rmen.",
+   "Flyttalsv\303\244rde f\303\266r bildformat (bredd/h\303\266jd).",
+   "St\303\244ll in bildformat.",
+   "Maximal uppdateringsfrekvens f\303\266r att betraktas som PAL.",
+   "Byt sk\303\244rmens uppdateringshastighet automatiskt baserat p\303\245 aktuellt inneh\303\245ll"
+   ".",
+   "Justera antalet svarta bildrutor i den totala BFI-sekvensen f\303\266r utskanning. Fler motsvara"
+   "r h\303\266gre r\303\266relseklarhet, f\303\244rre motsvarar h\303\266gre ljusstyrka. Inte till"
+   "\303\244mpligt vid 120 Hz eftersom det bara finns totalt 1 BFI-bildruta att arbeta med. Inst\303"
+   "\244llningar som \303\244r h\303\266gre \303\244n m\303\266jligt begr\303\244nsar dig till det h"
+   "\303\266gsta m\303\266jliga f\303\266r din valda uppdateringsfrekvens.",
+   "VARNING: Snabbt flimmer kan orsaka kvarst\303\245ende bild p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Infoga svarta ramar mellan bildrutorna. Kan kraftigt minska r"
+   "\303\266relseosk\303\244rpa genom att emulera CRT-scanning, men p\303\245 bekostnad av ljusstyrk"
+   "an.",
+   "Besk\303\244r n\303\245gra pixlar runt sk\303\244rmens kant, som vanligen l\303\244mnas tomma av"
+   " utvecklare och som ibland ocks\303\245 inneh\303\245ller skr\303\244ppixlar.",
+#ifdef HAVE_ODROIDGO2
+#else
+   "Kontextskalning med h\303\245rdvara (om tillg\303\244nglig).",
+#endif
+   "F\303\266nsterhanterare anv\303\244nder komposition f\303\266r att till\303\244mpa visuella effe"
+   "kter, uppt\303\244cka f\303\266nster som inte svarar och mycket annat.",
+   "Anv\303\244nd ett CPU-drivet videofilter. Kan inneb\303\244ra en h\303\266g prestandakostnad. Vi"
+   "ssa videofilter kanske bara fungerar f\303\266r k\303\244rnor som anv\303\244nder 32-bitars elle"
+   "r 16-bitars f\303\244rg.",
+   "CPU-baserade videofilter lagras i denna katalog.",
+   "St\303\244ng av alla aktiva CPU-drivna videofilter.",
+   "Visa Sk\303\244rm-meddelanden.",
+   "V\303\244lj typsnittet f\303\266r sk\303\244rmmeddelanden.",
+   "Ange teckenstorleken i punkter. N\303\244r widgetar anv\303\244nds har denna storlek endast effe"
+   "kt p\303\245 statistikvisningen p\303\245 sk\303\244rmen.",
+   "Tvinga upp uppl\303\266sningen till helsk\303\244rmsstorleken, om den \303\244r inst\303\244lld "
+   "p\303\245 0, kommer ett fast v\303\244rde p\303\245 3840 x 2160 att anv\303\244ndas.",
+   "Tv\303\245ngsinaktivera st\303\266d f\303\266r sRGB FBO. Vissa Intel OpenGL-drivrutiner p\303"
+   "\245 Windows har videoproblem med sRGB FBOer. Att aktivera detta kan l\303\266sa det.",
+   "Minskar latensen p\303\245 bekostnad av en h\303\266gre risk f\303\266r att videon hackar.",
+   "Justera effektiv 'Bildrutef\303\266rdr\303\266jning' dynamiskt.",
+   "Visning i helsk\303\244rm. Kan \303\244ndras vid k\303\266rtid. Kan \303\245sidos\303\244ttas me"
+   "d en kommandoradsv\303\244xel.",
+   "\303\204ndra inst\303\244llningar f\303\266r helsk\303\244rmsl\303\244ge.",
+   "St\303\244ll in anpassad breddstorlek f\303\266r helsk\303\244rmsl\303\244get utan f\303\266nste"
+   "r. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sningen.",
+   "St\303\244ll in anpassad h\303\266jdstorlek f\303\266r helsk\303\244rmsl\303\244ge utan f\303"
+   "\266nster. Om du l\303\245ter den vara oinst\303\244lld anv\303\244nds skrivbordsuppl\303\266sni"
+   "ngen.",
+   "V\303\244lj vilket grafikkort att anv\303\244nda.",
+   "Spela in GPU-skuggade material om tillg\303\244ngligt.",
+   "Sk\303\244rmdumpar f\303\245ngar GPU-skuggat material om det finns.",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "St\303\244ll in hur m\303\245nga bildrutor CPUn kan k\303\266ra f\303\266re GPUn n\303\244r 'H"
+   "\303\245rd GPU-synk' anv\303\244nds.",
+   "St\303\244ll in HDR-utg\303\245ngsl\303\244ge om sk\303\244rmen st\303\266der det. Observera: sc"
+   "RGB kan mjuka upp strikta CRT-skuggmasker eftersom operativsystemets compositor konverterar till"
+   " HDR10 efter att masken har till\303\244mpats.",
+   "Aktivera HDR-skanningslinjer. Skanningslinjer \303\244r den fr\303\244msta anledningen till att "
+   "anv\303\244nda HDR i RetroArch, eftersom en korrekt implementering av skanningslinjer st\303\244"
+   "nger av st\303\266rre delen av sk\303\244rmen och HDR \303\245terst\303\244ller en del av den f"
+   "\303\266rlorade ljusstyrkan. Om du beh\303\266ver mer kontroll \303\266ver dina skanningslinjer "
+   "kan du anv\303\244nda de anpassade skuggare som RetroArch tillhandah\303\245ller.",
+   "\303\204ndra HDR-inst\303\244llningar f\303\266r video.",
+   "V\303\244lj din sk\303\244rms subpixel-layout, detta p\303\245verkar endast skanningslinjer. Om "
+   "du inte vet vad din sk\303\244rms subpixel-layout \303\244r, se Rtings.com f\303\266r din sk\303"
+   "\244rms \342\200\235subpixel-layout\342\200\235",
+   "Videolayouter lagras i denna katalog.",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
+   "S\303\244ger till videodrivrutinen att uttryckligen anv\303\244nda ett specificerat buffringsl"
+   "\303\244ge.",
+   "St\303\244ller in det bl\303\245a v\303\244rdet f\303\266r bakgrundsf\303\244rgen f\303\266r sk"
+   "\303\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "Aktiverar en bakgrundsf\303\244rg f\303\266r sk\303\244rmmeddelanden.",
+   "St\303\244ller in det gr\303\266na v\303\244rdet f\303\266r bakgrundsf\303\244rgen f\303\266r sk"
+   "\303\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "St\303\244ller in opaciteten f\303\266r OSD-bakgrundsf\303\244rgen. Giltiga v\303\244rden ligger"
+   " mellan 0,0 och 1,0.",
+   "St\303\244ller in det r\303\266da v\303\244rdet f\303\266r bakgrundsf\303\244rgen f\303\266r sk"
+   "\303\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "St\303\244ller in det bl\303\245a v\303\244rdet f\303\266r textf\303\244rgen f\303\266r sk\303"
+   "\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "St\303\244ller in det gr\303\266na v\303\244rdet f\303\266r textf\303\244rgen f\303\266r sk\303"
+   "\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "St\303\244ller in det r\303\266da v\303\244rdet f\303\266r textf\303\244rgen f\303\266r sk\303"
+   "\244rmmeddelanden. Giltiga v\303\244rden \303\244r mellan 0 och 255.",
+   "Ange anpassad X-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den v\303\244nstra kanten.",
+   "Ange anpassad Y-axelposition f\303\266r sk\303\244rmtext. 0 \303\244r den nedre kanten.",
+   "V\303\244lj vilken sk\303\244rm som ska anv\303\244ndas.",
+   "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
+   "Justera besk\303\244rning av \303\266verskanning av sk\303\244rmen genom att minska bildstorleke"
+   "n med ett angivet antal skanlinjer (tagen fr\303\245n sk\303\244rmens nedre kant). Kan orsaka sk"
+   "alningsartefakter.",
+   "Justera besk\303\244rning av \303\266verskanning av sk\303\244rmen genom att minska bildstorleke"
+   "n med ett angivet antal skanningslinjer (tagen fr\303\245n sk\303\244rmens \303\266vre del). Kan"
+   " orsaka skalningsartefakter.",
+   "F\303\245nga bilden efter att filter (men inte shaders) har till\303\244mpats. Videon kommer att"
+   " se lika snygg ut som det du ser p\303\245 din sk\303\244rm.",
+   "Den noggrant uppskattade uppdateringsfrekvensen f\303\266r sk\303\244rmen i Hz.",
+   "Uppdateringsfrekvensen som rapporterats av bildsk\303\244rmsdrivrutinen.",
+   "Framtvingar en s\303\244rskild rotation av videon. Rotationen l\303\244ggs till rotationer som k"
+   "\303\244rnan st\303\244ller in.",
+   "Skala video endast i heltalssteg. Basstorleken beror p\303\245 core-rapporterad geometri och bil"
+   "df\303\266rh\303\245llande.",
+   "Skala antingen h\303\266jd eller bredd, eller b\303\245de h\303\266jd och bredd. Halva steg g"
+   "\303\244ller endast f\303\266r k\303\244llor med h\303\266g uppl\303\266sning.",
+   "Avrunda ned\303\245t eller upp\303\245t till n\303\244rmaste heltal. \342\200\235Smart\342\200"
+   "\235 g\303\245r ner till underskala n\303\244r bilden besk\303\244rs f\303\266r mycket och \303"
+   "\245terg\303\245r slutligen till icke-heltalsskalning om underskalningsmarginalerna \303\244r f"
+   "\303\266r stora.",
+   "\303\204ndra inst\303\244llningar f\303\266r videoskalning.",
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "\303\204ndra inst\303\244llningar f\303\266r videoutmatning.",
+   "Aktivera pipeline f\303\266r video shader.",
+   "F\303\266rdr\303\266j automatisk inl\303\244sning av Shaders (i ms). Kan kringg\303\245 grafiska"
+   " fel n\303\244r programvara f\303\266r sk\303\244rminspelning anv\303\244nds.",
+   "GPU-baserade videoshaders lagras i denna katalog.",
+   "\303\226ka eller minska antalet shader-pipeline-pass. Separata shaders kan kopplas till varje pi"
+   "peline-pass och dess skala och filtrering kan konfigureras.",
+   "Modifiera den aktuella shadern direkt. \303\204ndringar sparas inte i den f\303\266rinst\303\244"
+   "llda filen.",
+   "L\303\244s in en f\303\266rinst\303\244lld Shader. Shader pipelinen kommer automatiskt att konfi"
+   "gureras.",
+   "L\303\244gg till f\303\266rval till de redan inl\303\244sta f\303\266rvalen.",
+   "Aktuellt shader-f\303\266rval som anv\303\244nds.",
+   "Spara eller ta bort shader-f\303\266rval.",
+   "\303\204ndrar den f\303\266rinst\303\244llda shader som f\303\266r n\303\244rvarande anv\303\244"
+   "nds i menyn.",
+   "L\303\244gg till f\303\266rinst\303\244llning f\303\266re den aktuella inl\303\244sta f\303\266r"
+   "inst\303\244llningen.",
+   "Ta bort f\303\266rinst\303\244llningen f\303\266r k\303\244rna, som anv\303\244nds av allt inneh"
+   "\303\245ll som k\303\266rs med den f\303\266r n\303\244rvarande inl\303\244sta k\303\244rnan.",
+   "Ta bort f\303\266rinst\303\244llningen f\303\266r spel, som endast anv\303\244nds f\303\266r det"
+   " specifika spelet i fr\303\245ga.",
+   "Ta bort den globala f\303\266rinst\303\244llningen, som anv\303\244nds av allt inneh\303\245ll o"
+   "ch alla k\303\244rnor.",
+   "Ta bort f\303\266rvalet f\303\266r inneh\303\245llskatalogen, som anv\303\244nds av allt inneh"
+   "\303\245ll i den aktuella arbetskatalogen.",
+   "Spara de aktuella shaderinst\303\244llningarna som en ny shaderf\303\266rinst\303\244llning.",
+   "Spara de aktuella shaderinst\303\244llningarna som standard f\303\266r den h\303\244r k\303\244r"
+   "nan.",
+   "Spara aktuellt shader-f\303\266rval.",
+   "Spara de aktuella shaderinst\303\244llningarna som standardinst\303\244llningar f\303\266r inneh"
+   "\303\245llet.",
+   "Spara de aktuella shaderinst\303\244llningarna som global standardinst\303\244llning.",
+   "Spara de aktuella shaderinst\303\244llningarna som standard f\303\266r alla filer i den aktuella"
+   " inneh\303\245llskatalogen.",
+   "Spara en shader-f\303\266rinst\303\244llning som har en l\303\244nk till den ursprungliga f\303"
+   "\266rinst\303\244llningen och som endast inneh\303\245ller de parameter\303\244ndringar som du h"
+   "ar gjort.",
+   "\303\226ppna filbl\303\244ddrare vid senast anv\303\244nda katalog n\303\244r shader-f\303\266rv"
+   "al och pass l\303\244ses in.",
+   "VARNING: Snabbt flimmer kan orsaka bildbest\303\244ndighet p\303\245 vissa sk\303\244rmar. Anv"
+   "\303\244nd p\303\245 egen risk // Simulerar en grundl\303\244ggande rullande skanningslinje \303"
+   "\266ver flera underrutor genom att dela upp sk\303\244rmen vertikalt och rendera varje del av sk"
+   "\303\244rmen beroende p\303\245 hur m\303\245nga underrutor det finns.",
+   "Ge h\303\245rdvarurenderade k\303\244rnor en egen privat kontext. Undviker att beh\303\266va ant"
+   "a att h\303\245rdvaran \303\244ndrar tillst\303\245nd mellan bildrutor.",
+   "L\303\244gg till en liten osk\303\244rpa i bilden f\303\266r att mjuka upp h\303\245rda pixelkan"
+   "ter. Det h\303\244r alternativet har mycket liten inverkan p\303\245 prestandan. B\303\266r inak"
+   "tiveras n\303\244r Shaders anv\303\244nds.",
+   "Anv\303\244nd ett anpassat bytesintervall f\303\266r VSynk. Minskar effektivt bildsk\303\244rmen"
+   "s uppdateringsfrekvens med den angivna faktorn. 'Auto' st\303\244ller in faktorn baserat p\303"
+   "\245 k\303\244rnrapporterad bildhastighet, vilket ger f\303\266rb\303\244ttrad bildtakt n\303"
+   "\244r du k\303\266r t.ex. 30 fps inneh\303\245ll p\303\245 en 60 Hz sk\303\244rm eller 60 fps in"
+   "neh\303\245ll p\303\245 en 120 Hz sk\303\244rm.",
+   "\303\204ndra inst\303\244llningar f\303\266r videosynkronisering.",
+   "F\303\266rb\303\244ttrar prestanda till priset av latens och mer videolagg. Anv\303\244nd endast"
+   " om full hastighet inte kan uppn\303\245s p\303\245 annat s\303\244tt.",
+   "F\303\266rs\303\266k att f\303\266rb\303\244ttra prestandan genom att anv\303\244nda Metal-argum"
+   "entbuffertar. Vissa k\303\244rnor kan kr\303\244va detta. Detta kan g\303\266ra att vissa shader"
+   "s slutar fungera, s\303\244rskilt p\303\245 \303\244ldre h\303\245rdvara eller operativsystem.",
+   "Horisontell position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r bred"
+   "are \303\244n inneh\303\245llets bredd. 0,0 \303\244r l\303\244ngst till v\303\244nster, 0,5 "
+   "\303\244r i mitten och 1,0 \303\244r l\303\244ngst till h\303\266ger.",
+   "Vertikal position f\303\266r inneh\303\245ll n\303\244r visningsomr\303\245det \303\244r h\303"
+   "\266gre \303\244n inneh\303\245llets h\303\266jd. 0,0 \303\244r \303\266verst, 0,5 \303\244r i m"
+   "itten, 1,0 \303\244r nederst.",
+   "Anpassad visningsporth\303\266jd som anv\303\244nds om bildformatet \303\244r inst\303\244llt p"
+   "\303\245 'Anpassa bildformat'.",
+   "Anpassad visningsportbredd som anv\303\244nds om bildformatet \303\244r inst\303\244llt p\303"
+   "\245 'Anpassa bildformat'.",
+   "Anpassad visningsf\303\266rskjutning som anv\303\244nds f\303\266r att definiera visningsomr\303"
+   "\245dets X-axelposition.",
+   "Anpassad visningsf\303\266rskjutning som anv\303\244nds f\303\266r att definiera visningsomr\303"
+   "\245dets Y-axelposition.",
+   "Synkronisera videoutmatningen fr\303\245n grafikkortet till bildsk\303\244rmens uppdateringsfrek"
+   "vens. Rekommenderas.",
+   "H\303\245rdsynkronisera CPU och GPU. Minskar latens p\303\245 bekostnad av prestanda.",
+   "Om helsk\303\244rm, f\303\266redrar att anv\303\244nda ett helsk\303\244rmsf\303\266nster som f"
+   "\303\266rhindrar att visningsl\303\244ge \303\244ndras.",
+   "\303\204ndra inst\303\244llningar f\303\266r f\303\266nsterl\303\244ge.",
+   "Ange den maximala h\303\266jden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244n"
+   "dras automatiskt baserat p\303\245 'F\303\266nsterskala'.",
+   "Ange den maximala bredden p\303\245 visningsf\303\266nstret n\303\244r storleken \303\244ndras a"
+   "utomatiskt baserat p\303\245 'F\303\266nsterskala'.",
+   "Visa allt inneh\303\245ll i ett f\303\266nster i fast storlek av dimensioner som anges av 'F\303"
+   "\266nster Bredd' och 'F\303\266nster H\303\266jd'. Inaktiverad kommer f\303\266nsterstorleken at"
+   "t st\303\244llas in dynamiskt baserat p\303\245 'F\303\266nsterskala'.",
+   "Ange den anpassade h\303\266jden f\303\266r visningsf\303\266nstret.",
+   "Framtvingar en s\303\244rskild f\303\266rskjutning horisontellt till videon. F\303\266rskjutning"
+   "en till\303\244mpas globalt.",
+   "Framtvingar en s\303\244rskild f\303\266rskjutning vertikalt till videon. F\303\266rskjutningen "
+   "till\303\244mpas globalt.",
+   "St\303\244ll in f\303\266nstrets transparens.",
+   "Visa allt inneh\303\245ll i ett f\303\266nster i fast storlek av dimensioner som anges av 'F\303"
+   "\266nster Bredd' och 'F\303\266nster H\303\266jd', och spara aktuell f\303\266nsterstorlek och p"
+   "osition vid st\303\244ngning av RetroArch. Inaktiverad kommer f\303\266nsterstorleken att st\303"
+   "\244llas in dynamiskt baserat p\303\245 'F\303\266nsterskala'.",
+   "St\303\244ll in f\303\266nsterstorleken till den angivna multipeln av k\303\244rnans visningspor"
+   "tstorlek.",
+   "Visa f\303\266nstrets titelrad och ramar.",
+   "Ange den anpassade bredden f\303\266r visningsf\303\266nstret.",
+   "Ingen avvikelse fr\303\245n k\303\244rnans efterfr\303\245gade timing. Anv\303\244nd f\303\266r "
+   "sk\303\244rmar med variabel uppdateringsfrekvens (G-sync, FreeSync, HDMI 2.1 VRR).",
+   "S\303\266k efter tr\303\245dl\303\266sa n\303\244tverk och etablera anslutning.",
+   "Aktuell menyikon kan d\303\266ljas, under den horisontella menyn eller i sidhuvudets titel.",
+   "V\303\244lj ett annat huvudsakligt teckensnitt som ska anv\303\244ndas av menyn.",
+   "V\303\244lj en annan layout f\303\266r XMB-gr\303\244nssnittet.",
+   "Visa inst\303\244llningsfliken som inneh\303\245ller programinst\303\244llningar.",
+   "V\303\244lj ett annat bakgrundsf\303\244rg tema.",
+   "V\303\244lj en animerad bakgrundseffekt. Kan vara GPU-intensiv beroende p\303\245 effekten. Om p"
+   "restandan \303\244r otillfredsst\303\244llande kan du antingen st\303\244nga av den eller \303"
+   "\245terg\303\245 till en enklare effekt.",
+   "Rita skuggor f\303\266r ikoner, miniatyrbilder och bokst\303\244ver. Detta kommer att p\303\245v"
+   "erka prestandan n\303\245got.",
+   "Anv\303\244nd ikoner ist\303\244llet f\303\266r P\303\205/AV-text f\303\266r att representera 'o"
+   "mkopplare' menyinst\303\244llningar.",
+   "V\303\244lj ett annat ikontema f\303\266r RetroArch.",
+   "Visa den v\303\244nstra miniatyrbilden under den h\303\266gra, p\303\245 den h\303\266gra sidan "
+   "av sk\303\244rmen.",
+   "RetroArchs hj\303\244lpmedelsfunktioner p\303\245. Huvudmeny L\303\244s in k\303\244rna.",
+   "Prestation uppl\303\245st",
+   "Tillagd i favoriter",
+   "Lades till i spellistan",
+   "Misslyckades med att l\303\244gga till favorit: spellistan full",
+   "Misslyckades med att l\303\244gga till i spellista: spellistan \303\244r full",
+   "stoppad.",
+   "Alla k\303\244rnor som st\303\266ds ersatta till Play-butiksversioner",
+   "Alla installerade k\303\244rnor \303\244r senaste versionen",
+   "Lade till skivan p\303\245 slutet",
+   "Programkatalog",
+   "Till\303\244mpar fusk\303\244ndringar.",
+   "Till\303\244mpar patch: %s",
+   "Till\303\244mpar shader",
+   "Global ljudmixervolym",
+   "Ljudet tystat.",
+   "Ljudet aktiverat.",
+   "Ljudvolym",
+   "Fel vid sparande av handkontrollerprofil.",
+   "Kontrollerprofil sparad som \"%s\".",
+   "Autouppt\303\244ck",
+   "Misslyckades med att automatiskt l\303\244sa in sparat tillst\303\245nd fr\303\245n \"%s\".",
+   "L\303\244s automatiskt in sparade tillst\303\245nd fr\303\245n",
+   "Automatisk inl\303\244sning av sparat tillst\303\245nd fr\303\245n \"%s\" lyckades.",
+   "Kunde inte initiera automatisk sparning.",
+   "Spara tillst\303\245nd automatiskt till",
+   "S\303\244kerhetskopierar k\303\244rna: ",
+   "Blockerar SRAM-\303\266verskrivning",
+   "Parkoppling borttagen. Starta om RetroArch f\303\266r att ansluta/para igen.",
+   "Bluetooth-genoms\303\266kning slutf\303\266rd.",
+   "Tar upp kommandogr\303\244nssnitt p\303\245 port",
+   "Kan inte sluta sig till ny konfigurationss\303\266kv\303\244g. Anv\303\244nd aktuell tid.",
+   "F\303\266rm\303\245gor",
+   "\303\204ndra miniatyrbildstyp",
+   "Nytt fusk lades till efter denna.",
+   "Nytt fusk lades till f\303\266re denna.",
+   "Nytt fusk lades till nederst i listan.",
+   "Nytt fusk lades till \303\266verst i listan.",
+   "Fusk kopierat till efter denna.",
+   "Fusk kopierat till f\303\266re denna.",
+   "Tryck h\303\266ger 5 g\303\245nger f\303\266r att radera alla fusk.",
+   "Alla fusk borttagna.",
+   "Fusk raderat.",
+   "Misslyckades med att starta s\303\266kning efter fusk.",
+   "Startade s\303\266kning efter fusk.",
+   "Misslyckades med att l\303\244gga till matchningar.",
+   "Lade till %u matchningar.",
+   "Slut p\303\245 plats. Maximalt antal samtidiga fusk \303\244r 100.",
+   "Misslyckades med att skapa kod.",
+   "Skapade kod fr\303\245n matchning.",
+   "Tog bort matchning.",
+   "Nya matchantal = %u",
+   "S\303\266kningen har inte initierats/startats.",
+   "Kontrollerar k\303\244rna: ",
+   "Alla %d prestationer har aktiverats f\303\266r denna session",
+   "Mediabyte f\303\266r RetroAchievements misslyckades: %s",
+   "Klarade av %s",
+   "Detta spel har inga prestationer.",
+   "Spelinl\303\244sning f\303\266r RetroAchievements misslyckades: %s",
+   "RetroAchievements: Spelet kunde inte identifieras.",
+   "Hardcore-l\303\244get f\303\266r prestationer \303\244ndrades av v\303\244rden.",
+   "Ett sparat tillst\303\245nd l\303\244stes in. Hardcore-l\303\244get f\303\266r prestationer inak"
+   "tiverades f\303\266r aktuell session.",
+   "Ett fusk aktiverades. Hardcore-l\303\244get f\303\266r prestationer inaktiverades f\303\266r akt"
+   "uell session.",
+   "Hardcore-l\303\244get f\303\266r prestationer aktiverades, sparade tillst\303\245nd och tillbaka"
+   "spolning inaktiverades.",
+   "Netplay-v\303\244rden beh\303\266ver uppdateras. Hardcore-l\303\244get f\303\266r prestationer i"
+   "naktiverades f\303\266r aktuell session.",
+   "Hardcore pausad. Infogning av svarta bildrutor \303\244r inte till\303\245tet.",
+   "Hardcore pausad. Manuell inst\303\244llning av f\303\266rdr\303\266jning av bildrutor f\303\266r"
+   " video \303\244r inte till\303\245ten.",
+   "Hardcore pausat. Inst\303\244llningen till\303\245ts inte: %s=%s",
+   "Hardcore pausat. Du kan inte tj\303\244na hardcore-prestationer f\303\266r %s med %s",
+   "Hardcore pausad. vsync swap-intervall \303\266ver 1 till\303\245ts inte.",
+   "Du m\303\245ste pausa eller inaktivera hardcorel\303\244get f\303\266r prestationer f\303\266r a"
+   "tt l\303\244sa in srm-sparningar.",
+   "Du m\303\245ste pausa eller inaktivera Hardcore-l\303\244get f\303\266r prestationer f\303\266r "
+   "att l\303\244sa in tillst\303\245nd.",
+   "RetroAchievements: Inloggad som \"%s\".",
+   "Inloggningen f\303\266r RetroAchievements har g\303\245tt ut. Ange ditt l\303\266senord igen och"
+   " l\303\244s om spelet.",
+   "Bem\303\244strat: %s",
+   "Du har l\303\245st upp %d av %d prestationer",
+   "\303\205sk\303\245darl\303\244ge f\303\266r %s",
+   "Aktiverade %d inofficiella prestationer",
+   "%d st\303\266ds inte",
+   "Prestationer som inte st\303\266ds uppt\303\244cktes. Prova en annan k\303\244rna eller uppdater"
+   "a RetroArch.",
+   "J\303\244mf\303\266r med k\303\244nda magic numbers...",
+   "Kompilerad mot API",
+   "Kompilator",
+   "Konfigurationskatalog inte inst\303\244lld. Kan inte spara ny konfiguration.",
+   "\303\205sidos\303\244ttning av konfiguration inl\303\244st.",
+   "Ansluten till",
+   "Ansluter till Netplay-v\303\244rd",
+   "Ansluter till port",
+   "Anslutningsplats",
+   "Inneh\303\245llets CRC32 skiljer sig. Kan inte anv\303\244nda olika spel.",
+   "Inl\303\244sning av inneh\303\245ll hoppades \303\266ver. Implementeringen l\303\244ser in det s"
+   "j\303\244lv.",
+   "V\303\244rden k\303\266r ett annat spel.",
+   "S\303\244kerhetskopia av installerad k\303\244rna finns redan: ",
+   "S\303\244kerhetskopiering av k\303\244rna slutf\303\266rd: ",
+   "S\303\244kerhetskopiering av k\303\244rna misslyckades: ",
+   "S\303\266ker igenom k\303\244rna: ",
+   "K\303\244rnborttagning inaktiverad - k\303\244rnan \303\244r l\303\245st: ",
+   "K\303\244rnan har inte st\303\266d f\303\266r Disc Control.",
+   "K\303\244rnan har inget st\303\266d f\303\266r sparat tillst\303\245nd.",
+   "K\303\244rnan har inte st\303\266d f\303\266r att \303\245ngra sparade tillst\303\245nd.",
+   "Kan inte skriva till k\303\244rnans informationskatalog - k\303\244rninfocachen kommer att inakt"
+   "iveras",
+   "Vald k\303\244rnfil \303\244r redan installerad: ",
+   "K\303\244rninstallationen f\303\244rdig: ",
+   "K\303\244rninstallation inaktiverad - k\303\244rnan \303\244r l\303\245st: ",
+   "Installation av k\303\244rna misslyckades: ",
+   "K\303\244rna installerad: ",
+   "Misslyckades installera k\303\244rna: ",
+   "H\303\244mta k\303\244rnlista misslyckad!",
+   "Misslyckades med att l\303\245sa k\303\244rnan: ",
+   "K\303\244rnans alternativfil skapades.",
+   "K\303\244rnans alternativfil togs bort.",
+   "K\303\244rnalternativ sparades till:",
+   "Misslyckades med att spara k\303\244rnalternativen till:",
+   "Alla k\303\244rnalternativ nollst\303\244llda till standard.",
+   "Ommappningsfil f\303\266r k\303\244rna inl\303\244st.",
+   "Vald s\303\244kerhetskopia f\303\266r k\303\244rna redan installerad: ",
+   "K\303\244rn\303\245terst\303\244llningen f\303\244rdig: ",
+   "\303\205terst\303\244llning av k\303\244rna inaktiverad - k\303\244rnan \303\244r l\303\245st: ",
+   "\303\205terst\303\244llning av k\303\244rna misslyckades: ",
+   "Ogiltig k\303\244rnfil vald: ",
+   "Misslyckades att ta bort k\303\244rna fr\303\245n listan 'Inneh\303\245llsl\303\266sa k\303\244r"
+   "nor': ",
+   "Misslyckades med att l\303\245sa upp k\303\244rnan: ",
+   "Misslyckades att l\303\244gga till k\303\244rna i listan 'Inneh\303\245llsl\303\266sa k\303\244r"
+   "nor': ",
+   "K\303\244rnuppdatering inaktiverad - k\303\244rnan \303\244r l\303\245st: ",
+   "Kunde inte hitta n\303\245gon n\303\244sta drivrutin",
+   "Kunde inte hitta ett kompatibelt system.",
+   "Kunde inte hitta ett giltigt datasp\303\245r",
+   "Kunde inte \303\266ppna datasp\303\245ret",
+   "Kunde inte l\303\244sa inneh\303\245llsfilen",
+   "Kunde inte l\303\244sa filmhuvud.",
+   "Kunde inte l\303\244sa tillst\303\245nd fr\303\245n film.",
+   "CRC32-kontrollsumman st\303\244mmer inte \303\266verens mellan inneh\303\245llsfilen och kontrol"
+   "lsumman f\303\266r sparat inneh\303\245ll i uppspelningsfilens huvud. Uppspelningen kommer med s"
+   "tor sannolikhet att desynkroniseras vid uppspelning.",
+   "Anpassad timing angiven",
+   "Dekomprimering p\303\245g\303\245r redan.",
+   "Dekomprimeringen misslyckades.",
+   "Uppt\303\244ckte visningsomr\303\245de f\303\266r",
+   "%s konfigurerad i port %u",
+   "%s kopplades fr\303\245n port %u",
+   "%s (%u/%u) inte konfigurerad, faller tillbaka",
+   "%s (%u/%u) \303\244r inte konfigurerad",
+   "Hittade inte n\303\245gon giltig inneh\303\245llspatch.",
+   "Ommappningsfil f\303\266r inneh\303\245llskatalog inl\303\244st.",
+   "Inaktiverar Wi-Fi...",
+   "Kopplar fr\303\245n Wi-Fi...",
+   "Koppla fr\303\245n enhet fr\303\245n en giltig port.",
+   "Till\303\245ta anslutning f\303\266r anv\303\244ndare:",
+   "Misslyckades med att l\303\244sa fr\303\245n enhet. Dumpning avbr\303\266ts.",
+   "Misslyckades med att skriva till disk. Dumpning avbr\303\266ts.",
+   "St\303\244ngde virtuell skivsl\303\244de.",
+   "Matade ut virtuell skivsl\303\244de.",
+   "H\303\244mtar ner",
+   "H\303\244mtar ner k\303\244rna: ",
+   "H\303\244mtningen misslyckades",
+   "Enhet %d",
+   "Dumpar skiva...",
+   "Aktiverar Wi-Fi...",
+   "Fel",
+   "Libretros k\303\244rna kr\303\244ver inneh\303\245ll men ingenting tillhandah\303\266lls.",
+   "Libretros k\303\244rna kr\303\244ver speciellt inneh\303\245ll men ingenting tillhandah\303\266l"
+   "ls.",
+   "K\303\244rnan har inte st\303\266d f\303\266r VFS och inl\303\244sning fr\303\245n lokal kopia m"
+   "isslyckades",
+   "Fel vid tolkning av argument.",
+   "Fel vid borttagning av k\303\244rnans alternativfil.",
+   "Fel vid borttagning av ommappningsfil.",
+   "Fel vid borttagning av shader-f\303\266rval.",
+   "Fel vid sparning av k\303\244rnans alternativfil.",
+   "Fel vid sparning av ommappningsfil.",
+   "Fel vid sparning av shader-f\303\266rval.",
+   "Extern programkatalog",
+   "Extraherar",
+   "Extraherar k\303\244rna: ",
+   "Extraherar fil",
+   "Misslyckades med att spara konfig till",
+   "Misslyckades med att acceptera inkommande \303\245sk\303\245dare.",
+   "Misslyckades med att tilldela minne f\303\266r korrigerat inneh\303\245ll...",
+   "Misslyckades med att l\303\244gga till skivan",
+   "Misslyckades med att till\303\244mpa shader.",
+   "Misslyckades med att till\303\244mpa shader f\303\266rinst\303\244llning:",
+   "Misslyckades med att binda uttag.",
+   "Misslyckades med att ansluta till klient.",
+   "Misslyckades med att ansluta till v\303\244rd.",
+   "Misslyckades med att skapa katalogen.",
+   "Misslyckades med att g\303\245 in i GameMode",
+   "Misslyckades med att g\303\245 in i GameMode - kontrollera att GameMode-daemon \303\244r install"
+   "erad och k\303\266rs",
+   "Misslyckades med att extrahera inneh\303\245ll fr\303\245n komprimerad fil",
+   "Misslyckades med att f\303\245 smeknamn fr\303\245n klient.",
+   "Misslyckades med att l\303\244sa.",
+   "Misslyckades med att l\303\244sa in inneh\303\245ll.",
+   "Misslyckades med att l\303\244sa in fr\303\245n spellista.",
+   "Misslyckades med att l\303\244sa filmfil.",
+   "Misslyckades med att l\303\244sa in \303\266verl\303\244gg.",
+   "Det gick inte att l\303\244sa in SRAM",
+   "Misslyckades med att l\303\244sa in tillst\303\245nd fr\303\245n",
+   "Misslyckades med att \303\266ppna libretro-k\303\244rna",
+   "Misslyckades med att patcha",
+   "Misslyckades med att ta emot rubrik fr\303\245n klient.",
+   "Misslyckades med att ta bort rubrik fr\303\245n v\303\244rd.",
+   "Misslyckades med att ta emot smeknamn.",
+   "Misslyckades med att ta emot smeknamn fr\303\245n v\303\244rd.",
+   "Misslyckades med att ta emot smeknamnsstorlek fr\303\245n v\303\244rd.",
+   "Misslyckades med att ta emot SRAM-data fr\303\245n v\303\244rd.",
+   "Misslyckades med att ta bort skiva fr\303\245n facket.",
+   "Misslyckades med att ta bort tempor\303\244rfilen",
+   "Det gick inte att spara SRAM",
+   "Misslyckades att spara tillst\303\245nd till",
+   "Misslyckades att skicka nicknamn.",
+   "Misslyckades att skicka nicknamnsstorlek.",
+   "Misslyckades med att skicka smeknamn till klient.",
+   "Misslyckades med att skicka smeknamn till v\303\244rd.",
+   "Misslyckades med att skicka SRAM-data till klient.",
+   "Misslyckades med att st\303\244lla in sista anv\303\244nda skiva.",
+   "Misslyckades med att starta ljuddrivrutin. Forts\303\244tter utan ljud.",
+   "Misslyckades med att starta filminspelning.",
+   "Misslyckades med att starta inspelning.",
+   "Misslyckades med att ta sk\303\244rmbild.",
+   "Misslyckades med att \303\245ngra inl\303\244st tillst\303\245nd.",
+   "Misslyckades att \303\245ngra sparat tillst\303\245nd.",
+   "Misslyckades med att starta ljudet igen.",
+   "Snabbspolning.",
+   "\303\226desdigert fel p\303\245tr\303\244ffades i",
+   "H\303\244mtar k\303\244rnlista...",
+   "Filen finns redan. Sparar till reservbuffert",
+   "Filen hittas ej",
+   "En eller flera firmwarefiler saknas",
+   "Mappspecifika k\303\244rnalternativ hittades i",
+   "Hittade automatiskt sparat tillst\303\245nd i",
+   "Hittade skivetikett",
+   "Hittade ing\303\245ngstillst\303\245nd i",
+   "Hittade f\303\266rsta datasp\303\245ret p\303\245 fil",
+   "Hittade senaste \303\245teruppspelningsplatsen",
+   "Hittade senaste tillst\303\245ndsplats",
+   "Hittade shader",
+   "Bildrutor",
+   "Game Focus inaktiv",
+   "Game Focus aktiv",
+   "Ommappningsfil f\303\266r spel inl\303\244st.",
+   "Spelspecifika k\303\244rnalternativ hittades i",
+   "Fick anslutning fr\303\245n: \"%s\"",
+   "Fick anslutning fr\303\245n: \"%s (%s)\"",
+   "Fick ogiltigt skivindex.",
+   "Tillst\303\245nd f\303\266r musf\303\245ngst",
+   "Libretro core \303\244r h\303\245rdvarurenderad. M\303\245ste anv\303\244nda post-shaded inspeln"
+   "ing ocks\303\245.",
+   "Uppbl\303\245st kontrollsumma matchade inte CRC32.",
+   "H\303\245ll in",
+   "Tryck p\303\245 tangentbord, mus eller spelkontroll",
+   "Sl\303\244pp tangenter och knappar!",
+   "Tidsgr\303\244ns",
+   "Mata in fusk",
+   "Filnamn f\303\266r inmatningsfusk",
+   "Ange l\303\266senord",
+   "L\303\266senord felaktigt.",
+   "L\303\266senord korrekt.",
+   "Ange l\303\266senord",
+   "L\303\266senord felaktigt.",
+   "L\303\266senord korrekt.",
+   "Filnamn f\303\266r inmatnings\303\245sidos\303\244ttning",
+   "Filnamn f\303\266r inmatningsf\303\266rval",
+   "Filnamn f\303\266r inmatningsommappning",
+   "D\303\266p om titel",
+   "Installerar k\303\244rna: ",
+   "Gr\303\244nssnitt",
+   "Intern lagring",
+   "Internet (inte anslutningsbart)",
+   "Internet (rel\303\244)",
+   "Ogiltig nicknamnsstorlek.",
+   "i bytes",
+   "i gigabyte",
+   "i megabytes",
+   "Tryckmus \303\244r inaktiverad",
+   "Tryckmus \303\244r aktiverad",
+   "Senaste version redan installerad: ",
+   "B\303\244sta: %s",
+   "Topplistef\303\266rs\303\266k misslyckades",
+   "Topplistef\303\266rs\303\266k startat",
+   "Skickade in %s f\303\266r %s",
+   "\303\244r kompilerad mot en annan version av libretro \303\244n denna libretro-implementation.",
+   "Frontend f\303\266r libretro",
+   "L\303\244ste in tillst\303\245nd fr\303\245n plats: %d.",
+   "L\303\244ste in tillst\303\245nd fr\303\245n plats: Auto.",
+   "L\303\244ser in",
+   "L\303\244ser in inneh\303\245llsfil",
+   "L\303\244ser in ing\303\245ngstillst\303\245nd fr\303\245n",
+   "L\303\244ser in favoriterfil",
+   "L\303\244ser in historikfil",
+   "L\303\244ser in tillst\303\245nd",
+   "L\303\244s in en k\303\244rna f\303\266rst.",
+   "Lokal",
+   "Ogiltig arcade DAT-fil vald.",
+   "Misslyckades med att l\303\244sa in arcade DAT-fil (ogiltigt format?)",
+   "Vald arcade DAT-fil \303\244r f\303\266r stor (otillr\303\244ckligt med ledigt minne).",
+   "Genoms\303\266kning f\303\244rdig: ",
+   "Ogiltig konfiguration f\303\266r manuell genoms\303\266kning.",
+   "Inget giltigt inneh\303\245ll hittades.",
+   "S\303\266ker igenom: ",
+   "St\303\244dar upp M3U-poster: ",
+   "Kontrollerar aktuella poster: ",
+   "S\303\266ker igenom inneh\303\245ll: ",
+   "Minne",
+   "Varning: Saknade resurser, anv\303\244nd online-uppdateraren om tillg\303\244nglig.",
+   "Stoppar filminspelning.",
+   "Inbyggd",
+   "Du \303\244r bannlyst fr\303\245n denna v\303\244rd.",
+   "Blockerade klient: \"%s\"",
+   "Kan inte v\303\244xla till spell\303\244get",
+   "De beg\303\244rda inmatningsenheterna \303\244r inte tillg\303\244ngliga",
+   "Detfinns inga lediga spelarplatser",
+   "Du har inte beh\303\266righet att spela",
+   "Ditt nicknamn \303\244ndrades till \"%s\"",
+   "Chatt st\303\266ds",
+   "Enheter",
+   "Netplay fr\303\245nkopplad",
+   "En netplay-peer k\303\266r en annan k\303\244rna. Det g\303\245r inte att ansluta.",
+   "VARNING: En netplay-peer k\303\266r en annan version av k\303\244rnan. Om problem uppst\303\245r"
+   " ska du anv\303\244nda samma version.",
+   "VARNING: En netplay-peer k\303\266r en annan version av RetroArch. Om problem uppst\303\245r, an"
+   "v\303\244nd samma version.",
+   "Denna k\303\244rna st\303\266der inte netplay mellan dessa plattformar",
+   "Ange Netplay-chattmeddelande:",
+   "Ange Netplay-serverl\303\266senord:",
+   "Misslyckades med att initiera netplay.",
+   "Misslyckades blockera klient: \"%s\"",
+   "Misslyckades sparka klient: \"%s\"",
+   "Netplay-v\303\244rden \303\244r full.",
+   "Felaktigt l\303\266senord",
+   "Sparkade klient: \"%s\"",
+   "Letar efter netplay-v\303\244rdar...",
+   "Netplay-s\303\266kning f\303\244rdigst\303\244lld.",
+   "Inneh\303\245llet m\303\245ste l\303\244sas in innan netplay kan startas.",
+   "Ett f\303\266rs\303\266k till Netplay-anslutning misslyckades eftersom motparten inte k\303\266r"
+   " RetroArch eller k\303\266r en gammal version av RetroArch.",
+   "En netplay-peer k\303\266r en gammal version av RetroArch. Det g\303\245r inte att ansluta.",
+   "Netplay-peer \342\200\235%s\342\200\235 pausad",
+   "Denna k\303\244rna st\303\266der inte netplay mellan olika plattformar",
+   "%d spelare",
+   "Spelare %.*s har l\303\244mnat spelet",
+   "En netplay-klient har kopplat fr\303\245n",
+   "\"%s\" har kopplat fr\303\245n",
+   "F\303\266rdr\303\266jningar orsakade",
+   "%d spelare (%d \303\245sk\303\245dare)",
+   "Spelar",
+   "\303\205sk\303\245dar",
+   "%.*s \303\244r ansluten, som spelare %u",
+   "%.*s \303\244r ansluten, med inmatningsenheter %.*s",
+   "K\303\244rnan har inte st\303\266d f\303\266r netplay.",
+   "Du \303\244r ansluten, som spelare %u",
+   "Du \303\244r ansluten, med inmatningsenheter %.*s",
+   "Du har l\303\244mnat spelet",
+   "Inga argument angavs och ingen meny inbyggd, visar hj\303\244lp...",
+   "Inget inneh\303\245ll, startar dummyk\303\244rna.",
+   "Ingen skiva har matats in i enheten.",
+   "Inget sparat tillst\303\245nd har \303\244nnu blivit \303\266verskriven.",
+   "Inget tillst\303\245nd har l\303\244sts in \303\244n.",
+   "Ingen miniatyrbild tillg\303\244nglig",
+   "Alla m\303\266jliga h\303\244mtningar av miniatyrbilder har redan provats f\303\266r den h\303"
+   "\244r spellisteposten.",
+   "K\303\244rnor \303\266verhoppade: ",
+   "K\303\244rnor uppdaterade: ",
+   "Tangentbords\303\266verl\303\244gg \303\244r inte inst\303\244llt.",
+   "Sparar inte. \303\205sidos\303\244ttningar aktiva.",
+   "Fel vid borttagning av \303\245sidos\303\244ttningar.",
+   "Fel vid sparning av \303\245sidos\303\244ttningar.",
+   "Inget att spara. \303\205sidos\303\244ttningar inte sparade.",
+   "\303\205sidos\303\244ttningar togs bort.",
+   "\303\205sidos\303\244ttningar sparades.",
+   "\303\205sidos\303\244ttningar l\303\244stes ur.",
+   "Pausad.",
+   "Din pingtid \303\244r f\303\266r h\303\266g f\303\266r denna v\303\244rd.",
+   "Rensar spellista: ",
+   "K\303\244rnor \303\245terst\303\244lld: ",
+   "Spellista rensad: ",
+   "Uppdatering misslyckades - arcade DAT-filen \303\244r f\303\266r stor (otillr\303\244ckligt med "
+   "minne): ",
+   "Uppdatering misslyckades - ogiltig/saknad inneh\303\245llskatalog: ",
+   "Uppdatering misslyckades - ogiltig k\303\244rna: ",
+   "Uppdatering misslyckades - ogiltig/saknad arcade DAT-fil: ",
+   "Uppdatering misslyckades - ogiltigt/saknat systemnamn: ",
+   "Uppdatering misslyckades - spellistan inneh\303\245ller inga giltiga s\303\266kposter: ",
+   "\303\205terst\303\244ller k\303\244rnor: ",
+   "Preemptive Frames \303\244r inte tillg\303\244ngligt eftersom denna k\303\244rna saknar st\303"
+   "\266d f\303\266r deterministisk sparning av tillst\303\245nd.",
+   "Preemptive Frames har inaktiverats d\303\244rf\303\266r att denna k\303\244rna inte har st\303"
+   "\266d f\303\266r sparade tillst\303\245nd.",
+   "Preemptive Frames inaktiverat.",
+   "Preemptive Frames aktiverat. Latensbildrutor borttagna: %u.",
+   "Det gick inte att allokera minne f\303\266r Preemptive Frames.",
+   "Det gick inte att l\303\244sa in tillst\303\245ndet. Preemptive Frames har inaktiverats.",
+   "Det gick inte att spara tillst\303\245ndet. Preemptive Frames har inaktiverats.",
+   "F\303\266rbereder f\303\266r inneh\303\245llss\303\266kning...",
+   "Tryck igen f\303\266r att st\303\244nga inneh\303\245llet...",
+   "Tryck igen f\303\266r att avsluta...",
+   "Tryck igen f\303\266r att starta om...",
+   "Externt n\303\244tverk har en privat eller delad adress. \303\226verv\303\244g att anv\303\244nd"
+   "a en rel\303\244server.",
+   "Tar bort f\303\266r\303\245ldrade s\303\244kerhetskopior: ",
+   "Portmappning f\303\266r Netplay lyckades",
+   "S\303\244llsynt prestation uppl\303\245st",
+   "L\303\244ser f\303\266rsta datasp\303\245ret...",
+   "Status f\303\266r intern lagring: Skrivskyddad",
+   "Status f\303\266r intern lagring: L\303\244s/skriv",
+   "Inspelning avslutad p\303\245 grund av storleks\303\244ndring.",
+   "Spelar in till",
+   "Dirigerar om fuskfil till",
+   "Omdirigerar sparad fil till",
+   "Omdirigerar sparat tillst\303\245nd till",
+   "Ommappningsalternativ f\303\266r inmatning sparades till:",
+   "Misslyckades med att spara ommappningsalternativ f\303\266r inmatning till:",
+   "Ommappningsfil togs bort.",
+   "Alla alternativ f\303\266r inmatningsommappningar \303\245terst\303\244llda till standard.",
+   "Ommappningsfil sparades.",
+   "Flyttbar lagring",
+   "Tog bort skiva fr\303\245n sl\303\244de.",
+   "Tar bort tempor\303\244r inneh\303\245llsfil",
+   "Kan inte l\303\244sa in framtida tillst\303\245nd under uppspelning",
+   "Inte fr\303\245n aktuell inspelning",
+   "Felaktigt tidslinjefel under uppspelning",
+   "Inte kompatibel med \303\245teruppspelning",
+   "Felaktig tidslinje; skriver \303\266ver inspelning",
+   "Spolning f\303\244rdig",
+   "Spolning misslyckades",
+   "Spola fram\303\245t",
+   "Fram\303\245tspolning misslyckades",
+   "Spola bak\303\245t",
+   "Tillbakaspolning misslyckades",
+   "\303\205teruppspelningsplats",
+   "H\303\266gre",
+   "H\303\266gsta",
+   "L\303\244gre",
+   "L\303\244gsta",
+   "\303\205terst\303\244ll",
+   "K\303\244rnassociering f\303\266r spellisteposten har \303\245terst\303\244llts.",
+   "Startar om inspelning p\303\245 grund av ominitiering av drivrutin.",
+   "\303\205terst\303\244llde \303\244ldre sparat tillst\303\245nd.",
+   "\303\205terst\303\244ller k\303\244rna: ",
+   "\303\205terst\303\244ller katalog f\303\266r sparade filer till",
+   "\303\205terst\303\244ller katalogen f\303\266r sparade tillst\303\245ndsfiler till",
+   "Spolar tillbaka.",
+   "Buffertkapaciteten r\303\244cker inte till.",
+   "Initierar tillbakaspolningsbuffert med storlek",
+   "Misslyckades med att initiera tillbakaspolningsbuffert. Tillbakaspolning kommer inaktiveras.",
+   "Implementation anv\303\244nder tr\303\245dat ljud. Kan inte anv\303\244nda tillbakaspolning.",
+   "N\303\245dde slutet p\303\245 tillbakaspolningsbufferten.",
+   "Tillbakaspolning inte tillg\303\244nglig p\303\245 grund av att denna k\303\244rna saknas serial"
+   "iserat st\303\266d f\303\266r sparade tillst\303\245nd.",
+   "Varning: Spr\303\245ket st\303\266ds inte - anv\303\244nder engelska.",
+   "Varning: Saknade typsnitt f\303\266r valt spr\303\245k, anv\303\244nd online-uppdateraren om til"
+   "lg\303\244nglig.",
+   "Ditt rum \303\244r inte m\303\266jligt att ansluta till fr\303\245n internet.",
+   "L\303\266senordsskyddat",
+   "Run-Ahead \303\244r inte tillg\303\244nglig p\303\245 grund av bristande st\303\266d i denna k"
+   "\303\244rna f\303\266r deterministisk sparning av tillst\303\245nd.",
+   "Run-Ahead har inaktiverats f\303\266r att denna k\303\244rna saknar st\303\266d f\303\266r spara"
+   "de tillst\303\245nd.",
+   "Run-Ahead inaktiverat.",
+   "Run-Ahead aktiverat. Latensbildrutor borttagna: %u.",
+   "Run-Ahead aktiverat med sekund\303\244r instans. Latensbildrutor borttagna: %u.",
+   "Misslyckades med att skapa sekund\303\244r instans. Run-Ahead kommer nu endast anv\303\244nda en"
+   " instans.",
+   "Misslyckades med att l\303\244sa in tillst\303\245nd. Run-Ahead har inaktiverats.",
+   "Misslyckades med att spara tillst\303\245nd. Run-Ahead har inaktiverats.",
+   "Sparade konfiguration till",
+   "Sparade tillst\303\245nd till plats: %d.",
+   "Sparade tillst\303\245nd till plats: Auto.",
+   "Sparades till",
+   "Sparar RAM-typ",
+   "Sparar tillst\303\245nd",
+   "S\303\266ker igenom",
+   "S\303\266ker efter bluetooth-enheter...",
+   "S\303\266ker igenom k\303\244rnor...",
+   "Genoms\303\266kningen misslyckades, ingen databas hittades.",
+   "Genoms\303\266kning av katalog f\303\244rdig.",
+   "Genoms\303\266kning av fil genomf\303\266rd.",
+   "S\303\266ker efter tr\303\245dl\303\266sa n\303\244tverk...",
+   "Sk\303\244rmdump sparad",
+   "Verkst\303\244ller: Standard",
+   "Verkst\303\244ller: %dx%d - %s\nSTART f\303\266r att starta om",
+   "Verkst\303\244ller: %dx%d\nSTART f\303\266r att starta om",
+   "Sk\303\244rmuppl\303\266sning: Standard",
+   "Sk\303\244rmuppl\303\266sning: %dx%d - %s",
+   "Sk\303\244rmuppl\303\266sning: %dx%d",
+   "\303\205terst\303\244ller till: Standard",
+   "\303\205terst\303\244ller till: %dx%d - %s",
+   "\303\205terst\303\244ller till: %dx%d",
+   "sdl2-mikrofonen kr\303\244ver sdl2-ljuddrivrutin",
+   "Skickar kommando",
+   "Matar in skiva i sl\303\244den",
+   "K\303\244rnupps\303\244ttning: ",
+   "Flera patchar \303\244r explicit definierade, ignorerar alla...",
+   "F\303\266rval f\303\266r shader togs bort.",
+   "Shader-f\303\266rval sparades.",
+   "Hoppar \303\266ver SRAM-inl\303\244sning.",
+   "Tillbakaspolning i slow-motion.",
+   "Tyv\303\244rr, inte implementerat: k\303\244rnor som inte efterfr\303\245gar inneh\303\245ll kan"
+   " inte delta i netplay.",
+   "SRAM kommer inte att sparas.",
+   "Startar uppspelning av film.",
+   "Startar filminspelning till",
+   "Tillst\303\245ndsstorlek",
+   "Tillst\303\245ndsplats",
+   "Tar sk\303\244rmdump.",
+   "till",
+   "V\303\244xla metadata",
+   "Helsk\303\244rmsminiatyrer",
+   "\303\205ngrade inl\303\244sningstillst\303\245nd.",
+   "Ok\303\244nd",
+   "Ok\303\244nd kompilator",
+   "Ok\303\244nt netplay-kommando togs emot",
+   "Opausad.",
+   "Ok\303\244nt kommando \"%s\" togs emot.\n",
+   "Videol\303\244get st\303\266ds inte",
+   "Uppdaterar k\303\244rna: ",
+   "Netplay UPnP-portmappning misslyckades",
+   "Anv\303\244nder k\303\244rnnamnet f\303\266r ny konfiguration.",
+   "Anv\303\244nder libretros dummy-k\303\244rna. Hoppar \303\266ver inspelning.",
+   "Anslut enhet fr\303\245n en giltig port.",
+   "Startar om...",
+   "St\303\244nger ner...",
+   "Version av libretro API",
+   "Videouppdateringsfrekvens \303\244ndrad till %s Hz.",
+   "Misslyckades med att st\303\244nga virtuell skivsl\303\244de.",
+   "Misslyckades med att mata ut virtuell skivsl\303\244de.",
+   "Synkronisera till inneh\303\245llets exakta bildfrekvens inaktiverat.",
+   "Synkronisera till inneh\303\245llets exakta bildfrekvens aktiverat.",
+   "V\303\244ntar p\303\245 klient...",
+   "Wi-Fi-genoms\303\266kning slutf\303\266rd.",
+};
+
+/* Contiguity check: char members have alignment 1, so any
+ * compiler that pads this struct fails here instead of
+ * misindexing at runtime. */
+typedef char msg_hash_sv_blob_check[
+      (sizeof(msg_hash_sv_blob) == (165598u
+#ifndef HAVE_DYNAMIC
+       + 48u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+       + 77u
+#endif
 #endif
 #ifdef HAVE_ODROIDGO2
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
-   "RGA-skalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
-   "RGA-skalning och bikubisk filtrering. Kan göra sönder widgetar."
-   )
 #else
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
-   "Kontextspecifik skalning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
-   "Kontextskalning med hårdvara (om tillgänglig)."
-   )
+       + 25u
 #endif
-#ifdef _3DS
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
-   "Aktivera New3DS-klocka / L2-cache"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
-   "Aktivera New3DS-klockhastighet (804 Mhz) och L2-cache."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
-   "Nedre 3DS-skärm"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
-   "Aktivera visning av statusinformation på den nedre skärmen. Inaktivera för att öka batteritiden och förbättra prestandan."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
-   "Läge för 3DS-skärmar"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
-   "Väljer mellan visningslägena 3D och 2D. I ”3D”-läget är bildpunkterna kvadratiska och en djupeffekt tillämpas när snabbmenyn visas. ”2D\"-läget ger bäst prestanda."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
-   "2D (pixelrutnätseffekt)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
-   "2D (hög upplösning)"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_DEFAULT,
-   "Tryck på pekskärmen för att gå\ntill Retroarch-menyn"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
-   "Tillgång(ar) hittades inte"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
-   "Inga\ndata"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
-   "Ingen\nskärmdump"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_RESUME,
-   "Återuppta spel"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_SAVE_STATE,
-   "Skapa\nÅterställ punkt"
-   )
-MSG_HASH(
-   MSG_3DS_BOTTOM_MENU_LOAD_STATE,
-   "Läs in\nåterställningspunkt"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
-   "Nedre skärmens Tillgångsmapp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
-   "Nedre skärmens katalog för tillgångar. Katalogen måste inkludera \"bottom_menu.png\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
-   "Typsnittsaktivering"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
-   "Visa nedre menyns typsnitt. Aktivera för att visa knappbeskrivningar på nedre skärmen. Detta exkluderar datum för sparat tillstånd."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
-   "Typsnittsfärg röd"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
-   "Justera den röda färgen på teckensnittet i nedre skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
-   "Typsnittsfärg grön"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
-   "Justera den gröna färgen på teckensnittet i nedre skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
-   "Typsnittsfärg blå"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_BLUE,
-   "Justera den blåa färgen på teckensnittet i nedre skärmen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
-   "Färgopacitet för typsnitt"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
-   "Justera nedre skärmens typsnittsopacitet."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
-   "Typsnittsskala"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
-   "Justera nedre skärmens typsnittsskala."
-   )
+#ifndef HAVE_DYNAMIC
+       + 178u
 #endif
-#ifdef HAVE_QT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
-   "Genomsökning slutförd.<br><br>\nFör att innehållet ska sökas igenom korrekt måste du:\n<ul><li>ha en kompatibel kärna redan hämtat</li>\n<li>ha ”Kärninfofiler” uppdaterade via Online-uppdaterare</li>\n<li>ha ”Databaser” uppdaterade via Online-uppdaterare</li>\n<li>starta om RetroArch om något av ovanstående just har gjorts</li></ul>\nSlutligen måste innehållet matcha befintliga databaser från <a href=\"https://docs. libretro.com/guides/roms-playlists-thumbnails/#sources\">här</a>. Om det fortfarande inte fungerar kan du överväga att <a href=”https://www.github.com/libretro/RetroArch/issues”>skicka in en felrapport</a>."
-   )
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+       + 245u
 #endif
-MSG_HASH(
-   MSG_IOS_TOUCH_MOUSE_ENABLED,
-   "Tryckmus är aktiverad"
-   )
-MSG_HASH(
-   MSG_IOS_TOUCH_MOUSE_DISABLED,
-   "Tryckmus är inaktiverad"
-   )
-MSG_HASH(
-   MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
-   "sdl2-mikrofonen kräver sdl2-ljuddrivrutin"
-   )
-MSG_HASH(
-   MSG_ACCESSIBILITY_STARTUP,
-   "RetroArchs hjälpmedelsfunktioner på. Huvudmeny Läs in kärna."
-   )
-MSG_HASH(
-   MSG_AI_SERVICE_STOPPED,
-   "stoppad."
-   )
-#ifdef HAVE_GAME_AI
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
-   "Åsidosätt AI-spelare"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
-   "Spel-AI"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
-   "Åsidosätt p1"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
-   "Åsidosätt spelare 01"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
-   "Åsidosätt p2"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
-   "Åsidosätt spelare 02"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
-   "Visa felsökning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG,
-   "Visa felsökning"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
-   "Visa 'Spel-AI'"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
-   "Visa alternativet 'Spel-AI'."
-   )
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+       + 125u
 #endif
-#ifdef HAVE_SMBCLIENT
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
-   "Nätverksinställningar för SMB"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
-   "Konfigurera inställningar för SMB-nätverksdelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
-   "Aktivera SMB-klient"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
-   "Aktivera nätverksåtkomst för SMB-utdelning. Ethernet rekommenderas starkt över Wi-Fi för en mer tillförlitlig anslutning. Observera: ändring av dessa inställningar kräver en omstart av RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
-   "SMB-server"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
-   "Serverns IP-adress eller värdnamn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
-   "SMB-utdelningsnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
-   "Namn på nätverksutdelningen att komma åt."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
-   "SMB-underkatalog (valfritt)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
-   "Sökväg till underkatalog på utdelningen."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
-   "SMB-användarnamn"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
-   "Användarnamn för autentisering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
-   "SMB-lösenord"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
-   "Lösenord för autentisering."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
-   "SMB-arbetsgrupp"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
-   "Arbetsgrupp eller domännamn."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
-   "Autentiseringsläge för SMB"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
-   "Välj den autentisering som används i din miljö."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
-   "Maximalt antal anslutningar för SMB"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
-   "Välj maximala antalet anslutningar som används i din miljö."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
-   "Tidsgräns för SMB"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
-   "Välj standardtidsgräns i sekunder."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
-   "Bläddra i SMB-utdelning"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
-   "Bläddra efter filer på konfigurerad SMB-utdelning."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
-   "Visa \"SMB-klient\""
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
-   "Visa inställningar för \"SMB-klient\"."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
-   "SMB-utdelning"
-   )
 #endif
+#ifdef HAVE_ODROIDGO2
+#else
+       + 49u
+#endif
+      )) ? 1 : -1];
+
+static const uint32_t msg_hash_sv_ids[] =
+{
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_32,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_4,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_8,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_EQMINUS_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_EQPLUS_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_EQ_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_EXACT_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_GTE_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_GT_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_LTE_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_LT_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_SEARCH_NEQ_VAL,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_DECREASE_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_INCREASE_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_EQ,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_GT,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
+   (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_NEW_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_RANGE_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_SAVE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_DELETED,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_EXISTS,
+   (uint32_t)MENU_ENUM_LABEL_EXPLORE_VIEW_SAVED,
+   (uint32_t)MENU_ENUM_LABEL_HELP_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_ALSA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_JACK,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_OSS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DEVICE_RSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_AL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ALSATHREAD,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_DSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_JACK,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_OSS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PIPEWIRE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_PULSE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_ROAR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_RSOUND,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_SL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_TINYALSA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_DRIVER_WASAPI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_CC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_RESAMPLER_DRIVER_SINC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_HELP_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_CONFIG_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CHEAT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_COMPRESSED_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CORE_SELECT_FROM_COLLECTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_CURSOR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_FONT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE_OPEN_WITH_VIEWER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MOVIE_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_MUSIC_OPEN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_PLAIN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RDB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_REMAP,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_GAMEMODE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_LINUXRAW,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_NO_DETAILS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_DRIVER_UDEV,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_PARPORT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_SDL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_UDEV,
+   (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_XINPUT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_MATERIALUI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_START_AS_SPECTATOR,
+   (uint32_t)MENU_ENUM_LABEL_HELP_PARENT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SCAN_THIS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
+   (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
+   (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_HELP_UI_COMPANION_START_ON_BOOT,
+   (uint32_t)MENU_ENUM_LABEL_HELP_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_USE_THIS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_CACA,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D10,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D11,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D12,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D8,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_CG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_D3D9_HLSL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DISPMANX,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_DRM,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_EXYNOS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GDI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL1,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_GL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_METAL,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_NO_DETAILS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL1,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SDL2,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SUNXI,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_SWITCH,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VG,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_VULKAN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_DRIVER_WIIU,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FILTER_BUILTIN,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_FILTER_PASS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_NUM_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PASS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_DECREASE_BY_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_DOES_NOT_CHANGE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_EQ_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_GT_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_INCREASE_BY_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_LT_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_RUMBLE_TYPE_NEQ_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_CHEEVOS_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCOUNTS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_PAUSE_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_SERVER_UNREACHABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_NARRATOR_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_PAUSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SOURCE_LANG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SPEECH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_TARGET_LANG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_URL,
+#ifndef HAVE_DYNAMIC
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_BLOCK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_SHADERS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_BACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BT_CONNECTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BUILDBOT_ASSETS_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BUNDLE_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CANNOT_ACTIVATE_ACHIEVEMENTS_WITH_THIS_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADDRESS_BIT_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_AFTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BEFORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_ADD_NEW_TOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_AFTER_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_BROWSE_MEMORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_CODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_COPY_AFTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_COPY_BEFORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_COPY_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DATABASE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DELETE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DETAILS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_APPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_LOAD_APPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_HANDLER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_MEMORY_SEARCH_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RELOAD_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_ADD_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_REPEAT_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_DURATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_PRIMARY_STRENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_DURATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_SECONDARY_STRENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_RUMBLE_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQMINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EQPLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_EXACT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_GTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_LTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_NEQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SEARCH_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_CONT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_START_OR_RESTART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ACTIVE_CHALLENGES_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ALMOST_THERE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMCENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMLEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_BOTTOMRIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPCENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPLEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_ANCHOR_TOPRIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_AUTO_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_BADGES_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_CHALLENGE_INDICATORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_FETCHING_GAME_DATA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_IDENTIFYING_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LEADERBOARDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_LOCKED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_NOTIFICATIONS_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_RECENTLY_UNLOCKED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_STARTING_SESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_START_ACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_TRACKERS_ONLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCKED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNOFFICIAL_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_UNSUPPORTED_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_MASTERY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_ALLGAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_SUMMARY_HASCHEEVOS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_VISIBILITY_UNLOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLEAR_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ACCESS_KEY_ID,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIG_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_DATABASE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CHEEVOS_HASH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_ENTRY_IDX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LAST_PLAYED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_RUNTIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_ADD_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_FAVORITES_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_PLAYLIST_TABS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_SETTINGS_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SHOW_VIDEO_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CHEAT_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_IN_CONTENT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_REQUIRED_HW_API,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BYPASS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DETERMINISTIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INPUT_REMAPPING_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTION_CATEGORY_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTION_OVERRIDE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MAX_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_MANAGED_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERFPOWER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_CORE_GOVERNOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_GOVERNOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_RESERVED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_NOT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_GAME_PAUSED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_PL_ENTRY_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWN_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWN_Y_L_R,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SWITCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADD_ADDITIONAL_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_FRANCHISE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_TAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_PLAYER_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_CATEGORY_TAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ITEMS_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SEARCH_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_SHOW_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FACEBOOK_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FALSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_FRAMESKIP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_PICKER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FILTER_BY_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FPS_UPDATE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAMECOUNT_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRAME_TIME_COUNTER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GLOBAL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HALT_REPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HOLD_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HOLD_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HORIZONTAL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ICON_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_X_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_RIGHT_Y_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_DEFAULT_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVATION_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_LEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_R3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_RIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_LEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_RIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_DPAD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_RELOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_TRIGGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_INDEX_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CHEAT_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_EJECT_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_DISK_PREV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FAST_FORWARD_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FRAMEADVANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_GAME_WATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_HOST_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_OSK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_OVERLAY_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PAUSE_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PLAY_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PREEMPT_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RECORDING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RECORD_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REPLAY_SLOT_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_REWIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RUNAHEAD_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_PREV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SHADER_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_HOLD_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SLOWMOTION_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STATE_SLOT_PLUS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STATISTICS_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_STREAMING_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_TURBO_FIRE_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON4,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_BUTTON5,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_HORIZ_WHEEL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_ROTATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_AUTO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_BEHIND_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_IN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_PORT_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_MOUSE_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PHYSICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_EARLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_POLL_TYPE_BEHAVIOR_LATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_PREFER_FRONT_TOUCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_DIR_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_INFO_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_TO_FILE_TIMESTAMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_DEBUG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME_USE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_EXCLUDE_THUMBNAIL_VIEWS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_FADE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_SLIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_SHOW_NAV_BAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_LARGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_MEDIUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_LANDSCAPE_LIST_SMALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_LINEAR_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_MAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INLINE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SHADOWS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_STARFIELD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCROLL_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_REBOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_NOTICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_BOUNCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_TYPE_LOOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGETS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_SHOW_TITLE_HEADER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_PAUSING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_BAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_MSG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHAT_COLOR_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_LOOK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NO_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_FADE_CHAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_KICK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOAD_CONTENT_MANUALLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_CONNECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MAX_PING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_4,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PING_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_ANALOG_AVERAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_OR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_DIGITAL_VOTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHARE_NO_PREFERENCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_CONNECTABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_ONLY_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SHOW_PASSWORDED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_HOSTING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_DISK_CONTROL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_PATCH_APPLIED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_REMAP_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_INSTANT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_DURATION_VERY_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SCREENSHOT_FLASH_NORMAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NOT_LOGGED_IN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ACHIEVEMENTS_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_BT_DEVICES_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_BACKUPS_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_INFORMATION_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ITEMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_MUSIC_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_CLIENTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETPLAY_HOSTS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_NETWORKS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PERFORMANCE_COUNTERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PLAYLIST_ENTRIES_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_PRESETS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SETTINGS_FOUND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_SHADER_PARAMETERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_VIDEOS_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_AUTOLOAD_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_SCALE_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_X_OFFSET_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_X_SEPARATION_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_OFFSET_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERLAY_Y_SEPARATION_PORTRAIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OVERRIDE_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_BLACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_BASIC_WHITE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_GRUVBOX_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_COLOR_THEME_SOLARIZED_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_FACTOR_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_FONT_SCALE_SEPARATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_DYNAMIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_FIXED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_MAXIMUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_HEADER_SEPARATOR_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_PADDING_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SCROLL_CONTENT_METADATA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAL60_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PARENT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_LIBRETRO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PAUSE_ON_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFCNT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ALLOW_NON_PNG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_REMOVE_ENABLE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_ENTRY_RENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_INLINE_CORE_DISPLAY_NEVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_DEFAULT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_DEFAULT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_DISC_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_KEEP_REGION_AND_DISC_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_BRACKETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE_REMOVE_PARENS_AND_BRACKETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_REFRESH_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_RESET_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_ALPHABETICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_DEFAULT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SORT_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_THUMBNAIL_MODE_DEFAULT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_AGGREGATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_RUNTIME_PER_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_ENTRY_IDX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_INLINE_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SORT_ALPHABETICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_PLAY_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_RUNTIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_USE_OLD_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ADDING_FILES_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ADD_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ADD_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ADD_FOLDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ALL_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_APPLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ASSOCIATE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CANNOT_ADD_TO_ALL_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CHOOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_DELETE_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_RENAME_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_COULD_NOT_UPDATE_PLAYLIST_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CURRENT_SHADER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CUSTOM_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DONT_SHOW_AGAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_ENTIRE_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALL_THUMBNAILS_THIS_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_ALREADY_IN_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_PLAYLIST_THUMBNAIL_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DOWNLOAD_THUMBNAIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_DROP_IMAGE_HERE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_EDIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ENTER_NEW_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FIELD_MULTIPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FILE_DOES_NOT_EXIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FILE_IS_EMPTY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FILE_PATH_IS_BLANK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FILE_READ_OPEN_FAILED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FILE_WRITE_OPEN_FAILED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_FOR_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_GATHERING_LIST_OF_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_HIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_ITEMS_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOADING_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_DOCK_CONTENT_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_EXIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT_CONTRIBUTORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_SEARCH_CLEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_DOCK_POSITIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_SHADER_PARAMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MOVE_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NETWORK_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_DATABASE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_EXTENSIONS_PLACEHOLDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_FILTER_INSIDE_ARCHIVES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLAYLIST_ENTRY_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PLEASE_FILL_OUT_REQUIRED_FIELDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_PROGRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_QUESTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_ALL_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_PARAMETER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SAVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SHADER_ADD_PASS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SHADER_CLEAR_ALL_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SHADER_NO_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_TOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_PACK_DOWNLOADED_SUCCESSFULLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FAILED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_FINISHED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_UPDATE_RETROARCH_NIGHTLY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_VIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_WARNING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_OVERRIDE_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_UNDO_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_START_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RANDOM_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ARTSTYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONSOLE_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DETAIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_ISSUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_EDGE_MAGAZINE_REVIEW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_FAMITSU_MAGAZINE_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GAMEPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NARRATIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_TGDB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REBOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_OUTPUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_REPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_FLUSH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_REMOVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_FILE_SAVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMAP_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RENAME_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETROPAD_WITH_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_BUFFER_SIZE_STEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_GRANULARITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_10_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_16_9_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_21_9_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_3_2_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_5_3_CENTRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FILL_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_FIT_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_ASPECT_RATIO_LOCK_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_MENU_THEME_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_RAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_SNOW_ALT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_STARFIELD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_PARTICLE_EFFECT_VORTEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_SHOW_START_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_THUMB_SCALE_SINC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_UPSCALE_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RIGHT_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_PREEMPTIVE_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SECOND_INSTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUNAHEAD_MODE_SINGLE_INSTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_HIDE_WARNINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_AHEAD_UNSUPPORTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RUN_MUSIC,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_LOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_AUTO_SAVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_OMIT_DB_REF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_LOOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_STRICT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREENSHOT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCREEN_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCROLL_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SEARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SECONDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SELECT_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACCESSIBILITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CONFIGURATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_DRIVERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_FRAME_THROTTLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_LOGGING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_NETWORK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_RIBBON_SIMPLIFIED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SIMPLE_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_PIPELINE_SNOWFLAKE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHADER_WATCH_FOR_CHANGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_ADVANCED_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_ERROR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_RGUI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_SCREENSHOTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_TITLE_SCREENS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_AGO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_DATE_SEPARATOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_STYLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MINUTES_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_MONTHS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_SECONDS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_WEEKS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_SINGLEBUTTON_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNABLE_TO_READ_COMPRESSED_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_LOAD_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNDO_SAVE_STATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNKNOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UNKNOWN_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_LAKKA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_OVERLAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_ALL_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_EXCLUSIVE_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_AUTOSWITCH_REFRESH_RATE_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CROP_OVERSCAN,
+#ifdef HAVE_ODROIDGO2
+#else
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_FAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_WEBM_HIGH_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_THREADS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_180_DEG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_270_DEG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION_90_DEG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_AXIS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_OVERSCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_APPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_FILE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_PREPEND,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_FONT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_RIBBON_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_SHADOWS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_NARRATOR_SPEECH_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_PAUSE_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_RESUME_REQUIRES_RELOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_ACHIEVEMENT_SERVER_UNREACHABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_ADD_TO_FAVORITES_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_BACKEND,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_PAUSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_SOURCE_LANG,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_TARGET_LANG,
+   (uint32_t)MENU_ENUM_SUBLABEL_AI_SERVICE_URL,
+#ifndef HAVE_DYNAMIC
+   (uint32_t)MENU_ENUM_SUBLABEL_ALWAYS_RELOAD_CORE_ON_RUN_CONTENT,
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,
+   (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
+   (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CAMERA_ALLOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_ADDRESS_BIT_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_AFTER_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_DATABASE_PATH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_LOAD_APPEND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_IDX,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_ADDRESS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_ADD_TO_VALUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_REPEAT_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQMINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EQPLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_SEARCH_EXACT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEAT_START_OR_RESTART,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_ANCHOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_AUTO_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_BADGES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_CHALLENGE_INDICATORS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_RICHPRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_START_ACTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_TEST_UNOFFICIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_UNLOCK_SOUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VERBOSE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_ACCOUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_START,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_SUBMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_LBOARD_TRACKERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_MASTERY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_PROGRESS_TRACKER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CHEEVOS_VISIBILITY_UNLOCK,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ACCESS_KEY_ID,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_S3_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SECRET_ACCESS_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_CONFIGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_NOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_SYSTEM,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_SYNC_THUMBS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIG_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_CLOSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_QUIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONFIRM_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_DATABASE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_FAVORITES_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_IMAGE_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_MUSIC_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_RUNTIME_LOG_AGGREGATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_ADD_ENTRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_FAVORITES_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_HISTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_OVERLAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLISTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_PLAYLIST_TABS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_REWIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_SETTINGS_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SHOW_VIDEO_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_VIDEO_HISTORY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CHEAT_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFO_CACHE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INFO_SAVESTATE_BYPASS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_INPUT_REMAPPING_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTION_CATEGORY_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_INFO,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTION_OVERRIDE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_SHOW_EXPERIMENTAL_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SWITCH_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
+   (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
+   (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_UWP_PERMISSIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FILTER_BY_CURRENT_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_CREATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_FOLDER_SPECIFIC_CORE_OPTIONS_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_FPS_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_FPS_UPDATE_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAMECOUNT_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GLOBAL_CORE_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_SUBLABEL_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_HALT_REPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_HELP_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_ICON_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_ALL,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_DEFAULTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_INFO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_LEFT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_RIGHT_ANALOG_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DISABLE_SEARCH_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_MINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_INDEX_PLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_CHEAT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_EJECT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_DISK_PREV,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_HOLD_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FAST_FORWARD_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FPS_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FRAMEADVANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_FULLSCREEN_TOGGLE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_FADE_CHAT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_GAME_WATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_HOST_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PING_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NETPLAY_PLAYER_CHAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_NEXT_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_OSK,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_OVERLAY_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PAUSE_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PLAY_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PREEMPT_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_PREV_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RECORDING_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RECORD_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_REPLAY_SLOT_PLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_RUNAHEAD_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_REPLAY_CHECKPOINT_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_MINUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATE_SLOT_PLUS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STATISTICS_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_STREAMING_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_TURBO_FIRE_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_UI_COMPANION_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_ROTATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_AUTO_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_BEHIND_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_DPAD_DIAGONAL_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_THREE_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TRIGGER_ON_TOUCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_TWO_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_ALT_TWO_TOUCH_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_MSEC,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_DTAP_TO_DRAG,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_MSEC,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_HOLD_TO_DRAG,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_MOUSE_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_INPUTS_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_SHOW_MOUSE_CURSOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_POLL_TYPE_BEHAVIOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSORS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_DUTY_CYCLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_PERIOD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
+   (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_OZONE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LIBRETRO_DIR_PATH,
+   (uint32_t)MENU_ENUM_SUBLABEL_LIBRETRO_INFO_PATH,
+   (uint32_t)MENU_ENUM_SUBLABEL_LIBRETRO_LOG_LEVEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_FILE_EXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_OVERWRITE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_SEARCH_RECURSIVELY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+   (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_VALIDATE_ENTRIES,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_AUTO_ROTATE_NAV_BAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_DUAL_THUMBNAIL_LIST_VIEW_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_THUMBNAIL_VIEW_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_PLAYLIST_ICONS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_SCROLL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_INSERT_DISK_RESUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_KIOSK_MODE_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_REMEMBER_SELECTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BACKGROUND_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_BORDER_FILLER_THICKNESS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_FULL_WIDTH_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INLINE_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_INTERNAL_UPSCALE_LEVEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SCREENSAVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SHADOWS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_ANIMATION_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCREENSAVER_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SCROLL_FAST,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_DISC,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_REBOOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WALLPAPER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGETS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_WIDGET_SCALE_FACTOR_WINDOWED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_HORIZONTAL_HIGHLIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_STOP,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_MOUSE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_BAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_FADE_CHAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_IP_ADDRESS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_KICK,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_CONNECTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_MAX_PING,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PING_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CONFIG_OVERRIDE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_DISK_CONTROL,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_NETPLAY_EXTRA,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_PATCH_APPLIED,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_REMAP_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_DURATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SCREENSHOT_FLASH,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_SET_INITIAL_DISK,
+   (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_DISPLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_NOTIFICATIONS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_ONSCREEN_VIDEO_LAYOUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_PRESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_ASPECT_ADJUST_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_AUTOLOAD_PREFERRED,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_LIGHTGUN_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_MOUSE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_PRESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_SCALE_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_SCALE_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_OFFSET_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_X_SEPARATION_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_OFFSET_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_LANDSCAPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERLAY_Y_SEPARATION_PORTRAIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_SUBLABEL_OVERRIDE_UNLOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_COLLAPSE_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_FOOTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_GLOBAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_LABEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SIDEBAR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_SUBLABEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TIME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_FONT_SCALE_FACTOR_TITLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_ICON,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_HEADER_SEPARATOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_PADDING_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SCROLL_CONTENT_METADATA,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_THUMBNAIL_SCALE_FACTOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_OZONE_TRUNCATE_PLAYLIST_NAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_LIBRETRO,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_NONACTIVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PAUSE_ON_DISCONNECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PERFCNT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ALLOW_NON_PNG,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_ENTRY_RENAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_FUZZY_ARCHIVE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_DEFAULT_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LABEL_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_RESET_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_MANAGER_SORT_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_PORTABLE_PATHS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_ENTRY_IDX,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_HISTORY_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SORT_ALPHABETICAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_SUBLABEL_LAST_PLAYED_STYLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_FILENAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAYLIST_USE_OLD_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_PLAY_REPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_PL_THUMBNAILS_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CHEATS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVESTATE_SUBMENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CONTENT_DIR_OVERRIDES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_CORE_OVERRIDES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_GAME_OVERRIDES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SAVE_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_SHADERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_START_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_STOP_STREAMING,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_ON_CLOSE_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_QUIT_RETROARCH_NOSAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_RDB_ENTRY_DETAIL,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_OUTPUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORD_REPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_INFO,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_MANAGER_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_RESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_AS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_FILE_SAVE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMAP_SAVE_ON_EXIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REMOVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_RENAME_ENTRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_DESERIALIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_CHECKPOINT_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_MAX_KEEP,
+   (uint32_t)MENU_ENUM_SUBLABEL_REPLAY_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESUME_CONTENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_BUFFER_SIZE_STEP,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_GRANULARITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_REWIND_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_BROWSER_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_CONFIG_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_MENU_THEME_PRESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_RGUI_SHOW_START_SCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUNAHEAD_MODE,
+#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
+   (uint32_t)MENU_ENUM_SUBLABEL_RUNAHEAD_MODE_NO_SECOND_INSTANCE,
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_RUNTIME_LOG_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_HIDE_WARNINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RUN_AHEAD_UNSUPPORTED,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_LOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_AUTO_SAVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_FILE_COMPRESSION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_MAIN_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_NEW_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_DB_SELECT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_METHOD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_OMIT_DB_REF,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SERIAL_AND_CRC,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_SINGLE_FILE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_TARGET_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_USE_DB,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCAN_WITHOUT_CORE_MATCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOTS_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AI_SERVICE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CONFIGURATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_DRIVERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_FRAME_THROTTLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_LOGGING,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_NETWORK,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ONSCREEN_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_PLAYLISTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_VIDEO,
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SET_CORE_ASSOCIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_APPLY_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_OPTIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHADER_WATCH_FOR_CHANGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_ADVANCED_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
+   (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_LANGUAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_IMAGE_VIEWER,
+   (uint32_t)MENU_ENUM_SUBLABEL_USE_BUILTIN_PLAYER,
+   (uint32_t)MENU_ENUM_SUBLABEL_USE_LAST_START_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_BALANCED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PERF,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANAGED_PER_CONTEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
+   (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_PAL_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_AUTOSWITCH_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BFI_DARK_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_BLACK_FRAME_INSERTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CROP_OVERSCAN,
+#ifdef HAVE_ODROIDGO2
+#else
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_RESOLUTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_GPU_SCREENSHOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_BGCOLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_COLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_NUM_PASSES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PARAMETERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_APPEND,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_FILE_INFO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PARAMETERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_PREPEND,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_AS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CORE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_CURRENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_WIDTH_MAX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_CUSTOM_SIZE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OFFSET_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SAVE_POSITION,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SCALE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_SHOW_DECORATIONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_FONT,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_MENU_COLOR_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_RIBBON_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_SHADOWS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+   (uint32_t)MSG_ACCESSIBILITY_STARTUP,
+   (uint32_t)MSG_ACHIEVEMENT_UNLOCKED,
+   (uint32_t)MSG_ADDED_TO_FAVORITES,
+   (uint32_t)MSG_ADDED_TO_PLAYLIST,
+   (uint32_t)MSG_ADD_TO_FAVORITES_FAILED,
+   (uint32_t)MSG_ADD_TO_PLAYLIST_FAILED,
+   (uint32_t)MSG_AI_SERVICE_STOPPED,
+   (uint32_t)MSG_ALL_CORES_SWITCHED_PFD,
+   (uint32_t)MSG_ALL_CORES_UPDATED,
+   (uint32_t)MSG_APPENDED_DISK,
+   (uint32_t)MSG_APPLICATION_DIR,
+   (uint32_t)MSG_APPLYING_CHEAT,
+   (uint32_t)MSG_APPLYING_PATCH,
+   (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_MIXER_VOLUME,
+   (uint32_t)MSG_AUDIO_MUTED,
+   (uint32_t)MSG_AUDIO_UNMUTED,
+   (uint32_t)MSG_AUDIO_VOLUME,
+   (uint32_t)MSG_AUTOCONFIG_FILE_ERROR_SAVING,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTODETECT,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FROM,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   (uint32_t)MSG_AUTOSAVE_FAILED,
+   (uint32_t)MSG_AUTO_SAVE_STATE_TO,
+   (uint32_t)MSG_BACKING_UP_CORE,
+   (uint32_t)MSG_BLOCKING_SRAM_OVERWRITE,
+   (uint32_t)MSG_BLUETOOTH_PAIRING_REMOVED,
+   (uint32_t)MSG_BLUETOOTH_SCAN_COMPLETE,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (uint32_t)MSG_CANNOT_INFER_NEW_CONFIG_PATH,
+   (uint32_t)MSG_CAPABILITIES,
+   (uint32_t)MSG_CHANGE_THUMBNAIL_TYPE,
+   (uint32_t)MSG_CHEAT_ADD_AFTER_SUCCESS,
+   (uint32_t)MSG_CHEAT_ADD_BEFORE_SUCCESS,
+   (uint32_t)MSG_CHEAT_ADD_BOTTOM_SUCCESS,
+   (uint32_t)MSG_CHEAT_ADD_TOP_SUCCESS,
+   (uint32_t)MSG_CHEAT_COPY_AFTER_SUCCESS,
+   (uint32_t)MSG_CHEAT_COPY_BEFORE_SUCCESS,
+   (uint32_t)MSG_CHEAT_DELETE_ALL_INSTRUCTIONS,
+   (uint32_t)MSG_CHEAT_DELETE_ALL_SUCCESS,
+   (uint32_t)MSG_CHEAT_DELETE_SUCCESS,
+   (uint32_t)MSG_CHEAT_INIT_FAIL,
+   (uint32_t)MSG_CHEAT_INIT_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_FAIL,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
+   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_FAIL,
+   (uint32_t)MSG_CHEAT_SEARCH_ADD_MATCH_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_DELETE_MATCH_SUCCESS,
+   (uint32_t)MSG_CHEAT_SEARCH_FOUND_MATCHES,
+   (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
+   (uint32_t)MSG_CHECKING_CORE,
+   (uint32_t)MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
+   (uint32_t)MSG_CHEEVOS_COMPLETED_GAME,
+   (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
+   (uint32_t)MSG_CHEEVOS_GAME_LOAD_FAILED,
+   (uint32_t)MSG_CHEEVOS_GAME_NOT_IDENTIFIED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_DISABLED_CHEAT,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_ENABLE,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_MODE_REQUIRES_NEWER_HOST,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_PAUSED_BLACK_FRAME_INSERTION,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_PAUSED_MANUAL_FRAME_DELAY,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_PAUSED_SETTING_NOT_ALLOWED,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_PAUSED_SYSTEM_NOT_FOR_CORE,
+   (uint32_t)MSG_CHEEVOS_HARDCORE_PAUSED_VSYNC_SWAP_INTERVAL,
+   (uint32_t)MSG_CHEEVOS_LOAD_SAVEFILE_PREVENTED_BY_HARDCORE_MODE,
+   (uint32_t)MSG_CHEEVOS_LOAD_STATE_PREVENTED_BY_HARDCORE_MODE,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   (uint32_t)MSG_CHEEVOS_LOGIN_TOKEN_EXPIRED,
+   (uint32_t)MSG_CHEEVOS_MASTERED_GAME,
+   (uint32_t)MSG_CHEEVOS_NUMBER_ACHIEVEMENTS_UNLOCKED,
+   (uint32_t)MSG_CHEEVOS_RICH_PRESENCE_SPECTATING,
+   (uint32_t)MSG_CHEEVOS_UNOFFICIAL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_UNSUPPORTED_COUNT,
+   (uint32_t)MSG_CHEEVOS_UNSUPPORTED_WARNING,
+   (uint32_t)MSG_COMPARING_WITH_KNOWN_MAGIC_NUMBERS,
+   (uint32_t)MSG_COMPILED_AGAINST_API,
+   (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_CONFIG_DIRECTORY_NOT_SET,
+   (uint32_t)MSG_CONFIG_OVERRIDE_LOADED,
+   (uint32_t)MSG_CONNECTED_TO,
+   (uint32_t)MSG_CONNECTING_TO_NETPLAY_HOST,
+   (uint32_t)MSG_CONNECTING_TO_PORT,
+   (uint32_t)MSG_CONNECTION_SLOT,
+   (uint32_t)MSG_CONTENT_CRC32S_DIFFER,
+   (uint32_t)MSG_CONTENT_LOADING_SKIPPED_IMPLEMENTATION_WILL_DO_IT,
+   (uint32_t)MSG_CONTENT_NETPACKET_CRC32S_DIFFER,
+   (uint32_t)MSG_CORE_BACKUP_ALREADY_EXISTS,
+   (uint32_t)MSG_CORE_BACKUP_COMPLETE,
+   (uint32_t)MSG_CORE_BACKUP_FAILED,
+   (uint32_t)MSG_CORE_BACKUP_SCANNING_CORE,
+   (uint32_t)MSG_CORE_DELETE_DISABLED,
+   (uint32_t)MSG_CORE_DOES_NOT_SUPPORT_DISK_OPTIONS,
+   (uint32_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (uint32_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATE_UNDO,
+   (uint32_t)MSG_CORE_INFO_CACHE_UNSUPPORTED,
+   (uint32_t)MSG_CORE_INSTALLATION_ALREADY_INSTALLED,
+   (uint32_t)MSG_CORE_INSTALLATION_COMPLETE,
+   (uint32_t)MSG_CORE_INSTALLATION_DISABLED,
+   (uint32_t)MSG_CORE_INSTALLATION_FAILED,
+   (uint32_t)MSG_CORE_INSTALLED,
+   (uint32_t)MSG_CORE_INSTALL_FAILED,
+   (uint32_t)MSG_CORE_LIST_FAILED,
+   (uint32_t)MSG_CORE_LOCK_FAILED,
+   (uint32_t)MSG_CORE_OPTIONS_FILE_CREATED_SUCCESSFULLY,
+   (uint32_t)MSG_CORE_OPTIONS_FILE_REMOVED_SUCCESSFULLY,
+   (uint32_t)MSG_CORE_OPTIONS_FLUSHED,
+   (uint32_t)MSG_CORE_OPTIONS_FLUSH_FAILED,
+   (uint32_t)MSG_CORE_OPTIONS_RESET,
+   (uint32_t)MSG_CORE_REMAP_FILE_LOADED,
+   (uint32_t)MSG_CORE_RESTORATION_ALREADY_INSTALLED,
+   (uint32_t)MSG_CORE_RESTORATION_COMPLETE,
+   (uint32_t)MSG_CORE_RESTORATION_DISABLED,
+   (uint32_t)MSG_CORE_RESTORATION_FAILED,
+   (uint32_t)MSG_CORE_RESTORATION_INVALID_CONTENT,
+   (uint32_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+   (uint32_t)MSG_CORE_UNLOCK_FAILED,
+   (uint32_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
+   (uint32_t)MSG_CORE_UPDATE_DISABLED,
+   (uint32_t)MSG_COULD_NOT_FIND_ANY_NEXT_DRIVER,
+   (uint32_t)MSG_COULD_NOT_FIND_COMPATIBLE_SYSTEM,
+   (uint32_t)MSG_COULD_NOT_FIND_VALID_DATA_TRACK,
+   (uint32_t)MSG_COULD_NOT_OPEN_DATA_TRACK,
+   (uint32_t)MSG_COULD_NOT_READ_CONTENT_FILE,
+   (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
+   (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
+   (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_CUSTOM_TIMING_GIVEN,
+   (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
+   (uint32_t)MSG_DECOMPRESSION_FAILED,
+   (uint32_t)MSG_DETECTED_VIEWPORT_OF,
+   (uint32_t)MSG_DEVICE_CONFIGURED_IN_PORT_NR,
+   (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
+   (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
+   (uint32_t)MSG_DEVICE_NOT_CONFIGURED_NR,
+   (uint32_t)MSG_DID_NOT_FIND_A_VALID_CONTENT_PATCH,
+   (uint32_t)MSG_DIRECTORY_REMAP_FILE_LOADED,
+   (uint32_t)MSG_DISABLING_WIRELESS,
+   (uint32_t)MSG_DISCONNECTING_WIRELESS,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_DISCORD_CONNECTION_REQUEST,
+   (uint32_t)MSG_DISC_DUMP_FAILED_TO_READ_FROM_DRIVE,
+   (uint32_t)MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
+   (uint32_t)MSG_DISK_CLOSED,
+   (uint32_t)MSG_DISK_EJECTED,
+   (uint32_t)MSG_DOWNLOADING,
+   (uint32_t)MSG_DOWNLOADING_CORE,
+   (uint32_t)MSG_DOWNLOAD_FAILED,
+   (uint32_t)MSG_DRIVE_NUMBER,
+   (uint32_t)MSG_DUMPING_DISC,
+   (uint32_t)MSG_ENABLING_WIRELESS,
+   (uint32_t)MSG_ERROR,
+   (uint32_t)MSG_ERROR_LIBRETRO_CORE_REQUIRES_CONTENT,
+   (uint32_t)MSG_ERROR_LIBRETRO_CORE_REQUIRES_SPECIAL_CONTENT,
+   (uint32_t)MSG_ERROR_LIBRETRO_CORE_REQUIRES_VFS,
+   (uint32_t)MSG_ERROR_PARSING_ARGUMENTS,
+   (uint32_t)MSG_ERROR_REMOVING_CORE_OPTIONS_FILE,
+   (uint32_t)MSG_ERROR_REMOVING_REMAP_FILE,
+   (uint32_t)MSG_ERROR_REMOVING_SHADER_PRESET,
+   (uint32_t)MSG_ERROR_SAVING_CORE_OPTIONS_FILE,
+   (uint32_t)MSG_ERROR_SAVING_REMAP_FILE,
+   (uint32_t)MSG_ERROR_SAVING_SHADER_PRESET,
+   (uint32_t)MSG_EXTERNAL_APPLICATION_DIR,
+   (uint32_t)MSG_EXTRACTING,
+   (uint32_t)MSG_EXTRACTING_CORE,
+   (uint32_t)MSG_EXTRACTING_FILE,
+   (uint32_t)MSG_FAILED_SAVING_CONFIG_TO,
+   (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
+   (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
+   (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
+   (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
+   (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
+   (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
+   (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE,
+   (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
+   (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
+   (uint32_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   (uint32_t)MSG_FAILED_TO_LOAD,
+   (uint32_t)MSG_FAILED_TO_LOAD_CONTENT,
+   (uint32_t)MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
+   (uint32_t)MSG_FAILED_TO_LOAD_MOVIE_FILE,
+   (uint32_t)MSG_FAILED_TO_LOAD_OVERLAY,
+   (uint32_t)MSG_FAILED_TO_LOAD_SRAM,
+   (uint32_t)MSG_FAILED_TO_LOAD_STATE,
+   (uint32_t)MSG_FAILED_TO_OPEN_LIBRETRO_CORE,
+   (uint32_t)MSG_FAILED_TO_PATCH,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_HEADER_FROM_CLIENT,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_HEADER_FROM_HOST,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME_FROM_HOST,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_NICKNAME_SIZE_FROM_HOST,
+   (uint32_t)MSG_FAILED_TO_RECEIVE_SRAM_DATA_FROM_HOST,
+   (uint32_t)MSG_FAILED_TO_REMOVE_DISK_FROM_TRAY,
+   (uint32_t)MSG_FAILED_TO_REMOVE_TEMPORARY_FILE,
+   (uint32_t)MSG_FAILED_TO_SAVE_SRAM,
+   (uint32_t)MSG_FAILED_TO_SAVE_STATE_TO,
+   (uint32_t)MSG_FAILED_TO_SEND_NICKNAME,
+   (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_SIZE,
+   (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
+   (uint32_t)MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_SET_INITIAL_DISK,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
+   (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
+   (uint32_t)MSG_FAILED_TO_START_RECORDING,
+   (uint32_t)MSG_FAILED_TO_TAKE_SCREENSHOT,
+   (uint32_t)MSG_FAILED_TO_UNDO_LOAD_STATE,
+   (uint32_t)MSG_FAILED_TO_UNDO_SAVE_STATE,
+   (uint32_t)MSG_FAILED_TO_UNMUTE_AUDIO,
+   (uint32_t)MSG_FAST_FORWARD,
+   (uint32_t)MSG_FATAL_ERROR_RECEIVED_IN,
+   (uint32_t)MSG_FETCHING_CORE_LIST,
+   (uint32_t)MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER,
+   (uint32_t)MSG_FILE_NOT_FOUND,
+   (uint32_t)MSG_FIRMWARE,
+   (uint32_t)MSG_FOLDER_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   (uint32_t)MSG_FOUND_AUTO_SAVESTATE_IN,
+   (uint32_t)MSG_FOUND_DISK_LABEL,
+   (uint32_t)MSG_FOUND_ENTRY_STATE_IN,
+   (uint32_t)MSG_FOUND_FIRST_DATA_TRACK_ON_FILE,
+   (uint32_t)MSG_FOUND_LAST_REPLAY_SLOT,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_FOUND_SHADER,
+   (uint32_t)MSG_FRAMES,
+   (uint32_t)MSG_GAME_FOCUS_OFF,
+   (uint32_t)MSG_GAME_FOCUS_ON,
+   (uint32_t)MSG_GAME_REMAP_FILE_LOADED,
+   (uint32_t)MSG_GAME_SPECIFIC_CORE_OPTIONS_FOUND_AT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_GOT_INVALID_DISK_INDEX,
+   (uint32_t)MSG_GRAB_MOUSE_STATE,
+   (uint32_t)MSG_HW_RENDERED_MUST_USE_POSTSHADED_RECORDING,
+   (uint32_t)MSG_INFLATED_CHECKSUM_DID_NOT_MATCH_CRC32,
+   (uint32_t)MSG_INPUT_BIND_HOLD,
+   (uint32_t)MSG_INPUT_BIND_PRESS,
+   (uint32_t)MSG_INPUT_BIND_RELEASE,
+   (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_CHEAT,
+   (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
+   (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
+   (uint32_t)MSG_INPUT_PRESET_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_RENAME_ENTRY,
+   (uint32_t)MSG_INSTALLING_CORE,
+   (uint32_t)MSG_INTERFACE,
+   (uint32_t)MSG_INTERNAL_STORAGE,
+   (uint32_t)MSG_INTERNET_NOT_CONNECTABLE,
+   (uint32_t)MSG_INTERNET_RELAY,
+   (uint32_t)MSG_INVALID_NICKNAME_SIZE,
+   (uint32_t)MSG_IN_BYTES,
+   (uint32_t)MSG_IN_GIGABYTES,
+   (uint32_t)MSG_IN_MEGABYTES,
+   (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
+   (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
+   (uint32_t)MSG_LATEST_CORE_INSTALLED,
+   (uint32_t)MSG_LEADERBOARD_BEST,
+   (uint32_t)MSG_LEADERBOARD_FAILED,
+   (uint32_t)MSG_LEADERBOARD_STARTED,
+   (uint32_t)MSG_LEADERBOARD_SUBMISSION,
+   (uint32_t)MSG_LIBRETRO_ABI_BREAK,
+   (uint32_t)MSG_LIBRETRO_FRONTEND,
+   (uint32_t)MSG_LOADED_STATE_FROM_SLOT,
+   (uint32_t)MSG_LOADED_STATE_FROM_SLOT_AUTO,
+   (uint32_t)MSG_LOADING,
+   (uint32_t)MSG_LOADING_CONTENT_FILE,
+   (uint32_t)MSG_LOADING_ENTRY_STATE_FROM,
+   (uint32_t)MSG_LOADING_FAVORITES_FILE,
+   (uint32_t)MSG_LOADING_HISTORY_FILE,
+   (uint32_t)MSG_LOADING_STATE,
+   (uint32_t)MSG_LOAD_CORE_FIRST,
+   (uint32_t)MSG_LOCAL,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_END,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONFIG,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_INVALID_CONTENT,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
+   (uint32_t)MSG_MANUAL_CONTENT_SCAN_START,
+   (uint32_t)MSG_MEMORY,
+   (uint32_t)MSG_MISSING_ASSETS,
+   (uint32_t)MSG_MOVIE_RECORD_STOPPED,
+   (uint32_t)MSG_NATIVE,
+   (uint32_t)MSG_NETPLAY_BANNED,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_NO_SLOTS,
+   (uint32_t)MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_CHAT_SUPPORTED,
+   (uint32_t)MSG_NETPLAY_CLIENT_DEVICES,
+   (uint32_t)MSG_NETPLAY_CLIENT_HANGUP,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_CORES,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_CORE_VERSIONS,
+   (uint32_t)MSG_NETPLAY_DIFFERENT_VERSIONS,
+   (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_ENTER_CHAT,
+   (uint32_t)MSG_NETPLAY_ENTER_PASSWORD,
+   (uint32_t)MSG_NETPLAY_FAILED,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_HOST_FULL,
+   (uint32_t)MSG_NETPLAY_INCORRECT_PASSWORD,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_LAN_SCANNING,
+   (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   (uint32_t)MSG_NETPLAY_NEED_CONTENT_LOADED,
+   (uint32_t)MSG_NETPLAY_NOT_RETROARCH,
+   (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_PLATFORM_DEPENDENT,
+   (uint32_t)MSG_NETPLAY_PLAYERS_INFO,
+   (uint32_t)MSG_NETPLAY_PLAYER_S_LEFT,
+   (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_NETPLAY_SLOWDOWNS_CAUSED,
+   (uint32_t)MSG_NETPLAY_SPECTATORS_INFO,
+   (uint32_t)MSG_NETPLAY_STATUS_PLAYING,
+   (uint32_t)MSG_NETPLAY_STATUS_SPECTATING,
+   (uint32_t)MSG_NETPLAY_S_HAS_JOINED_AS_PLAYER_N,
+   (uint32_t)MSG_NETPLAY_S_HAS_JOINED_WITH_INPUT_DEVICES_S,
+   (uint32_t)MSG_NETPLAY_UNSUPPORTED,
+   (uint32_t)MSG_NETPLAY_YOU_HAVE_JOINED_AS_PLAYER_N,
+   (uint32_t)MSG_NETPLAY_YOU_HAVE_JOINED_WITH_INPUT_DEVICES_S,
+   (uint32_t)MSG_NETPLAY_YOU_HAVE_LEFT_THE_GAME,
+   (uint32_t)MSG_NO_ARGUMENTS_SUPPLIED_AND_NO_MENU_BUILTIN,
+   (uint32_t)MSG_NO_CONTENT_STARTING_DUMMY_CORE,
+   (uint32_t)MSG_NO_DISC_INSERTED,
+   (uint32_t)MSG_NO_SAVE_STATE_HAS_BEEN_OVERWRITTEN_YET,
+   (uint32_t)MSG_NO_STATE_HAS_BEEN_LOADED_YET,
+   (uint32_t)MSG_NO_THUMBNAIL_AVAILABLE,
+   (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
+   (uint32_t)MSG_NUM_CORES_LOCKED,
+   (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
+   (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
+   (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,
+   (uint32_t)MSG_OVERRIDES_ERROR_SAVING,
+   (uint32_t)MSG_OVERRIDES_NOT_SAVED,
+   (uint32_t)MSG_OVERRIDES_REMOVED_SUCCESSFULLY,
+   (uint32_t)MSG_OVERRIDES_SAVED_SUCCESSFULLY,
+   (uint32_t)MSG_OVERRIDES_UNLOADED_SUCCESSFULLY,
+   (uint32_t)MSG_PAUSED,
+   (uint32_t)MSG_PING_TOO_HIGH,
+   (uint32_t)MSG_PLAYLIST_MANAGER_CLEANING_PLAYLIST,
+   (uint32_t)MSG_PLAYLIST_MANAGER_CORES_RESET,
+   (uint32_t)MSG_PLAYLIST_MANAGER_PLAYLIST_CLEANED,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_DAT_FILE_TOO_LARGE,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CONTENT_DIR,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_CORE,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_DAT_FILE,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_INVALID_SYSTEM_NAME,
+   (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
+   (uint32_t)MSG_PLAYLIST_MANAGER_RESETTING_CORES,
+   (uint32_t)MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_PREEMPT,
+   (uint32_t)MSG_PREEMPT_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (uint32_t)MSG_PREEMPT_DISABLED,
+   (uint32_t)MSG_PREEMPT_ENABLED,
+   (uint32_t)MSG_PREEMPT_FAILED_TO_ALLOCATE,
+   (uint32_t)MSG_PREEMPT_FAILED_TO_LOAD_STATE,
+   (uint32_t)MSG_PREEMPT_FAILED_TO_SAVE_STATE,
+   (uint32_t)MSG_PREPARING_FOR_CONTENT_SCAN,
+   (uint32_t)MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
+   (uint32_t)MSG_PRESS_AGAIN_TO_QUIT,
+   (uint32_t)MSG_PRESS_AGAIN_TO_RESET,
+   (uint32_t)MSG_PRIVATE_OR_SHARED_ADDRESS,
+   (uint32_t)MSG_PRUNING_CORE_BACKUP_HISTORY,
+   (uint32_t)MSG_PUBLIC_ADDRESS,
+   (uint32_t)MSG_RARE_ACHIEVEMENT_UNLOCKED,
+   (uint32_t)MSG_READING_FIRST_DATA_TRACK,
+   (uint32_t)MSG_READ_ONLY,
+   (uint32_t)MSG_READ_WRITE,
+   (uint32_t)MSG_RECORDING_TERMINATED_DUE_TO_RESIZE,
+   (uint32_t)MSG_RECORDING_TO,
+   (uint32_t)MSG_REDIRECTING_CHEATFILE_TO,
+   (uint32_t)MSG_REDIRECTING_SAVEFILE_TO,
+   (uint32_t)MSG_REDIRECTING_SAVESTATE_TO,
+   (uint32_t)MSG_REMAP_FILE_FLUSHED,
+   (uint32_t)MSG_REMAP_FILE_FLUSH_FAILED,
+   (uint32_t)MSG_REMAP_FILE_REMOVED_SUCCESSFULLY,
+   (uint32_t)MSG_REMAP_FILE_RESET,
+   (uint32_t)MSG_REMAP_FILE_SAVED_SUCCESSFULLY,
+   (uint32_t)MSG_REMOVABLE_STORAGE,
+   (uint32_t)MSG_REMOVED_DISK_FROM_TRAY,
+   (uint32_t)MSG_REMOVING_TEMPORARY_CONTENT_FILE,
+   (uint32_t)MSG_REPLAY_LOAD_STATE_FAILED_FUTURE_STATE,
+   (uint32_t)MSG_REPLAY_LOAD_STATE_FAILED_INCOMPAT,
+   (uint32_t)MSG_REPLAY_LOAD_STATE_FAILED_WRONG_TIMELINE,
+   (uint32_t)MSG_REPLAY_LOAD_STATE_HALT_INCOMPAT,
+   (uint32_t)MSG_REPLAY_LOAD_STATE_OVERWRITING_REPLAY,
+   (uint32_t)MSG_REPLAY_SEEK_TO_FRAME,
+   (uint32_t)MSG_REPLAY_SEEK_TO_FRAME_FAILED,
+   (uint32_t)MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT,
+   (uint32_t)MSG_REPLAY_SEEK_TO_NEXT_CHECKPOINT_FAILED,
+   (uint32_t)MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT,
+   (uint32_t)MSG_REPLAY_SEEK_TO_PREV_CHECKPOINT_FAILED,
+   (uint32_t)MSG_REPLAY_SLOT,
+   (uint32_t)MSG_RESAMPLER_QUALITY_HIGHER,
+   (uint32_t)MSG_RESAMPLER_QUALITY_HIGHEST,
+   (uint32_t)MSG_RESAMPLER_QUALITY_LOWER,
+   (uint32_t)MSG_RESAMPLER_QUALITY_LOWEST,
+   (uint32_t)MSG_RESET,
+   (uint32_t)MSG_RESET_CORE_ASSOCIATION,
+   (uint32_t)MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT,
+   (uint32_t)MSG_RESTORED_OLD_SAVE_STATE,
+   (uint32_t)MSG_RESTORING_CORE,
+   (uint32_t)MSG_REVERTING_SAVEFILE_DIRECTORY_TO,
+   (uint32_t)MSG_REVERTING_SAVESTATE_DIRECTORY_TO,
+   (uint32_t)MSG_REWINDING,
+   (uint32_t)MSG_REWIND_BUFFER_CAPACITY_INSUFFICIENT,
+   (uint32_t)MSG_REWIND_INIT,
+   (uint32_t)MSG_REWIND_INIT_FAILED,
+   (uint32_t)MSG_REWIND_INIT_FAILED_THREADED_AUDIO,
+   (uint32_t)MSG_REWIND_REACHED_END,
+   (uint32_t)MSG_REWIND_UNSUPPORTED,
+   (uint32_t)MSG_RGUI_INVALID_LANGUAGE,
+   (uint32_t)MSG_RGUI_MISSING_FONTS,
+   (uint32_t)MSG_ROOM_NOT_CONNECTABLE,
+   (uint32_t)MSG_ROOM_PASSWORDED,
+   (uint32_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_RUNAHEAD,
+   (uint32_t)MSG_RUNAHEAD_CORE_DOES_NOT_SUPPORT_SAVESTATES,
+   (uint32_t)MSG_RUNAHEAD_DISABLED,
+   (uint32_t)MSG_RUNAHEAD_ENABLED,
+   (uint32_t)MSG_RUNAHEAD_ENABLED_WITH_SECOND_INSTANCE,
+   (uint32_t)MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE,
+   (uint32_t)MSG_RUNAHEAD_FAILED_TO_LOAD_STATE,
+   (uint32_t)MSG_RUNAHEAD_FAILED_TO_SAVE_STATE,
+   (uint32_t)MSG_SAVED_NEW_CONFIG_TO,
+   (uint32_t)MSG_SAVED_STATE_TO_SLOT,
+   (uint32_t)MSG_SAVED_STATE_TO_SLOT_AUTO,
+   (uint32_t)MSG_SAVED_SUCCESSFULLY_TO,
+   (uint32_t)MSG_SAVING_RAM_TYPE,
+   (uint32_t)MSG_SAVING_STATE,
+   (uint32_t)MSG_SCANNING,
+   (uint32_t)MSG_SCANNING_BLUETOOTH_DEVICES,
+   (uint32_t)MSG_SCANNING_CORES,
+   (uint32_t)MSG_SCANNING_NO_DATABASE,
+   (uint32_t)MSG_SCANNING_OF_DIRECTORY_FINISHED,
+   (uint32_t)MSG_SCANNING_OF_FILE_FINISHED,
+   (uint32_t)MSG_SCANNING_WIRELESS_NETWORKS,
+   (uint32_t)MSG_SCREENSHOT_SAVED,
+   (uint32_t)MSG_SCREEN_RESOLUTION_APPLYING_DEFAULT,
+   (uint32_t)MSG_SCREEN_RESOLUTION_APPLYING_DESC,
+   (uint32_t)MSG_SCREEN_RESOLUTION_APPLYING_NO_DESC,
+   (uint32_t)MSG_SCREEN_RESOLUTION_DEFAULT,
+   (uint32_t)MSG_SCREEN_RESOLUTION_DESC,
+   (uint32_t)MSG_SCREEN_RESOLUTION_NO_DESC,
+   (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DEFAULT,
+   (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_DESC,
+   (uint32_t)MSG_SCREEN_RESOLUTION_RESETTING_NO_DESC,
+   (uint32_t)MSG_SDL2_MIC_NEEDS_SDL2_AUDIO,
+   (uint32_t)MSG_SENDING_COMMAND,
+   (uint32_t)MSG_SETTING_DISK_IN_TRAY,
+   (uint32_t)MSG_SET_CORE_ASSOCIATION,
+   (uint32_t)MSG_SEVERAL_PATCHES_ARE_EXPLICITLY_DEFINED,
+   (uint32_t)MSG_SHADER_PRESET_REMOVED_SUCCESSFULLY,
+   (uint32_t)MSG_SHADER_PRESET_SAVED_SUCCESSFULLY,
+   (uint32_t)MSG_SKIPPING_SRAM_LOAD,
+   (uint32_t)MSG_SLOW_MOTION_REWIND,
+   (uint32_t)MSG_SORRY_UNIMPLEMENTED_CORES_DONT_DEMAND_CONTENT_NETPLAY,
+   (uint32_t)MSG_SRAM_WILL_NOT_BE_SAVED,
+   (uint32_t)MSG_STARTING_MOVIE_PLAYBACK,
+   (uint32_t)MSG_STARTING_MOVIE_RECORD_TO,
+   (uint32_t)MSG_STATE_SIZE,
+   (uint32_t)MSG_STATE_SLOT,
+   (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TO,
+   (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
+   (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,
+   (uint32_t)MSG_UNDID_LOAD_STATE,
+   (uint32_t)MSG_UNKNOWN,
+   (uint32_t)MSG_UNKNOWN_COMPILER,
+   (uint32_t)MSG_UNKNOWN_NETPLAY_COMMAND_RECEIVED,
+   (uint32_t)MSG_UNPAUSED,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
+   (uint32_t)MSG_UNSUPPORTED_VIDEO_MODE,
+   (uint32_t)MSG_UPDATING_CORE,
+   (uint32_t)MSG_UPNP_FAILED,
+   (uint32_t)MSG_USING_CORE_NAME_FOR_NEW_CONFIG,
+   (uint32_t)MSG_USING_LIBRETRO_DUMMY_CORE_RECORDING_SKIPPED,
+   (uint32_t)MSG_VALUE_CONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_VALUE_REBOOTING,
+   (uint32_t)MSG_VALUE_SHUTTING_DOWN,
+   (uint32_t)MSG_VERSION_OF_LIBRETRO_API,
+   (uint32_t)MSG_VIDEO_REFRESH_RATE_CHANGED,
+   (uint32_t)MSG_VIRTUAL_DISK_TRAY_CLOSE,
+   (uint32_t)MSG_VIRTUAL_DISK_TRAY_EJECT,
+   (uint32_t)MSG_VRR_RUNLOOP_DISABLED,
+   (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
+   (uint32_t)MSG_WAITING_FOR_CLIENT,
+   (uint32_t)MSG_WIFI_SCAN_COMPLETE,
+};

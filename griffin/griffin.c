@@ -33,7 +33,9 @@
 
 #define CINTERFACE
 
-#define HAVE_IBXM 1
+#define HAVE_RMODTRACKER 1
+
+#define HAVE_ROPUS 1
 
 #if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
 #define HAVE_COMPRESSION 1
@@ -440,6 +442,21 @@ VIDEO IMAGE
 #ifdef HAVE_RWEBP
 #include "../libretro-common/formats/webp/rwebp.c"
 #endif
+#if defined(HAVE_RWEBP) || defined(HAVE_RWEBM)
+#include "../libretro-common/formats/vp8/rvp8.c"
+#endif
+#ifdef HAVE_RWEBM
+#include "../libretro-common/formats/webm/rwebm.c"
+#include "../libretro-common/formats/webm/rwebm_video.c"
+#include "../libretro-common/formats/webm/rwebm_audio.c"
+#endif
+
+#ifdef HAVE_RVP9
+#include "../libretro-common/formats/vp9/rvp9.c"
+#endif
+#ifdef HAVE_RDDS
+#include "../libretro-common/formats/dds/rdds.c"
+#endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
 #ifdef HAVE_RWAV
@@ -573,11 +590,6 @@ VIDEO DRIVER
 #elif defined(PS2)
 #include "../gfx/drivers/ps2_gfx.c"
 #elif defined(HAVE_VITA2D)
-#include "../deps/libvita2d/source/vita2d.c"
-#include "../deps/libvita2d/source/vita2d_texture.c"
-#include "../deps/libvita2d/source/vita2d_draw.c"
-#include "../deps/libvita2d/source/utils.c"
-
 #include "../gfx/drivers/vita2d_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
@@ -593,7 +605,7 @@ VIDEO DRIVER
 #endif
 #endif
 
-#include "../deps/ibxm/ibxm.c"
+#include "../libretro-common/formats/mod/rmodtracker.c"
 
 /*============================================================
 FONTS
@@ -822,11 +834,14 @@ AUDIO RESAMPLER
 ============================================================ */
 #include "../libretro-common/audio/resampler/audio_resampler.c"
 #include "../libretro-common/audio/resampler/drivers/sinc_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/sinc_resampler_int16.c"
 #ifdef HAVE_NEAREST_RESAMPLER
 #include "../libretro-common/audio/resampler/drivers/nearest_resampler.c"
+#include "../libretro-common/audio/resampler/drivers/nearest_resampler_int16.c"
 #endif
 #ifdef HAVE_CC_RESAMPLER
 #include "../audio/drivers_resampler/cc_resampler.c"
+#include "../audio/drivers_resampler/cc_resampler_int16.c"
 #endif
 
 /*============================================================
@@ -914,7 +929,9 @@ AUDIO
 #include "../audio/drivers/xaudio.c"
 #endif
 
-#if defined(HAVE_SDL2)
+#if defined(HAVE_SDL3)
+#include "../input/drivers_joypad/sdl3_joypad.c"
+#elif defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #include "../input/drivers/sdl_input.c"
 #include "../input/drivers_joypad/sdl_joypad.c"
@@ -990,7 +1007,25 @@ DRIVERS
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
+/* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
+ * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
+ * of both consumers, whenever either of them is present. */
+#if defined(HAVE_RFLAC) || defined(HAVE_CHD)
+#include "../libretro-common/formats/flac/rflac.c"
+#endif
 #ifdef HAVE_AUDIOMIXER
+#if defined(HAVE_RVORBIS)
+#include "../libretro-common/formats/vorbis/rvorbis.c"
+#endif
+#if defined(HAVE_RMP3)
+#include "../libretro-common/formats/mp3/rmp3.c"
+#endif
+#ifdef HAVE_ROPUS
+#include "../libretro-common/formats/opus/ropus.c"
+#endif
+#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_ROPUS)
+#include "../libretro-common/formats/audio_transfer.c"
+#endif
 #include "../libretro-common/audio/audio_mixer.c"
 #endif
 
@@ -1070,6 +1105,10 @@ CORES
 ============================================================ */
 #ifdef HAVE_FFMPEG
 #include "../cores/libretro-ffmpeg/ffmpeg_core.c"
+#endif
+
+#ifdef HAVE_WEBMPLAYER
+#include "../cores/libretro-webm/webm_core.c"
 #endif
 
 #if defined(HAVE_MPV)

@@ -2540,6 +2540,100 @@ static uint32_t gx2_get_flags(void *data)
    return flags;
 }
 
+/* --- GPU-native BCn compressed-texture upload --- */
+/* The Wii U GPU (Latte, R700-class) samples BC1/BC2/BC3 (also BC4/BC5);
+ * BC6H/BC7 do not exist on this GPU. Textures use the same
+ * LINEAR_ALIGNED tile mode as the uncompressed path, so the DDS blocks map
+ * in directly with no retiling. */
+static bool gx2_bc_to_format(enum texture_gpu_format fmt,
+      GX2SurfaceFormat *out, unsigned *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC1; *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC2; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *out = GX2_SURFACE_FORMAT_UNORM_BC3; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool gx2_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   GX2SurfaceFormat f;
+   unsigned         bb;
+   (void)data;
+   return gx2_bc_to_format(fmt, &f, &bb);
+}
+
+static uintptr_t gx2_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   GX2Texture      *texture;
+   GX2SurfaceFormat f;
+   unsigned         block_bytes;
+   unsigned         blocks_w, blocks_h, row_bytes, dst_row_bytes, j;
+   const uint8_t   *src;
+   uint8_t         *dst;
+
+   (void)threaded;
+   (void)filter_type;
+
+   if (!tc || tc->num_mips == 0)
+      return 0;
+   if (!gx2_bc_to_format(tc->format, &f, &block_bytes))
+      return 0;
+   if (!(texture = (GX2Texture*)calloc(1, sizeof(GX2Texture))))
+      return 0;
+
+   /* Upload the base level only; GX2's per-mip surface layout for
+    * block-compressed formats is left to a follow-up. UI/menu DDS assets
+    * are single-level in practice. */
+   texture->surface.width    = tc->mips[0].width;
+   texture->surface.height   = tc->mips[0].height;
+   texture->surface.depth    = 1;
+   texture->surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
+   texture->surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+   texture->surface.format   = f;
+   texture->viewNumSlices    = 1;
+   texture->compMap          = GX2_COMP_SEL(_R, _G, _B, _A);
+
+   GX2CalcSurfaceSizeAndAlignment(&texture->surface);
+   GX2InitTextureRegs(texture);
+
+   texture->surface.image    = MEM2_alloc(
+         texture->surface.imageSize, texture->surface.alignment);
+   if (!texture->surface.image)
+   {
+      free(texture);
+      return 0;
+   }
+
+   /* Copy 4x4 blocks row by row. surface.pitch is the padded width in
+    * pixels, so one block-row occupies (pitch / 4) * block_bytes. */
+   blocks_w      = (tc->mips[0].width  + 3) >> 2;
+   blocks_h      = (tc->mips[0].height + 3) >> 2;
+   row_bytes     = blocks_w * block_bytes;
+   dst_row_bytes = (texture->surface.pitch >> 2) * block_bytes;
+   src           = (const uint8_t*)tc->mips[0].data;
+   dst           = (uint8_t*)texture->surface.image;
+
+   for (j = 0; j < blocks_h; j++)
+      memcpy(dst + j * dst_row_bytes, src + j * row_bytes, row_bytes);
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture->surface.image,
+         texture->surface.imageSize);
+
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t gx2_poke_interface = {
    gx2_get_flags,
    gx2_load_texture,
@@ -2566,7 +2660,9 @@ static const video_poke_interface_t gx2_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   gx2_supports_texture_format,
+   gx2_load_texture_compressed
 };
 
 static void gx2_get_poke_interface(void *data,

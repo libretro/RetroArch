@@ -380,20 +380,20 @@ int menu_cbs_init_bind_scan(menu_file_list_cbs_t *cbs,
             BIND_ACTION_SCAN(cbs, action_scan_input_desc);
             return 0;
          case ST_PATH:
-            if (string_is_equal(label, MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR))
+            if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_FONT_PATH)))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_font_path);
                return 0;
             }
 #ifdef HAVE_XMB
-            else if (string_is_equal(label, MENU_ENUM_LABEL_XMB_FONT_STR))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_XMB_FONT)))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_xmb_font);
                return 0;
             }
 #endif
 #ifdef HAVE_OZONE
-            else if (string_is_equal(label, MENU_ENUM_LABEL_OZONE_FONT_STR))
+            else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_OZONE_FONT)))
             {
                BIND_ACTION_SCAN(cbs, action_scan_video_ozone_font);
                return 0;

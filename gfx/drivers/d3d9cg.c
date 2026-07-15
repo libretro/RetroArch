@@ -4810,7 +4810,9 @@ static const video_poke_interface_t d3d9_cg_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   d3d9_supports_texture_format,
+   d3d9_load_texture_compressed
 };
 
 static void d3d9_cg_get_poke_interface(void *data,
