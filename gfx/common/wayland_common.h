@@ -44,6 +44,14 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl, void *topl
 void xdg_toplevel_handle_close(void *data,
       struct xdg_toplevel *xdg_toplevel);
 
+void xdg_toplevel_handle_configure_bounds(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      int32_t width, int32_t height);
+
+void xdg_toplevel_handle_wm_capabilities(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      struct wl_array *capabilities);
+
 #ifdef HAVE_LIBDECOR_H
 void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration, gfx_ctx_wayland_data_t *wl);

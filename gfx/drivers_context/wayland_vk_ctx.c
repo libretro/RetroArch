@@ -128,6 +128,8 @@ static const toplevel_listener_t toplevel_listener = {
    .xdg_toplevel_listener = {
       xdg_toplevel_handle_configure,
       xdg_toplevel_handle_close,
+      xdg_toplevel_handle_configure_bounds,
+      xdg_toplevel_handle_wm_capabilities,
    },
 };
 
@@ -273,6 +275,16 @@ static void *gfx_ctx_wl_get_context_data(void *data)
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   /* When suspended the surface is not visible (occluded, minimized,
+    * or screen locked).  Skip present/acquire to avoid busy-spinning
+    * on a surface the compositor is not scanning out. */
+   if (wl->suspended)
+   {
+      retro_sleep(10);
+      flush_wayland_fd(&wl->input);
+      return;
+   }
 
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {

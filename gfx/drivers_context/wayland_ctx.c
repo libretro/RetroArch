@@ -177,6 +177,8 @@ static const toplevel_listener_t toplevel_listener = {
    .xdg_toplevel_listener = {
       xdg_toplevel_handle_configure,
       xdg_toplevel_handle_close,
+      xdg_toplevel_handle_configure_bounds,
+      xdg_toplevel_handle_wm_capabilities,
    },
 };
 
@@ -547,9 +549,14 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * vsync-pacing. A swap interval of 0 (fast-forward, or vsync
     * disabled) means we explicitly do not want to wait for the
     * display cadence; blocking on the frame callback here would gate
-    * unthrottled frames on vsync-rate callbacks and stall the core. */
+    * unthrottled frames on vsync-rate callbacks and stall the core.
+    *
+    * Also skip frame callbacks when suspended: the surface is not
+    * being repainted (occluded, minimized, or screen locked) and
+    * the client must not request new frames until visible again. */
    bool frame_throttle            = (max_swapchain_images <= 2)
-      && (wl->egl.interval != 0);
+      && (wl->egl.interval != 0)
+      && !wl->suspended;
 
    if (frame_throttle)
    {

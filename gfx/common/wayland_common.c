@@ -111,6 +111,7 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
 
    wl->fullscreen             = false;
    wl->maximized              = false;
+   wl->suspended              = false;
 
    WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
    {
@@ -134,6 +135,9 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
             break;
          case XDG_TOPLEVEL_STATE_ACTIVATED:
             wl->activated  = true;
+            break;
+         case XDG_TOPLEVEL_STATE_SUSPENDED:
+            wl->suspended = true;
             break;
       }
    }
@@ -183,6 +187,18 @@ void xdg_toplevel_handle_close(void *data,
       struct xdg_toplevel *xdg_toplevel)
 {
    frontend_driver_set_signal_handler_state(1);
+}
+
+void xdg_toplevel_handle_configure_bounds(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      int32_t width, int32_t height)
+{
+}
+
+void xdg_toplevel_handle_wm_capabilities(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      struct wl_array *capabilities)
+{
 }
 
 #ifdef HAVE_LIBDECOR_H
