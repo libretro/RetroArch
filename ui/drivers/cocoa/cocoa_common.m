@@ -16,7 +16,6 @@
 
 #import <AvailabilityMacros.h>
 #include <sys/stat.h>
-#include <pthread.h>
 #include <dispatch/dispatch.h>
 #include <CoreFoundation/CoreFoundation.h>
 
@@ -933,7 +932,7 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
    CFArrayRef modes;
    const void *mode_entries[2];
 
-   if (pthread_main_np() != 0)
+   if (sthread_is_main_thread())
    {
       func(userdata);
       return;
@@ -981,7 +980,7 @@ void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata)
 bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
 bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock)
 {
-   if (pthread_main_np() == 0)
+   if (!sthread_is_main_thread())
       return false;
    if (!scond_wait_timeout(cond, lock, 1000))
    {
@@ -1024,7 +1023,7 @@ bool cocoa_has_focus(void *data)
      * publishing from NSApplication did-become/resign-active
      * notifications; kept out of this validation patch. */
     static retro_atomic_size_t focus_state;
-    if (pthread_main_np() != 0)
+    if (sthread_is_main_thread())
     {
        size_t v = [NSApp isActive] ? 2 : 1;
        retro_atomic_store_release_size(&focus_state, v);
