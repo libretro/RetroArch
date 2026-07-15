@@ -448,6 +448,7 @@ VIDEO IMAGE
 #ifdef HAVE_RWEBM
 #include "../libretro-common/formats/webm/rwebm.c"
 #include "../libretro-common/formats/webm/rwebm_video.c"
+#include "../libretro-common/formats/webm/rwebm_audio.c"
 #endif
 
 #ifdef HAVE_RVP9

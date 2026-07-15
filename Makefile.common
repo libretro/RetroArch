@@ -2327,7 +2327,8 @@ endif
 ifeq ($(HAVE_RWEBM), 1)
    DEFINES += -DHAVE_RWEBM
    OBJ += $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.o \
-          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.o
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.o \
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_audio.o
 ifneq ($(HAVE_RWEBP), 1)
    # rwebm_video decodes VP8 tracks with rvp8, normally built with RWEBP
    OBJ += $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o

@@ -35,6 +35,13 @@
 #include "gfx_animation.h"
 #include "gfx_thumbnail.h"
 
+#if defined(HAVE_RWEBM) && defined(HAVE_AUDIOMIXER) && \
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#include <formats/rwebm_audio.h>
+#include <audio/audio_mixer.h>
+#include "../audio/audio_driver.h"
+#endif
+
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
@@ -261,8 +268,15 @@ static void gfx_thumbnail_init_fade(
 #define GFX_THUMB_ANIM_DUR_DEFAULT  100
 #define GFX_THUMB_ANIM_DUR_MIN      16
 
-#ifdef HAVE_THREADS
-/* ---- Animated-thumbnail decode worker ---- */
+/* Preview audio: decode the animated thumbnail's audio track and loop
+ * it through the audio mixer while the animation is shown. */
+#if defined(HAVE_RWEBM) && defined(HAVE_AUDIOMIXER) && \
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#define GFX_THUMB_PREVIEW_AUDIO 1
+/* Cap decoded PCM (memory bound: 90 s stereo 48 kHz s16 = ~17 MB). */
+#define GFX_THUMB_PREVIEW_AUDIO_MAX_MS 90000
+#define GFX_THUMB_PREVIEW_AUDIO_NAME   "__gfx_thumb_preview"
+#endif
 
 enum gfx_thumb_anim_job_status
 {
@@ -283,7 +297,17 @@ typedef struct gfx_thumb_anim_job
    int       status;                 /* enum gfx_thumb_anim_job_status */
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
+   /* Preview-audio jobs (is_audio): decode src/src_len (the thumbnail's
+    * file buffer, borrowed) into a job-owned in-memory WAV. */
+   bool      is_audio;
+   const void *src;
+   size_t    src_len;
+   void     *wav;
+   size_t    wav_size;
 } gfx_thumb_anim_job_t;
+
+#ifdef HAVE_THREADS
+/* ---- Animated-thumbnail decode worker ---- */
 
 static slock_t               *gfx_thumb_worker_lock   = NULL;
 static scond_t               *gfx_thumb_worker_wake   = NULL; /* worker */
@@ -358,7 +382,14 @@ static void gfx_thumbnail_anim_worker(void *unused)
       job->status           = GFX_THUMB_JOB_RUNNING;
 
       slock_unlock(gfx_thumb_worker_lock);
-      alive = gfx_thumbnail_anim_job_step(job);
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+      if (job->is_audio)
+         alive = rwebm_audio_decode_wav(job->src, job->src_len,
+               GFX_THUMB_PREVIEW_AUDIO_MAX_MS,
+               &job->wav, &job->wav_size) ? true : false;
+      else
+#endif
+         alive = gfx_thumbnail_anim_job_step(job);
       slock_lock(gfx_thumb_worker_lock);
 
       job->status = alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED;
@@ -467,6 +498,69 @@ void gfx_thumbnail_anim_worker_deinit(void)
 void gfx_thumbnail_anim_worker_deinit(void) { }
 #endif
 
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+/* The thumbnail currently holding the (single) preview-audio mixer
+ * stream, and the granted slot. Main thread only. */
+static const gfx_thumbnail_t *gfx_thumb_audio_owner = NULL;
+static int                    gfx_thumb_audio_slot  = -1;
+
+static void gfx_thumbnail_preview_audio_stop(const gfx_thumbnail_t *owner)
+{
+   if (gfx_thumb_audio_owner != owner)
+      return;
+   if (gfx_thumb_audio_slot >= 0)
+   {
+      /* Only touch the slot if it still holds our stream (another
+       * subsystem may have replaced it). */
+      const char *name = audio_driver_mixer_get_stream_name(
+            (unsigned)gfx_thumb_audio_slot);
+      if (name && string_is_equal(name, GFX_THUMB_PREVIEW_AUDIO_NAME))
+         audio_driver_mixer_remove_stream((unsigned)gfx_thumb_audio_slot);
+   }
+   gfx_thumb_audio_owner = NULL;
+   gfx_thumb_audio_slot  = -1;
+}
+
+static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
+      void *wav, size_t wav_size)
+{
+   audio_mixer_stream_params_t params;
+   unsigned i;
+
+   /* One preview stream at a time */
+   gfx_thumbnail_preview_audio_stop(gfx_thumb_audio_owner);
+
+   params.buf                 = wav;
+   params.bufsize             = wav_size;
+   params.basename            = strdup(GFX_THUMB_PREVIEW_AUDIO_NAME);
+   params.cb                  = NULL;
+   params.slot_selection_idx  = 0;
+   params.volume              = 1.0f;
+   params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
+   params.stream_type         = AUDIO_STREAM_TYPE_SYSTEM;
+   params.type                = AUDIO_MIXER_TYPE_WAV;
+   params.state               = AUDIO_STREAM_STATE_PLAYING_LOOPED;
+
+   if (!audio_driver_mixer_add_stream(&params))
+   {
+      free(params.basename);
+      return;
+   }
+   /* add_stream copies the buffer and does not report the slot; find
+    * ours by its distinctive name. */
+   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
+   {
+      const char *name = audio_driver_mixer_get_stream_name(i);
+      if (name && string_is_equal(name, GFX_THUMB_PREVIEW_AUDIO_NAME))
+      {
+         gfx_thumb_audio_slot = (int)i;
+         break;
+      }
+   }
+   gfx_thumb_audio_owner = thumbnail;
+}
+#endif /* GFX_THUMB_PREVIEW_AUDIO */
+
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
 #ifdef HAVE_THREADS
@@ -479,6 +573,20 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
       thumbnail->anim_job = NULL;
    }
 #endif
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   if (thumbnail->anim_audio_job)
+   {
+      gfx_thumb_anim_job_t *job =
+            (gfx_thumb_anim_job_t*)thumbnail->anim_audio_job;
+#ifdef HAVE_THREADS
+      gfx_thumbnail_anim_job_release(job);
+#endif
+      free(job->wav);
+      free(job);
+      thumbnail->anim_audio_job = NULL;
+   }
+   gfx_thumbnail_preview_audio_stop(thumbnail);
+#endif
    if (thumbnail->anim)
       image_transfer_anim_stream_free(thumbnail->anim,
             (enum image_type_enum)thumbnail->anim_type);
@@ -486,6 +594,7 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
       free(thumbnail->anim_buf);
    thumbnail->anim            = NULL;
    thumbnail->anim_buf        = NULL;
+   thumbnail->anim_buf_len    = 0;
    thumbnail->anim_next_us    = 0;
    thumbnail->anim_loops_left = 0;
    thumbnail->anim_type       = 0;
@@ -537,10 +646,48 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
 
    thumbnail->anim            = stream;
    thumbnail->anim_buf        = buf;
+   thumbnail->anim_buf_len    = (size_t)len;
    thumbnail->anim_type       = (uint8_t)type;
    thumbnail->anim_loops_left = (loop_count == 0) ? -1 : loop_count;
    thumbnail->anim_next_us    = 0;   /* first advance establishes timing */
    thumbnail->flags          |= GFX_THUMB_FLAG_ANIM_ACTIVE;
+
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   /* Preview audio (opt-in): decode the file's audio track to PCM and
+    * loop it through the mixer while the animation is shown. WebM only
+    * (animated WebP has no audio). With threads the decode runs on the
+    * shared worker; without, it runs here once (a one-shot cost when
+    * the preview opens). */
+   if (     (type == IMAGE_TYPE_WEBM)
+         && config_get_ptr()->bools.menu_thumbnail_preview_audio)
+   {
+      gfx_thumb_anim_job_t *job =
+            (gfx_thumb_anim_job_t*)calloc(1, sizeof(*job));
+      if (job)
+      {
+         job->is_audio = true;
+         job->src      = thumbnail->anim_buf;
+         job->src_len  = thumbnail->anim_buf_len;
+#ifdef HAVE_THREADS
+         if (gfx_thumbnail_anim_worker_init())
+         {
+            thumbnail->anim_audio_job = job;
+            gfx_thumbnail_anim_job_enqueue(job);
+         }
+         else
+#endif
+         {
+            if (rwebm_audio_decode_wav(job->src, job->src_len,
+                  GFX_THUMB_PREVIEW_AUDIO_MAX_MS,
+                  &job->wav, &job->wav_size))
+               job->status = GFX_THUMB_JOB_READY;
+            else
+               job->status = GFX_THUMB_JOB_FINISHED;
+            thumbnail->anim_audio_job = job;
+         }
+      }
+   }
+#endif
    return;
 
 fail:
@@ -635,6 +782,41 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    now  = cpu_features_get_time_usec();
    type = (enum image_type_enum)thumbnail->anim_type;
+
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   /* Hand a finished preview-audio decode to the mixer (independent of
+    * the video frame cadence). */
+   if (thumbnail->anim_audio_job)
+   {
+      gfx_thumb_anim_job_t *ajob =
+            (gfx_thumb_anim_job_t*)thumbnail->anim_audio_job;
+      int astatus;
+#ifdef HAVE_THREADS
+      if (gfx_thumb_worker_lock)
+      {
+         slock_lock(gfx_thumb_worker_lock);
+         astatus = ajob->status;
+         slock_unlock(gfx_thumb_worker_lock);
+      }
+      else
+#endif
+         astatus = ajob->status;
+      if (astatus == GFX_THUMB_JOB_READY)
+      {
+         gfx_thumbnail_preview_audio_start(thumbnail,
+               ajob->wav, ajob->wav_size);
+         free(ajob->wav);          /* the mixer copied the buffer */
+         free(ajob);
+         thumbnail->anim_audio_job = NULL;
+      }
+      else if (astatus == GFX_THUMB_JOB_FINISHED)
+      {
+         free(ajob->wav);
+         free(ajob);
+         thumbnail->anim_audio_job = NULL;
+      }
+   }
+#endif
 
    if ((thumbnail->anim_next_us != 0) && (now < thumbnail->anim_next_us))
       return;

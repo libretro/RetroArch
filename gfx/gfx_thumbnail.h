@@ -222,6 +222,8 @@ typedef struct
    void *anim;
    void *anim_buf;
    void *anim_job;         /* decode-worker job (HAVE_THREADS builds)  */
+   void *anim_audio_job;   /* preview-audio decode job                 */
+   size_t anim_buf_len;    /* size of anim_buf (for the audio decoder) */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
@@ -255,6 +257,8 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim            = NULL;
    t->anim_buf        = NULL;
    t->anim_job        = NULL;
+   t->anim_audio_job  = NULL;
+   t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
    t->anim_loops_left = 0;
    t->width           = 0;
