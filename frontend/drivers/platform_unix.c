@@ -49,7 +49,7 @@
 #endif
 
 #include <signal.h>
-#include <pthread.h>
+#include <rthreads/rthreads.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -122,7 +122,7 @@ enum platform_android_flags
    PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
 };
 
-static pthread_key_t thread_key;
+static sthread_tls_t thread_key;
 static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
@@ -422,7 +422,7 @@ JNIEnv *jni_thread_getenv(void)
       RARCH_ERR("jni_thread_getenv: Failed to attach current thread.\n");
       return NULL;
    }
-   pthread_setspecific(thread_key, (void*)env);
+   sthread_tls_set(&thread_key, (void*)env);
 
    return env;
 }
@@ -438,7 +438,7 @@ static void jni_thread_destruct(void *value)
    if (android_app)
       (*android_app->activity->vm)->
          DetachCurrentThread(android_app->activity->vm);
-   pthread_setspecific(thread_key, NULL);
+   sthread_tls_set(&thread_key, NULL);
 }
 
 static void android_app_entry(void *data)
@@ -570,8 +570,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
          | AWINDOW_FLAG_FULLSCREEN, 0);
 
-   if (pthread_key_create(&thread_key, jni_thread_destruct))
-      RARCH_ERR("Error initializing pthread_key.\n");
+   if (!sthread_tls_create_with_dtor(&thread_key, jni_thread_destruct))
+      RARCH_ERR("Error initializing thread-local storage key.\n");
 
    activity->instance = android_app_create(activity,
          savedState, savedStateSize);

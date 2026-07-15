@@ -799,6 +799,18 @@ bool sthread_tls_create(sthread_tls_t *tls)
 #endif
 }
 
+bool sthread_tls_create_with_dtor(sthread_tls_t *tls,
+      void (*destructor)(void *value))
+{
+#ifdef USE_WIN32_THREADS
+   /* TlsAlloc() provides no destructor callback; created without one. */
+   (void)destructor;
+   return (*tls = TlsAlloc()) != TLS_OUT_OF_INDEXES;
+#else
+   return pthread_key_create((pthread_key_t*)tls, destructor) == 0;
+#endif
+}
+
 bool sthread_tls_delete(sthread_tls_t *tls)
 {
 #ifdef USE_WIN32_THREADS

@@ -254,6 +254,27 @@ void scond_signal(scond_t *cond);
 bool sthread_tls_create(sthread_tls_t *tls);
 
 /**
+ * Like sthread_tls_create(), but registers a destructor invoked with the
+ * thread-local value when a thread exits with a non-NULL value set for
+ * this key (POSIX pthread_key_create semantics). Used e.g. to release a
+ * per-thread resource such as a JNI attachment on thread teardown.
+ *
+ * The destructor is honoured on pthread backends; on Win32 the key is
+ * created without one (TlsAlloc has no destructor callback), so callers
+ * needing cleanup there must do it explicitly. Current users are POSIX.
+ *
+ * @param tls[in,out] Pointer to the key to initialize; must be cleaned up
+ * with sthread_tls_delete. Behavior is undefined if NULL.
+ * @param destructor Called with the thread-local value on thread exit;
+ * may be NULL for no destructor (equivalent to sthread_tls_create).
+ * @return true if the operation succeeded, false otherwise.
+ * @see sthread_tls_create
+ * @see sthread_tls_delete
+ */
+bool sthread_tls_create_with_dtor(sthread_tls_t *tls,
+      void (*destructor)(void *value));
+
+/**
  * Deletes a thread local storage key.
  *
  * The value must be cleaned up separately \em before calling this function,
