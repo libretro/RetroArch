@@ -319,6 +319,31 @@ uintptr_t sthread_get_current_thread_id(void);
 bool sthread_is_main_thread(void);
 
 /**
+ * Enable or defer cancellation of the CALLING thread (POSIX-style
+ * deferred cancellation). Bracket a critical section that must not be
+ * interrupted (e.g. one holding an open file or other resource) with
+ * sthread_set_cancel_enable(false) ... sthread_set_cancel_enable(true).
+ *
+ * A no-op on backends without thread cancellation (Win32, Android/Bionic,
+ * GEKKO, 3DS); pair it with a cooperative "done" flag so shutdown does not
+ * rely on cancellation being available.
+ *
+ * @param enable true to allow cancellation, false to defer it.
+ */
+void sthread_set_cancel_enable(bool enable);
+
+/**
+ * Request cancellation of @thread. Intended to interrupt a thread blocked
+ * at a cancellation point (e.g. a sleep) so it can exit promptly; the
+ * caller should still set a cooperative stop flag and sthread_join().
+ *
+ * @param thread The thread to cancel.
+ * @return true if the request was issued; false on failure or where the
+ * backend provides no cancellation (Win32, Android/Bionic, GEKKO, 3DS).
+ */
+bool sthread_cancel(sthread_t *thread);
+
+/**
  * Temporarily raise the CALLING thread's scheduling priority to match a
  * higher-priority thread that is synchronously waiting on it, mitigating a
  * priority inversion across an slock/scond handoff. Unlike some OS-native

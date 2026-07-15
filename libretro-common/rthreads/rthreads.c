@@ -856,6 +856,35 @@ bool sthread_is_main_thread(void)
 #endif
 }
 
+/* pthread_cancel / pthread_setcancelstate are POSIX but not universally
+ * available: notably absent on Android/Bionic, and meaningless on the
+ * non-pthread backends. Enable only where the backend provides them. */
+#if !defined(USE_WIN32_THREADS) && !defined(GEKKO) && !defined(_3DS) && !defined(__ANDROID__)
+#define RTHREADS_HAVE_CANCEL 1
+#endif
+
+void sthread_set_cancel_enable(bool enable)
+{
+#ifdef RTHREADS_HAVE_CANCEL
+   pthread_setcancelstate(
+         enable ? PTHREAD_CANCEL_ENABLE : PTHREAD_CANCEL_DISABLE, NULL);
+#else
+   (void)enable;
+#endif
+}
+
+bool sthread_cancel(sthread_t *thread)
+{
+#ifdef RTHREADS_HAVE_CANCEL
+   if (thread)
+      return pthread_cancel(thread->id) == 0;
+   return false;
+#else
+   (void)thread;
+   return false;
+#endif
+}
+
 void *sthread_priority_override_begin(void)
 {
 #ifdef RTHREADS_HAVE_QOS_OVERRIDE
