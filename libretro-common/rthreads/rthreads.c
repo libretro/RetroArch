@@ -70,6 +70,20 @@
 #if defined(__MACH__) && defined(__APPLE__)
 #include <mach/clock.h>
 #include <mach/mach.h>
+#include <TargetConditionals.h>
+#include <AvailabilityMacros.h> /* MAC_OS_X_VERSION_MIN_REQUIRED (since 10.2) */
+/* The pthread QoS override API (pthread_override_qos_class_start_np, used by
+ * sthread_priority_override_*) exists only on macOS 10.10+ / iOS 8.0+, and
+ * RetroArch still ships deployment targets below that (OS X 10.5, iOS 6)
+ * where the symbol is absent in both SDK and runtime. Gate on the
+ * deployment-target version. TARGET_OS_* keeps the macOS check from firing
+ * on iOS; numeric literals are used because the MAC_OS_X_VERSION_10_10 /
+ * __IPHONE_8_0 constants are undefined on old SDKs (and would expand to 0). */
+#if (TARGET_OS_OSX && defined(MAC_OS_X_VERSION_MIN_REQUIRED) && MAC_OS_X_VERSION_MIN_REQUIRED >= 101000) || \
+    (TARGET_OS_IPHONE && defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 80000)
+#define RTHREADS_HAVE_QOS_OVERRIDE 1
+#include <pthread/qos.h>
+#endif
 #endif
 
 struct thread_data
@@ -826,5 +840,25 @@ uintptr_t sthread_get_current_thread_id(void)
    return (uintptr_t)GetCurrentThreadId();
 #else
    return (uintptr_t)pthread_self();
+#endif
+}
+
+void *sthread_priority_override_begin(void)
+{
+#ifdef RTHREADS_HAVE_QOS_OVERRIDE
+   return (void*)pthread_override_qos_class_start_np(
+         pthread_self(), QOS_CLASS_USER_INTERACTIVE, 0);
+#else
+   return NULL;
+#endif
+}
+
+void sthread_priority_override_end(void *ovr)
+{
+#ifdef RTHREADS_HAVE_QOS_OVERRIDE
+   if (ovr)
+      pthread_override_qos_class_end_np((pthread_override_t)ovr);
+#else
+   (void)ovr;
 #endif
 }

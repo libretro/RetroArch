@@ -303,6 +303,35 @@ uintptr_t sthread_get_thread_id(sthread_t *thread);
  */
 uintptr_t sthread_get_current_thread_id(void);
 
+/**
+ * Temporarily raise the CALLING thread's scheduling priority to match a
+ * higher-priority thread that is synchronously waiting on it, mitigating a
+ * priority inversion across an slock/scond handoff. Unlike some OS-native
+ * locks, sthread's lock/condvar primitives do not propagate priority
+ * automatically, so a low-priority worker executing work a high-priority
+ * thread is blocked on will not be boosted on its own.
+ *
+ * Must be paired with sthread_priority_override_end(). Returns an opaque
+ * handle to pass to that call, or \c NULL when the platform provides no
+ * such mechanism (in which case _end() is a no-op). Scoped to the current
+ * thread; needs no handle to the waiting thread.
+ *
+ * @return An opaque override handle, or \c NULL if unsupported.
+ * @see sthread_priority_override_end
+ */
+void *sthread_priority_override_begin(void);
+
+/**
+ * End a priority override previously started on the calling thread with
+ * sthread_priority_override_begin(), restoring its prior scheduling
+ * priority.
+ *
+ * @param ovr Handle from sthread_priority_override_begin(); may be
+ * \c NULL, in which case this is a no-op.
+ * @see sthread_priority_override_begin
+ */
+void sthread_priority_override_end(void *ovr);
+
 RETRO_END_DECLS
 
 #endif
