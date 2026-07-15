@@ -3065,6 +3065,44 @@ bool video_driver_is_hw_context(void)
    return video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE;
 }
 
+bool video_driver_render_context_is_main_thread_only(void)
+{
+#ifdef IOS
+   /* The iOS Cocoa GL/GLES backends ("gl", "glcore") render through a
+    * GLKView, whose drawable and backing CAEAGLLayer may only be touched
+    * on the main thread.  With threaded video, swap_buffers and the
+    * per-frame bindDrawable run on the video worker thread, which trips
+    * UIKit's "modifying properties of a view's layer off the main thread"
+    * assertion (the GLKView drawable is realized/resized from the layer
+    * lazily on whichever thread first binds it).  Veto threaded video for
+    * these drivers so all GL and UIKit work stays on the main thread, the
+    * way GLKit is designed to be driven.  Metal and Vulkan (CAMetalLayer
+    * via MoltenVK) do not use GLKView and are unaffected. */
+   video_driver_state_t *video_st = &video_driver_st;
+   const video_driver_t *vid      = video_st->current_video;
+   const char           *ident    = NULL;
+   if (!vid)
+      return false;
+   /* Read the underlying driver ident directly.  Mirror
+    * video_driver_get_ident() but key off VIDEO_FLAG_THREAD_WRAPPER_ACTIVE
+    * rather than VIDEO_DRIVER_IS_THREADED_INTERNAL, since that macro calls
+    * back into this predicate and would recurse. */
+#ifdef HAVE_THREADS
+   if (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE)
+   {
+      const thread_video_t *thr = (const thread_video_t*)video_st->data;
+      ident = (thr && thr->driver) ? thr->driver->ident : NULL;
+   }
+   else
+#endif
+      ident = vid->ident;
+   if (ident && (string_is_equal(ident, "gl")
+              || string_is_equal(ident, "glcore")))
+      return true;
+#endif /* IOS */
+   return false;
+}
+
 /* Drops cached, core-owned GPU resource references from the active
  * video driver. Safe to call unconditionally; cheap when no HW context
  * is active or when the driver does not implement the hook. */

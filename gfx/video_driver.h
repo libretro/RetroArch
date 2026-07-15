@@ -71,7 +71,7 @@
 #define MAX_VARIABLES 64
 
 #ifdef HAVE_THREADS
-#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((!video_driver_is_hw_context() && (((video_st->threaded)) ? true : false)))
+#define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) ((!video_driver_is_hw_context() && !video_driver_render_context_is_main_thread_only() && (((video_st->threaded)) ? true : false)))
 #else
 #define VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st) (false)
 #endif
@@ -1072,6 +1072,12 @@ void video_driver_cached_frame_publish(
 void video_driver_cached_frame_invalidate(void);
 
 bool video_driver_is_hw_context(void);
+
+/* True when the active video driver's render context can only be driven
+ * from the main thread, so threaded video must be vetoed for it.  Used as
+ * an extra term in VIDEO_DRIVER_IS_THREADED_INTERNAL, alongside the
+ * hardware-context check. */
+bool video_driver_render_context_is_main_thread_only(void);
 
 void video_driver_invalidate_hw_render_cache(void);
 

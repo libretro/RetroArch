@@ -419,25 +419,13 @@ static void cocoa_gl_gfx_ctx_swap_buffers(void *data)
    cocoa_ctx_data_t *cocoa_ctx = (cocoa_ctx_data_t*)data;
    if (!(--cocoa_ctx->fast_forward_skips < 0))
       return;
-   /* Present on the render thread. -[GLKView display] resizes the drawable
-    * to the view's layer bounds and mutates CALayer state, which is illegal
-    * off the main thread -- UIKit traps it under threaded video, where
-    * gl2_frame -> swap_buffers runs on video_thread_loop, not the main
-    * thread. presentRenderbuffer: is a pure EAGL/GL op on the context that
-    * is already current on this thread, so it is safe here. Bind the view's
-    * drawable immediately before presenting so the colour renderbuffer is
-    * the one bound to GL_RENDERBUFFER regardless of what the final gl2 pass
-    * left bound; this bindDrawable is the same call gl2 already issues every
-    * frame via glkitview_bind_fbo() and runs off-main without tripping the
-    * checker, so it does not reintroduce the layer mutation -- that was
-    * specific to -display's resize, not to binding. Drawable resize on
-    * rotation/reinit stays on the main thread via set_video_mode
-    * (cocoa_main_thread_sync). */
-   if (glk_view && g_ctx)
-   {
-      [glk_view bindDrawable];
-      [g_ctx presentRenderbuffer:GL_RENDERBUFFER];
-   }
+   /* -[GLKView display] presents and resizes the drawable to the view's
+    * layer bounds; the resize mutates CALayer state, so this must run on
+    * the main thread. The iOS GL/GLES backends are forced non-threaded
+    * (video_driver_render_context_is_main_thread_only), so swap_buffers is
+    * always on the main thread here and this is safe. */
+   if (glk_view)
+      [glk_view display];
    cocoa_ctx->fast_forward_skips =
       (cocoa_ctx->flags & COCOA_CTX_FLAG_IS_SYNCING) ? 0 : 3;
 #endif
