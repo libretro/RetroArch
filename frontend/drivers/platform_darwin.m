@@ -733,12 +733,28 @@ static int frontend_darwin_parse_drive_list(void *data, bool load_content)
 static uint64_t frontend_darwin_get_total_mem(void)
 {
 #if defined(OSX)
-    uint64_t size;
-    int mib[2]     = { CTL_HW, HW_MEMSIZE };
-    u_int namelen  = ARRAY_SIZE(mib);
-    size_t _len    = sizeof(size);
-    if (sysctl(mib, namelen, &size, &_len, NULL, 0) >= 0)
-       return size;
+    uint64_t size = 0;
+#ifdef HW_MEMSIZE
+    {
+       /* 64-bit total; HW_MEMSIZE exists from 10.6 onward. */
+       int    mib[2]  = { CTL_HW, HW_MEMSIZE };
+       u_int  namelen = ARRAY_SIZE(mib);
+       size_t _len    = sizeof(size);
+       if (sysctl(mib, namelen, &size, &_len, NULL, 0) >= 0 && size)
+          return size;
+    }
+#endif
+    {
+       /* 10.5 fallback: HW_PHYSMEM is 32-bit and saturates near 2-4 GB,
+        * but it is all early kernels expose (and a 10.5 SDK may not even
+        * define HW_MEMSIZE). */
+       unsigned int psize   = 0;
+       int          mib[2]  = { CTL_HW, HW_PHYSMEM };
+       u_int        namelen = ARRAY_SIZE(mib);
+       size_t       _len    = sizeof(psize);
+       if (sysctl(mib, namelen, &psize, &_len, NULL, 0) >= 0)
+          return (uint64_t)psize;
+    }
 #elif defined(IOS)
     task_vm_info_data_t vm_info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
@@ -750,11 +766,22 @@ static uint64_t frontend_darwin_get_total_mem(void)
 
 static uint64_t frontend_darwin_get_free_mem(void)
 {
-#if (defined(OSX) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 101200))
-   task_vm_info_data_t vm_info;
-   mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-   if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t) &vm_info, &count) == KERN_SUCCESS)
-        return frontend_darwin_get_total_mem() - vm_info.phys_footprint;
+#if defined(OSX)
+   /* free + reclaimable (inactive) pages. Use the 32-bit
+    * host_statistics / HOST_VM_INFO interface: it exists back to 10.0
+    * and runs on 10.5 kernels, unlike host_statistics64 (10.6+) or the
+    * task_vm_info / phys_footprint path this replaced (10.12+). The old
+    * value -- total minus this process's own footprint -- ignored every
+    * other process and the OS, hugely over-reporting what was free.
+    * natural_t page counts cannot overflow for any realistic RAM size,
+    * and each is widened to 64-bit before the multiply. */
+   vm_size_t              page_size = 0;
+   vm_statistics_data_t   vm_stat;
+   mach_msg_type_number_t count     = HOST_VM_INFO_COUNT;
+   mach_port_t            host      = mach_host_self();
+   if (host_page_size(host, &page_size) == KERN_SUCCESS &&
+       host_statistics(host, HOST_VM_INFO, (host_info_t)&vm_stat, &count) == KERN_SUCCESS)
+      return ((uint64_t)vm_stat.free_count + (uint64_t)vm_stat.inactive_count) * (uint64_t)page_size;
 #elif defined(IOS)
     task_vm_info_data_t vm_info;
     mach_msg_type_number_t count = TASK_VM_INFO_COUNT;

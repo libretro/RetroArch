@@ -2364,7 +2364,7 @@ bool gfx_widgets_ai_service_overlay_load(
    {
       if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture,
-               TEXTURE_FILTER_LINEAR,
+               gfx_display_texture_filter(),
                (void *) buffer, buffer_len, image_type,
                &p_dispwidget->ai_service_overlay_width,
                &p_dispwidget->ai_service_overlay_height))

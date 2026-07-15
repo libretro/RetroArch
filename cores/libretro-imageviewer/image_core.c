@@ -11,7 +11,7 @@
 
 #include <streams/file_stream.h>
 
-#if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP) || defined(HAVE_RWEBP)
+#if defined(HAVE_RPNG) || defined(HAVE_RJPEG) || defined(HAVE_RTGA) || defined(HAVE_RBMP) || defined(HAVE_RWEBP) || defined(HAVE_RDDS)
 #define PREFER_NON_STB_IMAGE
 #endif
 
@@ -26,12 +26,7 @@
 #define STBI_NO_PNM
 #endif
 #define STBI_SUPPORT_ZLIB
-
-#ifdef RARCH_INTERNAL
-#include "../../deps/stb/stb_image.h"
-#else
-#include <stb_image.h>
-#endif
+#include "stb_image.h"
 #else
 #include <formats/image.h>
 #endif
@@ -95,7 +90,11 @@ static const char image_formats[] =
 "|webp"
 #endif
 
-#if !defined(HAVE_RJPEG) && !defined(HAVE_RPNG) && !defined(HAVE_RBMP) && !defined(HAVE_RTGA) && !defined(HAVE_RWEBP)
+#ifdef HAVE_RDDS
+"|dds"
+#endif
+
+#if !defined(HAVE_RJPEG) && !defined(HAVE_RPNG) && !defined(HAVE_RBMP) && !defined(HAVE_RTGA) && !defined(HAVE_RWEBP) && !defined(HAVE_RDDS)
 #error "can't build this core with no image formats"
 #endif
 ;

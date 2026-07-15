@@ -3034,7 +3034,6 @@ static void *gl3_init(const video_info_t *video,
       goto error;
    }
 
-   if (video->font_enable)
       font_driver_init_osd(gl,
             video,
             false,
@@ -4804,6 +4803,143 @@ static retro_proc_address_t gl3_get_proc_address(
    return NULL;
 }
 
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#endif
+#ifndef GL_COMPRESSED_RGBA_BPTC_UNORM
+#define GL_COMPRESSED_RGBA_BPTC_UNORM 0x8E8C
+#endif
+
+static GLenum gl3_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+      case TEXTURE_GPU_FORMAT_BC2: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+      case TEXTURE_GPU_FORMAT_BC3: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+      case TEXTURE_GPU_FORMAT_BC7: return GL_COMPRESSED_RGBA_BPTC_UNORM;
+      default:                     break;
+   }
+   return 0;
+}
+
+static bool gl3_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   (void)data;
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+      case TEXTURE_GPU_FORMAT_BC2:
+      case TEXTURE_GPU_FORMAT_BC3:
+         return gl_query_extension("EXT_texture_compression_s3tc")
+             || gl_query_extension("ANGLE_texture_compression_dxt5")
+             || gl_query_extension("EXT_texture_compression_dxt1");
+      case TEXTURE_GPU_FORMAT_BC7:
+         return gl_query_extension("ARB_texture_compression_bptc")
+             || gl_query_extension("EXT_texture_compression_bptc");
+      default:
+         break;
+   }
+   return false;
+}
+
+static uintptr_t gl3_upload_texture_compressed(
+      const struct texture_compressed *tc,
+      enum texture_filter_type filter_type)
+{
+   GLuint   id   = 0;
+   GLenum   ifmt;
+   unsigned i;
+   GLint    minf;
+   GLint    magf;
+   bool     nearest;
+
+   if (!tc || tc->num_mips == 0)
+      return 0;
+   ifmt = gl3_gpu_format(tc->format);
+   if (!ifmt)
+      return 0;
+
+   nearest = (filter_type == TEXTURE_FILTER_NEAREST
+           || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST);
+   magf    = nearest ? GL_NEAREST : GL_LINEAR;
+   if (tc->num_mips > 1)
+      minf = nearest ? GL_NEAREST_MIPMAP_NEAREST : GL_LINEAR_MIPMAP_LINEAR;
+   else
+      minf = magf;
+
+   glGenTextures(1, &id);
+   glBindTexture(GL_TEXTURE_2D, id);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+   for (i = 0; i < tc->num_mips; i++)
+      glCompressedTexImage2D(GL_TEXTURE_2D, (GLint)i, ifmt,
+            (GLsizei)tc->mips[i].width, (GLsizei)tc->mips[i].height, 0,
+            (GLsizei)tc->mips[i].size, tc->mips[i].data);
+
+#ifdef GL_TEXTURE_MAX_LEVEL
+   /* Not defined by GLES2 / Orbis (PS4) GL headers; only meaningful when
+    * the file actually carries a mip chain. */
+   if (tc->num_mips > 1)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,
+            (GLint)(tc->num_mips - 1));
+#endif
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minf);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magf);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   return (uintptr_t)id;
+}
+
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   gl3_t                           *gl;
+   const struct texture_compressed *tc;
+   enum texture_filter_type         filter;
+} gl3_texture_compressed_cmd_t;
+
+static uintptr_t video_texture_load_wrap_gl3_compressed(void *data)
+{
+   gl3_texture_compressed_cmd_t *cmd = (gl3_texture_compressed_cmd_t*)data;
+   gl3_t                        *gl  = cmd->gl;
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+   return gl3_upload_texture_compressed(cmd->tc, cmd->filter);
+}
+#endif
+
+static uintptr_t gl3_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gl3_texture_compressed_cmd_t cmd;
+      cmd.gl     = (gl3_t*)video_data;
+      cmd.tc     = tc;
+      cmd.filter = filter_type;
+      return video_thread_texture_handle(&cmd,
+            video_texture_load_wrap_gl3_compressed);
+   }
+#else
+   (void)video_data;
+   (void)threaded;
+#endif
+   return gl3_upload_texture_compressed(tc, filter_type);
+}
+
 static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_flags,
    gl3_load_texture,
@@ -4830,7 +4966,9 @@ static const video_poke_interface_t gl3_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   gl3_supports_texture_format,
+   gl3_load_texture_compressed
 };
 
 static void gl3_get_poke_interface(void *data,

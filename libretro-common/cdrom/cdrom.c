@@ -71,6 +71,15 @@
 #include <IOKit/scsi/SCSITaskLib.h>
 #include <IOKit/storage/IOCDMediaBSDClient.h>
 #include <IOKit/storage/IOCDTypes.h>
+/* kIOMainPortDefault superseded the now-deprecated kIOMasterPortDefault in the
+ * macOS 12 / iOS 15 SDKs.  When the deployment target predates that, the new
+ * symbol is unavailable, so fall back to the old name (which is not yet
+ * deprecated for those targets).  Keeps the build warning-free on old SDKs and
+ * on new SDKs targeting an older OS alike. */
+#if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED < 120000) || \
+    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 150000)
+#define kIOMainPortDefault kIOMasterPortDefault
+#endif
 #endif
 
 #define CDROM_CUE_TRACK_BYTES 107

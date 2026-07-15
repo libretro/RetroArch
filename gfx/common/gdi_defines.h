@@ -25,6 +25,22 @@
 
 #include "../video_defines.h"
 
+#ifdef HAVE_OVERLAY
+/* On-screen input overlay entry. Defined at file scope (not inside
+ * struct gdi) so the tag resolves to the same type in both C and C++;
+ * see the note at the 'overlays' member below. */
+struct gdi_overlay
+{
+   HBITMAP   bmp;
+   unsigned  tex_w;
+   unsigned  tex_h;
+   float     tex_coords[4];
+   float     vert_coords[4];
+   float     alpha_mod;
+   bool      fullscreen;
+};
+#endif
+
 typedef struct gdi
 {
 #ifndef __WINRT__
@@ -170,17 +186,16 @@ typedef struct gdi
     * is a 4-float (x, y, w, h) tuple in 0..1 space (window space
     * for vert when fullscreen, viewport space otherwise; texture
     * space for tex).  vertex_geom flips y the same way d3d8 does
-    * to keep the same on-screen behaviour. */
-   struct gdi_overlay
-   {
-      HBITMAP   bmp;
-      unsigned  tex_w;
-      unsigned  tex_h;
-      float     tex_coords[4];
-      float     vert_coords[4];
-      float     alpha_mod;
-      bool      fullscreen;
-   } *overlays;
+    * to keep the same on-screen behaviour.
+    *
+    * Note: struct gdi_overlay is defined at file scope (above this
+    * typedef) rather than inline here. Defining a struct inside
+    * another struct's body scopes the tag to the enclosing type in
+    * C++ (gdi::gdi_overlay), so under CXX_BUILD a file-scope
+    * 'struct gdi_overlay *' in gdi_gfx.c would refer to a different,
+    * incomplete type. A top-level definition keeps a single shared
+    * type in both C and C++. */
+   struct gdi_overlay *overlays;
    unsigned overlays_size;
    bool overlays_enabled;
 #endif

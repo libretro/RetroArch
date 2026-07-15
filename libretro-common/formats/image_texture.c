@@ -79,6 +79,12 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[2] | 0x20) == 'a')
             return IMAGE_TYPE_TGA;
 #endif
+#ifdef HAVE_RDDS
+         if ((ext[0] | 0x20) == 'd' &&
+             (ext[1] | 0x20) == 'd' &&
+             (ext[2] | 0x20) == 's')
+            return IMAGE_TYPE_DDS;
+#endif
          break;
 
       case 4:
@@ -96,6 +102,13 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[3] | 0x20) == 'p')
             return IMAGE_TYPE_WEBP;
 #endif
+#ifdef HAVE_RWEBM
+         if ((ext[0] | 0x20) == 'w' &&
+             (ext[1] | 0x20) == 'e' &&
+             (ext[2] | 0x20) == 'b' &&
+             (ext[3] | 0x20) == 'm')
+            return IMAGE_TYPE_WEBM;
+#endif
          break;
    }
 
@@ -109,8 +122,11 @@ static bool image_texture_load_internal(
       struct texture_image *out_img)
 {
    int ret;
-   void *img    = image_transfer_new(type);
+   void *img;
 
+   out_img->compressed = NULL;
+
+   img = image_transfer_new(type);
    if (!img)
       return false;
 
@@ -128,6 +144,51 @@ static bool image_texture_load_internal(
    {
       image_transfer_free(img, type);
       return false;
+   }
+
+   /* GPU-native fast path: if the loader can hand back BCn blocks for
+    * direct upload, copy the source (so the mip pointers survive the
+    * caller freeing its buffer) and defer any RGBA8 decode. */
+   {
+      struct image_gpu_layout lay;
+      if (image_transfer_get_gpu_layout(img, type, len, &lay))
+      {
+         struct texture_compressed *tc = (struct texture_compressed*)
+            calloc(1, sizeof(*tc));
+         if (tc)
+         {
+            tc->mips    = (struct texture_mip*)
+               malloc((size_t)lay.num_mips * sizeof(*tc->mips));
+            tc->storage = malloc(len);
+            if (tc->mips && tc->storage)
+            {
+               unsigned i;
+               memcpy(tc->storage, ptr, len);
+               tc->storage_len = len;
+               tc->num_mips    = lay.num_mips;
+               tc->format      = lay.format;
+               tc->type        = type;
+               for (i = 0; i < lay.num_mips; i++)
+               {
+                  tc->mips[i].data   = (const unsigned char*)tc->storage
+                                     + lay.offset[i];
+                  tc->mips[i].width  = lay.width[i];
+                  tc->mips[i].height = lay.height[i];
+                  tc->mips[i].size   = lay.size[i];
+               }
+               out_img->compressed = tc;
+               out_img->pixels     = NULL;
+               out_img->width      = lay.width[0];
+               out_img->height     = lay.height[0];
+               image_transfer_free(img, type);
+               return true;
+            }
+            free(tc->storage);
+            free(tc->mips);
+            free(tc);
+         }
+         /* allocation failure: fall through to the CPU decode below */
+      }
    }
 
    do
@@ -152,11 +213,70 @@ void image_texture_free(struct texture_image *img)
    if (!img)
       return;
 
+   if (img->compressed)
+   {
+      free(img->compressed->storage);
+      free(img->compressed->mips);
+      free(img->compressed);
+      img->compressed = NULL;
+   }
    if (img->pixels)
       free(img->pixels);
    img->width  = 0;
    img->height = 0;
    img->pixels = NULL;
+}
+
+bool image_texture_realize_rgba(struct texture_image *img)
+{
+   struct texture_compressed *tc;
+   void    *decoded = NULL;
+   void    *xfer;
+   unsigned w       = 0;
+   unsigned h       = 0;
+   int      ret;
+
+   if (!img)
+      return false;
+   if (img->pixels)               /* already decoded */
+      return true;
+   tc = img->compressed;
+   if (!tc || !tc->storage)
+      return false;
+
+   xfer = image_transfer_new(tc->type);
+   if (!xfer)
+      return false;
+   image_transfer_set_buffer_ptr(xfer, tc->type,
+         (uint8_t*)tc->storage, tc->storage_len);
+   if (!image_transfer_start(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   while (image_transfer_iterate(xfer, tc->type));
+   if (!image_transfer_is_valid(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   do
+   {
+      ret = image_transfer_process(xfer, tc->type,
+            (uint32_t**)&decoded, tc->storage_len, &w, &h,
+            img->supports_rgba);
+   } while (ret == IMAGE_PROCESS_NEXT);
+   image_transfer_free(xfer, tc->type);
+
+   if (     ret == IMAGE_PROCESS_ERROR
+         || ret == IMAGE_PROCESS_ERROR_END
+         || !decoded)
+      return false;
+
+   img->pixels = (uint32_t*)decoded;
+   img->width  = w;
+   img->height = h;
+   return true;
 }
 
 bool image_texture_load_buffer(struct texture_image *out_img,
@@ -173,6 +293,7 @@ bool image_texture_load_buffer(struct texture_image *out_img,
    out_img->pixels = NULL;
    out_img->width = 0;
    out_img->height = 0;
+   out_img->compressed = NULL;
 
    return false;
 }
@@ -212,6 +333,7 @@ bool image_texture_load(struct texture_image *out_img,
    out_img->pixels        = NULL;
    out_img->width         = 0;
    out_img->height        = 0;
+   out_img->compressed    = NULL;
 
    return false;
 }

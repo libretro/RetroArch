@@ -1040,7 +1040,7 @@ static bool net_http_connect(struct http_t *state)
 
          /* Temp fix, don't use new timeout/poll code for cheevos http requests */
          bool timeout = true;
-#ifdef __WIN32
+#ifdef _WIN32
          if (!strcmp(state->request.domain, "retroachievements.org"))
             timeout = false;
 #endif

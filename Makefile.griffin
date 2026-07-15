@@ -214,10 +214,12 @@ else ifeq ($(libogc_platform), 1)
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_THREADS             := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_IBXM                := 1
+   HAVE_RMODTRACKER                := 1
    HAVE_OVERLAY             := 1
    HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
@@ -288,6 +290,8 @@ else ifeq ($(platform), psp1)
 
    BUILD_PRX                 = 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -311,7 +315,6 @@ else ifeq ($(platform), vita)
    EXT_TARGET := $(TARGET_NAME)_$(platform).velf
    EXT_INTER_TARGET := $(TARGET_NAME)_$(platform).elf
    MACHDEP := -DVITA
-   INCLUDE += -Ideps/libvita2d/include
    PLATCFLAGS := -mfloat-abi=hard -fsingle-precision-constant \
         -mword-relocations -fno-unwind-tables -fno-asynchronous-unwind-tables -ftree-vectorize -fno-optimize-sibling-calls
    LIBS += -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub\
@@ -319,13 +322,13 @@ else ifeq ($(platform), vita)
            -lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub \
            -lSceMotion_stub -lSceAppMgr_stub -lpng -lm -lc
 
-   PLATOBJS += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-      $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+   PLATOBJS += gfx/drivers/vita_shaders/clear_v_gxp.o \
+      gfx/drivers/vita_shaders/clear_f_gxp.o \
+      gfx/drivers/vita_shaders/color_v_gxp.o \
+      gfx/drivers/vita_shaders/color_f_gxp.o \
+      gfx/drivers/vita_shaders/texture_v_gxp.o \
+      gfx/drivers/vita_shaders/texture_f_gxp.o \
+      gfx/drivers/vita_shaders/texture_tint_f_gxp.o
 
    PLATOBJS += \
       libretro-common/audio/conversion/s16_to_float_neon.o \
@@ -342,6 +345,8 @@ else ifeq ($(platform), vita)
    HAVE_FILTERS_BUILTIN     := 1
    HAVE_LANGEXTRA           := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -364,6 +369,8 @@ else ifeq ($(platform), vita)
    HAVE_CORE_INFO_CACHE     := 1
 else ifeq ($(platform), windows_msvc6_x86)
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -411,6 +418,8 @@ else ifeq ($(platform), windows_msvc6_x86)
 else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_GDI                 := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -466,6 +475,8 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_GDI                 := 1
    HAVE_REWIND              := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -550,6 +561,8 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -646,6 +659,8 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -733,6 +748,8 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -820,6 +837,8 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -922,6 +941,8 @@ else ifeq (qnx,$(platform))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -969,6 +990,8 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_AUDIOMIXER          := 1
    HAVE_RWAV                := 1
    HAVE_RPNG                := 1
+   HAVE_RWEBP               := 1
+   HAVE_RDDS                := 1
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
@@ -1076,6 +1099,14 @@ endif
 
 ifeq ($(HAVE_RPNG), 1)
    CFLAGS      += -DHAVE_RPNG
+endif
+
+ifeq ($(HAVE_RWEBP), 1)
+   CFLAGS      += -DHAVE_RWEBP
+endif
+
+ifeq ($(HAVE_RDDS), 1)
+   CFLAGS      += -DHAVE_RDDS
 endif
 
 ifeq ($(HAVE_RBMP), 1)

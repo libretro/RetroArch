@@ -44,6 +44,55 @@ void rwebp_free(rwebp_t *rwebp);
 
 rwebp_t *rwebp_alloc(void);
 
+/* ===== Animation (animated WebP / ANMF) =====
+ * Opaque handle to a fully decoded animation. rwebp_anim_decode returns
+ * NULL for non-animated or malformed input, so callers can attempt it
+ * unconditionally and fall back to the still-image path. Frames are
+ * complete, composited RGBA canvases (memory order R,G,B,A). */
+
+typedef struct rwebp_anim rwebp_anim_t;
+
+rwebp_anim_t *rwebp_anim_decode(const uint8_t *buf, size_t len);
+
+void rwebp_anim_free(rwebp_anim_t *anim);
+
+int rwebp_anim_num_frames(const rwebp_anim_t *anim);
+
+void rwebp_anim_get_info(const rwebp_anim_t *anim,
+      unsigned *width, unsigned *height, int *loop_count);
+
+/* Returns the RGBA pixels of frame 'index' (0-based) and, if non-NULL,
+ * writes its display duration in milliseconds. Returns NULL out of range.
+ * The returned pointer is owned by the animation and valid until freed. */
+const uint32_t *rwebp_anim_get_frame(const rwebp_anim_t *anim, int index,
+      int *duration_ms);
+
+/* Streaming animation iterator. Unlike rwebp_anim_decode, which holds
+ * every composited canvas in memory at once, the stream keeps only two
+ * canvases plus a BORROWED reference to the caller's file buffer, so
+ * memory use is independent of frame count. The buffer passed to
+ * rwebp_anim_stream_open must remain valid and unmodified until
+ * rwebp_anim_stream_close. */
+
+typedef struct rwebp_anim_stream rwebp_anim_stream_t;
+
+rwebp_anim_stream_t *rwebp_anim_stream_open(const uint8_t *buf, size_t len);
+
+void rwebp_anim_stream_close(rwebp_anim_stream_t *stream);
+
+void rwebp_anim_stream_get_info(const rwebp_anim_stream_t *stream,
+      unsigned *width, unsigned *height, int *num_frames, int *loop_count);
+
+/* Composites and returns the next frame as a full RGBA canvas (memory
+ * order R,G,B,A), writing its display duration in milliseconds. The
+ * returned pointer refers to the stream's internal canvas: it is valid
+ * until the next call into the stream and must not be freed. Returns
+ * NULL at the end of one pass; call rwebp_anim_stream_rewind to loop. */
+const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *stream,
+      int *duration_ms);
+
+void rwebp_anim_stream_rewind(rwebp_anim_stream_t *stream);
+
 RETRO_END_DECLS
 
 #endif

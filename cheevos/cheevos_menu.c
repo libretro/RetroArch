@@ -662,7 +662,7 @@ uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool downlo
       APPLICATION_SPECIAL_DIRECTORY_THUMBNAILS_CHEEVOS_BADGES);
 
    if (!gfx_display_reset_textures_list(badge_file, fullpath,
-      &tex, TEXTURE_FILTER_MIPMAP_LINEAR, NULL, NULL))
+      &tex, gfx_display_texture_filter(), NULL, NULL))
    {
       if (download_if_missing)
       {

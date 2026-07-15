@@ -232,8 +232,14 @@ ifneq ($(GIT_VERSION),)  # Enable version_git.o?
 endif
 
 # General object files
-ifeq ($(HAVE_DR_MP3), 1)
-   DEFINES += -DHAVE_DR_MP3
+ifeq ($(HAVE_RMP3), 1)
+   DEFINES += -DHAVE_RMP3
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+ifneq ($(HAVE_RVORBIS),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
 endif
 
 OBJ += frontend/frontend_driver.o \
@@ -416,10 +422,12 @@ OBJ     += $(LIBRETRO_COMM_DIR)/audio/dsp_filter.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler.o
+OBJ += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.o
 
 ifeq ($(HAVE_NEAREST_RESAMPLER), 1)
    DEFINES += -DHAVE_NEAREST_RESAMPLER
    OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.o
+   OBJ     += $(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler_int16.o
 endif
 
 OBJ += \
@@ -467,6 +475,7 @@ endif
 ifeq ($(HAVE_CC_RESAMPLER), 1)
    DEFINES += -DHAVE_CC_RESAMPLER
    OBJ += audio/drivers_resampler/cc_resampler.o
+   OBJ += audio/drivers_resampler/cc_resampler_int16.o
 
 ifeq ($(HAVE_NEON),1)
    OBJ += audio/drivers_resampler/cc_resampler_neon.o
@@ -985,6 +994,9 @@ ifeq ($(HAVE_COREMIDI), 1)
    LIBS += -framework CoreMIDI
 endif
 
+# In-process FM synth MIDI driver (no external dependency, all platforms)
+OBJ += midi/drivers/fmsynth_midi.o
+
 # Audio Resamplers
 
 ifeq ($(HAVE_NEON),1)
@@ -1207,23 +1219,19 @@ ifeq ($(HAVE_THREAD_STORAGE), 1)
 endif
 
 ifeq ($(HAVE_VITA2D), 1)
-   OBJ += $(DEPS_DIR)/libvita2d/source/vita2d.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_texture.o \
-          $(DEPS_DIR)/libvita2d/source/vita2d_draw.o \
-          $(DEPS_DIR)/libvita2d/source/utils.o
-
-   OBJ += $(DEPS_DIR)/libvita2d/shader/clear_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/clear_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/color_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_f_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_v_gxp.o \
-          $(DEPS_DIR)/libvita2d/shader/texture_tint_f_gxp.o
+   # The vita2d GXM backend is now folded directly into vita2d_gfx.c; only
+   # the precompiled shader blobs remain as a dependency (the driver still
+   # references clear_v_gxp/texture_v_gxp/... as externs).
+   OBJ += gfx/drivers/vita_shaders/clear_v_gxp.o \
+          gfx/drivers/vita_shaders/clear_f_gxp.o \
+          gfx/drivers/vita_shaders/color_v_gxp.o \
+          gfx/drivers/vita_shaders/color_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_f_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_v_gxp.o \
+          gfx/drivers/vita_shaders/texture_tint_f_gxp.o
 
    OBJ += gfx/drivers/vita2d_gfx.o
-
-   INCLUDE_DIRS += -I$(DEPS_DIR)/libvita2d/include
 endif
 
 ifeq ($(TARGET), retroarch_3ds)
@@ -1679,17 +1687,33 @@ endif
 
 endif
 
-ifeq ($(HAVE_SDL2), 1)
+ifeq ($(HAVE_SDL3), 1)
+   SDL3_CFLAGS = $(shell pkg-config sdl3 --cflags)
+	SDL3_LIBS = $(shell pkg-config sdl3 --libs)
+   DEF_FLAGS += $(SDL3_CFLAGS)
+   # RetroArch supplies its own entry point and sets SDL_MAIN_HANDLED
+   # (see retroarch.c), so SDL's WinMain shim library (-lSDL3main /
+   # -lSDLmain, pulled in automatically by pkg-config --libs on
+   # Windows/MSYS2) is both unnecessary and harmful: its WinMain
+   # references SDL_main, which no longer exists once main stays main.
+   # Filter it out.
+   LIBS += $(filter-out -lSDL3main -lSDLmain -lSDL_main,$(SDL3_LIBS))
+	DEFINES += -DHAVE_SDL3
+   OBJ += input/drivers_joypad/sdl3_joypad.o
+else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \
 	  gfx/common/sdl2_common.o
    DEF_FLAGS += $(SDL2_CFLAGS)
-   LIBS += $(SDL2_LIBS)
+   # See the SDL3 note above: drop SDL's WinMain shim lib, we set
+   # SDL_MAIN_HANDLED and provide our own entry point.
+   LIBS += $(filter-out -lSDL2main -lSDLmain -lSDL_main,$(SDL2_LIBS))
 else ifeq ($(HAVE_SDL), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl_gfx.o
    DEF_FLAGS += $(SDL_CFLAGS)
-   LIBS += $(SDL_LIBS)
+   # See the SDL3 note above: drop SDL's WinMain shim lib.
+   LIBS += $(filter-out -lSDLmain -lSDL_main,$(SDL_LIBS))
 else ifeq ($(HAVE_SDL_DINGUX), 1)
    HAVE_SDL_COMMON = 1
    DEF_FLAGS += -DHAVE_SDL -DHAVE_SDL_DINGUX
@@ -1951,6 +1975,15 @@ endif
 
 ifeq ($(HAVE_SPIRV_CROSS), 1)
    DEFINES += -DHAVE_SPIRV_CROSS
+# Default to the vendored (builtin) SPIRV-Cross unless it was explicitly
+# turned off via 'configure --disable-builtinspirv_cross', which writes
+# HAVE_BUILTINSPIRV_CROSS=0 to config.mk. An unset value (every platform
+# Makefile that sets HAVE_SPIRV_CROSS=1 directly, e.g. Makefile.wiiu) is
+# treated as builtin, so existing builds are unaffected. Note: griffin
+# console builds pull the vendored sources in via griffin_cpp.cpp guarded
+# by -DHAVE_SPIRV_CROSS and never reach this block.
+ifneq ($(HAVE_BUILTINSPIRV_CROSS), 0)
+   DEFINES += -DHAVE_BUILTINSPIRV_CROSS
    INCLUDE_DIRS += -I$(DEPS_DIR)/SPIRV-Cross
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cfg.o
@@ -1959,6 +1992,10 @@ ifeq ($(HAVE_SPIRV_CROSS), 1)
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_msl.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_parser.o
    OBJ += $(DEPS_DIR)/SPIRV-Cross/spirv_cross_parsed_ir.o
+else
+   CXXFLAGS += $(SPIRV_CROSS_CFLAGS)
+   LIBS     += $(SPIRV_CROSS_LIBS)
+endif
 endif
 
 ifeq ($(WANT_WGL), 1)
@@ -2026,16 +2063,39 @@ ifeq ($(HAVE_ZSTD),1)
            $(ZSOBJ)
 endif
 
-ifeq ($(HAVE_IBXM), 1)
-   DEFINES += -DHAVE_IBXM
-   OBJ += $(DEPS_DIR)/ibxm/ibxm.o
+ifeq ($(HAVE_RMODTRACKER), 1)
+   DEFINES += -DHAVE_RMODTRACKER
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+ifneq ($(HAVE_RVORBIS),1)
+ifneq ($(HAVE_RMP3),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
+endif
+endif
+
+ifeq ($(HAVE_ROPUS), 1)
+   DEFINES += -DHAVE_ROPUS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+ifneq ($(HAVE_RVORBIS),1)
+ifneq ($(HAVE_RMP3),1)
+ifneq ($(HAVE_RMODTRACKER),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
+endif
+endif
+endif
 endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
-   DEFINES += -DHAVE_FLAC -DHAVE_DR_FLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+   DEFINES += -DHAVE_FLAC -DHAVE_RFLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
    INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
+          $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
              $(DEPS_DIR)/libFLAC/bitreader.o \
              $(DEPS_DIR)/libFLAC/cpu.o \
@@ -2061,6 +2121,14 @@ ifeq ($(HAVE_BUILTINFLAC),1)
 else ifeq ($(HAVE_FLAC),1)
    DEFINES += -DHAVE_FLAC
    LIBS    += $(FLAC_LIBS)
+endif
+
+ifeq ($(HAVE_RVORBIS),1)
+   DEFINES += -DHAVE_RVORBIS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
+ifneq ($(HAVE_BUILTINFLAC),1)
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
 endif
 
 ifeq ($(HAVE_BUILTINZLIB), 1)
@@ -2196,6 +2264,11 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
       ifeq ($(HAVE_FLAC),1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
+         # libchdr decodes CHD FLAC through rflac; when the built-in FLAC
+         # library is not in use it has not already added the object.
+         ifneq ($(HAVE_BUILTINFLAC),1)
+            OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+         endif
       endif
 
       ifeq ($(HAVE_7ZIP), 1)
@@ -2225,6 +2298,11 @@ ifeq ($(HAVE_RTGA), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/tga/rtga.o
 endif
 
+ifeq ($(HAVE_RDDS), 1)
+   DEFINES += -DHAVE_RDDS
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/dds/rdds.o
+endif
+
 ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
    OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
@@ -2243,7 +2321,29 @@ endif
 
 ifeq ($(HAVE_RWEBP), 1)
    DEFINES += -DHAVE_RWEBP
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.o \
+          $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
+endif
+
+ifeq ($(HAVE_RWEBM), 1)
+   DEFINES += -DHAVE_RWEBM
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/webm/rwebm.o \
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_video.o \
+          $(LIBRETRO_COMM_DIR)/formats/webm/rwebm_audio.o
+ifneq ($(HAVE_RWEBP), 1)
+   # rwebm_video decodes VP8 tracks with rvp8, normally built with RWEBP
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.o
+endif
+endif
+
+ifeq ($(HAVE_RVP9), 1)
+   DEFINES += -DHAVE_RVP9
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.o
+endif
+
+ifeq ($(HAVE_WEBMPLAYER), 1)
+   DEFINES += -DHAVE_WEBMPLAYER
+   OBJ += cores/libretro-webm/webm_core.o
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \

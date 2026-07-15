@@ -302,6 +302,10 @@ static void runloop_game_ai_think_cb(void *userdata,
 #define SYMBOL_MPV(x) current_core->x = libretro_mpv_##x
 #endif
 
+#ifdef HAVE_WEBMPLAYER
+#define SYMBOL_WEBM(x) current_core->x = libretro_webm_##x
+#endif
+
 #ifdef HAVE_IMAGEVIEWER
 #define SYMBOL_IMAGEVIEWER(x) current_core->x = libretro_imageviewer_##x
 #endif
@@ -3363,6 +3367,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_MEMORY_STATUS:
+      {
+         struct retro_memory_status *memstat = (struct retro_memory_status *)data;
+         memstat->free  = frontend_driver_get_free_memory();
+         memstat->total = frontend_driver_get_total_memory();
+         /* If the active frontend driver cannot report memory, tell the core
+          * the call is unsupported so it falls back to its own defaults. */
+         if (memstat->free == 0 && memstat->total == 0)
+            return false;
+         break;
+      }
+
       case RETRO_ENVIRONMENT_GET_INPUT_MAX_USERS:
          *(unsigned *)data = settings->uints.input_max_users;
          break;
@@ -3533,6 +3549,52 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+
+      case RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT:
+      {
+         struct retro_audio_sample_float_callback *cb =
+               (struct retro_audio_sample_float_callback*)data;
+         if (!cb)
+            return false;
+         /* The 'Resample to Fixed Integer' hint (audio_fastpath_s16) asks for
+          * a deterministic integer audio pipeline. Advertising float here
+          * would defeat it: a float-native core forces the float resampler
+          * path regardless of the hint. So when the hint is set we decline,
+          * and the core keeps using its int16 batch callback - leaving the
+          * whole chain in the integer domain. The hint takes precedence over
+          * float advertisement. This is queried once at core init, so
+          * toggling the hint takes effect on the next core load. */
+         if (config_get_ptr()->bools.audio_fastpath_s16)
+            return false;
+         /* Only advertise float when the audio driver actually runs a float
+          * output format. If it negotiated s16 (the device rejected float, or
+          * the format-negotiation hint asked for s16), a float core would just
+          * be converted straight back to s16 for the device - so decline and
+          * let the core keep its int16 batch callback. When the driver is not
+          * yet initialised (queried before drivers_init, e.g. a direct CLI
+          * load) we cannot read its real format, so fall back to the
+          * format-negotiation hint, which is what it will request. */
+         if (audio_state_get_ptr()->flags & AUDIO_FLAG_ACTIVE)
+         {
+            if (!(audio_state_get_ptr()->flags & AUDIO_FLAG_USE_FLOAT))
+               return false;
+         }
+         else if (config_get_ptr()->uints.audio_format_negotiation
+               != AUDIO_FORMAT_NEGOTIATION_FLOAT)
+            return false;
+         /* RetroArch's resampler and DSP chain are float-native, so we
+          * advertise float audio output and hand the core our float
+          * batch entry point. The core then bypasses int16 entirely.
+          *
+          * Note: the float entry funnels into the same audio_driver_flush()
+          * as int16 and internally bridges recording and reverse-audio
+          * (rewind). The one subsystem it does not cover is netplay's
+          * core-packet audio interception (audio_sample_batch_net), which
+          * swaps the int16 batch callback the float core no longer uses;
+          * that path remains int16-only. */
+         cb->batch = audio_driver_sample_batch_float;
+         break;
+      }
 
       case RETRO_ENVIRONMENT_GET_JIT_CAPABLE:
          {
@@ -3777,6 +3839,11 @@ bool runloop_init_libretro_symbols(
          CORE_SYMBOLS(SYMBOL_MPV);
 #endif
          break;
+      case CORE_TYPE_WEBM:
+#ifdef HAVE_WEBMPLAYER
+         CORE_SYMBOLS(SYMBOL_WEBM);
+#endif
+         break;
       case CORE_TYPE_IMAGEVIEWER:
 #ifdef HAVE_IMAGEVIEWER
          CORE_SYMBOLS(SYMBOL_IMAGEVIEWER);
@@ -3984,7 +4051,6 @@ static retro_time_t runloop_core_runtime_tick(
 static bool core_unload_game(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    video_driver_free_hw_context();
 
@@ -6288,7 +6354,7 @@ static enum runloop_state_enum runloop_check_state(
                generic_action_ok_displaylist_push(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB),
                      NULL,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY),
                      MENU_SETTING_ACTION,
                      0, 0, ACTION_OK_DL_GENERIC);
                break;
@@ -6328,7 +6394,7 @@ static enum runloop_state_enum runloop_check_state(
                generic_action_ok_displaylist_push(
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST),
                      NULL,
-                     MENU_ENUM_LABEL_LOAD_CONTENT_LIST_STR,
+                     msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_LIST),
                      MENU_SETTING_ACTION,
                      0, 0, ACTION_OK_DL_GENERIC);
                break;
@@ -6478,16 +6544,22 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_DYNAMIC
          if (a && *a)
          {
-            content_ctx_info_t content_info = {0};
-            if (task_push_load_new_core(a,
-                        NULL,
-                        &content_info,
-                        CORE_TYPE_PLAIN,
-                        NULL, NULL))
-            {
-               menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
-                               |  MENU_ST_FLAG_PREVENT_POPULATE;
-            }
+            /* Reload the core library only. The active session at
+             * this point is the dummy core, so the current core
+             * type must remain CORE_TYPE_DUMMY. Loading through
+             * task_push_load_new_core() latched CORE_TYPE_PLAIN
+             * (and RUNLOOP_FLAG_HAS_SET_CORE) here, which made the
+             * frontend believe real content was running: after
+             * 'Close Content' on a contentless (SUPPORT_NO_GAME)
+             * core the menu could be toggled out into the dummy
+             * session, CORE_RUNNING became set, and the Main Menu
+             * then offered only the Quick Menu entry while
+             * Load/Start/Unload Core became unreachable until a
+             * new game was loaded or RetroArch was restarted. */
+            path_set(RARCH_PATH_CORE, a);
+            command_event(CMD_EVENT_LOAD_CORE, NULL);
+            menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            |  MENU_ST_FLAG_PREVENT_POPULATE;
          }
 #endif
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
@@ -6562,7 +6634,7 @@ static enum runloop_state_enum runloop_check_state(
       if (menu_st->dialog_st.pending_cmd != CMD_EVENT_NONE)
       {
          /* Event also wants to resume */
-         if (!command_event(menu_st->dialog_st.pending_cmd, NULL))
+         if (!command_event((enum event_command)menu_st->dialog_st.pending_cmd, NULL))
             command_event(CMD_EVENT_RESUME, NULL);
 
          menu_dialog_confirm_clear(menu_st);
@@ -8194,7 +8266,6 @@ bool core_get_memory(retro_ctx_memory_info_t *info)
 bool core_load_game(retro_ctx_load_content_info_t *load_info)
 {
    bool             game_loaded   = false;
-   video_driver_state_t *video_st = video_state_get_ptr();
    runloop_state_t *runloop_st    = &runloop_state;
 
    video_driver_cached_frame_invalidate();
@@ -8331,7 +8402,6 @@ uint64_t core_serialization_quirks(void)
 void core_reset(void)
 {
    runloop_state_t *runloop_st    = &runloop_state;
-   video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Drop video-driver caches of core-owned GPU resources before
     * retro_reset() is allowed to destroy them. No-op on software

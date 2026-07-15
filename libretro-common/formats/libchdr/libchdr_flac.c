@@ -12,12 +12,7 @@
 #include <boolean.h>
 
 #include <libchdr/flac.h>
-#ifdef HAVE_DR_FLAC
-#include <retro_inline.h>
-#define DR_FLAC_IMPLEMENTATION
-#define DRFLAC_API static INLINE
-#include <dr/dr_flac.h>
-#endif
+#include <formats/rflac.h>
 
 /***************************************************************************
  *  FLAC DECODER
@@ -25,8 +20,8 @@
  */
 
 static size_t flac_decoder_read_callback(void *userdata, void *buffer, size_t bytes);
-static drflac_bool32 flac_decoder_seek_callback(void *userdata, int offset, drflac_seek_origin origin);
-static void flac_decoder_metadata_callback(void *userdata, drflac_metadata *metadata);
+static uint32_t flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin);
+static void flac_decoder_metadata_callback(void *userdata, rflac_metadata *metadata);
 static void flac_decoder_write_callback(void *userdata, void *buffer, size_t bytes);
 
 
@@ -65,7 +60,7 @@ int flac_decoder_init(flac_decoder *decoder)
 void flac_decoder_free(flac_decoder* decoder)
 {
 	if ((decoder != NULL) && (decoder->decoder != NULL)) {
-		drflac_close(decoder->decoder);
+		rflac_close(decoder->decoder);
 		decoder->decoder = NULL;
 	}
 }
@@ -80,9 +75,9 @@ static int flac_decoder_internal_reset(flac_decoder* decoder)
 {
 	decoder->compressed_offset = 0;
 	flac_decoder_free(decoder);
-	decoder->decoder = drflac_open_with_metadata(
+	decoder->decoder = rflac_open_with_metadata(
 		flac_decoder_read_callback, flac_decoder_seek_callback,
-		flac_decoder_metadata_callback, decoder, NULL);
+		flac_decoder_metadata_callback, decoder);
 	return (decoder->decoder != NULL);
 }
 
@@ -148,7 +143,7 @@ int flac_decoder_decode_interleaved(flac_decoder* decoder, int16_t *samples, uin
 	/* loop until we get everything we want */
 	while (decoder->uncompressed_offset < decoder->uncompressed_length) {
 		uint32_t frames = (num_samples < buf_samples ? num_samples : buf_samples);
-		if (!drflac_read_pcm_frames_s16(decoder->decoder, frames, buffer))
+		if (!rflac_read_pcm_frames_s16(decoder->decoder, frames, buffer))
 			return 0;
 		flac_decoder_write_callback(decoder, buffer, frames*sizeof(*buffer)*channels(decoder));
 		num_samples -= frames;
@@ -164,12 +159,19 @@ int flac_decoder_decode_interleaved(flac_decoder* decoder, int16_t *samples, uin
 uint32_t flac_decoder_finish(flac_decoder* decoder)
 {
 	/* get the final decoding position and move forward */
-	drflac *flac = decoder->decoder;
+	rflac *flac = decoder->decoder;
 	uint64_t position = decoder->compressed_offset;
 
-	/* ugh... there's no function to obtain bytes used in drflac :-/ */
-	position -= DRFLAC_CACHE_L2_LINES_REMAINING(&flac->bs) * sizeof(drflac_cache_t);
-	position -= DRFLAC_CACHE_L1_BITS_REMAINING(&flac->bs) / 8;
+	/* rflac exposes no "bytes consumed" accessor, so recover the exact
+	 * source position from the public bitstream-reader state, mirroring
+	 * rflac's own L1/L2 cache accounting.  This previously used the
+	 * internal RFLAC_CACHE_*_REMAINING macros, in scope only because a
+	 * private copy of the decoder was compiled inline; with rflac linked
+	 * as one shared object those macros aren't visible, so the equivalent
+	 * arithmetic over the (public) bitstream fields is spelled out here. */
+	position -= ((sizeof(flac->bs.cacheL2) / sizeof(flac->bs.cacheL2[0]))
+			- flac->bs.nextL2Line) * sizeof(size_t);
+	position -= ((sizeof(flac->bs.cache) * 8) - flac->bs.consumedBits) / 8;
 	position -= flac->bs.unalignedByteCount;
 
 	/* adjust position if we provided the header */
@@ -220,12 +222,12 @@ static size_t flac_decoder_read_callback(void *userdata, void *buffer, size_t by
  *-------------------------------------------------
  */
 
-static void flac_decoder_metadata_callback(void *userdata, drflac_metadata *metadata)
+static void flac_decoder_metadata_callback(void *userdata, rflac_metadata *metadata)
 {
 	flac_decoder *decoder = userdata;
 
 	/* ignore all but STREAMINFO metadata */
-	if (metadata->type != DRFLAC_METADATA_BLOCK_TYPE_STREAMINFO)
+	if (metadata->type != RFLAC_METADATA_BLOCK_TYPE_STREAMINFO)
 		return;
 
 	/* parse out the data we care about */
@@ -283,18 +285,18 @@ static void flac_decoder_write_callback(void *userdata, void *buffer, size_t byt
  *-------------------------------------------------
  */
 
-static drflac_bool32 flac_decoder_seek_callback(void *userdata, int offset, drflac_seek_origin origin)
+static uint32_t flac_decoder_seek_callback(void *userdata, int offset, rflac_seek_origin origin)
 {
 	flac_decoder * decoder = (flac_decoder *)userdata;
 	uint32_t length = decoder->compressed_length + decoder->compressed2_length;
 
-	if (origin == drflac_seek_origin_start) {
+	if (origin == rflac_seek_origin_start) {
 		uint32_t pos = offset;
 		if (pos <= length) {
 			decoder->compressed_offset = pos;
 			return 1;
 		}
-	} else if (origin == drflac_seek_origin_current) {
+	} else if (origin == rflac_seek_origin_current) {
 		uint32_t pos = decoder->compressed_offset + offset;
 		if (pos <= length) {
 			decoder->compressed_offset = pos;

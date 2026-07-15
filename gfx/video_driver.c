@@ -1649,24 +1649,13 @@ bool video_driver_is_threaded(void)
 bool *video_driver_get_threaded(void)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-#if defined(__MACH__) && defined(__APPLE__)
-   /* TODO/FIXME - force threaded video to disabled on Apple for now
-    * until NSWindow/UIWindow concurrency issues are taken care of */
-   video_st->threaded = false;
-#endif
    return &video_st->threaded;
 }
 
 void video_driver_set_threaded(bool val)
 {
    video_driver_state_t *video_st                 = &video_driver_st;
-#if defined(__MACH__) && defined(__APPLE__)
-   /* TODO/FIXME - force threaded video to disabled on Apple for now
-    * until NSWindow/UIWindow concurrency issues are taken care of */
-   video_st->threaded = false;
-#else
    video_st->threaded = val;
-#endif
 }
 
 const char *video_driver_get_ident(void)
@@ -3177,16 +3166,42 @@ bool video_driver_texture_load(void *data,
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
+   struct texture_image *ti           = (struct texture_image*)data;
+   bool threaded;
    if (!id || !poke || !poke->load_texture)
       return false;
    /* Only use the threaded path when the thread wrapper is
     * fully active. During reinit, video_st->threaded may
     * already reflect the new setting while video_st->data
     * still points to the real driver, not thread_video_t. */
-   *id = poke->load_texture(video_st->data, data,
-         VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
-         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE),
-         filter_type);
+   threaded = VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+         && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE);
+
+   /* GPU-native fast path: upload BCn blocks directly when the driver can
+    * sample the format. This works under threading too -- the threaded flag
+    * is forwarded, and each driver's load_texture_compressed either marshals
+    * the upload onto the video thread or declines (returning 0), in which
+    * case the CPU decode fallback below takes over. */
+   if (     ti
+         && ti->compressed
+         && poke->supports_texture_format
+         && poke->load_texture_compressed
+         && poke->supports_texture_format(video_st->data,
+               ti->compressed->format))
+   {
+      *id = poke->load_texture_compressed(video_st->data,
+            ti->compressed, threaded, filter_type);
+      if (*id)
+         return true;
+      /* upload failed or declined: fall through to CPU decode */
+   }
+
+   /* Fallback: realize RGBA8 for drivers that can't sample the format
+    * (or that declined the threaded upload), then take the normal upload. */
+   if (ti && ti->compressed && !ti->pixels)
+      image_texture_realize_rgba(ti);
+
+   *id = poke->load_texture(video_st->data, data, threaded, filter_type);
    return true;
 }
 
@@ -3213,7 +3228,6 @@ void video_driver_cached_frame(void)
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
    recording_state_t *recording_st= recording_state_get_ptr();
-   video_driver_state_t *video_st = &video_driver_st;
    void             *recording    = recording_st->data;
    struct retro_callbacks *cbs    = &runloop_st->retro_ctx;
 
@@ -3277,7 +3291,6 @@ bool video_driver_cached_frame_info(
       unsigned *width, unsigned *height, size_t *pitch,
       bool *has_cpu_pixels)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    const void           *data;
    bool                  has_frame;
 
@@ -3314,7 +3327,6 @@ void video_driver_cached_frame_read(
                  const void *data,
                  unsigned width, unsigned height, size_t pitch))
 {
-   video_driver_state_t *video_st = &video_driver_st;
    const void           *data;
    unsigned              width    = 0;
    unsigned              height   = 0;
@@ -3350,7 +3362,6 @@ void video_driver_cached_frame_read(
 
 bool video_driver_cached_frame_is_hw_render(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    bool                  is_hw;
    cached_frame_lock_acquire();
    is_hw =    frame_cache_data
@@ -3368,7 +3379,6 @@ bool video_driver_cached_frame_is_hw_render(void)
 void video_driver_cached_frame_publish(
       const void *data, unsigned width, unsigned height, size_t pitch)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
    if (data)
       frame_cache_data = data;
@@ -3387,7 +3397,6 @@ void video_driver_cached_frame_publish(
  * after this returns. */
 void video_driver_cached_frame_invalidate(void)
 {
-   video_driver_state_t *video_st = &video_driver_st;
    cached_frame_lock_acquire();
    frame_cache_data   = NULL;
    frame_cache_width  = 0;
@@ -4965,6 +4974,7 @@ void video_driver_frame(const void *data, unsigned width,
                " Aspect:      %3.3f\n"
                " FPS:         %3.2f\n"
                " Sample Rate: %6.2f\n"
+               " Sample Format: %s\n"
                "VIDEO: %s\n"
                " Viewport:    %u x %u\n"
                " - Scale:     %u x %u\n"
@@ -4975,12 +4985,6 @@ void video_driver_frame(const void *data, unsigned width,
                " - Deviation:%6.2f %%\n"
                " Frames:   %8" PRIu64"\n"
                " - Dropped:   %5u\n"
-               "AUDIO: %s\n"
-               " Saturation: %6.2f %%\n"
-               " Deviation:  %6.2f %%\n"
-               " Underrun:   %6.2f %%\n"
-               " Blocking:   %6.2f %%\n"
-               " Samples:  %8d\n"
                ,
                frame_cache_width,
                frame_cache_height,
@@ -4991,6 +4995,7 @@ void video_driver_frame(const void *data, unsigned width,
                av_info->geometry.aspect_ratio,
                av_info->timing.fps,
                av_info->timing.sample_rate,
+               audio_state_get_ptr()->stat_core_is_float ? "float" : "int16",
                vid->ident,
                video_info.width,
                video_info.height,
@@ -5005,13 +5010,30 @@ void video_driver_frame(const void *data, unsigned width,
                frame_time / 1000.0f,
                100.0f * stddev,
                video_st->frame_count,
-               video_st->frame_drop_count,
+               video_st->frame_drop_count);
+
+         /* Split from the block above: a single concatenated format
+          * literal exceeded the 509-byte minimum ISO C90 guarantees
+          * (-Werror=overlength-strings in the C89 lane). */
+         __len += snprintf(video_info.stat_text + __len,
+               sizeof(video_info.stat_text) - __len,
+               "AUDIO: %s\n"
+               " Saturation: %6.2f %%\n"
+               " Deviation:  %6.2f %%\n"
+               " Underrun:   %6.2f %%\n"
+               " Blocking:   %6.2f %%\n"
+               " Samples:  %8d\n"
+               " Sample Format: %s\n"
+               " Resampling: %s\n"
+               ,
                audio_state_get_ptr()->current_audio->ident,
                audio_stats.average_buffer_saturation,
                audio_stats.std_deviation_percentage,
                audio_stats.close_to_underrun,
                audio_stats.close_to_blocking,
-               audio_stats.samples);
+               audio_stats.samples,
+               audio_state_get_ptr()->stat_frontend_is_float ? "float" : "int16",
+               (audio_state_get_ptr()->src_ratio_orig == 1.0) ? "no" : "yes");
 
          /* TODO/FIXME - localize */
          __len += strlcpy(video_info.stat_text + __len, "LATENCY\n",

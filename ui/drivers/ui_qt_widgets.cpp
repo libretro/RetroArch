@@ -103,15 +103,17 @@ static inline void add_sublabel_and_whats_this(
    char tmp[512];
    tmp[0] = '\0';
 
-   cbs.enum_idx = setting->enum_idx;
+   cbs.enum_idx = (enum msg_hash_enums)setting->enum_idx;
 
-   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0, setting->type, setting->size);
+   menu_cbs_init_bind_sublabel(&cbs, NULL, NULL, 0,
+         (unsigned)setting->type, setting->size);
 
    cbs.action_sublabel(0, 0, 0, 0, 0, tmp, sizeof(tmp));
 
    widget->setToolTip(tmp);
 
-   msg_hash_get_help_enum(setting->enum_idx, tmp, sizeof(tmp));
+   msg_hash_get_help_enum((enum msg_hash_enums)setting->enum_idx,
+         tmp, sizeof(tmp));
 
    if (!string_is_equal(tmp, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_INFORMATION_AVAILABLE)))
       widget->setWhatsThis(tmp);
@@ -532,7 +534,7 @@ void UIntComboBox::populate(double min, double max)
    bool  checked_found = false;
    unsigned      count = 0;
 
-   if (m_setting->get_string_representation)
+   if (m_setting->actions->repr)
    {
       for (i = min; i <= max; i += step)
       {
@@ -541,7 +543,7 @@ void UIntComboBox::populate(double min, double max)
 
          *m_setting->value.target.unsigned_integer = val;
 
-         m_setting->get_string_representation(m_setting, val_s, sizeof(val_s));
+         m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
          m_hash[i] = QString(val_s);
 
@@ -674,7 +676,7 @@ UIntRadioButton::UIntRadioButton(msg_hash_enums enum_idx, unsigned value, QWidge
 
    *m_setting->value.target.unsigned_integer = value;
 
-   m_setting->get_string_representation(m_setting, val_s, sizeof(val_s));
+   m_setting->actions->repr(m_setting, val_s, sizeof(val_s));
 
    *m_setting->value.target.unsigned_integer = orig_value;
 
@@ -727,7 +729,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
    float           max = (setting->flags & SD_FLAG_ENFORCE_MAXRANGE) ? setting->max : UINT_MAX;
    bool  checked_found = false;
 
-   if (setting->get_string_representation)
+   if (setting->actions->repr)
    {
       for (i = min; i <= max; i += step)
       {
@@ -735,7 +737,7 @@ UIntRadioButtons::UIntRadioButtons(rarch_setting_t *setting, QWidget *parent) :
 
          *setting->value.target.unsigned_integer = i;
 
-         setting->get_string_representation(setting, val_s, sizeof(val_s));
+         setting->actions->repr(setting, val_s, sizeof(val_s));
 
          QRadioButton *button = new QRadioButton(QString(val_s), this);
 
@@ -815,7 +817,7 @@ FloatSpinBox::FloatSpinBox(rarch_setting_t *setting, QWidget *parent) :
    ,m_setting(setting)
    ,m_value(setting->value.target.fraction)
 {
-   QRegularExpressionMatch match = DECIMALS_REGEX.match(setting->rounding_fraction);
+   QRegularExpressionMatch match = DECIMALS_REGEX.match(setting->aux.rounding_fraction);
 
    if (match.hasMatch())
       setDecimals(match.captured(1).toInt());
@@ -938,7 +940,7 @@ FloatSlider::FloatSlider(rarch_setting_t *setting, QWidget *parent) :
    ,m_value(setting->value.target.fraction)
    ,m_decimalsRegEx("%.(\\d)f")
 {
-   QRegularExpressionMatch match = m_decimalsRegEx.match(setting->rounding_fraction);
+   QRegularExpressionMatch match = m_decimalsRegEx.match(setting->aux.rounding_fraction);
 
    if (match.hasMatch())
       m_precision = pow(10, match.captured(1).toInt());
@@ -1017,7 +1019,7 @@ BindButton::BindButton(rarch_setting_t *setting, QWidget *parent) :
 {
    char val_s[NAME_MAX_LENGTH];
 
-   setting->get_string_representation(setting, val_s, sizeof(val_s));
+   setting->actions->repr(setting, val_s, sizeof(val_s));
 
    setText(val_s);
 
@@ -1033,7 +1035,7 @@ void BindButton::onClicked(bool checked)
 {
    (void)(checked);
 
-   m_setting->action_ok(m_setting, 0, false);
+   m_setting->actions->ok(m_setting, 0, false);
 }
 
 ColorButton::ColorButton(rarch_setting_t *red, rarch_setting_t *green, rarch_setting_t *blue, QWidget *parent) :

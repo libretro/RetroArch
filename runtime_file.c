@@ -1325,9 +1325,9 @@ void runtime_update_playlist(
    unsigned runtime_type                  = settings->uints.playlist_sublabel_runtime_type;
    bool log_per_core                      = (runtime_type == PLAYLIST_RUNTIME_PER_CORE);
    enum playlist_sublabel_last_played_style_type
-         timedate_style                   = settings->uints.playlist_sublabel_last_played_style;
+         timedate_style                   = (enum playlist_sublabel_last_played_style_type)settings->uints.playlist_sublabel_last_played_style;
    enum playlist_sublabel_last_played_date_separator_type
-         date_separator                   = settings->uints.menu_timedate_date_separator;
+         date_separator                   = (enum playlist_sublabel_last_played_date_separator_type)settings->uints.menu_timedate_date_separator;
 
    /* Sanity check */
    if (!playlist)

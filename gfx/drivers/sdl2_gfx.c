@@ -463,7 +463,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-   if (video->font_enable)
       font_driver_init_osd(vid, video, false, video->is_threaded,
             FONT_DRIVER_RENDER_SDL2);
 #endif
@@ -522,7 +521,43 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
    }
 
-   SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
+   {
+      /* For 90/270 degree rotation the frame must not be clipped by the
+       * aspect-corrected game viewport.  SDL_RenderCopyEx() scales the
+       * texture to the destination then rotates it about the centre, so
+       * a NULL dst (== the viewport) leaves the rotated frame overflowing
+       * the viewport, which clips it to the smaller dimension: the output
+       * collapses towards square and the aspect ratio is wrong for
+       * vertical ("tate") games (issue #17893).  Render into the full
+       * window with an explicit dst rect whose width/height are the
+       * viewport's swapped, centred on the game area.  Even rotations
+       * keep the existing (viewport, NULL dst) path. */
+      int deg = ((int)vid->rotation) % 360;
+      if (deg < 0)
+         deg += 360;
+      if (deg == 90 || deg == 270)
+      {
+         SDL_Rect dst;
+         SDL_Rect game_vp;
+         dst.w     = (int)vid->vp.height;
+         dst.h     = (int)vid->vp.width;
+         dst.x     = vid->vp.x + ((int)vid->vp.width  - dst.w) / 2;
+         dst.y     = vid->vp.y + ((int)vid->vp.height - dst.h) / 2;
+         SDL_RenderSetViewport(vid->renderer, NULL);
+         SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, &dst,
+               vid->rotation, NULL, SDL_FLIP_NONE);
+         /* Restore the game viewport for the menu/widget/overlay passes,
+          * which save and restore vid->vp. */
+         game_vp.x = vid->vp.x;
+         game_vp.y = vid->vp.y;
+         game_vp.w = (int)vid->vp.width;
+         game_vp.h = (int)vid->vp.height;
+         SDL_RenderSetViewport(vid->renderer, &game_vp);
+      }
+      else
+         SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL,
+               vid->rotation, NULL, SDL_FLIP_NONE);
+   }
 
 #ifdef HAVE_MENU
    {

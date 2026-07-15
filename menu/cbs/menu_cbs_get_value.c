@@ -1022,6 +1022,35 @@ static size_t menu_action_setting_disp_set_label_entry_url(
    return 0;
 }
 
+#ifdef HAVE_NETWORKING
+static size_t menu_action_setting_disp_set_label_core_content_entry(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   const char *alt = list->list[i].alt
+      ? list->list[i].alt : list->list[i].path;
+   /* Content downloader will store a "[#]" in the entry
+    * label when the file already exists in the download directory. */
+   const char *entry_label = list->list[i].label;
+   *s = '\0';
+   *w = 0;
+
+   if (alt)
+      strlcpy(s2, alt, len2);
+
+   if (entry_label && *entry_label)
+   {
+      *w = (unsigned)strlen(entry_label);
+      return strlcpy(s, entry_label, len);
+   }
+   return 0;
+}
+#endif
+
 static size_t menu_action_setting_disp_set_label_entry(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -1662,8 +1691,8 @@ static size_t menu_action_setting_disp_set_label_achievement_information(
    rarch_setting_t *setting  = cbs->setting;
    *w                        = 2;
 
-   if (setting && setting->get_string_representation)
-      _len = setting->get_string_representation(setting, s, len);
+   if (setting && setting->actions->repr)
+      _len = setting->actions->repr(setting, s, len);
    else
       *s                     = '\0';
 
@@ -1816,8 +1845,8 @@ static size_t menu_action_setting_disp_set_label(file_list_t* list,
 
    *w                        = 19;
 
-   if (setting && setting->get_string_representation)
-      _len = setting->get_string_representation(setting, s, len);
+   if (setting && setting->actions->repr)
+      _len = setting->actions->repr(setting, s, len);
    else
       *s                     = '\0';
    if (path && *path)
@@ -2332,9 +2361,16 @@ static int menu_cbs_init_bind_get_string_representation_compare_type(
       case 31: /* Database entry */
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_db_entry);
          break;
-      case 25: /* URL directory entries */
-      case 26: /* URL entries */
+      case FILE_TYPE_DOWNLOAD_URL: /* URL directory entries */
          BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry_url);
+         break;
+      case FILE_TYPE_DOWNLOAD_CORE_CONTENT: /* URL entries */
+#ifdef HAVE_NETWORKING
+         BIND_ACTION_GET_VALUE(cbs,
+               menu_action_setting_disp_set_label_core_content_entry);
+#else
+         BIND_ACTION_GET_VALUE(cbs, menu_action_setting_disp_set_label_entry_url);
+#endif
          break;
       case MENU_SETTING_DROPDOWN_SETTING_INT_ITEM:
       case MENU_SETTING_DROPDOWN_SETTING_UINT_ITEM:
@@ -2410,7 +2446,7 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
       }
    }
 
-   if (cbs->setting && !cbs->setting->get_string_representation)
+   if (cbs->setting && !cbs->setting->actions->repr)
    {
       switch (cbs->setting->type)
       {

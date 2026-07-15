@@ -299,6 +299,33 @@ static void xdg_screensaver_inhibit(Window wnd)
          title_len = strlcpy(title, " ", sizeof(title));
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*) title, title_len);
+
+#ifdef X_HAVE_UTF8_STRING
+      /* Also set the EWMH _NET_WM_NAME (UTF8_STRING). Without this, a
+       * title containing non-Latin-1 characters set via the legacy
+       * WM_NAME above is rendered garbled by EWMH-aware window managers,
+       * and this code path (which runs on screensaver inhibit, i.e. on
+       * window creation and game open/close transitions) would otherwise
+       * leave a stale legacy-only title behind. Purely additive: if the
+       * atoms are unavailable, WM_NAME remains the sole fallback. */
+      {
+         Atom XA_NET_WM_NAME      = XInternAtom(g_x11_dpy, "_NET_WM_NAME",      False);
+         Atom XA_NET_WM_ICON_NAME = XInternAtom(g_x11_dpy, "_NET_WM_ICON_NAME", False);
+         Atom XA_UTF8_STRING      = XInternAtom(g_x11_dpy, "UTF8_STRING",       False);
+
+         if (XA_UTF8_STRING)
+         {
+            if (XA_NET_WM_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, title_len);
+            if (XA_NET_WM_ICON_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, title_len);
+         }
+      }
+#endif
    }
 
    _len = strlcpy(cmd, "xdg-screensaver suspend 0x", sizeof(cmd));
@@ -837,8 +864,41 @@ void x11_update_title(void *data)
    title[0]  = '\0';
    _len      = video_driver_get_window_title(title, sizeof(title));
    if (title[0])
+   {
+      /* Legacy ICCCM property. Kept for window managers that do not
+       * understand EWMH. The encoding of WM_NAME is nominally STRING
+       * (Latin-1), but RetroArch's title may contain UTF-8; this is
+       * preserved as-is to avoid changing long-standing behaviour for
+       * old clients, which is exactly what they receive today. */
       XChangeProperty(g_x11_dpy, g_x11_win, XA_WM_NAME, XA_STRING,
             8, PropModeReplace, (const unsigned char*)title, _len);
+
+#ifdef X_HAVE_UTF8_STRING
+      /* EWMH properties. Window managers that implement EWMH prefer
+       * _NET_WM_NAME (UTF8_STRING) over WM_NAME, so non-Latin-1 titles
+       * (e.g. Japanese ROM names) render correctly. This is purely
+       * additive: the atoms are interned at runtime and, if either is
+       * unavailable, the legacy WM_NAME above is the sole fallback, so
+       * older clients are never broken. */
+      {
+         Atom XA_NET_WM_NAME      = XInternAtom(g_x11_dpy, "_NET_WM_NAME",      False);
+         Atom XA_NET_WM_ICON_NAME = XInternAtom(g_x11_dpy, "_NET_WM_ICON_NAME", False);
+         Atom XA_UTF8_STRING      = XInternAtom(g_x11_dpy, "UTF8_STRING",       False);
+
+         if (XA_UTF8_STRING)
+         {
+            if (XA_NET_WM_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, _len);
+            if (XA_NET_WM_ICON_NAME)
+               XChangeProperty(g_x11_dpy, g_x11_win, XA_NET_WM_ICON_NAME,
+                     XA_UTF8_STRING, 8, PropModeReplace,
+                     (const unsigned char*)title, _len);
+         }
+      }
+#endif
+   }
 }
 
 bool x11_input_ctx_new(bool true_full)

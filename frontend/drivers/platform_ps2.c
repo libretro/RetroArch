@@ -456,11 +456,18 @@ static uint64_t frontend_ps2_get_total_mem(void) { return 32*1024*1024; }
 /* Crude try-and-fail approach, in lack of a better solution. */
 static uint64_t frontend_ps2_get_free_mem(void)
 {
+  /* The probe below transiently allocates most of RAM to estimate what
+   * is free. That is fine as a one-off, but callers such as the memory
+   * stats overlay poll repeatedly - so compute it once and memoize. */
+  static uint64_t cached = 0;
   uint64_t free_mem;
   size_t s0 = 32*1024*1024;
   void* p1;
   void* p2;
   void* p3;
+
+  if (cached)
+    return cached;
 
   while (s0 && (p1 = malloc(s0)) == NULL)
     s0 >>= 1;
@@ -488,7 +495,8 @@ static uint64_t frontend_ps2_get_free_mem(void)
   if (p3)
     free(p3);
 
-  return free_mem;
+  cached = free_mem;
+  return cached;
 }
 
 static int frontend_ps2_parse_drive_list(void *data, bool load_content)

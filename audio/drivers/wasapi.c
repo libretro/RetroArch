@@ -1119,7 +1119,8 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
    REFERENCE_TIME dev_period = 0;
    BYTE *dest                = NULL;
    settings_t *settings      = config_get_ptr();
-   bool float_format         = settings->bools.audio_wasapi_float_format;
+   bool float_format         = (settings->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_FLOAT);
    bool exclusive_mode       = settings->bools.audio_wasapi_exclusive_mode;
    bool audio_sync           = settings->bools.audio_sync;
    unsigned sh_buffer_length = settings->uints.audio_wasapi_sh_buffer_length;

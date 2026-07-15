@@ -323,7 +323,7 @@ typedef struct
    D3D11BlendState       blend_disable;
    D3D11BlendState       blend_pipeline;
    D3D11Buffer           menu_pipeline_vbo;
-   math_matrix_4x4       mvp, mvp_no_rot, identity;
+   math_matrix_4x4       mvp, mvp_last_pass, mvp_no_rot, identity;
    struct video_viewport vp;
    D3D11_VIEWPORT        viewport;
    D3D11_RECT            scissor;
@@ -581,8 +581,8 @@ static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
       unsigned width, height;
 
       texture->desc.BindFlags |= D3D11_BIND_RENDER_TARGET;
-      width                    = texture->desc.Width  >> 5;
-      height                   = texture->desc.Height >> 5;
+      width                    = texture->desc.Width;
+      height                   = texture->desc.Height;
 
       while ((width > 1) || (height > 1))
       {
@@ -2248,7 +2248,7 @@ static bool d3d11_shader_load_step(void *data,
             },
             {
                i == ds->shader_preset->passes - 1
-                  ? &d3d11->mvp : &d3d11->identity,
+                  ? &d3d11->mvp_last_pass : &d3d11->identity,
                &d3d11->pass[i].rt.size_data,
                &d3d11->frame.output_size,
                &d3d11->pass[i].frame_count,
@@ -2577,7 +2577,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
                &d3d11->luts[0].size_data, sizeof(*d3d11->luts)},
          },
          {
-            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp : &d3d11->identity, /* MVP */
+            i == d3d11->shader_preset->passes - 1 ? &d3d11->mvp_last_pass : &d3d11->identity, /* MVP */
             &d3d11->pass[i].rt.size_data,    /* OutputSize */
             &d3d11->frame.output_size,       /* FinalViewportSize */
             &d3d11->pass[i].frame_count,     /* FrameCount */
@@ -2964,7 +2964,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       d3d11->device                = *cached_device;
       d3d11->context               = *cached_context;
       d3d11->supportedFeatureLevel = cached_supportedFeatureLevel;
-      cached_supportedFeatureLevel = 0;
+      cached_supportedFeatureLevel = (D3D_FEATURE_LEVEL)0;
       *cached_device               = NULL;
       *cached_context              = NULL;
    }
@@ -3810,6 +3810,8 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    size_t i;
+   d3d11->mvp_last_pass = d3d11->ubo_values.mvp;
+   int rot = retroarch_get_rotation();
 
    for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
@@ -3824,7 +3826,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = d3d11->vp.width * pass->fbo.scale_x;
+               width = (rot % 2 ? d3d11->vp.height : d3d11->vp.width) * pass->fbo.scale_x;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3845,7 +3847,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = d3d11->vp.height * pass->fbo.scale_y;
+               height = (rot % 2 ? d3d11->vp.width : d3d11->vp.height) * pass->fbo.scale_y;
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -3861,13 +3863,17 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
       else if (i == (d3d11->shader_preset->passes - 1))
       {
-         width  = d3d11->vp.width;
-         height = d3d11->vp.height;
+         width  = rot % 2 ? d3d11->vp.height : d3d11->vp.width;
+         height = rot % 2 ? d3d11->vp.width : d3d11->vp.height;
       }
 
       RARCH_DBG("[D3D11] Updating framebuffer size %ux%u.\n", width, height);
+	  
+	  bool last_pass = i == (d3d11->shader_preset->passes - 1);
+	  
 
-      if (     (i != (d3d11->shader_preset->passes - 1))
+      if (     !last_pass
+			|| pass->feedback
             || (width  != d3d11->vp.width)
             || (height != d3d11->vp.height))
       {
@@ -3879,6 +3885,17 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
          d3d11->pass[i].rt.desc.Height    = height;
          d3d11->pass[i].rt.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
          d3d11->pass[i].rt.desc.Format    = glslang_format_to_dxgi(d3d11->pass[i].semantics.format);
+		 
+		 if (!last_pass)
+		 {
+			/* mipmap refers to the input of the pass */ 
+		    struct video_shader_pass* nextPass = &d3d11->shader_preset->pass[i + 1];
+		    if (nextPass && nextPass->mipmap)
+		    {
+		       d3d11->pass[i].rt.desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+		    }
+		 }
+		 
          d3d11_release_texture(&d3d11->pass[i].rt);
          d3d11_init_texture(d3d11->device, &d3d11->pass[i].rt);
 
@@ -3892,8 +3909,14 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
       }
       else
       {
-         width = retroarch_get_rotation() % 2 ? height : width;
-         height = retroarch_get_rotation() % 2 ? width : height;
+         d3d11->mvp_last_pass = d3d11->mvp;
+		 
+		 if (rot % 2)
+		 {
+			unsigned tmp = width;
+			width = height;
+			height = tmp;
+		 }			 
 
          d3d11->pass[i].rt.size_data.x = width;
          d3d11->pass[i].rt.size_data.y = height;
@@ -4428,6 +4451,9 @@ static bool d3d11_gfx_frame(
             context->lpVtbl->Draw(context, 4, 0);
          else
             context->lpVtbl->Draw(context, 4, 4);
+		
+		 if (d3d11->pass[i].rt.desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+			context->lpVtbl->GenerateMips( context, d3d11->pass[i].rt.view);
 
          texture = &d3d11->pass[i].rt;
       }
@@ -5652,6 +5678,105 @@ static bool d3d11_get_hw_render_interface(
    return ((d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE) > 0);
 }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+static DXGI_FORMAT d3d11_dxgi_from_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return DXGI_FORMAT_BC1_UNORM;
+      case TEXTURE_GPU_FORMAT_BC2: return DXGI_FORMAT_BC2_UNORM;
+      case TEXTURE_GPU_FORMAT_BC3: return DXGI_FORMAT_BC3_UNORM;
+      case TEXTURE_GPU_FORMAT_BC7: return DXGI_FORMAT_BC7_UNORM;
+      default:                     break;
+   }
+   return DXGI_FORMAT_UNKNOWN;
+}
+
+static bool d3d11_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt)
+{
+   UINT        support = 0;
+   d3d11_video_t* v = (d3d11_video_t*)data;
+   DXGI_FORMAT dxgi    = d3d11_dxgi_from_gpu_format(fmt);
+   if (!v || !v->device || dxgi == DXGI_FORMAT_UNKNOWN)
+      return false;
+   if (FAILED(v->device->lpVtbl->CheckFormatSupport(
+         v->device, dxgi, &support)))
+      return false;
+   return (support & D3D11_FORMAT_SUPPORT_TEXTURE2D) != 0;
+}
+
+static uintptr_t d3d11_gfx_load_texture_compressed(void* video_data,
+      const struct texture_compressed* tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   D3D11_SUBRESOURCE_DATA subres[IMAGE_MAX_MIPS];
+   d3d11_video_t* v = (d3d11_video_t*)video_data;
+   d3d11_texture_t* texture = NULL;
+   DXGI_FORMAT dxgi        = DXGI_FORMAT_UNKNOWN;
+   unsigned    block_bytes = 16;
+   unsigned    i;
+
+   (void)threaded;
+   if (!v || !v->device || !tc || tc->num_mips == 0)
+      return 0;
+   dxgi = d3d11_dxgi_from_gpu_format(tc->format);
+   if (dxgi == DXGI_FORMAT_UNKNOWN)
+      return 0;
+   if (tc->format == TEXTURE_GPU_FORMAT_BC1)
+      block_bytes = 8;
+
+   if (!(texture = (d3d11_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+      texture->sampler = v->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+   else
+      texture->sampler = v->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      unsigned blocks_w          = (tc->mips[i].width + 3u) >> 2;
+      subres[i].pSysMem          = tc->mips[i].data;
+      subres[i].SysMemPitch      = blocks_w * block_bytes;
+      subres[i].SysMemSlicePitch = (UINT)tc->mips[i].size;
+   }
+
+   texture->desc.Width            = tc->mips[0].width;
+   texture->desc.Height           = tc->mips[0].height;
+   texture->desc.MipLevels        = tc->num_mips;
+   texture->desc.ArraySize        = 1;
+   texture->desc.Format           = dxgi;
+   texture->desc.SampleDesc.Count = 1;
+   texture->desc.Usage            = D3D11_USAGE_IMMUTABLE;
+   texture->desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
+
+   if (FAILED(v->device->lpVtbl->CreateTexture2D(
+         v->device, &texture->desc, subres, &texture->handle)))
+   {
+      free(texture);
+      return 0;
+   }
+
+   {
+      D3D11_SHADER_RESOURCE_VIEW_DESC view_desc;
+      memset(&view_desc, 0, sizeof(view_desc));
+      view_desc.Format                    = dxgi;
+      view_desc.ViewDimension             = D3D_SRV_DIMENSION_TEXTURE2D;
+      view_desc.Texture2D.MostDetailedMip = 0;
+      view_desc.Texture2D.MipLevels       = tc->num_mips;
+      v->device->lpVtbl->CreateShaderResourceView(v->device,
+            (D3D11Resource)texture->handle, &view_desc, &texture->view);
+   }
+
+   texture->size_data.x = (float)tc->mips[0].width;
+   texture->size_data.y = (float)tc->mips[0].height;
+   texture->size_data.z = 1.0f / (float)tc->mips[0].width;
+   texture->size_data.w = 1.0f / (float)tc->mips[0].height;
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_get_flags,
    d3d11_gfx_load_texture,
@@ -5690,14 +5815,16 @@ static const video_poke_interface_t d3d11_poke_interface = {
    d3d11_set_hdr_paper_white_nits,
    d3d11_set_hdr_expand_gamut,
    d3d11_set_hdr_scanlines,
-   d3d11_set_hdr_subpixel_layout
+   d3d11_set_hdr_subpixel_layout,
 #else
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* d3d11_set_hdr_subpixel_layout */
+   NULL, /* d3d11_set_hdr_subpixel_layout */
 #endif
+   d3d11_gfx_supports_texture_format,
+   d3d11_gfx_load_texture_compressed
 };
 
 static void d3d11_gfx_get_poke_interface(void* data,

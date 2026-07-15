@@ -1140,7 +1140,6 @@ static void *gl1_init(const video_info_t *video,
    unsigned temp_width = 0, temp_height = 0;
    settings_t *settings                 = config_get_ptr();
    bool video_smooth                    = settings->bools.video_smooth;
-   bool video_font_enable               = settings->bools.video_font_enable;
    const char *video_context_driver     = settings->arrays.video_context_driver;
    const char *vendor                   = NULL;
    const char *renderer                 = NULL;
@@ -1302,7 +1301,6 @@ static void *gl1_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (video_font_enable)
       font_driver_init_osd(gl1,
             video,
             false,

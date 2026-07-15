@@ -164,6 +164,9 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
                        library:(id<MTLLibrary>)l;
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+#if TARGET_OS_OSX
+- (Texture *)newTextureCompressed:(const struct texture_compressed *)tc filter:(enum texture_filter_type)filter;
+#endif
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped;
 - (void)convertFormat:(RPixelFormat)fmt from:(id<MTLTexture>)src to:(id<MTLTexture>)dst;
 - (id<MTLRenderPipelineState>)getStockShader:(int)index blend:(bool)blend;
@@ -878,6 +881,11 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 - (Uniforms *)uniforms
 {
    return &_uniforms;
+}
+
+- (Uniforms *)uniformsNoRotate
+{
+   return &_uniformsNoRotate;
 }
 
 #pragma mark - HDR
@@ -1865,6 +1873,49 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
    return t;
 }
+
+#if TARGET_OS_OSX
+- (Texture *)newTextureCompressed:(const struct texture_compressed *)tc
+      filter:(enum texture_filter_type)filter
+{
+   MTLPixelFormat        pf;
+   MTLTextureDescriptor *td;
+   id<MTLTexture>        t;
+   Texture              *tex;
+   unsigned              i;
+   unsigned              block_bytes = 16;
+
+   switch (tc->format)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: pf = MTLPixelFormatBC1_RGBA;    block_bytes = 8; break;
+      case TEXTURE_GPU_FORMAT_BC2: pf = MTLPixelFormatBC2_RGBA;                     break;
+      case TEXTURE_GPU_FORMAT_BC3: pf = MTLPixelFormatBC3_RGBA;                     break;
+      case TEXTURE_GPU_FORMAT_BC7: pf = MTLPixelFormatBC7_RGBAUnorm;                break;
+      default:                     return nil;
+   }
+
+   td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf
+         width:tc->mips[0].width
+         height:tc->mips[0].height
+         mipmapped:NO];
+   td.mipmapLevelCount = tc->num_mips;
+
+   t = [_device newTextureWithDescriptor:td];
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      NSUInteger blocks_w = (tc->mips[i].width + 3u) >> 2;
+      [t replaceRegion:MTLRegionMake2D(0, 0, tc->mips[i].width, tc->mips[i].height)
+           mipmapLevel:i
+             withBytes:tc->mips[i].data
+           bytesPerRow:blocks_w * block_bytes];
+   }
+
+   tex         = [Texture new];
+   tex.texture = t;
+   tex.sampler = _samplers[filter];
+   return tex;
+}
+#endif
 
 - (id<CAMetalDrawable>)nextDrawable
 {
@@ -4342,6 +4393,7 @@ typedef struct texture
 typedef struct MTLALIGN(16)
 {
    matrix_float4x4 mvp;
+   matrix_float4x4 mvp_last_pass;
 
    struct
    {
@@ -4384,7 +4436,7 @@ typedef struct MTLALIGN(16)
    id<MTLTexture> _src; /* source texture */
    bool _srcDirty;
 
-   id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
+   id<MTLSamplerState> _samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX][2];
    struct video_shader *_shader;
 
    engine_t _engine;
@@ -4507,15 +4559,25 @@ typedef struct MTLALIGN(16)
       sd.rAddressMode        = sd.sAddressMode;
       sd.minFilter           = MTLSamplerMinMagFilterLinear;
       sd.magFilter           = MTLSamplerMinMagFilterLinear;
+      sd.mipFilter           = MTLSamplerMipFilterNotMipmapped;
 
       id<MTLSamplerState> ss = [_context.device newSamplerStateWithDescriptor:sd];
-      _samplers[RARCH_FILTER_LINEAR][i] = ss;
+      _samplers[RARCH_FILTER_LINEAR][i][0] = ss;
+      
+      sd.mipFilter           = MTLSamplerMipFilterLinear;
+      ss = [_context.device newSamplerStateWithDescriptor:sd];
+      _samplers[RARCH_FILTER_LINEAR][i][1] = ss;
 
       sd.minFilter           = MTLSamplerMinMagFilterNearest;
       sd.magFilter           = MTLSamplerMinMagFilterNearest;
+      sd.mipFilter           = MTLSamplerMipFilterNotMipmapped;
 
       ss                     = [_context.device newSamplerStateWithDescriptor:sd];
-      _samplers[RARCH_FILTER_NEAREST][i] = ss;
+      _samplers[RARCH_FILTER_NEAREST][i][0] = ss;
+      
+      sd.mipFilter           = MTLSamplerMipFilterNearest;
+      ss = [_context.device newSamplerStateWithDescriptor:sd];
+      _samplers[RARCH_FILTER_NEAREST][i][1] = ss;
    }
 }
 
@@ -4525,9 +4587,15 @@ typedef struct MTLALIGN(16)
    for (i = 0; i < RARCH_WRAP_MAX; i++)
    {
       if (smooth)
-         _samplers[RARCH_FILTER_UNSPEC][i] = _samplers[RARCH_FILTER_LINEAR][i];
+      {
+         _samplers[RARCH_FILTER_UNSPEC][i][0] = _samplers[RARCH_FILTER_LINEAR][i][0];
+         _samplers[RARCH_FILTER_UNSPEC][i][1] = _samplers[RARCH_FILTER_LINEAR][i][1];
+      }
       else
-         _samplers[RARCH_FILTER_UNSPEC][i] = _samplers[RARCH_FILTER_NEAREST][i];
+      {
+         _samplers[RARCH_FILTER_UNSPEC][i][0] = _samplers[RARCH_FILTER_NEAREST][i][0];
+         _samplers[RARCH_FILTER_UNSPEC][i][1] = _samplers[RARCH_FILTER_NEAREST][i][1];
+      }
    }
 }
 
@@ -4812,7 +4880,8 @@ typedef struct MTLALIGN(16)
          int binding        = texture_sem->binding;
          id<MTLTexture> tex = (__bridge id<MTLTexture>)*(void **)texture_sem->texture_data;
          textures[binding]  = tex;
-         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap];
+         
+         samplers[binding]  = _samplers[texture_sem->filter][texture_sem->wrap][tex.mipmapLevelCount > 1 ? 1 : 0];
          texture_sem++;
       }
 
@@ -4827,7 +4896,17 @@ typedef struct MTLALIGN(16)
       [rce drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 
       if (!backBuffer)
+      {
          [rce endEncoding];
+         
+         if (_engine.pass[i].rt.view.mipmapLevelCount > 1)
+         {
+            id<MTLBlitCommandEncoder> bce = [cb blitCommandEncoder];
+            [bce generateMipmapsForTexture:(_engine.pass[i].rt.view)];
+            [bce endEncoding];
+            bce = nil;
+         }
+      }
 
       _texture = _engine.pass[i].rt.view;
    }
@@ -4854,6 +4933,17 @@ typedef struct MTLALIGN(16)
       memset(&_engine.pass[i].feedback, 0, sizeof(_engine.pass[i].feedback));
    }
 
+   /* Default to the rotated projection matrix. Under a TATE rotation the
+    * final pass swaps width/height (below), which makes its target size
+    * differ from the viewport and sends it down the FBO-allocation branch
+    * rather than the direct-to-screen 'else' that assigns the rotated
+    * matrix -- so without this default the last pass would render with the
+    * unrotated matrix and the image would keep its orientation while only
+    * the aspect ratio changed (issue #19142). This mirrors the D3D11 driver,
+    * which initialises mvp_last_pass to the rotated mvp. */
+   _engine.mvp_last_pass = _context.uniforms->projectionMatrix;
+   int rot = retroarch_get_rotation();
+   
    width  = (NSUInteger)_size.width;
    height = (NSUInteger)_size.height;
 
@@ -4870,7 +4960,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               width = (NSUInteger)(_viewport->width * shader_pass->fbo.scale_x);
+               width = (NSUInteger)((rot % 2 ? _viewport->height : _viewport->width) * shader_pass->fbo.scale_x);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4891,7 +4981,7 @@ typedef struct MTLALIGN(16)
                break;
 
             case RARCH_SCALE_VIEWPORT:
-               height = (NSUInteger)(_viewport->height * shader_pass->fbo.scale_y);
+               height = (NSUInteger)((rot % 2 ? _viewport->width : _viewport->height) * shader_pass->fbo.scale_y);
                break;
 
             case RARCH_SCALE_ABSOLUTE:
@@ -4907,8 +4997,8 @@ typedef struct MTLALIGN(16)
       }
       else if (i == (_shader->passes - 1))
       {
-         width  = _viewport->width;
-         height = _viewport->height;
+         width  = rot % 2 ? _viewport->height : _viewport->width;
+         height = rot % 2 ? _viewport->width : _viewport->height;
       }
 
       /* Updating framebuffer size */
@@ -4931,6 +5021,7 @@ typedef struct MTLALIGN(16)
 
       if (   (!lastPass)
           || forceAllocForHDR
+          || shader_pass->feedback
           || (width  != _viewport->width)
           || (height != _viewport->height)
           || fmt != MTLPixelFormatBGRA8Unorm)
@@ -4939,13 +5030,24 @@ typedef struct MTLALIGN(16)
          _engine.pass[i].viewport.height = height;
          _engine.pass[i].viewport.znear  = 0.0;
          _engine.pass[i].viewport.zfar   = 1.0;
+         
+         bool useMipMap = false;
+         if (!lastPass)
+         {
+           /* mipmap refers to the input of the pass */
+            struct video_shader_pass *nextPass = &_shader->pass[i + 1];
+            if (nextPass && nextPass->mipmap)
+               useMipMap = true;
+         }
 
-         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt
-            width:width height:height mipmapped:false];
-         td.storageMode = MTLStorageModePrivate;
+         MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:fmt width:width height:height mipmapped:(useMipMap ? YES : NO)];
+        // td.storageMode = MTLStorageModePrivate;
          td.usage       = MTLTextureUsageShaderRead
                         | MTLTextureUsageRenderTarget;
-
+         
+         if (useMipMap)
+            td.mipmapLevelCount = [self getMipLevels:(unsigned)width height:(unsigned)height];
+         
          [self _initTexture:&_engine.pass[i].rt withDescriptor:td];
 
          if (shader_pass->feedback)
@@ -4953,6 +5055,14 @@ typedef struct MTLALIGN(16)
       }
       else
       {
+         if (rot % 2)
+         {
+             NSUInteger tmp = width;
+             width = height;
+             height = tmp;
+         }
+         
+         _engine.mvp_last_pass = _context.uniforms->projectionMatrix;
          _engine.pass[i].rt.size_data.x = width;
          _engine.pass[i].rt.size_data.y = height;
          _engine.pass[i].rt.size_data.z = 1.0f / width;
@@ -4993,6 +5103,21 @@ typedef struct MTLALIGN(16)
    free(shader);
 }
 
+- (unsigned)getMipLevels:(unsigned)_width height:(unsigned)_height
+{
+   unsigned levels = 0;
+   unsigned size = _width > _height ? _width : _height;
+   if (!size)
+      size = 1;
+   
+   while(size)
+   {
+      size >>= 1;
+      levels++;
+   }
+   return levels;
+}
+
 - (BOOL)setShaderFromPath:(NSString *)path
 {
    [self _freeVideoShader:_shader];
@@ -5031,7 +5156,7 @@ typedef struct MTLALIGN(16)
       for (i = 0; i < shader->passes; source = &_engine.pass[i++].rt)
       {
          matrix_float4x4 *mvp = (i == shader->passes-1)
-            ? &_context.uniforms->projectionMatrix
+            ? &_engine.mvp_last_pass
             : &_engine.mvp;
 
          /* clang-format off */
@@ -5242,6 +5367,8 @@ typedef struct MTLALIGN(16)
             shader->pass[i].source.string.fragment = NULL;
          }
       }
+      
+      id<MTLBlitCommandEncoder> bce = [_context.blitCommandBuffer blitCommandEncoder];
 
       for (i = 0; i < shader->luts; i++)
       {
@@ -5253,20 +5380,32 @@ typedef struct MTLALIGN(16)
 
          if (!image_texture_load(&image, shader->lut[i].path))
             return NO;
+         
+         bool mipmapped = shader->lut[i].mipmap;
 
          MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatRGBA8Unorm
-             width:image.width height:image.height
-             mipmapped:shader->lut[i].mipmap];
+             width:image.width height:image.height mipmapped:(mipmapped ? YES : NO)];
+         
          td.usage                 = MTLTextureUsageShaderRead;
+         
+         if (mipmapped)
+            td.mipmapLevelCount = [self getMipLevels:image.width height:image.height];
+         
          [self _initTexture:&_engine.luts[i] withDescriptor:td];
 
          [_engine.luts[i].view replaceRegion:MTLRegionMake2D(0, 0, image.width, image.height)
                                  mipmapLevel:0 withBytes:image.pixels
                                  bytesPerRow:4 * image.width];
 
-         /* TODO/FIXME (sgc): generate mip maps */
+         if (mipmapped)
+            [bce generateMipmapsForTexture:_engine.luts[i].view];
+         
          image_texture_free(&image);
       }
+      [bce endEncoding];
+      [_context.commandBuffer commit];
+      [_context.commandBuffer waitUntilCompleted];
+      
       _shader = shader;
       shader = nil;
    }
@@ -5491,23 +5630,65 @@ static void metal_ctx_swap_buffers(void *data)
 static bool metal_set_shader(void *data,
       enum rarch_shader_type type, const char *path);
 
+typedef struct
+{
+   const video_info_t *video;
+   input_driver_t **input;
+   void **input_data;
+   void *result;
+} metal_init_args_t;
+
+/* Defined in ui/drivers/cocoa/cocoa_common.m.  Declared locally (same
+ * pattern as the cocoa ctx drivers) to avoid touching the
+ * CRLF-formatted cocoa_common.h. */
+void cocoa_main_thread_sync(void (*func)(void *userdata), void *userdata);
+
+/* The whole init is main-thread work: setViewType replaces the
+ * window's contentView (with threaded video, calling it from the
+ * worker raises NSInternalInconsistencyException inside
+ * -[NSWindow setContentView:] and aborts), and MetalDriver's
+ * -initWithVideo: attaches to the render view (view.device /
+ * view.delegate / view.frame) and drives [apple_platform
+ * setVideoMode:].  metal_frame needs no such treatment: it presents
+ * via CAMetalLayer.nextDrawable, which is the sanctioned off-main
+ * path. */
+static void metal_init_mainthread(void *userdata)
+{
+   metal_init_args_t *args = (metal_init_args_t*)userdata;
+   MetalDriver *md         = nil;
+
+   [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
+
+   md = [[MetalDriver alloc] initWithVideo:args->video
+                                     input:args->input
+                                 inputData:args->input_data];
+   if (md == nil)
+   {
+      args->result = NULL;
+      return;
+   }
+
+   /* Store reference for context swap_buffers calls */
+   metal_ctx_data = (__bridge void *)md;
+
+   args->result   = (__bridge_retained void *)md;
+}
+
 static void *metal_init(
       const video_info_t *video,
       input_driver_t **input,
       void **input_data)
 {
-   MetalDriver *md = nil;
+   metal_init_args_t args;
 
-   [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
+   args.video      = video;
+   args.input      = input;
+   args.input_data = input_data;
+   args.result     = NULL;
 
-   md = [[MetalDriver alloc] initWithVideo:video input:input inputData:input_data];
-   if (md == nil)
-      return NULL;
+   cocoa_main_thread_sync(metal_init_mainthread, &args);
 
-   /* Store reference for context swap_buffers calls */
-   metal_ctx_data = (__bridge void *)md;
-
-   return (__bridge_retained void *)md;
+   return args.result;
 }
 
 /* Flag to prevent recursive shader_subframes calls */
@@ -5602,7 +5783,11 @@ static void metal_set_nonblock_state(void *data, bool non_block,
 
 static bool metal_alive(void *data) { return true; }
 static bool metal_has_windowed(void *data) { return true; }
-static bool metal_focus(void *data) { return apple_platform.hasFocus; }
+/* apple_platform.hasFocus is [NSApp isActive] (AppKit, main-thread-
+ * only); with threaded video this is queried from the worker every
+ * frame.  cocoa_has_focus() reads the value the main thread last
+ * published, lock-free. */
+static bool metal_focus(void *data) { return cocoa_has_focus(NULL); }
 
 static bool metal_suppress_screensaver(void *data, bool disable)
 {
@@ -5830,9 +6015,17 @@ static void metal_set_texture_enable(void *data, bool state, bool full_screen)
 #endif
 }
 
+static void metal_show_mouse_mainthread(void *userdata)
+{
+   [apple_platform setCursorVisible:(userdata != NULL)];
+}
+
 static void metal_show_mouse(void *data, bool state)
 {
-   [apple_platform setCursorVisible:state];
+   /* setCursorVisible is NSCursor (AppKit); with threaded video this
+    * can be reached from the worker thread. */
+   cocoa_main_thread_sync(metal_show_mouse_mainthread,
+         state ? (void*)1 : NULL);
 }
 
 static struct video_shader *metal_get_current_shader(void *data)
@@ -5916,6 +6109,58 @@ static void metal_set_hdr_subpixel_layout(void *data, unsigned subpixel_layout)
       [md.context setHDRSubpixelLayout:subpixel_layout];
 }
 
+static bool metal_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+#if TARGET_OS_OSX
+   MetalDriver  *md = (__bridge MetalDriver *)video_data;
+   id<MTLDevice> dev;
+   if (!md)
+      return false;
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+      case TEXTURE_GPU_FORMAT_BC2:
+      case TEXTURE_GPU_FORMAT_BC3:
+      case TEXTURE_GPU_FORMAT_BC7:
+         break;
+      default:
+         return false;
+   }
+   dev = md.context.device;
+   if (@available(macOS 11.0, *))
+      return dev.supportsBCTextureCompression ? true : false;
+   return true; /* BC always available on pre-11 (Intel) Macs */
+#else
+   (void)video_data;
+   (void)fmt;
+   return false;
+#endif
+}
+
+static uintptr_t metal_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+#if TARGET_OS_OSX
+   MetalDriver *md = (__bridge MetalDriver *)video_data;
+   Texture     *t;
+   (void)threaded;
+   if (!md || !tc || tc->num_mips == 0)
+      return 0;
+   t = [md.context newTextureCompressed:tc filter:filter_type];
+   if (!t)
+      return 0;
+   return (uintptr_t)(__bridge_retained void *)(t);
+#else
+   (void)video_data;
+   (void)tc;
+   (void)threaded;
+   (void)filter_type;
+   return 0;
+#endif
+}
+
 static const video_poke_interface_t metal_poke_interface = {
    metal_get_flags,
    metal_load_texture,
@@ -5942,7 +6187,9 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_set_hdr_paper_white_nits,
    metal_set_hdr_expand_gamut,
    metal_set_hdr_scanlines,
-   metal_set_hdr_subpixel_layout
+   metal_set_hdr_subpixel_layout,
+   metal_supports_texture_format,
+   metal_load_texture_compressed
 };
 
 static void metal_get_poke_interface(void *data,

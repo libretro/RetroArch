@@ -818,7 +818,6 @@ static void *ps2_init(const video_info_t *video,
       return NULL;
 
    init_ps2_video(ps2);
-   if (video->font_enable)
       font_driver_init_osd(ps2,
             video, false,
             video->is_threaded,

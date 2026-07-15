@@ -17,6 +17,7 @@
  */
 
 #include <stdlib.h>
+#include <time.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -1225,6 +1226,33 @@ static const rgui_theme_t rgui_theme_opaque_gray_light = {
  * of 60Hz (-> 16.666 ms update period) */
 static const float particle_effect_period = (1.0f / 60.0f) * 1000.0f;
 
+/* Cheap inline PRNG for the cosmetic particle effects. libc
+ * rand()/random() are ~10x slower than needed (call overhead +
+ * internal state/locking), random() is not portable, and the
+ * particle effects do not need their statistical quality. xorshift32
+ * is deterministic, multiply-free, has a single word of state, and
+ * inlines to register-only shift/xor. Returns [0, RGUI_RAND_MAX]. */
+#define RGUI_RAND_MAX 0xFFFFFFFFu
+
+static uint32_t rgui_rng_state = 0;
+
+static INLINE uint32_t rgui_rand(void)
+{
+   uint32_t x = rgui_rng_state;
+   /* Lazy seed; xorshift state must never be zero. */
+   if (!x)
+   {
+      x = (uint32_t)time(NULL) * 2654435761u;
+      if (!x)
+         x = 2463534242u;
+   }
+   x ^= x << 13;
+   x ^= x >> 17;
+   x ^= x << 5;
+   rgui_rng_state = x;
+   return x;
+}
+
 /* ==============================
  * pixel format conversion START
  * ============================== */
@@ -1946,10 +1974,10 @@ static void rgui_init_particle_effect(
             {
                rgui_particle_t *particle = &rgui->particles[i];
 
-               particle->a = (float)(rand() % fb_width);
-               particle->b = (float)(rand() % fb_height);
-               particle->c = (float)(rand() % 64 - 16) * 0.1f;
-               particle->d = (float)(rand() % 64 - 48) * 0.1f;
+               particle->a = (float)(rgui_rand() % fb_width);
+               particle->b = (float)(rgui_rand() % fb_height);
+               particle->c = (float)(rgui_rand() % 64 - 16) * 0.1f;
+               particle->d = (float)(rgui_rand() % 64 - 48) * 0.1f;
             }
          }
          break;
@@ -1974,13 +2002,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* x pos */
-               particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+               particle->a = (float)(rgui_rand() % (fb_width / 3)) * 3.0f;
                /* y pos */
-               particle->b = (float)(rand() % fb_height);
+               particle->b = (float)(rgui_rand() % fb_height);
                /* drop length */
-               particle->c = (float)weights[(unsigned)(rand() % 60)];
+               particle->c = (float)weights[(unsigned)(rgui_rand() % 60)];
                /* drop speed (larger drops fall faster) */
-               particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+               particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rgui_rand() % 150) / 200.0f));
             }
          }
          break;
@@ -1994,13 +2022,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* radius */
-               particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+               particle->a = 1.0f + (((float)rgui_rand() / (float)RGUI_RAND_MAX) * max_radius);
                /* theta */
-               particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+               particle->b = ((float)rgui_rand() / (float)RGUI_RAND_MAX) * 2.0f * PI;
                /* radial speed */
-               particle->c = (float)((rand() % 100) + 1) * 0.001f;
+               particle->c = (float)((rgui_rand() % 100) + 1) * 0.001f;
                /* rotational speed */
-               particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+               particle->d = (((float)((rgui_rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
             }
          }
          break;
@@ -2011,13 +2039,13 @@ static void rgui_init_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* x pos */
-               particle->a = (float)(rand() % fb_width);
+               particle->a = (float)(rgui_rand() % fb_width);
                /* y pos */
-               particle->b = (float)(rand() % fb_height);
+               particle->b = (float)(rgui_rand() % fb_height);
                /* depth */
                particle->c = (float)fb_width;
                /* speed */
-               particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+               particle->d = 1.0f + ((float)(rgui_rand() % 20) * 0.01f);
             }
          }
          break;
@@ -2095,8 +2123,8 @@ static void rgui_render_particle_effect(
                rgui_particle_t *particle = &rgui->particles[i];
 
                /* Update particle 'speed' */
-               particle->c    = particle->c + (float)(rand() % 16 - 9) * 0.01f;
-               particle->d    = particle->d + (float)(rand() % 16 - 7) * 0.01f;
+               particle->c    = particle->c + (float)(rgui_rand() % 16 - 9) * 0.01f;
+               particle->d    = particle->d + (float)(rgui_rand() % 16 - 7) * 0.01f;
 
                if (particle->c < -0.4f)
                   particle->c = -0.4f;
@@ -2177,13 +2205,13 @@ static void rgui_render_particle_effect(
                if (!on_screen)
                {
                   /* x pos */
-                  particle->a = (float)(rand() % (fb_width / 3)) * 3.0f;
+                  particle->a = (float)(rgui_rand() % (fb_width / 3)) * 3.0f;
                   /* y pos */
                   particle->b = 0.0f;
                   /* drop length */
-                  particle->c = (float)weights[(unsigned)(rand() % 60)];
+                  particle->c = (float)weights[(unsigned)(rgui_rand() % 60)];
                   /* drop speed (larger drops fall faster) */
-                  particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rand() % 150) / 200.0f));
+                  particle->d = (particle->c / 12.0f) * (0.5f + ((float)(rgui_rand() % 150) / 200.0f));
                }
             }
          }
@@ -2233,13 +2261,13 @@ static void rgui_render_particle_effect(
                    * > particle->a = max_radius;
                    * ...but it turns out that spawning new particles at random
                    * locations produces a more visually appealing result... */
-                  particle->a = 1.0f + (((float)rand() / (float)RAND_MAX) * max_radius);
+                  particle->a = 1.0f + (((float)rgui_rand() / (float)RGUI_RAND_MAX) * max_radius);
                   /* theta */
-                  particle->b = ((float)rand() / (float)RAND_MAX) * 2.0f * PI;
+                  particle->b = ((float)rgui_rand() / (float)RGUI_RAND_MAX) * 2.0f * PI;
                   /* radial speed */
-                  particle->c = (float)((rand() % 100) + 1) * 0.001f;
+                  particle->c = (float)((rgui_rand() % 100) + 1) * 0.001f;
                   /* rotational speed */
-                  particle->d = (((float)((rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
+                  particle->d = (((float)((rgui_rand() % 50) + 1) / 200.0f) + 0.1f) * one_degree_radians;
                }
             }
          }
@@ -2286,13 +2314,13 @@ static void rgui_render_particle_effect(
                if (!on_screen || (particle->c <= 0.0f) || particle_size > 16)
                {
                   /* x pos */
-                  particle->a = (float)(rand() % fb_width);
+                  particle->a = (float)(rgui_rand() % fb_width);
                   /* y pos */
-                  particle->b = (float)(rand() % fb_height);
+                  particle->b = (float)(rgui_rand() % fb_height);
                   /* depth */
                   particle->c = (float)fb_width;
                   /* speed */
-                  particle->d = 1.0f + ((float)(rand() % 20) * 0.01f);
+                  particle->d = 1.0f + ((float)(rgui_rand() % 20) * 0.01f);
                }
             }
          }
@@ -4990,13 +5018,40 @@ static void rgui_render_osk(
    {
       int input_str_x, input_str_y;
       int text_cursor_x;
-      unsigned input_str_char_offset = 0;
-      unsigned input_str_length      = (unsigned)utf8len(input_str);
-      const char *input_str_visible  = NULL;
+      unsigned input_str_char_offset        = 0;
+      unsigned input_str_length             = (unsigned)utf8len(input_str);
+      unsigned input_str_cursor             = input_str_length;
+      static const char *last_cursor_buffer = NULL;
+      static size_t last_cursor_ptr         = 0;
+      static retro_time_t last_cursor_time  = 0;
+      retro_time_t current_time             = menu_driver_get_current_time();
+      size_t cursor_ptr                     = input_str_cursor;
+      const char *input_str_visible         = NULL;
+
+      if (input_str && input_st->keyboard_line.buffer)
+      {
+         size_t ptr         = input_st->keyboard_line.ptr;
+         const char *cursor = input_st->keyboard_line.buffer;
+         const char *end;
+
+         input_str_cursor   = 0;
+
+         if (ptr > input_st->keyboard_line.size)
+            ptr = input_st->keyboard_line.size;
+         cursor_ptr = ptr;
+         end = cursor + ptr;
+
+         while (cursor < end && *cursor)
+         {
+            utf8_walk(&cursor);
+            input_str_cursor++;
+         }
+      }
 
       if (input_str_length > input_str_max_length)
       {
-         input_str_char_offset       = input_str_length - input_str_max_length;
+         input_str_char_offset       = (input_str_cursor > input_str_max_length)
+            ? input_str_cursor - input_str_max_length : 0;
          input_str_length            = input_str_max_length;
       }
 
@@ -5010,10 +5065,19 @@ static void rgui_render_osk(
 
       /* Draw text cursor */
       text_cursor_x                  = osk_x + input_offset_x
-                                       + (input_str_length * rgui->font_width_stride);
+                                       + ((input_str_cursor - input_str_char_offset)
+                                             * rgui->font_width_stride);
 
-      rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
-            rgui->colors.normal_color, rgui->colors.shadow_color);
+      if ((last_cursor_buffer != input_st->keyboard_line.buffer) || (last_cursor_ptr != cursor_ptr))
+      {
+         last_cursor_buffer = input_st->keyboard_line.buffer;
+         last_cursor_ptr    = cursor_ptr;
+         last_cursor_time   = current_time;
+      }
+
+      if (!(((current_time - last_cursor_time) / 500000) & 1))
+         rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
+               rgui->colors.normal_color, rgui->colors.shadow_color);
    }
 
    /* Draw keyboard 'keys' */
@@ -6235,8 +6299,15 @@ static void rgui_update_menu_viewport(
       rgui->menu_video_settings.vp.height = 1;
    }
 
-   rgui->menu_video_settings.vp.x = (vp.full_width - rgui->menu_video_settings.vp.width) / 2;
-   rgui->menu_video_settings.vp.y = (vp.full_height - rgui->menu_video_settings.vp.height) / 2;
+   /* Leave the viewport at the origin and let the video driver's
+    * viewport-bias logic centre it (default bias 0.5 == centred).
+    * Pre-centring here as well (vp.x = (full_width - width) / 2)
+    * double-applies the offset since 439c672c22 made the
+    * ASPECT_RATIO_CUSTOM path add padding * bias on top of vp.x,
+    * which pushed the menu hard against the right/bottom edge on
+    * wide screens. */
+   rgui->menu_video_settings.vp.x = 0;
+   rgui->menu_video_settings.vp.y = 0;
 }
 
 static bool rgui_set_aspect_ratio(
@@ -6441,6 +6512,10 @@ static bool rgui_set_aspect_ratio(
 #endif
          }
          break;
+      case RGUI_ASPECT_RATIO_1_1:
+         rgui->frame_buf.width = RGUI_ROUND_FB_WIDTH(rgui->frame_buf.height);
+         base_term_width       = rgui->frame_buf.width;
+         break;
       default:
          /* 4:3 */
          if (rgui->frame_buf.height == 240)
@@ -6543,6 +6618,10 @@ static bool rgui_set_aspect_ratio(
                   RGUI_MIN_FB_WIDTH : base_term_width;
             break;
 
+         case RGUI_ASPECT_RATIO_1_1:
+            rgui->frame_buf.height = rgui->frame_buf.width;
+            base_term_width        = rgui->frame_buf.width;
+            break;
          default:
             /* 4:3 */
             rgui->frame_buf.height = (unsigned)(
@@ -7094,7 +7173,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -7584,7 +7663,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
-         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -7601,7 +7680,7 @@ static void rgui_populate_entries(
 
    /* Determine whether this is the quick menu */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-         || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
+         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
          || string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
@@ -7631,7 +7710,7 @@ static void rgui_populate_entries(
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
+            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
          )
       {
          rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
@@ -7651,7 +7730,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
+         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -7663,7 +7742,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_st->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
+   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
@@ -8043,6 +8122,9 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          case RGUI_ASPECT_RATIO_5_3:
          case RGUI_ASPECT_RATIO_5_3_CENTRE:
             default_fb_width = 400;
+            break;
+         case RGUI_ASPECT_RATIO_1_1:
+            default_fb_width = 240;
             break;
          default:
             /* 4:3 */

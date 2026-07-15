@@ -707,6 +707,8 @@ static enum msg_file_type extension_to_file_type(const char *ext)
       return FILE_TYPE_RVZ;
    if (memcmp(ext_lower, "wia",   4) == 0)
       return FILE_TYPE_WIA;
+   if (memcmp(ext_lower, "pbp",   4) == 0)
+      return FILE_TYPE_PBP;
    if (memcmp(ext_lower, "lutro", 6) == 0)
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
@@ -780,6 +782,18 @@ static int task_database_iterate_playlist(
             db_state->serial[0] = '\0';
             RARCH_DBG("[Scanner] CHD file serial not detected, fallback to crc.\n");
             return task_database_chd_get_crc_and_size(name, &db_state->crc, &db_state->size);
+         }
+         break;
+      case FILE_TYPE_PBP:
+         db_state->serial[0] = '\0';
+         if (task_database_pbp_get_serial(name, db_state->serial, sizeof(db_state->serial),&db_state->size))
+            db->type         = DATABASE_TYPE_SERIAL_LOOKUP;
+         else
+         {
+            db->type         = DATABASE_TYPE_CRC_LOOKUP;
+            db_state->serial[0] = '\0';
+            RARCH_DBG("[Scanner] PBP file serial not detected, fallback to crc.\n");
+            return intfstream_file_get_crc_and_size(name, 0, INT64_MAX, &db_state->crc, &db_state->size);
          }
          break;
       case FILE_TYPE_LUTRO:
@@ -917,8 +931,16 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * safe, so we can bail early; clean up whichever succeeded
     * and return SCAN_VERDICT_ERROR so the scanner continues
     * with the next content entry rather than silently
-    * mismatching. */
-   if (!db_crc || !entry_path_str)
+    * mismatching.
+    *
+    * db_path is also checked here: database_info_get_current_name()
+    * returns NULL when the database handle/list is missing (and the
+    * matched element's data may itself be NULL). A NULL db_path is
+    * fed straight into path_basename_nocompression()/fill_pathname()
+    * below, where strrchr()/strlcpy() dereference it and crash. With
+    * no database name there is no meaningful playlist filename to
+    * build, so treat it like the OOM case and skip this entry. */
+   if (!db_crc || !entry_path_str || !db_path)
    {
       free(db_crc);
       free(entry_path_str);
@@ -1276,15 +1298,19 @@ static int task_database_iterate_playlist_lutro(
 static bool task_database_check_serial_and_crc(
       database_state_handle_t *db_state)
 {
+   const char *db_name;
    if (!config_get_ptr()->bools.scan_serial_and_crc)
        return false;
+   /* database_info_get_current_name() can return NULL (missing
+    * handle/list, or a NULL element). Guard it before it reaches
+    * path_basename_nocompression()/string_starts_with(), both of
+    * which would dereference the NULL and crash. */
+   if (!(db_name = database_info_get_current_name(db_state)))
+       return false;
+   db_name = path_basename_nocompression(db_name);
    /* the PSP shares serials for disc/download content */
-   return (string_starts_with(
-         path_basename_nocompression(database_info_get_current_name(db_state)),
-         "Sony - PlayStation Portable") ||
-           string_starts_with(
-         path_basename_nocompression(database_info_get_current_name(db_state)),
-         "Sega - Dreamcast"));
+   return (string_starts_with(db_name, "Sony - PlayStation Portable") ||
+           string_starts_with(db_name, "Sega - Dreamcast"));
 }
 
 static int task_database_iterate_serial_lookup(
@@ -2200,7 +2226,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                if (dbinfo->type == DATABASE_TYPE_ITERATE)
                   dbinfo->type   = DATABASE_TYPE_ITERATE_ARCHIVE;
 
-            current_verdict = task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
+            current_verdict = (enum scan_verdict)task_database_iterate(manual_scan, content_path, dbstate, dbinfo,
                      path_contains_compressed_file);
 #ifdef DEBUG
             RARCH_DBG("[Scanner] Scan verdict is %d for %s\n", current_verdict, content_path);

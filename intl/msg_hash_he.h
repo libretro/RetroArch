@@ -1,1669 +1,1087 @@
-#if defined(_MSC_VER) && !defined(_XBOX) && (_MSC_VER >= 1500 && _MSC_VER < 1900)
-#if (_MSC_VER >= 1700)
-/* https://support.microsoft.com/en-us/kb/980263 */
-#pragma execution_character_set("utf-8")
-#endif
-#pragma warning(disable:4566)
-#endif
-
-/*
-##### NOTE FOR TRANSLATORS ####
-
-PLEASE do NOT modify any `msg_hash_*.h` files, besides `msg_hash_us.h`!
-
-Translations are handled using the localization platform Crowdin:
-https://crowdin.com/project/retroarch
-
-Translations from Crowdin are applied automatically and will overwrite
-any changes made to the other localization files.
-As a result, any submissions directly altering `msg_hash_*.h` files
-other than `msg_hash_us.h` will be rejected.
-*/
-
-/* Top-Level Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAIN_MENU,
-   "תפריט ראשי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
-   "הגדרות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
-   "מועדפים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
-   "היסטוריה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
-   "תמונות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
-   "מוזיקה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
-   "סרטונים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
-   "נטפליי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
-   "עיין"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
-   "ליבות ללא תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_TAB,
-   "ייבוא תוכן"
-   )
-
-/* Main Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
-   "תפריט מהיר"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
-   "גישה מהירה להגדרות משחק."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST,
-   "טעינת ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST,
-   "בחרו באיזו ליבה להשתמש."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
-   "פריקת ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
-   "שחרור הליבה הטעונה."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_CORE_LIST,
-   "עיון אחר ליבה עבור הטמעת ליבת libretro. היכן העיון מתחיל תלוי בנתיב הליבה שלך. אם ריק, העיון יתחיל בנתיב הראשי.\nאם נתיב הליבה הוא תיקייה, התפריט ישתמש בה כתיקיית על. אם נתיב ליבה הוא נתיב מלא, העיון יתחיל בתיקייה שבה הקובץ."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
-   "טעינת תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
-   "בחרו איזה תוכן להתחיל."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
-   "עיינו עבור תוכן. לטעינת תוכן, אתם צריכים 'ליבה' שתשתמש בו, וקובץ תוכן. \nבכדי לשלוט היכן התפריט מתחיל את העיון אחר התוכן, קבעו 'תיקיית מעיין הקבצים'. אם לא קבעתם, המעיין יתחיל בתיקייה הראשית.\nהמעיין יסנן רק את הסיומות התואמות את הליבה האחרונה שהוגדרה ב'טען ליבה', וישתמש בליבה זו כ[...]"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_DISC,
-   "טען דיסק"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DUMP_DISC,
-   "שמירת דיסק"
-   )
-#ifdef HAVE_LAKKA
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_EJECT_DISC,
-   "הוצאת דיסק"
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
-   "רשימות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
-   "ייבוא תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
-   "הצג תפריט שולחן עבודה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
-   "עדכון מקוון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY,
-   "נטפליי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS,
-   "הגדרות"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SETTINGS,
-   "שינוי הגדרות יישום."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
-   "מידע נוסף"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
-   "מידע מערכת."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
-   "קובץ הגדרות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP_LIST,
-   "עזרה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
-   "אתחל"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
-   "הפעל מחדש את אפליקציית RetroArch."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
-   "יציאה"
-   )
-
-/* Main Menu > Load Core */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
-   "הורד ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-   "התקנה או שיחזור של ליבה"
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
-   "החל מעבד וידאו"
-   )
-MSG_HASH( /* FIXME Maybe add a description? */
-   MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
-   "הפעל RetroPad מרוחק"
-   )
-
-/* Main Menu > Load Content */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_FAVORITES,
-   "תיקיית ההתחלה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
-   "הורדות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
-   "עיון בקובץ דחוס"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
-   "טען קובץ דחוס"
-   )
-
-/* Main Menu > Load Content > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
-   "מועדפים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
-   "מוזיקה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
-   "תמונות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
-   "סרטונים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
-   "עיין"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
-   "ליבות ללא תוכן"
-   )
-
-/* Main Menu > Online Updater */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
-   "מוריד הליבות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
-   "עדכן ליבות מותקנות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
-   "הורדת תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
-   "עדכן קבצי מידע ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
-   "עדכן נכסים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
-   "עדכן פרופילי שלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
-   "עדכן צ'יטים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
-   "עדכן בסיסי נתונים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
-   "עדכן מצלילי GLSL"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
-   "עדכן מצלילי Cg"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
-   "עדכן מצלילי Slang"
-   )
-
-/* Main Menu > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
-   "מידע ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
-   "מידע דיסק"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
-   "מידע רשת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
-   "מידע מערכת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
-   "מנהל בסיס נתונים"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
-   "הצג מסדי נתונים."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
-   "מנהל מצביע"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
-   "הצג חיפושים קודמים."
-   )
-
-/* Main Menu > Information > Core Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
-   "שם ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
-   "תגית ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
-   "גירסאת ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
-   "שם המערכת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
-   "יצרן המערכת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
-   "קטגוריות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
-   "מחבר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
-   "הרשאות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
-   "רישיון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
-   "תוספים נתמכים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
-   "תמיכה בשמירת מצבים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
-   "ללא"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
-   "בסיסי (שמור/טען)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
-   "ממוספר (שמור/טען, החזר אחורה)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
-   "קושחה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
-   "חסר, נצרך:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
-   "חסר, אופציונאלי:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   "קיים, נצרך:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
-   "קיים, אופציונאלי:"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_LOCK,
-   "נעל ליבה מותקנת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE,
-   "מחק ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
-   "גבה ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
-   "שחזר גיבוי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
-   "מחק גיבוי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
-   "[אוטומטי]"
-   )
-
-/* Main Menu > Information > System Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
-   "תאריך הגרסה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
-   "גירסאת RetroArch"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
-   "גירסאת גיט"
-   )
-MSG_HASH( /* FIXME Should be MENU_LABEL_VALUE */
-   MSG_COMPILER,
-   "הידור (קימפול)‏"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
-   "דגם מעבד"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
-   "מאפייני מעבד"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
-   "ארכיטקטורת מעבד"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CPU_CORES,
-   "ליבות מעבד"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
-   "JIT זמין"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
-   "מזהה ממשק"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
-   "מערכת הפעלת ממשק"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
-   "מקור חשמל"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
-   "מנהל התקן הקשר וידאו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
-   "רוחב תצוגה (מ\"מ)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
-   "גובה תצוגה (מ\"מ)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
-   "DPI מסך"
-   )
-
-/* Main Menu > Information > Database Manager > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
-   "שם"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
-   "תיאור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
-   "ז'אנר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
-   "הישגים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
-   "קטגוריה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
-   "שפה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
-   "איזור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
-   "ניקוד"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
-   "מדיה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
-   "פקדים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
-   "הגדרה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
-   "חזותי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
-   "רכבי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
-   "מפיץ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
-   "מפתח"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
-   "מקור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
-   "דירוג BBFC"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
-   "דירוג ESRB"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
-   "דירוג ELSPA"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
-   "דירוג PEGI"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
-   "דירוג CERO"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
-   "סידורי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
-   "אנלוגי נתמך"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
-   "רטט נתמך"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
-   "תמיכת משחק משותף"
-   )
-
-/* Main Menu > Configuration File */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
-   "טעינת תצורה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
-   "אפס לברירת המחדל"
-   )
-
-/* Main Menu > Help */
-
-/* Main Menu > Help > Basic Menu Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
-   "גלול למעלה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
-   "גלול למטה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
-   "אישור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
-   "מידע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
-   "התחל"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
-   "הצגת\\הסתרת תפריט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
-   "יציאה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
-   "הצגת/הסתרת מקלדת"
-   )
-
-/* Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
-   "מנהלי התקנים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
-   "וידאו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
-   "שמע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
-   "קלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
-   "ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_CORE_SETTINGS,
-   "שינוי הגדרות ליבה."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
-   "הגדרות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
-   "שמירות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
-   "סנכרון ענן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
-   "סיסמא"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
-   "רישום"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
-   "סייר קבצים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
-   "קובץ תמונה."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
-   "הקלטה"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
-   "שינוי הגדרות הקלטה."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
-   "ממשק משתמש"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
-   "שירות תרגום"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
-   "נגישות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
-   "ניהול צריכת החשמל"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
-   "הישגים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
-   "רשת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
-   "רשימות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
-   "משתמש"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
-   "תיקייה"
-   )
-
-/* Core option category placeholders for icons */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
-   "פריצות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
-   "מיפויים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
-   "מדיה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
-   "ביצועים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
-   "שמע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
-   "מפרט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
-   "אחסון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
-   "מערכת"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
-   "תזמון"
-   )
-
-#ifdef HAVE_MIST
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
-   "סטים"
-   )
+/* THIS FILE IS GENERATED by intl/json2h.py - do not edit.
+ * Packed message table; source of truth is the Crowdin
+ * project (see intl/crowdin_sync.py). */
+/* Pure-ASCII source: every non-ASCII byte is a fixed 3-digit octal
+ * escape, so no execution-charset pragma is needed and the encoded
+ * UTF-8 bytes survive any compiler codepage (including MSVC 2003-2010,
+ * which have no way to consume raw UTF-8 source reliably).
+ * C4045 is disabled for old MSVC: non-final chunk members are sized
+ * without a NUL slot, which is valid C89; the sizeof compile check
+ * below still catches any real size mismatch. */
+#if defined(_MSC_VER) && (_MSC_VER < 1900)
+#pragma warning(disable:4045)
 #endif
 
-/* Settings > Drivers */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
-   "קלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
-   "בקר משחק"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
-   "וידאו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
-   "שמע"
-   )
-#ifdef HAVE_MICROPHONE
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
-   "מצלמה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
-   "בלוטות'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
-   "רשת אלחוטית"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
-   "שירותי מיקום"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   "תצורת תפריט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
-   "הקלט"
-   )
-
-/* Settings > Video */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
-   "פלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
-   "מצב מסך מלא"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
-   "מצב חלון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
-   "שינוי קנה מידה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
-   "סינכרון"
-   )
-#if defined(DINGUX)
-#if defined(RS90) || defined(MIYOO)
-#endif
-#endif
-
-/* Settings > Video > CRT SwitchRes */
-
-
-/* Settings > Video > Output */
-
-#if defined (WIIU)
-#endif
-#if defined(DINGUX) && defined(DINGUX_BETA)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
-   "60 הרץ"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
-   "50 הרץ"
-   )
-#endif
-
-/* Settings > Video > Fullscreen Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
-   "רוחב מסך מלא"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
-   "גובה מסך מלא"
-   )
-
-/* Settings > Video > Windowed Mode */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
-   "הצג שורת תפריט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
-   "רוחב חלון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
-   "גובה חלון"
-   )
-
-/* Settings > Video > Scaling */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
-   "יחס גובה-רוחב"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
-   "הגדר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
-   "ליבה סופקה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
-   "מותאם אישית"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
-   "מלא"
-   )
-#if defined(DINGUX)
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
-   "שמור על יחס הגובה-רוחב"
-   )
-#endif
-#if defined(RARCH_MOBILE)
-#endif
-
-/* Settings > Video > HDR */
-
-
-
-/* Settings > Video > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
-   "אוטומטי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
-   "בפועל"
-   )
-
-/* Settings > Audio */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
-   "פלט"
-   )
-#ifdef HAVE_MICROPHONE
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
-   "מיקרופון"
-   )
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "סינכרון"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
-   "שנה הגדרות סנכון שמע."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
-   "מערבל שמע (מיקסר)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
-   "שנה הגדרות מערבל שמע (מיקסר)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
-   "צלילי תפריט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
-   "השתק"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MUTE,
-   "השתק שמע."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
-   "השתק מערבל שמע (מיקסר)"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
-   "השתק מערבל שמע (מיקסר)."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
-   "תוסף DSP"
-   )
-
-/* Settings > Audio > Output */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
-   "שמע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
-   "התקן"
-   )
-
-#ifdef HAVE_MICROPHONE
-/* Settings > Audio > Input */
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
-   "מיקרופון"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
-   "התקן"
-   )
-#endif
-
-/* Settings > Audio > Resampler */
-
-
-/* Settings > Audio > Synchronization */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
-   "סינכרון"
-   )
-
-/* Settings > Audio > MIDI */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
-   "קלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
-   "פלט"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
-   "עוצמת שמע"
-   )
-
-/* Settings > Audio > Mixer Settings > Mixer Stream */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
-   "נגן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
-   "נגן (בלופ)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
-   "עצור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
-   "הסר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
-   "עוצמת שמע"
-   )
-
-/* Settings > Audio > Menu Sounds */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
-   "מערבל שמע (מיקסר)"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
-   "אפשר סאונד 'OK'"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
-   "אפשר סאונד 'Cancel'"
-   )
-
-/* Settings > Input */
-
-#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-#endif
-#ifdef ANDROID
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
-   "כבוי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
-   "פועל"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
-   "זהה"
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_TIMEOUT,
-   "זמן קצוב לתפוגה"
-   )
-MSG_HASH(
-   MSG_INPUT_BIND_HOLD,
-   "החזק"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
-   "ירי טורבו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
-   "תקופת טורבו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
-   "קלאסי"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
-   "ירי טורבו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
-   "מקשי קיצור"
-   )
-
-
-/* Settings > Input > Haptic Feedback/Vibration */
-
-
-/* Settings > Input > Menu Controls */
-
-
-/* Settings > Input > Hotkeys */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
-   "יציאה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
-   "סגור תוכן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
-   "אפס תוכן"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
-   "הגבר עוצמת שמע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
-   "הנמך עוצמת שמע"
-   )
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
-   "טען מצב"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
-   "שמור מצב"
-   )
-
-
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
-   "שמור צילום מסך"
-   )
-
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
-   "שירות תרגום"
-   )
-
-
-/* Settings > Input > Port # Controls */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
-   "סוג התקן"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
-   "ירי טורבו"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
-   "החזק"
-   )
-
-/* Settings > Latency */
-
-#if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
-#endif
-
-/* Settings > Core */
-
-#ifndef HAVE_DYNAMIC
-#endif
-#ifdef HAVE_MIST
-
-
-
-
-
-
-
-#endif
-/* Settings > Configuration */
-
-
-/* Settings > Saving */
-
-
-/* Settings > Logging */
-
-
-/* Settings > File Browser */
-
-
-/* Settings > Frame Throttle */
-
-
-/* Settings > Frame Throttle > Rewind */
-
-
-/* Settings > Frame Throttle > Frame Time Counter */
-
-
-/* Settings > Recording */
-
-
-/* Settings > On-Screen Display */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay */
-
-
-#if defined(ANDROID)
-#endif
-
-/* Settings > On-Screen Display > On-Screen Overlay > Keyboard Overlay */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Lightgun */
-
-
-/* Settings > On-Screen Display > On-Screen Overlay > Overlay Mouse */
-
-
-/* Settings > On-Screen Display > On-Screen Notifications */
-
-
-/* Settings > User Interface */
-
-#ifdef _3DS
-#endif
-
-/* Settings > User Interface > Menu Item Visibility */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
-   "תפריט מהיר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
-   "הגדרות"
-   )
-#ifdef HAVE_LAKKA
-#endif
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
-   "תפריט ראשי"
-   )
-
-/* Settings > User Interface > Menu Item Visibility > Quick Menu */
-
-
-/* Settings > User Interface > Views > Settings */
-
-
-
-/* Settings > User Interface > Appearance */
-
-
-/* Settings > AI Service */
-
-
-/* Settings > Accessibility */
-
-
-/* Settings > Power Management */
-
-/* Settings > Achievements */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
-   "הישגים"
-   )
-
-/* Settings > Achievements > Appearance */
-
-
-/* Settings > Achievements > Visibility */
-
-
-/* Settings > Network */
-
-
-/* Settings > Network > Updater */
-
-
-/* Settings > Playlists */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
-   "היסטוריה"
-   )
-
-/* Settings > Playlists > Playlist Management */
-
-
-/* Settings > User */
-
-
-/* Settings > User > Privacy */
-
-
-/* Settings > User > Accounts */
-
-
-/* Settings > User > Accounts > RetroAchievements */
-
-
-/* Settings > User > Accounts > YouTube */
-
-
-/* Settings > User > Accounts > Twitch */
-
-
-/* Settings > User > Accounts > Facebook Gaming */
-
-
-/* Settings > User > Accounts > Kick */
-
-
-/* Settings > Directory */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
-   "הורדות"
-   )
-MSG_HASH( /* FIXME Not RGUI specific */
-   MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
-   "תיקיית ההתחלה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
-   "רשימות"
-   )
-
-#ifdef HAVE_MIST
-/* Settings > Steam */
-
-
-
-#endif
-
-/* Music */
-
-/* Music > Quick Menu */
-
-
-/* Netplay */
-
-
-/* Netplay > Host */
-
-
-/* Import Content */
-
-
-/* Import Content > Scan File */
-
-
-/* Import Content > Content Scan */
-
-
-/* Explore tab */
-
-/* Playlist > Playlist Item */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
-   "הסר"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INFORMATION,
-   "מידע נוסף"
-   )
-
-/* Playlist Item > Set Core Association */
-
-
-/* Playlist Item > Information */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
-   "שם"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
-   "ליבה"
-   )
-
-/* Quick Menu */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
-   "שמור צילום מסך"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
-   "הישגים"
-   )
-
-/* Quick Menu > Options */
-
-
-/* Quick Menu > Options > Manage Core Options */
-
-
-/* Quick Menu > Controls */
-
-
-/* Quick Menu > Controls > Manage Remap Files */
-
-
-/* Quick Menu > Controls > Manage Remap Files > Load Remap File */
-
-
-/* Quick Menu > Cheats */
-
-
-/* Quick Menu > Cheats > Start or Continue Cheat Search */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Replace) */
-
-
-/* Quick Menu > Cheats > Load Cheat File (Append) */
-
-
-/* Quick Menu > Cheats > Cheat Details */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
-   "תיאור"
-   )
-
-/* Quick Menu > Disc Control */
-
-
-/* Quick Menu > Shaders */
-
-
-
-/* Quick Menu > Shaders > Shader Parameters */
-
-
-/* Quick Menu > Overrides */
-
-
-/* Quick Menu > Achievements */
-
-
-/* Quick Menu > Information */
-
-
-/* Miscellaneous UI Items */
-
-
-/* Settings Options */
-
-
-/* RGUI: Settings > User Interface > Appearance */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   "יחס גובה-רוחב"
-   )
-
-/* RGUI: Settings Options */
-
-
-/* XMB: Settings > User Interface > Appearance */
-
-
-/* XMB: Settings Options */
-
-
-/* Ozone: Settings > User Interface > Appearance */
-
-
-
-
-/* MaterialUI: Settings > User Interface > Appearance */
-
-
-/* MaterialUI: Settings Options */
-
-
-/* Qt (Desktop Menu) */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_INFO,
-   "מידע"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
-   "הגדרות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   "&עזרה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
-   "טעינת ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_NAME,
-   "שם"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
-   "רשימות"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
-   "סייר קבצים"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_CORE,
-   "ליבה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
-   "מידע נוסף"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_STOP,
-   "עצור"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_QT_REMOVE,
-   "הסר"
-   )
-
-/* Unsorted */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
-   "היסטוריה"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_USER,
-   "משתמש"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_BROWSE_START,
-   "התחל"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_HELP,
-   "עזרה"
-   )
-
-/* Discord Status */
-
-
-/* Notifications */
-
-
-
-
-/* Lakka */
-
-
-/* Environment Specific Settings */
-
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   "רשת אלחוטית"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
-   "אתחול RetroArch"
-   )
-#ifdef HAVE_LIBNX
-#endif
+static const struct
+{
+   char s_70c7c198[391];
+   char s_40f0ecd9[21];
+   char s_99bfa829_0[499];
+   char s_99bfa829_1[21];
+   char s_4ad41e20[13];
+   char s_314e7dec[13];
+   char s_061657e6[20];
+   char s_7632d987[20];
+   char s_2e5078b2[22];
+   char s_da068369[9];
+   char s_daead8a5[7];
+   char s_48c208ee[13];
+   char s_dcf2e800[7];
+   char s_f7e668f4[31];
+   char s_76e73138[40];
+   char s_c82d0aee[31];
+   char s_ad791974[9];
+   char s_fb84857a[7];
+   char s_49b0b12a[7];
+   char s_ad7c73f6[15];
+   char s_30acd6fb[15];
+   char s_14ec7b7e[11];
+   char s_005cc6dc[9];
+   char s_00614813[11];
+   char s_8584f1d6[18];
+   char s_7fc52043[20];
+   char s_0cadcd1e[9];
+   char s_9509d1c2[31];
+   char s_c7a999e6[31];
+   char s_0b7bdc29[14];
+   char s_25babaa7[9];
+   char s_502f623c[11];
+   char s_5b51050b[11];
+   char s_565cbabb[13];
+   char s_7d00b7ed[11];
+   char s_780eb7cb[20];
+   char s_ce5f3353[22];
+   char s_6155456e[22];
+   char s_e4e54370[13];
+   char s_ec59110b[27];
+   char s_225da616[9];
+   char s_0fd30a6d[5];
+   char s_36265c93[20];
+   char s_1e1c0557[13];
+   char s_e68b50a2[17];
+   char s_97242f99[16];
+   char s_8cefb843[16];
+   char s_177845b3[18];
+   char s_881efe76[18];
+   char s_1e4264a1[9];
+   char s_babee9c1[17];
+   char s_78c58363[18];
+   char s_78071664[14];
+   char s_cc781d49[22];
+   char s_e3d18c38[11];
+   char s_49c9bf91[13];
+   char s_04ecbe77[13];
+   char s_18cc5aec[29];
+   char s_66ed0f42[7];
+   char s_ba582576[52];
+   char s_33ed5ede[35];
+   char s_8d30abf0[26];
+   char s_38b82e6c[22];
+   char s_8f133960[18];
+   char s_d7f2cfac[20];
+   char s_87e07c0e[20];
+   char s_d7f2e719[29];
+   char s_b95e3404[20];
+   char s_734d2a61[9];
+   char s_145f5880[24];
+   char s_9af4bf52[30];
+   char s_e5d096ab[20];
+   char s_06f25fc0[20];
+   char s_f0ce97f7[31];
+   char s_704e200c[7];
+   char s_b92166cd[13];
+   char s_5d29b870[18];
+   char s_10342503[13];
+   char s_d31f6d88[18];
+   char s_f03e9c42[20];
+   char s_3674ba44[24];
+   char s_6ebb6a00[20];
+   char s_99eb425d[9];
+   char s_941e50fb[26];
+   char s_2cb9dc71[15];
+   char s_c4842e2d[27];
+   char s_fd3e287f[9];
+   char s_550b1e93[15];
+   char s_d2224db6[13];
+   char s_c0d9bee1[13];
+   char s_c175c697[15];
+   char s_9ef5d822[13];
+   char s_e2f27171[9];
+   char s_2f9a064c[9];
+   char s_96ee0cfb[17];
+   char s_ae50c550[17];
+   char s_b30d3e14[13];
+   char s_99d3d4ae[18];
+   char s_d81bf7a9[18];
+   char s_ea5757a0[7];
+   char s_f9ee4a82[9];
+   char s_7beff2c4[9];
+   char s_d9f6c8e8[16];
+   char s_009a10e3[7];
+   char s_58de51be[9];
+   char s_cde2111a[20];
+   char s_735c53f7[22];
+   char s_f8b9e275[18];
+   char s_50e34bc5[14];
+   char s_87071f08[11];
+   char s_3c55b220[16];
+   char s_ec502f2a[21];
+   char s_21c5b854[16];
+   char s_cbdeb67b[27];
+   char s_652788cc[27];
+   char s_0cc981b9[27];
+   char s_980ef0e8[7];
+   char s_75851363[18];
+   char s_e59fc3c9[18];
+   char s_7dcf9e78[18];
+   char s_feaf16c5[22];
+   char s_bd07998f[13];
+   char s_9e66791a[16];
+   char s_6107eb09[25];
+   char s_b6172513[17];
+   char s_e3d18a3d[20];
+   char s_d15b342a[16];
+   char s_31b177ec[24];
+   char s_8cb3b95f[11];
+   char s_d9685b01[20];
+   char s_8a9a3ae4[15];
+   char s_e22edcd8[9];
+   char s_9da5609f[20];
+   char s_8d3a8b68[22];
+   char s_3a0a3fef[20];
+   char s_72898bf0[25];
+   char s_df92f5b5[36];
+   char s_b00815b8[22];
+   char s_ada81f6a[29];
+   char s_d264a13e[25];
+   char s_8be7813a[7];
+   char s_1757647b[7];
+   char s_273a9f02[18];
+   char s_e1a8f707[30];
+   char s_51844cc2[18];
+   char s_df610c7f[7];
+   char s_3acb0241[18];
+   char s_40084357[7];
+   char s_df62d56f[9];
+   char s_4a1166e1[18];
+   char s_42b8ffbf[13];
+   char s_62564465[13];
+   char s_733174db[13];
+   char s_89920317[16];
+   char s_87d88aa2[7];
+   char s_e2c6c781[22];
+   char s_164566fb[29];
+   char s_0f1d488a[15];
+   char s_b3cc8a43[13];
+   char s_6090802e[13];
+   char s_8d94cfea[13];
+   char s_56e21ee1[33];
+   char s_f70406ce[32];
+   char s_66df5c89[20];
+   char s_3361e11d[51];
+   char s_9b3ca94b[47];
+   char s_6d025795[9];
+   char s_6d059c18[9];
+   char s_99d648f2[18];
+   char s_2aeb5474[20];
+   char s_7534cfc9[10];
+   char s_036acd54[34];
+   char s_a0a191ca[34];
+   char s_5f15f7a7[13];
+   char s_6d08238d[5];
+   char s_d93c753a[7];
+   char s_6d0b3292[9];
+   char s_08785e85[20];
+   char s_b71e6907[13];
+   char s_260261d6[20];
+   char s_95cf0994[11];
+   char s_36109f2c[13];
+   char s_cf24fcc2[22];
+   char s_b93afb41[16];
+   char s_47f4eb8e[15];
+   char s_d3a2aa7d[16];
+   char s_70bac144[11];
+   char s_046d0e21[31];
+   char s_bdc1c274[11];
+   char s_06650b16[9];
+   char s_2742a469[17];
+   char s_17983560[16];
+   char s_9251b4c1[10];
+   char s_887214f4[7];
+   char s_92be1c10[9];
+   char s_0472da71[5];
+   char s_f019e498[9];
+   char s_0e740679[16];
+   char s_4ceac87e[9];
+   char s_f62d1074[11];
+   char s_f751c497[16];
+   char s_9329c64c[11];
+   char s_f8883f70[13];
+   char s_09ba892e[11];
+   char s_0a2aa953[9];
+   char s_ffd0dac4[11];
+   char s_1b8a5cb5[11];
+   char s_721e7bb2[9];
+   char s_1938dce6[31];
+   char s_59980356[9];
+   char s_62144cdf[13];
+   char s_5f612db6[26];
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "Retroflag Safe Shutdown"
-#else
-   "Retroflag Safe Shutdown (Reboot required)"
-#endif
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
-#ifdef HAVE_RETROFLAG_RPI5
-   "For use with compatible Retroflag case."
-#else
-   "For use with compatible Retroflag case. Reboot is required when changing."
-#endif
-   )
-#endif
-#ifdef HAVE_LAKKA_SWITCH
+   char s_addc7f89[77];
 #endif
 #endif
-#ifdef HAVE_LAKKA_SWITCH
+   char s_e7a63560[13];
+   char s_4aaeeb99[13];
+   char s_9932960f[13];
+   char s_302fdd56[13];
+   char s_ed013a05[40];
+   char s_01a73130[43];
+   char s_467f06c1[7];
+   char s_084af156[9];
+   char s_d7fc4c9c[29];
+   char s_d21c686b[27];
+   char s_206b1acd[11];
+   char s_bab74532[20];
+   char s_7d2035c4[22];
+   char s_b3565d3d[24];
+   char s_f8fa3e2f[16];
+   char s_8356c98c[11];
+   char s_5c7bbce1[28];
+   char s_cd916c68[28];
+   char s_8fe41f79[18];
+   char s_519cd5f8[31];
+   char s_43ac80a0[20];
+   char s_ebe994b4[18];
+   char s_da093426[23];
+   char s_d9b00fbd[38];
+   char s_0a008a9d[11];
+   char s_9c6ed9ca[27];
+   char s_9a981aa0[11];
+   char s_0ca3b319[11];
+   char s_48da4695[27];
+   char s_95cbebbd[20];
+   char s_6b80a1bc[31];
+   char s_eb0d7f1d[25];
+   char s_99a77122[21];
+   char s_51cbf8f0[36];
+   char s_4a5b7672[33];
+   char s_8fa79de5[27];
+   char s_5eee10e5[35];
+   char s_6ae93e68[28];
+   char s_e2f9cd07[11];
+   char s_7277e127[20];
+   char s_3a9d7557[11];
+   char s_ad5ff591[9];
+   char s_a79acb40[20];
+   char s_adcf82d6[22];
+   char s_e7033e0e[7];
+   char s_c79d5013[25];
+   char s_cc973e8a[11];
+   char s_aa9bc75d[15];
+   char s_57047267[11];
+   char s_020e2bc5[21];
+   char s_59f183c8[23];
+   char s_59f183c9[23];
+   char s_57665cff[7];
+   char s_69b801ef[27];
+   char s_580e244f[11];
+   char s_730df420[15];
+   char s_bcddf275[15];
+   char s_ebf10493[16];
+   char s_0f5266ce[18];
+   char s_30140cb5[18];
+   char s_1c0a61e2[22];
+   char s_50d77da7[22];
+   char s_9ca4bbd7[22];
+   char s_9ca4bbd8[22];
+   char s_950e7a66[41];
+   char s_ce113b1c[51];
+   char s_cb649822[17];
+   char s_3c3598a9[39];
+   char s_544da5c1[45];
+   char s_35f2309a[43];
+   char s_a607c53c[36];
+   char s_92cf524f[34];
+   char s_16b9856e[36];
+   char s_0ef5e125[30];
+   char s_9eb26572[21];
+   char s_c6e1f92b[41];
+   char s_60a8a963[36];
+   char s_3ca87244[53];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   char s_96c461f7[125];
 #endif
-#ifdef GEKKO
 #endif
-#ifdef UDEV_TOUCH_SUPPORT
+   char s_e8aee6c7[36];
+   char s_2a9c73f3[34];
+   char s_05e3f715[42];
+   char s_631c5635[45];
+   char s_19e809ad[38];
+   char s_db1e4390[38];
+   char s_f7e279a6[29];
+   char s_4b6a946a[36];
+   char s_8d677b5b[29];
+   char s_e533ddbb[22];
+   char s_45130077[26];
+   char s_856bdef7[31];
+   char s_46f6a65d[9];
+   char s_543fcabd[29];
+   char s_b1e9bfbf[20];
+   char s_28bbcc15[30];
+   char s_d15060ee[27];
+   char s_a068841f[28];
+   char s_4d7ee7e2[20];
+   char s_509dd374[25];
+   char s_bab020a4[22];
+   char s_88494936[37];
+} msg_hash_he_blob =
+{
+   "\327\242\327\231\327\225\327\237 \327\220\327\227\327\250 \327\234\327\231\327\221\327\224 \327"
+   "\242\327\221\327\225\327\250 \327\224\327\230\327\236\327\242\327\252 \327\234\327\231\327\221"
+   "\327\252 libretro. \327\224\327\231\327\233\327\237 \327\224\327\242\327\231\327\225\327\237 "
+   "\327\236\327\252\327\227\327\231\327\234 \327\252\327\234\327\225\327\231 \327\221\327\240\327"
+   "\252\327\231\327\221 \327\224\327\234\327\231\327\221\327\224 \327\251\327\234\327\232. \327\220"
+   "\327\235 \327\250\327\231\327\247, \327\224\327\242\327\231\327\225\327\237 \327\231\327\252\327"
+   "\227\327\231\327\234 \327\221\327\240\327\252\327\231\327\221 \327\224\327\250\327\220\327\251"
+   "\327\231.\n\327\220\327\235 \327\240\327\252\327\231\327\221 \327\224\327\234\327\231\327\221"
+   "\327\224 \327\224\327\225\327\220 \327\252\327\231\327\247\327\231\327\231\327\224, \327\224\327"
+   "\252\327\244\327\250\327\231\327\230 \327\231\327\251\327\252\327\236\327\251 \327\221\327\224 "
+   "\327\233\327\252\327\231\327\247\327\231\327\231\327\252 \327\242\327\234. \327\220\327\235 \327"
+   "\240\327\252\327\231\327\221 \327\234\327\231\327\221\327\224 \327\224\327\225\327\220 \327\240"
+   "\327\252\327\231\327\221 \327\236\327\234\327\220, \327\224\327\242\327\231\327\225\327\237 \327"
+   "\231\327\252\327\227\327\231\327\234 \327\221\327\252\327\231\327\247\327\231\327\231\327\224 "
+   "\327\251\327\221\327\224 \327\224\327\247\327\225\327\221\327\245.",
+   "\327\247\327\225\327\221\327\245 \327\252\327\236\327\225\327\240\327\224.",
+   "\327\242\327\231\327\231\327\240\327\225 \327\242\327\221\327\225\327\250 \327\252\327\225\327"
+   "\233\327\237. \327\234\327\230\327\242\327\231\327\240\327\252 \327\252\327\225\327\233\327\237,"
+   " \327\220\327\252\327\235 \327\246\327\250\327\231\327\233\327\231\327\235 '\327\234\327\231\327"
+   "\221\327\224' \327\251\327\252\327\251\327\252\327\236\327\251 \327\221\327\225, \327\225\327"
+   "\247\327\225\327\221\327\245 \327\252\327\225\327\233\327\237. \n\327\221\327\233\327\223\327"
+   "\231 \327\234\327\251\327\234\327\225\327\230 \327\224\327\231\327\233\327\237 \327\224\327\252"
+   "\327\244\327\250\327\231\327\230 \327\236\327\252\327\227\327\231\327\234 \327\220\327\252 \327"
+   "\224\327\242\327\231\327\225\327\237 \327\220\327\227\327\250 \327\224\327\252\327\225\327\233"
+   "\327\237, \327\247\327\221\327\242\327\225 '\327\252\327\231\327\247\327\231\327\231\327\252 "
+   "\327\236\327\242\327\231\327\231\327\237 \327\224\327\247\327\221\327\246\327\231\327\235'. \327"
+   "\220\327\235 \327\234\327\220 \327\247\327\221\327\242\327\252\327\235, \327\224\327\236\327\242"
+   "\327\231\327\231\327\237 \327\231\327\252\327\227\327\231\327\234 \327\221\327\252\327\231\327"
+   "\247\327\231\327\231\327\224 \327\224\327\250\327\220\327\251\327\231\327\252.\n\327\224\327\236"
+   "\327\242\327\231\327\231\327\237 \327\231\327\241\327\240\327\237 \327\250\327\247 \327\220\327"
+   "\252 \327\224\327\241\327\231\327\225\327\236\327\225\327\252 \327\224\327\252\327\225\327\220"
+   "\327\236\327\225\327\252 \327\220\327\252 \327\224\327\234\327\231\327\221\327\224 \327\224\327"
+   "\220\327\227\327\250\327\225\327\240\327\224 \327\251\327\224\327\225\327\222\327\223\327\250"
+   "\327\224 \327\221'\327\230\327\242\327\237 \327\234\327\231\327\221\327\224', \327\225\327\231"
+   "\327\251\327\252\327\236\327\251 \327\221\327\234\327\231\327\221\327\224 \327\226\327\225 \327"
+   "\233\327\251",
+   "\327\224\327\252\327\225\327\233\327\237 \327\240\327\230\327\242\327\237.",
+   "\327\240\327\222\327\231\327\251\327\225\327\252",
+   "\327\224\327\231\327\251\327\222\327\231\327\235",
+   "\327\231\327\231\327\221\327\225\327\220 \327\252\327\225\327\233\327\237",
+   "\327\231\327\231\327\221\327\225\327\220 \327\252\327\225\327\233\327\237",
+   "\327\251\327\231\327\250\327\225\327\252 \327\252\327\250\327\222\327\225\327\235",
+   "\327\224\327\252\327\247\327\237",
+   "\327\251\327\236\327\242",
+   "\327\252\327\225\327\241\327\243 DSP",
+   "\327\251\327\236\327\242",
+   "\327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327\242 (\327\236\327\231\327\247\327"
+   "\241\327\250)",
+   "\327\224\327\251\327\252\327\247 \327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327"
+   "\242 (\327\236\327\231\327\247\327\241\327\250)",
+   "\327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327\242 (\327\236\327\231\327\247\327"
+   "\241\327\250)",
+   "\327\224\327\251\327\252\327\247",
+   "\327\244\327\234\327\230",
+   "\327\251\327\236\327\242",
+   "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
+   "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
+   "\327\220\327\231\327\251\327\225\327\250",
+   "\327\236\327\231\327\223\327\242",
+   "\327\231\327\246\327\231\327\220\327\224",
+   "\327\222\327\234\327\225\327\234 \327\234\327\236\327\230\327\224",
+   "\327\222\327\234\327\225\327\234 \327\234\327\236\327\242\327\234\327\224",
+   "\327\224\327\252\327\227\327\234",
+   "\327\224\327\246\327\222\327\252/\327\224\327\241\327\252\327\250\327\252 \327\236\327\247\327"
+   "\234\327\223\327\252",
+   "\327\224\327\246\327\222\327\252\\\327\224\327\241\327\252\327\250\327\252 \327\252\327\244\327"
+   "\250\327\231\327\230",
+   "\327\221\327\234\327\225\327\230\327\225\327\252'",
+   "\327\224\327\252\327\227\327\234",
+   "\327\236\327\246\327\234\327\236\327\224",
+   "\327\252\327\231\327\220\327\225\327\250",
+   "\327\224\327\231\327\251\327\222\327\231\327\235",
+   "\327\241\327\231\327\241\327\236\327\220",
+   "\327\241\327\240\327\233\327\250\327\225\327\237 \327\242\327\240\327\237",
+   "\327\230\327\242\327\231\327\240\327\252 \327\252\327\246\327\225\327\250\327\224",
+   "\327\247\327\225\327\221\327\245 \327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\234\327\231\327\221\327\225\327\252 \327\234\327\234\327\220 \327\252\327\225\327\233\327"
+   "\237",
+   "\327\234\327\231\327\221\327\224",
+   "\327\251\327\235",
+   "\327\252\327\244\327\250\327\231\327\230 \327\236\327\224\327\231\327\250",
+   "\327\224\327\225\327\250\327\223\327\225\327\252",
+   "[\327\220\327\225\327\230\327\225\327\236\327\230\327\231]",
+   "\327\222\327\221\327\224 \327\234\327\231\327\221\327\224",
+   "\327\236\327\227\327\247 \327\234\327\231\327\221\327\224",
+   "\327\236\327\227\327\247 \327\222\327\231\327\221\327\225\327\231",
+   "\327\236\327\231\327\223\327\242 \327\234\327\231\327\221\327\224",
+   "\327\236\327\227\327\221\327\250",
+   "\327\247\327\230\327\222\327\225\327\250\327\231\327\225\327\252",
+   "\327\252\327\222\327\231\327\252 \327\234\327\231\327\221\327\224",
+   "\327\251\327\235 \327\234\327\231\327\221\327\224",
+   "\327\222\327\231\327\250\327\241\327\220\327\252 \327\234\327\231\327\221\327\224",
+   "\327\247\327\225\327\251\327\227\327\224",
+   "\327\250\327\231\327\251\327\231\327\225\327\237",
+   "\327\224\327\250\327\251\327\220\327\225\327\252",
+   "\327\221\327\241\327\231\327\241\327\231 (\327\251\327\236\327\225\327\250/\327\230\327\242\327"
+   "\237)",
+   "\327\234\327\234\327\220",
+   "\327\236\327\236\327\225\327\241\327\244\327\250 (\327\251\327\236\327\225\327\250/\327\230\327"
+   "\242\327\237, \327\224\327\227\327\226\327\250 \327\220\327\227\327\225\327\250\327\224)",
+   "\327\252\327\236\327\231\327\233\327\224 \327\221\327\251\327\236\327\231\327\250\327\252 \327"
+   "\236\327\246\327\221\327\231\327\235",
+   "\327\252\327\225\327\241\327\244\327\231\327\235 \327\240\327\252\327\236\327\233\327\231\327"
+   "\235",
+   "\327\231\327\246\327\250\327\237 \327\224\327\236\327\242\327\250\327\233\327\252",
+   "\327\251\327\235 \327\224\327\236\327\242\327\250\327\233\327\252",
+   "\327\230\327\242\327\231\327\240\327\252 \327\234\327\231\327\221\327\224",
+   "\327\244\327\250\327\231\327\247\327\252 \327\234\327\231\327\221\327\224",
+   "\327\240\327\242\327\234 \327\234\327\231\327\221\327\224 \327\236\327\225\327\252\327\247\327"
+   "\240\327\252",
+   "\327\251\327\227\327\226\327\250 \327\222\327\231\327\221\327\225\327\231",
+   "\327\234\327\231\327\221\327\224",
+   "\327\236\327\225\327\250\327\231\327\223 \327\224\327\234\327\231\327\221\327\225\327\252",
+   "\327\220\327\250\327\233\327\231\327\230\327\247\327\230\327\225\327\250\327\252 \327\236\327"
+   "\242\327\221\327\223",
+   "\327\234\327\231\327\221\327\225\327\252 \327\236\327\242\327\221\327\223",
+   "\327\236\327\240\327\224\327\234 \327\236\327\246\327\221\327\231\327\242",
+   "\327\236\327\240\327\224\327\234 \327\221\327\241\327\231\327\241 \327\240\327\252\327\225\327"
+   "\240\327\231\327\235",
+   "\327\224\327\241\327\250",
+   "\327\252\327\231\327\247\327\231\327\231\327\224",
+   "\327\236\327\231\327\223\327\242 \327\223\327\231\327\241\327\247",
+   "\327\224\327\225\327\250\327\223\327\225\327\252",
+   "\327\224\327\225\327\250\327\223 \327\234\327\231\327\221\327\224",
+   "\327\224\327\225\327\250\327\223\327\252 \327\252\327\225\327\233\327\237",
+   "\327\236\327\240\327\224\327\234\327\231 \327\224\327\252\327\247\327\240\327\231\327\235",
+   "\327\251\327\236\327\231\327\250\327\252 \327\223\327\231\327\241\327\247",
+   "\327\242\327\231\327\231\327\237",
+   "\327\252\327\231\327\247\327\231\327\231\327\252 \327\224\327\224\327\252\327\227\327\234\327"
+   "\224",
+   "\327\236\327\225\327\242\327\223\327\244\327\231\327\235",
+   "\327\234\327\231\327\221\327\225\327\252 \327\234\327\234\327\220 \327\252\327\225\327\233\327"
+   "\237",
+   "\327\242\327\231\327\231\327\237",
+   "\327\236\327\225\327\242\327\223\327\244\327\231\327\235",
+   "\327\252\327\236\327\225\327\240\327\225\327\252",
+   "\327\236\327\225\327\226\327\231\327\247\327\224",
+   "\327\241\327\250\327\230\327\225\327\240\327\231\327\235",
+   "\327\244\327\250\327\231\327\246\327\225\327\252",
+   "\327\242\327\226\327\250\327\224",
+   "\327\242\327\226\327\250\327\224",
+   "\327\224\327\231\327\241\327\230\327\225\327\250\327\231\327\224",
+   "\327\224\327\231\327\241\327\230\327\225\327\250\327\231\327\224",
+   "\327\252\327\236\327\225\327\240\327\225\327\252",
+   "\327\236\327\231\327\223\327\242 \327\240\327\225\327\241\327\243",
+   "\327\236\327\231\327\223\327\242 \327\240\327\225\327\241\327\243",
+   "\327\226\327\224\327\224",
+   "\327\233\327\221\327\225\327\231",
+   "\327\244\327\225\327\242\327\234",
+   "\327\241\327\225\327\222 \327\224\327\252\327\247\327\237",
+   "\327\247\327\234\327\230",
+   "\327\224\327\227\327\226\327\247",
+   "\327\236\327\247\327\251\327\231 \327\247\327\231\327\246\327\225\327\250",
+   "\327\251\327\231\327\250\327\225\327\252 \327\252\327\250\327\222\327\225\327\235",
+   "\327\241\327\222\327\225\327\250 \327\252\327\225\327\233\327\237",
+   "\327\230\327\242\327\237 \327\236\327\246\327\221",
+   "\327\231\327\246\327\231\327\220\327\224",
+   "\327\220\327\244\327\241 \327\252\327\225\327\233\327\237",
+   "\327\220\327\252\327\227\327\225\327\234 RetroArch",
+   "\327\251\327\236\327\225\327\250 \327\236\327\246\327\221",
+   "\327\251\327\236\327\225\327\250 \327\246\327\231\327\234\327\225\327\235 \327\236\327\241\327"
+   "\232",
+   "\327\224\327\240\327\236\327\232 \327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327"
+   "\242",
+   "\327\224\327\222\327\221\327\250 \327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327"
+   "\242",
+   "\327\247\327\234\327\230",
+   "\327\231\327\250\327\231 \327\230\327\225\327\250\327\221\327\225",
+   "\327\231\327\250\327\231 \327\230\327\225\327\250\327\221\327\225",
+   "\327\231\327\250\327\231 \327\230\327\225\327\250\327\221\327\225",
+   "\327\252\327\247\327\225\327\244\327\252 \327\230\327\225\327\250\327\221\327\225",
+   "JIT \327\226\327\236\327\231\327\237",
+   "\327\221\327\247\327\250 \327\236\327\251\327\227\327\247",
+   "\327\230\327\242\327\237 \327\247\327\225\327\221\327\245 \327\223\327\227\327\225\327\241",
+   "\327\224\327\231\327\241\327\230\327\225\327\250\327\231\327\224",
+   "\327\230\327\242\327\231\327\240\327\252 \327\252\327\225\327\233\327\237",
+   "\327\230\327\242\327\237 \327\223\327\231\327\241\327\247",
+   "\327\251\327\231\327\250\327\225\327\252\327\231 \327\236\327\231\327\247\327\225\327\235",
+   "\327\250\327\231\327\251\327\225\327\235",
+   "\327\252\327\244\327\250\327\231\327\230 \327\250\327\220\327\251\327\231",
+   "\327\236\327\231\327\244\327\225\327\231\327\231\327\235",
+   "\327\236\327\223\327\231\327\224",
+   "\327\252\327\244\327\250\327\231\327\230 \327\250\327\220\327\251\327\231",
+   "\327\252\327\246\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327\230",
+   "\327\241\327\231\327\231\327\250 \327\247\327\221\327\246\327\231\327\235",
+   "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
+   "\"Load Content\" Startup Notification",
+   "\327\246\327\234\327\231\327\234\327\231 \327\252\327\244\327\250\327\231\327\230",
+   "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'Cancel'",
+   "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'OK'",
+   "\327\247\327\234\327\230",
+   "\327\244\327\234\327\230",
+   "\327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327\242",
+   "\327\227\327\241\327\250, \327\220\327\225\327\244\327\246\327\231\327\225\327\240\327\220\327"
+   "\234\327\231:",
+   "\327\227\327\241\327\250, \327\240\327\246\327\250\327\232:",
+   "\327\240\327\222\327\237",
+   "\327\240\327\222\327\237 (\327\221\327\234\327\225\327\244)",
+   "\327\224\327\241\327\250",
+   "\327\242\327\246\327\225\327\250",
+   "\327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327\242",
+   "\327\236\327\225\327\226\327\231\327\247\327\224",
+   "\327\240\327\230\327\244\327\234\327\231\327\231",
+   "\327\240\327\230\327\244\327\234\327\231\327\231",
+   "\327\236\327\231\327\223\327\242 \327\250\327\251\327\252",
+   "\327\250\327\251\327\252",
+   "\327\242\327\223\327\233\327\225\327\237 \327\236\327\247\327\225\327\225\327\237",
+   "\327\242\327\231\327\225\327\237 \327\221\327\247\327\225\327\221\327\245 \327\223\327\227\327"
+   "\225\327\241",
+   "\327\221\327\231\327\246\327\225\327\242\327\231\327\235",
+   "\327\250\327\251\327\231\327\236\327\225\327\252",
+   "\327\250\327\251\327\231\327\236\327\225\327\252",
+   "\327\250\327\251\327\231\327\236\327\225\327\252",
+   "\327\240\327\231\327\224\327\225\327\234 \327\246\327\250\327\231\327\233\327\252 \327\224\327"
+   "\227\327\251\327\236\327\234",
+   "\327\247\327\231\327\231\327\235, \327\220\327\225\327\244\327\246\327\231\327\225\327\240\327"
+   "\220\327\234\327\231:",
+   "\327\247\327\231\327\231\327\235, \327\240\327\246\327\250\327\232:",
+   "Are you sure you want to delete the playlist \"%1\"?",
+   "Are you sure you want to delete the item \"%1\"?",
+   "\327\234\327\231\327\221\327\224",
+   "\327\236\327\231\327\223\327\242",
+   "\327\236\327\231\327\223\327\242 \327\240\327\225\327\241\327\243",
+   "\327\230\327\242\327\231\327\240\327\252 \327\234\327\231\327\221\327\224",
+   "&\327\242\327\226\327\250\327\224",
+   "\"All Playlists\" max grid entries:",
+   "\"All Playlists\" max list entries:",
+   "\327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\251\327\235",
+   "\327\224\327\241\327\250",
+   "\327\242\327\246\327\225\327\250",
+   "\327\241\327\231\327\231\327\250 \327\247\327\221\327\246\327\231\327\235",
+   "\327\250\327\251\327\231\327\236\327\225\327\252",
+   "\327\252\327\244\327\250\327\231\327\230 \327\236\327\224\327\231\327\250",
+   "\327\231\327\246\327\231\327\220\327\224",
+   "\327\224\327\231\327\251\327\222\327\231\327\235",
+   "\327\220\327\240\327\234\327\225\327\222\327\231 \327\240\327\252\327\236\327\232",
+   "\327\223\327\231\327\250\327\225\327\222 BBFC",
+   "\327\247\327\230\327\222\327\225\327\250\327\231\327\224",
+   "\327\223\327\231\327\250\327\225\327\222 CERO",
+   "\327\244\327\247\327\223\327\231\327\235",
+   "\327\252\327\236\327\231\327\233\327\252 \327\236\327\251\327\227\327\247 \327\236\327\251\327"
+   "\225\327\252\327\243",
+   "\327\252\327\231\327\220\327\225\327\250",
+   "\327\236\327\244\327\252\327\227",
+   "\327\223\327\231\327\250\327\225\327\222 ELSPA",
+   "\327\223\327\231\327\250\327\225\327\222 ESRB",
+   "\327\226'\327\220\327\240\327\250",
+   "\327\251\327\244\327\224",
+   "\327\236\327\223\327\231\327\224",
+   "\327\251\327\235",
+   "\327\236\327\247\327\225\327\250",
+   "\327\223\327\231\327\250\327\225\327\222 PEGI",
+   "\327\236\327\244\327\231\327\245",
+   "\327\220\327\231\327\226\327\225\327\250",
+   "\327\250\327\230\327\230 \327\240\327\252\327\236\327\232",
+   "\327\240\327\231\327\247\327\225\327\223",
+   "\327\241\327\231\327\223\327\225\327\250\327\231",
+   "\327\224\327\222\327\223\327\250\327\224",
+   "\327\250\327\233\327\221\327\231",
+   "\327\227\327\226\327\225\327\252\327\231",
+   "\327\224\327\247\327\234\327\230\327\224",
+   "\327\224\327\247\327\234\327\230",
+   "\327\220\327\244\327\241 \327\234\327\221\327\250\327\231\327\250\327\252 \327\224\327\236\327"
+   "\227\327\223\327\234",
+   "\327\220\327\252\327\227\327\234",
+   "\327\224\327\231\327\251\327\222\327\231\327\235",
+   "\327\252\327\231\327\247\327\231\327\231\327\252 \327\224\327\224\327\252\327\227\327\234\327"
+   "\224",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
-#ifdef HAVE_ODROIDGO2
-#else
 #endif
-#ifdef _3DS
+   "\327\251\327\236\327\231\327\250\327\225\327\252",
+   "\327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\224\327\222\327\223\327\250\327\225\327\252",
+   "\327\224\327\246\327\222 \327\252\327\244\327\250\327\231\327\230 \327\251\327\225\327\234\327"
+   "\227\327\237 \327\242\327\221\327\225\327\223\327\224",
+   "\327\224\327\252\327\247\327\240\327\224 \327\220\327\225 \327\251\327\231\327\227\327\226\327"
+   "\225\327\250 \327\251\327\234 \327\234\327\231\327\221\327\224",
+   "\327\251\327\236\327\242",
+   "\327\236\327\244\327\250\327\230",
+   "\327\224\327\244\327\242\327\234 RetroPad \327\236\327\250\327\225\327\227\327\247",
+   "\327\224\327\227\327\234 \327\236\327\242\327\221\327\223 \327\225\327\231\327\223\327\220\327"
+   "\225",
+   "\327\220\327\227\327\241\327\225\327\237",
+   "\327\236\327\231\327\223\327\242 \327\236\327\242\327\250\327\233\327\252",
+   "\327\252\327\220\327\250\327\231\327\232 \327\224\327\222\327\250\327\241\327\224",
+   "\327\236\327\220\327\244\327\231\327\231\327\240\327\231 \327\236\327\242\327\221\327\223",
+   "\327\223\327\222\327\235 \327\236\327\242\327\221\327\223",
+   "DPI \327\236\327\241\327\232",
+   "\327\222\327\225\327\221\327\224 \327\252\327\246\327\225\327\222\327\224 (\327\236\"\327\236)",
+   "\327\250\327\225\327\227\327\221 \327\252\327\246\327\225\327\222\327\224 (\327\236\"\327\236)",
+   "\327\236\327\226\327\224\327\224 \327\236\327\236\327\251\327\247",
+   "\327\236\327\242\327\250\327\233\327\252 \327\224\327\244\327\242\327\234\327\252 \327\236\327"
+   "\236\327\251\327\247",
+   "\327\222\327\231\327\250\327\241\327\220\327\252 \327\222\327\231\327\230",
+   "\327\236\327\247\327\225\327\250 \327\227\327\251\327\236\327\234",
+   "\327\222\327\231\327\250\327\241\327\220\327\252 RetroArch",
+   "\327\236\327\240\327\224\327\234 \327\224\327\252\327\247\327\237 \327\224\327\247\327\251\327"
+   "\250 \327\225\327\231\327\223\327\220\327\225",
+   "\327\236\327\242\327\250\327\233\327\252",
+   "\327\251\327\236\327\225\327\250 \327\246\327\231\327\234\327\225\327\235 \327\236\327\241\327"
+   "\232",
+   "\327\252\327\226\327\236\327\225\327\237",
+   "\327\247\327\234\327\220\327\241\327\231",
+   "\327\224\327\246\327\222 \327\251\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327"
+   "\230",
+   "\327\242\327\223\327\233\327\237 \327\240\327\233\327\241\327\231\327\235",
+   "\327\242\327\223\327\233\327\237 \327\244\327\250\327\225\327\244\327\231\327\234\327\231 \327"
+   "\251\327\234\327\230",
+   "\327\242\327\223\327\233\327\237 \327\236\327\246\327\234\327\231\327\234\327\231 Cg",
+   "\327\242\327\223\327\233\327\237 \327\246'\327\231\327\230\327\231\327\235",
+   "\327\242\327\223\327\233\327\237 \327\247\327\221\327\246\327\231 \327\236\327\231\327\223\327"
+   "\242 \327\234\327\231\327\221\327\224",
+   "\327\242\327\223\327\233\327\237 \327\221\327\241\327\231\327\241\327\231 \327\240\327\252\327"
+   "\225\327\240\327\231\327\235",
+   "\327\242\327\223\327\233\327\237 \327\236\327\246\327\234\327\231\327\234\327\231 GLSL",
+   "\327\242\327\223\327\233\327\237 \327\234\327\231\327\221\327\225\327\252 \327\236\327\225\327"
+   "\252\327\247\327\240\327\225\327\252",
+   "\327\242\327\223\327\233\327\237 \327\236\327\246\327\234\327\231\327\234\327\231 Slang",
+   "\327\236\327\251\327\252\327\236\327\251",
+   "\327\236\327\236\327\251\327\247 \327\236\327\251\327\252\327\236\327\251",
+   "\327\236\327\251\327\252\327\236\327\251",
+   "\327\224\327\222\327\223\327\250",
+   "\327\234\327\231\327\221\327\224 \327\241\327\225\327\244\327\247\327\224",
+   "\327\236\327\225\327\252\327\220\327\235 \327\220\327\231\327\251\327\231\327\252",
+   "\327\236\327\234\327\220",
+   "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
+   "\327\225\327\231\327\223\327\220\327\225",
+   "\327\220\327\225\327\230\327\225\327\236\327\230\327\231",
+   "\327\221\327\244\327\225\327\242\327\234",
+   "\327\236\327\246\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "\327\250\327\225\327\227\327\221 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "\327\222\327\225\327\221\327\224 \327\236\327\241\327\232 \327\236\327\234\327\220",
+   "\327\244\327\234\327\230",
+   "\327\251\327\231\327\240\327\225\327\231 \327\247\327\240\327\224 \327\236\327\231\327\223\327"
+   "\224",
+   "\327\225\327\231\327\223\327\220\327\225",
+   "\327\241\327\231\327\240\327\233\327\250\327\225\327\237",
+   "\327\241\327\250\327\230\327\225\327\240\327\231\327\235",
+   "\327\236\327\246\327\221 \327\227\327\234\327\225\327\237",
+   "\327\222\327\225\327\221\327\224 \327\227\327\234\327\225\327\237",
+   "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
+   "\327\250\327\251\327\252 \327\220\327\234\327\227\327\225\327\230\327\231\327\252",
+   "\327\250\327\251\327\252 \327\220\327\234\327\227\327\225\327\230\327\231\327\252",
+   "video_viewport_bias_x",
+   "video_viewport_bias_y",
+   "\327\224\327\251\327\252\327\247 \327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327"
+   "\242 (\327\236\327\231\327\247\327\241\327\250).",
+   "\327\251\327\240\327\224 \327\224\327\222\327\223\327\250\327\225\327\252 \327\236\327\242\327"
+   "\250\327\221\327\234 \327\251\327\236\327\242 (\327\236\327\231\327\247\327\241\327\250)",
+   "\327\224\327\251\327\252\327\247 \327\251\327\236\327\242.",
+   "\327\251\327\240\327\224 \327\224\327\222\327\223\327\250\327\225\327\252 \327\241\327\240\327"
+   "\233\327\225\327\237 \327\251\327\236\327\242.",
+   "\327\222\327\231\327\251\327\224 \327\236\327\224\327\231\327\250\327\224 \327\234\327\224\327"
+   "\222\327\223\327\250\327\225\327\252 \327\236\327\251\327\227\327\247.",
+   "\327\221\327\227\327\250\327\225 \327\221\327\220\327\231\327\226\327\225 \327\234\327\231\327"
+   "\221\327\224 \327\234\327\224\327\251\327\252\327\236\327\251.",
+   "\327\251\327\227\327\250\327\225\327\250 \327\224\327\234\327\231\327\221\327\224 \327\224\327"
+   "\230\327\242\327\225\327\240\327\224.",
+   "\327\251\327\231\327\240\327\225\327\231 \327\224\327\222\327\223\327\250\327\225\327\252 \327"
+   "\234\327\231\327\221\327\224.",
+   "\327\224\327\246\327\222 \327\227\327\231\327\244\327\225\327\251\327\231\327\235 \327\247\327"
+   "\225\327\223\327\236\327\231\327\235.",
+   "\327\224\327\246\327\222 \327\236\327\241\327\223\327\231 \327\240\327\252\327\225\327\240\327"
+   "\231\327\235.",
+   "\327\236\327\231\327\223\327\242 \327\236\327\242\327\250\327\233\327\252.",
+   "\327\221\327\227\327\250\327\225 \327\220\327\231\327\226\327\224 \327\252\327\225\327\233\327"
+   "\237 \327\234\327\224\327\252\327\227\327\231\327\234.",
+   "\327\251\327\231\327\240\327\225\327\231 \327\224\327\222\327\223\327\250\327\225\327\252 \327"
+   "\224\327\247\327\234\327\230\327\224.",
+   "\327\224\327\244\327\242\327\234 \327\236\327\227\327\223\327\251 \327\220\327\252 \327\220\327"
+   "\244\327\234\327\231\327\247\327\246\327\231\327\231\327\252 RetroArch.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   "For use with compatible Retroflag case.\"\n#else\n   \"For use with compatible Retroflag case. R"
+   "eboot is required when changing.",
 #endif
-#ifdef HAVE_QT
 #endif
-#ifdef HAVE_GAME_AI
+   "\327\251\327\231\327\240\327\225\327\231 \327\224\327\222\327\223\327\250\327\225\327\252 \327"
+   "\231\327\231\327\251\327\225\327\235.",
+   "Controller profile saved as \"%s\".",
+   "Auto-loading save state from \"%s\" failed.",
+   "Auto-loading save state from \"%s\" succeeded.",
+   "bringing_up_command_interface_at_port",
+   "RetroAchievements: Logged in as \"%s\".",
+   "\327\224\327\231\327\223\327\225\327\250 (\327\247\327\231\327\236\327\244\327\225\327\234)\342"
+   "\200\217",
+   "disconnect_device_from_a_valid_port",
+   "failed_to_start_audio_driver",
+   "found_last_state_slot",
+   "Got connection from: \"%s\"",
+   "Got connection from: \"%s (%s)\"",
+   "\327\224\327\227\327\226\327\247",
+   "\327\226\327\236\327\237 \327\247\327\246\327\225\327\221 \327\234\327\252\327\244\327\225\327"
+   "\222\327\224",
+   "Client banned: \"%s\"",
+   "Your nickname changed to \"%s\"",
+   "Failed to ban client: \"%s\"",
+   "Failed to kick client: \"%s\"",
+   "Client kicked: \"%s\"",
+   "Netplay peer \"%s\" paused",
+   "\"%s\" has disconnected",
+   "Unrecognized command \"%s\" received.\n",
+};
 
-
-
-
-
+/* Contiguity check: char members have alignment 1, so any
+ * compiler that pads this struct fails here instead of
+ * misindexing at runtime. */
+typedef char msg_hash_he_blob_check[
+      (sizeof(msg_hash_he_blob) == (6940u
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+       + 77u
+       + 125u
 #endif
-#ifdef HAVE_SMBCLIENT
 #endif
+      )) ? 1 : -1];
+
+static const uint32_t msg_hash_he_ids[] =
+{
+   (uint32_t)MENU_ENUM_LABEL_HELP_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_HELP_FILE_BROWSER_IMAGE,
+   (uint32_t)MENU_ENUM_LABEL_HELP_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACCESSIBILITY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ACHIEVEMENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_QUIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_SCROLL_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CAMERA_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEAT_DESC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CHEEVOS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATIONS_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONFIGURATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENTLESS_CORES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_INFO_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_BACKUP_MODE_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_CREATE_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CATEGORIES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_LABEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CORE_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_FIRMWARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_LICENSES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_PERMISSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_BASIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SERIALIZED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SAVESTATE_SUPPORT_LEVEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SUPPORTED_EXTENSIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_RESTORE_BACKUP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_ARCHITECTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DIRECTORY_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_CONTENTLESS_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_EXPLORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_FAVORITES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_IMAGES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HACKS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_LIST_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_HISTORY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_IMAGES_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SAVE_STATE_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_DOWN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_VOLUME_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_FIRE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAPPING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_ONLINE_UPDATER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_OPEN_ARCHIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PERFORMANCE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLISTS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PLAYLIST_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUIT_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ACHIEVEMENTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ANALOG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CERO_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CONTROLS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_COOP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_LANGUAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_MEDIA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ORIGIN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SETTING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VISUAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RECORD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESET_TO_DEFAULT_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RESTART_RETROARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RETRO_ACHIEVEMENTS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RGUI_BROWSER_DIRECTORY,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_VIEWS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_CPU_MODEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_DPI,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_DISPLAY_METRIC_MM_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_IDENTIFIER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_MENUBAR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_ASSETS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_AUTOCONFIG_PROFILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CHEATS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_CORE_INFO_FILES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_DATABASES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_GLSL_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_INSTALLED_CORES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UPDATE_SLANG_SHADERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_INTERFACE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CORE_PROVIDED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CONTENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_RECORDING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_RESTART_RETROARCH,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
+   (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
+#endif
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
+   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
+   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
+   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
+   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
+   (uint32_t)MSG_COMPILER,
+   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
+   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
+   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
+   (uint32_t)MSG_GOT_CONNECTION_FROM,
+   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
+   (uint32_t)MSG_INPUT_BIND_HOLD,
+   (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
+   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
+   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
+   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
+};

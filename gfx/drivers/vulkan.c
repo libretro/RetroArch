@@ -5187,7 +5187,6 @@ static void *vulkan_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (video->font_enable)
       font_driver_init_osd(vk,
             video,
             false,
@@ -7671,6 +7670,14 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
       *texture = vulkan_create_texture(vk, NULL,
             image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
             image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+      /* vulkan_create_texture always builds the full mip chain for
+       * static textures and returns VK_TEX_FLAG_MIPMAP set; sampler
+       * selection is expected to gate its use.  Mask the inherited
+       * sampler flags off first so the requested filter_type is
+       * actually honored -- otherwise TEXTURE_FILTER_LINEAR still
+       * samples through the mipmap sampler. */
+      texture->flags &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH
+                        | VK_TEX_FLAG_MIPMAP);
       if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR || filter_type ==
             TEXTURE_FILTER_LINEAR)
          texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
@@ -7806,6 +7813,223 @@ static void vulkan_get_video_output_next(void *data)
       vk->ctx_driver->get_video_output_next(vk->ctx_data);
 }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+static bool vulkan_gpu_format_to_vk(enum texture_gpu_format f, VkFormat *out)
+{
+   switch (f)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: *out = VK_FORMAT_BC1_RGBA_UNORM_BLOCK; return true;
+      case TEXTURE_GPU_FORMAT_BC2: *out = VK_FORMAT_BC2_UNORM_BLOCK;      return true;
+      case TEXTURE_GPU_FORMAT_BC3: *out = VK_FORMAT_BC3_UNORM_BLOCK;      return true;
+      case TEXTURE_GPU_FORMAT_BC7: *out = VK_FORMAT_BC7_UNORM_BLOCK;      return true;
+      default: break;
+   }
+   return false;
+}
+
+static bool vulkan_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   vk_t                *vk = (vk_t*)data;
+   VkFormat             vkfmt;
+   VkFormatProperties   props;
+   if (!vk || !vk->context || !vulkan_gpu_format_to_vk(fmt, &vkfmt))
+      return false;
+   vkGetPhysicalDeviceFormatProperties(vk->context->gpu, vkfmt, &props);
+   return (props.optimalTilingFeatures
+         & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT) != 0;
+}
+
+static uintptr_t vulkan_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   vk_t                       *vk = (vk_t*)video_data;
+   struct vk_texture     *texture = NULL;
+   VkDevice                device;
+   VkFormat                vkfmt;
+   VkImageCreateInfo       info;
+   VkImageViewCreateInfo   view;
+   VkMemoryRequirements    mem_reqs;
+   VkMemoryAllocateInfo    alloc;
+   VkBufferCreateInfo      buffer_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo    begin_info;
+   VkSubmitInfo            submit_info;
+   VkBufferImageCopy       regions[IMAGE_MAX_MIPS];
+   VkBuffer                staging     = VK_NULL_HANDLE;
+   VkDeviceMemory          staging_mem = VK_NULL_HANDLE;
+   VkCommandBuffer         cmd         = VK_NULL_HANDLE;
+   size_t                  total       = 0;
+   size_t                  off         = 0;
+   void                   *ptr         = NULL;
+   uint8_t                *dst;
+   unsigned                i;
+
+   (void)threaded;
+   if (!vk || !vk->context || !tc || tc->num_mips == 0)
+      return 0;
+   if (!vulkan_gpu_format_to_vk(tc->format, &vkfmt))
+      return 0;
+   device = vk->context->device;
+
+   if (!(texture = (struct vk_texture*)calloc(1, sizeof(*texture))))
+      return 0;
+
+   /* Optimal-tiled image with the file's pre-baked mip count (no blit
+    * mip generation -- block-compressed images cannot be filtered). */
+   memset(&info, 0, sizeof(info));
+   info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+   info.imageType     = VK_IMAGE_TYPE_2D;
+   info.format        = vkfmt;
+   info.extent.width  = tc->mips[0].width;
+   info.extent.height = tc->mips[0].height;
+   info.extent.depth  = 1;
+   info.mipLevels     = tc->num_mips;
+   info.arrayLayers   = 1;
+   info.samples       = VK_SAMPLE_COUNT_1_BIT;
+   info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+   info.usage         = VK_IMAGE_USAGE_SAMPLED_BIT
+                      | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+   info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+   info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+   if (vkCreateImage(device, &info, NULL, &texture->image) != VK_SUCCESS)
+   {
+      free(texture);
+      return 0;
+   }
+   vkGetImageMemoryRequirements(device, texture->image, &mem_reqs);
+
+   alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext           = NULL;
+   alloc.allocationSize  = mem_reqs.size;
+   alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties, mem_reqs.memoryTypeBits,
+         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+   if (vkAllocateMemory(device, &alloc, NULL, &texture->memory) != VK_SUCCESS)
+   {
+      vkDestroyImage(device, texture->image, NULL);
+      free(texture);
+      return 0;
+   }
+   vkBindImageMemory(device, texture->image, texture->memory, 0);
+   texture->memory_size = alloc.allocationSize;
+   texture->memory_type = alloc.memoryTypeIndex;
+
+   /* Host-visible staging buffer sized to the sum of the mip block bytes. */
+   for (i = 0; i < tc->num_mips; i++)
+      total += tc->mips[i].size;
+
+   memset(&buffer_info, 0, sizeof(buffer_info));
+   buffer_info.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   buffer_info.size        = total;
+   buffer_info.usage       = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+   buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+   vkCreateBuffer(device, &buffer_info, NULL, &staging);
+   vkGetBufferMemoryRequirements(device, staging, &mem_reqs);
+   alloc.allocationSize  = mem_reqs.size;
+   alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties, mem_reqs.memoryTypeBits,
+         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0);
+   vkAllocateMemory(device, &alloc, NULL, &staging_mem);
+   vkBindBufferMemory(device, staging, staging_mem, 0);
+
+   vkMapMemory(device, staging_mem, 0, total, 0, &ptr);
+   dst = (uint8_t*)ptr;
+   memset(regions, 0, sizeof(regions));
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      memcpy(dst + off, tc->mips[i].data, tc->mips[i].size);
+      regions[i].bufferOffset                    = off;
+      regions[i].bufferRowLength                 = 0; /* tightly packed */
+      regions[i].bufferImageHeight               = 0;
+      regions[i].imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+      regions[i].imageSubresource.mipLevel       = i;
+      regions[i].imageSubresource.baseArrayLayer = 0;
+      regions[i].imageSubresource.layerCount     = 1;
+      regions[i].imageExtent.width               = tc->mips[i].width;
+      regions[i].imageExtent.height              = tc->mips[i].height;
+      regions[i].imageExtent.depth               = 1;
+      off                                       += tc->mips[i].size;
+   }
+   vkUnmapMemory(device, staging_mem);
+
+   /* One-shot copy: UNDEFINED -> TRANSFER_DST -> SHADER_READ_ONLY. */
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.pNext              = NULL;
+   cmd_info.commandPool        = vk->staging_pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   vkAllocateCommandBuffers(device, &cmd_info, &cmd);
+
+   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext            = NULL;
+   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo = NULL;
+   vkBeginCommandBuffer(cmd, &begin_info);
+
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+   vkCmdCopyBufferToImage(cmd, staging, texture->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, tc->num_mips, regions);
+
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+   vkEndCommandBuffer(cmd);
+
+   memset(&submit_info, 0, sizeof(submit_info));
+   submit_info.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.commandBufferCount = 1;
+   submit_info.pCommandBuffers    = &cmd;
+#ifdef HAVE_THREADS
+   if (vk->context->queue_lock)
+      slock_lock(vk->context->queue_lock);
+#endif
+   vkQueueSubmit(vk->context->queue, 1, &submit_info, VK_NULL_HANDLE);
+   vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+   if (vk->context->queue_lock)
+      slock_unlock(vk->context->queue_lock);
+#endif
+   vkFreeCommandBuffers(device, vk->staging_pool, 1, &cmd);
+   vkDestroyBuffer(device, staging, NULL);
+   vkFreeMemory(device, staging_mem, NULL);
+
+   memset(&view, 0, sizeof(view));
+   view.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+   view.image                       = texture->image;
+   view.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+   view.format                      = vkfmt;
+   view.components.r                = VK_COMPONENT_SWIZZLE_R;
+   view.components.g                = VK_COMPONENT_SWIZZLE_G;
+   view.components.b                = VK_COMPONENT_SWIZZLE_B;
+   view.components.a                = VK_COMPONENT_SWIZZLE_A;
+   view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   view.subresourceRange.levelCount = tc->num_mips;
+   view.subresourceRange.layerCount = 1;
+   vkCreateImageView(device, &view, NULL, &texture->view);
+
+   texture->width  = tc->mips[0].width;
+   texture->height = tc->mips[0].height;
+   texture->format = vkfmt;
+   texture->type   = VULKAN_TEXTURE_STATIC;
+   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   if (     filter_type == TEXTURE_FILTER_MIPMAP_LINEAR
+         || filter_type == TEXTURE_FILTER_LINEAR)
+      texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
+   if (filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      texture->flags |= VK_TEX_FLAG_MIPMAP;
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -7833,14 +8057,16 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_set_hdr_paper_white_nits,
    vulkan_set_hdr_expand_gamut,
    vulkan_set_hdr_scanlines,
-   vulkan_set_hdr_subpixel_layout
+   vulkan_set_hdr_subpixel_layout,
 #else
    NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
 #endif /* VULKAN_HDR_SWAPCHAIN */
+   vulkan_supports_texture_format,
+   vulkan_load_texture_compressed
 };
 
 static void vulkan_get_poke_interface(void *data,

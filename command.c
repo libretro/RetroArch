@@ -831,14 +831,14 @@ bool command_load_state_slot(command_t *cmd, const char *arg)
    bool ret                     = false;
    _len  = strlcpy(reply, "LOAD_STATE_SLOT ", sizeof(reply));
    _len += snprintf(reply + _len, sizeof(reply) - _len, "%d", slot);
-   if (savestates_enabled)
-   {
-      size_t info_size;
-      runloop_get_savestate_path(state_path, sizeof(state_path), slot);
-
-      info_size          = core_serialize_size();
-      savestates_enabled = (info_size > 0);
-   }
+   runloop_get_savestate_path(state_path, sizeof(state_path), slot);
+   /* For LOADING, an existing state file outranks metadata and
+    * save-capability probes: core_serialize_size() measures whether the
+    * core can SAVE right now (0 at e.g. a game's own main menu), which
+    * says nothing about whether it can restore. Let the load task and
+    * retro_unserialize() arbitrate. */
+   if (!savestates_enabled)
+      savestates_enabled = path_is_valid(state_path);
    if (savestates_enabled)
    {
       if ((ret = content_load_state(state_path, false, false)))
@@ -1601,8 +1601,8 @@ bool command_event_load_entry_state(settings_t *settings)
    runloop_state_t *runloop_st     = runloop_state_get_ptr();
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing entry-state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1650,8 +1650,8 @@ bool command_event_load_auto_state(void)
    const char *name_savestate      = runloop_st->name.savestate;
    bool ret                        = false;
 
-   if (!core_info_current_supports_savestate())
-      return false;
+   /* No early save-capability gate here: content_load_state() decides,
+    * and an existing .auto state file outranks stale metadata. */
 
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
@@ -1915,14 +1915,18 @@ void command_event_set_savestate_auto_index(settings_t *settings)
    bool savestate_auto_index = settings->bools.savestate_auto_index;
    if (savestate_auto_index)
    {
+      int prev_slot          = settings->ints.state_slot;
       command_scan_states(
             settings->bools.show_hidden_files,
             settings->uints.savestate_max_keep,
             settings->ints.state_slot, &max_idx, NULL);
       configuration_set_int(settings, settings->ints.state_slot, max_idx);
-      RARCH_LOG("[State] %s: #%d.\n",
+      RARCH_LOG("[State] %s: #%d (slot reset %d -> %u from on-disk scan, "
+            "max_keep %u). If the previous slot was higher, earlier saves "
+            "may be missing on disk.\n",
             msg_hash_to_str(MSG_FOUND_LAST_STATE_SLOT),
-            max_idx);
+            max_idx, prev_slot, max_idx,
+            settings->uints.savestate_max_keep);
    }
    else
       /* Reset savestate index to 0 when loading content. */
@@ -2426,7 +2430,18 @@ bool command_event_main_state(unsigned cmd)
                      settings->bools.frame_time_counter_auto_reset;
 
                if (cmd == CMD_EVENT_SAVE_STATE)
-                  content_save_state(state_path, true);
+               {
+                  bool queued = content_save_state(state_path, true);
+                  RARCH_LOG("[State] save dispatch for slot %d, path "
+                        "\"%s\": content_save_state queued=%s "
+                        "(auto_index=%s, max_keep=%u). NOTE: actual disk "
+                        "write is asynchronous; success is only known when "
+                        "the save task completes.\n",
+                        settings->ints.state_slot, state_path,
+                        queued ? "yes" : "NO",
+                        savestate_auto_index ? "on" : "off",
+                        savestate_max_keep);
+               }
                else
                   content_save_state_to_ram();
 
