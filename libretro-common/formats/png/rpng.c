@@ -917,16 +917,22 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
             {
                case 7:
                   data[6] = palette[(*decoded >> 1) & 1];
+                  /* fall-through */
                case 6:
                   data[5] = palette[(*decoded >> 2) & 1];
+                  /* fall-through */
                case 5:
                   data[4] = palette[(*decoded >> 3) & 1];
+                  /* fall-through */
                case 4:
                   data[3] = palette[(*decoded >> 4) & 1];
+                  /* fall-through */
                case 3:
                   data[2] = palette[(*decoded >> 5) & 1];
+                  /* fall-through */
                case 2:
                   data[1] = palette[(*decoded >> 6) & 1];
+                  /* fall-through */
                case 1:
                   data[0] = palette[(*decoded >> 7) & 1];
                   break;
@@ -950,8 +956,10 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
             {
                case 3:
                   data[2] = palette[(*decoded >> 2) & 3];
+                  /* fall-through */
                case 2:
                   data[1] = palette[(*decoded >> 4) & 3];
+                  /* fall-through */
                case 1:
                   data[0] = palette[(*decoded >> 6) & 3];
                   break;
