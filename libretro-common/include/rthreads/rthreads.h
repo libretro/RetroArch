@@ -304,6 +304,21 @@ uintptr_t sthread_get_thread_id(sthread_t *thread);
 uintptr_t sthread_get_current_thread_id(void);
 
 /**
+ * Returns whether the calling thread is the process's main/initial thread.
+ *
+ * Implemented where the platform exposes a native predicate (currently
+ * Apple/Darwin, via pthread_main_np()); returns false on backends that
+ * provide no such primitive. All present callers run on Apple. A fully
+ * portable implementation would compare sthread_get_current_thread_id()
+ * against a main-thread id captured at startup (cf. task_is_on_main_thread()
+ * in queues/task_queue.c).
+ *
+ * @return true if called from the main thread; false otherwise, or if the
+ * platform offers no way to tell.
+ */
+bool sthread_is_main_thread(void);
+
+/**
  * Temporarily raise the CALLING thread's scheduling priority to match a
  * higher-priority thread that is synchronously waiting on it, mitigating a
  * priority inversion across an slock/scond handoff. Unlike some OS-native

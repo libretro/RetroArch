@@ -31,7 +31,7 @@
 
 #include <retro_timers.h>
 #include <retro_atomic.h>
-#include <pthread.h>
+#include <rthreads/rthreads.h>
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
@@ -199,7 +199,7 @@ static void cocoa_vk_gfx_ctx_get_video_size_ts(void *data,
       unsigned *width, unsigned *height)
 {
    size_t packed;
-   if (pthread_main_np() != 0)
+   if (sthread_is_main_thread())
       cocoa_vk_gfx_ctx_publish_size();
    packed  = retro_atomic_load_acquire_size(&cocoa_vk_backing_size);
    *width  = (unsigned)((packed >> 16) & 0xFFFF);

@@ -843,6 +843,19 @@ uintptr_t sthread_get_current_thread_id(void)
 #endif
 }
 
+bool sthread_is_main_thread(void)
+{
+#if defined(__APPLE__)
+   /* BSD/Darwin extension reporting whether the caller is the initial
+    * thread. pthread.h is already included on this backend. */
+   return pthread_main_np() != 0;
+#else
+   /* No native predicate on this backend; current callers are Apple-only.
+    * See the header note for the portable captured-id alternative. */
+   return false;
+#endif
+}
+
 void *sthread_priority_override_begin(void)
 {
 #ifdef RTHREADS_HAVE_QOS_OVERRIDE
