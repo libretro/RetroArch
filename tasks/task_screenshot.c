@@ -311,15 +311,15 @@ static void screenshot_rotate(
       uint8_t rotate_type)
 {
    int x, y;
-   int bpp           = *pitch / *width;
-   int source_width  = *width;
-   int source_height = *height;
-   int source_pitch  = *pitch;
-   int target_width  = source_width;
-   int target_height = source_height;
-   int target_pitch  = source_pitch;
+   size_t bpp          = *pitch / *width;
+   size_t source_pitch = *pitch;
+   int source_width    = *width;
+   int source_height   = *height;
+   int target_width    = source_width;
+   int target_height   = source_height;
+   int target_pitch    = source_pitch;
 
-   /* 90deg dimension flip */
+   /* 90 deg dimension flip */
    if (     rotate_type == VIDEO_ROTATION_90_DEG
          || rotate_type == VIDEO_ROTATION_270_DEG)
    {
@@ -332,8 +332,8 @@ static void screenshot_rotate(
    {
       for (x = 0; x < target_pitch; x++)
       {
-         int pixel_source = (y * source_width) + x;
-         int pixel_target = (y * target_width) + x;
+         size_t pixel_source = (y * source_width) + x;
+         size_t pixel_target = (y * target_width) + x;
 
          switch (rotate_type)
          {
@@ -353,8 +353,8 @@ static void screenshot_rotate(
 
          if (     pixel_source < 0
                || pixel_target < 0
-               || pixel_source > (int)size / bpp
-               || pixel_target > (int)size / bpp)
+               || pixel_source > size / bpp
+               || pixel_target > size / bpp)
             continue;
 
          *(target + pixel_target) = *(source + pixel_source);
