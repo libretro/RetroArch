@@ -275,6 +275,28 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   /* Dispatch any buffered Wayland events to receive the PREVIOUS
+    * frame's presentation feedback. flush_wayland_fd at the end
+    * of the previous iteration already did this, but pick up
+    * anything that arrived since then. */
+   if (wl->present_clock)
+      wl_presentation_dispatch_pending(wl);
+
+   /* Sleep until the next predicted vblank based on the previous
+    * frame's presentation timing. No-op when:
+    *  - no timing data yet (first frame)
+    *  - swap_interval == 0 (fast-forward / immediate present)
+    *  - already past the deadline */
+   wait_for_next_frame(wl);
+
+   /* Request presentation feedback for THIS frame's commit.
+    * Must be before vulkan_present so the feedback object is
+    * associated with the upcoming wl_surface.commit. */
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
+
+   /* Submit the frame to the compositor.
+    * vulkan_present triggers a wl_surface.commit internally. */
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       wl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
@@ -286,11 +308,13 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          vulkan_present(&wl->vk, wl->vk.context.current_swapchain_index);
    }
 
-   if (wl->present_clock)
-      wl_request_presentation_feedback(wl);
-
-   wait_for_next_frame(wl);
+   /* Acquire the next swapchain image from the compositor.
+    * This provides backpressure: blocks until a buffer is available. */
    vulkan_acquire_next_image(&wl->vk);
+
+   /* Dispatch Wayland events to receive the current frame's
+    * presentation feedback (delivered asynchronously by the
+    * compositor) and keep the event queue moving. */
    flush_wayland_fd(&wl->input);
 }
 

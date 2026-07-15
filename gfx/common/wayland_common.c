@@ -333,7 +333,10 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    if (wl->viewport)
       wp_viewport_destroy(wl->viewport);
    if (wl->presentation)
+   {
+      wl_presentation_destroy_feedbacks(wl);
       wp_presentation_destroy(wl->presentation);
+   }
    if (wl->fractional_scale)
       wp_fractional_scale_v1_destroy(wl->fractional_scale);
    if (wl->idle_inhibitor)
@@ -530,7 +533,7 @@ static void presentation_feedback_presented(void *data,
    uint64_t sec = ((uint64_t)tv_sec_hi << 32) | (uint64_t)tv_sec_lo;
    wl->last_ust = sec * 1000000000ULL + (uint64_t)tv_nsec;
    wl->last_msc = ((uint64_t)seq_hi << 32) | (uint64_t)seq_lo;
-   wl->refresh_interval = (int64_t)refresh;
+   wl->refresh_interval = (uint64_t)refresh;
    wl->is_presented = true;
 }
 
@@ -551,6 +554,23 @@ static const struct wp_presentation_feedback_listener presentation_feedback_list
    presentation_feedback_discarded,
 };
 
+void wl_presentation_dispatch_pending(gfx_ctx_wayland_data_t *wl)
+{
+   if (wl->presentation && wl->input.dpy)
+      wl_display_dispatch_pending(wl->input.dpy);
+}
+
+void wl_presentation_destroy_feedbacks(gfx_ctx_wayland_data_t *wl)
+{
+   wp_presentation_feedback_t *fb, *tmp;
+   wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
+   {
+      wl_list_remove(&fb->link);
+      wp_presentation_feedback_destroy(fb->feedback);
+      free(fb);
+   }
+}
+
 void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
 {
    wp_presentation_feedback_t *fb = calloc(1, sizeof(*fb));
@@ -568,7 +588,6 @@ void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
       return;
    }
 
-   wl->is_presented = false;
    wp_presentation_feedback_add_listener(fb->feedback,
          &presentation_feedback_listener, wl);
    wl_list_insert(&wl->feedbacks, &fb->link);
@@ -576,29 +595,47 @@ void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
 
 void wait_for_next_frame(gfx_ctx_wayland_data_t *wl)
 {
-    if (!wl->present_clock || wl->refresh_interval <= 0 || !wl->is_presented)
-        return;
+   struct timespec ts;
+   struct timespec now;
+   clockid_t clock_type;
+   uint64_t now_ns;
+   uint64_t next_frame_ns;
 
-    clockid_t clock_type = (wl->present_clock_id == CLOCK_MONOTONIC ||
-                            wl->present_clock_id == CLOCK_MONOTONIC_RAW)
-                            ? wl->present_clock_id
-                            : CLOCK_MONOTONIC;
+   if (!wl->present_clock || !wl->is_presented)
+      return;
 
-    uint64_t next_frame_ns = wl->last_ust + wl->refresh_interval;
+   if (wl->swap_interval == 0)
+      return;
 
-    struct timespec ts;
-    ts.tv_sec = next_frame_ns / 1000000000ULL;
-    ts.tv_nsec = next_frame_ns % 1000000000ULL;
+   if (wl->refresh_interval == 0)
+      return;
 
-    struct timespec now;
-    if (clock_gettime(clock_type, &now) == 0)
-    {
-       uint64_t now_ns = (uint64_t)now.tv_sec * 1000000000ULL + now.tv_nsec;
-       if (now_ns >= next_frame_ns)
-          return;
-    }
+   clock_type = (wl->present_clock_id == CLOCK_MONOTONIC_RAW)
+      ? CLOCK_MONOTONIC_RAW : CLOCK_MONOTONIC;
 
-    clock_nanosleep(clock_type, TIMER_ABSTIME, &ts, NULL);
+   /* Calculate predicted next vblank:
+    * last_ust = absolute time the previous frame was displayed
+    * refresh_interval = compositor's prediction of time until next vblank
+    * So next_frame_ns = when the next frame should be displayed */
+   next_frame_ns = wl->last_ust + wl->refresh_interval;
+
+   if (clock_gettime(clock_type, &now) < 0)
+      return;
+
+   now_ns = (uint64_t)now.tv_sec * 1000000000ULL + (uint64_t)now.tv_nsec;
+
+   if (now_ns >= next_frame_ns)
+      return;
+
+   ts.tv_sec  = (time_t)(next_frame_ns / 1000000000ULL);
+   ts.tv_nsec = (long)(next_frame_ns % 1000000000ULL);
+
+   clock_nanosleep(clock_type, TIMER_ABSTIME, &ts, NULL);
+
+   /* Consume the timing data so we don't re-use stale values.
+    * New data will arrive when the compositor dispatches the
+    * next presentation_feedback.presented event. */
+   wl->is_presented = false;
 }
 
 static int create_shm_file(off_t size)

@@ -242,10 +242,10 @@ typedef struct gfx_ctx_wayland_data
 
    int num_active_touches;
    int swap_interval;
-   int64_t last_ust;
-   int64_t last_sbc;
-   int64_t last_msc;
-   int64_t refresh_interval;
+   uint64_t last_ust;
+   uint64_t last_sbc;
+   uint64_t last_msc;
+   uint64_t refresh_interval;
    touch_pos_t active_touch_positions[MAX_TOUCHES]; /* int32_t alignment */
    clockid_t present_clock_id;
    unsigned width;
@@ -296,6 +296,10 @@ void gfx_ctx_wl_show_mouse(void *data, bool state);
 void flush_wayland_fd(void *data);
 
 void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl);
+
+void wl_presentation_dispatch_pending(gfx_ctx_wayland_data_t *wl);
+
+void wl_presentation_destroy_feedbacks(gfx_ctx_wayland_data_t *wl);
 
 void wait_for_next_frame(gfx_ctx_wayland_data_t *wl);
 

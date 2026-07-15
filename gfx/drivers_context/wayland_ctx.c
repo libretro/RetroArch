@@ -388,6 +388,7 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 #ifdef HAVE_EGL
    egl_set_swap_interval(&wl->egl, swap_interval);
 #endif
+   wl->swap_interval = swap_interval;
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
@@ -539,7 +540,7 @@ static const struct wl_callback_listener wl_surface_frame_listener = {
 static void gfx_ctx_wl_swap_buffers(void *data)
 {
 #ifdef HAVE_EGL
-   struct wl_callback *cb;
+   struct wl_callback *cb        = NULL;
    gfx_ctx_wayland_data_t *wl     = (gfx_ctx_wayland_data_t*)data;
    settings_t *settings           = config_get_ptr();
    unsigned max_swapchain_images  = settings->uints.video_max_swapchain_images;
@@ -551,24 +552,48 @@ static void gfx_ctx_wl_swap_buffers(void *data)
    bool frame_throttle            = (max_swapchain_images <= 2)
       && (wl->egl.interval != 0);
 
+   /* Register frame callback BEFORE the commit (wl_surface.commit).
+    * The compositor will send wl_callback.done when it is ready
+    * for the next frame. Must be before egl_swap_buffers.
+    * Only when vsync-pacing to avoid blocking during fast-forward. */
    if (frame_throttle)
    {
-      /* Set Wayland frame callback. */
       cb = wl_surface_frame(wl->surface);
       wl_callback_add_listener(cb, &wl_surface_frame_listener, wl);
    }
 
-   egl_swap_buffers(&wl->egl);
+   /* Dispatch any buffered Wayland events to receive the PREVIOUS
+    * frame's presentation feedback. check_window -> flush_wayland_fd
+    * already does a non-blocking dispatch, but pick up anything
+    * that arrived since then. */
+   if (wl->present_clock)
+      wl_presentation_dispatch_pending(wl);
 
+   /* Sleep until the next predicted vblank based on the previous
+    * frame's presentation timing. This is a no-op when:
+    *  - no timing data has been received yet (first frame)
+    *  - swap_interval == 0 (fast-forward / immediate present)
+    *  - we are already past the deadline */
+   wait_for_next_frame(wl);
+
+   /* Request presentation feedback for THIS frame's commit.
+    * Must be before egl_swap_buffers so the feedback object
+    * is associated with the upcoming wl_surface.commit. */
    if (wl->present_clock)
       wl_request_presentation_feedback(wl);
 
-   wait_for_next_frame(wl);
+   /* Submit the frame - triggers wl_surface.commit.
+    * With swap_interval > 0, this may block until the compositor
+    * releases the previous buffer (approx one frame of latency). */
+   egl_swap_buffers(&wl->egl);
 
-   if (cb)
+   /* Wait for the frame callback (compositor backpressure).
+    * This provides an additional pacing signal: the compositor
+    * tells us when it is ready for a new frame. The 50ms hard
+    * deadline prevents deadlocks if the compositor is slow.
+    * Only active when frame_throttle is true (vsync-pacing mode). */
    if (frame_throttle)
    {
-      /* Wait for the frame callback we set earlier. */
       struct pollfd pollfd = {.fd = wl->input.fd, .events = POLLIN};
       uint64_t deadline = cpu_features_get_time_usec() + 50000;
       wl->swap_complete = false;
@@ -578,7 +603,6 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          uint64_t current_time = cpu_features_get_time_usec();
          if (current_time >= deadline)
          {
-            /* Deadline met. */
             wl_callback_destroy(cb);
             return;
          }
@@ -588,12 +612,11 @@ static void gfx_ctx_wl_swap_buffers(void *data)
          {
             ret = wl_display_prepare_read(wl->input.dpy);
             if (ret == -1)
-               continue; /* Retry dispatch_pending. */
+               continue;
 
             ret = poll(&pollfd, 1, remaining_time / 1000);
             if (ret <= 0)
             {
-               /* Timeout met, or polling error. */
                wl_display_cancel_read(wl->input.dpy);
                wl_callback_destroy(cb);
                return;
