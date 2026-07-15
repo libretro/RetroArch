@@ -124,8 +124,21 @@ static void ui_window_cocoa_set_visible(void *data,
 static void ui_window_cocoa_set_title(void *data, char *buf)
 {
    CocoaView *cocoa_view    = (BRIDGE CocoaView*)data;
-   const char* const text   = buf; /* < Can't access buffer directly in the block */
-   [[cocoa_view window] setTitle:[NSString stringWithCString:text encoding:NSUTF8StringEncoding]];
+   /* buf points into a shared buffer (video_st->window_title) that may be
+    * overwritten by the next frame, so materialise the NSString here on the
+    * calling thread rather than reading the C string inside a deferred block. */
+   NSString  *title         = [NSString stringWithCString:buf encoding:NSUTF8StringEncoding];
+
+   /* AppKit is main-thread-only. Under threaded video this is reached from the
+    * video thread (gl3_frame -> video_driver_update_title), so marshal the
+    * -setTitle: onto the main queue there. dispatch_async (not sync) avoids
+    * deadlocking against the video thread lock. */
+   if ([NSThread isMainThread])
+      [[cocoa_view window] setTitle:title];
+   else
+      dispatch_async(dispatch_get_main_queue(), ^{
+         [[cocoa_view window] setTitle:title];
+      });
 }
 
 static void ui_window_cocoa_set_droppable(void *data, bool droppable)
