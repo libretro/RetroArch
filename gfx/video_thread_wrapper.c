@@ -19,11 +19,6 @@
 #include <limits.h>
 #include <math.h>
 
-#ifdef __APPLE__
-#include <CoreFoundation/CoreFoundation.h>
-#include <pthread.h>
-#endif
-
 #include <compat/strl.h>
 #include <features/features_cpu.h>
 
@@ -81,45 +76,33 @@ static void video_thread_send_packet(thread_video_t *thr,
 
 }
 
+/* One condvar-wait iteration that lets a main-thread waiter drain the
+ * cocoa main-thread trampoline, so work the worker marshals back via
+ * cocoa_main_thread_sync() runs and the handshake does not deadlock (the
+ * worker blocks on the main thread while the main thread blocks on the
+ * reply).  Returns true if it fully handled this wait iteration; false if
+ * the caller should perform a plain blocking scond_wait().  A no-op
+ * returning false on non-Apple platforms. */
+static bool video_thread_pump_wait(scond_t *cond, slock_t *lock)
+{
+#ifdef __APPLE__
+   bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
+   return cocoa_main_thread_cond_wait_pump(cond, lock);
+#else
+   (void)cond;
+   (void)lock;
+   return false;
+#endif
+}
+
 /* user -> thread */
 static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
-#ifdef __APPLE__
-   /* On Apple platforms the worker thread marshals main-thread-only
-    * AppKit/UIKit work (context/view attachment during CMD_INIT,
-    * window surgery during set-video-mode, ...) back to the main
-    * thread via cocoa_main_thread_sync() (ui/drivers/cocoa/
-    * cocoa_common.m).  A bare condvar wait here would deadlock that
-    * handshake: the worker blocks waiting for the main thread to run
-    * its block, while the main thread blocks here waiting for the
-    * worker's reply.  Instead, when waiting on the main thread, pump
-    * the private trampoline runloop mode between short condvar waits
-    * so those marshaled blocks can drain.  Pumping ONLY the private
-    * mode guarantees nothing else (draw observers, timers, input
-    * sources) runs reentrantly under this wait.  The mode string must
-    * stay in sync with cocoa_main_thread_sync(). */
-   if (pthread_main_np() != 0)
-   {
-      while (pkt->type != thr->reply_cmd)
-      {
-         if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
-         {
-            slock_unlock(thr->lock);
-            CFRunLoopRunInMode(
-                  CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
-                  0.001, false);
-            slock_lock(thr->lock);
-         }
-      }
-   }
-   else
-#endif
-   {
-      while (pkt->type != thr->reply_cmd)
+   while (pkt->type != thr->reply_cmd)
+      if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
          scond_wait(thr->cond_cmd, thr->lock);
-   }
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
@@ -710,37 +693,18 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_MENU
       if (thr->texture.enable)
       {
-#ifdef __APPLE__
-         /* Same rationale as video_thread_wait_reply(): this wait is
-          * unbounded and runs on the main thread, and the worker may
-          * marshal main-thread-only work (e.g. Vulkan swapchain
-          * recreation on resize) via cocoa_main_thread_sync() before
-          * clearing frame.updated.  Pump the private trampoline mode
-          * so that work can drain.  The timed frame-pacing wait above
-          * needs no such treatment: it breaks after at most one frame
-          * period and the main runloop then drains common modes. */
-         if (pthread_main_np() != 0)
+         /* Unbounded wait that may run on the main thread; the worker can
+          * marshal main-thread-only work (e.g. Vulkan swapchain recreation
+          * on resize) via cocoa_main_thread_sync() before clearing
+          * frame.updated, so drain the trampoline while waiting. The timed
+          * frame-pacing wait above needs no such treatment: it breaks after
+          * at most one frame period and the main runloop then drains common
+          * modes. */
+         do
          {
-            do
-            {
-               if (!scond_wait_timeout(thr->cond_cmd, thr->lock, 1000))
-               {
-                  slock_unlock(thr->lock);
-                  CFRunLoopRunInMode(
-                        CFSTR("com.libretro.RetroArch.MainThreadTrampoline"),
-                        0.001, false);
-                  slock_lock(thr->lock);
-               }
-            } while (thr->frame.updated);
-         }
-         else
-#endif
-         {
-            do
-            {
+            if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
                scond_wait(thr->cond_cmd, thr->lock);
-            } while (thr->frame.updated);
-         }
+         } while (thr->frame.updated);
       }
 #endif
       thr->hit_count++;
