@@ -4883,11 +4883,12 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
 int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
       float *buffer, int num_floats)
 {
-   rvorbis_set_output_mode(f, 0);
    float **outputs;
    int len = num_floats / channels;
    int n=0;
    int z = f->channels;
+
+   rvorbis_set_output_mode(f, 0);
    if (z > channels)
       z = channels;
    while (n < len)
@@ -4921,11 +4922,12 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
 int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       int16_t *buffer, int num_shorts)
 {
-   rvorbis_set_output_mode(f, 1);
    float **outputs;
    int len = num_shorts / channels;
    int n=0;
    int z = f->channels;
+
+   rvorbis_set_output_mode(f, 1);
    if (z > channels)
       z = channels;
    while (n < len)
