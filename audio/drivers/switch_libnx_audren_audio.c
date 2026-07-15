@@ -81,7 +81,7 @@ static void *libnx_audren_audio_init(
    real_latency = MAX(5, latency);
    RARCH_LOG("[Audren] real_latency is %u.\n", real_latency);
 
-   aud->nonblock     = !block_frames;
+   aud->nonblock     = false;
    aud->buffer_size  = (real_latency * sample_rate / 1000);
    aud->samples      = (aud->buffer_size / num_channels / sizeof(int16_t));
    aud->current_size = 0;
