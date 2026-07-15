@@ -180,6 +180,14 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
       if (wl->vk.swapchain)
          wl->vk.flags  |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
+
+   if (wl->tearing_control)
+   {
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+            swap_interval == 0
+               ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC
+               : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC);
+   }
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,

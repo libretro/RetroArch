@@ -388,6 +388,14 @@ static void gfx_ctx_wl_set_swap_interval(void *data, int swap_interval)
 #ifdef HAVE_EGL
    egl_set_swap_interval(&wl->egl, swap_interval);
 #endif
+
+   if (wl->tearing_control)
+   {
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+            swap_interval == 0
+               ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC
+               : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC);
+   }
 }
 
 static bool gfx_ctx_wl_set_video_mode(void *data,
