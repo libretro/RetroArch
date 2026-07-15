@@ -614,7 +614,19 @@ static float rmp3_L3_pow_43(int x)
 
     sign = 2*x & 64;
     frac = (float)((x & 63) - sign) / ((x & ~63) + sign);
-    return g_pow43[(x + sign) >> 6]*(1.f + frac*((4.f/3) + frac*(2.f/9)))*mult;
+    /* The volatile intermediates force each multiply and add to round
+     * separately: with floating-point contraction enabled (the default
+     * on AArch64) the compiler otherwise fuses these into fmadd, whose
+     * single rounding differs from x86's separate rounding and made
+     * decoded samples differ between ISAs.  Kept unfused, the whole
+     * s16 pipeline is bit-exact on every build; this branch only runs
+     * for quantised values beyond the table, so the store/reload cost
+     * is negligible. */
+    {
+        volatile float t0 = frac * (2.f/9);
+        volatile float t2 = frac * ((4.f/3) + t0);
+        return g_pow43[(x + sign) >> 6] * (1.f + t2) * mult;
+    }
 }
 
 static void rmp3_L3_huffman(float *dst, rmp3_bs *bs, const rmp3_L3_gr_info *gr_info, const float *scf, int layer3gr_limit)
@@ -903,9 +915,19 @@ static void rmp3_L3_antialias(float *grbuf, int nbands)
             float32x4_t vd = vld1q_f32(grbuf + 14 - i);
             float32x4_t vc0 = vld1q_f32(g_aa[0] + i);
             float32x4_t vc1 = vld1q_f32(g_aa[1] + i);
+            float32x4_t p0, p1, p2, p3;
             vd = vcombine_f32(vget_high_f32(vrev64q_f32(vd)), vget_low_f32(vrev64q_f32(vd)));
-            vst1q_f32(grbuf + 18 + i, vsubq_f32(vmulq_f32(vu, vc0), vmulq_f32(vd, vc1)));
-            vd = vaddq_f32(vmulq_f32(vu, vc1), vmulq_f32(vd, vc0));
+            p0 = vmulq_f32(vu, vc0);
+            p1 = vmulq_f32(vd, vc1);
+            p2 = vmulq_f32(vu, vc1);
+            p3 = vmulq_f32(vd, vc0);
+            /* Fence the products so the compiler cannot contract the
+             * multiply and the combine into fused operations: fused
+             * rounding differs from separate rounding and the antialias
+             * runs in the s16 pipeline, which is bit-exact across ISAs. */
+            __asm__("" : "+w"(p0), "+w"(p1), "+w"(p2), "+w"(p3));
+            vst1q_f32(grbuf + 18 + i, vsubq_f32(p0, p1));
+            vd = vaddq_f32(p2, p3);
             vst1q_f32(grbuf + 14 - i, vcombine_f32(vget_high_f32(vrev64q_f32(vd)), vget_low_f32(vrev64q_f32(vd))));
         }
 #endif
@@ -1128,24 +1150,33 @@ static int32_t rmp3d_float_to_q(float x)
 
 /* Convert a run of samples to Q28.  The SIMD forms are branchless:
  * scale, clamp to the representable range and convert with the
- * vector rounding conversion.  cvtps2dq/vcvtnq round half to even
- * where the scalar helper rounds half away from zero; the affected
- * values differ by one Q28 ULP, orders of magnitude below an output
- * LSB (the s16 pipeline's accuracy oracle is unaffected). */
+ * vector rounding conversion.  all
+ * three forms round half away from zero identically, so the converted
+ * samples are bit-exact across ISAs. */
 static void rmp3d_float_to_q_n(int32_t *dst, const float *src, int n)
 {
    int i = 0;
 #if RMP3_HAVE_SSE
    {
-      __m128 vscale = _mm_set1_ps((float)(1 << RMP3D_QBITS));
-      __m128 vmax   = _mm_set1_ps( 7.999999f);
-      __m128 vmin   = _mm_set1_ps(-7.999999f);
+      __m128  vscale = _mm_set1_ps((float)(1 << RMP3D_QBITS));
+      __m128  vmax   = _mm_set1_ps( 7.999999f);
+      __m128  vmin   = _mm_set1_ps(-7.999999f);
+      __m128i vhalf  = _mm_set1_epi32(0x3F000000);
+      __m128i vsign  = _mm_set1_epi32((int)0x80000000u);
       for (; i + 4 <= n; i += 4)
       {
          __m128 v = _mm_loadu_ps(src + i);
+         __m128 s, h;
          v = _mm_min_ps(_mm_max_ps(v, vmin), vmax);
+         /* round half away from zero, matching the scalar and NEON
+          * conversions exactly: add +-0.5 by sign, then truncate.  The
+          * half vector is derived from the unscaled value's sign bit so
+          * it is computed in parallel with the multiply. */
+         h = _mm_castsi128_ps(_mm_or_si128(vhalf,
+               _mm_and_si128(_mm_castps_si128(v), vsign)));
+         s = _mm_mul_ps(v, vscale);
          _mm_storeu_si128((__m128i *)(dst + i),
-               _mm_cvtps_epi32(_mm_mul_ps(v, vscale)));
+               _mm_cvttps_epi32(_mm_add_ps(s, h)));
       }
    }
 #elif RMP3_HAVE_NEON
@@ -1159,6 +1190,10 @@ static void rmp3d_float_to_q_n(int32_t *dst, const float *src, int n)
          float32x4_t s;
          v = vminq_f32(vmaxq_f32(v, vmin), vmax);
          s = vmulq_f32(v, vscale);
+         /* Fence so the scale multiply and the rounding add below are
+          * not contracted into a fused multiply-add, which would round
+          * differently from the other conversion forms. */
+         __asm__("" : "+w"(s));
          /* round to nearest: add +-0.5 by sign, then truncate */
          s = vaddq_f32(s, vreinterpretq_f32_u32(vorrq_u32(
                vandq_u32(vreinterpretq_u32_f32(s), vmovq_n_u32(0x80000000u)),
