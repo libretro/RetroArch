@@ -152,6 +152,8 @@ wiiu/wut/elf2rpl/elf2rpl
 /pkg/android/phoenix/.externalNativeBuild
 /pkg/android/phoenix/build
 /pkg/android/phoenix-legacy/.project
+/pkg/android/phoenix-jelly-bean/.gradle/
+/pkg/android/phoenix-jelly-bean/.cxx/
 
 # Cloned by libretro-fetch.sh
 /media/assets/
