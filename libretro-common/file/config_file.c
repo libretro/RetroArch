@@ -229,9 +229,25 @@ static char *config_file_extract_value(char *line)
       /* If this a ("), then value string is empty */
       if (*line != '"')
       {
+         char c;
          /* Find the next (") character */
-         while (line[idx] && (line[idx] != '\"'))
+         while ((c = line[idx]) && c != '\"')
             idx++;
+
+         /* If it's a quote preceed by a backslash, unescape it and find the next (") character */
+         if (c && line[idx - 1] == '\\')
+         {
+            size_t read_idx = idx + 1; /* Skip over the quote */
+
+            do
+            {
+               line[idx - 1] = '\"'; /* Replace the backslash with a quote */
+
+               while ((c = line[read_idx++]) && c != '\"')
+                  line[idx++] = c;
+
+            } while (c && line[idx - 1] == '\\'); /* If it's another escaped quote, keep going */
+         }
 
          line[idx] = '\0';
          if ((value = line) && *value)
@@ -1462,7 +1478,29 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    while (list)
    {
       if (!list->readonly && list->key)
-         fprintf(file, "%s = \"%s\"\n", list->key, list->value);
+      {
+         const char* quote = strchr(list->value, '\"');
+         if (!quote)
+         {
+            fprintf(file, "%s = \"%s\"\n", list->key, list->value);
+         }
+         else
+         {
+            const char* start = list->value;
+            fprintf(file, "%s = \"", list->key);
+            do
+            {
+               if (quote > start)
+                  fwrite(start, 1, quote - start, file);
+               fputc('\\', file);
+               fputc('\"', file);
+               start = quote + 1;
+               quote = strchr(start, '\"');
+            } while (quote);
+
+            fprintf(file, "%s\"\n", start);
+         }
+      }
       list = list->next;
    }
 
