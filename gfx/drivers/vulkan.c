@@ -7446,6 +7446,17 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    if (chain->texture.width != framebuffer->width ||
          chain->texture.height != framebuffer->height)
    {
+      /* vulkan_create_texture() synchronously unmaps (and, unless the
+       * allocation is pilfered, frees) the old memory. If the core
+       * rendered the previous frame through this callback, the cached
+       * frame still points at that mapping: evict it first, under the
+       * lifetime lock, so a concurrent reader cannot be left mid-read
+       * of dying memory and a later cached re-render cannot pick up a
+       * stale pointer (the pilfer path can even remap the same
+       * VkDeviceMemory at the same host address, making a stale
+       * pointer look dereferenceable with the wrong geometry). */
+      video_driver_cached_frame_invalidate_if(
+            vk, vulkan_cached_frame_uses_swapchain_texture);
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
