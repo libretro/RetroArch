@@ -703,7 +703,7 @@ private:
    QProgressDialog *m_thumbnailPackDownloadProgressDialog;
 
    QProgressDialog *m_playlistThumbnailDownloadProgressDialog;
-   QVector<QHash<QString, QString> > m_pendingPlaylistThumbnails;
+   QList<QHash<QString, QString> > m_pendingPlaylistThumbnails;
    unsigned m_downloadedThumbnails;
    unsigned m_failedThumbnails;
    bool m_playlistThumbnailDownloadWasCanceled;
