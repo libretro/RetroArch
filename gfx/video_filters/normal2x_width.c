@@ -20,6 +20,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#include <arm_neon.h>
+#endif
+
 #ifdef RARCH_INTERNAL
 #define softfilter_get_implementation normal2x_width_get_implementation
 #define softfilter_thread_data normal2x_width_softfilter_thread_data
@@ -110,17 +116,29 @@ static void normal2x_width_work_cb_xrgb8888(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint32_t *out_ptr = output;
-      for (x = 0; x < thr->width; ++x)
+      x = 0;
+#if defined(__SSE2__)
+      for (; x + 4 <= thr->width; x += 4)
       {
-         uint32_t *out_line_ptr = out_ptr;
-         uint32_t color         = *(input + x);
-
-         /* Duplicate pixels in the x direction */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-
-         out_ptr += 2;
+         __m128i v = _mm_loadu_si128((const __m128i*)(input + x));
+         _mm_storeu_si128((__m128i*)(output + 2 * x),
+               _mm_unpacklo_epi32(v, v));
+         _mm_storeu_si128((__m128i*)(output + 2 * x + 4),
+               _mm_unpackhi_epi32(v, v));
+      }
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+      for (; x + 4 <= thr->width; x += 4)
+      {
+         uint32x4_t v = vld1q_u32(input + x);
+         vst1q_u32(output + 2 * x,     vzip1q_u32(v, v));
+         vst1q_u32(output + 2 * x + 4, vzip2q_u32(v, v));
+      }
+#endif
+      for (; x < thr->width; ++x)
+      {
+         uint32_t color        = input[x];
+         output[2 * x]         = color;
+         output[2 * x + 1]     = color;
       }
 
       input  += in_stride;
@@ -139,17 +157,29 @@ static void normal2x_width_work_cb_rgb565(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint16_t *out_ptr = output;
-      for (x = 0; x < thr->width; ++x)
+      x = 0;
+#if defined(__SSE2__)
+      for (; x + 8 <= thr->width; x += 8)
       {
-         uint16_t *out_line_ptr = out_ptr;
-         uint16_t color         = *(input + x);
-
-         /* Duplicate pixels in the x direction */
-         *out_line_ptr       = color;
-         *(out_line_ptr + 1) = color;
-
-         out_ptr += 2;
+         __m128i v = _mm_loadu_si128((const __m128i*)(input + x));
+         _mm_storeu_si128((__m128i*)(output + 2 * x),
+               _mm_unpacklo_epi16(v, v));
+         _mm_storeu_si128((__m128i*)(output + 2 * x + 8),
+               _mm_unpackhi_epi16(v, v));
+      }
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+      for (; x + 8 <= thr->width; x += 8)
+      {
+         uint16x8_t v = vld1q_u16(input + x);
+         vst1q_u16(output + 2 * x,     vzip1q_u16(v, v));
+         vst1q_u16(output + 2 * x + 8, vzip2q_u16(v, v));
+      }
+#endif
+      for (; x < thr->width; ++x)
+      {
+         uint16_t color        = input[x];
+         output[2 * x]         = color;
+         output[2 * x + 1]     = color;
       }
 
       input  += in_stride;
