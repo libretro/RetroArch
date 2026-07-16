@@ -155,9 +155,12 @@ static void vp8_yuv2rgb(int y, int u, int v, uint8_t *r, uint8_t *g, uint8_t *bo
    *bo = vp8_clip8(yg + vp8_mulhi(u, 33050) - 17685);
 }
 
-/* ---- Row YUV -> ARGB conversion ----
+/* ---- Row YUV -> ARGB/ABGR conversion ----
  * Converts a full row of co-sited (already chroma-interpolated) YUV
- * samples to 0xFFRRGGBB words. The scalar body matches vp8_yuv2rgb
+ * samples to 0xFFRRGGBB words (or memory-order R,G,B,A words when
+ * swap_rb is set: the order is selected at store time for free, which
+ * lets callers skip a whole-image post-pass swizzle). The scalar body
+ * matches vp8_yuv2rgb
  * exactly; the SSE2/NEON paths reproduce it bit-for-bit by loading
  * samples into the upper byte of each 16-bit lane, so an unsigned
  * high-multiply computes (x * coeff) >> 8 with the same truncation
@@ -173,7 +176,7 @@ static void vp8_yuv2rgb(int y, int u, int v, uint8_t *r, uint8_t *g, uint8_t *bo
 #endif
 
 static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
-      const uint8_t *v, uint32_t *dst, int len)
+      const uint8_t *v, uint32_t *dst, int len, int swap_rb)
 {
    int i = 0;
 
@@ -209,13 +212,15 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
          __m128i R  = _mm_srai_epi16(R2, 6);
          __m128i G  = _mm_srai_epi16(G4, 6);
          __m128i B  = _mm_srli_epi16(B2, 6);
-         /* pack to words 0xFFrrggbb (memory order b,g,r,FF) */
+         /* pack to words 0xFFrrggbb (memory order b,g,r,FF), or with
+          * R and B lanes exchanged (memory order r,g,b,FF) when
+          * swap_rb - channel order costs nothing at store time */
          __m128i r8 = _mm_packus_epi16(R, R);
          __m128i g8 = _mm_packus_epi16(G, G);
          __m128i b8 = _mm_packus_epi16(B, B);
          __m128i a8 = _mm_packus_epi16(alpha, alpha);
-         __m128i bg = _mm_unpacklo_epi8(b8, g8);
-         __m128i ra = _mm_unpacklo_epi8(r8, a8);
+         __m128i bg = _mm_unpacklo_epi8(swap_rb ? r8 : b8, g8);
+         __m128i ra = _mm_unpacklo_epi8(swap_rb ? b8 : r8, a8);
          _mm_storeu_si128((__m128i*)(dst + i),     _mm_unpacklo_epi16(bg, ra));
          _mm_storeu_si128((__m128i*)(dst + i + 4), _mm_unpackhi_epi16(bg, ra));
       }
@@ -232,6 +237,7 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
       {
          uint16x8_t Y0, U0, V0, Y1, R0, G0, G1, B0, B2;
          int16x8_t  R2, G4;
+         uint8x8_t  r8, b8;
          uint8x8x4_t px;
          Y0 = vshll_n_u8(vld1_u8(y + i), 8);
          U0 = vshll_n_u8(vld1_u8(u + i), 8);
@@ -250,20 +256,27 @@ static void vp8_yuv2rgb_row(const uint8_t *y, const uint8_t *u,
          G4 = vsubq_s16(vaddq_s16(vreinterpretq_s16_u16(Y1), vdupq_n_s16(8708)),
                         vreinterpretq_s16_u16(vaddq_u16(G0, G1)));
          B2 = vqsubq_u16(vqaddq_u16(B0, Y1), vdupq_n_u16(17685));
-         px.val[0] = vqmovn_u16(vshrq_n_u16(B2, 6));   /* b */
-         px.val[1] = vqshrun_n_s16(G4, 6);             /* g */
-         px.val[2] = vqshrun_n_s16(R2, 6);             /* r */
-         px.val[3] = vdup_n_u8(255);                   /* a */
+         b8 = vqmovn_u16(vshrq_n_u16(B2, 6));
+         r8 = vqshrun_n_s16(R2, 6);
+         px.val[0] = swap_rb ? r8 : b8;                /* b (or r) */
+         px.val[1] = vqshrun_n_s16(G4, 6);             /* g        */
+         px.val[2] = swap_rb ? b8 : r8;                /* r (or b) */
+         px.val[3] = vdup_n_u8(255);                   /* a        */
          vst4_u8((uint8_t*)(dst + i), px);
       }
    }
 #endif
 
-   for (; i < len; i++)
    {
-      uint8_t r, g, b2;
-      vp8_yuv2rgb(y[i], u[i], v[i], &r, &g, &b2);
-      dst[i] = 0xFF000000u | ((uint32_t)r << 16) | ((uint32_t)g << 8) | b2;
+      unsigned rs = swap_rb ? 0 : 16;
+      unsigned bs = swap_rb ? 16 : 0;
+      for (; i < len; i++)
+      {
+         uint8_t r, g, b2;
+         vp8_yuv2rgb(y[i], u[i], v[i], &r, &g, &b2);
+         dst[i] = 0xFF000000u | ((uint32_t)r << rs)
+                | ((uint32_t)g << 8) | ((uint32_t)b2 << bs);
+      }
    }
 }
 
@@ -383,7 +396,7 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
       const uint8_t *top_u, const uint8_t *top_v,
       const uint8_t *cur_u, const uint8_t *cur_v,
       uint32_t *top_dst, uint32_t *bot_dst, int len,
-      uint8_t *scratch)
+      uint8_t *scratch, int swap_rb)
 {
    uint8_t *du, *dv;
    if (len <= 0)
@@ -391,17 +404,21 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
    if (!scratch)
    {
       {
-         /* No scratch (allocation failed upstream): fused scalar path. */
+         /* No scratch (allocation failed upstream): fused scalar path.
+          * rsh/bsh select the channel order at store time (see
+          * vp8_yuv2rgb_row). */
          int x, last_pair = (len - 1) >> 1;
          int tl_u = top_u[0], tl_v = top_v[0];
          int l_u = cur_u[0], l_v = cur_v[0];
+         unsigned rsh = swap_rb ? 0 : 16;
+         unsigned bsh = swap_rb ? 16 : 0;
          uint8_t r, g, b2;
          vp8_yuv2rgb(top_y[0], (3*tl_u+l_u+2)>>2, (3*tl_v+l_v+2)>>2, &r, &g, &b2);
-         top_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+         top_dst[0] = 0xFF000000u | ((uint32_t)r<<rsh) | ((uint32_t)g<<8) | ((uint32_t)b2<<bsh);
          if (bot_y)
          {
             vp8_yuv2rgb(bot_y[0], (3*l_u+tl_u+2)>>2, (3*l_v+tl_v+2)>>2, &r, &g, &b2);
-            bot_dst[0] = 0xFF000000u | ((uint32_t)r<<16) | ((uint32_t)g<<8) | b2;
+            bot_dst[0] = 0xFF000000u | ((uint32_t)r<<rsh) | ((uint32_t)g<<8) | ((uint32_t)b2<<bsh);
          }
          for (x = 1; x <= last_pair; x++)
          {
@@ -411,26 +428,26 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
             int d12_u=(avg_u+2*(t_u+l_u))>>3, d12_v=(avg_v+2*(t_v+l_v))>>3;
             int d03_u=(avg_u+2*(tl_u+c_u))>>3, d03_v=(avg_v+2*(tl_v+c_v))>>3;
             vp8_yuv2rgb(top_y[2*x-1],(d12_u+tl_u)>>1,(d12_v+tl_v)>>1,&r,&g,&b2);
-            top_dst[2*x-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            top_dst[2*x-1]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
             vp8_yuv2rgb(top_y[2*x],(d03_u+t_u)>>1,(d03_v+t_v)>>1,&r,&g,&b2);
-            top_dst[2*x]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            top_dst[2*x]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
             if (bot_y)
             {
                vp8_yuv2rgb(bot_y[2*x-1],(d03_u+l_u)>>1,(d03_v+l_v)>>1,&r,&g,&b2);
-               bot_dst[2*x-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+               bot_dst[2*x-1]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
                vp8_yuv2rgb(bot_y[2*x],(d12_u+c_u)>>1,(d12_v+c_v)>>1,&r,&g,&b2);
-               bot_dst[2*x]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+               bot_dst[2*x]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
             }
             tl_u=t_u; tl_v=t_v; l_u=c_u; l_v=c_v;
          }
          if (!(len & 1))
          {
             vp8_yuv2rgb(top_y[len-1],(3*tl_u+l_u+2)>>2,(3*tl_v+l_v+2)>>2,&r,&g,&b2);
-            top_dst[len-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+            top_dst[len-1]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
             if (bot_y)
             {
                vp8_yuv2rgb(bot_y[len-1],(3*l_u+tl_u+2)>>2,(3*l_v+tl_v+2)>>2,&r,&g,&b2);
-               bot_dst[len-1]=0xFF000000u|((uint32_t)r<<16)|((uint32_t)g<<8)|b2;
+               bot_dst[len-1]=0xFF000000u|((uint32_t)r<<rsh)|((uint32_t)g<<8)|((uint32_t)b2<<bsh);
             }
          }
          return;
@@ -440,11 +457,11 @@ static void vp8_fancy_pair(const uint8_t *top_y, const uint8_t *bot_y,
    dv = scratch + len;
 
    vp8_fancy_uv_top(top_u, top_v, cur_u, cur_v, du, dv, len);
-   vp8_yuv2rgb_row(top_y, du, dv, top_dst, len);
+   vp8_yuv2rgb_row(top_y, du, dv, top_dst, len, swap_rb);
    if (bot_y)
    {
       vp8_fancy_uv_bot(top_u, top_v, cur_u, cur_v, du, dv, len);
-      vp8_yuv2rgb_row(bot_y, du, dv, bot_dst, len);
+      vp8_yuv2rgb_row(bot_y, du, dv, bot_dst, len, swap_rb);
    }
 }
 
@@ -3652,14 +3669,14 @@ int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
    int limit = j0 + max_rows;
    if (j0 == 0)
       vp8_fancy_pair(yb, NULL, ub, vb, ub, vb, pix, NULL, w,
-            s->fancy_uv);
+            s->fancy_uv, s->swap_rb);
    for (; j + 2 < h && j < limit; j += 2)
    {
       const uint8_t *tu = ub + (j >> 1) * uvs, *tv = vb + (j >> 1) * uvs;
       vp8_fancy_pair(yb + (j+1)*ys, yb + (j+2)*ys,
             tu, tv, tu + uvs, tv + uvs,
             pix + (size_t)(j+1)*w, pix + (size_t)(j+2)*w, w,
-            s->fancy_uv);
+            s->fancy_uv, s->swap_rb);
    }
    if (j + 2 >= h)
    {
@@ -3668,7 +3685,8 @@ int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
          const uint8_t *lu = ub + ((h-1) >> 1) * uvs;
          const uint8_t *lv = vb + ((h-1) >> 1) * uvs;
          vp8_fancy_pair(yb + (size_t)(h-1)*ys, NULL, lu, lv, lu, lv,
-               pix + (size_t)(h-1)*w, NULL, w, s->fancy_uv);
+               pix + (size_t)(h-1)*w, NULL, w, s->fancy_uv,
+               s->swap_rb);
       }
       return h;
    }
@@ -3679,7 +3697,7 @@ int rvp8_upsample_rows(rvp8_dec *s, uint32_t *pix, int j0, int max_rows)
  * still-image fallback paths and the animation decoder, and doubling as
  * the reference composition of the resumable stages. */
 uint32_t *rvp8_decode(const uint8_t *data, size_t len,
-      unsigned *ow, unsigned *oh)
+      unsigned *ow, unsigned *oh, int swap_rb)
 {
    rvp8_dec s;
    uint32_t *pix;
@@ -3699,6 +3717,7 @@ uint32_t *rvp8_decode(const uint8_t *data, size_t len,
       return NULL;
    }
    rvp8_filter_rows(&s, 0, s.mbh);
+   s.swap_rb = swap_rb;
    rvp8_upsample_rows(&s, pix, 0, s.h);
    *ow = (unsigned)s.w;
    *oh = (unsigned)s.h;

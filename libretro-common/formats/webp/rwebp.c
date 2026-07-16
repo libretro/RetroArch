@@ -1112,11 +1112,19 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
 {
    rw_ctr c;
    uint32_t *pix = NULL;
+   int swapped = 0;  /* pixels already in memory R,G,B,A order */
    if (!rw_parse(buf, len, &c)) return NULL;
    if (c.vp8l && c.vp8ls > 0) pix = vl_decode_full(c.vp8l, c.vp8ls, w, h);
    if (!pix && c.vp8 && c.vp8s > 0)
    {
-      pix = rvp8_decode(c.vp8, c.vp8s, w, h);
+      /* The lossy decoder selects the channel order at YUV->RGB store
+       * time (swap_rb), so the requested order comes out directly and
+       * the whole-image swap pass below is VP8L-only. The ALPH
+       * composite is order-agnostic: alpha is the top byte of the
+       * word in both layouts. */
+      pix = rvp8_decode(c.vp8, c.vp8s, w, h, rgba ? 1 : 0);
+      if (pix)
+         swapped = rgba ? 1 : 0;
       if (pix && c.alph && c.alphs > 0)
       {
          uint8_t *ap = alph_decode(c.alph, c.alphs, *w, *h);
@@ -1130,7 +1138,7 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
       }
    }
    if (!pix) return NULL;
-   if (rgba)
+   if (rgba && !swapped)
    {
       unsigned i, n = (*w) * (*h);
       for (i = 0; i < n; i++)
@@ -1176,7 +1184,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
        * caller can skip per-pixel blending for such frames. */
       if (out_opaque && !(fa && fas > 0))
          *out_opaque = 1;
-      pix = rvp8_decode(fv, fvs, &w, &h);
+      pix = rvp8_decode(fv, fvs, &w, &h, 1); /* canvas order directly */
       if (pix && fa && fas > 0)
       {
          uint8_t *ap = alph_decode(fa, fas, w, h);
@@ -1190,20 +1198,30 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
       }
    }
    if (!pix) return NULL;
-   /* Convert to R,B-swapped (memory R,G,B,A) to match the anim canvas.
-    * While every pixel is being touched anyway, accumulate an AND-mask
-    * of the alpha bytes: encoders routinely emit an ALPH chunk (or a
-    * VP8L alpha channel) whose bytes are all 0xFF, and detecting that
-    * here lets the compositor use a plain row copy instead of running
-    * per-pixel blending over the whole frame. */
+   /* Lossy frames already come out in canvas order (memory R,G,B,A;
+    * rvp8_decode swap_rb); VP8L output is ARGB words and still needs
+    * the R,B swap. Either way, while every pixel is being touched,
+    * accumulate an AND-mask of the alpha bytes: encoders routinely
+    * emit an ALPH chunk (or a VP8L alpha channel) whose bytes are all
+    * 0xFF, and detecting that here lets the compositor use a plain
+    * row copy instead of running per-pixel blending over the whole
+    * frame. */
    {
       unsigned i, n = w * h;
       uint32_t acc = 0xFF000000u;
-      for (i = 0; i < n; i++)
+      if (fl && fls > 0)
       {
-         uint32_t px = pix[i];
-         acc   &= px;
-         pix[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+         for (i = 0; i < n; i++)
+         {
+            uint32_t px = pix[i];
+            acc   &= px;
+            pix[i] = (px & 0xFF00FF00u) | ((px & 0xFF) << 16) | ((px >> 16) & 0xFF);
+         }
+      }
+      else
+      {
+         for (i = 0; i < n; i++)
+            acc &= pix[i];
       }
       if (out_opaque && (acc >> 24) == 0xFF)
          *out_opaque = 1;
@@ -1651,7 +1669,11 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
             }
             rwebp->phase   = RWEBP_PHASE_ROWS;
             rwebp->cursor  = 0;
-            rwebp->swizzle = supports_rgba ? 1 : 0;
+            /* Channel order is selected at the YUV->RGB store inside
+             * rvp8_upsample_rows (swap_rb), so the lossy path never
+             * needs the post-pass SWIZZLE phase (VP8L still does). */
+            rwebp->swizzle       = 0;
+            rwebp->u.d.swap_rb   = supports_rgba ? 1 : 0;
             *width  = (unsigned)rwebp->u.d.w;
             *height = (unsigned)rwebp->u.d.h;
             return IMAGE_PROCESS_NEXT;
@@ -1789,7 +1811,9 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
       case RWEBP_PHASE_SWIZZLE:
       {
          /* ARGB words -> ABGR (memory R,G,B,A), a bounded pixel batch
-          * per call; matches the rwebp_do output conversion. */
+          * per call; matches the rwebp_do output conversion. Reached
+          * only from the sliced VP8L path now - the lossy path emits
+          * the requested order directly from the upsample store. */
          uint32_t *pix = rwebp->output_image;
          int n = rwebp->u.d.w * rwebp->u.d.h;
          int i = rwebp->cursor;

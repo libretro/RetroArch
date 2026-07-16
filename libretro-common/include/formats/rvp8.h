@@ -50,6 +50,9 @@ typedef struct rvp8_dec
    uint8_t  *above_nz_y, *above_nz_u, *above_nz_v, *above_nz_dc;
    uint8_t  *above_bmodes;
    uint8_t  *fancy_uv;               /* 2*w chroma-interp scratch (or NULL) */
+   int       swap_rb;                /* upsample emits memory-order R,G,B,A
+                                        words (ABGR32 on LE) instead of the
+                                        default ARGB when nonzero          */
    int       w, h, mbw, mbh, ys, uvs;
    int       base_qp, y1dc_dq, y2dc_dq, y2ac_dq, uvdc_dq, uvac_dq;
    int       skip_enabled, prob_skip, num_parts;
@@ -81,10 +84,12 @@ typedef struct rvp8_dec
 
 /* One-shot: decode a complete VP8 key frame from 'data' (the raw VP8
  * bitstream, i.e. the WebP 'VP8 ' chunk payload) to a freshly malloc'd
- * RGBA8888 buffer of *ow * *oh pixels. Returns NULL on malformed input.
- * The caller frees the buffer. */
+ * buffer of *ow * *oh pixels. Channel order is selected at store time:
+ * 0xAARRGGBB words when swap_rb is 0, memory-order R,G,B,A (ABGR32
+ * words on LE) when nonzero - no post-pass swizzle is needed either
+ * way. Returns NULL on malformed input. The caller frees the buffer. */
 uint32_t *rvp8_decode(const uint8_t *data, size_t len,
-      unsigned *ow, unsigned *oh);
+      unsigned *ow, unsigned *oh, int swap_rb);
 
 /* Resumable primitives. Typical drive loop mirrors rvp8_decode():
  *   if (rvp8_begin(data, len, &s) != 0) fail;
