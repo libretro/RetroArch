@@ -2369,16 +2369,16 @@ static void rgui_process_wallpaper(
    x_crop_offset = (image->width  - background_buf->width)  >> 1;
    y_crop_offset = (image->height - background_buf->height) >> 1;
 
-   /* Copy image to wallpaper buffer, performing pixel format conversion */
-   for (x = 0; x < background_buf->width; x++)
+   /* Copy image to wallpaper buffer, performing pixel format conversion.
+    * Both buffers are row-major, so iterate rows in the outer loop to
+    * keep source and destination accesses sequential. */
+   for (y = 0; y < background_buf->height; y++)
    {
-      for (y = 0; y < background_buf->height; y++)
-      {
-         background_buf->data[x + (y * background_buf->width)] =
-               argb32_to_pixel_platform_format(image->pixels[
-                     (x + x_crop_offset) +
-                     ((y + y_crop_offset) * image->width)]);
-      }
+      uint16_t   *dst = background_buf->data + y * background_buf->width;
+      const uint32_t *src = image->pixels + x_crop_offset
+            + (y + y_crop_offset) * image->width;
+      for (x = 0; x < background_buf->width; x++)
+         dst[x] = argb32_to_pixel_platform_format(src[x]);
    }
 
    /* Tell menu that a display update is required */
@@ -2625,12 +2625,15 @@ static void rgui_process_thumbnail(
    thumbnail->width       = image->width;
    thumbnail->height      = image->height;
 
-   /* Copy image to thumbnail buffer, performing pixel format conversion */
-   for (x = 0; x < thumbnail->width; x++)
+   /* Copy image to thumbnail buffer, performing pixel format conversion.
+    * Iterate rows in the outer loop so the row-major source and
+    * destination are walked sequentially. */
+   for (y = 0; y < thumbnail->height; y++)
    {
-      for (y = 0; y < thumbnail->height; y++)
-         thumbnail->data[x + (y * thumbnail->width)] =
-            argb32_to_pixel_platform_format(image->pixels[x + (y * thumbnail->width)]);
+      uint16_t       *dst = thumbnail->data   + y * thumbnail->width;
+      const uint32_t *src = image->pixels     + y * thumbnail->width;
+      for (x = 0; x < thumbnail->width; x++)
+         dst[x] = argb32_to_pixel_platform_format(src[x]);
    }
 
    thumbnail->is_valid    = true;
