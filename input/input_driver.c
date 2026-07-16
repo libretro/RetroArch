@@ -8070,20 +8070,16 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (display_kb && input && input->input_state)
       {
-         /* Allow LCtrl as OK, character map switches,
+         /* Allow character map switches, 
           * and set RetroPad Select bit when pressing Escape
           * in order to clear the input window and close it. */
          unsigned i;
          unsigned ids[][2] =
          {
-            {RETROK_LCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
             {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
          };
-
-         if (settings->bools.input_menu_swap_ok_cancel_buttons)
-            ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
@@ -8327,23 +8323,27 @@ void input_keyboard_event(bool down, unsigned code,
          case RETROK_LEFT:
             if (line->ptr && line->buffer)
             {
-               while (line->ptr)
-               {
+               line->ptr--;
+               while (line->ptr && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
                   line->ptr--;
-                  if (!IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
-                     break;
-               }
+
+               if (mod & RETROKMOD_CTRL)
+                  while (line->ptr &&
+                        (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                     line->ptr--;
             }
             return;
          case RETROK_RIGHT:
             if (line->buffer && line->ptr < line->size)
             {
-               while (line->ptr < line->size)
-               {
+               line->ptr++;
+               while (line->ptr < line->size && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
                   line->ptr++;
-                  if ((line->ptr >= line->size) || !IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
-                     break;
-               }
+
+               if (mod & RETROKMOD_CTRL)
+                  while (line->ptr < line->size &&
+                        (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                     line->ptr++;
             }
             return;
          case RETROK_UP:
