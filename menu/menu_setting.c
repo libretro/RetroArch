@@ -1313,11 +1313,14 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
 {
    if (setting)
    {
+      const char *path = setting->value.target.string;
+      if ((setting->type == ST_DIR) && (config_get_ptr()->bools.menu_show_full_paths))
+         return strlcpy(s, path, len);
 #if IOS
       return fill_pathname_abbreviate_special(s,
-            path_basename(setting->value.target.string), len);
+            path_basename(path), len);
 #else
-      return fill_pathname(s, path_basename(setting->value.target.string),
+      return fill_pathname(s, path_basename(path),
             "", len);
 #endif
    }
@@ -12333,6 +12336,11 @@ static const setting_desc_t menu_desc_39[] = {
 #include "../settings/settings_def_menu_privacy.h"
 };
 
+static const setting_desc_t menu_desc_40[] = {
+/* GENERATED: rows come from settings_def_menu_show_full_paths.h in order. */
+#include "../settings/settings_def_menu_show_full_paths.h"
+};
+
 static const setting_desc_t menu_file_brow_desc_0[] = {
 /* GENERATED: rows come from settings_def_menu_filebrowser.h in order. */
 #include "../settings/settings_def_menu_filebrowser.h"
@@ -15311,6 +15319,8 @@ static void settings_build_menu(
 
             ADD_DESC(menu_desc_14);
 
+            ADD_DESC(menu_desc_40);
+
       END_SUB_GROUP(list, list_info, parent_group);
 
       START_SUB_GROUP(list, list_info, "Navigation", &group_info, &subgroup_info, parent_group);
@@ -17874,6 +17884,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { menu_desc_37, (uint16_t)ARRAY_SIZE(menu_desc_37) },
    { menu_desc_38, (uint16_t)ARRAY_SIZE(menu_desc_38) },
    { menu_desc_39, (uint16_t)ARRAY_SIZE(menu_desc_39) },
+   { menu_desc_40, (uint16_t)ARRAY_SIZE(menu_desc_40) },
 #ifdef ANDROID
    { power_manageme_desc_0_s0, (uint16_t)ARRAY_SIZE(power_manageme_desc_0_s0) },
 #endif
