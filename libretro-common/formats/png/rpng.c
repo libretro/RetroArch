@@ -427,33 +427,48 @@ static void rpng_filter_paeth_rgba(uint8_t *decoded,
  * -------------------------------------------------------------------------*/
 
 /* Pack 8-bit RGB triples into ARGB32/ABGR32 words (alpha = 0xFF).
- * SSE2 version processes 4 pixels (12 input bytes) per iteration. */
+ * SSE2 version expands 4 pixels (12 input bytes) per 16-byte load:
+ * SSE2 has no byte shuffle (pshufb is SSSE3), but the fixed 3->4 byte
+ * expansion falls out of whole-register byte shifts plus dword masks -
+ *    w = (v & M0) | (v<<1B & M1) | (v<<2B & M2) | (v<<3B & M3)
+ * places triple k at output byte 4k, giving memory order R,G,B after
+ * the alpha OR (the ABGR32 supports_rgba layout on LE); the ARGB
+ * layout additionally swaps R and B inside each word. The load reads
+ * 4 bytes past the 12 consumed, so the vector loop requires at least
+ * 6 pixels (18 bytes) of remaining scanline. */
 #if defined(RPNG_SIMD_SSE2)
 static void rpng_copy_line_rgb_sse2(uint32_t *data,
       const uint8_t *src, unsigned width, bool supports_rgba)
 {
    unsigned i = 0;
+   const __m128i m0   = _mm_setr_epi32((int)0x00FFFFFF, 0, 0, 0);
+   const __m128i m1   = _mm_setr_epi32(0, (int)0x00FFFFFF, 0, 0);
+   const __m128i m2   = _mm_setr_epi32(0, 0, (int)0x00FFFFFF, 0);
+   const __m128i m3   = _mm_setr_epi32(0, 0, 0, (int)0x00FFFFFF);
+   const __m128i ma   = _mm_set1_epi32((int)0xFF000000u);
+   const __m128i keep = _mm_set1_epi32((int)0xFF00FF00u);
+   const __m128i lowm = _mm_set1_epi32(0xFF);
+
+   for (; (int)(width - i) >= 6; i += 4)
+   {
+      __m128i v = _mm_loadu_si128((const __m128i*)(src + (size_t)i * 3));
+      __m128i w = _mm_or_si128(
+            _mm_or_si128(_mm_and_si128(v, m0),
+                         _mm_and_si128(_mm_slli_si128(v, 1), m1)),
+            _mm_or_si128(_mm_and_si128(_mm_slli_si128(v, 2), m2),
+                         _mm_and_si128(_mm_slli_si128(v, 3), m3)));
+      if (!supports_rgba)
+      {
+         /* memory R,G,B -> B,G,R: swap the low and high channel bytes */
+         __m128i lo = _mm_slli_epi32(_mm_and_si128(w, lowm), 16);
+         __m128i hi = _mm_and_si128(_mm_srli_epi32(w, 16), lowm);
+         w = _mm_or_si128(_mm_and_si128(w, keep), _mm_or_si128(lo, hi));
+      }
+      _mm_storeu_si128((__m128i*)(data + i), _mm_or_si128(w, ma));
+   }
+
    if (supports_rgba)
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i + 0] = 0xFF000000u
-                     | ((unsigned)src[i*3+2] << 16)
-                     | ((unsigned)src[i*3+1] <<  8)
-                     | ((unsigned)src[i*3+0]      );
-         data[i + 1] = 0xFF000000u
-                     | ((unsigned)src[i*3+5] << 16)
-                     | ((unsigned)src[i*3+4] <<  8)
-                     | ((unsigned)src[i*3+3]      );
-         data[i + 2] = 0xFF000000u
-                     | ((unsigned)src[i*3+8] << 16)
-                     | ((unsigned)src[i*3+7] <<  8)
-                     | ((unsigned)src[i*3+6]      );
-         data[i + 3] = 0xFF000000u
-                     | ((unsigned)src[i*3+11] << 16)
-                     | ((unsigned)src[i*3+10] <<  8)
-                     | ((unsigned)src[i*3+9]       );
-      }
       for (; i < width; i++)
          data[i] = 0xFF000000u
                  | ((unsigned)src[i*3+2] << 16)
@@ -462,25 +477,6 @@ static void rpng_copy_line_rgb_sse2(uint32_t *data,
    }
    else
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i + 0] = 0xFF000000u
-                     | ((unsigned)src[i*3+0] << 16)
-                     | ((unsigned)src[i*3+1] <<  8)
-                     | ((unsigned)src[i*3+2]      );
-         data[i + 1] = 0xFF000000u
-                     | ((unsigned)src[i*3+3] << 16)
-                     | ((unsigned)src[i*3+4] <<  8)
-                     | ((unsigned)src[i*3+5]      );
-         data[i + 2] = 0xFF000000u
-                     | ((unsigned)src[i*3+6] << 16)
-                     | ((unsigned)src[i*3+7] <<  8)
-                     | ((unsigned)src[i*3+8]      );
-         data[i + 3] = 0xFF000000u
-                     | ((unsigned)src[i*3+9]  << 16)
-                     | ((unsigned)src[i*3+10] <<  8)
-                     | ((unsigned)src[i*3+11]      );
-      }
       for (; i < width; i++)
          data[i] = 0xFF000000u
                  | ((unsigned)src[i*3+0] << 16)
@@ -493,7 +489,10 @@ static void rpng_copy_line_rgb_sse2(uint32_t *data,
 /* Pack 8-bit RGBA bytes into ARGB32 or ABGR32 words.
  * Each input pixel is 4 bytes: R G B A
  * ARGB output: (A<<24)|(R<<16)|(G<<8)|B
- * ABGR output: (A<<24)|(B<<16)|(G<<8)|R  (when supports_rgba) */
+ * ABGR output: (A<<24)|(B<<16)|(G<<8)|R  (when supports_rgba)
+ * On LE (implied by SSE2/x86) the ABGR layout is the input bytes
+ * verbatim, so that case is a straight row copy; the ARGB layout is a
+ * vectorized R/B swap within each word. */
 #if defined(RPNG_SIMD_SSE2)
 static void rpng_copy_line_rgba_sse2(uint32_t *data,
       const uint8_t *src, unsigned width, bool supports_rgba)
@@ -501,38 +500,24 @@ static void rpng_copy_line_rgba_sse2(uint32_t *data,
    unsigned i = 0;
    if (supports_rgba)
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i+0] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+2] << 16)
-                   | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+0]);
-         data[i+1] = ((unsigned)src[i*4+7] << 24) | ((unsigned)src[i*4+6] << 16)
-                   | ((unsigned)src[i*4+5] <<  8) | ((unsigned)src[i*4+4]);
-         data[i+2] = ((unsigned)src[i*4+11] << 24) | ((unsigned)src[i*4+10] << 16)
-                   | ((unsigned)src[i*4+9]  <<  8) | ((unsigned)src[i*4+8]);
-         data[i+3] = ((unsigned)src[i*4+15] << 24) | ((unsigned)src[i*4+14] << 16)
-                   | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+12]);
-      }
-      for (; i < width; i++)
-         data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+2] << 16)
-                 | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+0]);
+      memcpy(data, src, (size_t)width * 4);
+      return;
    }
-   else
    {
+      const __m128i keep = _mm_set1_epi32((int)0xFF00FF00u);
+      const __m128i lowm = _mm_set1_epi32(0xFF);
       for (; (int)(width - i) >= 4; i += 4)
       {
-         data[i+0] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
-                   | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
-         data[i+1] = ((unsigned)src[i*4+7] << 24) | ((unsigned)src[i*4+4] << 16)
-                   | ((unsigned)src[i*4+5] <<  8) | ((unsigned)src[i*4+6]);
-         data[i+2] = ((unsigned)src[i*4+11] << 24) | ((unsigned)src[i*4+8]  << 16)
-                   | ((unsigned)src[i*4+9]  <<  8) | ((unsigned)src[i*4+10]);
-         data[i+3] = ((unsigned)src[i*4+15] << 24) | ((unsigned)src[i*4+12] << 16)
-                   | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+14]);
+         __m128i w  = _mm_loadu_si128((const __m128i*)(src + (size_t)i * 4));
+         __m128i lo = _mm_slli_epi32(_mm_and_si128(w, lowm), 16);
+         __m128i hi = _mm_and_si128(_mm_srli_epi32(w, 16), lowm);
+         _mm_storeu_si128((__m128i*)(data + i),
+               _mm_or_si128(_mm_and_si128(w, keep), _mm_or_si128(lo, hi)));
       }
-      for (; i < width; i++)
-         data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
-                 | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
    }
+   for (; i < width; i++)
+      data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+              | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
 }
 #endif /* RPNG_SIMD_SSE2 */
 
