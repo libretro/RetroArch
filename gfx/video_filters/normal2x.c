@@ -134,9 +134,10 @@ static void normal2x_work_cb_xrgb8888(void *data, void *thread_data)
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
       for (; x + 4 <= thr->width; x += 4)
       {
-         uint32x4_t v = vld1q_u32(input + x);
-         vst1q_u32(row0 + 2 * x,     vzip1q_u32(v, v));
-         vst1q_u32(row0 + 2 * x + 4, vzip2q_u32(v, v));
+         uint32x4_t   v = vld1q_u32(input + x);
+         uint32x4x2_t d = vzipq_u32(v, v);   /* portable on ARMv7+A64  */
+         vst1q_u32(row0 + 2 * x,     d.val[0]);
+         vst1q_u32(row0 + 2 * x + 4, d.val[1]);
       }
 #endif
       for (; x < thr->width; ++x)
@@ -181,9 +182,10 @@ static void normal2x_work_cb_rgb565(void *data, void *thread_data)
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
       for (; x + 8 <= thr->width; x += 8)
       {
-         uint16x8_t v = vld1q_u16(input + x);
-         vst1q_u16(row0 + 2 * x,     vzip1q_u16(v, v));
-         vst1q_u16(row0 + 2 * x + 8, vzip2q_u16(v, v));
+         uint16x8_t   v = vld1q_u16(input + x);
+         uint16x8x2_t d = vzipq_u16(v, v);
+         vst1q_u16(row0 + 2 * x,     d.val[0]);
+         vst1q_u16(row0 + 2 * x + 8, d.val[1]);
       }
 #endif
       for (; x < thr->width; ++x)
