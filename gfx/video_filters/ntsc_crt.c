@@ -1202,6 +1202,11 @@ struct filter_data
     struct CRT          crt;
     struct NTSC_SETTINGS ntsc;
 
+    /* packed-RGB input buffer for crt_modulate (cached across frames) */
+    unsigned char *in_buf;
+    unsigned       in_buf_w;
+    unsigned       in_buf_h;
+
     /* output buffer (XRGB8888) */
     unsigned char *out_buf;
     unsigned       out_buf_w;
@@ -1373,6 +1378,7 @@ static void ntsc_crt_destroy(void *data)
 {
     struct filter_data *filt = (struct filter_data*)data;
     if (!filt) return;
+    if (filt->in_buf)  free(filt->in_buf);
     if (filt->out_buf) free(filt->out_buf);
     free(filt->workers);
     free(filt);
@@ -1392,8 +1398,16 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
     size_t    out_pitch  = thr->out_pitch;
 
     /* ---- Convert input to RGB byte-array for crt_modulate ---- */
-    unsigned char *rgb_in = (unsigned char*)malloc(width * height * 3);
-    if (!rgb_in) return;
+    unsigned char *rgb_in;
+    if (filt->in_buf_w != width || filt->in_buf_h != height) {
+        unsigned char *new_buf = (unsigned char*)realloc(filt->in_buf,
+                                                          width * height * 3);
+        if (!new_buf) return;
+        filt->in_buf   = new_buf;
+        filt->in_buf_w = width;
+        filt->in_buf_h = height;
+    }
+    rgb_in = filt->in_buf;
 
     if (thr->colfmt == SOFTFILTER_FMT_XRGB8888) {
         unsigned y;
@@ -1415,7 +1429,7 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
     if (filt->out_buf_w != width || filt->out_buf_h != height) {
         unsigned char *new_buf = (unsigned char*)realloc(filt->out_buf,
                                                           width * height * 3);
-        if (!new_buf) { free(rgb_in); return; }
+        if (!new_buf) return;
         filt->out_buf   = new_buf;
         filt->out_buf_w = width;
         filt->out_buf_h = height;
@@ -1451,8 +1465,6 @@ static void ntsc_crt_work_cb(void *data, void *thread_data)
             rgb_to_xrgb8888(src_row, dst_row, width);
         }
     }
-
-    free(rgb_in);
 }
 
 /* -----------------------------------------------------------------------
