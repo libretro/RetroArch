@@ -87,6 +87,10 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
+      }
     }
     playStorePlus {
       minSdkVersion 21
@@ -99,6 +103,10 @@ android {
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
 
       dimension "variant"
+
+      ndk {
+        abiFilters 'arm64-v8a', 'x86_64', 'armeabi-v7a'
+      }
     }
   }
 
