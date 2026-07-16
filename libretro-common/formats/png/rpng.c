@@ -43,6 +43,7 @@
 #endif
 
 #include <boolean.h>
+#include <retro_endianness.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
@@ -737,9 +738,10 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 24): 
-    * each pixel is exactly 3 bytes. */
-   if (bpp == 24)
+   /* bpp here is ihdr->depth: bits per SAMPLE (8 or 16), not bits per
+    * pixel - the scalar loop below strides bpp/8 bytes per channel.
+    * Fast path for 8-bit depth: each pixel is exactly 3 bytes. */
+   if (bpp == 8)
    {
 #if defined(RPNG_SIMD_NEON)
       rpng_copy_line_rgb_neon(data, decoded, width, supports_rgba);
@@ -788,10 +790,22 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 32): 
-    * each pixel is exactly 4 bytes. */
-   if (bpp == 32)
+   /* bpp here is ihdr->depth: bits per SAMPLE (8 or 16), not bits per
+    * pixel - the scalar loop below strides bpp/8 bytes per channel.
+    * Fast paths for 8-bit depth: each pixel is exactly 4 bytes. */
+   if (bpp == 8)
    {
+#if !defined(MSB_FIRST)
+      /* The unfiltered scanline bytes are already R,G,B,A in memory
+       * order, which on a little-endian host is exactly the ABGR32
+       * word layout the supports_rgba output wants: the conversion is
+       * the identity, so copy the row wholesale. */
+      if (supports_rgba)
+      {
+         memcpy(data, decoded, (size_t)width * 4);
+         return;
+      }
+#endif
 #if defined(RPNG_SIMD_NEON)
       rpng_copy_line_rgba_neon(data, decoded, width, supports_rgba);
       return;
