@@ -110,17 +110,10 @@ static void normal2x_height_work_cb_xrgb8888(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint32_t *out_ptr = output;
-      for (x = 0; x < thr->width; ++x)
-      {
-         uint32_t color          = *(input + x);
-
-         /* Duplicate pixels in the y direction */
-         *out_ptr                = color;
-         *(out_ptr + out_stride) = color;
-
-         out_ptr++;
-      }
+      /* Duplicate the row in the y direction: copy the source row to
+       * both output rows.  memcpy replaces the per-pixel store loop. */
+      memcpy(output,              input, thr->width * sizeof(uint32_t));
+      memcpy(output + out_stride, input, thr->width * sizeof(uint32_t));
 
       input  += in_stride;
       output += out_stride << 1;
@@ -138,17 +131,9 @@ static void normal2x_height_work_cb_rgb565(void *data, void *thread_data)
 
    for (y = 0; y < thr->height; ++y)
    {
-      uint16_t *out_ptr = output;
-      for (x = 0; x < thr->width; ++x)
-      {
-         uint16_t color          = *(input + x);
-
-         /* Duplicate pixels in the y direction */
-         *out_ptr                = color;
-         *(out_ptr + out_stride) = color;
-
-         out_ptr++;
-      }
+      /* Duplicate the row in the y direction. */
+      memcpy(output,              input, thr->width * sizeof(uint16_t));
+      memcpy(output + out_stride, input, thr->width * sizeof(uint16_t));
 
       input  += in_stride;
       output += out_stride << 1;
