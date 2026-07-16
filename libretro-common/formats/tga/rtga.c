@@ -31,6 +31,7 @@
 #include <limits.h> /* INT_MAX, SIZE_MAX via stdint */
 
 #include <retro_inline.h>
+#include <retro_endianness.h> /* MSB_FIRST: gates the LE memcpy fast path */
 
 #include <formats/image.h>
 #include <formats/rtga.h>
