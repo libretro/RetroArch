@@ -1286,6 +1286,19 @@ ifeq ($(TARGET), retroarch_switch)
       ifeq ($(HAVE_OPENGL), 1)
          OBJ += gfx/drivers_context/switch_ctx.o
       endif
+      ifeq ($(HAVE_DEKO3D), 1)
+         OBJ      += gfx/drivers/deko3d.o
+         DEFINES  += -DHAVE_DEKO3D
+         INCLUDE_DIRS += -Igfx/include
+         # Menu shaders for gfx_display_ctx_deko3d. GLSL -> DKSH (uam) ->
+         # .o (objcopy raw binary embed with stable symbol names:
+         # <basename>_dksh[], <basename>_dksh_end[], <basename>_dksh_size).
+         UAM      ?= $(DEVKITPRO)/tools/bin/uam
+         OBJ      += gfx/drivers/deko3d_menu_vsh_dksh.o \
+                     gfx/drivers/deko3d_menu_fsh_dksh.o \
+                     gfx/drivers/deko3d_blit_vsh_dksh.o \
+                     gfx/drivers/deko3d_blit_fsh_dksh.o
+      endif
    endif
    OBJ += audio/drivers/switch_audio.o \
           audio/drivers/switch_thread_audio.o \
@@ -3060,3 +3073,22 @@ endif
 endif
 
 ##################################
+
+#---------------------------------------------------------------------------------
+# deko3d menu shaders: GLSL -> DKSH (uam) -> .o (objcopy raw binary embed).
+# Pattern rules are scoped to gfx/drivers/ to avoid accidentally matching
+# elsewhere. They only fire when the corresponding _dksh.o targets are in
+# OBJ (added inside the HAVE_DEKO3D Switch block above).
+#---------------------------------------------------------------------------------
+gfx/drivers/%_vsh.dksh: gfx/drivers/%_vsh.glsl
+	@echo "==> uam vert $<"
+	@$(UAM) -s vert -o $@ $<
+
+gfx/drivers/%_fsh.dksh: gfx/drivers/%_fsh.glsl
+	@echo "==> uam frag $<"
+	@$(UAM) -s frag -o $@ $<
+
+gfx/drivers/%_dksh.o: gfx/drivers/%.dksh
+	@echo "==> objcopy $<"
+	@cd $$(dirname $<) && $(PREFIX)objcopy -I binary -O elf64-littleaarch64 -B aarch64 \
+		$$(basename $<) $$(basename $*)_dksh.o

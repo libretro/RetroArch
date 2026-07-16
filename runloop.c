@@ -766,6 +766,10 @@ static bool dynamic_verify_hw_context(
             if (!(len == 6 && memcmp(video_ident, "vulkan", 6) == 0))
                return false;
             break;
+         case RETRO_HW_CONTEXT_DEKO3D:
+            if (!(len == 6 && memcmp(video_ident, "deko3d", 6) == 0))
+               return false;
+            break;
 #if defined(HAVE_OPENGL_CORE)
          case RETRO_HW_CONTEXT_OPENGL_CORE:
             if (!(len == 6 && memcmp(video_ident, "glcore", 6) == 0))
@@ -816,6 +820,15 @@ static bool dynamic_request_hw_context(enum retro_hw_context_type type,
          break;
 #else
          RARCH_ERR("[HW] Requesting Vulkan context, but RetroArch is not compiled against Vulkan. Cannot use HW context.\n");
+         return false;
+#endif
+
+      case RETRO_HW_CONTEXT_DEKO3D:
+#ifdef HAVE_DEKO3D
+         RARCH_LOG("[HW] Requesting Deko3D context.\n");
+         break;
+#else
+         RARCH_ERR("[HW] Requesting Deko3D context, but RetroArch is not compiled against Deko3D. Cannot use HW context.\n");
          return false;
 #endif
 

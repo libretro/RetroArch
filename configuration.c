@@ -5914,7 +5914,8 @@ static bool check_menu_driver_compatibility(settings_t *settings)
              || (memcmp(video_driver, "d3d9_cg",  7) == 0 && video_driver[7]  == '\0')
              || (memcmp(video_driver, "d3d10",    5) == 0 && video_driver[5]  == '\0')
              || (memcmp(video_driver, "d3d11",    5) == 0 && video_driver[5]  == '\0')
-             || (memcmp(video_driver, "d3d12",    5) == 0 && video_driver[5]  == '\0');
+             || (memcmp(video_driver, "d3d12",    5) == 0 && video_driver[5]  == '\0')
+             || (memcmp(video_driver, "deko3d",   6) == 0 && video_driver[6]  == '\0');
       case 'g':
          if (video_driver[1] == 'l')
             return (memcmp(video_driver, "gl",     2) == 0 && video_driver[2] == '\0')

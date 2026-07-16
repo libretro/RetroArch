@@ -69,6 +69,7 @@ HAVE_FREETYPE = 0
 HAVE_SWITCH = 1
 HAVE_LIBNX = 1
 HAVE_OPENGL = 1
+HAVE_DEKO3D = 1
 HAVE_LANGEXTRA = 1
 HAVE_GFX_WIDGETS = 1
 
@@ -156,6 +157,12 @@ LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpn
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)
+endif
+
+ifeq ($(HAVE_DEKO3D), 1)
+  CFLAGS  += -DHAVE_DEKO3D
+  CXXFLAGS += -DHAVE_DEKO3D
+  LIBS := -ldeko3d $(LIBS)
 endif
 
 #---------------------------------------------------------------------------------
