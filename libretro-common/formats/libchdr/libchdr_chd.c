@@ -288,9 +288,11 @@ static chd_error metadata_find_entry(chd_file *chd, uint32_t metatag, uint32_t m
 chd_error zlib_codec_init(void *codec, uint32_t hunkbytes);
 void zlib_codec_free(void *codec);
 chd_error zlib_codec_decompress(void *codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen);
+#ifdef CHD_HAVE_ZLIB
 voidpf zlib_fast_alloc(voidpf opaque, uInt items, uInt size);
 void zlib_fast_free(voidpf opaque, voidpf address);
 void zlib_allocator_free(voidpf opaque);
+#endif
 
 /* lzma compression codec */
 chd_error lzma_codec_init(void *codec, uint32_t hunkbytes);
