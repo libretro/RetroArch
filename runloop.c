@@ -737,6 +737,11 @@ void runloop_runtime_log_deinit(
          sizeof(runloop_st->runtime_content_path));
    memset(runloop_st->runtime_core_path, 0,
          sizeof(runloop_st->runtime_core_path));
+
+   /* Reset entry state slot, to prevent any possibility
+    * of a stale slot leaking into subsequently loaded
+    * content */
+   runloop_st->entry_state_slot = -1;
 }
 
 static bool runloop_clear_all_thread_waits(
@@ -4568,12 +4573,24 @@ static void runloop_runtime_log_init(runloop_state_t *runloop_st)
 
    if (     (content_path && *content_path)
          && (core_path && *core_path))
-      runtime_log_init(
+   {
+      runtime_log_t *runtime_log = runtime_log_init(
             runloop_st->runtime_content_path,
             runloop_st->runtime_core_path,
             settings->paths.directory_runtime_log,
             settings->paths.directory_playlist,
             true);
+
+      if (runtime_log)
+      {
+         if (     runloop_st->entry_state_slot < 0
+               && path_is_valid(runtime_log->path)
+               && runtime_log->state_slot < 1000)
+            configuration_set_int(settings, settings->ints.state_slot, runtime_log->state_slot);
+
+         free(runtime_log);
+      }
+   }
 }
 
 void runloop_set_frame_limit(

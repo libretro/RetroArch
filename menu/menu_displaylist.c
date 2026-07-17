@@ -14566,6 +14566,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                bool savestates_enabled     = core_info_current_supports_savestate();
                playlist_t *playlist        = playlist_get_cached();
                runloop_state_t *runloop_st = runloop_state_get_ptr();
+               int state_slot              = settings->ints.state_slot;
 
                /* Load the core for getting the final state path for thumbnails */
                if (playlist && !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
@@ -14578,6 +14579,8 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                   if (entry && *entry->path)
                   {
+                     runtime_log_t *runtime_log = NULL;
+
                      path_set(RARCH_PATH_CORE, entry->core_path);
                      command_event(CMD_EVENT_LOAD_CORE, NULL);
                      runloop_set_current_core_type(CORE_TYPE_PLAIN, true);
@@ -14585,8 +14588,23 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                      /* Reinit runtime log and read current state slot */
                      savestates_enabled = core_info_current_supports_savestate();
                      if (savestates_enabled)
+                     {
                         runtime_update_playlist(playlist,
                               menu_st->driver_data->rpl_entry_selection_ptr);
+
+                        runtime_log = runtime_log_init(entry->path,
+                              entry->core_path,
+                              settings->paths.directory_runtime_log,
+                              settings->paths.directory_playlist,
+                              true);
+
+                        if (runtime_log)
+                        {
+                           if (path_is_valid(runtime_log->path) && runtime_log->state_slot < 1000)
+                              state_slot = runtime_log->state_slot;
+                           free(runtime_log);
+                        }
+                     }
                   }
                }
 
@@ -14618,7 +14636,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   }
 
                   /* Pre-select last slot from the runtime log */
-                  menu_st->selection_ptr = runloop_st->entry_state_slot + 1;
+                  menu_st->selection_ptr = state_slot + 1;
                }
 
                menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
