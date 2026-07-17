@@ -181,6 +181,7 @@ HAVE_RTGA=yes              # RTGA support
 HAVE_RDDS=yes              # DDS (DXT/BCn) support
 HAVE_RWEBP=yes             # RWEBP support
 HAVE_RWEBM=yes             # RWEBM (WebM/Matroska demuxer) support
+HAVE_RMP4=yes              # RMP4 (MP4/ISO-BMFF demuxer) support
 HAVE_RVP9=yes              # RVP9 (VP9 video decoder) support
 HAVE_WEBMPLAYER=no         # Built-in WebM (VP8/VP9) movie player
 HAVE_RWAV=yes              # WAV support

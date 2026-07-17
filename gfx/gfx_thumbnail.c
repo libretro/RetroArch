@@ -35,9 +35,15 @@
 #include "gfx_animation.h"
 #include "gfx_thumbnail.h"
 
-#if defined(HAVE_RWEBM) && defined(HAVE_AUDIOMIXER) && \
+#if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
+      defined(HAVE_AUDIOMIXER) && \
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#ifdef HAVE_RWEBM
 #include <formats/rwebm_audio.h>
+#endif
+#ifdef HAVE_RMP4
+#include <formats/rmp4_audio.h>
+#endif
 #include <audio/audio_mixer.h>
 #include "../audio/audio_driver.h"
 #endif
@@ -270,7 +276,8 @@ static void gfx_thumbnail_init_fade(
 
 /* Preview audio: decode the animated thumbnail's audio track and loop
  * it through the audio mixer while the animation is shown. */
-#if defined(HAVE_RWEBM) && defined(HAVE_AUDIOMIXER) && \
+#if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
+      defined(HAVE_AUDIOMIXER) && \
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
 #define GFX_THUMB_PREVIEW_AUDIO 1
 /* Cap decoded PCM (memory bound: 90 s stereo 48 kHz s16 = ~17 MB). */
@@ -321,6 +328,25 @@ static bool                   gfx_thumb_worker_die    = false;
  * convert it into job->frame in its final upload format. Returns false
  * when the animation is over. Runs on the worker thread; the job is
  * RUNNING, so it owns the stream exclusively. */
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+/* Decode the preview audio of the container type the job carries. */
+static bool gfx_thumb_preview_audio_decode(uint8_t type,
+      const void *src, size_t src_len, void **wav, size_t *wav_size)
+{
+#ifdef HAVE_RWEBM
+   if (type == IMAGE_TYPE_WEBM)
+      return rwebm_audio_decode_wav(src, src_len,
+            GFX_THUMB_PREVIEW_AUDIO_MAX_MS, wav, wav_size) ? true : false;
+#endif
+#ifdef HAVE_RMP4
+   if (type == IMAGE_TYPE_MP4)
+      return rmp4_audio_decode_wav(src, src_len,
+            GFX_THUMB_PREVIEW_AUDIO_MAX_MS, wav, wav_size) ? true : false;
+#endif
+   return false;
+}
+#endif
+
 static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
 {
    const uint32_t *frame;
@@ -384,9 +410,8 @@ static void gfx_thumbnail_anim_worker(void *unused)
       slock_unlock(gfx_thumb_worker_lock);
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
       if (job->is_audio)
-         alive = rwebm_audio_decode_wav(job->src, job->src_len,
-               GFX_THUMB_PREVIEW_AUDIO_MAX_MS,
-               &job->wav, &job->wav_size) ? true : false;
+         alive = gfx_thumb_preview_audio_decode(job->type,
+               job->src, job->src_len, &job->wav, &job->wav_size);
       else
 #endif
          alive = gfx_thumbnail_anim_job_step(job);
@@ -624,7 +649,8 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    /* Cheap gate: only container types with an animation decoder */
    type = image_texture_get_type(path);
    if (   (type != IMAGE_TYPE_WEBP)
-       && (type != IMAGE_TYPE_WEBM))
+       && (type != IMAGE_TYPE_WEBM)
+       && (type != IMAGE_TYPE_MP4))
       return;
 
    if (!filestream_read_file(path, &buf, &len))
@@ -654,11 +680,12 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
 
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
    /* Preview audio (opt-in): decode the file's audio track to PCM and
-    * loop it through the mixer while the animation is shown. WebM only
-    * (animated WebP has no audio). With threads the decode runs on the
-    * shared worker; without, it runs here once (a one-shot cost when
-    * the preview opens). */
-   if (     (type == IMAGE_TYPE_WEBM)
+    * loop it through the mixer while the animation is shown. WebM and
+    * MP4 only (animated WebP has no audio). With threads the decode
+    * runs on the shared worker; without, it runs here once (a one-shot
+    * cost when the preview opens). */
+   if (     (   (type == IMAGE_TYPE_WEBM)
+             || (type == IMAGE_TYPE_MP4))
          && config_get_ptr()->bools.menu_thumbnail_preview_audio)
    {
       gfx_thumb_anim_job_t *job =
@@ -666,6 +693,7 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
       if (job)
       {
          job->is_audio = true;
+         job->type     = (uint8_t)type;
          job->src      = thumbnail->anim_buf;
          job->src_len  = thumbnail->anim_buf_len;
 #ifdef HAVE_THREADS
@@ -677,9 +705,8 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
          else
 #endif
          {
-            if (rwebm_audio_decode_wav(job->src, job->src_len,
-                  GFX_THUMB_PREVIEW_AUDIO_MAX_MS,
-                  &job->wav, &job->wav_size))
+            if (gfx_thumb_preview_audio_decode(job->type,
+                  job->src, job->src_len, &job->wav, &job->wav_size))
                job->status = GFX_THUMB_JOB_READY;
             else
                job->status = GFX_THUMB_JOB_FINISHED;
@@ -2358,10 +2385,12 @@ bool gfx_thumbnail_set_content_image(
    if ((!img_dir || !*img_dir) || (!img_name || !*img_name))
       return false;
 
-   /* Images, and WebM files (whose video track the thumbnail pipeline
-    * decodes like an animated WebP), can serve as their own thumbnail */
+   /* Images, and WebM/MP4 files (whose video track the thumbnail
+    * pipeline decodes like an animated WebP), can serve as their own
+    * thumbnail */
    if (   (path_is_media_type(img_name) != RARCH_CONTENT_IMAGE)
-       && (image_texture_get_type(img_name) != IMAGE_TYPE_WEBM))
+       && (image_texture_get_type(img_name) != IMAGE_TYPE_WEBM)
+       && (image_texture_get_type(img_name) != IMAGE_TYPE_MP4))
       return false;
 
    /* Cache content image name */
@@ -2566,13 +2595,6 @@ bool gfx_thumbnail_update_path(
    unsigned menu_left_thumbnails = settings->uints.menu_left_thumbnails;
    unsigned menu_icon_thumbnails = settings->uints.menu_icon_thumbnails;
    /* Thumbnail extension order. The default (i.e. png) is always the first. */
-#if defined(HAVE_RWEBP) && defined(HAVE_RWEBM)
-   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 7
-#elif defined(HAVE_RWEBP) || defined(HAVE_RWEBM)
-   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 6
-#else
-   #define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS 5
-#endif
    const char* const SUPPORTED_THUMBNAIL_EXTENSIONS[] = { ".png", ".jpg", ".jpeg", ".bmp", ".tga",
 #ifdef HAVE_RWEBP
          ".webp",
@@ -2580,7 +2602,14 @@ bool gfx_thumbnail_update_path(
 #ifdef HAVE_RWEBM
          ".webm",
 #endif
+#ifdef HAVE_RMP4
+         ".mp4",
+#endif
          0 };
+   /* Entries before the terminating null */
+#define MAX_SUPPORTED_THUMBNAIL_EXTENSIONS \
+   ((int)(sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS) / \
+          sizeof(SUPPORTED_THUMBNAIL_EXTENSIONS[0])) - 1)
 
    if (!path_data)
       return false;
@@ -2650,11 +2679,13 @@ bool gfx_thumbnail_update_path(
       if (path_is_media_type(path_data->content_path) == RARCH_CONTENT_IMAGE)
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
-      /* A WebM file is likewise its own (animated) thumbnail, but unlike
-       * an image the entire file must be read to decode it, so refuse
-       * anything past the animation decoder's file-size cap */
-      else if (   (image_texture_get_type(path_data->content_path)
-                     == IMAGE_TYPE_WEBM)
+      /* A WebM or MP4 file is likewise its own (animated) thumbnail,
+       * but unlike an image the entire file must be read to decode it,
+       * so refuse anything past the animation decoder's file-size cap */
+      else if (   (   (image_texture_get_type(path_data->content_path)
+                        == IMAGE_TYPE_WEBM)
+                   || (image_texture_get_type(path_data->content_path)
+                        == IMAGE_TYPE_MP4))
                && (path_get_size(path_data->content_path)
                      <= GFX_THUMB_ANIM_MAX_FILE))
          strlcpy(thumbnail_path,

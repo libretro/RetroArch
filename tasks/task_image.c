@@ -529,6 +529,9 @@ bool task_push_image_load(const char *fullpath,
       case IMAGE_TYPE_WEBM:
          nbio->type = NBIO_TYPE_WEBM;
          break;
+      case IMAGE_TYPE_MP4:
+         nbio->type = NBIO_TYPE_MP4;
+         break;
       default:
          nbio->type = NBIO_TYPE_NONE;
          break;

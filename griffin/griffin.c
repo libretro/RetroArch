@@ -445,13 +445,18 @@ VIDEO IMAGE
 #ifdef HAVE_RWEBP
 #include "../libretro-common/formats/webp/rwebp.c"
 #endif
-#if defined(HAVE_RWEBP) || defined(HAVE_RWEBM)
+#if defined(HAVE_RWEBP) || defined(HAVE_RWEBM) || defined(HAVE_RMP4)
 #include "../libretro-common/formats/vp8/rvp8.c"
 #endif
 #ifdef HAVE_RWEBM
 #include "../libretro-common/formats/webm/rwebm.c"
 #include "../libretro-common/formats/webm/rwebm_video.c"
 #include "../libretro-common/formats/webm/rwebm_audio.c"
+#endif
+#ifdef HAVE_RMP4
+#include "../libretro-common/formats/mp4/rmp4.c"
+#include "../libretro-common/formats/mp4/rmp4_video.c"
+#include "../libretro-common/formats/mp4/rmp4_audio.c"
 #endif
 
 #ifdef HAVE_RVP9

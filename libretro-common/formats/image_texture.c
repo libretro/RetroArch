@@ -85,6 +85,16 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[2] | 0x20) == 's')
             return IMAGE_TYPE_DDS;
 #endif
+#ifdef HAVE_RMP4
+         if ((ext[0] | 0x20) == 'm' &&
+              ext[1]         == '4' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_MP4;
+         if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'p' &&
+              ext[2]         == '4')
+            return IMAGE_TYPE_MP4;
+#endif
          break;
 
       case 4:
