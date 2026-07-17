@@ -28,7 +28,7 @@
 #ifdef HAVE_CHD
 #include <streams/chd_stream.h>
 #endif
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
 #include <streams/rzip_stream.h>
 #endif
 #include <encodings/crc32.h>
@@ -51,7 +51,7 @@ struct intfstream_internal
       int32_t track;
    } chd;
 #endif
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    struct
    {
       rzipstream_t *fp;
@@ -78,7 +78,7 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
         break;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_get_size(intf->rzip.fp);
 #else
          break;
@@ -115,7 +115,7 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
          return false;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          intf->rzip.fp = rzipstream_open(path, mode);
          if (!intf->rzip.fp)
             return false;
@@ -169,7 +169,7 @@ int intfstream_close(intfstream_internal_t *intf)
 #endif
          return 0;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          if (intf->rzip.fp)
             return rzipstream_close(intf->rzip.fp);
 #endif
@@ -195,7 +195,7 @@ void *intfstream_init(intfstream_info_t *info)
    intf->chd.track       = 0;
    intf->chd.fp          = NULL;
 #endif
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    intf->rzip.fp         = NULL;
 #endif
 
@@ -301,7 +301,7 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
          break;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_read(intf->rzip.fp, s, len);
 #else
          break;
@@ -326,7 +326,7 @@ int64_t intfstream_write(intfstream_internal_t *intf,
       case INTFSTREAM_CHD:
          return -1;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_write(intf->rzip.fp, s, len);
 #else
          return -1;
@@ -357,7 +357,7 @@ int intfstream_printf(intfstream_internal_t *intf,
       case INTFSTREAM_CHD:
          return -1;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          va_start(vl, format);
          ret = rzipstream_vprintf(intf->rzip.fp, format, vl);
          va_end(vl);
@@ -411,7 +411,7 @@ char *intfstream_gets(intfstream_internal_t *intf,
          break;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_gets(intf->rzip.fp, s, (size_t)len);
 #else
          break;
@@ -439,7 +439,7 @@ int intfstream_getc(intfstream_internal_t *intf)
          break;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_getc(intf->rzip.fp);
 #else
          break;
@@ -467,7 +467,7 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
          break;
 #endif
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return (int64_t)rzipstream_tell(intf->rzip.fp);
 #else
          break;
@@ -495,7 +495,7 @@ int intfstream_eof(intfstream_internal_t *intf)
           * chd_stream interface */
          break;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_eof(intf->rzip.fp);
 #else
          break;
@@ -521,7 +521,7 @@ void intfstream_rewind(intfstream_internal_t *intf)
 #endif
          break;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          rzipstream_rewind(intf->rzip.fp);
 #endif
          break;
@@ -544,7 +544,7 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
       case INTFSTREAM_CHD:
          break;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          rzipstream_putc(intf->rzip.fp, c);
 #else
          break;
@@ -605,7 +605,7 @@ bool intfstream_is_compressed(intfstream_internal_t *intf)
       case INTFSTREAM_CHD:
          return true;
       case INTFSTREAM_RZIP:
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          return rzipstream_is_compressed(intf->rzip.fp);
 #else
          break;

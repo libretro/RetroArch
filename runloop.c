@@ -276,7 +276,7 @@ static void runloop_game_ai_think_cb(void *userdata,
 
 #define QUIT_DELAY_USEC 3 * 1000000 /* 3 seconds */
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 #define DEFAULT_EXT "zip"
 #else
 #define DEFAULT_EXT ""

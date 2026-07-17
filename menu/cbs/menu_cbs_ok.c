@@ -5191,7 +5191,7 @@ static int action_ok_undo_save_state(const char *path,
 
 #ifdef HAVE_NETWORKING
 
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 static void cb_decompressed(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {

@@ -495,7 +495,7 @@ static bool content_load_ram_file(unsigned slot)
        || !path_is_valid(ram.path))
       return false;
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    /* Always use RZIP interface when reading SRAM
     * files - this will automatically handle uncompressed
     * data */
@@ -600,7 +600,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    if (   ram.path && *ram.path
        &&  path_is_valid(ram.path))
    {
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
       bool read_ok = rzipstream_read_file(ram.path, &disk_buf, &disk_rc);
 #else
       bool read_ok = filestream_read_file(ram.path, &disk_buf, &disk_rc);
@@ -628,7 +628,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
          msg_hash_to_str(MSG_TO),
          ram.path);
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (compress)
    {
       if (!rzipstream_write_file(

@@ -3193,7 +3193,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_SAVE_FILES:
          return event_save_files(
                runloop_st->flags & RUNLOOP_FLAG_USE_SRAM,
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
                settings->bools.save_file_compression,
 #else
                false,
@@ -4149,7 +4149,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
             {
                if (autosave_init(
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
                         settings->bools.save_file_compression,
 #else
                         false,

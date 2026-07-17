@@ -51,7 +51,7 @@
 #define CORE_INFO_CACHE_DEFAULT_CAPACITY 8
 
 /* TODO/FIXME: Apparently rzip compression is an issue on UWP */
-#if defined(HAVE_ZLIB) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
+#if defined(HAVE_COMPRESSION) && !(defined(__WINRT__) || defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 #define CORE_INFO_CACHE_COMPRESS
 #endif
 
@@ -774,7 +774,7 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
    else
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    file = intfstream_open_rzip_file(file_path,
          RETRO_VFS_FILE_ACCESS_READ);
 #else
@@ -1983,7 +1983,7 @@ static size_t core_info_list_resolve_all_extensions(
    CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), slots, token_buf,
          token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
 #endif
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
    CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), slots, token_buf,
          token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
 #endif

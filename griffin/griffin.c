@@ -1380,7 +1380,7 @@ DATA RUNLOOP
 #ifdef HAVE_TRANSLATE
 #include "../tasks/task_translation.c"
 #endif
-#ifdef HAVE_ZLIB
+#ifdef HAVE_COMPRESSION
 #include "../tasks/task_decompress.c"
 #endif
 #include "../tasks/task_database.c"

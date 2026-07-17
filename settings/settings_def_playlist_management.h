@@ -33,9 +33,9 @@ S_BOOL(playlist_use_old_format, PLAYLIST_USE_OLD_FORMAT,
       DEFAULT_PLAYLIST_USE_OLD_FORMAT, SD_FLAG_NONE, 0, 0,
       "Save Playlists Using Old Format",
       "Write playlists using depreciated plain-text format. When disabled, playlists are formatted using JSON.")
-/* Descriptor and configuration rows are #if defined(HAVE_ZLIB); the string
+/* Descriptor and configuration rows are #if defined(HAVE_COMPRESSION); the string
  * tables always carry this row via the strings pass. */
-#if defined(HAVE_ZLIB) || defined(SETTINGS_DEF_STRINGS_PASS)
+#if defined(HAVE_COMPRESSION) || defined(SETTINGS_DEF_STRINGS_PASS)
 S_BOOL(playlist_compression, PLAYLIST_COMPRESSION,
       "playlist_compression",
       DEFAULT_PLAYLIST_COMPRESSION, SD_FLAG_NONE, 0, 0,

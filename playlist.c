@@ -1718,14 +1718,14 @@ void playlist_write_file(playlist_t *playlist)
    if (   !playlist
        || !*playlist->config.path
        || !( (playlist->flags & CNT_PLAYLIST_FLG_MOD)
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
           || (pl_compressed != playlist->config.compress)
 #endif
           || (pl_old_fmt    != playlist->config.old_format)
           ))
       return;
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (playlist->config.compress)
       file = intfstream_open_rzip_file(playlist->config.path,
             RETRO_VFS_FILE_ACCESS_WRITE);
@@ -2573,7 +2573,7 @@ static bool playlist_read_file(playlist_t *playlist)
 {
    int test_char;
    bool res             = true;
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
       /* Always use RZIP interface when reading playlists
        * > this will automatically handle uncompressed
        *   data */
@@ -2874,7 +2874,7 @@ bool playlist_init_cached(const playlist_config_t *config)
     * does not match requested settings, update
     * file on disk immediately */
    if (
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
        (pl_compressed != playlist->config.compress) ||
 #endif
        (pl_old_fmt != playlist->config.old_format))

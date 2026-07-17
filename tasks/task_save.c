@@ -688,7 +688,7 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
       state->state_slot     = settings->ints.state_slot;
       if (video_driver_cached_frame_is_hw_render())
          state->flags      |= SAVE_TASK_FLAG_HAS_VALID_FB;
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
       if (settings->bools.savestate_file_compression)
          state->flags      |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
@@ -807,7 +807,7 @@ static void task_load_handler(retro_task_t *task)
 
    if (!state->file)
    {
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
       /* Always use RZIP interface when reading state
        * files - this will automatically handle uncompressed
        * data */
@@ -1270,7 +1270,7 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    state->state_slot             = settings->ints.state_slot;
    if (video_driver_cached_frame_is_hw_render())
       state->flags              |= SAVE_TASK_FLAG_HAS_VALID_FB;
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
       state->flags              |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
@@ -1395,7 +1395,7 @@ static void task_push_load_and_save_state(const char *path, void *data,
    state->state_slot            = settings->ints.state_slot;
    if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
@@ -1456,7 +1456,7 @@ bool content_auto_save_state(const char *path)
    if (!serial_data)
       return false;
 
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
       file = intfstream_open_rzip_file(path, RETRO_VFS_FILE_ACCESS_WRITE);
    else
@@ -1680,7 +1680,7 @@ bool content_load_state(const char *path,
    state->state_slot            = settings->ints.state_slot;
    if (video_driver_cached_frame_is_hw_render())
       state->flags             |= SAVE_TASK_FLAG_HAS_VALID_FB;
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
@@ -1879,7 +1879,7 @@ bool content_ram_state_to_file(const char *path)
          && ram_buf.state_buf.data
          && ram_buf.to_write_file)
    {
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
       settings_t *settings = config_get_ptr();
       if (settings->bools.save_file_compression)
       {

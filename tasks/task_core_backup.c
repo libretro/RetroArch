@@ -305,7 +305,7 @@ static void task_core_backup_handler(retro_task_t *task)
             backup_handle->backup_path = strdup(backup_path);
 
             /* Open backup file */
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
             backup_handle->backup_file = intfstream_open_rzip_file(
                   backup_handle->backup_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
@@ -787,7 +787,7 @@ static void task_core_restore_handler(retro_task_t *task)
             char task_title[128];
 
             /* Open backup file */
-#if defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
             backup_handle->backup_file = intfstream_open_rzip_file(
                   backup_handle->backup_path, RETRO_VFS_FILE_ACCESS_READ);
 #else
