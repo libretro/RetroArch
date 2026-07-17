@@ -3996,17 +3996,27 @@ static void vulkan_init_textures(vk_t *vk)
          &zero, NULL, VULKAN_TEXTURE_STATIC);
 }
 
+static bool vulkan_cached_frame_uses_swapchain_texture(
+      void *userdata, const void *data)
+{
+   vk_t *vk = (vk_t*)userdata;
+   int i;
+
+   for (i = 0; i < (int)vk->num_swapchain_images; i++)
+      if (data == vk->swapchain[i].texture.mapped)
+         return true;
+
+   return false;
+}
+
 static void vulkan_deinit_textures(vk_t *vk)
 {
    int i;
-   /* Invalidate the cached frame unconditionally before destroying
-    * the swapchain textures.  The new API's lifetime lock blocks
-    * here if an off-thread consumer is mid-read of pixels that
-    * may live in one of those mapped textures, so the destroy
-    * below cannot race a reader.  Cheaper and simpler than the
-    * previous conditional check (which only covered the
-    * synchronous case via a pointer-in-mapped-range test). */
-   video_driver_cached_frame_invalidate();
+   /* Keep cached core-owned pixels across swapchain recreation. If the
+    * cache points into a mapped swapchain texture, invalidate it under
+    * the lifetime lock before unmapping that texture. */
+   video_driver_cached_frame_invalidate_if(
+         vk, vulkan_cached_frame_uses_swapchain_texture);
 
    vkDestroySampler(vk->context->device, vk->samplers.nearest,        NULL);
    vkDestroySampler(vk->context->device, vk->samplers.linear,         NULL);
@@ -7436,6 +7446,17 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
    if (chain->texture.width != framebuffer->width ||
          chain->texture.height != framebuffer->height)
    {
+      /* vulkan_create_texture() synchronously unmaps (and, unless the
+       * allocation is pilfered, frees) the old memory. If the core
+       * rendered the previous frame through this callback, the cached
+       * frame still points at that mapping: evict it first, under the
+       * lifetime lock, so a concurrent reader cannot be left mid-read
+       * of dying memory and a later cached re-render cannot pick up a
+       * stale pointer (the pilfer path can even remap the same
+       * VkDeviceMemory at the same host address, making a stale
+       * pointer look dereferenceable with the wrong geometry). */
+      video_driver_cached_frame_invalidate_if(
+            vk, vulkan_cached_frame_uses_swapchain_texture);
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
             framebuffer->width, framebuffer->height, chain->texture.format,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);

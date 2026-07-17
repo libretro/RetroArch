@@ -1071,6 +1071,18 @@ void video_driver_cached_frame_publish(
  */
 void video_driver_cached_frame_invalidate(void);
 
+/**
+ * video_driver_cached_frame_invalidate_if:
+ *
+ * Conditionally invalidates the cached frame while holding its lifetime
+ * lock. The predicate must not call another cached-frame API.
+ *
+ * Returns true when the cached frame was invalidated.
+ */
+bool video_driver_cached_frame_invalidate_if(
+      void *userdata,
+      bool (*predicate)(void *userdata, const void *data));
+
 bool video_driver_is_hw_context(void);
 
 /* True when the active video driver's render context can only be driven
