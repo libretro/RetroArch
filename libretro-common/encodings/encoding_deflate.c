@@ -34,8 +34,6 @@
  * Non-blocking, resumable: suspends when input is exhausted or output is
  * full and resumes on the next call, in the style of image_transfer. */
 
-
-
 /* Decoder state-machine phases. */
 enum rinf_phase
 {
@@ -148,7 +146,9 @@ static uint32_t rinf_adler32_update(uint32_t adler,
       /* process in chunks so the sums never overflow before the modulo */
       size_t n = len > 5552 ? 5552 : len;
       len -= n;
-      do { a += *buf++; b += a; } while (--n);
+      do {
+         a += *buf++; b += a;
+      } while (--n);
       a %= ADLER_MOD;
       b %= ADLER_MOD;
    }
@@ -231,8 +231,8 @@ static int rinf_build(struct rinf_huff *h, const uint8_t *lengths, int num)
       if (!len)
          continue;
       {
-         int c   = next_code[len]++;
-         int sym = h->firstsym[len] + (c - h->firstcode[len]);
+         int c         = next_code[len]++;
+         int sym       = h->firstsym[len] + (c - h->firstcode[len]);
          h->size[sym]  = (uint8_t)len;
          h->value[sym] = (uint16_t)i;
 
@@ -308,11 +308,16 @@ static void rinf_fixed_tables(struct rinflate *s)
 {
    uint8_t ll[288], dd[30];
    int i;
-   for (i = 0;   i < 144; i++) ll[i] = 8;
-   for (i = 144; i < 256; i++) ll[i] = 9;
-   for (i = 256; i < 280; i++) ll[i] = 7;
-   for (i = 280; i < 288; i++) ll[i] = 8;
-   for (i = 0;   i < 30;  i++) dd[i] = 5;
+   for (i = 0;   i < 144; i++)
+      ll[i] = 8;
+   for (i = 144; i < 256; i++)
+      ll[i] = 9;
+   for (i = 256; i < 280; i++)
+      ll[i] = 7;
+   for (i = 280; i < 288; i++)
+      ll[i] = 8;
+   for (i = 0;   i < 30;  i++)
+      dd[i] = 5;
    rinf_build(&s->lencode, ll, 288);
    rinf_build(&s->distcode, dd, 30);
    s->have_tables = 1;
@@ -348,13 +353,13 @@ static int rinf_emit(struct rinflate *s, uint8_t b)
  * ring window of previously-flushed output. */
 static uint8_t rinf_back(struct rinflate *s, uint32_t dist)
 {
-   if (dist <= s->out_pos)
-      return s->out[s->out_pos - dist];
+   if (dist > s->out_pos)
    {
       uint32_t back = dist - (uint32_t)s->out_pos; /* into prior output */
       uint32_t idx  = (s->wnext + 32768 - back) & 32767;
       return s->window[idx];
    }
+   return s->out[s->out_pos - dist];
 }
 
 
@@ -2036,7 +2041,8 @@ static int rd_emit_block_dynamic(struct rdeflate *s)
          {
             rd_emit_sym_dynamic(s, &s->syms[s->sym_cursor]);
             s->sym_cursor++;
-            if (!rd_flush_bytes(s)) return 0;
+            if (!rd_flush_bytes(s))
+               return 0;
          }
       }
       rd_putbits(s, s->dyn_lit_code[256], s->dyn_lit_len[256]);
@@ -2044,7 +2050,8 @@ static int rd_emit_block_dynamic(struct rdeflate *s)
    }
    if (s->emit_phase == 6)
    {
-      if (!rd_flush_bytes(s)) return 0;   /* drain EOB */
+      if (!rd_flush_bytes(s))
+         return 0;   /* drain EOB */
       s->emit_phase = 7;
    }
    return 1;
@@ -2068,7 +2075,11 @@ void *rdeflate_new(int level, int window_bits)
    }
    return s;
 }
-void rdeflate_free(void *p) { free(p); }
+
+void rdeflate_free(void *p)
+{
+   free(p);
+}
 
 /* Choose whether the current block should be stored or fixed-Huffman, then
  * emit it.  Returns 0 if suspended, 1 when fully emitted. */
@@ -2129,8 +2140,9 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    if (s->in_pos < s->in_size)
    {
       size_t n = s->in_size - s->in_pos;
+      /* window full: parse what we have */
       if (s->win_len + n > sizeof(s->win))
-         n = sizeof(s->win) - s->win_len;   /* window full: parse what we have */
+         n = sizeof(s->win) - s->win_len;   
       memcpy(s->win + s->win_len, s->in + s->in_pos, n);
       if (s->wrapped)
          s->adler = rd_adler32(s->adler, s->in + s->in_pos, n);
@@ -2227,7 +2239,8 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    /* trailer: flush bits + (wrapped) adler32, byte-aligned big-endian */
    if (s->emit_phase == 10)
    {
-      if (!rd_align(s)) goto suspend;
+      if (!rd_align(s))
+         goto suspend;
       s->emit_phase = 11;
    }
    if (s->emit_phase == 11)
@@ -2237,7 +2250,8 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
          while (s->trailer_cursor < 4)
          {
             uint32_t byte = (s->adler >> (24 - 8*s->trailer_cursor)) & 0xff;
-            if (s->out_pos >= s->out_size) goto suspend;
+            if (s->out_pos >= s->out_size)
+               goto suspend;
             s->out[s->out_pos++] = (uint8_t)byte;
             s->trailer_cursor++;
          }
@@ -2247,9 +2261,13 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
    }
 
 suspend:
-   if (read)  *read  = s->in_pos  - in_start;
-   if (wrote) *wrote = s->out_pos - out_start;
-   if (s->error) return RDEFLATE_PROCESS_ERROR;
-   if (s->done)  return RDEFLATE_PROCESS_END;
+   if (read)
+      *read  = s->in_pos  - in_start;
+   if (wrote)
+      *wrote = s->out_pos - out_start;
+   if (s->error)
+      return RDEFLATE_PROCESS_ERROR;
+   if (s->done)
+      return RDEFLATE_PROCESS_END;
    return RDEFLATE_PROCESS_NEXT;
 }
