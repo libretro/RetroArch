@@ -629,8 +629,11 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                   else
                   {
                      sym = rinf_decode(s, &s->lencode);
-                     if (sym < -1) goto error;
-                     if (sym == -1) break; /* shouldn't happen given margin */
+                     if (sym < -1)
+                        goto error;
+                     /* Shouldn't happen given margin */
+                     if (sym == -1)
+                        break; 
                   }
                }
                if (sym < 256)
@@ -657,16 +660,32 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                   }
                   length = rinf_len_base[li] + (ei ? rinf_getbits(s, ei) : 0);
                   dsym = rinf_decode(s, &s->distcode);
-                  if (dsym < 0) { if (dsym == -1) break; goto error; }
-                  if (dsym >= 30) { s->error = 1; goto error; }
+                  if (dsym < 0)
+                  {
+                     if (dsym == -1)
+                        break;
+                     goto error;
+                  }
+                  if (dsym >= 30)
+                  {
+                     s->error = 1;
+                     goto error;
+                  }
                   ei = rinf_dist_extra[dsym];
                   if (s->bitcnt < ei)
                   {
                      while (s->bitcnt <= 24 && s->in_pos < s->in_size)
-                     { s->bitbuf |= (uint32_t)s->in[s->in_pos++] << s->bitcnt; s->bitcnt += 8; }
+                     {
+                        s->bitbuf |= (uint32_t)s->in[s->in_pos++] << s->bitcnt;
+                        s->bitcnt += 8;
+                     }
                   }
                   dist = rinf_dist_base[dsym] + (ei ? rinf_getbits(s, ei) : 0);
-                  if (dist > s->out_pos + s->whave) { s->error = 1; goto error; }
+                  if (dist > s->out_pos + s->whave)
+                  {
+                     s->error = 1;
+                     goto error;
+                  }
                   /* copy the match */
                   if (dist <= s->out_pos)
                   {
@@ -674,11 +693,8 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                      const uint8_t *srcp = dst - dist;
                      if (dist >= length)
                         memcpy(dst, srcp, length);
-                     else if (dist == 1)
-                     {
-                        /* run of a single byte */
+                     else if (dist == 1) /* run of a single byte */
                         memset(dst, srcp[0], length);
-                     }
                      else
                      {
                         /* overlapping run: grow the copied region by
@@ -754,11 +770,18 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                if (s->ld_step == 0)
                {
                   int sym = rinf_decode(s, &s->lencode);
-                  if (sym == -1) goto suspend;
-                  if (sym < 0) { goto error; }
+                  if (sym == -1)
+                     goto suspend;
+                  if (sym < 0)
+                     goto error;
                   if (sym < 256)
                   {
-                     if (!rinf_emit(s, (uint8_t)sym)) { s->pending_lit = (uint8_t)sym; s->have_pending_lit = 1; goto suspend; }
+                     if (!rinf_emit(s, (uint8_t)sym))
+                     {
+                        s->pending_lit      = (uint8_t)sym;
+                        s->have_pending_lit = 1;
+                        goto suspend;
+                     }
                      continue;
                   }
                   if (sym == 256)
@@ -847,8 +870,10 @@ error:
    if (s->wrapped && s->out_pos > fold_start)
       s->adler = rinf_adler32_update(s->adler,
             s->out + fold_start, s->out_pos - fold_start);
-   if (read)  *read  = s->in_pos  - in_start;
-   if (wrote) *wrote = s->out_pos - out_start;
+   if (read)
+      *read  = s->in_pos  - in_start;
+   if (wrote)
+      *wrote = s->out_pos - out_start;
    return RDEFLATE_PROCESS_ERROR;
 }
 
@@ -1110,6 +1135,7 @@ static int rd_len_sym(uint32_t len)
 {
    return rd_length_code[len];
 }
+
 static int rd_dist_sym(uint32_t dist)
 {
    if (dist <= 256)
@@ -1122,8 +1148,8 @@ static int rd_dist_sym(uint32_t dist)
  * since DEFLATE writes Huffman codes MSB-first within the LSB-first stream). */
 static uint16_t rd_bitrev(uint16_t code, int len)
 {
-   uint16_t r = 0;
    int i;
+   uint16_t r = 0;
    for (i = 0; i < len; i++)
    {
       r = (uint16_t)((r << 1) | (code & 1));
@@ -1138,8 +1164,10 @@ static void rd_codes_from_lengths(const uint8_t *lens, int n,
    int   next_code[16];
    int   bits, i;
    int   code = 0;
-   for (i = 0; i < 16; i++) bl_count[i] = 0;
-   for (i = 0; i < n; i++) bl_count[lens[i]]++;
+   for (i = 0; i < 16; i++)
+      bl_count[i] = 0;
+   for (i = 0; i < n; i++)
+      bl_count[lens[i]]++;
    bl_count[0] = 0;
    for (bits = 1; bits < 16; bits++)
    {
@@ -1163,10 +1191,14 @@ static void rd_codes_from_lengths(const uint8_t *lens, int n,
 static void rd_fixed_lit_lengths(uint8_t *ll)
 {
    int i;
-   for (i = 0;   i < 144; i++) ll[i] = 8;
-   for (i = 144; i < 256; i++) ll[i] = 9;
-   for (i = 256; i < 280; i++) ll[i] = 7;
-   for (i = 280; i < 288; i++) ll[i] = 8;
+   for (i = 0;   i < 144; i++)
+      ll[i] = 8;
+   for (i = 144; i < 256; i++)
+      ll[i] = 9;
+   for (i = 256; i < 280; i++)
+      ll[i] = 7;
+   for (i = 280; i < 288; i++)
+      ll[i] = 8;
 }
 
 /* ------- match finder (hash chains + lazy) ------- */
@@ -1235,105 +1267,107 @@ static INLINE int rd_clz64(uint64_t x)
 /* byte-order detection for the word compare's first-difference logic */
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) \
     && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define RD_BIG_ENDIAN 1
+#ifndef MSB_FIRST
+#define MSB_FIRST
+#endif
 #elif defined(__BIG_ENDIAN__) || defined(_BIG_ENDIAN) \
     || defined(__ARMEB__) || defined(__MIPSEB__) || defined(__PPC__) \
     || defined(__powerpc__)
-#define RD_BIG_ENDIAN 1
+#ifndef MSB_FIRST
+#define MSB_FIRST
+#endif
 #endif
 
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
       uint32_t max_len, uint32_t best_start, uint32_t *dist_out)
 {
-   const uint8_t *win  = s->win;
-   const uint8_t *scan = win + pos;
-   uint32_t best_len = best_start;   /* only a longer match is interesting */
-   uint32_t best_dist = 0;
    int      chain;
    uint32_t limit;
-   int32_t  cur;
    uint16_t scan_end;   /* the two bytes scan[best_len-1..best_len]         */
-
+   const uint8_t *win  = s->win;
+   const uint8_t *scan = win + pos;
+   uint32_t best_len   = best_start;   /* only a longer match is interesting */
+   uint32_t best_dist  = 0;
    /* The caller has already inserted `pos`; begin at the previous
     * occurrence recorded in prev[].  Empty chain -> no match. */
-   cur = s->prev[pos & RD_WMASK];
+   int32_t cur         = s->prev[pos & RD_WMASK];
    if (cur < 0)
       return 0;
 
    {
-   const int32_t *prev = s->prev;   /* hoisted: avoids repeated struct load */
-   chain = s->chain;
-   /* good_match heuristic (zlib): if we already carry a decent match into
-    * this search, spend proportionally less effort looking for a better one.
-    * Evaluated once here, never in the inner loop. */
-   if (best_len >= (uint32_t)s->good)
-      chain >>= 2;
-   limit = pos > RD_WINDOW ? pos - RD_WINDOW : 0;
-   /* Load the two bytes bracketing the current best as a single 16-bit value
-    * so the per-candidate quick reject is one 16-bit load + compare instead
-    * of two byte loads + compares.  Endianness does not matter: we only test
-    * equality of the same two bytes on both sides. */
-   memcpy(&scan_end, scan + best_len - 1, 2);
+      const int32_t *prev = s->prev;   /* hoisted: avoids repeated struct load */
+      chain = s->chain;
+      /* good_match heuristic (zlib): if we already carry a decent match into
+       * this search, spend proportionally less effort looking for a better one.
+       * Evaluated once here, never in the inner loop. */
+      if (best_len >= (uint32_t)s->good)
+         chain >>= 2;
+      limit = pos > RD_WINDOW ? pos - RD_WINDOW : 0;
+      /* Load the two bytes bracketing the current best as a single 16-bit value
+       * so the per-candidate quick reject is one 16-bit load + compare instead
+       * of two byte loads + compares.  Endianness does not matter: we only test
+       * equality of the same two bytes on both sides. */
+      memcpy(&scan_end, scan + best_len - 1, 2);
 
-   while (cur >= 0 && (uint32_t)cur >= limit && chain-- > 0)
-   {
-      const uint8_t *m = win + cur;
-      uint16_t m_end;
-      /* Quick reject: a candidate can only beat best_len if the two bytes
-       * bracketing the current best both match.  Compared as one 16-bit
-       * load, this rejects the vast majority of candidates cheaply. */
-      memcpy(&m_end, m + best_len - 1, 2);
-      if (m_end != scan_end)
+      while (cur >= 0 && (uint32_t)cur >= limit && chain-- > 0)
       {
-         cur = prev[cur & RD_WMASK];
-         continue;
-      }
-      {
-         /* Compare 8 bytes at a time: load a word from each side, XOR, and
-          * on a mismatch locate the first differing byte from the low end of
-          * the XOR (which corresponds to the first byte in memory order on
-          * little-endian; on big-endian we take the high end).  This turns a
-          * long match compare into ~max_len/8 iterations instead of max_len.
-          * We already know scan[0]==m[0]. */
-         const uint8_t *sc  = scan;
-         const uint8_t *mp  = m;
-         uint32_t lim8 = max_len & ~7u;
-         uint32_t l = 0;
-         while (l < lim8)
+         const uint8_t *m = win + cur;
+         uint16_t m_end;
+         /* Quick reject: a candidate can only beat best_len if the two bytes
+          * bracketing the current best both match.  Compared as one 16-bit
+          * load, this rejects the vast majority of candidates cheaply. */
+         memcpy(&m_end, m + best_len - 1, 2);
+         if (m_end != scan_end)
          {
-            uint64_t a, b, x;
-            memcpy(&a, sc + l, 8);
-            memcpy(&b, mp + l, 8);
-            x = a ^ b;
-            if (x != 0)
+            cur = prev[cur & RD_WMASK];
+            continue;
+         }
+         {
+            /* Compare 8 bytes at a time: load a word from each side, XOR, and
+             * on a mismatch locate the first differing byte from the low end of
+             * the XOR (which corresponds to the first byte in memory order on
+             * little-endian; on big-endian we take the high end).  This turns a
+             * long match compare into ~max_len/8 iterations instead of max_len.
+             * We already know scan[0]==m[0]. */
+            const uint8_t *sc  = scan;
+            const uint8_t *mp  = m;
+            uint32_t lim8 = max_len & ~7u;
+            uint32_t l = 0;
+            while (l < lim8)
             {
-#if defined(RD_BIG_ENDIAN)
-               /* first differing byte is the most-significant nonzero byte */
-               l += (uint32_t)(rd_clz64(x) >> 3);
+               uint64_t a, b, x;
+               memcpy(&a, sc + l, 8);
+               memcpy(&b, mp + l, 8);
+               x = a ^ b;
+               if (x != 0)
+               {
+#if defined(MSB_FIRST)
+                  /* first differing byte is the most-significant nonzero byte */
+                  l += (uint32_t)(rd_clz64(x) >> 3);
 #else
-               /* first differing byte is the least-significant nonzero byte */
-               l += (uint32_t)(rd_ctz64(x) >> 3);
+                  /* first differing byte is the least-significant nonzero byte */
+                  l += (uint32_t)(rd_ctz64(x) >> 3);
 #endif
-               goto have_len;
+                  goto have_len;
+               }
+               l += 8;
             }
-            l += 8;
+            while (l < max_len && sc[l] == mp[l])
+               l++;
+have_len:
+            if (l > max_len)
+               l = max_len;
+            if (l > best_len)
+            {
+               best_len  = l;
+               best_dist = pos - (uint32_t)cur;
+               if (l >= max_len || l >= (uint32_t)s->nice)
+                  break;
+               memcpy(&scan_end, scan + best_len - 1, 2);
+            }
          }
-         while (l < max_len && sc[l] == mp[l])
-            l++;
-      have_len:
-         if (l > max_len)
-            l = max_len;
-         if (l > best_len)
-         {
-            best_len  = l;
-            best_dist = pos - (uint32_t)cur;
-            if (l >= max_len || l >= (uint32_t)s->nice)
-               break;
-            memcpy(&scan_end, scan + best_len - 1, 2);
-         }
+         cur = prev[cur & RD_WMASK];
       }
-      cur = prev[cur & RD_WMASK];
-   }
    }
    /* best_dist stays 0 until an actual candidate beats best_len; when the
     * caller seeded best_len with a pending match, a zero dist means nothing
@@ -1369,9 +1403,7 @@ static void rd_build_fixed(struct rdeflate *s)
 static void rd_emit_sym_fixed(struct rdeflate *s, const struct rd_sym *y)
 {
    if (y->dist == 0)
-   {
       rd_putbits(s, s->fix_lit_code[y->lit], s->fix_lit_len[y->lit]);
-   }
    else
    {
       int ls = rd_len_sym(y->len);
@@ -1405,7 +1437,8 @@ static int rd_emit_block_fixed(struct rdeflate *s)
    }
    if (s->emit_phase == 1)
    {
-      if (!rd_flush_bytes(s)) return 0;
+      if (!rd_flush_bytes(s))
+         return 0;
       /* Each symbol emits at most ~48 bits (6 bytes); keeping an 8-byte
        * output margin lets us emit and drain without per-byte bounds checks.
        * When the margin is gone, fall back to the careful path so we can
@@ -1422,20 +1455,23 @@ static int rd_emit_block_fixed(struct rdeflate *s)
          {
             rd_emit_sym_fixed(s, &s->syms[s->sym_cursor]);
             s->sym_cursor++;
-            if (!rd_flush_bytes(s)) return 0;
+            if (!rd_flush_bytes(s))
+               return 0;
          }
       }
       s->emit_phase = 2;
    }
    if (s->emit_phase == 2)
    {
-      if (!rd_flush_bytes(s)) return 0;   /* drain last symbol */
+      if (!rd_flush_bytes(s)) /* Drain last symbol */
+         return 0;   
       rd_putbits(s, s->fix_lit_code[256], s->fix_lit_len[256]);
       s->emit_phase = 3;
    }
    if (s->emit_phase == 3)
    {
-      if (!rd_flush_bytes(s)) return 0;   /* drain EOB */
+      if (!rd_flush_bytes(s)) /* drain EOB */
+         return 0;
       s->emit_phase = 4;                  /* done sentinel */
    }
    return 1;
@@ -1464,9 +1500,12 @@ static void rd_set_level(struct rdeflate *s)
 /* fixed-Huffman code length for a literal/length symbol index (RFC 1951). */
 static INLINE uint32_t rd_fixed_litlen_bits(int sym)
 {
-   if (sym < 144)  return 8;
-   if (sym < 256)  return 9;
-   if (sym < 280)  return 7;
+   if (sym < 144)
+      return 8;
+   if (sym < 256)
+      return 9;
+   if (sym < 280)
+      return 7;
    return 8;
 }
 static void rd_record_lit(struct rdeflate *s, uint8_t c)
@@ -1696,14 +1735,16 @@ static int rd_emit_block_stored(struct rdeflate *s)
    if (s->emit_phase == 1)
    {
       /* drain the buffered header bytes before copying raw data */
-      if (!rd_flush_bytes(s)) return 0;
+      if (!rd_flush_bytes(s))
+         return 0;
       s->emit_phase = 2;
    }
    if (s->emit_phase == 2)
    {
       while (s->trailer_cursor > 0)
       {
-         if (s->out_pos >= s->out_size) return 0;
+         if (s->out_pos >= s->out_size)
+            return 0;
          s->out[s->out_pos++] = s->win[s->sym_cursor++];
          s->trailer_cursor--;
       }
@@ -1747,9 +1788,12 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
       int      j  = i - 1;
       while (j >= 0 && fr[j] > tf)
       {
-         fr[j + 1] = fr[j]; idx[j + 1] = idx[j]; j--;
+         fr[j + 1]  = fr[j];
+         idx[j + 1] = idx[j];
+         j--;
       }
-      fr[j + 1] = tf; idx[j + 1] = ti;
+      fr[j + 1]  = tf;
+      idx[j + 1] = ti;
    }
 
    /* build the Huffman tree via a sorted-array min-heap of sibling merges */
@@ -1760,7 +1804,12 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
       int      hn = 0;
       int      node_used;
 
-      for (i = 0; i < m; i++) { wt[i] = fr[i]; dad[i] = -1; heap[hn++] = i; }
+      for (i = 0; i < m; i++)
+      {
+         wt[i]      = fr[i];
+         dad[i]     = -1;
+         heap[hn++] = i;
+      }
       node_used = m;
       while (hn > 1)
       {
@@ -1769,18 +1818,28 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
          int ins, t;
          wt[nd]  = wt[x] + wt[y];
          dad[x]  = nd; dad[y] = nd; dad[nd] = -1;
-         for (i = 2; i < hn; i++) heap[i - 2] = heap[i];
+         for (i = 2; i < hn; i++)
+            heap[i - 2] = heap[i];
          hn -= 2;
          ins = hn;
          for (i = 0; i < hn; i++)
-            if (wt[heap[i]] > wt[nd]) { ins = i; break; }
-         for (t = hn; t > ins; t--) heap[t] = heap[t - 1];
+            if (wt[heap[i]] > wt[nd])
+            {
+               ins = i;
+               break;
+            }
+         for (t = hn; t > ins; t--)
+            heap[t] = heap[t - 1];
          heap[ins] = nd; hn++;
       }
       for (i = 0; i < m; i++)
       {
          int d = 0, c = i;
-         while (dad[c] >= 0) { c = dad[c]; d++; }
+         while (dad[c] >= 0)
+         {
+            c = dad[c];
+            d++;
+         }
          lc[i] = d ? d : 1;
       }
    }
@@ -1789,7 +1848,8 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
    {
       int      bl[64];
       int      over = 0;
-      for (i = 0; i <= 63; i++) bl[i] = 0;
+      for (i = 0; i <= 63; i++)
+         bl[i] = 0;
       for (i = 0; i < m; i++)
          if (lc[i] > max_bits) over = 1;
       if (over)
@@ -1798,7 +1858,8 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
          uint32_t kraft = 0;
          for (i = 0; i < m; i++)
          {
-            if (lc[i] > max_bits) lc[i] = max_bits;
+            if (lc[i] > max_bits)
+               lc[i] = max_bits;
             bl[lc[i]]++;
          }
          for (i = 0; i < m; i++)
@@ -1806,8 +1867,10 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
          while (kraft > one)
          {
             int l2 = max_bits - 1;
-            while (l2 > 0 && bl[l2] == 0) l2--;
-            if (l2 == 0) break;
+            while (l2 > 0 && bl[l2] == 0)
+               l2--;
+            if (l2 == 0)
+               break;
             bl[l2]--; bl[l2 + 1]++;
             for (i = 0; i < m; i++)
                if (lc[i] == l2) { lc[i] = l2 + 1; break; }
@@ -1817,7 +1880,8 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
          {
             int l2 = max_bits;
             while (l2 > 0 && bl[l2] == 0) l2--;
-            if (l2 == 0) break;
+            if (l2 == 0)
+               break;
             for (i = 0; i < m; i++)
                if (lc[i] == l2) { lc[i] = l2 - 1; break; }
             bl[l2]--; bl[l2 - 1]++;
@@ -2000,35 +2064,43 @@ static int rd_emit_block_dynamic(struct rdeflate *s)
    }
    if (s->emit_phase == 2)
    {
-      if (!rd_flush_bytes(s)) return 0;
+      if (!rd_flush_bytes(s))
+         return 0;
       while (s->sym_cursor < (uint32_t)s->dyn_hclen)
       {
          rd_putbits(s, s->dyn_cl_len[rd_clc_order[s->sym_cursor]], 3);
          s->sym_cursor++;
-         if (!rd_flush_bytes(s)) return 0;
+         if (!rd_flush_bytes(s))
+            return 0;
       }
       s->sym_cursor = 0;
       s->emit_phase = 3;
    }
    if (s->emit_phase == 3)
    {
-      if (!rd_flush_bytes(s)) return 0;
+      if (!rd_flush_bytes(s))
+         return 0;
       while (s->sym_cursor < (uint32_t)s->dyn_rle_n)
       {
          int sym = s->dyn_rle[s->sym_cursor];
          rd_putbits(s, s->dyn_cl_code[sym], s->dyn_cl_len[sym]);
-         if (sym == 16)      rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 2);
-         else if (sym == 17) rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 3);
-         else if (sym == 18) rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 7);
+         if (sym == 16)
+            rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 2);
+         else if (sym == 17)
+            rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 3);
+         else if (sym == 18)
+            rd_putbits(s, s->dyn_rle_extra[s->sym_cursor], 7);
          s->sym_cursor++;
-         if (!rd_flush_bytes(s)) return 0;
+         if (!rd_flush_bytes(s))
+            return 0;
       }
       s->sym_cursor = 0;
       s->emit_phase = 4;
    }
    if (s->emit_phase == 4)
    {
-      if (!rd_flush_bytes(s)) return 0;
+      if (!rd_flush_bytes(s))
+         return 0;
       while (s->sym_cursor < s->nsyms)
       {
          if (s->out_pos + 8 <= s->out_size)
@@ -2088,21 +2160,20 @@ static int rd_emit_current_block(struct rdeflate *s)
    /* decide once, before we start emitting (emit_phase 0) */
    if (s->emit_phase == 0)
    {
-      s->use_stored = 0;
-      s->use_dynamic = 0;
+      s->use_stored    = 0;
+      s->use_dynamic   = 0;
       if (s->level == 0)
          s->use_stored = 1;
       else
       {
-         uint32_t stored_bits, fixed_bits, dyn_bits;
-         uint32_t total = s->pos - s->block_start;
+         uint32_t total       = s->pos - s->block_start;
          /* fixed-block size: accumulated during parse (no re-walk), plus the
           * 3-bit block header and the 7-bit end-of-block code. */
-         fixed_bits = 3 + 7 + s->fixed_bits_acc;
+         uint32_t fixed_bits  = 3 + 7 + s->fixed_bits_acc;
          /* dynamic-block size in bits (also builds the tables) */
-         dyn_bits = rd_build_dynamic(s);
+         uint32_t dyn_bits    = rd_build_dynamic(s);
          /* stored-block size in bits: header + align + 4 + payload */
-         stored_bits = 3 + 8 + 32 + total * 8;  /* upper bound */
+         uint32_t stored_bits = 3 + 8 + 32 + total * 8;  /* upper bound */
 
          if (stored_bits <= fixed_bits && stored_bits <= dyn_bits)
             s->use_stored = 1;
@@ -2120,8 +2191,8 @@ static int rd_emit_current_block(struct rdeflate *s)
 int rdeflate_process(void *data, size_t *read, size_t *wrote)
 {
    struct rdeflate *s = (struct rdeflate*)data;
-   size_t in_start  = s->in_pos;
-   size_t out_start = s->out_pos;
+   size_t in_start    = s->in_pos;
+   size_t out_start   = s->out_pos;
 
    /* 0) zlib wrapper header (CMF/FLG) once, at stream start */
    if (s->wrapped && !s->header_done)
@@ -2133,7 +2204,7 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
          goto suspend;
       s->out[s->out_pos++] = 0x78;
       s->out[s->out_pos++] = 0x9c;
-      s->header_done = 1;
+      s->header_done       = 1;
    }
 
    /* 1) ingest available input into the window */
@@ -2154,21 +2225,24 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
     * buffer is full, the window is full, or input has finished. */
    for (;;)
    {
-      /* resume emitting a block that was mid-output */
+      /* Resume emitting a block that was mid-output */
       if (s->emitting)
       {
          if (!rd_emit_current_block(s))
             goto suspend;
-         /* block fully emitted: reset for next block */
-         s->emitting = 0;
-         s->emit_phase = 0;
-         s->block_start = s->pos;
-         s->nsyms = 0;
+
+         /* Block fully emitted: reset for next block */
+         s->emitting       = 0;
+         s->emit_phase     = 0;
+         s->block_start    = s->pos;
+         s->nsyms          = 0;
          s->fixed_bits_acc = 0;
          {
             int i;
-            for (i = 0; i < 286; i++) s->freq_lit[i] = 0;
-            for (i = 0; i < 30; i++)  s->freq_dist[i] = 0;
+            for (i = 0; i < 286; i++)
+               s->freq_lit[i] = 0;
+            for (i = 0; i < 30; i++)
+               s->freq_dist[i] = 0;
          }
          if (s->block_final)
          {
@@ -2216,23 +2290,23 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
       /* decide if a block is ready to emit */
       {
          int block_ready = 0;
-         int is_final = 0;
+         int is_final    = 0;
          if (s->nsyms >= RD_BLOCK_SYMS - 4)
-            block_ready = 1;
+            block_ready  = 1;
          /* window full and fully parsed but more input remains: flush a
           * non-final block so we can slide the window and continue. */
          if (s->win_len >= sizeof(s->win) && s->pos >= s->win_len)
-            block_ready = 1;
+            block_ready  = 1;
          if (s->final_in && s->in_pos >= s->in_size && s->pos >= s->win_len)
          {
-            block_ready = 1;
-            is_final = 1;
+            block_ready  = 1;
+            is_final     = 1;
          }
-         if (!block_ready)
-            goto suspend;   /* need more input */
-         s->block_final = is_final;
-         s->emitting = 1;
-         s->emit_phase = 0;
+         if (!block_ready) /* need more input */
+            goto suspend;   
+         s->block_final  = is_final;
+         s->emitting     = 1;
+         s->emit_phase   = 0;
       }
    }
 
