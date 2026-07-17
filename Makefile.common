@@ -2005,7 +2005,10 @@ endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
-       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o \
+       $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.o \
+       $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.o \
+       $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
 
 ifeq ($(HAVE_7ZIP),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
@@ -2154,8 +2157,7 @@ endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
+          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
 

@@ -101,6 +101,15 @@ extern const struct trans_stream_backend zlib_deflate_backend;
 extern const struct trans_stream_backend zlib_inflate_backend;
 extern const struct trans_stream_backend pipe_backend;
 
+/* Clean-room, zlib-free DEFLATE backend (encodings/deflate.c).  Always
+ * available; used as the fallback compression backend when zlib is not
+ * compiled in. */
+const struct trans_stream_backend* trans_stream_get_deflate_deflate_backend(void);
+const struct trans_stream_backend* trans_stream_get_deflate_inflate_backend(void);
+
+extern const struct trans_stream_backend deflate_deflate_backend;
+extern const struct trans_stream_backend deflate_inflate_backend;
+
 RETRO_END_DECLS
 
 #endif

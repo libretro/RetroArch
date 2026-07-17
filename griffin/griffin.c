@@ -160,10 +160,12 @@ COMPRESSION
 #include "../libretro-common/streams/stdin_stream.c"
 #include "../libretro-common/streams/trans_stream.c"
 #include "../libretro-common/streams/trans_stream_pipe.c"
+#include "../libretro-common/encodings/encoding_deflate.c"
+#include "../libretro-common/streams/trans_stream_deflate.c"
+#include "../libretro-common/streams/rzip_stream.c"
 
 #ifdef HAVE_ZLIB
 #include "../libretro-common/streams/trans_stream_zlib.c"
-#include "../libretro-common/streams/rzip_stream.c"
 #endif
 
 /*============================================================
