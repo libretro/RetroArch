@@ -5498,7 +5498,7 @@ void cb_generic_download(retro_task_t *task,
 {
    char output_path[PATH_MAX_LENGTH];
    char buf[PATH_MAX_LENGTH];
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    bool extract               = true;
 #endif
    const char *dir_path       = NULL;
@@ -5522,7 +5522,7 @@ void cb_generic_download(retro_task_t *task,
          break;
       case MENU_ENUM_LABEL_CB_CORE_CONTENT_DOWNLOAD:
          dir_path = settings->paths.directory_core_assets;
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
          extract  = settings->bools.network_buildbot_auto_extract_archive;
 #endif
          break;
@@ -5648,7 +5648,7 @@ void cb_generic_download(retro_task_t *task,
       goto finish;
    }
 
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    if (!extract)
       goto finish;
 

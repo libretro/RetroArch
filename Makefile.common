@@ -2004,11 +2004,16 @@ endif
 # Compression/Archive
 
 OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
+       $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.o \
        $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.o \
        $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.o \
        $(LIBRETRO_COMM_DIR)/streams/rzip_stream.o
+
+# The ZIP archive backend decodes DEFLATE through the built-in inflate when
+# zlib is not present, so ZIP/APK extraction is always available.
+HAVE_COMPRESSION = 1
 
 ifeq ($(HAVE_7ZIP),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
@@ -2156,8 +2161,7 @@ else ifeq ($(HAVE_ZLIB),1)
 endif
 
 ifeq ($(HAVE_ZLIB_COMMON), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.o \
-          $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
+   OBJ += $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.o
    DEFINES += -DHAVE_ZLIB
    HAVE_COMPRESSION = 1
 

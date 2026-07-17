@@ -566,7 +566,9 @@ int file_archive_compressed_read(
 
 const struct file_archive_file_backend *file_archive_get_zlib_file_backend(void)
 {
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(HAVE_COMPRESSION)
+   /* The ZIP DEFLATE backend decodes through the built-in inflate when zlib
+    * is not present, so it is available whenever compression support is. */
    return &zlib_backend;
 #else
    return NULL;
@@ -593,7 +595,7 @@ const struct file_archive_file_backend *file_archive_get_zstd_file_backend(void)
 
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_ZSTD)
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_ZSTD) || defined(HAVE_COMPRESSION)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -610,7 +612,9 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
       return &sevenzip_backend;
 #endif
 
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(HAVE_COMPRESSION)
+   /* ZIP/APK decode via zlib, or via the built-in inflate when zlib is
+    * not compiled in. */
    if (     string_is_equal_noncase(file_ext, "zip")
          || string_is_equal_noncase(file_ext, "apk")
       )

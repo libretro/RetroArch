@@ -37,9 +37,10 @@
 
 #define HAVE_ROPUS 1
 
-#if defined(HAVE_ZLIB) || defined(HAVE_7ZIP)
+/* The ZIP archive backend and the DEFLATE trans_stream backend both fall
+ * back to the built-in inflate/deflate codec, so compression support is
+ * always available regardless of whether zlib or 7zip is compiled in. */
 #define HAVE_COMPRESSION 1
-#endif
 
 #if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
 #ifndef HAVE_OPENGLES
@@ -142,9 +143,9 @@ ARCHIVE FILE
 ============================================================ */
 #include "../libretro-common/file/archive_file.c"
 
-#ifdef HAVE_ZLIB
+/* Always built: decodes ZIP DEFLATE via zlib when present, else via the
+ * built-in inflate. */
 #include "../libretro-common/file/archive_file_zlib.c"
-#endif
 
 #ifdef HAVE_7ZIP
 #include "../libretro-common/file/archive_file_7z.c"

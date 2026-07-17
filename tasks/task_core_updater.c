@@ -603,7 +603,7 @@ void cb_http_task_core_updater_download(
       goto finish;
    }
 
-#if defined(HAVE_COMPRESSION) && defined(HAVE_ZLIB)
+#if defined(HAVE_COMPRESSION)
    /* Decompress core file, if required
     * NOTE: If core is compressed and platform
     * doesn't have compression support, then this
