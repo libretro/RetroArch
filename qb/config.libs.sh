@@ -902,7 +902,6 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
 
 if [ "$HAVE_CXX11" = 'yes' ]; then
