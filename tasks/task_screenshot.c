@@ -159,7 +159,7 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
 #elif defined(HAVE_RBMP)
    {
       enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
-      if (state->bgr24)
+      if (state->flags & SS_TASK_FLAG_BGR24)
          bmp_type = RBMP_SOURCE_TYPE_BGR24;
       else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
          bmp_type = RBMP_SOURCE_TYPE_XRGB888;
