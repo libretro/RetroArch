@@ -145,7 +145,7 @@ static void byteSwap(FLAC__uint32 *buf, unsigned words)
 }
 static void byteSwapX16(FLAC__uint32 *buf)
 {
-   FALC__uint32 x = *buf;
+   FLAC__uint32 x = *buf;
    x = ((x << 8) & 0xff00ff00) | ((x >> 8) & 0x00ff00ff); *buf++ = (x >> 16) | (x << 16);
    x = *buf;
    x = ((x << 8) & 0xff00ff00) | ((x >> 8) & 0x00ff00ff);
