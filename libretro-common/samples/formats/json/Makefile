@@ -17,6 +17,8 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c

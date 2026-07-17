@@ -42,6 +42,8 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 
@@ -55,7 +57,9 @@ TEST_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 
 # The round-trip regression test writes with rpng_encode and reads
 # back with rpng, so it needs the full file/nbio/stream stack.
@@ -88,6 +92,8 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c
 

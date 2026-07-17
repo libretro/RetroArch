@@ -131,6 +131,9 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
+	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
+	$(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
@@ -139,7 +142,6 @@ DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
 
 ifeq ($(HAVE_ZLIB), 1)
 SOURCES_C += \
-				 $(LIBRETRO_COMM_DIR)/file/archive_file_zlib.c \
 				 $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c
 DEFINES += -DHAVE_ZLIB
 LIBS += -lz
