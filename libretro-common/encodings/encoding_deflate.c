@@ -27,6 +27,14 @@
 #include <string.h>
 
 #include <retro_inline.h>
+/* Byte-order source of truth for the word-compare first-difference logic
+ * in rd_longest_match().  Do NOT sniff platform macros locally: newlib
+ * and bionic define _BIG_ENDIAN as a byte-order *constant* on every
+ * target, so testing defined(_BIG_ENDIAN) misfires on little-endian
+ * platforms (and a bare MSB_FIRST define leaks into every later file in
+ * single-TU griffin builds, tripping the LSB_FIRST/MSB_FIRST
+ * consistency check in retro_endianness.h). */
+#include <retro_endianness.h>
 #include <encodings/deflate.h>
 
 /* ===================== inflate (RFC 1951 / RFC 1950) ===================== */
@@ -1264,20 +1272,6 @@ static INLINE int rd_clz64(uint64_t x)
 }
 #endif
 
-/* byte-order detection for the word compare's first-difference logic */
-#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) \
-    && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#ifndef MSB_FIRST
-#define MSB_FIRST
-#endif
-#elif defined(__BIG_ENDIAN__) || defined(_BIG_ENDIAN) \
-    || defined(__ARMEB__) || defined(__MIPSEB__) || defined(__PPC__) \
-    || defined(__powerpc__)
-#ifndef MSB_FIRST
-#define MSB_FIRST
-#endif
-#endif
-
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
       uint32_t max_len, uint32_t best_start, uint32_t *dist_out)
 {
@@ -1341,7 +1335,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
                x = a ^ b;
                if (x != 0)
                {
-#if defined(MSB_FIRST)
+#if RETRO_IS_BIG_ENDIAN
                   /* first differing byte is the most-significant nonzero byte */
                   l += (uint32_t)(rd_clz64(x) >> 3);
 #else
