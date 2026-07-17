@@ -12100,9 +12100,10 @@ static void ozone_selection_changed(ozone_handle_t *ozone, bool allow_animation)
 
             if (   (entry.type == FILE_TYPE_IMAGEVIEWER)
                 || (entry.type == FILE_TYPE_IMAGE)
-                /* WebM files preview like images: the thumbnail
+                /* WebM and MP4 files preview like images: the thumbnail
                  * pipeline decodes their video track */
-                || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM))
+                || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM)
+                || (image_texture_get_type(entry.path) == IMAGE_TYPE_MP4))
             {
                ozone_set_thumbnail_content(ozone, "imageviewer");
                update_thumbnails = true;
