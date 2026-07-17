@@ -9,7 +9,9 @@
  *
  * Deliberately unsupported (rvp9_decode_frame returns an error):
  * segmentation, scaled (different-size) reference frames, and
- * profiles 1-3.  Tiled streams (tile columns and tile rows) decode
+ * profiles 1-3 (profile 2/3 are the 10/12-bit streams used for HDR;
+ * these return -15 specifically so callers can report them as such).
+ * Tiled streams (tile columns and tile rows) decode
  * fully, so encoder defaults at any resolution are covered.
  *
  * Usage: zero-initialise an rvp9_dec (it is large; heap allocation is

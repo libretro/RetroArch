@@ -216,7 +216,32 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          r = rvp9_decode_frame(p->vp9, frame, sizes[i], &show);
          if (r < 0)
          {
-            if (WEBM_CORE_PREFIX(log_cb))
+            if (r == -15 && sizes[i] > 0)
+            {
+               /* Unsupported profile: name it instead of a bare error.
+                * Frame byte 0: marker(2) profile_low profile_high ... */
+               unsigned b0      = frame[0];
+               unsigned profile = ((b0 >> 5) & 1) | (((b0 >> 4) & 1) << 1);
+               const char *desc = (profile >= 2)
+                  ? "10/12-bit; used by HDR streams"
+                  : "8-bit 4:4:4/4:2:2";
+               if (WEBM_CORE_PREFIX(log_cb))
+                  WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+                     "[webm] VP9 profile %u (%s) is not supported; "
+                     "only profile 0 (8-bit 4:2:0) can be decoded.\n",
+                     profile, desc);
+               if (WEBM_CORE_PREFIX(environ_cb))
+               {
+                  struct retro_message msg;
+                  msg.msg    = (profile >= 2)
+                     ? "10-bit/HDR VP9 (profile 2) is not supported"
+                     : "This VP9 profile is not supported";
+                  msg.frames = 240;
+                  WEBM_CORE_PREFIX(environ_cb)(
+                     RETRO_ENVIRONMENT_SET_MESSAGE, &msg);
+               }
+            }
+            else if (WEBM_CORE_PREFIX(log_cb))
                WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
                   "[webm] VP9 decode error %d.\n", r);
             return -1;

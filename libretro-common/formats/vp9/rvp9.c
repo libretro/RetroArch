@@ -1111,7 +1111,7 @@ static int rvp9_parse_uncompressed(const uint8_t *data, size_t len,
    hd->profile  = rvp9_rb_bit(&rb);
    hd->profile |= rvp9_rb_bit(&rb) << 1;
    if (hd->profile > 2) hd->profile += rvp9_rb_bit(&rb);
-   if (hd->profile != 0) return -1;              /* 8-bit 4:2:0 only */
+   if (hd->profile != 0) return -15;             /* 8-bit 4:2:0 only */
 
    hd->show_existing_frame = rvp9_rb_bit(&rb);
    if (hd->show_existing_frame)
@@ -4999,7 +4999,7 @@ int rvp9_decode_frame(rvp9_dec *d, const uint8_t *data, size_t len,
     * names slots first; parse needs dims of the named slots.  We parse
     * in two steps: peek the ref slots, then full parse. */
    r = rvp9_parse_uncompressed(data, len, hd, ref_dims);
-   if (r < 0) return -1;
+   if (r < 0) return r;
    if (r == 1)
    {
       int fb = d->ref_frame_map[hd->frame_to_show];
