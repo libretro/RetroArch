@@ -1698,7 +1698,16 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
    int rtype = f->residue_types[rn];
    int c = r->classbook;
    int classwords = f->codebooks[c].dimensions;
-   int n_read = r->end - r->begin;
+   /* A residue's begin/end may legally exceed the vector actually
+    * decoded (libvorbis routinely writes type-2 coupled ranges over the
+    * interleaved ch*n vector); the spec behaviour, and upstream
+    * stb_vorbis's, is to clamp to the actual vector size at decode
+    * time, never to reject.  This also bounds part_read, keeping the
+    * temp classification array allocation below safe. */
+   unsigned int actual_size = rtype == 2 ? (unsigned int)n * 2 : (unsigned int)n;
+   unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
+   unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
+   int n_read = (int)(limit_r_end - limit_r_begin);
    int part_read = n_read / r->part_size;
    int temp_alloc_point = temp_alloc_save(f);
    uint8_t ***part_classdata = (uint8_t ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
@@ -3490,7 +3499,16 @@ static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n,
    int rtype = f->residue_types[rn];
    int c = r->classbook;
    int classwords = f->codebooks[c].dimensions;
-   int n_read = r->end - r->begin;
+   /* A residue's begin/end may legally exceed the vector actually
+    * decoded (libvorbis routinely writes type-2 coupled ranges over the
+    * interleaved ch*n vector); the spec behaviour, and upstream
+    * stb_vorbis's, is to clamp to the actual vector size at decode
+    * time, never to reject.  This also bounds part_read, keeping the
+    * temp classification array allocation below safe. */
+   unsigned int actual_size = rtype == 2 ? (unsigned int)n * 2 : (unsigned int)n;
+   unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
+   unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
+   int n_read = (int)(limit_r_end - limit_r_begin);
    int part_read = n_read / r->part_size;
    int temp_alloc_point = temp_alloc_save(f);
    uint8_t ***part_classdata = (uint8_t ***) temp_block_array(f,f->channels, part_read * sizeof(**part_classdata));
@@ -4741,13 +4759,16 @@ skip:;
       r->begin = get_bits(f, 24);
       r->end = get_bits(f, 24);
       r->part_size = get_bits(f,24)+1;
-      /* begin/end are unbounded 24-bit fields; a malformed header can
-       * make (end - begin) enormous, and decode_residue[_q] sizes an
-       * alloca()'d classification array by (end - begin) / part_size --
-       * a large value there overflows the stack.  A residue can cover at
-       * most the usable spectrum, blocksize_1 / 2, so reject anything
-       * beyond that (and any inverted range) up front. */
-      if (r->begin > r->end || r->end > (uint32_t)(f->blocksize_1 >> 1))
+      /* begin/end are unbounded 24-bit fields.  Do not reject large
+       * values outright: libvorbis legally writes type-2 coupled ranges
+       * over the interleaved ch*n vector, i.e. up to twice the
+       * half-block (seen in ordinary stereo files).  decode_residue[_q]
+       * clamps to the actual decoded vector at run time (as upstream
+       * stb_vorbis does), which is what makes the temp classification
+       * array sizing safe; here only reject inverted ranges and values
+       * beyond the largest vector any mode can decode. */
+      if (r->begin > r->end ||
+            r->end > 2u * (uint32_t)(f->blocksize_1 >> 1))
          return error(f, RVORBIS_invalid_setup);
       r->classifications = get_bits(f,6)+1;
       r->classbook = get_bits(f,8);
