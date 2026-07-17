@@ -42,6 +42,7 @@
 #ifdef HAVE_RVP9
 #include <formats/rvp9.h>
 #endif
+#include <formats/rh264.h>
 #include <formats/rmp4_video.h>
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
@@ -60,6 +61,7 @@ struct rmp4_video_stream
 #ifdef HAVE_RVP9
    rvp9_dec    *vp9;
 #endif
+   rh264_video *h264;
    uint32_t    *frame;      /* width * height ABGR words              */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
@@ -352,6 +354,16 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
             return false;
          return true;
 #endif
+      case RMP4_CODEC_H264:
+      {
+         const rmp4_track *t = rmp4_get_track(s->demux, s->track);
+         if (!(s->h264 = rh264_video_open()))
+            return false;
+         if (t && t->codec_private && t->codec_private_size)
+            rh264_video_set_extradata(s->h264, t->codec_private,
+                  t->codec_private_size);
+         return true;
+      }
       default:
          break;
    }
@@ -373,6 +385,11 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
       s->vp9 = NULL;
    }
 #endif
+   if (s->h264)
+   {
+      rh264_video_close(s->h264);
+      s->h264 = NULL;
+   }
 }
 
 /* ------------------------------------------------------------------ */
@@ -409,6 +426,7 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 #ifdef HAVE_RVP9
           && t->codec != RMP4_CODEC_VP9
 #endif
+          && t->codec != RMP4_CODEC_H264
          )
          continue;
       s->track  = i;
@@ -505,6 +523,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
 #ifdef HAVE_RVP9
        && !s->vp9
 #endif
+       && !s->h264
       )
       return -1;
 #ifdef HAVE_RVP9
@@ -549,6 +568,25 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       y = rvp8_video_plane(s->vp8, 0, &ys, &w, &h);
       u = rvp8_video_plane(s->vp8, 1, &uvs, &cw, &ch);
       v = rvp8_video_plane(s->vp8, 2, &uvs, &cw, &ch);
+      if (!y || !u || !v)
+         return -1;
+      if ((unsigned)w > s->width)
+         w = (int)s->width;
+      if ((unsigned)h > s->height)
+         h = (int)s->height;
+      rmp4_video_blit_i420(s->frame, s->width,
+            (unsigned)w, (unsigned)h, y, ys, u, v, uvs);
+      return 1;
+   }
+   if (s->codec == RMP4_CODEC_H264)
+   {
+      const uint8_t *y, *u, *v;
+      int ys, uvs, w, h, cw, ch;
+      if (rh264_video_decode(s->h264, pkt->data, pkt->size) != 0)
+         return -1;
+      y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
+      u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
+      v = rh264_video_plane(s->h264, 2, &uvs, &cw, &ch);
       if (!y || !u || !v)
          return -1;
       if ((unsigned)w > s->width)

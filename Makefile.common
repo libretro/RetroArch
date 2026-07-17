@@ -2345,7 +2345,8 @@ ifeq ($(HAVE_RMP4), 1)
    DEFINES += -DHAVE_RMP4
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.o \
           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.o \
-          $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_audio.o
+          $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_audio.o \
+          $(LIBRETRO_COMM_DIR)/formats/h264/rh264.o
 ifneq ($(HAVE_RWEBP), 1)
 ifneq ($(HAVE_RWEBM), 1)
    # rmp4_video decodes VP8 tracks with rvp8, normally built with RWEBP

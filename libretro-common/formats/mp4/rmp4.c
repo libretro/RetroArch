@@ -328,6 +328,24 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
          case RMP4_FOURCC('v','p','0','9'):
             t->pub.codec = RMP4_CODEC_VP9;
             break;
+         case RMP4_FOURCC('a','v','c','1'):
+         case RMP4_FOURCC('a','v','c','3'):
+         {
+            /* AVCSampleEntry embeds an avcC (AVCDecoderConfigurationRecord)
+             * child after the 78-byte VisualSampleEntry prefix; surface it
+             * as codec_private so the decoder gets the SPS/PPS and NAL
+             * length size. */
+            rmp4_box avcc;
+            if (e.size > 78
+                && rmp4_find_child(e.body + 78, e.size - 78,
+                      RMP4_FOURCC('a','v','c','C'), &avcc))
+            {
+               t->pub.codec              = RMP4_CODEC_H264;
+               t->pub.codec_private      = avcc.body;
+               t->pub.codec_private_size = (size_t)avcc.size;
+            }
+            break;
+         }
          default:
             break;
       }
