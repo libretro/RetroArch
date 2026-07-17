@@ -436,6 +436,7 @@ static void handle_translation_response(
                && raw_image_file_data[3] == 'G')
          {
             /* PNG file */
+#ifdef HAVE_RPNG
             int retval   = 0;
             rpng_t *rpng = rpng_alloc();
             if (!rpng)
@@ -495,6 +496,11 @@ static void handle_translation_response(
                }
             }
             rpng_free(rpng);
+#else
+            /* PNG decoding requires RPNG; without it we cannot handle this
+             * screenshot format, so fail the request cleanly. */
+            goto finish;
+#endif
          }
          else
          {
@@ -1282,9 +1288,16 @@ static bool http_translate(
     * branch has been deleted as dead code). */
    {
       size_t pitch = width * 3;
+#ifdef HAVE_RPNG
       bmp_buffer   = rpng_save_image_bgr24_string(
             bit24_image + width * (height - 1) * 3,
             width, height, (signed)-pitch, &buffer_bytes);
+#else
+      /* Encoding the screenshot requires RPNG; without it the translation
+       * request cannot be built, so fail cleanly below on the NULL buffer. */
+      (void)pitch;
+      bmp_buffer   = NULL;
+#endif
    }
 
    if (!(bmp64_buffer = base64((void *)bmp_buffer,
