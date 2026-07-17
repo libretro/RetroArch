@@ -4691,6 +4691,12 @@ skip:;
    /* Residue */
    f->residue_count = get_bits(f, 6)+1;
    f->residue_config = (Residue *) setup_malloc(f, f->residue_count * sizeof(*f->residue_config));
+   if (!f->residue_config)
+      return error(f, RVORBIS_outofmem);
+   /* setup_malloc does not zero: clear so a mid-parse error() leaves the
+    * unvisited residues' classdata/residue_books pointers NULL for
+    * vorbis_deinit rather than freeing uninitialised garbage. */
+   memset(f->residue_config, 0, f->residue_count * sizeof(*f->residue_config));
    for (i=0; i < f->residue_count; ++i)
    {
       uint8_t residue_cascade[64];
@@ -4738,6 +4744,11 @@ skip:;
 
    f->mapping_count = get_bits(f,6)+1;
    f->mapping = (Mapping *) setup_malloc(f, f->mapping_count * sizeof(*f->mapping));
+   if (f->mapping == NULL)                    return error(f, RVORBIS_outofmem);
+   /* setup_malloc does not zero: clear the per-mapping chan pointers so
+    * that if a later error() aborts this loop, vorbis_deinit only frees
+    * pointers that were actually assigned (or NULL). */
+   memset(f->mapping, 0, f->mapping_count * sizeof(*f->mapping));
    for (i=0; i < f->mapping_count; ++i) {
       Mapping *m = f->mapping + i;
       int mapping_type = get_bits(f,16);
