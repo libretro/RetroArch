@@ -19,7 +19,8 @@ static uint32_t rh264_u1(rh264_bits *b){
 static uint32_t rh264_un(rh264_bits *b,int n){ uint32_t v=0; int i; for(i=0;i<n;i++) v=(v<<1)|rh264_u1(b); return v; }
 static uint32_t rh264_ue(rh264_bits *b){
    int z=0; while(rh264_more_data(b)&&rh264_u1(b)==0) z++;
-   if(z==0) return 0; if(z>=32) return 0xFFFFFFFFu;
+   if(z==0) return 0;
+   if(z>=32) return 0xFFFFFFFFu;
    return ((1u<<z)-1u)+rh264_un(b,z);
 }
 static int32_t rh264_se(rh264_bits *b){ uint32_t k=rh264_ue(b); uint32_t m=(k+1)>>1; return (k&1)?(int32_t)m:-(int32_t)m; }
@@ -116,11 +117,6 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
          sh->slice_beta_offset=rh264_se(b)*2; }
    }
    return 1;
-}
-static int rh264_parse_slice_header(const uint8_t *rbsp,size_t size,int nut,int nri,
-      const rh264_sps *sps,const rh264_pps *pps,rh264_slice_hdr *sh){
-   rh264_bits b; rh264_bits_init(&b,rbsp,size);
-   return rh264_parse_slice_header_adv(&b,nut,nri,sps,pps,sh);
 }
 
 
@@ -476,12 +472,16 @@ static void rh264_intra16x16(uint8_t *dst,int stride,int mode,int have_up,int ha
       if(have_up){for(x=0;x<16;x++)sum+=up[x];cnt+=16;}
       if(have_left){for(y=0;y<16;y++)sum+=dst[y*stride-1];cnt+=16;}
       dc=(cnt==32)?(sum+16)>>5:(cnt==16)?(sum+8)>>4:128;
-      for(y=0;y<16;y++)for(x=0;x<16;x++)dst[y*stride+x]=(uint8_t)dc; break;}
+      for(y=0;y<16;y++)for(x=0;x<16;x++)dst[y*stride+x]=(uint8_t)dc;
+      break;}
    default:{int H=0,V=0,a,bb,c,i,val; const uint8_t *tl=dst-stride-1;
-      for(i=0;i<7;i++)H+=(i+1)*(up[8+i]-up[6-i]); H+=8*(up[15]-tl[0]);
-      for(i=0;i<7;i++)V+=(i+1)*(dst[(8+i)*stride-1]-dst[(6-i)*stride-1]); V+=8*(dst[15*stride-1]-tl[0]);
+      for(i=0;i<7;i++)H+=(i+1)*(up[8+i]-up[6-i]);
+      H+=8*(up[15]-tl[0]);
+      for(i=0;i<7;i++)V+=(i+1)*(dst[(8+i)*stride-1]-dst[(6-i)*stride-1]);
+      V+=8*(dst[15*stride-1]-tl[0]);
       a=16*(up[15]+dst[15*stride-1]); bb=(5*H+32)>>6; c=(5*V+32)>>6;
-      for(y=0;y<16;y++)for(x=0;x<16;x++){val=(a+bb*(x-7)+c*(y-7)+16)>>5;dst[y*stride+x]=(uint8_t)RH264_CLIP(val);} break;}
+      for(y=0;y<16;y++)for(x=0;x<16;x++){val=(a+bb*(x-7)+c*(y-7)+16)>>5;dst[y*stride+x]=(uint8_t)RH264_CLIP(val);}
+      break;}
    }
 }
 static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,int have_up,int have_left){
@@ -490,10 +490,13 @@ static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,int have_up,int 
    case 1: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=dst[y*stride-1]; break;
    case 2: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=up[x]; break;
    case 3:{int H=0,V=0,a,bb,c,i,val; const uint8_t *tl=dst-stride-1;
-      for(i=0;i<3;i++)H+=(i+1)*(up[4+i]-up[2-i]); H+=4*(up[7]-tl[0]);
-      for(i=0;i<3;i++)V+=(i+1)*(dst[(4+i)*stride-1]-dst[(2-i)*stride-1]); V+=4*(dst[7*stride-1]-tl[0]);
+      for(i=0;i<3;i++)H+=(i+1)*(up[4+i]-up[2-i]);
+      H+=4*(up[7]-tl[0]);
+      for(i=0;i<3;i++)V+=(i+1)*(dst[(4+i)*stride-1]-dst[(2-i)*stride-1]);
+      V+=4*(dst[7*stride-1]-tl[0]);
       a=16*(up[7]+dst[7*stride-1]); bb=(17*H+16)>>5; c=(17*V+16)>>5;
-      for(y=0;y<8;y++)for(x=0;x<8;x++){val=(a+bb*(x-3)+c*(y-3)+16)>>5;dst[y*stride+x]=(uint8_t)RH264_CLIP(val);} break;}
+      for(y=0;y<8;y++)for(x=0;x<8;x++){val=(a+bb*(x-3)+c*(y-3)+16)>>5;dst[y*stride+x]=(uint8_t)RH264_CLIP(val);}
+      break;}
    default:{int bx,by;
       for(by=0;by<2;by++)for(bx=0;bx<2;bx++){
          int sum=0,cnt=0,dc,i,ux=bx*4,uy=by*4,use_up=have_up,use_left=have_left;
@@ -879,7 +882,8 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
                   int nC=rh264_nC(f->nzL,gw,f->mbh*4,gx,gy);
                   int32_t scan[16];
                   int tc=rh264_residual_block(b,nC,16,scan);
-                  if(tc<0)return -1; nzc=tc;
+                  if(tc<0)return -1;
+                  nzc=tc;
                   for(k=0;k<16;k++)coef[rh264_zigzag4[k]]=scan[k];
                   rh264_dequant4x4(coef,f->qp,0);
                   rh264_itransform4x4(coef,r);
@@ -931,7 +935,8 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
             if(cbp_luma){
                int nC=rh264_nC(f->nzL,gw,f->mbh*4,gx,gy);
                int32_t scan[16]; int tc=rh264_residual_block(b,nC,15,scan);
-               if(tc<0)return -1; nzc=tc;
+               if(tc<0)return -1;
+                  nzc=tc;
                for(k=0;k<15;k++)ac[rh264_zigzag4[k+1]]=scan[k];
             }
             ac[0]=dc[(byy*4+bxx)]; /* raster DC index within 4x4 grid */
