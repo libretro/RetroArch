@@ -1209,6 +1209,11 @@ const char *audio_driver_mixer_get_stream_name(unsigned i)
    return msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 }
 
+unsigned audio_driver_mixer_get_streams_playing(void)
+{
+   return audio_driver_st.mixer_streams_playing;
+}
+
 #endif
 
 bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)

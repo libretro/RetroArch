@@ -385,6 +385,8 @@ enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
 
+unsigned audio_driver_mixer_get_streams_playing(void);
+
 void audio_driver_load_system_sounds(void);
 
 #endif
