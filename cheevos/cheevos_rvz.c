@@ -538,13 +538,18 @@ static void lfg_initialize(lfg_state_t* lfg)
                        lfg->buffer[i - 1];
    }
 
-   /* Bit shift and byteswap for LFG output (unconditional swap required by algorithm) */
+   /* Bit shift, then serialize each word big-endian for output.  The
+    * algorithm (and Dolphin's reference implementation, which assumes a
+    * little-endian host) defines the junk byte stream as the big-endian
+    * serialization of the tweaked words; an unconditional swap only
+    * achieves that on little-endian hosts and produces byte-reversed
+    * junk (and thus wrong hashes) on big-endian ones. */
    for (i = 0; i < LFG_K; i++)
    {
       x = lfg->buffer[i];
       x = (x & 0xFF00FFFF) | ((x >> 2) & 0x00FF0000);
-      /* Unconditional byte swap */
-      lfg->buffer[i] = SWAP32(x);
+      /* host -> big-endian store (no-op on big-endian) */
+      lfg->buffer[i] = swap_if_little32(x);
    }
 
    /* Forward 4 times */
