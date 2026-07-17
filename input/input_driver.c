@@ -1565,13 +1565,14 @@ void input_keyboard_line_free(input_driver_state_t *input_st)
    input_keyboard_line_t *kb_line = (input_keyboard_line_t*)&input_st->keyboard_line;
    if (kb_line->buffer)
       free(kb_line->buffer);
-   kb_line->buffer       = NULL;
-   kb_line->ptr          = 0;
-   kb_line->size         = 0;
-   kb_line->capacity     = 0;
-   kb_line->cb           = NULL;
-   kb_line->userdata     = NULL;
-   kb_line->enabled      = false;
+   kb_line->buffer             = NULL;
+   kb_line->ptr                =  0;
+   kb_line->size               = 0;
+   kb_line->capacity           = 0;
+   kb_line->cb                 = NULL;
+   kb_line->userdata           = NULL;
+   kb_line->enabled            = false;
+   input_st->osk_textbox_focus = false;
 }
 
 const char **input_keyboard_start_line(
@@ -1579,13 +1580,14 @@ const char **input_keyboard_start_line(
       struct input_keyboard_line *kb_line,
       input_keyboard_line_complete_t cb)
 {
-   kb_line->buffer    = NULL;
-   kb_line->ptr       = 0;
-   kb_line->size      = 0;
-   kb_line->capacity  = 0;
-   kb_line->cb        = cb;
-   kb_line->userdata  = userdata;
-   kb_line->enabled   = true;
+   kb_line->buffer                   = NULL;
+   kb_line->ptr                      = 0;
+   kb_line->size                     = 0;
+   kb_line->capacity                 = 0;
+   kb_line->cb                       = cb;
+   kb_line->userdata                 = userdata;
+   kb_line->enabled                  = true;
+   input_driver_st.osk_textbox_focus = false;
 
    return (const char**)&kb_line->buffer;
 }
@@ -8070,7 +8072,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (display_kb && input && input->input_state)
       {
-         /* Allow character map switches, 
+         /* Allow CTRL as OK if focus is on OSK, character map switches,
           * and set RetroPad Select bit when pressing Escape
           * in order to clear the input window and close it. */
          unsigned i;
@@ -8079,10 +8081,26 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
+            {RETROK_LCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_RCTRL,     RETRO_DEVICE_ID_JOYPAD_A      },
          };
 
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
+            if (     settings->bools.input_menu_swap_ok_cancel_buttons
+                  && (ids[i][0] == RETROK_LCTRL || ids[i][0] == RETROK_RCTRL))
+               ids[i][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
+            if (     input_st->osk_textbox_focus
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_L
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_R
+                  && ids[i][1] != RETRO_DEVICE_ID_JOYPAD_SELECT)
+               continue;
+
             if (input->input_state(
                      input_st->current_data,
                      joypad,
@@ -8318,42 +8336,51 @@ void input_keyboard_event(bool down, unsigned code,
       if (!down)
          return;
 
-      switch (code)
+      if (code == RETROK_TAB)
       {
-         case RETROK_LEFT:
-            if (line->ptr && line->buffer)
-            {
-               line->ptr--;
-               while (line->ptr && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
+         input_st->osk_textbox_focus = !input_st->osk_textbox_focus;
+         return;
+      }
+
+      if (input_st->osk_textbox_focus)
+      {
+         switch (code)
+         {
+            case RETROK_LEFT:
+               if (line->ptr && line->buffer)
+               {
                   line->ptr--;
-
-               if (mod & RETROKMOD_CTRL)
-                  while (line->ptr &&
-                        (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                  while (line->ptr && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
                      line->ptr--;
-            }
-            return;
-         case RETROK_RIGHT:
-            if (line->buffer && line->ptr < line->size)
-            {
-               line->ptr++;
-               while (line->ptr < line->size && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
-                  line->ptr++;
 
-               if (mod & RETROKMOD_CTRL)
-                  while (line->ptr < line->size &&
-                        (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                  if (mod & RETROKMOD_CTRL)
+                     while (line->ptr &&
+                           (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                        line->ptr--;
+               }
+               return;
+            case RETROK_RIGHT:
+               if (line->buffer && line->ptr < line->size)
+               {
+                  line->ptr++;
+                  while (line->ptr < line->size && IS_UTF8_CONTINUATION(line->buffer[line->ptr]))
                      line->ptr++;
-            }
-            return;
-         case RETROK_UP:
-            line->ptr = 0;
-            return;
-         case RETROK_DOWN:
-            line->ptr = line->size;
-            return;
-         default:
-            break;
+
+                  if (mod & RETROKMOD_CTRL)
+                     while (line->ptr < line->size &&
+                           (ISSPACE(line->buffer[line->ptr]) || !ISSPACE(line->buffer[line->ptr - 1])))
+                        line->ptr++;
+               }
+               return;
+            case RETROK_UP:
+               line->ptr = 0;
+               return;
+            case RETROK_DOWN:
+               line->ptr = line->size;
+               return;
+            default:
+               break;
+         }
       }
 
       if (!input_keyboard_line_event(input_st, line, character))

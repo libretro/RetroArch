@@ -620,6 +620,7 @@ typedef struct
 #endif
 #endif
    int osk_ptr;
+   bool osk_textbox_focus;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
    hold_buttons_t hold_btns;   /* int32_t alignment */
 

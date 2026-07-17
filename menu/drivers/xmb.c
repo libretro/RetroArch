@@ -392,6 +392,10 @@ typedef struct xmb_handle
    int old_depth;
    int icon_size;
    int cursor_size;
+   int osk_textbox_x;
+   int osk_textbox_y;
+   int osk_textbox_w;
+   int osk_textbox_h;
    int wideglyph_width;
 
    unsigned categories_active_idx;
@@ -1297,6 +1301,44 @@ static void xmb_render_messagebox_internal(
    if (confirm_dialog)
       slice_h             += (line_height * 2);
 
+   if (input_dialog_display_kb)
+   {
+      xmb->osk_textbox_x = slice_x;
+      xmb->osk_textbox_y = slice_y;
+      xmb->osk_textbox_w = slice_w;
+      xmb->osk_textbox_h = slice_h;
+   }
+
+   if (input_dialog_display_kb && input_state_get_ptr()->osk_textbox_focus && line_count > 1)
+   {
+      int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
+
+      if (dispctx && dispctx->blend_begin)
+         dispctx->blend_begin(userdata);
+
+      gfx_display_draw_texture_slice(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            slice_x - cursor_offset,
+            slice_y - cursor_offset,
+            256,
+            256,
+            slice_w + (cursor_offset * 2),
+            slice_h + (cursor_offset * 2),
+            video_width,
+            video_height,
+            NULL,
+            xmb->margins_slice,
+            xmb->last_scale_factor,
+            xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
+            mymat);
+
+      if (dispctx && dispctx->blend_end)
+         dispctx->blend_end(userdata);
+   }
+
    if (!xmb->assets_missing)
    {
       if (dispctx && dispctx->blend_begin)
@@ -1397,7 +1439,7 @@ static void xmb_render_messagebox_internal(
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
             input_st->osk_grid,
-            input_st->osk_ptr,
+            input_st->osk_textbox_focus ? 44 : input_st->osk_ptr,
             0xffffffff);
    }
 
@@ -1570,6 +1612,26 @@ static void xmb_render_messagebox_internal(
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
+}
+
+static bool xmb_osk_pointer_over_textbox(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
+{
+   xmb_handle_t *xmb = (xmb_handle_t*)data;
+
+   if (     xmb
+         && menu_input_dialog_get_display_kb()
+         && x > xmb->osk_textbox_x
+         && x < xmb->osk_textbox_x + xmb->osk_textbox_w
+         && y > xmb->osk_textbox_y
+         && y < xmb->osk_textbox_y + xmb->osk_textbox_h)
+      return true;
+
+   return false;
 }
 
 #ifdef HAVE_LIBRETRODB
@@ -10918,6 +10980,7 @@ menu_ctx_driver_t menu_ctx_xmb = {
    xmb_refresh_thumbnail_image,
    xmb_set_thumbnail_content,
    gfx_display_osk_ptr_at_pos,
+   xmb_osk_pointer_over_textbox,
    xmb_update_savestate_thumbnail_path,
    xmb_update_savestate_thumbnail_image,
    xmb_pointer_down,

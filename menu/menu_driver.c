@@ -320,6 +320,7 @@ static menu_ctx_driver_t menu_ctx_null = {
   NULL,  /* refresh_thumbnail_image */
   NULL,  /* set_thumbnail_content */
   NULL,  /* osk_ptr_at_pos */
+  NULL,  /* osk_pointer_over_textbox */
   NULL,  /* update_savestate_thumbnail_path */
   NULL,  /* update_savestate_thumbnail_image */
   NULL,  /* pointer_down */
@@ -6116,20 +6117,33 @@ static int menu_input_post_iterate(
              * has remained stationary */
             if (!(menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED))
             {
-               menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
-               if (point.retcode > -1)
+               if (     menu_st->driver_ctx
+                     && menu_st->driver_ctx->osk_pointer_over_textbox
+                     && menu_st->driver_ctx->osk_pointer_over_textbox(
+                        menu_st->userdata, x, y, video_st->width, video_st->height))
+                  input_st->osk_textbox_focus = true;
+               else
                {
-                  bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
-                  input_st->osk_ptr     = point.retcode;
-                  input_event_osk_append(
-                        &input_st->keyboard_line,
-                        &input_st->osk_idx,
-                        &input_st->osk_last_codepoint,
-                        &input_st->osk_last_codepoint_len,
-                        point.retcode,
-                        show_osk_symbols,
-                        input_st->osk_grid[input_st->osk_ptr],
-                        strlen(input_st->osk_grid[input_st->osk_ptr]));
+                  menu_driver_ctl(RARCH_MENU_CTL_OSK_PTR_AT_POS, &point);
+                  if (point.retcode > -1)
+                  {
+                     bool textbox_focus    = input_st->osk_textbox_focus;
+                     input_st->osk_ptr     = point.retcode;
+                     input_st->osk_textbox_focus = false;
+                     if (!textbox_focus)
+                     {
+                        bool show_osk_symbols = input_event_osk_show_symbol_pages(menu_st->driver_data);
+                        input_event_osk_append(
+                              &input_st->keyboard_line,
+                              &input_st->osk_idx,
+                              &input_st->osk_last_codepoint,
+                              &input_st->osk_last_codepoint_len,
+                              point.retcode,
+                              show_osk_symbols,
+                              input_st->osk_grid[input_st->osk_ptr],
+                              strlen(input_st->osk_grid[input_st->osk_ptr]));
+                     }
+                  }
                }
             }
 #ifdef HAVE_MIST
