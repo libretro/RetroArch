@@ -752,8 +752,13 @@ static int lookup1_values(int entries, int dim)
    int r = (int) floor(exp((float) log((float) entries) / dim));
    if ((int) floor(pow((float) r+1, dim)) <= entries)   /* (int) cast for MinGW warning; */
       ++r;                                              /* floor() to avoid _ftol() when non-CRT */
-   assert(pow((float) r+1, dim) > entries);
-   assert((int) floor(pow((float) r, dim)) <= entries); /* (int),floor() as above */
+   /* On well-formed data these invariants hold; on malformed entries/dim
+    * they can fail.  Return 0 so the caller (which already rejects a
+    * zero lookup_values) errors out gracefully instead of asserting. */
+   if (!(pow((float) r+1, dim) > entries))
+      return 0;
+   if (!((int) floor(pow((float) r, dim)) <= entries))
+      return 0;
    return r;
 }
 
