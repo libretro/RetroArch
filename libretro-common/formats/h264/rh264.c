@@ -1132,6 +1132,11 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    rh264_bits_init(&b, rbsp, rl);
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { free(rbsp); return -1; }
+   /* This decoder is CAVLC-only (baseline intra). A Main/High-profile stream
+    * with CABAC entropy coding cannot be parsed as CAVLC; reject it rather
+    * than misinterpret the bitstream. */
+   if (v->pps.entropy_coding_mode_flag)
+   { free(rbsp); return -1; }
    rh264_frame_reset(&v->f);
    rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f);
    if (rc == 0) rh264_deblock(&v->f, &sh);
