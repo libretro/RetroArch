@@ -1622,11 +1622,24 @@ static INLINE void draw_line(float *output, int x0, int y0, int x1, int y1, int 
 {
    int dy = y1 - y0;
    int adx = x1 - x0;
-   int ady = abs(dy);
+   /* See draw_line_q: guard against a malformed floor's non-increasing
+    * X coordinates dividing by zero here. */
+   int ady;
    int x=x0,y=y0;
    int err = 0;
    int sy;
-   int base = dy / adx;
+   int base;
+   if (adx <= 0)
+      return;
+   /* y is interpolated between y0 and y1, so clamping the endpoints to
+    * the inverse_db_table[] range keeps every lookup below in bounds
+    * even if a malformed floor produced an out-of-range Y value. */
+   if (y0 < 0) y0 = 0; else if (y0 > 255) y0 = 255;
+   if (y1 < 0) y1 = 0; else if (y1 > 255) y1 = 255;
+   dy   = y1 - y0;
+   y    = y0;
+   ady  = abs(dy);
+   base = dy / adx;
 
    if (dy < 0)
       sy = base - 1;
@@ -3646,11 +3659,26 @@ static INLINE void draw_line_q(int32_t *output, int x0, int y0, int x1, int y1, 
 {
    int dy = y1 - y0;
    int adx = x1 - x0;
-   int ady = abs(dy);
+   /* A valid floor's X coordinates are strictly increasing, so adx > 0;
+    * a malformed floor can repeat or unsort them, which would divide by
+    * zero below.  A zero/negative-width segment covers no samples, so
+    * skip it. */
+   int ady;
    int x=x0,y=y0;
    int err = 0;
    int sy;
-   int base = dy / adx;
+   int base;
+   if (adx <= 0)
+      return;
+   /* y is interpolated between y0 and y1, so clamping the endpoints to
+    * the inverse_db_q31[] range keeps every lookup below in bounds even
+    * if a malformed floor produced an out-of-range Y value. */
+   if (y0 < 0) y0 = 0; else if (y0 > 255) y0 = 255;
+   if (y1 < 0) y1 = 0; else if (y1 > 255) y1 = 255;
+   dy   = y1 - y0;
+   y    = y0;
+   ady  = abs(dy);
+   base = dy / adx;
 
    if (dy < 0)
       sy = base - 1;
@@ -4412,6 +4440,8 @@ static int start_decoder(vorb *f)
             f->setup_temp_memory_required = c->entries;
 
          c->codeword_lengths = (uint8_t *) setup_malloc(f, c->entries);
+         if (!c->codeword_lengths)
+            return error(f, RVORBIS_outofmem);
          memcpy(c->codeword_lengths, lengths, c->entries);
          setup_temp_free(f, lengths, c->entries); /* note this is only safe if there have been no intervening temp mallocs! */
          lengths = c->codeword_lengths;
@@ -4706,6 +4736,14 @@ skip:;
       r->begin = get_bits(f, 24);
       r->end = get_bits(f, 24);
       r->part_size = get_bits(f,24)+1;
+      /* begin/end are unbounded 24-bit fields; a malformed header can
+       * make (end - begin) enormous, and decode_residue[_q] sizes an
+       * alloca()'d classification array by (end - begin) / part_size --
+       * a large value there overflows the stack.  A residue can cover at
+       * most the usable spectrum, blocksize_1 / 2, so reject anything
+       * beyond that (and any inverted range) up front. */
+      if (r->begin > r->end || r->end > (uint32_t)(f->blocksize_1 >> 1))
+         return error(f, RVORBIS_invalid_setup);
       r->classifications = get_bits(f,6)+1;
       r->classbook = get_bits(f,8);
       for (j=0; j < r->classifications; ++j) {
