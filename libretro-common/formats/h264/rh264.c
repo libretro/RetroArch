@@ -465,6 +465,10 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
 
 static void rh264_intra16x16(uint8_t *dst,int stride,int mode,int have_up,int have_left){
    int x,y; const uint8_t *up=dst-stride;
+   /* Vertical(0)/Horizontal(1)/Plane(3) require the corresponding neighbours;
+    * fall back to DC(2) if unavailable rather than read out of bounds. */
+   if((mode==0&&!have_up)||(mode==1&&!have_left)||(mode==3&&!(have_up&&have_left)))
+      mode=2;
    switch(mode){
    case 0: for(y=0;y<16;y++)for(x=0;x<16;x++)dst[y*stride+x]=up[x]; break;
    case 1: for(y=0;y<16;y++)for(x=0;x<16;x++)dst[y*stride+x]=dst[y*stride-1]; break;
@@ -486,6 +490,12 @@ static void rh264_intra16x16(uint8_t *dst,int stride,int mode,int have_up,int ha
 }
 static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,int have_up,int have_left){
    int x,y; const uint8_t *up=dst-stride;
+   /* Horizontal(1)/Vertical(2)/Plane(3) require the corresponding neighbours.
+    * A conformant stream never signals them when unavailable, but arbitrary
+    * (e.g. thumbnail) input might; fall back to DC rather than read out of
+    * bounds. */
+   if((mode==1&&!have_left)||(mode==2&&!have_up)||(mode==3&&!(have_up&&have_left)))
+      mode=0;
    switch(mode){
    case 1: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=dst[y*stride-1]; break;
    case 2: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=up[x]; break;
