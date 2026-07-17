@@ -29,7 +29,25 @@
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
 
+/* The ZIP DEFLATE backend can be built against zlib or against the
+ * clean-room inflate implementation in encodings/deflate.h.  Define
+ * ARCHIVE_HAVE_ZLIB to use zlib, ARCHIVE_USE_BUILTIN_DEFLATE to use the
+ * built-in decoder; when neither is set the choice follows HAVE_ZLIB.  Only
+ * the raw inflate path differs -- everything else (ZIP parsing, STORED mode,
+ * CRC32, zstd) is unchanged. */
+#if !defined(ARCHIVE_HAVE_ZLIB) && !defined(ARCHIVE_USE_BUILTIN_DEFLATE)
+#if defined(HAVE_ZLIB)
+#define ARCHIVE_HAVE_ZLIB 1
+#else
+#define ARCHIVE_USE_BUILTIN_DEFLATE 1
+#endif
+#endif
+
+#ifdef ARCHIVE_HAVE_ZLIB
 #include <zlib.h>
+#else
+#include <encodings/deflate.h>
+#endif
 
 #ifdef HAVE_ZSTD
 #include <zstd.h>
@@ -61,7 +79,12 @@ typedef struct
    uint64_t fdoffset;
    uint32_t boffset, csize, usize;
    unsigned cmode;
+#ifdef ARCHIVE_HAVE_ZLIB
    z_stream *zstream;
+#else
+   void *zstream;          /* rinflate stream handle */
+   int    out_bound;       /* output buffer already handed to the decoder */
+#endif
    uint8_t *tmpbuf;
    uint8_t *decompressed_data;
 } zip_context_t;
@@ -81,8 +104,13 @@ static void zip_context_free_stream(
 {
    if (zip_context->zstream)
    {
+#ifdef ARCHIVE_HAVE_ZLIB
       inflateEnd(zip_context->zstream);
       free(zip_context->zstream);
+#else
+      rinflate_free(zip_context->zstream);
+      zip_context->out_bound = 0;
+#endif
       zip_context->fdoffset = 0;
       zip_context->csize = 0;
       zip_context->usize = 0;
@@ -157,6 +185,7 @@ static bool zlib_stream_decompress_data_to_file_init(
 
    if (cmode == ZIP_MODE_DEFLATED)
    {
+#ifdef ARCHIVE_HAVE_ZLIB
       /* Initialize the zlib inflate machinery */
       zip_context->zstream            = (z_stream*)malloc(sizeof(z_stream));
       zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
@@ -189,6 +218,20 @@ static bool zlib_stream_decompress_data_to_file_init(
          zip_context_free_stream(zip_context, false);
          return false;
       }
+#else
+      /* Initialize the built-in raw-DEFLATE decoder.  The output buffer
+       * (the full decompressed_data) is bound once on the first iterate
+       * call; only compressed input is fed incrementally after that. */
+      zip_context->zstream            = rinflate_new(-15);
+      zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
+      zip_context->out_bound          = 0;
+
+      if (!zip_context->zstream || !zip_context->tmpbuf)
+      {
+         zip_context_free_stream(zip_context, false);
+         return false;
+      }
+#endif
    }
 #ifdef HAVE_ZSTD
    else if (cmode == ZIP_MODE_ZSTD)
@@ -265,16 +308,50 @@ static int zlib_stream_decompress_data_to_file_iterate(
       }
 
       zip_context->boffset           += rd;
+
+#ifdef ARCHIVE_HAVE_ZLIB
       zip_context->zstream->next_in   = dptr;
       zip_context->zstream->avail_in  = (uInt)rd;
 
       if (inflate(zip_context->zstream, 0) < 0)
          return -1;
+#else
+      /* Bind the output buffer once, then feed this compressed chunk.  The
+       * decoder keeps its own output cursor across calls, so set_out is only
+       * issued the first time. */
+      if (!zip_context->out_bound)
+      {
+         rinflate_set_out(zip_context->zstream,
+               zip_context->decompressed_data, zip_context->usize);
+         zip_context->out_bound = 1;
+      }
+      rinflate_set_in(zip_context->zstream, dptr, (size_t)rd);
+
+      for (;;)
+      {
+         size_t got_in = 0, got_out = 0;
+         int    st     = rinflate_process(zip_context->zstream,
+               &got_in, &got_out);
+         if (st == RDEFLATE_PROCESS_ERROR)
+            return -1;
+         /* END: stream finished.  NEXT with no further progress means this
+          * input chunk is drained; fetch the next one on the outer loop. */
+         if (st == RDEFLATE_PROCESS_END)
+            break;
+         if (got_in == 0 && got_out == 0)
+            break;
+      }
+#endif
 
       if (zip_context->boffset >= zip_context->csize)
       {
+#ifdef ARCHIVE_HAVE_ZLIB
          inflateEnd(zip_context->zstream);
          free(zip_context->zstream);
+#else
+         rinflate_free(zip_context->zstream);
+         zip_context->out_bound = 0;
+#endif
          zip_context->zstream = NULL;
 
          handle->data = zip_context->decompressed_data;
