@@ -2792,6 +2792,35 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT (90 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Queries which HDR output mode the frontend is presenting with.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  Both
+ * output modes accept the same PQ Rec.2020 frame, but they do not treat its
+ * primaries identically: an HDR10 swapchain presents the samples as-is,
+ * while an scRGB swapchain converts them and applies a Rec.2020 -> Rec.709
+ * rotation on the way.  A core that encodes its own gamut -- which it must,
+ * to honour #RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT -- therefore has to know
+ * which of the two it is feeding, or its colour choice is undone by that
+ * rotation on one of them.
+ *
+ * Values:
+ *   0  HDR output is off
+ *   1  HDR10 (PQ, Rec.2020 swapchain); samples are presented unchanged
+ *   2  scRGB (linear FP16, Rec.709); the frontend applies Rec.2020 ->
+ *      Rec.709 to the decoded samples
+ *
+ * The user can switch this at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 1 (HDR10), which is the
+ * mode that needs no compensation.
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE (91 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.

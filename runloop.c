@@ -3656,6 +3656,17 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_GET_HDR_OUTPUT_MODE:
+         /* Which HDR swapchain is presenting.  A core encoding its own gamut
+          * needs this because the scRGB path rotates Rec.2020 -> Rec.709 on
+          * the way to the display and the HDR10 path does not, so the same
+          * frame lands differently on the two. */
+         {
+            settings_t *settings = config_get_ptr();
+            *(unsigned*)data     = settings->uints.video_hdr_mode;
+         }
+         break;
+
       case RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT:
          /* Which gamut treatment SDR content receives.  A core encoding
           * Rec.2020 itself has to match it, otherwise switching that core
