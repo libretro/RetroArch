@@ -190,6 +190,15 @@ dependencies {
   playStorePlusImplementation playAssetDelivery
 }
 
+dependencies {
+  constraints {
+    playStoreNormalImplementation 'androidx.activity:activity:1.10.1'
+    playStoreNormalImplementation 'androidx.fragment:fragment:1.8.6'
+    playStorePlusImplementation 'androidx.activity:activity:1.10.1'
+    playStorePlusImplementation 'androidx.fragment:fragment:1.8.6'
+  }
+}
+
 def dynamicFeatures = file("dynamic_features.gradle")
 if(dynamicFeatures.exists()) {
   apply from: "dynamic_features.gradle"
