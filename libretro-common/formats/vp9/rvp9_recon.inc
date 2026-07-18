@@ -3393,6 +3393,17 @@ static void rvp9_lpf_vertical_16_hbd_sse2(RVP9_PIXEL *s, int pitch,
 
 #endif /* RVP9_RECON_HBD && RVP9_SSE2 */
 
+#if RVP9_RECON_HBD && defined(RVP9_NEON)
+/* NEON hbd loop-filter kernels are defined further down (after the NEON
+ * convolve block); forward-declare so the dispatch wrappers can call them. */
+static void rvp9_lpf_horizontal_4_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+static void rvp9_lpf_horizontal_8_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+static void rvp9_lpf_horizontal_16_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+static void rvp9_lpf_vertical_4_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+static void rvp9_lpf_vertical_8_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+static void rvp9_lpf_vertical_16_hbd_neon(RVP9_PIXEL *s, int pitch, int blimit, int limit, int thresh);
+#endif
+
 static RVP9_LF_F rvp9_signed_char_clamp(int t) {
   return (RVP9_LF_F)(t < RVP9_LF_CLAMP_MIN ? RVP9_LF_CLAMP_MIN
                    : t > RVP9_LF_CLAMP_MAX ? RVP9_LF_CLAMP_MAX : t);
@@ -4389,6 +4400,10 @@ static void rvp9_lpf_horizontal_4(RVP9_PIXEL *s, int pitch, const uint8_t *blimi
   rvp9_lpf_horizontal_4_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  rvp9_lpf_horizontal_4_hbd_neon(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
 #endif
 
 /* loop filter designed to work using chars so that we can make maximum use */
@@ -4421,6 +4436,10 @@ static void rvp9_lpf_vertical_4(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
   rvp9_lpf_vertical_4_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  rvp9_lpf_vertical_4_hbd_neon(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
 #endif
 
 /* loop filter designed to work using chars so that we can make maximum use */
@@ -4449,6 +4468,10 @@ static void rvp9_lpf_horizontal_8(RVP9_PIXEL *s, int pitch, const uint8_t *blimi
   return;
 #elif RVP9_RECON_HBD && defined(RVP9_SSE2)
   rvp9_lpf_horizontal_8_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  rvp9_lpf_horizontal_8_hbd_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
 #endif
@@ -4486,6 +4509,10 @@ static void rvp9_lpf_vertical_8(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
   rvp9_lpf_vertical_8_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  rvp9_lpf_vertical_8_hbd_neon(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
 #endif
 
   for (i = 0; i < 8; ++i) {
@@ -4517,6 +4544,10 @@ static void rvp9_mb_lpf_horizontal_edge_w(RVP9_PIXEL *s, int pitch,
 #elif RVP9_RECON_HBD && defined(RVP9_SSE2)
   for (i = 0; i < count; i++)
      rvp9_lpf_horizontal_16_hbd_sse2(s + 8 * i, pitch, *blimit, *limit, *thresh);
+  return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  for (i = 0; i < count; i++)
+     rvp9_lpf_horizontal_16_hbd_neon(s + 8 * i, pitch, *blimit, *limit, *thresh);
   return;
 #endif
 
@@ -4564,6 +4595,10 @@ static void rvp9_mb_lpf_vertical_edge_w(RVP9_PIXEL *s, int pitch, const uint8_t 
 #elif RVP9_RECON_HBD && defined(RVP9_SSE2)
   for (i = 0; i < count; i += 8)
      rvp9_lpf_vertical_16_hbd_sse2(s + i * pitch, pitch, *blimit, *limit, *thresh);
+  return;
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+  for (i = 0; i < count; i += 8)
+     rvp9_lpf_vertical_16_hbd_neon(s + i * pitch, pitch, *blimit, *limit, *thresh);
   return;
 #endif
 
@@ -4761,6 +4796,807 @@ static void rvp9_convolve_vert_hbd_neon(const RVP9_PIXEL *src,
       src += src_stride; dst += dst_stride;
    }
 }
+
+/* ---- 10/12-bit NEON loop filter ----
+ * The 4/8/16 edge kernels are the byte-exact SSE2 kernels compiled through
+ * a thin intrinsic shim (int16x8 lanes), so the filter logic is identical
+ * to the verified SSE2 path; only the 8-tap loads/stores, the compares and
+ * the 8x8 transpose are NEON-specific.  Validated byte-exact against the
+ * scalar kernels under aarch64 execution (random and near-flat edges, so
+ * the flat2 15-tap path is exercised). */
+#define __m128i                    int16x8_t
+#define _mm_setzero_si128()        vdupq_n_s16(0)
+#define _mm_set1_epi16(x)          vdupq_n_s16((int16_t)(x))
+#define _mm_or_si128(a,b)          vorrq_s16((a),(b))
+#define _mm_and_si128(a,b)         vandq_s16((a),(b))
+#define _mm_andnot_si128(a,b)      vbicq_s16((b),(a))
+#define _mm_xor_si128(a,b)         veorq_s16((a),(b))
+#define _mm_add_epi16(a,b)         vaddq_s16((a),(b))
+#define _mm_sub_epi16(a,b)         vsubq_s16((a),(b))
+#define _mm_mullo_epi16(a,b)       vmulq_s16((a),(b))
+#define _mm_min_epi16(a,b)         vminq_s16((a),(b))
+#define _mm_max_epi16(a,b)         vmaxq_s16((a),(b))
+#define _mm_cmpgt_epi16(a,b)       vreinterpretq_s16_u16(vcgtq_s16((a),(b)))
+#define _mm_slli_epi16(a,n)        vshlq_n_s16((a),(n))
+#define _mm_srai_epi16(a,n)        vshrq_n_s16((a),(n))
+#define _mm_srli_epi16(a,n)        vreinterpretq_s16_u16(vshrq_n_u16(vreinterpretq_u16_s16(a),(n)))
+#define _mm_loadu_si128(p)         vreinterpretq_s16_u16(vld1q_u16((const uint16_t*)(p)))
+#define _mm_storeu_si128(p,v)      vst1q_u16((uint16_t*)(p), vreinterpretq_u16_s16(v))
+
+static void rvp9_lf_transpose8x8_hbd_n(int16x8_t *r)
+{
+   int16x8x2_t a0 = vtrnq_s16(r[0], r[1]);
+   int16x8x2_t a1 = vtrnq_s16(r[2], r[3]);
+   int16x8x2_t a2 = vtrnq_s16(r[4], r[5]);
+   int16x8x2_t a3 = vtrnq_s16(r[6], r[7]);
+   int32x4x2_t b0 = vtrnq_s32(vreinterpretq_s32_s16(a0.val[0]), vreinterpretq_s32_s16(a1.val[0]));
+   int32x4x2_t b1 = vtrnq_s32(vreinterpretq_s32_s16(a0.val[1]), vreinterpretq_s32_s16(a1.val[1]));
+   int32x4x2_t b2 = vtrnq_s32(vreinterpretq_s32_s16(a2.val[0]), vreinterpretq_s32_s16(a3.val[0]));
+   int32x4x2_t b3 = vtrnq_s32(vreinterpretq_s32_s16(a2.val[1]), vreinterpretq_s32_s16(a3.val[1]));
+   r[0] = vreinterpretq_s16_s32(vcombine_s32(vget_low_s32(b0.val[0]),  vget_low_s32(b2.val[0])));
+   r[1] = vreinterpretq_s16_s32(vcombine_s32(vget_low_s32(b1.val[0]),  vget_low_s32(b3.val[0])));
+   r[2] = vreinterpretq_s16_s32(vcombine_s32(vget_low_s32(b0.val[1]),  vget_low_s32(b2.val[1])));
+   r[3] = vreinterpretq_s16_s32(vcombine_s32(vget_low_s32(b1.val[1]),  vget_low_s32(b3.val[1])));
+   r[4] = vreinterpretq_s16_s32(vcombine_s32(vget_high_s32(b0.val[0]), vget_high_s32(b2.val[0])));
+   r[5] = vreinterpretq_s16_s32(vcombine_s32(vget_high_s32(b1.val[0]), vget_high_s32(b3.val[0])));
+   r[6] = vreinterpretq_s16_s32(vcombine_s32(vget_high_s32(b0.val[1]), vget_high_s32(b2.val[1])));
+   r[7] = vreinterpretq_s16_s32(vcombine_s32(vget_high_s32(b1.val[1]), vget_high_s32(b3.val[1])));
+}
+
+static __m128i rvp9_lf_clampv_n(__m128i x)
+{
+   return _mm_min_epi16(_mm_max_epi16(x, _mm_set1_epi16(-512)),
+                        _mm_set1_epi16(511));
+}
+static __m128i rvp9_lf_absdiff_n(__m128i a, __m128i b)
+{
+   __m128i d = _mm_sub_epi16(a, b);
+   return _mm_max_epi16(d, _mm_sub_epi16(_mm_setzero_si128(), d));
+}
+static void rvp9_lpf_horizontal_4_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i p3 = _mm_loadu_si128((const __m128i*)(s - 4 * pitch));
+   __m128i p2 = _mm_loadu_si128((const __m128i*)(s - 3 * pitch));
+   __m128i p1 = _mm_loadu_si128((const __m128i*)(s - 2 * pitch));
+   __m128i p0 = _mm_loadu_si128((const __m128i*)(s - 1 * pitch));
+   __m128i q0 = _mm_loadu_si128((const __m128i*)(s + 0 * pitch));
+   __m128i q1 = _mm_loadu_si128((const __m128i*)(s + 1 * pitch));
+   __m128i q2 = _mm_loadu_si128((const __m128i*)(s + 2 * pitch));
+   __m128i q3 = _mm_loadu_si128((const __m128i*)(s + 3 * pitch));
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i m    = _mm_setzero_si128();
+   __m128i hev  = _mm_setzero_si128();
+   __m128i ps1, ps0, qs0, qs1, filter, f1, f2, outer, t;
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+
+   ps1 = _mm_sub_epi16(p1, off); ps0 = _mm_sub_epi16(p0, off);
+   qs0 = _mm_sub_epi16(q0, off); qs1 = _mm_sub_epi16(q1, off);
+   filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+   filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+               _mm_mullo_epi16(_mm_set1_epi16(3),
+                  _mm_sub_epi16(qs0, ps0)))), m);
+   f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+   f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+   outer = _mm_andnot_si128(hev,
+              _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+   _mm_storeu_si128((__m128i*)(s - 2 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off));
+   _mm_storeu_si128((__m128i*)(s - 1 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off));
+   _mm_storeu_si128((__m128i*)(s + 0 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off));
+   _mm_storeu_si128((__m128i*)(s + 1 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off));
+}
+
+static void rvp9_lpf_horizontal_8_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i p3 = _mm_loadu_si128((const __m128i*)(s - 4 * pitch));
+   __m128i p2 = _mm_loadu_si128((const __m128i*)(s - 3 * pitch));
+   __m128i p1 = _mm_loadu_si128((const __m128i*)(s - 2 * pitch));
+   __m128i p0 = _mm_loadu_si128((const __m128i*)(s - 1 * pitch));
+   __m128i q0 = _mm_loadu_si128((const __m128i*)(s + 0 * pitch));
+   __m128i q1 = _mm_loadu_si128((const __m128i*)(s + 1 * pitch));
+   __m128i q2 = _mm_loadu_si128((const __m128i*)(s + 2 * pitch));
+   __m128i q3 = _mm_loadu_si128((const __m128i*)(s + 3 * pitch));
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i four = _mm_set1_epi16(1 << 2);   /* flat_mask4 thresh = 1, LF_T(1) = 4 */
+   __m128i m = _mm_setzero_si128(), hev = _mm_setzero_si128();
+   __m128i flat = _mm_setzero_si128();
+   __m128i ps1, ps0, qs0, qs1, filter, f1, f2, outer, t;
+   __m128i f4_p1, f4_p0, f4_q0, f4_q1;
+   __m128i op2, op1_, op0_, oq0_, oq1_, oq2;
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q0), four));
+   flat = _mm_xor_si128(flat, _mm_set1_epi16(-1));
+   flat = _mm_and_si128(flat, m);
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+   ps1 = _mm_sub_epi16(p1, off); ps0 = _mm_sub_epi16(p0, off);
+   qs0 = _mm_sub_epi16(q0, off); qs1 = _mm_sub_epi16(q1, off);
+   filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+   filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+               _mm_mullo_epi16(_mm_set1_epi16(3),
+                  _mm_sub_epi16(qs0, ps0)))), m);
+   f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+   f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+   outer = _mm_andnot_si128(hev,
+              _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+   f4_p1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off);
+   f4_p0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off);
+   f4_q0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off);
+   f4_q1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off);
+
+#define RVP9_LF8_AVG3(sum) \
+   _mm_srai_epi16(_mm_add_epi16((sum), _mm_set1_epi16(4)), 3)
+   op2  = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p3), p3), _mm_slli_epi16(p2, 1)),
+            p1), p0), q0));
+   op1_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p3), p2), _mm_slli_epi16(p1, 1)),
+            p0), q0), q1));
+   op0_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p2), p1), _mm_slli_epi16(p0, 1)),
+            q0), q1), q2));
+   oq0_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p2, p1), p0), _mm_slli_epi16(q0, 1)),
+            q1), q2), q3));
+   oq1_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p1, p0), q0), _mm_slli_epi16(q1, 1)),
+            q2), q3), q3));
+   oq2  = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p0, q0), q1), _mm_slli_epi16(q2, 1)),
+            q3), q3), q3));
+#undef RVP9_LF8_AVG3
+
+#define RVP9_LF_SEL(a, b) \
+   _mm_or_si128(_mm_and_si128(flat, (a)), _mm_andnot_si128(flat, (b)))
+   _mm_storeu_si128((__m128i*)(s - 3 * pitch), RVP9_LF_SEL(op2,  p2));
+   _mm_storeu_si128((__m128i*)(s - 2 * pitch), RVP9_LF_SEL(op1_, f4_p1));
+   _mm_storeu_si128((__m128i*)(s - 1 * pitch), RVP9_LF_SEL(op0_, f4_p0));
+   _mm_storeu_si128((__m128i*)(s + 0 * pitch), RVP9_LF_SEL(oq0_, f4_q0));
+   _mm_storeu_si128((__m128i*)(s + 1 * pitch), RVP9_LF_SEL(oq1_, f4_q1));
+   _mm_storeu_si128((__m128i*)(s + 2 * pitch), RVP9_LF_SEL(oq2,  q2));
+#undef RVP9_LF_SEL
+}
+static void rvp9_lpf_horizontal_16_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i p7 = _mm_loadu_si128((const __m128i*)(s - 8 * pitch));
+   __m128i p6 = _mm_loadu_si128((const __m128i*)(s - 7 * pitch));
+   __m128i p5 = _mm_loadu_si128((const __m128i*)(s - 6 * pitch));
+   __m128i p4 = _mm_loadu_si128((const __m128i*)(s - 5 * pitch));
+   __m128i p3 = _mm_loadu_si128((const __m128i*)(s - 4 * pitch));
+   __m128i p2 = _mm_loadu_si128((const __m128i*)(s - 3 * pitch));
+   __m128i p1 = _mm_loadu_si128((const __m128i*)(s - 2 * pitch));
+   __m128i p0 = _mm_loadu_si128((const __m128i*)(s - 1 * pitch));
+   __m128i q0 = _mm_loadu_si128((const __m128i*)(s + 0 * pitch));
+   __m128i q1 = _mm_loadu_si128((const __m128i*)(s + 1 * pitch));
+   __m128i q2 = _mm_loadu_si128((const __m128i*)(s + 2 * pitch));
+   __m128i q3 = _mm_loadu_si128((const __m128i*)(s + 3 * pitch));
+   __m128i q4 = _mm_loadu_si128((const __m128i*)(s + 4 * pitch));
+   __m128i q5 = _mm_loadu_si128((const __m128i*)(s + 5 * pitch));
+   __m128i q6 = _mm_loadu_si128((const __m128i*)(s + 6 * pitch));
+   __m128i q7 = _mm_loadu_si128((const __m128i*)(s + 7 * pitch));
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i four = _mm_set1_epi16(1 << 2);   /* flat/flat2 thresh 1 -> 4 */
+   __m128i m    = _mm_setzero_si128();
+   __m128i hev  = _mm_setzero_si128();
+   __m128i flat = _mm_setzero_si128();
+   __m128i flat2 = _mm_setzero_si128();
+   __m128i rp6, rp5, rp4, rp3, rp2, rp1, rp0;
+   __m128i rq0, rq1, rq2, rq3, rq4, rq5, rq6;
+   __m128i t;
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q0), four));
+   flat = _mm_xor_si128(flat, _mm_set1_epi16(-1));
+   flat = _mm_and_si128(flat, m);
+
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p4, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q4, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p5, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q5, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p6, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q6, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p7, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q7, q0), four));
+   flat2 = _mm_xor_si128(flat2, _mm_set1_epi16(-1));
+   flat2 = _mm_and_si128(flat2, flat);
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+
+   /* filter4 base result into rp1,rp0,rq0,rq1 */
+   {
+      __m128i ps1 = _mm_sub_epi16(p1, off), ps0 = _mm_sub_epi16(p0, off);
+      __m128i qs0 = _mm_sub_epi16(q0, off), qs1 = _mm_sub_epi16(q1, off);
+      __m128i filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+      __m128i f1, f2, outer;
+      filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+                  _mm_mullo_epi16(_mm_set1_epi16(3),
+                     _mm_sub_epi16(qs0, ps0)))), m);
+      f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+      f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+      outer = _mm_andnot_si128(hev,
+                 _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+      rp1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off);
+      rp0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off);
+      rq0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off);
+      rq1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off);
+   }
+   rp2 = p2; rq2 = q2;
+   rp6 = p6; rp5 = p5; rp4 = p4; rp3 = p3;
+   rq3 = q3; rq4 = q4; rq5 = q5; rq6 = q6;
+
+   /* filter8 7-tap, blended by flat into p2..q2 and p1..q1 */
+   {
+      __m128i c4 = _mm_set1_epi16(4);
+#define RVP9_LF16_A3(x) _mm_srai_epi16(_mm_add_epi16((x), c4), 3)
+      __m128i op2 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p3),
+         _mm_slli_epi16(p2, 1)), p1), p0), q0));
+      __m128i op1 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p2),
+         _mm_slli_epi16(p1, 1)), p0), q0), q1));
+      __m128i op0 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p2), p1),
+         _mm_slli_epi16(p0, 1)), q0), q1), q2));
+      __m128i oq0 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p2, p1), p0),
+         _mm_slli_epi16(q0, 1)), q1), q2), q3));
+      __m128i oq1 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p1, p0), q0),
+         _mm_slli_epi16(q1, 1)), q2), q3), q3));
+      __m128i oq2 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1),
+         _mm_slli_epi16(q2, 1)), q3), q3), q3));
+#undef RVP9_LF16_A3
+      rp2 = _mm_or_si128(_mm_and_si128(flat, op2), _mm_andnot_si128(flat, rp2));
+      rp1 = _mm_or_si128(_mm_and_si128(flat, op1), _mm_andnot_si128(flat, rp1));
+      rp0 = _mm_or_si128(_mm_and_si128(flat, op0), _mm_andnot_si128(flat, rp0));
+      rq0 = _mm_or_si128(_mm_and_si128(flat, oq0), _mm_andnot_si128(flat, rq0));
+      rq1 = _mm_or_si128(_mm_and_si128(flat, oq1), _mm_andnot_si128(flat, rq1));
+      rq2 = _mm_or_si128(_mm_and_si128(flat, oq2), _mm_andnot_si128(flat, rq2));
+   }
+
+   /* filter16 15-tap, blended by flat2 into p6..q6 */
+   {
+      __m128i c8 = _mm_set1_epi16(8);
+#define RVP9_LF16_A4(x) _mm_srai_epi16(_mm_add_epi16((x), c8), 4)
+#define RVP9_MUL(v, n) _mm_mullo_epi16((v), _mm_set1_epi16(n))
+      __m128i op6 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 7), RVP9_MUL(p6, 2)), p5), p4), p3), p2), p1),
+         _mm_add_epi16(p0, q0)));
+      __m128i op5 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 6), p6), RVP9_MUL(p5, 2)), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(p0, q0), q1)));
+      __m128i op4 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 5), p6), p5), RVP9_MUL(p4, 2)), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2)));
+      __m128i op3 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 4), p6), p5), p4), RVP9_MUL(p3, 2)), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3)));
+      __m128i op2b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 3), p6), p5), p4), p3), RVP9_MUL(p2, 2)), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3), q4)));
+      __m128i op1b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 2), p6), p5), p4), p3), p2), RVP9_MUL(p1, 2)),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3), q4), q5)));
+      __m128i op0b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         p7, p6), p5), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(RVP9_MUL(p0, 2), q0), q1), q2), q3), q4), q5), q6)));
+      __m128i oq0b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p6, p5), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, RVP9_MUL(q0, 2)), q1), q2), q3), q4), q5), q6), q7)));
+      __m128i oq1b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(p5, p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), RVP9_MUL(q1, 2)), q2), q3), q4), q5),
+         _mm_add_epi16(q6, RVP9_MUL(q7, 2)))));
+      __m128i oq2b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p4, p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), RVP9_MUL(q2, 2)), q3), q4),
+         _mm_add_epi16(_mm_add_epi16(q5, q6), RVP9_MUL(q7, 3)))));
+      __m128i oq3b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p3, p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), RVP9_MUL(q3, 2)),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q4, q5), q6), RVP9_MUL(q7, 4)))));
+      __m128i oq4b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(p2, p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3),
+         _mm_add_epi16(_mm_add_epi16(RVP9_MUL(q4, 2), q5), _mm_add_epi16(q6, RVP9_MUL(q7, 5))))));
+      __m128i oq5b = RVP9_LF16_A4(_mm_add_epi16(p1,
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q3, q4), RVP9_MUL(q5, 2)), _mm_add_epi16(q6, RVP9_MUL(q7, 6))))));
+      __m128i oq6b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p0, q0), q1), q2),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q3, q4), q5),
+         _mm_add_epi16(RVP9_MUL(q6, 2), RVP9_MUL(q7, 7)))));
+#undef RVP9_LF16_A4
+#undef RVP9_MUL
+      rp6 = _mm_or_si128(_mm_and_si128(flat2, op6), _mm_andnot_si128(flat2, rp6));
+      rp5 = _mm_or_si128(_mm_and_si128(flat2, op5), _mm_andnot_si128(flat2, rp5));
+      rp4 = _mm_or_si128(_mm_and_si128(flat2, op4), _mm_andnot_si128(flat2, rp4));
+      rp3 = _mm_or_si128(_mm_and_si128(flat2, op3), _mm_andnot_si128(flat2, rp3));
+      rp2 = _mm_or_si128(_mm_and_si128(flat2, op2b), _mm_andnot_si128(flat2, rp2));
+      rp1 = _mm_or_si128(_mm_and_si128(flat2, op1b), _mm_andnot_si128(flat2, rp1));
+      rp0 = _mm_or_si128(_mm_and_si128(flat2, op0b), _mm_andnot_si128(flat2, rp0));
+      rq0 = _mm_or_si128(_mm_and_si128(flat2, oq0b), _mm_andnot_si128(flat2, rq0));
+      rq1 = _mm_or_si128(_mm_and_si128(flat2, oq1b), _mm_andnot_si128(flat2, rq1));
+      rq2 = _mm_or_si128(_mm_and_si128(flat2, oq2b), _mm_andnot_si128(flat2, rq2));
+      rq3 = _mm_or_si128(_mm_and_si128(flat2, oq3b), _mm_andnot_si128(flat2, rq3));
+      rq4 = _mm_or_si128(_mm_and_si128(flat2, oq4b), _mm_andnot_si128(flat2, rq4));
+      rq5 = _mm_or_si128(_mm_and_si128(flat2, oq5b), _mm_andnot_si128(flat2, rq5));
+      rq6 = _mm_or_si128(_mm_and_si128(flat2, oq6b), _mm_andnot_si128(flat2, rq6));
+   }
+
+   _mm_storeu_si128((__m128i*)(s - 7 * pitch), rp6);
+   _mm_storeu_si128((__m128i*)(s - 6 * pitch), rp5);
+   _mm_storeu_si128((__m128i*)(s - 5 * pitch), rp4);
+   _mm_storeu_si128((__m128i*)(s - 4 * pitch), rp3);
+   _mm_storeu_si128((__m128i*)(s - 3 * pitch), rp2);
+   _mm_storeu_si128((__m128i*)(s - 2 * pitch), rp1);
+   _mm_storeu_si128((__m128i*)(s - 1 * pitch), rp0);
+   _mm_storeu_si128((__m128i*)(s + 0 * pitch), rq0);
+   _mm_storeu_si128((__m128i*)(s + 1 * pitch), rq1);
+   _mm_storeu_si128((__m128i*)(s + 2 * pitch), rq2);
+   _mm_storeu_si128((__m128i*)(s + 3 * pitch), rq3);
+   _mm_storeu_si128((__m128i*)(s + 4 * pitch), rq4);
+   _mm_storeu_si128((__m128i*)(s + 5 * pitch), rq5);
+   _mm_storeu_si128((__m128i*)(s + 6 * pitch), rq6);
+}
+
+
+/* 8x8 uint16 transpose (SSE2 unpack cascade), used by the vertical LF
+ * kernels: the scalar vertical filters read p3..q3 contiguously along
+ * each of 8 rows, so loading 8 rows and transposing puts one sample per
+ * lane, letting the column-parallel filter (identical to the horizontal
+ * kernels) run, after which we transpose back and store. */
+/* NEON transpose defined below via rvp9_lf_transpose8x8_hbd_n */
+
+
+/* Vertical 4-tap: transpose an 8x8 window (cols p3..q3), filter, store. */
+static void rvp9_lpf_vertical_4_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i r[8];
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i m    = _mm_setzero_si128();
+   __m128i hev  = _mm_setzero_si128();
+   __m128i p3, p2, p1, p0, q0, q1, q2, q3, t;
+   int i;
+   for (i = 0; i < 8; i++)
+      r[i] = _mm_loadu_si128((const __m128i*)(s - 4 + i * pitch));
+   rvp9_lf_transpose8x8_hbd_n(r);
+   p3 = r[0]; p2 = r[1]; p1 = r[2]; p0 = r[3];
+   q0 = r[4]; q1 = r[5]; q2 = r[6]; q3 = r[7];
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+   {
+      __m128i ps1 = _mm_sub_epi16(p1, off), ps0 = _mm_sub_epi16(p0, off);
+      __m128i qs0 = _mm_sub_epi16(q0, off), qs1 = _mm_sub_epi16(q1, off);
+      __m128i filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+      __m128i f1, f2, outer;
+      filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+                  _mm_mullo_epi16(_mm_set1_epi16(3),
+                     _mm_sub_epi16(qs0, ps0)))), m);
+      f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+      f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+      outer = _mm_andnot_si128(hev,
+                 _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+      r[2] = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off);
+      r[3] = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off);
+      r[4] = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off);
+      r[5] = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off);
+   }
+   rvp9_lf_transpose8x8_hbd_n(r);
+   for (i = 0; i < 8; i++)
+      _mm_storeu_si128((__m128i*)(s - 4 + i * pitch), r[i]);
+}
+
+/* Vertical 8-tap: 8x8 transpose window, filter8 (flat blend), store. */
+static void rvp9_lpf_vertical_8_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i r[8];
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i four = _mm_set1_epi16(1 << 2);
+   __m128i m = _mm_setzero_si128(), hev = _mm_setzero_si128();
+   __m128i flat = _mm_setzero_si128();
+   __m128i p3, p2, p1, p0, q0, q1, q2, q3, t;
+   __m128i f4_p1, f4_p0, f4_q0, f4_q1;
+   int i;
+   for (i = 0; i < 8; i++)
+      r[i] = _mm_loadu_si128((const __m128i*)(s - 4 + i * pitch));
+   rvp9_lf_transpose8x8_hbd_n(r);
+   p3 = r[0]; p2 = r[1]; p1 = r[2]; p0 = r[3];
+   q0 = r[4]; q1 = r[5]; q2 = r[6]; q3 = r[7];
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q0), four));
+   flat = _mm_xor_si128(flat, _mm_set1_epi16(-1));
+   flat = _mm_and_si128(flat, m);
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+   {
+      __m128i ps1 = _mm_sub_epi16(p1, off), ps0 = _mm_sub_epi16(p0, off);
+      __m128i qs0 = _mm_sub_epi16(q0, off), qs1 = _mm_sub_epi16(q1, off);
+      __m128i filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+      __m128i f1, f2, outer;
+      filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+                  _mm_mullo_epi16(_mm_set1_epi16(3),
+                     _mm_sub_epi16(qs0, ps0)))), m);
+      f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+      f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+      outer = _mm_andnot_si128(hev,
+                 _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+      f4_p1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off);
+      f4_p0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off);
+      f4_q0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off);
+      f4_q1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off);
+   }
+   {
+      __m128i c4 = _mm_set1_epi16(4);
+#define RVP9_V8_A3(x) _mm_srai_epi16(_mm_add_epi16((x), c4), 3)
+      __m128i op2 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p3),
+         _mm_slli_epi16(p2, 1)), p1), p0), q0));
+      __m128i op1 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p2),
+         _mm_slli_epi16(p1, 1)), p0), q0), q1));
+      __m128i op0 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p2), p1),
+         _mm_slli_epi16(p0, 1)), q0), q1), q2));
+      __m128i oq0 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p2, p1), p0),
+         _mm_slli_epi16(q0, 1)), q1), q2), q3));
+      __m128i oq1 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p1, p0), q0),
+         _mm_slli_epi16(q1, 1)), q2), q3), q3));
+      __m128i oq2 = RVP9_V8_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1),
+         _mm_slli_epi16(q2, 1)), q3), q3), q3));
+#undef RVP9_V8_A3
+      r[1] = _mm_or_si128(_mm_and_si128(flat, op2), _mm_andnot_si128(flat, p2));
+      r[2] = _mm_or_si128(_mm_and_si128(flat, op1), _mm_andnot_si128(flat, f4_p1));
+      r[3] = _mm_or_si128(_mm_and_si128(flat, op0), _mm_andnot_si128(flat, f4_p0));
+      r[4] = _mm_or_si128(_mm_and_si128(flat, oq0), _mm_andnot_si128(flat, f4_q0));
+      r[5] = _mm_or_si128(_mm_and_si128(flat, oq1), _mm_andnot_si128(flat, f4_q1));
+      r[6] = _mm_or_si128(_mm_and_si128(flat, oq2), _mm_andnot_si128(flat, q2));
+   }
+   rvp9_lf_transpose8x8_hbd_n(r);
+   for (i = 0; i < 8; i++)
+      _mm_storeu_si128((__m128i*)(s - 4 + i * pitch), r[i]);
+}
+
+
+/* Vertical 16-tap: load 8 rows x 16 cols as two 8x8 halves, transpose
+ * both, run the filter16 blend (identical to horizontal_16), transpose
+ * the 14 updated columns back and store. */
+static void rvp9_lpf_vertical_16_hbd_neon(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i lo[8], hi[8];
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i four = _mm_set1_epi16(1 << 2);
+   __m128i m    = _mm_setzero_si128();
+   __m128i hev  = _mm_setzero_si128();
+   __m128i flat = _mm_setzero_si128();
+   __m128i flat2 = _mm_setzero_si128();
+   __m128i p7, p6, p5, p4, p3, p2, p1, p0;
+   __m128i q0, q1, q2, q3, q4, q5, q6, q7;
+   __m128i rp6, rp5, rp4, rp3, rp2, rp1, rp0;
+   __m128i rq0, rq1, rq2, rq3, rq4, rq5, rq6;
+   __m128i t;
+   int i;
+   for (i = 0; i < 8; i++)
+   {
+      lo[i] = _mm_loadu_si128((const __m128i*)(s - 8 + i * pitch));
+      hi[i] = _mm_loadu_si128((const __m128i*)(s + 0 + i * pitch));
+   }
+   rvp9_lf_transpose8x8_hbd_n(lo);   /* lo[0]=p7 .. lo[7]=p0 */
+   rvp9_lf_transpose8x8_hbd_n(hi);   /* hi[0]=q0 .. hi[7]=q7 */
+   p7 = lo[0]; p6 = lo[1]; p5 = lo[2]; p4 = lo[3];
+   p3 = lo[4]; p2 = lo[5]; p1 = lo[6]; p0 = lo[7];
+   q0 = hi[0]; q1 = hi[1]; q2 = hi[2]; q3 = hi[3];
+   q4 = hi[4]; q5 = hi[5]; q6 = hi[6]; q7 = hi[7];
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff_n(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff_n(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p2, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q2, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p3, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q3, q0), four));
+   flat = _mm_xor_si128(flat, _mm_set1_epi16(-1));
+   flat = _mm_and_si128(flat, m);
+
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p4, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q4, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p5, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q5, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p6, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q6, q0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p7, p0), four));
+   flat2 = _mm_or_si128(flat2, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q7, q0), four));
+   flat2 = _mm_xor_si128(flat2, _mm_set1_epi16(-1));
+   flat2 = _mm_and_si128(flat2, flat);
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff_n(q1, q0), thv));
+
+   /* filter4 base result into rp1,rp0,rq0,rq1 */
+   {
+      __m128i ps1 = _mm_sub_epi16(p1, off), ps0 = _mm_sub_epi16(p0, off);
+      __m128i qs0 = _mm_sub_epi16(q0, off), qs1 = _mm_sub_epi16(q1, off);
+      __m128i filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_sub_epi16(ps1, qs1)), hev);
+      __m128i f1, f2, outer;
+      filter = _mm_and_si128(rvp9_lf_clampv_n(_mm_add_epi16(filter,
+                  _mm_mullo_epi16(_mm_set1_epi16(3),
+                     _mm_sub_epi16(qs0, ps0)))), m);
+      f1 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+      f2 = _mm_srai_epi16(rvp9_lf_clampv_n(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+      outer = _mm_andnot_si128(hev,
+                 _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+      rp1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps1, outer)), off);
+      rp0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_add_epi16(ps0, f2)), off);
+      rq0 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs0, f1)), off);
+      rq1 = _mm_add_epi16(rvp9_lf_clampv_n(_mm_sub_epi16(qs1, outer)), off);
+   }
+   rp2 = p2; rq2 = q2;
+   rp6 = p6; rp5 = p5; rp4 = p4; rp3 = p3;
+   rq3 = q3; rq4 = q4; rq5 = q5; rq6 = q6;
+
+   /* filter8 7-tap, blended by flat into p2..q2 and p1..q1 */
+   {
+      __m128i c4 = _mm_set1_epi16(4);
+#define RVP9_LF16_A3(x) _mm_srai_epi16(_mm_add_epi16((x), c4), 3)
+      __m128i op2 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p3),
+         _mm_slli_epi16(p2, 1)), p1), p0), q0));
+      __m128i op1 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p3), p2),
+         _mm_slli_epi16(p1, 1)), p0), q0), q1));
+      __m128i op0 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p3, p2), p1),
+         _mm_slli_epi16(p0, 1)), q0), q1), q2));
+      __m128i oq0 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p2, p1), p0),
+         _mm_slli_epi16(q0, 1)), q1), q2), q3));
+      __m128i oq1 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p1, p0), q0),
+         _mm_slli_epi16(q1, 1)), q2), q3), q3));
+      __m128i oq2 = RVP9_LF16_A3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1),
+         _mm_slli_epi16(q2, 1)), q3), q3), q3));
+#undef RVP9_LF16_A3
+      rp2 = _mm_or_si128(_mm_and_si128(flat, op2), _mm_andnot_si128(flat, rp2));
+      rp1 = _mm_or_si128(_mm_and_si128(flat, op1), _mm_andnot_si128(flat, rp1));
+      rp0 = _mm_or_si128(_mm_and_si128(flat, op0), _mm_andnot_si128(flat, rp0));
+      rq0 = _mm_or_si128(_mm_and_si128(flat, oq0), _mm_andnot_si128(flat, rq0));
+      rq1 = _mm_or_si128(_mm_and_si128(flat, oq1), _mm_andnot_si128(flat, rq1));
+      rq2 = _mm_or_si128(_mm_and_si128(flat, oq2), _mm_andnot_si128(flat, rq2));
+   }
+
+   /* filter16 15-tap, blended by flat2 into p6..q6 */
+   {
+      __m128i c8 = _mm_set1_epi16(8);
+#define RVP9_LF16_A4(x) _mm_srai_epi16(_mm_add_epi16((x), c8), 4)
+#define RVP9_MUL(v, n) _mm_mullo_epi16((v), _mm_set1_epi16(n))
+      __m128i op6 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 7), RVP9_MUL(p6, 2)), p5), p4), p3), p2), p1),
+         _mm_add_epi16(p0, q0)));
+      __m128i op5 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 6), p6), RVP9_MUL(p5, 2)), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(p0, q0), q1)));
+      __m128i op4 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 5), p6), p5), RVP9_MUL(p4, 2)), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2)));
+      __m128i op3 = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 4), p6), p5), p4), RVP9_MUL(p3, 2)), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3)));
+      __m128i op2b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 3), p6), p5), p4), p3), RVP9_MUL(p2, 2)), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3), q4)));
+      __m128i op1b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         RVP9_MUL(p7, 2), p6), p5), p4), p3), p2), RVP9_MUL(p1, 2)),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3), q4), q5)));
+      __m128i op0b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         p7, p6), p5), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(RVP9_MUL(p0, 2), q0), q1), q2), q3), q4), q5), q6)));
+      __m128i oq0b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p6, p5), p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, RVP9_MUL(q0, 2)), q1), q2), q3), q4), q5), q6), q7)));
+      __m128i oq1b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(_mm_add_epi16(p5, p4), p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), RVP9_MUL(q1, 2)), q2), q3), q4), q5),
+         _mm_add_epi16(q6, RVP9_MUL(q7, 2)))));
+      __m128i oq2b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p4, p3), p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), RVP9_MUL(q2, 2)), q3), q4),
+         _mm_add_epi16(_mm_add_epi16(q5, q6), RVP9_MUL(q7, 3)))));
+      __m128i oq3b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p3, p2), p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), RVP9_MUL(q3, 2)),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q4, q5), q6), RVP9_MUL(q7, 4)))));
+      __m128i oq4b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(p2, p1),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2), q3),
+         _mm_add_epi16(_mm_add_epi16(RVP9_MUL(q4, 2), q5), _mm_add_epi16(q6, RVP9_MUL(q7, 5))))));
+      __m128i oq5b = RVP9_LF16_A4(_mm_add_epi16(p1,
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), q1), q2),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q3, q4), RVP9_MUL(q5, 2)), _mm_add_epi16(q6, RVP9_MUL(q7, 6))))));
+      __m128i oq6b = RVP9_LF16_A4(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+         _mm_add_epi16(p0, q0), q1), q2),
+         _mm_add_epi16(_mm_add_epi16(_mm_add_epi16(q3, q4), q5),
+         _mm_add_epi16(RVP9_MUL(q6, 2), RVP9_MUL(q7, 7)))));
+#undef RVP9_LF16_A4
+#undef RVP9_MUL
+      rp6 = _mm_or_si128(_mm_and_si128(flat2, op6), _mm_andnot_si128(flat2, rp6));
+      rp5 = _mm_or_si128(_mm_and_si128(flat2, op5), _mm_andnot_si128(flat2, rp5));
+      rp4 = _mm_or_si128(_mm_and_si128(flat2, op4), _mm_andnot_si128(flat2, rp4));
+      rp3 = _mm_or_si128(_mm_and_si128(flat2, op3), _mm_andnot_si128(flat2, rp3));
+      rp2 = _mm_or_si128(_mm_and_si128(flat2, op2b), _mm_andnot_si128(flat2, rp2));
+      rp1 = _mm_or_si128(_mm_and_si128(flat2, op1b), _mm_andnot_si128(flat2, rp1));
+      rp0 = _mm_or_si128(_mm_and_si128(flat2, op0b), _mm_andnot_si128(flat2, rp0));
+      rq0 = _mm_or_si128(_mm_and_si128(flat2, oq0b), _mm_andnot_si128(flat2, rq0));
+      rq1 = _mm_or_si128(_mm_and_si128(flat2, oq1b), _mm_andnot_si128(flat2, rq1));
+      rq2 = _mm_or_si128(_mm_and_si128(flat2, oq2b), _mm_andnot_si128(flat2, rq2));
+      rq3 = _mm_or_si128(_mm_and_si128(flat2, oq3b), _mm_andnot_si128(flat2, rq3));
+      rq4 = _mm_or_si128(_mm_and_si128(flat2, oq4b), _mm_andnot_si128(flat2, rq4));
+      rq5 = _mm_or_si128(_mm_and_si128(flat2, oq5b), _mm_andnot_si128(flat2, rq5));
+      rq6 = _mm_or_si128(_mm_and_si128(flat2, oq6b), _mm_andnot_si128(flat2, rq6));
+   }
+
+
+   lo[1] = rp6; lo[2] = rp5; lo[3] = rp4; lo[4] = rp3;
+   lo[5] = rp2; lo[6] = rp1; lo[7] = rp0;
+   hi[0] = rq0; hi[1] = rq1; hi[2] = rq2; hi[3] = rq3;
+   hi[4] = rq4; hi[5] = rq5; hi[6] = rq6;
+   /* lo[0]=p7 and hi[7]=q7 are unchanged by the filter */
+   rvp9_lf_transpose8x8_hbd_n(lo);
+   rvp9_lf_transpose8x8_hbd_n(hi);
+   for (i = 0; i < 8; i++)
+   {
+      _mm_storeu_si128((__m128i*)(s - 8 + i * pitch), lo[i]);
+      _mm_storeu_si128((__m128i*)(s + 0 + i * pitch), hi[i]);
+   }
+}
+
+
+#undef __m128i
+#undef _mm_setzero_si128
+#undef _mm_set1_epi16
+#undef _mm_or_si128
+#undef _mm_and_si128
+#undef _mm_andnot_si128
+#undef _mm_xor_si128
+#undef _mm_add_epi16
+#undef _mm_sub_epi16
+#undef _mm_mullo_epi16
+#undef _mm_min_epi16
+#undef _mm_max_epi16
+#undef _mm_cmpgt_epi16
+#undef _mm_slli_epi16
+#undef _mm_srai_epi16
+#undef _mm_srli_epi16
+#undef _mm_loadu_si128
+#undef _mm_storeu_si128
+
 #endif /* RVP9_RECON_HBD && RVP9_NEON */
 
 
