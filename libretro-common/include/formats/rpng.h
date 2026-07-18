@@ -94,6 +94,16 @@ uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch,
       const struct rpng_hdr_metadata *hdr, uint64_t *bytes);
 
+/* Encode a 16-bit-per-channel RGB image (three uint16_t per pixel, in
+ * host byte order, R,G,B order) as a 48-bit PNG, optionally with the
+ * given HDR colour-space chunks. This is the higher-precision companion
+ * to the 8-bit bgr24 path, suitable for HDR content. `pitch` is the
+ * row stride in BYTES (typically width * 6). Samples are written to the
+ * PNG big-endian per the spec. */
+uint8_t* rpng_save_image_rgb48_hdr_string(const uint16_t *data,
+      unsigned width, unsigned height, signed pitch,
+      const struct rpng_hdr_metadata *hdr, uint64_t *bytes);
+
 /* After a successful decode, retrieve any HDR colour-space metadata
  * parsed from cICP / cLLI / mDCV chunks. Returns true and fills *out
  * when the image carried a cICP chunk; returns false otherwise (in

@@ -223,6 +223,21 @@ static void copy_bgr24_line(uint8_t *dst, const uint8_t *src, unsigned width)
    }
 }
 
+/* 16-bit-per-channel RGB. PNG stores 16-bit samples big-endian, so each
+ * host-order R,G,B sample is written most-significant byte first. Input is
+ * three uint16_t per pixel in R,G,B order (already the PNG channel order,
+ * unlike the BGR 8-bit path). */
+static void copy_rgb48_line(uint8_t *dst, const uint16_t *src, unsigned width)
+{
+   unsigned i;
+   for (i = 0; i < width; i++, dst += 6, src += 3)
+   {
+      dst[0] = (uint8_t)(src[0] >> 8); dst[1] = (uint8_t)(src[0] & 0xff);
+      dst[2] = (uint8_t)(src[1] >> 8); dst[3] = (uint8_t)(src[1] & 0xff);
+      dst[4] = (uint8_t)(src[2] >> 8); dst[5] = (uint8_t)(src[2] & 0xff);
+   }
+}
+
 static unsigned count_sad(const uint8_t *data, size_t len)
 {
    size_t i;
@@ -350,8 +365,9 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
 
    ihdr.width      = width;
    ihdr.height     = height;
-   ihdr.depth      = 8;
-   ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; /* RGBA or RGB */
+   /* bpp is bytes per pixel: 6 = 16-bit RGB, 4 = 8-bit RGBA, 3 = 8-bit RGB. */
+   ihdr.depth      = (bpp == 6) ? 16 : 8;
+   ihdr.color_type = (bpp == sizeof(uint32_t)) ? 6 : 2; /* RGBA or RGB */
    if (!png_write_ihdr_string(intf_s, &ihdr))
       GOTO_END_ERROR();
 
@@ -396,6 +412,8 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
 
       if (bpp == sizeof(uint32_t))
          copy_argb_line(rgba_line, (const uint32_t*)data, width);
+      else if (bpp == 6)
+         copy_rgb48_line(rgba_line, (const uint16_t*)data, width);
       else
          copy_bgr24_line(rgba_line, data, width);
 
@@ -617,5 +635,50 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
 {
    return rpng_save_image_bgr24_hdr_string(data, width, height, pitch,
          NULL, bytes);
+}
+
+uint8_t* rpng_save_image_rgb48_hdr_string(const uint16_t *data,
+      unsigned width, unsigned height, signed pitch,
+      const struct rpng_hdr_metadata *hdr, uint64_t* bytes)
+{
+   bool ret             = false;
+   intfstream_t *intf_s = NULL;
+   /* cICP(16) + cLLI(20) + mDCV(36) = 72 bytes of extra chunks at most. */
+   size_t hdr_extra     = hdr ? 72 : 0;
+   /* 6 bytes/pixel for 16-bit RGB. */
+   size_t _len          = (size_t)(width * height * 6 * DEFLATE_PADDING) + PNG_ROUGH_HEADER + hdr_extra;
+   uint8_t *buf         = (uint8_t*)malloc(_len * sizeof(uint8_t));
+   if (!buf)
+      GOTO_END_ERROR();
+
+   intf_s = intfstream_open_memory(buf,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE,
+         _len);
+
+   ret    = rpng_save_image_stream((const uint8_t*)data,
+            intf_s, width, height, pitch, 6, hdr);
+   *bytes = intfstream_get_ptr(intf_s);
+
+   if (ret && *bytes > 0)
+   {
+      uint8_t *trimmed = (uint8_t*)realloc(buf, (size_t)*bytes);
+      if (trimmed)
+         buf = trimmed;
+   }
+
+end:
+   if (intf_s)
+   {
+      intfstream_close(intf_s);
+      free(intf_s);
+   }
+   if (!ret)
+   {
+      if (buf)
+         free(buf);
+      return NULL;
+   }
+   return buf;
 }
 
