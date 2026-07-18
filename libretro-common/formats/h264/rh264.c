@@ -1623,6 +1623,29 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          if(cbp_chroma){ if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,
                cbp_chroma,slice_first,0)<0)return -1; }
       }
+      else if(mb_type==25){
+         /* I_PCM: byte-align (pcm_alignment_zero_bit), then the raw
+          * samples. Neighbour bookkeeping matches the CABAC path: DC
+          * prediction modes (8.3.1.1) and coefficient counts of 16
+          * (9.2.1); QP is unchanged. */
+         int r,c2;
+         b->bitpos=(b->bitpos+7)&~(size_t)7;
+         if((b->size*8-b->bitpos)>>3 < 256+64+64) return -1;
+         for(r=0;r<16;r++)for(c2=0;c2<16;c2++)
+            y[r*f->ystride+c2]=(uint8_t)rh264_un(b,8);
+         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+            u[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
+         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+            v[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
+         for(r=0;r<4;r++)for(c2=0;c2<4;c2++){
+            f->nzL[(mby*4+r)*gw+mbx*4+c2]=16;
+            f->i4mode[(mby*4+r)*gw+mbx*4+c2]=0xff;
+         }
+         for(r=0;r<2;r++)for(c2=0;c2<2;c2++){
+            f->nzC[0][(mby*2+r)*cgw+mbx*2+c2]=16;
+            f->nzC[1][(mby*2+r)*cgw+mbx*2+c2]=16;
+         }
+      }
       else return -2;
    return 0;
 }
@@ -4298,7 +4321,44 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
    else
       is_i16 = forced;
    if (is_i16) {
-      if (rh264_cabac_terminate(cb)) return -100;   /* I_PCM unsupported */
+      if (rh264_cabac_terminate(cb)) {
+         /* I_PCM. The encoder flushed its arithmetic state and aligned, so
+          * the raw samples begin at the next byte boundary of what this
+          * engine has fetched: drop the current byte's remaining bits. The
+          * engine restarts behind the samples with its context variables
+          * kept (9.3.1.2). */
+         int r, c2, k;
+         cb->bitcnt = 0;
+         if (cb->end - cb->buf < 256 + 64 + 64) return -1;
+         for (r = 0; r < 16; r++) for (c2 = 0; c2 < 16; c2++)
+            Y[r*f->ystride + c2] = *cb->buf++;
+         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+            U8[r*f->cstride + c2] = *cb->buf++;
+         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+            V8[r*f->cstride + c2] = *cb->buf++;
+         rh264_cabac_init_engine(cb, cb->buf, cb->end);
+         /* neighbour state: mb_type counts as not-I_NxN (9.3.3.1.1.3),
+          * every coded_block_flag is inferred 1 (9.3.3.1.1.9), the intra
+          * prediction modes read as DC (8.3.1.1), and coefficient counts
+          * are 16 (9.2.1). QP is unchanged: I_PCM carries no delta. */
+         cur->is_i16 = 1;
+         cur->cbpLuma = 15; cur->cbpChroma = 2;   /* inferred, 7.4.5 */
+         for (k = 0; k < 16; k++) cur->luma[k] = 1;
+         cur->cDC[0] = cur->cDC[1] = 1;
+         for (k = 0; k < 4; k++) cur->cAC[0][k] = cur->cAC[1][k] = 1;
+         for (r = 0; r < 4; r++) for (c2 = 0; c2 < 4; c2++)
+         {
+            f->nzL[(gy0+r)*gw + gx0+c2] = 16;
+            f->i4mode[(gy0+r)*gw + gx0+c2] = 0xff;
+         }
+         for (r = 0; r < 2; r++) for (c2 = 0; c2 < 2; c2++)
+         {
+            f->nzC[0][(mby*2+r)*cgw + mbx*2+c2] = 16;
+            f->nzC[1][(mby*2+r)*cgw + mbx*2+c2] = 16;
+         }
+         *prevQpDeltaNZ = 0;
+         return 0;
+      }
       is_i16 = 1;
       cbp_luma   = rh264_cabac_decode(cb, mbt[1]) ? 15 : 0;
       if (rh264_cabac_decode(cb, mbt[2]))
