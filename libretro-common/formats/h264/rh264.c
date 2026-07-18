@@ -118,11 +118,14 @@ static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
 
 /* ==================== rh264_slice.h ==================== */
 enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SLICE_SI=4 };
+#define RH264_MAX_REFS 16
+#define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
    num_ref_idx_l0,cabac_init_idc,frame_num_val,
    nmod,wp_valid,luma_log2_denom,chroma_log2_denom,
-   slice_alpha_c0_offset,slice_beta_offset;
+   slice_alpha_c0_offset,slice_beta_offset,n_mmco1;
+   int32_t mmco1_diff[RH264_MAX_REFS];
    int8_t mod_op[34]; int32_t mod_val[34];
    int16_t wp_lw[32],wp_lo[32],wp_cw[32][2],wp_co[32][2]; } rh264_slice_hdr;
 /* advancing variant: parses from an existing reader b (leaves it at slice data) */
@@ -183,11 +186,17 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       if(sh->is_idr){ rh264_u1(b); rh264_u1(b); } /* no_output_prior + long_term_ref */
       else {
          if(rh264_u1(b)){ /* adaptive_ref_pic_marking_mode_flag */
+            /* Op 1 removals are executed (encoders use them to retire
+             * B-pyramid references early); long-term and reset ops (2..6)
+             * are not supported, so streams using them are refused rather
+             * than decoded against a wrong reference set. */
             int op; do{ op=rh264_ue(b);
-               if(op==1||op==3) rh264_ue(b);
-               if(op==2) rh264_ue(b);
-               if(op==3||op==6) rh264_ue(b);
-               if(op==4) rh264_ue(b);
+               if(op==1){
+                  int d=rh264_ue(b);
+                  if(sh->n_mmco1<RH264_MAX_REFS)
+                     sh->mmco1_diff[sh->n_mmco1++]=d;
+               }
+               else if(op!=0) return 0;
             } while(op!=0);
          }
       }
@@ -1935,8 +1944,6 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
 
 
 
-#define RH264_MAX_REFS 16
-#define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 
 struct rh264_video
 {
@@ -1972,6 +1979,9 @@ struct rh264_video
    int        out_show;         /* slot most recently handed out, -1 if none */
    int        idr_gen;          /* IDR generation of the current picture     */
    int        reorder_delay;    /* output delay in pictures, fixed per SPS   */
+   /* marking ops of the picture just decoded, executed before it is stored */
+   int        pend_n_mmco1;
+   int32_t    pend_mmco1[RH264_MAX_REFS];
 };
 
 /* ---- allocation helpers ---- */
@@ -3700,12 +3710,52 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
  * order the default P list initialisation of 8.2.4.2.1 produces when there is
  * no list reordering. The oldest entry is evicted once the buffer is full
  * (the sliding window of 8.2.5.3). */
+/* Adaptive reference marking, op 1 only (8.2.5.4.1): unmark the short-term
+ * picture whose PicNum is CurrPicNum minus the signalled difference. Runs
+ * before the current picture is stored. */
+static void rh264_dpb_apply_mmco(rh264_video *v, int currfn,
+      const int32_t *diffs, int ndiff)
+{
+   int k, maxpn = 1 << v->sps.log2_max_frame_num;
+   for (k = 0; k < ndiff; k++)
+   {
+      int pn = currfn - (diffs[k] + 1);
+      int j;
+      if (pn < 0) pn += maxpn;
+      if (pn > currfn) pn -= maxpn;
+      for (j = 0; j < v->dpb_len; j++)
+      {
+         int fn = v->dpb_pn[v->dpb_slot[j]];
+         int fnw = (fn > currfn) ? (fn - maxpn) : fn;
+         if (fnw == pn)
+         {
+            int m;
+            for (m = j; m < v->dpb_len - 1; m++)
+               v->dpb_slot[m] = v->dpb_slot[m + 1];
+            v->dpb_len--;
+            break;
+         }
+      }
+   }
+}
+
 static void rh264_dpb_insert(rh264_video *v, int picnum)
 {
    int slot, i;
    if (v->dpb_size <= 0) return;
    if (v->dpb_len < v->dpb_size)
-      slot = v->dpb_len;                       /* still filling up */
+   {
+      /* any slot not currently listed; marking removals can leave holes */
+      int used, j;
+      slot = 0;
+      for (i = 0; i < v->dpb_size; i++)
+      {
+         used = 0;
+         for (j = 0; j < v->dpb_len; j++)
+            if (v->dpb_slot[j] == i) { used = 1; break; }
+         if (!used) { slot = i; break; }
+      }
+   }
    else
       slot = v->dpb_slot[v->dpb_size - 1];     /* evict the oldest */
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
@@ -3826,6 +3876,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    }
    if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
    v->last_picnum = sh.frame_num_val;
+   v->pend_n_mmco1 = sh.n_mmco1;
+   memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
    free(rbsp);
    return rc;
 }
@@ -3853,7 +3905,11 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (rh264_video_decode_inter(v, nal, nl) != 0) return -1;
       if ((nal[0] >> 5) & 3)   /* nal_ref_idc: only reference pictures stored */
+      {
+         rh264_dpb_apply_mmco(v, v->last_picnum, v->pend_mmco1,
+               v->pend_n_mmco1);
          rh264_dpb_insert(v, v->last_picnum);
+      }
       if (rh264_out_push(v, v->last_poc, 0) >= 0) *got_pic = 1;
       return 1;
    }
