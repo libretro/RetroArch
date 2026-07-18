@@ -3387,6 +3387,20 @@ const enum msg_hash_enums ozone_system_tabs_label[OZONE_SYSTEM_TAB_LAST] = {
 #endif
 };
 
+/* Fill a float[4] RGBA from a packed 0xRRGGBBAA theme colour (RGB taken at
+ * 8-bit, which is how the theme authors it) and a full-precision float alpha
+ * in 0..1. Used to drive animated-alpha text through the font high-precision
+ * path so the fade is not quantised to 256 steps on a deep-colour
+ * framebuffer. On an 8-bit framebuffer the result rounds to the same output. */
+static INLINE void ozone_text_color_hp(uint32_t rgba, float alpha,
+      float out[4])
+{
+   out[0] = FONT_COLOR_GET_RED(rgba)   * (1.0f / 255.0f);
+   out[1] = FONT_COLOR_GET_GREEN(rgba) * (1.0f / 255.0f);
+   out[2] = FONT_COLOR_GET_BLUE(rgba)  * (1.0f / 255.0f);
+   out[3] = alpha < 0.0f ? 0.0f : (alpha > 1.0f ? 1.0f : alpha);
+}
+
 static void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       const uintptr_t *icons_tex,
@@ -3452,6 +3466,10 @@ static void ozone_draw_sidebar(
    gfx_animation_ctx_ticker_smooth_t ticker_smooth;
    unsigned ticker_x_offset          = 0;
    uint32_t text_alpha               = ozone->animations.sidebar_text_alpha * 255.0f;
+   /* Full-precision copy of the same fade alpha, kept as a float so the
+    * animated sidebar text can be drawn through the font high-precision path
+    * without the 256-step quantisation of the 8-bit text_alpha above. */
+   float    text_alpha_f             = ozone->animations.sidebar_text_alpha;
    float scale_factor                = ozone->last_scale_factor;
    unsigned selection_y              = 0;
    unsigned selection_old_y          = 0;
@@ -3609,7 +3627,8 @@ static void ozone_draw_sidebar(
    if (dispctx && dispctx->blend_begin)
       dispctx->blend_begin(userdata);
 
-   text_alpha *= ozone->animations.alpha;
+   text_alpha   *= ozone->animations.alpha;
+   text_alpha_f *= ozone->animations.alpha;
 
    for (i = 0; i < (unsigned)(ozone->system_tab_end + 1); i++)
    {
@@ -3651,6 +3670,7 @@ static void ozone_draw_sidebar(
          enum msg_hash_enums value_idx  = ozone_system_tabs_value[ozone->tabs[i]];
          const char *title              = msg_hash_to_str(value_idx);
          uint32_t text_color            = 0;
+         float    text_color_hp[4]      = {0.0f, 0.0f, 0.0f, 0.0f};
          /* Available pixel width for the ticker.  scale_factor
           * promotes the right operand to float, and entry_width
           * may legitimately be small or zero (sidebar collapsed
@@ -3670,9 +3690,13 @@ static void ozone_draw_sidebar(
          unsigned ticker_field_width    = avail_width > 0
                ? (unsigned)avail_width : 0;
          if (ozone->theme)
-            text_color                  = selected
-               ? COLOR_TEXT_ALPHA(ozone->theme->text_selected_rgba, text_alpha)
-               : COLOR_TEXT_ALPHA(ozone->theme->text_sidebar_rgba, text_alpha);
+         {
+            uint32_t rgba               = selected
+               ? ozone->theme->text_selected_rgba
+               : ozone->theme->text_sidebar_rgba;
+            text_color                  = COLOR_TEXT_ALPHA(rgba, text_alpha);
+            ozone_text_color_hp(rgba, text_alpha_f, text_color_hp);
+         }
 
          if (use_smooth_ticker)
          {
@@ -3696,7 +3720,7 @@ static void ozone_draw_sidebar(
             gfx_animation_ticker(&ticker);
          }
 
-         gfx_display_draw_text(
+         gfx_display_draw_text_hp(
                ozone->fonts.sidebar.font,
                console_title,
                ticker_x_offset
@@ -3711,6 +3735,7 @@ static void ozone_draw_sidebar(
                video_width,
                video_height,
                text_color,
+               text_color_hp,
                TEXT_ALIGN_LEFT,
                1.0f,
                false,
@@ -3753,6 +3778,7 @@ static void ozone_draw_sidebar(
          float *col           = NULL;
          bool selected        = (ozone->categories_selection_ptr == ozone->system_tab_end + 1 + i);
          uint32_t text_color  = 0;
+         float    text_color_hp[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
          /* Cull off-screen sidebar entries */
          tab_y_screen = y + ozone->animations.scroll_y_sidebar;
@@ -3766,9 +3792,13 @@ static void ozone_draw_sidebar(
          }
 
          if (ozone->theme)
-            text_color        = COLOR_TEXT_ALPHA((selected
+         {
+            uint32_t rgba     = selected
                ? ozone->theme->text_selected_rgba
-               : ozone->theme->text_sidebar_rgba), text_alpha);
+               : ozone->theme->text_sidebar_rgba;
+            text_color        = COLOR_TEXT_ALPHA(rgba, text_alpha);
+            ozone_text_color_hp(rgba, text_alpha_f, text_color_hp);
+         }
 
          if (!node)
             goto console_iterate;
@@ -3851,7 +3881,7 @@ static void ozone_draw_sidebar(
             }
          }
 
-         gfx_display_draw_text(
+         gfx_display_draw_text_hp(
                ozone->fonts.sidebar.font,
                console_title,
                ticker_x_offset
@@ -3866,6 +3896,7 @@ static void ozone_draw_sidebar(
                video_width,
                video_height,
                text_color,
+               text_color_hp,
                TEXT_ALIGN_LEFT,
                1.0f,
                false,
