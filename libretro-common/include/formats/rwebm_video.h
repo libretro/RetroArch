@@ -58,6 +58,19 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned matrix, unsigned transfer, unsigned range,
       unsigned max_cll, int abgr);
 
+/* Native 10-bit variant: same SDR-encoded colour as the _hbd path (PQ/HDR10
+ * tone-mapped, BT.2020 -> 709 gamut, sRGB transfer) but emitted at 10-bit
+ * precision into packed XRGB2101010 (bits [29:20]=R [19:10]=G [9:0]=B, native
+ * endian) instead of narrowing to 8 bits, so gradients band less. Used when
+ * the frontend accepts RETRO_PIXEL_FORMAT_XRGB2101010. The frontend HDR path
+ * expects an SDR-encoded source, so this raises bit depth only and does not
+ * pass PQ through. */
+void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll);
+
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
 
 /* Decodes the first displayed frame of the first supported video track

@@ -109,6 +109,7 @@ typedef struct
    int          aeof;
    int64_t      vpts_ns;             /* pts of the last presented frame */
 #endif
+   int          pix10;               /* frontend accepted XRGB2101010   */
 } webm_player_t;
 
 static webm_player_t webm_player;
@@ -144,6 +145,31 @@ static INLINE uint32_t webm_yuv_px(int y, int u, int v, const int16_t *k)
    if (b < 0) b = 0; else if (b > 255) b = 255;
    return 0xff000000u | ((uint32_t)r << 16) | ((uint32_t)g << 8)
       | (uint32_t)b;
+}
+
+/* Widen an already-blitted XRGB8888 buffer to XRGB2101010 in place (each
+ * channel 8 -> 10 bits via << 2). Used when the frontend was told the format
+ * is XRGB2101010 but the decoded stream turned out to be 8-bit (VP8, or VP9
+ * profile 0), so the presented buffer matches the announced format. */
+static void webm_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
+      unsigned w, unsigned h)
+{
+   unsigned yy, xx;
+   for (yy = 0; yy < h; yy++)
+   {
+      uint32_t *dr = dst + (size_t)yy * stride;
+      for (xx = 0; xx < w; xx++)
+      {
+         uint32_t px = dr[xx];
+         uint32_t r8 = (px >> 16) & 0xff;
+         uint32_t g8 = (px >>  8) & 0xff;
+         uint32_t b8 =  px        & 0xff;
+         dr[xx] = ((r8 << 2) << 20)
+                | ((g8 << 2) << 10)
+                |  (b8 << 2)
+                | 0xC0000000u;
+      }
+   }
 }
 
 static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
@@ -220,19 +246,30 @@ static int webm_present_vp9(webm_player_t *p, int show)
    if (p->vp9->hd.bit_depth == 10)
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-      rwebm_video_blit_i420_hbd(p->fb, p->width, w, h,
-         (const uint16_t*)fb->y, p->vp9->ys,
-         (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
-         ct ? ct->matrix_coefficients : 0,
-         ct ? ct->transfer_characteristics : 0,
-         ct ? ct->colour_range : 0,
-         ct ? ct->max_cll : 0, 0);
+      if (p->pix10)
+         rwebm_video_blit_i420_10bit(p->fb, p->width, w, h,
+            (const uint16_t*)fb->y, p->vp9->ys,
+            (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
+            ct ? ct->matrix_coefficients : 0,
+            ct ? ct->transfer_characteristics : 0,
+            ct ? ct->colour_range : 0,
+            ct ? ct->max_cll : 0);
+      else
+         rwebm_video_blit_i420_hbd(p->fb, p->width, w, h,
+            (const uint16_t*)fb->y, p->vp9->ys,
+            (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
+            ct ? ct->matrix_coefficients : 0,
+            ct ? ct->transfer_characteristics : 0,
+            ct ? ct->colour_range : 0,
+            ct ? ct->max_cll : 0, 0);
    }
    else
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
             p->vp9->uvs, ct ? ct->matrix_coefficients : 0);
+         if (p->pix10)
+            webm_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
    WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
@@ -316,6 +353,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
             ct ? ct->matrix_coefficients : 0);
+         if (p->pix10)
+            webm_expand_8888_to_2101010(p->fb, p->width,
+               (unsigned)w, (unsigned)h);
       }
       WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
@@ -560,6 +600,8 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    webm_player_t *p = &webm_player;
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   enum retro_pixel_format fmt10 = RETRO_PIXEL_FORMAT_XRGB2101010;
+   int want10 = 0;
    const rwebm_track *vt = NULL;
    int64_t len = 0;
    int i, nvpkts;
@@ -567,7 +609,17 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!info || !info->path)
       return false;
-   if (!WEBM_CORE_PREFIX(environ_cb)(
+
+   /* Prefer native 10-bit output: if the frontend accepts XRGB2101010 we emit
+    * 10-bit (still SDR-encoded - the frontend HDR path inverse-tone-maps that
+    * to the display) so 10-bit sources band less; otherwise fall back to
+    * XRGB8888. The frontend accepts XRGB2101010 even when it will
+    * down-convert, so this is best-effort - the precision only survives on a
+    * driver with native 10-bit support. */
+   if (WEBM_CORE_PREFIX(environ_cb)(
+         RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
+      want10 = 1;
+   else if (!WEBM_CORE_PREFIX(environ_cb)(
          RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
    {
       if (WEBM_CORE_PREFIX(log_cb))
@@ -577,6 +629,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
 
    memset(p, 0, sizeof(*p));
+   p->pix10 = want10;
 
    if (!filestream_read_file(info->path, (void**)&p->file_buf, &len)
          || len <= 0)

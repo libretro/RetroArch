@@ -331,6 +331,7 @@ static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
 /* ------------------------------------------------------------------ */
 static uint16_t rwebm_hbd_pq_lut[1024];   /* PQ' -> tone-mapped linear */
 static uint8_t  rwebm_hbd_out_lut[8193];  /* linear -> sRGB' 8-bit     */
+static uint16_t rwebm_hbd_out_lut10[8193];/* linear -> sRGB' 10-bit    */
 static int      rwebm_hbd_lut_ready;
 static unsigned rwebm_hbd_lut_peak;       /* nits the PQ LUT was built for */
 
@@ -380,7 +381,8 @@ static void rwebm_hbd_init_luts(unsigned peak_cll)
       double lin = i / 8192.0;
       double s   = lin <= 0.0031308
          ? 12.92 * lin : 1.055 * pow(lin, 1.0 / 2.4) - 0.055;
-      rwebm_hbd_out_lut[i] = (uint8_t)(s * 255.0 + 0.5);
+      rwebm_hbd_out_lut[i]   = (uint8_t)(s * 255.0 + 0.5);
+      rwebm_hbd_out_lut10[i] = (uint16_t)(s * 1023.0 + 0.5);
    }
    rwebm_hbd_lut_ready = 1;
    rwebm_hbd_lut_peak  = peak_cll;
@@ -470,6 +472,86 @@ void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
                | 0xFF000000u)
             : (((uint32_t)r << 16) | ((uint32_t)g << 8) | (uint32_t)b
                | 0xFF000000u);
+      }
+   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Native 10-bit I420 -> XRGB2101010 (packed 2-10-10-10, native endian) */
+/* Produces the SAME SDR-encoded colour as the _hbd path - PQ/HDR10 is  */
+/* tone-mapped (hable), BT.2020 -> 709 gamut, sRGB transfer - but keeps  */
+/* 10-bit precision instead of narrowing to 8, so gradients are smoother */
+/* with less banding. The frontend's HDR pipeline expects an SDR-encoded */
+/* source (it inverse-tone-maps SDR -> HDR for the display), so this     */
+/* deliberately does NOT pass PQ through; it only raises the source bit  */
+/* depth. Used when the frontend accepts RETRO_PIXEL_FORMAT_XRGB2101010. */
+/* ------------------------------------------------------------------ */
+void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll)
+{
+   int re, gd, ge, bd;
+   int is_pq   = (transfer == 16);
+   int full    = (range == 2);
+   unsigned j, i;
+
+   if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
+      rwebm_hbd_init_luts(max_cll);
+   rwebm_hbd_matrix(matrix ? matrix : (is_pq ? 9u : 1u), &re, &gd, &ge, &bd);
+
+   for (j = 0; j < h; j++)
+   {
+      const uint16_t *yr = y + (size_t)j * ys;
+      const uint16_t *ur = u + (size_t)(j >> 1) * uvs;
+      const uint16_t *vr = v + (size_t)(j >> 1) * uvs;
+      uint32_t       *dr = dst + (size_t)j * dst_stride;
+      for (i = 0; i < w; i++)
+      {
+         int c, d, e, r, g, b;
+         if (full)
+         {
+            c = ((int)yr[i] * 877) >> 10;
+            d = (((int)ur[i >> 1] - 512) * 897) >> 10;
+            e = (((int)vr[i >> 1] - 512) * 897) >> 10;
+         }
+         else
+         {
+            c = (int)yr[i] - 64;
+            d = (int)ur[i >> 1] - 512;
+            e = (int)vr[i >> 1] - 512;
+         }
+         r = (298 * c + re * e + 128) >> 8;
+         g = (298 * c - gd * d - ge * e + 128) >> 8;
+         b = (298 * c + bd * d + 128) >> 8;
+         if (r < 0) r = 0; else if (r > 1023) r = 1023;
+         if (g < 0) g = 0; else if (g > 1023) g = 1023;
+         if (b < 0) b = 0; else if (b > 1023) b = 1023;
+         if (is_pq)
+         {
+            /* tone-mapped linear, then 2020 -> 709 gamut, then sRGB,
+             * emitted at 10-bit precision. */
+            int lr = rwebm_hbd_pq_lut[r];
+            int lg = rwebm_hbd_pq_lut[g];
+            int lb = rwebm_hbd_pq_lut[b];
+            int xr = (6801 * lr - 2407 * lg -  298 * lb) >> 12;
+            int xg = ( -510 * lr + 4640 * lg -   34 * lb) >> 12;
+            int xb = (  -75 * lr -  412 * lg + 4583 * lb) >> 12;
+            if (xr < 0) xr = 0; else if (xr > 65535) xr = 65535;
+            if (xg < 0) xg = 0; else if (xg > 65535) xg = 65535;
+            if (xb < 0) xb = 0; else if (xb > 65535) xb = 65535;
+            r = rwebm_hbd_out_lut10[xr >> 3];
+            g = rwebm_hbd_out_lut10[xg >> 3];
+            b = rwebm_hbd_out_lut10[xb >> 3];
+         }
+         /* non-PQ: r/g/b are already 10-bit SDR-encoded, keep as-is */
+         /* Pack XRGB2101010: bits [29:20]=R [19:10]=G [9:0]=B; top 2
+          * bits set so the value reads opaque under an A2 interpretation. */
+         dr[i] = ((uint32_t)r << 20)
+               | ((uint32_t)g << 10)
+               |  (uint32_t)b
+               | 0xC0000000u;
       }
    }
 }
