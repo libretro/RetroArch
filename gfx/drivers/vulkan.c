@@ -497,6 +497,8 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
 {
    switch (format)
    {
+      case VK_FORMAT_R16G16B16A16_SFLOAT:
+         return 8;
       case VK_FORMAT_B8G8R8A8_UNORM:
       case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
       case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
@@ -5943,11 +5945,25 @@ static void vulkan_readback(vk_t *vk, struct vk_image *readback_image)
    region.imageExtent.depth               = 1;
 
    staging  = &vk->readback.staging[vk->context->current_frame_index];
-   *staging = vulkan_create_texture(vk,
-         staging->memory != VK_NULL_HANDLE ? staging : NULL,
-         vk->vp.width, vk->vp.height,
-         VK_FORMAT_B8G8R8A8_UNORM, /* Formats don't matter for readback since it's a raw copy. */
-         NULL, NULL, VULKAN_TEXTURE_READBACK);
+   {
+      /* The staging buffer is a raw byte copy of the source image, so its
+       * texel size MUST match the source. For an ordinary (SDR / HDR10)
+       * read-back the source is 4 bytes/pixel and B8G8R8A8 is fine, but an
+       * HDR scRGB read-back copies the R16G16B16A16_SFLOAT backbuffer (8
+       * bytes/pixel) - using a 4-byte format there under-allocates the
+       * buffer and both the GPU copy and the CPU read overrun it. Use the
+       * swapchain format for HDR read-back so the sizes agree. */
+      VkFormat staging_format = VK_FORMAT_B8G8R8A8_UNORM;
+#ifdef VULKAN_HDR_SWAPCHAIN
+      if (vk->flags & VK_FLAG_READBACK_HDR)
+         staging_format = vk->context->swapchain_format;
+#endif
+      *staging = vulkan_create_texture(vk,
+            staging->memory != VK_NULL_HANDLE ? staging : NULL,
+            vk->vp.width, vk->vp.height,
+            staging_format,
+            NULL, NULL, VULKAN_TEXTURE_READBACK);
+   }
 
    vkCmdCopyImageToBuffer(vk->cmd, readback_image->image,
          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
