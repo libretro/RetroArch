@@ -62,6 +62,9 @@ typedef struct
    unsigned               transfer_characteristics;
    unsigned               primaries;
    unsigned               colour_range;
+   /* HDR static metadata (0 = absent) */
+   unsigned               max_cll;     /* MaxCLL, nits                     */
+   unsigned               max_fall;    /* MaxFALL, nits                    */
    /* Raw Matroska CodecID string, NUL-terminated (e.g. "V_VP8"). */
    char                   codec_id[24];
 } rwebm_track;

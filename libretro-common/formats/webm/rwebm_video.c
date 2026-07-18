@@ -78,17 +78,39 @@ struct rwebm_video
 };
 
 /* ------------------------------------------------------------------ */
+/* 8-bit limited-range YCbCr coefficient sets, <<8: {re, gd, ge, bd}.  */
+/* Untagged content defaults to BT.601 below 720 lines and BT.709 at   */
+/* or above it, matching industry convention.                          */
+/* ------------------------------------------------------------------ */
+static const int16_t rwebm_video_coef_601[4]  = { 409, 100, 208, 516 };
+static const int16_t rwebm_video_coef_709[4]  = { 459,  55, 136, 541 };
+static const int16_t rwebm_video_coef_2020[4] = { 431,  48, 167, 548 };
+
+static const int16_t *rwebm_video_coefs(unsigned matrix, unsigned height)
+{
+   switch (matrix)
+   {
+      case 1:            return rwebm_video_coef_709;
+      case 5: case 6:    return rwebm_video_coef_601;
+      case 9: case 10:   return rwebm_video_coef_2020;
+      default:           return height >= 720
+                            ? rwebm_video_coef_709 : rwebm_video_coef_601;
+   }
+}
+
+/* ------------------------------------------------------------------ */
 /* BT.601 limited-range I420 -> ABGR words (memory R,G,B,A on LE),     */
 /* the packing the animated-WebP stream emits.                         */
 /* ------------------------------------------------------------------ */
-static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v)
+static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v,
+      const int16_t *k)
 {
    int c = 298 * (y - 16);
    int d = u - 128;
    int e = v - 128;
-   int r = (c + 409 * e + 128) >> 8;
-   int g = (c - 100 * d - 208 * e + 128) >> 8;
-   int b = (c + 516 * d + 128) >> 8;
+   int r = (c + k[0] * e + 128) >> 8;
+   int g = (c - k[1] * d - k[2] * e + 128) >> 8;
+   int b = (c + k[3] * d + 128) >> 8;
    if (r < 0)
       r = 0;
    else if (r > 255)
@@ -115,7 +137,7 @@ static INLINE uint32_t rwebm_video_yuv_px(int y, int u, int v)
  * pre-clamp channel range (about -223..481 for 8-bit input) fits int16
  * without distortion. */
 static void rwebm_video_yuv_row_sse2(uint32_t *dr,
-      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w)
+      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w, const int16_t *k)
 {
    const __m128i k16   = _mm_set1_epi16(16);
    const __m128i k128  = _mm_set1_epi16(128);
@@ -127,10 +149,10 @@ static void rwebm_video_yuv_row_sse2(uint32_t *dr,
 #define RWEBM_PAIR16(hi, lo) \
    ((int32_t)(((uint32_t)(uint16_t)(int16_t)(hi) << 16) \
             |  (uint32_t)(uint16_t)(int16_t)(lo)))
-   const __m128i c_r   = _mm_set1_epi32(RWEBM_PAIR16( 409, 298));
-   const __m128i c_g1  = _mm_set1_epi32(RWEBM_PAIR16(-100, 298));
-   const __m128i c_g2  = _mm_set1_epi32(RWEBM_PAIR16( 128, -208));
-   const __m128i c_b   = _mm_set1_epi32(RWEBM_PAIR16( 516, 298));
+   const __m128i c_r   = _mm_set1_epi32(RWEBM_PAIR16( k[0], 298));
+   const __m128i c_g1  = _mm_set1_epi32(RWEBM_PAIR16(-k[1], 298));
+   const __m128i c_g2  = _mm_set1_epi32(RWEBM_PAIR16( 128, -k[2]));
+   const __m128i c_b   = _mm_set1_epi32(RWEBM_PAIR16( k[3], 298));
 #undef RWEBM_PAIR16
    const __m128i rnd   = _mm_set1_epi32(128);
    unsigned i;
@@ -198,7 +220,7 @@ static void rwebm_video_yuv_row_sse2(uint32_t *dr,
             _mm_unpackhi_epi16(rg, ba));
    }
    for (; i < w; i++)
-      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
 }
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 /* NEON translation of the SSE2 kernel above: identical integer
@@ -206,7 +228,8 @@ static void rwebm_video_yuv_row_sse2(uint32_t *dr,
  * saturating narrows for the clamp), so results are byte-identical to
  * the scalar path. */
 static void rwebm_video_yuv_row_neon(uint32_t *dr,
-      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w)
+      const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w,
+      const int16_t *kc)
 {
    const int16x8_t k16  = vdupq_n_s16(16);
    const int16x8_t k128 = vdupq_n_s16(128);
@@ -239,14 +262,14 @@ static void rwebm_video_yuv_row_neon(uint32_t *dr,
       c_lo = vmlal_n_s16(rnd, vget_low_s16(ysub),  298);
       c_hi = vmlal_n_s16(rnd, vget_high_s16(ysub), 298);
 
-      r_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(e),   409), 8);
-      r_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(e),  409), 8);
+      r_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(e),  kc[0]), 8);
+      r_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(e), kc[0]), 8);
       g_lo = vshrq_n_s32(vmlsl_n_s16(vmlsl_n_s16(c_lo,
-               vget_low_s16(d),  100), vget_low_s16(e),  208), 8);
+               vget_low_s16(d), kc[1]), vget_low_s16(e), kc[2]), 8);
       g_hi = vshrq_n_s32(vmlsl_n_s16(vmlsl_n_s16(c_hi,
-               vget_high_s16(d), 100), vget_high_s16(e), 208), 8);
-      b_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(d),   516), 8);
-      b_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(d),  516), 8);
+               vget_high_s16(d), kc[1]), vget_high_s16(e), kc[2]), 8);
+      b_lo = vshrq_n_s32(vmlal_n_s16(c_lo, vget_low_s16(d),  kc[3]), 8);
+      b_hi = vshrq_n_s32(vmlal_n_s16(c_hi, vget_high_s16(d), kc[3]), 8);
 
       /* Saturating narrows implement the 0..255 clamp */
       r16 = vcombine_s16(vqmovn_s32(r_lo), vqmovn_s32(r_hi));
@@ -260,15 +283,17 @@ static void rwebm_video_yuv_row_neon(uint32_t *dr,
       vst4_u8((uint8_t*)(dr + i), out);
    }
    for (; i < w; i++)
-      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+      dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], kc);
 }
 #endif
 
 static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
-      const uint8_t *u, const uint8_t *v, int uvs)
+      const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned matrix)
 {
+   const int16_t *k = rwebm_video_coefs(matrix, h);
    unsigned j;
    for (j = 0; j < h; j++)
    {
@@ -277,14 +302,14 @@ static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       const uint8_t *vr = v + (size_t)(j >> 1) * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
 #if defined(__SSE2__)
-      rwebm_video_yuv_row_sse2(dr, yr, ur, vr, w);
+      rwebm_video_yuv_row_sse2(dr, yr, ur, vr, w, k);
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
-      rwebm_video_yuv_row_neon(dr, yr, ur, vr, w);
+      rwebm_video_yuv_row_neon(dr, yr, ur, vr, w, k);
 #else
       {
          unsigned i;
          for (i = 0; i < w; i++)
-            dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+            dr[i] = rwebm_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
       }
 #endif
    }
@@ -307,6 +332,7 @@ static void rwebm_video_blit_i420(uint32_t *dst, unsigned dst_stride,
 static uint16_t rwebm_hbd_pq_lut[1024];   /* PQ' -> tone-mapped linear */
 static uint8_t  rwebm_hbd_out_lut[8193];  /* linear -> sRGB' 8-bit     */
 static int      rwebm_hbd_lut_ready;
+static unsigned rwebm_hbd_lut_peak;       /* nits the PQ LUT was built for */
 
 static double rwebm_hbd_hable(double x)
 {
@@ -314,11 +340,15 @@ static double rwebm_hbd_hable(double x)
    return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-static void rwebm_hbd_init_luts(void)
+static void rwebm_hbd_init_luts(unsigned peak_cll)
 {
    const double m1 = 0.1593017578125, m2 = 78.84375;
    const double c1 = 0.8359375, c2 = 18.8515625, c3 = 18.6875;
-   const double sdr_white = 203.0, peak_nits = 1000.0;
+   const double sdr_white = 203.0;
+   /* MaxCLL when signalled, else assume a 1000-nit grade; clamp to a
+    * sane window so absurd metadata cannot wreck the curve */
+   const double peak_nits =
+      (peak_cll >= 400 && peak_cll <= 10000) ? (double)peak_cll : 1000.0;
    const double peak = peak_nits / sdr_white;
    double glo = 1.0, ghi = 8.0, g = 2.0;
    int i, it;
@@ -353,6 +383,7 @@ static void rwebm_hbd_init_luts(void)
       rwebm_hbd_out_lut[i] = (uint8_t)(s * 255.0 + 0.5);
    }
    rwebm_hbd_lut_ready = 1;
+   rwebm_hbd_lut_peak  = peak_cll;
 }
 
 /* limited-range 10-bit YCbCr coefficients, <<8 */
@@ -372,15 +403,16 @@ static void rwebm_hbd_matrix(unsigned matrix, int *re, int *gd, int *ge, int *bd
 void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
-      unsigned matrix, unsigned transfer, unsigned range, int abgr)
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, int abgr)
 {
    int re, gd, ge, bd;
    int is_pq   = (transfer == 16);
    int full    = (range == 2);
    unsigned j, i;
 
-   if (!rwebm_hbd_lut_ready)
-      rwebm_hbd_init_luts();
+   if (!rwebm_hbd_lut_ready || (is_pq && max_cll != rwebm_hbd_lut_peak))
+      rwebm_hbd_init_luts(max_cll);
    /* HDR10 without an explicit matrix is BT.2020-ncl in practice */
    rwebm_hbd_matrix(matrix ? matrix : (is_pq ? 9u : 1u), &re, &gd, &ge, &bd);
 
@@ -690,11 +722,16 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
                   s->vp9->uvs,
                   ct ? ct->matrix_coefficients : 0,
                   ct ? ct->transfer_characteristics : 0,
-                  ct ? ct->colour_range : 0, 1);
+                  ct ? ct->colour_range : 0,
+                  ct ? ct->max_cll : 0, 1);
          }
          else
+         {
+            const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
             rwebm_video_blit_i420(s->frame, s->width, w, h,
-                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs);
+                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs,
+                  ct ? ct->matrix_coefficients : 0);
+         }
          return 1;
       }
       return 0;
@@ -719,8 +756,12 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          w = (int)s->width;
       if ((unsigned)h > s->height)
          h = (int)s->height;
-      rwebm_video_blit_i420(s->frame, s->width,
-            (unsigned)w, (unsigned)h, y, ys, u, v, uvs);
+      {
+         const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
+         rwebm_video_blit_i420(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+               ct ? ct->matrix_coefficients : 0);
+      }
       return 1;
    }
    return -1;

@@ -114,14 +114,31 @@ typedef struct
 static webm_player_t webm_player;
 
 /* -------------------------------------------------------------------- */
-/* BT.601 limited-range I420 -> XRGB8888.                                */
+/* Limited-range I420 -> XRGB8888.  Coefficients follow the Colour       */
+/* element's MatrixCoefficients; untagged content defaults to BT.601     */
+/* below 720 lines and BT.709 at or above (industry convention).         */
 /* -------------------------------------------------------------------- */
-static INLINE uint32_t webm_yuv_px(int y, int u, int v)
+static const int16_t webm_coef_601[4]  = { 409, 100, 208, 516 };
+static const int16_t webm_coef_709[4]  = { 459,  55, 136, 541 };
+static const int16_t webm_coef_2020[4] = { 431,  48, 167, 548 };
+
+static const int16_t *webm_yuv_coefs(unsigned matrix, unsigned height)
+{
+   switch (matrix)
+   {
+      case 1:          return webm_coef_709;
+      case 5: case 6:  return webm_coef_601;
+      case 9: case 10: return webm_coef_2020;
+      default:         return height >= 720 ? webm_coef_709 : webm_coef_601;
+   }
+}
+
+static INLINE uint32_t webm_yuv_px(int y, int u, int v, const int16_t *k)
 {
    int c = 298 * (y - 16) + 128;
-   int r = (c + 409 * (v - 128)) >> 8;
-   int g = (c - 100 * (u - 128) - 208 * (v - 128)) >> 8;
-   int b = (c + 516 * (u - 128)) >> 8;
+   int r = (c + k[0] * (v - 128)) >> 8;
+   int g = (c - k[1] * (u - 128) - k[2] * (v - 128)) >> 8;
+   int b = (c + k[3] * (u - 128)) >> 8;
    if (r < 0) r = 0; else if (r > 255) r = 255;
    if (g < 0) g = 0; else if (g > 255) g = 255;
    if (b < 0) b = 0; else if (b > 255) b = 255;
@@ -130,8 +147,10 @@ static INLINE uint32_t webm_yuv_px(int y, int u, int v)
 }
 
 static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
-      const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs)
+      const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned matrix)
 {
+   const int16_t *k = webm_yuv_coefs(matrix, h);
    unsigned i, j;
    for (j = 0; j < h; j++)
    {
@@ -140,7 +159,7 @@ static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *vr = v + (j >> 1) * uvs;
       uint32_t *dr      = dst + j * w;
       for (i = 0; i < w; i++)
-         dr[i] = webm_yuv_px(yr[i], ur[i >> 1], vr[i >> 1]);
+         dr[i] = webm_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
    }
 }
 
@@ -206,11 +225,15 @@ static int webm_present_vp9(webm_player_t *p, int show)
          (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
          ct ? ct->matrix_coefficients : 0,
          ct ? ct->transfer_characteristics : 0,
-         ct ? ct->colour_range : 0, 0);
+         ct ? ct->colour_range : 0,
+         ct ? ct->max_cll : 0, 0);
    }
    else
-      webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
-         p->vp9->uvs);
+      {
+         const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+         webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
+            p->vp9->uvs, ct ? ct->matrix_coefficients : 0);
+      }
    WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }
@@ -289,7 +312,11 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          return -1;
       if ((unsigned)w > p->width)  w = (int)p->width;
       if ((unsigned)h > p->height) h = (int)p->height;
-      webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs);
+      {
+         const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+         webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+            ct ? ct->matrix_coefficients : 0);
+      }
       WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
          p->width * sizeof(uint32_t));
       return 1;

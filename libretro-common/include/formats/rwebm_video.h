@@ -47,14 +47,16 @@ void rwebm_video_free(rwebm_video_t *webm);
  * PIXELS.  matrix / transfer / range are ISO/IEC 23001-8 code points as
  * carried by the webm Colour element (0 = absent; HD-appropriate
  * defaults are chosen).  transfer 16 (PQ / HDR10) is tone-mapped to SDR
- * (hable curve, auto exposure, 1000-nit assumed peak, BT.2020 -> 709
+ * (hable curve, auto exposure, MaxCLL-driven peak with a
+ * 1000-nit fallback, BT.2020 -> 709
  * gamut); anything else is converted as SDR and rounded to 8 bits.
  * abgr nonzero packs R in the low byte (thumbnail convention); zero
  * packs XRGB8888 (libretro frontend convention). */
 void rwebm_video_blit_i420_hbd(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h, const uint16_t *y, int ys,
       const uint16_t *u, const uint16_t *v, int uvs,
-      unsigned matrix, unsigned transfer, unsigned range, int abgr);
+      unsigned matrix, unsigned transfer, unsigned range,
+      unsigned max_cll, int abgr);
 
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
 

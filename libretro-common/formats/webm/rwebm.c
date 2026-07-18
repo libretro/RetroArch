@@ -42,6 +42,8 @@
 #define ID_COLOURRANGE     0x55B9u
 #define ID_TRANSFERCHAR    0x55BAu
 #define ID_PRIMARIES       0x55BBu
+#define ID_MAXCLL          0x55BCu
+#define ID_MAXFALL         0x55BDu
 #define ID_AUDIO           0xE1u
 #define ID_SAMPLINGFREQ    0xB5u
 #define ID_CHANNELS        0x9Fu
@@ -259,6 +261,12 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
                      break;
                   case ID_PRIMARIES:
                      trk->primaries               = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case ID_MAXCLL:
+                     trk->max_cll                 = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case ID_MAXFALL:
+                     trk->max_fall                = (unsigned)be_uint(cb, (size_t)csz);
                      break;
                   default:
                      break;
