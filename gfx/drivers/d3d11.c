@@ -5567,14 +5567,19 @@ static uintptr_t d3d11_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->desc.Format = image->pix10
+         ? DXGI_FORMAT_R10G10B10A2_UNORM
+         : DXGI_FORMAT_B8G8R8A8_UNORM;
 
    d3d11_release_texture(texture);
    d3d11_init_texture(d3d11->device, texture);
 
    if (texture->staging)
       d3d11_update_texture(
-            d3d11->context, image->width, image->height, 0, DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels,
+            d3d11->context, image->width, image->height, 0,
+            image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
+                         : DXGI_FORMAT_B8G8R8A8_UNORM,
+            image->pixels,
             texture);
 
    return (uintptr_t)texture;
