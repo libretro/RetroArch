@@ -3892,6 +3892,85 @@ static void rvp9_convolve_vert_hbd_sse2(const RVP9_PIXEL *src,
 }
 #endif /* RVP9_RECON_HBD && RVP9_SSE2 */
 
+#if RVP9_RECON_HBD && defined(RVP9_NEON)
+/* ---- 10/12-bit NEON 8-tap convolve (unscaled, step_q4 == 16) ----
+ * Same width-major scheme as the SSE2 path: 8 output columns/iter, one
+ * contiguous 8-wide uint16 row load per tap widened via vmull/vmlal to
+ * two int32x4 accumulators, +64, >>7, saturating narrow to the pixel
+ * range.  Bit-exact with the scalar path. */
+static void rvp9_convolve_hbd_row8_neon(const RVP9_PIXEL *s, int step,
+      const int16_t *f, RVP9_PIXEL *dst, int avg)
+{
+   int32x4_t acc_lo = vdupq_n_s32(64);
+   int32x4_t acc_hi = vdupq_n_s32(64);
+   int k;
+   for (k = 0; k < RVP9_SUBPEL_TAPS; k++)
+   {
+      int16x8_t row = vreinterpretq_s16_u16(vld1q_u16(s + k * step));
+      acc_lo = vmlal_n_s16(acc_lo, vget_low_s16(row),  f[k]);
+      acc_hi = vmlal_n_s16(acc_hi, vget_high_s16(row), f[k]);
+   }
+   acc_lo = vshrq_n_s32(acc_lo, 7);
+   acc_hi = vshrq_n_s32(acc_hi, 7);
+   {
+      /* clamp [0, RVP9_PXMAX]: saturate to u16 at 0, then min with max */
+      uint16x8_t res = vcombine_u16(vqmovun_s32(acc_lo), vqmovun_s32(acc_hi));
+      res = vminq_u16(res, vdupq_n_u16((uint16_t)RVP9_PXMAX));
+      if (avg)
+      {
+         uint16x8_t old = vld1q_u16(dst);
+         res = vrhaddq_u16(old, res);
+      }
+      vst1q_u16(dst, res);
+   }
+}
+
+static void rvp9_convolve_horiz_hbd_neon(const RVP9_PIXEL *src,
+      int src_stride, RVP9_PIXEL *dst, int dst_stride,
+      const int16_t *f, int w, int h, int avg)
+{
+   int x, y, k;
+   for (y = 0; y < h; y++)
+   {
+      for (x = 0; x + 8 <= w; x += 8)
+         rvp9_convolve_hbd_row8_neon(src + x, 1, f, dst + x, avg);
+      for (; x < w; x++)
+      {
+         const RVP9_PIXEL *s = src + x; int sum = 0;
+         for (k = 0; k < RVP9_SUBPEL_TAPS; k++) sum += s[k] * f[k];
+         { int r = (sum + 64) >> 7;
+           if (r < 0) r = 0; else if (r > RVP9_PXMAX) r = RVP9_PXMAX;
+           if (avg) dst[x] = (RVP9_PIXEL)((dst[x] + r + 1) >> 1);
+           else     dst[x] = (RVP9_PIXEL)r; }
+      }
+      src += src_stride; dst += dst_stride;
+   }
+}
+
+static void rvp9_convolve_vert_hbd_neon(const RVP9_PIXEL *src,
+      int src_stride, RVP9_PIXEL *dst, int dst_stride,
+      const int16_t *f, int w, int h, int avg)
+{
+   int x, y, k;
+   for (y = 0; y < h; y++)
+   {
+      const RVP9_PIXEL *s = src;
+      for (x = 0; x + 8 <= w; x += 8)
+         rvp9_convolve_hbd_row8_neon(s + x, src_stride, f, dst + x, avg);
+      for (; x < w; x++)
+      {
+         const RVP9_PIXEL *sc = s + x; int sum = 0;
+         for (k = 0; k < RVP9_SUBPEL_TAPS; k++) sum += sc[k * src_stride] * f[k];
+         { int r = (sum + 64) >> 7;
+           if (r < 0) r = 0; else if (r > RVP9_PXMAX) r = RVP9_PXMAX;
+           if (avg) dst[x] = (RVP9_PIXEL)((dst[x] + r + 1) >> 1);
+           else     dst[x] = (RVP9_PIXEL)r; }
+      }
+      src += src_stride; dst += dst_stride;
+   }
+}
+#endif /* RVP9_RECON_HBD && RVP9_NEON */
+
 
 /* ---- SSE2 / NEON 8-tap convolve (unscaled path, step_q4 == 16) ----
  * With a 16/16th step the subpel phase is constant across the block, so
@@ -4382,6 +4461,14 @@ static void rvp9_convolve_horiz(const RVP9_PIXEL *src, int src_stride,
             xf[x0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
       return;
    }
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+   if (x_step_q4 == 16)
+   {
+      rvp9_convolve_horiz_hbd_neon(src + (x0_q4 >> RVP9_SUBPEL_BITS),
+            src_stride, dst, dst_stride,
+            xf[x0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
 #endif
    for (y = 0; y < h; y++)
    {
@@ -4433,6 +4520,15 @@ static void rvp9_convolve_vert(const RVP9_PIXEL *src, int src_stride,
    if (y_step_q4 == 16)
    {
       rvp9_convolve_vert_hbd_sse2(src +
+            (y0_q4 >> RVP9_SUBPEL_BITS) * src_stride,
+            src_stride, dst, dst_stride,
+            yf[y0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
+      return;
+   }
+#elif RVP9_RECON_HBD && defined(RVP9_NEON)
+   if (y_step_q4 == 16)
+   {
+      rvp9_convolve_vert_hbd_neon(src +
             (y0_q4 >> RVP9_SUBPEL_BITS) * src_stride,
             src_stride, dst, dst_stride,
             yf[y0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
