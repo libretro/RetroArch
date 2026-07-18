@@ -459,17 +459,32 @@ def pack(text, lang, source=None):
                 and decode_c_literal(r[1]) != source.get(r[0], None)]
     if not rows:
         raise SystemExit('packed emitter: no rows for ' + lang)
-    seen_keys = set()
-    for key, _v, _g in rows:
-        if key in seen_keys:
-            raise SystemExit('packed emitter: duplicate key ' + key)
-        seen_keys.add(key)
+    # A single def file can define one enum key in two build-variant rows
+    # (e.g. an OSX vs non-OSX S_BOOL, or a GEKKO vs non-GEKKO S_UINT_EX)
+    # whose only difference is a non-string argument; both rows carry
+    # byte-identical value and sublabel strings.  h2json.py collapses these
+    # on upload (its messages dict is last-write-wins), so the Crowdin
+    # source only ever holds one copy; the packed emitter must match that
+    # and keep exactly one row.  A duplicate key whose decoded value
+    # DIFFERS is a genuine authoring conflict and still aborts the build.
+    seen_vals = {}
+    deduped   = []
+    for key, val, guard in rows:
+        dec = decode_c_literal(val)
+        if key in seen_vals:
+            if seen_vals[key] != dec:
+                raise SystemExit('packed emitter: conflicting duplicate key '
+                                 + key)
+            continue
+        seen_vals[key] = dec
+        deduped.append((key, val, guard))
+    rows = deduped
     import os as _os
     if _os.path.exists('msg_hash_us.json'):
         with open('msg_hash_us.json', encoding='utf-8') as _f:
             _src = set(json.load(_f))
         _alien = set()
-        for _k in seen_keys - _src:
+        for _k in set(seen_vals) - _src:
             # h2json legitimately omits language-name rows and rows with
             # preprocessor branches inside the invocation; everything
             # else missing from the source json is garbage.
