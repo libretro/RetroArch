@@ -116,6 +116,12 @@ DXGI_FORMAT* dxgi_get_format_fallback_list(DXGI_FORMAT format)
                                           DXGI_FORMAT_UNKNOWN };
          return formats;
       }
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+      {
+         static DXGI_FORMAT formats[] = { DXGI_FORMAT_R10G10B10A2_UNORM,
+                                          DXGI_FORMAT_UNKNOWN };
+         return formats;
+      }
       case DXGI_FORMAT_EX_A4R4G4B4_UNORM:
       case DXGI_FORMAT_B4G4R4A4_UNORM:
       {
@@ -2398,6 +2404,46 @@ void dxgi_copy(
                      in  += src_pitch ? (int)src_pitch  : (int)(width * sizeof(UINT16));
                      out += dst_pitch ? (int)dst_pitch  : (int)(width * sizeof(UINT16));
                   }
+               }
+               break;
+            }
+            default:
+               break;
+         }
+         break;
+      }
+
+      case DXGI_FORMAT_R10G10B10A2_UNORM:
+      {
+         /* Native 10-bit source. The ABI's XRGB2101010 packs R in bits
+          * [29:20], G in [19:10], B in [9:0]; DXGI_FORMAT_R10G10B10A2_UNORM
+          * expects R in the LOW 10 bits and B in the high 10 bits, so R and B
+          * must be swapped during the copy (there is no B-first 10-bit DXGI
+          * format). Alpha is forced opaque (3 = max for a 2-bit channel). */
+         switch ((unsigned)dst_format)
+         {
+            case DXGI_FORMAT_R10G10B10A2_UNORM:
+            {
+               const UINT32* src_ptr = (const UINT32*)src_data;
+               UINT32*       dst_ptr = (UINT32*)dst_data;
+               int sp = src_pitch;
+               int dp = dst_pitch;
+               if (sp)
+                  sp -= width * sizeof(*src_ptr);
+               if (dp)
+                  dp -= width * sizeof(*dst_ptr);
+               for (i = 0; i < height; i++)
+               {
+                  for (j = 0; j < width; j++)
+                  {
+                     UINT32 src_val = *src_ptr++;
+                     unsigned r = (src_val >> 20) & 0x3ff;
+                     unsigned g = (src_val >> 10) & 0x3ff;
+                     unsigned b =  src_val        & 0x3ff;
+                     *dst_ptr++ = r | (g << 10) | (b << 20) | (0x3u << 30);
+                  }
+                  src_ptr = (UINT32*)((UINT8*)src_ptr + sp);
+                  dst_ptr = (UINT32*)((UINT8*)dst_ptr + dp);
                }
                break;
             }

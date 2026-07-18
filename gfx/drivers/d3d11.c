@@ -1514,6 +1514,7 @@ static uint32_t d3d11_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
 
    return flags;
@@ -3288,8 +3289,10 @@ static void *d3d11_gfx_init(const video_info_t* video,
    else
       d3d11->flags       &= ~D3D11_ST_FLAG_KEEP_ASPECT;
 
-   d3d11->format          = (video->rgb32)
-         ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d11->format          = video->source_10bit
+         ? DXGI_FORMAT_R10G10B10A2_UNORM
+         : ((video->rgb32)
+         ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
 
    d3d11->frame.texture[0].desc.Format = d3d11->format;
    d3d11->frame.texture[0].desc.Usage  = D3D11_USAGE_DEFAULT;
