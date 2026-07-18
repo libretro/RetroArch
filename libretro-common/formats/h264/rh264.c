@@ -1962,10 +1962,8 @@ struct rh264_video
    int        prev_poc_msb, prev_poc_lsb, prev_frame_num, fn_offset;
    /* Display-order output. Decoded pictures queue here and leave lowest
     * (generation, POC) first, so B pictures come out in presentation order.
-    * The delay stays zero until the stream shows its first B slice, so
-    * P-only streams keep their decode-order behaviour exactly. gen counts
-    * IDRs: POC restarts at an IDR, and every picture after it in decode
-    * order also follows it in output order (8.2.1). */
+    * gen counts IDRs: POC restarts at an IDR, and every picture after it in
+    * decode order also follows it in output order (8.2.1). */
    rh264_frame out[RH264_OUT_SLOTS];
    int        out_poc[RH264_OUT_SLOTS];
    int        out_gen[RH264_OUT_SLOTS];
@@ -1973,8 +1971,7 @@ struct rh264_video
    int        out_len;          /* pictures queued and not yet shown         */
    int        out_show;         /* slot most recently handed out, -1 if none */
    int        idr_gen;          /* IDR generation of the current picture     */
-   int        reorder_delay;    /* current output delay in pictures          */
-   int        seen_b;           /* stream has shown a B slice                */
+   int        reorder_delay;    /* output delay in pictures, fixed per SPS   */
 };
 
 /* ---- allocation helpers ---- */
@@ -2063,6 +2060,19 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
    }
    v->have_ref = 0;
    v->dpb_len = 0;
+   /* Display delay for the whole sequence: what the VUI promises, else no
+    * delay for Baseline (no B slices there), else the reference count. Known
+    * up front so the pictures decoded before the first B slice are already
+    * being held back when it arrives. */
+   {
+      int d;
+      if (v->sps.vui_num_reorder >= 0) d = v->sps.vui_num_reorder;
+      else if (v->sps.profile_idc == 66) d = 0;
+      else d = v->sps.max_num_ref_frames;
+      if (d > RH264_MAX_REFS) d = RH264_MAX_REFS;
+      if (d < 0) d = 0;
+      v->reorder_delay = d;
+   }
    v->alloc_w = v->sps.frame_width;
    v->alloc_h = v->sps.frame_height;
    return 0;
@@ -3898,7 +3908,7 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
          p = e;
       }
    }
-   return got_pic ? 0 : -1;
+   return got_pic ? 1 : 0;
 }
 
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,

@@ -618,8 +618,13 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
        * rather than aborting the stream, so such clips keep animating across
        * their key frames as before. A key frame that fails to decode is a
        * real error. */
-      if (rh264_video_decode(s->h264, pkt->data, pkt->size) != 0)
-         return pkt->keyframe ? -1 : 0;
+      {
+         int dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
+         if (dec < 0)
+            return pkt->keyframe ? -1 : 0;
+         if (dec == 0)   /* consumed; picture held for display reordering */
+            return 0;
+      }
       y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
       u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
       v = rh264_video_plane(s->h264, 2, &uvs, &cw, &ch);

@@ -19,7 +19,7 @@
  *   rh264_video *v = rh264_video_open();
  *   rh264_video_set_extradata(v, avcc, avcc_len);   (the avcC box payload)
  *   for each frame:
- *      if (rh264_video_decode(v, data, len) != 0) fail;
+ *      if (rh264_video_decode(v, data, len) < 0) fail;   (1 = picture ready)
  *      y = rh264_video_plane(v, 0, &ystride, &w, &h);   (also 1=U, 2=V)
  *   rh264_video_close(v);
  *
@@ -50,9 +50,10 @@ int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len);
 
 /* Decode one access unit (one coded picture worth of NAL units) to internal
  * I420 planes. Accepts Annex-B or length-prefixed AVCC data. IDR pictures and
- * CAVLC-coded P pictures are decoded, the latter predicted from the previously
- * decoded picture; returns 0 on success, nonzero on malformed input or an
- * unsupported (B-slice/CABAC-P/high-profile) stream. */
+ * decoded picture leaves in display order, which with B pictures is not
+ * decode order: returns 1 when a picture is ready through rh264_video_plane,
+ * 0 when the data was consumed but the picture is still held for reordering,
+ * and negative on malformed input or an unsupported (high-profile) stream. */
 int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
 
 /* Hand out the next pending picture in display order without feeding more
