@@ -1,14 +1,13 @@
-/* rh264 -- self-contained H.264 baseline intra-frame decoder for
- * libretro-common.
+/* rh264 -- self-contained H.264 decoder for libretro-common.
  *
- * Decodes H.264 (AVC) baseline-profile intra frames: NAL/SPS/PPS/slice
- * parsing, CAVLC residual decoding, 4x4 and 16x16 luma intra prediction and
- * chroma intra prediction, the inverse 4x4 transform and Hadamard DC
- * transforms, dequantisation (with correct chroma-QP derivation), and the
- * in-loop deblocking filter.  Inter-frame prediction (motion vectors,
- * reference frames), CABAC entropy coding, and the higher profiles are not
- * present: a thumbnail decoder only needs the first key frame, which in a
- * baseline avc1 stream is an IDR intra frame.
+ * Decodes H.264 (AVC) I and P pictures: NAL/SPS/PPS/slice parsing, CAVLC and
+ * CABAC residual decoding, 4x4 and 16x16 luma intra prediction and chroma
+ * intra prediction, inter prediction (motion vector prediction, sub-pel
+ * luma and chroma interpolation, a single reference picture), the inverse
+ * 4x4 transform and Hadamard DC transforms, dequantisation (with correct
+ * chroma-QP derivation), and the in-loop deblocking filter.  B pictures,
+ * CABAC-coded P slices, multiple reference pictures and the higher profiles
+ * are not present.
  *
  * The CAVLC VLC tables are extracted verbatim from the encoder tables in
  * libopenh264 (verified prefix-free); no table is hand-transcribed.
@@ -50,9 +49,10 @@ rh264_video *rh264_video_open(void);
 int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len);
 
 /* Decode one access unit (one coded picture worth of NAL units) to internal
- * I420 planes. Accepts Annex-B or length-prefixed AVCC data. Only the intra
- * (IDR) frame is decoded; returns 0 on success, nonzero on malformed input
- * or an unsupported (inter/CABAC/high-profile) stream. */
+ * I420 planes. Accepts Annex-B or length-prefixed AVCC data. IDR pictures and
+ * CAVLC-coded P pictures are decoded, the latter predicted from the previously
+ * decoded picture; returns 0 on success, nonzero on malformed input or an
+ * unsupported (B-slice/CABAC-P/high-profile) stream. */
 int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
