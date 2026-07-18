@@ -2765,6 +2765,33 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS (89 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Queries the colour-gamut treatment the frontend applies to SDR content
+ * when presenting HDR.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010.  A core
+ * emitting that format performs its own Rec.709 -> Rec.2020 rotation, and
+ * has to make the same choice the frontend makes for SDR content, or a
+ * scene will change saturation when the user switches the core between an
+ * SDR format and HDR10.  The values match the frontend's "Colour Boost"
+ * setting:
+ *
+ *   0 Accurate -- proper Rec.709 -> Rec.2020 conversion, no boost
+ *   1 Expanded -- Rec.709 -> a slightly wider space
+ *   2 Wide     -- Rec.709 -> DCI-P3
+ *   3 Super    -- no rotation at all; values stay Rec.709 and the boost
+ *                 comes from the display interpreting them as Rec.2020
+ *
+ * A core should re-query this when it rebuilds its colour tables, since the
+ * user can change it at any time.
+ *
+ * @param[out] data <tt>unsigned *</tt>.
+ * Set to one of the values above.
+ * @return \c true if the call is recognised, \c false on a frontend that
+ * does not implement it; callers should then assume 0 (Accurate).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT (90 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.

@@ -3656,6 +3656,19 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_GET_HDR_EXPAND_GAMUT:
+         /* Which gamut treatment SDR content receives.  A core encoding
+          * Rec.2020 itself has to match it, otherwise switching that core
+          * between an SDR format and HDR10 visibly changes saturation --
+          * "Super" in particular applies no rotation at all, so a core that
+          * dutifully rotates 709 -> 2020 comes out looking desaturated
+          * beside the SDR path. */
+         {
+            settings_t *settings = config_get_ptr();
+            *(unsigned*)data = settings->uints.video_hdr_expand_gamut;
+         }
+         break;
+
       case RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS:
          /* Where the user puts SDR white.  A core emitting
           * RETRO_PIXEL_FORMAT_HDR10_2101010 encodes absolute luminance
