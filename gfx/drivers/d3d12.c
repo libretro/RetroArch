@@ -6927,7 +6927,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->desc.Format = image->pix10
+         ? DXGI_FORMAT_R10G10B10A2_UNORM
+         : DXGI_FORMAT_B8G8R8A8_UNORM;
    texture->srv_heap    = &d3d12->desc.srv_heap;
 
    d3d12_release_texture(texture);
@@ -6936,7 +6938,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
    if (texture->upload_buffer)
       d3d12_update_texture(
             image->width, image->height, 0,
-            DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
+            image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
+                         : DXGI_FORMAT_B8G8R8A8_UNORM,
+            image->pixels, texture);
 
    return (uintptr_t)texture;
 }
