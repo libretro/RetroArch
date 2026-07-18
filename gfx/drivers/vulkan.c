@@ -5161,6 +5161,18 @@ static void *vulkan_init(const video_info_t *video,
    else
       vk->flags &= ~VK_FLAG_SOURCE_HDR10;
 
+   /* State it plainly at init.  Whether the source is PQ decides every later
+    * HDR composition choice, it arrives only through video_info, and getting
+    * it wrong is silent: the image is merely graded oddly, with no error
+    * anywhere.  Logging it once turns "the picture looks washed out" into a
+    * one-line check. */
+   RARCH_LOG("[Vulkan] Source is %s (%s), swapchain %s.\n",
+         video->source_hdr10 ? "HDR10 PQ Rec.2020"
+                             : (video->source_10bit ? "10-bit SDR" : "SDR"),
+         video->rgb32 ? "32-bit" : "16-bit",
+         (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? "scRGB"
+            : ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) ? "HDR10" : "SDR"));
+
    if (video->source_10bit)
       /* Native XRGB2101010 passthrough. The frontend only sets source_10bit
        * when this driver advertised GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE, so the
