@@ -1939,6 +1939,31 @@ static void frontend_unix_get_env(int *argc,
    getcwd(base_path, sizeof(base_path));
 #elif defined(DINGUX)
    dingux_get_base_path(base_path, sizeof(base_path));
+#elif defined(WEBOS)
+   /* Jailer: HOME/XDG often do not point at the package. Prefer
+    * <app>/.config/retroarch so cores, system, and content defaults match
+    * where the app actually stores data. */
+   {
+      char app_dir[PATH_MAX_LENGTH];
+
+      app_dir[0] = '\0';
+      fill_pathname_application_dir(app_dir, sizeof(app_dir));
+      if (!string_is_empty(app_dir))
+         fill_pathname_join(base_path, app_dir, ".config/retroarch",
+               sizeof(base_path));
+      else
+         strlcpy(base_path, "/media/developer/temp", sizeof(base_path));
+
+      /* Start file browser on shared storage when available (user content). */
+      if (path_is_directory("/media/internal"))
+         strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
+               "/media/internal",
+               sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+      else
+         strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT],
+               base_path,
+               sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+   }
 #else
    const char *xdg          = getenv("XDG_CONFIG_HOME");
    const char *home         = getenv("HOME");
@@ -2532,23 +2557,58 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 
 #elif defined(WEBOS)
-   if (path_is_directory("/media/developer/temp"))
-      menu_entries_append(list, "/media/developer/temp",
-         MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
-         enum_idx,
-         FILE_TYPE_DIRECTORY, 0, 0, NULL);
+   /* Prefer real storage paths. Do not list jail root "/" — readdir on
+    * /proc and /sys under jailer can stall the UI for a long time. */
+   {
+      char app_dir[PATH_MAX_LENGTH];
+      char app_config[PATH_MAX_LENGTH];
+      size_t wi;
+      static const char *const webos_storage[] = {
+         "/media/developer/temp",
+         "/media/developer",
+         "/media/internal/downloads",
+         "/media/internal",
+         "/tmp/usb",
+         "/tmp",
+         NULL
+      };
 
-   if (path_is_directory("/media/internal"))
-      menu_entries_append(list, "/media/internal",
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      /* Application package, config tree, and downloads (common content). */
+      app_dir[0] = '\0';
+      fill_pathname_application_dir(app_dir, sizeof(app_dir));
+      if (!string_is_empty(app_dir) && path_is_directory(app_dir))
+      {
+         menu_entries_append(list, app_dir,
+               MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
+               enum_idx,
+               FILE_TYPE_DIRECTORY, 0, 0, NULL);
 
-   if (path_is_directory("/tmp/usb"))
-      menu_entries_append(list, "/tmp/usb",
-            MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
-            enum_idx,
-            FILE_TYPE_DIRECTORY, 0, 0, NULL);
+         fill_pathname_join_special(app_config, app_dir, ".config/retroarch",
+               sizeof(app_config));
+         if (path_is_directory(app_config))
+            menu_entries_append(list, app_config,
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+
+         fill_pathname_join_special(app_config, app_dir,
+               ".config/retroarch/downloads", sizeof(app_config));
+         if (path_is_directory(app_config))
+            menu_entries_append(list, app_config,
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      }
+
+      for (wi = 0; webos_storage[wi]; wi++)
+      {
+         if (path_is_directory(webos_storage[wi]))
+            menu_entries_append(list, webos_storage[wi],
+                  MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
+                  enum_idx,
+                  FILE_TYPE_DIRECTORY, 0, 0, NULL);
+      }
+   }
 #else
    char base_path[PATH_MAX] = {0};
    char udisks_media_path[PATH_MAX] = {0};
@@ -2618,7 +2678,8 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-#ifdef ANDROID
+#if !defined(WEBOS)
+#if defined(ANDROID)
    if (!g_android->is_play_store_build)
 #else
    if (1)
@@ -2629,6 +2690,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
    }
+#endif
 
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (g_android->have_saf)
