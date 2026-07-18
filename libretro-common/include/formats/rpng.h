@@ -104,6 +104,12 @@ uint8_t* rpng_save_image_rgb48_hdr_string(const uint16_t *data,
       unsigned width, unsigned height, signed pitch,
       const struct rpng_hdr_metadata *hdr, uint64_t *bytes);
 
+/* As rpng_save_image_rgb48_hdr_string, but writes directly to a file
+ * at @path. `pitch` is the row stride in bytes (typically width * 6). */
+bool rpng_save_image_rgb48_hdr(const char *path, const uint16_t *data,
+      unsigned width, unsigned height, unsigned pitch,
+      const struct rpng_hdr_metadata *hdr);
+
 /* After a successful decode, retrieve any HDR colour-space metadata
  * parsed from cICP / cLLI / mDCV chunks. Returns true and fills *out
  * when the image carried a cICP chunk; returns false otherwise (in

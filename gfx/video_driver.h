@@ -34,6 +34,7 @@
 #include <gfx/scaler/pixconv.h>
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
+#include <formats/rpng.h>
 
 #include "../configuration.h"
 #include "../input/input_driver.h"
@@ -782,6 +783,17 @@ typedef struct video_driver
 
    /* Reads out in BGR byte order (24bpp). */
    bool (*read_viewport)(void *data, uint8_t *buffer, bool is_idle);
+
+   /* Optional. Reads the current viewport as native HDR pixels for an HDR
+    * screenshot: three uint16_t per pixel (R,G,B, host order) written to
+    * @buffer (which must hold width*height*6 bytes), bottom-up like
+    * read_viewport, without the HDR->SDR tone-map that read_viewport applies.
+    * Fills *out_meta with the colour-space metadata to tag the PNG (PQ /
+    * Rec.2020 etc.). Returns false if HDR read-back is unavailable (the
+    * caller then falls back to the ordinary SDR read_viewport); NULL vtable
+    * entry is treated the same as returning false. */
+   bool (*read_viewport_hdr)(void *data, uint16_t *buffer, bool is_idle,
+         struct rpng_hdr_metadata *out_meta);
 
    /* Returns a pointer to a newly allocated buffer that can
     * (and must) be passed to free() by the caller, containing a

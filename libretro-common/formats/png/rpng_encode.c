@@ -582,6 +582,23 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
    return ret;
 }
 
+bool rpng_save_image_rgb48_hdr(const char *path, const uint16_t *data,
+      unsigned width, unsigned height, unsigned pitch,
+      const struct rpng_hdr_metadata *hdr)
+{
+   bool ret                      = false;
+   intfstream_t* intf_s          = NULL;
+
+   intf_s = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   ret = rpng_save_image_stream((const uint8_t*)data, intf_s, width, height,
+                                (signed) pitch, 6, hdr);
+   intfstream_close(intf_s);
+   free(intf_s);
+   return ret;
+}
+
 
 uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch,

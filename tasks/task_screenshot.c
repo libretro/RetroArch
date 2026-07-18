@@ -63,7 +63,8 @@ enum screenshot_task_flags
    SS_TASK_FLAG_IS_IDLE             = (1 << 2),
    SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
    SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
-   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5)
+   SS_TASK_FLAG_WIDGETS_READY       = (1 << 5),
+   SS_TASK_FLAG_HDR                 = (1 << 6)
 };
 
 typedef struct screenshot_task_state screenshot_task_state_t;
@@ -86,6 +87,9 @@ struct screenshot_task_state
 
    char filename[PATH_MAX_LENGTH];
    char shotname[NAME_MAX_LENGTH];
+   /* Colour-space metadata for an HDR screenshot (SS_TASK_FLAG_HDR). The
+    * frame buffer then holds three uint16_t per pixel (48-bit RGB). */
+   struct rpng_hdr_metadata hdr;
 };
 
 static bool screenshot_dump_direct(screenshot_task_state_t *state)
@@ -98,6 +102,24 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
 
    if (!input)
       return ret;
+
+   /* HDR screenshot: the frame is 48-bit RGB (three uint16_t per pixel),
+    * bottom-up, and carries colour-space metadata. Encode a 16-bit PNG
+    * tagged with the HDR chunks, using the same negative-pitch top-down
+    * trick as the BGR24 fast path. Never resampled. */
+   if (state->flags & SS_TASK_FLAG_HDR)
+   {
+      ret = rpng_save_image_rgb48_hdr(
+            state->filename,
+            (const uint16_t*)input,
+            state->out_width,
+            state->out_height,
+            (unsigned)(-state->pitch),
+            &state->hdr);
+      if (state->out_buffer)
+         free(state->out_buffer);
+      return ret;
+   }
 
    /* Fast path: source is already BGR24 and no resampling is
     * needed, so hand the source buffer directly to the PNG
@@ -382,7 +404,8 @@ static bool screenshot_dump(
       uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type,
+      const struct rpng_hdr_metadata *hdr)
 {
    uint8_t *buf                   = NULL;
    settings_t *settings           = config_get_ptr();
@@ -404,6 +427,11 @@ static bool screenshot_dump(
       state->flags              |= SS_TASK_FLAG_IS_PAUSED;
    if (bgr24)
       state->flags              |= SS_TASK_FLAG_BGR24;
+   if (hdr)
+   {
+      state->flags              |= SS_TASK_FLAG_HDR;
+      state->hdr                 = *hdr;
+   }
    state->width                  = width;
    state->height                 = height;
    state->out_width              = width;
@@ -536,10 +564,12 @@ static bool screenshot_dump(
     * will actually use the scaler. When the source is already BGR24 at
     * the output dimensions (typical of the viewport read-back path,
     * take_screenshot_viewport), the encoder walks the source directly
-    * with negative pitch and no intermediate buffer is needed. */
-   if (  !(state->flags & SS_TASK_FLAG_BGR24)
-       || state->out_width  != width
-       || state->out_height != height)
+    * with negative pitch and no intermediate buffer is needed. The HDR
+    * path likewise encodes the source directly and never uses the scaler. */
+   if (   !(state->flags & SS_TASK_FLAG_HDR)
+       && (   !(state->flags & SS_TASK_FLAG_BGR24)
+           || state->out_width  != width
+           || state->out_height != height))
    {
       if (!(buf = (uint8_t*)malloc(state->out_width * state->out_height * 3)))
       {
@@ -620,6 +650,43 @@ static bool take_screenshot_viewport(
 
    if (!vp.width || !vp.height)
       return false;
+
+   /* Prefer a native HDR read-back when the driver offers one. This path is
+    * entirely additive: if read_viewport_hdr is absent or returns false
+    * (e.g. not in HDR mode, or the driver has no HDR read-back), we fall
+    * straight through to the ordinary 8-bit SDR read_viewport below, so
+    * normal screenshots are unaffected. */
+   if (video_st->current_video->read_viewport_hdr)
+   {
+      struct rpng_hdr_metadata hdr;
+      uint16_t *hdr_buffer = (uint16_t*)malloc((size_t)vp.width * vp.height * 6);
+
+      memset(&hdr, 0, sizeof(hdr));
+      if (hdr_buffer)
+      {
+         if (video_st->current_video->read_viewport_hdr(
+                  video_st->data, hdr_buffer,
+                  runloop_flags & RUNLOOP_FLAG_IDLE, &hdr))
+         {
+            if (vp.width > video_st->width)
+               vp.width = video_st->width;
+            if (vp.height > video_st->height)
+               vp.height = video_st->height;
+
+            /* 48-bit RGB, bottom-up (pitch = width*6, negated top-down
+             * inside screenshot_dump_direct like the BGR24 path). */
+            if (screenshot_dump(screenshot_dir,
+                     name_base,
+                     hdr_buffer, vp.width, vp.height,
+                     vp.width * 6, false, hdr_buffer,
+                     savestate, runloop_flags, fullpath, use_thread,
+                     pixel_format_type, &hdr))
+               return true;
+         }
+         free(hdr_buffer);
+      }
+   }
+
    if (!(buffer = (uint8_t*)malloc(vp.width * vp.height * 3)))
       return false;
 
@@ -639,7 +706,7 @@ static bool take_screenshot_viewport(
                buffer, vp.width, vp.height,
                vp.width * 3, true, buffer,
                savestate, runloop_flags, fullpath, use_thread,
-               pixel_format_type))
+               pixel_format_type, NULL))
          return true;
    }
 
@@ -774,7 +841,8 @@ static bool take_screenshot_raw(
             runloop_flags,
             fullpath,
             use_thread,
-            pixel_format_type))
+            pixel_format_type,
+            NULL))
       return true;
 
    /* screenshot_dump only takes ownership on success; on failure
