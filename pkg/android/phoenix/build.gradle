@@ -198,8 +198,8 @@ if(dynamicFeatures.exists()) {
 int getPlayStoreVersionCode() {
   def baseVersion = getManifestAttribute("versionCode").toInteger()
   def baseTime = 1609632000
-  def halfWeek = 302400
-  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / halfWeek
+  def oneDay = 86400
+  def increment = ((System.currentTimeMillis() / 1000).toInteger() - baseTime) / oneDay
 
   return baseVersion + increment
 }
