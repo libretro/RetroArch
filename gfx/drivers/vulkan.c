@@ -457,6 +457,7 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
    switch (format)
    {
       case VK_FORMAT_B8G8R8A8_UNORM:
+      case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
          return 4;
       case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
       case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
@@ -5090,12 +5091,22 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
-   vk->tex_fmt           = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   if (video->source_10bit)
+      /* Native XRGB2101010 passthrough. The frontend only sets source_10bit
+       * when this driver advertised GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE, so the
+       * frame arrives as packed 2-10-10-10 and maps directly. A2R10G10B10
+       * matches the XRGB2101010 bit layout (R in bits [29:20], etc.) in
+       * native endian, mirroring how B8G8R8A8 is used for XRGB8888. */
+      vk->tex_fmt        = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+   else
+      vk->tex_fmt        = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    if (video->force_aspect)
       vk->flags         |=  VK_FLAG_KEEP_ASPECT;
    else
       vk->flags         &= ~VK_FLAG_KEEP_ASPECT;
-   RARCH_LOG("[Vulkan] Using %s format.\n", video->rgb32 ? "BGRA8888" : "RGB565");
+   RARCH_LOG("[Vulkan] Using %s format.\n",
+         video->source_10bit ? "A2R10G10B10 (10-bit)"
+         : (video->rgb32 ? "BGRA8888" : "RGB565"));
 
    /* Set the viewport to fix recording, since it needs to know
     * the viewport sizes before we start running. */
@@ -7806,6 +7817,7 @@ static uint32_t vulkan_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 
    return flags;
 }

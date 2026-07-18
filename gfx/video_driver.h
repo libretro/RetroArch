@@ -338,6 +338,14 @@ typedef struct video_info
     * */
    bool rgb32;
 
+   /* Set when the source frame is a native XRGB2101010 (10-bit per channel)
+    * surface. Only meaningful when rgb32 is also true (a 10-bit source is a
+    * 32-bit source); a driver that advertises GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+    * uses this to select a 10-bit texture format instead of 8-bit BGRA. Drivers
+    * that do not advertise that capability never see this set, because the
+    * frontend down-converts to XRGB8888 first. */
+   bool source_10bit;
+
    /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;
 

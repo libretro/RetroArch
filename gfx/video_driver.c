@@ -4257,6 +4257,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
          || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010);
 #endif
+   /* A native 10-bit source is only presented to drivers that advertise
+    * support; otherwise it has already been down-converted to XRGB8888 in
+    * video_driver_frame and must not be flagged as 10-bit here. */
+   video.source_10bit                =
+         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
+         && video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
    video.parent                      = 0;
 
    if (video.fullscreen)
@@ -4536,14 +4542,15 @@ void video_driver_frame(const void *data, unsigned width,
       pitch               = video_st->scaler_ptr->scaler->out_stride;
    }
 
-   /* XRGB2101010 fallback: no video driver advertises a native 10-bit source
-    * surface yet, so transparently narrow to XRGB8888 before the driver sees
-    * the frame. (A driver that gains native support will set a capability and
-    * this branch will be gated on the absence of that capability.) */
+   /* XRGB2101010 fallback: if the active video driver cannot present a native
+    * 10-bit source surface, transparently narrow to XRGB8888 before the driver
+    * sees the frame. A driver that advertises GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+    * takes the packed 10-bit frame directly and this branch is skipped. */
    if (
             (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
          && data
          && (data != RETRO_HW_FRAME_BUFFER_VALID)
+         && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE)
       )
    {
       size_t      conv_pitch = pitch;

@@ -261,7 +261,11 @@ enum display_flags
    GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED,
    GFX_CTX_FLAGS_CRT_SWITCHRES,
    GFX_CTX_FLAGS_SUBFRAME_SHADERS,
-   GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS
+   GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS,
+   /* Set by a video driver that can present a native XRGB2101010 (10-bit
+    * per channel) source frame without the frontend down-converting it to
+    * XRGB8888 first. */
+   GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
 };
 
 enum shader_uniform_type
