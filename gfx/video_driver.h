@@ -910,6 +910,12 @@ typedef struct
 
    /* Deferred shader loading state */
    shader_load_deferred_t shader_deferred;
+
+   /* Scratch buffer + capacity (in pixels) for the XRGB2101010 -> XRGB8888
+    * fallback down-conversion, used when the active driver cannot present a
+    * native 10-bit source surface. Allocated lazily on first use. */
+   uint32_t *pix10_convert_buf;
+   size_t    pix10_convert_cap;
 } video_driver_state_t;
 
 typedef struct video_frame_delay_auto

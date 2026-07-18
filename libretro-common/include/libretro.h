@@ -5808,6 +5808,20 @@ enum retro_pixel_format
     */
    RETRO_PIXEL_FORMAT_RGB565   = 2,
 
+   /**
+    * XRGB2101010, native endian.
+    * 32-bit packed: 2 ignored high bits followed by 10-bit R, G, B
+    * (i.e. bits [29:20]=R, [19:10]=G, [9:0]=B; the top 2 bits are ignored).
+    * Intended for cores that decode 10-bit-per-channel content (e.g. HDR10
+    * sources) and want to pass it through without narrowing to 8 bits.
+    *
+    * A frontend is not required to render this natively: if the active video
+    * driver does not support a 10-bit source surface, the frontend transparently
+    * down-converts to XRGB8888, so a core may rely on SET_PIXEL_FORMAT accepting
+    * this value but should not assume the display path is 10-bit end to end.
+    */
+   RETRO_PIXEL_FORMAT_XRGB2101010 = 3,
+
    /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };

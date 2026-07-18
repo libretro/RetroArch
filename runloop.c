@@ -2040,6 +2040,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             case RETRO_PIXEL_FORMAT_XRGB8888:
                RARCH_LOG("[Environ] SET_PIXEL_FORMAT: XRGB8888.\n");
                break;
+            case RETRO_PIXEL_FORMAT_XRGB2101010:
+               /* Always accepted: if the active video driver cannot present a
+                * 10-bit source surface, the frame path transparently
+                * down-converts to XRGB8888 (see video_driver_frame). */
+               RARCH_LOG("[Environ] SET_PIXEL_FORMAT: XRGB2101010.\n");
+               break;
             default:
                return false;
          }

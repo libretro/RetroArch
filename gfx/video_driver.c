@@ -1894,6 +1894,11 @@ void video_driver_free_internal(void)
    if (video_st->scaler_ptr)
       video_driver_pixel_converter_free(video_st->scaler_ptr);
    video_st->scaler_ptr = NULL;
+
+   if (video_st->pix10_convert_buf)
+      free(video_st->pix10_convert_buf);
+   video_st->pix10_convert_buf = NULL;
+   video_st->pix10_convert_cap = 0;
 #ifdef HAVE_VIDEO_FILTER
    video_driver_filter_free();
 #endif
@@ -4238,13 +4243,19 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.font_enable                 = settings->bools.video_font_enable;
    video.font_size                   = settings->floats.video_font_size;
    video.path_font                   = settings->paths.path_font;
+   /* Both XRGB8888 and XRGB2101010 sources are 32-bit; the latter is
+    * down-converted to XRGB8888 before the driver sees it (until a driver
+    * gains native 10-bit support), so from the driver's perspective it is a
+    * 32-bit frame either way. */
 #ifdef HAVE_VIDEO_FILTER
    video.rgb32                       = video_st->state_filter
          ? (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
-         : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+         : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010);
 #else
    video.rgb32                       =
-         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888);
+         (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010);
 #endif
    video.parent                      = 0;
 
@@ -4401,6 +4412,57 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    return true;
 }
 
+/* Down-convert an XRGB2101010 source frame to XRGB8888 in place of a scratch
+ * buffer, used when the active video driver cannot present a native 10-bit
+ * source surface. Each channel is narrowed 10 -> 8 bits by taking the high 8
+ * bits (>> 2), which matches the truncation a core would otherwise apply
+ * itself. Returns the scratch buffer and its tight stride, or NULL on
+ * allocation failure (in which case the caller leaves the frame untouched).
+ * The packed layout is bits [29:20]=R, [19:10]=G, [9:0]=B, 2 ignored high
+ * bits; output is 0xFFRRGGBB (XRGB8888, native endian). */
+static const void *video_driver_convert_xrgb2101010(
+      video_driver_state_t *video_st,
+      const void *data, unsigned width, unsigned height,
+      size_t in_pitch, size_t *out_pitch)
+{
+   unsigned x, y;
+   const uint8_t *src_row = (const uint8_t*)data;
+   uint32_t      *dst;
+   size_t         needed  = (size_t)width * height;
+
+   if (video_st->pix10_convert_cap < needed)
+   {
+      uint32_t *buf = (uint32_t*)realloc(video_st->pix10_convert_buf,
+            needed * sizeof(uint32_t));
+      if (!buf)
+         return NULL;
+      video_st->pix10_convert_buf = buf;
+      video_st->pix10_convert_cap = needed;
+   }
+
+   dst = video_st->pix10_convert_buf;
+   for (y = 0; y < height; y++)
+   {
+      const uint32_t *src = (const uint32_t*)src_row;
+      for (x = 0; x < width; x++)
+      {
+         uint32_t p = src[x];
+         uint32_t r = (p >> 20) & 0x3ff;
+         uint32_t g = (p >> 10) & 0x3ff;
+         uint32_t b =  p        & 0x3ff;
+         dst[x]     = 0xff000000u
+                    | ((r >> 2) << 16)
+                    | ((g >> 2) <<  8)
+                    |  (b >> 2);
+      }
+      dst     += width;
+      src_row += in_pitch;
+   }
+
+   *out_pitch = (size_t)width * sizeof(uint32_t);
+   return video_st->pix10_convert_buf;
+}
+
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch)
 {
@@ -4472,6 +4534,26 @@ void video_driver_frame(const void *data, unsigned width,
             data, width, height, pitch);
       data                = video_st->scaler_ptr->scaler_out;
       pitch               = video_st->scaler_ptr->scaler->out_stride;
+   }
+
+   /* XRGB2101010 fallback: no video driver advertises a native 10-bit source
+    * surface yet, so transparently narrow to XRGB8888 before the driver sees
+    * the frame. (A driver that gains native support will set a capability and
+    * this branch will be gated on the absence of that capability.) */
+   if (
+            (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010)
+         && data
+         && (data != RETRO_HW_FRAME_BUFFER_VALID)
+      )
+   {
+      size_t      conv_pitch = pitch;
+      const void *converted  = video_driver_convert_xrgb2101010(
+            video_st, data, width, height, pitch, &conv_pitch);
+      if (converted)
+      {
+         data  = converted;
+         pitch = conv_pitch;
+      }
    }
 
    video_driver_build_info(&video_info);
