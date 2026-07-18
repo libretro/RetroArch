@@ -107,6 +107,19 @@
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
+/* Format of the offscreen buffer that SDR content and the menu/UI are
+ * composited into before the HDR shader inverse-tone-maps it onto the
+ * A2B10G10R10 swapchain. It holds SDR-encoded colour; making it 10-bit (from
+ * the historical B8G8R8A8) lets deep-colour menu text and gradients survive
+ * the composite instead of being quantised to 8 bits before the HDR pass.
+ * A2B10G10R10 is already used as the HDR swapchain/FBO format in this driver,
+ * so it is known colour-renderable here. The HDR shader samples this buffer
+ * as a normalised texture, so the wider precision is transparent to it; the
+ * separate readback_image keeps its 8-bit BGRA layout for CPU memcpy. */
+#define VULKAN_HDR_SDR_OFFSCREEN_FORMAT VK_FORMAT_A2B10G10R10_UNORM_PACK32
+#endif
+
+#ifdef VULKAN_HDR_SWAPCHAIN
 /* Purely for HDR read back */
 #ifndef VKALIGN
 #ifdef _MSC_VER
@@ -3125,7 +3138,7 @@ static void vulkan_init_render_pass(
    vkCreateRenderPass(vk->context->device,
          &rp_info, NULL, &vk->keep_render_pass);
 
-   attachment.format            = VK_FORMAT_B8G8R8A8_UNORM;
+   attachment.format            = VULKAN_HDR_SDR_OFFSCREEN_FORMAT;
    attachment.loadOp            = VK_ATTACHMENT_LOAD_OP_CLEAR;
    attachment.storeOp           = VK_ATTACHMENT_STORE_OP_STORE;
    attachment.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -3494,9 +3507,10 @@ static void vulkan_init_pipelines(vk_t *vk)
     * segfault.
     *
     * For the HDR offscreen compositing path, which renders into
-    * a B8G8R8A8 offscreen buffer under sdr_render_pass, these
+    * an A2B10G10R10 offscreen buffer under sdr_render_pass (see
+    * VULKAN_HDR_SDR_OFFSCREEN_FORMAT), these
     * pipelines may not be format-compatible if the swapchain
-    * format differs from B8G8R8A8.  However, the HDR path
+    * format differs from that.  However, the HDR path
     * is only active when HDR is supported AND the display uses
     * a wide-gamut format — in which case a separate set of
     * HDR display pipelines (indices 4-5) is built against the
@@ -3717,9 +3731,10 @@ static void vulkan_init_pipelines(vk_t *vk)
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* When HDR is supported, the menu is rendered into an SDR
-    * offscreen buffer (B8G8R8A8_UNORM) under sdr_render_pass,
+    * offscreen buffer (A2B10G10R10, VULKAN_HDR_SDR_OFFSCREEN_FORMAT)
+    * under sdr_render_pass,
     * then composited onto the HDR swapchain.  If the swapchain
-    * format differs from B8G8R8A8, the main pipeline set (built
+    * format differs from that, the main pipeline set (built
     * against render_pass) is incompatible with sdr_render_pass.
     * Build a parallel SDR set against sdr_render_pass. */
    if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
@@ -5239,7 +5254,7 @@ static void *vulkan_init(const video_info_t *video,
    {
       vulkan_init_render_target(&vk->offscreen_buffer,
             vk->video_width, vk->video_height,
-            VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+            VULKAN_HDR_SDR_OFFSCREEN_FORMAT, vk->sdr_render_pass, vk->context);
       vulkan_init_render_target(&vk->readback_image,
             vk->video_width, vk->video_height,
             VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
@@ -7308,7 +7323,7 @@ static bool vulkan_frame(void *data, const void *frame,
           * in HDR16 (scRGB) mode only the menu/overlay uses it so
           * that the copy pass can linearize sRGB content. */
          vulkan_init_render_target(&vk->offscreen_buffer, video_width, video_height,
-                                  VK_FORMAT_B8G8R8A8_UNORM, vk->sdr_render_pass, vk->context);
+                                  VULKAN_HDR_SDR_OFFSCREEN_FORMAT, vk->sdr_render_pass, vk->context);
          /* Create image for readback target in bgra8 format */
          vulkan_init_render_target(&vk->readback_image, video_width, video_height,
                                     VK_FORMAT_B8G8R8A8_UNORM, vk->readback_render_pass, vk->context);
