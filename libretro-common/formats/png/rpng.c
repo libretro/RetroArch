@@ -764,7 +764,10 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
          uint32_t r = (((uint32_t)decoded[0] << 8) | decoded[1]) >> 6;
          uint32_t g = (((uint32_t)decoded[2] << 8) | decoded[3]) >> 6;
          uint32_t b = (((uint32_t)decoded[4] << 8) | decoded[5]) >> 6;
-         data[i]    = (r << 20) | (g << 10) | b;
+         /* Top 2 bits = alpha 3 (opaque), matching the video 10-bit blit;
+          * A2R10G10B10_UNORM samples these as alpha, so leaving them 0 would
+          * render the image fully transparent. */
+         data[i]    = (r << 20) | (g << 10) | b | 0xC0000000u;
       }
       return;
    }
