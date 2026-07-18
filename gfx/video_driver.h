@@ -345,6 +345,12 @@ typedef struct video_info
     * that do not advertise that capability never see this set, because the
     * frontend down-converts to XRGB8888 first. */
    bool source_10bit;
+   /* The core's frame is already PQ-encoded Rec.2020 at absolute luminance
+    * (RETRO_PIXEL_FORMAT_HDR10_2101010).  The HDR composition must then pass
+    * the samples through untouched: no inverse tonemap, no Rec.709->Rec.2020
+    * rotation and no paper-white scaling, because the core applied all of
+    * that when it encoded them. */
+   bool source_hdr10;
 
    /* Launch in fullscreen mode instead of windowed mode. */
    bool fullscreen;

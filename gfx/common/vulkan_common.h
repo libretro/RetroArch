@@ -108,7 +108,11 @@ enum vk_flags
    VK_FLAG_READBACK_STREAMED   = (1 << 13),
    VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
    VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15),
-   VK_FLAG_SDR_PIPELINE        = (1 << 16)
+   VK_FLAG_SDR_PIPELINE        = (1 << 16),
+   /* The core's frames are already PQ-encoded Rec.2020 at absolute
+    * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
+    * must pass them through rather than encode them again. */
+   VK_FLAG_SOURCE_HDR10        = (1 << 17)
 };
 
 enum vk_texture_type

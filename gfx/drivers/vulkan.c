@@ -4305,7 +4305,8 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(
       vk->filter_chain_default);
-      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default);
+      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
+         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain_default));
       bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain_default);
       unsigned hdr_mode = settings->uints.video_hdr_mode;
 
@@ -4407,7 +4408,8 @@ static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
    if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
    {
       struct video_shader* shader_preset = vulkan_filter_chain_get_preset(vk->filter_chain);
-      bool emits_hdr10 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
+         || (shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
       bool emits_hdr16 = shader_preset && shader_preset->passes && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
       unsigned hdr_mode = settings->uints.video_hdr_mode;
 
@@ -5148,6 +5150,15 @@ static void *vulkan_init(const video_info_t *video,
    vk->tex_swizzle.g = VK_COMPONENT_SWIZZLE_G;
    vk->tex_swizzle.b = VK_COMPONENT_SWIZZLE_B;
    vk->tex_swizzle.a = VK_COMPONENT_SWIZZLE_A;
+   /* A core supplying RETRO_PIXEL_FORMAT_HDR10_2101010 has already produced
+    * PQ Rec.2020 at absolute luminance, so the HDR composition must leave the
+    * samples alone -- exactly the situation a shader preset that emits HDR10
+    * puts us in, and handled the same way below. */
+   if (video->source_hdr10)
+      vk->flags |= VK_FLAG_SOURCE_HDR10;
+   else
+      vk->flags &= ~VK_FLAG_SOURCE_HDR10;
+
    if (video->source_10bit)
       /* Native XRGB2101010 passthrough. The frontend only sets source_10bit
        * when this driver advertised GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE, so the
@@ -5404,7 +5415,8 @@ static void vulkan_check_swapchain(vk_t *vk)
     *   HDR10 mode: shader emits A2B10G10R10 (HDR10 PQ) or RGBA16F */
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) && vk->filter_chain)
    {
-      bool emits_hdr10 = vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+      bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
+         || vulkan_filter_chain_emits_hdr10(vk->filter_chain);
       bool emits_hdr16 = vulkan_filter_chain_emits_hdr16(vk->filter_chain);
 
       if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
@@ -5634,8 +5646,9 @@ static bool vulkan_shader_load_step(void *data,
          settings_t *settings = config_get_ptr();
          struct video_shader *shader_preset =
             vulkan_filter_chain_get_preset(vk->filter_chain);
-         bool emits_hdr10 = shader_preset && shader_preset->passes
-            && vulkan_filter_chain_emits_hdr10(vk->filter_chain);
+         bool emits_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
+            || (shader_preset && shader_preset->passes
+               && vulkan_filter_chain_emits_hdr10(vk->filter_chain));
          bool emits_hdr16 = shader_preset && shader_preset->passes
             && vulkan_filter_chain_emits_hdr16(vk->filter_chain);
          unsigned hdr_mode = settings->uints.video_hdr_mode;

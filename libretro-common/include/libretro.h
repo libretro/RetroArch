@@ -2744,6 +2744,27 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE (88 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 /**
+ * Queries the luminance, in nits, that the frontend treats as SDR paper
+ * white when presenting HDR content.
+ *
+ * Only meaningful together with #RETRO_PIXEL_FORMAT_HDR10_2101010: a core
+ * encoding absolute luminance itself has to know where the user expects
+ * ordinary, non-glowing image content to sit, otherwise the whole frame is
+ * either dim or searing.  The value corresponds to the frontend's HDR paper
+ * white setting; typical values are 100-400.
+ *
+ * The user can change it at any time, so a core should re-query it when it
+ * rebuilds its colour tables rather than caching it forever.
+ *
+ * @param[out] data <tt>float *</tt>.
+ * Set to the paper white luminance in nits.
+ * @return \c true if the call is recognised and the value is valid, \c false
+ * on a frontend that does not implement it; callers should then assume a
+ * sensible default (200 nits).
+ */
+#define RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS (89 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.
@@ -5851,6 +5872,38 @@ enum retro_pixel_format
    RETRO_PIXEL_FORMAT_XRGB2101010 = 3,
 
    /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
+   /**
+    * HDR10: PQ-encoded Rec.2020, 10 bits per channel, native endian.
+    *
+    * Bit layout is identical to #RETRO_PIXEL_FORMAT_XRGB2101010 -- 2 ignored
+    * high bits then 10-bit R, G, B (bits [29:20]=R, [19:10]=G, [9:0]=B) --
+    * but the *encoding* differs, and that is the whole point of a separate
+    * value: the samples are SMPTE ST.2084 (PQ) over Rec.2020 primaries,
+    * covering 0..10000 nits absolute, exactly as HDR10 video does.
+    *
+    * XRGB2101010 is 10-bit SDR: the frontend treats 1.0 as paper white and
+    * cannot represent anything brighter, so a core has no way to make a
+    * highlight exceed the SDR white level.  With this format the core
+    * chooses absolute luminance per pixel, so specular highlights, muzzle
+    * flashes, explosions and emissive surfaces can sit well above paper
+    * white while the rest of the image stays where it was.
+    *
+    * A frontend that accepts this format MUST pass the samples through to an
+    * HDR10 (PQ / Rec.2020) swapchain without re-encoding them: no inverse
+    * tonemap, no Rec.709->Rec.2020 rotation, no paper-white scaling, since
+    * the core has already applied all of it.  A frontend that cannot present
+    * HDR10 natively must reject the format from SET_PIXEL_FORMAT rather than
+    * silently down-converting -- PQ samples interpreted as SDR look badly
+    * wrong, so the usual transparent narrowing is not safe here.  Cores
+    * should therefore keep an SDR path and fall back when this is refused.
+    *
+    * Cores should query #RETRO_ENVIRONMENT_GET_HDR_PAPER_WHITE_NITS to learn
+    * the luminance the user considers "SDR white" and map their normal
+    * output to it; content authored above that value is what produces the
+    * HDR effect.
+    */
+   RETRO_PIXEL_FORMAT_HDR10_2101010 = 4,
+
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
