@@ -8411,32 +8411,99 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-/* HDR screenshot read-back. Copies the HDR10 backbuffer (A2B10G10R10, PQ
- * Rec.2020) straight into the read-back staging buffer WITHOUT the
- * hdr_to_sdr tone-map that vulkan_read_viewport applies, then unpacks each
- * packed 2-10-10-10 word into three uint16_t (R,G,B), scaling 10->16 bit.
- * The frame path checks VK_FLAG_READBACK_HDR and leaves readback_source as
- * the backbuffer when it is set.
+/* IEEE-754 half (binary16) -> float, for reading an RGBA16F scRGB backbuffer
+ * on the CPU. Handles normals, subnormals, sign and inf/nan. */
+static float vulkan_half_to_float(uint16_t h)
+{
+   uint32_t sign = (uint32_t)(h & 0x8000) << 16;
+   uint32_t exp  = (h >> 10) & 0x1F;
+   uint32_t mant = h & 0x3FF;
+   uint32_t f;
+   float    out;
+   if (exp == 0)
+   {
+      if (mant == 0)
+         f = sign;
+      else
+      {
+         exp = 127 - 15 + 1;
+         while (!(mant & 0x400)) { mant <<= 1; exp--; }
+         mant &= 0x3FF;
+         f = sign | (exp << 23) | (mant << 13);
+      }
+   }
+   else if (exp == 0x1F)
+      f = sign | 0x7F800000 | (mant << 13);
+   else
+      f = sign | ((exp - 15 + 127) << 23) | (mant << 13);
+   memcpy(&out, &f, sizeof(out));
+   return out;
+}
+
+/* ST.2084 (PQ) inverse-EOTF: normalised linear (v = nits/10000, [0,1]) ->
+ * PQ code [0,1]. Same constants as the forward HDR pipeline. */
+static float vulkan_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+/* One scRGB (Rec.709 linear, 1.0 = 80 nits) channel -> 16-bit PQ code. */
+static uint16_t vulkan_scrgb_channel_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f; /* kscRGBWhiteNits, matching hdr_common.glsl */
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;             /* extended-gamut negatives clamp */
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = vulkan_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
+#ifdef VULKAN_HDR_SWAPCHAIN
+/* HDR screenshot read-back. Copies the HDR backbuffer straight into the
+ * read-back staging buffer WITHOUT the hdr_to_sdr tone-map that
+ * vulkan_read_viewport applies (VK_FLAG_READBACK_HDR tells the frame path to
+ * leave readback_source as the backbuffer), then converts each pixel to three
+ * uint16_t (R,G,B) and writes them bottom-up like vulkan_read_viewport. Two
+ * backbuffer encodings are handled:
  *
- * Only HDR10 is handled; scRGB (FP16) returns false so the caller falls back
- * to the ordinary SDR read-back. Bottom-up output like vulkan_read_viewport.
+ *   - HDR10  (A2B10G10R10, PQ Rec.2020): unpack the packed 2-10-10-10 word,
+ *     scale each channel 10->16 bit. Tagged PQ / BT.2100.
+ *   - scRGB  (RGBA16F, linear Rec.709, 1.0 = 80 nits): decode the halves,
+ *     scale to absolute nits and PQ-encode into 16-bit. Tagged PQ / BT.709,
+ *     so no gamut matrix is needed - the values are Rec.709, just PQ-coded.
+ *     scRGB's extended range (>1.0, negatives) is clamped to [0,10000] nits,
+ *     which is unavoidable for a UNORM PNG.
  *
  * NB: the GPU-side path (skip-tonemap copy) is validated structurally only;
- * the 10->16 bit unpack is unit-tested. On-HDR-hardware verification of the
- * captured pixels is the hand-off. */
+ * the 10->16 bit unpack, the half decode and the PQ encode are unit-tested.
+ * On-HDR-hardware verification of the captured pixels is the hand-off. */
 static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
       bool is_idle, struct rpng_hdr_metadata *out_meta)
 {
    struct vk_texture *staging = NULL;
    vk_t *vk                   = (vk_t*)data;
+   bool is_scrgb;
 
    if (!vk)
       return false;
 
-   /* Need an active HDR10 swapchain; scRGB and SDR are not handled here. */
-   if (   !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
-       ||  (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
-       || !vulkan_is_hdr10_format(vk->context->swapchain_format))
+   /* Need an active HDR swapchain. Two encodings are supported: HDR10
+    * (A2B10G10R10 PQ) and scRGB (RGBA16F). SDR is not handled here. */
+   if (!(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
+      return false;
+
+   is_scrgb = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) != 0;
+
+   if (!is_scrgb && !vulkan_is_hdr10_format(vk->context->swapchain_format))
       return false;
 
    /* Request a synchronous read-back that skips the tone-map. Reuse the
@@ -8502,31 +8569,56 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
        * the (top-down) staging rows forwards - mirrors vulkan_read_viewport. */
       buffer += (size_t)3 * (vp_height - 1) * vp_width;
 
-      for (y = 0; y < (int)vp_height; y++,
-            src += staging->stride, buffer -= 3 * vp_width)
+      if (is_scrgb)
       {
-         const uint32_t *row = (const uint32_t*)src;
-         int x;
-         for (x = 0; x < (int)vp_width; x++)
+         /* RGBA16F: 4 halves per pixel; take R,G,B, drop A. Decode the
+          * halves, scale to nits and PQ-encode. */
+         for (y = 0; y < (int)vp_height; y++,
+               src += staging->stride, buffer -= 3 * vp_width)
          {
-            /* A2B10G10R10_UNORM_PACK32: A[31:30] B[29:20] G[19:10] R[9:0]. */
-            uint32_t w = row[x];
-            uint32_t r = (w      ) & 0x3FF;
-            uint32_t g = (w >> 10) & 0x3FF;
-            uint32_t b = (w >> 20) & 0x3FF;
-            /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
-            buffer[x * 3 + 0] = (uint16_t)((r << 6) | (r >> 4));
-            buffer[x * 3 + 1] = (uint16_t)((g << 6) | (g >> 4));
-            buffer[x * 3 + 2] = (uint16_t)((b << 6) | (b >> 4));
+            const uint16_t *row = (const uint16_t*)src;
+            int x;
+            for (x = 0; x < (int)vp_width; x++)
+            {
+               float r = vulkan_half_to_float(row[x * 4 + 0]);
+               float g = vulkan_half_to_float(row[x * 4 + 1]);
+               float b = vulkan_half_to_float(row[x * 4 + 2]);
+               buffer[x * 3 + 0] = vulkan_scrgb_channel_to_pq16(r);
+               buffer[x * 3 + 1] = vulkan_scrgb_channel_to_pq16(g);
+               buffer[x * 3 + 2] = vulkan_scrgb_channel_to_pq16(b);
+            }
+         }
+      }
+      else
+      {
+         for (y = 0; y < (int)vp_height; y++,
+               src += staging->stride, buffer -= 3 * vp_width)
+         {
+            const uint32_t *row = (const uint32_t*)src;
+            int x;
+            for (x = 0; x < (int)vp_width; x++)
+            {
+               /* A2B10G10R10_UNORM_PACK32: A[31:30] B[29:20] G[19:10] R[9:0]. */
+               uint32_t w = row[x];
+               uint32_t r = (w      ) & 0x3FF;
+               uint32_t g = (w >> 10) & 0x3FF;
+               uint32_t b = (w >> 20) & 0x3FF;
+               /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
+               buffer[x * 3 + 0] = (uint16_t)((r << 6) | (r >> 4));
+               buffer[x * 3 + 1] = (uint16_t)((g << 6) | (g >> 4));
+               buffer[x * 3 + 2] = (uint16_t)((b << 6) | (b >> 4));
+            }
          }
       }
    }
 
-   /* HDR10 = PQ transfer, BT.2100 primaries, full range, RGB matrix. */
+   /* Both encodings are PQ-coded and full range. HDR10 keeps its BT.2100
+    * (Rec.2020) primaries; scRGB is Rec.709, so tag primaries=1 and skip any
+    * gamut matrix - the stored values are Rec.709, just PQ-coded. */
    if (out_meta)
    {
       memset(out_meta, 0, sizeof(*out_meta));
-      out_meta->colour_primaries      = 9;  /* BT.2020 / BT.2100 */
+      out_meta->colour_primaries      = is_scrgb ? 1 : 9;
       out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
       out_meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG)  */
       out_meta->video_full_range_flag = 1;
