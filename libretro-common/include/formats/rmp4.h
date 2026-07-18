@@ -62,6 +62,11 @@ typedef struct
    int                    number;      /* MP4 track_ID (1-based)          */
    /* Video */
    unsigned               width, height;
+   /* From the sample entry's colr box (nclx/nclc); 0 when untagged, in
+    * which case converters pick defaults by resolution. */
+   unsigned               matrix_coefficients;
+   unsigned               transfer_characteristics;
+   unsigned               full_range;
    /* Audio */
    unsigned               sample_rate;
    unsigned               channels;

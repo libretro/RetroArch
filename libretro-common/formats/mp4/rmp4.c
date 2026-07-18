@@ -320,6 +320,26 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
          t->pub.width  = rmp4_be16(e.body + 24);
          t->pub.height = rmp4_be16(e.body + 26);
       }
+      /* colr carries the colour description for any visual sample entry:
+       * colour_type 'nclx' (ISO, with a full-range flag) or 'nclc' (QTFF)
+       * followed by primaries, transfer and matrix as 16-bit values. */
+      if (e.size > 78)
+      {
+         rmp4_box colr;
+         if (rmp4_find_child(e.body + 78, e.size - 78,
+               RMP4_FOURCC('c','o','l','r'), &colr) && colr.size >= 10)
+         {
+            uint32_t ct = rmp4_be32(colr.body);
+            if (ct == RMP4_FOURCC('n','c','l','x')
+                  || ct == RMP4_FOURCC('n','c','l','c'))
+            {
+               t->pub.transfer_characteristics = rmp4_be16(colr.body + 6);
+               t->pub.matrix_coefficients      = rmp4_be16(colr.body + 8);
+               if (ct == RMP4_FOURCC('n','c','l','x') && colr.size >= 11)
+                  t->pub.full_range = (colr.body[10] >> 7) & 1;
+            }
+         }
+      }
       switch (e.type)
       {
          case RMP4_FOURCC('v','p','0','8'):
