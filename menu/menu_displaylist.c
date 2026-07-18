@@ -272,6 +272,20 @@ static int filebrowser_parse(
             || !strcmp(label, "cursor_manager_list"))
          allow_parent_directory = false;
 
+#if defined(WEBOS)
+      /* Parent-directory navigation can still reach "/". Re-show the
+       * platform drive list instead of readdir() on jail root, which
+       * freezes the UI when /proc or /sys is scanned. */
+      if (string_is_equal(full_path, "/") || string_is_equal(full_path, "//"))
+      {
+         frontend_driver_parse_drive_list(info_list, true);
+         allow_parent_directory = false;
+         count = 1; /* info_list already has drives; avoid "No items" */
+         ret   = true;
+         goto end;
+      }
+#endif
+
       if (filebrowser_type == FILEBROWSER_SELECT_FILE_SUBSYSTEM)
       {
          runloop_state_t    *runloop_st = runloop_state_get_ptr();
