@@ -55,6 +55,13 @@ typedef struct
     * OpusHead; VP8/VP9: usually empty).  Aliases into the input buffer. */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
+   /* Colour element (video): ISO/IEC 23001-8 code points, 0 = absent.
+    * matrix: 1=BT.709 5/6=BT.601 9=BT.2020-ncl; transfer: 1/6=BT.709/601,
+    * 16=PQ (HDR10), 18=HLG; range: 1=limited(TV) 2=full. */
+   unsigned               matrix_coefficients;
+   unsigned               transfer_characteristics;
+   unsigned               primaries;
+   unsigned               colour_range;
    /* Raw Matroska CodecID string, NUL-terminated (e.g. "V_VP8"). */
    char                   codec_id[24];
 } rwebm_track;

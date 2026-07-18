@@ -24,6 +24,7 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/rwebm.h>
+#include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
 
 #if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS)
@@ -197,8 +198,19 @@ static int webm_present_vp9(webm_player_t *p, int show)
    const rvp9_fb *fb = &p->vp9->fbs[show];
    unsigned w = (unsigned)fb->w < p->width  ? (unsigned)fb->w : p->width;
    unsigned h = (unsigned)fb->h < p->height ? (unsigned)fb->h : p->height;
-   webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
-      p->vp9->uvs);
+   if (p->vp9->hd.bit_depth == 10)
+   {
+      const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+      rwebm_video_blit_i420_hbd(p->fb, p->width, w, h,
+         (const uint16_t*)fb->y, p->vp9->ys,
+         (const uint16_t*)fb->u, (const uint16_t*)fb->v, p->vp9->uvs,
+         ct ? ct->matrix_coefficients : 0,
+         ct ? ct->transfer_characteristics : 0,
+         ct ? ct->colour_range : 0, 0);
+   }
+   else
+      webm_blit_i420(p->fb, w, h, fb->y, p->vp9->ys, fb->u, fb->v,
+         p->vp9->uvs);
    WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }

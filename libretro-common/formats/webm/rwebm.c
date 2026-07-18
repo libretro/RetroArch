@@ -37,6 +37,11 @@
 #define ID_VIDEO           0xE0u
 #define ID_PIXELWIDTH      0xB0u
 #define ID_PIXELHEIGHT     0xBAu
+#define ID_COLOUR          0x55B0u
+#define ID_MATRIXCOEFF     0x55B1u
+#define ID_COLOURRANGE     0x55B9u
+#define ID_TRANSFERCHAR    0x55BAu
+#define ID_PRIMARIES       0x55BBu
 #define ID_AUDIO           0xE1u
 #define ID_SAMPLINGFREQ    0xB5u
 #define ID_CHANNELS        0x9Fu
@@ -228,6 +233,40 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
          case ID_CHANNELS:
             trk->channels    = (unsigned)be_uint(body, (size_t)sz);
             break;
+         case ID_COLOUR:
+         {
+            /* Colour master element: pick out the code points we use */
+            ebml_reader cr;
+            cr.p = body; cr.end = body + sz;
+            while (cr.p < cr.end)
+            {
+               int       cok;
+               uint32_t  cid   = ebml_read_id(&cr);
+               uint64_t  csz   = ebml_read_vint(&cr, 1, &cok);
+               const uint8_t *cb = cr.p;
+               if (!cid || !cok || cb + csz > cr.end)
+                  break;
+               switch (cid)
+               {
+                  case ID_MATRIXCOEFF:
+                     trk->matrix_coefficients     = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case ID_COLOURRANGE:
+                     trk->colour_range            = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case ID_TRANSFERCHAR:
+                     trk->transfer_characteristics = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  case ID_PRIMARIES:
+                     trk->primaries               = (unsigned)be_uint(cb, (size_t)csz);
+                     break;
+                  default:
+                     break;
+               }
+               cr.p = cb + csz;
+            }
+            break;
+         }
          default:
             break;
       }
