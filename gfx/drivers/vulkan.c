@@ -8481,6 +8481,29 @@ static uint16_t vulkan_scrgb_channel_to_pq16(float scrgb)
    else if (pq > 1.0f) pq = 1.0f;
    return (uint16_t)(pq * 65535.0f + 0.5f);
 }
+
+/* 10-bit PQ code -> absolute nits, for deriving MaxCLL / MaxFALL from an
+ * HDR10 read-back. Lazily built; the HDR10 backbuffer is 10-bit so a
+ * 1024-entry table is exact. */
+static float vulkan_pq10_to_nits_lut[1024];
+static bool  vulkan_pq10_lut_ready = false;
+
+static void vulkan_build_pq10_lut(void)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   int i;
+   for (i = 0; i < 1024; i++)
+   {
+      float e   = (float)i / 1023.0f;
+      float ep  = powf(e, 1.0f / m2);
+      float num = ep - c1;
+      float den = c2 - c3 * ep;
+      if (num < 0.0f) num = 0.0f;
+      vulkan_pq10_to_nits_lut[i] = powf(num / den, 1.0f / m1) * 10000.0f;
+   }
+   vulkan_pq10_lut_ready = true;
+}
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -8590,6 +8613,16 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
       unsigned vp_width  = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
       unsigned vp_height = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
       const uint8_t *src = (const uint8_t*)staging->mapped;
+      /* Per-pixel light level (nits of the brightest channel), accumulated
+       * to derive MaxCLL (peak) and MaxFALL (frame average) for the cLLI
+       * chunk. */
+      float max_cll      = 0.0f;
+      double sum_fall    = 0.0;
+
+      if (is_scrgb)
+      { /* nothing extra to prepare */ }
+      else if (!vulkan_pq10_lut_ready)
+         vulkan_build_pq10_lut();
 
       /* Bottom-up: start at the last output row and walk backwards, reading
        * the (top-down) staging rows forwards - mirrors vulkan_read_viewport. */
@@ -8609,9 +8642,17 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
                float r = vulkan_half_to_float(row[x * 4 + 0]);
                float g = vulkan_half_to_float(row[x * 4 + 1]);
                float b = vulkan_half_to_float(row[x * 4 + 2]);
+               float lvl;
                buffer[x * 3 + 0] = vulkan_scrgb_channel_to_pq16(r);
                buffer[x * 3 + 1] = vulkan_scrgb_channel_to_pq16(g);
                buffer[x * 3 + 2] = vulkan_scrgb_channel_to_pq16(b);
+               /* Light level = brightest channel in nits (scRGB 1.0 = 80). */
+               lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
+               lvl *= 80.0f;
+               if (lvl < 0.0f) lvl = 0.0f;
+               else if (lvl > 10000.0f) lvl = 10000.0f;
+               if (lvl > max_cll) max_cll = lvl;
+               sum_fall += lvl;
             }
          }
       }
@@ -8629,13 +8670,27 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
                uint32_t r = (w      ) & 0x3FF;
                uint32_t g = (w >> 10) & 0x3FF;
                uint32_t b = (w >> 20) & 0x3FF;
+               uint32_t mx;
+               float lvl;
                /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
                buffer[x * 3 + 0] = (uint16_t)((r << 6) | (r >> 4));
                buffer[x * 3 + 1] = (uint16_t)((g << 6) | (g >> 4));
                buffer[x * 3 + 2] = (uint16_t)((b << 6) | (b >> 4));
+               /* Light level = brightest channel decoded from PQ to nits. */
+               mx = r; if (g > mx) mx = g; if (b > mx) mx = b;
+               lvl = vulkan_pq10_to_nits_lut[mx];
+               if (lvl > max_cll) max_cll = lvl;
+               sum_fall += lvl;
             }
          }
       }
+
+      /* Stash the derived light levels so the metadata block below (outside
+       * this scope) can write the cLLI chunk. */
+      vk->hdr.max_cll  = max_cll;
+      vk->hdr.max_fall = (vp_width && vp_height)
+         ? (float)(sum_fall / ((double)vp_width * (double)vp_height))
+         : 0.0f;
    }
 
    /* Both encodings are PQ-coded and full range. HDR10 keeps its BT.2100
@@ -8648,6 +8703,33 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
       out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
       out_meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG)  */
       out_meta->video_full_range_flag = 1;
+
+      /* cLLI: peak and frame-average light level measured from the pixels
+       * above. The encoder emits the chunk when either is non-zero. */
+      out_meta->max_cll  = vk->hdr.max_cll;
+      out_meta->max_fall = vk->hdr.max_fall;
+
+      /* mDCV: mastering display volume. Chromaticities match the tagged
+       * primaries (D65 white); luminance is the configured HDR output range.
+       * R,G,B order. */
+      out_meta->write_mdcv = 1;
+      if (is_scrgb)
+      {
+         /* Rec.709 primaries. */
+         out_meta->primary_chromaticity[0][0] = 0.640f; out_meta->primary_chromaticity[0][1] = 0.330f;
+         out_meta->primary_chromaticity[1][0] = 0.300f; out_meta->primary_chromaticity[1][1] = 0.600f;
+         out_meta->primary_chromaticity[2][0] = 0.150f; out_meta->primary_chromaticity[2][1] = 0.060f;
+      }
+      else
+      {
+         /* Rec.2020 primaries. */
+         out_meta->primary_chromaticity[0][0] = 0.708f; out_meta->primary_chromaticity[0][1] = 0.292f;
+         out_meta->primary_chromaticity[1][0] = 0.170f; out_meta->primary_chromaticity[1][1] = 0.797f;
+         out_meta->primary_chromaticity[2][0] = 0.131f; out_meta->primary_chromaticity[2][1] = 0.046f;
+      }
+      out_meta->white_point[0] = 0.3127f; out_meta->white_point[1] = 0.3290f; /* D65 */
+      out_meta->max_luminance  = vk->hdr.max_output_nits;
+      out_meta->min_luminance  = vk->hdr.min_output_nits;
    }
 
    return true;
