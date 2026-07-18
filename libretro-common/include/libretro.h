@@ -2716,6 +2716,34 @@ enum retro_mod
 #define RETRO_ENVIRONMENT_SET_SERIALIZATION_QUIRKS 87
 
 /**
+ * Queries whether the active video driver can present a 10-bit-per-channel
+ * (30-bit) source surface end to end, i.e. whether a frame submitted as
+ * #RETRO_PIXEL_FORMAT_XRGB2101010 reaches the display without the frontend
+ * narrowing it to 8 bits per channel.
+ *
+ * Unlike SET_PIXEL_FORMAT, which accepts XRGB2101010 unconditionally and
+ * transparently down-converts when the driver cannot present 10-bit, this
+ * lets a core discover the real capability so it can avoid pointless work:
+ * a core that has both a 10-bit and an 8-bit output path should prefer the
+ * 8-bit path when this returns \c false, since emitting 10-bit only to have
+ * the frontend narrow it wastes effort and, for content that starts at 8
+ * bits, is a no-op round trip; going straight to 8 bits also rounds rather
+ * than truncates.
+ *
+ * The result may change across a driver reinit (e.g. the user switches
+ * video driver or toggles HDR), so a core that cares should query it when
+ * (re)choosing its pixel format rather than caching it indefinitely.
+ *
+ * @param[out] data <tt>bool *</tt>.
+ * Set to \c true if a 10-bit source surface is presented natively, \c false
+ * if XRGB2101010 frames are down-converted to 8-bit.
+ * @return \c true if the environment call is recognised (the value at
+ * \c data is then valid), \c false if it is unsupported (an older frontend);
+ * a core must treat "unsupported" as "no guarantee of native 10-bit".
+ */
+#define RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE (88 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/**
  * Result of \c RETRO_ENVIRONMENT_GET_MEMORY_STATUS.
  *
  * Sizes are in bytes; a field the frontend cannot determine is left at 0.

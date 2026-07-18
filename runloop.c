@@ -3617,6 +3617,15 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE:
+         /* True only when the active video driver presents a 10-bit source
+          * surface natively; when false, XRGB2101010 frames are narrowed to
+          * 8-bit by video_driver_frame, so a core with an 8-bit path should
+          * prefer it and skip the wasted 10-bit work. */
+         *(bool*)data =
+               video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
+         break;
+
       case RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE:
 #ifdef HAVE_NETWORKING
          RARCH_LOG("[Environ] SET_NETPACKET_INTERFACE.\n");
