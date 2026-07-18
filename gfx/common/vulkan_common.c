@@ -2636,6 +2636,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* Force driver to reset swapchain image handles. */
    vk->context.flags                 |=  VK_CTX_FLAG_INVALID_SWAPCHAIN;
    vk->context.flags                 &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+   /* A replacement swapchain can have fewer images than its predecessor.
+    * Do not retain an image index from the old swapchain while waiting for
+    * the first acquire from the new one. */
+   vk->context.current_swapchain_index = 0;
    vulkan_create_wait_fences(vk);
 
    if (vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX)
