@@ -6957,6 +6957,10 @@ MSG_HASH(
    "scRGB"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
+   "video_swapchain_bit_depth"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    "Output Bit Depth"
    )
