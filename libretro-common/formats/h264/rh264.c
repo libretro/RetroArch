@@ -84,7 +84,7 @@ static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
 enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SLICE_SI=4 };
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
-   num_ref_idx_l0,
+   num_ref_idx_l0,cabac_init_idc,
    slice_alpha_c0_offset,slice_beta_offset; } rh264_slice_hdr;
 /* advancing variant: parses from an existing reader b (leaves it at slice data) */
 static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_ref_idc,
@@ -124,6 +124,9 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
          }
       }
    }
+   if(pps->entropy_coding_mode_flag&&sh->slice_type!=RH264_SLICE_I
+         &&sh->slice_type!=RH264_SLICE_SI)
+      sh->cabac_init_idc=rh264_ue(b);
    sh->slice_qp=pps->pic_init_qp+rh264_se(b);
    if(pps->deblocking_filter_control_present){
       sh->disable_deblocking_filter_idc=rh264_ue(b);
@@ -2016,6 +2019,189 @@ static int rh264_cb_bit(rh264_cabac *c)
    return b;
 }
 
+static const int8_t rh264_cabac_init_PB[3][460][2]={
+{
+ {20,-15},{2,54},{3,74},{20,-15},{2,54},{3,74},{-28,127},{-23,104},
+ {-6,53},{-1,54},{7,51},{23,33},{23,2},{21,0},{1,9},{0,49},
+ {-37,118},{5,57},{-13,78},{-11,65},{1,62},{12,49},{-4,73},{17,50},
+ {18,64},{9,43},{29,0},{26,67},{16,90},{9,104},{-46,127},{-20,104},
+ {1,67},{-13,78},{-11,65},{1,62},{-6,86},{-17,95},{-6,61},{9,45},
+ {-3,69},{-6,81},{-11,96},{6,55},{7,67},{-5,86},{2,88},{0,58},
+ {-3,76},{-10,94},{5,54},{4,69},{-3,81},{0,88},{-7,67},{-5,74},
+ {-4,74},{-5,80},{-7,72},{1,58},{0,41},{0,63},{0,63},{0,63},
+ {-9,83},{4,86},{0,97},{-7,72},{13,41},{3,62},{0,45},{-4,78},
+ {-3,96},{-27,126},{-28,98},{-25,101},{-23,67},{-28,82},{-20,94},{-16,83},
+ {-22,110},{-21,91},{-18,102},{-13,93},{-29,127},{-7,92},{-5,89},{-7,96},
+ {-13,108},{-3,46},{-1,65},{-1,57},{-9,93},{-3,74},{-9,92},{-8,87},
+ {-23,126},{5,54},{6,60},{6,59},{6,69},{-1,48},{0,68},{-4,69},
+ {-8,88},{-2,85},{-6,78},{-1,75},{-7,77},{2,54},{5,50},{-3,68},
+ {1,50},{6,42},{-4,81},{1,63},{-4,70},{0,67},{2,57},{-2,76},
+ {11,35},{4,64},{1,61},{11,35},{18,25},{12,24},{13,29},{13,36},
+ {-10,93},{-7,73},{-2,73},{13,46},{9,49},{-7,100},{9,53},{2,53},
+ {5,53},{-2,61},{0,56},{0,56},{-13,63},{-5,60},{-1,62},{4,57},
+ {-6,69},{4,57},{14,39},{4,51},{13,68},{3,64},{1,61},{9,63},
+ {7,50},{16,39},{5,44},{4,52},{11,48},{-5,60},{-1,59},{0,59},
+ {22,33},{5,44},{14,43},{-1,78},{0,60},{9,69},{11,28},{2,40},
+ {3,44},{0,49},{0,46},{2,44},{2,51},{0,47},{4,39},{2,62},
+ {6,46},{0,54},{3,54},{2,58},{4,63},{6,51},{6,57},{7,53},
+ {6,52},{6,55},{11,45},{14,36},{8,53},{-1,82},{7,55},{-3,78},
+ {15,46},{22,31},{-1,84},{25,7},{30,-7},{28,3},{28,4},{32,0},
+ {34,-1},{30,6},{30,6},{32,9},{31,19},{26,27},{26,30},{37,20},
+ {28,34},{17,70},{1,67},{5,59},{9,67},{16,30},{18,32},{18,35},
+ {22,29},{24,31},{23,38},{18,43},{20,41},{11,63},{9,59},{9,64},
+ {-1,94},{-2,89},{-9,108},{-6,76},{-2,44},{0,45},{0,52},{-3,64},
+ {-2,59},{-4,70},{-4,75},{-8,82},{-17,102},{-9,77},{3,24},{0,42},
+ {0,48},{0,55},{-6,59},{-7,71},{-12,83},{-11,87},{-30,119},{1,58},
+ {-3,29},{-1,36},{1,38},{2,43},{-6,55},{0,58},{0,64},{-3,74},
+ {-10,90},{0,70},{-4,29},{5,31},{7,42},{1,59},{-2,58},{-3,72},
+ {-3,81},{-11,97},{0,58},{8,5},{10,14},{14,18},{13,27},{2,40},
+ {0,58},{-3,70},{-6,79},{-8,85},{0,0},{-13,106},{-16,106},{-10,87},
+ {-21,114},{-18,110},{-14,98},{-22,110},{-21,106},{-18,103},{-21,107},{-23,108},
+ {-26,112},{-10,96},{-12,95},{-5,91},{-9,93},{-22,94},{-5,86},{9,67},
+ {-4,80},{-10,85},{-1,70},{7,60},{9,58},{5,61},{12,50},{15,50},
+ {18,49},{17,54},{10,41},{7,46},{-1,51},{7,49},{8,52},{9,41},
+ {6,47},{2,55},{13,41},{10,44},{6,50},{5,53},{13,49},{4,63},
+ {6,64},{-2,69},{-2,59},{6,70},{10,44},{9,31},{12,43},{3,53},
+ {14,34},{10,38},{-3,52},{13,40},{17,32},{7,44},{7,38},{13,50},
+ {10,57},{26,43},{14,11},{11,14},{9,11},{18,11},{21,9},{23,-2},
+ {32,-15},{32,-15},{34,-21},{39,-23},{42,-33},{41,-31},{46,-28},{38,-12},
+ {21,29},{45,-24},{53,-45},{48,-26},{65,-43},{43,-19},{39,-10},{30,9},
+ {18,26},{20,27},{0,57},{-14,82},{-5,75},{-19,97},{-35,125},{27,0},
+ {28,0},{31,-4},{27,6},{34,8},{30,10},{24,22},{33,19},{22,32},
+ {26,31},{21,41},{26,44},{23,47},{16,65},{14,71},{8,60},{6,63},
+ {17,65},{21,24},{23,20},{26,23},{27,32},{28,23},{28,24},{23,40},
+ {24,32},{28,29},{23,42},{19,57},{22,53},{22,61},{11,86},{12,40},
+ {11,51},{14,59},{-4,79},{-7,71},{-5,69},{-9,70},{-8,66},{-10,68},
+ {-19,73},{-12,69},{-16,70},{-15,67},{-20,62},{-19,70},{-16,66},{-22,65},
+ {-20,63},{9,-2},{26,-9},{33,-9},{39,-7},{41,-2},{45,3},{49,9},
+ {45,27},{36,59},{-6,66},{-7,35},{-7,42},{-8,45},{-5,48},{-12,56},
+ {-6,60},{-5,62},{-8,66},{-8,76},{-5,85},{-6,81},{-10,77},{-7,81},
+ {-17,80},{-18,73},{-4,74},{-10,83},{-9,71},{-9,67},{-1,61},{-8,66},
+ {-14,66},{0,59},{2,59},{21,-13},{33,-14},{39,-7},{46,-2},{51,2},
+ {60,6},{61,17},{55,34},{42,62},
+},
+{
+ {20,-15},{2,54},{3,74},{20,-15},{2,54},{3,74},{-28,127},{-23,104},
+ {-6,53},{-1,54},{7,51},{22,25},{34,0},{16,0},{-2,9},{4,41},
+ {-29,118},{2,65},{-6,71},{-13,79},{5,52},{9,50},{-3,70},{10,54},
+ {26,34},{19,22},{40,0},{57,2},{41,36},{26,69},{-45,127},{-15,101},
+ {-4,76},{-6,71},{-13,79},{5,52},{6,69},{-13,90},{0,52},{8,43},
+ {-2,69},{-5,82},{-10,96},{2,59},{2,75},{-3,87},{-3,100},{1,56},
+ {-3,74},{-6,85},{0,59},{-3,81},{-7,86},{-5,95},{-1,66},{-1,77},
+ {1,70},{-2,86},{-5,72},{0,61},{0,41},{0,63},{0,63},{0,63},
+ {-9,83},{4,86},{0,97},{-7,72},{13,41},{3,62},{13,15},{7,51},
+ {2,80},{-39,127},{-18,91},{-17,96},{-26,81},{-35,98},{-24,102},{-23,97},
+ {-27,119},{-24,99},{-21,110},{-18,102},{-36,127},{0,80},{-5,89},{-7,94},
+ {-4,92},{0,39},{0,65},{-15,84},{-35,127},{-2,73},{-12,104},{-9,91},
+ {-31,127},{3,55},{7,56},{7,55},{8,61},{-3,53},{0,68},{-7,74},
+ {-9,88},{-13,103},{-13,91},{-9,89},{-14,92},{-8,76},{-12,87},{-23,110},
+ {-24,105},{-10,78},{-20,112},{-17,99},{-78,127},{-70,127},{-50,127},{-46,127},
+ {-4,66},{-5,78},{-4,71},{-8,72},{2,59},{-1,55},{-7,70},{-6,75},
+ {-8,89},{-34,119},{-3,75},{32,20},{30,22},{-44,127},{0,54},{-5,61},
+ {0,58},{-1,60},{-3,61},{-8,67},{-25,84},{-14,74},{-5,65},{5,52},
+ {2,57},{0,61},{-9,69},{-11,70},{18,55},{-4,71},{0,58},{7,61},
+ {9,41},{18,25},{9,32},{5,43},{9,47},{0,44},{0,51},{2,46},
+ {19,38},{-4,66},{15,38},{12,42},{9,34},{0,89},{4,45},{10,28},
+ {10,31},{33,-11},{52,-43},{18,15},{28,0},{35,-22},{38,-25},{34,0},
+ {39,-18},{32,-12},{102,-94},{0,0},{56,-15},{33,-4},{29,10},{37,-5},
+ {51,-29},{39,-9},{52,-34},{69,-58},{67,-63},{44,-5},{32,7},{55,-29},
+ {32,1},{0,0},{27,36},{33,-25},{34,-30},{36,-28},{38,-28},{38,-27},
+ {34,-18},{35,-16},{34,-14},{32,-8},{37,-6},{35,0},{30,10},{28,18},
+ {26,25},{29,41},{0,75},{2,72},{8,77},{14,35},{18,31},{17,35},
+ {21,30},{17,45},{20,42},{18,45},{27,26},{16,54},{7,66},{16,56},
+ {11,73},{10,67},{-10,116},{-23,112},{-15,71},{-7,61},{0,53},{-5,66},
+ {-11,77},{-9,80},{-9,84},{-10,87},{-34,127},{-21,101},{-3,39},{-5,53},
+ {-7,61},{-11,75},{-15,77},{-17,91},{-25,107},{-25,111},{-28,122},{-11,76},
+ {-10,44},{-10,52},{-10,57},{-9,58},{-16,72},{-7,69},{-4,69},{-5,74},
+ {-9,86},{2,66},{-9,34},{1,32},{11,31},{5,52},{-2,55},{-2,67},
+ {0,73},{-8,89},{3,52},{7,4},{10,8},{17,8},{16,19},{3,37},
+ {-1,61},{-5,73},{-1,70},{-4,78},{0,0},{-21,126},{-23,124},{-20,110},
+ {-26,126},{-25,124},{-17,105},{-27,121},{-27,117},{-17,102},{-26,117},{-27,116},
+ {-33,122},{-10,95},{-14,100},{-8,95},{-17,111},{-28,114},{-6,89},{-2,80},
+ {-4,82},{-9,85},{-8,81},{-1,72},{5,64},{1,67},{9,56},{0,69},
+ {1,69},{7,69},{-7,69},{-6,67},{-16,77},{-2,64},{2,61},{-6,67},
+ {-3,64},{2,57},{-3,65},{-3,66},{0,62},{9,51},{-1,66},{-2,71},
+ {-2,75},{-1,70},{-9,72},{14,60},{16,37},{0,47},{18,35},{11,37},
+ {12,41},{10,41},{2,48},{12,41},{13,41},{0,59},{3,50},{19,40},
+ {3,66},{18,50},{19,-6},{18,-6},{14,0},{26,-12},{31,-16},{33,-25},
+ {33,-22},{37,-28},{39,-30},{42,-30},{47,-42},{45,-36},{49,-34},{41,-17},
+ {32,9},{69,-71},{63,-63},{66,-64},{77,-74},{54,-39},{52,-35},{41,-10},
+ {36,0},{40,-1},{30,14},{28,26},{23,37},{12,55},{11,65},{37,-33},
+ {39,-36},{40,-37},{38,-30},{46,-33},{42,-30},{40,-24},{49,-29},{38,-12},
+ {40,-10},{38,-3},{46,-5},{31,20},{29,30},{25,44},{12,48},{11,49},
+ {26,45},{22,22},{23,22},{27,21},{33,20},{26,28},{30,24},{27,34},
+ {18,42},{25,39},{18,50},{12,70},{21,54},{14,71},{11,83},{25,32},
+ {21,49},{21,54},{-5,85},{-6,81},{-10,77},{-7,81},{-17,80},{-18,73},
+ {-4,74},{-10,83},{-9,71},{-9,67},{-1,61},{-8,66},{-14,66},{0,59},
+ {2,59},{17,-10},{32,-13},{42,-9},{49,-5},{53,0},{64,3},{68,10},
+ {66,27},{47,57},{-5,71},{0,24},{-1,36},{-2,42},{-2,52},{-9,57},
+ {-6,63},{-4,65},{-4,67},{-7,82},{-3,81},{-3,76},{-7,72},{-6,78},
+ {-12,72},{-14,68},{-3,70},{-6,76},{-5,66},{-5,62},{0,57},{-4,61},
+ {-9,60},{1,54},{2,58},{17,-10},{32,-13},{42,-9},{49,-5},{53,0},
+ {64,3},{68,10},{66,27},{47,57},
+},
+{
+ {20,-15},{2,54},{3,74},{20,-15},{2,54},{3,74},{-28,127},{-23,104},
+ {-6,53},{-1,54},{7,51},{29,16},{25,0},{14,0},{-10,51},{-3,62},
+ {-27,99},{26,16},{-4,85},{-24,102},{5,57},{6,57},{-17,73},{14,57},
+ {20,40},{20,10},{29,0},{54,0},{37,42},{12,97},{-32,127},{-22,117},
+ {-2,74},{-4,85},{-24,102},{5,57},{-6,93},{-14,88},{-6,44},{4,55},
+ {-11,89},{-15,103},{-21,116},{19,57},{20,58},{4,84},{6,96},{1,63},
+ {-5,85},{-13,106},{5,63},{6,75},{-3,90},{-1,101},{3,55},{-4,79},
+ {-2,75},{-12,97},{-7,50},{1,60},{0,41},{0,63},{0,63},{0,63},
+ {-9,83},{4,86},{0,97},{-7,72},{13,41},{3,62},{7,34},{-9,88},
+ {-20,127},{-36,127},{-17,91},{-14,95},{-25,84},{-25,86},{-12,89},{-17,91},
+ {-31,127},{-14,76},{-18,103},{-13,90},{-37,127},{11,80},{5,76},{2,84},
+ {5,78},{-6,55},{4,61},{-14,83},{-37,127},{-5,79},{-11,104},{-11,91},
+ {-30,127},{0,65},{-2,79},{0,72},{-4,92},{-6,56},{3,68},{-8,71},
+ {-13,98},{-4,86},{-12,88},{-5,82},{-3,72},{-4,67},{-8,72},{-16,89},
+ {-9,69},{-1,59},{5,66},{4,57},{-4,71},{-2,71},{2,58},{-1,74},
+ {-4,44},{-1,69},{0,62},{-7,51},{-4,47},{-6,42},{-3,41},{-6,53},
+ {8,76},{-9,78},{-11,83},{9,52},{0,67},{-5,90},{1,67},{-15,72},
+ {-5,75},{-8,80},{-21,83},{-21,64},{-13,31},{-25,64},{-29,94},{9,75},
+ {17,63},{-8,74},{-5,35},{-2,27},{13,91},{3,65},{-7,69},{8,77},
+ {-10,66},{3,62},{-3,68},{-20,81},{0,30},{1,7},{-3,23},{-21,74},
+ {16,66},{-23,124},{17,37},{44,-18},{50,-34},{-22,127},{4,39},{0,42},
+ {7,34},{11,29},{8,31},{6,37},{7,42},{3,40},{8,33},{13,43},
+ {13,36},{4,47},{3,55},{2,58},{6,60},{8,44},{11,44},{14,42},
+ {7,48},{4,56},{4,52},{13,37},{9,49},{19,58},{10,48},{12,45},
+ {0,69},{20,33},{8,63},{35,-18},{33,-25},{28,-3},{24,10},{27,0},
+ {34,-14},{52,-44},{39,-24},{19,17},{31,25},{36,29},{24,33},{34,15},
+ {30,20},{22,73},{20,34},{19,31},{27,44},{19,16},{15,36},{15,36},
+ {21,28},{25,21},{30,20},{31,12},{27,16},{24,42},{0,93},{14,56},
+ {15,57},{26,38},{-24,127},{-24,115},{-22,82},{-9,62},{0,53},{0,59},
+ {-14,85},{-13,89},{-13,94},{-11,92},{-29,127},{-21,100},{-14,57},{-12,67},
+ {-11,71},{-10,77},{-21,85},{-16,88},{-23,104},{-15,98},{-37,127},{-10,82},
+ {-8,48},{-8,61},{-8,66},{-7,70},{-14,75},{-10,79},{-9,83},{-12,92},
+ {-18,108},{-4,79},{-22,69},{-16,75},{-2,58},{1,58},{-13,78},{-9,83},
+ {-4,81},{-13,99},{-13,81},{-6,38},{-13,62},{-6,58},{-2,59},{-16,73},
+ {-10,76},{-13,86},{-9,83},{-10,87},{0,0},{-22,127},{-25,127},{-25,120},
+ {-27,127},{-19,114},{-23,117},{-25,118},{-26,117},{-24,113},{-28,118},{-31,120},
+ {-37,124},{-10,94},{-15,102},{-10,99},{-13,106},{-50,127},{-5,92},{17,57},
+ {-5,86},{-13,94},{-12,91},{-2,77},{0,71},{-1,73},{4,64},{-7,81},
+ {5,64},{15,57},{1,67},{0,68},{-10,67},{1,68},{0,77},{2,64},
+ {0,68},{-5,78},{7,55},{5,59},{2,65},{14,54},{15,44},{5,60},
+ {2,70},{-2,76},{-18,86},{12,70},{5,64},{-12,70},{11,55},{5,56},
+ {0,69},{2,65},{-6,74},{5,54},{7,54},{-6,76},{-11,82},{-2,77},
+ {-2,77},{25,42},{17,-13},{16,-9},{17,-12},{27,-21},{37,-30},{41,-40},
+ {42,-41},{48,-47},{39,-32},{46,-40},{52,-51},{46,-41},{52,-39},{43,-19},
+ {32,11},{61,-55},{56,-46},{62,-50},{81,-67},{45,-20},{35,-2},{28,15},
+ {34,1},{39,1},{30,17},{20,38},{18,45},{15,54},{0,79},{36,-16},
+ {37,-14},{37,-17},{32,1},{34,15},{29,15},{24,25},{34,22},{31,16},
+ {35,18},{31,28},{33,41},{36,28},{27,47},{21,62},{18,31},{19,26},
+ {36,24},{24,23},{27,16},{24,30},{31,29},{22,41},{22,42},{16,60},
+ {15,52},{14,60},{3,78},{-16,123},{21,53},{22,56},{25,61},{21,33},
+ {19,50},{17,61},{-3,78},{-8,74},{-9,72},{-10,72},{-18,75},{-12,71},
+ {-11,63},{-5,70},{-17,75},{-14,72},{-16,67},{-8,53},{-14,59},{-9,52},
+ {-11,68},{9,-2},{30,-10},{31,-4},{33,-1},{33,7},{31,12},{37,23},
+ {31,38},{20,64},{-9,71},{-7,37},{-8,44},{-11,49},{-10,56},{-12,59},
+ {-8,63},{-9,67},{-6,68},{-10,79},{-3,78},{-8,74},{-9,72},{-10,72},
+ {-18,75},{-12,71},{-11,63},{-5,70},{-17,75},{-14,72},{-16,67},{-8,53},
+ {-14,59},{-9,52},{-11,68},{9,-2},{30,-10},{31,-4},{33,-1},{33,7},
+ {31,12},{37,23},{31,38},{20,64},
+},
+};
+
 static void rh264_cabac_init_engine(rh264_cabac *c,
       const uint8_t *buf, const uint8_t *end)
 {
@@ -2027,14 +2213,18 @@ static void rh264_cabac_init_engine(rh264_cabac *c,
 }
 
 /* 9.3.1.1 context variable initialisation for an I slice at SliceQPy. */
-static void rh264_cabac_init_contexts(rh264_cabac *c, int sliceQP)
+/* init_idc < 0 selects the I-slice table (9.3.1.1). */
+static void rh264_cabac_init_contexts(rh264_cabac *c, int sliceQP, int init_idc)
 {
    int i;
    if (sliceQP < 0) sliceQP = 0; else if (sliceQP > 51) sliceQP = 51;
+   if (init_idc > 2) init_idc = 2;
    for (i = 0; i < RH264_CABAC_NCTX; i++)
    {
-      int m = rh264_cabac_init_I[i][0];
-      int n = rh264_cabac_init_I[i][1];
+      int m = (init_idc < 0) ? rh264_cabac_init_I[i][0]
+                             : rh264_cabac_init_PB[init_idc][i][0];
+      int n = (init_idc < 0) ? rh264_cabac_init_I[i][1]
+                             : rh264_cabac_init_PB[init_idc][i][1];
       int pre = ((m * sliceQP) >> 4) + n;
       if (pre < 1) pre = 1; else if (pre > 126) pre = 126;
       if (pre <= 63) { c->state[i] = (uint8_t)(63 - pre); c->mps[i] = 0; }
@@ -2111,7 +2301,13 @@ enum {
    CTX_CBF            = 85,  /* coded_block_flag base       (85..104)       */
    CTX_SIG            = 105, /* significant_coeff_flag frame(105..165)      */
    CTX_LAST           = 166, /* last_significant_coeff_flag (166..226)      */
-   CTX_ABS            = 227   /* coeff_abs_level_minus1      (227..275)      */
+   CTX_ABS            = 227   /* coeff_abs_level_minus1      (227..275)      */,
+   RH264_CTX_MB_SKIP_P= 11,  /* mb_skip_flag, P/SP          (11..13)   */
+   RH264_CTX_MB_TYPE_P= 14,  /* mb_type prefix, P           (14..17)   */
+   RH264_CTX_MB_TYPE_PI=17,  /* mb_type intra suffix, P     (17..20)   */
+   RH264_CTX_SUB_TYPE_P=21,  /* sub_mb_type, P              (21..23)   */
+   RH264_CTX_MVD_X    = 40,  /* mvd_l0 horizontal           (40..46)   */
+   RH264_CTX_MVD_Y    = 47   /* mvd_l0 vertical             (47..53)   */
 };
 
 /* coded_block_flag ctxBlockCat base offsets into the 85.. range (spec
@@ -2237,9 +2433,14 @@ static int rh264_cbf_cac_ctx(int comp,int idx,rh264_cbf *cur,rh264_cbf *L,rh264_
 }
 
 /* Decode one I MB. Returns 0 ok, <0 error/unsupported. */
-static int rh264_cabac_decode_mb(rh264_cabac *cb, const rh264_sps *sps,
+/* mbt supplies the mb_type context indices, which differ between an I slice
+ * (ctxIdxOffset 3) and the intra suffix inside a P slice (offset 17, Table
+ * 9-39). When pskip_prefix is set the intra/inter prefix bin has already been
+ * consumed by the P-slice caller. */
+static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
       const rh264_pps *pps, rh264_frame *f, int mbx, int mby,
-      int *prevQpDeltaNZ, rh264_cbf *cur, rh264_cbf *L, rh264_cbf *U)
+      int *prevQpDeltaNZ, rh264_cbf *cur, rh264_cbf *L, rh264_cbf *U,
+      const int *mbt, int pskip_prefix)
 {
    int have_up=(mby>0), have_left=(mbx>0);
    int gw=f->mbw*4, cgw=f->mbw*2, gx0=mbx*4, gy0=mby*4;
@@ -2253,16 +2454,17 @@ static int rh264_cabac_decode_mb(rh264_cabac *cb, const rh264_sps *sps,
    /* mb_type bin0 ctxIdxInc: neighbours available & NOT I_4x4 */
    ctxInc = (have_left && L->avail && L->is_i16 ? 1:0)
           + (have_up   && U->avail && U->is_i16 ? 1:0);
-   if (!rh264_cabac_decode(cb, CTX_MB_TYPE_I + ctxInc))
+   (void)pskip_prefix;
+   if (!rh264_cabac_decode(cb, mbt[0] + (mbt[6] ? ctxInc : 0)))
       is_i16 = 0;
    else {
       if (rh264_cabac_terminate(cb)) return -100;   /* I_PCM unsupported */
       is_i16 = 1;
-      cbp_luma   = rh264_cabac_decode(cb, CTX_MB_TYPE_I+3) ? 15 : 0;
-      if (rh264_cabac_decode(cb, CTX_MB_TYPE_I+4))
-         cbp_chroma = rh264_cabac_decode(cb, CTX_MB_TYPE_I+5) ? 2 : 1;
-      i16mode  = rh264_cabac_decode(cb, CTX_MB_TYPE_I+6) << 1;
-      i16mode |= rh264_cabac_decode(cb, CTX_MB_TYPE_I+7);
+      cbp_luma   = rh264_cabac_decode(cb, mbt[1]) ? 15 : 0;
+      if (rh264_cabac_decode(cb, mbt[2]))
+         cbp_chroma = rh264_cabac_decode(cb, mbt[3]) ? 2 : 1;
+      i16mode  = rh264_cabac_decode(cb, mbt[4]) << 1;
+      i16mode |= rh264_cabac_decode(cb, mbt[5]);
    }
    cur->is_i16 = is_i16;
 
@@ -2409,6 +2611,12 @@ static int rh264_cabac_decode_mb(rh264_cabac *cb, const rh264_sps *sps,
            else mA=-1;
            if (by>0||have_up) mB=f->i4mode[(gy0+by-1)*gw+(gx0+bx)];
            else mB=-1;
+           /* An inter neighbour (0xff) contributes Intra_4x4 DC to the most
+            * probable mode per 8.3.1.1 when constrained_intra_pred_flag is 0.
+            * Only reachable from a P slice; in an I slice every neighbour is
+            * intra. */
+           if (mA==0xff) mA=2;
+           if (mB==0xff) mB=2;
            if (mA<0||mB<0) predmode=2; /* DC */
            else predmode=(mA<mB?mA:mB);
          }
@@ -2514,6 +2722,18 @@ static int rh264_cabac_decode_mb(rh264_cabac *cb, const rh264_sps *sps,
 
 /* Full CABAC I-slice decode. b is positioned right after the slice header.
  * Returns 0 on success. */
+
+/* I-slice macroblock: ctxIdxOffset 3, bin0 uses the neighbour-derived inc. */
+static int rh264_cabac_decode_mb(rh264_cabac *cb, const rh264_sps *sps,
+      const rh264_pps *pps, rh264_frame *f, int mbx, int mby,
+      int *prevQpDeltaNZ, rh264_cbf *cur, rh264_cbf *L, rh264_cbf *U)
+{
+   static const int mbt_i[7] = { CTX_MB_TYPE_I, CTX_MB_TYPE_I+3,
+      CTX_MB_TYPE_I+4, CTX_MB_TYPE_I+5, CTX_MB_TYPE_I+6, CTX_MB_TYPE_I+7, 1 };
+   return rh264_cabac_decode_mb_ctx(cb, sps, pps, f, mbx, mby,
+         prevQpDeltaNZ, cur, L, U, mbt_i, 0);
+}
+
 static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
       const rh264_pps *pps, rh264_slice_hdr *sh, rh264_frame *f)
 {
@@ -2525,7 +2745,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    while (b->bitpos & 7) { if (!rh264_u1(b)) break; }
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
-   rh264_cabac_init_contexts(&cb, sh->slice_qp);
+   rh264_cabac_init_contexts(&cb, sh->slice_qp, -1);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
 
@@ -2552,6 +2772,456 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
       }
    }
    free(row);
+   return 0;
+}
+
+/* ---- rh264_cabac_p.h ---- */
+/* CABAC P-slice decoding (clause 9.3). Shares the arithmetic engine, residual
+ * decoder and reconstruction path with the CABAC I-slice code, and the motion
+ * compensation / MV prediction with the CAVLC P-slice code. */
+
+/* mb_skip_flag ctxIdxInc (9.3.3.1.1.1): condTermFlagN is 0 when the neighbour
+ * is unavailable or was itself skipped, 1 otherwise. */
+static int rh264_cabac_pskip_ctx(int have_left, int have_up,
+      const uint8_t *skiprow, int mbx, int leftskip)
+{
+   int a = (have_left && !leftskip) ? 1 : 0;
+   int b = (have_up   && !skiprow[mbx]) ? 1 : 0;
+   return a + b;          /* plain sum here, not a + 2*b */
+}
+
+/* mvd_lX, UEG3 with signedValFlag 1 and uCoff 9 (9.3.2.3). The prefix is a
+ * truncated unary string whose first bin is contexted on the sum of the
+ * neighbouring absolute mvd components (9.3.3.1.1.7). */
+static int rh264_cabac_mvd(rh264_cabac *cb, int ctxbase, int abssum)
+{
+   int inc = (abssum < 3) ? 0 : ((abssum > 32) ? 2 : 1);
+   int val, k;
+   if (!rh264_cabac_decode(cb, ctxbase + inc))
+      return 0;
+   val = 1;
+   for (k = 1; k < 9; k++)
+   {
+      int c = (k >= 4) ? 6 : (2 + k);   /* binIdx 1,2,3 -> 3,4,5; >=4 -> 6 */
+      if (!rh264_cabac_decode(cb, ctxbase + c))
+         break;
+      val++;
+   }
+   if (val == 9)
+   {
+      int kexp = 3;                     /* UEG3 suffix, bypass coded */
+      while (rh264_cabac_bypass(cb)) { val += 1 << kexp; kexp++; }
+      while (kexp--) val += rh264_cabac_bypass(cb) << kexp;
+   }
+   return rh264_cabac_bypass(cb) ? -val : val;
+}
+
+/* Sum of the absolute mvd component of the partitions left of and above the
+ * given 4x4 grid position, for the mvd context increment. */
+static int rh264_cabac_mvd_absum(const int16_t *absmvd, int gw,
+      int gx, int gy, int comp)
+{
+   int s = 0;
+   if (gx > 0) s += absmvd[((gy)*gw + (gx-1))*2 + comp];
+   if (gy > 0) s += absmvd[((gy-1)*gw + (gx))*2 + comp];
+   return s;
+}
+
+/* Decode one partition's mvd, predict, store and motion compensate. */
+static void rh264_cabac_p_part(rh264_cabac *cb, rh264_frame *f,
+      const rh264_frame *ref, rh264_mv *mvg, int16_t *absmvd,
+      int gwmax, int ghmax, int mbx, int mby,
+      int bx, int by, int bw, int bh, int hint)
+{
+   int gx = mbx*4 + (bx>>2), gy = mby*4 + (by>>2);
+   int bw4 = bw>>2, bh4 = bh>>2;
+   int pmvx, pmvy, mvx, mvy, mdx, mdy, ix, iy;
+   rh264_pred_mv_dir(mvg, gwmax, gwmax, ghmax, gx, gy, bw4, 0, hint,
+         &pmvx, &pmvy);
+   mdx = rh264_cabac_mvd(cb, RH264_CTX_MVD_X,
+         rh264_cabac_mvd_absum(absmvd, gwmax, gx, gy, 0));
+   mdy = rh264_cabac_mvd(cb, RH264_CTX_MVD_Y,
+         rh264_cabac_mvd_absum(absmvd, gwmax, gx, gy, 1));
+   mvx = pmvx + mdx; mvy = pmvy + mdy;
+   rh264_mv_fill(mvg, gwmax, gx, gy, bw4, bh4, mvx, mvy, 0);
+   for (iy = 0; iy < bh4; iy++) for (ix = 0; ix < bw4; ix++)
+   {
+      int o = ((gy+iy)*gwmax + (gx+ix))*2;
+      absmvd[o]   = (int16_t)(mdx < 0 ? -mdx : mdx);
+      absmvd[o+1] = (int16_t)(mdy < 0 ? -mdy : mdy);
+   }
+   rh264_inter_pred_block(f, ref, mbx, mby, bx, by, bw, bh, mvx, mvy);
+}
+
+/* coded_block_flag ctxIdxInc for the blocks of an inter macroblock. An
+ * unavailable neighbour gives condTermFlagN 0 here, where an intra macroblock
+ * would use 1 (9.3.3.1.1.9). */
+static int rh264_cabac_pcbf_luma_ctx(int raster, rh264_cbf *cur,
+      rh264_cbf *L, rh264_cbf *U, int have_left, int have_up)
+{
+   int bx = raster & 3, by = raster >> 2, a, b;
+   if (bx > 0) a = cur->luma[raster-1];
+   else        a = (have_left && L->avail) ? L->luma[by*4+3] : 0;
+   if (by > 0) b = cur->luma[raster-4];
+   else        b = (have_up && U->avail) ? U->luma[12+bx] : 0;
+   return a + 2*b;
+}
+
+static int rh264_cabac_pcbf_cdc_ctx(int comp, rh264_cbf *L, rh264_cbf *U,
+      int have_left, int have_up)
+{
+   int a = (have_left && L->avail) ? L->cDC[comp] : 0;
+   int b = (have_up   && U->avail) ? U->cDC[comp] : 0;
+   return a + 2*b;
+}
+
+static int rh264_cabac_pcbf_cac_ctx(int comp, int idx, rh264_cbf *cur,
+      rh264_cbf *L, rh264_cbf *U, int have_left, int have_up)
+{
+   int bx = idx & 1, by = idx >> 1, a, b;
+   if (bx > 0) a = cur->cAC[comp][idx-1];
+   else        a = (have_left && L->avail) ? L->cAC[comp][by*2+1] : 0;
+   if (by > 0) b = cur->cAC[comp][idx-2];
+   else        b = (have_up && U->avail) ? U->cAC[comp][2+bx] : 0;
+   return a + 2*b;
+}
+
+/* Residual of one inter macroblock: luma 4x4 (ctxBlockCat 2) plus chroma DC
+ * and AC (cat 3 and 4), added onto the motion-compensated prediction. */
+static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
+      int mbx, int mby, int cbp_luma, int cbp_chroma,
+      rh264_cbf *cur, rh264_cbf *L, rh264_cbf *U,
+      int have_left, int have_up)
+{
+   int gw = f->mbw*4, cgw = f->mbw*2, k, bi, comp;
+   uint8_t *Y = f->Y + (mby*16)*f->ystride + mbx*16;
+   uint8_t *planes[2];
+   int32_t cdc[2][4];
+   planes[0] = f->U + (mby*8)*f->cstride + mbx*8;
+   planes[1] = f->V + (mby*8)*f->cstride + mbx*8;
+
+   for (bi = 0; bi < 16; bi++)
+   {
+      int bx = rh264_blk_x[bi], by = rh264_blk_y[bi], raster = by*4 + bx;
+      int32_t coef[16], r[16];
+      int nz = 0;
+      for (k = 0; k < 16; k++) coef[k] = 0;
+      if (cbp_luma & (1 << (bi >> 2)))
+      {
+         int32_t scan[16];
+         int inc = rh264_cabac_pcbf_luma_ctx(raster, cur, L, U,
+               have_left, have_up);
+         nz = rh264_cabac_residual(cb, 2, inc, 16, scan);
+         if (nz)
+         {
+            for (k = 0; k < 16; k++) coef[rh264_zigzag4[k]] = scan[k];
+            rh264_dequant4x4(coef, f->qp, 0);
+            rh264_itransform4x4(coef, r);
+            { uint8_t *d = Y + (by*4)*f->ystride + bx*4; int xx, yy, v;
+              for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
+              { v = d[yy*f->ystride+xx] + ((r[yy*4+xx] + 32) >> 6);
+                d[yy*f->ystride+xx] = (uint8_t)RH264_CLIP(v); } }
+         }
+      }
+      cur->luma[raster] = nz ? 1 : 0;
+      f->nzL[(mby*4+by)*gw + mbx*4+bx] = (uint8_t)(nz ? 1 : 0);
+   }
+
+   for (comp = 0; comp < 2; comp++) for (k = 0; k < 4; k++) cdc[comp][k] = 0;
+   if (cbp_chroma)
+   {
+      for (comp = 0; comp < 2; comp++)
+      {
+         int32_t scan[4];
+         int inc = rh264_cabac_pcbf_cdc_ctx(comp, L, U, have_left, have_up);
+         int n = rh264_cabac_residual(cb, 3, inc, 4, scan);
+         for (k = 0; k < 4; k++) cdc[comp][k] = scan[k];
+         cur->cDC[comp] = n ? 1 : 0;
+         rh264_chroma_dc_idct(cdc[comp]);
+         { int qpc = rh264_chroma_qp(f->qp, f->chroma_qp_offset);
+           int per = qpc/6, rem = qpc%6, LS = 16*rh264_dequant4_v[rem][0];
+           for (k = 0; k < 4; k++)
+              cdc[comp][k] = ((cdc[comp][k]*LS) << per) >> 5; }
+      }
+   }
+   for (comp = 0; comp < 2; comp++)
+   {
+      uint8_t *p = planes[comp];
+      int blk;
+      for (blk = 0; blk < 4; blk++)
+      {
+         int bx = blk & 1, by = blk >> 1;
+         int32_t ac[16], r[16];
+         int nz = 0;
+         for (k = 0; k < 16; k++) ac[k] = 0;
+         if (cbp_chroma == 2)
+         {
+            int32_t scan[16];
+            int inc = rh264_cabac_pcbf_cac_ctx(comp, blk, cur, L, U,
+                  have_left, have_up);
+            nz = rh264_cabac_residual(cb, 4, inc, 15, scan);
+            for (k = 0; k < 15; k++) ac[rh264_zigzag4[k+1]] = scan[k];
+         }
+         cur->cAC[comp][blk] = nz ? 1 : 0;
+         f->nzC[comp][(mby*2+by)*cgw + mbx*2+bx] = (uint8_t)(nz ? 1 : 0);
+         ac[0] = cdc[comp][blk];
+         rh264_dequant4x4(ac, rh264_chroma_qp(f->qp, f->chroma_qp_offset), 1);
+         rh264_itransform4x4(ac, r);
+         { uint8_t *d = p + by*4*f->cstride + bx*4; int xx, yy, v;
+           for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
+           { v = d[yy*f->cstride+xx] + ((r[yy*4+xx] + 32) >> 6);
+             d[yy*f->cstride+xx] = (uint8_t)RH264_CLIP(v); } }
+      }
+   }
+}
+
+static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
+      const rh264_pps *pps, rh264_slice_hdr *sh, rh264_frame *f,
+      const rh264_frame *ref, rh264_mv *mvg)
+{
+   rh264_cabac cb;
+   rh264_cbf *row, dummy;
+   uint8_t *skiprow;
+   int16_t *absmvd;
+   int mbw = f->mbw, mbh = f->mbh, mbx, mby, prevQpNZ = 0;
+   int gw = mbw*4, cgw = mbw*2;
+   int gwmax = mbw*4, ghmax = mbh*4;
+   int gi;
+   size_t bytepos;
+
+   while (b->bitpos & 7) { if (!rh264_u1(b)) break; }
+   bytepos = (b->bitpos + 7) >> 3;
+   rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
+   rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
+   f->qp = sh->slice_qp;
+   f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   (void)sps;
+
+   for (gi = 0; gi < gwmax * ghmax; gi++)
+   { mvg[gi].mvx = 0; mvg[gi].mvy = 0; mvg[gi].ref = -2; }
+   memset(f->nzL, 0, (size_t)gw * mbh * 4);
+   memset(f->nzC[0], 0, (size_t)cgw * mbh * 2);
+   memset(f->nzC[1], 0, (size_t)cgw * mbh * 2);
+   memset(f->i4mode, 0xff, (size_t)gw * mbh * 4);
+
+   row     = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
+   skiprow = (uint8_t*)calloc((size_t)mbw+2, 1);
+   absmvd  = (int16_t*)calloc((size_t)gwmax*ghmax*2, sizeof(int16_t));
+   if (!row || !skiprow || !absmvd)
+   { free(row); free(skiprow); free(absmvd); return -1; }
+   memset(&dummy, 0, sizeof(dummy));
+
+   for (mby = 0; mby < mbh; mby++)
+   {
+      rh264_cbf leftcbf; int leftskip = 0;
+      memset(&leftcbf, 0, sizeof(leftcbf));
+      for (mbx = 0; mbx < mbw; mbx++)
+      {
+         int have_up = (mby > 0), have_left = (mbx > 0);
+         int skip, inc, cx, cy;
+         rh264_cbf tmp, *L, *U;
+         memset(&tmp, 0, sizeof(tmp));
+         L = have_left ? &leftcbf  : &dummy;
+         U = have_up   ? &row[mbx] : &dummy;
+
+         inc  = rh264_cabac_pskip_ctx(have_left, have_up, skiprow, mbx, leftskip);
+         skip = rh264_cabac_decode(&cb, RH264_CTX_MB_SKIP_P + inc);
+
+         if (skip)
+         {
+            int gx = mbx*4, gy = mby*4, mvx, mvy;
+            const rh264_mv *A = rh264_mv_at(mvg, gwmax, gx-1, gy, gwmax, ghmax);
+            const rh264_mv *B = rh264_mv_at(mvg, gwmax, gx, gy-1, gwmax, ghmax);
+            if (!A || A->ref == -2 || !B || B->ref == -2
+                  || (A->ref == 0 && A->mvx == 0 && A->mvy == 0)
+                  || (B->ref == 0 && B->mvx == 0 && B->mvy == 0))
+            { mvx = 0; mvy = 0; }
+            else
+               rh264_pred_mv(mvg, gwmax, gwmax, ghmax, gx, gy, 4, 0, &mvx, &mvy);
+            rh264_mv_fill(mvg, gwmax, gx, gy, 4, 4, mvx, mvy, 0);
+            rh264_inter_pred_block(f, ref, mbx, mby, 0, 0, 16, 16, mvx, mvy);
+            rh264_inter_clear_i4mode(f, mbx, mby);
+            for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
+            {
+               int o = ((mby*4+cy)*gwmax + mbx*4+cx)*2;
+               f->nzL[(mby*4+cy)*gw + mbx*4+cx] = 0;
+               absmvd[o] = 0; absmvd[o+1] = 0;
+            }
+            for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++)
+            { f->nzC[0][(mby*2+cy)*cgw + mbx*2+cx] = 0;
+              f->nzC[1][(mby*2+cy)*cgw + mbx*2+cx] = 0; }
+            tmp.avail = 1;
+            prevQpNZ = 0;
+            f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
+         }
+         else
+         {
+            int mb_type, cbp_luma = 0, cbp_chroma = 0;
+            tmp.avail = 1;
+            if (rh264_cabac_decode(&cb, RH264_CTX_MB_TYPE_P + 0))
+            {
+               /* Intra macroblock inside a P slice. The prefix bin above has
+                * already selected intra; the suffix is the I-slice mb_type
+                * binarization read with ctxIdxOffset 17 (Table 9-39). */
+               static const int mbt_p[7] = { RH264_CTX_MB_TYPE_PI,
+                  RH264_CTX_MB_TYPE_PI+1, RH264_CTX_MB_TYPE_PI+2,
+                  RH264_CTX_MB_TYPE_PI+2, RH264_CTX_MB_TYPE_PI+3,
+                  RH264_CTX_MB_TYPE_PI+3, 0 };
+               int r2 = rh264_cabac_decode_mb_ctx(&cb, sps, pps, f, mbx, mby,
+                     &prevQpNZ, &tmp, L, U, mbt_p, 1);
+               if (r2 < 0)
+               { free(row); free(skiprow); free(absmvd); return r2; }
+               /* mark the macroblock intra in the MV grid and clear its mvd */
+               for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
+               {
+                  int o = ((mby*4+cy)*gwmax + mbx*4+cx);
+                  mvg[o].mvx = 0; mvg[o].mvy = 0; mvg[o].ref = -1;
+                  absmvd[o*2] = 0; absmvd[o*2+1] = 0;
+               }
+               f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
+               leftcbf = tmp; row[mbx] = tmp;
+               leftskip = 0; skiprow[mbx] = 0;
+               if (mbx == mbw-1 && mby == mbh-1) break;
+               if (rh264_cabac_terminate(&cb)) { mby = mbh; break; }
+               continue;
+            }
+            {
+               int b1 = rh264_cabac_decode(&cb, RH264_CTX_MB_TYPE_P + 1);
+               int b2 = rh264_cabac_decode(&cb,
+                     RH264_CTX_MB_TYPE_P + (b1 ? 3 : 2));
+               if (!b1) mb_type = b2 ? 3 : 0;     /* P_8x8 : P_L0_16x16 */
+               else     mb_type = b2 ? 1 : 2;     /* P_16x8 : P_8x16    */
+            }
+            rh264_inter_clear_i4mode(f, mbx, mby);
+
+            if (mb_type == 0)
+               rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                     mbx, mby, 0, 0, 16, 16, RH264_MVP_MEDIAN);
+            else if (mb_type == 1)
+            {
+               rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                     mbx, mby, 0, 0, 16, 8, RH264_MVP_B);
+               rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                     mbx, mby, 0, 8, 16, 8, RH264_MVP_A);
+            }
+            else if (mb_type == 2)
+            {
+               rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                     mbx, mby, 0, 0, 8, 16, RH264_MVP_A);
+               rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                     mbx, mby, 8, 0, 8, 16, RH264_MVP_C);
+            }
+            else
+            {
+               int sub[4], p;
+               for (p = 0; p < 4; p++)
+               {
+                  if (rh264_cabac_decode(&cb, RH264_CTX_SUB_TYPE_P + 0))
+                     sub[p] = 0;
+                  else if (!rh264_cabac_decode(&cb, RH264_CTX_SUB_TYPE_P + 1))
+                     sub[p] = 1;
+                  else
+                     sub[p] = rh264_cabac_decode(&cb, RH264_CTX_SUB_TYPE_P + 2)
+                            ? 2 : 3;
+               }
+               for (p = 0; p < 4; p++)
+               {
+                  int px = (p&1)*8, py = (p>>1)*8, st = sub[p];
+                  if (st == 0)
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px, py, 8, 8, RH264_MVP_MEDIAN);
+                  else if (st == 1)
+                  {
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px, py,   8, 4, RH264_MVP_MEDIAN);
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px, py+4, 8, 4, RH264_MVP_MEDIAN);
+                  }
+                  else if (st == 2)
+                  {
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px,   py, 4, 8, RH264_MVP_MEDIAN);
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px+4, py, 4, 8, RH264_MVP_MEDIAN);
+                  }
+                  else
+                  {
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px,   py,   4, 4, RH264_MVP_MEDIAN);
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px+4, py,   4, 4, RH264_MVP_MEDIAN);
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px,   py+4, 4, 4, RH264_MVP_MEDIAN);
+                     rh264_cabac_p_part(&cb, f, ref, mvg, absmvd, gwmax, ghmax,
+                           mbx, mby, px+4, py+4, 4, 4, RH264_MVP_MEDIAN);
+                  }
+               }
+            }
+
+            /* coded_block_pattern (9.3.3.1.1.4) */
+            {
+               int cbp = 0, k;
+               for (k = 0; k < 4; k++)
+               {
+                  int bx = (k&1), by = (k>>1), a, bb;
+                  if (bx > 0) a = !((cbp >> (k-1)) & 1);
+                  else        a = (have_left && L->avail)
+                                 ? !((L->cbpLuma >> (k+1)) & 1) : 0;
+                  if (by > 0) bb = !((cbp >> (k-2)) & 1);
+                  else        bb = (have_up && U->avail)
+                                 ? !((U->cbpLuma >> (k+2)) & 1) : 0;
+                  if (rh264_cabac_decode(&cb, CTX_CBP_LUMA + a + 2*bb))
+                     cbp |= (1 << k);
+               }
+               cbp_luma = cbp;
+               {
+                  int a  = (have_left && L->avail) ? (L->cbpChroma != 0) : 0;
+                  int bb = (have_up   && U->avail) ? (U->cbpChroma != 0) : 0;
+                  if (rh264_cabac_decode(&cb, CTX_CBP_CHROMA + a + 2*bb))
+                  {
+                     a  = (have_left && L->avail) ? (L->cbpChroma == 2) : 0;
+                     bb = (have_up   && U->avail) ? (U->cbpChroma == 2) : 0;
+                     cbp_chroma = rh264_cabac_decode(&cb,
+                           CTX_CBP_CHROMA + 4 + a + 2*bb) ? 2 : 1;
+                  }
+               }
+            }
+            tmp.cbpLuma = cbp_luma; tmp.cbpChroma = cbp_chroma;
+
+            /* mb_qp_delta */
+            {
+               int dqp = 0;
+               if (cbp_luma || cbp_chroma)
+               {
+                  if (rh264_cabac_decode(&cb, CTX_QP_DELTA + (prevQpNZ?1:0)))
+                  {
+                     int k = 1;
+                     if (rh264_cabac_decode(&cb, CTX_QP_DELTA+2))
+                     {
+                        k = 2;
+                        while (rh264_cabac_decode(&cb, CTX_QP_DELTA+3)) k++;
+                     }
+                     dqp = (k&1) ? (k+1)/2 : -(k/2);
+                  }
+                  prevQpNZ = (dqp != 0);
+               }
+               else prevQpNZ = 0;
+               f->qp = (f->qp + dqp + 52) % 52;
+            }
+
+            rh264_cabac_p_residual(&cb, f, mbx, mby, cbp_luma, cbp_chroma,
+                  &tmp, L, U, have_left, have_up);
+            f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
+         }
+
+         leftcbf = tmp; row[mbx] = tmp;
+         leftskip = skip; skiprow[mbx] = (uint8_t)skip;
+
+         if (mbx == mbw-1 && mby == mbh-1) break;
+         if (rh264_cabac_terminate(&cb)) { mby = mbh; break; }
+      }
+   }
+   free(row); free(skiprow); free(absmvd);
    return 0;
 }
 
@@ -2616,12 +3286,14 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
    if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP)
    { free(rbsp); return -1; }
-   if (v->pps.entropy_coding_mode_flag)
-   { free(rbsp); return -1; }   /* CABAC P-slices not yet supported */
    if (sh.num_ref_idx_l0 > 1)
    { free(rbsp); return -1; }   /* only a single reference picture is kept */
    /* The reference is the previous output frame (v->ref); decode into v->f. */
-   rc = rh264_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f, &v->ref, v->mvg);
+   if (v->pps.entropy_coding_mode_flag)
+      rc = rh264_cabac_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f,
+            &v->ref, v->mvg);
+   else
+      rc = rh264_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f, &v->ref, v->mvg);
    if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
    free(rbsp);
    return rc;
