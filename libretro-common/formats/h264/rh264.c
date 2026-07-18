@@ -52,11 +52,62 @@ typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cn
    frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
    poc_type1_always_zero,
    vui_num_reorder; /* VUI max_num_reorder_frames, -1 when not signalled */
+   int scaling_present;         /* seq_scaling_matrix_present_flag */
+   uint8_t sl_present[8];       /* seq_scaling_list_present_flag   */
+   uint8_t sl_usedef[8];        /* first delta selected the default */
+   uint8_t sl4[6][16];          /* parsed 4x4 lists (raster)        */
+   uint8_t sl8[2][64];          /* parsed 8x8 lists (raster)        */
    } rh264_sps;
 typedef struct { int valid,entropy_coding_mode_flag,pic_order_present_flag,pic_init_qp,
    num_ref_idx_l0_default,num_ref_idx_l1_default,weighted_pred_flag,weighted_bipred_idc,
    deblocking_filter_control_present,constrained_intra_pred_flag,chroma_qp_index_offset,
-   transform_8x8_mode; } rh264_pps;
+   transform_8x8_mode,
+   scaling_present; uint8_t sl_present[8],sl_usedef[8],
+   sl4[6][16],sl8[2][64]; } rh264_pps;
+static const uint8_t rh264_zigzag4[16]={0,1,4,8,5,2,3,6,9,12,13,10,7,11,14,15};
+
+/* 8x8 zig-zag scan, frame coding: scan position -> raster position. */
+static const uint8_t rh264_zigzag8[64]={
+    0, 1, 8,16, 9, 2, 3,10,17,24,32,25,18,11, 4, 5,
+   12,19,26,33,40,48,41,34,27,20,13, 6, 7,14,21,28,
+   35,42,49,56,57,50,43,36,29,22,15,23,30,37,44,51,
+   58,59,52,45,38,31,39,46,53,60,61,54,47,55,62,63};
+
+/* Default scaling matrices of Tables 7-3 and 7-4 (raster order). */
+static const uint8_t rh264_def4_intra[16]={
+    6,13,20,28, 13,20,28,32, 20,28,32,37, 28,32,37,42};
+static const uint8_t rh264_def4_inter[16]={
+   10,14,20,24, 14,20,24,27, 20,24,27,30, 24,27,30,34};
+static const uint8_t rh264_def8_intra[64]={
+    6,10,13,16,18,23,25,27, 10,11,16,18,23,25,27,29,
+   13,16,18,23,25,27,29,31, 16,18,23,25,27,29,31,33,
+   18,23,25,27,29,31,33,36, 23,25,27,29,31,33,36,38,
+   25,27,29,31,33,36,38,40, 27,29,31,33,36,38,40,42};
+static const uint8_t rh264_def8_inter[64]={
+    9,13,15,17,19,21,22,24, 13,13,17,19,21,22,24,25,
+   15,17,19,21,22,24,25,27, 17,19,21,22,24,25,27,28,
+   19,21,22,24,25,27,28,30, 21,22,24,25,27,28,30,32,
+   22,24,25,27,28,30,32,33, 24,25,27,28,30,32,33,35};
+
+/* scaling_list() of 7.3.2.1.1.1: delta-coded in zig-zag order, stored in
+ * raster order; a zero next_scale at the first position selects the default
+ * matrix for that list. */
+static void rh264_read_scaling_list(rh264_bits *b, uint8_t *out, int size,
+      uint8_t *usedef)
+{
+   int last=8, next=8, j;
+   *usedef=0;
+   for(j=0;j<size;j++){
+      int scanj=(size==16)?rh264_zigzag4[j]:rh264_zigzag8[j];
+      if(next){
+         int d=rh264_se(b);
+         next=(last+d+256)&255;
+         if(scanj==0&&next==0) *usedef=1;
+      }
+      out[scanj]=(uint8_t)(next?next:last);
+      last=out[scanj];
+   }
+}
 static void rh264_skip_scaling_list(rh264_bits *b,int size){
    int last=8,next=8,j; for(j=0;j<size;j++){ if(next){int d=rh264_se(b); next=(last+d+256)&255;} last=next?next:last; }
 }
@@ -69,7 +120,19 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       s->profile_idc==128||s->profile_idc==138||s->profile_idc==139||s->profile_idc==134){
       s->chroma_format_idc=rh264_ue(&b); if(s->chroma_format_idc==3) rh264_u1(&b);
       rh264_ue(&b); rh264_ue(&b); rh264_u1(&b);
-      if(rh264_u1(&b)){ int lists=(s->chroma_format_idc!=3)?8:12; for(i=0;i<lists;i++) if(rh264_u1(&b)) rh264_skip_scaling_list(&b,i<6?16:64); }
+      if(rh264_u1(&b)){
+         if(s->chroma_format_idc==3) return 0;   /* 4:4:4 unsupported */
+         s->scaling_present=1;
+         for(i=0;i<8;i++){
+            s->sl_present[i]=(uint8_t)rh264_u1(&b);
+            if(s->sl_present[i]){
+               if(i<6)
+                  rh264_read_scaling_list(&b,s->sl4[i],16,&s->sl_usedef[i]);
+               else
+                  rh264_read_scaling_list(&b,s->sl8[i-6],64,&s->sl_usedef[i]);
+            }
+         }
+      }
    }
    s->log2_max_frame_num=rh264_ue(&b)+4; s->pic_order_cnt_type=rh264_ue(&b);
    if(s->pic_order_cnt_type==0) s->log2_max_poc_lsb=rh264_ue(&b)+4;
@@ -127,12 +190,104 @@ static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
    if(rh264_u1(&b)) return 0;   /* redundant_pic_cnt_present unsupported */
    if(rh264_more_rbsp(&b)){
       p->transform_8x8_mode=rh264_u1(&b);
-      if(rh264_u1(&b)) return 0;   /* pic scaling matrices unsupported */
+      if(rh264_u1(&b)){
+         int i,n=6+2*p->transform_8x8_mode;
+         p->scaling_present=1;
+         for(i=0;i<n;i++){
+            p->sl_present[i]=(uint8_t)rh264_u1(&b);
+            if(p->sl_present[i]){
+               if(i<6)
+                  rh264_read_scaling_list(&b,p->sl4[i],16,&p->sl_usedef[i]);
+               else
+                  rh264_read_scaling_list(&b,p->sl8[i-6],64,&p->sl_usedef[i]);
+            }
+         }
+      }
       /* second_chroma_qp_index_offset: parsed; only the shared value is
        * supported, so streams giving Cr its own offset are refused. */
       if(rh264_se(&b)!=p->chroma_qp_index_offset) return 0;
    }
    p->valid=1; return 1;
+}
+
+/* Resolve the eight effective weight matrices for the active parameter sets
+ * (fall-back rules A and B of 7.4.2.1.1 / 7.4.2.2, per JM CalculateQuantParam):
+ * lists 0..5 are the 4x4 Intra/Inter Y,Cb,Cr weights, then the 8x8 Intra and
+ * Inter luma weights. Flat 16 when neither parameter set carries matrices. */
+static void rh264_resolve_scaling(const rh264_sps *s, const rh264_pps *p,
+      uint8_t w4[6][16], uint8_t w8[2][64])
+{
+   int i, k;
+   if (!s->scaling_present && !p->scaling_present)
+   {
+      for (i = 0; i < 6; i++) for (k = 0; k < 16; k++) w4[i][k] = 16;
+      for (i = 0; i < 2; i++) for (k = 0; k < 64; k++) w8[i][k] = 16;
+      return;
+   }
+   if (s->scaling_present)
+   {
+      for (i = 0; i < 8; i++)
+      {
+         if (i < 6)
+         {
+            const uint8_t *m;
+            if (!s->sl_present[i])   /* fall-back rule A */
+               m = (i == 0) ? rh264_def4_intra
+                 : (i == 3) ? rh264_def4_inter : w4[i-1];
+            else if (s->sl_usedef[i])
+               m = (i < 3) ? rh264_def4_intra : rh264_def4_inter;
+            else
+               m = s->sl4[i];
+            memcpy(w4[i], m, 16);
+         }
+         else
+         {
+            const uint8_t *m;
+            if (!s->sl_present[i] || s->sl_usedef[i])
+               m = (i == 6) ? rh264_def8_intra : rh264_def8_inter;
+            else
+               m = s->sl8[i-6];
+            memcpy(w8[i-6], m, 64);
+         }
+      }
+   }
+   if (p->scaling_present)
+   {
+      for (i = 0; i < 8; i++)
+      {
+         if (i < 6)
+         {
+            const uint8_t *m;
+            if (!p->sl_present[i])   /* fall-back rule B */
+            {
+               if (i == 0 || i == 3)
+                  m = s->scaling_present ? w4[i]
+                    : (i == 0) ? rh264_def4_intra : rh264_def4_inter;
+               else
+                  m = w4[i-1];
+            }
+            else if (p->sl_usedef[i])
+               m = (i < 3) ? rh264_def4_intra : rh264_def4_inter;
+            else
+               m = p->sl4[i];
+            if (m != w4[i]) memcpy(w4[i], m, 16);
+         }
+         else if (p->transform_8x8_mode)
+         {
+            const uint8_t *m;
+            if (!p->sl_present[i])
+               m = s->scaling_present ? w8[i-6]
+                 : (i == 6) ? rh264_def8_intra : rh264_def8_inter;
+            else if (p->sl_usedef[i])
+               m = (i == 6) ? rh264_def8_intra : rh264_def8_inter;
+            else
+               m = p->sl8[i-6];
+            if (m != w8[i-6]) memcpy(w8[i-6], m, 64);
+         }
+         else if (!s->scaling_present)
+            memset(w8[i-6], 16, 64);
+      }
+   }
 }
 
 
@@ -267,12 +422,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
 
 
 /* ==================== rh264_xform.h ==================== */
-static const uint8_t rh264_zigzag4[16]={0,1,4,8,5,2,3,6,9,12,13,10,7,11,14,15};
 static const int rh264_dequant4_v[6][3]={{10,16,13},{11,18,14},{13,20,16},{14,23,18},{16,25,20},{18,29,23}};
 static const uint8_t rh264_dequant4_idx[16]={0,2,0,2,2,1,2,1,0,2,0,2,2,1,2,1};
-static void rh264_dequant4x4(int32_t *blk,int qP,int has_dc_sep){
+static void rh264_dequant4x4(int32_t *blk,int qP,int has_dc_sep,
+      const uint8_t *w){
    int i,per=qP/6,rem=qP%6;
-   for(i=0;i<16;i++){ int sc=16*rh264_dequant4_v[rem][rh264_dequant4_idx[i]];
+   for(i=0;i<16;i++){ int sc=w[i]*rh264_dequant4_v[rem][rh264_dequant4_idx[i]];
       if(has_dc_sep&&i==0) continue;
       if(per>=4) blk[i]=(blk[i]*sc)<<(per-4); else blk[i]=(blk[i]*sc+(1<<(3-per)))>>(4-per); }
 }
@@ -733,6 +888,8 @@ typedef struct {
    uint8_t *mbqp;     /* per-MB luma QP (mbw x mbh)                     */
    uint8_t *mbt8;     /* per-MB 8x8-transform flag (mbw x mbh)          */
    uint8_t *mbslice;  /* per-MB slice index (mbw x mbh), for deblocking */
+   uint8_t w4[6][16]; /* effective 4x4 weight matrices (raster)         */
+   uint8_t w8[2][64]; /* effective 8x8 weight matrices (raster)         */
    struct rh264_mv_s *mvg; /* per-4x4 motion of this picture, reference pictures only */
    int poc;                /* picture order count of this picture */
 } rh264_frame;
@@ -766,13 +923,6 @@ static int rh264_nC(const uint8_t *nz,int gw,int gh,int gx,int gy,
 }
 
 /* ==================== 8x8 transform support (High profile) ==================== */
-/* 8x8 zig-zag scan, frame coding: scan position -> raster position. */
-static const uint8_t rh264_zigzag8[64]={
-    0, 1, 8,16, 9, 2, 3,10,17,24,32,25,18,11, 4, 5,
-   12,19,26,33,40,48,41,34,27,20,13, 6, 7,14,21,28,
-   35,42,49,56,57,50,43,36,29,22,15,23,30,37,44,51,
-   58,59,52,45,38,31,39,46,53,60,61,54,47,55,62,63};
-
 /* Dequantisation factors of 8.5.9 by qp%6 and position parity class,
  * expanded to the full 8x8 (the flat default weighting of 16 is folded in
  * at use). */
@@ -798,13 +948,13 @@ static const uint8_t rh264_deq8[6][64]={
 
 /* Dequantise an 8x8 block in raster order (8.5.13.1, flat scaling list):
  * value = round(coef * scale * 16 << qp/6 >> 6) with symmetric rounding. */
-static void rh264_dequant8x8(int32_t *c, int qp)
+static void rh264_dequant8x8(int32_t *c, int qp, const uint8_t *w)
 {
    int per = qp / 6, rem = qp % 6, i;
    for (i = 0; i < 64; i++)
       if (c[i])
       {
-         int32_t v = (c[i] * (int32_t)rh264_deq8[rem][i] * 16) << per;
+         int32_t v = (c[i] * (int32_t)rh264_deq8[rem][i] * w[i]) << per;
          c[i] = (v + 32) >> 6;
       }
 }
@@ -994,7 +1144,7 @@ static void rh264_intra8x8(uint8_t *dst, int stride, int mode,
  * dequantisation, the 8x8 inverse transform, and adds onto the prediction
  * already in the frame. */
 static int rh264_cavlc_luma8x8(rh264_bits *b, rh264_frame *f,
-      int mbx, int mby, int b8, int slice_first)
+      int mbx, int mby, int b8, int slice_first, int intra)
 {
    int gw = f->mbw * 4;
    int bx8 = (b8 & 1), by8 = (b8 >> 1);
@@ -1014,7 +1164,7 @@ static int rh264_cavlc_luma8x8(rh264_bits *b, rh264_frame *f,
    }
    for (k = 0; k < 64; k++) coef[k] = 0;
    for (k = 0; k < 64; k++) coef[rh264_zigzag8[k]] = scan[k];
-   rh264_dequant8x8(coef, f->qp);
+   rh264_dequant8x8(coef, f->qp, f->w8[intra ? 0 : 1]);
    rh264_itransform8x8(coef, r);
    { int yy, xx, v;
      for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
@@ -1044,7 +1194,7 @@ static void rh264_chroma_dc_idct(int32_t *c)
 /* Decode chroma residual for one MB (4:2:0). cbp_chroma: 1=DC only,
  * 2=DC+AC. Returns 0 on success. */
 static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
-      int mbx, int mby, uint8_t *u, uint8_t *v, int cbp_chroma, int slice_first)
+      int mbx, int mby, uint8_t *u, uint8_t *v, int cbp_chroma, int slice_first, int inter)
 {
    uint8_t *planes[2]; int comp;
    int32_t cdc[2][4];
@@ -1063,7 +1213,8 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
       /* scale (8.5.11.2): dcC = ((f * LevelScale[qpc%6][0]) << (qpc/6)) >> 5 */
       {
          int qpc=rh264_chroma_qp(f->qp, f->chroma_qp_offset);
-         int per=qpc/6, rem=qpc%6, LS=16*rh264_dequant4_v[rem][0];
+         int per=qpc/6, rem=qpc%6;
+         int LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
          for (k=0;k<4;k++)
             cdc[comp][k]=((cdc[comp][k]*LS)<<per)>>5;
       }
@@ -1100,7 +1251,8 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          }
          f->nzC[comp][cgy*cgw+cgx]=(uint8_t)nzc;
          ac[0]=cdc[comp][blk];
-         rh264_dequant4x4(ac,rh264_chroma_qp(f->qp,f->chroma_qp_offset),1);
+         rh264_dequant4x4(ac,rh264_chroma_qp(f->qp,f->chroma_qp_offset),1,
+               f->w4[(inter?4:1)+comp]);
          rh264_itransform4x4(ac,r);
          {
             uint8_t *d=p+by*4*f->cstride+bx*4; int xx,yy,val;
@@ -1302,7 +1454,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
                   :(b8==2)?1:0;
             rh264_intra8x8(d,f->ystride,modes[b8],hu,hl,hul,hur);
             if(cbp_luma&(1<<b8)){
-               if(rh264_cavlc_luma8x8(b,f,mbx,mby,b8,slice_first)<0) return -1;
+               if(rh264_cavlc_luma8x8(b,f,mbx,mby,b8,slice_first,1)<0)
+                  return -1;
             } else { int cy,cx; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++)
                f->nzL[(mby*4+by8*2+cy)*gw+mbx*4+bx8*2+cx]=0; }
          }
@@ -1310,7 +1463,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
          if(cbp_chroma) {
             if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,cbp_chroma,
-                  slice_first)<0)
+                  slice_first,0)<0)
                return -1;
          }
          if(!cbp_chroma){ int cx,cy; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++){
@@ -1387,7 +1540,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
                   if(tc<0)return -1;
                   nzc=tc;
                   for(k=0;k<16;k++)coef[rh264_zigzag4[k]]=scan[k];
-                  rh264_dequant4x4(coef,f->qp,0);
+                  rh264_dequant4x4(coef,f->qp,0,f->w4[0]);
                   rh264_itransform4x4(coef,r);
                   {int xx,yy,val;for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
                      val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
@@ -1401,7 +1554,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
          if(cbp_chroma) {
             if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,cbp_chroma,
-                  slice_first)<0)
+                  slice_first,0)<0)
                return -1;
          }
          /* mark chroma nz zero when no chroma residual */
@@ -1425,7 +1578,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             rh264_ihadamard4x4(dc,tmp);
             /* I_16x16 luma DC scaling (8.5.10): LevelScale = 16*normAdjust
              * (flat weightScale matrix); shift per qP. */
-            { int per=f->qp/6,rem=f->qp%6,LS=16*rh264_dequant4_v[rem][0];
+            { int per=f->qp/6,rem=f->qp%6;
+              int LS=f->w4[0][0]*rh264_dequant4_v[rem][0];
               for(i=0;i<16;i++){ if(f->qp>=36)dc[i]=(tmp[i]*LS)<<(per-6);
                  else dc[i]=(tmp[i]*LS+(1<<(5-per)))>>(6-per); } }
          }
@@ -1443,7 +1597,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
                for(k=0;k<15;k++)ac[rh264_zigzag4[k+1]]=scan[k];
             }
             ac[0]=dc[(byy*4+bxx)]; /* raster DC index within 4x4 grid */
-            rh264_dequant4x4(ac,f->qp,1);
+            rh264_dequant4x4(ac,f->qp,1,f->w4[0]);
             rh264_itransform4x4(ac,r);
             { uint8_t *bd=y+byy*4*f->ystride+bxx*4; int xx,yy,val;
               for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
@@ -1456,7 +1610,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          rh264_intra_chroma(u,f->cstride,chroma_mode,have_up,have_left);
          rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
          if(cbp_chroma){ if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,
-               cbp_chroma,slice_first)<0)return -1; }
+               cbp_chroma,slice_first,0)<0)return -1; }
       }
       else return -2;
    return 0;
@@ -1890,7 +2044,7 @@ static int rh264_inter_luma_residual(rh264_bits *b, rh264_frame *f,
       {
          if (cbp_luma & (1 << b8))
          {
-            if (rh264_cavlc_luma8x8(b, f, mbx, mby, b8, slice_first) < 0)
+            if (rh264_cavlc_luma8x8(b, f, mbx, mby, b8, slice_first, 0) < 0)
                return -1;
          }
          else
@@ -1919,7 +2073,7 @@ static int rh264_inter_luma_residual(rh264_bits *b, rh264_frame *f,
          nzc = tc;
 
          for (k = 0; k < 16; k++) coef[rh264_zigzag4[k]] = scan[k];
-         rh264_dequant4x4(coef, f->qp, 0);
+         rh264_dequant4x4(coef, f->qp, 0, f->w4[3]);
          rh264_itransform4x4(coef, r);
          {
             int xx, yy, val;
@@ -2222,7 +2376,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          if (cbp_chroma)
          {
             if (rh264_decode_chroma_residual(b, f, mbx, mby, u, v, cbp_chroma,
-                  sh->first_mb_in_slice) < 0)
+                  sh->first_mb_in_slice, 1) < 0)
                return -1;
          }
          else
@@ -3041,7 +3195,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          if (cbp_chroma)
          {
             if (rh264_decode_chroma_residual(b, f, mbx, mby, u, v, cbp_chroma,
-                  sh->first_mb_in_slice) < 0)
+                  sh->first_mb_in_slice, 1) < 0)
                return -1;
          }
          else
@@ -4232,7 +4386,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
         ndc = rh264_cabac_residual(cb, 0, inc, 16, dc);
         cur->lumaDC = ndc ? 1 : 0;
       }
-      { int per=f->qp/6,rem=f->qp%6,LS=16*rh264_dequant4_v[rem][0];
+      { int per=f->qp/6,rem=f->qp%6;
+              int LS=f->w4[0][0]*rh264_dequant4_v[rem][0];
         int32_t hin[16],hout[16];
         for(k=0;k<16;k++) hin[rh264_zigzag4[k]]=dc[k];
         rh264_ihadamard4x4(hin,hout);
@@ -4258,7 +4413,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
          }
          ac[0]=tmp[raster]; /* DC from hadamard, raster order */
          { int32_t q[16]; for(k=0;k<16;k++)q[k]=ac[k];
-           rh264_dequant4x4(q,f->qp,1); q[0]=ac[0];
+           rh264_dequant4x4(q,f->qp,1,f->w4[0]); q[0]=ac[0];
            rh264_itransform4x4(q,r); }
          { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
             int val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
@@ -4301,7 +4456,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
             rh264_cabac_residual(cb, 5, 0, 64, scan);
             for (k = 0; k < 64; k++) coef[k] = 0;
             for (k = 0; k < 64; k++) coef[rh264_zigzag8[k]] = scan[k];
-            rh264_dequant8x8(coef, f->qp);
+            rh264_dequant8x8(coef, f->qp, f->w8[0]);
             rh264_itransform8x8(coef, r);
             { int yy, xx, val;
               for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
@@ -4371,7 +4526,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
             nz = rh264_cabac_residual(cb, 2, inc, 16, scan);
             for(k=0;k<16;k++)coef[rh264_zigzag4[k]]=scan[k];
             cur->luma[raster]=nz?1:0;
-            rh264_dequant4x4(coef,f->qp,0);
+            rh264_dequant4x4(coef,f->qp,0,f->w4[0]);
             rh264_itransform4x4(coef,r);
             { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
                int val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
@@ -4398,7 +4553,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            int ndc = rh264_cabac_residual(cb, 3, inc, 4, dcs[comp]);
            cur->cDC[comp] = ndc ? 1 : 0;
         }
-        { int per=qpc/6,rem=qpc%6,LS=16*rh264_dequant4_v[rem][0];
+        { int per=qpc/6,rem=qpc%6;
+          int LS=f->w4[1+comp][0]*rh264_dequant4_v[rem][0];
           int32_t e[4];
           e[0]=dcs[comp][0]+dcs[comp][1]+dcs[comp][2]+dcs[comp][3];
           e[1]=dcs[comp][0]-dcs[comp][1]+dcs[comp][2]-dcs[comp][3];
@@ -4429,7 +4585,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            uint8_t *d=P+(by*4)*f->cstride+bx*4;
            int32_t q[16],r[16];
            for(k=0;k<16;k++) q[k]=cac[comp][blk][k];
-           rh264_dequant4x4(q,qpc,1); q[0]=cdc[comp][blk];
+           rh264_dequant4x4(q,qpc,1,f->w4[1+comp]); q[0]=cdc[comp][blk];
            rh264_itransform4x4(q,r);
            { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
               int val=d[yy*f->cstride+xx]+((r[yy*4+xx]+32)>>6);
@@ -4708,7 +4864,7 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
             rh264_cabac_residual(cb, 5, 0, 64, scan);
             for (k = 0; k < 64; k++) coef[k] = 0;
             for (k = 0; k < 64; k++) coef[rh264_zigzag8[k]] = scan[k];
-            rh264_dequant8x8(coef, f->qp);
+            rh264_dequant8x8(coef, f->qp, f->w8[1]);
             rh264_itransform8x8(coef, r);
             { int yy, xx, v;
               for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
@@ -4738,7 +4894,7 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
          if (nz)
          {
             for (k = 0; k < 16; k++) coef[rh264_zigzag4[k]] = scan[k];
-            rh264_dequant4x4(coef, f->qp, 0);
+            rh264_dequant4x4(coef, f->qp, 0, f->w4[3]);
             rh264_itransform4x4(coef, r);
             { uint8_t *d = Y + (by*4)*f->ystride + bx*4; int xx, yy, v;
               for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
@@ -4762,7 +4918,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
          cur->cDC[comp] = n ? 1 : 0;
          rh264_chroma_dc_idct(cdc[comp]);
          { int qpc = rh264_chroma_qp(f->qp, f->chroma_qp_offset);
-           int per = qpc/6, rem = qpc%6, LS = 16*rh264_dequant4_v[rem][0];
+           int per = qpc/6, rem = qpc%6;
+           int LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
            for (k = 0; k < 4; k++)
               cdc[comp][k] = ((cdc[comp][k]*LS) << per) >> 5; }
       }
@@ -4788,7 +4945,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
          cur->cAC[comp][blk] = nz ? 1 : 0;
          f->nzC[comp][(mby*2+by)*cgw + mbx*2+bx] = (uint8_t)(nz ? 1 : 0);
          ac[0] = cdc[comp][blk];
-         rh264_dequant4x4(ac, rh264_chroma_qp(f->qp, f->chroma_qp_offset), 1);
+         rh264_dequant4x4(ac, rh264_chroma_qp(f->qp, f->chroma_qp_offset), 1,
+               f->w4[4+comp]);
          rh264_itransform4x4(ac, r);
          { uint8_t *d = p + by*4*f->cstride + bx*4; int xx, yy, v;
            for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
@@ -5849,6 +6007,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       rh264_frame_reset(&v->f);
       v->pic_open = 1; v->pic_kind = 1; v->pic_ref = nri;
       v->pic_end = 0;  v->pic_nslices = 0;
+      rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
    }
    else if (!v->pic_open || v->pic_kind != 1
          || sh.first_mb_in_slice != v->pic_end)
@@ -6013,6 +6172,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       v->last_poc = rh264_derive_poc(v, &sh, nri);
       v->pic_open = 1; v->pic_kind = kind; v->pic_ref = nri;
       v->pic_end = 0;  v->pic_nslices = 0;
+      rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
    }
    else if (!v->pic_open || v->pic_kind != kind
          || sh.first_mb_in_slice != v->pic_end)
