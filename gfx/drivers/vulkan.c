@@ -106,6 +106,43 @@
 
 #define VK_REMAP_TO_TEXFMT(fmt) ((fmt == VK_FORMAT_R5G6B5_UNORM_PACK16) ? VK_FORMAT_R8G8B8A8_UNORM : fmt)
 
+/* Pick a 10-bit (XRGB2101010) sampled-image format the GPU can actually use.
+ *
+ * Frames/thumbnails are packed XRGB2101010 in memory: R in bits [29:20],
+ * G in [19:10], B in [9:0]. A2R10G10B10_UNORM_PACK32 maps that 1:1, so it is
+ * the zero-cost choice - but it is not universally supported: notably some
+ * NVIDIA drivers do not expose the ARGB-ordered 2-10-10-10 format for image
+ * use, while the BGR-ordered A2B10G10R10 is supported essentially everywhere.
+ *
+ * So: prefer A2R10G10B10 when the GPU reports it usable as a sampled image;
+ * otherwise fall back to A2B10G10R10 and set *swizzle to a red<->blue view
+ * swizzle. Feeding the same XRGB2101010 bytes to an A2B10G10R10 image reads R
+ * and B swapped (R lands in the low 10 bits it now calls "R" but which hold
+ * our B, and vice versa); swapping R<->B in the image view corrects that, so
+ * the shader sees identical RGBA either way. Returns the chosen format and
+ * writes a swizzle (identity when none is needed) to *swizzle. */
+static VkFormat vulkan_pick_10bit_sampled_format(
+      VkPhysicalDevice gpu, VkComponentMapping *swizzle)
+{
+   VkFormatProperties props;
+   const VkFormatFeatureFlags need = VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+
+   swizzle->r = VK_COMPONENT_SWIZZLE_R;
+   swizzle->g = VK_COMPONENT_SWIZZLE_G;
+   swizzle->b = VK_COMPONENT_SWIZZLE_B;
+   swizzle->a = VK_COMPONENT_SWIZZLE_A;
+
+   vkGetPhysicalDeviceFormatProperties(gpu,
+         VK_FORMAT_A2R10G10B10_UNORM_PACK32, &props);
+   if ((props.optimalTilingFeatures & need) == need)
+      return VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+
+   /* Fallback: BGR-ordered format read through a red<->blue view swizzle. */
+   swizzle->r = VK_COMPONENT_SWIZZLE_B;
+   swizzle->b = VK_COMPONENT_SWIZZLE_R;
+   return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+}
+
 #ifdef VULKAN_HDR_SWAPCHAIN
 /* Purely for HDR read back */
 #ifndef VKALIGN
@@ -245,6 +282,10 @@ typedef struct vk
    video_info_t video;
 
    VkFormat tex_fmt;
+   /* Component swizzle for the source-frame texture view. Identity for the
+    * 8-bit formats; a red<->blue swap when tex_fmt is the A2B10G10R10 10-bit
+    * fallback (see vulkan_pick_10bit_sampled_format). */
+   VkComponentMapping tex_swizzle;
    math_matrix_4x4 mvp, mvp_no_rot, mvp_menu; /* float alignment */
    VkViewport vk_vp;
    VkRenderPass render_pass;
@@ -458,6 +499,7 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
    {
       case VK_FORMAT_B8G8R8A8_UNORM:
       case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
+      case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
          return 4;
       case VK_FORMAT_R4G4B4A4_UNORM_PACK16:
       case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
@@ -3988,7 +4030,7 @@ static void vulkan_init_textures(vk_t *vk)
       {
          vk->swapchain[i].texture = vulkan_create_texture(
                vk, NULL, vk->tex_w, vk->tex_h, vk->tex_fmt,
-               NULL, NULL, VULKAN_TEXTURE_STREAMED);
+               NULL, &vk->tex_swizzle, VULKAN_TEXTURE_STREAMED);
 
          {
             struct vk_texture *texture = &vk->swapchain[i].texture;
@@ -3998,7 +4040,7 @@ static void vulkan_init_textures(vk_t *vk)
          if (vk->swapchain[i].texture.type == VULKAN_TEXTURE_STAGING)
             vk->swapchain[i].texture_optimal = vulkan_create_texture(
                   vk, NULL, vk->tex_w, vk->tex_h, vk->tex_fmt,
-                  NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+                  NULL, &vk->tex_swizzle, VULKAN_TEXTURE_DYNAMIC);
       }
    }
 
@@ -5101,13 +5143,19 @@ static void *vulkan_init(const video_info_t *video,
       vk->flags         &= ~VK_FLAG_FULLSCREEN;
    vk->tex_w             = RARCH_SCALE_BASE * video->input_scale;
    vk->tex_h             = RARCH_SCALE_BASE * video->input_scale;
+   /* Default to identity swizzle; the 10-bit fallback path overrides it. */
+   vk->tex_swizzle.r = VK_COMPONENT_SWIZZLE_R;
+   vk->tex_swizzle.g = VK_COMPONENT_SWIZZLE_G;
+   vk->tex_swizzle.b = VK_COMPONENT_SWIZZLE_B;
+   vk->tex_swizzle.a = VK_COMPONENT_SWIZZLE_A;
    if (video->source_10bit)
       /* Native XRGB2101010 passthrough. The frontend only sets source_10bit
        * when this driver advertised GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE, so the
-       * frame arrives as packed 2-10-10-10 and maps directly. A2R10G10B10
-       * matches the XRGB2101010 bit layout (R in bits [29:20], etc.) in
-       * native endian, mirroring how B8G8R8A8 is used for XRGB8888. */
-      vk->tex_fmt        = VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+       * frame arrives as packed 2-10-10-10. Prefer A2R10G10B10 (1:1 with the
+       * XRGB2101010 bit layout); fall back to A2B10G10R10 + red<->blue view
+       * swizzle where the ARGB ordering is not a usable sampled format. */
+      vk->tex_fmt        = vulkan_pick_10bit_sampled_format(
+            vk->context->gpu, &vk->tex_swizzle);
    else
       vk->tex_fmt        = video->rgb32 ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
    if (video->force_aspect)
@@ -5115,7 +5163,9 @@ static void *vulkan_init(const video_info_t *video,
    else
       vk->flags         &= ~VK_FLAG_KEEP_ASPECT;
    RARCH_LOG("[Vulkan] Using %s format.\n",
-         video->source_10bit ? "A2R10G10B10 (10-bit)"
+         video->source_10bit
+         ? (vk->tex_fmt == VK_FORMAT_A2R10G10B10_UNORM_PACK32
+               ? "A2R10G10B10 (10-bit)" : "A2B10G10R10 (10-bit, swizzled)")
          : (video->rgb32 ? "BGRA8888" : "RGB565"));
 
    /* Set the viewport to fix recording, since it needs to know
@@ -7709,11 +7759,20 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    }
    else
    {
+      VkFormat        tex_fmt = VK_FORMAT_B8G8R8A8_UNORM;
+      VkComponentMapping swz;
+      const VkComponentMapping *pswz = NULL;
+      if (image->pix10)
+      {
+         /* Same portability handling as the source frame: prefer the ARGB
+          * ordering, else A2B10G10R10 + red<->blue view swizzle. */
+         tex_fmt = vulkan_pick_10bit_sampled_format(vk->context->gpu, &swz);
+         pswz    = &swz;
+      }
       *texture = vulkan_create_texture(vk, NULL,
             image->width, image->height,
-            image->pix10 ? VK_FORMAT_A2R10G10B10_UNORM_PACK32
-                         : VK_FORMAT_B8G8R8A8_UNORM,
-            image->pixels, NULL, VULKAN_TEXTURE_STATIC);
+            tex_fmt,
+            image->pixels, pswz, VULKAN_TEXTURE_STATIC);
       /* vulkan_create_texture always builds the full mip chain for
        * static textures and returns VK_TEX_FLAG_MIPMAP set; sampler
        * selection is expected to gate its use.  Mask the inherited
