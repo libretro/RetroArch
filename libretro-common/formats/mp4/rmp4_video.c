@@ -551,14 +551,22 @@ void rmp4_video_stream_get_info(const rmp4_video_stream_t *s,
  * timestamp table; 0 when unknown (caller applies its default). */
 static int rmp4_video_duration_ms(const rmp4_video_stream_t *s, int idx)
 {
-   int64_t delta_ns = 0;
+   /* Quantise against the accumulated timeline, not per delta: flooring
+    * each delta independently loses the fractional millisecond every
+    * frame - a 33.333 ms (30 fps) stream came out 33+33+33..., running
+    * one percent fast and drifting further each loop. Differencing the
+    * floored absolute times emits 33/33/34 so the sum stays within a
+    * millisecond of the container's timeline. */
+   int64_t t0, t1;
    if (idx + 1 < s->ts_count)
-      delta_ns = s->ts[idx + 1] - s->ts[idx];
+   { t0 = s->ts[idx]; t1 = s->ts[idx + 1]; }
    else if (s->ts_count >= 2)
-      delta_ns = s->ts[s->ts_count - 1] - s->ts[s->ts_count - 2];
-   if (delta_ns <= 0)
+   { t0 = s->ts[s->ts_count - 2]; t1 = s->ts[s->ts_count - 1]; }
+   else
       return 0;
-   return (int)(delta_ns / 1000000);
+   if (t1 <= t0)
+      return 0;
+   return (int)(t1 / 1000000 - t0 / 1000000);
 }
 
 /* Decode one demuxed packet into s->frame. Returns 1 when a picture was
