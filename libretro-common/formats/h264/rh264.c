@@ -305,8 +305,9 @@ typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num
    num_ref_idx_l0,num_ref_idx_l1,direct_spatial_mv_pred_flag,
    cabac_init_idc,frame_num_val,
    nmod,nmod1,wp_valid,luma_log2_denom,chroma_log2_denom,
-   slice_alpha_c0_offset,slice_beta_offset,n_mmco1;
-   int32_t mmco1_diff[RH264_MAX_REFS];
+   slice_alpha_c0_offset,slice_beta_offset,n_mmco,idr_ltr;
+   uint8_t mmco_op[RH264_MAX_REFS*2];
+   int32_t mmco_a[RH264_MAX_REFS*2], mmco_b[RH264_MAX_REFS*2];
    int8_t mod_op[34],mod_op1[34]; int32_t mod_val[34],mod_val1[34];
    int16_t wp_lw[32],wp_lo[32],wp_cw[32][2],wp_co[32][2];
    int16_t wp1_lw[32],wp1_lo[32],wp1_cw[32][2],wp1_co[32][2]; } rh264_slice_hdr;
@@ -394,18 +395,24 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    }
    /* dec_ref_pic_marking (7.3.3.3): only when nal_ref_idc != 0. */
    if(nal_ref_idc){
-      if(sh->is_idr){ rh264_u1(b); rh264_u1(b); } /* no_output_prior + long_term_ref */
+      if(sh->is_idr){
+         rh264_u1(b);                    /* no_output_of_prior_pics_flag */
+         sh->idr_ltr=rh264_u1(b);        /* long_term_reference_flag     */
+      }
       else {
-         if(rh264_u1(b)){ /* adaptive_ref_pic_marking_mode_flag */
-            /* Op 1 removals are executed (encoders use them to retire
-             * B-pyramid references early); long-term and reset ops (2..6)
-             * are not supported, so streams using them are refused rather
-             * than decoded against a wrong reference set. */
+         if(rh264_u1(b)){ /* adaptive_ref_pic_marking_mode_flag (7.3.3.3) */
             int op; do{ op=rh264_ue(b);
-               if(op==1){
-                  int d=rh264_ue(b);
-                  if(sh->n_mmco1<RH264_MAX_REFS)
-                     sh->mmco1_diff[sh->n_mmco1++]=d;
+               if(op>=1&&op<=6){
+                  int a=0,b2=0;
+                  if(op==1||op==2||op==3||op==4||op==6) a=rh264_ue(b);
+                  if(op==3) b2=rh264_ue(b);
+                  if(sh->n_mmco<RH264_MAX_REFS*2){
+                     sh->mmco_op[sh->n_mmco]=(uint8_t)op;
+                     sh->mmco_a[sh->n_mmco]=a;
+                     sh->mmco_b[sh->n_mmco]=b2;
+                     sh->n_mmco++;
+                  }
+                  else return 0;
                }
                else if(op!=0) return 0;
             } while(op!=0);
@@ -3525,8 +3532,12 @@ struct rh264_video
    int        idr_gen;          /* IDR generation of the current picture     */
    int        reorder_delay;    /* output delay in pictures, fixed per SPS   */
    /* marking ops of the picture just decoded, executed before it is stored */
-   int        pend_n_mmco1;
-   int32_t    pend_mmco1[RH264_MAX_REFS];
+   int        pend_n_mmco;
+   uint8_t    pend_mmco_op[RH264_MAX_REFS*2];
+   int32_t    pend_mmco_a[RH264_MAX_REFS*2], pend_mmco_b[RH264_MAX_REFS*2];
+   int        pend_idr_ltr;     /* IDR long_term_reference_flag           */
+   signed char dpb_lt[RH264_MAX_REFS]; /* long_term_frame_idx/slot; -1 short */
+   int        max_lt_idx;       /* MaxLongTermFrameIdx; -1 none allowed   */
 };
 
 /* ---- allocation helpers ---- */
@@ -3623,6 +3634,7 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
       if (!v->mvg || !v->pic_mvg) return -1;
    }
    v->pic_open = 0;
+   v->max_lt_idx = -1;
    v->have_ref = 0;
    v->dpb_len = 0;
    /* Display delay for the whole sequence: what the VUI promises, else no
@@ -6107,6 +6119,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       rh264_frame_reset(&v->f);
       v->pic_open = 1; v->pic_kind = 1; v->pic_ref = nri;
       v->pic_end = 0;  v->pic_nslices = 0;
+      v->pend_idr_ltr = sh.idr_ltr;
       rh264_resolve_scaling(&v->sps, &v->pps, v->f.w4, v->f.w8);
    }
    else if (!v->pic_open || v->pic_kind != 1
@@ -6136,39 +6149,119 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
 /* Adaptive reference marking, op 1 only (8.2.5.4.1): unmark the short-term
  * picture whose PicNum is CurrPicNum minus the signalled difference. Runs
  * before the current picture is stored. */
-static void rh264_dpb_apply_mmco(rh264_video *v, int currfn,
-      const int32_t *diffs, int ndiff)
+/* Remove list position j from the reference set. */
+static void rh264_dpb_unmark_at(rh264_video *v, int j)
 {
-   int k, maxpn = 1 << v->sps.log2_max_frame_num;
-   for (k = 0; k < ndiff; k++)
-   {
-      int pn = currfn - (diffs[k] + 1);
-      int j;
-      if (pn < 0) pn += maxpn;
-      if (pn > currfn) pn -= maxpn;
-      for (j = 0; j < v->dpb_len; j++)
-      {
-         int fn = v->dpb_pn[v->dpb_slot[j]];
-         int fnw = (fn > currfn) ? (fn - maxpn) : fn;
-         if (fnw == pn)
-         {
-            int m;
-            for (m = j; m < v->dpb_len - 1; m++)
-               v->dpb_slot[m] = v->dpb_slot[m + 1];
-            v->dpb_len--;
-            break;
-         }
-      }
-   }
+   int m;
+   for (m = j; m < v->dpb_len - 1; m++)
+      v->dpb_slot[m] = v->dpb_slot[m + 1];
+   v->dpb_len--;
 }
 
-static void rh264_dpb_insert(rh264_video *v, int picnum)
+/* Find the held short-term picture with PicNum pn (FrameNumWrap of
+ * 8.2.4.1); -1 when absent. */
+static int rh264_dpb_find_short(rh264_video *v, int currfn, int pn)
+{
+   int j, maxpn = 1 << v->sps.log2_max_frame_num;
+   for (j = 0; j < v->dpb_len; j++)
+   {
+      int s = v->dpb_slot[j];
+      int fn, fnw;
+      if (v->dpb_lt[s] >= 0) continue;
+      fn = v->dpb_pn[s];
+      fnw = (fn > currfn) ? (fn - maxpn) : fn;
+      if (fnw == pn) return j;
+   }
+   return -1;
+}
+
+/* Adaptive reference marking (8.2.5.4). Returns the long_term_frame_idx the
+ * current picture is to be stored under (op 6), or -1 to store it as a
+ * short-term reference. On op 5 every held reference is dropped and the
+ * POC/frame-number state restarts, so *epoch is set to tell the caller the
+ * current picture opens a new output epoch with POC zero. */
+static int rh264_dpb_marking(rh264_video *v, int currfn, int *epoch)
+{
+   int k, cur_lt = -1;
+   int maxpn = 1 << v->sps.log2_max_frame_num;
+   for (k = 0; k < v->pend_n_mmco; k++)
+   {
+      int op = v->pend_mmco_op[k];
+      int a  = v->pend_mmco_a[k];
+      int j;
+      if (op == 1 || op == 3)
+      {
+         int pn = currfn - (a + 1);
+         if (pn < 0) pn += maxpn;
+         if (pn > currfn) pn -= maxpn;
+         j = rh264_dpb_find_short(v, currfn, pn);
+         if (j < 0) continue;
+         if (op == 1)
+            rh264_dpb_unmark_at(v, j);
+         else
+         {
+            /* short-term -> long-term with the given index; a held
+             * long-term under that index is dropped first (8.2.5.4.3) */
+            int idx = v->pend_mmco_b[k], m;
+            for (m = 0; m < v->dpb_len; m++)
+               if (v->dpb_lt[v->dpb_slot[m]] == idx)
+               { rh264_dpb_unmark_at(v, m); break; }
+            j = rh264_dpb_find_short(v, currfn, pn);
+            if (j >= 0) v->dpb_lt[v->dpb_slot[j]] = (signed char)idx;
+         }
+      }
+      else if (op == 2)
+      {
+         /* unmark the long-term picture with LongTermPicNum a (equal to
+          * long_term_frame_idx for frame coding) */
+         for (j = 0; j < v->dpb_len; j++)
+            if (v->dpb_lt[v->dpb_slot[j]] == a)
+            { rh264_dpb_unmark_at(v, j); break; }
+      }
+      else if (op == 4)
+      {
+         v->max_lt_idx = a - 1;
+         for (j = 0; j < v->dpb_len; )
+         {
+            if (v->dpb_lt[v->dpb_slot[j]] > v->max_lt_idx)
+               rh264_dpb_unmark_at(v, j);
+            else j++;
+         }
+      }
+      else if (op == 5)
+      {
+         v->dpb_len = 0;
+         v->max_lt_idx = -1;
+         *epoch = 1;
+      }
+      else if (op == 6)
+      {
+         int idx = a, m;
+         for (m = 0; m < v->dpb_len; m++)
+            if (v->dpb_lt[v->dpb_slot[m]] == idx)
+            { rh264_dpb_unmark_at(v, m); break; }
+         cur_lt = idx;
+      }
+   }
+   return cur_lt;
+}
+
+static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
 {
    int slot, i;
    if (v->dpb_size <= 0) return;
-   if (v->dpb_len < v->dpb_size)
+   if (v->dpb_len >= v->dpb_size)
    {
-      /* any slot not currently listed; marking removals can leave holes */
+      /* sliding window (8.2.5.3): the oldest short-term reference leaves;
+       * long-term pictures stay until unmarked by an explicit operation */
+      for (i = v->dpb_len - 1; i >= 0; i--)
+         if (v->dpb_lt[v->dpb_slot[i]] < 0)
+         { rh264_dpb_unmark_at(v, i); break; }
+      if (i < 0)   /* every held picture long-term: drop the tail */
+         rh264_dpb_unmark_at(v, v->dpb_len - 1);
+   }
+   {
+      /* any slot not currently listed; removals can leave holes */
       int used, j;
       slot = 0;
       for (i = 0; i < v->dpb_size; i++)
@@ -6179,8 +6272,6 @@ static void rh264_dpb_insert(rh264_video *v, int picnum)
          if (!used) { slot = i; break; }
       }
    }
-   else
-      slot = v->dpb_slot[v->dpb_size - 1];     /* evict the oldest */
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
@@ -6188,10 +6279,11 @@ static void rh264_dpb_insert(rh264_video *v, int picnum)
    if (v->dpb[slot].mvg && v->pic_mvg)
       memcpy(v->dpb[slot].mvg, v->pic_mvg,
             (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
-   for (i = (v->dpb_len < v->dpb_size ? v->dpb_len : v->dpb_size - 1); i > 0; i--)
+   v->dpb_lt[slot] = (signed char)lt;
+   for (i = v->dpb_len; i > 0; i--)
       v->dpb_slot[i] = v->dpb_slot[i-1];
    v->dpb_slot[0] = slot;
-   if (v->dpb_len < v->dpb_size) v->dpb_len++;
+   v->dpb_len++;
    v->have_ref = 1;
 }
 
@@ -6212,22 +6304,34 @@ static void rh264_apply_list_mods(rh264_video *v, const rh264_frame **l,
    int pred = currpn, k, ridx = 0;
    for (k = 0; k < nmod && ridx < nref; k++)
    {
-      int pn;
-      if (mod_op[k] == 2) continue;   /* long-term: not tracked */
-      if (mod_op[k] == 0)
-      { pn = pred - (mod_val[k] + 1); if (pn < 0) pn += maxpn; }
+      int pn, is_lt = (mod_op[k] == 2);
+      if (is_lt)
+         pn = 0x10000 + mod_val[k];    /* LongTermPicNum (8.2.4.3.1) */
       else
-      { pn = pred + (mod_val[k] + 1); if (pn >= maxpn) pn -= maxpn; }
-      pred = pn;
-      if (pn > currpn) pn -= maxpn;
+      {
+         if (mod_op[k] == 0)
+         { pn = pred - (mod_val[k] + 1); if (pn < 0) pn += maxpn; }
+         else
+         { pn = pred + (mod_val[k] + 1); if (pn >= maxpn) pn -= maxpn; }
+         pred = pn;
+         if (pn > currpn) pn -= maxpn;
+      }
       {
          const rh264_frame *pic = NULL;
          int j, nidx;
          for (j = 0; j < v->dpb_len; j++)
          {
-            int fn = v->dpb_pn[v->dpb_slot[j]];
-            int fnw = (fn > currpn) ? (fn - maxpn) : fn;
-            if (fnw == pn) { pic = &v->dpb[v->dpb_slot[j]]; break; }
+            int s = v->dpb_slot[j];
+            if (is_lt)
+            {
+               if (v->dpb_lt[s] == mod_val[k]) { pic = &v->dpb[s]; break; }
+            }
+            else if (v->dpb_lt[s] < 0)
+            {
+               int fn = v->dpb_pn[s];
+               int fnw = (fn > currpn) ? (fn - maxpn) : fn;
+               if (fnw == pn) { pic = &v->dpb[s]; break; }
+            }
          }
          if (!pic) continue;             /* names a picture we lack */
          for (j = nref; j > ridx; j--)
@@ -6293,8 +6397,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f, &end);
       if (rc == 0) v->pic_end = end; else v->pic_open = 0;
       v->last_picnum = sh.frame_num_val;
-      v->pend_n_mmco1 = sh.n_mmco1;
-      memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
+      v->pend_n_mmco = sh.n_mmco;
+      memcpy(v->pend_mmco_op, sh.mmco_op, sizeof(v->pend_mmco_op));
+      memcpy(v->pend_mmco_a, sh.mmco_a, sizeof(v->pend_mmco_a));
+      memcpy(v->pend_mmco_b, sh.mmco_b, sizeof(v->pend_mmco_b));
       free(rbsp);
       return rc;
    }
@@ -6320,9 +6426,13 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       if (nref1 < 1)  nref1 = 1;
       if (nref1 > 32) nref1 = 32;
       for (i = 0; i < v->dpb_len; i++)
-      { ordered[n] = &v->dpb[v->dpb_slot[i]];
-        opoc[n] = v->dpb_poc[v->dpb_slot[i]];
-        opn[n] = v->dpb_pn[v->dpb_slot[i]]; n++; }
+      {
+         int s = v->dpb_slot[i];
+         if (v->dpb_lt[s] >= 0) continue;
+         ordered[n] = &v->dpb[s];
+         opoc[n] = v->dpb_poc[s];
+         opn[n] = v->dpb_pn[s]; n++;
+      }
       /* selection-sort the held pictures by POC, ascending */
       for (i = 0; i < n; i++)
       {
@@ -6350,6 +6460,20 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       for (i = n - 1; i >= 0; i--) if (opoc[i] < v->last_poc)
       { bc.l1[bc.n1] = ordered[i]; bc.l1poc[bc.n1] = opoc[i];
         lpn1[bc.n1] = opn[i]; bc.n1++; }
+      /* long-term pictures close both lists, ascending index (8.2.4.2.4);
+       * they take part in the identical-lists swap check below */
+      { int idx;
+        for (idx = 0; idx <= v->max_lt_idx; idx++)
+           for (i = 0; i < v->dpb_len; i++)
+           {
+              int s = v->dpb_slot[i];
+              if (v->dpb_lt[s] != idx) continue;
+              bc.l0[bc.n0] = &v->dpb[s]; bc.l0poc[bc.n0] = v->dpb_poc[s];
+              lpn0[bc.n0] = 0x10000 + idx; bc.n0++;
+              bc.l1[bc.n1] = &v->dpb[s]; bc.l1poc[bc.n1] = v->dpb_poc[s];
+              lpn1[bc.n1] = 0x10000 + idx; bc.n1++;
+           }
+      }
       if (bc.n0 < 1 || bc.n1 < 1) { free(rbsp); return -1; }
       if (bc.n0 == bc.n1 && bc.n1 > 1)
       {
@@ -6409,8 +6533,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       }
       else v->pic_open = 0;
       v->last_picnum = sh.frame_num_val;
-      v->pend_n_mmco1 = sh.n_mmco1;
-      memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
+      v->pend_n_mmco = sh.n_mmco;
+      memcpy(v->pend_mmco_op, sh.mmco_op, sizeof(v->pend_mmco_op));
+      memcpy(v->pend_mmco_a, sh.mmco_a, sizeof(v->pend_mmco_a));
+      memcpy(v->pend_mmco_b, sh.mmco_b, sizeof(v->pend_mmco_b));
       free(rbsp);
       return rc;
    }
@@ -6431,7 +6557,22 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       if (nref < 1) nref = 1;
       if (nref > 32) nref = 32;
       for (i = 0; i < v->dpb_len; i++)
-      { l0[n] = &v->dpb[v->dpb_slot[i]]; lpn[n] = v->dpb_pn[v->dpb_slot[i]]; n++; }
+      {
+         int s = v->dpb_slot[i];
+         if (v->dpb_lt[s] >= 0) continue;
+         l0[n] = &v->dpb[s]; lpn[n] = v->dpb_pn[s]; n++;
+      }
+      /* long-term pictures follow, ascending LongTermPicNum (8.2.4.2.1) */
+      { int idx;
+        for (idx = 0; idx <= v->max_lt_idx; idx++)
+           for (i = 0; i < v->dpb_len; i++)
+           {
+              int s = v->dpb_slot[i];
+              if (v->dpb_lt[s] == idx)
+              { l0[n] = &v->dpb[s]; lpn[n] = 0x10000 + idx; n++; }
+           }
+      }
+      if (n == 0) { free(rbsp); return -1; }
       while (n < nref) { l0[n] = l0[n-1]; lpn[n] = lpn[n-1]; n++; }
       rh264_apply_list_mods(v, l0, lpn, nref, currpn, maxpn,
             sh.mod_op, sh.mod_val, sh.nmod);
@@ -6460,8 +6601,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    }
    else v->pic_open = 0;
    v->last_picnum = sh.frame_num_val;
-   v->pend_n_mmco1 = sh.n_mmco1;
-   memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
+   v->pend_n_mmco = sh.n_mmco;
+   memcpy(v->pend_mmco_op, sh.mmco_op, sizeof(v->pend_mmco_op));
+   memcpy(v->pend_mmco_a, sh.mmco_a, sizeof(v->pend_mmco_a));
+   memcpy(v->pend_mmco_b, sh.mmco_b, sizeof(v->pend_mmco_b));
    free(rbsp);
    return rc;
 }
@@ -6496,18 +6639,33 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
    if (v->pic_kind == 1)
    {
       v->dpb_len = 0;       /* an IDR empties the reference list (8.2.5.1) */
-      rh264_dpb_insert(v, 0);
+      /* long_term_reference_flag: the IDR itself becomes the long-term
+       * picture with index 0 and bounds the index space (8.2.5.1) */
+      v->max_lt_idx = v->pend_idr_ltr ? 0 : -1;
+      rh264_dpb_insert(v, 0, v->pend_idr_ltr ? 0 : -1);
       if (rh264_out_push(v, v->last_poc, 1) >= 0) *got_pic = 1;
    }
    else
    {
+      int epoch = 0;
       if (v->pic_ref)   /* nal_ref_idc: only reference pictures stored */
       {
-         rh264_dpb_apply_mmco(v, v->last_picnum, v->pend_mmco1,
-               v->pend_n_mmco1);
-         rh264_dpb_insert(v, v->last_picnum);
+         int cur_lt = rh264_dpb_marking(v, v->last_picnum, &epoch);
+         if (epoch)
+         {
+            /* op 5 restarts the sequence numbering: the current picture
+             * behaves as frame 0 with POC 0 in a fresh output epoch
+             * (8.2.1, 8.2.5.4.5) */
+            v->idr_gen++;
+            v->last_poc = 0;
+            v->prev_poc_msb = 0; v->prev_poc_lsb = 0;
+            v->prev_frame_num = 0; v->fn_offset = 0;
+            v->last_picnum = 0;
+            v->f.poc = 0;
+         }
+         rh264_dpb_insert(v, epoch ? 0 : v->last_picnum, cur_lt);
       }
-      if (rh264_out_push(v, v->last_poc, 0) >= 0) *got_pic = 1;
+      if (rh264_out_push(v, v->last_poc, epoch) >= 0) *got_pic = 1;
    }
    v->pic_open = 0;
 }
