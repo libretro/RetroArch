@@ -1116,11 +1116,14 @@ static void xmb_draw_text(
 {
    uint32_t color;
    uint8_t a8;
+   float alpha_hp;
+   float color_hp[4];
 
    if (alpha > xmb->alpha)
       alpha = xmb->alpha;
 
    a8       = 0xFF * alpha;
+   alpha_hp = alpha;
 
    /* Avoid drawing 100% transparent text */
    if (a8 == 0)
@@ -1129,15 +1132,29 @@ static void xmb_draw_text(
    if (     !strcmp(str, "null")
          || !strcmp(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF))
          || !strcmp(str, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MORE)))
-      a8    = 0x7F * alpha;
+   {
+      a8       = 0x7F * alpha;
+      alpha_hp = alpha * (127.0f / 255.0f);
+   }
 
    color    = FONT_COLOR_RGBA(
          settings->uints.menu_font_color_red,
          settings->uints.menu_font_color_green,
          settings->uints.menu_font_color_blue, a8);
 
-   gfx_display_draw_text(font, str, x, y,
-         width, height, color, text_align, scale_factor,
+   /* Full-precision copy of the same colour: the RGB is the user's 8-bit
+    * menu_font_color_* setting, but the alpha (which XMB animates as a float
+    * for fade in/out) is passed un-quantised so the fade is not capped at
+    * 256 steps on a deep-colour framebuffer. Backends that ignore the
+    * high-precision path fall back to 'color', so the 8-bit result is
+    * unchanged there. */
+   color_hp[0] = settings->uints.menu_font_color_red   * (1.0f / 255.0f);
+   color_hp[1] = settings->uints.menu_font_color_green * (1.0f / 255.0f);
+   color_hp[2] = settings->uints.menu_font_color_blue  * (1.0f / 255.0f);
+   color_hp[3] = alpha_hp < 0.0f ? 0.0f : (alpha_hp > 1.0f ? 1.0f : alpha_hp);
+
+   gfx_display_draw_text_hp(font, str, x, y,
+         width, height, color, color_hp, text_align, scale_factor,
          shadows_enable,
          xmb->shadow_offset, false);
 }
