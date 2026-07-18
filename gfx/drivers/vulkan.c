@@ -6273,6 +6273,71 @@ static void vulkan_init_render_target(struct vk_image* image, uint32_t width, ui
    vkCreateFramebuffer(ctx->device, &info, NULL, &image->framebuffer);
 }
 
+/* Pick the HDR composition mode from what the source image actually holds.
+ *
+ * The offscreen buffer contains PQ Rec.2020 when the core supplies
+ * RETRO_PIXEL_FORMAT_HDR10_2101010, or when a shader preset's final pass
+ * emits HDR10; linear FP16 when a preset emits HDR16; and ordinary SDR
+ * otherwise.  Getting this wrong is not subtle: treating PQ code values as
+ * sRGB applies a spurious 2.4 power to them, which lifts shadows and crushes
+ * highlights across the whole image.
+ *
+ * Both the game pass and the menu/overlay composite need the same answer,
+ * so derive it in one place rather than duplicating -- the composite used to
+ * assume SDR unconditionally, which was correct only while cores could not
+ * produce HDR frames themselves. */
+static unsigned vulkan_hdr_source_mode(vk_t *vk,
+      const struct video_shader *filter_chain_preset, void *filter_chain)
+{
+   bool src_hdr10 = (vk->flags & VK_FLAG_SOURCE_HDR10)
+      || (filter_chain && vulkan_filter_chain_emits_hdr10(
+               (vulkan_filter_chain_t*)filter_chain));
+   bool src_hdr16 = (filter_chain && vulkan_filter_chain_emits_hdr16(
+               (vulkan_filter_chain_t*)filter_chain));
+
+   if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
+   {
+      if (src_hdr10)
+         return 3;   /* PQ Rec.2020 -> scRGB */
+      if (src_hdr16)
+         return 0;   /* already linear scRGB: pass through */
+      return 2;      /* SDR -> scRGB */
+   }
+
+   /* HDR10 swapchain: a source already in PQ needs no encode. */
+   if (src_hdr10 || src_hdr16)
+      return 0;
+   return 1;         /* SDR -> HDR10 PQ */
+}
+
+/* Report, once per change, what the HDR composition decided and why.  The
+ * inputs are a mix of core pixel format, shader preset output and swapchain
+ * colour space, and a wrong combination shows up only as a subtly graded
+ * image -- which is very hard to attribute from a screenshot. */
+static void vulkan_hdr_log_mode(vk_t *vk, unsigned mode, const char *pass)
+{
+   static unsigned last_mode = 0xFFFFFFFFu;
+   static const char *last_pass = NULL;
+   static const char *desc[4] =
+   {
+      "passthrough (source already in output space)",
+      "SDR -> HDR10 PQ",
+      "SDR -> scRGB",
+      "PQ Rec.2020 -> scRGB"
+   };
+
+   if (mode == last_mode && pass == last_pass)
+      return;
+   last_mode = mode;
+   last_pass = pass;
+
+   RARCH_LOG("[Vulkan] HDR %s pass: mode %u, %s "
+         "(core PQ: %s, swapchain: %s).\n",
+         pass, mode, desc[mode & 3],
+         (vk->flags & VK_FLAG_SOURCE_HDR10) ? "yes" : "no",
+         (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? "scRGB" : "HDR10");
+}
+
 static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pass, const struct vk_image* source_image, struct vk_image* render_target, vk_t* vk, struct vk_buffer* ubo, unsigned hdr_mode, bool is_menu_composite)
 {
    VkRenderPassBeginInfo rp_info;
@@ -6286,15 +6351,18 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    vk->hdr.ubo_values.mvp                 = vk->mvp_no_rot;
    vk->hdr.ubo_values.hdr_mode            = hdr_mode;
 
-   if (hdr_mode == 2 || hdr_mode == 3)
+   if (hdr_mode == 0 || hdr_mode == 2 || hdr_mode == 3)
    {
-      /* scRGB paths: no legacy inverse tonemap / PQ encoding */
+      /* Source is already in the output's space (mode 0), or is converted by
+       * the shader's own scRGB branches (2 and 3).  In every one of these the
+       * legacy inverse tonemap and PQ encode must stay off, or the samples
+       * are encoded a second time. */
       vk->hdr.ubo_values.inverse_tonemap  = 0.0f;
       vk->hdr.ubo_values.hdr10            = 0.0f;
    }
    else
    {
-      /* HDR10 path: legacy inverse tonemap + PQ encoding */
+      /* SDR source, HDR10 output: inverse tonemap + PQ encode. */
       vk->hdr.ubo_values.inverse_tonemap  = 1.0f;
       vk->hdr.ubo_values.hdr10            = 1.0f;
    }
@@ -6918,18 +6986,9 @@ static bool vulkan_frame(void *data, const void *frame,
              * scRGB + HDR16 source -> mode 0 (passthrough, already scRGB)
              * scRGB + SDR source   -> mode 2 (sRGB->scRGB)
              * HDR10 + SDR source   -> mode 1 (sRGB->HDR10 PQ) */
-            unsigned game_hdr_mode;
-            if (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
-            {
-               if (filter_chain && vulkan_filter_chain_emits_hdr10(filter_chain))
-                  game_hdr_mode = 3;
-               else if (filter_chain && vulkan_filter_chain_emits_hdr16(filter_chain))
-                  game_hdr_mode = 0;
-               else
-                  game_hdr_mode = 2;
-            }
-            else
-               game_hdr_mode = 1;
+            unsigned game_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
+                  filter_chain);
+            vulkan_hdr_log_mode(vk, game_hdr_mode, "game");
             vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo, game_hdr_mode, false);
          }
 
@@ -7090,8 +7149,16 @@ static bool vulkan_frame(void *data, const void *frame,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
          {
-            /* Menu/overlay composite: source is always SDR (B8G8R8A8_UNORM) */
-            unsigned composite_hdr_mode = (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB) ? 2 : 1;
+            /* This pass replaces the game pass whenever the OSD, a menu, an
+             * overlay, a message or widgets are up, so it composites the game
+             * frame too -- it cannot assume the source is SDR.  When the core
+             * supplies HDR10 the offscreen buffer holds PQ, and treating that
+             * as sRGB applies a spurious 2.4 power to PQ code values: shadows
+             * lift, highlights crush, and the effect only appears while the
+             * OSD happens to be visible. */
+            unsigned composite_hdr_mode = vulkan_hdr_source_mode(vk, NULL,
+                  filter_chain);
+            vulkan_hdr_log_mode(vk, composite_hdr_mode, "composite");
             vulkan_run_hdr_pipeline(vk->pipelines.hdr, vk->keep_render_pass, &vk->offscreen_buffer, backbuffer, vk, &vk->hdr.ubo_menu, composite_hdr_mode, true);
          }
       }
