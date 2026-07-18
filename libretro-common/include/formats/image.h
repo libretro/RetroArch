@@ -188,6 +188,15 @@ bool image_transfer_iterate(void *data, enum image_type_enum type);
 
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
+/* True if the last processed frame was written as packed XRGB2101010
+ * (10-bit); only the video decoders can report this, for HDR sources. */
+bool image_transfer_is_10bit(void *data, enum image_type_enum type);
+
+/* Ask a video decoder to emit packed XRGB2101010 for 10-bit HDR sources
+ * (still-image types ignore it). */
+void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
+      int want);
+
 /* Animation (animated images: WEBP, and the video track of WEBM).
  *
  * image_transfer_anim_new returns an opaque animation handle, or NULL

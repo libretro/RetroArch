@@ -483,6 +483,40 @@ bool image_transfer_get_gpu_layout(
    return false;
 }
 
+/* Report whether the last processed frame was written as packed XRGB2101010
+ * (10-bit) rather than 8-bit RGBA. Only the video decoders can produce this,
+ * and only for 10-bit HDR sources. */
+/* Ask a video decoder to emit packed XRGB2101010 for 10-bit HDR sources.
+ * Only the video types honour it; still images ignore it. */
+void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
+      int want)
+{
+   switch (type)
+   {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         rwebm_video_set_want_10bit((rwebm_video_t*)data, want);
+         break;
+#endif
+      default:
+         break;
+   }
+}
+
+bool image_transfer_is_10bit(void *data, enum image_type_enum type)
+{
+   switch (type)
+   {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         return rwebm_video_is_10bit((const rwebm_video_t*)data);
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_iterate(void *data, enum image_type_enum type)
 {
 

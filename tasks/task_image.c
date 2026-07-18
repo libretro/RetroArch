@@ -110,6 +110,7 @@ static int task_image_process(
 
    image->ti.width  = *width;
    image->ti.height = *height;
+   image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
 
    return retval;
 }
@@ -219,6 +220,12 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    ptr                             = nbio_get_ptr(nbio->handle, &len);
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
+
+   /* Ask video thumbnail decoders for native 10-bit output, but only when the
+    * active video driver can sample a 10-bit texture; otherwise the decoded
+    * buffer would just be narrowed again at upload for no benefit. */
+   if (video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+      image_transfer_set_want_10bit(image->handle, image->type, 1);
 
    /* Set image size */
    image->size                     = len;
@@ -416,7 +423,12 @@ bool task_image_load_handler(retro_task_t *task)
                   false
                };
 
-               if (upscale_image(scale_factor_int, &image->ti, &img_resampled))
+               /* upscale_image() works on 8-bit RGBA pixels; a packed 10-bit
+                * buffer must not go through it. 10-bit thumbnails come from
+                * full-size HDR video frames, which are above the threshold
+                * and never resampled in practice, so simply skip it. */
+               if (!image->ti.pix10
+                     && upscale_image(scale_factor_int, &image->ti, &img_resampled))
                {
                   image->ti.width  = img_resampled.width;
                   image->ti.height = img_resampled.height;
@@ -432,6 +444,7 @@ bool task_image_load_handler(retro_task_t *task)
          img->height        = image->ti.height;
          img->pixels        = image->ti.pixels;
          img->supports_rgba = image->ti.supports_rgba;
+         img->pix10         = image->ti.pix10;
 
          /* Transfer pixel ownership to the output image so
           * cleanup does not double-free */

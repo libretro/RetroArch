@@ -69,12 +69,16 @@ struct rwebm_video_stream
    enum rwebm_codec codec;
    unsigned     width;
    unsigned     height;
+   int          want10;     /* caller requested 10-bit output         */
+   int          is10;       /* last decoded frame written as 10-bit    */
 };
 
 struct rwebm_video
 {
    const uint8_t *buf;
    size_t         len;
+   int            want10;     /* caller requested 10-bit thumbnail output */
+   int            last_10bit; /* last processed frame was XRGB2101010 */
 };
 
 /* ------------------------------------------------------------------ */
@@ -798,14 +802,29 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
          if (s->vp9->hd.bit_depth == 10)
          {
             const rwebm_track *ct = rwebm_get_track(s->demux, s->track);
-            rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
-                  (const uint16_t*)fb->y, s->vp9->ys,
-                  (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                  s->vp9->uvs,
-                  ct ? ct->matrix_coefficients : 0,
-                  ct ? ct->transfer_characteristics : 0,
-                  ct ? ct->colour_range : 0,
-                  ct ? ct->max_cll : 0, 1);
+            if (s->want10)
+            {
+               /* Native 10-bit thumbnail: packed XRGB2101010, SDR-encoded
+                * at 10-bit precision (same colour as the 8-bit path). */
+               rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
+                     (const uint16_t*)fb->y, s->vp9->ys,
+                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
+                     s->vp9->uvs,
+                     ct ? ct->matrix_coefficients : 0,
+                     ct ? ct->transfer_characteristics : 0,
+                     ct ? ct->colour_range : 0,
+                     ct ? ct->max_cll : 0);
+               s->is10 = 1;
+            }
+            else
+               rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
+                     (const uint16_t*)fb->y, s->vp9->ys,
+                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
+                     s->vp9->uvs,
+                     ct ? ct->matrix_coefficients : 0,
+                     ct ? ct->transfer_characteristics : 0,
+                     ct ? ct->colour_range : 0,
+                     ct ? ct->max_cll : 0, 1);
          }
          else
          {
@@ -909,6 +928,20 @@ bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len)
    return true;
 }
 
+/* Ask the thumbnail decoder to emit packed XRGB2101010 for 10-bit HDR
+ * sources (it silently keeps 8-bit output for 8-bit sources). */
+void rwebm_video_set_want_10bit(rwebm_video_t *webm, int want)
+{
+   if (webm)
+      webm->want10 = want ? 1 : 0;
+}
+
+/* True if the last rwebm_video_process_image() wrote packed XRGB2101010. */
+bool rwebm_video_is_10bit(const rwebm_video_t *webm)
+{
+   return webm && webm->last_10bit;
+}
+
 int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
       size_t len, unsigned *width, unsigned *height, bool supports_rgba)
 {
@@ -926,11 +959,16 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    if (!(s = rwebm_video_stream_open(webm->buf, webm->len)))
       return IMAGE_PROCESS_ERROR;
 
+   /* Request 10-bit output; the stream honours it only for 10-bit sources. */
+   s->want10 = webm->want10;
+
    if (!(frame = rwebm_video_stream_next(s, &duration_ms)))
    {
       rwebm_video_stream_close(s);
       return IMAGE_PROCESS_ERROR;
    }
+
+   webm->last_10bit = s->is10;
 
    n = (size_t)s->width * s->height;
    if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
@@ -939,7 +977,11 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
       return IMAGE_PROCESS_ERROR;
    }
 
-   if (supports_rgba)
+   if (s->is10)
+      /* Packed XRGB2101010 already in the frontend's channel order; copy
+       * verbatim (no 8-bit R/B swizzle). */
+      memcpy(out, frame, n * sizeof(uint32_t));
+   else if (supports_rgba)
       memcpy(out, frame, n * sizeof(uint32_t));
    else
    {

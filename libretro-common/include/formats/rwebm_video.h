@@ -73,6 +73,13 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
 
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
 
+/* Request packed XRGB2101010 (10-bit) output for 10-bit HDR sources; 8-bit
+ * sources are unaffected. Off by default. */
+void rwebm_video_set_want_10bit(rwebm_video_t *webm, int want);
+
+/* True if the last rwebm_video_process_image() produced XRGB2101010. */
+bool rwebm_video_is_10bit(const rwebm_video_t *webm);
+
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
  * success, IMAGE_PROCESS_ERROR on failure (no supported video track,
