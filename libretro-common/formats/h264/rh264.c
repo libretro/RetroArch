@@ -119,9 +119,15 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       s->profile_idc==44||s->profile_idc==83||s->profile_idc==86||s->profile_idc==118||
       s->profile_idc==128||s->profile_idc==138||s->profile_idc==139||s->profile_idc==134){
       s->chroma_format_idc=rh264_ue(&b); if(s->chroma_format_idc==3) rh264_u1(&b);
-      rh264_ue(&b); rh264_ue(&b); rh264_u1(&b);
+      /* the reconstruction pipeline is 8-bit 4:2:0 with the integer
+       * transform; refusing here keeps a monochrome, 4:2:2, 4:4:4,
+       * high-bit-depth or lossless transform-bypass stream from silently
+       * decoding as if it were plain 4:2:0. */
+      if(s->chroma_format_idc!=1) return 0;
+      if(rh264_ue(&b)!=0) return 0;      /* bit_depth_luma_minus8   */
+      if(rh264_ue(&b)!=0) return 0;      /* bit_depth_chroma_minus8 */
+      if(rh264_u1(&b)) return 0;         /* qpprime_y transform bypass */
       if(rh264_u1(&b)){
-         if(s->chroma_format_idc==3) return 0;   /* 4:4:4 unsupported */
          s->scaling_present=1;
          for(i=0;i<8;i++){
             s->sl_present[i]=(uint8_t)rh264_u1(&b);
