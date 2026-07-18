@@ -122,12 +122,14 @@ enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SL
 #define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
-   num_ref_idx_l0,cabac_init_idc,frame_num_val,
-   nmod,wp_valid,luma_log2_denom,chroma_log2_denom,
+   num_ref_idx_l0,num_ref_idx_l1,direct_spatial_mv_pred_flag,
+   cabac_init_idc,frame_num_val,
+   nmod,nmod1,wp_valid,luma_log2_denom,chroma_log2_denom,
    slice_alpha_c0_offset,slice_beta_offset,n_mmco1;
    int32_t mmco1_diff[RH264_MAX_REFS];
-   int8_t mod_op[34]; int32_t mod_val[34];
-   int16_t wp_lw[32],wp_lo[32],wp_cw[32][2],wp_co[32][2]; } rh264_slice_hdr;
+   int8_t mod_op[34],mod_op1[34]; int32_t mod_val[34],mod_val1[34];
+   int16_t wp_lw[32],wp_lo[32],wp_cw[32][2],wp_co[32][2];
+   int16_t wp1_lw[32],wp1_lo[32],wp1_cw[32][2],wp1_co[32][2]; } rh264_slice_hdr;
 /* advancing variant: parses from an existing reader b (leaves it at slice data) */
 static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_ref_idc,
       const rh264_sps *sps,const rh264_pps *pps,rh264_slice_hdr *sh){
@@ -144,12 +146,20 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    } else if(sps->pic_order_cnt_type==1&&!sps->poc_type1_always_zero){
       rh264_se(b); if(pps->pic_order_present_flag) rh264_se(b);
    }
-   sh->num_ref_idx_l0=1;
-   if(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP){
+   sh->num_ref_idx_l0=1; sh->num_ref_idx_l1=1;
+   if(sh->slice_type==RH264_SLICE_B)
+      sh->direct_spatial_mv_pred_flag=rh264_u1(b);
+   if(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP
+         ||sh->slice_type==RH264_SLICE_B){
       /* num_ref_idx_active_override_flag + ref_pic_list_modification (7.3.3). */
       sh->num_ref_idx_l0=pps->num_ref_idx_l0_default;
+      sh->num_ref_idx_l1=pps->num_ref_idx_l1_default;
       if(sh->num_ref_idx_l0<1) sh->num_ref_idx_l0=1;
-      if(rh264_u1(b)) sh->num_ref_idx_l0=rh264_ue(b)+1;
+      if(sh->num_ref_idx_l1<1) sh->num_ref_idx_l1=1;
+      if(rh264_u1(b)){
+         sh->num_ref_idx_l0=rh264_ue(b)+1;
+         if(sh->slice_type==RH264_SLICE_B) sh->num_ref_idx_l1=rh264_ue(b)+1;
+      }
       if(rh264_u1(b)){ /* ref_pic_list_modification_flag_l0 (7.3.3.1) */
          int op; do{ op=rh264_ue(b);
             if(op==0||op==1||op==2){
@@ -159,19 +169,32 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
             }
          } while(op!=3);
       }
+      if(sh->slice_type==RH264_SLICE_B&&rh264_u1(b)){
+         int op; do{ op=rh264_ue(b);
+            if(op==0||op==1||op==2){
+               int v=rh264_ue(b);
+               if(sh->nmod1<34){ sh->mod_op1[sh->nmod1]=(int8_t)op;
+                                 sh->mod_val1[sh->nmod1]=v; sh->nmod1++; }
+            }
+         } while(op!=3);
+      }
    } else if(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
-      return 0; /* B and other slice types not yet supported */
+      return 0; /* SP/SI switching slices not supported */
    /* pred_weight_table (7.3.3.2). Entries left unsignalled keep the default
     * of unit weight and zero offset. */
-   if(pps->weighted_pred_flag
-         &&(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP)){
+   if((pps->weighted_pred_flag
+         &&(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP))
+      ||(pps->weighted_bipred_idc==1&&sh->slice_type==RH264_SLICE_B)){
       int i,j;
       sh->luma_log2_denom=rh264_ue(b);
       sh->chroma_log2_denom=rh264_ue(b);
       for(i=0;i<32;i++){
          sh->wp_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp_lo[i]=0;
+         sh->wp1_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp1_lo[i]=0;
          for(j=0;j<2;j++){ sh->wp_cw[i][j]=(int16_t)(1<<sh->chroma_log2_denom);
-                           sh->wp_co[i][j]=0; } }
+                           sh->wp_co[i][j]=0;
+                           sh->wp1_cw[i][j]=(int16_t)(1<<sh->chroma_log2_denom);
+                           sh->wp1_co[i][j]=0; } }
       for(i=0;i<sh->num_ref_idx_l0&&i<32;i++){
          if(rh264_u1(b)){ sh->wp_lw[i]=(int16_t)rh264_se(b);
                           sh->wp_lo[i]=(int16_t)rh264_se(b); }
@@ -179,6 +202,14 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
             sh->wp_cw[i][j]=(int16_t)rh264_se(b);
             sh->wp_co[i][j]=(int16_t)rh264_se(b); }
       }
+      if(sh->slice_type==RH264_SLICE_B)
+         for(i=0;i<sh->num_ref_idx_l1&&i<32;i++){
+            if(rh264_u1(b)){ sh->wp1_lw[i]=(int16_t)rh264_se(b);
+                             sh->wp1_lo[i]=(int16_t)rh264_se(b); }
+            if(rh264_u1(b)) for(j=0;j<2;j++){
+               sh->wp1_cw[i][j]=(int16_t)rh264_se(b);
+               sh->wp1_co[i][j]=(int16_t)rh264_se(b); }
+         }
       sh->wp_valid=1;
    }
    /* dec_ref_pic_marking (7.3.3.3): only when nal_ref_idc != 0. */
@@ -1311,8 +1342,17 @@ static RH264_INLINE const rh264_mv *rh264_mv_at(const rh264_mv *grid,
 /* Predict the MV for a partition at 4x4-grid position (gx,gy) of size
  * (bw4 x bh4) 4x4 blocks, given the current partition's ref_idx and a
  * directional hint for 16x8 / 8x16 partitions (8.4.1.3). */
-static void rh264_pred_mv_dir(const rh264_mv *grid, int gw, int gwmax, int ghmax,
-      int gx, int gy, int bw4, int ref, int hint, int *pmvx, int *pmvy)
+/* Per-list view of a cell: the vector and reference index of one prediction
+ * list. The availability marker (ref == -2) stays on the list 0 field. */
+static RH264_INLINE int rh264_cell_ref(const rh264_mv *m, int list)
+{ return list ? m->ref1 : m->ref; }
+static RH264_INLINE int rh264_cell_mvx(const rh264_mv *m, int list)
+{ return list ? m->mvx1 : m->mvx; }
+static RH264_INLINE int rh264_cell_mvy(const rh264_mv *m, int list)
+{ return list ? m->mvy1 : m->mvy; }
+
+static void rh264_pred_mv_ldir(const rh264_mv *grid, int gw, int gwmax, int ghmax,
+      int gx, int gy, int bw4, int ref, int hint, int list, int *pmvx, int *pmvy)
 {
    const rh264_mv *A = rh264_mv_at(grid, gw, gx - 1,     gy,     gwmax, ghmax);
    const rh264_mv *B = rh264_mv_at(grid, gw, gx,         gy - 1, gwmax, ghmax);
@@ -1321,10 +1361,31 @@ static void rh264_pred_mv_dir(const rh264_mv *grid, int gw, int gwmax, int ghmax
    int axx, axy, bxx, bxy, cxx, cxy;
    int aok, bok, cok;
    /* C falls back to D only for GEOMETRIC unavailability -- the top-right
-    * neighbour is out of bounds or belongs to a macroblock not yet decoded
-    * (ref == -2). An intra neighbour (ref == -1) is geometrically present, so
-    * it is NOT substituted; it simply contributes an unavailable predictor
-    * (mv 0, ref -1). (6.4.11.7 / 8.4.1.3.) */
+    * neighbour is out of bounds, belongs to a macroblock not yet decoded
+    * (ref == -2), or lands in a part of the current macroblock that decodes
+    * after this partition. The last case is a fixed function of position
+    * (6.4.11.7): for a partition not on the macroblock's top row, C is
+    * unavailable when it would cross into the right half at the same height
+    * or leave the macroblock to the right. It must stay positional, because
+    * direct sub-blocks derive their motion before everything else and would
+    * otherwise look decoded early. An intra neighbour (ref == -1) is
+    * geometrically present, so it is NOT substituted; it simply contributes
+    * an unavailable predictor (mv 0, ref -1). (8.4.1.3.) */
+   {
+      int mbpx = (gx & 3) * 4, mbpy = (gy & 3) * 4, bw = bw4 * 4;
+      if (mbpy > 0)
+      {
+         if (mbpx < 8)
+         {
+            if (mbpy == 8)
+            {  if (bw == 16) C = NULL; }
+            else if (mbpx + bw == 8)
+               C = NULL;
+         }
+         else if (mbpx + bw == 16)
+            C = NULL;
+      }
+   }
    if (!C || C->ref == -2) C = D;
 
    /* 8.4.1.3: when B and C are both unavailable but A is available, B and C
@@ -1337,30 +1398,39 @@ static void rh264_pred_mv_dir(const rh264_mv *grid, int gw, int gwmax, int ghmax
    if ((!B || B->ref == -2) && (!C || C->ref == -2) && A && A->ref != -2)
    { B = A; C = A; }
 
-   aok = A && A->ref >= 0; bok = B && B->ref >= 0; cok = C && C->ref >= 0;
-   axx = aok ? A->mvx : 0; axy = aok ? A->mvy : 0;
-   bxx = bok ? B->mvx : 0; bxy = bok ? B->mvy : 0;
-   cxx = cok ? C->mvx : 0; cxy = cok ? C->mvy : 0;
+   aok = A && rh264_cell_ref(A, list) >= 0;
+   bok = B && rh264_cell_ref(B, list) >= 0;
+   cok = C && rh264_cell_ref(C, list) >= 0;
+   axx = aok ? rh264_cell_mvx(A, list) : 0; axy = aok ? rh264_cell_mvy(A, list) : 0;
+   bxx = bok ? rh264_cell_mvx(B, list) : 0; bxy = bok ? rh264_cell_mvy(B, list) : 0;
+   cxx = cok ? rh264_cell_mvx(C, list) : 0; cxy = cok ? rh264_cell_mvy(C, list) : 0;
 
    /* 8.4.1.3.2 directional prediction for 16x8 / 8x16 takes priority. */
-   if (hint == RH264_MVP_B && bok && B->ref == ref) { *pmvx = bxx; *pmvy = bxy; return; }
-   if (hint == RH264_MVP_A && aok && A->ref == ref) { *pmvx = axx; *pmvy = axy; return; }
-   if (hint == RH264_MVP_C && cok && C->ref == ref) { *pmvx = cxx; *pmvy = cxy; return; }
+   if (hint == RH264_MVP_B && bok && rh264_cell_ref(B, list) == ref) { *pmvx = bxx; *pmvy = bxy; return; }
+   if (hint == RH264_MVP_A && aok && rh264_cell_ref(A, list) == ref) { *pmvx = axx; *pmvy = axy; return; }
+   if (hint == RH264_MVP_C && cok && rh264_cell_ref(C, list) == ref) { *pmvx = cxx; *pmvy = cxy; return; }
 
    /* 8.4.1.3.1: if exactly one neighbour has the same ref, use it. */
    {
-      int nsame = (aok && A->ref == ref)
-                + (bok && B->ref == ref)
-                + (cok && C->ref == ref);
+      int nsame = (aok && rh264_cell_ref(A, list) == ref)
+                + (bok && rh264_cell_ref(B, list) == ref)
+                + (cok && rh264_cell_ref(C, list) == ref);
       if (nsame == 1)
       {
-         if (aok && A->ref == ref) { *pmvx = axx; *pmvy = axy; return; }
-         if (bok && B->ref == ref) { *pmvx = bxx; *pmvy = bxy; return; }
+         if (aok && rh264_cell_ref(A, list) == ref) { *pmvx = axx; *pmvy = axy; return; }
+         if (bok && rh264_cell_ref(B, list) == ref) { *pmvx = bxx; *pmvy = bxy; return; }
          { *pmvx = cxx; *pmvy = cxy; return; }
       }
    }
    *pmvx = rh264_median3(axx, bxx, cxx);
    *pmvy = rh264_median3(axy, bxy, cxy);
+}
+
+static void rh264_pred_mv_dir(const rh264_mv *grid, int gw, int gwmax, int ghmax,
+      int gx, int gy, int bw4, int ref, int hint, int *pmvx, int *pmvy)
+{
+   rh264_pred_mv_ldir(grid, gw, gwmax, ghmax, gx, gy, bw4, ref, hint, 0,
+         pmvx, pmvy);
 }
 
 /* Median-only convenience wrapper. */
@@ -1767,6 +1837,775 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
  * intra_p/intra_q: the block belongs to an intra MB. cbf_p/cbf_q: the block has
  * non-zero transform coefficients. The two MVs (single reference list, one ref)
  * decide bS 1 vs 0 by the quarter-pel >= 4 rule. */
+
+/* ==================== rh264_bslice.h ==================== */
+/* Everything B slices add on top of P: two reference lists ordered by POC,
+ * direct prediction (spatial and temporal), bi-prediction and the three
+ * weighting modes of weighted_bipred_idc. */
+
+/* Store one list's motion into a partition's cells. clear_other resets the
+ * opposite list to "unused", for blocks predicted from one list only. */
+static void rh264_mv_fill_list(rh264_mv *grid, int gw, int gx, int gy,
+      int bw4, int bh4, int list, int mvx, int mvy, int ref, int pic,
+      int refpoc, int clear_other)
+{
+   int x, y;
+   for (y = 0; y < bh4; y++)
+      for (x = 0; x < bw4; x++)
+      {
+         rh264_mv *m = &grid[(gy + y) * gw + (gx + x)];
+         m->intra = 0;
+         if (list == 0)
+         {
+            m->mvx = (int16_t)mvx; m->mvy = (int16_t)mvy;
+            m->ref = (int8_t)ref;  m->pic = (int8_t)pic; m->refpoc0 = refpoc;
+            if (clear_other)
+            { m->mvx1 = 0; m->mvy1 = 0; m->ref1 = -1; m->pic1 = -1;
+              m->refpoc1 = 0; }
+         }
+         else
+         {
+            m->mvx1 = (int16_t)mvx; m->mvy1 = (int16_t)mvy;
+            m->ref1 = (int8_t)ref;  m->pic1 = (int8_t)pic; m->refpoc1 = refpoc;
+            if (clear_other)
+            { m->mvx = 0; m->mvy = 0; m->ref = -1; m->pic = -1;
+              m->refpoc0 = 0; }
+         }
+      }
+}
+
+/* Per-slice B state. */
+typedef struct {
+   const rh264_frame *l0[34], *l1[34];
+   int l0poc[34], l1poc[34];
+   signed char pid0[34], pid1[34];
+   int n0, n1;
+   int currpoc;
+   int direct_spatial;
+   int d8x8;                  /* SPS direct_8x8_inference_flag */
+   int wbidc;                 /* PPS weighted_bipred_idc */
+   const rh264_mv *colg;      /* motion grid of RefPicList1[0] */
+   signed char w1imp[32][32]; /* implicit list 1 weight, list 0 = 64 - w1 */
+   int mvscale[32];           /* temporal DistScaleFactor per l0 index, 9999 = copy */
+} rh264_bctx;
+
+/* Implicit bi-prediction weights (8.4.2.3.1) and temporal direct scale
+ * factors (8.4.1.2.3), both pure functions of the POC distances between the
+ * current picture and each list entry. */
+static void rh264_b_setup_scales(rh264_bctx *bc)
+{
+   int i, j;
+   for (i = 0; i < bc->n0 && i < 32; i++)
+   {
+      int td, tb, tx, dsf;
+      for (j = 0; j < bc->n1 && j < 32; j++)
+      {
+         td = bc->l1poc[j] - bc->l0poc[i];
+         if (td < -128) td = -128; else if (td > 127) td = 127;
+         if (td == 0) { bc->w1imp[i][j] = 32; continue; }
+         tb = bc->currpoc - bc->l0poc[i];
+         if (tb < -128) tb = -128; else if (tb > 127) tb = 127;
+         tx = (16384 + (td < 0 ? (-td) / 2 : td / 2)) / td;
+         dsf = (tb * tx + 32) >> 6;
+         if (dsf < -1024) dsf = -1024; else if (dsf > 1023) dsf = 1023;
+         dsf >>= 2;
+         if (dsf < -64 || dsf > 128) dsf = 32;
+         bc->w1imp[i][j] = (signed char)dsf;
+      }
+      td = bc->l1poc[0] - bc->l0poc[i];
+      if (td < -128) td = -128; else if (td > 127) td = 127;
+      if (td == 0) bc->mvscale[i] = 9999;
+      else
+      {
+         tb = bc->currpoc - bc->l0poc[i];
+         if (tb < -128) tb = -128; else if (tb > 127) tb = 127;
+         tx = (16384 + (td < 0 ? (-td) / 2 : td / 2)) / td;
+         dsf = (tb * tx + 32) >> 6;
+         if (dsf < -1024) dsf = -1024; else if (dsf > 1023) dsf = 1023;
+         bc->mvscale[i] = dsf;
+      }
+   }
+}
+
+/* Motion compensate one list of a block into 16x16/8x8 scratch planes. */
+static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
+      const rh264_frame *ref, int ox, int oy, int bw, int bh,
+      int mvx, int mvy)
+{
+   int rw = ref->mbw * 16, rh = ref->mbh * 16;
+   rh264_mc_luma(ty, 16, ref->Y, ref->ystride, rw, rh, ox, oy, bw, bh,
+         mvx, mvy);
+   rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1, rh >> 1,
+         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, mvy);
+   rh264_mc_chroma(tv, 8, ref->V, ref->cstride, rw >> 1, rh >> 1,
+         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, mvy);
+}
+
+/* Single-list explicit weighting over samples just written (8.4.2.3.2),
+ * list selectable so B blocks predicted from list 1 use its table. */
+static void rh264_weight_pred_list(rh264_frame *f, const rh264_slice_hdr *sh,
+      int list, int refidx, int mbx, int mby, int bx, int by, int bw, int bh)
+{
+   int ox = mbx*16 + bx, oy = mby*16 + by, x, y;
+   int lw, lo, ld;
+   const int16_t *tlw, *tlo; const int16_t (*tcw)[2]; const int16_t (*tco)[2];
+   if (!sh->wp_valid) return;
+   if (refidx < 0) refidx = 0;
+   if (refidx > 31) refidx = 31;
+   tlw = list ? sh->wp1_lw : sh->wp_lw; tlo = list ? sh->wp1_lo : sh->wp_lo;
+   tcw = list ? sh->wp1_cw : sh->wp_cw; tco = list ? sh->wp1_co : sh->wp_co;
+   lw = tlw[refidx]; lo = tlo[refidx]; ld = sh->luma_log2_denom;
+   for (y = 0; y < bh; y++)
+   {
+      uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
+      for (x = 0; x < bw; x++)
+      {
+         int v = (ld >= 1) ? (((d[x]*lw + (1 << (ld-1))) >> ld) + lo)
+                           : (d[x]*lw + lo);
+         d[x] = (uint8_t)RH264_CLIP(v);
+      }
+   }
+   {
+      int cox = ox >> 1, coy = oy >> 1, cbw = bw >> 1, cbh = bh >> 1, c;
+      int cd = sh->chroma_log2_denom;
+      uint8_t *planes[2];
+      planes[0] = f->U; planes[1] = f->V;
+      for (c = 0; c < 2; c++)
+      {
+         int cw = tcw[refidx][c], co = tco[refidx][c];
+         for (y = 0; y < cbh; y++)
+         {
+            uint8_t *d = planes[c] + (coy+y)*f->cstride + cox;
+            for (x = 0; x < cbw; x++)
+            {
+               int v = (cd >= 1) ? (((d[x]*cw + (1 << (cd-1))) >> cd) + co)
+                                 : (d[x]*cw + co);
+               d[x] = (uint8_t)RH264_CLIP(v);
+            }
+         }
+      }
+   }
+}
+
+/* Predict one block from (r0,mv0) and/or (r1,mv1); a list is unused when its
+ * reference index is negative. Combines per weighted_bipred_idc: default
+ * rounding average, explicit tables, or implicit POC-derived weights, which
+ * apply to bi-predicted blocks only (8.4.2.3). */
+static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, int mbx, int mby, int bx, int by,
+      int bw, int bh, int r0, int mv0x, int mv0y, int r1, int mv1x, int mv1y)
+{
+   int ox = mbx*16 + bx, oy = mby*16 + by;
+   if (r0 >= 0 && r1 >= 0)
+   {
+      uint8_t t0y[256], t0u[64], t0v[64];
+      uint8_t t1y[256], t1u[64], t1v[64];
+      int x, y, c;
+      int cox = ox >> 1, coy = oy >> 1, cbw = bw >> 1, cbh = bh >> 1;
+      rh264_b_mc_tmp(t0y, t0u, t0v, bc->l0[r0], ox, oy, bw, bh, mv0x, mv0y);
+      rh264_b_mc_tmp(t1y, t1u, t1v, bc->l1[r1], ox, oy, bw, bh, mv1x, mv1y);
+      if (bc->wbidc == 1 && sh->wp_valid)
+      {
+         int ld = sh->luma_log2_denom, cd = sh->chroma_log2_denom;
+         int w0 = sh->wp_lw[r0 > 31 ? 31 : r0], w1 = sh->wp1_lw[r1 > 31 ? 31 : r1];
+         int o  = (sh->wp_lo[r0 > 31 ? 31 : r0]
+                 + sh->wp1_lo[r1 > 31 ? 31 : r1] + 1) >> 1;
+         for (y = 0; y < bh; y++)
+         {
+            uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
+            for (x = 0; x < bw; x++)
+            {
+               int v = ((t0y[y*16+x]*w0 + t1y[y*16+x]*w1
+                        + (1 << ld)) >> (ld + 1)) + o;
+               d[x] = (uint8_t)RH264_CLIP(v);
+            }
+         }
+         for (c = 0; c < 2; c++)
+         {
+            const uint8_t *s0 = c ? t0v : t0u, *s1 = c ? t1v : t1u;
+            uint8_t *pl = c ? f->V : f->U;
+            int cw0 = sh->wp_cw[r0 > 31 ? 31 : r0][c];
+            int cw1 = sh->wp1_cw[r1 > 31 ? 31 : r1][c];
+            int co  = (sh->wp_co[r0 > 31 ? 31 : r0][c]
+                     + sh->wp1_co[r1 > 31 ? 31 : r1][c] + 1) >> 1;
+            for (y = 0; y < cbh; y++)
+            {
+               uint8_t *d = pl + (coy+y)*f->cstride + cox;
+               for (x = 0; x < cbw; x++)
+               {
+                  int v = ((s0[y*8+x]*cw0 + s1[y*8+x]*cw1
+                           + (1 << cd)) >> (cd + 1)) + co;
+                  d[x] = (uint8_t)RH264_CLIP(v);
+               }
+            }
+         }
+      }
+      else if (bc->wbidc == 2)
+      {
+         int w1 = bc->w1imp[r0 > 31 ? 31 : r0][r1 > 31 ? 31 : r1];
+         int w0 = 64 - w1;
+         for (y = 0; y < bh; y++)
+         {
+            uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
+            for (x = 0; x < bw; x++)
+            {
+               int v = (t0y[y*16+x]*w0 + t1y[y*16+x]*w1 + 32) >> 6;
+               d[x] = (uint8_t)RH264_CLIP(v);
+            }
+         }
+         for (c = 0; c < 2; c++)
+         {
+            const uint8_t *s0 = c ? t0v : t0u, *s1 = c ? t1v : t1u;
+            uint8_t *pl = c ? f->V : f->U;
+            for (y = 0; y < cbh; y++)
+            {
+               uint8_t *d = pl + (coy+y)*f->cstride + cox;
+               for (x = 0; x < cbw; x++)
+               {
+                  int v = (s0[y*8+x]*w0 + s1[y*8+x]*w1 + 32) >> 6;
+                  d[x] = (uint8_t)RH264_CLIP(v);
+               }
+            }
+         }
+      }
+      else
+      {
+         for (y = 0; y < bh; y++)
+         {
+            uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
+            for (x = 0; x < bw; x++)
+               d[x] = (uint8_t)((t0y[y*16+x] + t1y[y*16+x] + 1) >> 1);
+         }
+         for (c = 0; c < 2; c++)
+         {
+            const uint8_t *s0 = c ? t0v : t0u, *s1 = c ? t1v : t1u;
+            uint8_t *pl = c ? f->V : f->U;
+            for (y = 0; y < cbh; y++)
+            {
+               uint8_t *d = pl + (coy+y)*f->cstride + cox;
+               for (x = 0; x < cbw; x++)
+                  d[x] = (uint8_t)((s0[y*8+x] + s1[y*8+x] + 1) >> 1);
+            }
+         }
+      }
+   }
+   else if (r0 >= 0)
+   {
+      rh264_inter_pred_block(f, bc->l0[r0], mbx, mby, bx, by, bw, bh,
+            mv0x, mv0y);
+      if (bc->wbidc == 1)
+         rh264_weight_pred_list(f, sh, 0, r0, mbx, mby, bx, by, bw, bh);
+   }
+   else if (r1 >= 0)
+   {
+      rh264_inter_pred_block(f, bc->l1[r1], mbx, mby, bx, by, bw, bh,
+            mv1x, mv1y);
+      if (bc->wbidc == 1)
+         rh264_weight_pred_list(f, sh, 1, r1, mbx, mby, bx, by, bw, bh);
+   }
+}
+
+/* Round a 4x4 grid coordinate to the corner block of its 8x8 when
+ * direct_8x8_inference is on (the RSD rule). */
+static RH264_INLINE int rh264_rsd(int x)
+{ return (x & 2) ? (x | 1) : (x & ~1); }
+
+/* Co-located "not moving" test for spatial direct (8.4.1.2.2): the block in
+ * RefPicList1[0] uses reference 0 of one of its own lists with a vector
+ * within one quarter-pel. */
+static RH264_INLINE int rh264_col_zero(const rh264_mv *c)
+{
+   int ax, ay;
+   if (c->ref == 0)
+   {
+      ax = c->mvx < 0 ? -c->mvx : c->mvx;
+      ay = c->mvy < 0 ? -c->mvy : c->mvy;
+      if ((ax >> 1) == 0 && (ay >> 1) == 0) return 1;
+   }
+   if (c->ref == -1 && c->ref1 == 0)
+   {
+      ax = c->mvx1 < 0 ? -c->mvx1 : c->mvx1;
+      ay = c->mvy1 < 0 ? -c->mvy1 : c->mvy1;
+      if ((ax >> 1) == 0 && (ay >> 1) == 0) return 1;
+   }
+   return 0;
+}
+
+/* Spatial direct per-macroblock preparation (8.4.1.2.2): the minimum
+ * non-negative reference of the three MV predictor neighbours per list, and
+ * the 16x16 median predictor toward it. */
+static void rh264_b_direct_prepare(const rh264_bctx *bc, const rh264_mv *mvg,
+      int gwmax, int ghmax, int mbx, int mby,
+      int *l0r, int *l1r, int *pm0x, int *pm0y, int *pm1x, int *pm1y)
+{
+   int gx = mbx * 4, gy = mby * 4;
+   const rh264_mv *A = rh264_mv_at(mvg, gwmax, gx - 1, gy,     gwmax, ghmax);
+   const rh264_mv *B = rh264_mv_at(mvg, gwmax, gx,     gy - 1, gwmax, ghmax);
+   const rh264_mv *C = rh264_mv_at(mvg, gwmax, gx + 4, gy - 1, gwmax, ghmax);
+   const rh264_mv *D = rh264_mv_at(mvg, gwmax, gx - 1, gy - 1, gwmax, ghmax);
+   int list;
+   if (!C || C->ref == -2) C = D;
+   for (list = 0; list < 2; list++)
+   {
+      int ra = (A && A->ref != -2) ? rh264_cell_ref(A, list) : -1;
+      int rb = (B && B->ref != -2) ? rh264_cell_ref(B, list) : -1;
+      int rc = (C && C->ref != -2) ? rh264_cell_ref(C, list) : -1;
+      unsigned ua = (unsigned char)(signed char)ra;
+      unsigned ub = (unsigned char)(signed char)rb;
+      unsigned uc = (unsigned char)(signed char)rc;
+      unsigned um = ua < ub ? ua : ub;
+      int r;
+      if (uc < um) um = uc;
+      r = (signed char)um;
+      if (list == 0) *l0r = r; else *l1r = r;
+      if (r >= 0)
+         rh264_pred_mv_ldir(mvg, gwmax, gwmax, ghmax, gx, gy, 4, r,
+               RH264_MVP_MEDIAN, list, list == 0 ? pm0x : pm1x,
+               list == 0 ? pm0y : pm1y);
+   }
+}
+
+/* Derive and store the motion of one direct 4x4 run (a full 8x8 quadrant
+ * under direct_8x8_inference, a single 4x4 otherwise). Returns 0, or -1 for
+ * a temporal mapping the current list 0 cannot satisfy. */
+static int rh264_b_direct_cells(const rh264_bctx *bc, rh264_mv *mvg,
+      int gwmax, int mbx, int mby, int bx4, int by4, int n4,
+      int l0r, int l1r, int pm0x, int pm0y, int pm1x, int pm1y)
+{
+   int gx = mbx * 4 + bx4, gy = mby * 4 + by4;
+   int cgx = bc->d8x8 ? mbx * 4 + rh264_rsd(bx4) : gx;
+   int cgy = bc->d8x8 ? mby * 4 + rh264_rsd(by4) : gy;
+   const rh264_mv *col = &bc->colg[cgy * gwmax + cgx];
+   if (bc->direct_spatial)
+   {
+      int r0 = l0r, r1 = l1r;
+      int m0x = pm0x, m0y = pm0y, m1x = pm1x, m1y = pm1y;
+      if (r0 < 0 && r1 < 0) { r0 = 0; r1 = 0; m0x = m0y = m1x = m1y = 0; }
+      else
+      {
+         int colzero = rh264_col_zero(col);
+         if (r0 < 0) { m0x = m0y = 0; }
+         else if (colzero && r0 == 0) { m0x = m0y = 0; }
+         if (r1 < 0) { m1x = m1y = 0; }
+         else if (colzero && r1 == 0) { m1x = m1y = 0; }
+      }
+      rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 0, r0 < 0 ? 0 : m0x,
+            r0 < 0 ? 0 : m0y, r0, r0 < 0 ? -1 : bc->pid0[r0],
+            r0 < 0 ? 0 : bc->l0poc[r0], 0);
+      rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 1, r1 < 0 ? 0 : m1x,
+            r1 < 0 ? 0 : m1y, r1, r1 < 0 ? -1 : bc->pid1[r1],
+            r1 < 0 ? 0 : bc->l1poc[r1], 0);
+   }
+   else
+   {
+      /* Temporal (8.4.1.2.3): scale the co-located vector by the POC
+       * distances; its reference maps into the current list 0 by picture. */
+      int cref, cmx, cmy, cpoc;
+      if (col->ref >= 0)
+      { cref = col->ref; cmx = col->mvx; cmy = col->mvy; cpoc = col->refpoc0; }
+      else if (col->ref1 >= 0)
+      { cref = col->ref1; cmx = col->mvx1; cmy = col->mvy1; cpoc = col->refpoc1; }
+      else cref = -1;
+      if (cref < 0)
+      {
+         rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 0, 0, 0, 0,
+               bc->pid0[0], bc->l0poc[0], 0);
+         rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 1, 0, 0, 0,
+               bc->pid1[0], bc->l1poc[0], 0);
+      }
+      else
+      {
+         int mi = -1, i;
+         int m0x, m0y, m1x, m1y;
+         for (i = 0; i < bc->n0; i++)
+            if (bc->l0poc[i] == cpoc) { mi = i; break; }
+         if (mi < 0) return -1;
+         if (bc->mvscale[mi > 31 ? 31 : mi] == 9999)
+         { m0x = cmx; m0y = cmy; m1x = 0; m1y = 0; }
+         else
+         {
+            int sc = bc->mvscale[mi > 31 ? 31 : mi];
+            m0x = (sc * cmx + 128) >> 8;
+            m0y = (sc * cmy + 128) >> 8;
+            m1x = m0x - cmx;
+            m1y = m0y - cmy;
+         }
+         rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 0, m0x, m0y, mi,
+               bc->pid0[mi], bc->l0poc[mi], 0);
+         rh264_mv_fill_list(mvg, gwmax, gx, gy, n4, n4, 1, m1x, m1y, 0,
+               bc->pid1[0], bc->l1poc[0], 0);
+      }
+   }
+   return 0;
+}
+
+/* Fill every direct 4x4 of one 8x8 quadrant and motion compensate it from
+ * the stored cells. Used by B_Skip, B_Direct_16x16 and direct 8x8 subs. */
+static int rh264_b_direct_quadrant(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int mbx, int mby,
+      int qx, int qy, int l0r, int l1r, int pm0x, int pm0y, int pm1x, int pm1y)
+{
+   int sx, sy;
+   int step = bc->d8x8 ? 2 : 1;
+   for (sy = 0; sy < 2; sy += step)
+      for (sx = 0; sx < 2; sx += step)
+      {
+         if (rh264_b_direct_cells(bc, mvg, gwmax, mbx, mby,
+               qx * 2 + sx, qy * 2 + sy, step, l0r, l1r,
+               pm0x, pm0y, pm1x, pm1y) != 0)
+            return -1;
+      }
+   /* compensate per 4x4 straight off the cells */
+   for (sy = 0; sy < 2; sy++)
+      for (sx = 0; sx < 2; sx++)
+      {
+         const rh264_mv *m = &mvg[(mby*4 + qy*2 + sy) * gwmax
+                                 + mbx*4 + qx*2 + sx];
+         rh264_b_pred_block(f, bc, sh, mbx, mby,
+               (qx*2 + sx) * 4, (qy*2 + sy) * 4, 4, 4,
+               m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
+      }
+   return 0;
+}
+
+/* Direct prediction of a whole macroblock (B_Skip / B_Direct_16x16). */
+static int rh264_b_direct_mb(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
+      int mbx, int mby)
+{
+   int l0r = -1, l1r = -1, pm0x = 0, pm0y = 0, pm1x = 0, pm1y = 0, q;
+   if (bc->direct_spatial)
+      rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
+            &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
+   for (q = 0; q < 4; q++)
+      if (rh264_b_direct_quadrant(f, bc, sh, mvg, gwmax, mbx, mby,
+            q & 1, q >> 1, l0r, l1r, pm0x, pm0y, pm1x, pm1y) != 0)
+         return -1;
+   return 0;
+}
+
+
+/* B macroblock and sub-macroblock types (Tables 7-14 and 7-18), reduced to a
+ * partition shape and a per-partition prediction usage: 0 = list 0 only,
+ * 1 = list 1 only, 2 = both, 3 = direct. */
+#define RH264_BSHAPE_D16   0  /* B_Direct_16x16 */
+#define RH264_BSHAPE_16x16 1
+#define RH264_BSHAPE_16x8  2
+#define RH264_BSHAPE_8x16  3
+#define RH264_BSHAPE_8x8   4
+
+static const int8_t rh264_b_pdir16[4]    = {3, 0, 1, 2};
+/* mb_type 4..21: shape alternates 16x8/8x16 within each pair, the
+ * prediction-usage pair advances every second type. */
+static const int8_t rh264_b_pdir2[9][2] = {
+   {0,0},{1,1},{0,1},{1,0},{0,2},{1,2},{2,0},{2,1},{2,2}};
+/* sub_mb_type: shape (8x8/8x4/4x8/4x4 as partition W,H) + usage */
+static const int8_t rh264_b_sub_w[13]    = {8, 8, 8, 8, 8, 4, 8, 4, 8, 4, 4, 4, 4};
+static const int8_t rh264_b_sub_h[13]    = {8, 8, 8, 8, 4, 8, 4, 8, 4, 8, 4, 4, 4};
+static const int8_t rh264_b_sub_pdir[13] = {3, 0, 1, 2, 0, 0, 1, 1, 2, 2, 0, 1, 2};
+
+/* One non-direct B partition, both lists resolved: predict per list off the
+ * grid, fill the cells, compensate. Refs below zero mean the list is unused. */
+static void rh264_b_part(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
+      int mbx, int mby, int bx, int by, int bw, int bh,
+      int r0, int mvd0x, int mvd0y, int r1, int mvd1x, int mvd1y,
+      int hint, int *m0x, int *m0y, int *m1x, int *m1y)
+{
+   int gx = mbx*4 + (bx>>2), gy = mby*4 + (by>>2);
+   int bw4 = bw>>2, bh4 = bh>>2;
+   int pmx, pmy;
+   *m0x = *m0y = *m1x = *m1y = 0;
+   if (r0 >= 0)
+   {
+      rh264_pred_mv_ldir(mvg, gwmax, gwmax, ghmax, gx, gy, bw4, r0, hint, 0,
+            &pmx, &pmy);
+      *m0x = pmx + mvd0x; *m0y = pmy + mvd0y;
+   }
+   rh264_mv_fill_list(mvg, gwmax, gx, gy, bw4, bh4, 0,
+         *m0x, *m0y, r0, r0 < 0 ? -1 : bc->pid0[r0],
+         r0 < 0 ? 0 : bc->l0poc[r0], 0);
+   if (r1 >= 0)
+   {
+      rh264_pred_mv_ldir(mvg, gwmax, gwmax, ghmax, gx, gy, bw4, r1, hint, 1,
+            &pmx, &pmy);
+      *m1x = pmx + mvd1x; *m1y = pmy + mvd1y;
+   }
+   rh264_mv_fill_list(mvg, gwmax, gx, gy, bw4, bh4, 1,
+         *m1x, *m1y, r1, r1 < 0 ? -1 : bc->pid1[r1],
+         r1 < 0 ? 0 : bc->l1poc[r1], 0);
+}
+
+/* Full B-slice decode, CAVLC entropy. Mirrors rh264_decode_pslice in
+ * structure; motion syntax follows 7.3.5.1/7.3.5.2: every reference index
+ * of list 0 then list 1, then every vector difference in the same order.
+ * Direct blocks derive their motion before any of that is read, so the MV
+ * predictors of following partitions see them (8.4.1.2). */
+static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
+      const rh264_pps *pps, rh264_slice_hdr *sh, rh264_frame *f,
+      const rh264_bctx *bc, rh264_mv *mvg)
+{
+   int mbaddr = sh->first_mb_in_slice, total = f->mbw * f->mbh;
+   int gw = f->mbw * 4, cgw = f->mbw * 2;
+   int gwmax = f->mbw * 4, ghmax = f->mbh * 4;
+   int skip_run = -1;
+   int gi;
+   f->qp = sh->slice_qp;
+   f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   (void)sps;
+   if (bc->n0 < 1 || bc->n1 < 1) return -1;
+
+   for (gi = 0; gi < gwmax * ghmax; gi++)
+   {
+      rh264_mv z; memset(&z, 0, sizeof(z));
+      z.ref = -2; z.ref1 = -1; z.pic = -1; z.pic1 = -1; mvg[gi] = z;
+   }
+   memset(f->nzL, 0, (size_t)gw * f->mbh * 4);
+   memset(f->nzC[0], 0, (size_t)cgw * f->mbh * 2);
+   memset(f->nzC[1], 0, (size_t)cgw * f->mbh * 2);
+   memset(f->i4mode, 0xff, (size_t)gw * f->mbh * 4);
+
+   while (mbaddr < total)
+   {
+      int mbx = mbaddr % f->mbw, mby = mbaddr / f->mbw;
+      int mb_type;
+
+      if (skip_run < 0) skip_run = rh264_ue(b);
+      if (skip_run > 0)
+      {
+         /* B_Skip: direct prediction of the whole macroblock, no residual. */
+         if (rh264_b_direct_mb(f, bc, sh, mvg, gwmax, ghmax, mbx, mby) != 0)
+            return -1;
+         rh264_inter_clear_i4mode(f, mbx, mby);
+         { int cx, cy; for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
+              f->nzL[(mby * 4 + cy) * gw + mbx * 4 + cx] = 0; }
+         { int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
+              f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
+              f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; } }
+         f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
+         skip_run--; mbaddr++;
+         continue;
+      }
+      skip_run = -1;
+      mb_type = rh264_ue(b);
+
+      if (mb_type >= 23)
+      {
+         /* Intra macroblock in a B slice: offset by 23 (Table 7-14). */
+         int imb = mb_type - 23;
+         int cx, cy;
+         if (rh264_decode_intra_mb_cavlc(b, f, mbx, mby, imb) < 0) return -1;
+         for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
+         {
+            rh264_mv *m = &mvg[(mby * 4 + cy) * gwmax + mbx * 4 + cx];
+            memset(m, 0, sizeof(*m));
+            m->ref = -1; m->pic = -1; m->ref1 = -1; m->pic1 = -1; m->intra = 1;
+         }
+         f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
+      }
+      else
+      {
+         int cbp, cbp_luma, cbp_chroma;
+         uint8_t *u = f->U + (mby * 8) * f->cstride + mbx * 8;
+         uint8_t *v = f->V + (mby * 8) * f->cstride + mbx * 8;
+         rh264_inter_clear_i4mode(f, mbx, mby);
+
+         if (mb_type == 0)
+         {
+            if (rh264_b_direct_mb(f, bc, sh, mvg, gwmax, ghmax, mbx, mby) != 0)
+               return -1;
+         }
+         else if (mb_type <= 3)
+         {
+            /* 16x16 single partition */
+            int pd = rh264_b_pdir16[mb_type];
+            int r0 = -1, r1 = -1, d0x = 0, d0y = 0, d1x = 0, d1y = 0;
+            int m0x, m0y, m1x, m1y;
+            if (pd == 0 || pd == 2) r0 = rh264_ref_idx_te(b, bc->n0);
+            if (pd == 1 || pd == 2) r1 = rh264_ref_idx_te(b, bc->n1);
+            if (r0 >= 0) { d0x = rh264_se(b); d0y = rh264_se(b); }
+            if (r1 >= 0) { d1x = rh264_se(b); d1y = rh264_se(b); }
+            rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby, 0, 0, 16, 16,
+                  r0, d0x, d0y, r1, d1x, d1y, RH264_MVP_MEDIAN,
+                  &m0x, &m0y, &m1x, &m1y);
+            rh264_b_pred_block(f, bc, sh, mbx, mby, 0, 0, 16, 16,
+                  r0, m0x, m0y, r1, m1x, m1y);
+         }
+         else if (mb_type <= 21)
+         {
+            /* Two partitions, 16x8 when the offset is even, 8x16 odd. */
+            int is16x8 = ((mb_type & 1) == 0);
+            int pd0 = rh264_b_pdir2[(mb_type - 4) >> 1][0];
+            int pd1 = rh264_b_pdir2[(mb_type - 4) >> 1][1];
+            int r0a = -1, r0b = -1, r1a = -1, r1b = -1;
+            int d0[4], d1[4];
+            int pi;
+            int hints[2];
+            int m0[4], m1[4];
+            hints[0] = is16x8 ? RH264_MVP_B : RH264_MVP_A;
+            hints[1] = is16x8 ? RH264_MVP_A : RH264_MVP_C;
+            if (pd0 == 0 || pd0 == 2) r0a = rh264_ref_idx_te(b, bc->n0);
+            if (pd1 == 0 || pd1 == 2) r0b = rh264_ref_idx_te(b, bc->n0);
+            if (pd0 == 1 || pd0 == 2) r1a = rh264_ref_idx_te(b, bc->n1);
+            if (pd1 == 1 || pd1 == 2) r1b = rh264_ref_idx_te(b, bc->n1);
+            d0[0] = d0[1] = d0[2] = d0[3] = 0;
+            d1[0] = d1[1] = d1[2] = d1[3] = 0;
+            if (r0a >= 0) { d0[0] = rh264_se(b); d0[1] = rh264_se(b); }
+            if (r0b >= 0) { d0[2] = rh264_se(b); d0[3] = rh264_se(b); }
+            if (r1a >= 0) { d1[0] = rh264_se(b); d1[1] = rh264_se(b); }
+            if (r1b >= 0) { d1[2] = rh264_se(b); d1[3] = rh264_se(b); }
+            for (pi = 0; pi < 2; pi++)
+            {
+               int bx = is16x8 ? 0 : pi * 8, by = is16x8 ? pi * 8 : 0;
+               int bw = is16x8 ? 16 : 8,     bh = is16x8 ? 8 : 16;
+               int rr0 = pi ? r0b : r0a, rr1 = pi ? r1b : r1a;
+               rh264_b_part(f, bc, sh, mvg, gwmax, ghmax, mbx, mby,
+                     bx, by, bw, bh, rr0, d0[pi*2], d0[pi*2+1],
+                     rr1, d1[pi*2], d1[pi*2+1], hints[pi],
+                     &m0[pi*2], &m0[pi*2+1], &m1[pi*2], &m1[pi*2+1]);
+               rh264_b_pred_block(f, bc, sh, mbx, mby, bx, by, bw, bh,
+                     rr0, m0[pi*2], m0[pi*2+1], rr1, m1[pi*2], m1[pi*2+1]);
+            }
+         }
+         else
+         {
+            /* B_8x8: sub types, direct derivation, then all list 0 refs,
+             * all list 1 refs, all list 0 mvds, all list 1 mvds. */
+            int sub[4], rf0[4], rf1[4], p;
+            int l0r = -1, l1r = -1, pm0x = 0, pm0y = 0, pm1x = 0, pm1y = 0;
+            int need_prepare = 0;
+            int16_t sd0[4][8], sd1[4][8];  /* mvd pairs, up to 4 per sub */
+            for (p = 0; p < 4; p++)
+            {
+               sub[p] = rh264_ue(b);
+               if (sub[p] > 12) return -3;
+               if (rh264_b_sub_pdir[sub[p]] == 3) need_prepare = 1;
+            }
+            if (need_prepare)
+            {
+               if (bc->direct_spatial)
+                  rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
+                        &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
+               for (p = 0; p < 4; p++)
+                  if (rh264_b_sub_pdir[sub[p]] == 3)
+                  {
+                     int sx, sy;
+                     int step = bc->d8x8 ? 2 : 1;
+                     for (sy = 0; sy < 2; sy += step)
+                        for (sx = 0; sx < 2; sx += step)
+                           if (rh264_b_direct_cells(bc, mvg, gwmax, mbx, mby,
+                                 (p & 1) * 2 + sx, (p >> 1) * 2 + sy, step,
+                                 l0r, l1r, pm0x, pm0y, pm1x, pm1y) != 0)
+                              return -1;
+                  }
+            }
+            for (p = 0; p < 4; p++)
+            {
+               int pd = rh264_b_sub_pdir[sub[p]];
+               rf0[p] = (pd == 0 || pd == 2) ? rh264_ref_idx_te(b, bc->n0) : -1;
+            }
+            for (p = 0; p < 4; p++)
+            {
+               int pd = rh264_b_sub_pdir[sub[p]];
+               rf1[p] = (pd == 1 || pd == 2) ? rh264_ref_idx_te(b, bc->n1) : -1;
+            }
+            /* All vector differences are read first, in stream order
+             * (7.3.5.2): they carry no prediction. Motion then resolves one
+             * 8x8 at a time in decode order, both lists together, so the MV
+             * predictor of a sub-block sees earlier sub-blocks resolved and
+             * later non-direct ones still undecoded, which is what makes
+             * the C-to-D neighbour substitution fire correctly (6.4.11.7,
+             * 8.4.1.3). Direct sub-blocks were derived before any of this
+             * and count as resolved throughout. */
+            for (p = 0; p < 4; p++)
+            {
+               int k = 64 / (rh264_b_sub_w[sub[p]] * rh264_b_sub_h[sub[p]]);
+               int q;
+               if (rf0[p] >= 0)
+                  for (q = 0; q < k; q++)
+                  { sd0[p][q*2] = (int16_t)rh264_se(b);
+                    sd0[p][q*2+1] = (int16_t)rh264_se(b); }
+            }
+            for (p = 0; p < 4; p++)
+            {
+               int k = 64 / (rh264_b_sub_w[sub[p]] * rh264_b_sub_h[sub[p]]);
+               int q;
+               if (rf1[p] >= 0)
+                  for (q = 0; q < k; q++)
+                  { sd1[p][q*2] = (int16_t)rh264_se(b);
+                    sd1[p][q*2+1] = (int16_t)rh264_se(b); }
+            }
+            for (p = 0; p < 4; p++)
+            {
+               int sw = rh264_b_sub_w[sub[p]], shh = rh264_b_sub_h[sub[p]];
+               int px = (p & 1) * 8, py = (p >> 1) * 8;
+               int list;
+               if (rh264_b_sub_pdir[sub[p]] == 3) continue;
+               for (list = 0; list < 2; list++)
+               {
+                  int rf = list ? rf1[p] : rf0[p];
+                  const int16_t *sd = list ? sd1[p] : sd0[p];
+                  int q = 0, oy, ox;
+                  for (oy = 0; oy < 8; oy += shh)
+                     for (ox = 0; ox < 8; ox += sw)
+                     {
+                        int gx = mbx*4 + ((px+ox)>>2), gy = mby*4 + ((py+oy)>>2);
+                        int pmx = 0, pmy = 0, mx = 0, my = 0;
+                        if (rf >= 0)
+                        {
+                           rh264_pred_mv_ldir(mvg, gwmax, gwmax, ghmax, gx, gy,
+                                 sw>>2, rf, RH264_MVP_MEDIAN, list, &pmx, &pmy);
+                           mx = pmx + sd[q*2]; my = pmy + sd[q*2+1];
+                        }
+                        rh264_mv_fill_list(mvg, gwmax, gx, gy, sw>>2, shh>>2,
+                              list, mx, my, rf,
+                              rf < 0 ? -1 : (list ? bc->pid1[rf] : bc->pid0[rf]),
+                              rf < 0 ? 0 : (list ? bc->l1poc[rf] : bc->l0poc[rf]),
+                              0);
+                        q++;
+                     }
+               }
+            }
+            /* compensate every 4x4 off its cell (direct subs included) */
+            {
+               int cy, cx;
+               for (cy = 0; cy < 4; cy++)
+                  for (cx = 0; cx < 4; cx++)
+                  {
+                     const rh264_mv *m = &mvg[(mby*4+cy)*gwmax + mbx*4+cx];
+                     rh264_b_pred_block(f, bc, sh, mbx, mby, cx*4, cy*4, 4, 4,
+                           m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
+                  }
+            }
+         }
+
+         cbp = rh264_ue(b);
+         if (cbp >= 48) return -3;
+         cbp = rh264_cbp_inter[cbp];
+         cbp_luma = cbp & 15; cbp_chroma = cbp >> 4;
+         if (cbp_luma || cbp_chroma)
+         {
+            int d = rh264_se(b); f->qp = (f->qp + d + 52) % 52;
+         }
+         if (rh264_inter_luma_residual(b, f, mbx, mby, cbp_luma) < 0) return -1;
+         if (cbp_chroma)
+         {
+            if (rh264_decode_chroma_residual(b, f, mbx, mby, u, v, cbp_chroma) < 0)
+               return -1;
+         }
+         else
+         {
+            int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
+               f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
+               f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; }
+         }
+         f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
+      }
+      mbaddr++;
+   }
+   return 0;
+}
+
 static RH264_INLINE int rh264_bs_mvcmp(int ax, int ay, int bx, int by)
 {
    return (ax - bx >= 4 || bx - ax >= 4 || ay - by >= 4 || by - ay >= 4);
@@ -3776,6 +4615,49 @@ static void rh264_dpb_insert(rh264_video *v, int picnum)
  * are currently supported; the previous decoded frame in v->ref is the single
  * reference. Returns 0 on success, negative otherwise (e.g. B-slice, CABAC P,
  * or no reference yet). */
+/* Apply ref_pic_list_modification (8.2.4.3.1) over a built list. PicNums
+ * compare through FrameNumWrap: frame_num wraps at MaxFrameNum, so a
+ * buffered picture's PicNum is relative to the current one (8.2.4.1). The
+ * list may end up naming one picture at several indices, which is how
+ * weighted prediction offers a weighted and an unweighted version of it.
+ * The list is one entry longer than nref while this runs. */
+static void rh264_apply_list_mods(rh264_video *v, const rh264_frame **l,
+      int *lpn, int nref, int currpn, int maxpn,
+      const int8_t *mod_op, const int32_t *mod_val, int nmod)
+{
+   int pred = currpn, k, ridx = 0;
+   for (k = 0; k < nmod && ridx < nref; k++)
+   {
+      int pn;
+      if (mod_op[k] == 2) continue;   /* long-term: not tracked */
+      if (mod_op[k] == 0)
+      { pn = pred - (mod_val[k] + 1); if (pn < 0) pn += maxpn; }
+      else
+      { pn = pred + (mod_val[k] + 1); if (pn >= maxpn) pn -= maxpn; }
+      pred = pn;
+      if (pn > currpn) pn -= maxpn;
+      {
+         const rh264_frame *pic = NULL;
+         int j, nidx;
+         for (j = 0; j < v->dpb_len; j++)
+         {
+            int fn = v->dpb_pn[v->dpb_slot[j]];
+            int fnw = (fn > currpn) ? (fn - maxpn) : fn;
+            if (fnw == pn) { pic = &v->dpb[v->dpb_slot[j]]; break; }
+         }
+         if (!pic) continue;             /* names a picture we lack */
+         for (j = nref; j > ridx; j--)
+         { l[j] = l[j-1]; lpn[j] = lpn[j-1]; }
+         l[ridx] = pic; lpn[ridx] = pn;
+         ridx++;
+         nidx = ridx;
+         for (j = ridx; j <= nref; j++)
+            if (l[j] != pic)
+            { l[nidx] = l[j]; lpn[nidx] = lpn[j]; nidx++; }
+      }
+   }
+}
+
 static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int nut, nri, rc;
@@ -3792,11 +4674,120 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    rh264_bits_init(&b, rbsp, rl);
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
-   if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP)
+   if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP
+         && sh.slice_type != RH264_SLICE_B)
    { free(rbsp); return -1; }
+   if (sh.slice_type == RH264_SLICE_B && v->sps.pic_order_cnt_type == 1)
+   { free(rbsp); return -1; }   /* no POC derivation for type 1 */
    v->last_poc = rh264_derive_poc(v, &sh, nri);
    if (v->dpb_len < 1)
    { free(rbsp); return -1; }
+   if (sh.slice_type == RH264_SLICE_B)
+   {
+      /* B slice: both lists ordered by POC around the current picture
+       * (8.2.4.2.3), then per-list modification. list 1 starts as list 0
+       * mirrored; when that leaves the two identical, its first two entries
+       * swap. The first B slice of the stream raises the display delay to
+       * what the VUI promises, or the reference count when it is silent. */
+      rh264_bctx bc;
+      int i, n = 0, maxpn = 1 << v->sps.log2_max_frame_num;
+      int currpn = sh.frame_num_val;
+      const rh264_frame *ordered[RH264_MAX_REFS];
+      int opoc[RH264_MAX_REFS], opn[RH264_MAX_REFS];
+      int lpn0[34], lpn1[34];
+      int nref0 = sh.num_ref_idx_l0, nref1 = sh.num_ref_idx_l1;
+      memset(&bc, 0, sizeof(bc));
+      if (nref0 < 1) nref0 = 1; if (nref0 > 32) nref0 = 32;
+      if (nref1 < 1) nref1 = 1; if (nref1 > 32) nref1 = 32;
+      for (i = 0; i < v->dpb_len; i++)
+      { ordered[n] = &v->dpb[v->dpb_slot[i]];
+        opoc[n] = v->dpb_poc[v->dpb_slot[i]];
+        opn[n] = v->dpb_pn[v->dpb_slot[i]]; n++; }
+      /* selection-sort the held pictures by POC, ascending */
+      for (i = 0; i < n; i++)
+      {
+         int j, m = i;
+         for (j = i + 1; j < n; j++) if (opoc[j] < opoc[m]) m = j;
+         if (m != i)
+         {
+            const rh264_frame *tf = ordered[i]; int tp = opoc[i], tn = opn[i];
+            ordered[i] = ordered[m]; opoc[i] = opoc[m]; opn[i] = opn[m];
+            ordered[m] = tf; opoc[m] = tp; opn[m] = tn;
+         }
+      }
+      /* list 0: below the current POC descending, then above ascending;
+       * list 1 the reverse */
+      bc.n0 = 0; bc.n1 = 0;
+      for (i = n - 1; i >= 0; i--) if (opoc[i] < v->last_poc)
+      { bc.l0[bc.n0] = ordered[i]; bc.l0poc[bc.n0] = opoc[i];
+        lpn0[bc.n0] = opn[i]; bc.n0++; }
+      for (i = 0; i < n; i++) if (opoc[i] > v->last_poc)
+      { bc.l0[bc.n0] = ordered[i]; bc.l0poc[bc.n0] = opoc[i];
+        lpn0[bc.n0] = opn[i]; bc.n0++; }
+      for (i = 0; i < n; i++) if (opoc[i] > v->last_poc)
+      { bc.l1[bc.n1] = ordered[i]; bc.l1poc[bc.n1] = opoc[i];
+        lpn1[bc.n1] = opn[i]; bc.n1++; }
+      for (i = n - 1; i >= 0; i--) if (opoc[i] < v->last_poc)
+      { bc.l1[bc.n1] = ordered[i]; bc.l1poc[bc.n1] = opoc[i];
+        lpn1[bc.n1] = opn[i]; bc.n1++; }
+      if (bc.n0 < 1 || bc.n1 < 1) { free(rbsp); return -1; }
+      if (bc.n0 == bc.n1 && bc.n1 > 1)
+      {
+         for (i = 0; i < bc.n0; i++) if (bc.l0[i] != bc.l1[i]) break;
+         if (i == bc.n0)
+         {
+            const rh264_frame *tf = bc.l1[0]; int tp = bc.l1poc[0];
+            int tn = lpn1[0];
+            bc.l1[0] = bc.l1[1]; bc.l1poc[0] = bc.l1poc[1]; lpn1[0] = lpn1[1];
+            bc.l1[1] = tf; bc.l1poc[1] = tp; lpn1[1] = tn;
+         }
+      }
+      /* pad to the active counts, then modify */
+      while (bc.n0 < nref0)
+      { bc.l0[bc.n0] = bc.l0[bc.n0-1]; bc.l0poc[bc.n0] = bc.l0poc[bc.n0-1];
+        lpn0[bc.n0] = lpn0[bc.n0-1]; bc.n0++; }
+      while (bc.n1 < nref1)
+      { bc.l1[bc.n1] = bc.l1[bc.n1-1]; bc.l1poc[bc.n1] = bc.l1poc[bc.n1-1];
+        lpn1[bc.n1] = lpn1[bc.n1-1]; bc.n1++; }
+      bc.n0 = nref0; bc.n1 = nref1;
+      rh264_apply_list_mods(v, bc.l0, lpn0, bc.n0, currpn, maxpn,
+            sh.mod_op, sh.mod_val, sh.nmod);
+      rh264_apply_list_mods(v, bc.l1, lpn1, bc.n1, currpn, maxpn,
+            sh.mod_op1, sh.mod_val1, sh.nmod1);
+      /* picture ids and POCs follow whatever the modification placed */
+      for (i = 0; i < bc.n0; i++)
+      {
+         int j; bc.pid0[i] = 0; bc.l0poc[i] = 0;
+         for (j = 0; j < v->dpb_size; j++)
+            if (bc.l0[i] == &v->dpb[j])
+            { bc.pid0[i] = (signed char)j; bc.l0poc[i] = v->dpb_poc[j]; break; }
+      }
+      for (i = 0; i < bc.n1; i++)
+      {
+         int j; bc.pid1[i] = 0; bc.l1poc[i] = 0;
+         for (j = 0; j < v->dpb_size; j++)
+            if (bc.l1[i] == &v->dpb[j])
+            { bc.pid1[i] = (signed char)j; bc.l1poc[i] = v->dpb_poc[j]; break; }
+      }
+      bc.currpoc = v->last_poc;
+      bc.direct_spatial = sh.direct_spatial_mv_pred_flag;
+      bc.d8x8 = v->sps.direct_8x8_inference_flag;
+      bc.wbidc = v->pps.weighted_bipred_idc;
+      bc.colg = bc.l1[0]->mvg;
+      if (!bc.colg) { free(rbsp); return -1; }
+      rh264_b_setup_scales(&bc);
+      if (v->pps.entropy_coding_mode_flag)
+         rc = -1;   /* CABAC B slices arrive with the next change */
+      else
+         rc = rh264_decode_bslice(&b, &v->sps, &v->pps, &sh, &v->f, &bc,
+               v->mvg);
+      if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
+      v->last_picnum = sh.frame_num_val;
+      v->pend_n_mmco1 = sh.n_mmco1;
+      memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
+      free(rbsp);
+      return rc;
+   }
    {
       /* Build reference picture list 0. The default order is by descending
        * PicNum (8.2.4.2.1), which is the order the buffer already keeps, then
@@ -3816,46 +4807,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       for (i = 0; i < v->dpb_len; i++)
       { l0[n] = &v->dpb[v->dpb_slot[i]]; lpn[n] = v->dpb_pn[v->dpb_slot[i]]; n++; }
       while (n < nref) { l0[n] = l0[n-1]; lpn[n] = lpn[n-1]; n++; }
-      if (sh.nmod > 0)
-      {
-         int pred = currpn, k, ridx = 0;
-         for (k = 0; k < sh.nmod && ridx < nref; k++)
-         {
-            int pn;
-            if (sh.mod_op[k] == 2) continue;   /* long-term: not tracked */
-            if (sh.mod_op[k] == 0)
-            { pn = pred - (sh.mod_val[k] + 1); if (pn < 0) pn += maxpn; }
-            else
-            { pn = pred + (sh.mod_val[k] + 1); if (pn >= maxpn) pn -= maxpn; }
-            pred = pn;
-            if (pn > currpn) pn -= maxpn;
-            {
-               const rh264_frame *pic = NULL;
-               int j, nidx;
-               /* Compare against FrameNumWrap, not the stored frame_num:
-                * frame_num wraps at MaxFrameNum, so a buffered picture's
-                * PicNum is relative to the current one (8.2.4.1). */
-               for (j = 0; j < v->dpb_len; j++)
-               {
-                  int fn = v->dpb_pn[v->dpb_slot[j]];
-                  int fnw = (fn > currpn) ? (fn - maxpn) : fn;
-                  if (fnw == pn) { pic = &v->dpb[v->dpb_slot[j]]; break; }
-               }
-               if (!pic) continue;             /* names a picture we lack */
-               /* Shift the tail up, place the picture, then drop any other
-                * copy of it from the remainder (8.2.4.3.1). The list is one
-                * longer than nref while this runs and is cut back after. */
-               for (j = nref; j > ridx; j--)
-               { l0[j] = l0[j-1]; lpn[j] = lpn[j-1]; }
-               l0[ridx] = pic; lpn[ridx] = pn;
-               ridx++;
-               nidx = ridx;
-               for (j = ridx; j <= nref; j++)
-                  if (l0[j] != pic)
-                  { l0[nidx] = l0[j]; lpn[nidx] = lpn[j]; nidx++; }
-            }
-         }
-      }
+      rh264_apply_list_mods(v, l0, lpn, nref, currpn, maxpn,
+            sh.mod_op, sh.mod_val, sh.nmod);
       /* Map each list position onto the picture it names, so deblocking can
        * ask whether two blocks used the same picture rather than the same
        * index; list modification can place one picture at several indices. */
