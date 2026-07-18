@@ -3490,11 +3490,16 @@ static INLINE void write_quad6(SpriteVertex *pv,
       drop_mod   = params->drop_mod;
       drop_alpha = params->drop_alpha;
 
-      color      = simd_make_float4(
-            FONT_COLOR_GET_RED(params->color) / 255.0f,
-            FONT_COLOR_GET_GREEN(params->color) / 255.0f,
-            FONT_COLOR_GET_BLUE(params->color) / 255.0f,
-            FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
+      if (params->color_hp)
+         color   = simd_make_float4(
+               params->color_hp[0], params->color_hp[1],
+               params->color_hp[2], params->color_hp[3]);
+      else
+         color   = simd_make_float4(
+               FONT_COLOR_GET_RED(params->color) / 255.0f,
+               FONT_COLOR_GET_GREEN(params->color) / 255.0f,
+               FONT_COLOR_GET_BLUE(params->color) / 255.0f,
+               FONT_COLOR_GET_ALPHA(params->color) / 255.0f);
 
    }
    else

@@ -218,6 +218,18 @@ void gfx_display_draw_text(
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
 
+/* As gfx_display_draw_text, but drives glyph colour at full float precision
+ * (color_rgba = 4 floats R,G,B,A in 0..1) for deep-colour framebuffers.
+ * Backends that do not implement the high-precision path fall back to the
+ * 8-bit 'color', so supply an equivalent packed value there. */
+void gfx_display_draw_text_hp(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, const float *color_rgba,
+      enum text_alignment text_align,
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
+
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,

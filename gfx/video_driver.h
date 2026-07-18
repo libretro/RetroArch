@@ -420,6 +420,10 @@ typedef struct video_frame_info
       int drop_x, drop_y;
       /* ABGR. Use the macros. */
       uint32_t color;
+      /* Must mirror struct font_params exactly: this struct is cast to
+       * struct font_params* when handed to the font backends, so its layout
+       * has to match field for field. */
+      const float *color_hp;
       float x;
       float y;
       float scale;

@@ -5119,6 +5119,7 @@ void video_driver_frame(const void *data, unsigned width,
       video_info.osd_stat_params.drop_alpha  = 0.9f;
       video_info.osd_stat_params.color       = COLOR_ABGR(
             alpha, blue, green, red);
+      video_info.osd_stat_params.color_hp    = NULL;
 
       audio_compute_buffer_statistics(&audio_stats);
 
