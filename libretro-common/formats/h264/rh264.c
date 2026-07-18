@@ -3252,7 +3252,8 @@ static void rh264_frame_free(rh264_frame *f)
    free(f->nzC[0]); free(f->nzC[1]);
    free(f->mbqp);
    free(f->mbt8);
-   memset(f, 0, sizeof(*f));   free(f->mvg); f->mvg = NULL;
+   free(f->mvg);
+   memset(f, 0, sizeof(*f));
 }
 
 
