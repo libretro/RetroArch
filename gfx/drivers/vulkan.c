@@ -8528,6 +8528,13 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
    vk->flags |= VK_FLAG_READBACK_PENDING;
    vk->flags |= VK_FLAG_READBACK_HDR;
 
+   /* Capture the staging slot BEFORE rendering the read-back frame. The
+    * frame records its copy into readback.staging[current_frame_index] as it
+    * runs and then advances the index for the next frame, so reading the slot
+    * afterwards (as an earlier version did) would look at the wrong, empty
+    * staging and always fall back to SDR. This mirrors vulkan_read_viewport. */
+   staging = &vk->readback.staging[vk->context->current_frame_index];
+
    if (!is_idle)
       video_driver_cached_frame();
 
@@ -8552,7 +8559,6 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
 
    vk->flags &= ~VK_FLAG_READBACK_HDR;
 
-   staging = &vk->readback.staging[vk->context->current_frame_index];
    if (!staging->memory)
    {
       /* No read-back frame has run yet on this slot (e.g. an HDR screenshot
