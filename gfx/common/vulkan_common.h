@@ -112,7 +112,12 @@ enum vk_flags
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them again. */
-   VK_FLAG_SOURCE_HDR10        = (1 << 17)
+   VK_FLAG_SOURCE_HDR10        = (1 << 17),
+   /* A synchronous HDR screenshot read-back is pending: the frame path
+    * should copy the HDR backbuffer (not the tone-mapped SDR one) into the
+    * HDR readback staging buffer. Distinct from READBACK_PENDING so the two
+    * never interfere. */
+   VK_FLAG_READBACK_HDR        = (1 << 18)
 };
 
 enum vk_texture_type

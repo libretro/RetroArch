@@ -7109,7 +7109,8 @@ static bool vulkan_frame(void *data, const void *frame,
          VkImageLayout backbuffer_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 #ifdef VULKAN_HDR_SWAPCHAIN
          struct vk_image* readback_source = backbuffer;
-         if((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
+         if(    (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+             && !(vk->flags & VK_FLAG_READBACK_HDR))
          {
             /* Select the inverse conversion the shader should apply.
              * The backbuffer is in one of two HDR encodings:
@@ -8409,6 +8410,132 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return true;
 }
 
+#ifdef VULKAN_HDR_SWAPCHAIN
+/* HDR screenshot read-back. Copies the HDR10 backbuffer (A2B10G10R10, PQ
+ * Rec.2020) straight into the read-back staging buffer WITHOUT the
+ * hdr_to_sdr tone-map that vulkan_read_viewport applies, then unpacks each
+ * packed 2-10-10-10 word into three uint16_t (R,G,B), scaling 10->16 bit.
+ * The frame path checks VK_FLAG_READBACK_HDR and leaves readback_source as
+ * the backbuffer when it is set.
+ *
+ * Only HDR10 is handled; scRGB (FP16) returns false so the caller falls back
+ * to the ordinary SDR read-back. Bottom-up output like vulkan_read_viewport.
+ *
+ * NB: the GPU-side path (skip-tonemap copy) is validated structurally only;
+ * the 10->16 bit unpack is unit-tested. On-HDR-hardware verification of the
+ * captured pixels is the hand-off. */
+static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   struct vk_texture *staging = NULL;
+   vk_t *vk                   = (vk_t*)data;
+
+   if (!vk)
+      return false;
+
+   /* Need an active HDR10 swapchain; scRGB and SDR are not handled here. */
+   if (   !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+       ||  (vk->context->flags & VK_CTX_FLAG_HDR_SCRGB)
+       || !vulkan_is_hdr10_format(vk->context->swapchain_format))
+      return false;
+
+   /* Request a synchronous read-back that skips the tone-map. Reuse the
+    * same PENDING machinery; VK_FLAG_READBACK_HDR tells the frame path to
+    * copy the backbuffer raw. */
+   vk->flags |= VK_FLAG_READBACK_PENDING;
+   vk->flags |= VK_FLAG_READBACK_HDR;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   {
+      unsigned slot       = vk->context->current_frame_index;
+      VkFence frame_fence = vk->context->swapchain_fences[slot];
+      if (     frame_fence != VK_NULL_HANDLE
+            && vk->context->swapchain_fences_signalled[slot])
+         vkWaitForFences(vk->context->device, 1,
+               &frame_fence, VK_TRUE, UINT64_MAX);
+      else
+      {
+#ifdef HAVE_THREADS
+         slock_lock(vk->context->queue_lock);
+#endif
+         vkQueueWaitIdle(vk->context->queue);
+#ifdef HAVE_THREADS
+         slock_unlock(vk->context->queue_lock);
+#endif
+      }
+   }
+
+   vk->flags &= ~VK_FLAG_READBACK_HDR;
+
+   staging = &vk->readback.staging[vk->context->current_frame_index];
+   if (!staging->memory)
+   {
+      RARCH_ERR("[Vulkan] HDR readback: no staging image present.\n");
+      return false;
+   }
+
+   if (!staging->mapped)
+      vkMapMemory(vk->context->device, staging->memory,
+            staging->offset, staging->size, 0, &staging->mapped);
+
+   if (     (staging->flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+         && (staging->memory != VK_NULL_HANDLE))
+   {
+      VkMappedMemoryRange range;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.memory = staging->memory;
+      range.offset = 0;
+      range.size   = VK_WHOLE_SIZE;
+      vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
+   }
+
+   {
+      int y;
+      unsigned vp_width  = (vk->vp.width  > vk->video_width)  ? vk->video_width  : vk->vp.width;
+      unsigned vp_height = (vk->vp.height > vk->video_height) ? vk->video_height : vk->vp.height;
+      const uint8_t *src = (const uint8_t*)staging->mapped;
+
+      /* Bottom-up: start at the last output row and walk backwards, reading
+       * the (top-down) staging rows forwards - mirrors vulkan_read_viewport. */
+      buffer += (size_t)3 * (vp_height - 1) * vp_width;
+
+      for (y = 0; y < (int)vp_height; y++,
+            src += staging->stride, buffer -= 3 * vp_width)
+      {
+         const uint32_t *row = (const uint32_t*)src;
+         int x;
+         for (x = 0; x < (int)vp_width; x++)
+         {
+            /* A2B10G10R10_UNORM_PACK32: A[31:30] B[29:20] G[19:10] R[9:0]. */
+            uint32_t w = row[x];
+            uint32_t r = (w      ) & 0x3FF;
+            uint32_t g = (w >> 10) & 0x3FF;
+            uint32_t b = (w >> 20) & 0x3FF;
+            /* 10->16 bit, replicating high bits so 0x3FF -> 0xFFFF. */
+            buffer[x * 3 + 0] = (uint16_t)((r << 6) | (r >> 4));
+            buffer[x * 3 + 1] = (uint16_t)((g << 6) | (g >> 4));
+            buffer[x * 3 + 2] = (uint16_t)((b << 6) | (b >> 4));
+         }
+      }
+   }
+
+   /* HDR10 = PQ transfer, BT.2100 primaries, full range, RGB matrix. */
+   if (out_meta)
+   {
+      memset(out_meta, 0, sizeof(*out_meta));
+      out_meta->colour_primaries      = 9;  /* BT.2020 / BT.2100 */
+      out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      out_meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG)  */
+      out_meta->video_full_range_flag = 1;
+   }
+
+   return true;
+}
+#endif /* VULKAN_HDR_SWAPCHAIN */
+
 #ifdef HAVE_OVERLAY
 static void vulkan_overlay_enable(void *data, bool enable)
 {
@@ -8813,5 +8940,10 @@ video_driver_t video_vulkan = {
 #ifdef HAVE_GFX_WIDGETS
    vulkan_gfx_widgets_enabled,
 #endif
-   vulkan_invalidate_hw_render_cache
+   vulkan_invalidate_hw_render_cache,
+#ifdef VULKAN_HDR_SWAPCHAIN
+   vulkan_read_viewport_hdr
+#else
+   NULL /* read_viewport_hdr */
+#endif
 };
