@@ -2625,6 +2625,169 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
 /* Loop filter kernels, ported from vpx_dsp/loopfilter.c (generic C).   */
 /* ==================================================================== */
 #define ROUND_POWER_OF_TWO(value, n) (((value) + (1 << ((n)-1))) >> (n))
+#if RVP9_RECON_HBD && defined(RVP9_SSE2)
+/* SSE2 8-wide 4-tap loop filter for the 10/12-bit horizontal edge.
+ * horizontal_4 filters 8 unit-stride columns, so all 8 map to one
+ * vector; the hbd LF domain (int16 offset samples, thresholds << 2,
+ * clamp [-512,511]) fits int16 lanes exactly, so this is bit-identical
+ * to the scalar filter_mask + hev + filter4 path (verified offline
+ * over 200k randomized edges). */
+static __m128i rvp9_lf_clampv(__m128i x)
+{
+   return _mm_min_epi16(_mm_max_epi16(x, _mm_set1_epi16(-512)),
+                        _mm_set1_epi16(511));
+}
+static __m128i rvp9_lf_absdiff(__m128i a, __m128i b)
+{
+   __m128i d = _mm_sub_epi16(a, b);
+   return _mm_max_epi16(d, _mm_sub_epi16(_mm_setzero_si128(), d));
+}
+static void rvp9_lpf_horizontal_4_hbd_sse2(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i p3 = _mm_loadu_si128((const __m128i*)(s - 4 * pitch));
+   __m128i p2 = _mm_loadu_si128((const __m128i*)(s - 3 * pitch));
+   __m128i p1 = _mm_loadu_si128((const __m128i*)(s - 2 * pitch));
+   __m128i p0 = _mm_loadu_si128((const __m128i*)(s - 1 * pitch));
+   __m128i q0 = _mm_loadu_si128((const __m128i*)(s + 0 * pitch));
+   __m128i q1 = _mm_loadu_si128((const __m128i*)(s + 1 * pitch));
+   __m128i q2 = _mm_loadu_si128((const __m128i*)(s + 2 * pitch));
+   __m128i q3 = _mm_loadu_si128((const __m128i*)(s + 3 * pitch));
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i m    = _mm_setzero_si128();
+   __m128i hev  = _mm_setzero_si128();
+   __m128i ps1, ps0, qs0, qs1, filter, f1, f2, outer, t;
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff(q1, q0), thv));
+
+   ps1 = _mm_sub_epi16(p1, off); ps0 = _mm_sub_epi16(p0, off);
+   qs0 = _mm_sub_epi16(q0, off); qs1 = _mm_sub_epi16(q1, off);
+   filter = _mm_and_si128(rvp9_lf_clampv(_mm_sub_epi16(ps1, qs1)), hev);
+   filter = _mm_and_si128(rvp9_lf_clampv(_mm_add_epi16(filter,
+               _mm_mullo_epi16(_mm_set1_epi16(3),
+                  _mm_sub_epi16(qs0, ps0)))), m);
+   f1 = _mm_srai_epi16(rvp9_lf_clampv(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+   f2 = _mm_srai_epi16(rvp9_lf_clampv(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+   outer = _mm_andnot_si128(hev,
+              _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+   _mm_storeu_si128((__m128i*)(s - 2 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv(_mm_add_epi16(ps1, outer)), off));
+   _mm_storeu_si128((__m128i*)(s - 1 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv(_mm_add_epi16(ps0, f2)), off));
+   _mm_storeu_si128((__m128i*)(s + 0 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv(_mm_sub_epi16(qs0, f1)), off));
+   _mm_storeu_si128((__m128i*)(s + 1 * pitch),
+      _mm_add_epi16(rvp9_lf_clampv(_mm_sub_epi16(qs1, outer)), off));
+}
+
+static void rvp9_lpf_horizontal_8_hbd_sse2(RVP9_PIXEL *s, int pitch,
+      int blimit, int limit, int thresh)
+{
+   __m128i p3 = _mm_loadu_si128((const __m128i*)(s - 4 * pitch));
+   __m128i p2 = _mm_loadu_si128((const __m128i*)(s - 3 * pitch));
+   __m128i p1 = _mm_loadu_si128((const __m128i*)(s - 2 * pitch));
+   __m128i p0 = _mm_loadu_si128((const __m128i*)(s - 1 * pitch));
+   __m128i q0 = _mm_loadu_si128((const __m128i*)(s + 0 * pitch));
+   __m128i q1 = _mm_loadu_si128((const __m128i*)(s + 1 * pitch));
+   __m128i q2 = _mm_loadu_si128((const __m128i*)(s + 2 * pitch));
+   __m128i q3 = _mm_loadu_si128((const __m128i*)(s + 3 * pitch));
+   __m128i limv = _mm_set1_epi16((short)(limit << 2));
+   __m128i blv  = _mm_set1_epi16((short)(blimit << 2));
+   __m128i thv  = _mm_set1_epi16((short)(thresh << 2));
+   __m128i off  = _mm_set1_epi16(0x200);
+   __m128i four = _mm_set1_epi16(1 << 2);   /* flat_mask4 thresh = 1, LF_T(1) = 4 */
+   __m128i m = _mm_setzero_si128(), hev = _mm_setzero_si128();
+   __m128i flat = _mm_setzero_si128();
+   __m128i ps1, ps0, qs0, qs1, filter, f1, f2, outer, t;
+   __m128i f4_p1, f4_p0, f4_q0, f4_q1;
+   __m128i op2, op1_, op0_, oq0_, oq1_, oq2;
+
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p3, p2), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p2, p1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(p1, p0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q1, q0), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q2, q1), limv));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(rvp9_lf_absdiff(q3, q2), limv));
+   t = _mm_add_epi16(_mm_slli_epi16(rvp9_lf_absdiff(p0, q0), 1),
+                     _mm_srli_epi16(rvp9_lf_absdiff(p1, q1), 1));
+   m = _mm_or_si128(m, _mm_cmpgt_epi16(t, blv));
+   m = _mm_xor_si128(m, _mm_set1_epi16(-1));
+
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(p1, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(q1, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(p2, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(q2, q0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(p3, p0), four));
+   flat = _mm_or_si128(flat, _mm_cmpgt_epi16(rvp9_lf_absdiff(q3, q0), four));
+   flat = _mm_xor_si128(flat, _mm_set1_epi16(-1));
+   flat = _mm_and_si128(flat, m);
+
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff(p1, p0), thv));
+   hev = _mm_or_si128(hev, _mm_cmpgt_epi16(rvp9_lf_absdiff(q1, q0), thv));
+   ps1 = _mm_sub_epi16(p1, off); ps0 = _mm_sub_epi16(p0, off);
+   qs0 = _mm_sub_epi16(q0, off); qs1 = _mm_sub_epi16(q1, off);
+   filter = _mm_and_si128(rvp9_lf_clampv(_mm_sub_epi16(ps1, qs1)), hev);
+   filter = _mm_and_si128(rvp9_lf_clampv(_mm_add_epi16(filter,
+               _mm_mullo_epi16(_mm_set1_epi16(3),
+                  _mm_sub_epi16(qs0, ps0)))), m);
+   f1 = _mm_srai_epi16(rvp9_lf_clampv(_mm_add_epi16(filter, _mm_set1_epi16(4))), 3);
+   f2 = _mm_srai_epi16(rvp9_lf_clampv(_mm_add_epi16(filter, _mm_set1_epi16(3))), 3);
+   outer = _mm_andnot_si128(hev,
+              _mm_srai_epi16(_mm_add_epi16(f1, _mm_set1_epi16(1)), 1));
+   f4_p1 = _mm_add_epi16(rvp9_lf_clampv(_mm_add_epi16(ps1, outer)), off);
+   f4_p0 = _mm_add_epi16(rvp9_lf_clampv(_mm_add_epi16(ps0, f2)), off);
+   f4_q0 = _mm_add_epi16(rvp9_lf_clampv(_mm_sub_epi16(qs0, f1)), off);
+   f4_q1 = _mm_add_epi16(rvp9_lf_clampv(_mm_sub_epi16(qs1, outer)), off);
+
+#define RVP9_LF8_AVG3(sum) \
+   _mm_srai_epi16(_mm_add_epi16((sum), _mm_set1_epi16(4)), 3)
+   op2  = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p3), p3), _mm_slli_epi16(p2, 1)),
+            p1), p0), q0));
+   op1_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p3), p2), _mm_slli_epi16(p1, 1)),
+            p0), q0), q1));
+   op0_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p3, p2), p1), _mm_slli_epi16(p0, 1)),
+            q0), q1), q2));
+   oq0_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p2, p1), p0), _mm_slli_epi16(q0, 1)),
+            q1), q2), q3));
+   oq1_ = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p1, p0), q0), _mm_slli_epi16(q1, 1)),
+            q2), q3), q3));
+   oq2  = RVP9_LF8_AVG3(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_add_epi16(_mm_add_epi16(p0, q0), q1), _mm_slli_epi16(q2, 1)),
+            q3), q3), q3));
+#undef RVP9_LF8_AVG3
+
+#define RVP9_LF_SEL(a, b) \
+   _mm_or_si128(_mm_and_si128(flat, (a)), _mm_andnot_si128(flat, (b)))
+   _mm_storeu_si128((__m128i*)(s - 3 * pitch), RVP9_LF_SEL(op2,  p2));
+   _mm_storeu_si128((__m128i*)(s - 2 * pitch), RVP9_LF_SEL(op1_, f4_p1));
+   _mm_storeu_si128((__m128i*)(s - 1 * pitch), RVP9_LF_SEL(op0_, f4_p0));
+   _mm_storeu_si128((__m128i*)(s + 0 * pitch), RVP9_LF_SEL(oq0_, f4_q0));
+   _mm_storeu_si128((__m128i*)(s + 1 * pitch), RVP9_LF_SEL(oq1_, f4_q1));
+   _mm_storeu_si128((__m128i*)(s + 2 * pitch), RVP9_LF_SEL(oq2,  q2));
+#undef RVP9_LF_SEL
+}
+#endif /* RVP9_RECON_HBD && RVP9_SSE2 */
+
 static RVP9_LF_F rvp9_signed_char_clamp(int t) {
   return (RVP9_LF_F)(t < RVP9_LF_CLAMP_MIN ? RVP9_LF_CLAMP_MIN
                    : t > RVP9_LF_CLAMP_MAX ? RVP9_LF_CLAMP_MAX : t);
@@ -3617,6 +3780,10 @@ static void rvp9_lpf_horizontal_4(RVP9_PIXEL *s, int pitch, const uint8_t *blimi
   rvp9_lpf_horizontal_4_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
+#elif RVP9_RECON_HBD && defined(RVP9_SSE2)
+  rvp9_lpf_horizontal_4_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
 #endif
 
 /* loop filter designed to work using chars so that we can make maximum use */
@@ -3669,6 +3836,10 @@ static void rvp9_lpf_horizontal_8(RVP9_PIXEL *s, int pitch, const uint8_t *blimi
   return;
 #elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   rvp9_lpf_horizontal_8_neon(s, pitch, *blimit, *limit, *thresh);
+  (void)i;
+  return;
+#elif RVP9_RECON_HBD && defined(RVP9_SSE2)
+  rvp9_lpf_horizontal_8_hbd_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
 #endif
