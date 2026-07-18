@@ -70,6 +70,7 @@ struct rmp4_video_stream
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
    int          pkt_idx;    /* ordinal of the next video packet       */
+   int          wait_key;   /* a reference failed; hold out for a key */
    int          track;      /* index of the chosen video track        */
    enum rmp4_codec codec;
    unsigned     width;
@@ -619,9 +620,24 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
        * frames as before. A key frame that fails to decode is a real
        * error. */
       {
-         int dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
+         int dec;
+         /* Once any frame in a prediction chain fails (e.g. an
+          * entropy-coding mode this decoder refuses), the pictures the
+          * following inter frames predict from are not the ones the
+          * encoder used, and decoding them anyway produces drifting
+          * garbage. Freeze on the last good picture until the next key
+          * frame restarts the chain cleanly. */
+         if (s->wait_key && !pkt->keyframe)
+            return 0;
+         dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
          if (dec < 0)
-            return pkt->keyframe ? -1 : 0;
+         {
+            if (pkt->keyframe)
+               return -1;
+            s->wait_key = 1;
+            return 0;
+         }
+         s->wait_key = 0;
          if (dec == 0)   /* consumed; picture held for display reordering */
             return 0;
       }
@@ -697,6 +713,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
       return;
    rmp4_rewind(s->demux);
    s->pkt_idx = 0;
+   s->wait_key = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
    rmp4_video_stream_close_decoder(s);
