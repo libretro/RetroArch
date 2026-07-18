@@ -610,22 +610,32 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    if (!info || !info->path)
       return false;
 
-   /* Prefer native 10-bit output: if the frontend accepts XRGB2101010 we emit
-    * 10-bit (still SDR-encoded - the frontend HDR path inverse-tone-maps that
-    * to the display) so 10-bit sources band less; otherwise fall back to
-    * XRGB8888. The frontend accepts XRGB2101010 even when it will
-    * down-convert, so this is best-effort - the precision only survives on a
-    * driver with native 10-bit support. */
-   if (WEBM_CORE_PREFIX(environ_cb)(
-         RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
-      want10 = 1;
-   else if (!WEBM_CORE_PREFIX(environ_cb)(
-         RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   /* Prefer native 10-bit output, but only when the driver truly presents a
+    * 10-bit surface end to end. SET_PIXEL_FORMAT(XRGB2101010) always
+    * succeeds - the frontend silently narrows to 8-bit when the driver is not
+    * 10-bit capable - so asking it alone would make us emit 10-bit that gets
+    * thrown away: for 8-bit sources that is a pointless <<2 then >>2 round
+    * trip, and for 10-bit sources the frontend truncates where our own 8-bit
+    * path would round. GET_SCREEN_10BPC_CAPABLE reports the real capability,
+    * so we only take the 10-bit path when it will survive; otherwise we go
+    * straight to XRGB8888 and tone-map to 8 bits directly. Older frontends
+    * that do not recognise the query leave want10 = 0 (safe: plain 8-bit). */
    {
-      if (WEBM_CORE_PREFIX(log_cb))
-         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[webm] XRGB8888 is not supported.\n");
-      return false;
+      bool cap10 = false;
+      if (WEBM_CORE_PREFIX(environ_cb)(
+               RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE, &cap10)
+            && cap10
+            && WEBM_CORE_PREFIX(environ_cb)(
+               RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt10))
+         want10 = 1;
+      else if (!WEBM_CORE_PREFIX(environ_cb)(
+               RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+      {
+         if (WEBM_CORE_PREFIX(log_cb))
+            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+               "[webm] XRGB8888 is not supported.\n");
+         return false;
+      }
    }
 
    memset(p, 0, sizeof(*p));
