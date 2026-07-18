@@ -60,6 +60,40 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
 uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch, uint64_t *bytes);
 
+/* Optional HDR colour-space signalling, written as PNG 3rd-edition
+ * cICP / cLLI / mDCV chunks. These label the colour space and light
+ * levels; they do not alter the pixel data (which for an HDR image is
+ * expected to already be encoded, e.g. PQ). For HDR10 use cICP code
+ * points primaries=9 (BT.2100), transfer=16 (PQ), matrix=0 (always 0
+ * for PNG, since PNG stores RGB), full_range=1. */
+struct rpng_hdr_metadata
+{
+   /* cICP - always written when this struct is passed. */
+   uint8_t colour_primaries;      /* H.273 code point, e.g. 9 = BT.2100  */
+   uint8_t transfer_function;     /* H.273 code point, e.g. 16 = PQ      */
+   uint8_t matrix_coefficients;   /* Must be 0 for PNG (RGB).            */
+   uint8_t video_full_range_flag; /* 1 = full range, 0 = narrow.        */
+
+   /* cLLI - written when either value is non-zero. Units: cd/m^2. */
+   float max_cll;                 /* Maximum Content Light Level.        */
+   float max_fall;                /* Maximum Frame-Average Light Level.  */
+
+   /* mDCV - written when write_mdcv is true. Chromaticities in xy,
+    * luminance in cd/m^2. Primaries are ordered R, G, B. */
+   uint8_t write_mdcv;
+   float primary_chromaticity[3][2]; /* R,G,B -> {x,y}                   */
+   float white_point[2];             /* {x,y}                           */
+   float max_luminance;              /* Mastering display max, cd/m^2.   */
+   float min_luminance;              /* Mastering display min, cd/m^2.   */
+};
+
+/* As rpng_save_image_bgr24_string, but also writes the given HDR
+ * colour-space chunks (cICP, and cLLI / mDCV as populated). Passing
+ * NULL for hdr is identical to rpng_save_image_bgr24_string. */
+uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,
+      unsigned width, unsigned height, signed pitch,
+      const struct rpng_hdr_metadata *hdr, uint64_t *bytes);
+
 RETRO_END_DECLS
 
 #endif

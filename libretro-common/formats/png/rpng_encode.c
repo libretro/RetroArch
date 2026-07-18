@@ -94,6 +94,90 @@ static bool png_write_ihdr_string(intfstream_t *intf_s, const struct png_ihdr *i
          sizeof(ihdr_raw) - sizeof(uint32_t));
 }
 
+/* --- PNG 3rd-edition HDR colour-space chunks --------------------------
+ * These are ancillary chunks placed after IHDR and before IDAT. They only
+ * label the colour space / light levels; they never touch the pixel data.
+ * Each is framed exactly like IHDR: [len(4)][type(4)][payload][crc(4)],
+ * with the CRC computed over type+payload. */
+
+static bool png_write_cicp_string(intfstream_t *intf_s,
+      const struct rpng_hdr_metadata *hdr)
+{
+   /* 4-byte payload: primaries, transfer, matrix (0 for PNG), full range. */
+   uint8_t raw[12];
+   dword_write_be(raw + 0, 4);
+   raw[4]  = 'c'; raw[5] = 'I'; raw[6] = 'C'; raw[7] = 'P';
+   raw[8]  = hdr->colour_primaries;
+   raw[9]  = hdr->transfer_function;
+   raw[10] = hdr->matrix_coefficients;
+   raw[11] = hdr->video_full_range_flag;
+   if (intfstream_write(intf_s, raw, sizeof(raw)) != sizeof(raw))
+      return false;
+   return png_write_crc_string(intf_s, raw + 4, sizeof(raw) - 4);
+}
+
+static bool png_write_clli_string(intfstream_t *intf_s,
+      const struct rpng_hdr_metadata *hdr)
+{
+   /* 8-byte payload: MaxCLL, MaxFALL, each a 4-byte unsigned integer in
+    * units of 0.0001 cd/m^2 (i.e. cd/m^2 * 10000). */
+   uint8_t raw[16];
+   dword_write_be(raw + 0, 8);
+   raw[4] = 'c'; raw[5] = 'L'; raw[6] = 'L'; raw[7] = 'I';
+   dword_write_be(raw +  8, (uint32_t)(hdr->max_cll  * 10000.0f + 0.5f));
+   dword_write_be(raw + 12, (uint32_t)(hdr->max_fall * 10000.0f + 0.5f));
+   if (intfstream_write(intf_s, raw, sizeof(raw)) != sizeof(raw))
+      return false;
+   return png_write_crc_string(intf_s, raw + 4, sizeof(raw) - 4);
+}
+
+static void word_write_be(uint8_t *buf, uint16_t val)
+{
+   buf[0] = (uint8_t)(val >> 8);
+   buf[1] = (uint8_t)(val >> 0);
+}
+
+static bool png_write_mdcv_string(intfstream_t *intf_s,
+      const struct rpng_hdr_metadata *hdr)
+{
+   /* 24-byte payload: R,G,B chromaticity pairs then white point, each xy as
+    * a 2-byte unsigned integer in units of 0.00002 (value * 50000); then max
+    * and min luminance as 4-byte unsigned integers in units of 0.0001
+    * cd/m^2 (value * 10000). */
+   uint8_t raw[8 + 24];
+   int c;
+   dword_write_be(raw + 0, 24);
+   raw[4] = 'm'; raw[5] = 'D'; raw[6] = 'C'; raw[7] = 'V';
+   for (c = 0; c < 3; c++)
+   {
+      word_write_be(raw + 8 + c * 4 + 0,
+            (uint16_t)(hdr->primary_chromaticity[c][0] * 50000.0f + 0.5f));
+      word_write_be(raw + 8 + c * 4 + 2,
+            (uint16_t)(hdr->primary_chromaticity[c][1] * 50000.0f + 0.5f));
+   }
+   word_write_be(raw + 20, (uint16_t)(hdr->white_point[0] * 50000.0f + 0.5f));
+   word_write_be(raw + 22, (uint16_t)(hdr->white_point[1] * 50000.0f + 0.5f));
+   dword_write_be(raw + 24, (uint32_t)(hdr->max_luminance * 10000.0f + 0.5f));
+   dword_write_be(raw + 28, (uint32_t)(hdr->min_luminance * 10000.0f + 0.5f));
+   if (intfstream_write(intf_s, raw, sizeof(raw)) != sizeof(raw))
+      return false;
+   return png_write_crc_string(intf_s, raw + 4, sizeof(raw) - 4);
+}
+
+static bool png_write_hdr_chunks(intfstream_t *intf_s,
+      const struct rpng_hdr_metadata *hdr)
+{
+   if (!png_write_cicp_string(intf_s, hdr))
+      return false;
+   if (hdr->max_cll != 0.0f || hdr->max_fall != 0.0f)
+      if (!png_write_clli_string(intf_s, hdr))
+         return false;
+   if (hdr->write_mdcv)
+      if (!png_write_mdcv_string(intf_s, hdr))
+         return false;
+   return true;
+}
+
 static bool png_write_idat_string(intfstream_t* intf_s, const uint8_t *data, size_t len)
 {
    if (intfstream_write(intf_s, data, len) != (ssize_t)len)
@@ -228,7 +312,8 @@ static bool flush_idat_chunk(intfstream_t *intf_s,
 }
 
 bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
-      unsigned width, unsigned height, signed pitch, unsigned bpp)
+      unsigned width, unsigned height, signed pitch, unsigned bpp,
+      const struct rpng_hdr_metadata *hdr)
 {
    unsigned h;
    struct png_ihdr ihdr = {0};
@@ -269,6 +354,12 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
    ihdr.color_type = bpp == sizeof(uint32_t) ? 6 : 2; /* RGBA or RGB */
    if (!png_write_ihdr_string(intf_s, &ihdr))
       GOTO_END_ERROR();
+
+   /* HDR colour-space chunks (cICP / cLLI / mDCV) belong after IHDR and
+    * before IDAT. Only written when the caller supplied metadata. */
+   if (hdr)
+      if (!png_write_hdr_chunks(intf_s, hdr))
+         GOTO_END_ERROR();
 
    /* Per-row scratch.  ~width*bpp each -- trivial compared to the
     * frame-sized encode_buf the old full-buffer path allocated. */
@@ -451,7 +542,7 @@ bool rpng_save_image_argb(const char *path, const uint32_t *data,
 
    ret = rpng_save_image_stream((const uint8_t*) data, intf_s,
                                 width, height,
-                                (signed) pitch, sizeof(uint32_t));
+                                (signed) pitch, sizeof(uint32_t), NULL);
    intfstream_close(intf_s);
    free(intf_s);
    return ret;
@@ -467,19 +558,22 @@ bool rpng_save_image_bgr24(const char *path, const uint8_t *data,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
    ret = rpng_save_image_stream(data, intf_s, width, height,
-                                (signed) pitch, 3);
+                                (signed) pitch, 3, NULL);
    intfstream_close(intf_s);
    free(intf_s);
    return ret;
 }
 
 
-uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
-      unsigned width, unsigned height, signed pitch, uint64_t* bytes)
+uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,
+      unsigned width, unsigned height, signed pitch,
+      const struct rpng_hdr_metadata *hdr, uint64_t* bytes)
 {
    bool ret             = false;
    intfstream_t *intf_s = NULL;
-   size_t _len          = (size_t)(width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER;
+   /* cICP(16) + cLLI(20) + mDCV(36) = 72 bytes of extra chunks at most. */
+   size_t hdr_extra     = hdr ? 72 : 0;
+   size_t _len          = (size_t)(width * height * 3 * DEFLATE_PADDING) + PNG_ROUGH_HEADER + hdr_extra;
    uint8_t *buf         = (uint8_t*)malloc(_len * sizeof(uint8_t));
    if (!buf)
       GOTO_END_ERROR();
@@ -490,7 +584,7 @@ uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
          _len);
 
    ret    = rpng_save_image_stream((const uint8_t*)data,
-            intf_s, width, height, pitch, 3);
+            intf_s, width, height, pitch, 3, hdr);
    *bytes = intfstream_get_ptr(intf_s);
 
    /* Trim the buffer to the actual written size instead of
@@ -516,5 +610,12 @@ end:
       return NULL;
    }
    return buf;
+}
+
+uint8_t* rpng_save_image_bgr24_string(const uint8_t *data,
+      unsigned width, unsigned height, signed pitch, uint64_t* bytes)
+{
+   return rpng_save_image_bgr24_hdr_string(data, width, height, pitch,
+         NULL, bytes);
 }
 
