@@ -1712,127 +1712,127 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
    int ix = ox + (mvx >> 2);
    int iy = oy + (mvy >> 2);
    int x, y;
+   /* The interpolation window is the block plus two samples of margin on
+    * the top/left and three on the bottom/right (8.4.2.2.1). Gathering it
+    * once with the edge clamp baked in lets every filter below run over a
+    * dense patch instead of re-clamping per tap. */
+   uint8_t pat[21 * 21];
+   int pw = bw + 5, ph = bh + 5, r, c;
+   const uint8_t *pc = pat + 2 * pw + 2;    /* patch centre (block origin) */
 
    if (fx == 0 && fy == 0)
    {
       /* full-pel: straight copy */
-      for (y = 0; y < bh; y++)
-         for (x = 0; x < bw; x++)
-            dst[y * dstride + x] =
-               (uint8_t)rh264_ref_luma(ref, rstride, rw, rh, ix + x, iy + y);
+      if (ix >= 0 && iy >= 0 && ix + bw <= rw && iy + bh <= rh)
+      {
+         for (y = 0; y < bh; y++)
+            memcpy(dst + y * dstride, ref + (iy + y) * rstride + ix, (size_t)bw);
+      }
+      else
+         for (y = 0; y < bh; y++)
+            for (x = 0; x < bw; x++)
+               dst[y * dstride + x] = (uint8_t)
+                  rh264_ref_luma(ref, rstride, rw, rh, ix + x, iy + y);
       return;
    }
 
-   for (y = 0; y < bh; y++)
+   if (ix >= 2 && iy >= 2 && ix + bw + 3 <= rw && iy + bh + 3 <= rh)
    {
-      for (x = 0; x < bw; x++)
-      {
-         int sx = ix + x, sy = iy + y;
-         int val;
-#define P(dx,dy) rh264_ref_luma(ref, rstride, rw, rh, sx + (dx), sy + (dy))
-         /* Per 8.4.2.2.1, name the samples by their quarter-pel position
-          * inside the unit cell:
-          *      G  a  b  c  H
-          *      d  e  f  g
-          *      h  i  j  k  m
-          *      n  p  q  r
-          *      M  .  s  .  N
-          * G,H,M,N are integer samples; b,h,j,m,s are half-pels; the rest are
-          * quarter-pels formed by averaging an adjacent half or integer pair. */
-         int G = P(0,0);
-         /* b: horizontal half-pel at (0,0) */
-         int b1 = rh264_tap6(P(-2,0),P(-1,0),P(0,0),P(1,0),P(2,0),P(3,0));
-         int b  = RH264_CLIP((b1 + 16) >> 5);
-         /* h: vertical half-pel at (0,0) */
-         int h1 = rh264_tap6(P(0,-2),P(0,-1),P(0,0),P(0,1),P(0,2),P(0,3));
-         int hh = RH264_CLIP((h1 + 16) >> 5);
-
-         if (fy == 0)
-         {
-            if (fx == 0)      val = G;
-            else if (fx == 2) val = b;
-            else              val = (b + ((fx == 1) ? G : P(1,0)) + 1) >> 1; /* a / c */
-         }
-         else if (fx == 0)
-         {
-            if (fy == 2) val = hh;
-            else         val = (hh + ((fy == 1) ? G : P(0,1)) + 1) >> 1;    /* d / n */
-         }
-         else if (fx == 2 && fy == 2)
-         {
-            /* j: centre half-pel = 6-tap over vertical half-pels of the row */
-            int t0=rh264_tap6(P(-2,-2),P(-1,-2),P(0,-2),P(1,-2),P(2,-2),P(3,-2));
-            int t1=rh264_tap6(P(-2,-1),P(-1,-1),P(0,-1),P(1,-1),P(2,-1),P(3,-1));
-            int t2=rh264_tap6(P(-2, 0),P(-1, 0),P(0, 0),P(1, 0),P(2, 0),P(3, 0));
-            int t3=rh264_tap6(P(-2, 1),P(-1, 1),P(0, 1),P(1, 1),P(2, 1),P(3, 1));
-            int t4=rh264_tap6(P(-2, 2),P(-1, 2),P(0, 2),P(1, 2),P(2, 2),P(3, 2));
-            int t5=rh264_tap6(P(-2, 3),P(-1, 3),P(0, 3),P(1, 3),P(2, 3),P(3, 3));
-            int j = rh264_tap6(t0,t1,t2,t3,t4,t5);
-            val = RH264_CLIP((j + 512) >> 10);
-         }
-         else if (fx == 2)
-         {
-            /* column b half-pel; fy 1 or 3 -> f / q: average b with j */
-            int t0=rh264_tap6(P(-2,-2),P(-1,-2),P(0,-2),P(1,-2),P(2,-2),P(3,-2));
-            int t1=rh264_tap6(P(-2,-1),P(-1,-1),P(0,-1),P(1,-1),P(2,-1),P(3,-1));
-            int t2=rh264_tap6(P(-2, 0),P(-1, 0),P(0, 0),P(1, 0),P(2, 0),P(3, 0));
-            int t3=rh264_tap6(P(-2, 1),P(-1, 1),P(0, 1),P(1, 1),P(2, 1),P(3, 1));
-            int t4=rh264_tap6(P(-2, 2),P(-1, 2),P(0, 2),P(1, 2),P(2, 2),P(3, 2));
-            int t5=rh264_tap6(P(-2, 3),P(-1, 3),P(0, 3),P(1, 3),P(2, 3),P(3, 3));
-            int j = RH264_CLIP((rh264_tap6(t0,t1,t2,t3,t4,t5) + 512) >> 10);
-            /* b half-pel of the adjacent row (y=0 for fy=1, y=1 for fy=3) */
-            int brow = (fy == 1) ? t2 : t3;
-            int bc = RH264_CLIP((brow + 16) >> 5);
-            val = (bc + j + 1) >> 1;
-         }
-         else if (fy == 2)
-         {
-            /* row h half-pel; fx 1 or 3 -> i / k: average h with j */
-            int t0=rh264_tap6(P(-2,-2),P(-1,-2),P(0,-2),P(1,-2),P(2,-2),P(3,-2));
-            int t1=rh264_tap6(P(-2,-1),P(-1,-1),P(0,-1),P(1,-1),P(2,-1),P(3,-1));
-            int t2=rh264_tap6(P(-2, 0),P(-1, 0),P(0, 0),P(1, 0),P(2, 0),P(3, 0));
-            int t3=rh264_tap6(P(-2, 1),P(-1, 1),P(0, 1),P(1, 1),P(2, 1),P(3, 1));
-            int t4=rh264_tap6(P(-2, 2),P(-1, 2),P(0, 2),P(1, 2),P(2, 2),P(3, 2));
-            int t5=rh264_tap6(P(-2, 3),P(-1, 3),P(0, 3),P(1, 3),P(2, 3),P(3, 3));
-            int j = RH264_CLIP((rh264_tap6(t0,t1,t2,t3,t4,t5) + 512) >> 10);
-            /* h half-pel of the adjacent column (x=0 for fx=1, x=1 for fx=3) */
-            int hcol;
-            if (fx == 1)
-               hcol = rh264_tap6(P(0,-2),P(0,-1),P(0,0),P(0,1),P(0,2),P(0,3));
-            else
-               hcol = rh264_tap6(P(1,-2),P(1,-1),P(1,0),P(1,1),P(1,2),P(1,3));
-            { int hc = RH264_CLIP((hcol + 16) >> 5);
-              val = (hc + j + 1) >> 1; }
-         }
-         else
-         {
-            /* Corner quarter-pels e,g,p,r (fx in {1,3}, fy in {1,3}):
-             * average the nearest horizontal half-pel (b, on the top or bottom
-             * edge) with the nearest vertical half-pel (h, on the left or right
-             * edge), per 8.4.2.2.1. */
-            int bx, hy;
-            /* b half-pel on the row toward fy: y=0 (fy=1) or y=1 (fy=3) */
-            if (fy == 1)
-               bx = b;   /* b at (0,0) already computed */
-            else
-            {
-               int bb = rh264_tap6(P(-2,1),P(-1,1),P(0,1),P(1,1),P(2,1),P(3,1));
-               bx = RH264_CLIP((bb + 16) >> 5);
-            }
-            /* h half-pel on the column toward fx: x=0 (fx=1) or x=1 (fx=3) */
-            if (fx == 1)
-               hy = hh;  /* h at (0,0) already computed */
-            else
-            {
-               int hb = rh264_tap6(P(1,-2),P(1,-1),P(1,0),P(1,1),P(1,2),P(1,3));
-               hy = RH264_CLIP((hb + 16) >> 5);
-            }
-            val = (bx + hy + 1) >> 1;
-         }
-#undef P
-         dst[y * dstride + x] = (uint8_t)val;
-      }
+      const uint8_t *s = ref + (iy - 2) * rstride + (ix - 2);
+      for (r = 0; r < ph; r++)
+         memcpy(pat + r * pw, s + r * rstride, (size_t)pw);
    }
+   else
+      for (r = 0; r < ph; r++)
+         for (c = 0; c < pw; c++)
+            pat[r * pw + c] = (uint8_t)
+               rh264_ref_luma(ref, rstride, rw, rh, ix - 2 + c, iy - 2 + r);
+
+#define PP(dx,dy) ((int)pc[(y + (dy)) * pw + x + (dx)])
+#define HTAP(px,py) rh264_tap6((int)pc[(py)*pw+(px)-2],(int)pc[(py)*pw+(px)-1],\
+      (int)pc[(py)*pw+(px)],(int)pc[(py)*pw+(px)+1],\
+      (int)pc[(py)*pw+(px)+2],(int)pc[(py)*pw+(px)+3])
+#define VTAP(px,py) rh264_tap6((int)pc[((py)-2)*pw+(px)],(int)pc[((py)-1)*pw+(px)],\
+      (int)pc[(py)*pw+(px)],(int)pc[((py)+1)*pw+(px)],\
+      (int)pc[((py)+2)*pw+(px)],(int)pc[((py)+3)*pw+(px)])
+
+   if (fy == 0)
+   {
+      /* b half-pels and the a/c quarter-pels beside them */
+      for (y = 0; y < bh; y++)
+         for (x = 0; x < bw; x++)
+         {
+            int b = RH264_CLIP((HTAP(x, y) + 16) >> 5);
+            int val;
+            if (fx == 2)      val = b;
+            else if (fx == 1) val = (b + PP(0,0) + 1) >> 1;
+            else              val = (b + PP(1,0) + 1) >> 1;
+            dst[y * dstride + x] = (uint8_t)val;
+         }
+   }
+   else if (fx == 0)
+   {
+      /* h half-pels and the d/n quarter-pels beside them */
+      for (y = 0; y < bh; y++)
+         for (x = 0; x < bw; x++)
+         {
+            int hh = RH264_CLIP((VTAP(x, y) + 16) >> 5);
+            int val;
+            if (fy == 2)      val = hh;
+            else if (fy == 1) val = (hh + PP(0,0) + 1) >> 1;
+            else              val = (hh + PP(0,1) + 1) >> 1;
+            dst[y * dstride + x] = (uint8_t)val;
+         }
+   }
+   else if (fx == 2 || fy == 2)
+   {
+      /* the centre half-pel j: a vertical 6-tap over rows of raw horizontal
+       * 6-taps. One row of taps serves six output rows, so compute the
+       * bh+5 rows once. */
+      int16_t hb[21 * 16];
+      for (r = 0; r < ph; r++)
+         for (c = 0; c < bw; c++)
+            hb[r * bw + c] = (int16_t)rh264_tap6(
+                  (int)pat[r*pw+c],   (int)pat[r*pw+c+1], (int)pat[r*pw+c+2],
+                  (int)pat[r*pw+c+3], (int)pat[r*pw+c+4], (int)pat[r*pw+c+5]);
+      for (y = 0; y < bh; y++)
+         for (x = 0; x < bw; x++)
+         {
+            int j = RH264_CLIP((rh264_tap6(hb[y*bw+x], hb[(y+1)*bw+x],
+                  hb[(y+2)*bw+x], hb[(y+3)*bw+x], hb[(y+4)*bw+x],
+                  hb[(y+5)*bw+x]) + 512) >> 10);
+            int val;
+            if (fx == 2 && fy == 2)
+               val = j;
+            else if (fx == 2)
+            {
+               /* f / q: average with the b half-pel of the nearer row */
+               int bc = RH264_CLIP((hb[(y + 2 + (fy == 3)) * bw + x] + 16) >> 5);
+               val = (bc + j + 1) >> 1;
+            }
+            else
+            {
+               /* i / k: average with the h half-pel of the nearer column */
+               int hc = RH264_CLIP((VTAP(x + (fx == 3), y) + 16) >> 5);
+               val = (hc + j + 1) >> 1;
+            }
+            dst[y * dstride + x] = (uint8_t)val;
+         }
+   }
+   else
+   {
+      /* corner quarter-pels e,g,p,r: average the nearer b and h half-pels */
+      for (y = 0; y < bh; y++)
+         for (x = 0; x < bw; x++)
+         {
+            int bx = RH264_CLIP((HTAP(x, y + (fy == 3)) + 16) >> 5);
+            int hy = RH264_CLIP((VTAP(x + (fx == 3), y) + 16) >> 5);
+            dst[y * dstride + x] = (uint8_t)((bx + hy + 1) >> 1);
+         }
+   }
+#undef PP
+#undef HTAP
+#undef VTAP
 }
 
 /* Chroma 1/8-pel bilinear MC. mv is the LUMA quarter-pel MV; chroma uses
