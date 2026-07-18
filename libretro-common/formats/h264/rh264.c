@@ -1293,6 +1293,9 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
 
 #ifndef RH264_ABS
 #define RH264_ABS(x) ((x)<0?-(x):(x))
+#ifndef RH264_INLINE
+#define RH264_INLINE
+#endif
 #endif
 static const int rh264_alpha[52]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,5,6,7,8,9,10,12,13,15,17,20,22,25,28,32,36,40,45,50,56,63,71,80,90,101,113,127,144,162,182,203,226,255,255};
 static const int rh264_beta[52]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,3,3,3,3,4,4,4,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18};
@@ -1339,6 +1342,460 @@ static void rh264_filter_luma_edge(uint8_t *e,int s,int bS,int a,int be,int tc0v
    }
 }
 
+#ifdef RH264_SSE2
+/* Store the low four bytes of a packed vector. */
+static RH264_INLINE void rh264_sse2_store4(uint8_t *d, __m128i v)
+{
+   uint32_t t = (uint32_t)_mm_cvtsi128_si32(v);
+   memcpy(d, &t, 4);
+}
+
+/* Load exactly four bytes into the low lanes. */
+static RH264_INLINE __m128i rh264_sse2_load4(const uint8_t *s)
+{
+   uint32_t t;
+   memcpy(&t, s, 4);
+   return _mm_cvtsi32_si128((int)t);
+}
+#endif
+
+#ifdef RH264_NEON
+/* Store the low four bytes of a packed vector. */
+static RH264_INLINE void rh264_neon_store4(uint8_t *d, uint8x8_t v)
+{
+   uint32_t t = vget_lane_u32(vreinterpret_u32_u8(v), 0);
+   memcpy(d, &t, 4);
+}
+
+/* Load exactly four bytes into the low lanes. */
+static RH264_INLINE uint8x8_t rh264_neon_load4(const uint8_t *s)
+{
+   uint32_t t;
+   memcpy(&t, s, 4);
+   return vreinterpret_u8_u32(vdup_n_u32(t));
+}
+#endif
+
+#ifdef RH264_SSE2
+#define RH264_SSE2_ABS16(x) _mm_max_epi16((x), _mm_sub_epi16(_mm_setzero_si128(), (x)))
+#define RH264_SSE2_SEL(m, a, b) _mm_or_si128(_mm_and_si128((m), (a)), _mm_andnot_si128((m), (b)))
+
+/* Transpose an 8x8 byte tile: in[k] and out[j] carry eight bytes in the
+ * low half of each vector. Applying it twice returns the original tile. */
+static void rh264_sse2_tr8x8(const __m128i in[8], __m128i out[8])
+{
+   __m128i t0 = _mm_unpacklo_epi8(in[0], in[1]);
+   __m128i t1 = _mm_unpacklo_epi8(in[2], in[3]);
+   __m128i t2 = _mm_unpacklo_epi8(in[4], in[5]);
+   __m128i t3 = _mm_unpacklo_epi8(in[6], in[7]);
+   __m128i u0 = _mm_unpacklo_epi16(t0, t1);
+   __m128i u1 = _mm_unpackhi_epi16(t0, t1);
+   __m128i u2 = _mm_unpacklo_epi16(t2, t3);
+   __m128i u3 = _mm_unpackhi_epi16(t2, t3);
+   __m128i c0 = _mm_unpacklo_epi32(u0, u2);
+   __m128i c1 = _mm_unpackhi_epi32(u0, u2);
+   __m128i c2 = _mm_unpacklo_epi32(u1, u3);
+   __m128i c3 = _mm_unpackhi_epi32(u1, u3);
+   out[0] = c0; out[1] = _mm_srli_si128(c0, 8);
+   out[2] = c1; out[3] = _mm_srli_si128(c1, 8);
+   out[4] = c2; out[5] = _mm_srli_si128(c2, 8);
+   out[6] = c3; out[7] = _mm_srli_si128(c3, 8);
+}
+
+/* The luma edge filter (8.7.2.3/8.7.2.4) on up to eight lanes held as int16
+ * vectors v[0..7] = p3..q3; filtered p2..q2 are written back into v[1..6].
+ * Inactive lanes compute garbage the caller never stores. */
+static void rh264_sse2_luma_kernel(__m128i v[8], int bS, int a, int be,
+      int tc0v)
+{
+   __m128i p3 = v[0], p2 = v[1], p1 = v[2], p0 = v[3];
+   __m128i q0 = v[4], q1 = v[5], q2 = v[6], q3 = v[7];
+   __m128i va  = _mm_set1_epi16((short)a);
+   __m128i vbe = _mm_set1_epi16((short)be);
+   __m128i d0  = RH264_SSE2_ABS16(_mm_sub_epi16(p0, q0));
+   __m128i filt = _mm_and_si128(_mm_cmplt_epi16(d0, va), _mm_and_si128(
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p1, p0)), vbe),
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(q1, q0)), vbe)));
+   __m128i apl = _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p2, p0)), vbe);
+   __m128i aql = _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(q2, q0)), vbe);
+   if (bS < 4)
+   {
+      __m128i one = _mm_set1_epi16(1);
+      __m128i t0  = _mm_set1_epi16((short)tc0v);
+      __m128i tc  = _mm_add_epi16(t0, _mm_add_epi16(
+            _mm_and_si128(apl, one), _mm_and_si128(aql, one)));
+      __m128i d = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(_mm_sub_epi16(q0, p0), 2),
+            _mm_sub_epi16(p1, q1)), _mm_set1_epi16(4)), 3);
+      __m128i half, dp, dq, np, nq;
+      d = _mm_max_epi16(_mm_min_epi16(d, tc),
+            _mm_sub_epi16(_mm_setzero_si128(), tc));
+      np = _mm_max_epi16(_mm_min_epi16(_mm_add_epi16(p0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      nq = _mm_max_epi16(_mm_min_epi16(_mm_sub_epi16(q0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      v[3] = RH264_SSE2_SEL(filt, np, p0);
+      v[4] = RH264_SSE2_SEL(filt, nq, q0);
+      half = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(p0, q0), one), 1);
+      dp = _mm_srai_epi16(_mm_sub_epi16(_mm_add_epi16(p2, half),
+            _mm_slli_epi16(p1, 1)), 1);
+      dp = _mm_max_epi16(_mm_min_epi16(dp, t0),
+            _mm_sub_epi16(_mm_setzero_si128(), t0));
+      v[2] = RH264_SSE2_SEL(_mm_and_si128(filt, apl),
+            _mm_add_epi16(p1, dp), p1);
+      dq = _mm_srai_epi16(_mm_sub_epi16(_mm_add_epi16(q2, half),
+            _mm_slli_epi16(q1, 1)), 1);
+      dq = _mm_max_epi16(_mm_min_epi16(dq, t0),
+            _mm_sub_epi16(_mm_setzero_si128(), t0));
+      v[5] = RH264_SSE2_SEL(_mm_and_si128(filt, aql),
+            _mm_add_epi16(q1, dq), q1);
+   }
+   else
+   {
+      __m128i two   = _mm_set1_epi16(2);
+      __m128i four  = _mm_set1_epi16(4);
+      __m128i inner = _mm_cmplt_epi16(d0, _mm_set1_epi16((short)((a >> 2) + 2)));
+      __m128i spm = _mm_and_si128(inner, apl);
+      __m128i sqm = _mm_and_si128(inner, aql);
+      __m128i pq0 = _mm_add_epi16(p0, q0);
+      __m128i wkp = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(p1, 1), _mm_add_epi16(p0, q1)), two), 2);
+      __m128i wkq = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(q1, 1), _mm_add_epi16(q0, p1)), two), 2);
+      __m128i stp0 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(p2,
+            _mm_slli_epi16(_mm_add_epi16(p1, pq0), 1)),
+            _mm_add_epi16(q1, four)), 3);
+      __m128i stp1 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(p2,
+            _mm_add_epi16(p1, pq0)), two), 2);
+      __m128i stp2 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(p3, 1), _mm_add_epi16(
+            _mm_add_epi16(_mm_slli_epi16(p2, 1), p2), p1)),
+            _mm_add_epi16(pq0, four)), 3);
+      __m128i stq0 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(q2,
+            _mm_slli_epi16(_mm_add_epi16(q1, pq0), 1)),
+            _mm_add_epi16(p1, four)), 3);
+      __m128i stq1 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(q2,
+            _mm_add_epi16(q1, pq0)), two), 2);
+      __m128i stq2 = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(q3, 1), _mm_add_epi16(
+            _mm_add_epi16(_mm_slli_epi16(q2, 1), q2), q1)),
+            _mm_add_epi16(pq0, four)), 3);
+      v[3] = RH264_SSE2_SEL(filt, RH264_SSE2_SEL(spm, stp0, wkp), p0);
+      v[2] = RH264_SSE2_SEL(_mm_and_si128(filt, spm), stp1, p1);
+      v[1] = RH264_SSE2_SEL(_mm_and_si128(filt, spm), stp2, p2);
+      v[4] = RH264_SSE2_SEL(filt, RH264_SSE2_SEL(sqm, stq0, wkq), q0);
+      v[5] = RH264_SSE2_SEL(_mm_and_si128(filt, sqm), stq1, q1);
+      v[6] = RH264_SSE2_SEL(_mm_and_si128(filt, sqm), stq2, q2);
+   }
+}
+
+/* The chroma edge filter (8.7.2.3/8.7.2.4) on int16 lanes v[0..3] =
+ * p1,p0,q0,q1; filtered p0/q0 land in v[1]/v[2]. */
+static void rh264_sse2_chroma_kernel(__m128i v[4], int bS, int a, int be,
+      int tc0v)
+{
+   __m128i p1 = v[0], p0 = v[1], q0 = v[2], q1 = v[3];
+   __m128i va  = _mm_set1_epi16((short)a);
+   __m128i vbe = _mm_set1_epi16((short)be);
+   __m128i filt = _mm_and_si128(
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p0, q0)), va),
+         _mm_and_si128(
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p1, p0)), vbe),
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(q1, q0)), vbe)));
+   if (bS < 4)
+   {
+      __m128i tc = _mm_set1_epi16((short)(tc0v + 1));
+      __m128i d = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(_mm_sub_epi16(q0, p0), 2),
+            _mm_sub_epi16(p1, q1)), _mm_set1_epi16(4)), 3);
+      __m128i np, nq;
+      d = _mm_max_epi16(_mm_min_epi16(d, tc),
+            _mm_sub_epi16(_mm_setzero_si128(), tc));
+      np = _mm_max_epi16(_mm_min_epi16(_mm_add_epi16(p0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      nq = _mm_max_epi16(_mm_min_epi16(_mm_sub_epi16(q0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      v[1] = RH264_SSE2_SEL(filt, np, p0);
+      v[2] = RH264_SSE2_SEL(filt, nq, q0);
+   }
+   else
+   {
+      __m128i two = _mm_set1_epi16(2);
+      __m128i np = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(p1, 1), _mm_add_epi16(p0, q1)), two), 2);
+      __m128i nq = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(q1, 1), _mm_add_epi16(q0, p1)), two), 2);
+      v[1] = RH264_SSE2_SEL(filt, np, p0);
+      v[2] = RH264_SSE2_SEL(filt, nq, q0);
+   }
+}
+#endif
+
+#ifdef RH264_NEON
+#define RH264_NEON_SEL(m, a, b) vbslq_s16((m), (a), (b))
+
+/* Transpose an 8x8 byte tile held as eight uint8x8_t rows. */
+static void rh264_neon_tr8x8(const uint8x8_t in[8], uint8x8_t out[8])
+{
+   uint8x8x2_t a0 = vtrn_u8(in[0], in[1]);
+   uint8x8x2_t a1 = vtrn_u8(in[2], in[3]);
+   uint8x8x2_t a2 = vtrn_u8(in[4], in[5]);
+   uint8x8x2_t a3 = vtrn_u8(in[6], in[7]);
+   uint16x4x2_t b0 = vtrn_u16(vreinterpret_u16_u8(a0.val[0]),
+                              vreinterpret_u16_u8(a1.val[0]));
+   uint16x4x2_t b1 = vtrn_u16(vreinterpret_u16_u8(a0.val[1]),
+                              vreinterpret_u16_u8(a1.val[1]));
+   uint16x4x2_t b2 = vtrn_u16(vreinterpret_u16_u8(a2.val[0]),
+                              vreinterpret_u16_u8(a3.val[0]));
+   uint16x4x2_t b3 = vtrn_u16(vreinterpret_u16_u8(a2.val[1]),
+                              vreinterpret_u16_u8(a3.val[1]));
+   uint32x2x2_t c0 = vtrn_u32(vreinterpret_u32_u16(b0.val[0]),
+                              vreinterpret_u32_u16(b2.val[0]));
+   uint32x2x2_t c1 = vtrn_u32(vreinterpret_u32_u16(b1.val[0]),
+                              vreinterpret_u32_u16(b3.val[0]));
+   uint32x2x2_t c2 = vtrn_u32(vreinterpret_u32_u16(b0.val[1]),
+                              vreinterpret_u32_u16(b2.val[1]));
+   uint32x2x2_t c3 = vtrn_u32(vreinterpret_u32_u16(b1.val[1]),
+                              vreinterpret_u32_u16(b3.val[1]));
+   out[0] = vreinterpret_u8_u32(c0.val[0]);
+   out[1] = vreinterpret_u8_u32(c1.val[0]);
+   out[2] = vreinterpret_u8_u32(c2.val[0]);
+   out[3] = vreinterpret_u8_u32(c3.val[0]);
+   out[4] = vreinterpret_u8_u32(c0.val[1]);
+   out[5] = vreinterpret_u8_u32(c1.val[1]);
+   out[6] = vreinterpret_u8_u32(c2.val[1]);
+   out[7] = vreinterpret_u8_u32(c3.val[1]);
+}
+
+/* Luma edge filter on int16 lanes, mirroring the SSE2 kernel. */
+static void rh264_neon_luma_kernel(int16x8_t v[8], int bS, int a, int be,
+      int tc0v)
+{
+   int16x8_t p3 = v[0], p2 = v[1], p1 = v[2], p0 = v[3];
+   int16x8_t q0 = v[4], q1 = v[5], q2 = v[6], q3 = v[7];
+   int16x8_t va  = vdupq_n_s16((int16_t)a);
+   int16x8_t vbe = vdupq_n_s16((int16_t)be);
+   int16x8_t d0  = vabsq_s16(vsubq_s16(p0, q0));
+   uint16x8_t filt = vandq_u16(vcltq_s16(d0, va), vandq_u16(
+         vcltq_s16(vabsq_s16(vsubq_s16(p1, p0)), vbe),
+         vcltq_s16(vabsq_s16(vsubq_s16(q1, q0)), vbe)));
+   uint16x8_t apl = vcltq_s16(vabsq_s16(vsubq_s16(p2, p0)), vbe);
+   uint16x8_t aql = vcltq_s16(vabsq_s16(vsubq_s16(q2, q0)), vbe);
+   if (bS < 4)
+   {
+      int16x8_t one = vdupq_n_s16(1);
+      int16x8_t t0  = vdupq_n_s16((int16_t)tc0v);
+      int16x8_t tc  = vaddq_s16(t0, vaddq_s16(
+            vandq_s16(vreinterpretq_s16_u16(apl), one),
+            vandq_s16(vreinterpretq_s16_u16(aql), one)));
+      int16x8_t d = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(vsubq_s16(q0, p0), 2),
+            vsubq_s16(p1, q1)), vdupq_n_s16(4)), 3);
+      int16x8_t half, dp, dq, np, nq;
+      d = vmaxq_s16(vminq_s16(d, tc), vnegq_s16(tc));
+      np = vmaxq_s16(vminq_s16(vaddq_s16(p0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      nq = vmaxq_s16(vminq_s16(vsubq_s16(q0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      v[3] = RH264_NEON_SEL(filt, np, p0);
+      v[4] = RH264_NEON_SEL(filt, nq, q0);
+      half = vshrq_n_s16(vaddq_s16(vaddq_s16(p0, q0), one), 1);
+      dp = vshrq_n_s16(vsubq_s16(vaddq_s16(p2, half), vshlq_n_s16(p1, 1)), 1);
+      dp = vmaxq_s16(vminq_s16(dp, t0), vnegq_s16(t0));
+      v[2] = RH264_NEON_SEL(vandq_u16(filt, apl), vaddq_s16(p1, dp), p1);
+      dq = vshrq_n_s16(vsubq_s16(vaddq_s16(q2, half), vshlq_n_s16(q1, 1)), 1);
+      dq = vmaxq_s16(vminq_s16(dq, t0), vnegq_s16(t0));
+      v[5] = RH264_NEON_SEL(vandq_u16(filt, aql), vaddq_s16(q1, dq), q1);
+   }
+   else
+   {
+      int16x8_t two  = vdupq_n_s16(2);
+      int16x8_t four = vdupq_n_s16(4);
+      uint16x8_t inner = vcltq_s16(d0, vdupq_n_s16((int16_t)((a >> 2) + 2)));
+      uint16x8_t spm = vandq_u16(inner, apl);
+      uint16x8_t sqm = vandq_u16(inner, aql);
+      int16x8_t pq0 = vaddq_s16(p0, q0);
+      int16x8_t wkp = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(p1, 1), vaddq_s16(p0, q1)), two), 2);
+      int16x8_t wkq = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(q1, 1), vaddq_s16(q0, p1)), two), 2);
+      int16x8_t stp0 = vshrq_n_s16(vaddq_s16(vaddq_s16(p2,
+            vshlq_n_s16(vaddq_s16(p1, pq0), 1)), vaddq_s16(q1, four)), 3);
+      int16x8_t stp1 = vshrq_n_s16(vaddq_s16(vaddq_s16(p2,
+            vaddq_s16(p1, pq0)), two), 2);
+      int16x8_t stp2 = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(p3, 1), vaddq_s16(
+            vaddq_s16(vshlq_n_s16(p2, 1), p2), p1)),
+            vaddq_s16(pq0, four)), 3);
+      int16x8_t stq0 = vshrq_n_s16(vaddq_s16(vaddq_s16(q2,
+            vshlq_n_s16(vaddq_s16(q1, pq0), 1)), vaddq_s16(p1, four)), 3);
+      int16x8_t stq1 = vshrq_n_s16(vaddq_s16(vaddq_s16(q2,
+            vaddq_s16(q1, pq0)), two), 2);
+      int16x8_t stq2 = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(q3, 1), vaddq_s16(
+            vaddq_s16(vshlq_n_s16(q2, 1), q2), q1)),
+            vaddq_s16(pq0, four)), 3);
+      v[3] = RH264_NEON_SEL(filt, RH264_NEON_SEL(spm, stp0, wkp), p0);
+      v[2] = RH264_NEON_SEL(vandq_u16(filt, spm), stp1, p1);
+      v[1] = RH264_NEON_SEL(vandq_u16(filt, spm), stp2, p2);
+      v[4] = RH264_NEON_SEL(filt, RH264_NEON_SEL(sqm, stq0, wkq), q0);
+      v[5] = RH264_NEON_SEL(vandq_u16(filt, sqm), stq1, q1);
+      v[6] = RH264_NEON_SEL(vandq_u16(filt, sqm), stq2, q2);
+   }
+}
+
+/* Chroma edge filter on int16 lanes v[0..3] = p1,p0,q0,q1. */
+static void rh264_neon_chroma_kernel(int16x8_t v[4], int bS, int a, int be,
+      int tc0v)
+{
+   int16x8_t p1 = v[0], p0 = v[1], q0 = v[2], q1 = v[3];
+   int16x8_t va  = vdupq_n_s16((int16_t)a);
+   int16x8_t vbe = vdupq_n_s16((int16_t)be);
+   uint16x8_t filt = vandq_u16(
+         vcltq_s16(vabsq_s16(vsubq_s16(p0, q0)), va), vandq_u16(
+         vcltq_s16(vabsq_s16(vsubq_s16(p1, p0)), vbe),
+         vcltq_s16(vabsq_s16(vsubq_s16(q1, q0)), vbe)));
+   if (bS < 4)
+   {
+      int16x8_t tc = vdupq_n_s16((int16_t)(tc0v + 1));
+      int16x8_t d = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(vsubq_s16(q0, p0), 2),
+            vsubq_s16(p1, q1)), vdupq_n_s16(4)), 3);
+      int16x8_t np, nq;
+      d = vmaxq_s16(vminq_s16(d, tc), vnegq_s16(tc));
+      np = vmaxq_s16(vminq_s16(vaddq_s16(p0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      nq = vmaxq_s16(vminq_s16(vsubq_s16(q0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      v[1] = RH264_NEON_SEL(filt, np, p0);
+      v[2] = RH264_NEON_SEL(filt, nq, q0);
+   }
+   else
+   {
+      int16x8_t two = vdupq_n_s16(2);
+      int16x8_t np = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(p1, 1), vaddq_s16(p0, q1)), two), 2);
+      int16x8_t nq = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(q1, 1), vaddq_s16(q0, p1)), two), 2);
+      v[1] = RH264_NEON_SEL(filt, np, p0);
+      v[2] = RH264_NEON_SEL(filt, nq, q0);
+   }
+}
+#endif
+
+/* Filter n lanes of a luma edge: lane k's samples sit at e + k*ls + i*s
+ * for i in -4..3. Same arithmetic per lane as rh264_filter_luma_edge. */
+static void rh264_filter_luma_edge_n(uint8_t *e, int s, int ls, int n,
+      int bS, int a, int be, int tc0v)
+{
+   int k = 0;
+#ifdef RH264_SSE2
+   if (ls == 1)
+   {
+      /* lanes contiguous; samples at row offsets across the edge */
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 8 <= n; k += 8)
+      {
+         __m128i v[8];
+         int i;
+         for (i = 0; i < 8; i++)
+            v[i] = _mm_unpacklo_epi8(_mm_loadl_epi64(
+                  (const __m128i*)(e + k + (i - 4) * s)), vz);
+         rh264_sse2_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 1; i < 7; i++)
+            _mm_storel_epi64((__m128i*)(e + k + (i - 4) * s),
+                  _mm_packus_epi16(v[i], v[i]));
+      }
+      if (k + 4 <= n)
+      {
+         __m128i v[8];
+         int i;
+         for (i = 0; i < 8; i++)
+            v[i] = _mm_unpacklo_epi8(rh264_sse2_load4(e + k + (i - 4) * s), vz);
+         rh264_sse2_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 1; i < 7; i++)
+            rh264_sse2_store4(e + k + (i - 4) * s,
+                  _mm_packus_epi16(v[i], v[i]));
+         k += 4;
+      }
+   }
+   else if (s == 1)
+   {
+      /* lanes down the rows; transpose an 8-wide tile per pass */
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 4 <= n; )
+      {
+         int rows = (k + 8 <= n) ? 8 : 4, i;
+         __m128i r[8], c[8], v[8];
+         for (i = 0; i < rows; i++)
+            r[i] = _mm_loadl_epi64((const __m128i*)(e + (k + i) * ls - 4));
+         for (; i < 8; i++) r[i] = vz;
+         rh264_sse2_tr8x8(r, c);
+         for (i = 0; i < 8; i++)
+            v[i] = _mm_unpacklo_epi8(c[i], vz);
+         rh264_sse2_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 0; i < 8; i++)
+            c[i] = _mm_packus_epi16(v[i], v[i]);
+         rh264_sse2_tr8x8(c, r);
+         for (i = 0; i < rows; i++)
+            _mm_storel_epi64((__m128i*)(e + (k + i) * ls - 4), r[i]);
+         k += rows;
+      }
+   }
+#elif defined(RH264_NEON)
+   if (ls == 1)
+   {
+      for (; k + 8 <= n; k += 8)
+      {
+         int16x8_t v[8];
+         int i;
+         for (i = 0; i < 8; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(
+                  vld1_u8(e + k + (i - 4) * s)));
+         rh264_neon_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 1; i < 7; i++)
+            vst1_u8(e + k + (i - 4) * s, vqmovun_s16(v[i]));
+      }
+      if (k + 4 <= n)
+      {
+         int16x8_t v[8];
+         int i;
+         for (i = 0; i < 8; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(
+                  rh264_neon_load4(e + k + (i - 4) * s)));
+         rh264_neon_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 1; i < 7; i++)
+            rh264_neon_store4(e + k + (i - 4) * s, vqmovun_s16(v[i]));
+         k += 4;
+      }
+   }
+   else if (s == 1)
+   {
+      for (; k + 4 <= n; )
+      {
+         int rows = (k + 8 <= n) ? 8 : 4, i;
+         uint8x8_t r[8], c[8];
+         int16x8_t v[8];
+         for (i = 0; i < rows; i++)
+            r[i] = vld1_u8(e + (k + i) * ls - 4);
+         for (; i < 8; i++) r[i] = vdup_n_u8(0);
+         rh264_neon_tr8x8(r, c);
+         for (i = 0; i < 8; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(c[i]));
+         rh264_neon_luma_kernel(v, bS, a, be, tc0v);
+         for (i = 0; i < 8; i++)
+            c[i] = vqmovun_s16(v[i]);
+         rh264_neon_tr8x8(c, r);
+         for (i = 0; i < rows; i++)
+            vst1_u8(e + (k + i) * ls - 4, r[i]);
+         k += rows;
+      }
+   }
+#endif
+   for (; k < n; k++)
+      rh264_filter_luma_edge(e + k * ls, s, bS, a, be, tc0v);
+}
+
 /* Filter one chroma sample across an edge. */
 static void rh264_filter_chroma_edge(uint8_t *e,int s,int bS,int a,int be,int tc0v)
 {
@@ -1355,6 +1812,116 @@ static void rh264_filter_chroma_edge(uint8_t *e,int s,int bS,int a,int be,int tc
    }
 }
 
+/* Filter n lanes of a chroma edge, laid out as for the luma variant. */
+static void rh264_filter_chroma_edge_n(uint8_t *e, int s, int ls, int n,
+      int bS, int a, int be, int tc0v)
+{
+   int k = 0;
+#ifdef RH264_SSE2
+   if (ls == 1)
+   {
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 8 <= n; k += 8)
+      {
+         __m128i v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = _mm_unpacklo_epi8(_mm_loadl_epi64(
+                  (const __m128i*)(e + k + (i - 2) * s)), vz);
+         rh264_sse2_chroma_kernel(v, bS, a, be, tc0v);
+         _mm_storel_epi64((__m128i*)(e + k - s), _mm_packus_epi16(v[1], v[1]));
+         _mm_storel_epi64((__m128i*)(e + k),     _mm_packus_epi16(v[2], v[2]));
+      }
+      if (k + 4 <= n)
+      {
+         __m128i v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = _mm_unpacklo_epi8(rh264_sse2_load4(e + k + (i - 2) * s), vz);
+         rh264_sse2_chroma_kernel(v, bS, a, be, tc0v);
+         rh264_sse2_store4(e + k - s, _mm_packus_epi16(v[1], v[1]));
+         rh264_sse2_store4(e + k,     _mm_packus_epi16(v[2], v[2]));
+         k += 4;
+      }
+   }
+   else if (s == 1)
+   {
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 4 <= n; )
+      {
+         int rows = (k + 8 <= n) ? 8 : 4, i;
+         __m128i r[8], c[8], v[4];
+         for (i = 0; i < rows; i++)
+            r[i] = rh264_sse2_load4(e + (k + i) * ls - 2);
+         for (; i < 8; i++) r[i] = vz;
+         rh264_sse2_tr8x8(r, c);
+         for (i = 0; i < 4; i++)
+            v[i] = _mm_unpacklo_epi8(c[i], vz);
+         rh264_sse2_chroma_kernel(v, bS, a, be, tc0v);
+         for (i = 0; i < 4; i++)
+            c[i] = _mm_packus_epi16(v[i], v[i]);
+         for (; i < 8; i++) c[i] = vz;
+         rh264_sse2_tr8x8(c, r);
+         for (i = 0; i < rows; i++)
+            rh264_sse2_store4(e + (k + i) * ls - 2, r[i]);
+         k += rows;
+      }
+   }
+#elif defined(RH264_NEON)
+   if (ls == 1)
+   {
+      for (; k + 8 <= n; k += 8)
+      {
+         int16x8_t v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(
+                  vld1_u8(e + k + (i - 2) * s)));
+         rh264_neon_chroma_kernel(v, bS, a, be, tc0v);
+         vst1_u8(e + k - s, vqmovun_s16(v[1]));
+         vst1_u8(e + k,     vqmovun_s16(v[2]));
+      }
+      if (k + 4 <= n)
+      {
+         int16x8_t v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(
+                  rh264_neon_load4(e + k + (i - 2) * s)));
+         rh264_neon_chroma_kernel(v, bS, a, be, tc0v);
+         rh264_neon_store4(e + k - s, vqmovun_s16(v[1]));
+         rh264_neon_store4(e + k,     vqmovun_s16(v[2]));
+         k += 4;
+      }
+   }
+   else if (s == 1)
+   {
+      for (; k + 4 <= n; )
+      {
+         int rows = (k + 8 <= n) ? 8 : 4, i;
+         uint8x8_t r[8], c[8];
+         int16x8_t v[4];
+         for (i = 0; i < rows; i++)
+            r[i] = rh264_neon_load4(e + (k + i) * ls - 2);
+         for (; i < 8; i++) r[i] = vdup_n_u8(0);
+         rh264_neon_tr8x8(r, c);
+         for (i = 0; i < 4; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(c[i]));
+         rh264_neon_chroma_kernel(v, bS, a, be, tc0v);
+         for (i = 0; i < 4; i++)
+            c[i] = vqmovun_s16(v[i]);
+         for (; i < 8; i++) c[i] = vdup_n_u8(0);
+         rh264_neon_tr8x8(c, r);
+         for (i = 0; i < rows; i++)
+            rh264_neon_store4(e + (k + i) * ls - 2, r[i]);
+         k += rows;
+      }
+   }
+#endif
+   for (; k < n; k++)
+      rh264_filter_chroma_edge(e + k * ls, s, bS, a, be, tc0v);
+}
+
 /* In-loop deblocking (8.7) for an all-intra frame. */
 /* Deblock an all-intra picture. Parameters come per macroblock from the
  * slice that macroblock belongs to (idc/oA/oB indexed by f->mbslice, 8.7):
@@ -1363,7 +1930,7 @@ static void rh264_filter_chroma_edge(uint8_t *e,int s,int bS,int a,int be,int tc
 static void rh264_deblock(rh264_frame *f, const signed char *sidc,
       const signed char *soA, const signed char *soB)
 {
-   int mbx,mby,edge,i;
+   int mbx,mby,edge;
    for(mby=0;mby<f->mbh;mby++)
    for(mbx=0;mbx<f->mbw;mbx++)
    {
@@ -1388,10 +1955,11 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
          idxA=qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
          idxB=qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
          a=rh264_alpha[idxA]; be=rh264_beta[idxB]; t=rh264_tc0[bS==4?2:bS-1][idxA];
-         for(i=0;i<16;i++){ uint8_t *e=f->Y+(mby*16+i)*f->ystride+x; rh264_filter_luma_edge(e,1,bS,a,be,t); }
+         rh264_filter_luma_edge_n(f->Y+(mby*16)*f->ystride+x, 1,
+               f->ystride, 16, bS, a, be, t);
          /* chroma: only on even edges (0 and 8 luma -> chroma 0,4) */
          if((edge&1)==0){
-            int cx=mbx*8+(edge>>1)*4, ci, cc;
+            int cx=mbx*8+(edge>>1)*4, cc;
             for(cc=0;cc<2;cc++){
                int coff=cc?f->chroma_qp_offset2:f->chroma_qp_offset;
                int qc=rh264_chroma_qp(qp,coff);
@@ -1400,8 +1968,8 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
                uint8_t *pl=cc?f->V:f->U;
                if(cA<0)cA=0;else if(cA>51)cA=51; if(cB<0)cB=0;else if(cB>51)cB=51;
                ca=rh264_alpha[cA];cbe=rh264_beta[cB];ct=rh264_tc0[bS==4?2:bS-1][cA];
-               for(ci=0;ci<8;ci++)
-                  rh264_filter_chroma_edge(pl+(mby*8+ci)*f->cstride+cx,1,bS,ca,cbe,ct);
+               rh264_filter_chroma_edge_n(pl+(mby*8)*f->cstride+cx, 1,
+                     f->cstride, 8, bS, ca, cbe, ct);
             }
          }
       }
@@ -1420,9 +1988,10 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
          idxA=qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
          idxB=qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
          a=rh264_alpha[idxA]; be=rh264_beta[idxB]; t=rh264_tc0[bS==4?2:bS-1][idxA];
-         for(i=0;i<16;i++){ uint8_t *e=f->Y+y*f->ystride+(mbx*16+i); rh264_filter_luma_edge(e,f->ystride,bS,a,be,t); }
+         rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
+               1, 16, bS, a, be, t);
          if((edge&1)==0){
-            int cy=mby*8+(edge>>1)*4, ci, cc;
+            int cy=mby*8+(edge>>1)*4, cc;
             for(cc=0;cc<2;cc++){
                int coff=cc?f->chroma_qp_offset2:f->chroma_qp_offset;
                int qc=rh264_chroma_qp(qp,coff);
@@ -1431,8 +2000,8 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
                uint8_t *pl=cc?f->V:f->U;
                if(cA<0)cA=0;else if(cA>51)cA=51; if(cB<0)cB=0;else if(cB>51)cB=51;
                ca=rh264_alpha[cA];cbe=rh264_beta[cB];ct=rh264_tc0[bS==4?2:bS-1][cA];
-               for(ci=0;ci<8;ci++)
-                  rh264_filter_chroma_edge(pl+cy*f->cstride+(mbx*8+ci),f->cstride,bS,ca,cbe,ct);
+               rh264_filter_chroma_edge_n(pl+cy*f->cstride+mbx*8,
+                     f->cstride, 1, 8, bS, ca, cbe, ct);
             }
          }
       }
@@ -1677,9 +2246,6 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
 /* ==================== rh264_inter.h ==================== */
 /* Inter prediction: luma sub-pel interpolation (all 15 fractional
  * positions, 8.4.2.2.1) and chroma 1/8-pel bilinear (8.4.2.2.2). */
-#ifndef RH264_INLINE
-#define RH264_INLINE
-#endif
 /* rh264 inter prediction (motion compensation) for P/B slices, 4:2:0.
  * Luma uses the 6-tap half-pel filter (8.4.2.2.1) plus bilinear quarter-pel.
  * Chroma uses 1/8-pel bilinear (8.4.2.2.2). Reference samples are clamped to
@@ -1781,39 +2347,8 @@ static RH264_INLINE __m128i rh264_sse2_j8(const int16_t *r0, const int16_t *r1,
 }
 #endif
 
-#ifdef RH264_SSE2
-/* Store the low four bytes of a packed vector. */
-static RH264_INLINE void rh264_sse2_store4(uint8_t *d, __m128i v)
-{
-   uint32_t t = (uint32_t)_mm_cvtsi128_si32(v);
-   memcpy(d, &t, 4);
-}
-
-/* Load exactly four bytes into the low lanes. */
-static RH264_INLINE __m128i rh264_sse2_load4(const uint8_t *s)
-{
-   uint32_t t;
-   memcpy(&t, s, 4);
-   return _mm_cvtsi32_si128((int)t);
-}
-#endif
 
 #ifdef RH264_NEON
-/* Store the low four bytes of a packed vector. */
-static RH264_INLINE void rh264_neon_store4(uint8_t *d, uint8x8_t v)
-{
-   uint32_t t = vget_lane_u32(vreinterpret_u32_u8(v), 0);
-   memcpy(d, &t, 4);
-}
-
-/* Load exactly four bytes into the low lanes. */
-static RH264_INLINE uint8x8_t rh264_neon_load4(const uint8_t *s)
-{
-   uint32_t t;
-   memcpy(&t, s, 4);
-   return vreinterpret_u8_u32(vdup_n_u32(t));
-}
-
 /* Raw 6-tap (1,-5,20,20,-5,1) for eight consecutive positions; the value
  * range -2550..10710 fits int16. */
 static RH264_INLINE int16x8_t rh264_neon_tap6_u8(const uint8_t *p0,
@@ -3989,15 +4524,14 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
             int bS = rh264_inter_bs(mbedge, mp->intra, mq->intra,
                   rh264_bs_nz(f, gw, gxp, gy), rh264_bs_nz(f, gw, gxq, gy),
                   mp, mq);
-            int a, be, t, idxA, idxB, i;
+            int a, be, t, idxA, idxB;
             if (bS == 0) continue;
             idxA = qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
             idxB = qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
             a = rh264_alpha[idxA]; be = rh264_beta[idxB];
             t = rh264_tc0[bS==4?2:bS-1][idxA];
-            for (i = 0; i < 4; i++)
-            { uint8_t *e = f->Y + (mby*16+seg*4+i)*f->ystride + x;
-              rh264_filter_luma_edge(e, 1, bS, a, be, t); }
+            rh264_filter_luma_edge_n(f->Y + (mby*16+seg*4)*f->ystride + x,
+                  1, f->ystride, 4, bS, a, be, t);
             /* chroma on even luma edges; two chroma rows per luma segment */
             if ((edge&1)==0)
             {
@@ -4045,15 +4579,14 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
             int bS = rh264_inter_bs(mbedge, mp->intra, mq->intra,
                   rh264_bs_nz(f, gw, gx, gyp), rh264_bs_nz(f, gw, gx, gyq),
                   mp, mq);
-            int a, be, t, idxA, idxB, i;
+            int a, be, t, idxA, idxB;
             if (bS == 0) continue;
             idxA = qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
             idxB = qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
             a = rh264_alpha[idxA]; be = rh264_beta[idxB];
             t = rh264_tc0[bS==4?2:bS-1][idxA];
-            for (i = 0; i < 4; i++)
-            { uint8_t *e = f->Y + y*f->ystride + (mbx*16+seg*4+i);
-              rh264_filter_luma_edge(e, f->ystride, bS, a, be, t); }
+            rh264_filter_luma_edge_n(f->Y + y*f->ystride + mbx*16 + seg*4,
+                  f->ystride, 1, 4, bS, a, be, t);
             if ((edge&1)==0)
             {
                int cy = mby*8 + (edge>>1)*4, cc;
