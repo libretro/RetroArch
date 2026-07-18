@@ -245,6 +245,10 @@ typedef struct
    const uint8_t *cat6_prob;
    int      cat6_bits;
 
+   /* pixel width the frame buffers were allocated for (8 or 10);
+    * set on first frame, streams may not switch mid-way */
+   int      fb_bit_depth;
+
    rvp9_tran dqcoeff[32 * 32];
    int      max_blocks_wide, max_blocks_high;  /* token ctx trunc  */
    int      mb_to_right_edge, mb_to_bottom_edge; /* in 1/8 pel *8  */

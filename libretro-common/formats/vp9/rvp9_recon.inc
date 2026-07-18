@@ -17,13 +17,905 @@
 #if RVP9_RECON_PART == 1
 
 /* ==================================================================== */
+/* Inverse transforms, ported from vpx_dsp/inv_txfm.c (generic C).      */
+/* ==================================================================== */
+#define RVP9_DCT_CONST_BITS 14
+static INLINE int rvp9_round_shift(int64_t in)
+{
+   return (int)((in + (1 << (RVP9_DCT_CONST_BITS - 1))) >> RVP9_DCT_CONST_BITS);
+}
+static INLINE int rvp9_clamp(int v, int lo, int hi)
+{
+   return v < lo ? lo : v > hi ? hi : v;
+}
+
+static INLINE RVP9_PIXEL rvp9_clip8(int v)
+{
+   return (RVP9_PIXEL)(v < 0 ? 0 : v > RVP9_PXMAX ? RVP9_PXMAX : v);
+}
+/* cospi/sinpi constants (vpx_dsp/txfm_common.h) */
+#define c1_p64  16364
+#define RVP9_WRAP(x) (x)
+static const int64_t rvp9_cospi64[32] = {
+   16384, 16364, 16305, 16207, 16069, 15893, 15679, 15426,
+   15137, 14811, 14449, 14053, 13623, 13160, 12665, 12140,
+   11585, 11003, 10394,  9760,  9102,  8423,  7723,  7005,
+    6270,  5520,  4756,  3981,  3196,  2404,  1606,   804
+};
+static const int64_t rvp9_sinpi[5] = { 0, 5283, 9929, 13377, 15212 };
+
+
+static void rvp9_idct4(const rvp9_tran *input, rvp9_tran *output)
+{
+   RVP9_TRAN_STEP step[4];
+   int64_t temp1, temp2;
+   temp1 = ((int)input[0] + input[2]) * rvp9_cospi64[16];
+   temp2 = ((int)input[0] - input[2]) * rvp9_cospi64[16];
+   step[0] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step[1] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   temp1 = (int)input[1] * rvp9_cospi64[24] - (int)input[3] * rvp9_cospi64[8];
+   temp2 = (int)input[1] * rvp9_cospi64[8]  + (int)input[3] * rvp9_cospi64[24];
+   step[2] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step[3] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   output[0] = step[0] + step[3];
+   output[1] = step[1] + step[2];
+   output[2] = step[1] - step[2];
+   output[3] = step[0] - step[3];
+}
+
+static void rvp9_iadst4(const rvp9_tran *input, rvp9_tran *output)
+{
+   int64_t s0, s1, s2, s3, s4, s5, s6, s7;
+   int64_t x0 = input[0], x1 = input[1], x2 = input[2], x3 = input[3];
+   if (!(x0 | x1 | x2 | x3))
+   {
+      output[0] = output[1] = output[2] = output[3] = 0;
+      return;
+   }
+   s0 = rvp9_sinpi[1] * x0;
+   s1 = rvp9_sinpi[2] * x0;
+   s2 = rvp9_sinpi[3] * x1;
+   s3 = rvp9_sinpi[4] * x2;
+   s4 = rvp9_sinpi[1] * x2;
+   s5 = rvp9_sinpi[2] * x3;
+   s6 = rvp9_sinpi[4] * x3;
+   s7 = (int)(x0 - x2 + x3);
+   x0 = s0 + s3 + s5;
+   x1 = s1 - s4 - s6;
+   x2 = rvp9_sinpi[3] * s7;
+   x3 = s2;
+   s0 = x0 + x3;
+   s1 = x1 + x3;
+   s2 = x2;
+   s3 = x0 + x1 - x3;
+   output[0] = rvp9_round_shift(s0);
+   output[1] = rvp9_round_shift(s1);
+   output[2] = rvp9_round_shift(s2);
+   output[3] = rvp9_round_shift(s3);
+}
+
+static void rvp9_idct8(const rvp9_tran *input, rvp9_tran *output)
+{
+   RVP9_TRAN_STEP step1[8], step2[8];
+   int64_t temp1, temp2;
+   step1[0] = (RVP9_TRAN_STEP)input[0];
+   step1[2] = (RVP9_TRAN_STEP)input[4];
+   step1[1] = (RVP9_TRAN_STEP)input[2];
+   step1[3] = (RVP9_TRAN_STEP)input[6];
+   temp1 = (int)input[1] * rvp9_cospi64[28] - (int)input[7] * rvp9_cospi64[4];
+   temp2 = (int)input[1] * rvp9_cospi64[4]  + (int)input[7] * rvp9_cospi64[28];
+   step1[4] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step1[7] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   temp1 = (int)input[5] * rvp9_cospi64[12] - (int)input[3] * rvp9_cospi64[20];
+   temp2 = (int)input[5] * rvp9_cospi64[20] + (int)input[3] * rvp9_cospi64[12];
+   step1[5] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step1[6] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+
+   /* stage 2: 4-point idct on evens */
+   temp1 = (step1[0] + step1[2]) * rvp9_cospi64[16];
+   temp2 = (step1[0] - step1[2]) * rvp9_cospi64[16];
+   step2[0] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step2[1] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   temp1 = step1[1] * rvp9_cospi64[24] - step1[3] * rvp9_cospi64[8];
+   temp2 = step1[1] * rvp9_cospi64[8]  + step1[3] * rvp9_cospi64[24];
+   step2[2] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step2[3] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   step2[4] = (RVP9_TRAN_STEP)(step1[4] + step1[5]);
+   step2[5] = (RVP9_TRAN_STEP)(step1[4] - step1[5]);
+   step2[6] = (RVP9_TRAN_STEP)(-step1[6] + step1[7]);
+   step2[7] = (RVP9_TRAN_STEP)(step1[6] + step1[7]);
+
+   /* stage 3 */
+   step1[0] = (RVP9_TRAN_STEP)(step2[0] + step2[3]);
+   step1[1] = (RVP9_TRAN_STEP)(step2[1] + step2[2]);
+   step1[2] = (RVP9_TRAN_STEP)(step2[1] - step2[2]);
+   step1[3] = (RVP9_TRAN_STEP)(step2[0] - step2[3]);
+   step1[4] = step2[4];
+   temp1 = (step2[6] - step2[5]) * rvp9_cospi64[16];
+   temp2 = (step2[5] + step2[6]) * rvp9_cospi64[16];
+   step1[5] = (RVP9_TRAN_STEP)rvp9_round_shift(temp1);
+   step1[6] = (RVP9_TRAN_STEP)rvp9_round_shift(temp2);
+   step1[7] = step2[7];
+
+   output[0] = step1[0] + step1[7];
+   output[1] = step1[1] + step1[6];
+   output[2] = step1[2] + step1[5];
+   output[3] = step1[3] + step1[4];
+   output[4] = step1[3] - step1[4];
+   output[5] = step1[2] - step1[5];
+   output[6] = step1[1] - step1[6];
+   output[7] = step1[0] - step1[7];
+}
+
+static void rvp9_iadst8(const rvp9_tran *input, rvp9_tran *output)
+{
+   int64_t s0,s1,s2,s3,s4,s5,s6,s7;
+   int64_t x0 = input[7], x1 = input[0], x2 = input[5], x3 = input[2];
+   int64_t x4 = input[3], x5 = input[4], x6 = input[1], x7 = input[6];
+   if (!(x0|x1|x2|x3|x4|x5|x6|x7))
+   {
+      memset(output, 0, 8 * sizeof(*output));
+      return;
+   }
+   /* stage 1 */
+   s0 = (int)(rvp9_cospi64[2]  * x0 + rvp9_cospi64[30] * x1);
+   s1 = (int)(rvp9_cospi64[30] * x0 - rvp9_cospi64[2]  * x1);
+   s2 = (int)(rvp9_cospi64[10] * x2 + rvp9_cospi64[22] * x3);
+   s3 = (int)(rvp9_cospi64[22] * x2 - rvp9_cospi64[10] * x3);
+   s4 = (int)(rvp9_cospi64[18] * x4 + rvp9_cospi64[14] * x5);
+   s5 = (int)(rvp9_cospi64[14] * x4 - rvp9_cospi64[18] * x5);
+   s6 = (int)(rvp9_cospi64[26] * x6 + rvp9_cospi64[6]  * x7);
+   s7 = (int)(rvp9_cospi64[6]  * x6 - rvp9_cospi64[26] * x7);
+   x0 = rvp9_round_shift(s0 + s4);
+   x1 = rvp9_round_shift(s1 + s5);
+   x2 = rvp9_round_shift(s2 + s6);
+   x3 = rvp9_round_shift(s3 + s7);
+   x4 = rvp9_round_shift(s0 - s4);
+   x5 = rvp9_round_shift(s1 - s5);
+   x6 = rvp9_round_shift(s2 - s6);
+   x7 = rvp9_round_shift(s3 - s7);
+   /* stage 2 */
+   s0 = x0; s1 = x1; s2 = x2; s3 = x3;
+   s4 = (int)( rvp9_cospi64[8]  * x4 + rvp9_cospi64[24] * x5);
+   s5 = (int)( rvp9_cospi64[24] * x4 - rvp9_cospi64[8]  * x5);
+   s6 = (int)(-rvp9_cospi64[24] * x6 + rvp9_cospi64[8]  * x7);
+   s7 = (int)( rvp9_cospi64[8]  * x6 + rvp9_cospi64[24] * x7);
+   x0 = s0 + s2;
+   x1 = s1 + s3;
+   x2 = s0 - s2;
+   x3 = s1 - s3;
+   x4 = rvp9_round_shift(s4 + s6);
+   x5 = rvp9_round_shift(s5 + s7);
+   x6 = rvp9_round_shift(s4 - s6);
+   x7 = rvp9_round_shift(s5 - s7);
+   /* stage 3 */
+   s2 = (int)(rvp9_cospi64[16] * (x2 + x3));
+   s3 = (int)(rvp9_cospi64[16] * (x2 - x3));
+   s6 = (int)(rvp9_cospi64[16] * (x6 + x7));
+   s7 = (int)(rvp9_cospi64[16] * (x6 - x7));
+   x2 = rvp9_round_shift(s2);
+   x3 = rvp9_round_shift(s3);
+   x6 = rvp9_round_shift(s6);
+   x7 = rvp9_round_shift(s7);
+   output[0] = x0;
+   output[1] = -x4;
+   output[2] = x6;
+   output[3] = -x2;
+   output[4] = x3;
+   output[5] = -x7;
+   output[6] = x5;
+   output[7] = -x1;
+}
+
+static void rvp9_idct16(const rvp9_tran *input, rvp9_tran *output) {
+  RVP9_TRAN_STEP step1[16], step2[16];
+  int64_t temp1, temp2;
+
+/* stage 1 */
+  step1[0] = input[0 / 2];
+  step1[1] = input[16 / 2];
+  step1[2] = input[8 / 2];
+  step1[3] = input[24 / 2];
+  step1[4] = input[4 / 2];
+  step1[5] = input[20 / 2];
+  step1[6] = input[12 / 2];
+  step1[7] = input[28 / 2];
+  step1[8] = input[2 / 2];
+  step1[9] = input[18 / 2];
+  step1[10] = input[10 / 2];
+  step1[11] = input[26 / 2];
+  step1[12] = input[6 / 2];
+  step1[13] = input[22 / 2];
+  step1[14] = input[14 / 2];
+  step1[15] = input[30 / 2];
+
+/* stage 2 */
+  step2[0] = step1[0];
+  step2[1] = step1[1];
+  step2[2] = step1[2];
+  step2[3] = step1[3];
+  step2[4] = step1[4];
+  step2[5] = step1[5];
+  step2[6] = step1[6];
+  step2[7] = step1[7];
+
+  temp1 = step1[8] * rvp9_cospi64[30] - step1[15] * rvp9_cospi64[2];
+  temp2 = step1[8] * rvp9_cospi64[2] + step1[15] * rvp9_cospi64[30];
+  step2[8] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[15] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[9] * rvp9_cospi64[14] - step1[14] * rvp9_cospi64[18];
+  temp2 = step1[9] * rvp9_cospi64[18] + step1[14] * rvp9_cospi64[14];
+  step2[9] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[14] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[10] * rvp9_cospi64[22] - step1[13] * rvp9_cospi64[10];
+  temp2 = step1[10] * rvp9_cospi64[10] + step1[13] * rvp9_cospi64[22];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[11] * rvp9_cospi64[6] - step1[12] * rvp9_cospi64[26];
+  temp2 = step1[11] * rvp9_cospi64[26] + step1[12] * rvp9_cospi64[6];
+  step2[11] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[12] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+/* stage 3 */
+  step1[0] = step2[0];
+  step1[1] = step2[1];
+  step1[2] = step2[2];
+  step1[3] = step2[3];
+
+  temp1 = step2[4] * rvp9_cospi64[28] - step2[7] * rvp9_cospi64[4];
+  temp2 = step2[4] * rvp9_cospi64[4] + step2[7] * rvp9_cospi64[28];
+  step1[4] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[7] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = step2[5] * rvp9_cospi64[12] - step2[6] * rvp9_cospi64[20];
+  temp2 = step2[5] * rvp9_cospi64[20] + step2[6] * rvp9_cospi64[12];
+  step1[5] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[6] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  step1[8] = RVP9_WRAP(step2[8] + step2[9]);
+  step1[9] = RVP9_WRAP(step2[8] - step2[9]);
+  step1[10] = RVP9_WRAP(-step2[10] + step2[11]);
+  step1[11] = RVP9_WRAP(step2[10] + step2[11]);
+  step1[12] = RVP9_WRAP(step2[12] + step2[13]);
+  step1[13] = RVP9_WRAP(step2[12] - step2[13]);
+  step1[14] = RVP9_WRAP(-step2[14] + step2[15]);
+  step1[15] = RVP9_WRAP(step2[14] + step2[15]);
+
+/* stage 4 */
+  temp1 = (step1[0] + step1[1]) * rvp9_cospi64[16];
+  temp2 = (step1[0] - step1[1]) * rvp9_cospi64[16];
+  step2[0] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[1] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = step1[2] * rvp9_cospi64[24] - step1[3] * rvp9_cospi64[8];
+  temp2 = step1[2] * rvp9_cospi64[8] + step1[3] * rvp9_cospi64[24];
+  step2[2] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[3] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[4] = RVP9_WRAP(step1[4] + step1[5]);
+  step2[5] = RVP9_WRAP(step1[4] - step1[5]);
+  step2[6] = RVP9_WRAP(-step1[6] + step1[7]);
+  step2[7] = RVP9_WRAP(step1[6] + step1[7]);
+
+  step2[8] = step1[8];
+  step2[15] = step1[15];
+  temp1 = -step1[9] * rvp9_cospi64[8] + step1[14] * rvp9_cospi64[24];
+  temp2 = step1[9] * rvp9_cospi64[24] + step1[14] * rvp9_cospi64[8];
+  step2[9] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[14] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step1[10] * rvp9_cospi64[24] - step1[13] * rvp9_cospi64[8];
+  temp2 = -step1[10] * rvp9_cospi64[8] + step1[13] * rvp9_cospi64[24];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[11] = step1[11];
+  step2[12] = step1[12];
+
+/* stage 5 */
+  step1[0] = RVP9_WRAP(step2[0] + step2[3]);
+  step1[1] = RVP9_WRAP(step2[1] + step2[2]);
+  step1[2] = RVP9_WRAP(step2[1] - step2[2]);
+  step1[3] = RVP9_WRAP(step2[0] - step2[3]);
+  step1[4] = step2[4];
+  temp1 = (step2[6] - step2[5]) * rvp9_cospi64[16];
+  temp2 = (step2[5] + step2[6]) * rvp9_cospi64[16];
+  step1[5] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[6] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[7] = step2[7];
+
+  step1[8] = RVP9_WRAP(step2[8] + step2[11]);
+  step1[9] = RVP9_WRAP(step2[9] + step2[10]);
+  step1[10] = RVP9_WRAP(step2[9] - step2[10]);
+  step1[11] = RVP9_WRAP(step2[8] - step2[11]);
+  step1[12] = RVP9_WRAP(-step2[12] + step2[15]);
+  step1[13] = RVP9_WRAP(-step2[13] + step2[14]);
+  step1[14] = RVP9_WRAP(step2[13] + step2[14]);
+  step1[15] = RVP9_WRAP(step2[12] + step2[15]);
+
+/* stage 6 */
+  step2[0] = RVP9_WRAP(step1[0] + step1[7]);
+  step2[1] = RVP9_WRAP(step1[1] + step1[6]);
+  step2[2] = RVP9_WRAP(step1[2] + step1[5]);
+  step2[3] = RVP9_WRAP(step1[3] + step1[4]);
+  step2[4] = RVP9_WRAP(step1[3] - step1[4]);
+  step2[5] = RVP9_WRAP(step1[2] - step1[5]);
+  step2[6] = RVP9_WRAP(step1[1] - step1[6]);
+  step2[7] = RVP9_WRAP(step1[0] - step1[7]);
+  step2[8] = step1[8];
+  step2[9] = step1[9];
+  temp1 = (-step1[10] + step1[13]) * rvp9_cospi64[16];
+  temp2 = (step1[10] + step1[13]) * rvp9_cospi64[16];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = (-step1[11] + step1[12]) * rvp9_cospi64[16];
+  temp2 = (step1[11] + step1[12]) * rvp9_cospi64[16];
+  step2[11] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[12] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[14] = step1[14];
+  step2[15] = step1[15];
+
+/* stage 7 */
+  output[0] = (rvp9_tran)RVP9_WRAP(step2[0] + step2[15]);
+  output[1] = (rvp9_tran)RVP9_WRAP(step2[1] + step2[14]);
+  output[2] = (rvp9_tran)RVP9_WRAP(step2[2] + step2[13]);
+  output[3] = (rvp9_tran)RVP9_WRAP(step2[3] + step2[12]);
+  output[4] = (rvp9_tran)RVP9_WRAP(step2[4] + step2[11]);
+  output[5] = (rvp9_tran)RVP9_WRAP(step2[5] + step2[10]);
+  output[6] = (rvp9_tran)RVP9_WRAP(step2[6] + step2[9]);
+  output[7] = (rvp9_tran)RVP9_WRAP(step2[7] + step2[8]);
+  output[8] = (rvp9_tran)RVP9_WRAP(step2[7] - step2[8]);
+  output[9] = (rvp9_tran)RVP9_WRAP(step2[6] - step2[9]);
+  output[10] = (rvp9_tran)RVP9_WRAP(step2[5] - step2[10]);
+  output[11] = (rvp9_tran)RVP9_WRAP(step2[4] - step2[11]);
+  output[12] = (rvp9_tran)RVP9_WRAP(step2[3] - step2[12]);
+  output[13] = (rvp9_tran)RVP9_WRAP(step2[2] - step2[13]);
+  output[14] = (rvp9_tran)RVP9_WRAP(step2[1] - step2[14]);
+  output[15] = (rvp9_tran)RVP9_WRAP(step2[0] - step2[15]);
+}
+
+static void rvp9_iadst16(const rvp9_tran *input, rvp9_tran *output) {
+  int64_t s0, s1, s2, s3, s4, s5, s6, s7, s8;
+  int64_t s9, s10, s11, s12, s13, s14, s15;
+  int64_t x0 = input[15];
+  int64_t x1 = input[0];
+  int64_t x2 = input[13];
+  int64_t x3 = input[2];
+  int64_t x4 = input[11];
+  int64_t x5 = input[4];
+  int64_t x6 = input[9];
+  int64_t x7 = input[6];
+  int64_t x8 = input[7];
+  int64_t x9 = input[8];
+  int64_t x10 = input[5];
+  int64_t x11 = input[10];
+  int64_t x12 = input[3];
+  int64_t x13 = input[12];
+  int64_t x14 = input[1];
+  int64_t x15 = input[14];
+
+  if (!(x0 | x1 | x2 | x3 | x4 | x5 | x6 | x7 | x8 | x9 | x10 | x11 | x12 |
+        x13 | x14 | x15)) {
+    memset(output, 0, 16 * sizeof(*output));
+    return;
+  }
+
+/* stage 1 */
+  s0 = x0 * rvp9_cospi64[1] + x1 * rvp9_cospi64[31];
+  s1 = x0 * rvp9_cospi64[31] - x1 * rvp9_cospi64[1];
+  s2 = x2 * rvp9_cospi64[5] + x3 * rvp9_cospi64[27];
+  s3 = x2 * rvp9_cospi64[27] - x3 * rvp9_cospi64[5];
+  s4 = x4 * rvp9_cospi64[9] + x5 * rvp9_cospi64[23];
+  s5 = x4 * rvp9_cospi64[23] - x5 * rvp9_cospi64[9];
+  s6 = x6 * rvp9_cospi64[13] + x7 * rvp9_cospi64[19];
+  s7 = x6 * rvp9_cospi64[19] - x7 * rvp9_cospi64[13];
+  s8 = x8 * rvp9_cospi64[17] + x9 * rvp9_cospi64[15];
+  s9 = x8 * rvp9_cospi64[15] - x9 * rvp9_cospi64[17];
+  s10 = x10 * rvp9_cospi64[21] + x11 * rvp9_cospi64[11];
+  s11 = x10 * rvp9_cospi64[11] - x11 * rvp9_cospi64[21];
+  s12 = x12 * rvp9_cospi64[25] + x13 * rvp9_cospi64[7];
+  s13 = x12 * rvp9_cospi64[7] - x13 * rvp9_cospi64[25];
+  s14 = x14 * rvp9_cospi64[29] + x15 * rvp9_cospi64[3];
+  s15 = x14 * rvp9_cospi64[3] - x15 * rvp9_cospi64[29];
+
+  x0 = RVP9_WRAP(rvp9_round_shift(s0 + s8));
+  x1 = RVP9_WRAP(rvp9_round_shift(s1 + s9));
+  x2 = RVP9_WRAP(rvp9_round_shift(s2 + s10));
+  x3 = RVP9_WRAP(rvp9_round_shift(s3 + s11));
+  x4 = RVP9_WRAP(rvp9_round_shift(s4 + s12));
+  x5 = RVP9_WRAP(rvp9_round_shift(s5 + s13));
+  x6 = RVP9_WRAP(rvp9_round_shift(s6 + s14));
+  x7 = RVP9_WRAP(rvp9_round_shift(s7 + s15));
+  x8 = RVP9_WRAP(rvp9_round_shift(s0 - s8));
+  x9 = RVP9_WRAP(rvp9_round_shift(s1 - s9));
+  x10 = RVP9_WRAP(rvp9_round_shift(s2 - s10));
+  x11 = RVP9_WRAP(rvp9_round_shift(s3 - s11));
+  x12 = RVP9_WRAP(rvp9_round_shift(s4 - s12));
+  x13 = RVP9_WRAP(rvp9_round_shift(s5 - s13));
+  x14 = RVP9_WRAP(rvp9_round_shift(s6 - s14));
+  x15 = RVP9_WRAP(rvp9_round_shift(s7 - s15));
+
+/* stage 2 */
+  s0 = x0;
+  s1 = x1;
+  s2 = x2;
+  s3 = x3;
+  s4 = x4;
+  s5 = x5;
+  s6 = x6;
+  s7 = x7;
+  s8 = x8 * rvp9_cospi64[4] + x9 * rvp9_cospi64[28];
+  s9 = x8 * rvp9_cospi64[28] - x9 * rvp9_cospi64[4];
+  s10 = x10 * rvp9_cospi64[20] + x11 * rvp9_cospi64[12];
+  s11 = x10 * rvp9_cospi64[12] - x11 * rvp9_cospi64[20];
+  s12 = -x12 * rvp9_cospi64[28] + x13 * rvp9_cospi64[4];
+  s13 = x12 * rvp9_cospi64[4] + x13 * rvp9_cospi64[28];
+  s14 = -x14 * rvp9_cospi64[12] + x15 * rvp9_cospi64[20];
+  s15 = x14 * rvp9_cospi64[20] + x15 * rvp9_cospi64[12];
+
+  x0 = RVP9_WRAP(s0 + s4);
+  x1 = RVP9_WRAP(s1 + s5);
+  x2 = RVP9_WRAP(s2 + s6);
+  x3 = RVP9_WRAP(s3 + s7);
+  x4 = RVP9_WRAP(s0 - s4);
+  x5 = RVP9_WRAP(s1 - s5);
+  x6 = RVP9_WRAP(s2 - s6);
+  x7 = RVP9_WRAP(s3 - s7);
+  x8 = RVP9_WRAP(rvp9_round_shift(s8 + s12));
+  x9 = RVP9_WRAP(rvp9_round_shift(s9 + s13));
+  x10 = RVP9_WRAP(rvp9_round_shift(s10 + s14));
+  x11 = RVP9_WRAP(rvp9_round_shift(s11 + s15));
+  x12 = RVP9_WRAP(rvp9_round_shift(s8 - s12));
+  x13 = RVP9_WRAP(rvp9_round_shift(s9 - s13));
+  x14 = RVP9_WRAP(rvp9_round_shift(s10 - s14));
+  x15 = RVP9_WRAP(rvp9_round_shift(s11 - s15));
+
+/* stage 3 */
+  s0 = x0;
+  s1 = x1;
+  s2 = x2;
+  s3 = x3;
+  s4 = x4 * rvp9_cospi64[8] + x5 * rvp9_cospi64[24];
+  s5 = x4 * rvp9_cospi64[24] - x5 * rvp9_cospi64[8];
+  s6 = -x6 * rvp9_cospi64[24] + x7 * rvp9_cospi64[8];
+  s7 = x6 * rvp9_cospi64[8] + x7 * rvp9_cospi64[24];
+  s8 = x8;
+  s9 = x9;
+  s10 = x10;
+  s11 = x11;
+  s12 = x12 * rvp9_cospi64[8] + x13 * rvp9_cospi64[24];
+  s13 = x12 * rvp9_cospi64[24] - x13 * rvp9_cospi64[8];
+  s14 = -x14 * rvp9_cospi64[24] + x15 * rvp9_cospi64[8];
+  s15 = x14 * rvp9_cospi64[8] + x15 * rvp9_cospi64[24];
+
+  x0 = RVP9_WRAP(s0 + s2);
+  x1 = RVP9_WRAP(s1 + s3);
+  x2 = RVP9_WRAP(s0 - s2);
+  x3 = RVP9_WRAP(s1 - s3);
+  x4 = RVP9_WRAP(rvp9_round_shift(s4 + s6));
+  x5 = RVP9_WRAP(rvp9_round_shift(s5 + s7));
+  x6 = RVP9_WRAP(rvp9_round_shift(s4 - s6));
+  x7 = RVP9_WRAP(rvp9_round_shift(s5 - s7));
+  x8 = RVP9_WRAP(s8 + s10);
+  x9 = RVP9_WRAP(s9 + s11);
+  x10 = RVP9_WRAP(s8 - s10);
+  x11 = RVP9_WRAP(s9 - s11);
+  x12 = RVP9_WRAP(rvp9_round_shift(s12 + s14));
+  x13 = RVP9_WRAP(rvp9_round_shift(s13 + s15));
+  x14 = RVP9_WRAP(rvp9_round_shift(s12 - s14));
+  x15 = RVP9_WRAP(rvp9_round_shift(s13 - s15));
+
+/* stage 4 */
+  s2 = (-rvp9_cospi64[16]) * (x2 + x3);
+  s3 = rvp9_cospi64[16] * (x2 - x3);
+  s6 = rvp9_cospi64[16] * (x6 + x7);
+  s7 = rvp9_cospi64[16] * (-x6 + x7);
+  s10 = rvp9_cospi64[16] * (x10 + x11);
+  s11 = rvp9_cospi64[16] * (-x10 + x11);
+  s14 = (-rvp9_cospi64[16]) * (x14 + x15);
+  s15 = rvp9_cospi64[16] * (x14 - x15);
+
+  x2 = RVP9_WRAP(rvp9_round_shift(s2));
+  x3 = RVP9_WRAP(rvp9_round_shift(s3));
+  x6 = RVP9_WRAP(rvp9_round_shift(s6));
+  x7 = RVP9_WRAP(rvp9_round_shift(s7));
+  x10 = RVP9_WRAP(rvp9_round_shift(s10));
+  x11 = RVP9_WRAP(rvp9_round_shift(s11));
+  x14 = RVP9_WRAP(rvp9_round_shift(s14));
+  x15 = RVP9_WRAP(rvp9_round_shift(s15));
+
+  output[0] = RVP9_WRAP(x0);
+  output[1] = RVP9_WRAP(-x8);
+  output[2] = RVP9_WRAP(x12);
+  output[3] = RVP9_WRAP(-x4);
+  output[4] = RVP9_WRAP(x6);
+  output[5] = RVP9_WRAP(x14);
+  output[6] = RVP9_WRAP(x10);
+  output[7] = RVP9_WRAP(x2);
+  output[8] = RVP9_WRAP(x3);
+  output[9] = RVP9_WRAP(x11);
+  output[10] = RVP9_WRAP(x15);
+  output[11] = RVP9_WRAP(x7);
+  output[12] = RVP9_WRAP(x5);
+  output[13] = RVP9_WRAP(-x13);
+  output[14] = RVP9_WRAP(x9);
+  output[15] = RVP9_WRAP(-x1);
+}
+
+static void rvp9_idct32(const rvp9_tran *input, rvp9_tran *output) {
+  RVP9_TRAN_STEP step1[32], step2[32];
+  int64_t temp1, temp2;
+
+/* stage 1 */
+  step1[0] = input[0];
+  step1[1] = input[16];
+  step1[2] = input[8];
+  step1[3] = input[24];
+  step1[4] = input[4];
+  step1[5] = input[20];
+  step1[6] = input[12];
+  step1[7] = input[28];
+  step1[8] = input[2];
+  step1[9] = input[18];
+  step1[10] = input[10];
+  step1[11] = input[26];
+  step1[12] = input[6];
+  step1[13] = input[22];
+  step1[14] = input[14];
+  step1[15] = input[30];
+
+  temp1 = input[1] * rvp9_cospi64[31] - input[31] * rvp9_cospi64[1];
+  temp2 = input[1] * rvp9_cospi64[1] + input[31] * rvp9_cospi64[31];
+  step1[16] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[31] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[17] * rvp9_cospi64[15] - input[15] * rvp9_cospi64[17];
+  temp2 = input[17] * rvp9_cospi64[17] + input[15] * rvp9_cospi64[15];
+  step1[17] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[30] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[9] * rvp9_cospi64[23] - input[23] * rvp9_cospi64[9];
+  temp2 = input[9] * rvp9_cospi64[9] + input[23] * rvp9_cospi64[23];
+  step1[18] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[29] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[25] * rvp9_cospi64[7] - input[7] * rvp9_cospi64[25];
+  temp2 = input[25] * rvp9_cospi64[25] + input[7] * rvp9_cospi64[7];
+  step1[19] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[28] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[5] * rvp9_cospi64[27] - input[27] * rvp9_cospi64[5];
+  temp2 = input[5] * rvp9_cospi64[5] + input[27] * rvp9_cospi64[27];
+  step1[20] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[27] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[21] * rvp9_cospi64[11] - input[11] * rvp9_cospi64[21];
+  temp2 = input[21] * rvp9_cospi64[21] + input[11] * rvp9_cospi64[11];
+  step1[21] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[26] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[13] * rvp9_cospi64[19] - input[19] * rvp9_cospi64[13];
+  temp2 = input[13] * rvp9_cospi64[13] + input[19] * rvp9_cospi64[19];
+  step1[22] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[25] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = input[29] * rvp9_cospi64[3] - input[3] * rvp9_cospi64[29];
+  temp2 = input[29] * rvp9_cospi64[29] + input[3] * rvp9_cospi64[3];
+  step1[23] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[24] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+/* stage 2 */
+  step2[0] = step1[0];
+  step2[1] = step1[1];
+  step2[2] = step1[2];
+  step2[3] = step1[3];
+  step2[4] = step1[4];
+  step2[5] = step1[5];
+  step2[6] = step1[6];
+  step2[7] = step1[7];
+
+  temp1 = step1[8] * rvp9_cospi64[30] - step1[15] * rvp9_cospi64[2];
+  temp2 = step1[8] * rvp9_cospi64[2] + step1[15] * rvp9_cospi64[30];
+  step2[8] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[15] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[9] * rvp9_cospi64[14] - step1[14] * rvp9_cospi64[18];
+  temp2 = step1[9] * rvp9_cospi64[18] + step1[14] * rvp9_cospi64[14];
+  step2[9] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[14] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[10] * rvp9_cospi64[22] - step1[13] * rvp9_cospi64[10];
+  temp2 = step1[10] * rvp9_cospi64[10] + step1[13] * rvp9_cospi64[22];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  temp1 = step1[11] * rvp9_cospi64[6] - step1[12] * rvp9_cospi64[26];
+  temp2 = step1[11] * rvp9_cospi64[26] + step1[12] * rvp9_cospi64[6];
+  step2[11] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[12] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  step2[16] = RVP9_WRAP(step1[16] + step1[17]);
+  step2[17] = RVP9_WRAP(step1[16] - step1[17]);
+  step2[18] = RVP9_WRAP(-step1[18] + step1[19]);
+  step2[19] = RVP9_WRAP(step1[18] + step1[19]);
+  step2[20] = RVP9_WRAP(step1[20] + step1[21]);
+  step2[21] = RVP9_WRAP(step1[20] - step1[21]);
+  step2[22] = RVP9_WRAP(-step1[22] + step1[23]);
+  step2[23] = RVP9_WRAP(step1[22] + step1[23]);
+  step2[24] = RVP9_WRAP(step1[24] + step1[25]);
+  step2[25] = RVP9_WRAP(step1[24] - step1[25]);
+  step2[26] = RVP9_WRAP(-step1[26] + step1[27]);
+  step2[27] = RVP9_WRAP(step1[26] + step1[27]);
+  step2[28] = RVP9_WRAP(step1[28] + step1[29]);
+  step2[29] = RVP9_WRAP(step1[28] - step1[29]);
+  step2[30] = RVP9_WRAP(-step1[30] + step1[31]);
+  step2[31] = RVP9_WRAP(step1[30] + step1[31]);
+
+/* stage 3 */
+  step1[0] = step2[0];
+  step1[1] = step2[1];
+  step1[2] = step2[2];
+  step1[3] = step2[3];
+
+  temp1 = step2[4] * rvp9_cospi64[28] - step2[7] * rvp9_cospi64[4];
+  temp2 = step2[4] * rvp9_cospi64[4] + step2[7] * rvp9_cospi64[28];
+  step1[4] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[7] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = step2[5] * rvp9_cospi64[12] - step2[6] * rvp9_cospi64[20];
+  temp2 = step2[5] * rvp9_cospi64[20] + step2[6] * rvp9_cospi64[12];
+  step1[5] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[6] = RVP9_WRAP(rvp9_round_shift(temp2));
+
+  step1[8] = RVP9_WRAP(step2[8] + step2[9]);
+  step1[9] = RVP9_WRAP(step2[8] - step2[9]);
+  step1[10] = RVP9_WRAP(-step2[10] + step2[11]);
+  step1[11] = RVP9_WRAP(step2[10] + step2[11]);
+  step1[12] = RVP9_WRAP(step2[12] + step2[13]);
+  step1[13] = RVP9_WRAP(step2[12] - step2[13]);
+  step1[14] = RVP9_WRAP(-step2[14] + step2[15]);
+  step1[15] = RVP9_WRAP(step2[14] + step2[15]);
+
+  step1[16] = step2[16];
+  step1[31] = step2[31];
+  temp1 = -step2[17] * rvp9_cospi64[4] + step2[30] * rvp9_cospi64[28];
+  temp2 = step2[17] * rvp9_cospi64[28] + step2[30] * rvp9_cospi64[4];
+  step1[17] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[30] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step2[18] * rvp9_cospi64[28] - step2[29] * rvp9_cospi64[4];
+  temp2 = -step2[18] * rvp9_cospi64[4] + step2[29] * rvp9_cospi64[28];
+  step1[18] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[29] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[19] = step2[19];
+  step1[20] = step2[20];
+  temp1 = -step2[21] * rvp9_cospi64[20] + step2[26] * rvp9_cospi64[12];
+  temp2 = step2[21] * rvp9_cospi64[12] + step2[26] * rvp9_cospi64[20];
+  step1[21] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[26] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step2[22] * rvp9_cospi64[12] - step2[25] * rvp9_cospi64[20];
+  temp2 = -step2[22] * rvp9_cospi64[20] + step2[25] * rvp9_cospi64[12];
+  step1[22] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[25] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[23] = step2[23];
+  step1[24] = step2[24];
+  step1[27] = step2[27];
+  step1[28] = step2[28];
+
+/* stage 4 */
+  temp1 = (step1[0] + step1[1]) * rvp9_cospi64[16];
+  temp2 = (step1[0] - step1[1]) * rvp9_cospi64[16];
+  step2[0] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[1] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = step1[2] * rvp9_cospi64[24] - step1[3] * rvp9_cospi64[8];
+  temp2 = step1[2] * rvp9_cospi64[8] + step1[3] * rvp9_cospi64[24];
+  step2[2] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[3] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[4] = RVP9_WRAP(step1[4] + step1[5]);
+  step2[5] = RVP9_WRAP(step1[4] - step1[5]);
+  step2[6] = RVP9_WRAP(-step1[6] + step1[7]);
+  step2[7] = RVP9_WRAP(step1[6] + step1[7]);
+
+  step2[8] = step1[8];
+  step2[15] = step1[15];
+  temp1 = -step1[9] * rvp9_cospi64[8] + step1[14] * rvp9_cospi64[24];
+  temp2 = step1[9] * rvp9_cospi64[24] + step1[14] * rvp9_cospi64[8];
+  step2[9] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[14] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step1[10] * rvp9_cospi64[24] - step1[13] * rvp9_cospi64[8];
+  temp2 = -step1[10] * rvp9_cospi64[8] + step1[13] * rvp9_cospi64[24];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[11] = step1[11];
+  step2[12] = step1[12];
+
+  step2[16] = RVP9_WRAP(step1[16] + step1[19]);
+  step2[17] = RVP9_WRAP(step1[17] + step1[18]);
+  step2[18] = RVP9_WRAP(step1[17] - step1[18]);
+  step2[19] = RVP9_WRAP(step1[16] - step1[19]);
+  step2[20] = RVP9_WRAP(-step1[20] + step1[23]);
+  step2[21] = RVP9_WRAP(-step1[21] + step1[22]);
+  step2[22] = RVP9_WRAP(step1[21] + step1[22]);
+  step2[23] = RVP9_WRAP(step1[20] + step1[23]);
+
+  step2[24] = RVP9_WRAP(step1[24] + step1[27]);
+  step2[25] = RVP9_WRAP(step1[25] + step1[26]);
+  step2[26] = RVP9_WRAP(step1[25] - step1[26]);
+  step2[27] = RVP9_WRAP(step1[24] - step1[27]);
+  step2[28] = RVP9_WRAP(-step1[28] + step1[31]);
+  step2[29] = RVP9_WRAP(-step1[29] + step1[30]);
+  step2[30] = RVP9_WRAP(step1[29] + step1[30]);
+  step2[31] = RVP9_WRAP(step1[28] + step1[31]);
+
+/* stage 5 */
+  step1[0] = RVP9_WRAP(step2[0] + step2[3]);
+  step1[1] = RVP9_WRAP(step2[1] + step2[2]);
+  step1[2] = RVP9_WRAP(step2[1] - step2[2]);
+  step1[3] = RVP9_WRAP(step2[0] - step2[3]);
+  step1[4] = step2[4];
+  temp1 = (step2[6] - step2[5]) * rvp9_cospi64[16];
+  temp2 = (step2[5] + step2[6]) * rvp9_cospi64[16];
+  step1[5] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[6] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[7] = step2[7];
+
+  step1[8] = RVP9_WRAP(step2[8] + step2[11]);
+  step1[9] = RVP9_WRAP(step2[9] + step2[10]);
+  step1[10] = RVP9_WRAP(step2[9] - step2[10]);
+  step1[11] = RVP9_WRAP(step2[8] - step2[11]);
+  step1[12] = RVP9_WRAP(-step2[12] + step2[15]);
+  step1[13] = RVP9_WRAP(-step2[13] + step2[14]);
+  step1[14] = RVP9_WRAP(step2[13] + step2[14]);
+  step1[15] = RVP9_WRAP(step2[12] + step2[15]);
+
+  step1[16] = step2[16];
+  step1[17] = step2[17];
+  temp1 = -step2[18] * rvp9_cospi64[8] + step2[29] * rvp9_cospi64[24];
+  temp2 = step2[18] * rvp9_cospi64[24] + step2[29] * rvp9_cospi64[8];
+  step1[18] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[29] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step2[19] * rvp9_cospi64[8] + step2[28] * rvp9_cospi64[24];
+  temp2 = step2[19] * rvp9_cospi64[24] + step2[28] * rvp9_cospi64[8];
+  step1[19] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[28] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step2[20] * rvp9_cospi64[24] - step2[27] * rvp9_cospi64[8];
+  temp2 = -step2[20] * rvp9_cospi64[8] + step2[27] * rvp9_cospi64[24];
+  step1[20] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[27] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = -step2[21] * rvp9_cospi64[24] - step2[26] * rvp9_cospi64[8];
+  temp2 = -step2[21] * rvp9_cospi64[8] + step2[26] * rvp9_cospi64[24];
+  step1[21] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[26] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[22] = step2[22];
+  step1[23] = step2[23];
+  step1[24] = step2[24];
+  step1[25] = step2[25];
+  step1[30] = step2[30];
+  step1[31] = step2[31];
+
+/* stage 6 */
+  step2[0] = RVP9_WRAP(step1[0] + step1[7]);
+  step2[1] = RVP9_WRAP(step1[1] + step1[6]);
+  step2[2] = RVP9_WRAP(step1[2] + step1[5]);
+  step2[3] = RVP9_WRAP(step1[3] + step1[4]);
+  step2[4] = RVP9_WRAP(step1[3] - step1[4]);
+  step2[5] = RVP9_WRAP(step1[2] - step1[5]);
+  step2[6] = RVP9_WRAP(step1[1] - step1[6]);
+  step2[7] = RVP9_WRAP(step1[0] - step1[7]);
+  step2[8] = step1[8];
+  step2[9] = step1[9];
+  temp1 = (-step1[10] + step1[13]) * rvp9_cospi64[16];
+  temp2 = (step1[10] + step1[13]) * rvp9_cospi64[16];
+  step2[10] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[13] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = (-step1[11] + step1[12]) * rvp9_cospi64[16];
+  temp2 = (step1[11] + step1[12]) * rvp9_cospi64[16];
+  step2[11] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step2[12] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step2[14] = step1[14];
+  step2[15] = step1[15];
+
+  step2[16] = RVP9_WRAP(step1[16] + step1[23]);
+  step2[17] = RVP9_WRAP(step1[17] + step1[22]);
+  step2[18] = RVP9_WRAP(step1[18] + step1[21]);
+  step2[19] = RVP9_WRAP(step1[19] + step1[20]);
+  step2[20] = RVP9_WRAP(step1[19] - step1[20]);
+  step2[21] = RVP9_WRAP(step1[18] - step1[21]);
+  step2[22] = RVP9_WRAP(step1[17] - step1[22]);
+  step2[23] = RVP9_WRAP(step1[16] - step1[23]);
+
+  step2[24] = RVP9_WRAP(-step1[24] + step1[31]);
+  step2[25] = RVP9_WRAP(-step1[25] + step1[30]);
+  step2[26] = RVP9_WRAP(-step1[26] + step1[29]);
+  step2[27] = RVP9_WRAP(-step1[27] + step1[28]);
+  step2[28] = RVP9_WRAP(step1[27] + step1[28]);
+  step2[29] = RVP9_WRAP(step1[26] + step1[29]);
+  step2[30] = RVP9_WRAP(step1[25] + step1[30]);
+  step2[31] = RVP9_WRAP(step1[24] + step1[31]);
+
+/* stage 7 */
+  step1[0] = RVP9_WRAP(step2[0] + step2[15]);
+  step1[1] = RVP9_WRAP(step2[1] + step2[14]);
+  step1[2] = RVP9_WRAP(step2[2] + step2[13]);
+  step1[3] = RVP9_WRAP(step2[3] + step2[12]);
+  step1[4] = RVP9_WRAP(step2[4] + step2[11]);
+  step1[5] = RVP9_WRAP(step2[5] + step2[10]);
+  step1[6] = RVP9_WRAP(step2[6] + step2[9]);
+  step1[7] = RVP9_WRAP(step2[7] + step2[8]);
+  step1[8] = RVP9_WRAP(step2[7] - step2[8]);
+  step1[9] = RVP9_WRAP(step2[6] - step2[9]);
+  step1[10] = RVP9_WRAP(step2[5] - step2[10]);
+  step1[11] = RVP9_WRAP(step2[4] - step2[11]);
+  step1[12] = RVP9_WRAP(step2[3] - step2[12]);
+  step1[13] = RVP9_WRAP(step2[2] - step2[13]);
+  step1[14] = RVP9_WRAP(step2[1] - step2[14]);
+  step1[15] = RVP9_WRAP(step2[0] - step2[15]);
+
+  step1[16] = step2[16];
+  step1[17] = step2[17];
+  step1[18] = step2[18];
+  step1[19] = step2[19];
+  temp1 = (-step2[20] + step2[27]) * rvp9_cospi64[16];
+  temp2 = (step2[20] + step2[27]) * rvp9_cospi64[16];
+  step1[20] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[27] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = (-step2[21] + step2[26]) * rvp9_cospi64[16];
+  temp2 = (step2[21] + step2[26]) * rvp9_cospi64[16];
+  step1[21] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[26] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = (-step2[22] + step2[25]) * rvp9_cospi64[16];
+  temp2 = (step2[22] + step2[25]) * rvp9_cospi64[16];
+  step1[22] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[25] = RVP9_WRAP(rvp9_round_shift(temp2));
+  temp1 = (-step2[23] + step2[24]) * rvp9_cospi64[16];
+  temp2 = (step2[23] + step2[24]) * rvp9_cospi64[16];
+  step1[23] = RVP9_WRAP(rvp9_round_shift(temp1));
+  step1[24] = RVP9_WRAP(rvp9_round_shift(temp2));
+  step1[28] = step2[28];
+  step1[29] = step2[29];
+  step1[30] = step2[30];
+  step1[31] = step2[31];
+
+/* final stage */
+  output[0] = RVP9_WRAP(step1[0] + step1[31]);
+  output[1] = RVP9_WRAP(step1[1] + step1[30]);
+  output[2] = RVP9_WRAP(step1[2] + step1[29]);
+  output[3] = RVP9_WRAP(step1[3] + step1[28]);
+  output[4] = RVP9_WRAP(step1[4] + step1[27]);
+  output[5] = RVP9_WRAP(step1[5] + step1[26]);
+  output[6] = RVP9_WRAP(step1[6] + step1[25]);
+  output[7] = RVP9_WRAP(step1[7] + step1[24]);
+  output[8] = RVP9_WRAP(step1[8] + step1[23]);
+  output[9] = RVP9_WRAP(step1[9] + step1[22]);
+  output[10] = RVP9_WRAP(step1[10] + step1[21]);
+  output[11] = RVP9_WRAP(step1[11] + step1[20]);
+  output[12] = RVP9_WRAP(step1[12] + step1[19]);
+  output[13] = RVP9_WRAP(step1[13] + step1[18]);
+  output[14] = RVP9_WRAP(step1[14] + step1[17]);
+  output[15] = RVP9_WRAP(step1[15] + step1[16]);
+  output[16] = RVP9_WRAP(step1[15] - step1[16]);
+  output[17] = RVP9_WRAP(step1[14] - step1[17]);
+  output[18] = RVP9_WRAP(step1[13] - step1[18]);
+  output[19] = RVP9_WRAP(step1[12] - step1[19]);
+  output[20] = RVP9_WRAP(step1[11] - step1[20]);
+  output[21] = RVP9_WRAP(step1[10] - step1[21]);
+  output[22] = RVP9_WRAP(step1[9] - step1[22]);
+  output[23] = RVP9_WRAP(step1[8] - step1[23]);
+  output[24] = RVP9_WRAP(step1[7] - step1[24]);
+  output[25] = RVP9_WRAP(step1[6] - step1[25]);
+  output[26] = RVP9_WRAP(step1[5] - step1[26]);
+  output[27] = RVP9_WRAP(step1[4] - step1[27]);
+  output[28] = RVP9_WRAP(step1[3] - step1[28]);
+  output[29] = RVP9_WRAP(step1[2] - step1[29]);
+  output[30] = RVP9_WRAP(step1[1] - step1[30]);
+  output[31] = RVP9_WRAP(step1[0] - step1[31]);
+}
+
+
+/* ==================================================================== */
 /* Intra predictors, ported from vpx_dsp/intrapred.c (generic C).       */
 /* ==================================================================== */
 #define RVP9_AVG3(a, b, c) (((a) + 2 * (b) + (c) + 2) >> 2)
 #define RVP9_AVG2(a, b)    (((a) + (b) + 1) >> 1)
 
-static void rvp9_d207_predictor(uint8_t *dst, int stride, int bs,
-                                  const uint8_t *above, const uint8_t *left) {
+static void rvp9_d207_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                  const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r, c;
   (void)above;
 /* first column */
@@ -46,8 +938,8 @@ static void rvp9_d207_predictor(uint8_t *dst, int stride, int bs,
       dst[r * stride + c] = dst[(r + 1) * stride + c - 2];
 }
 
-static void rvp9_d63_predictor(uint8_t *dst, int stride, int bs,
-                                 const uint8_t *above, const uint8_t *left) {
+static void rvp9_d63_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                 const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r, c;
   int size;
   (void)left;
@@ -56,17 +948,17 @@ static void rvp9_d63_predictor(uint8_t *dst, int stride, int bs,
     dst[stride + c] = RVP9_AVG3(above[c], above[c + 1], above[c + 2]);
   }
   for (r = 2, size = bs - 2; r < bs; r += 2, --size) {
-    memcpy(dst + (r + 0) * stride, dst + (r >> 1), size);
-    memset(dst + (r + 0) * stride + size, above[bs - 1], bs - size);
-    memcpy(dst + (r + 1) * stride, dst + stride + (r >> 1), size);
-    memset(dst + (r + 1) * stride + size, above[bs - 1], bs - size);
+    RVP9_PXCOPY(dst + (r + 0) * stride, dst + (r >> 1), size);
+    RVP9_PXFILL(dst + (r + 0) * stride + size, above[bs - 1], bs - size);
+    RVP9_PXCOPY(dst + (r + 1) * stride, dst + stride + (r >> 1), size);
+    RVP9_PXFILL(dst + (r + 1) * stride + size, above[bs - 1], bs - size);
   }
 }
 
-static void rvp9_d45_predictor(uint8_t *dst, int stride, int bs,
-                                 const uint8_t *above, const uint8_t *left) {
-  const uint8_t above_right = above[bs - 1];
-  const uint8_t *const dst_row0 = dst;
+static void rvp9_d45_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                 const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
+  const RVP9_PIXEL above_right = above[bs - 1];
+  const RVP9_PIXEL *const dst_row0 = dst;
   int x, size;
   (void)left;
 
@@ -76,14 +968,14 @@ static void rvp9_d45_predictor(uint8_t *dst, int stride, int bs,
   dst[bs - 1] = above_right;
   dst += stride;
   for (x = 1, size = bs - 2; x < bs; ++x, --size) {
-    memcpy(dst, dst_row0 + x, size);
-    memset(dst + size, above_right, x + 1);
+    RVP9_PXCOPY(dst, dst_row0 + x, size);
+    RVP9_PXFILL(dst + size, above_right, x + 1);
     dst += stride;
   }
 }
 
-static void rvp9_d117_predictor(uint8_t *dst, int stride, int bs,
-                                  const uint8_t *above, const uint8_t *left) {
+static void rvp9_d117_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                  const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r, c;
 
 /* first row */
@@ -107,15 +999,15 @@ static void rvp9_d117_predictor(uint8_t *dst, int stride, int bs,
   }
 }
 
-static void rvp9_d135_predictor(uint8_t *dst, int stride, int bs,
-                                  const uint8_t *above, const uint8_t *left) {
+static void rvp9_d135_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                  const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int i;
 #if defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ > 7
 /* silence a spurious -Warray-bounds warning, possibly related to: */
 /* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=56273 */
-  uint8_t border[69];
+  RVP9_PIXEL border[69];
 #else
-  uint8_t border[32 + 32 - 1];  /* outer border from bottom-left to top-right */
+  RVP9_PIXEL border[32 + 32 - 1];  /* outer border from bottom-left to top-right */
 #endif
 
 /* dst(bs, bs - 2)[0], i.e., border starting at bottom-left */
@@ -131,12 +1023,12 @@ static void rvp9_d135_predictor(uint8_t *dst, int stride, int bs,
   }
 
   for (i = 0; i < bs; ++i) {
-    memcpy(dst + i * stride, border + bs - 1 - i, bs);
+    RVP9_PXCOPY(dst + i * stride, border + bs - 1 - i, bs);
   }
 }
 
-static void rvp9_d153_predictor(uint8_t *dst, int stride, int bs,
-                                  const uint8_t *above, const uint8_t *left) {
+static void rvp9_d153_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                  const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r, c;
   dst[0] = RVP9_AVG2(above[-1], left[0]);
   for (r = 1; r < bs; r++) dst[r * stride] = RVP9_AVG2(left[r - 1], left[r]);
@@ -158,30 +1050,30 @@ static void rvp9_d153_predictor(uint8_t *dst, int stride, int bs,
   }
 }
 
-static void rvp9_v_predictor(uint8_t *dst, int stride, int bs,
-                               const uint8_t *above, const uint8_t *left) {
+static void rvp9_v_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                               const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r;
   (void)left;
 
   for (r = 0; r < bs; r++) {
-    memcpy(dst, above, bs);
+    RVP9_PXCOPY(dst, above, bs);
     dst += stride;
   }
 }
 
-static void rvp9_h_predictor(uint8_t *dst, int stride, int bs,
-                               const uint8_t *above, const uint8_t *left) {
+static void rvp9_h_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                               const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r;
   (void)above;
 
   for (r = 0; r < bs; r++) {
-    memset(dst, left[r], bs);
+    RVP9_PXFILL(dst, left[r], bs);
     dst += stride;
   }
 }
 
-static void rvp9_tm_predictor(uint8_t *dst, int stride, int bs,
-                                const uint8_t *above, const uint8_t *left) {
+static void rvp9_tm_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r, c;
   int ytop_left = above[-1];
 
@@ -192,21 +1084,21 @@ static void rvp9_tm_predictor(uint8_t *dst, int stride, int bs,
   }
 }
 
-static void rvp9_dc_128_predictor(uint8_t *dst, int stride, int bs,
-                                    const uint8_t *above, const uint8_t *left) {
+static void rvp9_dc_128_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                    const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int r;
   (void)above;
   (void)left;
 
   for (r = 0; r < bs; r++) {
-    memset(dst, 128, bs);
+    RVP9_PXFILL(dst, RVP9_PXMID, bs);
     dst += stride;
   }
 }
 
-static void rvp9_dc_left_predictor(uint8_t *dst, int stride, int bs,
-                                     const uint8_t *above,
-                                     const uint8_t *left) {
+static void rvp9_dc_left_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                     const RVP9_PIXEL *above,
+                                     const RVP9_PIXEL *left) {
   int i, r, expected_dc, sum = 0;
   (void)above;
 
@@ -214,13 +1106,13 @@ static void rvp9_dc_left_predictor(uint8_t *dst, int stride, int bs,
   expected_dc = (sum + (bs >> 1)) / bs;
 
   for (r = 0; r < bs; r++) {
-    memset(dst, expected_dc, bs);
+    RVP9_PXFILL(dst, expected_dc, bs);
     dst += stride;
   }
 }
 
-static void rvp9_dc_top_predictor(uint8_t *dst, int stride, int bs,
-                                    const uint8_t *above, const uint8_t *left) {
+static void rvp9_dc_top_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                    const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int i, r, expected_dc, sum = 0;
   (void)left;
 
@@ -228,13 +1120,13 @@ static void rvp9_dc_top_predictor(uint8_t *dst, int stride, int bs,
   expected_dc = (sum + (bs >> 1)) / bs;
 
   for (r = 0; r < bs; r++) {
-    memset(dst, expected_dc, bs);
+    RVP9_PXFILL(dst, expected_dc, bs);
     dst += stride;
   }
 }
 
-static void rvp9_dc_predictor(uint8_t *dst, int stride, int bs,
-                                const uint8_t *above, const uint8_t *left) {
+static void rvp9_dc_predictor(RVP9_PIXEL *dst, int stride, int bs,
+                                const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   int i, r, expected_dc, sum = 0;
   const int count = 2 * bs;
 
@@ -246,7 +1138,7 @@ static void rvp9_dc_predictor(uint8_t *dst, int stride, int bs,
   expected_dc = (sum + (count >> 1)) / count;
 
   for (r = 0; r < bs; r++) {
-    memset(dst, expected_dc, bs);
+    RVP9_PXFILL(dst, expected_dc, bs);
     dst += stride;
   }
 }
@@ -257,8 +1149,8 @@ static void rvp9_dc_predictor(uint8_t *dst, int stride, int bs,
  * extension (above[4..7]). */
 #define DST(x, y) dst[(x) + (y)*stride]
 
-static void rvp9_d207_predictor_4x4(uint8_t *dst, int stride,
-                              const uint8_t *above, const uint8_t *left) {
+static void rvp9_d207_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                              const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int I = left[0];
   const int J = left[1];
   const int K = left[2];
@@ -273,8 +1165,8 @@ static void rvp9_d207_predictor_4x4(uint8_t *dst, int stride,
   DST(3, 2) = DST(2, 2) = DST(0, 3) = DST(1, 3) = DST(2, 3) = DST(3, 3) = L;
 }
 
-static void rvp9_d63_predictor_4x4(uint8_t *dst, int stride,
-                             const uint8_t *above, const uint8_t *left) {
+static void rvp9_d63_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                             const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int A = above[0];
   const int B = above[1];
   const int C = above[2];
@@ -296,8 +1188,8 @@ static void rvp9_d63_predictor_4x4(uint8_t *dst, int stride,
   DST(3, 3) = RVP9_AVG3(E, F, G);  /* differs from vp8 */
 }
 
-static void rvp9_d45_predictor_4x4(uint8_t *dst, int stride,
-                             const uint8_t *above, const uint8_t *left) {
+static void rvp9_d45_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                             const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int A = above[0];
   const int B = above[1];
   const int C = above[2];
@@ -317,8 +1209,8 @@ static void rvp9_d45_predictor_4x4(uint8_t *dst, int stride,
   DST(3, 3) = H;  /* differs from vp8 */
 }
 
-static void rvp9_d117_predictor_4x4(uint8_t *dst, int stride,
-                              const uint8_t *above, const uint8_t *left) {
+static void rvp9_d117_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                              const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int I = left[0];
   const int J = left[1];
   const int K = left[2];
@@ -340,8 +1232,8 @@ static void rvp9_d117_predictor_4x4(uint8_t *dst, int stride,
   DST(3, 1) = RVP9_AVG3(B, C, D);
 }
 
-static void rvp9_d135_predictor_4x4(uint8_t *dst, int stride,
-                              const uint8_t *above, const uint8_t *left) {
+static void rvp9_d135_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                              const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int I = left[0];
   const int J = left[1];
   const int K = left[2];
@@ -361,8 +1253,8 @@ static void rvp9_d135_predictor_4x4(uint8_t *dst, int stride,
   DST(3, 0) = RVP9_AVG3(D, C, B);
 }
 
-static void rvp9_d153_predictor_4x4(uint8_t *dst, int stride,
-                              const uint8_t *above, const uint8_t *left) {
+static void rvp9_d153_predictor_4x4(RVP9_PIXEL *dst, int stride,
+                              const RVP9_PIXEL *above, const RVP9_PIXEL *left) {
   const int I = left[0];
   const int J = left[1];
   const int K = left[2];
@@ -391,14 +1283,16 @@ static void rvp9_d153_predictor_4x4(uint8_t *dst, int stride,
 /* Ported from vpx_dsp inv_txfm.c vpx_iht/idct *_add functions.         */
 /* tx_type: 0=DCT_DCT 1=ADST_DCT 2=DCT_ADST 3=ADST_ADST                 */
 /* ==================================================================== */
+#if !RVP9_RECON_HBD  /* rvp9_tran is shared; typedef once */
 typedef void (*rvp9_tx1d)(const rvp9_tran *, rvp9_tran *);
+#endif
 
 static INLINE int rvp9_rp2(int v, int n)   /* ROUND_POWER_OF_TWO */
 {
    return (v + (1 << (n - 1))) >> n;
 }
 
-static void rvp9_iht_add(const rvp9_tran *input, uint8_t *dst, int stride,
+static void rvp9_iht_add(const rvp9_tran *input, RVP9_PIXEL *dst, int stride,
       int tx_size, int tx_type, int eob)
 {
    static const rvp9_tx1d row1d[4][4] = {
@@ -433,7 +1327,7 @@ static void rvp9_iht_add(const rvp9_tran *input, uint8_t *dst, int stride,
 }
 
 /* Lossless 4x4 inverse Walsh-Hadamard (vpx iwht4x4_16_add). */
-static void rvp9_iwht4x4_add(const rvp9_tran *input, uint8_t *dst, int stride)
+static void rvp9_iwht4x4_add(const rvp9_tran *input, RVP9_PIXEL *dst, int stride)
 {
    int i;
    rvp9_tran output[16];
@@ -479,7 +1373,7 @@ static void rvp9_iwht4x4_add(const rvp9_tran *input, uint8_t *dst, int stride)
 #define RVP9_NEED_LEFT       1
 #define RVP9_NEED_ABOVE      2
 #define RVP9_NEED_ABOVERIGHT 4
-static const uint8_t rvp9_extend_modes[10] = {
+static const RVP9_PIXEL rvp9_extend_modes[10] = {
    RVP9_NEED_ABOVE | RVP9_NEED_LEFT,   /* DC   */
    RVP9_NEED_ABOVE,                    /* V    */
    RVP9_NEED_LEFT,                     /* H    */
@@ -492,15 +1386,15 @@ static const uint8_t rvp9_extend_modes[10] = {
    RVP9_NEED_LEFT | RVP9_NEED_ABOVE    /* TM   */
 };
 
-static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
-      uint8_t *dst, int dst_stride, int mode, int tx_size,
+static void rvp9_build_intra(rvp9_dec *d, const RVP9_PIXEL *ref, int ref_stride,
+      RVP9_PIXEL *dst, int dst_stride, int mode, int tx_size,
       int up_available, int left_available, int right_available,
       int x, int y, int plane, int mi_col, int mi_row)
 {
-   uint8_t left_col[32];
-   uint8_t above_data[64 + 16];
-   uint8_t *above_row = above_data + 16;
-   const uint8_t *const_above_row = above_row;
+   RVP9_PIXEL left_col[32];
+   RVP9_PIXEL above_data[64 + 16];
+   RVP9_PIXEL *above_row = above_data + 16;
+   const RVP9_PIXEL *const_above_row = above_row;
    const int bs = 4 << tx_size;
    int frame_width  = plane ? d->uvw : d->yw;
    int frame_height = plane ? d->uvh : d->yh;
@@ -533,23 +1427,23 @@ static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
             for (i = 0; i < bs; i++) left_col[i] = ref[i * ref_stride - 1];
       }
       else
-         memset(left_col, 129, bs);
+         RVP9_PXFILL(left_col, RVP9_PXMID + 1, bs);
    }
 
    if (rvp9_extend_modes[mode] & RVP9_NEED_ABOVE)
    {
       if (up_available)
       {
-         const uint8_t *above_ref = ref - ref_stride;
+         const RVP9_PIXEL *above_ref = ref - ref_stride;
          if (d->mb_to_right_edge < 0)
          {
             if (x0 + bs <= frame_width)
-               memcpy(above_row, above_ref, bs);
+               RVP9_PXCOPY(above_row, above_ref, bs);
             else if (x0 <= frame_width)
             {
                const int r = frame_width - x0;
-               memcpy(above_row, above_ref, r);
-               memset(above_row + r, above_row[r - 1], x0 + bs - frame_width);
+               RVP9_PXCOPY(above_row, above_ref, r);
+               RVP9_PXFILL(above_row + r, above_row[r - 1], x0 + bs - frame_width);
             }
          }
          else
@@ -557,14 +1451,14 @@ static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
             if (bs == 4 && right_available && left_available)
                const_above_row = above_ref;
             else
-               memcpy(above_row, above_ref, bs);
+               RVP9_PXCOPY(above_row, above_ref, bs);
          }
-         above_row[-1] = left_available ? above_ref[-1] : 129;
+         above_row[-1] = left_available ? above_ref[-1] : (RVP9_PXMID + 1);
       }
       else
       {
-         memset(above_row, 127, bs);
-         above_row[-1] = 127;
+         RVP9_PXFILL(above_row, RVP9_PXMID - 1, bs);
+         above_row[-1] = RVP9_PXMID - 1;
       }
    }
 
@@ -572,17 +1466,17 @@ static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
    {
       if (up_available)
       {
-         const uint8_t *above_ref = ref - ref_stride;
+         const RVP9_PIXEL *above_ref = ref - ref_stride;
          if (d->mb_to_right_edge < 0)
          {
             if (x0 + 2 * bs <= frame_width)
             {
                if (right_available && bs == 4)
-                  memcpy(above_row, above_ref, 2 * bs);
+                  RVP9_PXCOPY(above_row, above_ref, 2 * bs);
                else
                {
-                  memcpy(above_row, above_ref, bs);
-                  memset(above_row + bs, above_row[bs - 1], bs);
+                  RVP9_PXCOPY(above_row, above_ref, bs);
+                  RVP9_PXFILL(above_row + bs, above_row[bs - 1], bs);
                }
             }
             else if (x0 + bs <= frame_width)
@@ -590,21 +1484,21 @@ static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
                const int r = frame_width - x0;
                if (right_available && bs == 4)
                {
-                  memcpy(above_row, above_ref, r);
-                  memset(above_row + r, above_row[r - 1],
+                  RVP9_PXCOPY(above_row, above_ref, r);
+                  RVP9_PXFILL(above_row + r, above_row[r - 1],
                          x0 + 2 * bs - frame_width);
                }
                else
                {
-                  memcpy(above_row, above_ref, bs);
-                  memset(above_row + bs, above_row[bs - 1], bs);
+                  RVP9_PXCOPY(above_row, above_ref, bs);
+                  RVP9_PXFILL(above_row + bs, above_row[bs - 1], bs);
                }
             }
             else if (x0 <= frame_width)
             {
                const int r = frame_width - x0;
-               memcpy(above_row, above_ref, r);
-               memset(above_row + r, above_row[r - 1],
+               RVP9_PXCOPY(above_row, above_ref, r);
+               RVP9_PXFILL(above_row + r, above_row[r - 1],
                       x0 + 2 * bs - frame_width);
             }
          }
@@ -614,19 +1508,19 @@ static void rvp9_build_intra(rvp9_dec *d, const uint8_t *ref, int ref_stride,
                const_above_row = above_ref;
             else
             {
-               memcpy(above_row, above_ref, bs);
+               RVP9_PXCOPY(above_row, above_ref, bs);
                if (bs == 4 && right_available)
-                  memcpy(above_row + bs, above_ref + bs, bs);
+                  RVP9_PXCOPY(above_row + bs, above_ref + bs, bs);
                else
-                  memset(above_row + bs, above_row[bs - 1], bs);
+                  RVP9_PXFILL(above_row + bs, above_row[bs - 1], bs);
             }
          }
-         above_row[-1] = left_available ? above_ref[-1] : 129;
+         above_row[-1] = left_available ? above_ref[-1] : (RVP9_PXMID + 1);
       }
       else
       {
-         memset(above_row, 127, bs * 2);
-         above_row[-1] = 127;
+         RVP9_PXFILL(above_row, RVP9_PXMID - 1, bs * 2);
+         above_row[-1] = RVP9_PXMID - 1;
       }
    }
 
@@ -744,7 +1638,7 @@ static int rvp9_read_tx_size(rvp9_dec *d, rvp9_mi *mi,
 /* forward declarations (definitions after the loop filter section) */
 static void rvp9_build_inter_pred(rvp9_dec *d, int plane, int x, int y,
       int w, int h, const rvp9_mv *mv, const rvp9_fb *ref_fb,
-      const int16_t (*kernel)[8], int ref, uint8_t *dst_base, int dst_stride,
+      const int16_t (*kernel)[8], int ref, RVP9_PIXEL *dst_base, int dst_stride,
       int mi_row, int mi_col);
 static rvp9_mv rvp9_average_split_mvs(const rvp9_mi *mi, int ref, int ss,
       int block);
@@ -1214,16 +2108,16 @@ modes_done:
          {
             int ss = plane ? 1 : 0;
             int n4w = 1 << (bwl - ss), n4h = 1 << (bhl - ss);
-            uint8_t *base;
+            RVP9_PIXEL *base;
             int stride;
             if (plane == 0)
             {
-               base = d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
+               base = (RVP9_PIXEL*)d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
                stride = d->ys;
             }
             else
             {
-               base = (plane == 1 ? d->buf_u : d->buf_v)
+               base = (RVP9_PIXEL*)(plane == 1 ? d->buf_u : d->buf_v)
                     + (mi_row * 4) * d->uvs + mi_col * 4;
                stride = d->uvs;
             }
@@ -1256,14 +2150,14 @@ modes_done:
       int num4w = 1 << n4w_l2;
       int num4h = 1 << n4h_l2;
       int tx_size;
-      uint8_t *base;
+      RVP9_PIXEL *base;
       int stride;
       int max_bw, max_bh, step, row, col;
 
       if (plane == 0)
       {
          tx_size = mi->tx_size;
-         base = d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
+         base = (RVP9_PIXEL*)d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
          stride = d->ys;
       }
       else
@@ -1273,7 +2167,7 @@ modes_done:
          int ssb = bsize < 3 ? 0 : rvp9_ss_size[bsize];
          int mt = rvp9_max_tx[ssb];
          tx_size = mi->tx_size < mt ? mi->tx_size : mt;
-         base = (plane == 1 ? d->buf_u : d->buf_v)
+         base = (RVP9_PIXEL*)(plane == 1 ? d->buf_u : d->buf_v)
               + (mi_row * 4) * d->uvs + mi_col * 4;
          stride = d->uvs;
       }
@@ -1289,7 +2183,7 @@ modes_done:
       for (row = 0; row < max_bh; row += step)
          for (col = 0; col < max_bw; col += step)
          {
-            uint8_t *dst = base + 4 * row * stride + 4 * col;
+            RVP9_PIXEL *dst = base + 4 * row * stride + 4 * col;
             int mode = plane ? mi->uv_mode : mi->mode;
             int inter = rvp9_is_inter(mi);
             int have_top, have_left, have_right;
@@ -1442,6 +2336,7 @@ static void rvp9_decode_partition(rvp9_dec *d, int mi_row, int mi_col,
 #endif /* RVP9_RECON_PART == 2 */
 
 #if RVP9_RECON_PART == 3
+static void rvp9_loop_filter_frame(rvp9_dec *d);
 
 static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       size_t len, int *show_fb)
@@ -1477,9 +2372,10 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
       uvsz = (size_t)d->uvs * (d->mi_rows * 4 + 32);
       for (i = 0; i < RVP9_FRAME_BUFS; i++)
       {
-         d->fbs[i].y = (uint8_t*)calloc(1, ysz);
-         d->fbs[i].u = (uint8_t*)calloc(1, uvsz);
-         d->fbs[i].v = (uint8_t*)calloc(1, uvsz);
+         d->fbs[i].y = (uint8_t*)calloc(sizeof(RVP9_PIXEL), ysz);
+         d->fbs[i].u = (uint8_t*)calloc(sizeof(RVP9_PIXEL), uvsz);
+         d->fbs[i].v = (uint8_t*)calloc(sizeof(RVP9_PIXEL), uvsz);
+         d->fb_bit_depth = RVP9_RECON_HBD ? 10 : 8;
          if (!d->fbs[i].y || !d->fbs[i].u || !d->fbs[i].v) return -7;
       }
       d->mi = (rvp9_mi*)calloc((size_t)d->mi_cols * d->mi_rows,
@@ -1729,67 +2625,68 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
 /* Loop filter kernels, ported from vpx_dsp/loopfilter.c (generic C).   */
 /* ==================================================================== */
 #define ROUND_POWER_OF_TWO(value, n) (((value) + (1 << ((n)-1))) >> (n))
-static int8_t rvp9_signed_char_clamp(int t) {
-  return (int8_t)(t < -128 ? -128 : t > 127 ? 127 : t);
+static RVP9_LF_F rvp9_signed_char_clamp(int t) {
+  return (RVP9_LF_F)(t < RVP9_LF_CLAMP_MIN ? RVP9_LF_CLAMP_MIN
+                   : t > RVP9_LF_CLAMP_MAX ? RVP9_LF_CLAMP_MAX : t);
 }
 
-static int8_t rvp9_filter_mask(uint8_t limit, uint8_t blimit, uint8_t p3,
-                                 uint8_t p2, uint8_t p1, uint8_t p0, uint8_t q0,
-                                 uint8_t q1, uint8_t q2, uint8_t q3) {
+static int8_t rvp9_filter_mask(uint8_t limit, uint8_t blimit, RVP9_PIXEL p3,
+                                 RVP9_PIXEL p2, RVP9_PIXEL p1, RVP9_PIXEL p0, RVP9_PIXEL q0,
+                                 RVP9_PIXEL q1, RVP9_PIXEL q2, RVP9_PIXEL q3) {
   int8_t mask = 0;
-  mask |= (abs(p3 - p2) > limit) * -1;
-  mask |= (abs(p2 - p1) > limit) * -1;
-  mask |= (abs(p1 - p0) > limit) * -1;
-  mask |= (abs(q1 - q0) > limit) * -1;
-  mask |= (abs(q2 - q1) > limit) * -1;
-  mask |= (abs(q3 - q2) > limit) * -1;
-  mask |= (abs(p0 - q0) * 2 + abs(p1 - q1) / 2 > blimit) * -1;
+  mask |= (abs(p3 - p2) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(p2 - p1) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(p1 - p0) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(q1 - q0) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(q2 - q1) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(q3 - q2) > RVP9_LF_T(limit)) * -1;
+  mask |= (abs(p0 - q0) * 2 + abs(p1 - q1) / 2 > RVP9_LF_T(blimit)) * -1;
   return ~mask;
 }
 
-static int8_t rvp9_flat_mask4(uint8_t thresh, uint8_t p3, uint8_t p2,
-                                uint8_t p1, uint8_t p0, uint8_t q0, uint8_t q1,
-                                uint8_t q2, uint8_t q3) {
+static int8_t rvp9_flat_mask4(uint8_t thresh, RVP9_PIXEL p3, RVP9_PIXEL p2,
+                                RVP9_PIXEL p1, RVP9_PIXEL p0, RVP9_PIXEL q0, RVP9_PIXEL q1,
+                                RVP9_PIXEL q2, RVP9_PIXEL q3) {
   int8_t mask = 0;
-  mask |= (abs(p1 - p0) > thresh) * -1;
-  mask |= (abs(q1 - q0) > thresh) * -1;
-  mask |= (abs(p2 - p0) > thresh) * -1;
-  mask |= (abs(q2 - q0) > thresh) * -1;
-  mask |= (abs(p3 - p0) > thresh) * -1;
-  mask |= (abs(q3 - q0) > thresh) * -1;
+  mask |= (abs(p1 - p0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(q1 - q0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(p2 - p0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(q2 - q0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(p3 - p0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(q3 - q0) > RVP9_LF_T(thresh)) * -1;
   return ~mask;
 }
 
-static int8_t rvp9_flat_mask5(uint8_t thresh, uint8_t p4, uint8_t p3,
-                                uint8_t p2, uint8_t p1, uint8_t p0, uint8_t q0,
-                                uint8_t q1, uint8_t q2, uint8_t q3,
-                                uint8_t q4) {
+static int8_t rvp9_flat_mask5(uint8_t thresh, RVP9_PIXEL p4, RVP9_PIXEL p3,
+                                RVP9_PIXEL p2, RVP9_PIXEL p1, RVP9_PIXEL p0, RVP9_PIXEL q0,
+                                RVP9_PIXEL q1, RVP9_PIXEL q2, RVP9_PIXEL q3,
+                                RVP9_PIXEL q4) {
   int8_t mask = ~rvp9_flat_mask4(thresh, p3, p2, p1, p0, q0, q1, q2, q3);
-  mask |= (abs(p4 - p0) > thresh) * -1;
-  mask |= (abs(q4 - q0) > thresh) * -1;
+  mask |= (abs(p4 - p0) > RVP9_LF_T(thresh)) * -1;
+  mask |= (abs(q4 - q0) > RVP9_LF_T(thresh)) * -1;
   return ~mask;
 }
 
-static int8_t rvp9_hev_mask(uint8_t thresh, uint8_t p1, uint8_t p0,
-                              uint8_t q0, uint8_t q1) {
+static int8_t rvp9_hev_mask(uint8_t thresh, RVP9_PIXEL p1, RVP9_PIXEL p0,
+                              RVP9_PIXEL q0, RVP9_PIXEL q1) {
   int8_t hev = 0;
-  hev |= (abs(p1 - p0) > thresh) * -1;
-  hev |= (abs(q1 - q0) > thresh) * -1;
+  hev |= (abs(p1 - p0) > RVP9_LF_T(thresh)) * -1;
+  hev |= (abs(q1 - q0) > RVP9_LF_T(thresh)) * -1;
   return hev;
 }
 
-static void rvp9_filter4(int8_t mask, uint8_t thresh, uint8_t *op1,
-                           uint8_t *op0, uint8_t *oq0, uint8_t *oq1) {
-  int8_t filter1, filter2;
+static void rvp9_filter4(int8_t mask, uint8_t thresh, RVP9_PIXEL *op1,
+                           RVP9_PIXEL *op0, RVP9_PIXEL *oq0, RVP9_PIXEL *oq1) {
+  RVP9_LF_F filter1, filter2;
 
-  const int8_t ps1 = (int8_t)(*op1 ^ 0x80);
-  const int8_t ps0 = (int8_t)(*op0 ^ 0x80);
-  const int8_t qs0 = (int8_t)(*oq0 ^ 0x80);
-  const int8_t qs1 = (int8_t)(*oq1 ^ 0x80);
-  const int8_t hev = rvp9_hev_mask(thresh, *op1, *op0, *oq0, *oq1);
+  const RVP9_LF_F ps1 = RVP9_LF_PS(*op1);
+  const RVP9_LF_F ps0 = RVP9_LF_PS(*op0);
+  const RVP9_LF_F qs0 = RVP9_LF_PS(*oq0);
+  const RVP9_LF_F qs1 = RVP9_LF_PS(*oq1);
+  const RVP9_LF_F hev = rvp9_hev_mask(thresh, *op1, *op0, *oq0, *oq1);
 
 /* add outer taps if we have high edge variance */
-  int8_t filter = rvp9_signed_char_clamp(ps1 - qs1) & hev;
+  RVP9_LF_F filter = rvp9_signed_char_clamp(ps1 - qs1) & hev;
 
 /* inner taps */
   filter = rvp9_signed_char_clamp(filter + 3 * (qs0 - ps0)) & mask;
@@ -1800,23 +2697,23 @@ static void rvp9_filter4(int8_t mask, uint8_t thresh, uint8_t *op1,
   filter1 = rvp9_signed_char_clamp(filter + 4) >> 3;
   filter2 = rvp9_signed_char_clamp(filter + 3) >> 3;
 
-  *oq0 = (uint8_t)(rvp9_signed_char_clamp(qs0 - filter1) ^ 0x80);
-  *op0 = (uint8_t)(rvp9_signed_char_clamp(ps0 + filter2) ^ 0x80);
+  *oq0 = RVP9_LF_UNPS(qs0 - filter1);
+  *op0 = RVP9_LF_UNPS(ps0 + filter2);
 
 /* outer tap adjustments */
   filter = ROUND_POWER_OF_TWO(filter1, 1) & ~hev;
 
-  *oq1 = (uint8_t)(rvp9_signed_char_clamp(qs1 - filter) ^ 0x80);
-  *op1 = (uint8_t)(rvp9_signed_char_clamp(ps1 + filter) ^ 0x80);
+  *oq1 = RVP9_LF_UNPS(qs1 - filter);
+  *op1 = RVP9_LF_UNPS(ps1 + filter);
 }
 
 static void rvp9_filter8(int8_t mask, uint8_t thresh, int8_t flat,
-                           uint8_t *op3, uint8_t *op2, uint8_t *op1,
-                           uint8_t *op0, uint8_t *oq0, uint8_t *oq1,
-                           uint8_t *oq2, uint8_t *oq3) {
+                           RVP9_PIXEL *op3, RVP9_PIXEL *op2, RVP9_PIXEL *op1,
+                           RVP9_PIXEL *op0, RVP9_PIXEL *oq0, RVP9_PIXEL *oq1,
+                           RVP9_PIXEL *oq2, RVP9_PIXEL *oq3) {
   if (flat && mask) {
-    const uint8_t p3 = *op3, p2 = *op2, p1 = *op1, p0 = *op0;
-    const uint8_t q0 = *oq0, q1 = *oq1, q2 = *oq2, q3 = *oq3;
+    const RVP9_PIXEL p3 = *op3, p2 = *op2, p1 = *op1, p0 = *op0;
+    const RVP9_PIXEL q0 = *oq0, q1 = *oq1, q2 = *oq2, q3 = *oq3;
 
 /* 7-tap filter [1, 1, 1, 2, 1, 1, 1] */
     *op2 = ROUND_POWER_OF_TWO(p3 + p3 + p3 + 2 * p2 + p1 + p0 + q0, 3);
@@ -1831,17 +2728,17 @@ static void rvp9_filter8(int8_t mask, uint8_t thresh, int8_t flat,
 }
 
 static void rvp9_filter16(int8_t mask, uint8_t thresh, int8_t flat,
-                            int8_t flat2, uint8_t *op7, uint8_t *op6,
-                            uint8_t *op5, uint8_t *op4, uint8_t *op3,
-                            uint8_t *op2, uint8_t *op1, uint8_t *op0,
-                            uint8_t *oq0, uint8_t *oq1, uint8_t *oq2,
-                            uint8_t *oq3, uint8_t *oq4, uint8_t *oq5,
-                            uint8_t *oq6, uint8_t *oq7) {
+                            int8_t flat2, RVP9_PIXEL *op7, RVP9_PIXEL *op6,
+                            RVP9_PIXEL *op5, RVP9_PIXEL *op4, RVP9_PIXEL *op3,
+                            RVP9_PIXEL *op2, RVP9_PIXEL *op1, RVP9_PIXEL *op0,
+                            RVP9_PIXEL *oq0, RVP9_PIXEL *oq1, RVP9_PIXEL *oq2,
+                            RVP9_PIXEL *oq3, RVP9_PIXEL *oq4, RVP9_PIXEL *oq5,
+                            RVP9_PIXEL *oq6, RVP9_PIXEL *oq7) {
   if (flat2 && flat && mask) {
-    const uint8_t p7 = *op7, p6 = *op6, p5 = *op5, p4 = *op4, p3 = *op3,
+    const RVP9_PIXEL p7 = *op7, p6 = *op6, p5 = *op5, p4 = *op4, p3 = *op3,
                   p2 = *op2, p1 = *op1, p0 = *op0;
 
-    const uint8_t q0 = *oq0, q1 = *oq1, q2 = *oq2, q3 = *oq3, q4 = *oq4,
+    const RVP9_PIXEL q0 = *oq0, q1 = *oq1, q2 = *oq2, q3 = *oq3, q4 = *oq4,
                   q5 = *oq5, q6 = *oq6, q7 = *oq7;
 
 /* 15-tap filter [1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1] */
@@ -1884,7 +2781,7 @@ static void rvp9_filter16(int8_t mask, uint8_t thresh, int8_t flat,
   }
 }
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
 /* ---- 8-lane SSE2 loop filter ----
  * Each __m128i carries 8 samples (one per filtered line) in its low
  * half. Every step mirrors the scalar functions above exactly:
@@ -2346,7 +3243,7 @@ static void rvp9_lpf_vertical_16_sse2(uint8_t *s, int pitch,
 }
 #endif /* RVP9_SSE2 */
 
-#if defined(RVP9_NEON)
+#if defined(RVP9_NEON) && !RVP9_RECON_HBD
 /* NEON translation of the SSE2 loop filter above; the same integer
  * expressions lane for lane (vabd/vmax/vcle for the masks, vqadd/vqsub
  * signed-saturating int8 for filter4 with a native arithmetic
@@ -2708,15 +3605,15 @@ static void rvp9_lpf_vertical_16_neon(uint8_t *s, int pitch,
 }
 #endif /* RVP9_NEON */
 
-static void rvp9_lpf_horizontal_4(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_horizontal_4(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                             const uint8_t *limit, const uint8_t *thresh) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   rvp9_lpf_horizontal_4_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   rvp9_lpf_horizontal_4_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
@@ -2725,9 +3622,9 @@ static void rvp9_lpf_horizontal_4(uint8_t *s, int pitch, const uint8_t *blimit,
 /* loop filter designed to work using chars so that we can make maximum use */
 /* of 8 bit simd instructions. */
   for (i = 0; i < 8; ++i) {
-    const uint8_t p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
+    const RVP9_PIXEL p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
                   p0 = s[-pitch];
-    const uint8_t q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
+    const RVP9_PIXEL q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
                   q3 = s[3 * pitch];
     const int8_t mask =
         rvp9_filter_mask(*limit, *blimit, p3, p2, p1, p0, q0, q1, q2, q3);
@@ -2736,15 +3633,15 @@ static void rvp9_lpf_horizontal_4(uint8_t *s, int pitch, const uint8_t *blimit,
   }
 }
 
-static void rvp9_lpf_vertical_4(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_vertical_4(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                           const uint8_t *limit, const uint8_t *thresh) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   rvp9_lpf_vertical_4_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   rvp9_lpf_vertical_4_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
@@ -2753,8 +3650,8 @@ static void rvp9_lpf_vertical_4(uint8_t *s, int pitch, const uint8_t *blimit,
 /* loop filter designed to work using chars so that we can make maximum use */
 /* of 8 bit simd instructions. */
   for (i = 0; i < 8; ++i) {
-    const uint8_t p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
-    const uint8_t q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
+    const RVP9_PIXEL p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
+    const RVP9_PIXEL q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
     const int8_t mask =
         rvp9_filter_mask(*limit, *blimit, p3, p2, p1, p0, q0, q1, q2, q3);
     rvp9_filter4(mask, *thresh, s - 2, s - 1, s, s + 1);
@@ -2762,15 +3659,15 @@ static void rvp9_lpf_vertical_4(uint8_t *s, int pitch, const uint8_t *blimit,
   }
 }
 
-static void rvp9_lpf_horizontal_8(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_horizontal_8(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                             const uint8_t *limit, const uint8_t *thresh) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   rvp9_lpf_horizontal_8_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   rvp9_lpf_horizontal_8_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
@@ -2779,9 +3676,9 @@ static void rvp9_lpf_horizontal_8(uint8_t *s, int pitch, const uint8_t *blimit,
 /* loop filter designed to work using chars so that we can make maximum use */
 /* of 8 bit simd instructions. */
   for (i = 0; i < 8; ++i) {
-    const uint8_t p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
+    const RVP9_PIXEL p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
                   p0 = s[-pitch];
-    const uint8_t q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
+    const RVP9_PIXEL q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
                   q3 = s[3 * pitch];
 
     const int8_t mask =
@@ -2793,23 +3690,23 @@ static void rvp9_lpf_horizontal_8(uint8_t *s, int pitch, const uint8_t *blimit,
   }
 }
 
-static void rvp9_lpf_vertical_8(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_vertical_8(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                           const uint8_t *limit, const uint8_t *thresh) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   rvp9_lpf_vertical_8_sse2(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   rvp9_lpf_vertical_8_neon(s, pitch, *blimit, *limit, *thresh);
   (void)i;
   return;
 #endif
 
   for (i = 0; i < 8; ++i) {
-    const uint8_t p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
-    const uint8_t q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
+    const RVP9_PIXEL p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
+    const RVP9_PIXEL q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
     const int8_t mask =
         rvp9_filter_mask(*limit, *blimit, p3, p2, p1, p0, q0, q1, q2, q3);
     const int8_t flat = rvp9_flat_mask4(1, p3, p2, p1, p0, q0, q1, q2, q3);
@@ -2819,17 +3716,17 @@ static void rvp9_lpf_vertical_8(uint8_t *s, int pitch, const uint8_t *blimit,
   }
 }
 
-static void rvp9_mb_lpf_horizontal_edge_w(uint8_t *s, int pitch,
+static void rvp9_mb_lpf_horizontal_edge_w(RVP9_PIXEL *s, int pitch,
                                      const uint8_t *blimit,
                                      const uint8_t *limit,
                                      const uint8_t *thresh, int count) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   for (i = 0; i < count; i++)
      rvp9_lpf_horizontal_16_sse2(s + 8 * i, pitch, *blimit, *limit, *thresh);
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   for (i = 0; i < count; i++)
      rvp9_lpf_horizontal_16_neon(s + 8 * i, pitch, *blimit, *limit, *thresh);
   return;
@@ -2838,9 +3735,9 @@ static void rvp9_mb_lpf_horizontal_edge_w(uint8_t *s, int pitch,
 /* loop filter designed to work using chars so that we can make maximum use */
 /* of 8 bit simd instructions. */
   for (i = 0; i < 8 * count; ++i) {
-    const uint8_t p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
+    const RVP9_PIXEL p3 = s[-4 * pitch], p2 = s[-3 * pitch], p1 = s[-2 * pitch],
                   p0 = s[-pitch];
-    const uint8_t q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
+    const RVP9_PIXEL q0 = s[0 * pitch], q1 = s[1 * pitch], q2 = s[2 * pitch],
                   q3 = s[3 * pitch];
     const int8_t mask =
         rvp9_filter_mask(*limit, *blimit, p3, p2, p1, p0, q0, q1, q2, q3);
@@ -2858,29 +3755,29 @@ static void rvp9_mb_lpf_horizontal_edge_w(uint8_t *s, int pitch,
   }
 }
 
-static void rvp9_lpf_horizontal_16(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_horizontal_16(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                              const uint8_t *limit, const uint8_t *thresh) {
   rvp9_mb_lpf_horizontal_edge_w(s, pitch, blimit, limit, thresh, 1);
 }
 
-static void rvp9_mb_lpf_vertical_edge_w(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_mb_lpf_vertical_edge_w(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                                    const uint8_t *limit, const uint8_t *thresh,
                                    int count) {
   int i;
 
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
   for (i = 0; i < count; i += 8)
      rvp9_lpf_vertical_16_sse2(s + i * pitch, pitch, *blimit, *limit, *thresh);
   return;
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
   for (i = 0; i < count; i += 8)
      rvp9_lpf_vertical_16_neon(s + i * pitch, pitch, *blimit, *limit, *thresh);
   return;
 #endif
 
   for (i = 0; i < count; ++i) {
-    const uint8_t p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
-    const uint8_t q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
+    const RVP9_PIXEL p3 = s[-4], p2 = s[-3], p1 = s[-2], p0 = s[-1];
+    const RVP9_PIXEL q0 = s[0], q1 = s[1], q2 = s[2], q3 = s[3];
     const int8_t mask =
         rvp9_filter_mask(*limit, *blimit, p3, p2, p1, p0, q0, q1, q2, q3);
     const int8_t flat = rvp9_flat_mask4(1, p3, p2, p1, p0, q0, q1, q2, q3);
@@ -2894,7 +3791,7 @@ static void rvp9_mb_lpf_vertical_edge_w(uint8_t *s, int pitch, const uint8_t *bl
   }
 }
 
-static void rvp9_lpf_vertical_16(uint8_t *s, int pitch, const uint8_t *blimit,
+static void rvp9_lpf_vertical_16(RVP9_PIXEL *s, int pitch, const uint8_t *blimit,
                            const uint8_t *limit, const uint8_t *thresh) {
   rvp9_mb_lpf_vertical_edge_w(s, pitch, blimit, limit, thresh, 8);
 }
@@ -2917,7 +3814,7 @@ static void rvp9_lpf_vertical_16(uint8_t *s, int pitch, const uint8_t *blimit,
  * saturating packs for the clip; the averaging variant's
  * ROUND_POWER_OF_TWO(dst + res, 1) is exactly pavgb/vrhadd. Taps and
  * products fit int16 lanes (|tap| <= 128, samples <= 255). */
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
 static void rvp9_convolve_horiz_sse2(const uint8_t *src, int src_stride,
       uint8_t *dst, int dst_stride, const int16_t *f, int w, int h, int avg)
 {
@@ -3136,7 +4033,7 @@ static void rvp9_convolve_vert_sse2(const uint8_t *src, int src_stride,
 }
 #endif
 
-#if defined(RVP9_NEON)
+#if defined(RVP9_NEON) && !RVP9_RECON_HBD
 /* NEON translation of the SSE2 kernels: vmlal_lane tap chains
  * accumulating in int32; vqrshrn_n_s32(sum, 7) is exactly
  * (sum + 64) >> 7 with int16 saturation, vqmovun the 0..255 clip,
@@ -3367,13 +4264,13 @@ static void rvp9_convolve_vert_neon(const uint8_t *src, int src_stride,
 }
 #endif
 
-static void rvp9_convolve_horiz(const uint8_t *src, int src_stride,
-      uint8_t *dst, int dst_stride, const int16_t (*xf)[8],
+static void rvp9_convolve_horiz(const RVP9_PIXEL *src, int src_stride,
+      RVP9_PIXEL *dst, int dst_stride, const int16_t (*xf)[8],
       int x0_q4, int x_step_q4, int w, int h, int avg)
 {
    int x, y;
    src -= RVP9_SUBPEL_TAPS / 2 - 1;
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
    if (x_step_q4 == 16)
    {
       rvp9_convolve_horiz_sse2(src + (x0_q4 >> RVP9_SUBPEL_BITS),
@@ -3381,7 +4278,7 @@ static void rvp9_convolve_horiz(const uint8_t *src, int src_stride,
             xf[x0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
       return;
    }
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
    if (x_step_q4 == 16)
    {
       rvp9_convolve_horiz_neon(src + (x0_q4 >> RVP9_SUBPEL_BITS),
@@ -3395,12 +4292,12 @@ static void rvp9_convolve_horiz(const uint8_t *src, int src_stride,
       int x_q4 = x0_q4;
       for (x = 0; x < w; x++)
       {
-         const uint8_t *s = &src[x_q4 >> RVP9_SUBPEL_BITS];
+         const RVP9_PIXEL *s = &src[x_q4 >> RVP9_SUBPEL_BITS];
          const int16_t *f = xf[x_q4 & RVP9_SUBPEL_MASK];
          int k, sum = 0;
          for (k = 0; k < RVP9_SUBPEL_TAPS; k++) sum += s[k] * f[k];
          if (avg)
-            dst[x] = (uint8_t)ROUND_POWER_OF_TWO(dst[x] +
+            dst[x] = (RVP9_PIXEL)ROUND_POWER_OF_TWO(dst[x] +
                rvp9_clip8(ROUND_POWER_OF_TWO(sum, RVP9_FILTER_BITS)), 1);
          else
             dst[x] = rvp9_clip8(ROUND_POWER_OF_TWO(sum, RVP9_FILTER_BITS));
@@ -3411,13 +4308,13 @@ static void rvp9_convolve_horiz(const uint8_t *src, int src_stride,
    }
 }
 
-static void rvp9_convolve_vert(const uint8_t *src, int src_stride,
-      uint8_t *dst, int dst_stride, const int16_t (*yf)[8],
+static void rvp9_convolve_vert(const RVP9_PIXEL *src, int src_stride,
+      RVP9_PIXEL *dst, int dst_stride, const int16_t (*yf)[8],
       int y0_q4, int y_step_q4, int w, int h, int avg)
 {
    int x, y;
    src -= src_stride * (RVP9_SUBPEL_TAPS / 2 - 1);
-#if defined(RVP9_SSE2)
+#if defined(RVP9_SSE2) && !RVP9_RECON_HBD
    if (y_step_q4 == 16)
    {
       rvp9_convolve_vert_sse2(src +
@@ -3426,7 +4323,7 @@ static void rvp9_convolve_vert(const uint8_t *src, int src_stride,
             yf[y0_q4 & RVP9_SUBPEL_MASK], w, h, avg);
       return;
    }
-#elif defined(RVP9_NEON)
+#elif defined(RVP9_NEON) && !RVP9_RECON_HBD
    if (y_step_q4 == 16)
    {
       rvp9_convolve_vert_neon(src +
@@ -3441,13 +4338,13 @@ static void rvp9_convolve_vert(const uint8_t *src, int src_stride,
       int y_q4 = y0_q4;
       for (y = 0; y < h; y++)
       {
-         const uint8_t *s = &src[(y_q4 >> RVP9_SUBPEL_BITS) * src_stride];
+         const RVP9_PIXEL *s = &src[(y_q4 >> RVP9_SUBPEL_BITS) * src_stride];
          const int16_t *f = yf[y_q4 & RVP9_SUBPEL_MASK];
          int k, sum = 0;
          for (k = 0; k < RVP9_SUBPEL_TAPS; k++)
             sum += s[k * src_stride] * f[k];
          if (avg)
-            dst[y * dst_stride] = (uint8_t)ROUND_POWER_OF_TWO(
+            dst[y * dst_stride] = (RVP9_PIXEL)ROUND_POWER_OF_TWO(
                dst[y * dst_stride] +
                rvp9_clip8(ROUND_POWER_OF_TWO(sum, RVP9_FILTER_BITS)), 1);
          else
@@ -3461,11 +4358,11 @@ static void rvp9_convolve_vert(const uint8_t *src, int src_stride,
 }
 
 /* vpx_convolve8_c: horiz into temp, then vert. */
-static void rvp9_convolve8(const uint8_t *src, int src_stride, uint8_t *dst,
+static void rvp9_convolve8(const RVP9_PIXEL *src, int src_stride, RVP9_PIXEL *dst,
       int dst_stride, const int16_t (*kernel)[8], int x0_q4, int x_step_q4,
       int y0_q4, int y_step_q4, int w, int h, int avg)
 {
-   uint8_t temp[64 * 135];
+   RVP9_PIXEL temp[64 * 135];
    const int ih =
       (((h - 1) * y_step_q4 + y0_q4) >> RVP9_SUBPEL_BITS) + RVP9_SUBPEL_TAPS;
    rvp9_convolve_horiz(src - src_stride * (RVP9_SUBPEL_TAPS / 2 - 1),
@@ -3475,8 +4372,8 @@ static void rvp9_convolve8(const uint8_t *src, int src_stride, uint8_t *dst,
 }
 
 /* sf->predict dispatch for the unscaled case (xs = ys = 16). */
-static void rvp9_inter_predict(const uint8_t *src, int src_stride,
-      uint8_t *dst, int dst_stride, int subpel_x, int subpel_y,
+static void rvp9_inter_predict(const RVP9_PIXEL *src, int src_stride,
+      RVP9_PIXEL *dst, int dst_stride, int subpel_x, int subpel_y,
       int w, int h, int ref, const int16_t (*kernel)[8], int xs, int ys)
 {
    if (subpel_x && subpel_y)
@@ -3493,23 +4390,23 @@ static void rvp9_inter_predict(const uint8_t *src, int src_stride,
       int x, y;
       for (y = 0; y < h; y++)
          for (x = 0; x < w; x++)
-            dst[y * dst_stride + x] = (uint8_t)ROUND_POWER_OF_TWO(
+            dst[y * dst_stride + x] = (RVP9_PIXEL)ROUND_POWER_OF_TWO(
                dst[y * dst_stride + x] + src[y * src_stride + x], 1);
    }
    else
    {
       int y;
       for (y = 0; y < h; y++)
-         memcpy(dst + y * dst_stride, src + y * src_stride, w);
+         RVP9_PXCOPY(dst + y * dst_stride, src + y * src_stride, w);
    }
 }
 
 /* build_mc_border: replicate frame edges into a temp block. */
-static void rvp9_build_mc_border(const uint8_t *src, int src_stride,
-      uint8_t *dst, int dst_stride, int x, int y, int b_w, int b_h,
+static void rvp9_build_mc_border(const RVP9_PIXEL *src, int src_stride,
+      RVP9_PIXEL *dst, int dst_stride, int x, int y, int b_w, int b_h,
       int w, int h)
 {
-   const uint8_t *ref_row = src - x - y * src_stride;
+   const RVP9_PIXEL *ref_row = src - x - y * src_stride;
 
    if (y >= h)
       ref_row += (h - 1) * src_stride;
@@ -3526,9 +4423,9 @@ static void rvp9_build_mc_border(const uint8_t *src, int src_stride,
       if (right > b_w) right = b_w;
       copy = b_w - left - right;
 
-      if (left) memset(dst, ref_row[0], left);
-      if (copy) memcpy(dst + left, ref_row + x + left, copy);
-      if (right) memset(dst + left + copy, ref_row[w - 1], right);
+      if (left) RVP9_PXFILL(dst, ref_row[0], left);
+      if (copy) RVP9_PXCOPY(dst + left, ref_row + x + left, copy);
+      if (right) RVP9_PXFILL(dst + left + copy, ref_row[w - 1], right);
 
       dst += dst_stride;
       ++y;
@@ -3539,19 +4436,19 @@ static void rvp9_build_mc_border(const uint8_t *src, int src_stride,
 /* dec_build_inter_predictors, unscaled path only (refs same size). */
 static void rvp9_build_inter_pred(rvp9_dec *d, int plane, int x, int y,
       int w, int h, const rvp9_mv *mv, const rvp9_fb *ref_fb,
-      const int16_t (*kernel)[8], int ref, uint8_t *dst_base, int dst_stride,
+      const int16_t (*kernel)[8], int ref, RVP9_PIXEL *dst_base, int dst_stride,
       int mi_row, int mi_col)
 {
    int ss = plane ? 1 : 0;
-   uint8_t *dst = dst_base + dst_stride * y + x;
-   const uint8_t *ref_frame =
-      plane == 0 ? ref_fb->y : (plane == 1 ? ref_fb->u : ref_fb->v);
+   RVP9_PIXEL *dst = dst_base + dst_stride * y + x;
+   const RVP9_PIXEL *ref_frame = (const RVP9_PIXEL *)
+      (plane == 0 ? ref_fb->y : (plane == 1 ? ref_fb->u : ref_fb->v));
    int frame_width  = plane ? (ref_fb->w + 1) >> 1 : ref_fb->w;
    int frame_height = plane ? (ref_fb->h + 1) >> 1 : ref_fb->h;
    int buf_stride   = plane ? d->uvs : d->ys;
    int x0, y0, x0_16, y0_16, subpel_x, subpel_y;
    rvp9_mv scaled;
-   const uint8_t *buf_ptr;
+   const RVP9_PIXEL *buf_ptr;
 
    x0 = ((mi_col * 8) >> ss) + x;
    y0 = ((mi_row * 8) >> ss) + y;
@@ -3593,11 +4490,11 @@ static void rvp9_build_inter_pred(rvp9_dec *d, int plane, int x, int y,
       if (x0 < 0 || x0 > frame_width - 1 || x1 < 0 || x1 > frame_width - 1 ||
           y0 < 0 || y0 > frame_height - 1 || y1 < 0 || y1 > frame_height - 1)
       {
-         const uint8_t *buf_ptr1 = ref_frame + y0 * buf_stride + x0;
+         const RVP9_PIXEL *buf_ptr1 = ref_frame + y0 * buf_stride + x0;
          const int b_w = x1 - x0 + 1;
          const int b_h = y1 - y0 + 1;
          const int border_offset = y_pad * 3 * b_w + x_pad * 3;
-         uint8_t mc_buf[80 * 2 * 80 * 2];
+         RVP9_PIXEL mc_buf[80 * 2 * 80 * 2];
 
          rvp9_build_mc_border(buf_ptr1, buf_stride, mc_buf, b_w,
             x0, y0, b_w, b_h, frame_width, frame_height);
@@ -3634,6 +4531,7 @@ static rvp9_mv rvp9_average_split_mvs(const rvp9_mi *mi, int ref, int ss,
 /* ==================================================================== */
 #define RVP9_MAX_LOOP_FILTER 63
 
+#if !RVP9_RECON_HBD  /* shared, bit-depth independent types */
 typedef struct
 {
    uint8_t mblim, lim, hev_thr;
@@ -3645,6 +4543,7 @@ typedef struct
    uint16_t left_uv[4], above_uv[4], int_4x4_uv;
    uint8_t  lfl_y[64];
 } rvp9_lfm;
+#endif /* !RVP9_RECON_HBD */
 
 /* mask LUTs (vp9_loopfilter.c) */
 static const uint64_t rvp9_left_txf_mask[4] = {
@@ -3681,11 +4580,13 @@ static const uint16_t rvp9_size_mask_uv[13] = {
    0x1,0x1,0x1,0x1,0x1,0x1,0x1,0x11,0x3,0x33,0x3333,0xff,0xffff
 };
 
+#if !RVP9_RECON_HBD  /* shared, bit-depth independent types */
 typedef struct
 {
    rvp9_lfthr lfthr[RVP9_MAX_LOOP_FILTER + 1];
    uint8_t    lvl[4][2];    /* [ref_frame][mode_lf_lut]; seg off      */
 } rvp9_lf_info;
+#endif /* !RVP9_RECON_HBD */
 
 /* mode_lf_lut: intra modes + ZEROMV -> 0; NEAREST/NEAR/NEW -> 1 */
 static const uint8_t rvp9_mode_lf_lut[14] =
@@ -4023,7 +4924,7 @@ static void rvp9_adjust_mask(const rvp9_dec *d, int mi_row, int mi_col,
 }
 
 /* Simplified per-position application (equivalent to the dual variants). */
-static void rvp9_filter_vert_line(uint8_t *s, int pitch, unsigned m16,
+static void rvp9_filter_vert_line(RVP9_PIXEL *s, int pitch, unsigned m16,
       unsigned m8, unsigned m4, unsigned m4i, const rvp9_lfthr *thr,
       const uint8_t *lfl, int positions)
 {
@@ -4045,7 +4946,7 @@ static void rvp9_filter_vert_line(uint8_t *s, int pitch, unsigned m16,
    }
 }
 
-static void rvp9_filter_horiz_line(uint8_t *s, int pitch, unsigned m16,
+static void rvp9_filter_horiz_line(RVP9_PIXEL *s, int pitch, unsigned m16,
       unsigned m8, unsigned m4, unsigned m4i, const rvp9_lfthr *thr,
       const uint8_t *lfl, int positions)
 {
@@ -4073,7 +4974,7 @@ static void rvp9_filter_sb(rvp9_dec *d, const rvp9_lf_info *lfi,
    int r;
    /* ---- luma (ss00) ---- */
    {
-      uint8_t *buf = d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
+      RVP9_PIXEL *buf = (RVP9_PIXEL*)d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
       uint64_t m16 = lfm->left_y[2], m8 = lfm->left_y[1];
       uint64_t m4 = lfm->left_y[0], m4i = lfm->int_4x4_y;
       for (r = 0; r < 8 && mi_row + r < d->mi_rows; r++)
@@ -4085,7 +4986,7 @@ static void rvp9_filter_sb(rvp9_dec *d, const rvp9_lf_info *lfi,
          buf += 8 * d->ys;
          m16 >>= 8; m8 >>= 8; m4 >>= 8; m4i >>= 8;
       }
-      buf = d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
+      buf = (RVP9_PIXEL*)d->buf_y + (mi_row * 8) * d->ys + mi_col * 8;
       m16 = lfm->above_y[2]; m8 = lfm->above_y[1];
       m4 = lfm->above_y[0]; m4i = lfm->int_4x4_y;
       for (r = 0; r < 8 && mi_row + r < d->mi_rows; r++)
@@ -4116,9 +5017,9 @@ static void rvp9_filter_sb(rvp9_dec *d, const rvp9_lf_info *lfi,
 
       for (p = 1; p <= 2; p++)
       {
-         uint8_t *base = (p == 1 ? d->buf_u : d->buf_v)
+         RVP9_PIXEL *base = (RVP9_PIXEL*)(p == 1 ? d->buf_u : d->buf_v)
                        + (mi_row * 4) * d->uvs + mi_col * 4;
-         uint8_t *buf = base;
+         RVP9_PIXEL *buf = base;
          uint16_t m16 = lfm->left_uv[2], m8 = lfm->left_uv[1];
          uint16_t m4 = lfm->left_uv[0], m4i = lfm->int_4x4_uv;
          for (r = 0; r < 8 && mi_row + r < d->mi_rows; r += 2)
@@ -4173,4 +5074,3 @@ static void rvp9_loop_filter_frame(rvp9_dec *d)
 
 
 #endif /* RVP9_RECON_PART == 4 */
-
