@@ -340,6 +340,7 @@ typedef atomic_int    retro_atomic_int_t;
 typedef atomic_size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    atomic_init((p), (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   atomic_init((p), (v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -386,6 +387,13 @@ typedef std::atomic<int>         retro_atomic_int_t;
 typedef std::atomic<std::size_t> retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    std::atomic_init((p), (v))
+
+/* Static/aggregate initializer for a retro_atomic_int_t member.
+ * std::atomic<int> is a class type, so it must be brace-initialized
+ * inside an aggregate initializer list; the C backends below are all
+ * plain scalars and must NOT be braced, or GCC/Clang emit
+ * -Wbraces-around-scalar-init. */
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  { (v) }
 #define retro_atomic_size_init(p, v)   std::atomic_init((p), (std::size_t)(v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -415,6 +423,7 @@ typedef int    retro_atomic_int_t;
 typedef size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -489,6 +498,7 @@ typedef volatile LONG_PTR retro_atomic_size_t;
  * on every Windows ABI. */
 
 #define retro_atomic_int_init(p, v)    (*(p) = (LONG)(v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (LONG_PTR)(v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -556,6 +566,7 @@ typedef volatile intptr_t retro_atomic_size_t;
  * size_t == intptr_t in width.  Holds on every Apple ABI. */
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (intptr_t)(v))
 
 #define retro_atomic_load_acquire_int(p)  OSAtomicAdd32Barrier(0, (p))
@@ -595,6 +606,7 @@ typedef volatile int    retro_atomic_int_t;
 typedef volatile size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 /* __sync builtins are full sequential-consistency; over-strong but correct.
@@ -627,6 +639,7 @@ typedef volatile int    retro_atomic_int_t;
 typedef volatile size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 /* No barriers.  Correct only on single-core or x86 TSO. */
