@@ -2053,16 +2053,33 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                 * bits, or shown through the SDR path, PQ code values read as
                 * ordinary gamma and the image comes out badly wrong rather
                 * than merely coarse.  There is no safe silent fallback, so
-                * refuse and let the core pick an SDR format instead. */
+                * refuse and let the core pick an SDR format instead.
+                *
+                * What can be tested here is limited by when this runs.
+                * SET_PIXEL_FORMAT is issued from retro_load_game, i.e. during
+                * CMD_EVENT_CORE_INIT, which precedes drivers_init: the video
+                * driver has not yet created its swapchain for this session.
+                * VIDEO_FLAG_HDR_SUPPORT is cleared at driver init and only
+                * re-set once an HDR swapchain exists, so testing it here
+                * always fails and would refuse the format on every machine.
+                * The user setting is the reliable signal instead -- the D3D
+                * and Vulkan paths force video_hdr_mode to 0 when the display
+                * cannot do HDR, so a non-zero value means HDR output was both
+                * requested and possible. */
                {
                   settings_t *settings = config_get_ptr();
-                  if (     !(video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT)
-                        || settings->uints.video_hdr_mode == 0
-                        || !video_driver_test_all_flags(
-                              GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+                  if (settings->uints.video_hdr_mode == 0)
                   {
                      RARCH_LOG("[Environ] SET_PIXEL_FORMAT: HDR10_2101010 "
-                           "refused (HDR output not active).\n");
+                           "refused (HDR output is off).\n");
+                     return false;
+                  }
+                  if (!video_driver_test_all_flags(
+                           GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+                  {
+                     RARCH_LOG("[Environ] SET_PIXEL_FORMAT: HDR10_2101010 "
+                           "refused (video driver has no 10-bit source "
+                           "path).\n");
                      return false;
                   }
                   RARCH_LOG("[Environ] SET_PIXEL_FORMAT: HDR10_2101010.\n");
