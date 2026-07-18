@@ -612,12 +612,12 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    {
       const uint8_t *y, *u, *v;
       int ys, uvs, w, h, cw, ch;
-      /* rh264 reconstructs IDR key frames and CAVLC-coded P frames, the
-       * latter predicted from the previously decoded picture. Anything it
-       * still cannot handle (B frames, CABAC-coded P frames) is skipped
-       * rather than aborting the stream, so such clips keep animating across
-       * their key frames as before. A key frame that fails to decode is a
-       * real error. */
+      /* rh264 reconstructs IDR key frames and CAVLC-coded P and B frames,
+       * handing pictures out in display order. Anything it still cannot
+       * handle (CABAC entropy coding, High profile) is skipped rather than
+       * aborting the stream, so such clips keep animating across their key
+       * frames as before. A key frame that fails to decode is a real
+       * error. */
       {
          int dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
          if (dec < 0)
@@ -663,6 +663,30 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
       if (duration_ms)
          *duration_ms = rmp4_video_duration_ms(s, idx);
       return s->frame;
+   }
+   /* Out of packets. Display reordering can leave the last few pictures
+    * queued inside the H.264 decoder; hand them out before ending the
+    * pass, one per call, giving each the duration of a trailing sample. */
+   if (s->h264 && rh264_video_drain(s->h264) == 0)
+   {
+      const uint8_t *y, *u, *v;
+      int ys, uvs, w, h, cw, ch;
+      y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
+      u = rh264_video_plane(s->h264, 1, &uvs, &cw, &ch);
+      v = rh264_video_plane(s->h264, 2, &uvs, &cw, &ch);
+      if (y && u && v)
+      {
+         if ((unsigned)w > s->width)
+            w = (int)s->width;
+         if ((unsigned)h > s->height)
+            h = (int)s->height;
+         rmp4_video_blit_i420(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs);
+         if (duration_ms)
+            *duration_ms = rmp4_video_duration_ms(s,
+                  s->pkt_idx > 0 ? s->pkt_idx - 1 : 0);
+         return s->frame;
+      }
    }
    return NULL;           /* end of one pass */
 }
