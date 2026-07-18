@@ -582,6 +582,14 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    {
       const uint8_t *y, *u, *v;
       int ys, uvs, w, h, cw, ch;
+      /* rh264 is an intra-only decoder: it can reconstruct IDR key frames
+       * (which are self-contained) but not the P/B frames in between, since
+       * those reference previously decoded pictures this decoder does not
+       * keep. Rather than aborting the stream at the first inter frame, skip
+       * non-key-frame packets so the preview animates across the clip's key
+       * frames. */
+      if (!pkt->keyframe)
+         return 0;      /* not decodable stand-alone: skip, keep going */
       if (rh264_video_decode(s->h264, pkt->data, pkt->size) != 0)
          return -1;
       y = rh264_video_plane(s->h264, 0, &ys,  &w,  &h);
