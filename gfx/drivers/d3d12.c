@@ -4809,6 +4809,19 @@ static bool d3d12_gfx_frame(
       && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
             && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 
+   /* When HDR is on and a menu or overlay is up, the frame is composited
+    * from back_buffer to the swapchain (the "Copy over back buffer" pass
+    * below). That pass reads back_buffer unconditionally, so the core frame
+    * must have been rendered there this frame - otherwise it reads a stale/
+    * empty back_buffer and the menu background goes black (independent of
+    * colour depth). If the formats matched, use_back_buffer would be false
+    * and the frame would go straight to the swapchain, leaving back_buffer
+    * empty; force it on for that case. */
+   if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+         && (   (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+             || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
+      use_back_buffer = true;
+
    d3d12->chain.current_rt_format = back_buffer_format;
 #endif
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
