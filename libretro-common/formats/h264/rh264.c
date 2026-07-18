@@ -1344,8 +1344,15 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
       int mbx, int mby, int bx, int by, int bw, int bh, int mvx, int mvy)
 {
    int ox = mbx * 16 + bx, oy = mby * 16 + by;
+   /* Edge extension happens at the boundaries of the decoded picture, which
+    * is the full macroblock-aligned size (8.4.2.2.1: positions are clipped
+    * to 0..PicWidthInSamplesL-1). Frame cropping is display-only; samples in
+    * the cropped band are decoded normally and referenced by later pictures,
+    * so clamping at the cropped size substitutes the last visible column or
+    * row for real reference data. */
+   int rw = ref->mbw * 16, rh = ref->mbh * 16;
    uint8_t *dY = f->Y + oy * f->ystride + ox;
-   rh264_mc_luma(dY, f->ystride, ref->Y, ref->ystride, ref->w, ref->h,
+   rh264_mc_luma(dY, f->ystride, ref->Y, ref->ystride, rw, rh,
          ox, oy, bw, bh, mvx, mvy);
    {
       int cox = (mbx * 16 + bx) >> 1, coy = (mby * 16 + by) >> 1;
@@ -1353,9 +1360,9 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
       uint8_t *dU = f->U + coy * f->cstride + cox;
       uint8_t *dV = f->V + coy * f->cstride + cox;
       rh264_mc_chroma(dU, f->cstride, ref->U, ref->cstride,
-            ref->w >> 1, ref->h >> 1, cox, coy, cbw, cbh, mvx, mvy);
+            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, mvy);
       rh264_mc_chroma(dV, f->cstride, ref->V, ref->cstride,
-            ref->w >> 1, ref->h >> 1, cox, coy, cbw, cbh, mvx, mvy);
+            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, mvy);
    }
 }
 
