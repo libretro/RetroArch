@@ -5070,6 +5070,20 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
    return bi;
 }
 
+/* Mark every cell of the motion grid intra, the state an I picture leaves
+ * behind: when it later serves as the co-located picture of a direct block,
+ * 8.4.1.2 treats intra cells as static. */
+static void rh264_mvg_set_intra(rh264_mv *mvg, int gwmax, int ghmax)
+{
+   int i;
+   for (i = 0; i < gwmax * ghmax; i++)
+   {
+      rh264_mv z; memset(&z, 0, sizeof(z));
+      z.ref = -1; z.ref1 = -1; z.pic = -1; z.pic1 = -1; z.intra = 1;
+      mvg[i] = z;
+   }
+}
+
 static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int nut, nri, rc;
@@ -5094,7 +5108,12 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f);
    else
       rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f);
-   if (rc == 0) rh264_deblock(&v->f, &sh);
+   if (rc == 0)
+   {
+      rh264_deblock(&v->f, &sh);
+      if (v->mvg)
+         rh264_mvg_set_intra(v->mvg, v->f.mbw * 4, v->f.mbh * 4);
+   }
    free(rbsp);
    return rc;
 }
@@ -5230,11 +5249,34 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
    if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP
-         && sh.slice_type != RH264_SLICE_B)
+         && sh.slice_type != RH264_SLICE_B
+         && sh.slice_type != RH264_SLICE_I)
    { free(rbsp); return -1; }
    if (sh.slice_type == RH264_SLICE_B && v->sps.pic_order_cnt_type == 1)
    { free(rbsp); return -1; }   /* no POC derivation for type 1 */
    v->last_poc = rh264_derive_poc(v, &sh, nri);
+   if (sh.slice_type == RH264_SLICE_I)
+   {
+      /* A non-IDR I picture, e.g. a recovery point: decoded like an IDR but
+       * with normal inter-picture bookkeeping -- the reference buffer stays,
+       * the counters keep running, and the picture is stored like any other
+       * reference. */
+      if (v->pps.entropy_coding_mode_flag)
+         rc = rh264_cabac_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f);
+      else
+         rc = rh264_decode_islice(&b, &v->sps, &v->pps, &sh, &v->f);
+      if (rc == 0)
+      {
+         rh264_deblock(&v->f, &sh);
+         if (v->mvg)
+            rh264_mvg_set_intra(v->mvg, v->f.mbw * 4, v->f.mbh * 4);
+      }
+      v->last_picnum = sh.frame_num_val;
+      v->pend_n_mmco1 = sh.n_mmco1;
+      memcpy(v->pend_mmco1, sh.mmco1_diff, sizeof(v->pend_mmco1));
+      free(rbsp);
+      return rc;
+   }
    if (v->dpb_len < 1)
    { free(rbsp); return -1; }
    if (sh.slice_type == RH264_SLICE_B)
