@@ -2944,7 +2944,9 @@ rh264_video *rh264_video_open(void)
 {
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
    if (!v) return NULL;
-   v->nal_length_size = 4;
+   /* Annex-B until rh264_video_set_extradata reports the avcC length
+    * size; sample format is decided by that call, never sniffed. */
+   v->nal_length_size = 0;
    v->out_show = -1;
    return v;
 }
@@ -5473,11 +5475,14 @@ int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len)
    int got_pic = 0;
    if (!v || !data) return -1;
 
-   if (v->nal_length_size > 0 && len >= (size_t)v->nal_length_size
-         && !(data[0] == 0 && data[1] == 0
-              && (data[2] == 1 || (data[2] == 0 && data[3] == 1))))
+   if (v->nal_length_size > 0 && len >= (size_t)v->nal_length_size)
    {
-      /* length-prefixed AVCC */
+      /* Length-prefixed AVCC: extradata was provided, so this is the
+       * sample format by definition. Never sniff for start codes here: a
+       * NAL of 256..511 bytes has the 4-byte length 00 00 01 xx, which is
+       * indistinguishable from an Annex-B start code, and misreading such
+       * a sample as Annex-B lets arbitrary payload bytes parse as
+       * parameter sets. */
       int ls = v->nal_length_size, i;
       while (p + ls <= len)
       {
