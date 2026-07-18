@@ -5296,8 +5296,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       int lpn0[34], lpn1[34];
       int nref0 = sh.num_ref_idx_l0, nref1 = sh.num_ref_idx_l1;
       memset(&bc, 0, sizeof(bc));
-      if (nref0 < 1) nref0 = 1; if (nref0 > 32) nref0 = 32;
-      if (nref1 < 1) nref1 = 1; if (nref1 > 32) nref1 = 32;
+      if (nref0 < 1)  nref0 = 1;
+      if (nref0 > 32) nref0 = 32;
+      if (nref1 < 1)  nref1 = 1;
+      if (nref1 > 32) nref1 = 32;
       for (i = 0; i < v->dpb_len; i++)
       { ordered[n] = &v->dpb[v->dpb_slot[i]];
         opoc[n] = v->dpb_poc[v->dpb_slot[i]];
