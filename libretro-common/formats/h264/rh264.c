@@ -86,8 +86,11 @@ static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
 enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SLICE_SI=4 };
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
-   num_ref_idx_l0,cabac_init_idc,
-   slice_alpha_c0_offset,slice_beta_offset; } rh264_slice_hdr;
+   num_ref_idx_l0,cabac_init_idc,frame_num_val,
+   nmod,wp_valid,luma_log2_denom,chroma_log2_denom,
+   slice_alpha_c0_offset,slice_beta_offset;
+   int8_t mod_op[34]; int32_t mod_val[34];
+   int16_t wp_lw[32],wp_lo[32],wp_cw[32][2],wp_co[32][2]; } rh264_slice_hdr;
 /* advancing variant: parses from an existing reader b (leaves it at slice data) */
 static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_ref_idc,
       const rh264_sps *sps,const rh264_pps *pps,rh264_slice_hdr *sh){
@@ -95,6 +98,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    sh->first_mb_in_slice=rh264_ue(b);
    st=rh264_ue(b); sh->slice_type=st%5; sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
+   sh->frame_num_val=sh->frame_num;
    if(!sps->frame_mbs_only_flag){ if(rh264_u1(b)) rh264_u1(b); }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
    if(sps->pic_order_cnt_type==0) sh->poc_lsb=rh264_un(b,sps->log2_max_poc_lsb);
@@ -104,14 +108,37 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       sh->num_ref_idx_l0=pps->num_ref_idx_l0_default;
       if(sh->num_ref_idx_l0<1) sh->num_ref_idx_l0=1;
       if(rh264_u1(b)) sh->num_ref_idx_l0=rh264_ue(b)+1;
-      if(rh264_u1(b)){ /* ref_pic_list_modification_flag_l0 */
+      if(rh264_u1(b)){ /* ref_pic_list_modification_flag_l0 (7.3.3.1) */
          int op; do{ op=rh264_ue(b);
-            if(op==0||op==1) rh264_ue(b);          /* abs_diff_pic_num_minus1 */
-            else if(op==2) rh264_ue(b);            /* long_term_pic_num */
+            if(op==0||op==1||op==2){
+               int v=rh264_ue(b);
+               if(sh->nmod<34){ sh->mod_op[sh->nmod]=(int8_t)op;
+                                sh->mod_val[sh->nmod]=v; sh->nmod++; }
+            }
          } while(op!=3);
       }
    } else if(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
       return 0; /* B and other slice types not yet supported */
+   /* pred_weight_table (7.3.3.2). Entries left unsignalled keep the default
+    * of unit weight and zero offset. */
+   if(pps->weighted_pred_flag
+         &&(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP)){
+      int i,j;
+      sh->luma_log2_denom=rh264_ue(b);
+      sh->chroma_log2_denom=rh264_ue(b);
+      for(i=0;i<32;i++){
+         sh->wp_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp_lo[i]=0;
+         for(j=0;j<2;j++){ sh->wp_cw[i][j]=(int16_t)(1<<sh->chroma_log2_denom);
+                           sh->wp_co[i][j]=0; } }
+      for(i=0;i<sh->num_ref_idx_l0&&i<32;i++){
+         if(rh264_u1(b)){ sh->wp_lw[i]=(int16_t)rh264_se(b);
+                          sh->wp_lo[i]=(int16_t)rh264_se(b); }
+         if(rh264_u1(b)) for(j=0;j<2;j++){
+            sh->wp_cw[i][j]=(int16_t)rh264_se(b);
+            sh->wp_co[i][j]=(int16_t)rh264_se(b); }
+      }
+      sh->wp_valid=1;
+   }
    /* dec_ref_pic_marking (7.3.3.3): only when nal_ref_idc != 0. */
    if(nal_ref_idc){
       if(sh->is_idr){ rh264_u1(b); rh264_u1(b); } /* no_output_prior + long_term_ref */
@@ -1378,7 +1405,7 @@ static int rh264_inter_luma_residual(rh264_bits *b, rh264_frame *f,
  * and motion-compensate. gx,gy = 4x4 grid pos of the partition top-left;
  * bw,bh = pixel size; bx,by = MB-relative pixel offset. */
 static void rh264_p_part_hint(rh264_bits *b, rh264_frame *f, const rh264_frame *ref,
-      rh264_mv *mvg, int gwmax, int ghmax,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
       int mbx, int mby, int bx, int by, int bw, int bh, int refidx, int hint)
 {
    int gx = mbx * 4 + (bx >> 2), gy = mby * 4 + (by >> 2);
@@ -1390,6 +1417,49 @@ static void rh264_p_part_hint(rh264_bits *b, rh264_frame *f, const rh264_frame *
    mvx = pmvx + mvdx; mvy = pmvy + mvdy;
    rh264_mv_fill(mvg, gwmax, gx, gy, bw4, bh4, mvx, mvy, refidx);
    rh264_inter_pred_block(f, ref, mbx, mby, bx, by, bw, bh, mvx, mvy);
+}
+
+/* Explicit weighted prediction for one predicted block (8.4.2.3.2, single
+ * list), applied in place over the samples motion compensation just wrote. */
+static void rh264_weight_pred(rh264_frame *f, const rh264_slice_hdr *sh,
+      int refidx, int mbx, int mby, int bx, int by, int bw, int bh)
+{
+   int ox = mbx*16 + bx, oy = mby*16 + by, x, y;
+   int lw, lo, ld;
+   if (!sh->wp_valid) return;
+   if (refidx < 0) refidx = 0;
+   if (refidx > 31) refidx = 31;
+   lw = sh->wp_lw[refidx]; lo = sh->wp_lo[refidx]; ld = sh->luma_log2_denom;
+   for (y = 0; y < bh; y++)
+   {
+      uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
+      for (x = 0; x < bw; x++)
+      {
+         int v = (ld >= 1) ? (((d[x]*lw + (1 << (ld-1))) >> ld) + lo)
+                           : (d[x]*lw + lo);
+         d[x] = (uint8_t)RH264_CLIP(v);
+      }
+   }
+   {
+      int cox = ox >> 1, coy = oy >> 1, cbw = bw >> 1, cbh = bh >> 1, c;
+      int cd = sh->chroma_log2_denom;
+      uint8_t *planes[2];
+      planes[0] = f->U; planes[1] = f->V;
+      for (c = 0; c < 2; c++)
+      {
+         int cw = sh->wp_cw[refidx][c], co = sh->wp_co[refidx][c];
+         for (y = 0; y < cbh; y++)
+         {
+            uint8_t *d = planes[c] + (coy+y)*f->cstride + cox;
+            for (x = 0; x < cbw; x++)
+            {
+               int v = (cd >= 1) ? (((d[x]*cw + (1 << (cd-1))) >> cd) + co)
+                                 : (d[x]*cw + co);
+               d[x] = (uint8_t)RH264_CLIP(v);
+            }
+         }
+      }
+   }
 }
 
 /* ref_idx_lX, te(v): a single inverted bit when two pictures are available,
@@ -1409,10 +1479,10 @@ static int rh264_ref_idx_te(rh264_bits *b, int nrefs)
 
 /* Median-predictor partition (8x8 and sub-8x8 use plain median). */
 static void rh264_p_part(rh264_bits *b, rh264_frame *f, const rh264_frame *ref,
-      rh264_mv *mvg, int gwmax, int ghmax,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
       int mbx, int mby, int bx, int by, int bw, int bh, int refidx)
 {
-   rh264_p_part_hint(b, f, ref, mvg, gwmax, ghmax, mbx, mby,
+   rh264_p_part_hint(b, f, ref, sh, mvg, gwmax, ghmax, mbx, mby,
          bx, by, bw, bh, refidx, RH264_MVP_MEDIAN);
 }
 
@@ -1481,6 +1551,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
             rh264_pred_mv(mvg, gwmax, gwmax, ghmax, gx, gy, 4, 0, &mvx, &mvy);
          rh264_mv_fill(mvg, gwmax, gx, gy, 4, 4, mvx, mvy, 0);
          rh264_inter_pred_block(f, l0[0], mbx, mby, 0, 0, 16, 16, mvx, mvy);
+         rh264_weight_pred(f, sh, 0, mbx, mby, 0, 0, 16, 16);
          rh264_inter_clear_i4mode(f, mbx, mby);
          /* skip MBs carry no residual */
          { int cx, cy; for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
@@ -1521,7 +1592,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          {
             /* P_L0_16x16 */
             int r0 = rh264_ref_idx_te(b, nrefs);
-            rh264_p_part(b, f, l0[r0], mvg, gwmax, ghmax, mbx, mby,
+            rh264_p_part(b, f, l0[r0], sh, mvg, gwmax, ghmax, mbx, mby,
                   0, 0, 16, 16, r0);
          }
          else if (mb_type == 1)
@@ -1529,18 +1600,18 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
             /* P_L0_L0_16x8: every ref_idx precedes every mvd (7.3.5.1). */
             int ra = rh264_ref_idx_te(b, nrefs);
             int rb = rh264_ref_idx_te(b, nrefs);
-            rh264_p_part_hint(b, f, l0[ra], mvg, gwmax, ghmax, mbx, mby,
+            rh264_p_part_hint(b, f, l0[ra], sh, mvg, gwmax, ghmax, mbx, mby,
                   0, 0, 16, 8, ra, RH264_MVP_B);
-            rh264_p_part_hint(b, f, l0[rb], mvg, gwmax, ghmax, mbx, mby,
+            rh264_p_part_hint(b, f, l0[rb], sh, mvg, gwmax, ghmax, mbx, mby,
                   0, 8, 16, 8, rb, RH264_MVP_A);
          }
          else if (mb_type == 2)
          {
             int ra = rh264_ref_idx_te(b, nrefs);
             int rb = rh264_ref_idx_te(b, nrefs);
-            rh264_p_part_hint(b, f, l0[ra], mvg, gwmax, ghmax, mbx, mby,
+            rh264_p_part_hint(b, f, l0[ra], sh, mvg, gwmax, ghmax, mbx, mby,
                   0, 0, 8, 16, ra, RH264_MVP_A);
-            rh264_p_part_hint(b, f, l0[rb], mvg, gwmax, ghmax, mbx, mby,
+            rh264_p_part_hint(b, f, l0[rb], sh, mvg, gwmax, ghmax, mbx, mby,
                   8, 0, 8, 16, rb, RH264_MVP_C);
          }
          else
@@ -1557,23 +1628,23 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                int st = sub[p], rr = rf[p];
                const rh264_frame *rp = l0[rr];
                if (st == 0)
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px, py, 8, 8, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px, py, 8, 8, rr);
                else if (st == 1)
                {
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px, py,   8, 4, rr);
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px, py+4, 8, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px, py,   8, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px, py+4, 8, 4, rr);
                }
                else if (st == 2)
                {
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px,   py, 4, 8, rr);
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px+4, py, 4, 8, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px,   py, 4, 8, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px+4, py, 4, 8, rr);
                }
                else
                {
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px,   py,   4, 4, rr);
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px+4, py,   4, 4, rr);
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px,   py+4, 4, 4, rr);
-                  rh264_p_part(b, f, rp, mvg, gwmax, ghmax, mbx, mby, px+4, py+4, 4, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px,   py,   4, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px+4, py,   4, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px,   py+4, 4, 4, rr);
+                  rh264_p_part(b, f, rp, sh, mvg, gwmax, ghmax, mbx, mby, px+4, py+4, 4, 4, rr);
                }
             }
          }
@@ -1784,10 +1855,12 @@ struct rh264_video
    rh264_frame f;
    rh264_frame dpb[RH264_MAX_REFS];  /* short-term reference pictures        */
    int        dpb_slot[RH264_MAX_REFS]; /* slot indices, most recent first   */
+   int        dpb_pn[RH264_MAX_REFS];   /* PicNum per slot                   */
    int        dpb_len;          /* number of valid reference pictures        */
    int        dpb_size;         /* slots allocated                           */
    rh264_mv  *mvg;              /* motion-vector grid for the frame being decoded */
    int        have_ref;         /* a reference frame is available (post-IDR)     */
+   int        last_picnum;      /* frame_num of the picture just decoded         */
    int        alloc_w, alloc_h; /* geometry the plane buffers were sized for */
 };
 
@@ -2932,7 +3005,7 @@ static int rh264_cabac_ref_idx(rh264_cabac *cb, const rh264_mv *mvg,
 
 /* Decode one partition's mvd, predict, store and motion compensate. */
 static void rh264_cabac_p_part(rh264_cabac *cb, rh264_frame *f,
-      const rh264_frame *ref, rh264_mv *mvg, int16_t *absmvd,
+      const rh264_frame *ref, const rh264_slice_hdr *sh, rh264_mv *mvg, int16_t *absmvd,
       int gwmax, int ghmax, int mbx, int mby,
       int bx, int by, int bw, int bh, int hint, int refidx)
 {
@@ -2954,6 +3027,7 @@ static void rh264_cabac_p_part(rh264_cabac *cb, rh264_frame *f,
       absmvd[o+1] = (int16_t)(mdy < 0 ? -mdy : mdy);
    }
    rh264_inter_pred_block(f, ref, mbx, mby, bx, by, bw, bh, mvx, mvy);
+   rh264_weight_pred(f, sh, refidx, mbx, mby, bx, by, bw, bh);
 }
 
 /* coded_block_flag ctxIdxInc for the blocks of an inter macroblock. An
@@ -3144,6 +3218,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                rh264_pred_mv(mvg, gwmax, gwmax, ghmax, gx, gy, 4, 0, &mvx, &mvy);
             rh264_mv_fill(mvg, gwmax, gx, gy, 4, 4, mvx, mvy, 0);
             rh264_inter_pred_block(f, l0[0], mbx, mby, 0, 0, 16, 16, mvx, mvy);
+            rh264_weight_pred(f, sh, 0, mbx, mby, 0, 0, 16, 16);
             rh264_inter_clear_i4mode(f, mbx, mby);
             for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
             {
@@ -3205,7 +3280,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                int r0 = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4,
                      nrefs, curref, mbx, mby);
                { int _y,_x; for(_y=0;_y<4;_y++) for(_x=0;_x<4;_x++) curref[_y*4+_x]=(signed char)r0; }
-               rh264_cabac_p_part(&cb, f, l0[r0], mvg, absmvd, gwmax, ghmax,
+               rh264_cabac_p_part(&cb, f, l0[r0], sh, mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 16, 16, RH264_MVP_MEDIAN, r0);
             }
             else if (mb_type == 1)
@@ -3217,9 +3292,9 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4+2,
                      nrefs, curref, mbx, mby);
                { int _y,_x; for(_y=2;_y<4;_y++) for(_x=0;_x<4;_x++) curref[_y*4+_x]=(signed char)rb; }
-               rh264_cabac_p_part(&cb, f, l0[ra], mvg, absmvd, gwmax, ghmax,
+               rh264_cabac_p_part(&cb, f, l0[ra], sh, mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 16, 8, RH264_MVP_B, ra);
-               rh264_cabac_p_part(&cb, f, l0[rb], mvg, absmvd, gwmax, ghmax,
+               rh264_cabac_p_part(&cb, f, l0[rb], sh, mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 8, 16, 8, RH264_MVP_A, rb);
             }
             else if (mb_type == 2)
@@ -3231,9 +3306,9 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4+2, mby*4,
                      nrefs, curref, mbx, mby);
                { int _y,_x; for(_y=0;_y<4;_y++) for(_x=2;_x<4;_x++) curref[_y*4+_x]=(signed char)rb; }
-               rh264_cabac_p_part(&cb, f, l0[ra], mvg, absmvd, gwmax, ghmax,
+               rh264_cabac_p_part(&cb, f, l0[ra], sh, mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 8, 16, RH264_MVP_A, ra);
-               rh264_cabac_p_part(&cb, f, l0[rb], mvg, absmvd, gwmax, ghmax,
+               rh264_cabac_p_part(&cb, f, l0[rb], sh, mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 8, 0, 8, 16, RH264_MVP_C, rb);
             }
             else
@@ -3263,31 +3338,31 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                   int px = (p&1)*8, py = (p>>1)*8, st = sub[p], rr = rf[p];
                   const rh264_frame *rp = l0[rr];
                   if (st == 0)
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px, py, 8, 8, RH264_MVP_MEDIAN, rr);
                   else if (st == 1)
                   {
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px, py,   8, 4, RH264_MVP_MEDIAN, rr);
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px, py+4, 8, 4, RH264_MVP_MEDIAN, rr);
                   }
                   else if (st == 2)
                   {
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px,   py, 4, 8, RH264_MVP_MEDIAN, rr);
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px+4, py, 4, 8, RH264_MVP_MEDIAN, rr);
                   }
                   else
                   {
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px,   py,   4, 4, RH264_MVP_MEDIAN, rr);
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px+4, py,   4, 4, RH264_MVP_MEDIAN, rr);
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px,   py+4, 4, 4, RH264_MVP_MEDIAN, rr);
-                     rh264_cabac_p_part(&cb, f, rp, mvg, absmvd, gwmax, ghmax,
+                     rh264_cabac_p_part(&cb, f, rp, sh, mvg, absmvd, gwmax, ghmax,
                            mbx, mby, px+4, py+4, 4, 4, RH264_MVP_MEDIAN, rr);
                   }
                }
@@ -3403,7 +3478,7 @@ static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
  * order the default P list initialisation of 8.2.4.2.1 produces when there is
  * no list reordering. The oldest entry is evicted once the buffer is full
  * (the sliding window of 8.2.5.3). */
-static void rh264_dpb_insert(rh264_video *v)
+static void rh264_dpb_insert(rh264_video *v, int picnum)
 {
    int slot, i;
    if (v->dpb_size <= 0) return;
@@ -3412,6 +3487,7 @@ static void rh264_dpb_insert(rh264_video *v)
    else
       slot = v->dpb_slot[v->dpb_size - 1];     /* evict the oldest */
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+   v->dpb_pn[slot] = picnum;
    for (i = (v->dpb_len < v->dpb_size ? v->dpb_len : v->dpb_size - 1); i > 0; i--)
       v->dpb_slot[i] = v->dpb_slot[i-1];
    v->dpb_slot[0] = slot;
@@ -3441,22 +3517,69 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
    if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP)
    { free(rbsp); return -1; }
-   if (sh.num_ref_idx_l0 > v->dpb_len)
-   { free(rbsp); return -1; }   /* asks for pictures we do not have */
-   if (v->pps.weighted_pred_flag)
-   { free(rbsp); return -1; }   /* pred_weight_table is not parsed */
+   if (v->dpb_len < 1)
+   { free(rbsp); return -1; }
    {
-      const rh264_frame *l0[RH264_MAX_REFS];
-      int i;
-      for (i = 0; i < v->dpb_len; i++) l0[i] = &v->dpb[v->dpb_slot[i]];
+      /* Build reference picture list 0. The default order is by descending
+       * PicNum (8.2.4.2.1), which is the order the buffer already keeps, then
+       * ref_pic_list_modification moves entries to the front (8.2.4.3.1). The
+       * list may name the same picture more than once, which is how weighted
+       * prediction offers a weighted and an unweighted version of it, so it
+       * can be longer than the number of pictures held. */
+      const rh264_frame *l0[34];
+      int lpn[34];
+      int i, n = 0, nref = sh.num_ref_idx_l0;
+      int maxpn = 1 << v->sps.log2_max_frame_num;
+      int currpn = sh.frame_num_val;
+      if (nref < 1) nref = 1;
+      if (nref > 32) nref = 32;
+      for (i = 0; i < v->dpb_len; i++)
+      { l0[n] = &v->dpb[v->dpb_slot[i]]; lpn[n] = v->dpb_pn[v->dpb_slot[i]]; n++; }
+      while (n < nref) { l0[n] = l0[n-1]; lpn[n] = lpn[n-1]; n++; }
+      if (sh.nmod > 0)
+      {
+         int pred = currpn, k, ridx = 0;
+         for (k = 0; k < sh.nmod && ridx < nref; k++)
+         {
+            int pn;
+            if (sh.mod_op[k] == 2) continue;   /* long-term: not tracked */
+            if (sh.mod_op[k] == 0)
+            { pn = pred - (sh.mod_val[k] + 1); if (pn < 0) pn += maxpn; }
+            else
+            { pn = pred + (sh.mod_val[k] + 1); if (pn >= maxpn) pn -= maxpn; }
+            pred = pn;
+            if (pn > currpn) pn -= maxpn;
+            {
+               const rh264_frame *pic = NULL;
+               int j, nidx;
+               for (j = 0; j < v->dpb_len; j++)
+                  if (v->dpb_pn[v->dpb_slot[j]] == pn)
+                  { pic = &v->dpb[v->dpb_slot[j]]; break; }
+               if (!pic) continue;             /* names a picture we lack */
+               /* Shift the tail up, place the picture, then drop any other
+                * copy of it from the remainder (8.2.4.3.1). The list is one
+                * longer than nref while this runs and is cut back after. */
+               for (j = nref; j > ridx; j--)
+               { l0[j] = l0[j-1]; lpn[j] = lpn[j-1]; }
+               l0[ridx] = pic; lpn[ridx] = pn;
+               ridx++;
+               nidx = ridx;
+               for (j = ridx; j <= nref; j++)
+                  if (l0[j] != pic)
+                  { l0[nidx] = l0[j]; lpn[nidx] = lpn[j]; nidx++; }
+            }
+         }
+      }
+      (void)lpn;
       if (v->pps.entropy_coding_mode_flag)
          rc = rh264_cabac_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f,
-               l0, sh.num_ref_idx_l0, v->mvg);
+               l0, nref, v->mvg);
       else
          rc = rh264_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f,
-               l0, sh.num_ref_idx_l0, v->mvg);
+               l0, nref, v->mvg);
    }
    if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
+   v->last_picnum = sh.frame_num_val;
    free(rbsp);
    return rc;
 }
@@ -3474,7 +3597,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (rh264_video_decode_idr(v, nal, nl) != 0) return -1;
       v->dpb_len = 0;          /* an IDR empties the reference list (8.2.5.1) */
-      rh264_dpb_insert(v);
+      rh264_dpb_insert(v, 0);
       *got_pic = 1;
       return 1;   /* one coded picture per call */
    }
@@ -3484,7 +3607,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (rh264_frame_alloc_if_needed(v) != 0) return -1;
       if (rh264_video_decode_inter(v, nal, nl) != 0) return -1;
       if ((nal[0] >> 5) & 3)   /* nal_ref_idc: only reference pictures stored */
-         rh264_dpb_insert(v);
+         rh264_dpb_insert(v, v->last_picnum);
       *got_pic = 1;
       return 1;
    }
