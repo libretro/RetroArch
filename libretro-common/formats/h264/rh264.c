@@ -2618,6 +2618,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { free(rbsp); return -1; }
    if (v->pps.entropy_coding_mode_flag)
    { free(rbsp); return -1; }   /* CABAC P-slices not yet supported */
+   if (sh.num_ref_idx_l0 > 1)
+   { free(rbsp); return -1; }   /* only a single reference picture is kept */
    /* The reference is the previous output frame (v->ref); decode into v->f. */
    rc = rh264_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f, &v->ref, v->mvg);
    if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
