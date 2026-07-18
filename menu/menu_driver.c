@@ -5199,9 +5199,16 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
-   /* Check if all menu input is blocked */
+   /* Check if all menu input is blocked
+    * > 'ok_old' must be updated before returning, otherwise the
+    *   button state is frozen for the duration of the block and a
+    *   phantom trigger/release edge is generated against a stale
+    *   'ok_enum_idx' once input is unblocked */
    if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
+   {
+      ok_old                                       = ok_current;
       return MENU_ACTION_NOOP;
+   }
 
    /* Clear OK if dragged */
    if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
