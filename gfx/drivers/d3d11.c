@@ -107,7 +107,11 @@ enum d3d11_state_flags
    D3D11_ST_FLAG_OVERLAYS_FULLSCREEN = (1 << 14),
    D3D11_ST_FLAG_MENU_ENABLE         = (1 << 15),
    D3D11_ST_FLAG_MENU_FULLSCREEN     = (1 << 16),
-   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 17)
+   D3D11_ST_FLAG_FRAME_DUPE_LOCK     = (1 << 17),
+   /* The core's frames are already PQ-encoded Rec.2020 at absolute
+    * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
+    * must pass them through rather than encode them a second time. */
+   D3D11_ST_FLAG_SOURCE_HDR10        = (1 << 18)
 };
 
 enum d3d11_feature_level_hint
@@ -2411,6 +2415,12 @@ static bool d3d11_shader_load_step(void *data,
          ? d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* A core supplying PQ has the same effect as a final shader pass
+       * that emits PQ: the samples must not be encoded again. */
+      if (     (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
+            && last_fmt == SLANG_FORMAT_UNKNOWN)
+         last_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+
       if (menu_hdr_mode == 2)
       {
          d3d11_set_hdr_inverse_tonemap(d3d11, false);
@@ -3288,6 +3298,16 @@ static void *d3d11_gfx_init(const video_info_t* video,
       d3d11->flags       |=  D3D11_ST_FLAG_KEEP_ASPECT;
    else
       d3d11->flags       &= ~D3D11_ST_FLAG_KEEP_ASPECT;
+
+   /* Both 10-bit formats upload through the same packed 2-10-10-10
+    * texture; they differ only in how the samples are interpreted
+    * downstream.  A PQ frame is already in the swapchain's encoding --
+    * the same state a shader preset emitting HDR10 leaves us in -- so it
+    * takes that existing passthrough path rather than a new one. */
+   if (video->source_hdr10)
+      d3d11->flags       |=  D3D11_ST_FLAG_SOURCE_HDR10;
+   else
+      d3d11->flags       &= ~D3D11_ST_FLAG_SOURCE_HDR10;
 
    d3d11->format          = video->source_10bit
          ? DXGI_FORMAT_R10G10B10A2_UNORM

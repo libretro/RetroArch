@@ -114,7 +114,11 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
    D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
-   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16)
+   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16),
+   /* The core's frames are already PQ-encoded Rec.2020 at absolute
+    * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
+    * must pass them through rather than encode them a second time. */
+   D3D12_ST_FLAG_SOURCE_HDR10          = (1 << 17)
 };
 
 typedef enum
@@ -2732,6 +2736,12 @@ static bool d3d12_shader_load_step(void *data,
          ? d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* A core supplying PQ has the same effect as a final shader pass that
+       * emits PQ: the samples must not be encoded again. */
+      if (     (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+            && last_fmt == SLANG_FORMAT_UNKNOWN)
+         last_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+
       if (menu_hdr_mode == 2)
       {
          d3d12_set_hdr_inverse_tonemap(d3d12, false);
@@ -2997,6 +3007,12 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       enum glslang_format last_fmt = (d3d12->shader_preset && d3d12->shader_preset->passes)
          ? d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
+
+      /* A core supplying PQ has the same effect as a final shader pass that
+       * emits PQ: the samples must not be encoded again. */
+      if (     (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+            && last_fmt == SLANG_FORMAT_UNKNOWN)
+         last_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
       if (menu_hdr_mode == 2) /* scRGB */
       {
@@ -4492,6 +4508,16 @@ static void *d3d12_gfx_init(const video_info_t* video,
       ? DXGI_FORMAT_R10G10B10A2_UNORM
       : ((video->rgb32)
       ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
+
+   /* Both 10-bit formats upload through DXGI_FORMAT_R10G10B10A2_UNORM; they
+    * differ only in how the samples are interpreted downstream.  A PQ frame
+    * is already in the swapchain's encoding, which is the same state a
+    * shader preset emitting HDR10 leaves us in, so it takes the same
+    * passthrough path below rather than a separate one. */
+   if (video->source_hdr10)
+      d3d12->flags             |=  D3D12_ST_FLAG_SOURCE_HDR10;
+   else
+      d3d12->flags             &= ~D3D12_ST_FLAG_SOURCE_HDR10;
 
    d3d12->frame.texture[0].desc.Format = d3d12->format;
    d3d12->frame.texture[0].desc.Width  = 4;
