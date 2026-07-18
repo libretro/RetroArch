@@ -117,9 +117,6 @@ static void rh264_read_scaling_list(rh264_bits *b, uint8_t *out, int size,
       last=out[scanj];
    }
 }
-static void rh264_skip_scaling_list(rh264_bits *b,int size){
-   int last=8,next=8,j; for(j=0;j<size;j++){ if(next){int d=rh264_se(b); next=(last+d+256)&255;} last=next?next:last; }
-}
 static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    rh264_bits b; int i; memset(s,0,sizeof(*s)); rh264_bits_init(&b,rbsp,size);
    s->profile_idc=rh264_un(&b,8); rh264_un(&b,8); s->level_idc=rh264_un(&b,8); rh264_ue(&b);
@@ -3794,18 +3791,12 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
 static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
       const rh264_pps *pps,rh264_slice_hdr *sh,rh264_frame *f,int *end_mb){
    int mbaddr=sh->first_mb_in_slice, total=f->mbw*f->mbh;
-   int gw=f->mbw*4;        /* luma 4x4 grid width */
-   int cgw=f->mbw*2;       /* chroma 4x4 grid width */
    f->qp=sh->slice_qp;
    f->chroma_qp_offset=pps->chroma_qp_index_offset;
    f->chroma_qp_offset2=pps->chroma_qp_index_offset2;
    while(mbaddr<total){
       int mbx=mbaddr%f->mbw, mby=mbaddr/f->mbw;
       int mb_type;
-      int have_up=(mby>0), have_left=(mbx>0);
-      uint8_t *y=f->Y+(mby*16)*f->ystride+mbx*16;
-      uint8_t *u=f->U+(mby*8)*f->cstride+mbx*8;
-      uint8_t *v=f->V+(mby*8)*f->cstride+mbx*8;
       if(!rh264_more_rbsp(b)) break;   /* end of this slice's data */
       mb_type=rh264_ue(b);
 
