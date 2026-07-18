@@ -51,7 +51,9 @@ typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cn
    log2_max_poc_lsb,frame_mbs_only_flag,pic_width_in_mbs,pic_height_in_map_units,
    frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
    poc_type1_always_zero,
+   poc1_offset_non_ref, poc1_offset_ttb, poc1_ncycle,
    vui_num_reorder; /* VUI max_num_reorder_frames, -1 when not signalled */
+   int32_t poc1_offset_ref[256]; /* offset_for_ref_frame (POC type 1)  */
    int scaling_present;         /* seq_scaling_matrix_present_flag */
    uint8_t sl_present[8];       /* seq_scaling_list_present_flag   */
    uint8_t sl_usedef[8];        /* first delta selected the default */
@@ -143,7 +145,9 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    s->log2_max_frame_num=rh264_ue(&b)+4; s->pic_order_cnt_type=rh264_ue(&b);
    if(s->pic_order_cnt_type==0) s->log2_max_poc_lsb=rh264_ue(&b)+4;
    else if(s->pic_order_cnt_type==1){ int n; s->poc_type1_always_zero=rh264_u1(&b);
-      rh264_se(&b); rh264_se(&b); n=rh264_ue(&b); for(i=0;i<n;i++) rh264_se(&b); }
+      s->poc1_offset_non_ref=rh264_se(&b); s->poc1_offset_ttb=rh264_se(&b);
+      n=rh264_ue(&b); if(n>255) return 0; s->poc1_ncycle=n;
+      for(i=0;i<n;i++) s->poc1_offset_ref[i]=rh264_se(&b); }
    s->max_num_ref_frames=rh264_ue(&b); rh264_u1(&b);
    s->pic_width_in_mbs=rh264_ue(&b)+1; s->pic_height_in_map_units=rh264_ue(&b)+1;
    s->frame_mbs_only_flag=rh264_u1(&b); if(!s->frame_mbs_only_flag) rh264_u1(&b);
@@ -302,6 +306,7 @@ enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SL
 #define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
+   poc1_delta0,poc1_delta1,
    num_ref_idx_l0,num_ref_idx_l1,direct_spatial_mv_pred_flag,
    cabac_init_idc,frame_num_val,
    nmod,nmod1,wp_valid,luma_log2_denom,chroma_log2_denom,
@@ -325,7 +330,8 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       sh->poc_lsb=rh264_un(b,sps->log2_max_poc_lsb);
       if(pps->pic_order_present_flag) rh264_se(b); /* delta_pic_order_cnt_bottom */
    } else if(sps->pic_order_cnt_type==1&&!sps->poc_type1_always_zero){
-      rh264_se(b); if(pps->pic_order_present_flag) rh264_se(b);
+      sh->poc1_delta0=rh264_se(b);
+      if(pps->pic_order_present_flag) sh->poc1_delta1=rh264_se(b);
    }
    sh->num_ref_idx_l0=1; sh->num_ref_idx_l1=1;
    if(sh->slice_type==RH264_SLICE_B)
@@ -6009,7 +6015,37 @@ static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
       v->prev_frame_num = sh->frame_num;
    }
    else
-      poc = v->last_poc + 2;
+   {
+      /* POC type 1 (8.2.1.2): the expected order comes from a per-frame
+       * offset cycle keyed by frame number. */
+      int max_fn = 1 << sps->log2_max_frame_num;
+      int fno, absfn, expected = 0, top, bottom, i2;
+      if (sh->is_idr)
+         fno = 0;
+      else if (sh->frame_num < v->prev_frame_num)
+         fno = v->fn_offset + max_fn;
+      else
+         fno = v->fn_offset;
+      absfn = sps->poc1_ncycle ? fno + sh->frame_num : 0;
+      if (!nal_ref_idc && absfn > 0) absfn--;
+      if (absfn > 0)
+      {
+         int cyc = (absfn - 1) / sps->poc1_ncycle;
+         int inc = (absfn - 1) % sps->poc1_ncycle;
+         int per = 0;
+         for (i2 = 0; i2 < sps->poc1_ncycle; i2++)
+            per += sps->poc1_offset_ref[i2];
+         expected = cyc * per;
+         for (i2 = 0; i2 <= inc; i2++)
+            expected += sps->poc1_offset_ref[i2];
+      }
+      if (!nal_ref_idc) expected += sps->poc1_offset_non_ref;
+      top = expected + sh->poc1_delta0;
+      bottom = top + sps->poc1_offset_ttb + sh->poc1_delta1;
+      poc = (top < bottom) ? top : bottom;
+      v->fn_offset = fno;
+      v->prev_frame_num = sh->frame_num;
+   }
    return poc;
 }
 
@@ -6366,8 +6402,6 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          && sh.slice_type != RH264_SLICE_B
          && sh.slice_type != RH264_SLICE_I)
    { free(rbsp); return -1; }
-   if (sh.slice_type == RH264_SLICE_B && v->sps.pic_order_cnt_type == 1)
-   { free(rbsp); return -1; }   /* no POC derivation for type 1 */
    kind = (sh.slice_type == RH264_SLICE_I) ? 2
         : (sh.slice_type == RH264_SLICE_B) ? 4 : 3;
    if (sh.first_mb_in_slice == 0)
