@@ -4880,6 +4880,16 @@ static bool d3d11_gfx_frame(
             d3d11->hdr.ubo_values.hdr10            = 0.0f;
             d3d11->hdr.ubo_values.hdr_mode         = 2;
          }
+         else if (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
+         {
+            /* Core supplies PQ frames: the back buffer already holds
+             * PQ-encoded HDR10, so pass it through unchanged. Encoding it a
+             * second time drives the menu background to black. The menu
+             * glyphs are drawn separately as SDR sprites. */
+            d3d11->hdr.ubo_values.inverse_tonemap  = 0.0f;
+            d3d11->hdr.ubo_values.hdr10            = 0.0f;
+            d3d11->hdr.ubo_values.hdr_mode         = 0;
+         }
          else /* HDR10 */
          {
             d3d11->hdr.ubo_values.inverse_tonemap  = 1.0f;

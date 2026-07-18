@@ -5994,6 +5994,18 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 2;
          }
+         else if (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+         {
+            /* The core supplies PQ frames, so the back buffer already holds
+             * PQ-encoded HDR10: pass it through unchanged. Encoding it a
+             * second time (as the SDR-menu path below does) drives the whole
+             * background to black. inverse_tonemap=0, hdr10=0, hdr_mode=0
+             * selects the shader's pure-passthrough branch. The menu glyphs
+             * are drawn separately as SDR sprites and are unaffected. */
+            d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
+            d3d12->hdr.ubo_values.hdr10            = 0.0f;
+            d3d12->hdr.ubo_values.hdr_mode         = 0;
+         }
          else /* HDR10 */
          {
             d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;
