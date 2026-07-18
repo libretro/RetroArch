@@ -8555,7 +8555,11 @@ static bool vulkan_read_viewport_hdr(void *data, uint16_t *buffer,
    staging = &vk->readback.staging[vk->context->current_frame_index];
    if (!staging->memory)
    {
-      RARCH_ERR("[Vulkan] HDR readback: no staging image present.\n");
+      /* No read-back frame has run yet on this slot (e.g. an HDR screenshot
+       * requested at content load before the first presented frame, or while
+       * idle). Not fatal: return false so the caller falls back to the
+       * ordinary SDR read-back. */
+      RARCH_LOG("[Vulkan] HDR readback not ready; falling back to SDR.\n");
       return false;
    }
 
