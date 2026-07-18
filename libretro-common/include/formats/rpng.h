@@ -94,6 +94,12 @@ uint8_t* rpng_save_image_bgr24_hdr_string(const uint8_t *data,
       unsigned width, unsigned height, signed pitch,
       const struct rpng_hdr_metadata *hdr, uint64_t *bytes);
 
+/* After a successful decode, retrieve any HDR colour-space metadata
+ * parsed from cICP / cLLI / mDCV chunks. Returns true and fills *out
+ * when the image carried a cICP chunk; returns false otherwise (in
+ * which case the image should be treated as sRGB). */
+bool rpng_get_hdr_metadata(rpng_t *rpng, struct rpng_hdr_metadata *out);
+
 RETRO_END_DECLS
 
 #endif

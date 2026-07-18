@@ -76,6 +76,9 @@ enum png_chunk_type
    PNG_CHUNK_IDAT,
    PNG_CHUNK_PLTE,
    PNG_CHUNK_tRNS,
+   PNG_CHUNK_cICP,
+   PNG_CHUNK_cLLI,
+   PNG_CHUNK_mDCV,
    PNG_CHUNK_IEND
 };
 
@@ -135,7 +138,8 @@ enum rpng_flags
    RPNG_FLAG_HAS_IDAT = (1 << 1),
    RPNG_FLAG_HAS_IEND = (1 << 2),
    RPNG_FLAG_HAS_PLTE = (1 << 3),
-   RPNG_FLAG_HAS_TRNS = (1 << 4)
+   RPNG_FLAG_HAS_TRNS = (1 << 4),
+   RPNG_FLAG_HAS_HDR  = (1 << 5)
 };
 
 struct rpng
@@ -146,6 +150,8 @@ struct rpng
    struct idat_buffer idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
+   /* Populated from cICP / cLLI / mDCV when present (RPNG_FLAG_HAS_HDR). */
+   struct rpng_hdr_metadata hdr;
    uint8_t flags;
    bool supports_rgba;
 };
@@ -163,6 +169,11 @@ static const struct adam7_pass rpng_passes[] = {
 static INLINE uint32_t rpng_dword_be(const uint8_t *buf)
 {
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
+}
+
+static INLINE uint16_t rpng_word_be(const uint8_t *buf)
+{
+   return (uint16_t)((buf[0] << 8) | (buf[1] << 0));
 }
 
 /* ---------------------------------------------------------------------------
@@ -1577,6 +1588,12 @@ static enum png_chunk_type rpng_read_chunk_header(
       return PNG_CHUNK_PLTE;
    if (tag == 0x74524E53) /* "tRNS" */
       return PNG_CHUNK_tRNS;
+   if (tag == 0x63494350) /* "cICP" */
+      return PNG_CHUNK_cICP;
+   if (tag == 0x634C4C49) /* "cLLI" */
+      return PNG_CHUNK_cLLI;
+   if (tag == 0x6D444356) /* "mDCV" */
+      return PNG_CHUNK_mDCV;
 
    return PNG_CHUNK_NOOP;
 }
@@ -1758,6 +1775,58 @@ bool rpng_iterate_image(rpng_t *rpng)
          rpng->flags         |= RPNG_FLAG_HAS_TRNS;
          break;
 
+      case PNG_CHUNK_cICP:
+         /* Coding-independent code points: 4-byte payload
+          * (primaries, transfer, matrix, full-range flag). Must
+          * precede IDAT. Ignore malformed sizes rather than failing
+          * the whole decode over an ancillary chunk. */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 4)
+         {
+            buf += 8;
+            rpng->hdr.colour_primaries      = buf[0];
+            rpng->hdr.transfer_function     = buf[1];
+            rpng->hdr.matrix_coefficients   = buf[2];
+            rpng->hdr.video_full_range_flag = buf[3];
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
+      case PNG_CHUNK_cLLI:
+         /* Content light level: MaxCLL, MaxFALL as 4-byte unsigned
+          * integers in units of 0.0001 cd/m^2. */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 8)
+         {
+            buf += 8;
+            rpng->hdr.max_cll  = (float)rpng_dword_be(buf + 0) / 10000.0f;
+            rpng->hdr.max_fall = (float)rpng_dword_be(buf + 4) / 10000.0f;
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
+      case PNG_CHUNK_mDCV:
+         /* Mastering display colour volume: R,G,B then white
+          * chromaticity pairs (2-byte, units of 0.00002), then max
+          * and min luminance (4-byte, units of 0.0001 cd/m^2). */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 24)
+         {
+            int c;
+            buf += 8;
+            for (c = 0; c < 3; c++)
+            {
+               rpng->hdr.primary_chromaticity[c][0] =
+                  (float)rpng_word_be(buf + c * 4 + 0) / 50000.0f;
+               rpng->hdr.primary_chromaticity[c][1] =
+                  (float)rpng_word_be(buf + c * 4 + 2) / 50000.0f;
+            }
+            rpng->hdr.white_point[0] = (float)rpng_word_be(buf + 12) / 50000.0f;
+            rpng->hdr.white_point[1] = (float)rpng_word_be(buf + 14) / 50000.0f;
+            rpng->hdr.max_luminance  = (float)rpng_dword_be(buf + 16) / 10000.0f;
+            rpng->hdr.min_luminance  = (float)rpng_dword_be(buf + 20) / 10000.0f;
+            rpng->hdr.write_mdcv     = 1;
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
       case PNG_CHUNK_IDAT:
          if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR)
                ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
@@ -1927,6 +1996,14 @@ bool rpng_is_valid(rpng_t *rpng)
                             | RPNG_FLAG_HAS_IDAT
                             | RPNG_FLAG_HAS_IEND;
    return (rpng && ((rpng->flags & valid_mask) == valid_mask));
+}
+
+bool rpng_get_hdr_metadata(rpng_t *rpng, struct rpng_hdr_metadata *out)
+{
+   if (!rpng || !out || !(rpng->flags & RPNG_FLAG_HAS_HDR))
+      return false;
+   *out = rpng->hdr;
+   return true;
 }
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
