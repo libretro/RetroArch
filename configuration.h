@@ -411,6 +411,7 @@ typedef struct settings
       unsigned video_shader_subframes;
       unsigned video_autoswitch_refresh_rate;
       unsigned video_hdr_mode;
+      unsigned video_swapchain_bit_depth;
       unsigned video_hdr_subpixel_layout;
       unsigned video_hdr_expand_gamut;
 

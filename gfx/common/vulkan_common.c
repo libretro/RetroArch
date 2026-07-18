@@ -2365,15 +2365,44 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       if (!(vk->context.flags & VK_CTX_FLAG_HDR_ENABLE))
 #endif /* VULKAN_HDR_SWAPCHAIN */
       {
-         for (i = 0; i < format_count; i++)
+         /* A 10-bit SDR swapchain is the useful state for shader chains
+          * that darken heavily (CRT beam profiles, aperture grilles): it
+          * removes the final-pass quantisation without dragging in the
+          * whole HDR pipeline.  Opt-in, since it is not free on every
+          * compositor, and fall back to 8-bit when unavailable. */
+         if (settings->uints.video_swapchain_bit_depth == 2)
          {
-            if (
-                     formats[i].format == VK_FORMAT_R8G8B8A8_UNORM
-                  || formats[i].format == VK_FORMAT_B8G8R8A8_UNORM
-                  || formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+            for (i = 0; i < format_count; i++)
             {
-               format = formats[i];
-               break;
+               if (     (   formats[i].format == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                         || formats[i].format == VK_FORMAT_A2R10G10B10_UNORM_PACK32)
+                     && (formats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR))
+               {
+                  format = formats[i];
+                  break;
+               }
+            }
+
+            if (format.format == VK_FORMAT_UNDEFINED)
+               RARCH_WARN("[Vulkan] 10-bit SDR swapchain requested but not"
+                     " available, falling back to 8-bit.\n");
+            else
+               RARCH_LOG("[Vulkan] Using 10-bit SDR swapchain format %u.\n",
+                     format.format);
+         }
+
+         if (format.format == VK_FORMAT_UNDEFINED)
+         {
+            for (i = 0; i < format_count; i++)
+            {
+               if (
+                        formats[i].format == VK_FORMAT_R8G8B8A8_UNORM
+                     || formats[i].format == VK_FORMAT_B8G8R8A8_UNORM
+                     || formats[i].format == VK_FORMAT_A8B8G8R8_UNORM_PACK32)
+               {
+                  format = formats[i];
+                  break;
+               }
             }
          }
       }

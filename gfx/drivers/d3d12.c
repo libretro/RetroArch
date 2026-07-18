@@ -3762,7 +3762,15 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
          ? DXGI_SWAPCHAIN_BIT_DEPTH_16 : DXGI_SWAPCHAIN_BIT_DEPTH_10;
    }
    else
-      d3d12->chain.bit_depth   = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+   {
+      /* SDR.  A 10-bit swapchain here removes the final-pass
+       * quantisation for chains that darken heavily (CRT beam
+       * profiles, aperture grilles) without pulling in the HDR
+       * pipeline.  Opt-in; G22/P709 is correct for both depths. */
+      settings_t *settings     = config_get_ptr();
+      d3d12->chain.bit_depth   = (settings->uints.video_swapchain_bit_depth == 2)
+         ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
+   }
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);

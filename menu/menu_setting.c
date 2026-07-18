@@ -3287,6 +3287,27 @@ static size_t setting_get_string_representation_video_hdr_mode(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_swapchain_bit_depth(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case 0:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO), len);
+         case 1:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8), len);
+         case 2:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10), len);
+      }
+   }
+   return 0;
+}
+
 static size_t setting_get_string_representation_video_hdr_subpixel_layout(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -14408,6 +14429,26 @@ static void settings_build_video(
             SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
             SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_video_hdr_mode)
             menu_settings_list_current_add_range(list, list_info, 0, video_driver_hdr_max_mode(), 1, true, true);
+            MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
+                  list,
+                  list_info,
+                  CMD_EVENT_VIDEO_APPLY_STATE_CHANGES);
+
+            /* Descriptor holdout: poke tail outside the descriptor grammar. */
+            CONFIG_UINT(
+                  list, list_info,
+                  &settings->uints.video_swapchain_bit_depth,
+                  MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
+                  MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
+                  DEFAULT_VIDEO_SWAPCHAIN_BIT_DEPTH,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
+            SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_video_swapchain_bit_depth)
+            menu_settings_list_current_add_range(list, list_info, 0, 2, 1, true, true);
             MENU_SETTINGS_LIST_CURRENT_ADD_CMD(
                   list,
                   list_info,

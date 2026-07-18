@@ -549,6 +549,10 @@
 /* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
 #define DEFAULT_VIDEO_HDR_MODE 0
 
+/* Swapchain bit depth when HDR is off: 0 = auto (8), 1 = force 8, 2 = force 10.
+ * Only meaningful in SDR; HDR dictates its own swapchain format. */
+#define DEFAULT_VIDEO_SWAPCHAIN_BIT_DEPTH 0
+
 /* Brightness of the SDR menu/overlay when composited into the HDR backbuffer */
 #define DEFAULT_MENU_HDR_BRIGHTNESS_NITS 200.0f
 
