@@ -2562,14 +2562,9 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
    {
       UINT i = 0;
-#ifdef __cplusplus
-      while (  dxgi_adapter->EnumOutputs(i, &current_output)
-            != DXGI_ERROR_NOT_FOUND)
-#else
-      while (  dxgi_adapter->lpVtbl->EnumOutputs(dxgi_adapter, i, &current_output)
-            != DXGI_ERROR_NOT_FOUND)
-#endif
+      for (;;)
       {
+         HRESULT hr;
          RECT r, rect;
          DXGI_OUTPUT_DESC desc;
          int intersect_area;
@@ -2578,6 +2573,21 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
          int ay1               = 0;
          int ax2               = 0;
          int ay2               = 0;
+
+#ifdef __cplusplus
+         hr                     = dxgi_adapter->EnumOutputs(i, &current_output);
+#else
+         hr                     = dxgi_adapter->lpVtbl->EnumOutputs(
+               dxgi_adapter, i, &current_output);
+#endif
+         /* Stop at the end of the output list (DXGI_ERROR_NOT_FOUND) or on
+          * any other failure. Some drivers can return a failure HRESULT
+          * other than DXGI_ERROR_NOT_FOUND together with a NULL output,
+          * which must never be dereferenced. */
+         if (FAILED(hr) || !current_output)
+            break;
+
+         i++;
 
          if (win32_get_client_rect(&rect))
          {
@@ -2595,7 +2605,12 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
 #endif
          {
             RARCH_ERR("[DXGI] Failed to get DXGI output description.\n");
-            i++;
+#ifdef __cplusplus
+            current_output->Release();
+#else
+            Release(current_output);
+#endif
+            current_output      = NULL;
             continue;
          }
 
@@ -2629,7 +2644,13 @@ bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd)
             best_intersect_area = (float)intersect_area;
          }
 
-         i++;
+         /* Release this iteration's reference; best_output holds its own. */
+#ifdef __cplusplus
+         current_output->Release();
+#else
+         Release(current_output);
+#endif
+         current_output         = NULL;
       }
 
       if (current_output)
