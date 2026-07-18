@@ -5062,7 +5062,13 @@ typedef struct MTLALIGN(16)
       if (lastPass && _hdrEnabled)
       {
          forceAllocForHDR = YES;
-         if (fmt != MTLPixelFormatRGBA16Float && fmt != MTLPixelFormatRGB10A2Unorm)
+         /* Must match the attachment format _initPipelines picks, which
+          * only honours an HDR format the shader declared itself.  A
+          * format derived from preset FBO flags is not an HDR encode, so
+          * the composite input stays RGBA16F for it. */
+         if (!(   _engine.pass[i].semantics.explicit_format
+               && (   fmt == MTLPixelFormatRGBA16Float
+                   || fmt == MTLPixelFormatRGB10A2Unorm)))
             fmt = MTLPixelFormatRGBA16Float;
       }
 
