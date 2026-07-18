@@ -1859,7 +1859,14 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
 - (id<MTLTexture>)newTexture:(struct texture_image)image mipmapped:(bool)mipmapped
 {
-   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+   /* A 10-bit (XRGB2101010) source uses BGR10A2Unorm, whose packed layout
+    * (R in the high 10 bits, B in the low) matches the ABI with no swizzle,
+    * exactly as in the Metal source-frame path; otherwise BGRA8. Both are 4
+    * bytes/pixel so the row stride is unchanged. */
+   MTLPixelFormat        pf = image.pix10
+         ? MTLPixelFormatBGR10A2Unorm
+         : MTLPixelFormatBGRA8Unorm;
+   MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:pf
          width:image.width
          height:image.height
          mipmapped:mipmapped];
