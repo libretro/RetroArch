@@ -1396,9 +1396,15 @@ static void rh264_p_part_hint(rh264_bits *b, rh264_frame *f, const rh264_frame *
  * otherwise ue(v) (9.1.1). */
 static int rh264_ref_idx_te(rh264_bits *b, int nrefs)
 {
+   int v;
    if (nrefs <= 1) return 0;
    if (nrefs == 2) return rh264_u1(b) ? 0 : 1;
-   return rh264_ue(b);
+   v = rh264_ue(b);
+   /* A malformed stream can code an index past the end of the list; clamp so
+    * it cannot be used to read outside it. */
+   if (v < 0) v = 0;
+   if (v >= nrefs) v = nrefs - 1;
+   return v;
 }
 
 /* Median-predictor partition (8x8 and sub-8x8 use plain median). */
@@ -2879,15 +2885,36 @@ static int rh264_cabac_mvd_absum(const int16_t *absmvd, int gw,
 
 /* ref_idx_lX (9.3.3.1.1.6): unary, first bin contexted on whether the left and
  * above partitions themselves use a reference index above zero. */
+/* curref holds the reference indices of the partitions of the macroblock being
+ * decoded, in 4x4 raster order, with -2 meaning "not decoded yet". Every
+ * ref_idx of a macroblock is coded before any of its mvd values, so a later
+ * partition's neighbour can sit in a partition whose index is already known
+ * but whose motion vector grid cell has not been written yet. */
 static int rh264_cabac_ref_idx(rh264_cabac *cb, const rh264_mv *mvg,
-      int gwmax, int gx, int gy, int nrefs)
+      int gwmax, int gx, int gy, int nrefs,
+      const signed char *curref, int mbx, int mby)
 {
    int a = 0, b = 0, inc, v;
+   int x0 = mbx*4, y0 = mby*4;
    if (nrefs <= 1) return 0;
-   if (gx > 0) { const rh264_mv *m = &mvg[gy*gwmax + gx-1];
-                 a = (m->ref > 0) ? 1 : 0; }
-   if (gy > 0) { const rh264_mv *m = &mvg[(gy-1)*gwmax + gx];
-                 b = (m->ref > 0) ? 1 : 0; }
+   if (gx > 0)
+   {
+      int nx = gx-1, ny = gy, r;
+      if (nx >= x0 && nx < x0+4 && ny >= y0 && ny < y0+4)
+         r = curref[(ny-y0)*4 + (nx-x0)];
+      else
+         r = mvg[ny*gwmax + nx].ref;
+      a = (r > 0) ? 1 : 0;
+   }
+   if (gy > 0)
+   {
+      int nx = gx, ny = gy-1, r;
+      if (nx >= x0 && nx < x0+4 && ny >= y0 && ny < y0+4)
+         r = curref[(ny-y0)*4 + (nx-x0)];
+      else
+         r = mvg[ny*gwmax + nx].ref;
+      b = (r > 0) ? 1 : 0;
+   }
    inc = a + 2*b;
    if (!rh264_cabac_decode(cb, RH264_CTX_REF_IDX + inc)) return 0;
    if (!rh264_cabac_decode(cb, RH264_CTX_REF_IDX + 4)) return 1;
@@ -2899,6 +2926,7 @@ static int rh264_cabac_ref_idx(rh264_cabac *cb, const rh264_mv *mvg,
       v++;
       if (v >= RH264_MAX_REFS) break;
    }
+   if (v >= nrefs) v = nrefs - 1;   /* never index past the list */
    return v;
 }
 
@@ -3133,6 +3161,8 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          else
          {
             int mb_type, cbp_luma = 0, cbp_chroma = 0;
+            signed char curref[16];
+            memset(curref, -2, sizeof(curref));
             tmp.avail = 1;
             if (rh264_cabac_decode(&cb, RH264_CTX_MB_TYPE_P + 0))
             {
@@ -3172,14 +3202,21 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
 
             if (mb_type == 0)
             {
-               int r0 = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4, nrefs);
+               int r0 = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4,
+                     nrefs, curref, mbx, mby);
+               { int _y,_x; for(_y=0;_y<4;_y++) for(_x=0;_x<4;_x++) curref[_y*4+_x]=(signed char)r0; }
                rh264_cabac_p_part(&cb, f, l0[r0], mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 16, 16, RH264_MVP_MEDIAN, r0);
             }
             else if (mb_type == 1)
             {
-               int ra = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4, nrefs);
-               int rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4+2, nrefs);
+               int ra = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4,
+                     nrefs, curref, mbx, mby);
+               int rb;
+               { int _y,_x; for(_y=0;_y<2;_y++) for(_x=0;_x<4;_x++) curref[_y*4+_x]=(signed char)ra; }
+               rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4+2,
+                     nrefs, curref, mbx, mby);
+               { int _y,_x; for(_y=2;_y<4;_y++) for(_x=0;_x<4;_x++) curref[_y*4+_x]=(signed char)rb; }
                rh264_cabac_p_part(&cb, f, l0[ra], mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 16, 8, RH264_MVP_B, ra);
                rh264_cabac_p_part(&cb, f, l0[rb], mvg, absmvd, gwmax, ghmax,
@@ -3187,8 +3224,13 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
             }
             else if (mb_type == 2)
             {
-               int ra = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4, nrefs);
-               int rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4+2, mby*4, nrefs);
+               int ra = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4, mby*4,
+                     nrefs, curref, mbx, mby);
+               int rb;
+               { int _y,_x; for(_y=0;_y<4;_y++) for(_x=0;_x<2;_x++) curref[_y*4+_x]=(signed char)ra; }
+               rb = rh264_cabac_ref_idx(&cb, mvg, gwmax, mbx*4+2, mby*4,
+                     nrefs, curref, mbx, mby);
+               { int _y,_x; for(_y=0;_y<4;_y++) for(_x=2;_x<4;_x++) curref[_y*4+_x]=(signed char)rb; }
                rh264_cabac_p_part(&cb, f, l0[ra], mvg, absmvd, gwmax, ghmax,
                      mbx, mby, 0, 0, 8, 16, RH264_MVP_A, ra);
                rh264_cabac_p_part(&cb, f, l0[rb], mvg, absmvd, gwmax, ghmax,
@@ -3208,8 +3250,14 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                             ? 2 : 3;
                }
                for (p = 0; p < 4; p++)
+               {
+                  int qx = (p&1)*2, qy = (p>>1)*2, _y, _x;
                   rf[p] = rh264_cabac_ref_idx(&cb, mvg, gwmax,
-                        mbx*4 + (p&1)*2, mby*4 + (p>>1)*2, nrefs);
+                        mbx*4 + qx, mby*4 + qy, nrefs, curref, mbx, mby);
+                  for (_y = qy; _y < qy+2; _y++)
+                     for (_x = qx; _x < qx+2; _x++)
+                        curref[_y*4+_x] = (signed char)rf[p];
+               }
                for (p = 0; p < 4; p++)
                {
                   int px = (p&1)*8, py = (p>>1)*8, st = sub[p], rr = rf[p];
