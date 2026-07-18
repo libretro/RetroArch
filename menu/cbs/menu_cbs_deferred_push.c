@@ -33,6 +33,7 @@
 #include "../../configuration.h"
 #include "../../core.h"
 #include "../../core_info.h"
+#include "../../manual_content_scan.h"
 #include "../../verbosity.h"
 #include "../../msg_hash_lbl_str.h"
 
@@ -458,6 +459,13 @@ static int general_push(menu_displaylist_info_t *info,
       }
    }
 #endif
+
+   if (     string_is_equal(info->label, MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR)
+         && manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
+   {
+      strlcpy(ext_filter, manual_content_scan_get_file_exts(), sizeof(ext_filter));
+      string_replace_all_chars(ext_filter, ' ', '|');
+   }
 
    if (*ext_filter)
    {

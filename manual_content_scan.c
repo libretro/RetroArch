@@ -145,6 +145,15 @@ size_t manual_content_scan_get_file_exts_custom_size(void)
    return sizeof(scan_file_exts_custom);
 }
 
+/* Returns custom extensions,
+ * falling back to core-supported extensions */
+const char *manual_content_scan_get_file_exts(void)
+{
+   if (*scan_file_exts_custom)
+      return scan_file_exts_custom;
+   return scan_file_exts_core;
+}
+
 /* Returns a pointer to the internal
  * 'dat_file_path' string */
 char *manual_content_scan_get_dat_file_path_ptr(void)
