@@ -55,6 +55,11 @@ int rh264_video_set_extradata(rh264_video *v, const uint8_t *avcc, size_t len);
  * unsupported (B-slice/CABAC-P/high-profile) stream. */
 int rh264_video_decode(rh264_video *v, const uint8_t *data, size_t len);
 
+/* Hand out the next pending picture in display order without feeding more
+ * data, for end of stream. Returns 0 when a picture became available through
+ * rh264_video_plane, -1 when nothing is pending. */
+int rh264_video_drain(rh264_video *v);
+
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
 const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height);

@@ -38,9 +38,12 @@ static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
 typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cnt_type,
    max_num_ref_frames,
    log2_max_poc_lsb,frame_mbs_only_flag,pic_width_in_mbs,pic_height_in_map_units,
-   frame_width,frame_height,chroma_format_idc; } rh264_sps;
-typedef struct { int valid,entropy_coding_mode_flag,pic_init_qp,
-   num_ref_idx_l0_default,weighted_pred_flag,
+   frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
+   poc_type1_always_zero,
+   vui_num_reorder; /* VUI max_num_reorder_frames, -1 when not signalled */
+   } rh264_sps;
+typedef struct { int valid,entropy_coding_mode_flag,pic_order_present_flag,pic_init_qp,
+   num_ref_idx_l0_default,num_ref_idx_l1_default,weighted_pred_flag,weighted_bipred_idc,
    deblocking_filter_control_present,constrained_intra_pred_flag,chroma_qp_index_offset; } rh264_pps;
 static void rh264_skip_scaling_list(rh264_bits *b,int size){
    int last=8,next=8,j; for(j=0;j<size;j++){ if(next){int d=rh264_se(b); next=(last+d+256)&255;} last=next?next:last; }
@@ -58,24 +61,55 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    }
    s->log2_max_frame_num=rh264_ue(&b)+4; s->pic_order_cnt_type=rh264_ue(&b);
    if(s->pic_order_cnt_type==0) s->log2_max_poc_lsb=rh264_ue(&b)+4;
-   else if(s->pic_order_cnt_type==1){ int n; rh264_u1(&b); rh264_se(&b); rh264_se(&b); n=rh264_ue(&b); for(i=0;i<n;i++) rh264_se(&b); }
+   else if(s->pic_order_cnt_type==1){ int n; s->poc_type1_always_zero=rh264_u1(&b);
+      rh264_se(&b); rh264_se(&b); n=rh264_ue(&b); for(i=0;i<n;i++) rh264_se(&b); }
    s->max_num_ref_frames=rh264_ue(&b); rh264_u1(&b);
    s->pic_width_in_mbs=rh264_ue(&b)+1; s->pic_height_in_map_units=rh264_ue(&b)+1;
    s->frame_mbs_only_flag=rh264_u1(&b); if(!s->frame_mbs_only_flag) rh264_u1(&b);
-   rh264_u1(&b);
+   s->direct_8x8_inference_flag=rh264_u1(&b);
    { int cl=0,cr=0,ct=0,cb=0; int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
      if(rh264_u1(&b)){ cl=rh264_ue(&b); cr=rh264_ue(&b); ct=rh264_ue(&b); cb=rh264_ue(&b); }
      { int sw=2, sh=2*(2-s->frame_mbs_only_flag);
        s->frame_width=s->pic_width_in_mbs*16-sw*(cl+cr);
        s->frame_height=mbh*16-sh*(ct+cb); } }
+   /* VUI, walked only as far as max_num_reorder_frames (E.1.1), which bounds
+    * how many decoded pictures can precede a given picture in output order
+    * and so sets the display reorder delay. Absent VUI or an early end of
+    * data leaves it unsignalled (-1). */
+   s->vui_num_reorder=-1;
+   if(rh264_u1(&b)){
+      if(rh264_u1(&b)){ if(rh264_un(&b,8)==255){ rh264_un(&b,16); rh264_un(&b,16); } }
+      if(rh264_u1(&b)) rh264_u1(&b);
+      if(rh264_u1(&b)){ rh264_un(&b,3); rh264_u1(&b);
+         if(rh264_u1(&b)){ rh264_un(&b,8); rh264_un(&b,8); rh264_un(&b,8); } }
+      if(rh264_u1(&b)){ rh264_ue(&b); rh264_ue(&b); }
+      if(rh264_u1(&b)){ rh264_un(&b,32); rh264_un(&b,32); rh264_u1(&b); }
+      { int hrd0,hrd1,k;
+        hrd0=rh264_u1(&b);
+        if(hrd0){ int cnt=rh264_ue(&b)+1; rh264_un(&b,4); rh264_un(&b,4);
+           for(k=0;k<cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
+           rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); }
+        hrd1=rh264_u1(&b);
+        if(hrd1){ int cnt=rh264_ue(&b)+1; rh264_un(&b,4); rh264_un(&b,4);
+           for(k=0;k<cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
+           rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); }
+        if(hrd0||hrd1) rh264_u1(&b); }
+      rh264_u1(&b);
+      if(rh264_u1(&b)){
+         rh264_u1(&b); rh264_ue(&b); rh264_ue(&b); rh264_ue(&b); rh264_ue(&b);
+         if(rh264_more_data(&b)) s->vui_num_reorder=(int)rh264_ue(&b); }
+   }
    s->valid=1; return 1;
 }
 static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
    rh264_bits b; memset(p,0,sizeof(*p)); rh264_bits_init(&b,rbsp,size);
-   rh264_ue(&b); rh264_ue(&b); p->entropy_coding_mode_flag=rh264_u1(&b); rh264_u1(&b);
+   rh264_ue(&b); rh264_ue(&b); p->entropy_coding_mode_flag=rh264_u1(&b);
+   p->pic_order_present_flag=rh264_u1(&b);
    if(rh264_ue(&b)!=0) return 0;
-   p->num_ref_idx_l0_default=rh264_ue(&b)+1; rh264_ue(&b);
-   p->weighted_pred_flag=rh264_u1(&b); rh264_un(&b,2);
+   p->num_ref_idx_l0_default=rh264_ue(&b)+1;
+   p->num_ref_idx_l1_default=rh264_ue(&b)+1;
+   p->weighted_pred_flag=rh264_u1(&b);
+   p->weighted_bipred_idc=(int)rh264_un(&b,2);
    p->pic_init_qp=rh264_se(&b)+26; rh264_se(&b); p->chroma_qp_index_offset=rh264_se(&b);
    p->deblocking_filter_control_present=rh264_u1(&b); p->constrained_intra_pred_flag=rh264_u1(&b);
    p->valid=1; return 1;
@@ -101,7 +135,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    sh->frame_num_val=sh->frame_num;
    if(!sps->frame_mbs_only_flag){ if(rh264_u1(b)) rh264_u1(b); }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
-   if(sps->pic_order_cnt_type==0) sh->poc_lsb=rh264_un(b,sps->log2_max_poc_lsb);
+   if(sps->pic_order_cnt_type==0){
+      sh->poc_lsb=rh264_un(b,sps->log2_max_poc_lsb);
+      if(pps->pic_order_present_flag) rh264_se(b); /* delta_pic_order_cnt_bottom */
+   } else if(sps->pic_order_cnt_type==1&&!sps->poc_type1_always_zero){
+      rh264_se(b); if(pps->pic_order_present_flag) rh264_se(b);
+   }
    sh->num_ref_idx_l0=1;
    if(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP){
       /* num_ref_idx_active_override_flag + ref_pic_list_modification (7.3.3). */
@@ -1866,6 +1905,7 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
 
 
 #define RH264_MAX_REFS 16
+#define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 
 struct rh264_video
 {
@@ -1879,10 +1919,31 @@ struct rh264_video
    int        dpb_pn[RH264_MAX_REFS];   /* PicNum per slot                   */
    int        dpb_len;          /* number of valid reference pictures        */
    int        dpb_size;         /* slots allocated                           */
+   int        dpb_poc[RH264_MAX_REFS];  /* picture order count per slot      */
    rh264_mv  *mvg;              /* motion-vector grid for the frame being decoded */
    int        have_ref;         /* a reference frame is available (post-IDR)     */
    int        last_picnum;      /* frame_num of the picture just decoded         */
+   int        last_poc;         /* POC of the picture just decoded               */
    int        alloc_w, alloc_h; /* geometry the plane buffers were sized for */
+   /* Picture order count derivation state (8.2.1). prev_* track the previous
+    * reference picture in decode order for type 0; fn_offset accumulates
+    * frame_num wraps for type 2. */
+   int        prev_poc_msb, prev_poc_lsb, prev_frame_num, fn_offset;
+   /* Display-order output. Decoded pictures queue here and leave lowest
+    * (generation, POC) first, so B pictures come out in presentation order.
+    * The delay stays zero until the stream shows its first B slice, so
+    * P-only streams keep their decode-order behaviour exactly. gen counts
+    * IDRs: POC restarts at an IDR, and every picture after it in decode
+    * order also follows it in output order (8.2.1). */
+   rh264_frame out[RH264_OUT_SLOTS];
+   int        out_poc[RH264_OUT_SLOTS];
+   int        out_gen[RH264_OUT_SLOTS];
+   int        out_used[RH264_OUT_SLOTS];
+   int        out_len;          /* pictures queued and not yet shown         */
+   int        out_show;         /* slot most recently handed out, -1 if none */
+   int        idr_gen;          /* IDR generation of the current picture     */
+   int        reorder_delay;    /* current output delay in pictures          */
+   int        seen_b;           /* stream has shown a B slice                */
 };
 
 /* ---- allocation helpers ---- */
@@ -1951,6 +2012,9 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
          if (rh264_frame_alloc(&v->dpb[i], &v->sps) != 0) return -1;
       v->dpb_size = n;
       v->dpb_len  = 0;
+      for (i = 0; i < RH264_OUT_SLOTS; i++)
+      { rh264_frame_free(&v->out[i]); v->out_used[i] = 0; }
+      v->out_len = 0; v->out_show = -1;
    }
    free(v->mvg);
    {
@@ -1973,6 +2037,7 @@ rh264_video *rh264_video_open(void)
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
    if (!v) return NULL;
    v->nal_length_size = 4;
+   v->out_show = -1;
    return v;
 }
 
@@ -1983,6 +2048,7 @@ void rh264_video_close(rh264_video *v)
       int i;
       rh264_frame_free(&v->f);
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
+      for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
    }
    free(v->mvg);
    free(v);
@@ -3460,6 +3526,94 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    return 0;
 }
 
+/* Copy the pixel planes of src into dst (both already allocated at the same
+ * geometry). Used to place the just-decoded picture into the reference list. */
+static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
+{
+   memcpy(dst->Y, src->Y, (size_t)src->ystride * src->mbh * 16);
+   memcpy(dst->U, src->U, (size_t)src->cstride * src->mbh * 8);
+   memcpy(dst->V, src->V, (size_t)src->cstride * src->mbh * 8);
+   dst->qp = src->qp;
+   dst->chroma_qp_offset = src->chroma_qp_offset;
+}
+
+/* Picture order count for the picture just parsed (8.2.1). Type 0 rebuilds
+ * the count from its wrapping LSB against the previous reference picture;
+ * type 2 makes it follow decode order, doubled, with non-reference pictures
+ * sitting one below the next reference. Type 1 is not derived; the caller
+ * refuses B slices under it, and without B pictures output order equals
+ * decode order, so a synthetic increasing value keeps the queue ordered. */
+static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
+      int nal_ref_idc)
+{
+   const rh264_sps *sps = &v->sps;
+   int poc;
+   if (sh->is_idr)
+   { v->prev_poc_msb = 0; v->prev_poc_lsb = 0; v->fn_offset = 0;
+     v->prev_frame_num = 0; }
+   if (sps->pic_order_cnt_type == 0)
+   {
+      int max_lsb = 1 << sps->log2_max_poc_lsb;
+      int msb;
+      if (sh->poc_lsb < v->prev_poc_lsb
+            && (v->prev_poc_lsb - sh->poc_lsb) >= (max_lsb / 2))
+         msb = v->prev_poc_msb + max_lsb;
+      else if (sh->poc_lsb > v->prev_poc_lsb
+            && (sh->poc_lsb - v->prev_poc_lsb) > (max_lsb / 2))
+         msb = v->prev_poc_msb - max_lsb;
+      else
+         msb = v->prev_poc_msb;
+      poc = msb + sh->poc_lsb;
+      if (nal_ref_idc)
+      { v->prev_poc_msb = msb; v->prev_poc_lsb = sh->poc_lsb; }
+   }
+   else if (sps->pic_order_cnt_type == 2)
+   {
+      int max_fn = 1 << sps->log2_max_frame_num;
+      if (!sh->is_idr && sh->frame_num < v->prev_frame_num)
+         v->fn_offset += max_fn;
+      poc = 2 * (v->fn_offset + sh->frame_num);
+      if (!nal_ref_idc && poc > 0) poc -= 1;
+      v->prev_frame_num = sh->frame_num;
+   }
+   else
+      poc = v->last_poc + 2;
+   return poc;
+}
+
+/* Queue the just-decoded picture for display. Returns the slot to show now
+ * (lowest generation, then POC) once more than reorder_delay pictures wait,
+ * or when an IDR arrives with nothing pending; -1 while buffering. */
+static int rh264_out_push(rh264_video *v, int poc, int is_idr)
+{
+   int i, slot = -1, bi;
+   for (i = 0; i < RH264_OUT_SLOTS; i++)
+      if (!v->out_used[i] && i != v->out_show) { slot = i; break; }
+   if (slot < 0) return -1;            /* cannot happen: delay < slot count */
+   if (!v->out[slot].Y)
+      if (rh264_frame_alloc(&v->out[slot], &v->sps) != 0) return -1;
+   rh264_frame_copy_planes(&v->out[slot], &v->f);
+   v->out[slot].w = v->f.w; v->out[slot].h = v->f.h;
+   v->out_poc[slot] = poc; v->out_gen[slot] = v->idr_gen;
+   v->out_used[slot] = 1;  v->out_len++;
+   /* An IDR arriving with nothing pending can leave at once: no picture
+    * after it in decode order may precede it in output order. Otherwise
+    * hold pictures until more than reorder_delay wait. */
+   if (v->out_len <= v->reorder_delay && !(is_idr && v->out_len == 1))
+      return -1;
+   bi = -1;
+   for (i = 0; i < RH264_OUT_SLOTS; i++)
+   {
+      if (!v->out_used[i]) continue;
+      if (bi < 0 || v->out_gen[i] < v->out_gen[bi]
+            || (v->out_gen[i] == v->out_gen[bi] && v->out_poc[i] < v->out_poc[bi]))
+         bi = i;
+   }
+   v->out_used[bi] = 0; v->out_len--;
+   v->out_show = bi;
+   return bi;
+}
+
 static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len)
 {
    int nut, nri, rc;
@@ -3475,6 +3629,8 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    rh264_bits_init(&b, rbsp, rl);
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { free(rbsp); return -1; }
+   v->idr_gen++;
+   v->last_poc = rh264_derive_poc(v, &sh, nri);
    rh264_frame_reset(&v->f);
    /* Main/High-profile streams use CABAC entropy coding; baseline uses CAVLC.
     * Dispatch on the PPS entropy_coding_mode_flag. Both paths are intra-only. */
@@ -3485,17 +3641,6 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    if (rc == 0) rh264_deblock(&v->f, &sh);
    free(rbsp);
    return rc;
-}
-
-/* Copy the pixel planes of src into dst (both already allocated at the same
- * geometry). Used to place the just-decoded picture into the reference list. */
-static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
-{
-   memcpy(dst->Y, src->Y, (size_t)src->ystride * src->mbh * 16);
-   memcpy(dst->U, src->U, (size_t)src->cstride * src->mbh * 8);
-   memcpy(dst->V, src->V, (size_t)src->cstride * src->mbh * 8);
-   dst->qp = src->qp;
-   dst->chroma_qp_offset = src->chroma_qp_offset;
 }
 
 /* Insert the just-decoded picture into the short-term reference list, which is
@@ -3513,6 +3658,7 @@ static void rh264_dpb_insert(rh264_video *v, int picnum)
       slot = v->dpb_slot[v->dpb_size - 1];     /* evict the oldest */
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
    v->dpb_pn[slot] = picnum;
+   v->dpb_poc[slot] = v->last_poc;
    for (i = (v->dpb_len < v->dpb_size ? v->dpb_len : v->dpb_size - 1); i > 0; i--)
       v->dpb_slot[i] = v->dpb_slot[i-1];
    v->dpb_slot[0] = slot;
@@ -3542,6 +3688,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
    if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP)
    { free(rbsp); return -1; }
+   v->last_poc = rh264_derive_poc(v, &sh, nri);
    if (v->dpb_len < 1)
    { free(rbsp); return -1; }
    {
@@ -3639,7 +3786,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (rh264_video_decode_idr(v, nal, nl) != 0) return -1;
       v->dpb_len = 0;          /* an IDR empties the reference list (8.2.5.1) */
       rh264_dpb_insert(v, 0);
-      *got_pic = 1;
+      if (rh264_out_push(v, v->last_poc, 1) >= 0) *got_pic = 1;
       return 1;   /* one coded picture per call */
    }
    if (type == 1)
@@ -3649,7 +3796,7 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       if (rh264_video_decode_inter(v, nal, nl) != 0) return -1;
       if ((nal[0] >> 5) & 3)   /* nal_ref_idc: only reference pictures stored */
          rh264_dpb_insert(v, v->last_picnum);
-      *got_pic = 1;
+      if (rh264_out_push(v, v->last_poc, 0) >= 0) *got_pic = 1;
       return 1;
    }
    return 0;
@@ -3710,13 +3857,32 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
       int *stride, int *width, int *height)
 {
    const uint8_t *p;
+   const rh264_frame *f;
    int st, w, h;
    if (!v) return NULL;
-   if (plane == 0)      { st = v->f.ystride; w = v->f.w;         h = v->f.h;         p = v->f.Y; }
-   else                 { st = v->f.cstride; w = (v->f.w+1)/2;   h = (v->f.h+1)/2;
-                          p = (plane == 1) ? v->f.U : v->f.V; }
+   f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->f;
+   if (plane == 0)      { st = f->ystride; w = f->w;         h = f->h;         p = f->Y; }
+   else                 { st = f->cstride; w = (f->w+1)/2;   h = (f->h+1)/2;
+                          p = (plane == 1) ? f->U : f->V; }
    if (stride) *stride = st;
    if (width)  *width  = w;
    if (height) *height = h;
    return p;
+}
+
+int rh264_video_drain(rh264_video *v)
+{
+   int i, bi = -1;
+   if (!v) return -1;
+   for (i = 0; i < RH264_OUT_SLOTS; i++)
+   {
+      if (!v->out_used[i]) continue;
+      if (bi < 0 || v->out_gen[i] < v->out_gen[bi]
+            || (v->out_gen[i] == v->out_gen[bi] && v->out_poc[i] < v->out_poc[bi]))
+         bi = i;
+   }
+   if (bi < 0) return -1;
+   v->out_used[bi] = 0; v->out_len--;
+   v->out_show = bi;
+   return 0;
 }
