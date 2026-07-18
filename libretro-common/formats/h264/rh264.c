@@ -1415,23 +1415,6 @@ static int rh264_inter_luma_residual(rh264_bits *b, rh264_frame *f,
 /* Decode one P macroblock partition's motion: predict MV, read mvd, store,
  * and motion-compensate. gx,gy = 4x4 grid pos of the partition top-left;
  * bw,bh = pixel size; bx,by = MB-relative pixel offset. */
-static void rh264_p_part_hint(rh264_bits *b, rh264_frame *f, const rh264_frame *ref,
-      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
-      int mbx, int mby, int bx, int by, int bw, int bh, int refidx, int hint,
-      const signed char *picid)
-{
-   int gx = mbx * 4 + (bx >> 2), gy = mby * 4 + (by >> 2);
-   int bw4 = bw >> 2, bh4 = bh >> 2;
-   int pmvx, pmvy, mvx, mvy, mvdx, mvdy;
-   rh264_pred_mv_dir(mvg, gwmax, gwmax, ghmax, gx, gy, bw4, refidx, hint, &pmvx, &pmvy);
-   mvdx = rh264_se(b); mvdy = rh264_se(b);
-
-   mvx = pmvx + mvdx; mvy = pmvy + mvdy;
-   rh264_mv_fill_pic(mvg, gwmax, gx, gy, bw4, bh4, mvx, mvy, refidx,
-         picid ? picid[refidx] : refidx);
-   rh264_inter_pred_block(f, ref, mbx, mby, bx, by, bw, bh, mvx, mvy);
-}
-
 /* Explicit weighted prediction for one predicted block (8.4.2.3.2, single
  * list), applied in place over the samples motion compensation just wrote. */
 static void rh264_weight_pred(rh264_frame *f, const rh264_slice_hdr *sh,
@@ -1473,6 +1456,24 @@ static void rh264_weight_pred(rh264_frame *f, const rh264_slice_hdr *sh,
          }
       }
    }
+}
+
+static void rh264_p_part_hint(rh264_bits *b, rh264_frame *f, const rh264_frame *ref,
+      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int ghmax,
+      int mbx, int mby, int bx, int by, int bw, int bh, int refidx, int hint,
+      const signed char *picid)
+{
+   int gx = mbx * 4 + (bx >> 2), gy = mby * 4 + (by >> 2);
+   int bw4 = bw >> 2, bh4 = bh >> 2;
+   int pmvx, pmvy, mvx, mvy, mvdx, mvdy;
+   rh264_pred_mv_dir(mvg, gwmax, gwmax, ghmax, gx, gy, bw4, refidx, hint, &pmvx, &pmvy);
+   mvdx = rh264_se(b); mvdy = rh264_se(b);
+
+   mvx = pmvx + mvdx; mvy = pmvy + mvdy;
+   rh264_mv_fill_pic(mvg, gwmax, gx, gy, bw4, bh4, mvx, mvy, refidx,
+         picid ? picid[refidx] : refidx);
+   rh264_inter_pred_block(f, ref, mbx, mby, bx, by, bw, bh, mvx, mvy);
+   rh264_weight_pred(f, sh, refidx, mbx, mby, bx, by, bw, bh);
 }
 
 /* ref_idx_lX, te(v): a single inverted bit when two pictures are available,
