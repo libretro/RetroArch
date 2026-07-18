@@ -69,7 +69,7 @@ struct rmp4_video_stream
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
-   int          pkt_idx;    /* ordinal of the next video packet       */
+   int          disp_idx;   /* ordinal of the next displayed picture  */
    int          wait_key;   /* a reference failed; hold out for a key */
    int          track;      /* index of the chosen video track        */
    unsigned     matrix;     /* colr matrix_coefficients; 0 untagged   */
@@ -89,6 +89,12 @@ struct rmp4_video
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
 };
+
+static int rmp4_video_ts_cmp(const void *a, const void *b)
+{
+   int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
+   return (x > y) - (x < y);
+}
 
 /* ------------------------------------------------------------------ */
 /* Limited-range I420 -> ABGR words (memory R,G,B,A on LE).            */
@@ -492,6 +498,12 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    }
    if (s->num_frames < 1)
       goto fail;
+   /* The sample table lists composition times in decode order; with
+    * B-frames the decoder hands pictures out reordered by those times,
+    * so sort them into the presentation timeline the displayed frames
+    * actually follow. Without this a 30 fps recording with a reorder
+    * depth of two was paced 133/0/0/66 ms instead of 33 ms a frame. */
+   qsort(s->ts, (size_t)s->ts_count, sizeof(*s->ts), rmp4_video_ts_cmp);
    rmp4_rewind(s->demux);
 
    if (!rmp4_video_stream_open_decoder(s))
@@ -657,7 +669,10 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
           * garbage. Freeze on the last good picture until the next key
           * frame restarts the chain cleanly. */
          if (s->wait_key && !pkt->keyframe)
+         {
+            s->disp_idx++;  /* the sample's presentation slot is gone */
             return 0;
+         }
          dec = rh264_video_decode(s->h264, pkt->data, pkt->size);
          if (dec < 0)
          {
@@ -696,22 +711,22 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
 
    while (rmp4_read_packet(s->demux, &pkt) == 1)
    {
-      int idx, r;
+      int r;
       if (pkt.track != s->track)
          continue;
-      idx = s->pkt_idx++;
-      r   = rmp4_video_decode_packet(s, &pkt);
+      r = rmp4_video_decode_packet(s, &pkt);
       if (r < 0)
          return NULL;    /* decode error: end the animation */
       if (r == 0)
          continue;       /* non-shown frame: keep going      */
       if (duration_ms)
-         *duration_ms = rmp4_video_duration_ms(s, idx);
+         *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+      s->disp_idx++;
       return s->frame;
    }
    /* Out of packets. Display reordering can leave the last few pictures
     * queued inside the H.264 decoder; hand them out before ending the
-    * pass, one per call, giving each the duration of a trailing sample. */
+    * pass, one per call, on the same presentation clock. */
    if (s->h264 && rh264_video_drain(s->h264) == 0)
    {
       const uint8_t *y, *u, *v;
@@ -728,8 +743,8 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
          rmp4_video_blit_i420(s->frame, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
          if (duration_ms)
-            *duration_ms = rmp4_video_duration_ms(s,
-                  s->pkt_idx > 0 ? s->pkt_idx - 1 : 0);
+            *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+         s->disp_idx++;
          return s->frame;
       }
    }
@@ -741,7 +756,7 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    if (!s)
       return;
    rmp4_rewind(s->demux);
-   s->pkt_idx = 0;
+   s->disp_idx = 0;
    s->wait_key = 0;
    /* The stream restarts at a key frame, so a fresh decoder (empty
     * reference chain, default probabilities) is the correct state. */
