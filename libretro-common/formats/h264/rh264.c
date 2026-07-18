@@ -1788,6 +1788,14 @@ static RH264_INLINE void rh264_sse2_store4(uint8_t *d, __m128i v)
    uint32_t t = (uint32_t)_mm_cvtsi128_si32(v);
    memcpy(d, &t, 4);
 }
+
+/* Load exactly four bytes into the low lanes. */
+static RH264_INLINE __m128i rh264_sse2_load4(const uint8_t *s)
+{
+   uint32_t t;
+   memcpy(&t, s, 4);
+   return _mm_cvtsi32_si128((int)t);
+}
 #endif
 
 #ifdef RH264_NEON
@@ -1796,6 +1804,14 @@ static RH264_INLINE void rh264_neon_store4(uint8_t *d, uint8x8_t v)
 {
    uint32_t t = vget_lane_u32(vreinterpret_u32_u8(v), 0);
    memcpy(d, &t, 4);
+}
+
+/* Load exactly four bytes into the low lanes. */
+static RH264_INLINE uint8x8_t rh264_neon_load4(const uint8_t *s)
+{
+   uint32_t t;
+   memcpy(&t, s, 4);
+   return vreinterpret_u8_u32(vdup_n_u32(t));
 }
 
 /* Raw 6-tap (1,-5,20,20,-5,1) for eight consecutive positions; the value
@@ -3181,7 +3197,31 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
          for (y = 0; y < bh; y++)
          {
             uint8_t *d = f->Y + (oy+y)*f->ystride + ox;
-            for (x = 0; x < bw; x++)
+            x = 0;
+#ifdef RH264_SSE2
+            for (; x + 8 <= bw; x += 8)
+               _mm_storel_epi64((__m128i*)(d + x), _mm_avg_epu8(
+                     _mm_loadl_epi64((const __m128i*)(t0y + y*16 + x)),
+                     _mm_loadl_epi64((const __m128i*)(t1y + y*16 + x))));
+            if (x + 4 <= bw)
+            {
+               rh264_sse2_store4(d + x, _mm_avg_epu8(
+                     _mm_loadl_epi64((const __m128i*)(t0y + y*16 + x)),
+                     _mm_loadl_epi64((const __m128i*)(t1y + y*16 + x))));
+               x += 4;
+            }
+#elif defined(RH264_NEON)
+            for (; x + 8 <= bw; x += 8)
+               vst1_u8(d + x, vrhadd_u8(vld1_u8(t0y + y*16 + x),
+                     vld1_u8(t1y + y*16 + x)));
+            if (x + 4 <= bw)
+            {
+               rh264_neon_store4(d + x, vrhadd_u8(vld1_u8(t0y + y*16 + x),
+                     vld1_u8(t1y + y*16 + x)));
+               x += 4;
+            }
+#endif
+            for (; x < bw; x++)
                d[x] = (uint8_t)((t0y[y*16+x] + t1y[y*16+x] + 1) >> 1);
          }
          for (c = 0; c < 2; c++)
@@ -3191,7 +3231,19 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
             for (y = 0; y < cbh; y++)
             {
                uint8_t *d = pl + (coy+y)*f->cstride + cox;
-               for (x = 0; x < cbw; x++)
+               x = 0;
+#ifdef RH264_SSE2
+               for (; x + 4 <= cbw; x += 4)
+                  rh264_sse2_store4(d + x, _mm_avg_epu8(
+                        rh264_sse2_load4(s0 + y*8 + x),
+                        rh264_sse2_load4(s1 + y*8 + x)));
+#elif defined(RH264_NEON)
+               for (; x + 4 <= cbw; x += 4)
+                  rh264_neon_store4(d + x, vrhadd_u8(
+                        rh264_neon_load4(s0 + y*8 + x),
+                        rh264_neon_load4(s1 + y*8 + x)));
+#endif
+               for (; x < cbw; x++)
                   d[x] = (uint8_t)((s0[y*8+x] + s1[y*8+x] + 1) >> 1);
             }
          }
