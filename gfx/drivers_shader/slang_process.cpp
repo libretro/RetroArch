@@ -940,7 +940,8 @@ bool slang_process(
    if (!*pass.alias && !output.meta.name.empty())
       strlcpy(pass.alias, output.meta.name.c_str(), sizeof(pass.alias) - 1);
 
-   out->format = output.meta.rt_format;
+   out->format          = output.meta.rt_format;
+   out->explicit_format = (output.meta.rt_format != SLANG_FORMAT_UNKNOWN);
 
    if (out->format == SLANG_FORMAT_UNKNOWN)
    {

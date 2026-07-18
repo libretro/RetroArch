@@ -5296,11 +5296,19 @@ typedef struct MTLALIGN(16)
             BOOL passEmitsHDR16 = NO;
             if (lastPass)
             {
-               if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
-                   || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
-                  passEmitsHDR10 = YES;
-               else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
-                  passEmitsHDR16 = YES;
+               /* Only a format the shader declared itself (#pragma format)
+                * means the shader performed its own HDR encode.  A format
+                * derived from preset FBO flags (float_framebuffer /
+                * rgb10_framebuffer) carries no such intent, so it must not
+                * put the composite pass into passthrough. */
+               if (_engine.pass[i].semantics.explicit_format)
+               {
+                  if (   _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+                      || _engine.pass[i].semantics.format == SLANG_FORMAT_A2B10G10R10_UINT_PACK32)
+                     passEmitsHDR10 = YES;
+                  else if (_engine.pass[i].semantics.format == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+                     passEmitsHDR16 = YES;
+               }
 
                /* Method-scope flags — will be pushed to Context after the loop. */
                _shaderEmitsHDR10 = passEmitsHDR10;

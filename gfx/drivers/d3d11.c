@@ -2415,20 +2415,30 @@ static bool d3d11_shader_load_step(void *data,
          ? d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* Only a format the shader declared itself (#pragma format)
+       * means the shader performed its own HDR encode.  A format
+       * derived from preset FBO flags (float_framebuffer /
+       * rgb10_framebuffer) carries no such intent and must not put
+       * the driver into passthrough. */
+      enum glslang_format last_hdr_fmt =
+         (     d3d11->shader_preset && d3d11->shader_preset->passes
+            && d3d11->pass[d3d11->shader_preset->passes - 1].semantics.explicit_format)
+         ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
       /* A core supplying PQ has the same effect as a final shader pass
        * that emits PQ: the samples must not be encoded again. */
       if (     (d3d11->flags & D3D11_ST_FLAG_SOURCE_HDR10)
-            && last_fmt == SLANG_FORMAT_UNKNOWN)
-         last_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
       if (menu_hdr_mode == 2)
       {
          d3d11_set_hdr_inverse_tonemap(d3d11, false);
          d3d11_set_hdr10(d3d11, false);
 
-         if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
             d3d11->hdr.ubo_values.hdr_mode = 0;
-         else if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         else if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
             d3d11->hdr.ubo_values.hdr_mode = 3;
          else
          {
@@ -2443,8 +2453,8 @@ static bool d3d11_shader_load_step(void *data,
       }
       else
       {
-         if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
-               || last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+               || last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
          {
             d3d11_set_hdr_inverse_tonemap(d3d11, false);
             d3d11_set_hdr10(d3d11, false);
@@ -2679,15 +2689,25 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          ? d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* Only a format the shader declared itself (#pragma format)
+       * means the shader performed its own HDR encode.  A format
+       * derived from preset FBO flags (float_framebuffer /
+       * rgb10_framebuffer) carries no such intent and must not put
+       * the driver into passthrough. */
+      enum glslang_format last_hdr_fmt =
+         (     d3d11->shader_preset && d3d11->shader_preset->passes
+            && d3d11->pass[d3d11->shader_preset->passes - 1].semantics.explicit_format)
+         ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
       if (menu_hdr_mode == 2) /* scRGB */
       {
          /* scRGB: legacy inverse tonemap / PQ encoding never used */
          d3d11_set_hdr_inverse_tonemap(d3d11, false);
          d3d11_set_hdr10(d3d11, false);
 
-         if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
             d3d11->hdr.ubo_values.hdr_mode = 0; /* passthrough: already scRGB */
-         else if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         else if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
             d3d11->hdr.ubo_values.hdr_mode = 3; /* PQ->scRGB at Point 2 */
          else
          {
@@ -2702,14 +2722,14 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       }
       else /* HDR10 */
       {
-         if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
          {
             /* Shader emits HDR10 PQ: passthrough */
             d3d11_set_hdr_inverse_tonemap(d3d11, false);
             d3d11_set_hdr10(d3d11, false);
             d3d11->flags |= D3D11_ST_FLAG_RESIZE_CHAIN;
          }
-         else if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         else if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
          {
             /* Shader emits RGBA16F: passthrough, HW quantises */
             d3d11_set_hdr_inverse_tonemap(d3d11, false);
