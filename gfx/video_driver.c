@@ -3244,6 +3244,14 @@ bool video_driver_texture_load(void *data,
    if (ti && ti->compressed && !ti->pixels)
       image_texture_realize_rgba(ti);
 
+   /* A 10-bit (XRGB2101010) texture is only kept for drivers that advertise
+    * native 10-bit source support; otherwise narrow to 8-bit ARGB8888 before
+    * upload so the driver's ordinary 8-bit path stays correct. */
+   if (     ti
+         && ti->pix10
+         && !video_driver_test_all_flags(GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE))
+      image_texture_narrow_10bit(ti);
+
    *id = poke->load_texture(video_st->data, data, threaded, filter_type);
    return true;
 }

@@ -7700,7 +7700,9 @@ static uintptr_t vulkan_load_texture(void *video_data, void *data,
    else
    {
       *texture = vulkan_create_texture(vk, NULL,
-            image->width, image->height, VK_FORMAT_B8G8R8A8_UNORM,
+            image->width, image->height,
+            image->pix10 ? VK_FORMAT_A2R10G10B10_UNORM_PACK32
+                         : VK_FORMAT_B8G8R8A8_UNORM,
             image->pixels, NULL, VULKAN_TEXTURE_STATIC);
       /* vulkan_create_texture always builds the full mip chain for
        * static textures and returns VK_TEX_FLAG_MIPMAP set; sampler

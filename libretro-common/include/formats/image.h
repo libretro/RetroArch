@@ -48,6 +48,11 @@ struct texture_image
    unsigned width;
    unsigned height;
    bool supports_rgba;
+   /* When true, ->pixels holds packed XRGB2101010 (10-bit per channel,
+    * bits [29:20]=R [19:10]=G [9:0]=B) rather than 8-bit RGBA/BGRA. Only
+    * honoured by drivers that advertise GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE;
+    * others fall back to an 8-bit copy via image_texture_narrow_10bit(). */
+   bool pix10;
    /* Optional GPU-native compressed payload (BCn).  When non-NULL a
     * capable driver may upload it directly and leave ->pixels NULL;
     * image_texture_realize_rgba() decodes to ->pixels on demand for
@@ -141,6 +146,11 @@ void image_texture_free(struct texture_image *img);
  * No-op returning true if ->pixels is already present.  The fallback when
  * a driver cannot sample img->compressed->format. */
 bool image_texture_realize_rgba(struct texture_image *img);
+
+/* Narrow a texture_image whose ->pixels hold packed XRGB2101010 down to
+ * 8-bit ARGB8888 in place (and clear ->pix10), for drivers that cannot sample
+ * a 10-bit texture. No-op unless ->pix10 is set. */
+void image_texture_narrow_10bit(struct texture_image *img);
 
 /* Image transfer */
 
