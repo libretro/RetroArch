@@ -257,6 +257,12 @@ typedef struct gfx_ctx_vulkan_data
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
+    * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display
+    * metadata to the compositor after (re)creating an HDR swapchain. */
+   PFN_vkSetHdrMetadataEXT set_hdr_metadata;
+#endif
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
