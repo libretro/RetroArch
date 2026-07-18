@@ -975,6 +975,7 @@ static void d3d12_update_texture(
          case DXGI_FORMAT_B8G8R8X8_UNORM:
          case DXGI_FORMAT_B8G8R8A8_UNORM:
          case DXGI_FORMAT_R8G8B8A8_UNORM:
+         case DXGI_FORMAT_R10G10B10A2_UNORM:
             pitch = width * 4;
             break;
          case DXGI_FORMAT_B5G6R5_UNORM:
@@ -1795,6 +1796,7 @@ static uint32_t d3d12_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
 
    return flags;
@@ -4486,8 +4488,10 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags             &= ~D3D12_ST_FLAG_KEEP_ASPECT;
 
-   d3d12->format                = (video->rgb32)
-      ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d12->format                = video->source_10bit
+      ? DXGI_FORMAT_R10G10B10A2_UNORM
+      : ((video->rgb32)
+      ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
 
    d3d12->frame.texture[0].desc.Format = d3d12->format;
    d3d12->frame.texture[0].desc.Width  = 4;
