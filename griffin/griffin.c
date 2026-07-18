@@ -462,6 +462,7 @@ VIDEO IMAGE
 
 #ifdef HAVE_RVP9
 #include "../libretro-common/formats/vp9/rvp9.c"
+#include "../libretro-common/formats/image/image_hdr_blit.c"
 #endif
 #ifdef HAVE_RDDS
 #include "../libretro-common/formats/dds/rdds.c"
