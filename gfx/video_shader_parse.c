@@ -734,7 +734,16 @@ static bool video_shader_parse_pass(config_file_t *conf,
    if (config_get_bool(conf, shader_var, &tmp_bool))
    {
       if (tmp_bool)
+      {
+         /* Only the slang chain resolves this flag to a render target
+          * format; the .cg / .glsl backends would silently give 8-bit. */
+         if (!string_is_equal_case_insensitive(
+                  path_get_extension(pass->source.path), "slang"))
+            RARCH_WARN("[Shaders] Pass %u sets \"%s\" but is not a .slang"
+                  " shader; the option has no effect here.\n",
+                  i, shader_var);
          pass->fbo.flags |=  FBO_SCALE_FLAG_RGB10_FBO;
+      }
       else
          pass->fbo.flags &= ~FBO_SCALE_FLAG_RGB10_FBO;
    }
