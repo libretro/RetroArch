@@ -45,6 +45,13 @@ void rmp4_video_free(rmp4_video_t *mp4);
 
 bool rmp4_video_set_buf_ptr(rmp4_video_t *mp4, void *data, size_t len);
 
+/* Request packed XRGB2101010 (10-bit) output for 10-bit HDR sources; 8-bit
+ * sources are unaffected. Off by default. */
+void rmp4_video_set_want_10bit(rmp4_video_t *mp4, int want);
+
+/* True if the last rmp4_video_process_image() produced XRGB2101010. */
+bool rmp4_video_is_10bit(const rmp4_video_t *mp4);
+
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
  * success, IMAGE_PROCESS_ERROR on failure (no supported video track,

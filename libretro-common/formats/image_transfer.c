@@ -498,6 +498,11 @@ void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
          rwebm_video_set_want_10bit((rwebm_video_t*)data, want);
          break;
 #endif
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         rmp4_video_set_want_10bit((rmp4_video_t*)data, want);
+         break;
+#endif
       default:
          break;
    }
@@ -510,6 +515,10 @@ bool image_transfer_is_10bit(void *data, enum image_type_enum type)
 #ifdef HAVE_RWEBM
       case IMAGE_TYPE_WEBM:
          return rwebm_video_is_10bit((const rwebm_video_t*)data);
+#endif
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         return rmp4_video_is_10bit((const rmp4_video_t*)data);
 #endif
       default:
          break;

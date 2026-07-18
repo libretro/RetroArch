@@ -41,6 +41,9 @@
 #include <formats/rvp8.h>
 #ifdef HAVE_RVP9
 #include <formats/rvp9.h>
+/* The 10-bit / HDR I420->RGB blits are shared (image_hdr_blit.c) but still
+ * declared in rwebm_video.h; the implementation is demuxer-independent. */
+#include <formats/rwebm_video.h>
 #endif
 #include <formats/rh264.h>
 #include <formats/rmp4_video.h>
@@ -71,12 +74,16 @@ struct rmp4_video_stream
    enum rmp4_codec codec;
    unsigned     width;
    unsigned     height;
+   int          want10;     /* caller requested 10-bit output         */
+   int          is10;       /* last decoded frame written as 10-bit    */
 };
 
 struct rmp4_video
 {
    const uint8_t *buf;
    size_t         len;
+   int            want10;     /* caller requested 10-bit thumbnail output */
+   int            last_10bit; /* last processed frame was XRGB2101010 */
 };
 
 /* ------------------------------------------------------------------ */
@@ -548,8 +555,31 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          const rvp9_fb *fb = &s->vp9->fbs[last_show];
          unsigned w = (unsigned)fb->w < s->width  ? (unsigned)fb->w : s->width;
          unsigned h = (unsigned)fb->h < s->height ? (unsigned)fb->h : s->height;
-         rmp4_video_blit_i420(s->frame, s->width, w, h,
-               fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs);
+         if (s->vp9->hd.bit_depth == 10)
+         {
+            /* This demuxer does not parse the MP4 'colr' box, so colour
+             * metadata is unavailable; pass 0 and let the shared blit pick
+             * HD-appropriate defaults (BT.2020-ncl for PQ, BT.709/601 by
+             * resolution), matching untagged webm content. Without this
+             * branch the 10-bit (uint16) planes were handed to the 8-bit
+             * blit and mis-decoded. */
+            if (s->want10)
+            {
+               rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
+                     (const uint16_t*)fb->y, s->vp9->ys,
+                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
+                     s->vp9->uvs, 0, 0, 0, 0);
+               s->is10 = 1;
+            }
+            else
+               rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
+                     (const uint16_t*)fb->y, s->vp9->ys,
+                     (const uint16_t*)fb->u, (const uint16_t*)fb->v,
+                     s->vp9->uvs, 0, 0, 0, 0, 1);
+         }
+         else
+            rmp4_video_blit_i420(s->frame, s->width, w, h,
+                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs);
          return 1;
       }
       return 0;
@@ -668,6 +698,20 @@ bool rmp4_video_set_buf_ptr(rmp4_video_t *mp4, void *data, size_t len)
    return true;
 }
 
+/* Ask the thumbnail decoder to emit packed XRGB2101010 for 10-bit HDR
+ * sources (it keeps 8-bit output for 8-bit sources). */
+void rmp4_video_set_want_10bit(rmp4_video_t *mp4, int want)
+{
+   if (mp4)
+      mp4->want10 = want ? 1 : 0;
+}
+
+/* True if the last rmp4_video_process_image() wrote packed XRGB2101010. */
+bool rmp4_video_is_10bit(const rmp4_video_t *mp4)
+{
+   return mp4 && mp4->last_10bit;
+}
+
 int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
       size_t len, unsigned *width, unsigned *height, bool supports_rgba)
 {
@@ -685,11 +729,16 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    if (!(s = rmp4_video_stream_open(mp4->buf, mp4->len)))
       return IMAGE_PROCESS_ERROR;
 
+   /* Request 10-bit output; the stream honours it only for 10-bit sources. */
+   s->want10 = mp4->want10;
+
    if (!(frame = rmp4_video_stream_next(s, &duration_ms)))
    {
       rmp4_video_stream_close(s);
       return IMAGE_PROCESS_ERROR;
    }
+
+   mp4->last_10bit = s->is10;
 
    n = (size_t)s->width * s->height;
    if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
@@ -698,7 +747,11 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
       return IMAGE_PROCESS_ERROR;
    }
 
-   if (supports_rgba)
+   if (s->is10)
+      /* Packed XRGB2101010 already in the frontend's channel order; copy
+       * verbatim (no 8-bit R/B swizzle). */
+      memcpy(out, frame, n * sizeof(uint32_t));
+   else if (supports_rgba)
       memcpy(out, frame, n * sizeof(uint32_t));
    else
    {
