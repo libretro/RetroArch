@@ -2149,6 +2149,8 @@ bool vulkan_filter_chain::compile_full_pass(unsigned pass_idx,
          output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
       else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
          output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+         output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
       p_info.rt_format = glslang_format_to_vk(output.meta.rt_format);
 
@@ -4186,6 +4188,8 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
             output.meta.rt_format = SLANG_FORMAT_R8G8B8A8_SRGB;
          else if (pass->fbo.flags & FBO_SCALE_FLAG_FP_FBO)
             output.meta.rt_format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+         else if (pass->fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+            output.meta.rt_format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
 
          pass_info.rt_format      = glslang_format_to_vk(output.meta.rt_format);
 

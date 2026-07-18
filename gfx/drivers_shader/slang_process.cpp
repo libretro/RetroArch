@@ -949,6 +949,8 @@ bool slang_process(
          out->format = SLANG_FORMAT_R8G8B8A8_SRGB;
       else if (pass.fbo.flags & FBO_SCALE_FLAG_FP_FBO)
          out->format = SLANG_FORMAT_R16G16B16A16_SFLOAT;
+      else if (pass.fbo.flags & FBO_SCALE_FLAG_RGB10_FBO)
+         out->format = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
       else
          out->format = SLANG_FORMAT_R8G8B8A8_UNORM;
    }

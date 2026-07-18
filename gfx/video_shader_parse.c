@@ -729,6 +729,16 @@ static bool video_shader_parse_pass(config_file_t *conf,
          pass->fbo.flags &= ~FBO_SCALE_FLAG_FP_FBO;
    }
 
+   _len  = strlcpy(shader_var, "rgb10_framebuffer", sizeof(shader_var));
+   strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
+   if (config_get_bool(conf, shader_var, &tmp_bool))
+   {
+      if (tmp_bool)
+         pass->fbo.flags |=  FBO_SCALE_FLAG_RGB10_FBO;
+      else
+         pass->fbo.flags &= ~FBO_SCALE_FLAG_RGB10_FBO;
+   }
+
    _len  = strlcpy(shader_var, "mipmap_input", sizeof(shader_var));
    strlcpy(shader_var + _len, formatted_num, sizeof(shader_var) - _len);
    if (config_get_bool(conf, shader_var, &tmp_bool))
@@ -1275,6 +1285,14 @@ static void video_shader_write_fbo(config_file_t *conf,
    _len = strlcpy(key, "srgb_framebuffer", sizeof(key));
    strlcpy(key + _len, formatted_num, sizeof(key) - _len);
    config_set_string(conf, key, (fbo->flags & FBO_SCALE_FLAG_SRGB_FBO) ? "true" : "false");
+   /* Only emitted when set, so presets that do not use it stay
+    * byte-identical to what older builds wrote. */
+   if (fbo->flags & FBO_SCALE_FLAG_RGB10_FBO)
+   {
+      _len = strlcpy(key, "rgb10_framebuffer", sizeof(key));
+      strlcpy(key + _len, formatted_num, sizeof(key) - _len);
+      config_set_string(conf, key, "true");
+   }
 
    if (fbo->flags & FBO_SCALE_FLAG_VALID)
    {
@@ -1896,6 +1914,16 @@ static bool video_shader_write_referenced_preset(
          {
 #ifdef DEBUG
             RARCH_WARN("[Shaders] Pass %u srgb_fbo", i);
+#endif
+            continue_saving_ref = false;
+         }
+
+         if (continue_saving_ref
+               && (fbo->flags & FBO_SCALE_FLAG_RGB10_FBO) != (root_fbo->flags &
+                  FBO_SCALE_FLAG_RGB10_FBO))
+         {
+#ifdef DEBUG
+            RARCH_WARN("[Shaders] Pass %u rgb10_fbo", i);
 #endif
             continue_saving_ref = false;
          }
