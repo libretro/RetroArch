@@ -6589,7 +6589,7 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
 }
 
 static unsigned menu_displaylist_parse_manual_content_scan_list(
-      file_list_t *info_list)
+      file_list_t *info_list, bool is_main_view)
 {
    unsigned count = 0;
    settings_t *settings = config_get_ptr();
@@ -6599,7 +6599,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR),
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR_STR,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_DIR,
-         MENU_SETTING_MANUAL_CONTENT_SCAN_DIR, 0, 0, NULL))
+         MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
    /* Scan method - automatic or custom (more entries) */
@@ -6607,7 +6607,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_METHOD),
          msg_hash_to_str(MENU_ENUM_LABEL_SCAN_METHOD),
          MENU_ENUM_LABEL_SCAN_METHOD,
-         MENU_SETTING_SCAN_METHOD, 0, 0, NULL))
+         MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
    if (manual_content_scan_get_scan_method_enum() == MANUAL_CONTENT_SCAN_METHOD_CUSTOM)
@@ -6617,7 +6617,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_USE_DB),
             msg_hash_to_str(MENU_ENUM_LABEL_SCAN_USE_DB),
             MENU_ENUM_LABEL_SCAN_USE_DB,
-            MENU_SETTING_SCAN_USE_DB, 0, 0, NULL))
+            MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
 
       if (manual_content_scan_get_scan_use_db_enum() == MANUAL_CONTENT_SCAN_USE_DB_DAT_LOOSE ||
@@ -6636,7 +6636,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT),
                msg_hash_to_str(MENU_ENUM_LABEL_SCAN_DB_SELECT),
                MENU_ENUM_LABEL_SCAN_DB_SELECT,
-               MENU_SETTING_SCAN_DB_SELECT, 0, 0, NULL))
+               MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
       }
 
@@ -6645,7 +6645,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
             msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME),
             MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_SYSTEM_NAME,
-            MENU_SETTING_MANUAL_CONTENT_SCAN_SYSTEM_NAME, 0, 0, NULL))
+            MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
 
       if (manual_content_scan_get_menu_system_name_type() == MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM)
@@ -6675,7 +6675,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME),
             msg_hash_to_str(MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME),
             MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
-            MENU_SETTING_MANUAL_CONTENT_SCAN_CORE_NAME, 0, 0, NULL))
+            MENU_SETTING_ACTION, 0, 0, NULL))
          count++;
 
       /* File extensions */
@@ -6753,7 +6753,7 @@ static unsigned menu_displaylist_parse_manual_content_scan_list(
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_START),
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START_STR,
          MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_START,
-         MENU_SETTING_ACTION_MANUAL_CONTENT_SCAN_START, 0, 0, NULL))
+         MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
    return count;
@@ -8134,13 +8134,15 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_SCAN_FILE,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
-#endif
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
                   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST_STR,
                   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
+#endif
+         count = menu_displaylist_parse_manual_content_scan_list(list, true);
+
          break;
       case DISPLAYLIST_INFORMATION_LIST:
          count              = menu_displaylist_parse_information_list(list);
@@ -8687,7 +8689,7 @@ unsigned menu_displaylist_build_list(
          }
          break;
       case DISPLAYLIST_ADD_CONTENT_LIST:
-#ifdef HAVE_LIBRETRODB
+#if 0
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY),
                   MENU_ENUM_LABEL_SCAN_DIRECTORY_STR,
@@ -8700,13 +8702,14 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_SCAN_FILE,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
-#endif
          if (menu_entries_append(list,
                   msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_LIST),
                   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST_STR,
                   MENU_ENUM_LABEL_MANUAL_CONTENT_SCAN_LIST,
                   MENU_SETTING_ACTION, 0, 0, NULL))
             count++;
+#endif
+         count = menu_displaylist_parse_manual_content_scan_list(list, false);
          break;
       case DISPLAYLIST_NETWORK_INFO:
 #if defined(HAVE_NETWORKING) && defined(HAVE_IFINFO)
@@ -16245,7 +16248,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             break;
          case DISPLAYLIST_MANUAL_CONTENT_SCAN_LIST:
             menu_entries_clear(info->list);
-            count = menu_displaylist_parse_manual_content_scan_list(info->list);
+            count = menu_displaylist_parse_manual_content_scan_list(info->list, false);
 
             menu_displaylist_no_entries_fallback(info->list, count, FILE_TYPE_NONE);
 

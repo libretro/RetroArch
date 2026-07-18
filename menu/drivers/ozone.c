@@ -8713,6 +8713,13 @@ static enum menu_action ozone_parse_menu_entry_action(
       free input fields (passwords...). This is good enough. */
    is_current_entry_settings = ozone_is_current_entry_settings(selection);
 
+   /* Avoid left/right action skip if we are not in a submenu
+      (needed when Import Content is next to playlists) */
+   if (ozone->depth == 1)
+      menu_st->flags |= MENU_ST_FLAG_PREVENT_BOOL_SPECIAL_FILTER;
+   else
+      menu_st->flags &= ~MENU_ST_FLAG_PREVENT_BOOL_SPECIAL_FILTER;
+
    /* Scan user inputs */
    switch (action)
    {
