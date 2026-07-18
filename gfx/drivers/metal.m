@@ -105,6 +105,12 @@ typedef NS_ENUM(NSUInteger, RPixelFormat)
    RPixelFormatBGRA8Unorm,
    RPixelFormatBGRX8Unorm, /* RetroArch XRGB */
 
+   /* RetroArch XRGB2101010 (10-bit per channel). BGR10A2 matches the ABI's
+    * packed layout (R in bits [29:20], G [19:10], B [9:0]) with no swizzle,
+    * and is directly sampleable, so it uses the same direct-encoder draw
+    * path as BGRA8/BGRX8 rather than a conversion filter. */
+   RPixelFormatBGR10A2Unorm,
+
    RPixelFormatCount
 };
 
@@ -621,6 +627,7 @@ static NSString *NSStringFromRPixelFormat(RPixelFormat format)
       STRING(RPixelFormatBGRA4Unorm);
       STRING(RPixelFormatBGRA8Unorm);
       STRING(RPixelFormatBGRX8Unorm);
+      STRING(RPixelFormatBGR10A2Unorm);
 #undef STRING
 
    });
@@ -2815,7 +2822,9 @@ static const NSUInteger kConstantAlignment = 4;
       _filter       = d.filter;
       _context      = c;
       _visible      = YES;
-      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      if (   _format == RPixelFormatBGRA8Unorm
+          || _format == RPixelFormatBGRX8Unorm
+          || _format == RPixelFormatBGR10A2Unorm)
          _drawState = ViewDrawStateEncoder;
       else
          _drawState = ViewDrawStateAll;
@@ -2833,7 +2842,14 @@ static const NSUInteger kConstantAlignment = 4;
    _size = size;
 
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+      /* The sampled texture matches the source for the direct-encoder
+       * formats (BGRA8/BGRX8/BGR10A2); the filtered formats convert into a
+       * BGRA8 texture via a compute pass. */
+      MTLPixelFormat texFmt =
+            (_format == RPixelFormatBGR10A2Unorm)
+            ? MTLPixelFormatBGR10A2Unorm
+            : MTLPixelFormatBGRA8Unorm;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:texFmt
             width: (NSUInteger)size.width
             height:(NSUInteger)size.height
             mipmapped:NO];
@@ -2842,7 +2858,8 @@ static const NSUInteger kConstantAlignment = 4;
    }
 
    if (   _format != RPixelFormatBGRA8Unorm
-       && _format != RPixelFormatBGRX8Unorm)
+       && _format != RPixelFormatBGRX8Unorm
+       && _format != RPixelFormatBGR10A2Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
                width:(NSUInteger)size.width
@@ -2886,7 +2903,8 @@ static const NSUInteger kConstantAlignment = 4;
 - (void)drawWithContext:(Context *)ctx
 {
    if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm)
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
       return;
 
    if (!_srcDirty)
@@ -2911,7 +2929,9 @@ static const NSUInteger kConstantAlignment = 4;
     * the driver to walk 4x the source memory between rows, reading
     * past the source allocation on every row after the first. The
     * else-branch already passes pitch straight through. */
-   if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+   if (   _format == RPixelFormatBGRA8Unorm
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
    {
       [_texture replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
                   mipmapLevel:0 withBytes:src
@@ -3885,7 +3905,9 @@ static void metal_pull_cached_frame_cb(void *userdata,
       /* Framebuffer view */
       {
          ViewDescriptor *vd  = [ViewDescriptor new];
-         vd.format           = _video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm;
+         vd.format           = _video.source_10bit
+               ? RPixelFormatBGR10A2Unorm
+               : (_video.rgb32 ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm);
          vd.size             = CGSizeMake(video->width, video->height);
          vd.filter           = _video.smooth ? RTextureFilterLinear : RTextureFilterNearest;
          _frameView          = [[FrameView alloc] initWithDescriptor:vd context:_context];
@@ -4498,7 +4520,9 @@ typedef struct MTLALIGN(16)
       _format               = d.format;
       _bpp                  = RPixelFormatToBPP(_format);
       _filter               = d.filter;
-      if (_format == RPixelFormatBGRA8Unorm || _format == RPixelFormatBGRX8Unorm)
+      if (   _format == RPixelFormatBGRA8Unorm
+          || _format == RPixelFormatBGRX8Unorm
+          || _format == RPixelFormatBGR10A2Unorm)
          _drawState         = ViewDrawStateEncoder;
       else
          _drawState         = ViewDrawStateAll;
@@ -4608,7 +4632,8 @@ typedef struct MTLALIGN(16)
    resize_render_targets = YES;
 
    if (   _format != RPixelFormatBGRA8Unorm
-       && _format != RPixelFormatBGRX8Unorm)
+       && _format != RPixelFormatBGRX8Unorm
+       && _format != RPixelFormatBGR10A2Unorm)
    {
       MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR16Uint
                                  width:(NSUInteger)size.width
@@ -4685,7 +4710,15 @@ typedef struct MTLALIGN(16)
    if (   _engine.frame.texture[0].size_data.x != _size.width
        || _engine.frame.texture[0].size_data.y != _size.height)
    {
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatBGRA8Unorm
+      /* The front slot receives the uploaded source frame directly, so for a
+       * native 10-bit source it must be BGR10A2 (which matches the ABI's
+       * XRGB2101010 packing with no swizzle); all other formats upload into
+       * or convert to BGRA8. */
+      MTLPixelFormat frameFmt =
+            (_format == RPixelFormatBGR10A2Unorm)
+            ? MTLPixelFormatBGR10A2Unorm
+            : MTLPixelFormatBGRA8Unorm;
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:frameFmt
                width:(NSUInteger)_size.width
                height:(NSUInteger)_size.height
                mipmapped:false];
@@ -4734,7 +4767,8 @@ typedef struct MTLALIGN(16)
    [self _updateHistory];
 
    if (   _format == RPixelFormatBGRA8Unorm
-       || _format == RPixelFormatBGRX8Unorm)
+       || _format == RPixelFormatBGRX8Unorm
+       || _format == RPixelFormatBGR10A2Unorm)
    {
       id<MTLTexture> tex = _engine.frame.texture[0].view;
       [tex replaceRegion:MTLRegionMake2D(0, 0, (NSUInteger)_size.width, (NSUInteger)_size.height)
@@ -4777,6 +4811,7 @@ typedef struct MTLALIGN(16)
 
    if (     (_format != RPixelFormatBGRA8Unorm)
          && (_format != RPixelFormatBGRX8Unorm)
+         && (_format != RPixelFormatBGR10A2Unorm)
          && _srcDirty)
    {
       [_context convertFormat:_format from:_src to:_texture];
@@ -6044,6 +6079,7 @@ static uint32_t metal_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_CUSTOMIZABLE_SWAPCHAIN_IMAGES);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
