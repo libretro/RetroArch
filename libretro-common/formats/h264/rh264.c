@@ -1991,7 +1991,6 @@ static void rh264_p_part(rh264_bits *b, rh264_frame *f, const rh264_frame *ref,
 /* Full P-slice decode (single reference, CAVLC). ref is the previously
  * decoded frame. mvg is a per-4x4 MV grid (gwmax x ghmax) that must persist
  * for the whole slice. Returns 0 on success. */
-static int g_frameno=0;
 static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
       const rh264_pps *pps, rh264_slice_hdr *sh, rh264_frame *f,
       const rh264_frame *const *l0, int nrefs, const signed char *picid,
@@ -2002,7 +2001,6 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    int gwmax = f->mbw * 4, ghmax = f->mbh * 4;
    int skip_run = -1;
    int gi;
-   g_frameno++;
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
    (void)sps;
