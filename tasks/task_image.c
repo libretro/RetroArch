@@ -519,6 +519,7 @@ bool task_push_image_load(const char *fullpath,
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
    image->ti.compressed              = NULL;
+   image->ti.pix10                   = false;
    /* NOTE: Come back to this if this causes problems */
    image->ti.supports_rgba           = supports_rgba;
 

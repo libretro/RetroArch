@@ -1082,6 +1082,7 @@ bool gfx_display_reset_textures_list_buffer(
    ti.height        = 0;
    ti.pixels        = NULL;
    ti.supports_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10         = false;
 
    if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
    {
@@ -1118,6 +1119,7 @@ bool gfx_display_reset_textures_list(
    ti.height                     = 0;
    ti.pixels                     = NULL;
    ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1157,6 +1159,7 @@ bool gfx_display_reset_icon_texture(
    ti.height                     = 0;
    ti.pixels                     = NULL;
    ti.supports_rgba              = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   ti.pix10                      = false;
 
    if (!texture_path || !*texture_path)
       return false;
@@ -1248,6 +1251,7 @@ void gfx_display_init_white_texture(void)
    ti.height     = 1;
    ti.pixels     = (uint32_t*)&white_data;
    ti.compressed = NULL; /* raw pixels, not a loaded compressed texture */
+   ti.pix10      = false; /* 8-bit white; must not be read as 10-bit */
 
    video_driver_texture_load(&ti,
          TEXTURE_FILTER_NEAREST, &gfx_white_texture);

@@ -738,6 +738,7 @@ static void gfx_thumbnail_anim_upload(gfx_thumbnail_t *thumbnail,
    img.supports_rgba = use_rgba;
    img.pixels        = (uint32_t*)pixels;
    img.compressed    = NULL; /* raw frame, not a loaded compressed texture */
+   img.pix10         = false;
 
    /* Animated thumbnails re-upload every frame; always use
     * plain linear filtering here to avoid per-frame mip-map
