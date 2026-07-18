@@ -1567,6 +1567,142 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    return 0;
 }
 
+/* Boundary strength for a 4x4 edge between block P (side with lower coord) and
+ * block Q, per 8.7.2.1. mbedge != 0 when the edge is a macroblock boundary.
+ * intra_p/intra_q: the block belongs to an intra MB. cbf_p/cbf_q: the block has
+ * non-zero transform coefficients. The two MVs (single reference list, one ref)
+ * decide bS 1 vs 0 by the quarter-pel >= 4 rule. */
+static RH264_INLINE int rh264_inter_bs(int mbedge, int intra_p, int intra_q,
+      int cbf_p, int cbf_q,
+      int mvpx, int mvpy, int refp, int mvqx, int mvqy, int refq)
+{
+   if (intra_p || intra_q)
+      return mbedge ? 4 : 3;
+   if (cbf_p || cbf_q)
+      return 2;
+   if (refp != refq)
+      return 1;
+   if (mvpx - mvqx >= 4 || mvqx - mvpx >= 4 ||
+       mvpy - mvqy >= 4 || mvqy - mvpy >= 4)
+      return 1;
+   return 0;
+}
+
+/* In-loop deblocking for a P-slice: identical filter kernels to the intra
+ * rh264_deblock, but the boundary strength is derived per 4-sample edge segment
+ * from the macroblock/partition geometry carried in the MV grid (mvg) and the
+ * per-4x4 non-zero-coefficient flags (f->nzL / f->nzC). */
+static void rh264_deblock_pslice(rh264_frame *f, const rh264_slice_hdr *sh,
+      const rh264_mv *mvg)
+{
+   int mbx, mby, edge, seg;
+   int oA = sh->slice_alpha_c0_offset, oB = sh->slice_beta_offset;
+   int gw = f->mbw * 4, cgw = f->mbw * 2;
+   if (sh->disable_deblocking_filter_idc == 1) return;
+
+   for (mby = 0; mby < f->mbh; mby++)
+   for (mbx = 0; mbx < f->mbw; mbx++)
+   {
+      int qp  = f->mbqp ? f->mbqp[mby*f->mbw+mbx] : f->qp;
+      int qpc = rh264_chroma_qp(qp, f->chroma_qp_offset);
+
+      /* ---- vertical edges (filter columns), left to right ---- */
+      for (edge = 0; edge < 4; edge++)
+      {
+         int x = mbx*16 + edge*4;
+         int mbedge = (edge == 0);
+         int qpavg, qpp;
+         if (mbedge && mbx == 0) continue;
+         qpp = mbedge ? (f->mbqp ? f->mbqp[mby*f->mbw+mbx-1] : qp) : qp;
+         qpavg = mbedge ? ((qp + qpp + 1) >> 1) : qp;
+         /* four 4-sample segments down the edge, each its own bS */
+         for (seg = 0; seg < 4; seg++)
+         {
+            int gy = mby*4 + seg;
+            int gxq = mbx*4 + edge;           /* Q block column   */
+            int gxp = gxq - 1;                /* P block (left)   */
+            int rp = mvg[gy*gw + gxp].ref, rq = mvg[gy*gw + gxq].ref;
+            int bS = rh264_inter_bs(mbedge,
+                  rp == -1, rq == -1,
+                  f->nzL[gy*gw+gxp] != 0, f->nzL[gy*gw+gxq] != 0,
+                  mvg[gy*gw+gxp].mvx, mvg[gy*gw+gxp].mvy, rp<0?-1:rp,
+                  mvg[gy*gw+gxq].mvx, mvg[gy*gw+gxq].mvy, rq<0?-1:rq);
+            int a, be, t, idxA, idxB, i;
+            if (bS == 0) continue;
+            idxA = qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
+            idxB = qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
+            a = rh264_alpha[idxA]; be = rh264_beta[idxB];
+            t = rh264_tc0[bS==4?2:bS-1][idxA];
+            for (i = 0; i < 4; i++)
+            { uint8_t *e = f->Y + (mby*16+seg*4+i)*f->ystride + x;
+              rh264_filter_luma_edge(e, 1, bS, a, be, t); }
+            /* chroma on even luma edges; two chroma rows per luma segment */
+            if ((edge&1)==0)
+            {
+               int cx = mbx*8 + (edge>>1)*4;
+               int cqpavg = mbedge ?
+                  ((qpc + rh264_chroma_qp(qpp,f->chroma_qp_offset) + 1)>>1) : qpc;
+               int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, ct, ci;
+               if(cA<0)cA=0; else if(cA>51)cA=51;
+               if(cB<0)cB=0; else if(cB>51)cB=51;
+               ca=rh264_alpha[cA]; cbe=rh264_beta[cB]; ct=rh264_tc0[bS==4?2:bS-1][cA];
+               for (ci = 0; ci < 2; ci++)
+               { int cy = mby*8 + seg*2 + ci;
+                 rh264_filter_chroma_edge(f->U+cy*f->cstride+cx,1,bS,ca,cbe,ct);
+                 rh264_filter_chroma_edge(f->V+cy*f->cstride+cx,1,bS,ca,cbe,ct); }
+               (void)cgw;
+            }
+         }
+      }
+
+      /* ---- horizontal edges (filter rows), top to bottom ---- */
+      for (edge = 0; edge < 4; edge++)
+      {
+         int y = mby*16 + edge*4;
+         int mbedge = (edge == 0);
+         int qpavg, qpp;
+         if (mbedge && mby == 0) continue;
+         qpp = mbedge ? (f->mbqp ? f->mbqp[(mby-1)*f->mbw+mbx] : qp) : qp;
+         qpavg = mbedge ? ((qp + qpp + 1) >> 1) : qp;
+         for (seg = 0; seg < 4; seg++)
+         {
+            int gx = mbx*4 + seg;
+            int gyq = mby*4 + edge;           /* Q block row    */
+            int gyp = gyq - 1;                /* P block (above)*/
+            int rp = mvg[gyp*gw + gx].ref, rq = mvg[gyq*gw + gx].ref;
+            int bS = rh264_inter_bs(mbedge,
+                  rp == -1, rq == -1,
+                  f->nzL[gyp*gw+gx] != 0, f->nzL[gyq*gw+gx] != 0,
+                  mvg[gyp*gw+gx].mvx, mvg[gyp*gw+gx].mvy, rp<0?-1:rp,
+                  mvg[gyq*gw+gx].mvx, mvg[gyq*gw+gx].mvy, rq<0?-1:rq);
+            int a, be, t, idxA, idxB, i;
+            if (bS == 0) continue;
+            idxA = qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
+            idxB = qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
+            a = rh264_alpha[idxA]; be = rh264_beta[idxB];
+            t = rh264_tc0[bS==4?2:bS-1][idxA];
+            for (i = 0; i < 4; i++)
+            { uint8_t *e = f->Y + y*f->ystride + (mbx*16+seg*4+i);
+              rh264_filter_luma_edge(e, f->ystride, bS, a, be, t); }
+            if ((edge&1)==0)
+            {
+               int cy = mby*8 + (edge>>1)*4;
+               int cqpavg = mbedge ?
+                  ((qpc + rh264_chroma_qp(qpp,f->chroma_qp_offset) + 1)>>1) : qpc;
+               int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, ct, ci;
+               if(cA<0)cA=0; else if(cA>51)cA=51;
+               if(cB<0)cB=0; else if(cB>51)cB=51;
+               ca=rh264_alpha[cA]; cbe=rh264_beta[cB]; ct=rh264_tc0[bS==4?2:bS-1][cA];
+               for (ci = 0; ci < 2; ci++)
+               { int cx = mbx*8 + seg*2 + ci;
+                 rh264_filter_chroma_edge(f->U+cy*f->cstride+cx,f->cstride,bS,ca,cbe,ct);
+                 rh264_filter_chroma_edge(f->V+cy*f->cstride+cx,f->cstride,bS,ca,cbe,ct); }
+            }
+         }
+      }
+   }
+}
+
 static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
       const rh264_pps *pps,rh264_slice_hdr *sh,rh264_frame *f){
    int mbaddr=sh->first_mb_in_slice, total=f->mbw*f->mbh;
@@ -2484,6 +2620,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    { free(rbsp); return -1; }   /* CABAC P-slices not yet supported */
    /* The reference is the previous output frame (v->ref); decode into v->f. */
    rc = rh264_decode_pslice(&b, &v->sps, &v->pps, &sh, &v->f, &v->ref, v->mvg);
+   if (rc == 0) rh264_deblock_pslice(&v->f, &sh, v->mvg);
    free(rbsp);
    return rc;
 }
