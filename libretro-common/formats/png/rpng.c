@@ -130,6 +130,7 @@ struct rpng_process
    unsigned pass_pos;
    uint8_t flags;
    bool supports_rgba;
+   bool want_10bit;
 };
 
 enum rpng_flags
@@ -154,6 +155,10 @@ struct rpng
    struct rpng_hdr_metadata hdr;
    uint8_t flags;
    bool supports_rgba;
+   /* When set and the source is 16-bit, decode to packed XRGB2101010
+    * (10-bit) instead of narrowing to 8-bit ARGB, so HDR PNGs can reach a
+    * 10-bit display path. Ignored for 8-bit sources. */
+   bool want_10bit;
 };
 
 static const struct adam7_pass rpng_passes[] = {
@@ -730,7 +735,7 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
 
 static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp,
-      bool supports_rgba)
+      bool supports_rgba, bool want_10bit)
 {
    int i;
 
@@ -746,6 +751,22 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
       rpng_copy_line_rgb_sse2(data, decoded, width, supports_rgba);
       return;
 #endif
+   }
+
+   /* 16-bit source requested as 10-bit output: pack XRGB2101010
+    * (R in bits [29:20], G [19:10], B [9:0]) from the full 16-bit samples,
+    * scaled 16->10 bit by >> 6. Independent of supports_rgba: the packed
+    * layout is a fixed R-high ordering the 10-bit upload paths expect. */
+   if (want_10bit && bpp == 16)
+   {
+      for (i = 0; i < (int)width; i++, decoded += 6)
+      {
+         uint32_t r = (((uint32_t)decoded[0] << 8) | decoded[1]) >> 6;
+         uint32_t g = (((uint32_t)decoded[2] << 8) | decoded[3]) >> 6;
+         uint32_t b = (((uint32_t)decoded[4] << 8) | decoded[5]) >> 6;
+         data[i]    = (r << 20) | (g << 10) | b;
+      }
+      return;
    }
 
    bpp /= 8;
@@ -1241,7 +1262,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          break;
       case PNG_IHDR_COLOR_RGB:
          rpng_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth,
-               pngp->supports_rgba);
+               pngp->supports_rgba, pngp->want_10bit);
          break;
       case PNG_IHDR_COLOR_PLT:
          rpng_reverse_filter_copy_line_plt(
@@ -1905,6 +1926,7 @@ int rpng_process_image(rpng_t *rpng,
 
       rpng->process = process;
       rpng->process->supports_rgba = supports_rgba;
+      rpng->process->want_10bit    = rpng->want_10bit;
       return IMAGE_PROCESS_NEXT;
    }
 
@@ -2004,6 +2026,25 @@ bool rpng_get_hdr_metadata(rpng_t *rpng, struct rpng_hdr_metadata *out)
       return false;
    *out = rpng->hdr;
    return true;
+}
+
+void rpng_set_want_10bit(rpng_t *rpng, int want)
+{
+   if (rpng)
+      rpng->want_10bit = (want != 0);
+}
+
+bool rpng_is_10bit(const rpng_t *rpng)
+{
+   /* True only when 10-bit output was requested and the source is a 16-bit
+    * RGB image, i.e. the decode actually produced packed XRGB2101010. Only
+    * the RGB (colour type 2) path packs 10-bit; 16-bit RGBA still narrows to
+    * 8-bit, so it must not report 10-bit here. */
+   return rpng
+      && rpng->want_10bit
+      && (rpng->flags & RPNG_FLAG_HAS_IHDR)
+      && rpng->ihdr.depth == 16
+      && rpng->ihdr.color_type == PNG_IHDR_COLOR_RGB;
 }
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)

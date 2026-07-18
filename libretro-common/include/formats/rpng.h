@@ -110,6 +110,16 @@ uint8_t* rpng_save_image_rgb48_hdr_string(const uint16_t *data,
  * which case the image should be treated as sRGB). */
 bool rpng_get_hdr_metadata(rpng_t *rpng, struct rpng_hdr_metadata *out);
 
+/* Request native 10-bit output: when set before decoding, a 16-bit RGB
+ * source is decoded to packed XRGB2101010 (R in bits [29:20], G [19:10],
+ * B [9:0]) instead of being narrowed to 8-bit ARGB, letting HDR PNGs feed
+ * a 10-bit display path. Ignored for 8-bit sources and for RGBA. */
+void rpng_set_want_10bit(rpng_t *rpng, int want);
+
+/* True when the decode produced packed 10-bit output (10-bit was requested
+ * and the source is a 16-bit RGB image). */
+bool rpng_is_10bit(const rpng_t *rpng);
+
 RETRO_END_DECLS
 
 #endif
