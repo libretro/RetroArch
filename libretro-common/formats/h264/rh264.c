@@ -1781,7 +1781,23 @@ static RH264_INLINE __m128i rh264_sse2_j8(const int16_t *r0, const int16_t *r1,
 }
 #endif
 
+#ifdef RH264_SSE2
+/* Store the low four bytes of a packed vector. */
+static RH264_INLINE void rh264_sse2_store4(uint8_t *d, __m128i v)
+{
+   uint32_t t = (uint32_t)_mm_cvtsi128_si32(v);
+   memcpy(d, &t, 4);
+}
+#endif
+
 #ifdef RH264_NEON
+/* Store the low four bytes of a packed vector. */
+static RH264_INLINE void rh264_neon_store4(uint8_t *d, uint8x8_t v)
+{
+   uint32_t t = vget_lane_u32(vreinterpret_u32_u8(v), 0);
+   memcpy(d, &t, 4);
+}
+
 /* Raw 6-tap (1,-5,20,20,-5,1) for eight consecutive positions; the value
  * range -2550..10710 fits int16. */
 static RH264_INLINE int16x8_t rh264_neon_tap6_u8(const uint8_t *p0,
@@ -1890,6 +1906,17 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
                      (pc + y * pw + x + (fx == 3))));
             _mm_storel_epi64((__m128i*)(dst + y * dstride + x), b8);
          }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *rp = pc + y * pw + x - 2;
+            __m128i b8 = rh264_sse2_hp8(rh264_sse2_tap6_u8(rp, rp + 1,
+                  rp + 2, rp + 3, rp + 4, rp + 5));
+            if (fx != 2)
+               b8 = _mm_avg_epu8(b8, _mm_loadl_epi64((const __m128i*)
+                     (pc + y * pw + x + (fx == 3))));
+            rh264_sse2_store4(dst + y * dstride + x, b8);
+            x += 4;
+         }
 #elif defined(RH264_NEON)
          for (; x + 8 <= bw; x += 8)
          {
@@ -1899,6 +1926,16 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             if (fx != 2)
                b8 = vrhadd_u8(b8, vld1_u8(pc + y * pw + x + (fx == 3)));
             vst1_u8(dst + y * dstride + x, b8);
+         }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *rp = pc + y * pw + x - 2;
+            uint8x8_t b8 = rh264_neon_hp8(rh264_neon_tap6_u8(rp, rp + 1,
+                  rp + 2, rp + 3, rp + 4, rp + 5));
+            if (fx != 2)
+               b8 = vrhadd_u8(b8, vld1_u8(pc + y * pw + x + (fx == 3)));
+            rh264_neon_store4(dst + y * dstride + x, b8);
+            x += 4;
          }
 #endif
          for (; x < bw; x++)
@@ -1929,6 +1966,17 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
                      (pc + (y + (fy == 3)) * pw + x)));
             _mm_storel_epi64((__m128i*)(dst + y * dstride + x), h8);
          }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *cp = pc + (y - 2) * pw + x;
+            __m128i h8 = rh264_sse2_hp8(rh264_sse2_tap6_u8(cp, cp + pw,
+                  cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
+            if (fy != 2)
+               h8 = _mm_avg_epu8(h8, _mm_loadl_epi64((const __m128i*)
+                     (pc + (y + (fy == 3)) * pw + x)));
+            rh264_sse2_store4(dst + y * dstride + x, h8);
+            x += 4;
+         }
 #elif defined(RH264_NEON)
          for (; x + 8 <= bw; x += 8)
          {
@@ -1938,6 +1986,16 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             if (fy != 2)
                h8 = vrhadd_u8(h8, vld1_u8(pc + (y + (fy == 3)) * pw + x));
             vst1_u8(dst + y * dstride + x, h8);
+         }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *cp = pc + (y - 2) * pw + x;
+            uint8x8_t h8 = rh264_neon_hp8(rh264_neon_tap6_u8(cp, cp + pw,
+                  cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
+            if (fy != 2)
+               h8 = vrhadd_u8(h8, vld1_u8(pc + (y + (fy == 3)) * pw + x));
+            rh264_neon_store4(dst + y * dstride + x, h8);
+            x += 4;
          }
 #endif
          for (; x < bw; x++)
@@ -1968,6 +2026,14 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
                   rh264_sse2_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
                         rp + 5));
          }
+         if (c + 4 <= bw)
+         {
+            const uint8_t *rp = pat + r * pw + c;
+            _mm_storel_epi64((__m128i*)(hb + r * bw + c),
+                  rh264_sse2_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
+                        rp + 5));
+            c += 4;
+         }
 #elif defined(RH264_NEON)
          for (; c + 8 <= bw; c += 8)
          {
@@ -1975,6 +2041,14 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             vst1q_s16(hb + r * bw + c,
                   rh264_neon_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
                         rp + 5));
+         }
+         if (c + 4 <= bw)
+         {
+            const uint8_t *rp = pat + r * pw + c;
+            vst1_s16(hb + r * bw + c,
+                  vget_low_s16(rh264_neon_tap6_u8(rp, rp + 1, rp + 2,
+                        rp + 3, rp + 4, rp + 5)));
+            c += 4;
          }
 #endif
          for (; c < bw; c++)
@@ -2006,6 +2080,27 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             }
             _mm_storel_epi64((__m128i*)(dst + y * dstride + x), j8);
          }
+         if (x + 4 <= bw)
+         {
+            __m128i j8 = rh264_sse2_j8(hb + y*bw + x, hb + (y+1)*bw + x,
+                  hb + (y+2)*bw + x, hb + (y+3)*bw + x, hb + (y+4)*bw + x,
+                  hb + (y+5)*bw + x);
+            if (fx == 2 && fy != 2)
+            {
+               __m128i t = _mm_loadu_si128((const __m128i*)
+                     (hb + (y + 2 + (fy == 3)) * bw + x));
+               j8 = _mm_avg_epu8(rh264_sse2_hp8(t), j8);
+            }
+            else if (fy == 2 && fx != 2)
+            {
+               const uint8_t *cp = pc + (y - 2) * pw + x + (fx == 3);
+               __m128i h8 = rh264_sse2_hp8(rh264_sse2_tap6_u8(cp, cp + pw,
+                     cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
+               j8 = _mm_avg_epu8(h8, j8);
+            }
+            rh264_sse2_store4(dst + y * dstride + x, j8);
+            x += 4;
+         }
 #elif defined(RH264_NEON)
          for (; x + 8 <= bw; x += 8)
          {
@@ -2023,6 +2118,24 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
                      j8);
             }
             vst1_u8(dst + y * dstride + x, j8);
+         }
+         if (x + 4 <= bw)
+         {
+            uint8x8_t j8 = rh264_neon_j8(hb + y*bw + x, hb + (y+1)*bw + x,
+                  hb + (y+2)*bw + x, hb + (y+3)*bw + x, hb + (y+4)*bw + x,
+                  hb + (y+5)*bw + x);
+            if (fx == 2 && fy != 2)
+               j8 = vrhadd_u8(rh264_neon_hp8(
+                     vld1q_s16(hb + (y + 2 + (fy == 3)) * bw + x)), j8);
+            else if (fy == 2 && fx != 2)
+            {
+               const uint8_t *cp = pc + (y - 2) * pw + x + (fx == 3);
+               j8 = vrhadd_u8(rh264_neon_hp8(rh264_neon_tap6_u8(cp, cp + pw,
+                     cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw)),
+                     j8);
+            }
+            rh264_neon_store4(dst + y * dstride + x, j8);
+            x += 4;
          }
 #endif
          for (; x < bw; x++)
@@ -2067,6 +2180,17 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             _mm_storel_epi64((__m128i*)(dst + y * dstride + x),
                   _mm_avg_epu8(b8, h8));
          }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *rp = pc + (y + (fy == 3)) * pw + x - 2;
+            const uint8_t *cp = pc + (y - 2) * pw + x + (fx == 3);
+            __m128i b8 = rh264_sse2_hp8(rh264_sse2_tap6_u8(rp, rp + 1,
+                  rp + 2, rp + 3, rp + 4, rp + 5));
+            __m128i h8 = rh264_sse2_hp8(rh264_sse2_tap6_u8(cp, cp + pw,
+                  cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
+            rh264_sse2_store4(dst + y * dstride + x, _mm_avg_epu8(b8, h8));
+            x += 4;
+         }
 #elif defined(RH264_NEON)
          for (; x + 8 <= bw; x += 8)
          {
@@ -2077,6 +2201,17 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
             uint8x8_t h8 = rh264_neon_hp8(rh264_neon_tap6_u8(cp, cp + pw,
                   cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
             vst1_u8(dst + y * dstride + x, vrhadd_u8(b8, h8));
+         }
+         if (x + 4 <= bw)
+         {
+            const uint8_t *rp = pc + (y + (fy == 3)) * pw + x - 2;
+            const uint8_t *cp = pc + (y - 2) * pw + x + (fx == 3);
+            uint8x8_t b8 = rh264_neon_hp8(rh264_neon_tap6_u8(rp, rp + 1,
+                  rp + 2, rp + 3, rp + 4, rp + 5));
+            uint8x8_t h8 = rh264_neon_hp8(rh264_neon_tap6_u8(cp, cp + pw,
+                  cp + 2 * pw, cp + 3 * pw, cp + 4 * pw, cp + 5 * pw));
+            rh264_neon_store4(dst + y * dstride + x, vrhadd_u8(b8, h8));
+            x += 4;
          }
 #endif
          for (; x < bw; x++)
@@ -2148,6 +2283,20 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
             _mm_storel_epi64((__m128i*)(dst + y * dstride + x),
                   _mm_packus_epi16(s2, s2));
          }
+         if (x + 4 <= bw)
+         {
+            __m128i a = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(r0 + x)), vz);
+            __m128i b = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(r0 + x + 1)), vz);
+            __m128i cc2 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(r1 + x)), vz);
+            __m128i d = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(r1 + x + 1)), vz);
+            __m128i s2 = _mm_add_epi16(_mm_add_epi16(
+                     _mm_mullo_epi16(a, w00), _mm_mullo_epi16(b, w10)),
+                  _mm_add_epi16(
+                     _mm_mullo_epi16(cc2, w01), _mm_mullo_epi16(d, w11)));
+            s2 = _mm_srli_epi16(_mm_add_epi16(s2, rnd), 6);
+            rh264_sse2_store4(dst + y * dstride + x, _mm_packus_epi16(s2, s2));
+            x += 4;
+         }
          for (; x < bw; x++)
          {
             int a = r0[x], b = r0[x + 1], c2 = r1[x], d = r1[x + 1];
@@ -2172,6 +2321,15 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
             s = vmlal_u8(s, vld1_u8(r1 + x),     vdup_n_u8((uint8_t)w01));
             s = vmlal_u8(s, vld1_u8(r1 + x + 1), vdup_n_u8((uint8_t)w11));
             vst1_u8(dst + y * dstride + x, vrshrn_n_u16(s, 6));
+         }
+         if (x + 4 <= bw)
+         {
+            uint16x8_t s = vmull_u8(vld1_u8(r0 + x), vdup_n_u8((uint8_t)w00));
+            s = vmlal_u8(s, vld1_u8(r0 + x + 1), vdup_n_u8((uint8_t)w10));
+            s = vmlal_u8(s, vld1_u8(r1 + x),     vdup_n_u8((uint8_t)w01));
+            s = vmlal_u8(s, vld1_u8(r1 + x + 1), vdup_n_u8((uint8_t)w11));
+            rh264_neon_store4(dst + y * dstride + x, vrshrn_n_u16(s, 6));
+            x += 4;
          }
          for (; x < bw; x++)
          {
