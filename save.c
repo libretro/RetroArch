@@ -63,7 +63,6 @@ struct autosave_st
 
 enum autosave_flags
 {
-   AUTOSAVE_FLAG_QUIT           = (1 << 0),
    AUTOSAVE_FLAG_COMPRESS_FILES = (1 << 1),
    AUTOSAVE_FLAG_DIRTY          = (1 << 2)
 };
@@ -79,7 +78,13 @@ struct autosave
    sthread_t *thread;
    size_t bufsize;
    unsigned interval;
+   /* Guarded by 'lock'.  AUTOSAVE_FLAG_QUIT is deliberately NOT kept
+    * here: it is guarded by cond_lock, and two locks protecting
+    * different bits of one byte do not protect the byte -- the
+    * read-modify-write covers all of it. */
    uint8_t flags;
+   /* Guarded by cond_lock. */
+   uint8_t quit;
 };
 
 static struct autosave_st autosave_state;
@@ -186,7 +191,7 @@ static void autosave_thread(void *data)
 
       slock_lock(save->cond_lock);
 
-      if (save->flags & AUTOSAVE_FLAG_QUIT)
+      if (save->quit)
       {
          slock_unlock(save->cond_lock);
          break;
@@ -227,6 +232,7 @@ static autosave_t *autosave_new(const char *path,
       return NULL;
 
    handle->flags                 = AUTOSAVE_FLAG_DIRTY;
+   handle->quit                  = 0;
    handle->bufsize               = len;
    handle->interval              = interval;
    handle->buffer                = NULL;
@@ -307,7 +313,7 @@ static autosave_t *autosave_new(const char *path,
 static void autosave_free(autosave_t *handle)
 {
    slock_lock(handle->cond_lock);
-   handle->flags |= AUTOSAVE_FLAG_QUIT;
+   handle->quit  = 1;
    slock_unlock(handle->cond_lock);
    scond_signal(handle->cond);
    sthread_join(handle->thread);
