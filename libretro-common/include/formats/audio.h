@@ -110,6 +110,14 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
 bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames);
 
+/* Identify the codec of an Ogg buffer from its first page's
+ * identification header: AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose
+ * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
+ * not Ogg or carries an unsupported codec.  An .ogg extension can
+ * legitimately wrap either. */
+enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
+      size_t len);
+
 /* Identify the first supported audio codec of a WebM buffer (.weba):
  * AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose buffer modes both accept
  * the whole WebM file; AUDIO_TYPE_NONE if it is not WebM or carries no

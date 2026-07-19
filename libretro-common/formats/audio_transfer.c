@@ -661,6 +661,37 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
    return false;
 }
 
+enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
+      size_t len)
+{
+   const uint8_t *b = (const uint8_t*)buf;
+   unsigned nsegs, i;
+   size_t first, plen = 0;
+   if (!b || len < 28
+         || b[0] != 'O' || b[1] != 'g' || b[2] != 'g' || b[3] != 'S'
+         || b[4] != 0)
+      return AUDIO_TYPE_NONE;
+   /* first page: the identification header sits alone in it; its
+    * opening bytes name the codec */
+   nsegs = b[26];
+   first = 27 + nsegs;
+   if (len < first + 8)
+      return AUDIO_TYPE_NONE;
+   for (i = 0; i < nsegs; i++)
+      plen += b[27 + i];
+   if (plen < 7 || len < first + plen)
+      return AUDIO_TYPE_NONE;
+#ifdef HAVE_ROPUS
+   if (plen >= 8 && !memcmp(b + first, "OpusHead", 8))
+      return AUDIO_TYPE_OPUS;
+#endif
+#ifdef HAVE_RVORBIS
+   if (!memcmp(b + first, "\x01vorbis", 7))
+      return AUDIO_TYPE_VORBIS;
+#endif
+   return AUDIO_TYPE_NONE;
+}
+
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len)
 {
