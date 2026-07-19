@@ -426,6 +426,17 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
                t->pub.codec_private      = dsi;
                t->pub.codec_private_size = (size_t)dsi_size;
             }
+            /* 0x40 is MPEG-4 Audio (AAC signalled through the
+             * AudioSpecificConfig); 0x66..0x68 are the MPEG-2 AAC
+             * profiles some muxers still emit, whose DSI uses the
+             * same layout. */
+            else if ((oti == 0x40 || (oti >= 0x66 && oti <= 0x68))
+                  && dsi && dsi_size >= 2)
+            {
+               t->pub.codec              = RMP4_CODEC_AAC;
+               t->pub.codec_private      = dsi;
+               t->pub.codec_private_size = (size_t)dsi_size;
+            }
          }
       }
    }
@@ -652,6 +663,29 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
    t = &m->trk[m->num_tracks];
    memset(t, 0, sizeof(*t));
    t->pub.number = m->num_tracks + 1;
+
+   /* edts/elst: the common single-entry edit that trims the codec's
+    * startup samples (media_time > 0, e.g. the AAC encoder delay).
+    * Recorded in media-timescale units for decoders to drop; edits
+    * beyond that shape (multi-entry, dwell) stay unsupported. */
+   if (rmp4_find_child(body, size, RMP4_FOURCC('e','d','t','s'), &b))
+   {
+      rmp4_box elst;
+      if (rmp4_find_child(b.body, b.size,
+            RMP4_FOURCC('e','l','s','t'), &elst) && elst.size >= 8)
+      {
+         unsigned version = elst.body[0];
+         uint32_t count   = rmp4_be32(elst.body + 4);
+         if (count == 1 && elst.size >= (version ? 28u : 20u))
+         {
+            int64_t media_time = version
+                  ? (int64_t)rmp4_be64(elst.body + 16)
+                  : (int32_t)rmp4_be32(elst.body + 12);
+            if (media_time > 0)
+               t->pub.media_skip = (uint64_t)media_time;
+         }
+      }
+   }
 
    /* tkhd carries the official track_ID; go find it if present. */
    if (rmp4_find_child(body, size, RMP4_FOURCC('t','k','h','d'), &b)

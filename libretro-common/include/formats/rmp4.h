@@ -8,16 +8,16 @@
  * contract as the rwebm demuxer, so the rwebm_video/rwebm_audio-style
  * glue can drive either container identically.
  *
- * The codec set mirrors what libretro-common can decode: VP8 ('vp08')
- * and VP9 ('vp09') video, Opus ('Opus') and Vorbis ('mp4a' with the
- * Xiph object type) audio.  Other codecs (AVC, HEVC, AAC, ...) are
- * reported with their sample-entry fourcc in codec_id and the codec
- * field left RMP4_CODEC_UNKNOWN so callers can skip them.
+ * The codec set mirrors what libretro-common can decode: VP8 ('vp08'),
+ * VP9 ('vp09') and H.264 ('avc1'/'avc3') video; Opus ('Opus'),
+ * Vorbis and AAC ('mp4a' by object type) audio.  Other codecs (HEVC,
+ * AV1, ...) are reported with their sample-entry fourcc in codec_id
+ * and the codec field left RMP4_CODEC_UNKNOWN so callers can skip
+ * them.
  *
- * Only progressive (non-fragmented) files are supported: the sample
- * tables must live in moov/trak/mdia/minf/stbl.  Fragmented files
- * (moof) parse to tracks with no packets and are rejected by the
- * callers' "no packets" checks.
+ * Both progressive files (sample tables in moov/trak/mdia/minf/stbl)
+ * and fragmented movies (an mvex-marked moov followed by moof/mdat
+ * pairs) are supported.
  *
  * The whole input buffer is supplied up front (memory-only, like the
  * rest of libretro-common's format layer) and is borrowed, not copied:
@@ -52,7 +52,8 @@ enum rmp4_codec
    RMP4_CODEC_VP9,
    RMP4_CODEC_H264,
    RMP4_CODEC_VORBIS,
-   RMP4_CODEC_OPUS
+   RMP4_CODEC_OPUS,
+   RMP4_CODEC_AAC
 };
 
 typedef struct
@@ -70,6 +71,10 @@ typedef struct
    /* Audio */
    unsigned               sample_rate;
    unsigned               channels;
+   /* Media-timescale units the track's edit list trims from the
+    * start (the usual encoder-delay edit; sample count for audio).
+    * Zero when absent. Only the common single-entry shape is read. */
+   uint64_t               media_skip;
    /* Decoder setup data (Opus: an OpusHead repacked from the dOps box,
     * owned by the demuxer; Vorbis: the xiph-laced 3 headers from the
     * esds DecoderSpecificInfo, aliasing the input; VP8/VP9: usually
