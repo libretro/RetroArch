@@ -42,6 +42,10 @@
 #include <formats/audio.h>
 #endif
 
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+#include <formats/audio.h>
+#endif
+
 #ifdef HAVE_RFLAC
 #include <formats/audio.h>
 #endif
@@ -83,7 +87,7 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
       struct
       {
          /* shared streaming-codec source (OGG / FLAC / MP3) */
@@ -105,7 +109,7 @@ struct audio_mixer_voice
          unsigned position;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
       /* Shared streaming-codec voice state (OGG / FLAC / MP3). The codec is
        * identified by voice->type and passed to audio_transfer as an
        * enum audio_type_enum; the bookkeeping is identical across them. */
@@ -335,7 +339,7 @@ static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
    return (p >= 0) ? (p >> 16) : -((-p) >> 16);
 }
 
-#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
 /* Only the WAV and streaming s16 resample paths consult this; a MOD-only or
  * no-codec build would otherwise flag it as unused. */
 static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
@@ -641,6 +645,24 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
 #endif
 }
 
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size)
+{
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+
+   if (!sound)
+      return NULL;
+
+   sound->type           = AUDIO_MIXER_TYPE_M4A;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
 {
 #ifdef HAVE_RMODTRACKER
@@ -703,6 +725,13 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
             free(handle);
 #endif
          break;
+      case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+         handle = (void*)sound->types.stream.data;
+         if (handle)
+            free(handle);
+#endif
+         break;
       case AUDIO_MIXER_TYPE_NONE:
          break;
    }
@@ -718,7 +747,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
 /* Shared streaming-codec path (OGG / FLAC / MP3). audio_transfer already
  * abstracts the codec, so one set of play/mix/release functions serves all
  * three; the caller passes the matching enum audio_type_enum. */
@@ -943,6 +972,12 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
                   resampler_ident, quality, stop_cb, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_AAC);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1019,6 +1054,12 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+                  quality, stop_cb, AUDIO_TYPE_AAC);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_RMODTRACKER
             res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
@@ -1082,6 +1123,11 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
 #ifdef HAVE_RMP3
       case AUDIO_MIXER_TYPE_MP3:
          audio_mixer_release_stream(voice, AUDIO_TYPE_MP3);
+         break;
+#endif
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+      case AUDIO_MIXER_TYPE_M4A:
+         audio_mixer_release_stream(voice, AUDIO_TYPE_AAC);
          break;
 #endif
       default:
@@ -1209,7 +1255,7 @@ again:
    }
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || (defined(HAVE_RAAC) && defined(HAVE_RMP4))
 static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume,
@@ -1435,6 +1481,11 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_AAC);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1488,6 +1539,11 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_RMP3
             audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_MP3);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_AAC);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
