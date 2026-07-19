@@ -5160,8 +5160,24 @@ static void rh264_video_take_ps(rh264_video *v, const uint8_t *nal, size_t len)
    type = nal[0] & 0x1f;
    rbsp = rh264_unescape(nal + 1, len - 1, &rl);
    if (!rbsp) return;
-   if (type == 7) { if (rh264_parse_sps(rbsp, rl, &v->sps)) v->have_sps = 1; }
-   else if (type == 8) { if (rh264_parse_pps(rbsp, rl, &v->pps)) v->have_pps = 1; }
+   /* Parse into scratch and keep the result only if it is valid: both
+    * parsers clear their target before reading, so parsing straight
+    * into the stored set would let a malformed parameter set destroy
+    * the working one while have_sps/have_pps still claim it is there.
+    * Everything downstream then works from zeroed geometry - a picture
+    * of no macroblocks, which the slice decoders divide by. */
+   if (type == 7)
+   {
+      rh264_sps tmp;
+      if (rh264_parse_sps(rbsp, rl, &tmp))
+      { v->sps = tmp; v->have_sps = 1; }
+   }
+   else if (type == 8)
+   {
+      rh264_pps tmp;
+      if (rh264_parse_pps(rbsp, rl, &tmp))
+      { v->pps = tmp; v->have_pps = 1; }
+   }
    free(rbsp);
 }
 
