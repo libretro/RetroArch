@@ -32,10 +32,13 @@
 #ifdef HAVE_RMP4
 #include <formats/rmp4.h>
 #include <formats/rmp4_video.h>
+/* rh264 is built as part of the mp4 stack; with it present, Matroska
+ * H.264 tracks (V_MPEG4/ISO/AVC) decode too. */
+#define WEBM_HAVE_H264 1
+#include <formats/rh264.h>
 #endif
 
-#if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
-      || (defined(HAVE_RMP4) && defined(HAVE_RAAC))
+#if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC)
 #define WEBM_HAVE_AUDIO 1
 #include <formats/audio.h>
 #endif
@@ -101,6 +104,10 @@ typedef struct
 #ifdef HAVE_RWEBP
    rvp8_video  *vp8;
 #endif
+#ifdef WEBM_HAVE_H264
+   rh264_video *h264;
+   int          wait_key;            /* prediction chain broken: hold  */
+#endif
    uint32_t    *fb;                  /* XRGB8888 output                 */
    unsigned     width, height;
    double       fps;
@@ -120,6 +127,10 @@ typedef struct
    int          aeof;
 #endif
    int64_t      vpts_ns;             /* pts of the last presented frame */
+   int64_t      vshown;              /* display slots presented so far;
+                                        under H.264 reordering the pts
+                                        clock runs ahead, so restoring a
+                                        position is slot-based          */
    int64_t      dur_ns;              /* stream duration, 0 if unknown   */
    unsigned     last_input;          /* previous frame's buttons        */
    int          seeking;             /* suppress presentation           */
@@ -380,8 +391,91 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
       return 1;
    }
 #endif
+#ifdef WEBM_HAVE_H264
+   if (p->codec == RWEBM_CODEC_H264)
+   {
+      const uint8_t *y, *u, *v;
+      int ys, uvs, w, h, cw, ch, dec;
+      /* Mirrors the mp4 glue: rh264 hands pictures out in display
+       * order; CABAC-coded frames it refuses are skipped, and once a
+       * frame in a prediction chain fails the following inter frames
+       * would drift, so hold on the last good picture until the next
+       * key frame restarts the chain. */
+      if (p->wait_key && !pkt->keyframe)
+         return 0;
+      dec = rh264_video_decode(p->h264, pkt->data, pkt->size);
+      if (dec < 0)
+      {
+         if (pkt->keyframe)
+         {
+            if (WEBM_CORE_PREFIX(log_cb))
+               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+                  "[webm] H.264 key frame decode error.\n");
+            return -1;
+         }
+         p->wait_key = 1;
+         return 0;
+      }
+      p->wait_key = 0;
+      if (dec == 0)     /* consumed; picture held for reordering */
+         return 0;
+      y = rh264_video_plane(p->h264, 0, &ys,  &w,  &h);
+      u = rh264_video_plane(p->h264, 1, &uvs, &cw, &ch);
+      v = rh264_video_plane(p->h264, 2, &uvs, &cw, &ch);
+      if (!y || !u || !v)
+         return -1;
+      if ((unsigned)w > p->width)  w = (int)p->width;
+      if ((unsigned)h > p->height) h = (int)p->height;
+      if (p->seeking)   /* discarded during a seek: skip conversion */
+         return 1;
+      {
+         const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+         webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+            ct ? ct->matrix_coefficients : 0);
+         if (p->pix10)
+            webm_expand_8888_to_2101010(p->fb, p->width,
+               (unsigned)w, (unsigned)h);
+      }
+      WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+         p->width * sizeof(uint32_t));
+      return 1;
+   }
+#endif
    return -1;
 }
+
+#ifdef WEBM_HAVE_H264
+/* Display reordering can leave the last few pictures queued inside the
+ * H.264 decoder at end of stream; present one per call.  Returns 1
+ * when a picture was presented. */
+static int webm_drain_h264(webm_player_t *p)
+{
+   const uint8_t *y, *u, *v;
+   int ys, uvs, w, h, cw, ch;
+   if (!p->h264 || rh264_video_drain(p->h264) != 0)
+      return 0;
+   y = rh264_video_plane(p->h264, 0, &ys,  &w,  &h);
+   u = rh264_video_plane(p->h264, 1, &uvs, &cw, &ch);
+   v = rh264_video_plane(p->h264, 2, &uvs, &cw, &ch);
+   if (!y || !u || !v)
+      return 0;
+   if ((unsigned)w > p->width)  w = (int)p->width;
+   if ((unsigned)h > p->height) h = (int)p->height;
+   if (p->seeking)
+      return 1;
+   {
+      const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
+      webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         ct ? ct->matrix_coefficients : 0);
+      if (p->pix10)
+         webm_expand_8888_to_2101010(p->fb, p->width,
+            (unsigned)w, (unsigned)h);
+   }
+   WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+      p->width * sizeof(uint32_t));
+   return 1;
+}
+#endif
 
 static void webm_free_player(webm_player_t *p)
 {
@@ -393,6 +487,10 @@ static void webm_free_player(webm_player_t *p)
 #ifdef HAVE_RWEBP
    if (p->vp8)
       rvp8_video_close(p->vp8);
+#endif
+#ifdef WEBM_HAVE_H264
+   if (p->h264)
+      rh264_video_close(p->h264);
 #endif
    if (p->webm)
       rwebm_close(p->webm);
@@ -518,6 +616,18 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
       p->vp8 = rvp8_video_open();
    }
 #endif
+#ifdef WEBM_HAVE_H264
+   if (p->h264)
+   {
+      const rwebm_track *vt = rwebm_get_track(p->webm, p->vtrack);
+      rh264_video_close(p->h264);
+      p->h264 = rh264_video_open();
+      if (p->h264 && vt && vt->codec_private_size)
+         rh264_video_set_extradata(p->h264, vt->codec_private,
+               vt->codec_private_size);
+      p->wait_key = 0;
+   }
+#endif
 #ifdef WEBM_HAVE_AUDIO
    if (p->actx)
       audio_transfer_seek(p->actx, p->atype, 0);
@@ -525,6 +635,7 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
    p->aeof    = 0;
 #endif
    p->vpts_ns = 0;
+   p->vshown  = 0;
    p->eof = 0;
 }
 
@@ -533,7 +644,13 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
  * rewinds and decodes forward discarding samples (every codec here
  * decodes far faster than real time, so even a long skip is a
  * fraction of a second).  Returns the position actually reached. */
-static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
+/* Seek: when to_slot is negative, target_ns selects the display slot
+ * (the last one at or before it); otherwise to_slot is the display
+ * slot itself and target_ns only clamps (save-state restore, where
+ * the slot is exact but the pts clock may run ahead of it under
+ * display reordering). */
+static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
+      int64_t to_slot)
 {
    if (target_ns < 0)
       target_ns = 0;
@@ -547,26 +664,54 @@ static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
             target_ns / 1000000);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
       p->eof     = 0;
+      (void)to_slot;   /* the mp4 glue's timestamp table is exact */
    }
    else
 #endif
    {
-      /* Pass 1: timestamp of the last video key frame at or before
-       * the target. */
+      /* Pass 1: the display slot at or before the target (packets
+       * with a presentation time below it, invisible VP8 alt-refs
+       * excluded), the slot and timestamp of the preceding key frame,
+       * and the total shown count for end clamping.  Slot counting
+       * rather than packet timestamps keeps this exact under H.264
+       * display reordering, where decode order visits timestamps out
+       * of sequence. */
       rwebm_packet pkt;
       int64_t kts = 0;
+      int     tidx, kf_idx = 0, total = 0, below = 0;
       rwebm_rewind(p->webm);
       while (rwebm_read_packet(p->webm, &pkt) == 1)
       {
          if (pkt.track != p->vtrack)
             continue;
-         if (pkt.timestamp > target_ns)
-            break;
-         if (pkt.keyframe)
-            kts = pkt.timestamp;
+         if (p->codec == RWEBM_CODEC_VP8
+               && (!pkt.size || !(pkt.data[0] & 0x10)))
+            continue;          /* invisible alt-ref: no display slot   */
+         /* counting below-target packets is order-independent, so it
+          * gives the target's display slot even though this walk is
+          * in decode order */
+         if (pkt.timestamp < target_ns)
+            below++;
+         if (pkt.keyframe
+               && (to_slot >= 0 ? (int64_t)total <= to_slot
+                                : pkt.timestamp <= target_ns))
+         {
+            /* at an IDR, everything decoded earlier displays earlier,
+             * so the decode position is also the display slot */
+            kts    = pkt.timestamp;
+            kf_idx = total;
+         }
+         total++;
       }
+      tidx = to_slot >= 0 ? (int)to_slot : below;
+      if (tidx < 0)
+         tidx = 0;
+      if (total == 0)
+         return p->vpts_ns;
+      if (tidx >= total)
+         tidx = total - 1;
       /* Pass 2: fresh decoders; feed from that key frame on,
-       * presenting nothing, until the target. */
+       * discarding pictures until the target slot's is presented. */
       rwebm_rewind(p->webm);
       if (p->vp9)
       {
@@ -580,23 +725,56 @@ static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
          p->vp8 = rvp8_video_open();
       }
 #endif
-      p->vpts_ns = 0;
-      p->eof     = 0;
-      p->seeking = 1;
-      while (rwebm_read_packet(p->webm, &pkt) == 1)
+#ifdef WEBM_HAVE_H264
+      if (p->h264)
       {
-         int r;
-         if (pkt.track != p->vtrack || pkt.timestamp < kts)
-            continue;
-         r = webm_decode_packet(p, &pkt);
-         if (r < 0)
-            break;
-         if (pkt.timestamp > 0)
-            p->vpts_ns = pkt.timestamp;
-         if (pkt.timestamp >= target_ns)
-            break;
+         const rwebm_track *vt = rwebm_get_track(p->webm, p->vtrack);
+         rh264_video_close(p->h264);
+         p->h264 = rh264_video_open();
+         if (p->h264 && vt && vt->codec_private_size)
+            rh264_video_set_extradata(p->h264, vt->codec_private,
+                  vt->codec_private_size);
+         p->wait_key = 0;
+      }
+#endif
+      p->eof = 0;
+      {
+         int shown = kf_idx;
+         p->seeking = shown < tidx;
+         while (rwebm_read_packet(p->webm, &pkt) == 1)
+         {
+            int r;
+            if (pkt.track != p->vtrack || pkt.timestamp < kts)
+               continue;
+            r = webm_decode_packet(p, &pkt);
+            if (r < 0)
+               break;
+            if (r > 0)
+            {
+               if (!p->seeking)
+               {
+                  shown = tidx + 1;   /* target slot presented */
+                  break;
+               }
+               shown++;
+               p->seeking = shown < tidx;
+            }
+         }
+#ifdef WEBM_HAVE_H264
+         /* out of packets with pictures still queued for display
+          * reordering: drain up to and including the target slot */
+         while (shown <= tidx && p->codec == RWEBM_CODEC_H264)
+         {
+            p->seeking = shown < tidx;
+            if (!webm_drain_h264(p))
+               break;
+            shown++;
+         }
+#endif
       }
       p->seeking = 0;
+      p->vpts_ns = target_ns;
+      p->vshown  = (int64_t)tidx + 1;
    }
 
 #ifdef WEBM_HAVE_AUDIO
@@ -633,6 +811,11 @@ static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
 
 /* Edge-triggered transport controls: left/right seek 10 seconds,
  * L/R seek a minute. */
+static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
+{
+   return webm_seek_internal(p, target_ns, -1);
+}
+
 static void webm_check_input(webm_player_t *p)
 {
    unsigned cur = 0;
@@ -714,6 +897,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
              * frame's timestamp: the same pacing clock the webm path
              * takes from packet timestamps */
             p->vpts_ns += (int64_t)dur_ms * 1000000;
+            p->vshown++;
          }
          else
             p->eof = 1;
@@ -742,6 +926,16 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          int r = rwebm_read_packet(p->webm, &pkt);
          if (r != 1)
          {
+#ifdef WEBM_HAVE_H264
+            /* out of packets: hand out the pictures display reordering
+             * left queued, one per run, before ending the stream */
+            if (p->codec == RWEBM_CODEC_H264 && webm_drain_h264(p))
+            {
+               presented = 1;
+               p->vshown++;
+               break;
+            }
+#endif
             p->eof = 1;
             break;
          }
@@ -753,8 +947,15 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             p->eof = 1;
             break;
          }
-         if (presented > 0 && pkt.timestamp > 0)
-            p->vpts_ns = pkt.timestamp;
+         /* With H.264 display reordering the decoded packet's
+          * timestamp can lag the displayed picture's; keep the clock
+          * monotonic. */
+         if (presented > 0)
+         {
+            p->vshown++;
+            if (pkt.timestamp > p->vpts_ns)
+               p->vpts_ns = pkt.timestamp;
+         }
       }
       if (!presented)
          WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
@@ -1114,6 +1315,14 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          vt = t;
          break;
       }
+#ifdef WEBM_HAVE_H264
+      if (t->codec == RWEBM_CODEC_H264 && t->codec_private_size
+            && p->vtrack < 0)
+      {
+         p->vtrack = i;
+         vt = t;
+      }
+#endif
 #ifdef HAVE_RWEBP
       if (t->codec == RWEBM_CODEC_VP8 && p->vtrack < 0)
       {
@@ -1144,13 +1353,21 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          p->atype  = AUDIO_TYPE_VORBIS;
       }
 #endif
+#ifdef HAVE_RAAC
+      if (t->codec == RWEBM_CODEC_AAC && t->codec_private_size
+            && p->atrack < 0)
+      {
+         p->atrack = i;
+         p->atype  = AUDIO_TYPE_AAC;
+      }
+#endif
    }
 #endif
    if (p->vtrack < 0 || !vt || !vt->width || !vt->height)
    {
       if (WEBM_CORE_PREFIX(log_cb))
          WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
-            "[webm] No supported (VP8/VP9) video track found.\n");
+            "[webm] No supported (H.264/VP8/VP9) video track found.\n");
       goto error;
    }
    p->codec  = vt->codec;
@@ -1214,8 +1431,10 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             rwebm_rewind(p->webm);
             /* Exact playable length: decoded total minus the pre-skip
              * (dropped inside the decoder arm) minus container end
-             * trimming.  Only computable for Opus, whose TOC encodes
-             * packet durations; Vorbis emission is left unclamped. */
+             * trimming.  Computable for Opus, whose TOC encodes packet
+             * durations, and for AAC, whose access units are a fixed
+             * 1024 frames with the delay in CodecDelay; Vorbis
+             * emission is left unclamped. */
             p->atotal = -1;
             if (p->atype == AUDIO_TYPE_OPUS && toc_frames > 0)
             {
@@ -1232,11 +1451,28 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             }
             {
                const rwebm_track *at = rwebm_get_track(p->webm, p->atrack);
+               uint64_t trim = 0;
+#ifdef HAVE_RAAC
+               if (p->atype == AUDIO_TYPE_AAC)
+               {
+                  /* CodecDelay is in nanoseconds; the decoder arm
+                   * trims in frames at the track's rate */
+                  trim = (at->codec_delay_ns
+                        * (uint64_t)(at->sample_rate ? at->sample_rate
+                           : 48000) + 500000000) / 1000000000;
+                  p->atotal = (int64_t)k * 1024 - (int64_t)trim;
+                  if (p->atotal < 0)
+                     p->atotal = 0;
+               }
+#endif
                p->actx = audio_transfer_new(p->atype);
                if (p->actx
                      && audio_transfer_set_demuxed_ptr(p->actx, p->atype,
                         at->codec_private, at->codec_private_size,
                         p->apkts, off, p->asizes, k)
+                     && (p->atype != AUDIO_TYPE_AAC
+                        || audio_transfer_set_start_trim(p->actx,
+                           p->atype, trim))
                      && audio_transfer_start(p->actx, p->atype)
                      && audio_transfer_info(p->actx, p->atype,
                         &p->ach, &p->arate, NULL)
@@ -1245,7 +1481,8 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
                   if (WEBM_CORE_PREFIX(log_cb))
                      WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
                         "[webm] audio: %s, %u Hz, %u ch, %u packets.\n",
-                        p->atype == AUDIO_TYPE_OPUS ? "Opus" : "Vorbis",
+                        p->atype == AUDIO_TYPE_OPUS ? "Opus"
+                        : p->atype == AUDIO_TYPE_AAC ? "AAC" : "Vorbis",
                         p->arate, p->ach, (unsigned)k);
                }
                else
@@ -1284,6 +1521,16 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       if (!p->vp9)
          goto error;
    }
+#ifdef WEBM_HAVE_H264
+   else if (p->codec == RWEBM_CODEC_H264)
+   {
+      p->h264 = rh264_video_open();
+      if (!p->h264)
+         goto error;
+      rh264_video_set_extradata(p->h264, vt->codec_private,
+            vt->codec_private_size);
+   }
+#endif
 #ifdef HAVE_RWEBP
    else
    {
@@ -1304,7 +1551,8 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
          "[webm] %ux%u %s, %.3f fps, %d video packets.\n",
          p->width, p->height,
-         p->codec == RWEBM_CODEC_VP9 ? "VP9" : "VP8", p->fps, nvpkts);
+         p->codec == RWEBM_CODEC_VP9 ? "VP9"
+         : p->codec == RWEBM_CODEC_H264 ? "H.264" : "VP8", p->fps, nvpkts);
    return true;
 
 error:
@@ -1347,7 +1595,7 @@ size_t WEBM_CORE_PREFIX(retro_get_memory_size)(unsigned id)
  * frontend's save-state machinery a resume feature - saving on exit
  * and loading on start picks playback up where it left off, restored
  * through the same seek path the transport controls use. */
-#define WEBM_STATE_SIZE 16
+#define WEBM_STATE_SIZE 24
 
 size_t WEBM_CORE_PREFIX(retro_serialize_size)(void)
 {
@@ -1359,13 +1607,17 @@ bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
    webm_player_t *p = &webm_player;
    uint8_t *d = (uint8_t*)data;
    uint64_t v = (uint64_t)p->vpts_ns;
+   uint64_t s = (uint64_t)p->vshown;
    int i;
    if (size < WEBM_STATE_SIZE)
       return false;
    d[0] = 'W'; d[1] = 'P'; d[2] = 'O'; d[3] = 'S';
-   d[4] = 1;   d[5] = 0;   d[6] = 0;   d[7] = 0;
+   d[4] = 2;   d[5] = 0;   d[6] = 0;   d[7] = 0;
    for (i = 0; i < 8; i++)
-      d[8 + i] = (uint8_t)(v >> (8 * i));
+   {
+      d[8 + i]  = (uint8_t)(v >> (8 * i));
+      d[16 + i] = (uint8_t)(s >> (8 * i));
+   }
    return true;
 }
 
@@ -1373,15 +1625,32 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 {
    webm_player_t *p = &webm_player;
    const uint8_t *d = (const uint8_t*)data;
-   uint64_t v = 0;
+   uint64_t v = 0, s = 0;
    int i;
-   if (size < WEBM_STATE_SIZE || !d)
+   if (size < 16 || !d)
       return false;
-   if (d[0] != 'W' || d[1] != 'P' || d[2] != 'O' || d[3] != 'S'
-         || d[4] != 1)
+   if (d[0] != 'W' || d[1] != 'P' || d[2] != 'O' || d[3] != 'S')
       return false;
    for (i = 0; i < 8; i++)
       v |= (uint64_t)d[8 + i] << (8 * i);
+   if (d[4] == 2 && size >= WEBM_STATE_SIZE)
+   {
+      for (i = 0; i < 8; i++)
+         s |= (uint64_t)d[16 + i] << (8 * i);
+      /* the slot is exact where the pts clock can run ahead of the
+       * display position (H.264 reordering); the mp4 branch keeps
+       * using the timestamp, whose own table is exact */
+#ifdef HAVE_RMP4
+      if (p->mp4vs)
+         webm_seek(p, (int64_t)v);
+      else
+#endif
+         webm_seek_internal(p, (int64_t)v,
+               s > 0 ? (int64_t)s - 1 : 0);
+      return true;
+   }
+   if (d[4] != 1)
+      return false;
    webm_seek(p, (int64_t)v);
    return true;
 }
