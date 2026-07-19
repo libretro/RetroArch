@@ -1627,6 +1627,30 @@ float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
    return voice->volume;
 }
 
+/* Whether any active voice would be handled by audio_mixer_mix (float) /
+ * audio_mixer_mix_s16 (int16).  The frontend uses these to skip the
+ * cross-format fold when every active voice already matches the buffer it
+ * is mixing into. */
+bool audio_mixer_has_float_voices(void)
+{
+   unsigned i;
+   const audio_mixer_voice_t *voice = s_voices;
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+      if (voice->type != AUDIO_MIXER_TYPE_NONE && !voice->is_s16)
+         return true;
+   return false;
+}
+
+bool audio_mixer_has_s16_voices(void)
+{
+   unsigned i;
+   const audio_mixer_voice_t *voice = s_voices;
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+      if (voice->type != AUDIO_MIXER_TYPE_NONE && voice->is_s16)
+         return true;
+   return false;
+}
+
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
 {
    if (!voice)

@@ -94,6 +94,10 @@ void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bo
  * are mixed only by audio_mixer_mix_s16, and vice versa. */
 void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames, float volume_override, bool override);
 
+bool audio_mixer_has_float_voices(void);
+
+bool audio_mixer_has_s16_voices(void);
+
 audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
       bool repeat, float volume, enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb);

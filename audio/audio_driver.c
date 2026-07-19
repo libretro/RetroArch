@@ -653,6 +653,61 @@ static double audio_driver_fastforward_ratio_mult(
    return mult;
 }
 
+/* Whether the deterministic integer (s16) game path would run for a core
+ * delivering samples in format is_float.  Mirrors the use_i16 gate in
+ * audio_driver_flush; also used at mixer play() time to choose the voice
+ * format so mixer sounds decode/resample/mix in the same domain as the game
+ * audio, avoiding the s16<->float voice fold on the int16 path. */
+static bool audio_driver_mixer_use_s16(bool is_float)
+{
+   return    (audio_driver_st.resampler_data_int16 != NULL)
+          &&  config_get_ptr()->bools.audio_fastpath_s16
+          && !is_float
+#ifdef HAVE_DSP_FILTER
+          && (!audio_driver_st.dsp
+                || retro_dsp_filter_supports_int16(audio_driver_st.dsp))
+#endif
+          ;
+}
+
+#ifdef HAVE_AUDIOMIXER
+/* Cross-format voice folds.  A voice's format is fixed at play() time but the
+ * game pipeline picks int16-vs-float per flush, so a voice can occasionally
+ * land on the other path (e.g. a float-only DSP loaded while an s16 voice was
+ * sounding).  These sum the "foreign" voices via their native mixer into a
+ * scratch, then fold onto the active buffer so nothing is ever dropped.  They
+ * are gated by audio_mixer_has_{float,s16}_voices() so the common single-
+ * format case skips them entirely. */
+static void audio_mixer_fold_s16_voices_into_float(float *dst,
+      int16_t *scratch, unsigned frames, float gain, bool override)
+{
+   unsigned k;
+   unsigned total = frames * 2;
+   memset(scratch, 0, total * sizeof(int16_t));
+   audio_mixer_mix_s16(scratch, frames, gain, override);
+   for (k = 0; k < total; k++)
+      dst[k] += (float)scratch[k] * (1.0f / 0x8000);
+}
+
+static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
+      float *scratch, unsigned frames, float gain, bool override)
+{
+   unsigned k;
+   unsigned total = frames * 2;
+   memset(scratch, 0, total * sizeof(float));
+   audio_mixer_mix(scratch, frames, gain, override);
+   for (k = 0; k < total; k++)
+   {
+      float   fv = scratch[k] * 0x8000;
+      int32_t vv = (int32_t)(fv + (fv >= 0.0f ? 0.5f : -0.5f));
+      int32_t s  = (int32_t)dst[k] + vv;
+      if      (s >  32767) s =  32767;
+      else if (s < -32768) s = -32768;
+      dst[k]     = (int16_t)s;
+   }
+}
+#endif
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
@@ -744,15 +799,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * failing falls through to the float path below. */
    {
       static int audio_i16_path_logged = -1;
-      bool use_i16 =
-             (audio_st->resampler_data_int16 != NULL)
-         &&  config_get_ptr()->bools.audio_fastpath_s16
-         && !is_float
-#ifdef HAVE_DSP_FILTER
-         && (!audio_st->dsp
-               || retro_dsp_filter_supports_int16(audio_st->dsp))
-#endif
-         ;
+      bool use_i16 = audio_driver_mixer_use_s16(is_float);
 
       if (audio_i16_path_logged != (int)use_i16)
       {
@@ -871,6 +918,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                      override                      = false;
                   mixer_gain                       = audio_st->mixer_volume_gain;
                }
+               /* s16 voices (the common case on this int16 path): fold onto
+                * the float game buffer first so audio_mixer_mix's final clamp
+                * covers them.  output_samples_int16 is free here -- the game
+                * s16 was already converted to float above. */
+               if (audio_mixer_has_s16_voices())
+                  audio_mixer_fold_s16_voices_into_float(
+                        audio_st->output_samples_buf,
+                        audio_st->output_samples_int16, out_frames,
+                        mixer_gain, override);
                audio_mixer_mix(audio_st->output_samples_buf,
                      out_frames, mixer_gain, override);
             }
@@ -899,25 +955,20 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                }
             }
 #ifdef HAVE_AUDIOMIXER
-            /* Sum the mixer voices in float on top of the (already
-             * volume-scaled) game audio, then fold the result into the int16
-             * output.  Voices are mixed into output_samples_buf -- unused by
-             * this s16-output branch -- so the float mixer and its final clamp
-             * are reused verbatim; each summed sample is then converted to s16
-             * (round half away from zero * 0x8000, matching
-             * convert_float_to_s16) and
-             * saturating-added to the game audio.  The game keeps its Q16
-             * master gain above and the voices carry mixer_gain, matching the
-             * float path's ordering. */
+            /* Sum the mixer voices onto the int16 game audio, in the integer
+             * domain.  Voices played on the s16 path (the common case here,
+             * since the game itself is on the int16 fast path) are summed
+             * directly via audio_mixer_mix_s16 with saturating add -- no float
+             * scratch, no round-trip.  Any voice that happens to be float (a
+             * voice that outlived a pipeline-format change) is folded via
+             * audio_mixer_mix into output_samples_buf and quantised on top,
+             * matching convert_float_to_s16's rounding. */
             if (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
             {
                bool     override                   = true;
                float    mixer_gain                 = 0.0f;
                bool audio_driver_mixer_mute_enable  = audio_st->mixer_mute_enable;
-               unsigned k;
-               unsigned total                      = out_frames * 2;
                int16_t *ob                         = audio_st->output_samples_int16;
-               float   *mb                         = audio_st->output_samples_buf;
 
                if (!audio_driver_mixer_mute_enable)
                {
@@ -926,19 +977,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   mixer_gain                       = audio_st->mixer_volume_gain;
                }
 
-               memset(mb, 0, total * sizeof(float));
-               audio_mixer_mix(mb, out_frames, mixer_gain, override);
-
-               for (k = 0; k < total; k++)
-               {
-                  float   fv = mb[k] * 0x8000;
-                  int32_t vv = (int32_t)(fv +
-                        (fv >= 0.0f ? 0.5f : -0.5f));
-                  int32_t s  = (int32_t)ob[k] + vv;
-                  if      (s >  32767) s =  32767;
-                  else if (s < -32768) s = -32768;
-                  ob[k]      = (int16_t)s;
-               }
+               audio_mixer_mix_s16(ob, out_frames, mixer_gain, override);
+               if (audio_mixer_has_float_voices())
+                  audio_mixer_fold_float_voices_into_s16(ob,
+                        audio_st->output_samples_buf, out_frames,
+                        mixer_gain, override);
             }
 #endif
             audio->write(audio_st->context_audio_data,
@@ -1130,6 +1173,15 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          mixer_gain                       = audio_st->mixer_volume_gain;
 
       }
+      /* Fold any s16 voices (played while the int16 path was active, now on
+       * the float path) onto the float buffer before the float mix, so the
+       * clamp inside audio_mixer_mix covers them.  output_samples_int16 is
+       * unused until the float->s16 driver conversion further below. */
+      if (audio_mixer_has_s16_voices())
+         audio_mixer_fold_s16_voices_into_float(
+               audio_st->output_samples_buf,
+               audio_st->output_samples_int16, src_data.output_frames,
+               mixer_gain, override);
       audio_mixer_mix(audio_st->output_samples_buf,
             src_data.output_frames, mixer_gain, override);
    }
@@ -2123,9 +2175,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          /* fall-through */
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING:
-         voice = audio_mixer_play(handle, looped, params->volume,
-               audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality, stop_cb);
+         if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
+            voice = audio_mixer_play_s16(handle, looped, params->volume,
+                  audio_driver_st.resampler_quality, stop_cb);
+         else
+            voice = audio_mixer_play(handle, looped, params->volume,
+                  audio_driver_st.resampler_ident,
+                  audio_driver_st.resampler_quality, stop_cb);
          break;
       default:
          break;
@@ -2169,12 +2225,19 @@ static void audio_driver_mixer_play_stream_internal(
    switch (audio_driver_st.mixer_streams[i].state)
    {
       case AUDIO_STREAM_STATE_STOPPED:
-         audio_driver_st.mixer_streams[i].voice =
-            audio_mixer_play(audio_driver_st.mixer_streams[i].handle,
-               (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
-               1.0f, audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality,
-               audio_driver_st.mixer_streams[i].stop_cb);
+         if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
+            audio_driver_st.mixer_streams[i].voice =
+               audio_mixer_play_s16(audio_driver_st.mixer_streams[i].handle,
+                  (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
+                  1.0f, audio_driver_st.resampler_quality,
+                  audio_driver_st.mixer_streams[i].stop_cb);
+         else
+            audio_driver_st.mixer_streams[i].voice =
+               audio_mixer_play(audio_driver_st.mixer_streams[i].handle,
+                  (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
+                  1.0f, audio_driver_st.resampler_ident,
+                  audio_driver_st.resampler_quality,
+                  audio_driver_st.mixer_streams[i].stop_cb);
          audio_driver_st.mixer_streams[i].state = (enum audio_mixer_state)type;
          audio_driver_st.mixer_streams_playing++;
          break;
