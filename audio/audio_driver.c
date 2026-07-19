@@ -938,7 +938,24 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          else
          {
             /* s16-output driver: apply volume as a deterministic Q16 gain
-             * (round toward zero on the shift, saturate). */
+             * (round half away from zero on the shift, saturate).
+             *
+             * The +0x8000 bias before the shift makes this round to
+             * nearest rather than toward zero.  Truncating here costs
+             * ~6 dB of quantisation noise (the error is uniform over
+             * two LSBs instead of one) and opens a deadband of
+             * 2*(65536/gain_q16)-1 input codes around silence, which
+             * swallows low-level detail at heavy attenuation.
+             *
+             * Mirroring the bias across the sign keeps the quantiser
+             * odd-symmetric, so it stays DC-free on symmetric signals
+             * and remains bit-exact reproducible - the s16 path's
+             * determinism guarantee for netplay/rewind is unaffected,
+             * this is integer arithmetic either way.
+             *
+             * No overflow risk: the largest |p| is 32768 * gain_q16,
+             * and gain_q16 tops out at 260904 (+12 dB), so |p| stays
+             * under 2^33. */
             if (audio_volume_gain != 1.0f)
             {
                int32_t  gain_q16 = (int32_t)(audio_volume_gain * 65536.0f + 0.5f);
@@ -948,7 +965,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                for (k = 0; k < total; k++)
                {
                   int64_t p = (int64_t)ob[k] * gain_q16;
-                  int64_t v = (p >= 0) ? (p >> 16) : -((-p) >> 16);
+                  int64_t v = (p >= 0)
+                        ?  ((  p + 0x8000) >> 16)
+                        : -(((-p + 0x8000) >> 16));
                   if      (v >  32767) v =  32767;
                   else if (v < -32768) v = -32768;
                   ob[k] = (int16_t)v;
