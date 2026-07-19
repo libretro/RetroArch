@@ -432,6 +432,9 @@ static int general_push(menu_displaylist_info_t *info,
 #ifdef HAVE_ROPUS
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "opus");
 #endif
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "weba");
+#endif
 #ifdef HAVE_RMODTRACKER
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif

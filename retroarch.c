@@ -2947,6 +2947,10 @@ enum rarch_content_type path_is_media_type(const char *path)
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
       case FILE_TYPE_OPUS:
 #endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RWEBM) \
+      && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+      case FILE_TYPE_WEBA:
+#endif
          return RARCH_CONTENT_MUSIC;
 #endif
 #ifdef HAVE_IMAGEVIEWER

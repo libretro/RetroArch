@@ -1928,6 +1928,10 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    if (string_is_equal_noncase("opus", ext))
       return true;
 #endif
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   if (string_is_equal_noncase("weba", ext))
+      return true;
+#endif
    if (string_is_equal_noncase("wav", ext))
       return true;
    return false;
@@ -2156,6 +2160,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
          handle = audio_mixer_load_opus(buf, (int32_t)params->bufsize);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_WEBA:
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+         handle = audio_mixer_load_weba(buf, (int32_t)params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:

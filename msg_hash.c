@@ -669,6 +669,10 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
       { "opus",      FILE_TYPE_OPUS },
 #endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RWEBM) \
+      && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+      { "weba",      FILE_TYPE_WEBA },
+#endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
       { "jpg",       FILE_TYPE_JPEG },
