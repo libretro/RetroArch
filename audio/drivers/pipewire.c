@@ -25,6 +25,7 @@
 
 #include "../common/pipewire.h"
 #include "../audio_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 #define RINGBUFFER_SIZE    (1u << 22)
@@ -351,7 +352,19 @@ static void *pwire_microphone_open_mic(void *driver_context,
 
    pw_thread_loop_lock(mic->pw->thread_loop);
 
-   mic->info.format   = is_little_endian() ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
+   /* Honour the audio format-negotiation hint, as the ALSA and SDL capture
+    * paths do. The libretro microphone interface is int16 only, so asking
+    * PipeWire for S16 keeps the whole capture path integer rather than
+    * handing us float that gets converted back down. PipeWire converts
+    * server-side when the source is a different format, and the capture
+    * ring buffer here is byte-oriented, so neither format is special. */
+   if (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_INT16)
+      mic->info.format = is_little_endian()
+            ? SPA_AUDIO_FORMAT_S16_LE : SPA_AUDIO_FORMAT_S16_BE;
+   else
+      mic->info.format = is_little_endian()
+            ? SPA_AUDIO_FORMAT_F32_LE : SPA_AUDIO_FORMAT_F32_BE;
    mic->info.channels = MIC_DEFAULT_CHANNELS;
    pwire_set_position(MIC_DEFAULT_CHANNELS, mic->info.position);
    mic->info.rate     = rate;
@@ -457,7 +470,14 @@ static bool pwire_microphone_stop_mic(void *driver_context, void *mic_context)
 
 static bool pwire_microphone_mic_use_float(const void *a, const void *b)
 {
-   return true;
+   const pipewire_microphone_t *mic = (const pipewire_microphone_t*)b;
+   /* Report the format actually requested for this stream rather than a
+    * hardcoded true; the frontend uses this to decide whether it can keep
+    * the flush in the integer domain. */
+   if (!mic)
+      return false;
+   return    (mic->info.format == SPA_AUDIO_FORMAT_F32_LE)
+          || (mic->info.format == SPA_AUDIO_FORMAT_F32_BE);
 }
 
 microphone_driver_t microphone_pipewire = {
