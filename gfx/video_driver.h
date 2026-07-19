@@ -584,14 +584,14 @@ typedef struct gfx_ctx_driver
     * active for this thread. */
    void (*make_current)(bool release);
 
-   /* Optional. Creates and binds a new window surface, destroying the original
-    * window surface if applicable. Returns true on success and false on error.
-    * Currently only for OpenGL. */
+   /* Optional. Creates and binds a replacement window surface without
+    * reinitializing the underlying graphics context/device. Returns true on
+    * success and false on error. */
    bool (*create_surface)(void *data);
 
-   /* Optional. Destroys the current window surface. Returns true on success or
-    * or if there is no currently bound window surface and false on error.
-    * Currently only for OpenGL. */
+   /* Optional. Destroys the current window surface without reinitializing the
+    * underlying graphics context/device. Returns true on success, or if no
+    * window surface is bound, and false on error. */
    bool (*destroy_surface)(void *data);
 } gfx_ctx_driver_t;
 

@@ -1913,11 +1913,10 @@ static void android_input_reinit(void)
 
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
-      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
-       * will result in the EGL window surface being destroyed, but the actual
-       * OpenGL context will be preserved on most devices, so we may be able to
-       * get away with reinitializing only the window surface without having to
-       * do a full video driver reinitialization. */
+      /* When the app is paused (e.g. by opening the app switcher), Android may
+       * destroy the presentation surface while retaining the OpenGL context or
+       * Vulkan device. Recreate only the surface when supported before falling
+       * back to a full video driver reinitialization. */
       video_driver_state_t *state = video_state_get_ptr();
       if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
          command_event(CMD_EVENT_REINIT, NULL);
