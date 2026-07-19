@@ -171,6 +171,7 @@ enum msg_file_type
    FILE_TYPE_3G2,
    FILE_TYPE_MP4,
    FILE_TYPE_AAC,
+   FILE_TYPE_OPUS,
    FILE_TYPE_MP3,
    FILE_TYPE_FLAC,
    FILE_TYPE_OGG,

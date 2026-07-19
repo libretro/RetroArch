@@ -1872,6 +1872,10 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    if (string_is_equal_noncase("aac", ext))
       return true;
 #endif
+#ifdef HAVE_ROPUS
+   if (string_is_equal_noncase("opus", ext))
+      return true;
+#endif
    if (string_is_equal_noncase("wav", ext))
       return true;
    return false;
@@ -2095,6 +2099,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
          handle = audio_mixer_load_m4a(buf, (int32_t)params->bufsize);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+         handle = audio_mixer_load_opus(buf, (int32_t)params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
