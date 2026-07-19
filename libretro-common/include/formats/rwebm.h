@@ -38,7 +38,9 @@ enum rwebm_codec
    RWEBM_CODEC_VP8,
    RWEBM_CODEC_VP9,
    RWEBM_CODEC_VORBIS,
-   RWEBM_CODEC_OPUS
+   RWEBM_CODEC_OPUS,
+   RWEBM_CODEC_H264,  /* V_MPEG4/ISO/AVC: CodecPrivate is the avcC box  */
+   RWEBM_CODEC_AAC    /* A_AAC*: CodecPrivate is the ASC                */
 };
 
 typedef struct
@@ -55,6 +57,9 @@ typedef struct
     * OpusHead; VP8/VP9: usually empty).  Aliases into the input buffer. */
    const uint8_t         *codec_private;
    size_t                 codec_private_size;
+   /* CodecDelay: nanoseconds of decoded output to drop from the stream
+    * start (the encoder delay; AAC priming), 0 when absent. */
+   uint64_t               codec_delay_ns;
    /* Colour element (video): ISO/IEC 23001-8 code points, 0 = absent.
     * matrix: 1=BT.709 5/6=BT.601 9=BT.2020-ncl; transfer: 1/6=BT.709/601,
     * 16=PQ (HDR10), 18=HLG; range: 1=limited(TV) 2=full. */
