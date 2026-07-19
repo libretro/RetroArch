@@ -660,6 +660,9 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
       { "s3m",       FILE_TYPE_S3M },
       { "xm",        FILE_TYPE_XM },
 #endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC) && defined(HAVE_RMP4)
+      { "m4a",       FILE_TYPE_M4A },
+#endif
 #endif
 #ifdef HAVE_IMAGEVIEWER
       { "jpg",       FILE_TYPE_JPEG },

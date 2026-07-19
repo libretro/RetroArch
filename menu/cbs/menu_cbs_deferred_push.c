@@ -423,6 +423,9 @@ static int general_push(menu_displaylist_info_t *info,
 #if defined(HAVE_RWAV)
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "wav");
 #endif
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "m4a");
+#endif
 #ifdef HAVE_RMODTRACKER
                string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "s3m|mod|xm");
 #endif

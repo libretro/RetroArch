@@ -1864,6 +1864,10 @@ bool audio_driver_mixer_extension_supported(const char *ext)
    if (string_is_equal_noncase("mp3", ext))
       return true;
 #endif
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+   if (string_is_equal_noncase("m4a", ext))
+      return true;
+#endif
    if (string_is_equal_noncase("wav", ext))
       return true;
    return false;
@@ -2082,6 +2086,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_RMP3
          handle = audio_mixer_load_mp3(buf, (int32_t)params->bufsize);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_M4A:
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+         handle = audio_mixer_load_m4a(buf, (int32_t)params->bufsize);
 #endif
          break;
       case AUDIO_MIXER_TYPE_NONE:
