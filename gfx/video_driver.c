@@ -2249,6 +2249,26 @@ void video_driver_set_viewport_core(void)
       aspectratio_lut[ASPECT_RATIO_CORE].value = core_aspect;
 }
 
+/* Atomically set and/or clear bits of video_driver_st.flags under
+ * display_lock, the same lock video_driver_get_disp_flags() takes.
+ * Callers must not hold display_lock already; this is a leaf helper.
+ * A set/get pair around a |= would not do: the read-modify-write would
+ * straddle two separate critical sections. */
+void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+#ifdef HAVE_THREADS
+   if (video_st->display_lock)
+   {
+      slock_lock(video_st->display_lock);
+      video_st->flags = (video_st->flags & ~clear_bits) | set_bits;
+      slock_unlock(video_st->display_lock);
+      return;
+   }
+#endif
+   video_st->flags = (video_st->flags & ~clear_bits) | set_bits;
+}
+
 static retro_atomic_int_t video_cache_context_ack
    = RETRO_ATOMIC_INT_INITIALIZER(0);
 

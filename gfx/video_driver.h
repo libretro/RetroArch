@@ -1328,6 +1328,11 @@ void video_driver_build_info(video_frame_info_t *video_info);
  * which would make the struct layout differ between C and C++ TUs.
  * _set uses a release RMW and _test an acquire load, so the rebuilt
  * context is published to the observer. */
+/* Set and/or clear bits of the video driver flag word under
+ * display_lock.  Required for any write that can run concurrently with
+ * video_driver_get_disp_flags(), which task threads call. */
+void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits);
+
 void video_driver_cache_context_ack_set(void);
 bool video_driver_cache_context_ack_test(void);
 void video_driver_cache_context_ack_clear(void);

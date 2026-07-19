@@ -4229,7 +4229,7 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
 #if defined(HAVE_GFX_WIDGETS)
       if (      p_dispwidget->active
             && !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-         video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+         video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
 #endif
    }
 
@@ -5000,7 +5000,7 @@ bool runloop_event_init_core(
 
    /* Load auto-shaders on the next occasion */
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->flags |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+   video_driver_modify_disp_flags(VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD, 0);
    runloop_st->shader_delay_timer.timer_begin = false; /* not initialized */
    runloop_st->shader_delay_timer.timer_end   = false; /* not expired */
 #endif
@@ -5106,9 +5106,9 @@ void runloop_pause_checks(void)
    if (widgets_active)
    {
       if (is_paused)
-         video_st->flags |=  VIDEO_FLAG_WIDGETS_PAUSED;
+         video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_PAUSED, 0);
       else
-         video_st->flags &= ~VIDEO_FLAG_WIDGETS_PAUSED;
+         video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_PAUSED);
    }
 #endif
 
@@ -6921,9 +6921,9 @@ static enum runloop_state_enum runloop_check_state(
          if (widgets_active)
          {
             if (rewinding && settings->bools.notification_show_fast_forward)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_REWINDING;
+               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_REWINDING, 0);
             else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_REWINDING;
+               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_REWINDING);
          }
          else
 #endif
@@ -7241,12 +7241,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_FASTMOTION;
+               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_FASTMOTION, 0);
             else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
          }
          else
-            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
       }
       else
 #endif
@@ -7264,7 +7264,7 @@ static enum runloop_state_enum runloop_check_state(
    }
 #if defined(HAVE_GFX_WIDGETS)
    else
-      video_st->flags &= ~VIDEO_FLAG_WIDGETS_FASTMOTION;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_FASTMOTION);
 #endif
 
 #ifdef HAVE_CHEEVOS
@@ -7348,12 +7348,12 @@ static enum runloop_state_enum runloop_check_state(
          if (settings->bools.notification_show_fast_forward)
          {
             if (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION)
-               video_st->flags |=  VIDEO_FLAG_WIDGETS_SLOWMOTION;
+               video_driver_modify_disp_flags(VIDEO_FLAG_WIDGETS_SLOWMOTION, 0);
             else
-               video_st->flags &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+               video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_SLOWMOTION);
          }
          else
-            video_st->flags    &= ~VIDEO_FLAG_WIDGETS_SLOWMOTION;
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_WIDGETS_SLOWMOTION);
       }
 #endif
    }
