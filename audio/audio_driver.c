@@ -1829,10 +1829,15 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
       {
          if (audio_st->rewind_ptr < 1)
             break;
-         /* Inline saturating float->s16 to avoid an extra scratch copy. */
+         /* Inline saturating float->s16 to avoid an extra scratch copy.
+          * Must round the same way convert_float_to_s16() does - half
+          * away from zero - not truncate: the recording bridge lower in
+          * this same function calls that converter directly, and a
+          * truncating variant here would quantise the rewind audio with
+          * twice the error and a one-LSB dead band around silence. */
          {
-            float v = data[i] * 0x8000;
-            int   s = (int)v;
+            float   v = data[i] * 0x8000;
+            int32_t s = (int32_t)(v + (v >= 0.0f ? 0.5f : -0.5f));
             if (s >  0x7fff) s =  0x7fff;
             if (s < -0x8000) s = -0x8000;
             audio_st->rewind_buf[--audio_st->rewind_ptr] = (int16_t)s;
