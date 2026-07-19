@@ -807,13 +807,18 @@ static void frontend_switch_get_name(char *s, size_t len)
 
 void frontend_switch_process_args(int *argc, char *argv[])
 {
-#ifdef HAVE_STATIC_DUMMY
-   if (*argc >= 1)
-   {
-      /* Ensure current Path is set, only works for the static dummy, likely a hbloader args Issue (?) */
+   /* When launched through hbloader (hbmenu, a forwarder, or a
+    * fork via envSetNextLoad), argv[0] is the path of the NRO
+    * this process is running and is the authoritative core
+    * identity: RARCH_PATH_CORE may otherwise carry a stale value
+    * read from the salamander config at startup, naming a core
+    * other than the one statically linked into this binary.
+    * Menu-triggered content loads pass a synthesised argv whose
+    * argv[0] is the literal "retroarch", so only accept values
+    * that actually name an NRO. */
+   if (     (*argc >= 1)
+         && string_is_equal_noncase(path_get_extension(argv[0]), "nro"))
       path_set(RARCH_PATH_CORE, argv[0]);
-   }
-#endif
 }
 
 frontend_ctx_driver_t frontend_ctx_switch =
