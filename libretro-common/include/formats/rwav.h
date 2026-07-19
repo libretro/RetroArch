@@ -30,7 +30,9 @@ RETRO_BEGIN_DECLS
 
 typedef struct
 {
-   /* bits per sample */
+   /* bits per sample: 8 and 16 are integer PCM, 32 is IEEE float
+    * (the parser only admits 32 with the float format tag, so the
+    * width alone identifies the sample type) */
    unsigned int bitspersample;
 
    /* number of channels */

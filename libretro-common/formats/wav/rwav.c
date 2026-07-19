@@ -34,7 +34,8 @@ enum
    ITER_BEGIN,
    ITER_COPY_SAMPLES,
    ITER_COPY_SAMPLES_8,
-   ITER_COPY_SAMPLES_16
+   ITER_COPY_SAMPLES_16,
+   ITER_COPY_SAMPLES_32
 };
 
 struct rwav_iterator
@@ -60,6 +61,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 {
    size_t s;
    uint16_t *u16       = NULL;
+   uint32_t *u32       = NULL;
    void *samples       = NULL;
    rwav_t *rwav        = iter->out;
    const uint8_t *data = iter->data;
@@ -82,16 +84,23 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
          if (data[16] != 16 || data[17] != 0 || data[18] != 0 || data[19] != 0)
             return RWAV_ITERATE_ERROR;
 
-         if (data[20] != 1 || data[21] != 0)
-            return RWAV_ITERATE_ERROR; /* we don't support non-PCM or compressed data */
+         /* format tag: 1 is integer PCM, 3 is IEEE float (only the
+          * plain 16-byte fmt layout of either; compressed formats and
+          * extended fmt chunks are not supported) */
+         if ((data[20] != 1 && data[20] != 3) || data[21] != 0)
+            return RWAV_ITERATE_ERROR;
 
          if (data[36] != 'd' || data[37] != 'a' || data[38] != 't' || data[39] != 'a')
             return RWAV_ITERATE_ERROR;
 
          rwav->bitspersample = data[34] | data[35] << 8;
 
-         if (rwav->bitspersample != 8 && rwav->bitspersample != 16)
-            return RWAV_ITERATE_ERROR; /* we only support 8 and 16 bps */
+         /* integer PCM must be 8 or 16 bits, float must be 32; a
+          * bitspersample of 32 therefore always means IEEE float */
+         if (data[20] == 1
+               ? (rwav->bitspersample != 8 && rwav->bitspersample != 16)
+               : (rwav->bitspersample != 32))
+            return RWAV_ITERATE_ERROR;
 
          rwav->subchunk2size = data[40] | data[41] << 8 | data[42] << 16 | data[43] << 24;
 
@@ -129,7 +138,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
             memcpy((void*)((uint8_t*)rwav->samples + iter->i), (void *)(iter->data + 44 + iter->i), s);
             iter->i += s;
          }
-         else
+         else if (rwav->bitspersample == 16)
          {
             iter->step = ITER_COPY_SAMPLES_16;
             iter->j    = 0;
@@ -148,6 +157,31 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
                u16[iter->j++] = iter->data[44 + iter->i] | iter->data[45 + iter->i] << 8;
                iter->i += 2;
                s -= 2;
+            }
+         }
+         else
+         {
+            iter->step = ITER_COPY_SAMPLES_32;
+            iter->j    = 0;
+
+            /* the samples are IEEE-float little-endian words; assemble
+             * them to host order the same way the 16-bit path does */
+            case ITER_COPY_SAMPLES_32:
+            s = rwav->subchunk2size - iter->i;
+
+            if (s > RWAV_ITERATE_BUF_SIZE)
+               s = RWAV_ITERATE_BUF_SIZE;
+
+            u32 = (uint32_t *)rwav->samples;
+
+            while (s != 0)
+            {
+               u32[iter->j++] = (uint32_t)iter->data[44 + iter->i]
+                  | (uint32_t)iter->data[45 + iter->i] << 8
+                  | (uint32_t)iter->data[46 + iter->i] << 16
+                  | (uint32_t)iter->data[47 + iter->i] << 24;
+               iter->i += 4;
+               s -= 4;
             }
          }
 

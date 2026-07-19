@@ -42,6 +42,18 @@
 #include <formats/audio.h>
 #endif
 
+#ifdef HAVE_RAAC
+#include <formats/audio.h>
+#endif
+
+#ifdef HAVE_ROPUS
+#include <formats/audio.h>
+#endif
+
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#include <formats/audio.h>
+#endif
+
 #ifdef HAVE_RFLAC
 #include <formats/audio.h>
 #endif
@@ -83,7 +95,7 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
       struct
       {
          /* shared streaming-codec source (OGG / FLAC / MP3) */
@@ -105,7 +117,7 @@ struct audio_mixer_voice
          unsigned position;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
       /* Shared streaming-codec voice state (OGG / FLAC / MP3). The codec is
        * identified by voice->type and passed to audio_transfer as an
        * enum audio_type_enum; the bookkeeping is identical across them. */
@@ -118,6 +130,7 @@ struct audio_mixer_voice
          unsigned    position;
          unsigned    samples;
          unsigned    buf_samples;
+         unsigned    channels;    /* source channels; mono is duplicated */
          float       ratio;
          /* s16 pipeline (parallel; used when voice->is_s16) */
          int16_t    *buffer_s16;
@@ -166,7 +179,26 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
     * s16/float boundaries the voices are mixed and clamped at. The mono
     * channel-duplication below is why the audio/conversion helpers can't
     * be called verbatim here. */
-   if (wav->bitspersample == 8)
+   if (wav->bitspersample == 32)
+   {
+      /* IEEE-float samples are already in the mixer's own unit scale:
+       * copy (duplicating mono), converting nothing - this is the
+       * quantisation-free path float producers target. */
+      const float *src = (const float*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            float sample = *src++;
+            *f++ = sample;
+            *f++ = sample;
+         }
+      }
+      else if (wav->numchannels == 2)
+         memcpy(f, src, wav->numsamples * 2 * sizeof(float));
+   }
+   else if (wav->bitspersample == 8)
    {
       float sample      = 0.0f;
       const uint8_t *u8 = (const uint8_t*)wav->samples;
@@ -308,15 +340,27 @@ static int16_t audio_mixer_sat_s16(int32_t v)
    return (int16_t)v;
 }
 
-/* Apply a Q16 gain to an s16 sample, rounding toward zero (matches the
- * fixed-point volume applied on the core int16 audio path). */
+/* Apply a Q16 gain to an s16 sample, rounding half away from zero and
+ * accumulating in 64 bits (matches the fixed-point volume applied on the
+ * core int16 audio path in audio_driver_flush).
+ *
+ * The product must not be accumulated in int32: voice volume ranges over
+ * -80..+12 dB, so gain_q16 reaches 260904, and 32768 * 260904 needs 34
+ * bits. Anything above 0 dB overflows on loud input and wraps to the
+ * wrong sign, turning peaks into clicks rather than clamping them.
+ *
+ * Rounding rather than truncating halves the quantisation error and
+ * mirrors the bias across the sign, which keeps the transform
+ * odd-symmetric and therefore DC-free on symmetric signals. */
 static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
 {
-   int32_t p = (int32_t)s * gain_q16;
-   return (p >= 0) ? (p >> 16) : -((-p) >> 16);
+   int64_t p = (int64_t)s * gain_q16;
+   return (int32_t)((p >= 0)
+         ?  ((  p + 0x8000) >> 16)
+         : -(((-p + 0x8000) >> 16)));
 }
 
-#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
 /* Only the WAV and streaming s16 resample paths consult this; a MOD-only or
  * no-codec build would otherwise flag it as unused. */
 static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
@@ -354,7 +398,36 @@ static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
     * stereo, matching wav_to_float's channel handling. For the common
     * 16-bit stereo case this is a straight copy, so the s16 voice path
     * never touches float. */
-   if (wav->bitspersample == 8)
+   if (wav->bitspersample == 32)
+   {
+      /* float source on the float-free voice path: the one place a
+       * float wav is quantised, rounded and saturated in the float
+       * domain (casting out-of-range or non-finite values is
+       * undefined; non-finite pins to zero). */
+      const float *src = (const float*)wav->samples;
+      size_t n = wav->numsamples * ((wav->numchannels == 2) ? 2 : 1);
+      int16_t *d = s;
+
+      for (i = 0; i < n; i++)
+      {
+         float v = src[i] * 32768.0f;
+         int16_t q;
+         if (!(v > -1e9f && v < 1e9f))
+            v = 0.0f;
+         v += (v >= 0.0f) ? 0.5f : -0.5f;
+         if (v >  32767.0f) v =  32767.0f;
+         if (v < -32768.0f) v = -32768.0f;
+         q = (int16_t)(int)v;
+         if (wav->numchannels == 1)
+         {
+            *d++ = q;
+            *d++ = q;
+         }
+         else
+            *d++ = q;
+      }
+   }
+   else if (wav->bitspersample == 8)
    {
       const uint8_t *u8 = (const uint8_t*)wav->samples;
 
@@ -536,18 +609,32 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
-#ifdef HAVE_RVORBIS
+#if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS)
    audio_mixer_sound_t* sound;
+   enum audio_mixer_type mt = AUDIO_MIXER_TYPE_OGG;
 
    if (!buffer || size <= 0)
       return NULL;
+
+#ifdef HAVE_ROPUS
+   /* An .ogg file legitimately wraps Opus as well as Vorbis; route by
+    * the identification header, not the extension.  The Opus arm's
+    * Ogg buffer mode takes the whole file as-is. */
+   if (audio_transfer_ogg_audio_type(buffer, (size_t)size)
+         == AUDIO_TYPE_OPUS)
+      mt = AUDIO_MIXER_TYPE_OPUS;
+#endif
+#ifndef HAVE_RVORBIS
+   if (mt == AUDIO_MIXER_TYPE_OGG)
+      return NULL;
+#endif
 
    sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
       return NULL;
 
-   sound->type           = AUDIO_MIXER_TYPE_OGG;
+   sound->type           = mt;
    sound->types.stream.size = size;
    sound->types.stream.data = buffer;
 
@@ -587,6 +674,70 @@ audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size)
    sound->types.stream.size = size;
    sound->types.stream.data = buffer;
 
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size)
+{
+#ifdef HAVE_RAAC
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+
+   if (!sound)
+      return NULL;
+
+   sound->type           = AUDIO_MIXER_TYPE_M4A;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size)
+{
+#ifdef HAVE_ROPUS
+   audio_mixer_sound_t* sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
+
+   if (!sound)
+      return NULL;
+
+   sound->type           = AUDIO_MIXER_TYPE_OPUS;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
+{
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   audio_mixer_sound_t* sound;
+   enum audio_type_enum ty = audio_transfer_webm_audio_type(buffer,
+         (size_t)size);
+   enum audio_mixer_type mt;
+
+   /* Resolve to the existing sound type whose streaming arm accepts
+    * the whole WebM buffer; nothing downstream ever sees WEBA. */
+   if (ty == AUDIO_TYPE_OPUS)
+      mt = AUDIO_MIXER_TYPE_OPUS;
+   else if (ty == AUDIO_TYPE_VORBIS)
+      mt = AUDIO_MIXER_TYPE_OGG;
+   else
+      return NULL;
+
+   if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
+      return NULL;
+   sound->type           = mt;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
    return sound;
 #else
    return NULL;
@@ -655,6 +806,21 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
             free(handle);
 #endif
          break;
+      case AUDIO_MIXER_TYPE_M4A:
+#ifdef HAVE_RAAC
+         handle = (void*)sound->types.stream.data;
+         if (handle)
+            free(handle);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+         handle = (void*)sound->types.stream.data;
+         if (handle)
+            free(handle);
+#endif
+         break;
+      case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
       case AUDIO_MIXER_TYPE_NONE:
          break;
    }
@@ -670,7 +836,7 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
 /* Shared streaming-codec path (OGG / FLAC / MP3). audio_transfer already
  * abstracts the codec, so one set of play/mix/release functions serves all
  * three; the caller passes the matching enum audio_type_enum. */
@@ -700,7 +866,13 @@ static bool audio_mixer_play_stream(
    if (!audio_transfer_start(xfer, type))
       goto error;
 
-   audio_transfer_info(xfer, type, NULL, &rate, NULL);
+   {
+      unsigned ch = 0;
+      audio_transfer_info(xfer, type, &ch, &rate, NULL);
+      if (ch < 1 || ch > 2)
+         goto error;
+      voice->types.stream.channels = ch;
+   }
 
    if (rate != s_rate)
    {
@@ -895,6 +1067,19 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
                   resampler_ident, quality, stop_cb, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#ifdef HAVE_RAAC
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_AAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_OPUS);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -971,6 +1156,18 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#ifdef HAVE_RAAC
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+                  quality, stop_cb, AUDIO_TYPE_AAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+                  quality, stop_cb, AUDIO_TYPE_OPUS);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_RMODTRACKER
             res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
@@ -980,6 +1177,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
          case AUDIO_MIXER_TYPE_WAV:
             res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1034,6 +1232,16 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
 #ifdef HAVE_RMP3
       case AUDIO_MIXER_TYPE_MP3:
          audio_mixer_release_stream(voice, AUDIO_TYPE_MP3);
+         break;
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_MIXER_TYPE_M4A:
+         audio_mixer_release_stream(voice, AUDIO_TYPE_AAC);
+         break;
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_MIXER_TYPE_OPUS:
+         audio_mixer_release_stream(voice, AUDIO_TYPE_OPUS);
          break;
 #endif
       default:
@@ -1161,7 +1369,7 @@ again:
    }
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
 static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume,
@@ -1184,8 +1392,25 @@ again:
 
       {
          size_t got = 0;
-         audio_transfer_read_f32(voice->types.stream.stream, type,
-               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         if (voice->types.stream.channels == 1)
+         {
+            /* mono source: read into the front, then expand to
+             * interleaved stereo in place, descending - sample n-1
+             * is read before any destination at or above it is
+             * written, so the source is never clobbered */
+            unsigned n;
+            audio_transfer_read_f32(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+            for (n = (unsigned)got; n > 0; n--)
+            {
+               float s            = temp_buffer[n - 1];
+               temp_buffer[2*n-2] = s;
+               temp_buffer[2*n-1] = s;
+            }
+         }
+         else
+            audio_transfer_read_f32(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
          temp_samples = (unsigned)(got * 2);
       }
 
@@ -1387,6 +1612,17 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#ifdef HAVE_RAAC
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_AAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_OPUS);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1442,6 +1678,16 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
             audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_MP3);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_M4A:
+#ifdef HAVE_RAAC
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_AAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_OPUS:
+#ifdef HAVE_ROPUS
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_OPUS);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_RMODTRACKER
             audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_MOD);
@@ -1450,6 +1696,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_WAV:
             audio_mixer_mix_wav_s16(buffer, num_frames, voice, gain_q16);
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1465,6 +1712,30 @@ float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice)
       return 0.0f;
 
    return voice->volume;
+}
+
+/* Whether any active voice would be handled by audio_mixer_mix (float) /
+ * audio_mixer_mix_s16 (int16).  The frontend uses these to skip the
+ * cross-format fold when every active voice already matches the buffer it
+ * is mixing into. */
+bool audio_mixer_has_float_voices(void)
+{
+   unsigned i;
+   const audio_mixer_voice_t *voice = s_voices;
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+      if (voice->type != AUDIO_MIXER_TYPE_NONE && !voice->is_s16)
+         return true;
+   return false;
+}
+
+bool audio_mixer_has_s16_voices(void)
+{
+   unsigned i;
+   const audio_mixer_voice_t *voice = s_voices;
+   for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
+      if (voice->type != AUDIO_MIXER_TYPE_NONE && voice->is_s16)
+         return true;
+   return false;
 }
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)

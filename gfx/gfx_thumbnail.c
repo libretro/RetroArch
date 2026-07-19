@@ -34,10 +34,11 @@
 #include "gfx_display.h"
 #include "gfx_animation.h"
 #include "gfx_thumbnail.h"
+#include "../frontend/frontend_driver.h"
 
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #ifdef HAVE_RWEBM
 #include <formats/rwebm_audio.h>
 #endif
@@ -268,6 +269,12 @@ static void gfx_thumbnail_init_fade(
  * preview rather than risking an allocation spike on a multi-GiB
  * movie. */
 #define GFX_THUMB_ANIM_MAX_FILE     (256 * 1024 * 1024)
+/* When the platform can report free memory the caps above become the
+ * fallback and admission scales with the heap instead: an animation may
+ * pin at most a quarter of the reported free memory, bounded by an
+ * absolute ceiling so a workstation with tens of gigabytes free does
+ * not synchronously slurp a multi-gigabyte movie for a hover preview. */
+#define GFX_THUMB_ANIM_ABS_MAX_FILE (1024 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
  * (browsers substitute 100 ms); very small durations are floored so
  * a hostile file cannot request thousands of decodes per second. */
@@ -278,12 +285,34 @@ static void gfx_thumbnail_init_fade(
  * it through the audio mixer while the animation is shown. */
 #if (defined(HAVE_RWEBM) || defined(HAVE_RMP4)) && \
       defined(HAVE_AUDIOMIXER) && \
-      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+      (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #define GFX_THUMB_PREVIEW_AUDIO 1
 /* Cap decoded PCM (memory bound: 90 s stereo 48 kHz s16 = ~17 MB). */
 #define GFX_THUMB_PREVIEW_AUDIO_MAX_MS 90000
 #define GFX_THUMB_PREVIEW_AUDIO_NAME   "__gfx_thumb_preview"
 #endif
+
+/* Memory an active animation pins: the file buffer for its lifetime,
+ * two XRGB canvases, and decoder working state - for MP4/H.264 a
+ * decoded-picture buffer of reference and reorder pictures, bounded
+ * generously at 24 I420 frames. px may be 0 before the stream has
+ * been opened (file buffer only). */
+static uint64_t gfx_thumb_anim_mem_need(uint64_t file_len, uint64_t px)
+{
+   return file_len + px * 4 * 2 + (px * 3 / 2) * 24 + (1 << 20);
+}
+
+/* Admission: scale with the heap when the platform reports free
+ * memory, keep the static caps when it cannot (they return 0). */
+static bool gfx_thumb_anim_mem_ok(uint64_t file_len, uint64_t px)
+{
+   uint64_t free_mem = frontend_driver_get_free_memory();
+   if (free_mem)
+      return (file_len <= GFX_THUMB_ANIM_ABS_MAX_FILE)
+          && (gfx_thumb_anim_mem_need(file_len, px) <= free_mem / 4);
+   return (file_len <= GFX_THUMB_ANIM_MAX_FILE)
+       && (px == 0 || px <= GFX_THUMB_ANIM_MAX_PIXELS);
+}
 
 enum gfx_thumb_anim_job_status
 {
@@ -653,9 +682,17 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
        && (type != IMAGE_TYPE_MP4))
       return;
 
+   /* Gate on the file's size before reading it: rejecting after the
+    * read would itself be the allocation spike the cap exists to
+    * prevent. */
+   {
+      int64_t fsz = path_get_size(path);
+      if ((fsz <= 0) || !gfx_thumb_anim_mem_ok((uint64_t)fsz, 0))
+         return;
+   }
    if (!filestream_read_file(path, &buf, &len))
       return;
-   if ((len <= 0) || (len > GFX_THUMB_ANIM_MAX_FILE))
+   if (len <= 0)
       goto fail;
 
    if (!(stream = image_transfer_anim_stream_new(buf, (size_t)len, type)))
@@ -667,7 +704,8 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    if (   (num_frames < 2)
        || (anim_w < 1)
        || (anim_h < 1)
-       || ((uint64_t)anim_w * anim_h > GFX_THUMB_ANIM_MAX_PIXELS))
+       || !gfx_thumb_anim_mem_ok((uint64_t)len,
+             (uint64_t)anim_w * anim_h))
       goto fail;
 
    thumbnail->anim            = stream;
@@ -2687,8 +2725,8 @@ bool gfx_thumbnail_update_path(
                         == IMAGE_TYPE_WEBM)
                    || (image_texture_get_type(path_data->content_path)
                         == IMAGE_TYPE_MP4))
-               && (path_get_size(path_data->content_path)
-                     <= GFX_THUMB_ANIM_MAX_FILE))
+               && gfx_thumb_anim_mem_ok(
+                     (uint64_t)path_get_size(path_data->content_path), 0))
          strlcpy(thumbnail_path,
                path_data->content_path, PATH_MAX_LENGTH * sizeof(char));
    }

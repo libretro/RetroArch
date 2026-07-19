@@ -2883,6 +2883,11 @@ enum rarch_content_type path_is_media_type(const char *path)
 #if defined(HAVE_WEBMPLAYER) && !defined(HAVE_FFMPEG) && !defined(HAVE_MPV)
       case FILE_TYPE_MKV:
       case FILE_TYPE_WEBM:
+#ifdef HAVE_RMP4
+      /* the built-in player also handles ISO-BMFF containers */
+      case FILE_TYPE_MP4:
+      case FILE_TYPE_MOV:
+#endif
          return RARCH_CONTENT_MOVIE;
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
@@ -2929,6 +2934,22 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_MOD:
       case FILE_TYPE_S3M:
       case FILE_TYPE_XM:
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC) && defined(HAVE_RMP4) \
+      && !defined(HAVE_FFMPEG) && !defined(HAVE_MPV)
+      /* without FFmpeg/MPV (which claim m4a above), the mixer's AAC
+       * path takes it as music */
+      case FILE_TYPE_M4A:
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RAAC)
+      case FILE_TYPE_AAC:
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_ROPUS)
+      case FILE_TYPE_OPUS:
+#endif
+#if defined(HAVE_AUDIOMIXER) && defined(HAVE_RWEBM) \
+      && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+      case FILE_TYPE_WEBA:
 #endif
          return RARCH_CONTENT_MUSIC;
 #endif

@@ -55,11 +55,13 @@
 
 typedef struct
 {
-   int16_t *data;
+   void    *data;       /* s16 or f32 samples, by elem                  */
    size_t   frames;     /* per-channel                                  */
    size_t   cap_frames; /* allocation size                              */
    size_t   max_frames; /* hard cap from max_ms (0 = none)              */
    unsigned channels;
+   size_t   elem;       /* sizeof(int16_t) or sizeof(float): selects
+                         * the s16 or the float codec pipeline          */
 } rwebm_pcm_acc;
 
 static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
@@ -69,11 +71,10 @@ static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
       return 1;
    {
       size_t ncap = a->cap_frames ? a->cap_frames : 48000;
-      int16_t *nd;
+      void *nd;
       while (ncap < need)
          ncap += ncap / 2;
-      nd = (int16_t*)realloc(a->data,
-            ncap * a->channels * sizeof(int16_t));
+      nd = realloc(a->data, ncap * a->channels * a->elem);
       if (!nd)
          return 0;
       a->data       = nd;
@@ -81,6 +82,10 @@ static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
    }
    return 1;
 }
+
+/* byte offset of a frame position in the accumulator */
+#define RWEBM_ACC_AT(a, fr) \
+   ((uint8_t*)(a)->data + (fr) * (a)->channels * (a)->elem)
 
 /* ==================================================================== */
 /* Opus                                                                 */
@@ -111,8 +116,15 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
          continue;
       if (!rwebm_pcm_reserve(a, RWEBM_OPUS_MAX_FRAMES))
          break;
-      produced = ropus_decode_s16(o, pkt.data, pkt.size,
-            a->data + a->frames * a->channels);
+      /* the two pipelines are genuinely different decoders (s16 is
+       * the fixed-point build, f32 the float build), not conversions
+       * of one another */
+      if (a->elem == sizeof(float))
+         produced = ropus_decode_f32(o, pkt.data, pkt.size,
+               (float*)RWEBM_ACC_AT(a, a->frames));
+      else
+         produced = ropus_decode_s16(o, pkt.data, pkt.size,
+               (int16_t*)RWEBM_ACC_AT(a, a->frames));
       if (produced < 0)
          break;                    /* malformed packet: keep what we have */
       if (pkt.discard_padding > 0)
@@ -127,9 +139,9 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
       {
          size_t s = ((size_t)produced < skip) ? (size_t)produced : skip;
          if (s)
-            memmove(a->data + a->frames * a->channels,
-                  a->data + (a->frames + s) * a->channels,
-                  ((size_t)produced - s) * a->channels * sizeof(int16_t));
+            memmove(RWEBM_ACC_AT(a, a->frames),
+                  RWEBM_ACC_AT(a, a->frames + s),
+                  ((size_t)produced - s) * a->channels * a->elem);
          produced -= (int)s;
          skip     -= s;
       }
@@ -352,8 +364,13 @@ static int rwebm_audio_decode_vorbis(rwebm_t *m, const rwebm_track *t,
       }
       if (!rwebm_pcm_reserve(a, chunk))
          break;
-      got = rvorbis_get_samples_s16_interleaved(v, (int)a->channels,
-            a->data + a->frames * a->channels,
+      if (a->elem == sizeof(float))
+         got = rvorbis_get_samples_float_interleaved(v, (int)a->channels,
+               (float*)RWEBM_ACC_AT(a, a->frames),
+               (int)(chunk * a->channels));
+      else
+         got = rvorbis_get_samples_s16_interleaved(v, (int)a->channels,
+            (int16_t*)RWEBM_ACC_AT(a, a->frames),
             (int)(chunk * a->channels));
       if (got <= 0)
          break;
@@ -372,8 +389,9 @@ out:
 /* Public entry points                                                  */
 /* ==================================================================== */
 
-int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
-      int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels)
+static int rwebm_audio_decode_any(const void *buf, size_t len,
+      int64_t max_ms, size_t elem, void **pcm, size_t *frames,
+      unsigned *rate, unsigned *channels)
 {
    rwebm_t      *m;
    rwebm_pcm_acc a;
@@ -404,6 +422,7 @@ int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
       goto out;
 
    memset(&a, 0, sizeof(a));
+   a.elem = elem;
    if (max_ms > 0)
    {
       unsigned r = (t->codec == RWEBM_CODEC_OPUS)
@@ -440,10 +459,24 @@ out:
    return ok;
 }
 
+int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
+      int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels)
+{
+   return rwebm_audio_decode_any(buf, len, max_ms, sizeof(int16_t),
+         (void**)pcm, frames, rate, channels);
+}
+
+int rwebm_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
+      float **pcm, size_t *frames, unsigned *rate, unsigned *channels)
+{
+   return rwebm_audio_decode_any(buf, len, max_ms, sizeof(float),
+         (void**)pcm, frames, rate, channels);
+}
+
 int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       void **wav, size_t *wav_size)
 {
-   int16_t *pcm = NULL;
+   float   *pcm = NULL;
    size_t   frames = 0;
    unsigned rate = 0, channels = 0;
    size_t   data_size, total;
@@ -454,11 +487,11 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
    *wav = NULL;
    *wav_size = 0;
 
-   if (!rwebm_audio_decode(buf, len, max_ms, &pcm, &frames,
+   if (!rwebm_audio_decode_f32(buf, len, max_ms, &pcm, &frames,
          &rate, &channels))
       return 0;
 
-   data_size = frames * channels * sizeof(int16_t);
+   data_size = frames * channels * sizeof(float);
    total     = 44 + data_size;
    if (!(w = (uint8_t*)malloc(total)))
    {
@@ -471,19 +504,19 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
 #define RWEBM_W16(off, val) \
    do { v16 = (uint16_t)(val); memcpy(w + (off), &v16, 2); } while (0)
 
-   /* RIFF/WAVE, PCM s16le. WAV is little-endian by definition; on
+   /* RIFF/WAVE, IEEE-float 32 (format tag 3). WAV is little-endian by definition; on
     * big-endian hosts both the header fields and the samples are
     * byte-swapped into place. */
    memcpy(w, "RIFF", 4);
    RWEBM_W32(4, 36 + data_size);
    memcpy(w + 8, "WAVEfmt ", 8);
    RWEBM_W32(16, 16);
-   RWEBM_W16(20, 1);
+   RWEBM_W16(20, 3);
    RWEBM_W16(22, channels);
    RWEBM_W32(24, rate);
-   RWEBM_W32(28, (uint32_t)rate * channels * 2);
-   RWEBM_W16(32, channels * 2);
-   RWEBM_W16(34, 16);
+   RWEBM_W32(28, (uint32_t)rate * channels * 4);
+   RWEBM_W16(32, channels * 4);
+   RWEBM_W16(34, 32);
    memcpy(w + 36, "data", 4);
    RWEBM_W32(40, data_size);
 #if defined(MSB_FIRST)
@@ -507,9 +540,12 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       }
       for (k = 0; k < n; k++)
       {
-         uint16_t s = (uint16_t)pcm[k];
-         w[44 + 2*k]     = (uint8_t)(s & 0xFF);
-         w[44 + 2*k + 1] = (uint8_t)(s >> 8);
+         uint32_t s;
+         memcpy(&s, &pcm[k], 4);
+         w[44 + 4*k]     = (uint8_t)(s & 0xFF);
+         w[44 + 4*k + 1] = (uint8_t)((s >> 8) & 0xFF);
+         w[44 + 4*k + 2] = (uint8_t)((s >> 16) & 0xFF);
+         w[44 + 4*k + 3] = (uint8_t)(s >> 24);
       }
    }
 #else

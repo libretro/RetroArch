@@ -6937,6 +6937,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 /* Settings > Video > HDR */
 
 MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
+   "video_hdr_mode"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_ENABLE,
    "HDR"
    )
@@ -6955,6 +6959,10 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_SCRGB,
    "scRGB"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
+   "video_swapchain_bit_depth"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
@@ -19403,6 +19411,10 @@ MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #undef S_UINT_AT_EX_NS_H
 #undef SETTINGS_DEF_STRINGS_PASS
 MSG_HASH(
+   MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
+   "ai_service_backend"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
    "AI Service Backend"
    )
@@ -19856,12 +19868,20 @@ MSG_HASH(
    "Set whether achievement notifications should align with other types of on-screen notifications. Disable to set manual padding/position values."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   "cheevos_appearance_padding_h"
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_H,
    "Manual Horizontal Padding"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_CHEEVOS_APPEARANCE_PADDING_H,
    "Distance from left/right screen edge, which can compensate for display overscan."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
+   "cheevos_appearance_padding_v"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEEVOS_APPEARANCE_PADDING_V,

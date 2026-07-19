@@ -123,7 +123,11 @@ typedef struct
    int64_t    *pts;            /* nanoseconds                        */
    uint8_t    *key;
    uint32_t    count;
+   uint32_t    cap;            /* array capacity (fragment appends)  */
    uint32_t    cursor;
+   /* Movie-fragment state: trex defaults and the running decode time. */
+   uint32_t    trex_dur, trex_size, trex_flags;
+   uint64_t    frag_dts;       /* ticks; tfdt resets it              */
    uint8_t     opus_head[RMP4_OPUS_HEAD_MAX];
 } rmp4_itrack;
 
@@ -133,6 +137,7 @@ struct rmp4
    size_t         len;
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
+   int            fragmented;      /* an mvex box was present        */
    uint32_t       movie_timescale;
    uint64_t       movie_duration;   /* in movie timescale ticks       */
 };
@@ -320,6 +325,26 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
          t->pub.width  = rmp4_be16(e.body + 24);
          t->pub.height = rmp4_be16(e.body + 26);
       }
+      /* colr carries the colour description for any visual sample entry:
+       * colour_type 'nclx' (ISO, with a full-range flag) or 'nclc' (QTFF)
+       * followed by primaries, transfer and matrix as 16-bit values. */
+      if (e.size > 78)
+      {
+         rmp4_box colr;
+         if (rmp4_find_child(e.body + 78, e.size - 78,
+               RMP4_FOURCC('c','o','l','r'), &colr) && colr.size >= 10)
+         {
+            uint32_t ct = rmp4_be32(colr.body);
+            if (ct == RMP4_FOURCC('n','c','l','x')
+                  || ct == RMP4_FOURCC('n','c','l','c'))
+            {
+               t->pub.transfer_characteristics = rmp4_be16(colr.body + 6);
+               t->pub.matrix_coefficients      = rmp4_be16(colr.body + 8);
+               if (ct == RMP4_FOURCC('n','c','l','x') && colr.size >= 11)
+                  t->pub.full_range = (colr.body[10] >> 7) & 1;
+            }
+         }
+      }
       switch (e.type)
       {
          case RMP4_FOURCC('v','p','0','8'):
@@ -401,6 +426,17 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
                t->pub.codec_private      = dsi;
                t->pub.codec_private_size = (size_t)dsi_size;
             }
+            /* 0x40 is MPEG-4 Audio (AAC signalled through the
+             * AudioSpecificConfig); 0x66..0x68 are the MPEG-2 AAC
+             * profiles some muxers still emit, whose DSI uses the
+             * same layout. */
+            else if ((oti == 0x40 || (oti >= 0x66 && oti <= 0x68))
+                  && dsi && dsi_size >= 2)
+            {
+               t->pub.codec              = RMP4_CODEC_AAC;
+               t->pub.codec_private      = dsi;
+               t->pub.codec_private_size = (size_t)dsi_size;
+            }
          }
       }
    }
@@ -422,6 +458,45 @@ typedef struct
 /* Build the per-sample offset/size/pts/key arrays for one track.
  * Returns 1 on success (possibly with zero samples), 0 on OOM or a
  * table too malformed to trust. */
+/* Append one sample to a track's parallel arrays, growing them as
+ * movie fragments arrive. Returns 0 on allocation failure or once the
+ * global sample cap is reached (further samples are dropped). */
+static int rmp4_track_append(rmp4_itrack *t, uint64_t off, uint32_t size,
+      int64_t pts_ns, uint8_t key)
+{
+   if (t->count >= RMP4_MAX_SAMPLES)
+      return 0;
+   if (t->count >= t->cap)
+   {
+      uint32_t  ncap = t->cap ? t->cap * 2 : 512;
+      uint64_t *noff; uint32_t *nsize; int64_t *npts; uint8_t *nkey;
+      if (ncap > RMP4_MAX_SAMPLES) ncap = RMP4_MAX_SAMPLES;
+      noff  = (uint64_t*)realloc(t->off,  (size_t)ncap * sizeof(uint64_t));
+      if (!noff)
+         return 0;
+      t->off  = noff;
+      nsize = (uint32_t*)realloc(t->size, (size_t)ncap * sizeof(uint32_t));
+      if (!nsize)
+         return 0;
+      t->size = nsize;
+      npts  = (int64_t*) realloc(t->pts,  (size_t)ncap * sizeof(int64_t));
+      if (!npts)
+         return 0;
+      t->pts  = npts;
+      nkey  = (uint8_t*) realloc(t->key,  (size_t)ncap);
+      if (!nkey)
+         return 0;
+      t->key  = nkey;
+      t->cap = ncap;
+   }
+   t->off[t->count]  = off;
+   t->size[t->count] = size;
+   t->pts[t->count]  = pts_ns;
+   t->key[t->count]  = key;
+   t->count++;
+   return 1;
+}
+
 static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
       uint64_t file_len)
 {
@@ -446,6 +521,7 @@ static int rmp4_build_samples(rmp4_itrack *t, const rmp4_stbl *s,
    t->key  = (uint8_t*) malloc((size_t)count);
    if (!t->off || !t->size || !t->pts || !t->key)
       return 0;
+   t->cap = count;
 
    for (i = 0; i < count; i++)
       t->size[i] = uniform ? uniform : rmp4_be32(s->stsz + 12 + i * 4);
@@ -588,6 +664,29 @@ static void rmp4_parse_trak(rmp4_t *m, const uint8_t *body, uint64_t size)
    memset(t, 0, sizeof(*t));
    t->pub.number = m->num_tracks + 1;
 
+   /* edts/elst: the common single-entry edit that trims the codec's
+    * startup samples (media_time > 0, e.g. the AAC encoder delay).
+    * Recorded in media-timescale units for decoders to drop; edits
+    * beyond that shape (multi-entry, dwell) stay unsupported. */
+   if (rmp4_find_child(body, size, RMP4_FOURCC('e','d','t','s'), &b))
+   {
+      rmp4_box elst;
+      if (rmp4_find_child(b.body, b.size,
+            RMP4_FOURCC('e','l','s','t'), &elst) && elst.size >= 8)
+      {
+         unsigned version = elst.body[0];
+         uint32_t count   = rmp4_be32(elst.body + 4);
+         if (count == 1 && elst.size >= (version ? 28u : 20u))
+         {
+            int64_t media_time = version
+                  ? (int64_t)rmp4_be64(elst.body + 16)
+                  : (int32_t)rmp4_be32(elst.body + 12);
+            if (media_time > 0)
+               t->pub.media_skip = (uint64_t)media_time;
+         }
+      }
+   }
+
    /* tkhd carries the official track_ID; go find it if present. */
    if (rmp4_find_child(body, size, RMP4_FOURCC('t','k','h','d'), &b)
        && b.size >= 4)
@@ -672,7 +771,10 @@ static int rmp4_parse_moov(rmp4_t *m, const uint8_t *body, uint64_t size)
 {
    uint64_t pos = 0, next;
    rmp4_box b;
+   rmp4_box mvex;
    int have_mvhd = 0;
+
+   mvex.body = NULL; mvex.size = 0; mvex.type = 0;
 
    while (pos < size && rmp4_box_at(body, size, pos, &b, &next))
    {
@@ -695,11 +797,188 @@ static int rmp4_parse_moov(rmp4_t *m, const uint8_t *body, uint64_t size)
       }
       else if (b.type == RMP4_FOURCC('t','r','a','k'))
          rmp4_parse_trak(m, b.body, b.size);
+      else if (b.type == RMP4_FOURCC('m','v','e','x'))
+         mvex = b;
       if (next <= pos)
          break;
       pos = next;
    }
+   /* mvex marks a fragmented movie; its trex boxes carry per-track
+    * defaults the fragments inherit. Applied after the walk since box
+    * order inside moov is free. */
+   if (mvex.body)
+   {
+      uint64_t tp = 0, tn;
+      rmp4_box tx;
+      m->fragmented = 1;
+      while (tp < mvex.size && rmp4_box_at(mvex.body, mvex.size, tp, &tx, &tn))
+      {
+         if (tx.type == RMP4_FOURCC('t','r','e','x') && tx.size >= 24)
+         {
+            uint32_t tid = rmp4_be32(tx.body + 4);
+            int i;
+            for (i = 0; i < m->num_tracks; i++)
+               if (m->trk[i].pub.number == (int)tid)
+               {
+                  m->trk[i].trex_dur   = rmp4_be32(tx.body + 12);
+                  m->trk[i].trex_size  = rmp4_be32(tx.body + 16);
+                  m->trk[i].trex_flags = rmp4_be32(tx.body + 20);
+                  break;
+               }
+         }
+         if (tn <= tp)
+            break;
+         tp = tn;
+      }
+   }
    return have_mvhd || m->num_tracks > 0;
+}
+
+/* ===== movie fragments (moof/traf/trun, 14496-12 8.8) ===== */
+
+/* One traf: tfhd picks the track and its defaults, tfdt (re)bases the
+ * decode time, each trun appends a run of samples. */
+static void rmp4_parse_traf(rmp4_t *m, const uint8_t *body, uint64_t size,
+      uint64_t moof_pos)
+{
+   uint64_t pos = 0, next;
+   rmp4_box b;
+   rmp4_itrack *t = NULL;
+   uint64_t base = moof_pos;      /* default-base-is-moof and legacy   */
+   uint32_t dflt_dur = 0, dflt_size = 0, dflt_flags = 0;
+   uint64_t doff = 0;
+   int      have_doff = 0;
+
+   while (pos < size && rmp4_box_at(body, size, pos, &b, &next))
+   {
+      if (b.type == RMP4_FOURCC('t','f','h','d') && b.size >= 8)
+      {
+         uint32_t f   = rmp4_be32(b.body) & 0xffffff;
+         uint32_t tid = rmp4_be32(b.body + 4);
+         uint64_t off = 8;
+         int i;
+         t = NULL;
+         for (i = 0; i < m->num_tracks; i++)
+            if (m->trk[i].pub.number == (int)tid)
+            { t = &m->trk[i]; break; }
+         if (!t)
+            return;
+         dflt_dur   = t->trex_dur;
+         dflt_size  = t->trex_size;
+         dflt_flags = t->trex_flags;
+         if (f & 0x000001)              /* base-data-offset            */
+         {
+            if (b.size < off + 8) return;
+            base = rmp4_be64(b.body + off); off += 8;
+         }
+         if (f & 0x000002) off += 4;    /* sample-description-index    */
+         if (f & 0x000008)              /* default-sample-duration     */
+         {
+            if (b.size < off + 4) return;
+            dflt_dur = rmp4_be32(b.body + off); off += 4;
+         }
+         if (f & 0x000010)              /* default-sample-size         */
+         {
+            if (b.size < off + 4) return;
+            dflt_size = rmp4_be32(b.body + off); off += 4;
+         }
+         if (f & 0x000020)              /* default-sample-flags        */
+         {
+            if (b.size < off + 4) return;
+            dflt_flags = rmp4_be32(b.body + off);
+         }
+      }
+      else if (b.type == RMP4_FOURCC('t','f','d','t') && t && b.size >= 8)
+      {
+         if (b.body[0] == 1 && b.size >= 12)
+            t->frag_dts = rmp4_be64(b.body + 4);
+         else
+            t->frag_dts = rmp4_be32(b.body + 4);
+      }
+      else if (b.type == RMP4_FOURCC('t','r','u','n') && t && b.size >= 8)
+      {
+         uint32_t f = rmp4_be32(b.body) & 0xffffff;
+         int      v = b.body[0];
+         uint32_t n = rmp4_be32(b.body + 4);
+         uint64_t off = 8;
+         uint32_t first_flags = 0;
+         int      have_first = 0;
+         uint32_t i;
+         if (f & 0x000001)              /* data-offset (signed)        */
+         {
+            if (b.size < off + 4) return;
+            doff = base + (uint64_t)(int64_t)(int32_t)rmp4_be32(b.body + off);
+            off += 4;
+            have_doff = 1;
+         }
+         else if (!have_doff)
+         {
+            doff = base;
+            have_doff = 1;
+         }
+         if (f & 0x000004)              /* first-sample-flags          */
+         {
+            if (b.size < off + 4) return;
+            first_flags = rmp4_be32(b.body + off); off += 4;
+            have_first  = 1;
+         }
+         for (i = 0; i < n; i++)
+         {
+            uint32_t dur = dflt_dur, sz = dflt_size, fl = dflt_flags;
+            int32_t  cts = 0;
+            int64_t  pts;
+            if (f & 0x000100)
+            {
+               if (b.size < off + 4) return;
+               dur = rmp4_be32(b.body + off); off += 4;
+            }
+            if (f & 0x000200)
+            {
+               if (b.size < off + 4) return;
+               sz = rmp4_be32(b.body + off); off += 4;
+            }
+            if (f & 0x000400)
+            {
+               if (b.size < off + 4) return;
+               fl = rmp4_be32(b.body + off); off += 4;
+            }
+            if (f & 0x000800)
+            {
+               if (b.size < off + 4) return;
+               cts = (int32_t)rmp4_be32(b.body + off); off += 4;
+               if (v == 0 && cts < 0)   /* v0 offsets are unsigned     */
+                  cts = 0;
+            }
+            if (i == 0 && have_first)
+               fl = first_flags;
+            pts = rmp4_ticks_to_ns(
+                  (int64_t)t->frag_dts + cts, t->timescale);
+            if (sz && doff + sz <= m->len)
+               rmp4_track_append(t, doff, sz, pts,
+                     (uint8_t)!((fl >> 16) & 1));
+            doff        += sz;
+            t->frag_dts += dur;
+         }
+      }
+      if (next <= pos)
+         break;
+      pos = next;
+   }
+}
+
+static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
+      uint64_t moof_pos)
+{
+   uint64_t pos = 0, next;
+   rmp4_box b;
+   while (pos < size && rmp4_box_at(body, size, pos, &b, &next))
+   {
+      if (b.type == RMP4_FOURCC('t','r','a','f'))
+         rmp4_parse_traf(m, b.body, b.size, moof_pos);
+      if (next <= pos)
+         break;
+      pos = next;
+   }
 }
 
 /* ===== public API ===== */
@@ -748,6 +1027,22 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
    {
       rmp4_close(m);
       return NULL;
+   }
+
+   /* Fragmented movies keep their samples in moof boxes following the
+    * (usually empty) moov; walk them now that the tracks and their
+    * trex defaults exist. */
+   if (m->fragmented)
+   {
+      pos = 0;
+      while (pos < size && rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
+      {
+         if (b.type == RMP4_FOURCC('m','o','o','f'))
+            rmp4_parse_moof(m, b.body, b.size, pos);
+         if (next <= pos)
+            break;
+         pos = next;
+      }
    }
    return m;
 }

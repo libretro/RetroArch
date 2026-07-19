@@ -131,6 +131,9 @@ static const struct
    char s_d7f2cfac[17];
    char s_d7f2e719[29];
    char s_e567aa86[20];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[20];
+#endif
    char s_93e2fd9c[20];
    char s_734d2a61[7];
    char s_a7a97316[47];
@@ -144,6 +147,9 @@ static const struct
    char s_b61bd8d0[10];
    char s_6a07da9c[27];
    char s_12b8e195[27];
+#ifdef _3DS
+   char s_d199b625[22];
+#endif
    char s_06f25fc0[19];
    char s_0a176c2e[25];
    char s_f0ce97f7[25];
@@ -243,6 +249,7 @@ static const struct
    char s_980ef0e8[10];
    char s_ff1b8ce5[24];
    char s_9e66791a[12];
+   char s_c64d260f[10];
    char s_30a27169[21];
    char s_1939e675[21];
    char s_8cf87433[21];
@@ -252,6 +259,9 @@ static const struct
    char s_b6172513[10];
    char s_e3d18a3d[17];
    char s_d15b342a[16];
+#ifdef HAVE_LAKKA
+   char s_d3e11c2a[21];
+#endif
    char s_cafa647f[27];
    char s_31b177ec[15];
    char s_8cb3b95f[9];
@@ -292,11 +302,18 @@ static const struct
    char s_5bb9bd63[8];
    char s_ceb820ad[8];
    char s_63af41a7[48];
+#ifdef HAVE_MIST
+   char s_53788998[40];
+#endif
    char s_7a2033d4[40];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_5e519829[40];
+#endif
+#endif
    char s_f228c6c5[28];
    char s_11926382[35];
    char s_645ae416[39];
-   char s_df92f5b5[36];
    char s_dcbf8b04[39];
    char s_dcbffdfe[38];
    char s_7816d5d5[31];
@@ -312,6 +329,16 @@ static const struct
    char s_1193e37b[47];
    char s_729a38da[39];
    char s_4ca32b24[16];
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_d0fb22cb[8];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_d1df7807[11];
+   char s_d3e78762[11];
+   char s_d04ab10c[11];
+#endif
    char s_8be7813a[10];
    char s_1757647b[7];
    char s_e1a8f707[23];
@@ -452,8 +479,6 @@ static const struct
    char s_1cad7751[14];
    char s_753c8d3b[5];
    char s_82847606[19];
-   char s_036acd54[34];
-   char s_a0a191ca[34];
    char s_c471147e[35];
    char s_5f152b98[8];
    char s_7ea47472[16];
@@ -593,6 +618,9 @@ static const struct
    char s_01a73130[31];
    char s_d21c686b[31];
    char s_64a91b83[33];
+#ifdef HAVE_MIST
+   char s_6889b69d[10];
+#endif
    char s_9374b989[18];
    char s_7943e750[28];
    char s_bab74532[25];
@@ -631,6 +659,9 @@ static const struct
    char s_8a1c86c5[20];
    char s_a144988f[28];
    char s_bfda7e1c[25];
+#ifdef HAVE_LAKKA
+   char s_597f7f13[13];
+#endif
    char s_f92cf1f5[6];
    char s_fff21e47[5];
    char s_214b2135[6];
@@ -663,9 +694,22 @@ static const struct
    char s_3a9d7557[8];
    char s_a158a19e[36];
    char s_2b39eb60[23];
+#ifdef _3DS
+   char s_f069ce0e[23];
+#endif
    char s_d6fb8efe[35];
    char s_ad5ff591[15];
    char s_c79d5013[24];
+#if defined(DINGUX)
+   char s_bfd4c6ef[10];
+   char s_ce997004[10];
+   char s_d374d67d[34];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_5a03a511[12];
+#endif
+#endif
    char s_cc973e8a[6];
    char s_d0a04fe4[16];
    char s_ed22c5f1[26];
@@ -704,6 +748,7 @@ static const struct
    char s_9017e0d3[24];
    char s_ef3d53d8[17];
    char s_21d7a1f6[7];
+   char s_d74474ce[8];
    char s_45816e1d[56];
    char s_730df420[16];
    char s_bcddf275[8];
@@ -733,8 +778,6 @@ static const struct
    char s_368db7bb[20];
    char s_25e89959[4];
    char s_a7468d68[28];
-   char s_9ca4bbd7[22];
-   char s_9ca4bbd8[22];
    char s_579b5e71[43];
    char s_0367a7dc[107];
    char s_243da114[52];
@@ -777,6 +820,11 @@ static const struct
    char s_3f2095b2[44];
    char s_4db83281[106];
    char s_ccbacaee[89];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_043f1283[40];
+#endif
+#endif
    char s_aa39aae6[79];
    char s_d43521db[79];
    char s_44040aad[96];
@@ -789,14 +837,23 @@ static const struct
    char s_e85b309d[85];
    char s_bcea0a06[32];
    char s_8e48ec69[40];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   char s_2c73f69f[77];
+#endif
    char s_a18eb603[42];
    char s_d5b9f1e3[39];
    char s_a7d61696[61];
    char s_c6e1f92b[42];
    char s_2f5a9518[97];
+#ifdef HAVE_LAKKA
+   char s_e3a841d8[35];
+#endif
    char s_dac18a2d[53];
    char s_aadb028d[39];
    char s_91e03bff[32];
+#ifdef _3DS
+   char s_02c2854f[60];
+#endif
    char s_193e1462[54];
    char s_2d78e959[225];
    char s_bb0852aa[213];
@@ -815,6 +872,9 @@ static const struct
    char s_b3502258[96];
    char s_7279e585[65];
    char s_a5ffd3d0[50];
+#ifdef _3DS
+   char s_0d834bc5[65];
+#endif
    char s_85aab1ad[52];
    char s_f28ded2f[58];
    char s_8950b378[61];
@@ -856,6 +916,9 @@ static const struct
    char s_97d77020[35];
    char s_4b009af3[41];
    char s_46c57dde[60];
+#ifdef HAVE_LAKKA
+   char s_6124594a[55];
+#endif
    char s_82d064b1[49];
    char s_1a8301fe[50];
    char s_8bbf7ffb[121];
@@ -864,6 +927,9 @@ static const struct
    char s_55d6cc44[30];
    char s_6e9f0493[65];
    char s_78474a95[51];
+#ifdef _3DS
+   char s_f64dfe3c[157];
+#endif
    char s_0d96ed73[55];
    char s_7968f59d[50];
    char s_7e96b5ce[57];
@@ -872,15 +938,13 @@ static const struct
    char s_f83a493c[54];
    char s_75325963[56];
    char s_d9bcee6b[85];
+#ifdef _3DS
+   char s_a69ccdc1[54];
+#endif
    char s_63a238b1[22];
    char s_4bc02672[66];
-   char s_2a9c73f3[34];
-   char s_05e3f715[42];
-   char s_631c5635[45];
-   char s_19e809ad[38];
    char s_187dc6d2[31];
    char s_3267601f[76];
-   char s_db1e4390[38];
    char s_f7e279a6[11];
    char s_a1aa860c[54];
    char s_2fb7ea2e[38];
@@ -893,7 +957,6 @@ static const struct
    char s_4c6e5a10[36];
    char s_5eafa434[40];
    char s_7f1e25bf[38];
-   char s_4b6a946a[36];
    char s_42cf10ff[61];
    char s_eeabb721[11];
    char s_a3030e21[22];
@@ -903,14 +966,10 @@ static const struct
    char s_b0e4eb88[48];
    char s_9e5bd759[38];
    char s_fc5e1d2c[62];
-   char s_8d677b5b[29];
    char s_94ba5ea0[34];
    char s_7b7b7f6d[16];
    char s_27bf01b6[42];
    char s_ed159cd6[23];
-   char s_e533ddbb[22];
-   char s_45130077[26];
-   char s_856bdef7[31];
    char s_a56efbe2[7];
    char s_0e7aca8a[30];
    char s_3b7c0dd8[30];
@@ -922,18 +981,18 @@ static const struct
    char s_ffed014a[27];
    char s_9033e61a[25];
    char s_d16f3816[7];
+#ifdef HAVE_LAKKA
+   char s_1f2be238[73];
+   char s_f250153f[88];
+   char s_0e086f97[44];
+#endif
    char s_00fc26e4[8];
-   char s_b1e9bfbf[20];
    char s_1de3d99f[35];
    char s_dad076ef[60];
    char s_69a0990c[28];
    char s_28bbcc15[30];
    char s_03c57bc8[8];
    char s_0c53fe6c[73];
-   char s_d15060ee[27];
-   char s_a068841f[28];
-   char s_4d7ee7e2[20];
-   char s_509dd374[25];
    char s_52453850[29];
    char s_9cfca240[44];
    char s_bab020a4[21];
@@ -947,7 +1006,6 @@ static const struct
    char s_af784f91[54];
    char s_0f2a9f22[13];
    char s_1055e4c5[15];
-   char s_88494936[37];
    char s_94fc1cd0[15];
    char s_2aaf8414[12];
    char s_4f18c9d0[54];
@@ -1075,6 +1133,9 @@ static const struct
    "Cargar un nucleu",
    "Bloquiar el nucleu instal\303\241u",
    "Xesti\303\263n de nucleos",
+#ifdef HAVE_MIST
+   "Xesti\303\263n de nucleos",
+#endif
    "Opciones del nucleu",
    "Nucleu",
    "Escluyir del men\303\272 \302\253Nucleos ensin conten\303\255u\302\273",
@@ -1088,6 +1149,9 @@ static const struct
    "Pol\303\255tica",
    "SwitchRes pa pantalles CTR",
    "SwitchRes pa pantalles CTR",
+#ifdef _3DS
+   "2D (resoluci\303\263n alta)",
+#endif
    "Xestor de cursores",
    "Percorrer les miniatures",
    "Xestor de bases de datos",
@@ -1187,6 +1251,7 @@ static const struct
    "Controles",
    "Controles del puertu %u",
    "Controlador",
+   "Servicios",
    "Miniatura secundaria",
    "Miniatura secundaria",
    "Miniatura secundaria",
@@ -1196,6 +1261,9 @@ static const struct
    "Historial",
    "Cargar conten\303\255u",
    "Cargar un discu",
+#ifdef HAVE_LAKKA
+   "Puntu d'accesu Wi-Fi",
+#endif
    "Permitir la llocalizaci\303\263n",
    "Llocalizaci\303\263n",
    "Rexistru",
@@ -1236,11 +1304,18 @@ static const struct
    "V\303\263rtiz",
    "Aspeutu",
    "Amosar la opci\303\263n \302\253Ficheru de configuraci\303\263n\302\273",
+#ifdef HAVE_MIST
+   "Amosar la opci\303\263n \302\253Xestionar nucleos\302\273",
+#endif
    "Amosar la opci\303\263n \302\253Volquiar el discu\302\273",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Amosar la opci\303\263n \302\253Espulsar el discu\302\273",
+#endif
+#endif
    "Amosar la opci\303\263n \302\253Ayuda\302\273",
    "Amosar la opci\303\263n \302\253Informaci\303\263n\302\273",
    "Amosar la opci\303\263n \302\253Cargar conten\303\255u\302\273",
-   "\"Load Content\" Startup Notification",
    "Amosar la opci\303\263n \302\253Cargar un nucleu\302\273",
    "Amosar la opci\303\263n \302\253Cargar un discu\302\273",
    "Amosar la opci\303\263n \302\253Anovador\302\273",
@@ -1256,6 +1331,16 @@ static const struct
    "Usar l'estilu de colores prefer\303\255u pol sistema",
    "Visibilid\303\241 de los elementos del men\303\272",
    "Imaxe del fondu",
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "Pres\303\251u",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Micr\303\263fonu",
+   "Micr\303\263fonu",
+   "Micr\303\263fonu",
+#endif
    "Controles",
    "Salida",
    "Falta mas ye opcional:",
@@ -1396,8 +1481,6 @@ static const struct
    "&Ferramientes",
    "&Ver",
    "&Configuraci\303\263n\342\200\246",
-   "\"All Playlists\" max grid entries:",
-   "\"All Playlists\" max list entries:",
    "Suxerir un nucleu carg\303\241u primero:",
    "Estilu:",
    "Personalizar\342\200\246",
@@ -1538,6 +1621,9 @@ static const struct
    "Instalar o restaurar un nucleu",
    "Aniciar el procesador de videu",
    "Comandos de la entrada est\303\241ndar",
+#ifdef HAVE_MIST
+   "Conten\303\255u",
+#endif
    "Nucleos suxer\303\255os",
    "Suspender el curiapantalles",
    "Informaci\303\263n del sistema",
@@ -1576,6 +1662,9 @@ static const struct
    "AAAA-MM-DD HH:MM:SS",
    "AAAA-MM-DD HH:MM:SS (AM/PM)",
    "AAAA-MM-DD HH:MM (AM/PM)",
+#ifdef HAVE_LAKKA
+   "Fusu horariu",
+#endif
    "d\303\255es",
    "d\303\255a",
    "hores",
@@ -1608,9 +1697,22 @@ static const struct
    "Usuariu",
    "Usar el visor d'im\303\241xenes integr\303\241u",
    "<Usar esti direutoriu>",
+#ifdef _3DS
+   "Pantalla baxera de 3DS",
+#endif
    "Sincronizaci\303\263n vertical adautable",
    "Configuraci\303\263n",
    "Proporci\303\263n del aspeutu",
+#if defined(DINGUX)
+   "Bic\303\272bicu",
+   "Billinial",
+   "Caltener la proporci\303\263n d'aspeutu",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Semillinial",
+#endif
+#endif
    "Videu",
    "Filtru de videu",
    "Quitar el filtru de videu",
@@ -1649,6 +1751,7 @@ static const struct
    "Asolombradores de videu",
    "Filtru billinial",
    "Llocal",
+   "10 bits",
    "Intervalu d'intercamb\303\251u de la sincronizaci\303\263n vertical",
    "Sincronizaci\303\263n",
    "V\303\255deos",
@@ -1678,8 +1781,6 @@ static const struct
    "Color\303\241u volc\303\241nico",
    "S\303\255",
    "Clave d'emisi\303\263n de YouTube",
-   "video_viewport_bias_x",
-   "video_viewport_bias_y",
    "Xestiona les cuentes que t\303\241n configuraes.",
    "Gana llogros en xuegos cl\303\241sicos. Pa consiguir m\303\241s informaci\303\263n, visita\302"
    "\253https://retroachievements.org\302\273.",
@@ -1735,6 +1836,11 @@ static const struct
    " impide que RetroArch cole.",
    "Volquia un discu f\303\255sicu al almacenamientu internu ya gu\303\241rdalu como un ficheru d'im"
    "axe.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Espulsa'l discu de la unid\303\241 de CD/DVD.",
+#endif
+#endif
    "Camuda la configuraci\303\263n del rebobin\303\241u, l'avance r\303\241pidu ya la c\303\241mara "
    "lenta.",
    "Equ\303\255 apaecen los nucleos instalaos que puen funcionar ensin cargar conten\303\255u.",
@@ -1749,15 +1855,25 @@ static const struct
    "Configura autom\303\241ticamente los mandos que tienen un perfil, al estilu Plug-and-Play.",
    "Des/activa la salida del audiu.",
    "Captura una imaxe del conten\303\255u actual.",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   "Calti\303\251n les combinaciones de la tecla \302\253Windows\302\273 dientro de l'aplicaci\303"
+   "\263n.",
+#endif
    "Axusta la sensibilid\303\241 del aceler\303\263metru.",
    "Axusta la sensibilid\303\241 del xiroscopiu.",
    "Camuda la configuraci\303\263n de los mandos, el tecl\303\241u ya'l mur.",
    "Seleiciona'l conten\303\255u que quies aniciar.",
    "Carga un discu f\303\255sicu. Primero seleiciona'l nucleu (Cargar un nucleu) que quies usar col "
    "discu.",
+#ifdef HAVE_LAKKA
+   "Des/activa'l puntu d'accesu Wi-Fi.",
+#endif
    "Permite que los nucleos accedan a la llocalizaci\303\263n.",
    "Camuda la configuraci\303\263n del rexistru.",
    "Busca'l conten\303\255u seleicion\303\241u.",
+#ifdef _3DS
+   "Camuda la configuraci\303\263n del aspeutu de la pantalla baxera.",
+#endif
    "Amuesa toles opciones de configuraci\303\263n rellacionaes.",
    "Activa la visualizaci\303\263n de car\303\241uteres ASCII que nun son est\303\241ndar. Esta opci"
    "\303\263n ye obligatoria pa consiguir compatibilid\303\241 con ciertes lling\303\274es occidenta"
@@ -1784,6 +1900,9 @@ static const struct
    "oses.",
    "Visualiza les interfaces de rede ya les direiciones IP asociaes.",
    "Camuda la configuraci\303\263n del sirvidor ya la rede.",
+#ifdef _3DS
+   "Activa la velocid\303\241 de rel\303\263 (804MHz) ya la cach\303\251 L2 de New3DS.",
+#endif
    "Amuesa los avisos nam\303\241s cuando'l men\303\272 ta abiertu.",
    "Baxa complementos, componentes ya conten\303\255u pa RetroArch.",
    "Nesti direutoriu atr\303\263xense les superposiciones del tecl\303\241u.",
@@ -1834,6 +1953,9 @@ static const struct
    "Amuesa la configuraci\303\263n de Steam.",
    "Abre'l men\303\272 tradicional pa escritorios.",
    "Instala o restaura un nucleu del direutoriu \302\253Descargues\302\273.",
+#ifdef HAVE_LAKKA
+   "Usa SSH p'acceder remotamente a la llinia de comandos.",
+#endif
    "La interfaz de comandos de la entrada est\303\241ndar.",
    "Impide que s'active'l curiapantalles del sistema.",
    "Sustit\303\272i tolos nucleos heredaos ya instalaos manualmente poles \303\272ltimes versiones d"
@@ -1844,6 +1966,10 @@ static const struct
    "Fai xeres nun filu separt\303\241u.",
    "Anueva tolos nucleos instalaos a la \303\272ltima versi\303\263n disponible.",
    "Camuda la configuraci\303\263n de la interfaz d'usuariu.",
+#ifdef _3DS
+   "Activa l'apaici\303\263n de la informaci\303\263n d'est\303\241u na pantalla baxera. Desactiva e"
+   "sta opci\303\263n p'aumentar la duraci\303\263n de la bater\303\255a ya ameyorar el rindimientu.",
+#endif
    "Camuda la configuraci\303\263n del mou de pantalla completa.",
    "Camuda la configuraci\303\263n de la escalada de videu.",
    "Camuda la configuraci\303\263n de la sincronizaci\303\263n de videu.",
@@ -1856,15 +1982,13 @@ static const struct
    "Configura'l llargor predetermin\303\241u p'amosar la ventana.",
    "Amuesa la lling\303\274eta \302\253Configuraci\303\263n\302\273 que conti\303\251n la configurac"
    "i\303\263n del programa.",
+#ifdef _3DS
+   "Toca la pantalla t\303\241ctil pa\ndir al men\303\272 de Retroarch",
+#endif
    "Amest\303\263se a Favoritos",
    "Tolos nucleos compatibles cambiaron a les versiones de Play Store",
-   "Controller profile saved as \"%s\".",
-   "Auto-loading save state from \"%s\" failed.",
-   "Auto-loading save state from \"%s\" succeeded.",
-   "bringing_up_command_interface_at_port",
    "Desanici\303\241ronse toles trampes.",
    "Nun hai abondu espaciu. El n\303\272mberu m\303\241ximu de trampes simult\303\241nees ye 100.",
-   "RetroAchievements: Logged in as \"%s\".",
    "Compilador",
    "El nucleu nun ye compatible colos puntos de guard\303\241u.",
    "Hebo un error al instalar el nucleu: ",
@@ -1877,7 +2001,6 @@ static const struct
    "Nun se pudo abrir la pista de datos",
    "Nun se pudo lleer la testera del filme.",
    "Nun se pudo lleer l'est\303\241u del filme.",
-   "disconnect_device_from_a_valid_port",
    "Hebo un error al escribir nel discu. Albort\303\263se'l volqui\303\241u.",
    "Ta baxando",
    "Volquiando'l discu\342\200\246",
@@ -1887,14 +2010,10 @@ static const struct
    "Hebo un error al aceptar l'espectador entrante.",
    "Hebo un error al crear el direutoriu.",
    "Hebo un error al estrayer el conten\303\255u del ficheru comprim\303\255u",
-   "failed_to_start_audio_driver",
    "Hebo un error al activar l'audiu.",
    "Avance r\303\241pidu.",
    "Diendo en cata de la llista de nucleos\342\200\246",
    "Nun s'atop\303\263'l ficheru",
-   "found_last_state_slot",
-   "Got connection from: \"%s\"",
-   "Got connection from: \"%s (%s)\"",
    "\303\215ndiz",
    "La contrase\303\261a ye incorreuta.",
    "La contrase\303\261a ye incorreuta.",
@@ -1906,18 +2025,18 @@ static const struct
    "El mur t\303\241ctil ta activ\303\241u",
    "Carga un nucleu primero.",
    "Llocal",
+#ifdef HAVE_LAKKA
+   "Nun se pudo crear el ficheru de configuraci\303\263n del puntu d'accesu Wi-Fi.",
+   "El ficheru de configuraci\303\263n ye incorreutu, nun se pudo atopar APNAME o PASSWORD en: %s",
+   "El puntu d'accesu Wi-Fi nun ta n'execuci\303\263n",
+#endif
    "Memoria",
-   "Client banned: \"%s\"",
    "Nun se pue cambiar el mou de xuegu",
    "Los preseos d'introducci\303\263n solicitaos nun t\303\241n disponibles",
    "Nun tienes permisu pa xugar",
    "El to nomatu camud\303\263 a \302\253%s\302\273",
    "Preseos",
    "Esti nucleu nun ye compatible col xuegu en llinia ente estes plataformes",
-   "Failed to ban client: \"%s\"",
-   "Failed to kick client: \"%s\"",
-   "Client kicked: \"%s\"",
-   "Netplay peer \"%s\" paused",
    "\302\253%.*s\302\273 col\303\263 de la partida",
    "Desconect\303\263se un veceru del xuegu en llinia",
    "\302\253%s\302\273 desconect\303\263se",
@@ -1931,7 +2050,6 @@ static const struct
    "Est\303\241u del almacenamientu internu: llectura/escritura",
    "Asolombrador",
    "C\303\241mara lenta.",
-   "Unrecognized command \"%s\" received.\n",
    "Reaniciando\342\200\246",
    "Apagando\342\200\246",
    "Hebo un error al zarrar la bandexa de discos virtual.",
@@ -1942,12 +2060,89 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (25130u
+      (sizeof(msg_hash_ast_blob) == (24502u
+#ifdef HAVE_MIST
+       + 20u
+#endif
+#ifdef _3DS
+       + 22u
+#endif
+#ifdef HAVE_LAKKA
+       + 21u
+#endif
+#ifdef HAVE_MIST
+       + 40u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 40u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 8u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 11u
+       + 11u
+       + 11u
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 10u
+#endif
+#ifdef HAVE_LAKKA
+       + 13u
+#endif
+#ifdef _3DS
+       + 23u
+#endif
+#if defined(DINGUX)
+       + 10u
+       + 10u
+       + 34u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 12u
+#endif
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 40u
+#endif
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+       + 77u
+#endif
+#ifdef HAVE_LAKKA
+       + 35u
+#endif
+#ifdef _3DS
+       + 60u
+       + 65u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
        + 125u
 #endif
+#endif
+#ifdef HAVE_LAKKA
+       + 55u
+#endif
+#ifdef _3DS
+       + 157u
+       + 54u
+#endif
+#ifdef HAVE_LAKKA
+       + 73u
+       + 88u
+       + 44u
 #endif
       )) ? 1 : -1];
 
@@ -2070,6 +2265,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
@@ -2083,6 +2281,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -2182,6 +2383,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_MATERIALUI,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFT_THUMBNAILS_OZONE,
@@ -2191,6 +2393,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_HISTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -2231,11 +2436,18 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SCREENSAVER_ANIMATION_VORTEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_ONLINE_UPDATER,
@@ -2251,6 +2463,16 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_VIEWS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_WALLPAPER,
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
@@ -2391,8 +2613,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_TOOLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_THEME_CUSTOM,
@@ -2532,6 +2752,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
@@ -2570,6 +2793,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_HOURS_PLURAL,
@@ -2602,9 +2828,22 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_USER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BILINEAR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_BRESENHAM_HORZ,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
@@ -2643,6 +2882,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
@@ -2672,8 +2912,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,
    (uint32_t)MENU_ENUM_SUBLABEL_ADD_CONTENT_LIST,
@@ -2716,6 +2954,11 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMMY_ON_CORE_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_THROTTLE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_CONTENTLESS_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_GOTO_EXPLORE,
@@ -2728,14 +2971,23 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_START,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_EXTENDED_ASCII,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -2754,6 +3006,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_NICKNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_WHEN_MENU_IS_ALIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_ONLINE_UPDATER,
    (uint32_t)MENU_ENUM_SUBLABEL_OSK_OVERLAY_DIRECTORY,
@@ -2795,6 +3050,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SSH_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
@@ -2803,6 +3061,9 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UPDATE_INSTALLED_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_USER_INTERFACE_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -2811,15 +3072,13 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_HEIGHT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_MAIN_MENU_ENABLE_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MSG_3DS_BOTTOM_MENU_DEFAULT,
+#endif
    (uint32_t)MSG_ADDED_TO_FAVORITES,
    (uint32_t)MSG_ALL_CORES_SWITCHED_PFD,
-   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
    (uint32_t)MSG_CHEAT_DELETE_ALL_SUCCESS,
    (uint32_t)MSG_CHEAT_SEARCH_ADDED_MATCHES_TOO_MANY,
-   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_COMPILER,
    (uint32_t)MSG_CORE_DOES_NOT_SUPPORT_SAVESTATES,
    (uint32_t)MSG_CORE_INSTALL_FAILED,
@@ -2832,7 +3091,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MSG_COULD_NOT_OPEN_DATA_TRACK,
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
-   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
    (uint32_t)MSG_DISC_DUMP_FAILED_TO_WRITE_TO_DISK,
    (uint32_t)MSG_DOWNLOADING,
    (uint32_t)MSG_DUMPING_DISC,
@@ -2842,14 +3100,10 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
-   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_UNMUTE_AUDIO,
    (uint32_t)MSG_FAST_FORWARD,
    (uint32_t)MSG_FETCHING_CORE_LIST,
    (uint32_t)MSG_FILE_NOT_FOUND,
-   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
-   (uint32_t)MSG_GOT_CONNECTION_FROM,
-   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
    (uint32_t)MSG_INDEX_FILE,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
@@ -2861,18 +3115,18 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
    (uint32_t)MSG_LOAD_CORE_FIRST,
    (uint32_t)MSG_LOCAL,
+#ifdef HAVE_LAKKA
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   (uint32_t)MSG_LOCALAP_NOT_RUNNING,
+#endif
    (uint32_t)MSG_MEMORY,
-   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
    (uint32_t)MSG_NETPLAY_CANNOT_PLAY,
    (uint32_t)MSG_NETPLAY_CANNOT_PLAY_NOT_AVAILABLE,
    (uint32_t)MSG_NETPLAY_CANNOT_PLAY_UNPRIVILEGED,
    (uint32_t)MSG_NETPLAY_CHANGED_NICK,
    (uint32_t)MSG_NETPLAY_CLIENT_DEVICES,
    (uint32_t)MSG_NETPLAY_ENDIAN_DEPENDENT,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
    (uint32_t)MSG_NETPLAY_PLAYER_S_LEFT,
    (uint32_t)MSG_NETPLAY_SERVER_HANGUP,
    (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
@@ -2886,7 +3140,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MSG_READ_WRITE,
    (uint32_t)MSG_SHADER,
    (uint32_t)MSG_SLOW_MOTION,
-   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
    (uint32_t)MSG_VALUE_REBOOTING,
    (uint32_t)MSG_VALUE_SHUTTING_DOWN,
    (uint32_t)MSG_VIRTUAL_DISK_TRAY_CLOSE,

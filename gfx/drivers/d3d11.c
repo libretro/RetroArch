@@ -4049,7 +4049,16 @@ static bool d3d11_gfx_frame(
       else if (video_info->hdr_mode == 1)
          desired_bit_depth = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       else
-         desired_bit_depth = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      {
+         /* SDR.  This runs every frame and rebuilds the chain
+          * whenever it disagrees with the current depth, so it has
+          * to honour the setting the creation path already honours,
+          * or a 10-bit SDR chain is torn straight back down. */
+         settings_t *settings = config_get_ptr();
+         desired_bit_depth    =
+            (settings->uints.video_swapchain_bit_depth == 2)
+            ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       if (     (d3d11->flags & D3D11_ST_FLAG_RESIZE_CHAIN)
             || (d3d11_hdr_enable != video_hdr_enable)

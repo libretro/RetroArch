@@ -111,6 +111,9 @@ static const struct
    char s_0e85a0d1[48];
    char s_ff583ef3_0[500];
    char s_ff583ef3_1[94];
+#ifdef ANDROID
+   char s_2bd047ef[365];
+#endif
    char s_285ad699[34];
    char s_a6f4e7fa[63];
    char s_0cd5a7bf[97];
@@ -126,6 +129,9 @@ static const struct
    char s_ceafef5e[127];
    char s_c073450a[178];
    char s_e6cd4ada[127];
+#ifdef HAVE_MICROPHONE
+   char s_86e940b7[113];
+#endif
    char s_3f5ab0a6[175];
    char s_39308167[441];
    char s_60255deb_0[500];
@@ -144,6 +150,9 @@ static const struct
    char s_4dc69fe8[483];
    char s_138c1cdf[168];
    char s_a7206ebc[127];
+#ifdef HAVE_LAKKA
+   char s_f947e37f[212];
+#endif
    char s_80558e85[217];
    char s_cb88fe26[294];
    char s_0836e741[257];
@@ -304,6 +313,17 @@ static const struct
    char s_c7a999e6[15];
    char s_f0c9c4c0[28];
    char s_95a3cbcb[79];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_9a57d328[26];
+#endif
+#endif
+#ifdef _3DS
+   char s_22a46583[43];
+   char s_6651ce29[26];
+   char s_17813ad9[14];
+   char s_1131883a[17];
+#endif
    char s_efe3b3e1[19];
    char s_25babaa7[8];
    char s_b819d3cc[9];
@@ -495,6 +515,9 @@ static const struct
    char s_8cefb843[15];
    char s_177845b3[32];
    char s_8fe1a777[24];
+#ifdef HAVE_GAME_AI
+   char s_8dc1bc3e[11];
+#endif
    char s_881efe76[24];
    char s_1e4264a1[6];
    char s_58072ab5[44];
@@ -523,6 +546,9 @@ static const struct
    char s_87e07c0e[20];
    char s_d7f2e719[29];
    char s_e567aa86[19];
+#ifdef HAVE_MIST
+   char s_c3f0e1ff[19];
+#endif
    char s_93e2fd9c[20];
    char s_8ea1aafd[28];
    char s_8f76f01e[30];
@@ -533,6 +559,10 @@ static const struct
    char s_734d2a61[8];
    char s_a7a97316[39];
    char s_8b421107[40];
+#ifdef HAVE_MIST
+   char s_3e0f9900[19];
+   char s_67b3c923[22];
+#endif
    char s_543b5a62[24];
    char s_d1dc5a72[45];
    char s_1d9a045d[54];
@@ -566,6 +596,10 @@ static const struct
    char s_4bcbcc14[31];
    char s_e97bb565[18];
    char s_da7a38eb[20];
+#ifdef _3DS
+   char s_9db0c321[39];
+   char s_d199b625[22];
+#endif
    char s_06f25fc0[19];
    char s_0a176c2e[20];
    char s_f0ce97f7[25];
@@ -608,6 +642,11 @@ static const struct
    char s_6ebb6a00[26];
    char s_f4116974[16];
    char s_01d9ae7b[18];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_e65393d5[15];
+#endif
+#endif
    char s_c12910d3[9];
    char s_40a4eb2b[64];
    char s_92c32104[20];
@@ -670,6 +709,12 @@ static const struct
    char s_97c02a5a[20];
    char s_998d1a40[30];
    char s_c6622b4d[13];
+#ifdef HAVE_GAME_AI
+   char s_cef4e317[28];
+   char s_49a76d6a[15];
+   char s_49a76d6b[15];
+   char s_282cd511[19];
+#endif
    char s_3ca7402d[24];
    char s_5ebe01e7[26];
    char s_ad8d5812[65];
@@ -835,8 +880,14 @@ static const struct
    char s_e354f00a[7];
    char s_0eed526e[7];
    char s_4e61b8dd[7];
+#ifdef GEKKO
+   char s_4e706e07[15];
+#endif
    char s_803347cb[25];
    char s_6f8b74f8[25];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   char s_6a09c0b1[73];
+#endif
    char s_267cef24[48];
    char s_727b11f4[34];
    char s_21ec213c[37];
@@ -880,6 +931,9 @@ static const struct
    char s_d7c1d887[26];
    char s_8c49943c[26];
    char s_d2c6b214[31];
+#ifdef ANDROID
+   char s_dd65ea83[28];
+#endif
    char s_dad749ea[27];
    char s_90402655[31];
    char s_956c0935[28];
@@ -889,6 +943,13 @@ static const struct
    char s_fcf05466[16];
    char s_d042d680[6];
    char s_16cacb01[12];
+#ifdef UDEV_TOUCH_SUPPORT
+   char s_3326ea36[21];
+   char s_174b92c0[23];
+   char s_fe8e5e18[26];
+   char s_9c91e6ef[27];
+   char s_f03621e7[32];
+#endif
    char s_75851363[11];
    char s_a60a77f9[41];
    char s_f07432ff[18];
@@ -904,6 +965,10 @@ static const struct
    char s_4e2f19db[17];
    char s_9e66791a[6];
    char s_168d155d[31];
+   char s_c64d260f[9];
+#ifdef HAVE_LAKKA_SWITCH
+   char s_becdc648[28];
+#endif
    char s_84d3d068[9];
    char s_2ff647c2[31];
    char s_650d0e34[41];
@@ -921,6 +986,9 @@ static const struct
    char s_e3d18a3d[15];
    char s_d15b342a[13];
    char s_fdd6e708[16];
+#ifdef HAVE_LAKKA
+   char s_d3e11c2a[21];
+#endif
    char s_cafa647f[23];
    char s_31b177ec[14];
    char s_8cb3b95f[20];
@@ -1009,6 +1077,9 @@ static const struct
    char s_9da5609f[16];
    char s_269e5dff[29];
    char s_25464734[30];
+#ifdef _3DS
+   char s_fcde5521[33];
+#endif
    char s_136eaaf4[26];
    char s_8d3a8b68[6];
    char s_68d27147[13];
@@ -1055,6 +1126,9 @@ static const struct
    char s_ceb820ad[10];
    char s_63af41a7[37];
    char s_a4b769ca[31];
+#ifdef HAVE_MIST
+   char s_53788998[29];
+#endif
    char s_d02afc79[32];
    char s_7a2033d4[20];
    char s_f228c6c5[16];
@@ -1100,6 +1174,32 @@ static const struct
    char s_5e8d5121[17];
    char s_b201bb70[39];
    char s_b66840e9[32];
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   char s_f0db2883[31];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_d0fb22cb[12];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_d1df7807[11];
+   char s_d3e78762[11];
+   char s_b4868136[36];
+   char s_4eb68c0b[34];
+   char s_35324f11[21];
+   char s_ca9a92ae[26];
+   char s_d04ab10c[11];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_e501ec1b[22];
+   char s_5a6c78fd[24];
+   char s_73295c14[38];
+#endif
+#endif
    char s_8be7813a[8];
    char s_1757647b[7];
    char s_e1a8f707[24];
@@ -1183,6 +1283,9 @@ static const struct
    char s_ce445b41[31];
    char s_87d88aa2[5];
    char s_aadf6541[28];
+#ifdef _3DS
+   char s_4b1915d7[38];
+#endif
    char s_c3168ee5[4];
    char s_e2f5e678[8];
    char s_e53de5dd[68];
@@ -1481,6 +1584,10 @@ static const struct
    char s_e5a649a5[17];
    char s_5633a523[55];
    char s_6d0ae29b[7];
+#ifdef HAVE_QT
+   char s_974d8c3a_0[500];
+   char s_974d8c3a_1[191];
+#endif
    char s_21083aca[16];
    char s_213b38be[21];
    char s_490eddc7[21];
@@ -1513,6 +1620,9 @@ static const struct
    char s_a6efd66c[17];
    char s_f8b4c7cd[40];
    char s_6d24f146[31];
+#ifdef HAVE_GAME_AI
+   char s_1ff7947b[20];
+#endif
    char s_ab4776a4[27];
    char s_ae4fb605[34];
    char s_a81b969f[46];
@@ -1765,6 +1875,9 @@ static const struct
    char s_b160f7a1[31];
    char s_cd5ff0f5[20];
    char s_8b92e740[17];
+#ifdef HAVE_SMBCLIENT
+   char s_e2415d78[23];
+#endif
    char s_aeef8db2[16];
    char s_14d20957[18];
    char s_f4ad0f27[31];
@@ -1792,6 +1905,21 @@ static const struct
    char s_01a73130[33];
    char s_44ebca0d[32];
    char s_608ac5a1[28];
+#ifdef HAVE_SMBCLIENT
+   char s_3839f91d[27];
+   char s_86b07599[32];
+   char s_8d5f85ee[22];
+   char s_9b023eee[34];
+   char s_ccae82ba[16];
+   char s_ad6e88de[13];
+   char s_c7bc8298[27];
+   char s_e63b035a[31];
+   char s_d21d875b[23];
+   char s_ae86fed0[29];
+   char s_b12ae22e[20];
+   char s_b2d073c7[20];
+   char s_1cbc2657[22];
+#endif
    char s_e2ffc38b[69];
    char s_9d7898f7[63];
    char s_00ea07cc[67];
@@ -1806,6 +1934,16 @@ static const struct
    char s_a35a9e13[22];
    char s_8406d44c[7];
    char s_64a91b83[15];
+#ifdef HAVE_MIST
+   char s_943e9be1[30];
+   char s_96af5ce3[40];
+   char s_6889b69d[8];
+   char s_262290e5[26];
+   char s_5f12b2a1[26];
+   char s_4efdaf69[44];
+   char s_cf0912eb[16];
+   char s_dba1ce27[16];
+#endif
    char s_206b1acd[14];
    char s_b00e1e16[21];
    char s_b24d8753[17];
@@ -1816,7 +1954,20 @@ static const struct
    char s_9374b989[19];
    char s_7943e750[25];
    char s_cec8f66d[27];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_d3fa66ea[10];
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   char s_09902e71[17];
+#endif
    char s_ea80654d[46];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_37eb8e31[17];
+#endif
+#endif
    char s_be8e02b4[56];
    char s_002e83c8[12];
    char s_6a739141[13];
@@ -1870,6 +2021,9 @@ static const struct
    char s_8a1c86c5[20];
    char s_a144988f[28];
    char s_bfda7e1c[25];
+#ifdef HAVE_LAKKA
+   char s_597f7f13[13];
+#endif
    char s_89cbf597[12];
    char s_6bcbf80c[4];
    char s_f92cf1f5[6];
@@ -1926,6 +2080,10 @@ static const struct
    char s_c512fde9[44];
    char s_2b39eb60[23];
    char s_e8636306[28];
+#ifdef _3DS
+   char s_c54d8fa1[27];
+   char s_f069ce0e[25];
+#endif
    char s_d6fb8efe[17];
    char s_2f86932b[21];
    char s_b2f7627c[34];
@@ -1944,6 +2102,21 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    char s_e07e844d[36];
+#endif
+#if defined(DINGUX)
+   char s_bfd4c6ef[10];
+   char s_52153570[23];
+   char s_805730a0[25];
+   char s_d374d67d[31];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_f98e1e26[26];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_fec3d9e4[23];
+   char s_c1e9447c[24];
+#endif
 #endif
    char s_f4341e25[40];
    char s_cc973e8a[7];
@@ -2013,6 +2186,9 @@ static const struct
    char s_c0cdc638[26];
    char s_afd69a70[44];
    char s_22735e37[47];
+#ifdef HAVE_ODROIDGO2
+   char s_05359d58[13];
+#endif
    char s_6c40d14e[20];
    char s_6c1369c6[17];
    char s_4d7e9b13[15];
@@ -2059,6 +2235,10 @@ static const struct
    char s_bcddf275[8];
    char s_f90edcc2[56];
    char s_ad14307a[10];
+#if defined(RARCH_MOBILE)
+   char s_774121c7[74];
+   char s_774121c8[74];
+#endif
    char s_b0fb58d3[43];
    char s_b0fb58d4[43];
    char s_92a02470[44];
@@ -2068,6 +2248,11 @@ static const struct
    char s_6a9b757c[32];
    char s_6c52dfb1[33];
    char s_9119ef97[33];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_afb881f7[52];
+#endif
+#endif
    char s_84c46931[37];
    char s_ebf10493[13];
    char s_a64b3a0b[25];
@@ -2136,6 +2321,10 @@ static const struct
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
+#if defined(RARCH_MOBILE)
+   char s_b754294b[74];
+   char s_b754294c[74];
+#endif
    char s_9ca4bbd7[43];
    char s_9ca4bbd8[43];
    char s_5508c468[60];
@@ -2207,7 +2396,23 @@ static const struct
    char s_f6adf4ee[50];
    char s_9b87fbf9[102];
    char s_29a32557[54];
+#ifdef HAVE_LAKKA
+   char s_2bab34b2[33];
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_aa08c6d6[78];
+#endif
+#endif
    char s_27aef25c[43];
+#ifdef _3DS
+   char s_2873cef1[90];
+   char s_450ca36f[50];
+   char s_1da14b17[50];
+   char s_c7690859[53];
+   char s_5c9f8787[153];
+   char s_f441f728[47];
+#endif
    char s_3502008f[42];
    char s_a49df80f[76];
    char s_986d445e[63];
@@ -2331,6 +2536,9 @@ static const struct
    char s_a607c53c[27];
    char s_35f24807[283];
    char s_c8781974[163];
+#ifdef HAVE_MIST
+   char s_c9c04b6d[65];
+#endif
    char s_daa8dfca[35];
    char s_d3bff7ab[188];
    char s_d4953ccc[76];
@@ -2377,6 +2585,11 @@ static const struct
    char s_ccbacaee[94];
    char s_d721d862[71];
    char s_ef4a2ca9[67];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_043f1283[34];
+#endif
+#endif
    char s_a8b02d9a[134];
    char s_8a8a4bd7[236];
    char s_aa30afc7[64];
@@ -2392,6 +2605,12 @@ static const struct
    char s_e531c55e[127];
    char s_deab66ee[137];
    char s_5ce79fca[175];
+#ifdef HAVE_GAME_AI
+   char s_b7dcc585[37];
+   char s_328f4fd8[23];
+   char s_328f4fd9[23];
+   char s_6d4b21bf[19];
+#endif
    char s_6563cb1b[70];
    char s_877a8cd5[72];
    char s_6ff78e00[74];
@@ -2499,6 +2718,12 @@ static const struct
    char s_12adb1e7[46];
    char s_070529d4[77];
    char s_30d1fc05[42];
+#ifdef GEKKO
+   char s_3180dcf5[65];
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   char s_2c73f69f[57];
+#endif
    char s_13ed6d52[110];
    char s_ad9b9762[125];
    char s_623a09ea[97];
@@ -2509,6 +2734,9 @@ static const struct
    char s_bc47004d[69];
    char s_980b7c0a[92];
    char s_cc27d9d1[139];
+#if defined(ANDROID)
+   char s_8b6fbb71[168];
+#endif
    char s_9f1584c0[109];
    char s_791ba074[152];
    char s_8dcc2dac[89];
@@ -2536,12 +2764,22 @@ static const struct
    char s_dda608b5[335];
    char s_6f5a032a[68];
    char s_9530e802[129];
+#ifdef ANDROID
+   char s_e8eeac31[60];
+#endif
    char s_a18eb603[42];
    char s_d5b9f1e3[39];
    char s_aaa55caa[95];
    char s_6a44b3af[63];
    char s_a7d61696[44];
    char s_f9db39ef[112];
+#ifdef UDEV_TOUCH_SUPPORT
+   char s_d46604e4[82];
+   char s_d70829ee[75];
+   char s_9fcd78c6[75];
+   char s_65b4575d[76];
+   char s_dda6a015[112];
+#endif
    char s_b5bb6ba7[128];
    char s_0e9b7c2d[108];
    char s_2447fa4c[49];
@@ -2555,6 +2793,9 @@ static const struct
    char s_eaa7274b[59];
    char s_10994fc9[107];
    char s_bde8a108[54];
+#ifdef HAVE_LAKKA_SWITCH
+   char s_c4b1f676[54];
+#endif
    char s_a2fb1996[77];
    char s_394e4cd7[44];
    char s_ba790123[168];
@@ -2567,6 +2808,9 @@ static const struct
    char s_c6e1f92b[30];
    char s_2f5a9518[101];
    char s_1bc265b6[66];
+#ifdef HAVE_LAKKA
+   char s_e3a841d8[46];
+#endif
    char s_dac18a2d[55];
    char s_3a5d535a[58];
    char s_aadb028d[42];
@@ -2602,6 +2846,9 @@ static const struct
    char s_b3c6310f[60];
    char s_b1305e15[89];
    char s_2b2a7762[72];
+#ifdef _3DS
+   char s_02c2854f[60];
+#endif
    char s_193e1462[58];
    char s_6895dfd6[58];
    char s_788364f5[85];
@@ -2644,8 +2891,16 @@ static const struct
    char s_ee3a489b[60];
    char s_236bd8d5[66];
    char s_87c7d8b8[137];
+#ifdef HAVE_MIST
+   char s_40e907c6[58];
+#endif
    char s_dfdbf027[119];
    char s_63081642[49];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_6435c857[54];
+#endif
+#endif
    char s_01efec73[45];
    char s_d3fc9970[52];
    char s_740bd7c4[54];
@@ -2678,6 +2933,27 @@ static const struct
    char s_f3e3ccc1[47];
    char s_0ca85937[49];
    char s_9ce2f939[87];
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_b40b91b9[113];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_b4efe6f5[55];
+   char s_b6f7f650[116];
+   char s_76f0b724[106];
+   char s_93d4d8b9[156];
+   char s_fe54bf7f[50];
+   char s_b80b10dc[177];
+   char s_b932937a[44];
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_f5c1d149[195];
+   char s_65f53aab[96];
+   char s_b37744c2[103];
+#endif
+#endif
    char s_d8cdbfc4[46];
    char s_a9d2ffe8[37];
    char s_f2b2b8e9[36];
@@ -2726,6 +3002,9 @@ static const struct
    char s_7279e585[50];
    char s_8bb9f63a[125];
    char s_a5ffd3d0[42];
+#ifdef _3DS
+   char s_0d834bc5[65];
+#endif
    char s_d2ae640b[81];
    char s_8e5bac99[94];
    char s_28a346d2[70];
@@ -2835,6 +3114,9 @@ static const struct
    char s_66ac6d9a[29];
    char s_3902b07b[100];
    char s_b72fefb4[81];
+#ifdef HAVE_GAME_AI
+   char s_25c6fde9[31];
+#endif
    char s_08cb2bec[33];
    char s_b116e012[37];
    char s_be00a9b3[69];
@@ -2918,6 +3200,9 @@ static const struct
    char s_96c461f7[125];
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   char s_32f590c0[57];
+#endif
    char s_0a8d4a2c[68];
    char s_d4c47f59[144];
    char s_86d4b7cd[65];
@@ -2954,6 +3239,9 @@ static const struct
    char s_c2d7c9a8[55];
    char s_42bb4ac1[60];
    char s_0e0af329[57];
+#ifdef HAVE_LAKKA
+   char s_96ceb12a[49];
+#endif
    char s_e8aee6c7[23];
    char s_9754ee6e[46];
    char s_59a0ee82[37];
@@ -2974,6 +3262,9 @@ static const struct
    char s_bce9b94f[52];
    char s_d32f5a63[41];
    char s_9177176e[38];
+#ifdef HAVE_SMBCLIENT
+   char s_a1fdf4a6[44];
+#endif
    char s_97d77020[37];
    char s_59f05605[39];
    char s_e21d8d55[52];
@@ -2988,18 +3279,53 @@ static const struct
    char s_4b009af3[40];
    char s_46c57dde[64];
    char s_7eb20ecf[81];
+#ifdef HAVE_SMBCLIENT
+   char s_3e1e294b[51];
+   char s_69c0e487[58];
+   char s_706ff4dc[199];
+   char s_a0d1a85c[67];
+   char s_b5966528[35];
+   char s_907ef7cc[33];
+   char s_b0a46506[56];
+   char s_04624c88[40];
+   char s_91976dbe[45];
+   char s_f6492edc[57];
+   char s_9bb85635[39];
+   char s_22a05685[41];
+#endif
    char s_f3bfa8b9[92];
    char s_5fe2cee5[73];
    char s_29a692ba[92];
    char s_4b99ff86[73];
    char s_76ebe1a8[94];
+#ifdef HAVE_LAKKA
+   char s_6124594a[64];
+#endif
    char s_9b51352c[30];
    char s_12510638[53];
    char s_ac067981[44];
    char s_82d064b1[28];
+#ifdef HAVE_MIST
+   char s_357db68f[52];
+   char s_37ee7791[64];
+   char s_32956bc0[48];
+#endif
    char s_c50aa955[62];
    char s_1a8301fe[50];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_b70ad5d8[47];
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   char s_4eae7b1f[24];
+#endif
    char s_8bbf7ffb[130];
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   char s_5612d75f[42];
+#endif
+#endif
    char s_e74a8da2[61];
    char s_889ada6f[93];
    char s_ffd591e0[48];
@@ -3012,6 +3338,9 @@ static const struct
    char s_a39b8870[131];
    char s_52a12789[48];
    char s_dcb85773[69];
+#ifdef HAVE_LAKKA
+   char s_f77f7a41[82];
+#endif
    char s_e7cb5685[43];
    char s_2beab583[36];
    char s_a1c071eb[72];
@@ -3030,6 +3359,10 @@ static const struct
    char s_17e15f27[125];
    char s_adc676fb[80];
    char s_c6e32f19[149];
+#ifdef _3DS
+   char s_d4fe834f[194];
+   char s_f64dfe3c[146];
+#endif
    char s_dcdfbf2c[258];
    char s_74a4dfd9[170];
    char s_f815af2a[76];
@@ -3042,6 +3375,18 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    char s_c38ef33b[57];
+#endif
+#if defined(DINGUX)
+   char s_6dc7aece[242];
+   char s_c0e554ab[170];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_b0dd9b14[123];
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   char s_eaa5cf6a[157];
+#endif
 #endif
    char s_ab839b13[131];
    char s_135d20b8[51];
@@ -3093,6 +3438,9 @@ static const struct
    char s_05ec12e6[190];
    char s_b5a603de[53];
    char s_d9c2db25[75];
+#ifdef HAVE_ODROIDGO2
+   char s_e8460c46[56];
+#endif
    char s_7c07f6fc[96];
    char s_36667d81[128];
    char s_eec252b5[104];
@@ -3131,6 +3479,10 @@ static const struct
    char s_7e96b5ce[57];
    char s_3547866d[140];
    char s_c2314d30[233];
+#if defined(RARCH_MOBILE)
+   char s_82c9e375[177];
+   char s_82c9e376[159];
+#endif
    char s_73658ec1[154];
    char s_73658ec2[136];
    char s_8010a29e[136];
@@ -3139,6 +3491,11 @@ static const struct
    char s_9506fc7e[120];
    char s_47ae341f[103];
    char s_48696c85[68];
+#if defined (WIIU)
+#ifdef WIIU
+   char s_7222b7e5[114];
+#endif
+#endif
    char s_3c13e61f[118];
    char s_d96182c1[43];
    char s_93bbb839[111];
@@ -3166,6 +3523,15 @@ static const struct
    char s_1ba1d249[122];
    char s_57dccf4f[54];
    char s_fa863aac[77];
+#ifdef _3DS
+   char s_33e06527[27];
+   char s_a69ccdc1[51];
+   char s_f099647c[30];
+   char s_f56f24f2[10];
+   char s_0c6847bc[24];
+   char s_3d02018d[16];
+   char s_5c75e18b[29];
+#endif
    char s_007587a5[67];
    char s_52c66e88[19];
    char s_63a238b1[23];
@@ -3287,6 +3653,11 @@ static const struct
    char s_fb59e491[36];
    char s_96e03bed[46];
    char s_824867fd[75];
+#ifdef HAVE_MIST
+   char s_30512c09[29];
+   char s_35b60281[23];
+   char s_91e3840f[48];
+#endif
    char s_e5668863[46];
    char s_0638fe80[74];
    char s_902526ad[68];
@@ -3453,6 +3824,14 @@ static const struct
    char s_e01973d9[31];
    char s_e8e6cf09[16];
    char s_9033e61a[28];
+#ifdef HAVE_LAKKA
+   char s_7924d728[41];
+   char s_1f2be238[73];
+   char s_f250153f[87];
+   char s_0e086f97[45];
+   char s_f279fcb2[67];
+   char s_8b487430[33];
+#endif
    char s_a602dd84[53];
    char s_aa7139c6[77];
    char s_4ae9f9f9[85];
@@ -3683,6 +4062,11 @@ static const struct
    char s_5876788a[70];
    char s_b7248c5d[67];
    char s_a7ae1b42[21];
+#ifdef HAVE_LAKKA
+   char s_ebacf443[25];
+   char s_02938696[27];
+   char s_6f6d5b5a[11];
+#endif
    char s_2dbb6496[23];
 } msg_hash_gl_blob =
 {
@@ -3851,6 +4235,13 @@ static const struct
    "on te\303\261an que usar este men\303\272 en absoluto, e para o n\303\272cleo. -cambios es",
    "pec\303\255ficos de entrada, deber\303\255a utilizar o submen\303\272 \"Controis\" do men\303"
    "\272 r\303\241pido no seu lugar.",
+#ifdef ANDROID
+   "Se RetroArch identifica un teclado de hardware como alg\303\272n tipo de mando de xogos, esta co"
+   "nfiguraci\303\263n p\303\263dese usar para forzar a RetroArch a tratar o dispositivo identificad"
+   "o incorrectamente como un teclado.\nIsto pode ser \303\272til se est\303\241s tentando emular un"
+   " ordenador nalg\303\272n dispositivo Android TV e tam\303\251n pos\303\272e un teclado f\303\255"
+   "sico que se pode conectar \303\241 caixa.",
+#endif
    "Controlador de mando DirectInput.",
    "Controlador de dispositivo de interface humana de baixo nivel.",
    "Controlador Raw Linux, usa a API de panca de mando herdada. Use udev no seu lugar se \303\251 po"
@@ -3889,6 +4280,10 @@ static const struct
    "esoluci\303\263n.",
    "XMB \303\251 unha GUI de RetroArch que semella un men\303\272 de consola da s\303\251tima xeraci"
    "\303\263n. Pode admitir as mesmas funci\303\263ns que Ozone.",
+#ifdef HAVE_MICROPHONE
+   "Anular o dispositivo de entrada predeterminado que usa o controlador do micr\303\263fono. Isto d"
+   "epende do controlador.",
+#endif
    "Establece o dispositivo de entrada (espec\303\255fico do controlador). Cando se axuste a \"Desac"
    "tivado\", a entrada MIDI desactivarase. Tam\303\251n se pode escribir o nome do dispositivo.",
    "Establece o dispositivo de sa\303\255da (espec\303\255fico do controlador). Cando se define en "
@@ -3951,6 +4346,11 @@ static const struct
    "no disco, este ser\303\241 recompilado e aplicado automaticamente ao contido.",
    "Suspende o protector de pantalla. \303\211 unha suxesti\303\263n que non necesariamente ten que "
    "ser respectada polo controlador de v\303\255deo.",
+#ifdef HAVE_LAKKA
+   "Mostra unha lista de fusos horarios dispo\303\261ibles. Despois de seleccionar un fuso horario, "
+   "a hora e a data ax\303\272stanse ao fuso horario seleccionado. Asume que o reloxo do sistema/har"
+   "dware est\303\241 configurado en UTC.",
+#endif
    "Modo cl\303\241sico, operaci\303\263n de dous bot\303\263ns. Mant\303\251n un bot\303\263n e pre"
    "me o bot\303\263n Turbo para activar a secuencia de presi\303\263n-liberaci\303\263n.\nA asignac"
    "i\303\263n do Turbo pode facerse en Configuraci\303\263n/Entrada/Controis do Porto X.",
@@ -4203,6 +4603,17 @@ static const struct
    "Activa o men\303\272",
    "Mostrar o nivel de bater\303\255a",
    "Ficheiro de gardado: non sobrescribir a SaveRAM ao cargar un estado de gardado",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Desactivar Bluetooth ERTM",
+#endif
+#endif
+#ifdef _3DS
+   "Directorio de activos da pantalla inferior",
+   "Opacidade da cor da fonte",
+   "Activar fonte",
+   "Escala de fontes",
+#endif
    "Brillo da pantalla",
    "Iniciar",
    "URL Ruta",
@@ -4394,6 +4805,9 @@ static const struct
    "Borrar n\303\272cleo",
    "Borrar unha copia de seguridade",
    "Amosar o nome principal",
+#ifdef HAVE_GAME_AI
+   "IA do Xogo",
+#endif
    "Informaci\303\263n do n\303\272cleo",
    "Autor",
    "Ficheiros de informaci\303\263n b\303\241sica da cach\303\251",
@@ -4423,6 +4837,9 @@ static const struct
    "Descargar o n\303\272cleo",
    "Bloquear o n\303\272cleo instalado",
    "Xestionar n\303\272cleos",
+#ifdef HAVE_MIST
+   "Xestionar n\303\272cleos",
+#endif
    "Opci\303\263ns do N\303\272cleo",
    "Borrar as opci\303\263ns no disco",
    "Restaurar opci\303\263ns do n\303\272cleo",
@@ -4433,6 +4850,10 @@ static const struct
    "N\303\272cleo",
    "Excluir do men\303\272 'Nucleos sen contido'",
    "Iniciar un n\303\272cleo de forma autom\303\241tica",
+#ifdef HAVE_MIST
+   "Instalar o n\303\272cleo",
+   "Desinstalar o n\303\272cleo",
+#endif
    "Suxerir sempre n\303\272cleos",
    "N\303\272cleos de copia de seguranza ao actualizar",
    "Tama\303\261o do historial de copia de seguranza do n\303\272cleo",
@@ -4466,6 +4887,10 @@ static const struct
    "Tasa de refresco personalizada",
    "Centrado vertical",
    "Centrado horizontal",
+#ifdef _3DS
+   "2D (efecto de cuadr\303\255cula de p\303\255xeles)",
+   "2D (Alta definici\303\263n)",
+#endif
    "Xestor de cursores",
    "Ciclo de miniaturas",
    "Xestor de bases de datos",
@@ -4508,6 +4933,11 @@ static const struct
    "Facer unha copia do disco",
    "Fondo din\303\241mico",
    "Fondos din\303\241micos",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Expulsar Disco",
+#endif
+#endif
    "Activado",
    "Activar a vibraci\303\263n do dispositivo (para n\303\272cleos compatibles)",
    "Filtros adicion\303\241is",
@@ -4570,6 +5000,12 @@ static const struct
    "Contadores frontend",
    "Nivel de rexistro de frontend",
    "Modo de xogo",
+#ifdef HAVE_GAME_AI
+   "Substituci\303\263n do xogador IA",
+   "Substitu\303\255r p1",
+   "Substitu\303\255r p2",
+   "Amosar depuraci\303\263n",
+#endif
    "Gardar opci\303\263ns de xogo",
    "Eliminar Opci\303\263ns de xogo",
    "Cargar opci\303\263ns b\303\241sicas espec\303\255ficas de contido automaticamente",
@@ -4735,8 +5171,14 @@ static const struct
    "Rato 1",
    "Rato 3",
    "Rato 2",
+#ifdef GEKKO
+   "Escala do rato",
+#endif
    "Roda do rato cara abaixo",
    "Roda do rato cara arriba",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   "Desactivar as teclas de acceso r\303\241pido de Windows (requ\303\255rese reiniciar)",
+#endif
    "Superposici\303\263n de teclado de escala autom\303\241tica",
    "Sensibilidade de solapamento ABXY",
    "Zona de recentralizaci\303\263n anal\303\263xica",
@@ -4780,6 +5222,9 @@ static const struct
    "Vinculaci\303\263ns de RetroPad",
    "Resistencia \303\241 vibraci\303\263n",
    "Gardar o perfil do controlador",
+#ifdef ANDROID
+   "Seleccionar teclado f\303\255sico",
+#endif
    "Entrada de sensor auxiliar",
    "Sensibilidade do aceler\303\263metro",
    "Sensibilidade do xiroscopio",
@@ -4789,6 +5234,13 @@ static const struct
    "Teclado pequeno",
    "Tocar",
    "Toca Escala",
+#ifdef UDEV_TOUCH_SUPPORT
+   "Toca VMouse Gestures",
+   "Toca VMouse como Mouse",
+   "Toca VMouse como punteiro",
+   "Toque VMouse Touchpad Mode",
+   "Toca o modo Trackball de VMouse",
+#endif
    "Turbo fogo",
    "Permitir direcci\303\263ns da cruceta no Turbo",
    "Asignaci\303\263n Turbo",
@@ -4804,6 +5256,10 @@ static const struct
    "Perf\303\255s de mando",
    "Mando",
    "Expulsar clave de transmisi\303\263n",
+   "Servizos",
+#ifdef HAVE_LAKKA_SWITCH
+   "Opci\303\263ns de Nintendo Switch",
+#endif
    "Latencia",
    "Anal\303\263xicos esquerdo e dereito",
    "Anal\303\263xicos esquerdo + dereito (Forzado)",
@@ -4821,6 +5277,9 @@ static const struct
    "Cargar Contido",
    "Cargar Disco",
    "Estado de carga",
+#ifdef HAVE_LAKKA
+   "Punto de acceso wifi",
+#endif
    "Permitir localizaci\303\263n",
    "Localizaci\303\263n",
    "Rexistro de eventos",
@@ -4909,6 +5368,9 @@ static const struct
    "Men\303\272 principal",
    "Men\303\272 Listas de reproduci\303\263n",
    "Permitir volver desde lapelas",
+#ifdef _3DS
+   "Aspecto da pantalla inferior 3DS",
+#endif
    "Desactivar o modo quiosco",
    "Men\303\272",
    "Modo Quiosco",
@@ -4955,6 +5417,9 @@ static const struct
    "Aparencia",
    "Mostrar \"Ficheiro de configuraci\303\263n\"",
    "Amosar caixas de confirmaci\303\263n",
+#ifdef HAVE_MIST
+   "Mostrar \"Xestionar n\303\272cleos\"",
+#endif
    "Mostrar \"Descargador principal\"",
    "Mostrar \"Dump Disc\"",
    "Mostrar \"Axuda\"",
@@ -5000,6 +5465,32 @@ static const struct
    "Marxe do t\303\255tulo",
    "Desfase horizontal da marxe do t\303\255tulo",
    "Factor de esvaecemento vertical",
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   "Marcos de bloque de micr\303\263fono",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "Dispositivo",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Micr\303\263fono",
+   "Micr\303\263fono",
+   "Taxa de entrada predeterminada (Hz)",
+   "Latencia da entrada do audio (ms)",
+   "Micr\303\263fono Resampler",
+   "Calidade do remuestreador",
+   "Micr\303\263fono",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "Modo exclusivo WASAPI",
+   "WASAPI Formato flotante",
+   "Lonxitude do b\303\272fer compartido WASAPI",
+#endif
+#endif
    "Entrada",
    "Sa\303\255da",
    "Non se atopa, Opcional:",
@@ -5084,6 +5575,9 @@ static const struct
    "Porto base de RetroPad de rede",
    "Rede",
    "Usuario %d Network RetroPad",
+#ifdef _3DS
+   "Activa o reloxo de New3DS / cach\303\251 L2",
+#endif
    "Non",
    "Ning\303\272n",
    "Notificaci\303\263ns de conexi\303\263n de entrada (configuraci\303\263n autom\303\241tica)",
@@ -5384,6 +5878,17 @@ static const struct
    "Restablecer pase",
    "Reinicie o programa para que os cambios te\303\261an efecto.",
    "Gardar",
+#ifdef HAVE_QT
+   "Escaneado finalizado.<br><br>\nPara que o contido se dixitalice correctamente, debes:\n<ul><li>t"
+   "er un n\303\272cleo compatible xa descargado</li>\n<li>ter \"Ficheiros de informaci\303\263n do "
+   "N\303\272cleo \" actualizouse a trav\303\251s do Actualizador en li\303\261a</li>\n<li>te\303"
+   "\261en as \"bases de datos\" actualizadas mediante o Actualizador en li\303\261a</li>\n<li>reini"
+   "cie RetroArch se se acaba de facer algunha das acci\303\263ns anteriores</li></ul>\nFinalmente, "
+   "o contido debe coincidir coas bases de datos existentes de <a href=\"https://docs.",
+   "libretro.com/guides/roms-playlists-thumbnails/#sources\">aqu\303\255</a>. Se a\303\255nda non fu"
+   "nciona, considera <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar un informe"
+   " de erro</a>.",
+#endif
    "Seleccionar cor",
    "Seleccione Ficheiros",
    "Seleccionar cartafol",
@@ -5417,6 +5922,9 @@ static const struct
    "Mostrar controis",
    "Mostrar \"Opci\303\263ns de descarga no disco\"",
    "Mostrar \"Descargar miniaturas\"",
+#ifdef HAVE_GAME_AI
+   "Amosar \"IA do Xogo\"",
+#endif
    "Mostrar \"Opci\303\263ns N\303\272cleo\"",
    "Mostrar \"Controis de repetici\303\263n\"",
    "Mostrar \"Restablecer asociaci\303\263n de n\303\272cleos\"",
@@ -5669,6 +6177,9 @@ static const struct
    "Mostrar \"Xesti\303\263n de enerx\303\255a\"",
    "Amosar a gravaci\303\263n",
    "Mostrar \"Gardar\"",
+#ifdef HAVE_SMBCLIENT
+   "Amosar \302\253Cliente SMB\302\273",
+#endif
    "Mostrar 'Steam'",
    "Mostrar \"Usuario\"",
    "Mostrar \"Interface de usuario\"",
@@ -5696,6 +6207,21 @@ static const struct
    "Instalar ou restaurar un n\303\272cleo",
    "Instalaci\303\263n do n\303\272cleo exitosa",
    "Velocidade de c\303\241mara lenta",
+#ifdef HAVE_SMBCLIENT
+   "Modo de autenticaci\303\263n SMB",
+   "Explorar recurso compartido SMB",
+   "Activar o cliente SMB",
+   "N\303\272mero m\303\241ximo de conexi\303\263ns SMB",
+   "Contrasinal SMB",
+   "Servidor SMB",
+   "Configuraci\303\263n da rede SMB",
+   "Nome do recurso compartido SMB",
+   "Recurso compartido SMB",
+   "Subdirectorio SMB (opcional)",
+   "Tempo de espera SMB",
+   "Nome de usuario SMB",
+   "Grupo de traballo SMB",
+#endif
    "Ficheiro de gardado: ordenar en cartafoles por directorio do contido",
    "Ficheiro de gardado: ordenar en cartafoles por nome do n\303\272cleo",
    "Estado de gardado: ordenar en cartafoles por directorio do contido",
@@ -5710,6 +6236,16 @@ static const struct
    "Mostrar estat\303\255sticas",
    "Estado",
    "Comandos stdin",
+#ifdef HAVE_MIST
+   "Activa a presenza enriquecida",
+   "Formato de contido enriquecido Presente",
+   "Contido",
+   "Contido (nome do n\303\272cleo)",
+   "Contido (nome do sistema)",
+   "Contido (Nome do sistema - Nome do n\303\272cleo)",
+   "Nome do n\303\272cleo",
+   "Nome do sistema",
+#endif
    "Almacenamento",
    "Modo de transmisi\303\263n",
    "T\303\255tulo do fluxo",
@@ -5720,7 +6256,20 @@ static const struct
    "N\303\272cleos suxeridos",
    "Suspender Salvapantallas",
    "Modo de rendemento sostido",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Apoio CEC",
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   "Overclock da CPU",
+#endif
    "Mudar os n\303\272cleos pola versi\303\263n da Play Store",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Overclock da CPU",
+#endif
+#endif
    "Os ficheiros do sistema est\303\241n no directorio de contido",
    "Sistema BGM",
    "Sistema/BIOS",
@@ -5774,6 +6323,9 @@ static const struct
    "AAAA-MM-DD HH:MM:SS",
    "AAAA-MM-DD HH:MM:SS (AM/PM)",
    "AAAA-MM-DD HH:MM (AM/PM)",
+#ifdef HAVE_LAKKA
+   "Fuso horario",
+#endif
    "Amosar hora",
    "hai",
    "d\303\255as",
@@ -5830,6 +6382,10 @@ static const struct
    "Lembra o \303\272ltimo directorio de inicio usado",
    "<Usar este directorio>",
    "Vibrar ao presionar a tecla",
+#ifdef _3DS
+   "Modo de visualizaci\303\263n 3DS",
+   "Pantalla inferior da 3DS",
+#endif
    "VSync adaptativo",
    "Permitir a rotaci\303\263n",
    "Configurar a relaci\303\263n de aspecto",
@@ -5848,6 +6404,21 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    "Escalamento espec\303\255fico do contexto",
+#endif
+#if defined(DINGUX)
+   "Bic\303\272bico",
+   "Veci\303\261o m\303\241is pr\303\263ximo",
+   "Interpolaci\303\263n de imaxes",
+   "Mant\303\251r a relaci\303\263n de aspecto",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Tasa de refresco vertical",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Veci\303\261o m\303\241is pr\303\263ximo",
+   "Interpolaci\303\263n de imaxe",
+#endif
 #endif
    "Desactivar a composici\303\263n do escritorio",
    "V\303\255deo",
@@ -5919,6 +6490,9 @@ static const struct
    "Tasa de refresco vertical",
    "Taxa de actualizaci\303\263n da pantalla estimada",
    "Establece a taxa de actualizaci\303\263n da pantalla",
+#ifdef HAVE_ODROIDGO2
+   "Escalado RGA",
+#endif
    "Rotaci\303\263n de v\303\255deo",
    "Escala de vent\303\241",
    "Escala enteira",
@@ -5965,6 +6539,10 @@ static const struct
    "V\303\255deos",
    "Usar b\303\272feres de argumentos de Metal (require reinicio)",
    "Deflector",
+#if defined(RARCH_MOBILE)
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
+#endif
    "Axuste de Ancoraxe da Xanela gr\303\241fica en X",
    "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
    "Relaci\303\263n de aspecto personalizada (altura)",
@@ -5974,6 +6552,11 @@ static const struct
    "Establecer ancho da pantalla VI",
    "Sincronizaci\303\263n vertical (VSync)",
    "Cadeas de intercambio esperables",
+#if defined (WIIU)
+#ifdef WIIU
+   "Optimizar para Wii U GamePad (requ\303\255rese reiniciar)",
+#endif
+#endif
    "Modo de pantalla completa con xanela",
    "Modo fiestra",
    "Altura m\303\241xima da xanela",
@@ -6042,6 +6625,10 @@ static const struct
    "Predefinido de sombreado",
    "Predefinido de sombreado",
    "Predefinido de sombreado",
+#if defined(RARCH_MOBILE)
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
+   "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
+#endif
    "Axuste de Ancoraxe da Xanela gr\303\241fica en X",
    "Axuste de Ancoraxe da Xanela gr\303\241fica en Y",
    "Activa o texto a voz para axudar na navegaci\303\263n por men\303\272s.",
@@ -6141,7 +6728,25 @@ static const struct
    "Bloquee que SaveRAM non se sobrescriba ao cargar estados de gardar. Poder\303\255a levar a xogos"
    " con erros.",
    "Controlador de Bluetooth a usar. (Reinicio necesario)",
+#ifdef HAVE_LAKKA
+   "Determina o estado do Bluetooth.",
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Desactiva o Bluetooth ERTM para corrixir a vinculaci\303\263n dalg\303\272ns dispositivos",
+#endif
+#endif
    "Busca dispositivos bluetooth e con\303\251ctaos.",
+#ifdef _3DS
+   "Directorio de activos da pantalla inferior. O directorio debe inclu\303\255r \"bottom_menu.png\""
+   ".",
+   "Axuste a cor verde da fonte da pantalla inferior.",
+   "Axuste a opacidade da fonte da pantalla inferior.",
+   "Axuste a cor vermella da fonte da pantalla inferior.",
+   "Mostrar a fonte do men\303\272 inferior. Cando se activa mostra descrici\303\263ns dos bot\303"
+   "\263ns na parte inferior da pantalla. Isto excl\303\272e a data do estado gardado.",
+   "Axusta a escala da fonte da pantalla inferior.",
+#endif
    "Aumenta ou dimin\303\272e o brillo da pantalla.",
    "URL para o directorio de actualizaci\303\263n de activos no buildbot de libretro.",
    "O contido arquivado extrairase temporalmente neste directorio.",
@@ -6312,6 +6917,9 @@ static const struct
    "Realiza tarefas de mantemento sen conexi\303\263n nos n\303\272cleos instalados (copia de seguri"
    "dade, restauraci\303\263n, eliminaci\303\263n, etc.) e consulta a informaci\303\263n do n\303"
    "\272cleo.",
+#ifdef HAVE_MIST
+   "Instala ou desinstala n\303\272cleos distribu\303\255dos a trav\303\251s de Steam.",
+#endif
    "Trocar as opci\303\263ns para o contido.",
    "Forzar que a configuraci\303\263n actual se escriba no ficheiro de opci\303\263ns activo. Asegur"
    "a que as opci\303\263ns se conserven no caso de que un erro principal cause un peche incorrecto "
@@ -6383,6 +6991,11 @@ static const struct
    "de imaxe.",
    "Carga din\303\241micamente un novo fondo de pantalla dependendo do contexto.",
    "As imaxes de fondo utilizadas no men\303\272 g\303\241rdanse neste directorio.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Expulsar Disco do lector f\303\255sico.",
+#endif
+#endif
    "Saltar fotogramas segundo a taxa de avance r\303\241pido. Isto conserva enerx\303\255a e permite"
    " o uso de limitaci\303\263n de fotogramas de terceiros.",
    "A velocidade m\303\241xima \303\241 que se executar\303\241 o contido ao utilizar o avance r\303"
@@ -6413,6 +7026,12 @@ static const struct
    "t\303\241 por debaixo deste valor, ignorarase.",
    "Pode mellorar o rendemento, reducir a latencia e solucionar problemas de crepitaci\303\263n do a"
    "udio. Necesitas https://github.com/FeralInteractive/gamemode para que isto funcione.",
+#ifdef HAVE_GAME_AI
+   "O xogador de IA anula la subetiqueta",
+   "Substitu\303\255r xogador p1",
+   "Substitu\303\255r xogador p2",
+   "Amosar depuraci\303\263n",
+#endif
    "Garda as opci\303\263ns principais que s\303\263 se aplicar\303\241n ao contido actual.",
    "Elimina as opci\303\263ns principais que s\303\263 se aplicar\303\241n ao contido actual.",
    "Carga opci\303\263ns b\303\241sicas personalizadas de forma predeterminada ao inicio.",
@@ -6569,6 +7188,12 @@ static const struct
    "Aumenta o nivel de volume de audio de sa\303\255da.",
    "Activa/desactiva a sincronizaci\303\263n coa taxa de fotogramas de contido exacta.",
    "O rato f\303\255sico reco\303\261ecido por RetroArch.",
+#ifdef GEKKO
+   "Axusta a escala x/y para a velocidade da pistola de luz Wiimote.",
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   "Mante\303\261a as combinaci\303\263ns Win-key dentro da aplicaci\303\263n.",
+#endif
    "Axusta a superposici\303\263n do teclado \303\241 s\303\272a relaci\303\263n de aspecto orixinal"
    ". Desactiva para estirar \303\241 pantalla.",
    "Axusta o tama\303\261o das zonas de superposici\303\263n no rombo do bot\303\263n da cara. Estab"
@@ -6588,6 +7213,11 @@ static const struct
    " ao sa\303\255r do men\303\272.",
    "Oculta a superposici\303\263n cando un controlador f\303\255sico est\303\241 conectado no porto "
    "1 e m\303\263strao de novo cando o controlador estea desconectado.",
+#if defined(ANDROID)
+   "Oculta a superposici\303\263n cando un controlador f\303\255sico est\303\241 conectado no porto "
+   "1. A superposici\303\263n non se restaurar\303\241 automaticamente cando se desconecte o control"
+   "ador.",
+#endif
    "Permite apuntar f\303\263ra dos l\303\255mites. Desactivar para fixar o obxectivo f\303\263ra da"
    " pantalla ao bordo do l\303\255mite.",
    "Selecciona a entrada para enviar cando hai catro punteiros na pantalla. O retardo de disparo deb"
@@ -6635,6 +7265,9 @@ static const struct
    "Especifique a magnitude dos efectos de retroalimentaci\303\263n h\303\241ptica.",
    "Garda un ficheiro de configuraci\303\263n autom\303\241tica que se aplicar\303\241 automaticamen"
    "te sempre que se detecte de novo este controlador.",
+#ifdef ANDROID
+   "Usa este dispositivo como teclado f\303\255sico e non como mando.",
+#endif
    "Axustar a sensibilidade do aceler\303\263metro.",
    "Axustar a sensibilidade do xiroscopio.",
    "Xira os eixes do aceler\303\263metro e do xir\303\263scopo para coincidir coa orientaci\303\263n"
@@ -6643,6 +7276,14 @@ static const struct
    "Cambia os axustes do mando, teclado e rato.",
    "Axusta a escala x/y das coordenadas da pantalla t\303\241ctil para acomodar a escala de visualiz"
    "aci\303\263n a nivel de SO.",
+#ifdef UDEV_TOUCH_SUPPORT
+   "Activa os xestos da pantalla t\303\241ctil, inclu\303\255ndo tocar, arrastrar e tocar o dedo.",
+   "Activa a emulaci\303\263n do rato virtual mediante eventos t\303\241ctiles de entrada.",
+   "Habilita para pasar eventos t\303\241ctiles desde a pantalla t\303\241ctil de entrada.",
+   "Habilita xunto co rato para utilizar a pantalla t\303\241ctil como panel t\303\241ctil.",
+   "Habilita xunto co rato para utilizar a pantalla t\303\241ctil como bola de seguimento, engadindo"
+   " inercia ao punteiro.",
+#endif
    "Se est\303\241 activado, as entradas direccionais dixitais (tam\303\251n co\303\261ecidas como c"
    "ruceta, D-Pad ou 'hatswitch') poden usar o turbo.",
    "Turbo activando a asignaci\303\263n do RetroPad. Se est\303\241 baleiro, util\303\255zase a asig"
@@ -6662,6 +7303,9 @@ static const struct
    "Os perf\303\255s de mando utilizados para configurar automaticamente os mandos est\303\241n alma"
    "cenados nesta carpeta.",
    "Controlador de mando a utilizar. (Reinicio necesario)",
+#ifdef HAVE_LAKKA_SWITCH
+   "Xestiona as opci\303\263ns espec\303\255ficas de Nintendo Switch.",
+#endif
    "Cambiar a configuraci\303\263n relacionada co v\303\255deo, audio e latencia de entrada.",
    "Tipo de miniatura para mostrar \303\241 esquerda.",
    "Tipo auxiliar de miniatura para asociar a cada entrada da lista de reproduci\303\263n. O uso dep"
@@ -6679,6 +7323,9 @@ static const struct
    "Carga un disco de medio f\303\255sico. Primeiro escolla o n\303\272cleo (Cargar un n\303\272cleo"
    ") a empregar co disco.",
    "Carga un estado gardado desde a ra\303\261ura seleccionada actualmente.",
+#ifdef HAVE_LAKKA
+   "Activar ou desactivar o punto de acceso wifi.",
+#endif
    "Permite que os n\303\272cleos accedan \303\241 t\303\272a localizaci\303\263n.",
    "Controlador de localizaci\303\263n a usar. (Reinicio necesario)",
    "Cambia os axustes do rexistro de eventos.",
@@ -6743,6 +7390,9 @@ static const struct
    "Mostra a cantidade total e utilizada de memoria no sistema.",
    "A visualizaci\303\263n do uso da memoria actualizarase no intervalo establecido en fotogramas.",
    "Volver ao men\303\272 principal desde lapelas/barra lateral ao premer Volver.",
+#ifdef _3DS
+   "Cambiar a configuraci\303\263n da aparencia da pantalla inferior.",
+#endif
    "Amosa todas os axustes relacionados coas configuraci\303\263ns.",
    "Controlador de men\303\272 para usar. (O reinicio \303\251 necesario)",
    "Protexe a configuraci\303\263n ocultando todos os axustes relacionados coa configuraci\303\263n.",
@@ -6821,9 +7471,17 @@ static const struct
    "Mostra a opci\303\263n \"Ficheiro de configuraci\303\263n\" no men\303\272 principal.",
    "Solicitar confirmaci\303\263n antes de sa\303\255r, reiniciar ou pechar contido. Cando est\303"
    "\241 desactivado, estas acci\303\263ns exec\303\272tanse inmediatamente.",
+#ifdef HAVE_MIST
+   "Mostra a opci\303\263n \"Xestionar n\303\272cleos\" no men\303\272 principal.",
+#endif
    "Mostra a posibilidade de actualizar n\303\272cleos (e ficheiros de informaci\303\263n b\303\241s"
    "ica) na opci\303\263n \"Actualizador en li\303\261a\".",
    "Mostra a opci\303\263n \"Dump Disc\" no men\303\272 principal.",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "Mostra a opci\303\263n \"Expulsar disco\" no men\303\272 principal.",
+#endif
+#endif
    "Mostra a opci\303\263n \"Axuda\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Informaci\303\263n\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Cargar contido\" no men\303\272 principal.",
@@ -6877,6 +7535,36 @@ static const struct
    "A animaci\303\263n que se activa ao abrir un submen\303\272.",
    "Reduce o tama\303\261o da visualizaci\303\263n das miniaturas escalando o ancho m\303\241ximo pe"
    "rmitido.",
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "Anular o dispositivo de entrada predeterminado que usa o controlador do micr\303\263fono. Isto d"
+   "epende do controlador.",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "Controlador de micr\303\263fono a usar. (Reinicio necesario)",
+   "Activa a entrada de audio nos n\303\272cleos compatibles. Non ten sobrecarga se o n\303\272cleo "
+   "non est\303\241 usando un micr\303\263fono.",
+   "Frecuencia de mostraxe de entrada de audio, que se usa se un n\303\272cleo non solicita un n\303"
+   "\272mero espec\303\255fico.",
+   "Latencia de entrada de audio desexada en milisegundos. Pode non ser honrado se o controlador do "
+   "micr\303\263fono non pode proporcionar unha latencia determinada.",
+   "Controlador de resampler de micr\303\263fono para usar.",
+   "Reduce este valor para favorecer o rendemento/menor latencia fronte \303\241 calidade do audio, "
+   "aumenta para obter unha mellor calidade de audio a costa do rendemento/menor latencia.",
+   "Cambiar a configuraci\303\263n de entrada de son.",
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "Permitir que RetroArch asuma o control exclusivo do dispositivo de micr\303\263fono cando use o "
+   "controlador de micr\303\263fono WASAPI. Se est\303\241 desactivado, RetroArch usar\303\241 o mod"
+   "o compartido no seu lugar.",
+   "Use o formato flotante para o controlador WASAPI, se \303\251 compatible co seu dispositivo de a"
+   "udio.",
+   "A lonxitude intermedia do b\303\272fer (en fotogramas) cando se usa o controlador WASAPI en modo"
+   " compartido.",
+#endif
+#endif
    "Controlador MIDI a usar. (Reinicio necesario)",
    "Seleccione o dispositivo de entrada.",
    "Seleccione o dispositivo de sa\303\255da.",
@@ -6948,6 +7636,9 @@ static const struct
    "Descarga automaticamente as miniaturas que faltan mentres buscas listas de reproduci\303\263n. T"
    "en un grave impacto no rendemento.",
    "Cambiar os axustes da rede e do servidor.",
+#ifdef _3DS
+   "Activa a velocidade de reloxo de New3DS (804 Mhz) e a cach\303\251 L2.",
+#endif
    "Mostra unha mensaxe en pantalla ao conectar/desconectar dispositivos de entrada.",
    "Amosar unha mensaxe na pantalla cando os dispositivos de entrada non poidan ser configurados.",
    "Mostra unha mensaxe en pantalla cando se apliquen c\303\263digos de trucos.",
@@ -7132,6 +7823,9 @@ static const struct
    "Mostra a entrada \"Opci\303\263ns de descarga no disco\" no men\303\272 \"Opci\303\263ns > Xesti"
    "onar opci\303\263ns b\303\241sicas\".",
    "Mostra a opci\303\263n \"Descargar miniaturas\" cando o contido non se estea a executar.",
+#ifdef HAVE_GAME_AI
+   "Amosar a opci\303\263n 'IA do xogo'.",
+#endif
    "Mostra a opci\303\263n \"Informaci\303\263n\".",
    "Mostra a opci\303\263n \"Opci\303\263ns N\303\272cleo\".",
    "Mostra as opci\303\263ns para gravar/reproducir ficheiros de reproduci\303\263n.",
@@ -7258,6 +7952,9 @@ static const struct
    "eboot is required when changing.",
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   "Compartir cartafoles na rede empregando o protocolo SMB.",
+#endif
    "Usa o directorio de contido como directorio de ficheiros de gardar.",
    "Garda todos os ficheiros gardados neste directorio. Se non se define, tentarase gardar dentro do"
    " directorio de traballo do ficheiro de contido.",
@@ -7324,6 +8021,9 @@ static const struct
    "As capturas de pantalla almac\303\251nanse neste directorio.",
    "Forza a orientaci\303\263n da pantalla dende o sistema operativo.",
    "Seleccione o modo de visualizaci\303\263n (reinicie necesario)",
+#ifdef HAVE_LAKKA
+   "Xestionar servizos a nivel de sistema operativo.",
+#endif
    "Configurar o programa.",
    "Mostrar a configuraci\303\263n de \"Accesibilidade\".",
    "Amosar a configuraci\303\263n de \"Logros\".",
@@ -7344,6 +8044,9 @@ static const struct
    "Mostrar a configuraci\303\263n de \"Xesti\303\263n de enerx\303\255a\".",
    "Amosar a configuraci\303\263n de \"Grabaci\303\263n\".",
    "Mostrar a configuraci\303\263n de \"Gardar\".",
+#ifdef HAVE_SMBCLIENT
+   "Amosar a configuraci\303\263n do \302\253Cliente SMB\302\273.",
+#endif
    "Mostrar a configuraci\303\263n de \"Steam\".",
    "Mostrar a configuraci\303\263n de \"Usuario\".",
    "Mostrar a configuraci\303\263n da \"Interface de usuario\".",
@@ -7359,19 +8062,56 @@ static const struct
    "Abre o men\303\272 de escritorio tradicional.",
    "Instala ou restaura un n\303\272cleo dende o directorio de Descargas.",
    "A velocidade coa que se reproducir\303\241 o contido cando se utiliza a c\303\241mara lenta.",
+#ifdef HAVE_SMBCLIENT
+   "Selecciona a autenticaci\303\263n usada no teu contorno.",
+   "Explorar ficheiros no recurso compartido SMB configurado.",
+   "Activar o acceso a compartici\303\263ns de rede SMB. Recom\303\251ndase encarecidamente usar Eth"
+   "ernet en lugar de Wi-Fi para unha conexi\303\263n m\303\241is fiable. Nota: cambiar estes axuste"
+   "s require reiniciar RetroArch.",
+   "Selecciona o n\303\272mero m\303\241ximo de conexi\303\263ns usadas no teu contorno.",
+   "Contrasinal para a autenticaci\303\263n.",
+   "Enderezo IP ou nome do servidor.",
+   "Configura os axustes da carpeta compartida en rede SMB.",
+   "Nome do recurso de rede ao que acceder.",
+   "Ruta do subdirectorio no recurso compartido.",
+   "Selecciona o tempo de espera predeterminado en segundos.",
+   "Nome de usuario para a autenticaci\303\263n.",
+   "Nome do grupo de traballo ou do dominio.",
+#endif
    "Ordena os ficheiros gardados en cartafoles co nome do directorio no que se atopa o contido.",
    "Ordena os ficheiros gardados en cartafoles co nome do n\303\272cleo utilizado.",
    "Ordena os estados de gardado en cartafoles co nome do directorio no que se atopa o contido.",
    "Ordena os estados de gardado en cartafoles co nome do n\303\272cleo utilizado.",
    "Ordena as capturas de pantalla en cartafoles co nome do directorio no que se atopa o contido.",
+#ifdef HAVE_LAKKA
+   "Empregar SSH para acceder \303\241 li\303\261a de comandos de forma remota.",
+#endif
    "Inicia o n\303\272cleo sen contido.",
    "Cambia a ra\303\261ura de estado seleccionado actualmente.",
    "Mostra estat\303\255sticas t\303\251cnicas en pantalla.",
    "interface de comando stdin.",
+#ifdef HAVE_MIST
+   "Comparte o teu estado actual en RetroArch en Steam.",
+   "Decidir que informaci\303\263n relacionada co contido se compartir\303\241.",
+   "Cambiar a configuraci\303\263n relacionada con Steam.",
+#endif
    "Acceda \303\241 configuraci\303\263n do subsistema para o contido actual.",
    "Previr que se active o salvapantallas do sistema.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Activar CEC Handshaking coa TV cando se acopla",
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   "Overclock a CPU Switch.",
+#endif
    "Substit\303\272e todos os n\303\272cleos orixinais e os manualmente instalados coa \303\272ltima"
    " versi\303\263n da Play Store, cando estean dispo\303\261ibles.",
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   "Activa as frecuencias de overclock da CPU",
+#endif
+#endif
    "Use o directorio de contido como directorio do sistema/BIOS.",
    "Neste directorio g\303\241rdanse BIOS, ROM de arranque e outros ficheiros espec\303\255ficos do "
    "sistema.",
@@ -7389,6 +8129,10 @@ static const struct
    "\255a cando se mostre a data actual dentro do men\303\272.",
    "Mostra a data e/ou hora actual dentro do men\303\272.",
    "Cambiar o estilo de data e/ou hora actual m\303\263strase dentro do men\303\272.",
+#ifdef HAVE_LAKKA
+   "Seleccione o seu fuso horario para axustar a data e a hora \303\241 s\303\272a localizaci\303"
+   "\263n.",
+#endif
    "Amosar a hora actual no formato preferido.",
    "Mostrar a barra de men\303\272 da xanela.",
    "Se se cargou un estado, o contido volver\303\241 ao estado anterior \303\241 carga.",
@@ -7416,6 +8160,13 @@ static const struct
    "Sempre o m\303\241ximo rendemento: frecuencias m\303\241is altas para a mellor experiencia.",
    "Use a frecuencia m\303\241is baixa dispo\303\261ible para aforrar enerx\303\255a. \303\232til en"
    " dispositivos con bater\303\255a, pero o rendemento reducirase significativamente.",
+#ifdef _3DS
+   "Selecciona entre os modos de visualizaci\303\263n 3D e 2D. No modo '3D', os p\303\255xeles son c"
+   "adrados e apl\303\255case un efecto de profundidade ao ver o men\303\272 r\303\241pido. O modo "
+   "\"2D\" ofrece o mellor rendemento.",
+   "Activa a visualizaci\303\263n da informaci\303\263n de estado na pantalla inferior. Desactivar p"
+   "ara aumentar a duraci\303\263n da bater\303\255a e mellorar o rendemento.",
+#endif
    "VSync est\303\241 activado ata que o rendemento baixe da frecuencia de refresco obxectivo. Pode "
    "minimizar os cortes cando o rendemento cae por debaixo do tempo real e ser m\303\241is eficiente"
    " en canto a consumo de enerx\303\255a. Non \303\251 compatible con 'Atraso de fotograma'.",
@@ -7441,6 +8192,24 @@ static const struct
 #ifdef HAVE_ODROIDGO2
 #else
    "Escalado de contexto de hardware (se est\303\241 dispo\303\261ible).",
+#endif
+#if defined(DINGUX)
+   "Elixe o m\303\251todo de interpolaci\303\263n de imaxes cando se est\303\241 escalando contido a"
+   " trav\303\251s da IPU interna. 'Bic\303\272bica' ou 'Bilinear' \303\251 o recomendado cando se u"
+   "san filtros de video alimentados pola CPU. Esta opci\303\263n non ten efecto no rendemento.",
+   "Mant\303\251n relaci\303\263ns de aspecto de p\303\255xeles de 1:1 ao escalar o contido a trav"
+   "\303\251s da IPU interna. Se est\303\241 desactivado, as imaxes estenderanse para encher toda a "
+   "pantalla.",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "Establece a frecuencia de actualizaci\303\263n vertical da pantalla. \"50 Hz\" permitir\303\241 "
+   "un v\303\255deo suave ao executar contido PAL.",
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   "Elixe o m\303\251todo de interpolaci\303\263n de imaxe cando 'Escala de N\303\272meros Enteiros'"
+   " estea desactivado. 'Veci\303\261o m\303\241is pr\303\263ximo' ten o menor efecto no rendemento.",
+#endif
 #endif
    "Os xestores de fiestras usan a composici\303\263n para aplicar efectos visuais, detectar vent"
    "\303\241s que non responden, entre outras cousas.",
@@ -7538,6 +8307,9 @@ static const struct
    "\255deo con f\303\255os (Threaded Video)\342\200\235.",
    "A taxa de actualizaci\303\263n estimada da pantalla en Hz.",
    "A taxa de actualizaci\303\263n segundo a informada polo controlador da pantalla.",
+#ifdef HAVE_ODROIDGO2
+   "Escalado RGA e filtrado bic\303\272bico. Pode romper widgets.",
+#endif
    "Forza unha rotaci\303\263n do v\303\255deo. A rotaci\303\263n \303\251 engadida \303\241s rotaci"
    "\303\263ns que establece o n\303\272cleo.",
    "Escalar o v\303\255deo s\303\263 en pasos enteiros. O tama\303\261o base depende da xeometr\303"
@@ -7610,6 +8382,14 @@ static const struct
    "Tenta mellorar o rendemento usando b\303\272feres de argumentos de Metal. Alg\303\272ns n\303"
    "\272cleos poden requirilo. Isto pode provocar erros nalg\303\272ns sombreadores, especialmente e"
    "n soporte f\303\255sico antigo ou versi\303\263ns antigas do sistema operativo.",
+#if defined(RARCH_MOBILE)
+   "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido (or"
+   "ientaci\303\263n vertical). 0.0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1."
+   "0 \303\251 totalmente \303\241 dereita",
+   "Posici\303\263n vertical do contido cando a xanela \303\251 m\303\241is alta ca o contido (orien"
+   "taci\303\263n vertical). 0.0 \303\251 arriba de todo, 0.5 \303\251 o centro, 1.0 \303\251 abaixo"
+   " de todo",
+#endif
    "Posici\303\263n horizontal do contido cando a xanela \303\251 m\303\241is ancha ca o contido. 0."
    "0 \303\251 totalmente \303\241 esquerda, 0.5 \303\251 o centro, 1.0 \303\251 totalmente \303\241"
    " dereita.",
@@ -7626,6 +8406,12 @@ static const struct
    "Sincroniza o v\303\255deo de sa\303\255da da tarxeta gr\303\241fica coa taxa de actualizaci\303"
    "\263n da pantalla. Recomendado.",
    "Sincroniza a CPU e a GPU. Reduce a latencia ao custo do rendemento.",
+#if defined (WIIU)
+#ifdef WIIU
+   "Usa unha escala exacta de 2x do GamePad como ventana gr\303\241fica. Desactive para mostrar a re"
+   "soluci\303\263n nativa da TV.",
+#endif
+#endif
    "Se a pantalla completa, prefire usar unha xanela de pantalla completa para evitar o cambio de mo"
    "do de visualizaci\303\263n.",
    "Cambiar as configuraci\303\263n do modo fiestra.",
@@ -7667,6 +8453,15 @@ static const struct
    "\303\272 \"interruptor de alternancia\".",
    "Seleccione un tema de icona diferente para RetroArch.",
    "Mostra a miniatura esquerda debaixo da dereita, no lado dereito da pantalla.",
+#ifdef _3DS
+   "Non se atoparon recurso(s)",
+   "Toca a pantalla t\303\241ctil para ir\nao men\303\272 Retroarch",
+   "Cargar\nPunto de restauraci\303\263n",
+   "Sen\nDatos",
+   "Non\nCaptura de pantalla",
+   "Reanudar o xogo",
+   "Crear\nPunto de restauraci\303\263n",
+#endif
    "Accesibilidade RetroArch activada. Men\303\272 principal Cargar n\303\272cleo.",
    "Logro desbloqueado",
    "Engadido aos favoritos",
@@ -7798,6 +8593,11 @@ static const struct
    "Fallou a restauraci\303\263n do n\303\272cleo: ",
    "Ficheiro principal seleccionado non v\303\241lido: ",
    "Produciuse un erro ao eliminar o n\303\272cleo da lista \"N\303\272cleos sen contido\": ",
+#ifdef HAVE_MIST
+   "O n\303\272cleo estase descargando",
+   "Instalando o N\303\272cleo: ",
+   "O n\303\272cleo desinstalarase ao sa\303\255r de RetroArch.",
+#endif
    "Produciuse un erro ao desbloquear o n\303\272cleo: ",
    "Produciuse un erro ao engadir o n\303\272cleo \303\241 lista \"N\303\272cleos sen contido\": ",
    "Actualizaci\303\263n do n\303\272cleo desactivada - o n\303\272cleo est\303\241 bloqueado: ",
@@ -7969,6 +8769,14 @@ static const struct
    "Cargando ficheiro de historial",
    "Estado de carga",
    "Cargue primeiro un n\303\272cleo.",
+#ifdef HAVE_LAKKA
+   "O punto de acceso wifi xa est\303\241 iniciado",
+   "Non se puido crear o ficheiro de configuraci\303\263n do punto de acceso wifi.",
+   "Ficheiro de configuraci\303\263n incorrecto: non se puido atopar APNOME ou CONTRASINAL en %s",
+   "O punto de acceso wifi non est\303\241 funcionando",
+   "Iniciando o punto de acceso Wi-Fi con SSID=%s e clave de acceso=%s",
+   "Apagando o punto de acceso wifi.",
+#endif
    "Seleccionouse un ficheiro DAT de arcade non v\303\241lido.",
    "Produciuse un erro ao cargar o ficheiro DAT de arcade (formato non v\303\241lido?)",
    "O ficheiro DAT arcade seleccionado \303\251 demasiado grande (memoria libre insuficiente).",
@@ -8220,6 +9028,11 @@ static const struct
    "Sincronizaci\303\263n coa taxa de fotogramas de contido exacta desactivada.",
    "Sincronizaci\303\263n coa taxa de fotogramas de contido exacta activada.",
    "Esperando cliente...",
+#ifdef HAVE_LAKKA
+   "Conectando coa wifi '%s'",
+   "Desconectando da wifi \"%s\"",
+   "[Sen SSID]",
+#endif
    "Escaneo wifi completo.",
 };
 
@@ -8227,21 +9040,297 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (191997u
+      (sizeof(msg_hash_gl_blob) == (192006u
+#ifdef ANDROID
+       + 365u
+#endif
+#ifdef HAVE_MICROPHONE
+       + 113u
+#endif
+#ifdef HAVE_LAKKA
+       + 212u
+#endif
 #ifndef HAVE_DYNAMIC
        + 45u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 26u
+#endif
+#endif
+#ifdef _3DS
+       + 43u
+       + 26u
+       + 14u
+       + 17u
+#endif
+#ifdef HAVE_GAME_AI
+       + 11u
+#endif
+#ifdef HAVE_MIST
+       + 19u
+       + 19u
+       + 22u
+#endif
+#ifdef _3DS
+       + 39u
+       + 22u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 15u
+#endif
+#endif
+#ifdef HAVE_GAME_AI
+       + 28u
+       + 15u
+       + 15u
+       + 19u
+#endif
+#ifdef GEKKO
+       + 15u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+       + 73u
+#endif
+#ifdef ANDROID
+       + 28u
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+       + 21u
+       + 23u
+       + 26u
+       + 27u
+       + 32u
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+       + 28u
+#endif
+#ifdef HAVE_LAKKA
+       + 21u
+#endif
+#ifdef _3DS
+       + 33u
+#endif
+#ifdef HAVE_MIST
+       + 29u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+       + 31u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 12u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 11u
+       + 11u
+       + 36u
+       + 34u
+       + 21u
+       + 26u
+       + 11u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 22u
+       + 24u
+       + 38u
+#endif
+#endif
+#ifdef _3DS
+       + 38u
+#endif
+#ifdef HAVE_QT
+       + 691u
+#endif
+#ifdef HAVE_GAME_AI
+       + 20u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
 #endif
 #endif
+#ifdef HAVE_SMBCLIENT
+       + 23u
+       + 27u
+       + 32u
+       + 22u
+       + 34u
+       + 16u
+       + 13u
+       + 27u
+       + 31u
+       + 23u
+       + 29u
+       + 20u
+       + 20u
+       + 22u
+#endif
+#ifdef HAVE_MIST
+       + 30u
+       + 40u
+       + 8u
+       + 26u
+       + 26u
+       + 44u
+       + 16u
+       + 16u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 10u
+#endif
+#endif
+#ifdef HAVE_LIBNX
+       + 17u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 17u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+       + 13u
+#endif
+#ifdef _3DS
+       + 27u
+       + 25u
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
        + 36u
 #endif
+#if defined(DINGUX)
+       + 10u
+       + 23u
+       + 25u
+       + 31u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 26u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 23u
+       + 24u
+#endif
+#endif
+#ifdef HAVE_ODROIDGO2
+       + 13u
+#endif
+#if defined(RARCH_MOBILE)
+       + 74u
+       + 74u
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 52u
+#endif
+#endif
+#if defined(RARCH_MOBILE)
+       + 74u
+       + 74u
+#endif
 #ifndef HAVE_DYNAMIC
        + 175u
+#endif
+#ifdef HAVE_LAKKA
+       + 33u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 78u
+#endif
+#endif
+#ifdef _3DS
+       + 90u
+       + 50u
+       + 50u
+       + 53u
+       + 153u
+       + 47u
+#endif
+#ifdef HAVE_MIST
+       + 65u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 34u
+#endif
+#endif
+#ifdef HAVE_GAME_AI
+       + 37u
+       + 23u
+       + 23u
+       + 19u
+#endif
+#ifdef GEKKO
+       + 65u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+       + 57u
+#endif
+#if defined(ANDROID)
+       + 168u
+#endif
+#ifdef ANDROID
+       + 60u
+#endif
+#ifdef UDEV_TOUCH_SUPPORT
+       + 82u
+       + 75u
+       + 75u
+       + 76u
+       + 112u
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+       + 54u
+#endif
+#ifdef HAVE_LAKKA
+       + 46u
+#endif
+#ifdef _3DS
+       + 60u
+#endif
+#ifdef HAVE_MIST
+       + 58u
+#endif
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 54u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 113u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 55u
+       + 116u
+       + 106u
+       + 156u
+       + 50u
+       + 177u
+       + 44u
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 195u
+       + 96u
+       + 103u
+#endif
+#endif
+#ifdef _3DS
+       + 65u
+#endif
+#ifdef HAVE_GAME_AI
+       + 31u
 #endif
 #if !(defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
        + 262u
@@ -8251,9 +9340,105 @@ typedef char msg_hash_gl_blob_check[
        + 125u
 #endif
 #endif
+#ifdef HAVE_LAKKA
+       + 57u
+       + 49u
+#endif
+#ifdef HAVE_SMBCLIENT
+       + 44u
+       + 51u
+       + 58u
+       + 199u
+       + 67u
+       + 35u
+       + 33u
+       + 56u
+       + 40u
+       + 45u
+       + 57u
+       + 39u
+       + 41u
+#endif
+#ifdef HAVE_LAKKA
+       + 64u
+#endif
+#ifdef HAVE_MIST
+       + 52u
+       + 64u
+       + 48u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 47u
+#endif
+#endif
+#ifdef HAVE_LIBNX
+       + 24u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+       + 42u
+#endif
+#endif
+#ifdef HAVE_LAKKA
+       + 82u
+#endif
+#ifdef _3DS
+       + 194u
+       + 146u
+#endif
 #ifdef HAVE_ODROIDGO2
 #else
        + 57u
+#endif
+#if defined(DINGUX)
+       + 242u
+       + 170u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 123u
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+       + 157u
+#endif
+#endif
+#ifdef HAVE_ODROIDGO2
+       + 56u
+#endif
+#if defined(RARCH_MOBILE)
+       + 177u
+       + 159u
+#endif
+#if defined (WIIU)
+#ifdef WIIU
+       + 114u
+#endif
+#endif
+#ifdef _3DS
+       + 27u
+       + 51u
+       + 30u
+       + 10u
+       + 24u
+       + 16u
+       + 29u
+#endif
+#ifdef HAVE_MIST
+       + 29u
+       + 23u
+       + 48u
+#endif
+#ifdef HAVE_LAKKA
+       + 41u
+       + 73u
+       + 87u
+       + 45u
+       + 67u
+       + 33u
+       + 25u
+       + 27u
+       + 11u
 #endif
       )) ? 1 : -1];
 
@@ -8355,6 +9540,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_POLL_TYPE_BEHAVIOR,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_PREFER_FRONT_TOUCH,
    (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_RETROPAD_BINDS,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_HELP_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_DINPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_HID,
    (uint32_t)MENU_ENUM_LABEL_HELP_JOYPAD_DRIVER_LINUXRAW,
@@ -8370,6 +9558,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_OZONE,
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_RGUI,
    (uint32_t)MENU_ENUM_LABEL_HELP_MENU_DRIVER_XMB,
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_HELP_MICROPHONE_DEVICE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
@@ -8387,6 +9578,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_APPLY_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SHADER_WATCH_FOR_CHANGES,
    (uint32_t)MENU_ENUM_LABEL_HELP_SUSPEND_SCREENSAVER_ENABLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_HELP_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_CLASSIC_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_HELP_TURBO_MODE_SINGLEBUTTON,
@@ -8544,6 +9738,17 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BASIC_MENU_CONTROLS_TOGGLE_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BLOCK_SRAM_OVERWRITE,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BLUETOOTH_ERTM_DISABLE,
+#endif
+#endif
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_START,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BROWSE_URL,
@@ -8735,6 +9940,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_DELETE_BACKUP_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_ENABLE,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_GAME_AI_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_AUTHORS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_INFO_CACHE_ENABLE,
@@ -8763,6 +9971,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LIST_UNLOAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_LOCK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_OPTIONS_RESET,
@@ -8773,6 +9984,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SET_SUPPORTS_NO_CONTENT_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_INSTALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_STEAM_UNINSTALL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
@@ -8806,6 +10021,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_800X240,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CYCLE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
@@ -8848,6 +10067,11 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DYNAMIC_WALLPAPERS_DIRECTORY,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ENABLE_DEVICE_VIBRATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_ADDITIONAL_FILTER,
@@ -8910,6 +10134,12 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_COUNTERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAMEMODE_ENABLE,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_MENU_OPTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P1,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_OVERRIDE_P2,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_AI_SHOW_DEBUG,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_GAME_SPECIFIC_OPTIONS,
@@ -9075,8 +10305,14 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_MIDDLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_RIGHT,
+#ifdef GEKKO
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_SCALE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_WHEEL_UP,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_NOWINKEY_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
@@ -9120,6 +10356,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSORS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
@@ -9129,6 +10368,13 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
+#ifdef UDEV_TOUCH_SUPPORT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_GESTURE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_MOUSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_POINTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -9144,6 +10390,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_LATENCY_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LEFTRIGHT_ANALOG_FORCED,
@@ -9161,6 +10411,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOAD_STATE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS,
@@ -9249,6 +10502,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_PLAYLISTS_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ALLOW_TABS_BACK,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_BOTTOM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
@@ -9295,6 +10551,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CONFIRM,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
@@ -9340,6 +10599,32 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_TITLE_MARGIN_HORIZONTAL_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_XMB_VERTICAL_FADE_FACTOR,
+#ifdef HAVE_MICROPHONE
+#ifdef RARCH_MOBILE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_BLOCK_FRAMES,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
@@ -9423,6 +10708,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -9721,6 +11009,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESET_PASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_RESTART_TO_TAKE_EFFECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SAVE,
+#ifdef HAVE_QT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_COLOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FILES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SELECT_FOLDER,
@@ -9753,6 +11044,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_GAME_AI,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QUICK_MENU_SHOW_RESET_CORE_ASSOCIATION,
@@ -10005,6 +11299,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER_INTERFACE,
@@ -10032,6 +11329,21 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVEFILES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SORT_SAVESTATES_BY_CONTENT_ENABLE,
@@ -10046,6 +11358,16 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CONTENT_SYSTEM_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_RICH_PRESENCE_FORMAT_SYSTEM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_TITLE,
@@ -10056,7 +11378,20 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CEC_ENABLE,
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_INSTALLED_CORES_PFD,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SWITCH_OC_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_BGM_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_DIRECTORY,
@@ -10110,6 +11445,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HMS_AMPM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEDATE_YMD_HM_AMPM,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_AGO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_DAYS_PLURAL,
@@ -10166,6 +11504,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ALLOW_ROTATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO,
@@ -10184,6 +11526,21 @@ static const uint32_t msg_hash_gl_ids[] =
 #ifdef HAVE_ODROIDGO2
 #else
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_CTX_SCALING,
+#endif
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_BICUBIC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_NEAREST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_POINT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
@@ -10253,6 +11610,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_REFRESH_RATE_POLLED,
+#ifdef HAVE_ODROIDGO2
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RGA_SCALING,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
@@ -10299,6 +11659,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -10308,6 +11672,11 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VI_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -10376,6 +11745,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_ACCESSIBILITY_ENABLED,
@@ -10447,7 +11820,23 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_BATTERY_LEVEL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_DRIVER,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE,
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_BLUETOOTH_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_COLOR_RED,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_BOTTOM_FONT_SCALE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_BRIGHTNESS_CONTROL,
    (uint32_t)MENU_ENUM_SUBLABEL_BUILDBOT_ASSETS_URL,
    (uint32_t)MENU_ENUM_SUBLABEL_CACHE_DIRECTORY,
@@ -10571,6 +11960,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LIST_UNLOAD,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_LOCK,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_LIST,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_MANAGER_STEAM_LIST,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_OPTIONS_RESET,
@@ -10617,6 +12009,11 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DUMP_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPER,
    (uint32_t)MENU_ENUM_SUBLABEL_DYNAMIC_WALLPAPERS_DIRECTORY,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_FRAMESKIP,
    (uint32_t)MENU_ENUM_SUBLABEL_FASTFORWARD_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_FILE_BROWSER_OPEN_PICKER,
@@ -10632,6 +12029,12 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_FRAME_TIME_COUNTER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_FRONTEND_LOG_LEVEL,
    (uint32_t)MENU_ENUM_SUBLABEL_GAMEMODE_ENABLE_LINUX,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_MENU_OPTION,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P1,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_OVERRIDE_P2,
+   (uint32_t)MENU_ENUM_SUBLABEL_GAME_AI_SHOW_DEBUG,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_CREATE,
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_CORE_OPTIONS_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_GAME_SPECIFIC_OPTIONS,
@@ -10739,6 +12142,12 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
+#ifdef GEKKO
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_NOWINKEY_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OSK_OVERLAY_AUTO_SCALE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ABXY_DIAGONAL_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ANALOG_RECENTER_ZONE,
@@ -10749,6 +12158,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED,
+#if defined(ANDROID)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_HIDE_WHEN_GAMEPAD_CONNECTED_ANDROID,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_ALLOW_OFFSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_FOUR_TOUCH_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_OVERLAY_LIGHTGUN_PORT,
@@ -10776,12 +12188,22 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ACCELEROMETER_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_GYROSCOPE_SENSITIVITY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
+#ifdef UDEV_TOUCH_SUPPORT
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_MOUSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_POINTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
@@ -10795,6 +12217,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_LATENCY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_LEFT_THUMBNAILS_MATERIALUI,
@@ -10807,6 +12232,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_CONTENT_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_STATE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_LOCALAP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_LOCATION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
@@ -10842,6 +12270,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_BOTTOM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
@@ -10884,8 +12315,16 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIGURATIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CONFIRM,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -10918,6 +12357,27 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_MOVE_UP_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_ANIMATION_OPENING_MAIN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_INPUT_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_SETTINGS,
+#endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_EXCLUSIVE_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_WASAPI_SH_BUFFER_LENGTH,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
@@ -10966,6 +12426,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_CHEATS_APPLIED,
@@ -11075,6 +12538,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_CORE_OPTIONS_FLUSH,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_DOWNLOAD_THUMBNAILS,
+#ifdef HAVE_GAME_AI
+   (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_GAME_AI,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_REPLAY,
@@ -11158,6 +12624,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SAMBA_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVEFILE_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATES_IN_CONTENT_DIR_ENABLE,
@@ -11194,6 +12663,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SCREENSHOT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_SCREEN_RESOLUTION,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SERVICES_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACCESSIBILITY,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_ACHIEVEMENTS,
@@ -11214,6 +12686,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER_INTERFACE,
@@ -11228,18 +12703,53 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVESTATES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SCREENSHOTS_BY_CONTENT_ENABLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_SSH_ENABLE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_RICH_PRESENCE_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STEAM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SUBSYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SUSPEND_SCREENSAVER_ENABLE,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE,
+#endif
+#endif
+#ifdef HAVE_LIBNX
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_CPU_PROFILE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_INSTALLED_CORES_PFD,
+#ifdef HAVE_LAKKA
+#ifdef HAVE_LAKKA_SWITCH
+   (uint32_t)MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEMFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
@@ -11252,6 +12762,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_DATE_SEPARATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEDATE_STYLE,
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
@@ -11270,6 +12783,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MANUAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MAX_PERF,
    (uint32_t)MENU_ENUM_SUBLABEL_VALUE_CPU_PERF_MODE_MIN_POWER,
+#ifdef _3DS
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_3DS_DISPLAY_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_3DS_LCD_BOTTOM,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ADAPTIVE_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ALLOW_ROTATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ASPECT_RATIO,
@@ -11282,6 +12799,18 @@ static const uint32_t msg_hash_gl_ids[] =
 #ifdef HAVE_ODROIDGO2
 #else
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_CTX_SCALING,
+#endif
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_FILTER_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_REFRESH_RATE,
+#endif
+#if defined(DINGUX)
+#if defined(RS90) || defined(MIYOO)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_DRIVER,
@@ -11333,6 +12862,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
+#ifdef HAVE_ODROIDGO2
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_RGA_SCALING,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
@@ -11371,6 +12903,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
+#if defined(RARCH_MOBILE)
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_HEIGHT,
@@ -11379,6 +12915,11 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_CUSTOM_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VSYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WAITABLE_SWAPCHAINS,
+#if defined (WIIU)
+#ifdef WIIU
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WIIU_PREFER_DRC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOWED_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_WINDOW_AUTO_HEIGHT_MAX,
@@ -11406,6 +12947,15 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_THEME,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_VERTICAL_THUMBNAILS,
+#ifdef _3DS
+   (uint32_t)MSG_3DS_BOTTOM_MENU_ASSET_NOT_FOUND,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_DEFAULT,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_LOAD_STATE,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_NO_STATE_DATA,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_NO_STATE_THUMBNAIL,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_RESUME,
+   (uint32_t)MSG_3DS_BOTTOM_MENU_SAVE_STATE,
+#endif
    (uint32_t)MSG_ACCESSIBILITY_STARTUP,
    (uint32_t)MSG_ACHIEVEMENT_UNLOCKED,
    (uint32_t)MSG_ADDED_TO_FAVORITES,
@@ -11527,6 +13077,11 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_CORE_RESTORATION_FAILED,
    (uint32_t)MSG_CORE_RESTORATION_INVALID_CONTENT,
    (uint32_t)MSG_CORE_SET_STANDALONE_EXEMPT_FAILED,
+#ifdef HAVE_MIST
+   (uint32_t)MSG_CORE_STEAM_CURRENTLY_DOWNLOADING,
+   (uint32_t)MSG_CORE_STEAM_INSTALLING,
+   (uint32_t)MSG_CORE_STEAM_UNINSTALLED,
+#endif
    (uint32_t)MSG_CORE_UNLOCK_FAILED,
    (uint32_t)MSG_CORE_UNSET_STANDALONE_EXEMPT_FAILED,
    (uint32_t)MSG_CORE_UPDATE_DISABLED,
@@ -11693,6 +13248,14 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_LOADING_HISTORY_FILE,
    (uint32_t)MSG_LOADING_STATE,
    (uint32_t)MSG_LOAD_CORE_FIRST,
+#ifdef HAVE_LAKKA
+   (uint32_t)MSG_LOCALAP_ALREADY_RUNNING,
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_CREATE,
+   (uint32_t)MSG_LOCALAP_ERROR_CONFIG_PARSE,
+   (uint32_t)MSG_LOCALAP_NOT_RUNNING,
+   (uint32_t)MSG_LOCALAP_STARTING,
+   (uint32_t)MSG_LOCALAP_SWITCHING_OFF,
+#endif
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_INVALID,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_LOAD_ERROR,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_DAT_FILE_TOO_LARGE,
@@ -11923,5 +13486,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_VRR_RUNLOOP_DISABLED,
    (uint32_t)MSG_VRR_RUNLOOP_ENABLED,
    (uint32_t)MSG_WAITING_FOR_CLIENT,
+#ifdef HAVE_LAKKA
+   (uint32_t)MSG_WIFI_CONNECTING_TO,
+   (uint32_t)MSG_WIFI_DISCONNECT_FROM,
+   (uint32_t)MSG_WIFI_EMPTY_SSID,
+#endif
    (uint32_t)MSG_WIFI_SCAN_COMPLETE,
 };

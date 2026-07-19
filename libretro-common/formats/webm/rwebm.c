@@ -34,6 +34,7 @@
 #define ID_TRACKTYPE       0x83u
 #define ID_CODECID         0x86u
 #define ID_CODECPRIVATE    0x63A2u
+#define ID_CODECDELAY      0x56AAu
 #define ID_VIDEO           0xE0u
 #define ID_PIXELWIDTH      0xB0u
 #define ID_PIXELHEIGHT     0xBAu
@@ -204,6 +205,11 @@ static enum rwebm_codec codec_from_id(const char *id)
    if (!strcmp(id, "V_VP9"))    return RWEBM_CODEC_VP9;
    if (!strcmp(id, "A_VORBIS")) return RWEBM_CODEC_VORBIS;
    if (!strcmp(id, "A_OPUS"))   return RWEBM_CODEC_OPUS;
+   if (!strcmp(id, "V_MPEG4/ISO/AVC")) return RWEBM_CODEC_H264;
+   /* A_AAC with a profile suffix (e.g. A_AAC/MPEG4/LC) appears in older
+    * muxes; the CodecPrivate AudioSpecificConfig is authoritative
+    * either way. */
+   if (!strncmp(id, "A_AAC", 5)) return RWEBM_CODEC_AAC;
    return RWEBM_CODEC_UNKNOWN;
 }
 
@@ -323,6 +329,11 @@ static void parse_track_entry(const uint8_t *p, const uint8_t *end,
          case ID_CODECPRIVATE:
             trk->codec_private      = body;
             trk->codec_private_size = (size_t)sz;
+            break;
+         case ID_CODECDELAY:
+            /* nanoseconds of decoded output to drop from the stream
+             * start (the encoder delay; AAC priming in mkv muxes) */
+            trk->codec_delay_ns = be_uint(body, (size_t)sz);
             break;
          case ID_VIDEO:
          case ID_AUDIO:

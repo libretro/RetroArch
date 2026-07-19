@@ -181,7 +181,14 @@ static void *sdl_microphone_open_mic(void *driver_context, const char *device,
 
    desired_spec.freq     = rate;
 #ifdef HAVE_SDL2
-   desired_spec.format   = AUDIO_F32SYS;
+   /* Same negotiation hint the output device honours above. The libretro
+    * microphone interface is int16 only, so 'Int16' here keeps the whole
+    * capture path integer instead of converting a float stream back down.
+    * SDL converts transparently if the device's native format differs.
+    * SDL1.2 capture is int16 only. */
+   desired_spec.format   = (config_get_ptr()->uints.audio_format_negotiation
+         == AUDIO_FORMAT_NEGOTIATION_INT16)
+         ? AUDIO_S16SYS : AUDIO_F32SYS;
 #else
    desired_spec.format   = AUDIO_S16SYS;
 #endif

@@ -7456,9 +7456,31 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 #endif
 
+      /* Same hazard as the HDR case above, for the SDR path: changing
+       * the requested bit depth does not change width/height/interval,
+       * so vulkan_create_swapchain would early-return and keep the old
+       * format.  Force recreation when the depth we want and the depth
+       * we have disagree. */
+      {
+         settings_t *settings   = config_get_ptr();
+         bool want_10bit        = (settings->uints.video_swapchain_bit_depth == 2);
+         bool have_10bit        =
+               (   vk->context->swapchain_format
+                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32
+                || vk->context->swapchain_format
+                     == VK_FORMAT_A2R10G10B10_UNORM_PACK32);
+         bool sdr               =
+#ifdef VULKAN_HDR_SWAPCHAIN
+               !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE);
+#else
+               true;
+#endif
+         if (sdr && (want_10bit != have_10bit))
+            vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+      }
+
       if (vk->ctx_driver->set_resize)
          vk->ctx_driver->set_resize(vk->ctx_data, mode.width, mode.height);
-
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       {

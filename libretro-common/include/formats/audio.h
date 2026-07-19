@@ -63,10 +63,12 @@ enum audio_type_enum
    AUDIO_TYPE_NONE = 0,
    AUDIO_TYPE_WAV,
    AUDIO_TYPE_FLAC,
-   AUDIO_TYPE_VORBIS,
+   AUDIO_TYPE_VORBIS, /* Ogg Vorbis (rvorbis); also WebM buffers (.weba) */
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
-   AUDIO_TYPE_OPUS  /* Opus (ropus); demuxed path only (no Ogg parser) */
+   AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed, Ogg (.opus) or WebM (.weba) */
+   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, or a whole MP4/M4A
+                    * buffer when rmp4 is built in (no ADTS parser)     */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
@@ -99,6 +101,29 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
       const void *setup, size_t setup_size,
       const void *packets, size_t packets_size,
       const uint32_t *sizes, size_t num_packets);
+
+/* Frames the container trims from the start of the stream (e.g. the
+ * AAC encoder delay from an MP4 edit list).  Call between
+ * set_demuxed_ptr and audio_transfer_start; only codecs whose trim is
+ * not carried in the codec setup itself accept it (currently AAC --
+ * Opus pre-skip comes from the OpusHead and needs no call). */
+bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
+      uint64_t frames);
+
+/* Identify the codec of an Ogg buffer from its first page's
+ * identification header: AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose
+ * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
+ * not Ogg or carries an unsupported codec.  An .ogg extension can
+ * legitimately wrap either. */
+enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
+      size_t len);
+
+/* Identify the first supported audio codec of a WebM buffer (.weba):
+ * AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose buffer modes both accept
+ * the whole WebM file; AUDIO_TYPE_NONE if it is not WebM or carries no
+ * supported track. */
+enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
+      size_t len);
 
 /* Open the decoder over the buffer set above. Returns false on malformed
  * input. */

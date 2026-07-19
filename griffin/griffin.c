@@ -36,6 +36,7 @@
 #define HAVE_RMODTRACKER 1
 
 #define HAVE_ROPUS 1
+#define HAVE_RAAC 1
 
 /* The ZIP archive backend and the DEFLATE trans_stream backend both fall
  * back to the built-in inflate/deflate codec, so compression support is
@@ -1032,6 +1033,9 @@ DRIVERS
 #endif
 #ifdef HAVE_ROPUS
 #include "../libretro-common/formats/opus/ropus.c"
+#endif
+#ifdef HAVE_RAAC
+#include "../libretro-common/formats/aac/raac.c"
 #endif
 #if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_ROPUS)
 #include "../libretro-common/formats/audio_transfer.c"

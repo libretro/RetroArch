@@ -74,12 +74,13 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
-   /* Honour the audio format-negotiation hint for playback: 'Int16' skips
-    * the float request and uses S16 directly. Capture (microphone) keeps
-    * probing float-first. Either way we fall back to S16 if float is
+   /* Honour the audio format-negotiation hint for both directions: 'Int16'
+    * skips the float request and uses S16 directly. Capture wants this as
+    * much as playback does - the libretro microphone interface is int16
+    * only, so a float capture stream is converted back to int16 before the
+    * core ever sees it. Either way we fall back to S16 if float is
     * unavailable. */
-   if (     stream == SND_PCM_STREAM_PLAYBACK
-         && config_get_ptr()->uints.audio_format_negotiation
+   if (     config_get_ptr()->uints.audio_format_negotiation
                == AUDIO_FORMAT_NEGOTIATION_INT16)
       format = SND_PCM_FORMAT_S16;
    else

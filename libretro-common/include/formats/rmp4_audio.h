@@ -37,16 +37,24 @@ RETRO_BEGIN_DECLS
  * On success returns 1 and stores a malloc'd sample buffer (caller
  * frees), the per-channel frame count, the sample rate and the channel
  * count. max_ms > 0 caps the decoded duration. Returns 0 when the file
- * has no audio track, the codec is unsupported or not compiled in
- * (e.g. AAC), or the track is malformed.
+ * has no audio track, the codec is unsupported or not compiled in,
+ * or the track is malformed.
  *
- * Opus pre-skip (from the dOps box) is honoured; output is always
- * 48 kHz for Opus and the coded rate for Vorbis. */
+ * Opus pre-skip (from the dOps box) and the AAC encoder delay (from
+ * the track's edit list) are honoured; output is always 48 kHz for
+ * Opus and the coded rate for Vorbis and AAC. */
 int rmp4_audio_decode(const void *buf, size_t len, int64_t max_ms,
       int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels);
 
-/* Same, but returns a complete in-memory RIFF/WAVE file (16-bit PCM),
- * ready for audio_mixer_load_wav / AUDIO_MIXER_TYPE_WAV. */
+/* Same, decoded through the codecs' float pipelines (unit scale,
+ * full scale +-1.0) with no 16-bit quantisation anywhere. */
+int rmp4_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
+      float **pcm, size_t *frames, unsigned *rate, unsigned *channels);
+
+/* Same, but returns a complete in-memory RIFF/WAVE file (IEEE-float
+ * samples from the float pipelines, so nothing quantises between the
+ * codec and the mixer's float voice), ready for audio_mixer_load_wav
+ * / AUDIO_MIXER_TYPE_WAV. */
 int rmp4_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       void **wav, size_t *wav_size);
 

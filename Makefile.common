@@ -2082,6 +2082,11 @@ endif
 endif
 endif
 
+ifeq ($(HAVE_RAAC), 1)
+   DEFINES += -DHAVE_RAAC
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/aac/raac.o
+endif
+
 ifeq ($(HAVE_ROPUS), 1)
    DEFINES += -DHAVE_ROPUS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o

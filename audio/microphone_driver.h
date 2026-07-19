@@ -21,6 +21,7 @@
 #include <retro_common_api.h>
 #include <libretro.h>
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 #include <queues/fifo_queue.h>
 
 /**
@@ -175,6 +176,21 @@ struct retro_microphone
     * Not shared with the audio driver's resampler.
     */
    void *resampler_data;
+
+   /**
+    * Deterministic integer counterpart of \c resampler_data, created only
+    * when the device delivers int16. The libretro microphone interface is
+    * int16-only, so when the device is int16 as well the whole flush can
+    * stay in the integer domain and skip the s16->float->s16 round-trip.
+    * NULL when the device delivers float, or when the selected resampler
+    * has no integer implementation; the float path runs in that case.
+    */
+   void *resampler_data_int16;
+
+   /** Process/free for \c resampler_data_int16. NULL when it is NULL. */
+   void (*resampler_int16_process)(void *re,
+         struct resampler_data_int16 *data);
+   void (*resampler_int16_free)(void *re);
 
    /**
     * The ratio of the core-requested sample rate to the device's opened sample rate.
@@ -450,6 +466,18 @@ typedef struct microphone_driver_state
     * and up-channeled to dual-mono.
     */
    float *dual_mono_frames;
+
+   /**
+    * Interleaved-stereo int16 counterparts of \c dual_mono_frames and
+    * \c resampled_frames, used by the integer flush path. The int16
+    * resamplers take interleaved stereo, so mono mic input is duplicated
+    * into both channels and the left one is taken back out afterwards --
+    * exactly what the float path does, without leaving the integer domain.
+    */
+   int16_t *dual_mono_frames_int16;
+   size_t   dual_mono_frames_int16_length;
+   int16_t *resampled_frames_int16;
+   size_t   resampled_frames_int16_length;
 
    /**
     * The length of \c dual_mono_frames in bytes.
