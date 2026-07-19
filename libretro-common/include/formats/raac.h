@@ -75,6 +75,11 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
 int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       float *out);
 
+/* Return the decoder to its just-opened state (clears the overlap-add
+ * history and reseeds the noise generator) so a stream can be decoded
+ * again from its first packet, e.g. for looping. */
+void raac_reset(raac_t *a);
+
 void raac_close(raac_t *a);
 
 RETRO_END_DECLS

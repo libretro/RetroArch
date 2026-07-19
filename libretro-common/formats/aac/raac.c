@@ -1755,6 +1755,22 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
    return ret;
 }
 
+void raac_reset(raac_t *a)
+{
+   unsigned ch;
+   if (!a)
+      return;
+   for (ch = 0; ch < RAAC_MAX_CH; ch++)
+   {
+      memset(a->ch[ch].overlap, 0, sizeof(a->ch[ch].overlap));
+      memset(a->ch[ch].coef,    0, sizeof(a->ch[ch].coef));
+      a->ch[ch].prev_window_shape = 0;
+   }
+   /* reseed the PNS generator so a rewound stream decodes exactly as a
+    * fresh one */
+   a->noise_state = 0x1f2e3d4cu;
+}
+
 void raac_close(raac_t *a)
 {
    free(a);
