@@ -3144,8 +3144,14 @@ static void mic_driver_microphone_handle_free(retro_microphone_t *microphone, bo
    if (microphone->resampler && microphone->resampler->free && microphone->resampler_data)
       microphone->resampler->free(microphone->resampler_data);
 
-   microphone->resampler      = NULL;
-   microphone->resampler_data = NULL;
+   if (microphone->resampler_data_int16 && microphone->resampler_int16_free)
+      microphone->resampler_int16_free(microphone->resampler_data_int16);
+
+   microphone->resampler                = NULL;
+   microphone->resampler_data           = NULL;
+   microphone->resampler_data_int16     = NULL;
+   microphone->resampler_int16_process  = NULL;
+   microphone->resampler_int16_free     = NULL;
 
    /* If the mic driver is being reset and the microphone was already valid... */
    if ((microphone->flags & MICROPHONE_FLAG_ACTIVE) && is_reset)
@@ -3184,6 +3190,19 @@ static bool mic_driver_allocate_frames(microphone_driver_state_t *mic_st)
    mic_st->dual_mono_frames_length = max_frames * sizeof(float) * 2;
    mic_st->dual_mono_frames = (float*)memalign_alloc(64, mic_st->dual_mono_frames_length);
    if (!mic_st->dual_mono_frames)
+      return false;
+
+   /* Interleaved stereo, for the integer flush path. */
+   mic_st->dual_mono_frames_int16_length = max_frames * sizeof(int16_t) * 2;
+   mic_st->dual_mono_frames_int16 = (int16_t*)memalign_alloc(64,
+         mic_st->dual_mono_frames_int16_length);
+   if (!mic_st->dual_mono_frames_int16)
+      return false;
+
+   mic_st->resampled_frames_int16_length = max_frames * sizeof(int16_t) * 2;
+   mic_st->resampled_frames_int16 = (int16_t*)memalign_alloc(64,
+         mic_st->resampled_frames_int16_length);
+   if (!mic_st->resampled_frames_int16)
       return false;
 
    mic_st->resampled_frames_length = max_frames * sizeof(float) * 2;
@@ -3318,6 +3337,55 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
    {
       RARCH_ERR("[Microphone] Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
       goto error;
+   }
+
+   /* The libretro microphone interface hands the core int16 unconditionally,
+    * so when the device also delivers int16 there is no reason for the flush
+    * to detour through float: build the deterministic integer counterpart of
+    * the resampler just chosen and let microphone_driver_flush() use it.
+    * Float devices, and resamplers with no integer implementation, leave
+    * these NULL and keep the float path. */
+   microphone->resampler_data_int16    = NULL;
+   microphone->resampler_int16_process = NULL;
+   microphone->resampler_int16_free    = NULL;
+   if (     !(microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+         &&   microphone->resampler
+         &&   microphone->resampler->short_ident)
+   {
+      const char *rs_ident = microphone->resampler->short_ident;
+      if (string_is_equal(rs_ident, "sinc"))
+      {
+         microphone->resampler_data_int16 = sinc_resampler_int16_init(
+               microphone->orig_ratio,
+               audio_sinc_int16_quality_map(mic_st->resampler_quality));
+         microphone->resampler_int16_process = sinc_resampler_int16_process;
+         microphone->resampler_int16_free    = sinc_resampler_int16_free;
+      }
+#ifdef HAVE_NEAREST_RESAMPLER
+      else if (string_is_equal(rs_ident, "nearest"))
+      {
+         microphone->resampler_data_int16 = nearest_resampler_int16_init();
+         microphone->resampler_int16_process = nearest_resampler_int16_process;
+         microphone->resampler_int16_free    = nearest_resampler_int16_free;
+      }
+#endif
+#ifdef HAVE_CC_RESAMPLER
+      else if (string_is_equal(rs_ident, "cc"))
+      {
+         microphone->resampler_data_int16 = cc_resampler_int16_init(
+               microphone->orig_ratio);
+         microphone->resampler_int16_process = cc_resampler_int16_process;
+         microphone->resampler_int16_free    = cc_resampler_int16_free;
+      }
+#endif
+      if (!microphone->resampler_data_int16)
+      {
+         microphone->resampler_int16_process = NULL;
+         microphone->resampler_int16_free    = NULL;
+      }
+      RARCH_LOG("[Microphone] Resample path: %s\n",
+            microphone->resampler_data_int16
+                  ? "integer s16 (no float round-trip)" : "float");
    }
 
    microphone->flags &= ~MICROPHONE_FLAG_PENDING;
@@ -3484,6 +3552,47 @@ static size_t microphone_driver_flush(
       return frames_to_enqueue;
    }
    /* Couldn't take the fast path, so let's resample the mic input */
+
+   /* Deterministic integer path: the device gave us int16 and the selected
+    * resampler has an integer implementation, so the whole flush stays in
+    * the integer domain. Structurally identical to the float path below --
+    * duplicate mono into interleaved stereo, resample, take the left
+    * channel -- but without the s16->float->s16 round-trip, which is pure
+    * requantisation on a signal that starts and ends as int16. */
+   if (     !(microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+         &&   microphone->resampler_data_int16
+         &&   microphone->resampler_int16_process)
+   {
+      struct resampler_data_int16 s16;
+      const int16_t *src = (const int16_t*)mic_st->input_frames;
+      int16_t       *dst = mic_st->dual_mono_frames_int16;
+      size_t         n;
+
+      for (n = 0; n < resampler_data.input_frames; n++)
+      {
+         dst[(n << 1)    ] = src[n];
+         dst[(n << 1) + 1] = src[n];
+      }
+
+      s16.data_in       = dst;
+      s16.data_out      = mic_st->resampled_frames_int16;
+      s16.input_frames  = resampler_data.input_frames;
+      s16.output_frames = 0;
+      s16.ratio         = resampler_data.ratio;
+      microphone->resampler_int16_process(
+            microphone->resampler_data_int16, &s16);
+
+      /* Left channel only; both carry the same signal. */
+      for (n = 0; n < s16.output_frames; n++)
+         mic_st->final_frames[n] = mic_st->resampled_frames_int16[n << 1];
+
+      frames_to_enqueue = MIN(
+            FIFO_WRITE_AVAIL(microphone->outgoing_samples) / sizeof(int16_t),
+            s16.output_frames);
+      fifo_write(microphone->outgoing_samples, mic_st->final_frames,
+            frames_to_enqueue * sizeof(int16_t));
+      return frames_to_enqueue;
+   }
 
    /* First we need to format the input for the resampler. */
    /* If this mic provides floating-point samples... */
@@ -3744,6 +3853,16 @@ bool microphone_driver_deinit(bool is_reset)
       memalign_free(mic_st->dual_mono_frames);
    mic_st->dual_mono_frames        = NULL;
    mic_st->dual_mono_frames_length = 0;
+
+   if (mic_st->dual_mono_frames_int16)
+      memalign_free(mic_st->dual_mono_frames_int16);
+   mic_st->dual_mono_frames_int16        = NULL;
+   mic_st->dual_mono_frames_int16_length = 0;
+
+   if (mic_st->resampled_frames_int16)
+      memalign_free(mic_st->resampled_frames_int16);
+   mic_st->resampled_frames_int16        = NULL;
+   mic_st->resampled_frames_int16_length = 0;
 
    if (mic_st->resampled_frames)
       memalign_free(mic_st->resampled_frames);
