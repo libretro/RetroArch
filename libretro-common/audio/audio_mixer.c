@@ -130,6 +130,7 @@ struct audio_mixer_voice
          unsigned    position;
          unsigned    samples;
          unsigned    buf_samples;
+         unsigned    channels;    /* source channels; mono is duplicated */
          float       ratio;
          /* s16 pipeline (parallel; used when voice->is_s16) */
          int16_t    *buffer_s16;
@@ -851,7 +852,13 @@ static bool audio_mixer_play_stream(
    if (!audio_transfer_start(xfer, type))
       goto error;
 
-   audio_transfer_info(xfer, type, NULL, &rate, NULL);
+   {
+      unsigned ch = 0;
+      audio_transfer_info(xfer, type, &ch, &rate, NULL);
+      if (ch < 1 || ch > 2)
+         goto error;
+      voice->types.stream.channels = ch;
+   }
 
    if (rate != s_rate)
    {
@@ -1371,8 +1378,25 @@ again:
 
       {
          size_t got = 0;
-         audio_transfer_read_f32(voice->types.stream.stream, type,
-               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         if (voice->types.stream.channels == 1)
+         {
+            /* mono source: read into the front, then expand to
+             * interleaved stereo in place, descending - sample n-1
+             * is read before any destination at or above it is
+             * written, so the source is never clobbered */
+            unsigned n;
+            audio_transfer_read_f32(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+            for (n = (unsigned)got; n > 0; n--)
+            {
+               float s            = temp_buffer[n - 1];
+               temp_buffer[2*n-2] = s;
+               temp_buffer[2*n-1] = s;
+            }
+         }
+         else
+            audio_transfer_read_f32(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
          temp_samples = (unsigned)(got * 2);
       }
 
