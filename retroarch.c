@@ -8739,6 +8739,22 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_IS_DUMMY_CORE:
          return runloop_st->current_core_type == CORE_TYPE_DUMMY;
       case RARCH_CTL_IS_CORE_LOADED:
+#ifdef HAVE_STATIC_DUMMY
+         /* A static dummy build links no libretro core, yet
+          * RARCH_PATH_CORE may still name one: on static
+          * platforms it is populated from the salamander
+          * config at startup, and the argv[0] overwrite in
+          * the frontend's process_args is skipped when the
+          * process is launched without arguments (e.g. via
+          * title override on Switch). Comparing names against
+          * that phantom path yields false positives, causing
+          * content to be loaded in-process into the dummy
+          * core instead of forking the real core, and history
+          * entries/runtime logs to be recorded against the
+          * wrong core. No core can ever be loaded in this
+          * process, so always report false. */
+         return false;
+#else
          {
             const char *core_path = (const char*)data;
             const char *core_file = path_basename_nocompression(core_path);
@@ -8755,6 +8771,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             }
          }
          return false;
+#endif
 #if defined(HAVE_RUNAHEAD) && (defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB))
       case RARCH_CTL_IS_SECOND_CORE_AVAILABLE:
          return
