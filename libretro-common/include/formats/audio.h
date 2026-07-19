@@ -63,10 +63,10 @@ enum audio_type_enum
    AUDIO_TYPE_NONE = 0,
    AUDIO_TYPE_WAV,
    AUDIO_TYPE_FLAC,
-   AUDIO_TYPE_VORBIS,
+   AUDIO_TYPE_VORBIS, /* Ogg Vorbis (rvorbis); also WebM buffers (.weba) */
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
-   AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed path only (no Ogg parser) */
+   AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed, Ogg (.opus) or WebM (.weba) */
    AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, or a whole MP4/M4A
                     * buffer when rmp4 is built in (no ADTS parser)     */
 };
@@ -109,6 +109,13 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
  * Opus pre-skip comes from the OpusHead and needs no call). */
 bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames);
+
+/* Identify the first supported audio codec of a WebM buffer (.weba):
+ * AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose buffer modes both accept
+ * the whole WebM file; AUDIO_TYPE_NONE if it is not WebM or carries no
+ * supported track. */
+enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
+      size_t len);
 
 /* Open the decoder over the buffer set above. Returns false on malformed
  * input. */

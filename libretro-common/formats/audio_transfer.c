@@ -51,6 +51,9 @@
 #include <formats/rmp4.h>
 #endif
 #endif
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#include <formats/rwebm.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -104,6 +107,12 @@ struct audio_transfer_vorbis
     * part of the stream's identity. */
    uint8_t    *synth;
    size_t      synth_size;
+   /* WebM buffer mode (.weba): packets extracted from the container at
+    * start() into these owned arrays, then handed through the demuxed
+    * machinery above (rvorbis wants Ogg framing, which that path
+    * synthesises). */
+   uint8_t    *own_pkts;
+   uint32_t   *own_sizes;
 };
 #endif
 
@@ -171,6 +180,10 @@ struct audio_transfer_opus
    const uint8_t *buf;
    size_t      buf_size;
    int         ogg;          /* buffer is an Ogg Opus stream             */
+#ifdef HAVE_RWEBM
+   rwebm_t    *demux;        /* buffer is WebM audio (.weba)             */
+   int         track_idx;
+#endif
    size_t      pg_off;       /* byte offset of the current page          */
    size_t      body_off;     /* byte offset of the current segment       */
    unsigned    seg_idx;      /* next segment in the current page         */
@@ -191,6 +204,28 @@ struct audio_transfer_opus
    int16_t     pend_s16[5760 * 2];
    float       pend_f32[5760 * 2];
 };
+
+/* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
+static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
+{
+   static const int16_t fs[32] = {
+      480, 960, 1920, 2880, 480, 960, 1920, 2880,   /* SILK NB/MB      */
+      480, 960, 1920, 2880,                         /* SILK WB         */
+      480, 960, 480, 960,                           /* hybrid          */
+      120, 240, 480, 960, 120, 240, 480, 960,       /* CELT NB/WB      */
+      120, 240, 480, 960, 120, 240, 480, 960        /* CELT SWB/FB     */
+   };
+   int count;
+   if (!n)
+      return 0;
+   switch (d[0] & 3)
+   {
+      case 0: count = 1; break;
+      case 3: count = n >= 2 ? (d[1] & 0x3F) : 0; break;
+      default: count = 2; break;
+   }
+   return (int64_t)fs[d[0] >> 3] * count;
+}
 
 /* Validate the Ogg page at off and return its total size (header plus
  * body), or 0 if there is no valid page there.  On success the body
@@ -626,6 +661,42 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
    return false;
 }
 
+enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
+      size_t len)
+{
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   rwebm_t *wm;
+   int i;
+   enum audio_type_enum found = AUDIO_TYPE_NONE;
+   const uint8_t *b = (const uint8_t*)buf;
+   if (!b || len < 4
+         || b[0] != 0x1A || b[1] != 0x45 || b[2] != 0xDF || b[3] != 0xA3)
+      return AUDIO_TYPE_NONE;
+   if (!(wm = rwebm_open_memory(buf, len)))
+      return AUDIO_TYPE_NONE;
+   for (i = 0; i < rwebm_num_tracks(wm) && found == AUDIO_TYPE_NONE; i++)
+   {
+      const rwebm_track *t = rwebm_get_track(wm, i);
+      if (!t || t->type != RWEBM_TRACK_AUDIO || !t->codec_private_size)
+         continue;
+#ifdef HAVE_ROPUS
+      if (t->codec == RWEBM_CODEC_OPUS)
+         found = AUDIO_TYPE_OPUS;
+#endif
+#ifdef HAVE_RVORBIS
+      if (t->codec == RWEBM_CODEC_VORBIS)
+         found = AUDIO_TYPE_VORBIS;
+#endif
+   }
+   rwebm_close(wm);
+   return found;
+#else
+   (void)buf;
+   (void)len;
+   return AUDIO_TYPE_NONE;
+#endif
+}
+
 bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames)
 {
@@ -671,6 +742,73 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          int   len, err = 0;
          if (!v)
             return false;
+#ifdef HAVE_RWEBM
+         /* Buffer mode, WebM audio (.weba): extract the Vorbis track's
+          * setup and packets from the container, then reuse the
+          * demuxed path's Ogg synthesis below (rvorbis wants Ogg
+          * framing). */
+         if (!v->setup && v->data && v->size >= 4
+               && ((const uint8_t*)v->data)[0] == 0x1A
+               && ((const uint8_t*)v->data)[1] == 0x45
+               && ((const uint8_t*)v->data)[2] == 0xDF
+               && ((const uint8_t*)v->data)[3] == 0xA3)
+         {
+            rwebm_t *wm = rwebm_open_memory(v->data, v->size);
+            const rwebm_track *at = NULL;
+            int i, track = -1;
+            rwebm_packet pkt;
+            size_t napkts = 0, abytes = 0, off = 0, k = 0;
+            if (!wm)
+               return false;
+            for (i = 0; i < rwebm_num_tracks(wm); i++)
+            {
+               const rwebm_track *t = rwebm_get_track(wm, i);
+               if (t && t->type == RWEBM_TRACK_AUDIO
+                     && t->codec == RWEBM_CODEC_VORBIS
+                     && t->codec_private_size)
+               {
+                  at    = t;
+                  track = i;
+                  break;
+               }
+            }
+            if (!at)
+            {
+               rwebm_close(wm);
+               return false;
+            }
+            while (rwebm_read_packet(wm, &pkt) == 1)
+               if (pkt.track == track)
+               {
+                  napkts++;
+                  abytes += pkt.size;
+               }
+            rwebm_rewind(wm);
+            v->own_pkts  = (uint8_t*)malloc(abytes ? abytes : 1);
+            v->own_sizes = (uint32_t*)malloc(
+                  (napkts ? napkts : 1) * sizeof(uint32_t));
+            if (!v->own_pkts || !v->own_sizes || !napkts)
+            {
+               rwebm_close(wm);
+               return false;
+            }
+            while (rwebm_read_packet(wm, &pkt) == 1)
+            {
+               if (pkt.track != track)
+                  continue;
+               memcpy(v->own_pkts + off, pkt.data, pkt.size);
+               v->own_sizes[k++] = (uint32_t)pkt.size;
+               off += pkt.size;
+            }
+            v->setup        = at->codec_private;
+            v->setup_size   = at->codec_private_size;
+            v->packets      = v->own_pkts;
+            v->packets_size = off;
+            v->pkt_sizes    = v->own_sizes;
+            v->num_packets  = k;
+            rwebm_close(wm);
+         }
+#endif
          if (v->setup)
          {
             /* Demuxed path: repackage the container's raw Vorbis setup +
@@ -740,6 +878,62 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (!op)
             return false;
+#ifdef HAVE_RWEBM
+         /* buffer mode, WebM audio (.weba): demux with rwebm; packets
+          * stream from the demuxer on demand.  The exact decodable
+          * length comes from the packets' TOC durations less pre-skip
+          * and the container's end trimming (DiscardPadding). */
+         if (!op->setup && op->buf && op->buf_size >= 4
+               && op->buf[0] == 0x1A && op->buf[1] == 0x45
+               && op->buf[2] == 0xDF && op->buf[3] == 0xA3)
+         {
+            const rwebm_track *at = NULL;
+            int i;
+            rwebm_packet pkt;
+            int64_t toc = 0, discard_ns = 0, preskip = 0;
+            if (!(op->demux = rwebm_open_memory(op->buf, op->buf_size)))
+               return false;
+            op->track_idx = -1;
+            for (i = 0; i < rwebm_num_tracks(op->demux); i++)
+            {
+               const rwebm_track *t = rwebm_get_track(op->demux, i);
+               if (t && t->type == RWEBM_TRACK_AUDIO
+                     && t->codec == RWEBM_CODEC_OPUS
+                     && t->codec_private_size)
+               {
+                  at            = t;
+                  op->track_idx = i;
+                  break;
+               }
+            }
+            if (!at)
+               return false;
+            op->handle = ropus_open(at->codec_private,
+                  at->codec_private_size);
+            if (!op->handle)
+               return false;
+            while (rwebm_read_packet(op->demux, &pkt) == 1)
+            {
+               if (pkt.track != op->track_idx)
+                  continue;
+               toc += audio_transfer_opus_pkt_frames(pkt.data, pkt.size);
+               if (pkt.discard_padding > 0)
+                  discard_ns += pkt.discard_padding;
+            }
+            rwebm_rewind(op->demux);
+            preskip   = (int64_t)ropus_preskip(op->handle);
+            op->limit = -1;
+            if (toc > 0)
+            {
+               op->limit = toc - preskip
+                  - (discard_ns * 48000 + 500000000) / 1000000000;
+               if (op->limit < 0)
+                  op->limit = 0;
+            }
+            op->emitted = 0;
+         }
+         else
+#endif
          /* buffer mode: a whole Ogg Opus file.  The ID header sits
           * alone on the first page (RFC 7845), the comment header
           * finishes on its own page(s), and audio pages follow; the
@@ -1174,6 +1368,23 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       uint32_t plen;
       int r;
       unsigned skip;
+#ifdef HAVE_RWEBM
+      if (op->demux)
+      {
+         /* .weba: pull the next packet from the demuxer */
+         rwebm_packet pkt;
+         for (;;)
+         {
+            if (rwebm_read_packet(op->demux, &pkt) != 1)
+               return 0;
+            if (pkt.track == op->track_idx)
+               break;
+         }
+         pdata = pkt.data;
+         plen  = (uint32_t)pkt.size;
+      }
+      else
+#endif
       if (op->ogg)
       {
          r = audio_transfer_opus_next_pkt(op, &pdata, &plen);
@@ -1214,10 +1425,14 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
             op->preskip_left  = 0;
          }
       }
-      /* Ogg mode: the end granule bounds emission (container end
-       * trimming); frames now pending will all be consumed, so credit
-       * them here. */
-      if (op->ogg && op->limit >= 0 && op->pend_frames)
+      /* Buffer modes: the end granule (Ogg) or the TOC total less end
+       * trimming (WebM) bounds emission; frames now pending will all
+       * be consumed, so credit them here. */
+      if ((op->ogg
+#ifdef HAVE_RWEBM
+               || op->demux
+#endif
+            ) && op->limit >= 0 && op->pend_frames)
       {
          int64_t left = op->limit - op->emitted;
          if (left <= 0)
@@ -1677,6 +1892,10 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          if (!op || !op->handle || frame != 0)
             return false;        /* rewind-only (used by looping)       */
          ropus_reset(op->handle);
+#ifdef HAVE_RWEBM
+         if (op->demux)
+            rwebm_rewind(op->demux);
+#endif
          op->pkt_index    = 0;
          op->pkt_offset   = 0;
          op->pg_off       = op->audio_off;
@@ -1741,6 +1960,8 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          if (v->handle)
             rvorbis_close(v->handle);
          free(v->synth);
+         free(v->own_pkts);
+         free(v->own_sizes);
          break;
       }
 #endif
@@ -1777,6 +1998,10 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (op && op->handle)
             ropus_close(op->handle);
+#ifdef HAVE_RWEBM
+         if (op && op->demux)
+            rwebm_close(op->demux);
+#endif
          break;
       }
 #endif
