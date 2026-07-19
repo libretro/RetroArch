@@ -24,16 +24,24 @@
 #define __LIBRETRO_SDK_ATOMIC_H
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 /* Minimal portable atomic operations for SPSC patterns.
  *
  * This header consolidates the ad-hoc atomic shims previously duplicated
  * in audio/drivers/{coreaudio,coreaudio3,xaudio,opensl}.c, audio/common/
  * mmdevice_common.c and gfx/gfx_thumbnail.c.  The surface is intentionally
- * narrow: load, store, fetch_add, fetch_sub, plus inc/dec convenience
- * wrappers.  Everything is on plain machine words (int and size_t); no
- * compare-exchange, no double-word ops, no thread-fences.  Add only when
- * a real caller needs it.
+ * narrow: load, store, fetch_add, fetch_sub, fetch_or, fetch_and, plus
+ * inc/dec convenience wrappers.  Everything is on plain machine words
+ * (int and size_t); no compare-exchange, no double-word ops, no
+ * thread-fences.  Add only when a real caller needs it.
+ *
+ * fetch_or / fetch_and are int-width only, deliberately.  They exist for
+ * flag words, which are 32-bit everywhere in the tree, and the Apple
+ * OSAtomic backend has no 64-bit bitwise primitive -- a _size variant
+ * could not be implemented there without a compare-exchange loop, which
+ * this header does not provide.  Rather than ship a size variant that is
+ * unavailable on one backend, the operation is simply not offered.
  *
  * Memory ordering is fixed per-operation rather than parameterised, to
  * keep the call sites readable and to avoid having to invent ordering
@@ -43,6 +51,8 @@
  *   retro_atomic_store_release  - release store  (pairs with acquire load)
  *   retro_atomic_fetch_add      - acq_rel RMW
  *   retro_atomic_fetch_sub      - acq_rel RMW
+ *   retro_atomic_fetch_or       - acq_rel RMW, int only, returns old value
+ *   retro_atomic_fetch_and      - acq_rel RMW, int only, returns old value
  *   retro_atomic_inc / dec      - acq_rel RMW, return void
  *
  * Backend selection (in order):
@@ -351,6 +361,10 @@ typedef atomic_size_t retro_atomic_size_t;
    atomic_fetch_add_explicit((p), (v), memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
    atomic_fetch_sub_explicit((p), (v), memory_order_acq_rel)
+#define retro_atomic_fetch_or_int(p, v) \
+   atomic_fetch_or_explicit((p), (v), memory_order_acq_rel)
+#define retro_atomic_fetch_and_int(p, v) \
+   atomic_fetch_and_explicit((p), (v), memory_order_acq_rel)
 
 #define retro_atomic_load_acquire_size(p) \
    atomic_load_explicit((p), memory_order_acquire)
@@ -404,6 +418,10 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
    std::atomic_fetch_add_explicit((p), (v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
    std::atomic_fetch_sub_explicit((p), (v), std::memory_order_acq_rel)
+#define retro_atomic_fetch_or_int(p, v) \
+   std::atomic_fetch_or_explicit((p), (v), std::memory_order_acq_rel)
+#define retro_atomic_fetch_and_int(p, v) \
+   std::atomic_fetch_and_explicit((p), (v), std::memory_order_acq_rel)
 
 #define retro_atomic_load_acquire_size(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
@@ -434,6 +452,10 @@ typedef size_t retro_atomic_size_t;
    __atomic_fetch_add((p), (v), __ATOMIC_ACQ_REL)
 #define retro_atomic_fetch_sub_int(p, v) \
    __atomic_fetch_sub((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_or_int(p, v) \
+   __atomic_fetch_or((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_and_int(p, v) \
+   __atomic_fetch_and((p), (v), __ATOMIC_ACQ_REL)
 
 #define retro_atomic_load_acquire_size(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
@@ -516,6 +538,15 @@ typedef volatile LONG_PTR retro_atomic_size_t;
 #define retro_atomic_fetch_sub_int(p, v) (                                \
    RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
    InterlockedExchangeAdd((LONG volatile*)(p), -(LONG)(v)) )
+/* InterlockedOr / InterlockedAnd return the ORIGINAL value, matching the
+ * fetch_* contract.  Available since Windows XP / VS2003 and on Xbox 360,
+ * i.e. everywhere this backend is selected. */
+#define retro_atomic_fetch_or_int(p, v) (                                 \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedOr((LONG volatile*)(p), (LONG)(v)) )
+#define retro_atomic_fetch_and_int(p, v) (                                \
+   RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
+   InterlockedAnd((LONG volatile*)(p), (LONG)(v)) )
 /* Note: on ARM we'd ideally want a __dmb both before AND after the
  * RMW for full sequential consistency (PostgreSQL's recent fix does
  * exactly that).  acq_rel needs only one barrier on most use cases;
@@ -576,6 +607,13 @@ typedef volatile intptr_t retro_atomic_size_t;
    (OSAtomicAdd32Barrier((v), (p)) - (v))
 #define retro_atomic_fetch_sub_int(p, v) \
    (OSAtomicAdd32Barrier(-(v), (p)) + (v))
+/* The *OrigBarrier forms return the value from BEFORE the operation,
+ * which is the fetch_* contract.  The plain OSAtomicOr32Barrier /
+ * OSAtomicAnd32Barrier return the NEW value -- do not use them here. */
+#define retro_atomic_fetch_or_int(p, v) \
+   ((int)OSAtomicOr32OrigBarrier((uint32_t)(v), (volatile uint32_t*)(p)))
+#define retro_atomic_fetch_and_int(p, v) \
+   ((int)OSAtomicAnd32OrigBarrier((uint32_t)(v), (volatile uint32_t*)(p)))
 
 #if defined(__LP64__)
 #define retro_atomic_load_acquire_size(p) \
@@ -620,6 +658,10 @@ typedef volatile size_t retro_atomic_size_t;
    __sync_fetch_and_add((p), (v))
 #define retro_atomic_fetch_sub_int(p, v) \
    __sync_fetch_and_sub((p), (v))
+#define retro_atomic_fetch_or_int(p, v) \
+   __sync_fetch_and_or((p), (v))
+#define retro_atomic_fetch_and_int(p, v) \
+   __sync_fetch_and_and((p), (v))
 
 #define retro_atomic_load_acquire_size(p) \
    __sync_fetch_and_add((p), (size_t)0)
@@ -647,6 +689,25 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
 #define retro_atomic_fetch_add_int(p, v)         ((*(p) += (v)) - (v))
 #define retro_atomic_fetch_sub_int(p, v)         ((*(p) -= (v)) + (v))
+/* OR and AND are not invertible, so the old value cannot be recovered
+ * arithmetically the way it is for add/sub above.  Use a helper rather
+ * than a statement expression, which MSVC does not support. */
+#define retro_atomic_fetch_or_int(p, v)  retro_atomic_fetch_or_int_fb((p), (v))
+#define retro_atomic_fetch_and_int(p, v) retro_atomic_fetch_and_int_fb((p), (v))
+
+static INLINE int retro_atomic_fetch_or_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old | v;
+   return old;
+}
+
+static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old & v;
+   return old;
+}
 
 #define retro_atomic_load_acquire_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)
