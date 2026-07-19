@@ -3370,7 +3370,7 @@ const char *video_shader_get_current_shader_preset(void)
       flags.flags     = 0;
       video_context_driver_get_flags(&flags);
 
-      video_st->flags &= ~VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD);
 
       if (BIT32_GET(flags.flags,
                video_shader_type_to_flag(video_shader_parse_type(video_st->cli_shader_path))))

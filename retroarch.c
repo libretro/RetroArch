@@ -1997,9 +1997,9 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    /* Video */
    video_display_server_destroy();
 
-   video_st->flags &= ~(VIDEO_FLAG_ACTIVE      | VIDEO_FLAG_USE_RGBA      |
-                        VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT
-                       );
+   video_driver_modify_disp_flags(0,
+         VIDEO_FLAG_ACTIVE      | VIDEO_FLAG_USE_RGBA      |
+         VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT);
    video_driver_cache_context_ack_clear();
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
@@ -4063,7 +4063,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_REINIT_FROM_TOGGLE:
-         video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
+         video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
          /* this fallthrough is on purpose, it should do
             a CMD_EVENT_REINIT too */
       case CMD_EVENT_REINIT:
@@ -5434,7 +5434,7 @@ bool command_event(enum event_command cmd, void *data)
                return false;
 
             audio_st->flags |= AUDIO_FLAG_SUSPENDED;
-            video_st->flags |= VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
+            video_driver_modify_disp_flags(VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE, 0);
 
             /* we toggled manually, write the new value to settings */
             configuration_set_bool(settings, settings->bools.video_fullscreen,
@@ -5444,7 +5444,7 @@ bool command_event(enum event_command cmd, void *data)
 
             /* we toggled manually, the CLI arg is irrelevant now */
             if (ra_is_forced_fs)
-               video_st->flags &= ~VIDEO_FLAG_FORCE_FULLSCREEN;
+               video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
 
             /* If we go fullscreen we drop all drivers and
              * reinitialize to be safe. */
@@ -5471,7 +5471,7 @@ bool command_event(enum event_command cmd, void *data)
             input_overlay_check_mouse_cursor();
 #endif
 
-            video_st->flags &= ~VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE;
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE);
             audio_st->flags &= ~AUDIO_FLAG_SUSPENDED;
 
             if (userdata && *userdata == true)
@@ -6332,10 +6332,10 @@ int rarch_main(int argc, char *argv[], void *data)
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
    video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   video_st->flags   |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+   video_driver_modify_disp_flags(VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD, 0);
 #endif
 #ifdef HAVE_RUNAHEAD
-   video_st->flags   |= VIDEO_FLAG_RUNAHEAD_IS_ACTIVE;
+   video_driver_modify_disp_flags(VIDEO_FLAG_RUNAHEAD_IS_ACTIVE, 0);
    runloop_st->flags |= (
                          RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE
                       |  RUNLOOP_FLAG_RUNAHEAD_AVAILABLE
@@ -6442,7 +6442,7 @@ int rarch_main(int argc, char *argv[], void *data)
    sthread_tls_create(&p_rarch->rarch_tls);
    sthread_tls_set(&p_rarch->rarch_tls, MAGIC_POINTER);
 #endif
-   video_st->flags              |= VIDEO_FLAG_ACTIVE;
+   video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    {
@@ -7783,7 +7783,7 @@ static bool retroarch_parse_input_and_config(
                break;
 
             case 'f':
-               video_st->flags |= VIDEO_FLAG_FORCE_FULLSCREEN;
+               video_driver_modify_disp_flags(VIDEO_FLAG_FORCE_FULLSCREEN, 0);
                break;
 
             case 'N':
@@ -7815,7 +7815,7 @@ static bool retroarch_parse_input_and_config(
                /* disable auto-shaders */
                if (!optarg || !*optarg)
                {
-                  video_st->flags |= VIDEO_FLAG_CLI_SHADER_DISABLE;
+                  video_driver_modify_disp_flags(VIDEO_FLAG_CLI_SHADER_DISABLE, 0);
                   break;
                }
 
@@ -8287,7 +8287,7 @@ bool retroarch_main_init(int argc, char *argv[])
    core_info_set_savestate_probe(retroarch_core_info_savestate_probe);
 
    input_st->osk_idx             = OSK_LOWERCASE_LATIN;
-   video_st->flags              |= VIDEO_FLAG_ACTIVE;
+   video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
    audio_state_get_ptr()->flags |= AUDIO_FLAG_ACTIVE;
 
    if (setjmp(global->error_sjlj_context) > 0)
