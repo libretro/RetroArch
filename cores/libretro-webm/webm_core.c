@@ -700,8 +700,16 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          const uint32_t *frame = rmp4_video_stream_next(p->mp4vs, &dur_ms);
          if (frame)
          {
-            memcpy(p->fb, frame,
-                  (size_t)p->width * p->height * sizeof(uint32_t));
+            /* The stream glue emits memory-order R,G,B,A (its texture
+             * consumers upload that directly); the video callback
+             * wants XRGB8888 words, so swizzle during the copy. */
+            size_t n = (size_t)p->width * p->height, px;
+            for (px = 0; px < n; px++)
+            {
+               uint32_t c = frame[px];
+               p->fb[px]  = (c & 0xFF00FF00u)
+                     | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF);
+            }
             /* the running sum of presentation durations is the next
              * frame's timestamp: the same pacing clock the webm path
              * takes from packet timestamps */
