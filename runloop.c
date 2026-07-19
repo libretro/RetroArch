@@ -5818,10 +5818,28 @@ static void runloop_pause_toggle(
 
 static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool menu_pause_libretro)
 {
-   return ((runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
+   return ((runloop_is_inited()))
       &&  !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
       &&  (!menu_pause_libretro
       &&    runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING);
+}
+
+static retro_atomic_int_t runloop_inited
+   = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+void runloop_is_inited_set(void)
+{
+   retro_atomic_store_release_int(&runloop_inited, 1);
+}
+
+void runloop_is_inited_clear(void)
+{
+   retro_atomic_store_release_int(&runloop_inited, 0);
+}
+
+bool runloop_is_inited(void)
+{
+   return retro_atomic_load_acquire_int(&runloop_inited) != 0;
 }
 
 static enum runloop_state_enum runloop_check_state(
@@ -5854,7 +5872,7 @@ static enum runloop_state_enum runloop_check_state(
    unsigned output_width               = 0;
    unsigned output_height              = 0;
 #endif
-   bool rarch_is_initialized           = !!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED);
+   bool rarch_is_initialized           = !!runloop_is_inited();
    bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    bool pause_nonactive                = settings->bools.pause_nonactive;
    unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;

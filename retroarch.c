@@ -1639,7 +1639,7 @@ void drivers_init(
 
    /* Regular display refresh rate startup autoswitch based on content av_info. */
    if (     flags & (DRIVER_VIDEO_MASK | DRIVER_AUDIO_MASK)
-         && !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
+         && !runloop_is_inited())
    {
       float refresh_rate               = video_st->av_info.timing.fps;
       unsigned autoswitch_refresh_rate = settings->uints.video_autoswitch_refresh_rate;
@@ -6248,7 +6248,7 @@ void main_exit(void *args)
          p_rarch->launch_arguments);
 
    p_rarch->flags                  &= ~RARCH_FLAGS_HAS_SET_USERNAME;
-   runloop_st->flags               &= ~RUNLOOP_FLAG_IS_INITED;
+   runloop_is_inited_clear();
    global_get_ptr()->flags         &= ~GLOB_FLG_ERR_ON_INIT;
 #ifdef HAVE_CONFIGFILE
    p_rarch->flags                  &= ~RARCH_FLAGS_BLOCK_CONFIG_READ;
@@ -6435,7 +6435,7 @@ int rarch_main(int argc, char *argv[], void *data)
       }
    }
 
-   if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+   if (runloop_is_inited())
       driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
 
 #ifdef HAVE_THREAD_STORAGE
@@ -8648,7 +8648,7 @@ bool retroarch_main_init(int argc, char *argv[])
    command_event(CMD_EVENT_SET_PER_GAME_RESOLUTION, NULL);
 
    global->flags                   &= ~GLOB_FLG_ERR_ON_INIT;
-   runloop_st->flags               |=  RUNLOOP_FLAG_IS_INITED;
+   runloop_is_inited_set();
 
 #ifdef HAVE_DISCORD
    {
@@ -8690,7 +8690,7 @@ bool retroarch_main_init(int argc, char *argv[])
 
 error:
    command_event(CMD_EVENT_CORE_DEINIT, NULL);
-   runloop_state_get_ptr()->flags            &= ~RUNLOOP_FLAG_IS_INITED;
+   runloop_is_inited_clear();
    global->flags &= ~GLOB_FLG_INIT_IN_PROGRESS;
 
    return false;
@@ -8785,7 +8785,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
       case RARCH_CTL_MAIN_DEINIT:
          {
             input_driver_state_t *input_st = input_state_get_ptr();
-            if (!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED))
+            if (!runloop_is_inited())
                return false;
             command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
 #ifdef HAVE_NETWORKING
@@ -8843,7 +8843,7 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
             runloop_path_deinit_subsystem();
             path_deinit_savefile();
 
-            runloop_st->flags &= ~RUNLOOP_FLAG_IS_INITED;
+            runloop_is_inited_clear();
 
 #ifdef HAVE_THREAD_STORAGE
             sthread_tls_delete(&p_rarch->rarch_tls);

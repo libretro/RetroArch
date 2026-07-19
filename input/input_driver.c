@@ -6131,7 +6131,7 @@ void input_overlay_unload(void)
 
    /* Free if overlays disabled or initing/deiniting core */
    if (     !input_overlay_enable
-         || !(runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+         || !runloop_is_inited()
          ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
       input_overlay_deinit();
    else

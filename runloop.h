@@ -125,9 +125,19 @@ enum runloop_flags
    RUNLOOP_FLAG_PAUSED                            = (1 << 27),
    RUNLOOP_FLAG_IDLE                              = (1 << 28),
    RUNLOOP_FLAG_FOCUSED                           = (1 << 29),
-   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30),
-   RUNLOOP_FLAG_IS_INITED                         = (1 << 31)
+   RUNLOOP_FLAG_FORCE_NONBLOCK                    = (1 << 30)
+   /* (1 << 31) was RUNLOOP_FLAG_IS_INITED.  Moved out of this word into
+    * an atomic behind the runloop_is_inited_* accessors: it is the only
+    * bit here read off the main thread (the AppIntents entity query runs
+    * on a GCD worker), and the main thread's non-atomic read-modify-
+    * writes of this word would race that read.  Bit left reserved. */
 };
+
+/* Whether retroarch_main_init() has completed.  Written on the main
+ * thread, readable from any thread. */
+void runloop_is_inited_set(void);
+void runloop_is_inited_clear(void);
+bool runloop_is_inited(void);
 
 /* Contains the current retro_fastforwarding_override
  * parameters along with any pending updates triggered

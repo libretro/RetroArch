@@ -1289,7 +1289,7 @@ void* video_display_server_init(enum rarch_display_type type)
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
 
    /* Reuse when already and still running */
-   if (current_display_server && runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+   if (current_display_server && runloop_is_inited())
       return video_st->current_display_server_data;
    else
       video_display_server_destroy();
