@@ -166,7 +166,26 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
     * s16/float boundaries the voices are mixed and clamped at. The mono
     * channel-duplication below is why the audio/conversion helpers can't
     * be called verbatim here. */
-   if (wav->bitspersample == 8)
+   if (wav->bitspersample == 32)
+   {
+      /* IEEE-float samples are already in the mixer's own unit scale:
+       * copy (duplicating mono), converting nothing - this is the
+       * quantisation-free path float producers target. */
+      const float *src = (const float*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--)
+         {
+            float sample = *src++;
+            *f++ = sample;
+            *f++ = sample;
+         }
+      }
+      else if (wav->numchannels == 2)
+         memcpy(f, src, wav->numsamples * 2 * sizeof(float));
+   }
+   else if (wav->bitspersample == 8)
    {
       float sample      = 0.0f;
       const uint8_t *u8 = (const uint8_t*)wav->samples;
@@ -354,7 +373,36 @@ static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
     * stereo, matching wav_to_float's channel handling. For the common
     * 16-bit stereo case this is a straight copy, so the s16 voice path
     * never touches float. */
-   if (wav->bitspersample == 8)
+   if (wav->bitspersample == 32)
+   {
+      /* float source on the float-free voice path: the one place a
+       * float wav is quantised, rounded and saturated in the float
+       * domain (casting out-of-range or non-finite values is
+       * undefined; non-finite pins to zero). */
+      const float *src = (const float*)wav->samples;
+      size_t n = wav->numsamples * ((wav->numchannels == 2) ? 2 : 1);
+      int16_t *d = s;
+
+      for (i = 0; i < n; i++)
+      {
+         float v = src[i] * 32768.0f;
+         int16_t q;
+         if (!(v > -1e9f && v < 1e9f))
+            v = 0.0f;
+         v += (v >= 0.0f) ? 0.5f : -0.5f;
+         if (v >  32767.0f) v =  32767.0f;
+         if (v < -32768.0f) v = -32768.0f;
+         q = (int16_t)(int)v;
+         if (wav->numchannels == 1)
+         {
+            *d++ = q;
+            *d++ = q;
+         }
+         else
+            *d++ = q;
+      }
+   }
+   else if (wav->bitspersample == 8)
    {
       const uint8_t *u8 = (const uint8_t*)wav->samples;
 
