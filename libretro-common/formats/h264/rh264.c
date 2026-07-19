@@ -399,7 +399,8 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * caches that assume that order, and a field-coded pair changes
        * every neighbour derivation. */
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag
-            &&pps->entropy_coding_mode_flag)
+            &&pps->entropy_coding_mode_flag
+            &&sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
          return 0;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
@@ -6373,25 +6374,55 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    memset(&dummy,0,sizeof(dummy));
 
    slice_end = mbw * mbh;
-   for (mby=sh->first_mb_in_slice/mbw; mby<mbh; mby++) {
-      rh264_cbf leftcbf; memset(&leftcbf,0,sizeof(leftcbf));
-      for (mbx=(mby==sh->first_mb_in_slice/mbw)?sh->first_mb_in_slice%mbw:0;
-            mbx<mbw; mbx++) {
+   {
+      /* Address order, which is raster only when the picture is not
+       * scanned in macroblock pairs.  With pairs, a column's 'up'
+       * context for the top macroblock is the bottom macroblock of the
+       * pair above (row), and for the bottom macroblock it is the top
+       * one just decoded (toprow); each has its own 'left'. */
+      rh264_cbf *toprow = NULL;
+      rh264_cbf leftT, leftB;
+      int mba, bot;
+      if (f->mbaff)
+      {
+         toprow = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
+         if (!toprow) { free(row); return -1; }
+      }
+      memset(&leftT,0,sizeof(leftT));
+      memset(&leftB,0,sizeof(leftB));
+      for (mba=sh->first_mb_in_slice; mba<mbw*mbh; mba++) {
          rh264_cbf tmp;
+         int la;
+         rh264_mb_pos(mba, mbw, f->mbaff, &mbx, &mby);
+         bot = f->mbaff && (mba & 1);
+         if (mbx==0 && !bot)
+         { memset(&leftT,0,sizeof(leftT)); memset(&leftB,0,sizeof(leftB)); }
+         /* mb_field_decoding_flag: one per pair, ahead of its top
+          * macroblock.  Only frame pairs are handled, so the
+          * neighbouring pairs are always frame coded and the context
+          * increment is zero. */
+         if (f->mbaff && !bot && rh264_cabac_decode(&cb, 70))
+         { free(toprow); free(row); return -1; }
+         la = rh264_mb_addr(mbx-1, mby, mbw, f->mbaff);
          cur = &tmp;
-         L = (mbx>0 && mby*mbw+mbx > sh->first_mb_in_slice)
-             ? &leftcbf : &dummy;
-         U = &row[mbx];
+         L = (mbx>0 && la >= sh->first_mb_in_slice)
+             ? (bot ? &leftB : &leftT) : &dummy;
+         U = bot ? &toprow[mbx] : &row[mbx];
          rc = rh264_cabac_decode_mb(&cb, sps, pps, f, mbx, mby,
                &prevQpNZ, cur, L, U, sh->first_mb_in_slice);
-         if (rc < 0) { free(row); return rc; }
-         leftcbf = tmp;      /* becomes left for next MB */
-         row[mbx] = tmp;     /* becomes up for next row  */
-         /* end_of_slice_flag */
-         if (mbx==mbw-1 && mby==mbh-1) break;
-         if (rh264_cabac_terminate(&cb))
-         { slice_end = mby*mbw+mbx+1; mby=mbh; break; }
+         if (rc < 0) { free(toprow); free(row); return rc; }
+         if (bot)      { leftB = tmp; row[mbx] = tmp; }
+         else if (f->mbaff) { leftT = tmp; toprow[mbx] = tmp; }
+         else          { leftT = tmp; row[mbx] = tmp; }
+         /* end_of_slice_flag, but NOT after the top macroblock of a
+          * pair: with pair scanning more data always follows it
+          * (7.3.4), and reading a flag there consumes a bit the
+          * encoder never wrote. */
+         if (mba==mbw*mbh-1) break;
+         if (!(f->mbaff && !bot) && rh264_cabac_terminate(&cb))
+         { slice_end = mba+1; break; }
       }
+      free(toprow);
    }
    free(row);
    if (end_mb) *end_mb = slice_end;
