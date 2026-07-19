@@ -501,9 +501,19 @@ static void video_thread_loop(void *data)
                video_frame_info_t video_info;
                bool               ret;
 
-               /* TODO/FIXME - not thread-safe - should get
-                * rid of this */
-               video_driver_build_info(&video_info);
+               /* Built by video_driver_frame() on the main thread and
+                * carried across with the frame data.  Do not call
+                * video_driver_build_info() here: it reads video_driver_st
+                * and runloop_state while the main thread writes them. */
+               video_info = thr->frame.video_info;
+
+               /* video_driver_build_info() resolves userdata from
+                * video_driver_st, and video_thread_free() clears
+                * VIDEO_FLAG_THREAD_WRAPPER_ACTIVE before this thread
+                * stops, so a frame built inside that window would carry
+                * the thread_video_t wrapper instead of the real driver
+                * data.  This thread knows its own. */
+               video_info.userdata = thr->driver_data;
 
                ret = thr->driver->frame(thr->driver_data,
                   thr->frame.buffer, thr->frame.width, thr->frame.height,
@@ -682,6 +692,13 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.height  = height;
       thr->frame.count   = frame_count;
       thr->frame.pitch   = copy_stride;
+
+      /* Hand the caller's video_frame_info_t across with the frame data.
+       * It was built by video_driver_frame() on this thread; rebuilding
+       * it on the worker races the main thread's writes to
+       * video_driver_st and runloop_state. */
+      if (video_info)
+         thr->frame.video_info = *video_info;
 
       if (msg)
          strlcpy(thr->frame.msg, msg, sizeof(thr->frame.msg));

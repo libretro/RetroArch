@@ -229,6 +229,11 @@ typedef struct thread_video
       unsigned height;
       unsigned pitch;
       char msg[NAME_MAX_LENGTH];
+      /* Built by the caller (main thread) in video_thread_frame() and
+       * consumed by video_thread_loop().  video_driver_build_info()
+       * reads video_driver_st and runloop_state, both of which the main
+       * thread mutates, so it must not be called from the worker. */
+      video_frame_info_t video_info;
       bool updated;
       bool within_thread;
    } frame;
