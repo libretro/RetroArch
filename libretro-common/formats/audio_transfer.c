@@ -47,6 +47,9 @@
 #endif
 #ifdef HAVE_RAAC
 #include <formats/raac.h>
+#ifdef HAVE_RMP4
+#include <formats/rmp4.h>
+#endif
 #endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
@@ -191,6 +194,15 @@ struct audio_transfer_aac
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
    size_t      pkt_offset;  /* byte offset of that packet                */
+#ifdef HAVE_RMP4
+   /* Buffer input (set_buffer_ptr): a whole MP4/M4A file, demuxed here
+    * with rmp4; packets stream from the demuxer on demand and the edit
+    * list's start trim is picked up from the track. */
+   const uint8_t *buf;
+   size_t      buf_size;
+   rmp4_t     *demux;
+   int         track_idx;
+#endif
    /* Frames the container's edit list trims from the stream start (the
     * encoder delay); set with audio_transfer_set_start_trim before
     * audio_transfer_start. */
@@ -257,6 +269,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             fl->data = ptr;
             fl->size = len;
+         }
+         break;
+      }
+#endif
+#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (ac)
+         {
+            ac->buf      = (const uint8_t*)ptr;
+            ac->buf_size = len;
          }
          break;
       }
@@ -673,11 +697,47 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
-         if (!ac || !ac->setup || !ac->packets || !ac->pkt_sizes)
-            return false;         /* demuxed path only */
-         ac->handle = raac_open(ac->setup, ac->setup_size);
-         if (!ac->handle)
+         if (!ac)
             return false;
+#ifdef HAVE_RMP4
+         /* buffer mode: a whole MP4/M4A; demux it here */
+         if (!ac->setup && ac->buf)
+         {
+            const rmp4_track *at = NULL;
+            int i;
+            if (!(ac->demux = rmp4_open_memory(ac->buf, ac->buf_size)))
+               return false;
+            ac->track_idx = -1;
+            for (i = 0; i < rmp4_num_tracks(ac->demux); i++)
+            {
+               const rmp4_track *t = rmp4_get_track(ac->demux, i);
+               if (t && t->type == RMP4_TRACK_AUDIO
+                     && t->codec == RMP4_CODEC_AAC
+                     && t->codec_private_size)
+               {
+                  at            = t;
+                  ac->track_idx = i;
+                  break;
+               }
+            }
+            if (!at)
+               return false;
+            ac->handle = raac_open(at->codec_private,
+                  at->codec_private_size);
+            if (!ac->handle)
+               return false;
+            /* the track's edit list carries the encoder delay */
+            ac->start_trim = at->media_skip;
+         }
+         else
+#endif
+         {
+            if (!ac->setup || !ac->packets || !ac->pkt_sizes)
+               return false;      /* no input set                        */
+            ac->handle = raac_open(ac->setup, ac->setup_size);
+            if (!ac->handle)
+               return false;
+         }
          ac->channels    = raac_channels(ac->handle);
          ac->trim_left   = ac->start_trim;
          ac->pkt_index   = 0;
@@ -932,22 +992,41 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
 {
    while (ac->pend_frames == 0)
    {
+      const uint8_t *pdata;
       uint32_t plen;
       int r;
       uint64_t skip;
-      if (ac->pkt_index >= ac->num_packets)
-         return 0;
-      plen = ac->pkt_sizes[ac->pkt_index];
-      if (ac->pkt_offset + plen > ac->packets_size)
-         return -1;
-      if (fmt == 1)
-         r = raac_decode_s16(ac->handle,
-               ac->packets + ac->pkt_offset, plen, ac->pend_s16);
+#ifdef HAVE_RMP4
+      if (ac->demux)
+      {
+         /* buffer mode: pull the next access unit from the demuxer */
+         rmp4_packet pkt;
+         for (;;)
+         {
+            if (rmp4_read_packet(ac->demux, &pkt) != 1)
+               return 0;
+            if (pkt.track == ac->track_idx)
+               break;
+         }
+         pdata = pkt.data;
+         plen  = (uint32_t)pkt.size;
+      }
       else
-         r = raac_decode_f32(ac->handle,
-               ac->packets + ac->pkt_offset, plen, ac->pend_f32);
-      ac->pkt_offset += plen;
-      ac->pkt_index++;
+#endif
+      {
+         if (ac->pkt_index >= ac->num_packets)
+            return 0;
+         plen = ac->pkt_sizes[ac->pkt_index];
+         if (ac->pkt_offset + plen > ac->packets_size)
+            return -1;
+         pdata = ac->packets + ac->pkt_offset;
+         ac->pkt_offset += plen;
+         ac->pkt_index++;
+      }
+      if (fmt == 1)
+         r = raac_decode_s16(ac->handle, pdata, plen, ac->pend_s16);
+      else
+         r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
       if (r < 0)
          return -1;
       ac->pend_frames = (size_t)r;
@@ -1341,6 +1420,10 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          if (!ac || !ac->handle || frame != 0)
             return false;        /* rewind-only (used by looping)       */
          raac_reset(ac->handle);
+#ifdef HAVE_RMP4
+         if (ac->demux)
+            rmp4_rewind(ac->demux);
+#endif
          ac->pkt_index   = 0;
          ac->pkt_offset  = 0;
          ac->pend_frames = 0;
@@ -1425,6 +1508,10 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
          if (ac && ac->handle)
             raac_close(ac->handle);
+#ifdef HAVE_RMP4
+         if (ac && ac->demux)
+            rmp4_close(ac->demux);
+#endif
          break;
       }
 #endif

@@ -67,7 +67,8 @@ enum audio_type_enum
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
    AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed path only (no Ogg parser) */
-   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path only (no ADTS parser) */
+   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, or a whole MP4/M4A
+                    * buffer when rmp4 is built in (no ADTS parser)     */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
