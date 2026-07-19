@@ -66,7 +66,8 @@ enum audio_type_enum
    AUDIO_TYPE_VORBIS,
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
-   AUDIO_TYPE_OPUS  /* Opus (ropus); demuxed path only (no Ogg parser) */
+   AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed path only (no Ogg parser) */
+   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path only (no ADTS parser) */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
@@ -99,6 +100,14 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
       const void *setup, size_t setup_size,
       const void *packets, size_t packets_size,
       const uint32_t *sizes, size_t num_packets);
+
+/* Frames the container trims from the start of the stream (e.g. the
+ * AAC encoder delay from an MP4 edit list).  Call between
+ * set_demuxed_ptr and audio_transfer_start; only codecs whose trim is
+ * not carried in the codec setup itself accept it (currently AAC --
+ * Opus pre-skip comes from the OpusHead and needs no call). */
+bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
+      uint64_t frames);
 
 /* Open the decoder over the buffer set above. Returns false on malformed
  * input. */

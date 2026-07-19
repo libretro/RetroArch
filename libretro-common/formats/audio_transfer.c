@@ -45,6 +45,9 @@
 #ifdef HAVE_ROPUS
 #include <formats/ropus.h>
 #endif
+#ifdef HAVE_RAAC
+#include <formats/raac.h>
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -171,6 +174,37 @@ struct audio_transfer_opus
 };
 #endif
 
+#ifdef HAVE_RAAC
+struct audio_transfer_aac
+{
+   /* Demuxed input (set_demuxed_ptr): the AudioSpecificConfig as
+    * setup, concatenated raw access units, and the per-packet byte
+    * lengths (required -- AAC access units are delimited by the
+    * container). */
+   const void *setup;
+   size_t      setup_size;
+   const uint8_t *packets;
+   size_t      packets_size;
+   const uint32_t *pkt_sizes;
+   size_t      num_packets;
+   raac_t     *handle;
+   unsigned    channels;
+   size_t      pkt_index;   /* next packet to decode                     */
+   size_t      pkt_offset;  /* byte offset of that packet                */
+   /* Frames the container's edit list trims from the stream start (the
+    * encoder delay); set with audio_transfer_set_start_trim before
+    * audio_transfer_start. */
+   uint64_t    start_trim;
+   uint64_t    trim_left;
+   int         fmt;         /* 0 none, 1 s16, 2 f32 (pending buf type)   */
+   /* Decoded-but-unconsumed frames from the last packet. */
+   size_t      pend_frames;
+   size_t      pend_pos;
+   int16_t     pend_s16[1024 * 2];
+   float       pend_f32[1024 * 2];
+};
+#endif
+
 void *audio_transfer_new(enum audio_type_enum type)
 {
    switch (type)
@@ -194,6 +228,10 @@ void *audio_transfer_new(enum audio_type_enum type)
 #ifdef HAVE_ROPUS
       case AUDIO_TYPE_OPUS:
          return calloc(1, sizeof(struct audio_transfer_opus));
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+         return calloc(1, sizeof(struct audio_transfer_aac));
 #endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
@@ -480,12 +518,50 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac)
+            return false;
+         ac->setup        = setup;
+         ac->setup_size   = setup_size;
+         ac->packets      = (const uint8_t*)packets;
+         ac->packets_size = packets_size;
+         ac->pkt_sizes    = sizes;
+         ac->num_packets  = num_packets;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
    }
    (void)data; (void)setup; (void)setup_size;
    (void)packets; (void)packets_size; (void)sizes; (void)num_packets;
+   return false;
+}
+
+bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
+      uint64_t frames)
+{
+   switch (type)
+   {
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac)
+            return false;
+         ac->start_trim = frames;
+         ac->trim_left  = frames;
+         return true;
+      }
+#endif
+      case AUDIO_TYPE_NONE:
+      default:
+         break;
+   }
    return false;
 }
 
@@ -593,6 +669,25 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          return true;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac || !ac->setup || !ac->packets || !ac->pkt_sizes)
+            return false;         /* demuxed path only */
+         ac->handle = raac_open(ac->setup, ac->setup_size);
+         if (!ac->handle)
+            return false;
+         ac->channels    = raac_channels(ac->handle);
+         ac->trim_left   = ac->start_trim;
+         ac->pkt_index   = 0;
+         ac->pkt_offset  = 0;
+         ac->pend_frames = 0;
+         ac->pend_pos    = 0;
+         ac->fmt         = 0;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -644,6 +739,13 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          return op && op->handle;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         return ac && ac->handle;
       }
 #endif
       case AUDIO_TYPE_NONE:
@@ -750,6 +852,21 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac || !ac->handle)
+            return false;
+         if (channels)
+            *channels = ac->channels;
+         if (rate)
+            *rate = raac_sample_rate(ac->handle);
+         if (total_frames)
+            *total_frames = 0;   /* the caller knows the packet count   */
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -803,6 +920,56 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
    }
    op->fmt = fmt;
    return (int)op->pend_frames;
+}
+#endif
+
+#ifdef HAVE_RAAC
+/* Decode the next AAC access unit into the pending buffer in the
+ * requested format (1 = s16, 2 = f32), honouring the edit list's start
+ * trim.  Returns frames now pending, 0 at end of stream, < 0 on
+ * error. */
+static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
+{
+   while (ac->pend_frames == 0)
+   {
+      uint32_t plen;
+      int r;
+      uint64_t skip;
+      if (ac->pkt_index >= ac->num_packets)
+         return 0;
+      plen = ac->pkt_sizes[ac->pkt_index];
+      if (ac->pkt_offset + plen > ac->packets_size)
+         return -1;
+      if (fmt == 1)
+         r = raac_decode_s16(ac->handle,
+               ac->packets + ac->pkt_offset, plen, ac->pend_s16);
+      else
+         r = raac_decode_f32(ac->handle,
+               ac->packets + ac->pkt_offset, plen, ac->pend_f32);
+      ac->pkt_offset += plen;
+      ac->pkt_index++;
+      if (r < 0)
+         return -1;
+      ac->pend_frames = (size_t)r;
+      ac->pend_pos    = 0;
+      skip = ac->trim_left;
+      if (skip)
+      {
+         if (skip >= ac->pend_frames)
+         {
+            ac->trim_left  -= ac->pend_frames;
+            ac->pend_frames = 0;   /* whole packet trimmed; loop        */
+         }
+         else
+         {
+            ac->pend_pos     = (size_t)skip;
+            ac->pend_frames -= (size_t)skip;
+            ac->trim_left    = 0;
+         }
+      }
+   }
+   ac->fmt = fmt;
+   return (int)ac->pend_frames;
 }
 #endif
 
@@ -878,6 +1045,33 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
                   take * op->channels * sizeof(int16_t));
             op->pend_pos    += take;
             op->pend_frames -= take;
+            produced        += take;
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac || !ac->handle || ac->fmt == 2)
+            return AUDIO_PROCESS_ERROR;
+         while (produced < frames)
+         {
+            size_t take;
+            int r = audio_transfer_aac_fill(ac, 1);
+            if (r < 0)
+               return AUDIO_PROCESS_ERROR;
+            if (r == 0)
+               break;
+            take = frames - produced;
+            if (take > ac->pend_frames)
+               take = ac->pend_frames;
+            memcpy(out + produced * ac->channels,
+                  ac->pend_s16 + ac->pend_pos * ac->channels,
+                  take * ac->channels * sizeof(int16_t));
+            ac->pend_pos    += take;
+            ac->pend_frames -= take;
             produced        += take;
          }
          break;
@@ -1025,6 +1219,33 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          break;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac || !ac->handle || ac->fmt == 1)
+            return AUDIO_PROCESS_ERROR;
+         while (produced < frames)
+         {
+            size_t take;
+            int r = audio_transfer_aac_fill(ac, 2);
+            if (r < 0)
+               return AUDIO_PROCESS_ERROR;
+            if (r == 0)
+               break;
+            take = frames - produced;
+            if (take > ac->pend_frames)
+               take = ac->pend_frames;
+            memcpy(out + produced * ac->channels,
+                  ac->pend_f32 + ac->pend_pos * ac->channels,
+                  take * ac->channels * sizeof(float));
+            ac->pend_pos    += take;
+            ac->pend_frames -= take;
+            produced        += take;
+         }
+         break;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          return AUDIO_PROCESS_ERROR;
@@ -1113,6 +1334,22 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (!ac || !ac->handle || frame != 0)
+            return false;        /* rewind-only (used by looping)       */
+         raac_reset(ac->handle);
+         ac->pkt_index   = 0;
+         ac->pkt_offset  = 0;
+         ac->pend_frames = 0;
+         ac->pend_pos    = 0;
+         ac->trim_left   = ac->start_trim;
+         ac->fmt         = 0;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -1179,6 +1416,15 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (op && op->handle)
             ropus_close(op->handle);
+         break;
+      }
+#endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (ac && ac->handle)
+            raac_close(ac->handle);
          break;
       }
 #endif
