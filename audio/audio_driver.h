@@ -326,6 +326,12 @@ typedef struct
     * s16 resampler path). */
    bool     stat_core_is_float;
    bool     stat_frontend_is_float;
+
+   /* Unity passthrough state: set when the float path skipped the
+    * resampler because the ratio was exactly 1.0 (see audio_driver_flush).
+    * Used to re-initialise the resampler on the transition back to actual
+    * resampling so it does not resume from a stale ring buffer. */
+   bool     resampler_bypassed;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);

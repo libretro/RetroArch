@@ -1075,7 +1075,46 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       src_data.ratio *= audio_driver_fastforward_ratio_mult(
             audio_st, src_data.input_frames);
 
-   audio_st->resampler->process(audio_st->resampler_data, &src_data);
+   /* Unity passthrough: with dynamic rate control disabled the resampler
+    * ratio is static, and when it is exactly 1.0 (input rate == output
+    * rate, no slow-motion / fast-forward pitch change) the resampler would
+    * only apply its non-identity unity-ratio response for no benefit.
+    * Copy the already gain/synth/DSP-processed input straight to the output
+    * buffer instead, skipping the convolution (and, for int16 drivers, the
+    * s16<->float round-trip performed in the write stage below).
+    *
+    * process() is skipped while passing through, so the resampler ring goes
+    * stale; on the transition back to real resampling (slow-motion or fast-
+    * forward engaged) re-initialise it first so it resumes from a clean
+    * state rather than convolving new input against stale samples.  The
+    * transition is rare and already an audio-discontinuity moment, so the
+    * one-off realloc there is not on the steady-state hot path.
+    *
+    * Gated on DRC being off: with rate control active src_ratio_curr is
+    * dithered every batch to track A/V sync and is essentially never a
+    * stable 1.0, which would otherwise toggle the bypass and thrash the
+    * resampler state. */
+   if (!(audio_st->flags & AUDIO_FLAG_CONTROL) && src_data.ratio == 1.0)
+   {
+      memcpy(audio_st->output_samples_buf, src_data.data_in,
+            src_data.input_frames * 2 * sizeof(float));
+      src_data.output_frames       = src_data.input_frames;
+      audio_st->resampler_bypassed = true;
+   }
+   else
+   {
+      if (audio_st->resampler_bypassed)
+      {
+         audio_st->resampler_bypassed = false;
+         retro_resampler_realloc(&audio_st->resampler_data,
+               &audio_st->resampler, audio_st->resampler_ident,
+               audio_st->resampler_quality, audio_st->src_ratio_orig);
+      }
+      if (audio_st->resampler_data)
+         audio_st->resampler->process(audio_st->resampler_data, &src_data);
+      else
+         src_data.output_frames = 0;
+   }
 
 #ifdef HAVE_AUDIOMIXER
    if (audio_st->flags & AUDIO_FLAG_MIXER_ACTIVE)
@@ -1396,6 +1435,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
             audio_driver_st.resampler_ident);
       audio_driver_st.flags &= ~AUDIO_FLAG_ACTIVE;
    }
+
+   /* Freshly (re)allocated resampler: ring is clean, not in passthrough. */
+   audio_driver_st.resampler_bypassed = false;
 
    /* Deterministic integer (s16) fast path: allocate an int16 resampler
     * mirroring the float one when the selected backend has an int16
