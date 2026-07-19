@@ -547,6 +547,11 @@ static void video_thread_loop(void *data)
          thr->focus         = focus;
          thr->has_windowed  = has_windowed;
          thr->vp            = vp;
+         /* Statistics. The viewport maths ran on this thread during
+          * thr->driver->frame() above, so publish the result rather
+          * than letting the main thread read video_driver_st. */
+         thr->scale_width   = video_state_get_ptr()->scale_width;
+         thr->scale_height  = video_state_get_ptr()->scale_height;
          thr->frame.updated = false;
          scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);

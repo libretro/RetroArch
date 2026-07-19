@@ -640,6 +640,25 @@ static void *video_thread_get_ptr(video_driver_state_t *video_st)
       return thr->driver_data;
    return NULL;
 }
+
+/* Content scale is computed by the viewport maths, which runs on the
+ * video thread when threading is active. Read the copy the worker
+ * publishes under its lock instead of racing video_driver_st. */
+static void video_thread_get_scale(video_driver_state_t *video_st,
+      unsigned *width, unsigned *height)
+{
+   thread_video_t *thr = (thread_video_t*)video_st->data;
+   if (!thr)
+   {
+      *width  = video_st->scale_width;
+      *height = video_st->scale_height;
+      return;
+   }
+   slock_lock(thr->lock);
+   *width  = thr->scale_width;
+   *height = thr->scale_height;
+   slock_unlock(thr->lock);
+}
 #endif
 
 /**
@@ -3618,8 +3637,17 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
    video_info->width                       = video_st->width;
    video_info->height                      = video_st->height;
-   video_info->scale_width                 = video_st->scale_width;
-   video_info->scale_height                = video_st->scale_height;
+#ifdef HAVE_THREADS
+   if (  VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
+       && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
+      video_thread_get_scale(video_st,
+            &video_info->scale_width, &video_info->scale_height);
+   else
+#endif
+   {
+      video_info->scale_width              = video_st->scale_width;
+      video_info->scale_height             = video_st->scale_height;
+   }
 
    video_info->shader_active               = !(menu_shdr_flags & SHDR_FLAG_DISABLED) ? true : false;
    video_info->hdr_mode                    = settings->uints.video_hdr_mode;
