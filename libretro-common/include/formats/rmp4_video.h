@@ -87,6 +87,14 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
 
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
+/* Seek to the display position at or before 'ms' milliseconds: the
+ * stream restarts at the preceding key frame and decodes forward,
+ * discarding pictures, so the next rmp4_video_stream_next call
+ * returns the first frame past the position.  Returns the position in
+ * ms actually reached (the presented slot's timestamp), or -1 on a
+ * stream without timing. */
+int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *stream, int64_t ms);
+
 RETRO_END_DECLS
 
 #endif

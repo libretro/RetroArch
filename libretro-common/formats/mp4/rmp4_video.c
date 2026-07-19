@@ -772,6 +772,63 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    rmp4_video_stream_open_decoder(s);
 }
 
+int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
+{
+   int64_t target_ns;
+   int tidx, kf, n;
+   rmp4_packet pkt;
+
+   if (!s || s->ts_count <= 0)
+      return -1;
+   if (ms < 0)
+      ms = 0;
+   target_ns = ms * 1000000;
+
+   /* Target display slot: the last frame whose presentation time is at
+    * or before the requested position. */
+   tidx = 0;
+   while (tidx + 1 < s->ts_count && s->ts[tidx + 1] <= target_ns)
+      tidx++;
+
+   /* Pass 1: the last key frame at or before the target, by sample
+    * ordinal.  Decode order stands in for the display slot here; with
+    * B-frame reordering that is off by at most the reorder depth
+    * around the cut, and the key frame itself always displays before
+    * everything decoded after it. */
+   rmp4_video_stream_rewind(s);
+   kf = 0;
+   n  = 0;
+   while (n <= tidx && rmp4_read_packet(s->demux, &pkt) == 1)
+   {
+      if (pkt.track != s->track)
+         continue;
+      if (pkt.keyframe)
+         kf = n;
+      n++;
+   }
+
+   /* Pass 2: skip undecoded up to the key frame - its slot count is
+    * exactly the display slots consumed for H.264 and VP9 - then
+    * decode forward, discarding pictures, until the target slot has
+    * been presented. */
+   rmp4_video_stream_rewind(s);
+   n = 0;
+   while (n < kf && rmp4_read_packet(s->demux, &pkt) == 1)
+   {
+      if (pkt.track != s->track)
+         continue;
+      n++;
+   }
+   s->disp_idx = kf;
+   while (s->disp_idx < tidx)
+      if (!rmp4_video_stream_next(s, NULL))
+         break;
+   /* The target slot itself is left for the caller's next
+    * rmp4_video_stream_next call, so the frame at the position is the
+    * one presented. */
+   return s->disp_idx < s->ts_count ? s->ts[s->disp_idx] / 1000000 : 0;
+}
+
 /* ------------------------------------------------------------------ */
 /* Still image (first displayed frame)                                 */
 /* ------------------------------------------------------------------ */
