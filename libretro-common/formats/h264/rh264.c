@@ -395,12 +395,13 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    {
       sh->field_pic_flag=rh264_u1(b);
       if(sh->field_pic_flag) sh->bottom_field_flag=rh264_u1(b);
-      /* Intra field pictures decode; predicted ones do not yet, because
-       * their reference lists are built from fields rather than frames
-       * (8.2.4.2.2, 8.2.4.2.5).  Refusing them keeps a half-predicted
-       * field off the screen. */
-      if(sh->field_pic_flag&&sh->slice_type!=RH264_SLICE_I
-            &&sh->slice_type!=RH264_SLICE_SI)
+      /* B field pictures are still refused: their second list and the
+       * direct modes need field machinery this does not have.  So are
+       * CABAC ones: the significance maps of a field-coded block are
+       * built from their own context offsets (Table 9-11), which is
+       * not implemented. */
+      if(sh->field_pic_flag&&(sh->slice_type==RH264_SLICE_B
+            ||pps->entropy_coding_mode_flag))
          return 0;
    }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
@@ -3317,10 +3318,17 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
       int cbw = bw >> 1, cbh = bh >> 1;
       uint8_t *dU = f->U + coy * f->cstride + cox;
       uint8_t *dV = f->V + coy * f->cstride + cox;
+      /* A field predicting from a field of the other parity samples
+       * chroma half a chroma line away, because the two fields'
+       * chroma sampling grids are offset (8.4.1.4).  The vector is in
+       * eighths of a chroma sample, so the correction is 2. */
+      int cmvy = mvy;
+      if (f->field && ref->field && f->field != ref->field)
+         cmvy += (f->field == 1) ? -2 : 2;
       rh264_mc_chroma(dU, f->cstride, ref->U, ref->cstride,
-            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, mvy);
+            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, cmvy);
       rh264_mc_chroma(dV, f->cstride, ref->V, ref->cstride,
-            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, mvy);
+            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, cmvy);
    }
 }
 
@@ -4636,9 +4644,15 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    return 0;
 }
 
-static RH264_INLINE int rh264_bs_mvcmp(int ax, int ay, int bx, int by)
+/* mvlim is the vertical threshold: motion vectors are in quarter luma
+ * samples of the picture being decoded, but 8.7.2.1 states the limit in
+ * quarter samples of a FRAME, and a field's samples are twice as far
+ * apart vertically - so a field picture compares against 2, not 4. */
+static RH264_INLINE int rh264_bs_mvcmp(int ax, int ay, int bx, int by,
+      int mvlim)
 {
-   return (ax - bx >= 4 || bx - ax >= 4 || ay - by >= 4 || by - ay >= 4);
+   return (ax - bx >= 4 || bx - ax >= 4
+        || ay - by >= mvlim || by - ay >= mvlim);
 }
 
 /* Boundary strength between blocks P and Q per 8.7.2.1, over both prediction
@@ -4646,12 +4660,15 @@ static RH264_INLINE int rh264_bs_mvcmp(int ax, int ay, int bx, int by)
  * not use carries picture -1 with a zero vector, so one-list blocks fall out
  * of the same comparisons. When both blocks predict twice from one picture,
  * the vectors must differ under both pairings for the edge to strengthen. */
+/* fieldhoriz marks a horizontal macroblock edge in a field picture,
+ * where an intra edge filters at strength 3 rather than 4 (8.7.2.1). */
 static RH264_INLINE int rh264_inter_bs(int mbedge, int intra_p, int intra_q,
-      int cbf_p, int cbf_q, const rh264_mv *mp, const rh264_mv *mq)
+      int cbf_p, int cbf_q, const rh264_mv *mp, const rh264_mv *mq,
+      int fieldhoriz, int mvlim)
 {
    int p0, p1, q0, q1;
    if (intra_p || intra_q)
-      return mbedge ? 4 : 3;
+      return (mbedge && !fieldhoriz) ? 4 : 3;
    if (cbf_p || cbf_q)
       return 2;
    p0 = mp->ref  < 0 ? -1 : mp->pic;
@@ -4663,15 +4680,15 @@ static RH264_INLINE int rh264_inter_bs(int mbedge, int intra_p, int intra_q,
    if (p0 != p1)
    {
       if (p0 == q0)
-         return rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx,  mq->mvy)
-              | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx1, mq->mvy1);
-      return rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx1, mq->mvy1)
-           | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx,  mq->mvy);
+         return rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx,  mq->mvy, mvlim)
+              | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx1, mq->mvy1, mvlim);
+      return rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx1, mq->mvy1, mvlim)
+           | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx,  mq->mvy, mvlim);
    }
-   return (rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx,  mq->mvy)
-         | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx1, mq->mvy1))
-       && (rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx1, mq->mvy1)
-         | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx,  mq->mvy));
+   return (rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx,  mq->mvy, mvlim)
+         | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx1, mq->mvy1, mvlim))
+       && (rh264_bs_mvcmp(mp->mvx,  mp->mvy,  mq->mvx1, mq->mvy1, mvlim)
+         | rh264_bs_mvcmp(mp->mvx1, mp->mvy1, mq->mvx,  mq->mvy, mvlim));
 }
 
 /* In-loop deblocking for a P-slice: identical filter kernels to the intra
@@ -4744,7 +4761,8 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                const rh264_mv *mq = &mvg[gy*gw + gxq];
                vbS[seg] = rh264_inter_bs(mbedge, mp->intra, mq->intra,
                      rh264_bs_nz(f, gw, gxp, gy),
-                     rh264_bs_nz(f, gw, gxq, gy), mp, mq);
+                     rh264_bs_nz(f, gw, gxq, gy), mp, mq, 0,
+                     f->field ? 2 : 4);
                st[seg] = vbS[seg]
                      ? rh264_tc0[vbS[seg]==4?2:vbS[seg]-1][idxA] : 0;
             }
@@ -4826,7 +4844,8 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                const rh264_mv *mq = &mvg[gyq*gw + gx];
                hbS[seg] = rh264_inter_bs(mbedge, mp->intra, mq->intra,
                      rh264_bs_nz(f, gw, gx, gyp),
-                     rh264_bs_nz(f, gw, gx, gyq), mp, mq);
+                     rh264_bs_nz(f, gw, gx, gyq), mp, mq, f->field,
+                     f->field ? 2 : 4);
                st[seg] = hbS[seg]
                      ? rh264_tc0[hbS[seg]==4?2:hbS[seg]-1][idxA] : 0;
             }
@@ -4962,6 +4981,13 @@ struct rh264_video
    int32_t    pend_mmco_a[RH264_MAX_REFS*2], pend_mmco_b[RH264_MAX_REFS*2];
    int        pend_idr_ltr;     /* IDR long_term_reference_flag           */
    signed char dpb_lt[RH264_MAX_REFS]; /* long_term_frame_idx/slot; -1 short */
+   /* Which fields of each stored frame hold decoded data: bit 0 top,
+    * bit 1 bottom.  A frame picture sets both; the two fields of a
+    * complementary pair fill one entry between them. */
+   uint8_t     dpb_fields[RH264_MAX_REFS];
+   /* Reference field views handed to the slice decoders; each aliases a
+    * stored frame with field strides. */
+   rh264_frame fieldview[34];
    int        max_lt_idx;       /* MaxLongTermFrameIdx; -1 none allowed   */
 };
 
@@ -7501,6 +7527,38 @@ static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
    return poc;
 }
 
+/* Build a P field picture's reference list (8.2.4.2.2 with 8.2.4.2.5).
+ * Stored frames are visited most-recent-first and their fields taken
+ * alternately, starting with the parity of the picture being decoded;
+ * a field holding no decoded data - the partner of the field being
+ * decoded, most obviously - is skipped.  Each entry is a view aliasing
+ * the stored frame with field strides, so the slice decoders read it
+ * exactly as they read a frame. */
+static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
+      int *lpn, int max)
+{
+   int n = 0, i, want = v->cur_field, other = (want == 1) ? 2 : 1;
+   int pass;
+   for (pass = 0; pass < 2 && n < max; pass++)
+   {
+      int parity = pass ? other : want;
+      for (i = 0; i < v->dpb_len && n < max; i++)
+      {
+         int s = v->dpb_slot[i];
+         if (v->dpb_lt[s] >= 0) continue;
+         if (!(v->dpb_fields[s] & (1 << (parity - 1)))) continue;
+         v->fieldview[n] = v->dpb[s];
+         rh264_frame_set_field(&v->fieldview[n], parity);
+         l0[n]  = &v->fieldview[n];
+         /* PicNum is 2*FrameNumWrap + 1 for a field of the same parity
+          * as the current picture, 2*FrameNumWrap otherwise (8.2.4.1) */
+         lpn[n] = v->dpb_pn[s] * 2 + (parity == want ? 1 : 0);
+         n++;
+      }
+   }
+   return n;
+}
+
 /* Queue the just-decoded picture for display. Returns the slot to show now
  * (lowest generation, then POC) once more than reorder_delay pictures wait,
  * or when an IDR arrives with nothing pending; -1 while buffering. */
@@ -7771,6 +7829,8 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
       }
    }
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+   v->dpb_fields[slot] = (uint8_t)(v->cur_field ? (1 << (v->cur_field - 1))
+                                                : 3);
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
    v->dpb[slot].poc = v->last_poc;
@@ -8062,6 +8122,9 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       int currpn = sh.frame_num_val;
       if (nref < 1) nref = 1;
       if (nref > 32) nref = 32;
+      if (sh.field_pic_flag)
+         n = rh264_build_field_list(v, l0, lpn, 32);
+      else
       for (i = 0; i < v->dpb_len; i++)
       {
          int s = v->dpb_slot[i];
@@ -8091,6 +8154,11 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          for (j = 0; j < v->dpb_size; j++)
             if (l0[i] == &v->dpb[j])
             { picid[i] = (signed char)j; l0poc[i] = v->dpb_poc[j]; break; }
+         /* a field view aliases a stored frame; give it its own
+          * identity so deblocking still compares references correctly */
+         for (j = 0; j < 34; j++)
+            if (l0[i] == &v->fieldview[j])
+            { picid[i] = (signed char)(64 + j); break; }
       }
       (void)lpn;
       if (v->pps.entropy_coding_mode_flag)
