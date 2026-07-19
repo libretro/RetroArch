@@ -552,8 +552,27 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
    int avail              = (int)audio_st->current_audio->write_avail(
          audio_st->context_audio_data);
    int half_size          = (int)(audio_st->buffer_size / 2);
-   int delta_mid          = avail - half_size;
-   double direction       = (double)delta_mid / half_size;
+   int delta_mid;
+   double direction;
+   double effective_delta;
+   double rate_adjust;
+   /* half_size is the setpoint's denominator. A driver may report a zero
+    * buffer size at runtime as well as at init - pulse pushes its size
+    * through audio_driver_set_buffer_size() from write_avail() on every
+    * sample, and notes there that it "can change spuriously" - so guard
+    * the division here too rather than relying only on the init-time
+    * gate. Returning 1.0 leaves the ratio untouched, which degrades to
+    * "no rate control" instead of feeding inf/NaN into src_ratio_curr. */
+   if (half_size <= 0)
+   {
+      audio_st->free_samples_buf[write_idx] = avail;
+      audio_st->cached_rate_adjust          = 1.0;
+      audio_st->samples_since_drc           = 0;
+      return 1.0;
+   }
+
+   delta_mid              = avail - half_size;
+   direction              = (double)delta_mid / half_size;
    /* Scale rate_control_delta inversely with the resampling ratio
     * so the effective loop gain stays constant regardless of output
     * sample rate (e.g. 96 kHz+).  Without this, high ratios amplify
@@ -563,10 +582,10 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
     * Only scale down (ratio > 1.0).  At sub-unity ratios the original
     * delta is already well-tuned and dividing by a fraction would
     * over-amplify corrections. */
-   double effective_delta = (audio_st->src_ratio_orig > 1.0)
+   effective_delta        = (audio_st->src_ratio_orig > 1.0)
          ? audio_st->rate_control_delta / audio_st->src_ratio_orig
          : audio_st->rate_control_delta;
-   double rate_adjust     = 1.0 + effective_delta * direction;
+   rate_adjust            = 1.0 + effective_delta * direction;
 
    audio_st->free_samples_buf[write_idx] = avail;
    audio_st->cached_rate_adjust          = rate_adjust;
@@ -1578,13 +1597,31 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          )
    {
       /* Audio rate control requires write_avail
-       * and buffer_size to be implemented. */
+       * and buffer_size to be implemented.
+       *
+       * The reported size must also be usable: it is the DRC setpoint's
+       * denominator (half_size in audio_driver_compute_rate_adjust), so
+       * zero yields an infinite or NaN rate_adjust. That propagates into
+       * src_ratio_curr, and the sinc drivers' fixed-point time step is
+       * (uint32_t)(phases / ratio), which collapses to 0 - leaving
+       * `while (time < phases) { ...; time += 0; }` spinning and writing
+       * past the output buffer. Several drivers can legitimately report
+       * 0 here (asio, xaudio and both libnx audren drivers return 0 on a
+       * null handle; audioio returns 0 when its ioctl fails), and oss
+       * already carries a local "return something non-zero to avoid
+       * SIGFPE" workaround for the same hazard. Check it once, centrally,
+       * and fall back to no rate control rather than making every driver
+       * defend itself. */
       if (audio_driver_st.current_audio->buffer_size)
       {
          audio_driver_st.buffer_size =
             audio_driver_st.current_audio->buffer_size(
                   audio_driver_st.context_audio_data);
-         audio_driver_st.flags |= AUDIO_FLAG_CONTROL;
+         if (audio_driver_st.buffer_size > 0)
+            audio_driver_st.flags |= AUDIO_FLAG_CONTROL;
+         else
+            RARCH_WARN("[Audio] Rate control was desired, but the driver "
+                  "reported a zero buffer size.\n");
       }
       else
          RARCH_WARN("[Audio] Rate control was desired, but driver does not support needed features.\n");
