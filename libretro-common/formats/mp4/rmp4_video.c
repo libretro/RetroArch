@@ -70,6 +70,7 @@ struct rmp4_video_stream
    int          ts_count;   /* entries stored in ts                   */
    int          num_frames; /* total video packets in the stream      */
    int          disp_idx;   /* ordinal of the next displayed picture  */
+   int          catchup;    /* seek in progress: skip colour conversion */
    int          wait_key;   /* a reference failed; hold out for a key */
    int          track;      /* index of the chosen video track        */
    unsigned     matrix;     /* colr matrix_coefficients; 0 untagged   */
@@ -613,7 +614,9 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
              * resolution), matching untagged webm content. Without this
              * branch the 10-bit (uint16) planes were handed to the 8-bit
              * blit and mis-decoded. */
-            if (s->want10)
+            if (s->catchup)
+               ;           /* discarded during a seek: skip conversion */
+            else if (s->want10)
             {
                rwebm_video_blit_i420_10bit(s->frame, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
@@ -627,7 +630,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
                      s->vp9->uvs, s->matrix, s->transfer, s->range, 0, 1);
          }
-         else
+         else if (!s->catchup)
             rmp4_video_blit_i420(s->frame, s->width, w, h,
                   fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs, s->matrix);
          return 1;
@@ -654,8 +657,9 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          w = (int)s->width;
       if ((unsigned)h > s->height)
          h = (int)s->height;
-      rmp4_video_blit_i420(s->frame, s->width,
-            (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+      if (!s->catchup)
+         rmp4_video_blit_i420(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
       return 1;
    }
    if (s->codec == RMP4_CODEC_H264)
@@ -702,8 +706,9 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          w = (int)s->width;
       if ((unsigned)h > s->height)
          h = (int)s->height;
-      rmp4_video_blit_i420(s->frame, s->width,
-            (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+      if (!s->catchup)
+         rmp4_video_blit_i420(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
       return 1;
    }
    return -1;
@@ -748,8 +753,9 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
-         rmp4_video_blit_i420(s->frame, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+         if (!s->catchup)
+            rmp4_video_blit_i420(s->frame, s->width,
+                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
          if (duration_ms)
             *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
@@ -782,7 +788,13 @@ int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
       return -1;
    if (ms < 0)
       ms = 0;
-   target_ns = ms * 1000000;
+   /* Callers clock this stream by summing the quantised per-frame
+    * durations, which floors fractional milliseconds, so a position
+    * taken from that clock sits up to a millisecond below the true
+    * timestamp.  Bias the slot search by just under a millisecond so
+    * a position on a frame boundary selects that frame, not the one
+    * before it. */
+   target_ns = ms * 1000000 + 999999;
 
    /* Target display slot: the last frame whose presentation time is at
     * or before the requested position. */
@@ -820,9 +832,11 @@ int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
       n++;
    }
    s->disp_idx = kf;
+   s->catchup  = 1;
    while (s->disp_idx < tidx)
       if (!rmp4_video_stream_next(s, NULL))
          break;
+   s->catchup  = 0;
    /* The target slot itself is left for the caller's next
     * rmp4_video_stream_next call, so the frame at the position is the
     * one presented. */
