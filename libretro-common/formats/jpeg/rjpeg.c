@@ -3407,8 +3407,7 @@ static void rjpeg_upsample_YCbCr_to_BGRA_row(uint8_t *out, const uint8_t *y_row,
 {
    /* Upsampled chroma is chroma_w*2 pixels wide. This used to be staged
     * through fixed 1920-byte stack buffers, which overflowed the stack for
-    * any image wider than 1920px (a 2048px 4:2:0 image needs 2048 bytes) -
-    * HD texture packs hit that immediately.
+    * any image wider than 1920px (a 2048px 4:2:0 image needs 2048 bytes).
     *
     * rjpeg_resample_row_hv_2() cannot simply be called on sub-ranges instead:
     * it is a stateful filter (each output blends the current chroma sample
