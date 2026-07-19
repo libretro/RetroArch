@@ -400,8 +400,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * CABAC ones: the significance maps of a field-coded block are
        * built from their own context offsets (Table 9-11), which is
        * not implemented. */
-      if(sh->field_pic_flag&&(sh->slice_type==RH264_SLICE_B
-            ||pps->entropy_coding_mode_flag))
+      if(sh->field_pic_flag&&sh->slice_type==RH264_SLICE_B)
          return 0;
    }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
@@ -4937,6 +4936,8 @@ struct rh264_video
    #define RH264_MAX_SLICES 64
    int       pic_open;
    int       cur_field, pair_open, pair_frame_num, pair_poc;
+   /* DPB slot the pair's first field opened, so the second can fill it */
+   int       pair_slot;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
    int       pic_ref;           /* nal_ref_idc of the picture         */
    int       pic_end;           /* first undecoded MB address         */
@@ -5314,6 +5315,10 @@ typedef struct {
    int      bitcnt;
    uint8_t  state[1024];
    uint8_t  mps[1024];
+   /* field-coded picture: the significance maps use their own context
+    * offsets and, for 8x8 blocks, their own position-to-context map
+    * (Tables 9-11 and 9-43) */
+   int      field;
 } rh264_cabac;
 
 static int rh264_cb_bit(rh264_cabac *c)
@@ -5638,7 +5643,21 @@ static const int rh264_abs_catoff[5]  = {0,10,20,30,39};
  * 8x8 block is never coded; the coded_block_pattern bit already says it. */
 #define RH264_CTX_SIG8  402
 #define RH264_CTX_LAST8 417
+/* field-coded equivalents (Table 9-11) */
+#define RH264_CTX_SIG_F     277
+#define RH264_CTX_LAST_F    338
+#define RH264_CTX_SIG8_F    436
+#define RH264_CTX_LAST8_F   451
 #define RH264_CTX_ABS8  426
+/* significant_coeff_flag ctxIdxInc for an 8x8 block of a FIELD-coded
+ * picture (Table 9-43, field column); the last_significant map is
+ * shared with frame coding. */
+static const uint8_t rh264_sig8map_fld[64]={
+   0, 1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 7, 7, 8, 4, 5,
+   6, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,11,12,11,
+   9, 9,10,10, 8,11,12,11, 9, 9,10,10, 8,13,13, 9,
+   9,10,10, 8,13,13, 9, 9,10,10,14,14,14,14,14,14
+};
 static const uint8_t rh264_sig8map[64]={
     0, 1, 2, 3, 4, 5, 5, 4, 4, 3, 3, 4, 4, 4, 5, 5,
     4, 4, 4, 4, 3, 3, 6, 7, 7, 7, 8, 9,10, 9, 8, 7,
@@ -5669,14 +5688,19 @@ static int rh264_cabac_residual(rh264_cabac *c, int cat, int cbf_ctxinc,
    /* significance map (forward scan) */
    for (i = 0; i < maxNumCoeff - 1; i++)
    {
-      int sinc = (cat==5) ? rh264_sig8map[i] : (cat==3 && i>2) ? 2 : i;
-      int sctx = (cat==5) ? RH264_CTX_SIG8 + sinc
-                          : CTX_SIG + rh264_sig_catoff[cat] + sinc;
+      int sinc = (cat==5) ? (c->field ? rh264_sig8map_fld[i]
+                                      : rh264_sig8map[i])
+                          : (cat==3 && i>2) ? 2 : i;
+      int sctx = (cat==5) ? (c->field ? RH264_CTX_SIG8_F : RH264_CTX_SIG8) + sinc
+                          : (c->field ? RH264_CTX_SIG_F : CTX_SIG)
+                            + rh264_sig_catoff[cat] + sinc;
       if (rh264_cabac_decode(c, sctx))
       {
          int linc = (cat==5) ? rh264_last8map[i] : (cat==3 && i>2) ? 2 : i;
-         int lctx = (cat==5) ? RH264_CTX_LAST8 + linc
-                             : CTX_LAST + rh264_last_catoff[cat] + linc;
+         int lctx = (cat==5) ? (c->field ? RH264_CTX_LAST8_F
+                                         : RH264_CTX_LAST8) + linc
+                             : (c->field ? RH264_CTX_LAST_F : CTX_LAST)
+                               + rh264_last_catoff[cat] + linc;
          sig[nsig++] = i;
          if (rh264_cabac_decode(c, lctx))
             break;
@@ -6209,6 +6233,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    while (b->bitpos & 7) { if (!rh264_u1(b)) break; }
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
+   cb.field = f->field;
    rh264_cabac_init_contexts(&cb, sh->slice_qp, -1);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -6564,6 +6589,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    while (b->bitpos & 7) { if (!rh264_u1(b)) break; }
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
+   cb.field = f->field;
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -6979,6 +7005,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    while (b->bitpos & 7) { if (!rh264_u1(b)) break; }
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
+   cb.field = f->field;
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -7537,14 +7564,19 @@ static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
 static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
       int *lpn, int max)
 {
-   int n = 0, i, want = v->cur_field, other = (want == 1) ? 2 : 1;
-   int pass;
-   for (pass = 0; pass < 2 && n < max; pass++)
+   int n = 0, want = v->cur_field, other = (want == 1) ? 2 : 1;
+   int isame = 0, iopp = 0, parity = want;
+   /* 8.2.4.2.5 alternates between the parities, taking the next
+    * available field of each in turn - not every field of one parity
+    * followed by every field of the other. */
+   while (n < max)
    {
-      int parity = pass ? other : want;
-      for (i = 0; i < v->dpb_len && n < max; i++)
+      int *ip = (parity == want) ? &isame : &iopp;
+      int found = 0;
+      while (*ip < v->dpb_len)
       {
-         int s = v->dpb_slot[i];
+         int s = v->dpb_slot[*ip];
+         (*ip)++;
          if (v->dpb_lt[s] >= 0) continue;
          if (!(v->dpb_fields[s] & (1 << (parity - 1)))) continue;
          v->fieldview[n] = v->dpb[s];
@@ -7554,7 +7586,12 @@ static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
           * as the current picture, 2*FrameNumWrap otherwise (8.2.4.1) */
          lpn[n] = v->dpb_pn[s] * 2 + (parity == want ? 1 : 0);
          n++;
+         found = 1;
+         break;
       }
+      if (!found && isame >= v->dpb_len && iopp >= v->dpb_len)
+         break;
+      parity = (parity == want) ? other : want;
    }
    return n;
 }
@@ -7806,6 +7843,20 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
 {
    int slot, i;
    if (v->dpb_size <= 0) return;
+   /* The two fields of a complementary pair are one reference frame:
+    * the second field fills in the entry its partner opened rather
+    * than taking a slot of its own. */
+   if (v->cur_field && !v->pair_open && v->pair_slot >= 0)
+   {
+      slot = v->pair_slot;
+      rh264_frame_copy_planes(&v->dpb[slot], &v->f);
+      v->dpb_fields[slot] |= (uint8_t)(1 << (v->cur_field - 1));
+      if (v->dpb[slot].mvg && v->pic_mvg)
+         memcpy(v->dpb[slot].mvg, v->pic_mvg,
+               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+      v->pair_slot = -1;
+      return;
+   }
    if (v->dpb_len >= v->dpb_size)
    {
       /* sliding window (8.2.5.3): the oldest short-term reference leaves;
@@ -7831,6 +7882,7 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
    rh264_frame_copy_planes(&v->dpb[slot], &v->f);
    v->dpb_fields[slot] = (uint8_t)(v->cur_field ? (1 << (v->cur_field - 1))
                                                 : 3);
+   v->pair_slot = (v->cur_field && v->pair_open) ? slot : -1;
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
    v->dpb[slot].poc = v->last_poc;
