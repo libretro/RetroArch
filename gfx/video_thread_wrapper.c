@@ -76,6 +76,33 @@ static void video_thread_send_packet(thread_video_t *thr,
 
 }
 
+/* As video_thread_send_packet(), but drops the packet and reports
+ * failure if the worker is no longer alive.  thr->alive is written by
+ * video_thread_loop() under thr->lock, so the test has to happen with
+ * that lock held; doing it here reuses the critical section this
+ * function enters anyway rather than taking a second one. */
+static bool video_thread_send_packet_if_alive(thread_video_t *thr,
+      const thread_packet_t *pkt)
+{
+   slock_lock(thr->lock);
+
+   if (!thr->alive)
+   {
+      slock_unlock(thr->lock);
+      return false;
+   }
+
+   thr->cmd_data  = *pkt;
+
+   thr->send_cmd  = pkt->type;
+   thr->reply_cmd = CMD_VIDEO_NONE;
+
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+
+   return true;
+}
+
 /* One condvar-wait iteration that lets a main-thread waiter drain the
  * cocoa main-thread trampoline, so work the worker marshals back via
  * cocoa_main_thread_sync() runs and the handshake does not deadlock (the
@@ -1600,14 +1627,20 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 
    /* if we're already on the video thread, just call the function, otherwise
     * we may deadlock with ourself waiting for the packet to be processed. */
-   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id() || !thr->alive)
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return func(data);
 
    pkt.type                       = CMD_CUSTOM_COMMAND;
    pkt.data.custom_command.method = func;
    pkt.data.custom_command.data   = data;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   /* Aliveness is tested inside the send, under the lock it already
+    * takes.  Reading thr->alive here instead would race the worker's
+    * write in video_thread_loop(). */
+   if (!video_thread_send_packet_if_alive(thr, &pkt))
+      return func(data);
+
+   video_thread_wait_reply(thr, &pkt);
 
    return pkt.data.custom_command.return_value;
 }
