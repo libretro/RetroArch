@@ -163,6 +163,22 @@ struct audio_transfer_opus
    size_t      packets_size;
    const uint32_t *pkt_sizes;
    size_t      num_packets;
+   /* Buffer input (set_buffer_ptr): a whole Ogg Opus (.opus) file,
+    * paged per RFC 3533/7845; packets are read from the pages in
+    * place, assembled only when one spans pages, and the final page's
+    * granule position bounds emission the way the reference decoder's
+    * does. */
+   const uint8_t *buf;
+   size_t      buf_size;
+   int         ogg;          /* buffer is an Ogg Opus stream             */
+   size_t      pg_off;       /* byte offset of the current page          */
+   size_t      body_off;     /* byte offset of the current segment       */
+   unsigned    seg_idx;      /* next segment in the current page         */
+   unsigned    seg_count;
+   size_t      audio_off;    /* first audio page (for rewind)            */
+   int64_t     limit;        /* emission bound from the end granule      */
+   int64_t     emitted;      /* frames handed out so far                 */
+   uint8_t     asm_buf[61500]; /* only for packets spanning pages        */
    ropus_t    *handle;
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
@@ -175,6 +191,34 @@ struct audio_transfer_opus
    int16_t     pend_s16[5760 * 2];
    float       pend_f32[5760 * 2];
 };
+
+/* Validate the Ogg page at off and return its total size (header plus
+ * body), or 0 if there is no valid page there.  On success the body
+ * offset and segment count are stored. */
+static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
+      size_t off, size_t *body, unsigned *nsegs)
+{
+   size_t hdr, total;
+   unsigned i, n;
+   if (off + 27 > size)
+      return 0;
+   if (memcmp(buf + off, "OggS", 4) != 0 || buf[off + 4] != 0)
+      return 0;
+   n   = buf[off + 26];
+   hdr = 27 + n;
+   if (off + hdr > size)
+      return 0;
+   total = hdr;
+   for (i = 0; i < n; i++)
+      total += buf[off + 27 + i];
+   if (off + total > size)
+      return 0;
+   if (body)
+      *body = off + hdr;
+   if (nsegs)
+      *nsegs = n;
+   return total;
+}
 #endif
 
 #ifdef HAVE_RAAC
@@ -273,6 +317,18 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          {
             fl->data = ptr;
             fl->size = len;
+         }
+         break;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (op)
+         {
+            op->buf      = (const uint8_t*)ptr;
+            op->buf_size = len;
          }
          break;
       }
@@ -682,11 +738,81 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_OPUS:
       {
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
-         if (!op || !op->setup || !op->packets || !op->pkt_sizes)
-            return false;         /* demuxed path only */
-         op->handle = ropus_open(op->setup, op->setup_size);
-         if (!op->handle)
+         if (!op)
             return false;
+         /* buffer mode: a whole Ogg Opus file.  The ID header sits
+          * alone on the first page (RFC 7845), the comment header
+          * finishes on its own page(s), and audio pages follow; the
+          * final page's granule position, less the pre-skip, is the
+          * stream's exact decodable length. */
+         if (!op->setup && op->buf)
+         {
+            size_t body = 0, off, total;
+            unsigned nsegs = 0;
+            int64_t  last_granule = -1;
+            total = audio_transfer_ogg_page(op->buf, op->buf_size, 0,
+                  &body, &nsegs);
+            if (!total || !(op->buf[5] & 0x02))   /* first page: BOS  */
+               return false;
+            op->handle = ropus_open(op->buf + body, total - (body - 0));
+            if (!op->handle)
+               return false;
+            /* skip the comment header: pages until a lacing value
+             * below 255 completes the packet */
+            off = total;
+            for (;;)
+            {
+               unsigned i;
+               int done = 0;
+               size_t psz = audio_transfer_ogg_page(op->buf, op->buf_size,
+                     off, &body, &nsegs);
+               if (!psz)
+                  return false;
+               for (i = 0; i < nsegs; i++)
+                  if (op->buf[off + 27 + i] < 255)
+                     done = 1;
+               off += psz;
+               if (done)
+                  break;
+            }
+            op->ogg       = 1;
+            op->audio_off = off;
+            op->pg_off    = off;
+            op->seg_idx   = 0;
+            op->body_off  = 0;
+            /* end granule: walk the remaining pages once */
+            while (off < op->buf_size)
+            {
+               size_t psz = audio_transfer_ogg_page(op->buf, op->buf_size,
+                     off, NULL, NULL);
+               uint64_t g;
+               unsigned k;
+               if (!psz)
+                  break;
+               g = 0;
+               for (k = 0; k < 8; k++)
+                  g |= (uint64_t)op->buf[off + 6 + k] << (8 * k);
+               if (g != (uint64_t)-1)
+                  last_granule = (int64_t)g;
+               off += psz;
+            }
+            op->limit = -1;
+            if (last_granule >= 0)
+            {
+               op->limit = last_granule - (int64_t)ropus_preskip(op->handle);
+               if (op->limit < 0)
+                  op->limit = 0;
+            }
+            op->emitted = 0;
+         }
+         else
+         {
+            if (!op->setup || !op->packets || !op->pkt_sizes)
+               return false;      /* no input set                        */
+            op->handle = ropus_open(op->setup, op->setup_size);
+            if (!op->handle)
+               return false;
+         }
          op->channels     = ropus_channels(op->handle);
          op->preskip_left = ropus_preskip(op->handle);
          op->pkt_index    = 0;
@@ -962,6 +1088,81 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
 }
 
 #ifdef HAVE_ROPUS
+/* Assemble the next Opus packet from the Ogg pages.  Returns 1 with
+ * the packet bytes (aliasing the buffer unless it spans pages, in
+ * which case it is copied into asm_buf), 0 at end of stream, < 0 on a
+ * malformed stream. */
+static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
+      const uint8_t **pdata, uint32_t *plen)
+{
+   size_t asm_len = 0;
+   int    spans   = 0;
+   for (;;)
+   {
+      size_t body = 0;
+      unsigned nsegs = 0;
+      size_t psz = audio_transfer_ogg_page(op->buf, op->buf_size,
+            op->pg_off, &body, &nsegs);
+      size_t start;
+      size_t run = 0;
+      int    done = 0;
+      if (!psz)
+         return asm_len ? -1 : 0;   /* out of pages                   */
+      if (op->seg_idx == 0)
+         op->body_off = body;
+      if (asm_len && op->seg_idx == 0 && !(op->buf[op->pg_off + 5] & 0x01))
+         return -1;                 /* continuation page not flagged  */
+      start = op->body_off;
+      while (op->seg_idx < nsegs)
+      {
+         unsigned lace = op->buf[op->pg_off + 27 + op->seg_idx];
+         run += lace;
+         op->seg_idx++;
+         if (lace < 255)
+         {
+            done = 1;
+            break;
+         }
+      }
+      op->body_off = start + run;
+      if (op->seg_idx >= nsegs && !done)
+      {
+         /* packet continues on the next page: stash what we have */
+         if (run)
+         {
+            if (asm_len + run > sizeof(op->asm_buf))
+               return -1;
+            memcpy(op->asm_buf + asm_len, op->buf + start, run);
+            asm_len += run;
+         }
+         spans       = 1;
+         op->pg_off += psz;
+         op->seg_idx = 0;
+         continue;
+      }
+      if (op->seg_idx >= nsegs)
+      {
+         op->pg_off += psz;
+         op->seg_idx = 0;
+      }
+      if (!spans)
+      {
+         *pdata = op->buf + start;
+         *plen  = (uint32_t)run;
+      }
+      else
+      {
+         if (asm_len + run > sizeof(op->asm_buf))
+            return -1;
+         memcpy(op->asm_buf + asm_len, op->buf + start, run);
+         asm_len += run;
+         *pdata  = op->asm_buf;
+         *plen   = (uint32_t)asm_len;
+      }
+      return 1;
+   }
+}
+
 /* Decode the next Opus packet into the pending buffer in the requested
  * format (1 = s16, 2 = f32), honouring pre-skip.  Returns frames now
  * pending, 0 at end of stream, < 0 on error. */
@@ -969,22 +1170,31 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 {
    while (op->pend_frames == 0)
    {
+      const uint8_t *pdata;
       uint32_t plen;
       int r;
       unsigned skip;
-      if (op->pkt_index >= op->num_packets)
-         return 0;
-      plen = op->pkt_sizes[op->pkt_index];
-      if (op->pkt_offset + plen > op->packets_size)
-         return -1;
-      if (fmt == 1)
-         r = ropus_decode_s16(op->handle,
-               op->packets + op->pkt_offset, plen, op->pend_s16);
+      if (op->ogg)
+      {
+         r = audio_transfer_opus_next_pkt(op, &pdata, &plen);
+         if (r <= 0)
+            return r;
+      }
       else
-         r = ropus_decode_f32(op->handle,
-               op->packets + op->pkt_offset, plen, op->pend_f32);
-      op->pkt_offset += plen;
-      op->pkt_index++;
+      {
+         if (op->pkt_index >= op->num_packets)
+            return 0;
+         plen = op->pkt_sizes[op->pkt_index];
+         if (op->pkt_offset + plen > op->packets_size)
+            return -1;
+         pdata = op->packets + op->pkt_offset;
+         op->pkt_offset += plen;
+         op->pkt_index++;
+      }
+      if (fmt == 1)
+         r = ropus_decode_s16(op->handle, pdata, plen, op->pend_s16);
+      else
+         r = ropus_decode_f32(op->handle, pdata, plen, op->pend_f32);
       if (r < 0)
          return -1;
       op->pend_frames = (size_t)r;
@@ -1003,6 +1213,21 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
             op->pend_frames  -= skip;
             op->preskip_left  = 0;
          }
+      }
+      /* Ogg mode: the end granule bounds emission (container end
+       * trimming); frames now pending will all be consumed, so credit
+       * them here. */
+      if (op->ogg && op->limit >= 0 && op->pend_frames)
+      {
+         int64_t left = op->limit - op->emitted;
+         if (left <= 0)
+         {
+            op->pend_frames = 0;
+            return 0;
+         }
+         if ((int64_t)op->pend_frames > left)
+            op->pend_frames = (size_t)left;
+         op->emitted += (int64_t)op->pend_frames;
       }
    }
    op->fmt = fmt;
@@ -1454,6 +1679,10 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          ropus_reset(op->handle);
          op->pkt_index    = 0;
          op->pkt_offset   = 0;
+         op->pg_off       = op->audio_off;
+         op->seg_idx      = 0;
+         op->body_off     = 0;
+         op->emitted      = 0;
          op->pend_frames  = 0;
          op->pend_pos     = 0;
          op->preskip_left = ropus_preskip(op->handle);
