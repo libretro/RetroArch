@@ -2883,6 +2883,11 @@ enum rarch_content_type path_is_media_type(const char *path)
 #if defined(HAVE_WEBMPLAYER) && !defined(HAVE_FFMPEG) && !defined(HAVE_MPV)
       case FILE_TYPE_MKV:
       case FILE_TYPE_WEBM:
+#ifdef HAVE_RMP4
+      /* the built-in player also handles ISO-BMFF containers */
+      case FILE_TYPE_MP4:
+      case FILE_TYPE_MOV:
+#endif
          return RARCH_CONTENT_MOVIE;
 #endif
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
