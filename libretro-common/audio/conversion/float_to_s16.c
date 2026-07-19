@@ -154,7 +154,7 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
       __m128 res_a   = _mm_mul_ps(_mm_loadu_ps(in + 0), factor); /* next four samples * 32768 */
       __m128 res_b   = _mm_mul_ps(_mm_loadu_ps(in + 4), factor); /* the *next* next four   */
       __m128 bias_a, bias_b;
-      __m128i ints_a, ints_b;
+      __m128i ints_a, ints_b, packed;
       res_a          = _mm_and_ps(res_a, _mm_cmpord_ps(res_a, res_a));
       res_b          = _mm_and_ps(res_b, _mm_cmpord_ps(res_b, res_b));
       bias_a         = _mm_or_ps(_mm_and_ps(res_a, signmask), half); /* copysign(0.5, res) */
@@ -163,7 +163,7 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
       res_b          = _mm_max_ps(_mm_min_ps(_mm_add_ps(res_b, bias_b), vmax), vmin);
       ints_a         = _mm_cvttps_epi32(res_a); /* rounded, truncating cvt */
       ints_b         = _mm_cvttps_epi32(res_b);
-      __m128i packed = _mm_packs_epi32(ints_a, ints_b); /* Then to 16-bit, clamping to [-32768, 32767] */
+      packed         = _mm_packs_epi32(ints_a, ints_b); /* Then to 16-bit, clamping to [-32768, 32767] */
 
       _mm_storeu_si128((__m128i *)s, packed); /* Then put the result in the output array */
    }
