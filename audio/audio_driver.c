@@ -1956,7 +1956,22 @@ bool audio_driver_dsp_filter_init(const char *device)
 
 void audio_driver_set_buffer_size(size_t bufsize)
 {
-   audio_driver_st.buffer_size = bufsize;
+   /* Ignore zero. buffer_size is a divisor for every consumer that reads
+    * it - the DRC setpoint in audio_driver_compute_rate_adjust() and the
+    * saturation / water-mark statistics in
+    * audio_compute_buffer_statistics() - and the init-time gate on
+    * AUDIO_FLAG_CONTROL only covers the value the driver reported when it
+    * was opened. This setter is the one path that can replace it later:
+    * pulse calls it from inside write_avail() on every sample and notes
+    * there that the size "can change spuriously". Keeping the last known
+    * good size degrades to a slightly stale setpoint; adopting a zero
+    * feeds inf/NaN into the statistics overlay and forces
+    * close_to_underrun to 100%.
+    *
+    * Guarding here rather than at each consumer means anything added
+    * later inherits the invariant instead of having to rediscover it. */
+   if (bufsize > 0)
+      audio_driver_st.buffer_size = bufsize;
 }
 
 #ifdef HAVE_REWIND
