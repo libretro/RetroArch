@@ -1,18 +1,20 @@
-/* webm_core -- built-in WebM video player core.
+/* webm_core -- built-in WebM/MP4 video player core.
  *
- * A dependency-free movie player for WebM files, built entirely on
- * libretro-common: rwebm (demuxer), rvp9 (VP9 decoder) and, when
- * available, rvp8 (VP8 decoder).  Intended for builds without FFmpeg
- * or MPV -- consoles and other minimal targets -- where it acts as the
- * built-in media player fallback for .webm content.
+ * A dependency-free movie player built entirely on libretro-common.
+ * WebM files decode through rwebm (demuxer), rvp9 and, when
+ * available, rvp8; MP4 files (when rmp4 is built in) play through the
+ * rmp4_video stream glue, which drives H.264 (rh264), VP9 and VP8
+ * tracks with display-order reordering and colr-driven conversion.
+ * Intended for builds without FFmpeg or MPV -- consoles and other
+ * minimal targets -- where it acts as the built-in media player.
  *
- * Audio tracks (Opus via ropus, Vorbis via rvorbis) play through the
- * audio_transfer demuxed path when the decoders are built in; emission
- * is paced by the presented video frame's timestamp, which keeps A/V
- * in sync without a separate clock.  Files without a supported audio
- * track fall back to silence to keep frame pacing driven by the audio
- * callback.  VP9 superframes and invisible (non-shown) VP8/VP9 frames
- * are handled.
+ * Audio tracks (Opus via ropus, Vorbis via rvorbis, and for MP4 also
+ * AAC via raac) play through the audio_transfer demuxed path when the
+ * decoders are built in; emission is paced by the presented video
+ * frame's timestamp, which keeps A/V in sync without a separate
+ * clock.  Files without a supported audio track fall back to silence
+ * to keep frame pacing driven by the audio callback.  VP9 superframes
+ * and invisible (non-shown) VP8/VP9 frames are handled.
  */
 
 #include <stdio.h>
@@ -27,7 +29,13 @@
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
 
-#if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS)
+#ifdef HAVE_RMP4
+#include <formats/rmp4.h>
+#include <formats/rmp4_video.h>
+#endif
+
+#if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
+      || (defined(HAVE_RMP4) && defined(HAVE_RAAC))
 #define WEBM_HAVE_AUDIO 1
 #include <formats/audio.h>
 #endif
@@ -84,6 +92,9 @@ typedef struct
    uint8_t     *file_buf;
    int64_t      file_len;
    rwebm_t     *webm;
+#ifdef HAVE_RMP4
+   rmp4_video_stream_t *mp4vs;       /* video stream when playing MP4   */
+#endif
    int          vtrack;              /* video track index               */
    enum rwebm_codec codec;
    rvp9_dec    *vp9;
@@ -378,6 +389,10 @@ static void webm_free_player(webm_player_t *p)
 #endif
    if (p->webm)
       rwebm_close(p->webm);
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+      rmp4_video_stream_close(p->mp4vs);
+#endif
 #ifdef WEBM_HAVE_AUDIO
    if (p->actx)
       audio_transfer_free(p->actx, p->atype);
@@ -416,7 +431,11 @@ void WEBM_CORE_PREFIX(retro_get_system_info)(
    info->library_name     = "webm";
    info->library_version  = "v1";
    info->need_fullpath    = true;
+#ifdef HAVE_RMP4
+   info->valid_extensions = "webm|mkv|mp4|m4v|mov";
+#else
    info->valid_extensions = "webm|mkv";
+#endif
 }
 
 void WEBM_CORE_PREFIX(retro_get_system_av_info)(
@@ -476,6 +495,10 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
    webm_player_t *p = &webm_player;
    if (p->webm)
       rwebm_rewind(p->webm);
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+      rmp4_video_stream_rewind(p->mp4vs);
+#endif
    if (p->vp9)
    {
       rvp9_free(p->vp9);
@@ -504,6 +527,43 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    rwebm_packet pkt;
 
    WEBM_CORE_PREFIX(input_poll_cb)();
+
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+   {
+      if (!p->eof)
+      {
+         int dur_ms = 0;
+         const uint32_t *frame = rmp4_video_stream_next(p->mp4vs, &dur_ms);
+         if (frame)
+         {
+            memcpy(p->fb, frame,
+                  (size_t)p->width * p->height * sizeof(uint32_t));
+#ifdef WEBM_HAVE_AUDIO
+            /* the running sum of presentation durations is the next
+             * frame's timestamp: the same pacing clock the webm path
+             * takes from packet timestamps */
+            p->vpts_ns += (int64_t)dur_ms * 1000000;
+#endif
+         }
+         else
+            p->eof = 1;
+      }
+      WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
+            p->width * sizeof(uint32_t));
+      if (p->eof)
+      {
+         int audio_done = 1;
+#ifdef WEBM_HAVE_AUDIO
+         if (p->actx && !p->aeof)
+            audio_done = 0;
+#endif
+         if (audio_done)
+            WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+      }
+      goto audio;
+   }
+#endif
 
    if (!p->eof)
    {
@@ -546,6 +606,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
    }
 
+#ifdef HAVE_RMP4
+audio:
+#endif
 #ifdef WEBM_HAVE_AUDIO
    if (p->actx && !p->aeof)
    {
@@ -596,6 +659,211 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    WEBM_CORE_PREFIX(audio_batch_cb)(p->silence, p->silence_frames);
 }
 
+
+#ifdef HAVE_RMP4
+/* MP4 load path: video through the rmp4_video stream glue (H.264, VP9,
+ * VP8, with display-order reordering and colr-driven conversion done
+ * inside), audio through the audio_transfer demuxed arms (AAC, Opus,
+ * Vorbis).  8-bit XRGB8888 output. */
+static bool webm_load_mp4(webm_player_t *p)
+{
+   enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
+   unsigned w = 0, h = 0;
+   int nframes = 0, loops = 0;
+   int64_t dur_ns = 0;
+
+   if (!WEBM_CORE_PREFIX(environ_cb)(
+            RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
+   {
+      if (WEBM_CORE_PREFIX(log_cb))
+         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[webm] XRGB8888 is not supported.\n");
+      return false;
+   }
+
+   p->mp4vs = rmp4_video_stream_open(p->file_buf, (size_t)p->file_len);
+   if (!p->mp4vs)
+   {
+      if (WEBM_CORE_PREFIX(log_cb))
+         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
+            "[webm] No supported (H.264/VP9/VP8) MP4 video track.\n");
+      return false;
+   }
+   rmp4_video_stream_get_info(p->mp4vs, &w, &h, &nframes, &loops);
+   if (!w || !h)
+      return false;
+   p->width  = w;
+   p->height = h;
+
+   /* Audio and duration come from a second demuxer over the same
+    * buffer; it is closed again before playback starts. */
+   {
+      rmp4_t *m = rmp4_open_memory(p->file_buf, (size_t)p->file_len);
+      if (m)
+      {
+         dur_ns = rmp4_duration_ns(m);
+#ifdef WEBM_HAVE_AUDIO
+         {
+            const rmp4_track *at = NULL;
+            int i, atrack = -1;
+            for (i = 0; i < rmp4_num_tracks(m); i++)
+            {
+               const rmp4_track *t = rmp4_get_track(m, i);
+               if (!t || t->type != RMP4_TRACK_AUDIO || atrack >= 0)
+                  continue;
+#ifdef HAVE_RAAC
+               if (t->codec == RMP4_CODEC_AAC && t->codec_private_size)
+               {
+                  atrack   = i;
+                  at       = t;
+                  p->atype = AUDIO_TYPE_AAC;
+               }
+#endif
+#ifdef HAVE_ROPUS
+               if (t->codec == RMP4_CODEC_OPUS && t->codec_private_size
+                     && atrack < 0)
+               {
+                  atrack   = i;
+                  at       = t;
+                  p->atype = AUDIO_TYPE_OPUS;
+               }
+#endif
+#ifdef HAVE_RVORBIS
+               if (t->codec == RMP4_CODEC_VORBIS && t->codec_private_size
+                     && atrack < 0)
+               {
+                  atrack   = i;
+                  at       = t;
+                  p->atype = AUDIO_TYPE_VORBIS;
+               }
+#endif
+            }
+            if (atrack >= 0)
+            {
+               /* Copy the audio packets into one contiguous blob for
+                * the audio_transfer demuxed contract. */
+               rmp4_packet pkt;
+               size_t napkts = 0, abytes = 0;
+               while (rmp4_read_packet(m, &pkt) == 1)
+                  if (pkt.track == atrack)
+                  {
+                     napkts++;
+                     abytes += pkt.size;
+                  }
+               rmp4_rewind(m);
+               if (napkts)
+               {
+                  size_t k = 0, off = 0;
+#ifdef HAVE_ROPUS
+                  int64_t toc_frames = 0;
+#endif
+                  p->apkts  = (uint8_t*)malloc(abytes ? abytes : 1);
+                  p->asizes = (uint32_t*)malloc(napkts * sizeof(uint32_t));
+                  if (p->apkts && p->asizes)
+                  {
+                     while (rmp4_read_packet(m, &pkt) == 1)
+                     {
+                        if (pkt.track != atrack)
+                           continue;
+                        memcpy(p->apkts + off, pkt.data, pkt.size);
+                        p->asizes[k++] = (uint32_t)pkt.size;
+                        off += pkt.size;
+#ifdef HAVE_ROPUS
+                        if (p->atype == AUDIO_TYPE_OPUS)
+                           toc_frames +=
+                              webm_opus_pkt_frames(pkt.data, pkt.size);
+#endif
+                     }
+                     /* Exact playable length so emission stops with the
+                      * presentation timeline instead of on decoder
+                      * exhaustion. */
+                     p->atotal = -1;
+                     if (p->atype == AUDIO_TYPE_AAC)
+                        p->atotal = (int64_t)k * 1024
+                           - (int64_t)at->media_skip;
+#ifdef HAVE_ROPUS
+                     if (p->atype == AUDIO_TYPE_OPUS && toc_frames > 0)
+                     {
+                        int64_t preskip = 0;
+                        if (at->codec_private_size >= 19)
+                           preskip = at->codec_private[10]
+                              | ((int64_t)at->codec_private[11] << 8);
+                        p->atotal = toc_frames - preskip;
+                     }
+#endif
+                     if (p->atotal < 0 && p->atype != AUDIO_TYPE_VORBIS)
+                        p->atotal = 0;
+                     p->actx = audio_transfer_new(p->atype);
+                     if (p->actx
+                           && audio_transfer_set_demuxed_ptr(p->actx,
+                              p->atype, at->codec_private,
+                              at->codec_private_size,
+                              p->apkts, off, p->asizes, k)
+                           && (p->atype != AUDIO_TYPE_AAC
+                              || audio_transfer_set_start_trim(p->actx,
+                                 p->atype, at->media_skip))
+                           && audio_transfer_start(p->actx, p->atype)
+                           && audio_transfer_info(p->actx, p->atype,
+                              &p->ach, &p->arate, NULL)
+                           && p->ach >= 1 && p->ach <= 2 && p->arate)
+                     {
+                        if (WEBM_CORE_PREFIX(log_cb))
+                           WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+                              "[webm] mp4 audio: %s, %u Hz, %u ch, "
+                              "%u packets.\n",
+                              p->atype == AUDIO_TYPE_AAC ? "AAC"
+                              : p->atype == AUDIO_TYPE_OPUS ? "Opus"
+                              : "Vorbis",
+                              p->arate, p->ach, (unsigned)k);
+                     }
+                     else
+                     {
+                        if (WEBM_CORE_PREFIX(log_cb))
+                           WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+                              "[webm] mp4 audio track unusable; "
+                              "playing silent.\n");
+                        if (p->actx)
+                           audio_transfer_free(p->actx, p->atype);
+                        p->actx = NULL;
+                     }
+                  }
+                  if (!p->actx)
+                  {
+                     free(p->apkts);
+                     free(p->asizes);
+                     p->apkts  = NULL;
+                     p->asizes = NULL;
+                  }
+               }
+            }
+         }
+#endif /* WEBM_HAVE_AUDIO */
+         rmp4_close(m);
+      }
+   }
+
+   if (nframes > 1 && dur_ns > 0)
+      p->fps = (double)nframes * 1000000000.0 / (double)dur_ns;
+   else
+      p->fps = 30.0;
+   if (p->fps < 1.0 || p->fps > 240.0)
+      p->fps = 30.0;
+
+   p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
+      sizeof(uint32_t));
+   p->silence_frames = (size_t)(WEBM_AUDIO_RATE / p->fps) + 1;
+   p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
+   if (!p->fb || !p->silence)
+      return false;
+
+   if (WEBM_CORE_PREFIX(log_cb))
+      WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+         "[webm] mp4 %ux%u, %.3f fps, %d frames.\n",
+         p->width, p->height, p->fps, nframes);
+   return true;
+}
+#endif /* HAVE_RMP4 */
+
 bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 {
    webm_player_t *p = &webm_player;
@@ -609,6 +877,29 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 
    if (!info || !info->path)
       return false;
+
+   memset(p, 0, sizeof(*p));
+
+   if (!filestream_read_file(info->path, (void**)&p->file_buf, &len)
+         || len <= 0)
+      goto error;
+   p->file_len = len;
+
+#ifdef HAVE_RMP4
+   /* Container sniff: ISO-BMFF starts with a box whose type sits at
+    * offset 4 ('ftyp' in practice, but any box means BMFF); WebM/MKV
+    * starts with the EBML magic.  Only MP4 goes down the mp4 path;
+    * everything else tries the EBML demuxer as before. */
+   if (len >= 8
+         && (   !memcmp(p->file_buf + 4, "ftyp", 4)
+             || !memcmp(p->file_buf + 4, "moov", 4)
+             || !memcmp(p->file_buf + 4, "styp", 4)))
+   {
+      if (webm_load_mp4(p))
+         return true;
+      goto error;
+   }
+#endif
 
    /* Prefer native 10-bit output, but only when the driver truly presents a
     * 10-bit surface end to end. SET_PIXEL_FORMAT(XRGB2101010) always
@@ -634,17 +925,10 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          if (WEBM_CORE_PREFIX(log_cb))
             WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_ERROR,
                "[webm] XRGB8888 is not supported.\n");
-         return false;
+         goto error;
       }
    }
-
-   memset(p, 0, sizeof(*p));
    p->pix10 = want10;
-
-   if (!filestream_read_file(info->path, (void**)&p->file_buf, &len)
-         || len <= 0)
-      goto error;
-   p->file_len = len;
 
    p->webm = rwebm_open_memory(p->file_buf, (size_t)len);
    if (!p->webm)
