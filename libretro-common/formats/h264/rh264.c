@@ -401,6 +401,11 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       int i,j;
       sh->luma_log2_denom=rh264_ue(b);
       sh->chroma_log2_denom=rh264_ue(b);
+      /* 7.4.3.2 bounds both denominators to 0..7; a corrupt stream can
+       * signal anything, and the unit-weight defaults below shift by
+       * the value read. */
+      if(sh->luma_log2_denom>7||sh->chroma_log2_denom>7)
+         return 0;
       for(i=0;i<32;i++){
          sh->wp_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp_lo[i]=0;
          sh->wp1_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp1_lo[i]=0;
@@ -947,6 +952,22 @@ typedef struct {
    struct rh264_mv_s *mvg; /* per-4x4 motion of this picture, reference pictures only */
    int poc;                /* picture order count of this picture */
 } rh264_frame;
+
+/* Apply mb_qp_delta (7-37).  The spec bounds the delta to [-26, 25] for
+ * 8-bit video (7.4.5), which is exactly what makes the standard's
+ * "+ 52" term enough to keep the modulo's left operand non-negative;
+ * a corrupt stream can decode a delta far outside that, leaving a
+ * negative QP whose /6 and %6 then index the dequantisation tables out
+ * of bounds.  An illegal delta means the macroblock data is not
+ * conformant, so report it rather than reconstructing from nonsense. */
+static int rh264_qp_apply_delta(rh264_frame *f, int d)
+{
+   if (d < -26 || d > 25)
+      return -1;
+   f->qp = (f->qp + d + 52) % 52;
+   return 0;
+}
+
 
 /* 4x4 luma block scan order within an MB (raster of the 4x4 blocks in the
  * standard zig-zag/Z order used by CAVLC block indexing, 8.4.x). */
@@ -2166,7 +2187,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          chroma_mode=rh264_ue(b);
          cbp=rh264_ue(b); if(cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
          cbp_luma=cbp&15; cbp_chroma=cbp>>4;
-         if(cbp_luma||cbp_chroma){ int d=rh264_se(b); f->qp=(f->qp+d+52)%52; }
+         if(cbp_luma||cbp_chroma){ int d=rh264_se(b);
+            if(rh264_qp_apply_delta(f,d)) return -1; }
          for(b8=0;b8<4;b8++){
             int bx8=(b8&1), by8=(b8>>1);
             uint8_t *d=y+by8*8*f->ystride+bx8*8;
@@ -2219,7 +2241,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          chroma_mode=rh264_ue(b);
          cbp=rh264_ue(b); if(cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
          cbp_luma=cbp&15; cbp_chroma=cbp>>4;
-         if(cbp_luma||cbp_chroma){ int d=rh264_se(b); f->qp=(f->qp+d+52)%52; }
+         if(cbp_luma||cbp_chroma){ int d=rh264_se(b);
+            if(rh264_qp_apply_delta(f,d)) return -1; }
 
          /* per-4x4 luma: predict then (if cbp bit) residual+reconstruct */
          for(i=0;i<16;i++){
@@ -2292,7 +2315,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          int chroma_mode;
          rh264_intra16x16(y,f->ystride,pred,have_up,have_left);
          chroma_mode=rh264_ue(b);
-         { int d=rh264_se(b); f->qp=(f->qp+d+52)%52; }
+         { int d=rh264_se(b);
+           if(rh264_qp_apply_delta(f,d)) return -1; }
          /* luma DC (Hadamard) */
          {  int nC=rh264_nC(f->nzL,gw,f->mbh*4,gx0,gy0,slice_first);
             int32_t scan[16]; int tc=rh264_residual_block(b,nC,16,scan);
@@ -3707,7 +3731,8 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          }
          if (cbp_luma || cbp_chroma)
          {
-            int d = rh264_se(b); f->qp = (f->qp + d + 52) % 52;
+            int d = rh264_se(b);
+            if (rh264_qp_apply_delta(f, d)) return -1;
          }
          if (rh264_inter_luma_residual(b, f, mbx, mby, cbp_luma, t8,
                sh->first_mb_in_slice) < 0) return -1;
@@ -4523,7 +4548,8 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          }
          if (cbp_luma || cbp_chroma)
          {
-            int d = rh264_se(b); f->qp = (f->qp + d + 52) % 52;
+            int d = rh264_se(b);
+            if (rh264_qp_apply_delta(f, d)) return -1;
          }
          if (rh264_inter_luma_residual(b, f, mbx, mby, cbp_luma, t8,
                sh->first_mb_in_slice) < 0) return -1;
@@ -5798,14 +5824,16 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            int k=1;
            if (rh264_cabac_decode(cb, CTX_QP_DELTA+2)) {
               k=2;
-              while (rh264_cabac_decode(cb, CTX_QP_DELTA+3)) k++;
+              /* the legal delta range bounds this prefix; without a
+               * cap a corrupt stream spins here until k overflows */
+              while (rh264_cabac_decode(cb, CTX_QP_DELTA+3) && k < 88) k++;
            }
            /* codeNum k -> signed: +1,-1,+2,... */
            dqp = (k&1) ? (k+1)/2 : -(k/2);
         }
         *prevQpDeltaNZ = (dqp!=0);
      } else *prevQpDeltaNZ = 0;
-     f->qp = (f->qp + dqp + 52) % 52;
+     if (rh264_qp_apply_delta(f, dqp)) return -1;
    }
 
    /* ============ reconstruction ============ */
@@ -6696,14 +6724,16 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                      if (rh264_cabac_decode(&cb, CTX_QP_DELTA+2))
                      {
                         k = 2;
-                        while (rh264_cabac_decode(&cb, CTX_QP_DELTA+3)) k++;
+                        /* bounded: see the I-slice path */
+                        while (rh264_cabac_decode(&cb, CTX_QP_DELTA+3)
+                              && k < 88) k++;
                      }
                      dqp = (k&1) ? (k+1)/2 : -(k/2);
                   }
                   prevQpNZ = (dqp != 0);
                }
                else prevQpNZ = 0;
-               f->qp = (f->qp + dqp + 52) % 52;
+               if (rh264_qp_apply_delta(f, dqp)) return -1;
             }
 
             rh264_cabac_p_residual(&cb, f, mbx, mby, cbp_luma, cbp_chroma,
@@ -7265,14 +7295,16 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                      if (rh264_cabac_decode(&cb, CTX_QP_DELTA+2))
                      {
                         k = 2;
-                        while (rh264_cabac_decode(&cb, CTX_QP_DELTA+3)) k++;
+                        /* bounded: see the I-slice path */
+                        while (rh264_cabac_decode(&cb, CTX_QP_DELTA+3)
+                              && k < 88) k++;
                      }
                      dqp = (k&1) ? (k+1)/2 : -(k/2);
                   }
                   prevQpNZ = (dqp != 0);
                }
                else prevQpNZ = 0;
-               f->qp = (f->qp + dqp + 52) % 52;
+               if (rh264_qp_apply_delta(f, dqp)) return -1;
             }
 
             rh264_cabac_p_residual(&cb, f, mbx, mby, cbp_luma, cbp_chroma,
