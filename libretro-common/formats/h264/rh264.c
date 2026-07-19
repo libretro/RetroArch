@@ -7565,7 +7565,14 @@ static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
       int *lpn, int max)
 {
    int n = 0, want = v->cur_field, other = (want == 1) ? 2 : 1;
-   int isame = 0, iopp = 0, parity = want;
+   int isame = 0, iopp = 0, parity = want, i;
+   /* Long-term fields belong at the end of the list with their own
+    * numbering (8.2.4.2.2 with 8.2.4.2.5).  That is not built here, and
+    * silently leaving them out would hand the slice a list that names
+    * the wrong pictures, so refuse the picture instead. */
+   for (i = 0; i < v->dpb_len; i++)
+      if (v->dpb_lt[v->dpb_slot[i]] >= 0)
+         return 0;
    /* 8.2.4.2.5 alternates between the parities, taking the next
     * available field of each in turn - not every field of one parity
     * followed by every field of the other. */
