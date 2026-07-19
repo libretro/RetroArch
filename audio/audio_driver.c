@@ -789,8 +789,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                size_t s;
                for (s = 0; s < samples; s++)
                {
-                  int32_t v = (int32_t)audio_st->input_data_int16[s]
-                            + (int32_t)(audio_st->synth_buf[s] * 0x8000);
+                  float   fv = audio_st->synth_buf[s] * 0x8000;
+                  int32_t v  = (int32_t)audio_st->input_data_int16[s]
+                            + (int32_t)(fv +
+                               (fv >= 0.0f ? 0.5f : -0.5f));
                   if      (v >  32767) v =  32767;
                   else if (v < -32768) v = -32768;
                   audio_st->input_data_int16[s] = (int16_t)v;
@@ -902,7 +904,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
              * output.  Voices are mixed into output_samples_buf -- unused by
              * this s16-output branch -- so the float mixer and its final clamp
              * are reused verbatim; each summed sample is then converted to s16
-             * (truncating * 0x8000, matching convert_float_to_s16) and
+             * (round half away from zero * 0x8000, matching
+             * convert_float_to_s16) and
              * saturating-added to the game audio.  The game keeps its Q16
              * master gain above and the voices carry mixer_gain, matching the
              * float path's ordering. */
@@ -928,7 +931,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
                for (k = 0; k < total; k++)
                {
-                  int32_t vv = (int32_t)(mb[k] * 0x8000);
+                  float   fv = mb[k] * 0x8000;
+                  int32_t vv = (int32_t)(fv +
+                        (fv >= 0.0f ? 0.5f : -0.5f));
                   int32_t s  = (int32_t)ob[k] + vv;
                   if      (s >  32767) s =  32767;
                   else if (s < -32768) s = -32768;

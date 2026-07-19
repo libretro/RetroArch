@@ -40,10 +40,13 @@ _convert_float_s16_asm:
    # Hacky way to get a constant of 2^15.
    # ((2^4)^2)^2 * 0.5 = 2^15
    vmov.f32 q8, #16.0
-   vmov.f32 q9, #0.5
+   vmov.f32 q9, #0.5           @ keep 0.5 for the rounding bias
    vmul.f32 q8, q8, q8
    vmul.f32 q8, q8, q8
    vmul.f32 q8, q8, q9
+   # Sign mask 0x80000000 in every lane (1 << 31).
+   vmov.i32 q10, #1
+   vshl.i32 q10, q10, #31
 
 1:
    # Preload here?
@@ -51,6 +54,14 @@ _convert_float_s16_asm:
 
    vmul.f32 q0, q0, q8
    vmul.f32 q1, q1, q8
+
+   # Round half away from zero: add copysign(0.5, x) then truncate.
+   vand     q11, q0, q10
+   vand     q12, q1, q10
+   vorr     q11, q11, q9
+   vorr     q12, q12, q9
+   vadd.f32 q0, q0, q11
+   vadd.f32 q1, q1, q12
 
    vcvt.s32.f32 q0, q0
    vcvt.s32.f32 q1, q1
