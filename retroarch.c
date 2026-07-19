@@ -1630,10 +1630,10 @@ void drivers_init(
                verbosity_enabled))
          retroarch_fail(1, "video_driver_init_internal()");
 
-      if (   !(video_st->flags & VIDEO_FLAG_CACHE_CONTEXT_ACK)
+      if (   !video_driver_cache_context_ack_test()
             && hwr->context_reset)
          hwr->context_reset();
-      video_st->flags            &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
+      video_driver_cache_context_ack_clear();
       runloop_st->frame_time_last = 0;
    }
 
@@ -1998,9 +1998,9 @@ static void retroarch_deinit_drivers(struct retro_callbacks *cbs)
    video_display_server_destroy();
 
    video_st->flags &= ~(VIDEO_FLAG_ACTIVE      | VIDEO_FLAG_USE_RGBA      |
-                        VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT |
-                        VIDEO_FLAG_CACHE_CONTEXT_ACK
+                        VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_CACHE_CONTEXT
                        );
+   video_driver_cache_context_ack_clear();
    video_st->record_gpu_buffer          = NULL;
    video_st->current_video              = NULL;
    video_driver_cached_frame_invalidate();

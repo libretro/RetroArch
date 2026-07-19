@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include <retro_atomic.h>
 #include <retro_inline.h>
 #include <string/stdstring.h>
 #include <retro_math.h>
@@ -2246,6 +2247,24 @@ void video_driver_set_viewport_core(void)
    float core_aspect = video_driver_get_core_aspect();
    if (core_aspect != 0)
       aspectratio_lut[ASPECT_RATIO_CORE].value = core_aspect;
+}
+
+static retro_atomic_int_t video_cache_context_ack
+   = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+void video_driver_cache_context_ack_set(void)
+{
+   retro_atomic_fetch_or_int(&video_cache_context_ack, 1);
+}
+
+bool video_driver_cache_context_ack_test(void)
+{
+   return retro_atomic_load_acquire_int(&video_cache_context_ack) != 0;
+}
+
+void video_driver_cache_context_ack_clear(void)
+{
+   retro_atomic_fetch_and_int(&video_cache_context_ack, 0);
 }
 
 uint32_t video_driver_get_disp_flags(void)
@@ -5431,7 +5450,7 @@ void video_driver_reinit(int flags)
       video_st->flags                     |=  VIDEO_FLAG_CACHE_CONTEXT;
    else
       video_st->flags                     &= ~VIDEO_FLAG_CACHE_CONTEXT;
-   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT_ACK;
+   video_driver_cache_context_ack_clear();
    video_driver_reinit_context(settings, flags);
    video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
 

@@ -107,8 +107,13 @@ enum video_driver_state_flags
     * graphics context alive to avoid having to reset all
     * context state. */
    VIDEO_FLAG_CACHE_CONTEXT                       = (1 << 9 ),
-   /* Set to true by driver if context caching succeeded. */
-   VIDEO_FLAG_CACHE_CONTEXT_ACK                   = (1 << 10),
+   /* (1 << 10) was VIDEO_FLAG_CACHE_CONTEXT_ACK.  It was the only bit in
+    * this word written off the main thread -- the context drivers set it
+    * during context reset, which runs on the video thread when threading
+    * is active -- so a non-atomic RMW here from the main thread could
+    * clobber it.  It now lives in an atomic behind the
+    * video_driver_cache_context_ack_* accessors in video_driver.c.
+    * Bit left reserved rather than reused. */
    VIDEO_FLAG_ACTIVE                              = (1 << 11),
    VIDEO_FLAG_STATE_OUT_RGB32                     = (1 << 12),
    VIDEO_FLAG_CRT_SWITCHING_ACTIVE                = (1 << 13),
@@ -1314,6 +1319,18 @@ bool video_driver_texture_load(void *data,
 bool video_driver_texture_unload(uintptr_t *id);
 
 void video_driver_build_info(video_frame_info_t *video_info);
+
+/* Context-cache acknowledgement.  Set by the context driver (video
+ * thread under threaded video), tested and cleared by the main thread.
+ * Kept out of video_driver_state_t so the atomic type is not exposed in
+ * this header: it is included by C++ translation units, where
+ * retro_atomic_int_t is std::atomic<int> rather than the C atomic_int,
+ * which would make the struct layout differ between C and C++ TUs.
+ * _set uses a release RMW and _test an acquire load, so the rebuilt
+ * context is published to the observer. */
+void video_driver_cache_context_ack_set(void);
+bool video_driver_cache_context_ack_test(void);
+void video_driver_cache_context_ack_clear(void);
 
 void video_driver_reinit(int flags);
 
