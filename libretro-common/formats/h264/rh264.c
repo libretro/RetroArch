@@ -400,8 +400,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * CABAC ones: the significance maps of a field-coded block are
        * built from their own context offsets (Table 9-11), which is
        * not implemented. */
-      if(sh->field_pic_flag&&sh->slice_type==RH264_SLICE_B)
-         return 0;
+
    }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
    if(sps->pic_order_cnt_type==0){
@@ -414,6 +413,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    sh->num_ref_idx_l0=1; sh->num_ref_idx_l1=1;
    if(sh->slice_type==RH264_SLICE_B)
       sh->direct_spatial_mv_pred_flag=rh264_u1(b);
+   /* Temporal direct prediction scales motion by picture order count
+    * distances that are derived differently for fields; only the
+    * spatial mode is handled for field pictures. */
+   if(sh->field_pic_flag&&sh->slice_type==RH264_SLICE_B
+         &&!sh->direct_spatial_mv_pred_flag)
+      return 0;
    if(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP
          ||sh->slice_type==RH264_SLICE_B){
       /* num_ref_idx_active_override_flag + ref_pic_list_modification (7.3.3). */
@@ -1004,6 +1009,12 @@ typedef struct {
    uint8_t w4[6][16]; /* effective 4x4 weight matrices (raster)         */
    uint8_t w8[2][64]; /* effective 8x8 weight matrices (raster)         */
    struct rh264_mv_s *mvg; /* per-4x4 motion of this picture, reference pictures only */
+   /* A stored field pair keeps a grid per parity: mvg holds the top
+    * field's motion (or a frame picture's), mvg2 the bottom field's.
+    * A field view points mvg at the one matching its parity, so the
+    * colocated lookups index it with the field geometry they already
+    * use. */
+   struct rh264_mv_s *mvg2;
    int poc;                /* picture order count of this picture */
 } rh264_frame;
 
@@ -3924,17 +3935,24 @@ static void rh264_b_setup_scales(rh264_bctx *bc)
 }
 
 /* Motion compensate one list of a block into 16x16/8x8 scratch planes. */
+/* curfield is the parity of the picture being predicted, 0 for a frame.
+ * Predicting from a field of the other parity offsets the vertical
+ * chroma vector, because the two fields' chroma grids sit half a chroma
+ * line apart (8.4.1.4). */
 static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
       const rh264_frame *ref, int ox, int oy, int bw, int bh,
-      int mvx, int mvy)
+      int mvx, int mvy, int curfield)
 {
    int rw = ref->mbw * 16, rh = ref->mbh * 16;
+   int cmvy = mvy;
+   if (curfield && ref->field && curfield != ref->field)
+      cmvy += (curfield == 1) ? -2 : 2;
    rh264_mc_luma(ty, 16, ref->Y, ref->ystride, rw, rh, ox, oy, bw, bh,
          mvx, mvy);
    rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1, rh >> 1,
-         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, mvy);
+         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, cmvy);
    rh264_mc_chroma(tv, 8, ref->V, ref->cstride, rw >> 1, rh >> 1,
-         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, mvy);
+         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, cmvy);
 }
 
 /* Single-list explicit weighting over samples just written (8.4.2.3.2),
@@ -3984,8 +4002,10 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
       uint8_t t1y[256], t1u[64], t1v[64];
       int x, y, c;
       int cox = ox >> 1, coy = oy >> 1, cbw = bw >> 1, cbh = bh >> 1;
-      rh264_b_mc_tmp(t0y, t0u, t0v, bc->l0[r0], ox, oy, bw, bh, mv0x, mv0y);
-      rh264_b_mc_tmp(t1y, t1u, t1v, bc->l1[r1], ox, oy, bw, bh, mv1x, mv1y);
+      rh264_b_mc_tmp(t0y, t0u, t0v, bc->l0[r0], ox, oy, bw, bh, mv0x, mv0y,
+            f->field);
+      rh264_b_mc_tmp(t1y, t1u, t1v, bc->l1[r1], ox, oy, bw, bh, mv1x, mv1y,
+            f->field);
       if (bc->wbidc == 1 && sh->wp_valid)
       {
          int ld = sh->luma_log2_denom, cd = sh->chroma_log2_denom;
@@ -4986,9 +5006,19 @@ struct rh264_video
     * bit 1 bottom.  A frame picture sets both; the two fields of a
     * complementary pair fill one entry between them. */
    uint8_t     dpb_fields[RH264_MAX_REFS];
+   /* Each field of a stored pair carries its own order count; dpb_poc
+    * keeps the frame's (the smaller of the two), which is what frame
+    * references compare against. */
+   int         dpb_poc_fld[RH264_MAX_REFS][2];
    /* Reference field views handed to the slice decoders; each aliases a
     * stored frame with field strides. */
-   rh264_frame fieldview[34];
+   rh264_frame fieldview[68];   /* both B lists need their own views */
+   /* Identity of each view's picture, stable across lists: deblocking
+    * compares these to ask whether two blocks used the same reference,
+    * and the same field can sit at different view slots in list 0 and
+    * list 1.  Frames use their buffer slot, fields 32 + slot*2 +
+    * parity, which cannot collide with it. */
+   signed char fieldview_id[68];
    int        max_lt_idx;       /* MaxLongTermFrameIdx; -1 none allowed   */
 };
 
@@ -5003,6 +5033,7 @@ static void rh264_frame_free(rh264_frame *f)
    free(f->mbt8);
    free(f->mbslice);
    free(f->mvg);
+   free(f->mvg2);
    memset(f, 0, sizeof(*f));
 }
 
@@ -5056,6 +5087,8 @@ static void rh264_frame_reset_ex(rh264_frame *f, int keep)
 
 static void rh264_frame_set_field(rh264_frame *f, int fl)
 {
+   /* a bottom-field view reads the motion its own field wrote */
+   if (fl == 2 && f->mvg2) f->mvg = f->mvg2;
    f->field=fl;
    if(fl){ f->Y=f->Yb+(fl==2?f->ysb:0); f->U=f->Ub+(fl==2?f->csb:0);
            f->V=f->Vb+(fl==2?f->csb:0);
@@ -5083,7 +5116,10 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
          v->dpb[i].mvg = (rh264_mv*)calloc(
                (size_t)(v->dpb[i].mbw * 4) * (v->dpb[i].mbh * 4),
                sizeof(rh264_mv));
-         if (!v->dpb[i].mvg) return -1;
+         v->dpb[i].mvg2 = (rh264_mv*)calloc(
+               (size_t)(v->dpb[i].mbw * 4) * (v->dpb[i].mbh * 4),
+               sizeof(rh264_mv));
+         if (!v->dpb[i].mvg || !v->dpb[i].mvg2) return -1;
       }
       v->dpb_size = n;
       v->dpb_len  = 0;
@@ -5160,24 +5196,8 @@ static void rh264_video_take_ps(rh264_video *v, const uint8_t *nal, size_t len)
    type = nal[0] & 0x1f;
    rbsp = rh264_unescape(nal + 1, len - 1, &rl);
    if (!rbsp) return;
-   /* Parse into scratch and keep the result only if it is valid: both
-    * parsers clear their target before reading, so parsing straight
-    * into the stored set would let a malformed parameter set destroy
-    * the working one while have_sps/have_pps still claim it is there.
-    * Everything downstream then works from zeroed geometry - a picture
-    * of no macroblocks, which the slice decoders divide by. */
-   if (type == 7)
-   {
-      rh264_sps tmp;
-      if (rh264_parse_sps(rbsp, rl, &tmp))
-      { v->sps = tmp; v->have_sps = 1; }
-   }
-   else if (type == 8)
-   {
-      rh264_pps tmp;
-      if (rh264_parse_pps(rbsp, rl, &tmp))
-      { v->pps = tmp; v->have_pps = 1; }
-   }
+   if (type == 7) { if (rh264_parse_sps(rbsp, rl, &v->sps)) v->have_sps = 1; }
+   else if (type == 8) { if (rh264_parse_pps(rbsp, rl, &v->pps)) v->have_pps = 1; }
    free(rbsp);
 }
 
@@ -7577,6 +7597,44 @@ static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
  * decoded, most obviously - is skipped.  Each entry is a view aliasing
  * the stored frame with field strides, so the slice decoders read it
  * exactly as they read a frame. */
+/* Convert an ordered list of reference FRAMES (given as DPB slots) into
+ * a list of reference FIELDS per 8.2.4.2.5: alternate between the
+ * parities, taking the next available field of each in turn, starting
+ * with the parity of the picture being decoded.  Views are written into
+ * v->fieldview from base so two lists can coexist. */
+static int rh264_fields_from_slots(rh264_video *v, const int *slots,
+      int ns, const rh264_frame **out, int *opn, int base, int max)
+{
+   int n = 0, want = v->cur_field, other = (want == 1) ? 2 : 1;
+   int isame = 0, iopp = 0, parity = want;
+   while (n < max)
+   {
+      int *ip = (parity == want) ? &isame : &iopp;
+      int found = 0;
+      while (*ip < ns)
+      {
+         int s = slots[*ip];
+         (*ip)++;
+         if (!(v->dpb_fields[s] & (1 << (parity - 1)))) continue;
+         v->fieldview[base + n] = v->dpb[s];
+         rh264_frame_set_field(&v->fieldview[base + n], parity);
+         v->fieldview[base + n].poc = v->dpb_poc_fld[s][parity - 1];
+         v->fieldview_id[base + n] =
+               (signed char)(32 + s * 2 + (parity - 1));
+         out[n] = &v->fieldview[base + n];
+         if (opn)
+            opn[n] = v->dpb_pn[s] * 2 + (parity == want ? 1 : 0);
+         n++;
+         found = 1;
+         break;
+      }
+      if (!found && isame >= ns && iopp >= ns)
+         break;
+      parity = (parity == want) ? other : want;
+   }
+   return n;
+}
+
 static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
       int *lpn, int max)
 {
@@ -7604,6 +7662,8 @@ static int rh264_build_field_list(rh264_video *v, const rh264_frame **l0,
          if (!(v->dpb_fields[s] & (1 << (parity - 1)))) continue;
          v->fieldview[n] = v->dpb[s];
          rh264_frame_set_field(&v->fieldview[n], parity);
+         v->fieldview[n].poc = v->dpb_poc_fld[s][parity - 1];
+         v->fieldview_id[n] = (signed char)(32 + s * 2 + (parity - 1));
          l0[n]  = &v->fieldview[n];
          /* PicNum is 2*FrameNumWrap + 1 for a field of the same parity
           * as the current picture, 2*FrameNumWrap otherwise (8.2.4.1) */
@@ -7874,9 +7934,16 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
       slot = v->pair_slot;
       rh264_frame_copy_planes(&v->dpb[slot], &v->f);
       v->dpb_fields[slot] |= (uint8_t)(1 << (v->cur_field - 1));
-      if (v->dpb[slot].mvg && v->pic_mvg)
-         memcpy(v->dpb[slot].mvg, v->pic_mvg,
-               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+      v->dpb_poc_fld[slot][v->cur_field - 1] = v->last_poc;
+      if (v->last_poc < v->dpb_poc[slot])
+      { v->dpb_poc[slot] = v->last_poc; v->dpb[slot].poc = v->last_poc; }
+      {
+         rh264_mv *g = (v->cur_field == 2) ? v->dpb[slot].mvg2
+                                           : v->dpb[slot].mvg;
+         if (g && v->pic_mvg)
+            memcpy(g, v->pic_mvg,
+                  (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+      }
       v->pair_slot = -1;
       return;
    }
@@ -7906,12 +7973,25 @@ static void rh264_dpb_insert(rh264_video *v, int picnum, int lt)
    v->dpb_fields[slot] = (uint8_t)(v->cur_field ? (1 << (v->cur_field - 1))
                                                 : 3);
    v->pair_slot = (v->cur_field && v->pair_open) ? slot : -1;
+   if (v->cur_field)
+      v->dpb_poc_fld[slot][v->cur_field - 1] = v->last_poc;
+   else
+      v->dpb_poc_fld[slot][0] = v->dpb_poc_fld[slot][1] = v->last_poc;
    v->dpb_pn[slot] = picnum;
    v->dpb_poc[slot] = v->last_poc;
    v->dpb[slot].poc = v->last_poc;
-   if (v->dpb[slot].mvg && v->pic_mvg)
-      memcpy(v->dpb[slot].mvg, v->pic_mvg,
-            (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+   {
+      /* a frame picture's motion goes in the top slot and stands for
+       * both parities; a first field goes in the slot for its own */
+      rh264_mv *g = (v->cur_field == 2) ? v->dpb[slot].mvg2
+                                        : v->dpb[slot].mvg;
+      if (g && v->pic_mvg)
+         memcpy(g, v->pic_mvg,
+               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+      if (!v->cur_field && v->dpb[slot].mvg2 && v->pic_mvg)
+         memcpy(v->dpb[slot].mvg2, v->pic_mvg,
+               (size_t)(v->f.mbw * 4) * (v->f.mbh * 4) * sizeof(rh264_mv));
+   }
    v->dpb_lt[slot] = (signed char)lt;
    for (i = v->dpb_len; i > 0; i--)
       v->dpb_slot[i] = v->dpb_slot[i-1];
@@ -8059,6 +8139,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       int currpn = sh.frame_num_val;
       const rh264_frame *ordered[RH264_MAX_REFS];
       int opoc[RH264_MAX_REFS], opn[RH264_MAX_REFS];
+      int oslot[RH264_MAX_REFS];       /* DPB slot behind ordered[]     */
+      int l0slot[34], l1slot[34];      /* the two lists as slots        */
       int lpn0[34], lpn1[34];
       int nref0 = sh.num_ref_idx_l0, nref1 = sh.num_ref_idx_l1;
       memset(&bc, 0, sizeof(bc));
@@ -8072,6 +8154,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          if (v->dpb_lt[s] >= 0) continue;
          ordered[n] = &v->dpb[s];
          opoc[n] = v->dpb_poc[s];
+         oslot[n] = s;
          opn[n] = v->dpb_pn[s]; n++;
       }
       /* selection-sort the held pictures by POC, ascending */
@@ -8082,8 +8165,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          if (m != i)
          {
             const rh264_frame *tf = ordered[i]; int tp = opoc[i], tn = opn[i];
+            int ts = oslot[i];
             ordered[i] = ordered[m]; opoc[i] = opoc[m]; opn[i] = opn[m];
-            ordered[m] = tf; opoc[m] = tp; opn[m] = tn;
+            oslot[i] = oslot[m];
+            ordered[m] = tf; opoc[m] = tp; opn[m] = tn; oslot[m] = ts;
          }
       }
       /* list 0: below the current POC descending, then above ascending;
@@ -8091,16 +8176,16 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       bc.n0 = 0; bc.n1 = 0;
       for (i = n - 1; i >= 0; i--) if (opoc[i] < v->last_poc)
       { bc.l0[bc.n0] = ordered[i]; bc.l0poc[bc.n0] = opoc[i];
-        lpn0[bc.n0] = opn[i]; bc.n0++; }
+        l0slot[bc.n0] = oslot[i]; lpn0[bc.n0] = opn[i]; bc.n0++; }
       for (i = 0; i < n; i++) if (opoc[i] > v->last_poc)
       { bc.l0[bc.n0] = ordered[i]; bc.l0poc[bc.n0] = opoc[i];
-        lpn0[bc.n0] = opn[i]; bc.n0++; }
+        l0slot[bc.n0] = oslot[i]; lpn0[bc.n0] = opn[i]; bc.n0++; }
       for (i = 0; i < n; i++) if (opoc[i] > v->last_poc)
       { bc.l1[bc.n1] = ordered[i]; bc.l1poc[bc.n1] = opoc[i];
-        lpn1[bc.n1] = opn[i]; bc.n1++; }
+        l1slot[bc.n1] = oslot[i]; lpn1[bc.n1] = opn[i]; bc.n1++; }
       for (i = n - 1; i >= 0; i--) if (opoc[i] < v->last_poc)
       { bc.l1[bc.n1] = ordered[i]; bc.l1poc[bc.n1] = opoc[i];
-        lpn1[bc.n1] = opn[i]; bc.n1++; }
+        l1slot[bc.n1] = oslot[i]; lpn1[bc.n1] = opn[i]; bc.n1++; }
       /* long-term pictures close both lists, ascending index (8.2.4.2.4);
        * they take part in the identical-lists swap check below */
       { int idx;
@@ -8114,6 +8199,18 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
               bc.l1[bc.n1] = &v->dpb[s]; bc.l1poc[bc.n1] = v->dpb_poc[s];
               lpn1[bc.n1] = 0x10000 + idx; bc.n1++;
            }
+      }
+      if (sh.field_pic_flag)
+      {
+         /* the frame lists just built are refFrameList0/1 (8.2.4.2.4);
+          * each becomes a field list by the parity alternation */
+         int f0 = rh264_fields_from_slots(v, l0slot, bc.n0, bc.l0, lpn0,
+               0, 32);
+         int f1 = rh264_fields_from_slots(v, l1slot, bc.n1, bc.l1, lpn1,
+               34, 32);
+         for (i = 0; i < f0; i++) bc.l0poc[i] = bc.l0[i]->poc;
+         for (i = 0; i < f1; i++) bc.l1poc[i] = bc.l1[i]->poc;
+         bc.n0 = f0; bc.n1 = f1;
       }
       if (bc.n0 < 1 || bc.n1 < 1) { free(rbsp); return -1; }
       if (bc.n0 == bc.n1 && bc.n1 > 1)
@@ -8146,6 +8243,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          for (j = 0; j < v->dpb_size; j++)
             if (bc.l0[i] == &v->dpb[j])
             { bc.pid0[i] = (signed char)j; bc.l0poc[i] = v->dpb_poc[j]; break; }
+         for (j = 0; j < 68; j++)
+            if (bc.l0[i] == &v->fieldview[j])
+            { bc.pid0[i] = v->fieldview_id[j];
+              bc.l0poc[i] = v->fieldview[j].poc; break; }
       }
       for (i = 0; i < bc.n1; i++)
       {
@@ -8153,6 +8254,10 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          for (j = 0; j < v->dpb_size; j++)
             if (bc.l1[i] == &v->dpb[j])
             { bc.pid1[i] = (signed char)j; bc.l1poc[i] = v->dpb_poc[j]; break; }
+         for (j = 0; j < 68; j++)
+            if (bc.l1[i] == &v->fieldview[j])
+            { bc.pid1[i] = v->fieldview_id[j];
+              bc.l1poc[i] = v->fieldview[j].poc; break; }
       }
       bc.currpoc = v->last_poc;
       bc.direct_spatial = sh.direct_spatial_mv_pred_flag;
@@ -8229,11 +8334,11 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
          for (j = 0; j < v->dpb_size; j++)
             if (l0[i] == &v->dpb[j])
             { picid[i] = (signed char)j; l0poc[i] = v->dpb_poc[j]; break; }
-         /* a field view aliases a stored frame; give it its own
-          * identity so deblocking still compares references correctly */
-         for (j = 0; j < 34; j++)
+         /* a field view aliases a stored frame, so it never matches a
+          * buffer slot above; take the identity recorded with it */
+         for (j = 0; j < 68; j++)
             if (l0[i] == &v->fieldview[j])
-            { picid[i] = (signed char)(64 + j); break; }
+            { picid[i] = v->fieldview_id[j]; break; }
       }
       (void)lpn;
       if (v->pps.entropy_coding_mode_flag)
