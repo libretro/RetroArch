@@ -516,7 +516,7 @@ void rarch_log_file_init(
       const char *log_dir
       )
 {
-   char log_directory[DIR_MAX_LENGTH];
+   char log_directory[DIR_MAX_LENGTH] = {0};
    char log_file_path[PATH_MAX_LENGTH];
    static bool log_file_created              = false;
    static char timestamped_log_file_name[64] = {0};

@@ -16,6 +16,17 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdint.h>
+
+#if defined(__linux__)
+#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <linux/hidraw.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#endif
 
 #include <compat/strl.h>
 #include <file/file_path.h>
@@ -78,67 +89,86 @@ const GUID GUID_NULL = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 static const blissbox_pad_type_t blissbox_pad_types[] =
 {
-   {"A5200", 6},
-   {"A5200_TB", 50},
-   {"A7800", 4},
    {"ATARI", 0},
-   {"ATARI_KEYPAD", 43},
-   {"ATMARK", 10},
-   {"BALLY", 42},
-   {"CD32", 24},
-   {"CDI", 33},
    {"COL", 1},
-   {"COL_FLASHBACK", 48}, /* 3.0 */
+   {"gx4000", 2},
+   {"SATURN_DIGITAL", 3},
+   {"A7800", 4},
+   {"VEC", 5},
+   {"A5200", 6},
+   {"HPD", 7},
+   {"SATURN_ANALOG", 8},
+   {"GC", 9},
+   {"ATMARK", 10},
+   {"JAG", 11},
+   {"PSX_WHEEL", 12},
+   {"WII_NUNCHUK", 13},
+   {"INTELI", 14},
    {"DC_ASCI", 15},
    {"DC_PAD", 16},
-   {"DC_TWIN", 35}, /* 3.0 */
-   {"FC_ARKANOID", 53},
-   {"FC_NES", 52},
-   {"GC", 9},
+   {"NES", 17},
    {"GC_WHEEL", 18},
+   {"N64", 19},
    {"GEN_3", 20},
    {"GEN_6", 21},
-   {"GRAVIS_EX", 38},
-   {"HAMMERHEAD", 40},
-   {"HPD", 7},
-   {"INTELI", 14},
-   {"JAG", 11},
-   {"MSSW", 39},
-   {"N64", 19},
-   {"NEO", 49},
-   {"NES", 17},
-   {"NES_ARKANOID", 30},
-   {"NES_GUN", 28},
-   {"NES_POWERPAD", 36},
-   {"PADDLES", 41},
-   {"PC_FX", 26},
-   {"PC_GAMEPAD", 46},
-   {"PSX_DIGITAL", 65},
-   {"PSX_DS", 115},
-   {"PSX_DS2", 121},
-   {"PSX_FS", 83},
-   {"PSX_JOGCON", 227}, /* 3.0 */
-   {"PSX_NEGCON", 51},
-   {"PSX_WHEEL", 12},
-   {"SAC", 34},
-   {"SATURN_ANALOG", 8},
-   {"SATURN_DIGITAL", 3},
    {"SMS", 22},
-   {"SNES", 27},
-   {"SNESS_NTT", 47}, /* 3.0 */
-   {"SPEEK", 45},
    {"TG16", 23},
-   {"TG16_6BUTTON", 54}, /* 3.0 */
+   {"CD32", 24},
    {"THREE_DO", 25},
-   {"THREE_DO_ANALOG", 37},
-   {"VEC", 5},
+   {"PC_FX", 26},
+   {"SNES", 27},
+   {"NES_GUN", 28},
    {"V_BOY", 29},
+   {"NES_ARKANOID", 30},
    {"WII_CLASSIC", 31},
-   {"WII_DRUM", 55}, /* 3.0 */
    {"WII_MPLUS", 32},
-   {"WII_NUNCHUK", 13},
+   {"CDI", 33},
+   {"SAC", 34},
+   {"DC_TWIN", 35},
+   {"NES_POWERPAD", 36},
+   {"THREE_DO_ANALOG", 37},
+   {"GRAVIS_EX", 38},
+   {"MSSW", 39},
+   {"HAMMERHEAD", 40},
+   {"PADDLES", 41},
+   {"BALLY", 42},
+   {"ATARI_KEYPAD", 43},
    {"ZXSINC", 44},
-   {"gx4000", 2},
+   {"SPEEK", 45},
+   {"PC_GAMEPAD", 46},
+   {"SNESS_NTT", 47},
+   {"COL_FLASH_BACK", 48},
+   {"NEO", 49},
+   {"A5200_TB", 50},
+   {"PSX_NEGCON", 51},
+   {"FC_NES", 52},
+   {"FC_ARKANOID", 53},
+   {"TG16_6BUTTON", 54},
+   {"Unassigned", 55},
+   {"ARCADE", 56},
+   {"SUPERGUN1", 57},
+   {"SATURN_GUN", 58},
+   {"SMS_GUN", 59},
+   {"DC_GUN", 60},
+   {"PADDLES_GEMINI", 61},
+   {"DC_PAD_RF", 62},
+   {"FC_POWERPAD", 63},
+   {"ATARI_TB", 64},
+   {"PSX_DIGITAL", 65},
+   {"WII_DRUM", 66},
+   {"WII_GUITAR", 67},
+   {"WII_DJHERO", 68},
+   {"WII_TABLET", 69},
+   {"A2600_TB", 70},
+   {"FC_NTT", 71},
+   {"FAIRC", 72},
+   {"DC_GO_FISH", 73},
+   {"DC_MARACA", 74},
+   {"PSX_FS", 83},
+   {"PSX_DS", 115},
+   {"PSX_DS_GS", 119},
+   {"PSX_DS2", 121},
+   {"PSX_JOGCON", 127},
    {NULL, 0}, /* used to mark unconnected ports, do not remove */
 };
 
@@ -416,12 +446,193 @@ done:
          return pad;
    }
 
-   RARCH_LOG("[Autoconf] Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
+   RARCH_WARN("[Autoconf] Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
 #endif
 
    return NULL;
 }
 #else
+#if defined(__linux__)
+static int input_autoconfigure_hidraw_vid_pid_match(const char *hidraw_name, int vid, int pid, int *reported_vid, int *reported_pid)
+{
+   FILE *file = NULL;
+   char line[128];
+   char uevent_path[128];
+   unsigned int parsed_vid = 0;
+   unsigned int parsed_pid = 0;
+   unsigned int ignore = 0;
+   bool found = false;
+   bool matched = false;
+
+   if (!hidraw_name)
+      return 0;
+
+   snprintf(uevent_path, sizeof(uevent_path), "/sys/class/hidraw/%s/device/uevent", hidraw_name);
+   file = fopen(uevent_path, "r");
+   if (!file)
+      return 0;
+
+   while (fgets(line, sizeof(line), file))
+   {
+      if (strncmp(line, "HID_ID=", 7) == 0)
+      {
+         if (sscanf(line + 7, "%x:%x:%x", &ignore, &parsed_vid, &parsed_pid) == 3)
+         {
+            found = true;
+            break;
+         }
+      }
+   }
+
+   if (found)
+   {
+      if (reported_vid)
+         *reported_vid = (int)parsed_vid;
+      if (reported_pid)
+         *reported_pid = (int)parsed_pid;
+
+      matched = ((parsed_vid == (unsigned)vid) && (parsed_pid == (unsigned)pid)) ? true : false;
+   }
+
+   fclose(file);
+   return matched;
+}
+
+static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_hidraw_scan(int vid, int pid)
+{
+   DIR *dev_dir = NULL;
+   struct dirent *dir_entry = NULL;
+   int fd = -1;
+   int ret;
+   unsigned i;
+   int candidate_index;
+   struct hidraw_devinfo info;
+   unsigned char answer[USB_PACKET_CTRL_LEN] = {0};
+   const char candidate_name[] = "hidraw";
+   size_t candidate_name_len = sizeof(candidate_name) - 1;
+   char device_path[64];
+   const char *name_suffix = NULL;
+   const blissbox_pad_type_t *pad_type = NULL;
+
+   dev_dir = opendir("/dev");
+   if (!dev_dir)
+      return NULL;
+
+   while ((dir_entry = readdir(dev_dir)) != NULL)
+   {
+      unsigned long index = 0;
+      bool has_digits = false;
+      int local_ret;
+
+      if (strncmp(dir_entry->d_name, candidate_name, candidate_name_len) != 0)
+         continue;
+
+      name_suffix = dir_entry->d_name + candidate_name_len;
+      if (!*name_suffix)
+         continue;
+
+      for (index = 0; *name_suffix; name_suffix++)
+      {
+         if (!isdigit((unsigned char)*name_suffix))
+         {
+            has_digits = false;
+            break;
+         }
+         has_digits = true;
+         index = index * 10 + (unsigned long)(*name_suffix - '0');
+         if (index > 9999)
+            break;
+      }
+
+      if (!has_digits)
+         continue;
+
+      snprintf(device_path, sizeof(device_path), "/dev/%s", dir_entry->d_name);
+      {
+         int reported_vid;
+         int reported_pid;
+
+         reported_vid = 0;
+         reported_pid = 0;
+         if (!input_autoconfigure_hidraw_vid_pid_match(dir_entry->d_name, vid, pid, &reported_vid, &reported_pid))
+         {
+            if (reported_vid || reported_pid)
+            {
+               RARCH_LOG("[Autoconf]   Skipping non-bliss hidraw device: %s (sysfs=%04x:%04x)\n",
+                     device_path, reported_vid, reported_pid);
+            }
+            else
+               RARCH_LOG("[Autoconf]   Skipping non-bliss hidraw device: %s\n", device_path);
+            continue;
+         }
+
+         RARCH_LOG("[Autoconf] Probing hidraw candidate: %s (sysfs=%04x:%04x)\n", device_path, reported_vid, reported_pid);
+      }
+
+      fd = open(device_path, O_RDWR | O_NONBLOCK);
+      if (fd < 0)
+      {
+         RARCH_LOG("[Autoconf]   open failed for %s: %d\n", device_path, errno);
+         continue;
+      }
+
+      ret = ioctl(fd, HIDIOCGRAWINFO, &info);
+      if (ret == 0 && info.vendor == vid && info.product == pid)
+      {
+         memset(answer, 0, sizeof(answer));
+         answer[0] = BLISSBOX_USB_FEATURE_REPORT_ID;
+         local_ret = ioctl(fd, HIDIOCGFEATURE(USB_PACKET_CTRL_LEN), answer);
+         if (local_ret == USB_PACKET_CTRL_LEN)
+         {
+            int candidate_index_local = answer[0];
+
+            candidate_index = answer[0];
+            if (candidate_index_local == BLISSBOX_USB_FEATURE_REPORT_ID && USB_PACKET_CTRL_LEN > 1)
+               candidate_index = answer[1];
+
+            RARCH_LOG("[Autoconf]   raw feature report: [%02x %02x %02x %02x %02x] candidate=%d\n",
+                  answer[0], answer[1], answer[2], answer[3], answer[4], candidate_index);
+
+            for (i = 0; i < ARRAY_SIZE(blissbox_pad_types); i++)
+            {
+               const blissbox_pad_type_t *pad = &blissbox_pad_types[i];
+
+               if (!pad || !pad->name || !*pad->name)
+                  continue;
+
+               if (pad->index == candidate_index)
+               {
+                  pad_type = pad;
+                  break;
+               }
+            }
+
+            if (pad_type)
+            {
+               close(fd);
+               break;
+            }
+            RARCH_LOG("[Autoconf]   candidate index %d not mapped, continuing\n", candidate_index);
+         }
+         else
+            RARCH_LOG("[Autoconf]   HIDIOCGFEATURE failed for %s: %d\n", device_path, errno);
+      }
+      else
+         RARCH_LOG("[Autoconf]   HIDIOCGRAWINFO mismatch/failed for %s (ret=%d, vid=%04x pid=%04x), skipping\n",
+               device_path, ret, info.vendor, info.product);
+
+      close(fd);
+      fd = -1;
+   }
+
+   if (fd >= 0)
+      close(fd);
+   closedir(dev_dir);
+   return pad_type;
+}
+
+#endif
+
 static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libusb(int vid, int pid)
 {
 #ifdef HAVE_LIBUSB
@@ -434,7 +645,6 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
       RARCH_ERR("[Autoconf] Could not initialize libusb.\n");
       return NULL;
    }
-
    autoconfig_libusb_handle = libusb_open_device_with_vid_pid(NULL, vid, pid);
 
    if (!autoconfig_libusb_handle)
@@ -448,7 +658,6 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 #endif
 
    ret = libusb_set_configuration(autoconfig_libusb_handle, 1);
-
    if (ret < 0)
    {
       RARCH_ERR("[Autoconf] Error during libusb_set_configuration.\n");
@@ -456,7 +665,6 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
    }
 
    ret = libusb_claim_interface(autoconfig_libusb_handle, 0);
-
    if (ret < 0)
    {
       RARCH_ERR("[Autoconf] Error during libusb_claim_interface.\n");
@@ -466,7 +674,17 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
    ret = libusb_control_transfer(autoconfig_libusb_handle, USB_CTRL_IN, USB_HID_GET_REPORT, BLISSBOX_USB_FEATURE_REPORT_ID, 0, answer, USB_PACKET_CTRL_LEN, USB_TIMEOUT);
 
    if (ret < 0)
+   {
       RARCH_ERR("[Autoconf] Error during libusb_control_transfer.\n");
+      goto error;
+   }
+
+   if (ret != USB_PACKET_CTRL_LEN)
+   {
+      RARCH_ERR("[Autoconf] Unexpected Bliss-Box libusb control transfer length: %d (expected %d).\n",
+            ret, USB_PACKET_CTRL_LEN);
+      goto error;
+   }
 
    libusb_release_interface(autoconfig_libusb_handle, 0);
 
@@ -475,6 +693,7 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
 #endif
 
    libusb_close(autoconfig_libusb_handle);
+   autoconfig_libusb_handle = NULL;
    libusb_exit(NULL);
 
    for (i = 0; i < ARRAY_SIZE(blissbox_pad_types); i++)
@@ -485,7 +704,9 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type_libu
          continue;
 
       if (pad->index == answer[0])
+      {
          return pad;
+      }
    }
 
    RARCH_LOG("[Autoconf] Could not find connected pad in Bliss-Box port#%d.\n", pid - BLISSBOX_PID);
@@ -512,6 +733,11 @@ static const blissbox_pad_type_t* input_autoconfigure_get_blissbox_pad_type(int 
    return input_autoconfigure_get_blissbox_pad_type_win32(vid, pid);
 #endif
 #else
+#if defined(__linux__)
+   const blissbox_pad_type_t *pad = input_autoconfigure_get_blissbox_pad_type_hidraw_scan(vid, pid);
+   if (pad)
+      return pad;
+#endif
    return input_autoconfigure_get_blissbox_pad_type_libusb(vid, pid);
 #endif
 }
@@ -520,25 +746,30 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
       char *s, size_t len)
 {
    if (pid == BLISSBOX_UPDATE_MODE_PID)
-      RARCH_LOG("[Autoconf] Bliss-Box in update mode detected. Ignoring.\n");
+   {
+      RARCH_WARN("[Autoconf] Bliss-Box in update mode detected. Ignoring.\n");
+   }
    else if (pid == BLISSBOX_OLD_PID)
-      RARCH_LOG("[Autoconf] Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
+   {
+      RARCH_WARN("[Autoconf] Bliss-Box 1.0 firmware detected. Please update to 2.0 or later.\n");
+   }
    else if (pid >= BLISSBOX_PID && pid <= BLISSBOX_PID + BLISSBOX_MAX_PAD_INDEX)
    {
       const blissbox_pad_type_t *pad;
       int index      = pid - BLISSBOX_PID;
 
-      RARCH_LOG("[Autoconf] Bliss-Box detected. Getting pad type...\n");
-
       if (blissbox_pads[index])
          pad = blissbox_pads[index];
       else
+      {
          pad = input_autoconfigure_get_blissbox_pad_type(vid, pid);
+      }
+
+      if (!pad)
+         RARCH_WARN("[Autoconf] [Blissbox] Platform probe returned null for vid=%04x pid=%04x.\n", vid, pid);
 
       if (pad && pad->name && *pad->name)
       {
-         RARCH_LOG("[Autoconf] Found Bliss-Box pad type: %s (%d) in port#%d.\n", pad->name, pad->index, index);
-
          /* override name given to autoconfig so it knows what kind of pad this is */
          if (len > 0)
          {
@@ -546,10 +777,20 @@ void input_autoconfigure_blissbox_override_handler(int vid, int pid,
             strlcpy(s + _len, pad->name, len - _len);
          }
 
+         RARCH_LOG("[Autoconf] Bliss-Box port %d detected as %s.\n", index, pad->name);
+
          blissbox_pads[index] = pad;
       }
       /* use NULL entry to mark as an unconnected port */
       else
+      {
+         if (len > 0)
+            strlcpy(s, "Bliss-Box 4-Play", len);
          blissbox_pads[index] = &blissbox_pad_types[ARRAY_SIZE(blissbox_pad_types) - 1];
+      }
+   }
+   else
+   {
+      RARCH_WARN("[Autoconf] [Blissbox] Unexpected PID %04x for VID %04x.\n", pid, vid);
    }
 }
