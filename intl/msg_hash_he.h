@@ -96,6 +96,11 @@ static const struct
    char s_f03e9c42[20];
    char s_3674ba44[24];
    char s_6ebb6a00[20];
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   char s_e65393d5[20];
+#endif
+#endif
    char s_99eb425d[9];
    char s_941e50fb[26];
    char s_2cb9dc71[15];
@@ -150,10 +155,18 @@ static const struct
    char s_8d3a8b68[22];
    char s_3a0a3fef[20];
    char s_72898bf0[25];
-   char s_df92f5b5[36];
    char s_b00815b8[22];
    char s_ada81f6a[29];
    char s_d264a13e[25];
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   char s_d0fb22cb[9];
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   char s_d3e78762[17];
+   char s_d04ab10c[17];
+#endif
    char s_8be7813a[7];
    char s_1757647b[7];
    char s_273a9f02[18];
@@ -178,15 +191,11 @@ static const struct
    char s_56e21ee1[33];
    char s_f70406ce[32];
    char s_66df5c89[20];
-   char s_3361e11d[51];
-   char s_9b3ca94b[47];
    char s_6d025795[9];
    char s_6d059c18[9];
    char s_99d648f2[18];
    char s_2aeb5474[20];
    char s_7534cfc9[10];
-   char s_036acd54[34];
-   char s_a0a191ca[34];
    char s_5f15f7a7[13];
    char s_6d08238d[5];
    char s_d93c753a[7];
@@ -241,6 +250,9 @@ static const struct
    char s_084af156[9];
    char s_d7fc4c9c[29];
    char s_d21c686b[27];
+#ifdef HAVE_MIST
+   char s_22ce4612[9];
+#endif
    char s_206b1acd[11];
    char s_bab74532[20];
    char s_7d2035c4[22];
@@ -277,6 +289,13 @@ static const struct
    char s_adcf82d6[22];
    char s_e7033e0e[7];
    char s_c79d5013[25];
+#if defined(DINGUX)
+   char s_d374d67d[41];
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   char s_7c89e3ac[10];
+   char s_7c8a700d[10];
+#endif
    char s_cc973e8a[11];
    char s_aa9bc75d[15];
    char s_57047267[11];
@@ -293,8 +312,6 @@ static const struct
    char s_30140cb5[18];
    char s_1c0a61e2[22];
    char s_50d77da7[22];
-   char s_9ca4bbd7[22];
-   char s_9ca4bbd8[22];
    char s_950e7a66[41];
    char s_ce113b1c[51];
    char s_cb649822[17];
@@ -315,27 +332,9 @@ static const struct
 #endif
 #endif
    char s_e8aee6c7[36];
-   char s_2a9c73f3[34];
-   char s_05e3f715[42];
-   char s_631c5635[45];
-   char s_19e809ad[38];
-   char s_db1e4390[38];
    char s_f7e279a6[29];
-   char s_4b6a946a[36];
-   char s_8d677b5b[29];
-   char s_e533ddbb[22];
-   char s_45130077[26];
-   char s_856bdef7[31];
    char s_46f6a65d[9];
    char s_543fcabd[29];
-   char s_b1e9bfbf[20];
-   char s_28bbcc15[30];
-   char s_d15060ee[27];
-   char s_a068841f[28];
-   char s_4d7ee7e2[20];
-   char s_509dd374[25];
-   char s_bab020a4[22];
-   char s_88494936[37];
 } msg_hash_he_blob =
 {
    "\327\242\327\231\327\225\327\237 \327\220\327\227\327\250 \327\234\327\231\327\221\327\224 \327"
@@ -466,6 +465,11 @@ static const struct
    "\327\224\327\225\327\250\327\223\327\252 \327\252\327\225\327\233\327\237",
    "\327\236\327\240\327\224\327\234\327\231 \327\224\327\252\327\247\327\240\327\231\327\235",
    "\327\251\327\236\327\231\327\250\327\252 \327\223\327\231\327\241\327\247",
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   "\327\224\327\225\327\246\327\220\327\252 \327\223\327\231\327\241\327\247",
+#endif
+#endif
    "\327\242\327\231\327\231\327\237",
    "\327\252\327\231\327\247\327\231\327\231\327\252 \327\224\327\224\327\252\327\227\327\234\327"
    "\224",
@@ -525,10 +529,18 @@ static const struct
    "\327\252\327\246\327\225\327\250\327\252 \327\252\327\244\327\250\327\231\327\230",
    "\327\241\327\231\327\231\327\250 \327\247\327\221\327\246\327\231\327\235",
    "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
-   "\"Load Content\" Startup Notification",
    "\327\246\327\234\327\231\327\234\327\231 \327\252\327\244\327\250\327\231\327\230",
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'Cancel'",
    "\327\220\327\244\327\251\327\250 \327\241\327\220\327\225\327\240\327\223 'OK'",
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   "\327\224\327\252\327\247\327\237",
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   "\327\236\327\231\327\247\327\250\327\225\327\244\327\225\327\237",
+   "\327\236\327\231\327\247\327\250\327\225\327\244\327\225\327\237",
+#endif
    "\327\247\327\234\327\230",
    "\327\244\327\234\327\230",
    "\327\242\327\225\327\246\327\236\327\252 \327\251\327\236\327\242",
@@ -557,15 +569,11 @@ static const struct
    "\327\247\327\231\327\231\327\235, \327\220\327\225\327\244\327\246\327\231\327\225\327\240\327"
    "\220\327\234\327\231:",
    "\327\247\327\231\327\231\327\235, \327\240\327\246\327\250\327\232:",
-   "Are you sure you want to delete the playlist \"%1\"?",
-   "Are you sure you want to delete the item \"%1\"?",
    "\327\234\327\231\327\221\327\224",
    "\327\236\327\231\327\223\327\242",
    "\327\236\327\231\327\223\327\242 \327\240\327\225\327\241\327\243",
    "\327\230\327\242\327\231\327\240\327\252 \327\234\327\231\327\221\327\224",
    "&\327\242\327\226\327\250\327\224",
-   "\"All Playlists\" max grid entries:",
-   "\"All Playlists\" max list entries:",
    "\327\224\327\222\327\223\327\250\327\225\327\252",
    "\327\251\327\235",
    "\327\224\327\241\327\250",
@@ -626,6 +634,9 @@ static const struct
    "\327\224\327\244\327\242\327\234 RetroPad \327\236\327\250\327\225\327\227\327\247",
    "\327\224\327\227\327\234 \327\236\327\242\327\221\327\223 \327\225\327\231\327\223\327\220\327"
    "\225",
+#ifdef HAVE_MIST
+   "\327\241\327\230\327\231\327\235",
+#endif
    "\327\220\327\227\327\241\327\225\327\237",
    "\327\236\327\231\327\223\327\242 \327\236\327\242\327\250\327\233\327\252",
    "\327\252\327\220\327\250\327\231\327\232 \327\224\327\222\327\250\327\241\327\224",
@@ -670,6 +681,14 @@ static const struct
    "\327\236\327\225\327\252\327\220\327\235 \327\220\327\231\327\251\327\231\327\252",
    "\327\236\327\234\327\220",
    "\327\231\327\227\327\241 \327\222\327\225\327\221\327\224-\327\250\327\225\327\227\327\221",
+#if defined(DINGUX)
+   "\327\251\327\236\327\225\327\250 \327\242\327\234 \327\231\327\227\327\241 \327\224\327\222\327"
+   "\225\327\221\327\224-\327\250\327\225\327\227\327\221",
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   "50 \327\224\327\250\327\245",
+   "60 \327\224\327\250\327\245",
+#endif
    "\327\225\327\231\327\223\327\220\327\225",
    "\327\220\327\225\327\230\327\225\327\236\327\230\327\231",
    "\327\221\327\244\327\225\327\242\327\234",
@@ -687,8 +706,6 @@ static const struct
    "\327\250\327\225\327\227\327\221 \327\227\327\234\327\225\327\237",
    "\327\250\327\251\327\252 \327\220\327\234\327\227\327\225\327\230\327\231\327\252",
    "\327\250\327\251\327\252 \327\220\327\234\327\227\327\225\327\230\327\231\327\252",
-   "video_viewport_bias_x",
-   "video_viewport_bias_y",
    "\327\224\327\251\327\252\327\247 \327\236\327\242\327\250\327\221\327\234 \327\251\327\236\327"
    "\242 (\327\236\327\231\327\247\327\241\327\250).",
    "\327\251\327\240\327\224 \327\224\327\222\327\223\327\250\327\225\327\252 \327\236\327\242\327"
@@ -723,39 +740,49 @@ static const struct
 #endif
    "\327\251\327\231\327\240\327\225\327\231 \327\224\327\222\327\223\327\250\327\225\327\252 \327"
    "\231\327\231\327\251\327\225\327\235.",
-   "Controller profile saved as \"%s\".",
-   "Auto-loading save state from \"%s\" failed.",
-   "Auto-loading save state from \"%s\" succeeded.",
-   "bringing_up_command_interface_at_port",
-   "RetroAchievements: Logged in as \"%s\".",
    "\327\224\327\231\327\223\327\225\327\250 (\327\247\327\231\327\236\327\244\327\225\327\234)\342"
    "\200\217",
-   "disconnect_device_from_a_valid_port",
-   "failed_to_start_audio_driver",
-   "found_last_state_slot",
-   "Got connection from: \"%s\"",
-   "Got connection from: \"%s (%s)\"",
    "\327\224\327\227\327\226\327\247",
    "\327\226\327\236\327\237 \327\247\327\246\327\225\327\221 \327\234\327\252\327\244\327\225\327"
    "\222\327\224",
-   "Client banned: \"%s\"",
-   "Your nickname changed to \"%s\"",
-   "Failed to ban client: \"%s\"",
-   "Failed to kick client: \"%s\"",
-   "Client kicked: \"%s\"",
-   "Netplay peer \"%s\" paused",
-   "\"%s\" has disconnected",
-   "Unrecognized command \"%s\" received.\n",
 };
 
 /* Contiguity check: char members have alignment 1, so any
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_he_blob_check[
-      (sizeof(msg_hash_he_blob) == (6940u
+      (sizeof(msg_hash_he_blob) == (6144u
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+       + 20u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+       + 9u
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+       + 17u
+       + 17u
+#endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
+#endif
+#endif
+#ifdef HAVE_MIST
+       + 9u
+#endif
+#if defined(DINGUX)
+       + 41u
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+       + 10u
+       + 10u
+#endif
+#ifdef HAVE_LAKKA
+#ifdef HAVE_RETROFLAG
        + 125u
 #endif
 #endif
@@ -844,6 +871,11 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DRIVER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DUMP_DISC,
+#ifdef HAVE_CDROM
+#ifdef HAVE_LAKKA
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EJECT_DISC,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_FAVORITES_TAB,
@@ -898,10 +930,18 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_ASPECT_RATIO,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_CANCEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
+#ifdef HAVE_MICROPHONE
+#if !defined(RARCH_CONSOLE)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_DEVICE,
+#endif
+#endif
+#ifdef HAVE_MICROPHONE
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_VOLUME,
@@ -926,15 +966,11 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_REQUIRED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CONFIRM_DELETE_PLAYLIST_ITEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_HELP,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS_TITLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_REMOVE,
@@ -989,6 +1025,9 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
+#ifdef HAVE_MIST
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STEAM_SETTINGS,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_STORAGE_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_BUILD_DATE,
@@ -1025,6 +1064,13 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_FULL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ASPECT_RATIO_INDEX,
+#if defined(DINGUX)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_IPU_KEEP_ASPECT,
+#endif
+#if defined(DINGUX) && defined(DINGUX_BETA)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_50HZ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DINGUX_REFRESH_RATE_60HZ,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTOMATIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
@@ -1041,8 +1087,6 @@ static const uint32_t msg_hash_he_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_X,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
@@ -1063,25 +1107,7 @@ static const uint32_t msg_hash_he_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS,
-   (uint32_t)MSG_AUTOCONFIG_FILE_SAVED_SUCCESSFULLY_NAMED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_FAILED,
-   (uint32_t)MSG_AUTOLOADING_SAVESTATE_SUCCEEDED,
-   (uint32_t)MSG_BRINGING_UP_COMMAND_INTERFACE_ON_PORT,
-   (uint32_t)MSG_CHEEVOS_LOGGED_IN_AS_USER,
    (uint32_t)MSG_COMPILER,
-   (uint32_t)MSG_DISCONNECT_DEVICE_FROM_A_VALID_PORT,
-   (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
-   (uint32_t)MSG_FOUND_LAST_STATE_SLOT,
-   (uint32_t)MSG_GOT_CONNECTION_FROM,
-   (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
    (uint32_t)MSG_INPUT_BIND_HOLD,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
-   (uint32_t)MSG_NETPLAY_BANNED_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_CHANGED_NICK,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_BAN_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_FAILED_TO_KICK_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
-   (uint32_t)MSG_NETPLAY_PEER_PAUSED,
-   (uint32_t)MSG_NETPLAY_SERVER_NAMED_HANGUP,
-   (uint32_t)MSG_UNRECOGNIZED_COMMAND,
 };
