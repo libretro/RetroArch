@@ -5847,6 +5847,13 @@ static enum runloop_state_enum runloop_check_state(
    bool is_alive                       = false;
    uint64_t frame_count                = 0;
    bool focused                        = true;
+#if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
+   /* Snapshot of the output size, fetched under the display lock.
+    * The video thread writes video_st->width/height through
+    * video_driver_set_output_size() while this function runs. */
+   unsigned output_width               = 0;
+   unsigned output_height              = 0;
+#endif
    bool rarch_is_initialized           = !!(runloop_st->flags & RUNLOOP_FLAG_IS_INITED);
    bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    bool pause_nonactive                = settings->bools.pause_nonactive;
@@ -5977,11 +5984,13 @@ static enum runloop_state_enum runloop_check_state(
    {
       static unsigned last_width                     = 0;
       static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = video_st->width;
-      unsigned video_driver_height                   = video_st->height;
+      unsigned video_driver_width                    = 0;
+      unsigned video_driver_height                   = 0;
       bool check_next_rotation                       = true;
       bool input_overlay_hide_when_gamepad_connected = settings->bools.input_overlay_hide_when_gamepad_connected;
       bool input_overlay_auto_rotate                 = settings->bools.input_overlay_auto_rotate;
+
+      video_driver_get_output_size(&video_driver_width, &video_driver_height);
 
       /* Check whether overlay should be hidden
        * when a gamepad is connected */
@@ -6025,8 +6034,8 @@ static enum runloop_state_enum runloop_check_state(
          /* Check overlay rotation, if required */
          if (input_overlay_auto_rotate)
             input_overlay_auto_rotate_(
-                  video_st->width,
-                  video_st->height,
+                  video_driver_width,
+                  video_driver_height,
                   settings->bools.input_overlay_enable,
                   input_st->overlay_ptr);
 
@@ -6052,8 +6061,10 @@ static enum runloop_state_enum runloop_check_state(
    {
       static unsigned last_width                     = 0;
       static unsigned last_height                    = 0;
-      unsigned video_driver_width                    = video_st->width;
-      unsigned video_driver_height                   = video_st->height;
+      unsigned video_driver_width                    = 0;
+      unsigned video_driver_height                   = 0;
+
+      video_driver_get_output_size(&video_driver_width, &video_driver_height);
 
       /* Check whether video aspect has changed */
       if (   (video_driver_width  != last_width)
@@ -6292,12 +6303,14 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_MENU) || defined(HAVE_GFX_WIDGETS)
+   video_driver_get_output_size(&output_width, &output_height);
+
    gfx_animation_update(
          current_time,
          settings->bools.menu_timedate_enable,
          settings->floats.menu_ticker_speed,
-         video_st->width,
-         video_st->height);
+         output_width,
+         output_height);
 
 #if defined(HAVE_GFX_WIDGETS)
    if (widgets_active)
@@ -6311,8 +6324,8 @@ static enum runloop_state_enum runloop_check_state(
       gfx_widgets_iterate(
             p_disp,
             settings,
-            video_st->width,
-            video_st->height,
+            output_width,
+            output_height,
             video_is_fullscreen,
             settings->paths.directory_assets,
             settings->paths.path_font,
@@ -6711,8 +6724,8 @@ static enum runloop_state_enum runloop_check_state(
                if (menu->driver_ctx->render)
                   menu->driver_ctx->render(
                         menu->userdata,
-                        video_st->width,
-                        video_st->height,
+                        output_width,
+                        output_height,
                         (runloop_st->flags & RUNLOOP_FLAG_IDLE) ? true : false);
             }
 
