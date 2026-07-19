@@ -50,6 +50,10 @@
 #include <formats/audio.h>
 #endif
 
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#include <formats/audio.h>
+#endif
+
 #ifdef HAVE_RFLAC
 #include <formats/audio.h>
 #endif
@@ -685,6 +689,34 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size)
 #endif
 }
 
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
+{
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   audio_mixer_sound_t* sound;
+   enum audio_type_enum ty = audio_transfer_webm_audio_type(buffer,
+         (size_t)size);
+   enum audio_mixer_type mt;
+
+   /* Resolve to the existing sound type whose streaming arm accepts
+    * the whole WebM buffer; nothing downstream ever sees WEBA. */
+   if (ty == AUDIO_TYPE_OPUS)
+      mt = AUDIO_MIXER_TYPE_OPUS;
+   else if (ty == AUDIO_TYPE_VORBIS)
+      mt = AUDIO_MIXER_TYPE_OGG;
+   else
+      return NULL;
+
+   if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
+      return NULL;
+   sound->type           = mt;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+   return sound;
+#else
+   return NULL;
+#endif
+}
+
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
 {
 #ifdef HAVE_RMODTRACKER
@@ -761,6 +793,7 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
             free(handle);
 #endif
          break;
+      case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
       case AUDIO_MIXER_TYPE_NONE:
          break;
    }
@@ -1013,6 +1046,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
                   resampler_ident, quality, stop_cb, AUDIO_TYPE_OPUS);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1110,6 +1144,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
          case AUDIO_MIXER_TYPE_WAV:
             res = audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1537,6 +1572,7 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_OPUS);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
@@ -1610,6 +1646,7 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_WAV:
             audio_mixer_mix_wav_s16(buffer, num_frames, voice, gain_q16);
             break;
+         case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
             break;
       }
