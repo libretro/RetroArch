@@ -46,7 +46,8 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_MOD,
    AUDIO_MIXER_TYPE_FLAC,
    AUDIO_MIXER_TYPE_MP3,
-   AUDIO_MIXER_TYPE_M4A
+   AUDIO_MIXER_TYPE_M4A,
+   AUDIO_MIXER_TYPE_OPUS
 };
 
 typedef struct audio_mixer_sound audio_mixer_sound_t;
@@ -70,6 +71,7 @@ audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
