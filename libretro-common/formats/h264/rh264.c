@@ -153,14 +153,31 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       n=rh264_ue(&b); if(n>255) return 0; s->poc1_ncycle=n;
       for(i=0;i<n;i++) s->poc1_offset_ref[i]=rh264_se(&b); }
    s->max_num_ref_frames=rh264_ue(&b); rh264_u1(&b);
-   s->pic_width_in_mbs=rh264_ue(&b)+1; s->pic_height_in_map_units=rh264_ue(&b)+1;
+   /* Geometry is attacker-controlled: rh264_ue can hand back anything up
+    * to 0xFFFFFFFF, which lands in these ints as a huge or negative
+    * count and reaches the frame allocator's size arithmetic.  Bound it
+    * to 1024 macroblocks per side, 16384 pixels - above every level the
+    * standard defines. */
+   { uint32_t wm1=rh264_ue(&b), hm1=rh264_ue(&b);
+     if(wm1>=1024||hm1>=1024) return 0;
+     s->pic_width_in_mbs=(int)wm1+1; s->pic_height_in_map_units=(int)hm1+1; }
    s->frame_mbs_only_flag=rh264_u1(&b); if(!s->frame_mbs_only_flag) rh264_u1(&b);
    s->direct_8x8_inference_flag=rh264_u1(&b);
-   { int cl=0,cr=0,ct=0,cb=0; int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
-     if(rh264_u1(&b)){ cl=rh264_ue(&b); cr=rh264_ue(&b); ct=rh264_ue(&b); cb=rh264_ue(&b); }
+   { uint32_t cl=0,cr=0,ct=0,cb=0;
+     int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
+     if(rh264_u1(&b)){ cl=rh264_ue(&b); cr=rh264_ue(&b);
+                       ct=rh264_ue(&b); cb=rh264_ue(&b); }
+     /* Cropping is attacker-controlled too: keep each offset inside the
+      * coded picture so the products below cannot overflow, then require
+      * the cropped picture to be non-empty and no larger than the coded
+      * one.  A frame_width or frame_height that came out negative was
+      * cast to size_t by the frame allocator. */
+     if(cl>16384u||cr>16384u||ct>16384u||cb>16384u) return 0;
      { int sw=2, sh=2*(2-s->frame_mbs_only_flag);
-       s->frame_width=s->pic_width_in_mbs*16-sw*(cl+cr);
-       s->frame_height=mbh*16-sh*(ct+cb); } }
+       int cw=s->pic_width_in_mbs*16, ch=mbh*16;
+       int fw=cw-sw*(int)(cl+cr), fh=ch-sh*(int)(ct+cb);
+       if(fw<16||fh<16||fw>cw||fh>ch) return 0;
+       s->frame_width=fw; s->frame_height=fh; } }
    /* VUI, walked only as far as max_num_reorder_frames (E.1.1), which bounds
     * how many decoded pictures can precede a given picture in output order
     * and so sets the display reorder delay. Absent VUI or an early end of
@@ -174,13 +191,18 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       if(rh264_u1(&b)){ rh264_ue(&b); rh264_ue(&b); }
       if(rh264_u1(&b)){ rh264_un(&b,32); rh264_un(&b,32); rh264_u1(&b); }
       { int hrd0,hrd1,k;
+        /* cpb_cnt_minus1 is 0..31 (E.2.2); an unbounded count spins on a
+         * reader that has already run out of data, since a spent
+         * rh264_ue consumes nothing. */
         hrd0=rh264_u1(&b);
-        if(hrd0){ int cnt=rh264_ue(&b)+1; rh264_un(&b,4); rh264_un(&b,4);
-           for(k=0;k<cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
+        if(hrd0){ uint32_t cnt=rh264_ue(&b); if(cnt>31u) return 0;
+           rh264_un(&b,4); rh264_un(&b,4);
+           for(k=0;k<=(int)cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
            rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); }
         hrd1=rh264_u1(&b);
-        if(hrd1){ int cnt=rh264_ue(&b)+1; rh264_un(&b,4); rh264_un(&b,4);
-           for(k=0;k<cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
+        if(hrd1){ uint32_t cnt=rh264_ue(&b); if(cnt>31u) return 0;
+           rh264_un(&b,4); rh264_un(&b,4);
+           for(k=0;k<=(int)cnt;k++){ rh264_ue(&b); rh264_ue(&b); rh264_u1(&b); }
            rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); rh264_un(&b,5); }
         if(hrd0||hrd1) rh264_u1(&b); }
       rh264_u1(&b);
@@ -358,7 +380,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
                if(sh->nmod<34){ sh->mod_op[sh->nmod]=(int8_t)op;
                                 sh->mod_val[sh->nmod]=v; sh->nmod++; }
             }
-         } while(op!=3);
+         } while(op!=3&&rh264_more_data(b));
       }
       if(sh->slice_type==RH264_SLICE_B&&rh264_u1(b)){
          int op; do{ op=rh264_ue(b);
@@ -367,7 +389,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
                if(sh->nmod1<34){ sh->mod_op1[sh->nmod1]=(int8_t)op;
                                  sh->mod_val1[sh->nmod1]=v; sh->nmod1++; }
             }
-         } while(op!=3);
+         } while(op!=3&&rh264_more_data(b));
       }
    } else if(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
       return 0; /* SP/SI switching slices not supported */
@@ -425,7 +447,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
                   else return 0;
                }
                else if(op!=0) return 0;
-            } while(op!=0);
+            } while(op!=0&&rh264_more_data(b));
          }
       }
    }
@@ -693,6 +715,10 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
          return -1;
       if (total_coeff == 0)
          return 0;
+      /* more coefficients than the block can hold is a malformed
+       * stream, not something to scatter into the caller's array */
+      if (total_coeff > maxNumCoeff)
+         return -1;
    }
 
    /* Levels. */
@@ -761,6 +787,11 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
             if (idx < 0) return -1;
             rbv = idx;
          }
+         /* a run longer than the zeros total_zeros accounted for would
+          * drive the scan position backwards past the start of the
+          * block */
+         if (rbv > zeros_left)
+            return -1;
          run[i] = rbv;
          zeros_left -= rbv;
       }
@@ -773,7 +804,7 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
       for (i = total_coeff - 1; i >= 0; i--)
       {
          coeff_num += run[i] + 1;
-         if (coeff_num < maxNumCoeff)
+         if (coeff_num >= 0 && coeff_num < maxNumCoeff)
             out[coeff_num] = level[i];
       }
    }
