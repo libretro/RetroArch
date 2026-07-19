@@ -1363,7 +1363,7 @@ static int cheat_manager_search_input_start(
    line.label         = msg_hash_to_str(label_value);
    line.label_setting = value_buf;
    line.type          = label;
-   line.idx           = idx;
+   line.idx           = (unsigned)idx;
    line.cb            = cb;
 
    if (menu_input_dialog_start(&line))

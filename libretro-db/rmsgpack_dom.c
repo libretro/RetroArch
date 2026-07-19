@@ -75,7 +75,7 @@ static int rmsgpack_dom_reader_state_push(
       if (!new_stack)
          return -1;
       s->stack    = new_stack;
-      s->capacity = new_capacity;
+      s->capacity = (int)new_capacity;
    }
    s->i++;
    s->stack[s->i] = v;

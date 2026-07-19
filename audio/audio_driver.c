@@ -772,7 +772,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
       )
    {
-      size_t frames                  = samples >> 1;
+      size_t frames                  = (unsigned)(samples >> 1);
       double rate_adjust             = 1.0;
       unsigned input_rate            = (unsigned)audio_st->input;
 
@@ -1218,7 +1218,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (audio_mixer_has_s16_voices())
          audio_mixer_fold_s16_voices_into_float(
                audio_st->output_samples_buf,
-               audio_st->output_samples_int16, src_data.output_frames,
+               audio_st->output_samples_int16,
+               (unsigned)src_data.output_frames,
                mixer_gain, override);
       audio_mixer_mix(audio_st->output_samples_buf,
             src_data.output_frames, mixer_gain, override);

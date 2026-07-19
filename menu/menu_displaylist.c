@@ -14615,7 +14615,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                if (     core_info_current_supports_savestate()
                      && settings->bools.quick_menu_show_save_load_state)
                {
-                  runloop_state_t *runloop_st = runloop_state_get_ptr();
                   int i;
                   int i_max = count = 1000;
 

@@ -205,6 +205,7 @@ struct audio_transfer_opus
    float       pend_f32[5760 * 2];
 };
 
+#ifdef HAVE_RWEBM
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
 static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
 {
@@ -226,6 +227,7 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
    }
    return (int64_t)fs[d[0] >> 3] * count;
 }
+#endif
 
 /* Validate the Ogg page at off and return its total size (header plus
  * body), or 0 if there is no valid page there.  On success the body
