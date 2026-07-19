@@ -1302,10 +1302,11 @@
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
-/* When a core outputs 16-bit integer audio, prefer the deterministic
- * fixed-point (int16) SINC resampler over the float one for any needed
- * resampling. Avoids the s16<->float round-trip and is bit-reproducible. */
-#define DEFAULT_AUDIO_FASTPATH_S16 true
+/* When a core outputs 16-bit integer audio, the deterministic
+ * fixed-point (int16) SINC resampler can be preferred over the float
+ * one for any needed resampling, avoiding the s16<->float round-trip
+ * (bit-reproducible). Opt-in; the float path remains the default. */
+#define DEFAULT_AUDIO_FASTPATH_S16 false
 /* Requested output sample format for negotiable audio drivers:
  * AUDIO_FORMAT_NEGOTIATION_INT16 (0) or AUDIO_FORMAT_NEGOTIATION_FLOAT (1).
  * Float by default, matching RetroArch's historical driver behaviour. */
