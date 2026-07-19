@@ -13,4 +13,4 @@ S_BOOL(audio_fastpath_s16, AUDIO_FASTPATH_S16,
       "audio_fastpath_s16",
       DEFAULT_AUDIO_FASTPATH_S16, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Resample to Fixed Integer (Hint)",
-      "Use the fixed-point (integer) resampler instead of the floating-point one when a core outputs 16-bit audio. Avoids the integer-to-float round-trip and produces bit-identical output on every platform, which helps netplay determinism. Has no effect on cores that output floating-point audio, and falls back to the floating-point path while an incompatible DSP filter is active.")
+      "Use the fixed-point (integer) resampler instead of the floating-point one when a core outputs 16-bit audio. Avoids the integer-to-float round-trip and produces bit-identical output on every platform, making audio output reproducible across runs and systems. Has no effect on cores that output floating-point audio, and falls back to the floating-point path while an incompatible DSP filter is active.")
