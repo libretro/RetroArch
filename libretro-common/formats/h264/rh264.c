@@ -55,7 +55,8 @@ static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
 /* ==================== rh264_ps.h ==================== */
 typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cnt_type,
    max_num_ref_frames,
-   log2_max_poc_lsb,frame_mbs_only_flag,pic_width_in_mbs,pic_height_in_map_units,
+   log2_max_poc_lsb,frame_mbs_only_flag,mb_adaptive_frame_field_flag,
+   pic_width_in_mbs,pic_height_in_map_units,
    frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
    poc_type1_always_zero,
    poc1_offset_non_ref, poc1_offset_ttb, poc1_ncycle,
@@ -170,7 +171,16 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    { uint32_t wm1=rh264_ue(&b), hm1=rh264_ue(&b);
      if(wm1>=1024||hm1>=1024) return 0;
      s->pic_width_in_mbs=(int)wm1+1; s->pic_height_in_map_units=(int)hm1+1; }
-   s->frame_mbs_only_flag=rh264_u1(&b); if(!s->frame_mbs_only_flag) rh264_u1(&b);
+   s->frame_mbs_only_flag=rh264_u1(&b);
+   if(!s->frame_mbs_only_flag)
+      s->mb_adaptive_frame_field_flag=rh264_u1(&b);
+   /* Macroblock-adaptive frame/field coding switches frame and field
+    * macroblock pairs within one picture; every neighbour derivation,
+    * the deblocking filter and the reference addressing change with
+    * it.  None of that is implemented, and decoding such a picture as
+    * if it were progressive reconstructs garbage rather than failing,
+    * so refuse the sequence outright. */
+   if(s->mb_adaptive_frame_field_flag) return 0;
    s->direct_8x8_inference_flag=rh264_u1(&b);
    { uint32_t cl=0,cr=0,ct=0,cb=0;
      int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
@@ -341,6 +351,7 @@ enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SL
 #define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
+   field_pic_flag,bottom_field_flag,
    poc1_delta0,poc1_delta1,
    num_ref_idx_l0,num_ref_idx_l1,direct_spatial_mv_pred_flag,
    cabac_init_idc,frame_num_val,
@@ -359,7 +370,16 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    st=rh264_ue(b); sh->slice_type=st%5; sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
    sh->frame_num_val=sh->frame_num;
-   if(!sps->frame_mbs_only_flag){ if(rh264_u1(b)) rh264_u1(b); }
+   if(!sps->frame_mbs_only_flag)
+   {
+      sh->field_pic_flag=rh264_u1(b);
+      if(sh->field_pic_flag) sh->bottom_field_flag=rh264_u1(b);
+      /* A field picture is half the frame's height and keeps its own
+       * reference lists and picture order counts; decoded as a frame
+       * it reconstructs garbage.  Frame pictures in the same sequence
+       * are ordinary and still decode. */
+      if(sh->field_pic_flag) return 0;
+   }
    if(sh->is_idr) sh->idr_pic_id=rh264_ue(b);
    if(sps->pic_order_cnt_type==0){
       sh->poc_lsb=rh264_un(b,sps->log2_max_poc_lsb);
