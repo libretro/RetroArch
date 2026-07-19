@@ -1342,7 +1342,17 @@ static void thread_unload_texture(void *data,
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr && thr->driver_data && thr->poke && thr->poke->unload_texture)
+   {
+      /* Releasing a GPU texture while the video thread is mid-frame can
+       * free something the in-flight frame still references -- the AI
+       * service overlay is drawn straight from
+       * dispgfx_widget_t::ai_service_overlay_texture after a plain
+       * ai_service_overlay_state test, with no handshake.  Drain any
+       * pending frame first; no-op when this is the video thread or
+       * when the wrapper is not running. */
+      video_thread_wait_idle();
       thr->poke->unload_texture(thr->driver_data, threaded, id);
+   }
 }
 
 static void thread_apply_state_changes(void *data)
