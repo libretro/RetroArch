@@ -112,7 +112,8 @@ static void autosave_thread(void *data)
 
    for (;;)
    {
-      bool differ = false;
+      bool differ   = false;
+      bool compress = false;
 
       slock_lock(save->lock);
 
@@ -167,13 +168,19 @@ static void autosave_thread(void *data)
          save->flags &= ~AUTOSAVE_FLAG_DIRTY;
       }
 
+      /* COMPRESS_FILES never changes after autosave_new(), but it
+       * shares the byte with DIRTY, which the main thread sets under
+       * this lock.  Sample it here rather than reading save->flags
+       * again once the lock is dropped. */
+      compress = (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES) != 0;
+
       slock_unlock(save->lock);
 
       if (differ)
       {
          intfstream_t *file = NULL;
 
-         if (save->flags & AUTOSAVE_FLAG_COMPRESS_FILES)
+         if (compress)
             file = intfstream_open_rzip_file(save->path,
                   RETRO_VFS_FILE_ACCESS_WRITE);
          else
