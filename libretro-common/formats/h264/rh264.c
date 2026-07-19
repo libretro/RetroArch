@@ -146,8 +146,17 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
          }
       }
    }
-   s->log2_max_frame_num=rh264_ue(&b)+4; s->pic_order_cnt_type=rh264_ue(&b);
-   if(s->pic_order_cnt_type==0) s->log2_max_poc_lsb=rh264_ue(&b)+4;
+   /* Both minus4 fields are 0..12 (7.4.2.1.1), so the log2 values are
+    * 4..16.  Unchecked they reach 1 << value and rh264_un's bit count
+    * as anything up to 0xFFFFFFFF + 4. */
+   { uint32_t lm4=rh264_ue(&b);
+     if(lm4>12u) return 0;
+     s->log2_max_frame_num=(int)lm4+4; }
+   s->pic_order_cnt_type=rh264_ue(&b);
+   if(s->pic_order_cnt_type==0)
+   { uint32_t pm4=rh264_ue(&b);
+     if(pm4>12u) return 0;
+     s->log2_max_poc_lsb=(int)pm4+4; }
    else if(s->pic_order_cnt_type==1){ int n; s->poc_type1_always_zero=rh264_u1(&b);
       s->poc1_offset_non_ref=rh264_se(&b); s->poc1_offset_ttb=rh264_se(&b);
       n=rh264_ue(&b); if(n>255) return 0; s->poc1_ncycle=n;
