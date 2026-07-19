@@ -1274,10 +1274,31 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          {
             float32x4_t vpos1 = vdupq_n_f32( 1.0f);
             float32x4_t vneg1 = vdupq_n_f32(-1.0f);
+            uint32x4_t  vabsm = vdupq_n_u32(0x7FFFFFFFu);
+            uint32x4_t  vinfb = vdupq_n_u32(0x7F800000u);
             for (; i + 8 <= total_samples; i += 8)
             {
                float32x4_t v0 = vld1q_f32(buf + i);
                float32x4_t v1 = vld1q_f32(buf + i + 4);
+               /* Squash NaN to silence first: vmin/vmax propagate a NaN
+                * rather than clamping it, so without this it would reach
+                * the driver untouched.
+                *
+                * The test is on the bit pattern (NaN iff the exponent is
+                * all ones and the mantissa is non-zero, i.e. the value
+                * masked of its sign exceeds the +inf encoding) rather
+                * than vceqq_f32(v, v): -Ofast (HAVE_C_A7A7) implies
+                * -ffinite-math-only, under which GCC folds the float
+                * compare to all-ones and drops the mask entirely.
+                * Integer compares are immune to that. */
+               {
+                  uint32x4_t b0 = vreinterpretq_u32_f32(v0);
+                  uint32x4_t b1 = vreinterpretq_u32_f32(v1);
+                  v0 = vreinterpretq_f32_u32(vandq_u32(b0,
+                        vcleq_u32(vandq_u32(b0, vabsm), vinfb)));
+                  v1 = vreinterpretq_f32_u32(vandq_u32(b1,
+                        vcleq_u32(vandq_u32(b1, vabsm), vinfb)));
+               }
                v0             = vminq_f32(v0, vpos1);
                v0             = vmaxq_f32(v0, vneg1);
                v1             = vminq_f32(v1, vpos1);
@@ -1293,6 +1314,14 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             for (; i + 4 <= total_samples; i += 4)
             {
                __m128 v = _mm_loadu_ps(buf + i);
+               /* Squash NaN to silence first. _mm_min_ps/_mm_max_ps
+                * return their second operand when either input is NaN,
+                * which would silently turn a NaN into full scale here.
+                * _mm_cmpord_ps(v, v) is all-zero only for NaN lanes, and
+                * unlike a plain float compare it survives -ffast-math
+                * because it lowers to cmpordps directly. Kept as an SSE1
+                * op so the SSE-without-SSE2 build still compiles. */
+               v        = _mm_and_ps(v, _mm_cmpord_ps(v, v));
                v        = _mm_min_ps(v, vpos1);
                v        = _mm_max_ps(v, vneg1);
                _mm_storeu_ps(buf + i, v);
@@ -1301,8 +1330,17 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
          for (; i < total_samples; i++)
          {
-            if (buf[i] > 1.0f)
-               buf[i] = 1.0f;
+            /* NaN fails both ordered comparisons below, so test for it
+             * explicitly. The test is done on the bit pattern rather than
+             * as (v != v) because -Ofast (HAVE_C_A7A7) implies -ffast-math,
+             * under which the compiler is entitled to fold that to false.
+             * Zero matches wav_to_s16's handling of non-finite input. */
+            uint32_t bits;
+            memcpy(&bits, &buf[i], sizeof(bits));
+            if      ((bits & 0x7FFFFFFFu) > 0x7F800000u)
+               buf[i] =  0.0f;
+            else if (buf[i] >  1.0f)
+               buf[i] =  1.0f;
             else if (buf[i] < -1.0f)
                buf[i] = -1.0f;
          }
