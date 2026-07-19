@@ -609,18 +609,32 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
-#ifdef HAVE_RVORBIS
+#if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS)
    audio_mixer_sound_t* sound;
+   enum audio_mixer_type mt = AUDIO_MIXER_TYPE_OGG;
 
    if (!buffer || size <= 0)
       return NULL;
+
+#ifdef HAVE_ROPUS
+   /* An .ogg file legitimately wraps Opus as well as Vorbis; route by
+    * the identification header, not the extension.  The Opus arm's
+    * Ogg buffer mode takes the whole file as-is. */
+   if (audio_transfer_ogg_audio_type(buffer, (size_t)size)
+         == AUDIO_TYPE_OPUS)
+      mt = AUDIO_MIXER_TYPE_OPUS;
+#endif
+#ifndef HAVE_RVORBIS
+   if (mt == AUDIO_MIXER_TYPE_OGG)
+      return NULL;
+#endif
 
    sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
 
    if (!sound)
       return NULL;
 
-   sound->type           = AUDIO_MIXER_TYPE_OGG;
+   sound->type           = mt;
    sound->types.stream.size = size;
    sound->types.stream.data = buffer;
 
