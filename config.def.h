@@ -1303,8 +1303,9 @@
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
 /* When a core outputs 16-bit integer audio, the deterministic
- * fixed-point (int16) SINC resampler can be preferred over the float
- * one for any needed resampling, avoiding the s16<->float round-trip
+ * fixed-point (int16) resampler variant of the selected backend
+ * (sinc, nearest, or CC) can be preferred over the float one for any
+ * needed resampling, avoiding the s16<->float round-trip
  * (bit-reproducible). Opt-in; the float path remains the default. */
 #define DEFAULT_AUDIO_FASTPATH_S16 false
 /* Requested output sample format for negotiable audio drivers:

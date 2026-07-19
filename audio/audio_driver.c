@@ -803,8 +803,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    /* Deterministic integer (s16) fast path.
     *
     * When enabled by the 'Resample to Fixed Integer' hint, the core delivered
-    * int16, and the selected resampler is "sinc", resample s16 -> s16
-    * directly.  Volume is applied in fixed point (Q16), so non-unity gain no
+    * int16, and the selected resampler has an int16 variant (sinc, nearest,
+    * or CC), resample s16 -> s16 directly.  Volume is applied in fixed point
+    * (Q16), so non-unity gain no
     * longer forces the float path; an int16-capable DSP chain runs in the
     * integer domain, and the audio mixer is summed in float on top of the
     * resampled game audio in both output branches below.  Fast-forward
@@ -814,7 +815,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * summed into the game audio before the integer DSP/resample, exactly where
     * the float path sums them.  This removes the s16<->float round-trip on the
     * game signal, uses no FPU for the game resample, and is bit-identical
-    * across platforms for that signal (netplay / rewind).  Any condition
+    * across platforms for that signal (reproducible output for validation and
+    * regression comparison).  Any condition
     * failing falls through to the float path below. */
    {
       static int audio_i16_path_logged = -1;
@@ -822,7 +824,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 
       if (audio_i16_path_logged != (int)use_i16)
       {
-         RARCH_LOG("[Audio] SINC resampler active path: %s\n",
+         const char *rs_ident =
+               (audio_st->resampler && audio_st->resampler->short_ident)
+                     ? audio_st->resampler->short_ident : "resampler";
+         RARCH_LOG("[Audio] %s resampler active path: %s\n",
+               rs_ident,
                use_i16 ? "integer s16 (no float round-trip)" : "float");
          audio_i16_path_logged = (int)use_i16;
       }
