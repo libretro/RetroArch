@@ -3405,13 +3405,75 @@ static void rjpeg_upsample_YCbCr_to_BGRA_row(uint8_t *out, const uint8_t *y_row,
       uint8_t *cr_near, uint8_t *cr_far,
       int chroma_w, int out_w, bool supports_rgba)
 {
-   /* Stack buffers for upsampled chroma (chroma_w*2 output pixels).
-    * For typical RetroArch images, chroma_w <= 960 so 1920 bytes each. */
-   uint8_t cb_buf[1920], cr_buf[1920];
+   /* Upsampled chroma is chroma_w*2 pixels wide. This used to be staged
+    * through fixed 1920-byte stack buffers, which overflowed the stack for
+    * any image wider than 1920px (a 2048px 4:2:0 image needs 2048 bytes) -
+    * HD texture packs hit that immediately.
+    *
+    * rjpeg_resample_row_hv_2() cannot simply be called on sub-ranges instead:
+    * it is a stateful filter (each output blends the current chroma sample
+    * with the previous one, and the first/last output replicate the edge), so
+    * splitting it would introduce a seam at every chunk boundary. Inline the
+    * same recurrence here and emit pixels as they are produced, which needs
+    * no staging buffer at all and is bit-identical to the previous
+    * resample-then-convert for every width. */
+   uint8_t px_cb[2], px_cr[2];
+   int i;
+   int cb_t1, cr_t1;
 
-   rjpeg_resample_row_hv_2(cb_buf, cb_near, cb_far, chroma_w, 2);
-   rjpeg_resample_row_hv_2(cr_buf, cr_near, cr_far, chroma_w, 2);
-   rjpeg_YCbCr_to_RGB_row(out, y_row, cb_buf, cr_buf, out_w, 4, supports_rgba);
+   if (chroma_w <= 0 || out_w <= 0)
+      return;
+
+   if (chroma_w == 1)
+   {
+      px_cb[0] = px_cb[1] = RJPEG_DIV4(3*cb_near[0] + cb_far[0] + 2);
+      px_cr[0] = px_cr[1] = RJPEG_DIV4(3*cr_near[0] + cr_far[0] + 2);
+      rjpeg_YCbCr_to_RGB_row(out, y_row, px_cb, px_cr,
+            out_w < 2 ? out_w : 2, 4, supports_rgba);
+      return;
+   }
+
+   cb_t1 = 3*cb_near[0] + cb_far[0];
+   cr_t1 = 3*cr_near[0] + cr_far[0];
+
+   /* out[0] is the replicated left edge */
+   px_cb[0] = RJPEG_DIV4(cb_t1 + 2);
+   px_cr[0] = RJPEG_DIV4(cr_t1 + 2);
+   rjpeg_YCbCr_to_RGB_row(out, y_row, px_cb, px_cr, 1, 4, supports_rgba);
+
+   for (i = 1; i < chroma_w; ++i)
+   {
+      int cb_t0 = cb_t1;
+      int cr_t0 = cr_t1;
+      int p     = i*2 - 1;
+      int n;
+
+      cb_t1 = 3*cb_near[i] + cb_far[i];
+      cr_t1 = 3*cr_near[i] + cr_far[i];
+
+      px_cb[0] = RJPEG_DIV16(3*cb_t0 + cb_t1 + 8);
+      px_cb[1] = RJPEG_DIV16(3*cb_t1 + cb_t0 + 8);
+      px_cr[0] = RJPEG_DIV16(3*cr_t0 + cr_t1 + 8);
+      px_cr[1] = RJPEG_DIV16(3*cr_t1 + cr_t0 + 8);
+
+      if (p >= out_w)
+         return;
+      n = (p + 2 <= out_w) ? 2 : 1;
+      rjpeg_YCbCr_to_RGB_row(out + (size_t)p * 4, y_row + p,
+            px_cb, px_cr, n, 4, supports_rgba);
+   }
+
+   /* out[chroma_w*2-1] is the replicated right edge */
+   {
+      int p = chroma_w*2 - 1;
+      if (p < out_w)
+      {
+         px_cb[0] = RJPEG_DIV4(cb_t1 + 2);
+         px_cr[0] = RJPEG_DIV4(cr_t1 + 2);
+         rjpeg_YCbCr_to_RGB_row(out + (size_t)p * 4, y_row + p,
+               px_cb, px_cr, 1, 4, supports_rgba);
+      }
+   }
 }
 
 #if defined(__SSE2__) || defined(RJPEG_NEON)
