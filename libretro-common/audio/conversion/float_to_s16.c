@@ -44,10 +44,17 @@ void convert_float_to_s16(int16_t *s, const float *in, size_t len)
    size_t i           = 0;
    if (float_to_s16_neon_enabled)
    {
+#ifndef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+      /* arm_neon.h is only included when the intrinsic path is built,
+       * so these NEON-typed locals must be scoped to it as well - the
+       * asm path calls out to float_to_s16_neon.S and needs none of
+       * them. s16_to_float.c already keeps its equivalents inside the
+       * #else for the same reason. */
       float        gf    = (1<<15);
       float32x4_t vgf    = {gf, gf, gf, gf};
       float32x4_t vhalf  = vdupq_n_f32(0.5f);
       uint32x4_t  vsign  = vdupq_n_u32(0x80000000u);
+#endif
       while (len >= 8)
       {
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
