@@ -2362,10 +2362,33 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
    d->tile_col_start = 0;             /* set per tile before decoding  */
    d->tile_col_end   = d->mi_cols;
 
-   /* allocate on first frame (fixed dims thereafter) */
-   if (!d->buf_y)
+   /* Allocate on the first frame, and again whenever the geometry
+    * changes.  A key or intra-only frame may legitimately carry
+    * dimensions different from the last one, and mi_cols/mi_rows were
+    * just taken from its header; everything below is sized from them,
+    * so buffers held over from a smaller picture would be written past
+    * their end.  Inter frames cannot get here with new dimensions -
+    * the reference size check above rejects them. */
+   if (!d->buf_y || d->alloc_mi_cols != d->mi_cols
+         || d->alloc_mi_rows != d->mi_rows)
    {
       size_t ysz, uvsz;
+      /* release the previous geometry; the reference frames sized for
+       * it go with it, so the whole map is invalidated */
+      for (i = 0; i < RVP9_FRAME_BUFS; i++)
+      {
+         free(d->fbs[i].y); free(d->fbs[i].u); free(d->fbs[i].v);
+         d->fbs[i].y = d->fbs[i].u = d->fbs[i].v = NULL;
+         d->fbs[i].valid = 0;
+         d->fbs[i].ref_count = 0;
+      }
+      free(d->mi);        d->mi = NULL;
+      free(d->prev_mvs);  d->prev_mvs = NULL;
+      free(d->cur_mvs);   d->cur_mvs = NULL;
+      free(d->above_seg); d->above_seg = NULL;
+      for (i = 0; i < 3; i++)
+      { free(d->above_ctx[i]); d->above_ctx[i] = NULL; }
+      d->buf_y = d->buf_u = d->buf_v = NULL;
       d->ys  = (d->mi_cols * 8) + 64;
       d->uvs = (d->mi_cols * 4) + 32;
       ysz  = (size_t)d->ys * (d->mi_rows * 8 + 64);
@@ -2392,6 +2415,8 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
          return -7;
       for (i = 0; i < 8; i++) d->ref_frame_map[i] = -1;
       d->new_fb = -1;
+      d->alloc_mi_cols = d->mi_cols;
+      d->alloc_mi_rows = d->mi_rows;
    }
 
    /* pick a free frame buffer for this frame */

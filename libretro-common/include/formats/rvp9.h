@@ -234,6 +234,10 @@ typedef struct
 
    /* planes */
    uint8_t *buf_y, *buf_u, *buf_v;
+   /* geometry the buffers above were sized for; every frame header can
+    * change mi_cols/mi_rows, so this is what decides whether they still
+    * fit */
+   int      alloc_mi_cols, alloc_mi_rows;
    int      ys, uvs;
    int      yw, yh, uvw, uvh;        /* padded plane dims           */
 
