@@ -257,6 +257,8 @@ static int webm_present_vp9(webm_player_t *p, int show)
    const rvp9_fb *fb = &p->vp9->fbs[show];
    unsigned w = (unsigned)fb->w < p->width  ? (unsigned)fb->w : p->width;
    unsigned h = (unsigned)fb->h < p->height ? (unsigned)fb->h : p->height;
+   if (p->seeking)   /* discarded during a seek: skip the conversion */
+      return 1;
    if (p->vp9->hd.bit_depth == 10)
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
@@ -285,8 +287,7 @@ static int webm_present_vp9(webm_player_t *p, int show)
          if (p->pix10)
             webm_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
-   if (!p->seeking)
-      WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
+   WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }
 
@@ -364,6 +365,8 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          return -1;
       if ((unsigned)w > p->width)  w = (int)p->width;
       if ((unsigned)h > p->height) h = (int)p->height;
+      if (p->seeking)   /* discarded during a seek: skip conversion */
+         return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
          webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
@@ -372,9 +375,8 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
             webm_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
-      if (!p->seeking)
-         WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
-            p->width * sizeof(uint32_t));
+      WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+         p->width * sizeof(uint32_t));
       return 1;
    }
 #endif
@@ -1333,23 +1335,47 @@ size_t WEBM_CORE_PREFIX(retro_get_memory_size)(unsigned id)
    return 0;
 }
 
+/* The state of a movie is its position; serialising it makes the
+ * frontend's save-state machinery a resume feature - saving on exit
+ * and loading on start picks playback up where it left off, restored
+ * through the same seek path the transport controls use. */
+#define WEBM_STATE_SIZE 16
+
 size_t WEBM_CORE_PREFIX(retro_serialize_size)(void)
 {
-   return 0;
+   return WEBM_STATE_SIZE;
 }
 
 bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
 {
-   (void)data;
-   (void)size;
-   return false;
+   webm_player_t *p = &webm_player;
+   uint8_t *d = (uint8_t*)data;
+   uint64_t v = (uint64_t)p->vpts_ns;
+   int i;
+   if (size < WEBM_STATE_SIZE)
+      return false;
+   d[0] = 'W'; d[1] = 'P'; d[2] = 'O'; d[3] = 'S';
+   d[4] = 1;   d[5] = 0;   d[6] = 0;   d[7] = 0;
+   for (i = 0; i < 8; i++)
+      d[8 + i] = (uint8_t)(v >> (8 * i));
+   return true;
 }
 
 bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 {
-   (void)data;
-   (void)size;
-   return false;
+   webm_player_t *p = &webm_player;
+   const uint8_t *d = (const uint8_t*)data;
+   uint64_t v = 0;
+   int i;
+   if (size < WEBM_STATE_SIZE || !d)
+      return false;
+   if (d[0] != 'W' || d[1] != 'P' || d[2] != 'O' || d[3] != 'S'
+         || d[4] != 1)
+      return false;
+   for (i = 0; i < 8; i++)
+      v |= (uint64_t)d[8 + i] << (8 * i);
+   webm_seek(p, (int64_t)v);
+   return true;
 }
 
 void WEBM_CORE_PREFIX(retro_cheat_reset)(void) { }
