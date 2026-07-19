@@ -127,6 +127,16 @@ typedef struct
    int          aeof;
 #endif
    int64_t      vpts_ns;             /* pts of the last presented frame */
+   int64_t      play_ns;             /* wall clock: one frame interval
+                                        per retro_run.  Presentation is
+                                        paced against it, so variable
+                                        frame rate files repeat or drop
+                                        frames to keep real time        */
+   int64_t      frame_ns;            /* 1e9 / announced fps             */
+   int64_t     *vts;                 /* video display timestamps, sorted
+                                        (display order); pacing schedule
+                                        for the demuxed path            */
+   int          nvts;
    int64_t      vshown;              /* display slots presented so far;
                                         under H.264 reordering the pts
                                         clock runs ahead, so restoring a
@@ -476,6 +486,12 @@ static int webm_drain_h264(webm_player_t *p)
 }
 #endif
 
+static int webm_ts_cmp(const void *a, const void *b)
+{
+   int64_t x = *(const int64_t*)a, y = *(const int64_t*)b;
+   return x < y ? -1 : x > y ? 1 : 0;
+}
+
 static void webm_free_player(webm_player_t *p)
 {
    if (p->vp9)
@@ -504,6 +520,7 @@ static void webm_free_player(webm_player_t *p)
    free(p->asizes);
 #endif
    free(p->fb);
+   free(p->vts);
    free(p->silence);
    free(p->file_buf);
    memset(p, 0, sizeof(*p));
@@ -635,6 +652,7 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
 #endif
    p->vpts_ns = 0;
    p->vshown  = 0;
+   p->play_ns = p->nvts ? p->vts[0] : 0;
    p->eof = 0;
 }
 
@@ -662,6 +680,7 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
       int64_t ms = rmp4_video_stream_seek_ms(p->mp4vs,
             target_ns / 1000000);
       p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
+      p->play_ns = p->vpts_ns;
       p->eof     = 0;
       (void)to_slot;   /* the mp4 glue's timestamp table is exact */
    }
@@ -772,7 +791,13 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
 #endif
       }
       p->seeking = 0;
-      p->vpts_ns = target_ns;
+      /* anchor both clocks to the schedule's own timestamp for the
+       * slot just presented (a caller's timestamp can run ahead of
+       * the display position under reordering); the wall clock sits a
+       * frame past it - where the run loop would be at this point in
+       * linear playback */
+      p->vpts_ns = p->vts && tidx < p->nvts ? p->vts[tidx] : target_ns;
+      p->play_ns = p->vpts_ns + p->frame_ns;
       p->vshown  = (int64_t)tidx + 1;
    }
 
@@ -876,10 +901,31 @@ void WEBM_CORE_PREFIX(retro_run)(void)
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
+      /* Pacing: one frame interval of wall time per run, advancing
+       * the stream while the next frame's timestamp (the running
+       * duration sum) falls inside it, with half a frame of tolerance
+       * for millisecond quantisation.  Constant-rate files advance
+       * exactly one frame per run; variable-rate files hold the
+       * picture through slow stretches and pass through several
+       * frames in fast ones, converting only the last. */
+      p->play_ns += p->frame_ns;
       if (!p->eof)
       {
-         int dur_ms = 0;
-         const uint32_t *frame = rmp4_video_stream_next(p->mp4vs, &dur_ms);
+         const uint32_t *frame = NULL;
+         while (!p->eof
+               && p->vpts_ns + p->frame_ns / 2 <= p->play_ns)
+         {
+            int dur_ms = 0;
+            const uint32_t *fr = rmp4_video_stream_next(p->mp4vs, &dur_ms);
+            if (!fr)
+            {
+               p->eof = 1;
+               break;
+            }
+            frame       = fr;
+            p->vpts_ns += (int64_t)dur_ms * 1000000;
+            p->vshown++;
+         }
          if (frame)
          {
             /* The stream glue emits memory-order R,G,B,A (its texture
@@ -892,14 +938,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
                p->fb[px]  = (c & 0xFF00FF00u)
                      | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF);
             }
-            /* the running sum of presentation durations is the next
-             * frame's timestamp: the same pacing clock the webm path
-             * takes from packet timestamps */
-            p->vpts_ns += (int64_t)dur_ms * 1000000;
-            p->vshown++;
          }
-         else
-            p->eof = 1;
       }
       WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
@@ -919,20 +958,38 @@ void WEBM_CORE_PREFIX(retro_run)(void)
 
    if (!p->eof)
    {
-      int presented = 0;
-      while (!presented)
+      int presented = 0, shown_now = 0;
+      int64_t target_slot = p->vshown - 1;
+      /* Pacing: one frame interval of wall time per run; the last
+       * display slot whose timestamp (with half a frame of tolerance
+       * for container rounding) falls inside it is the one to show.
+       * Constant-rate files advance exactly one slot per run;
+       * variable-rate files repeat the current picture through slow
+       * stretches and drop intermediates through fast ones. */
+      p->play_ns += p->frame_ns;
+      while (target_slot + 1 < p->nvts
+            && p->vts[target_slot + 1] + p->frame_ns / 2 <= p->play_ns)
+         target_slot++;
+      while (p->vshown <= target_slot)
       {
          int r = rwebm_read_packet(p->webm, &pkt);
          if (r != 1)
          {
 #ifdef WEBM_HAVE_H264
             /* out of packets: hand out the pictures display reordering
-             * left queued, one per run, before ending the stream */
-            if (p->codec == RWEBM_CODEC_H264 && webm_drain_h264(p))
+             * left queued before ending the stream */
+            if (p->codec == RWEBM_CODEC_H264)
             {
-               presented = 1;
-               p->vshown++;
-               break;
+               p->seeking = p->vshown < target_slot;
+               if (webm_drain_h264(p))
+               {
+                  if (!p->seeking)
+                     shown_now = 1;
+                  presented = 1;
+                  p->vshown++;
+                  continue;
+               }
+               p->seeking = 0;
             }
 #endif
             p->eof = 1;
@@ -940,9 +997,13 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          }
          if (pkt.track != p->vtrack)
             continue;
+         /* dropped intermediates skip colour conversion, like the
+          * seek catch-up */
+         p->seeking = p->vshown < target_slot;
          presented = webm_decode_packet(p, &pkt);
          if (presented < 0)
          {
+            p->seeking = 0;
             p->eof = 1;
             break;
          }
@@ -951,14 +1012,22 @@ void WEBM_CORE_PREFIX(retro_run)(void)
           * monotonic. */
          if (presented > 0)
          {
+            if (!p->seeking)
+               shown_now = 1;
             p->vshown++;
             if (pkt.timestamp > p->vpts_ns)
                p->vpts_ns = pkt.timestamp;
          }
       }
-      if (!presented)
+      p->seeking = 0;
+      if (!shown_now)   /* nothing due this run: hold the picture */
          WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
+      /* every display slot shown and a further interval elapsed: the
+       * stream is over (the packet reader no longer runs each frame,
+       * so it cannot notice on its own) */
+      if (p->nvts > 0 && p->vshown >= p->nvts && !shown_now)
+         p->eof = 1;
    }
    else
    {
@@ -985,7 +1054,10 @@ audio:
        * throttle us through the tail. */
       int16_t buf[1024 * 2];
       int16_t st[1024 * 2];
-      int64_t target = (int64_t)(((double)p->vpts_ns * 1e-9 + 1.0 / p->fps)
+      /* the wall clock, not the picture's timestamp: through a slow
+       * stretch of a variable-rate file the picture holds while real
+       * time - and the audience's audio - keeps moving */
+      int64_t target = (int64_t)(((double)p->play_ns * 1e-9 + 1.0 / p->fps)
          * (double)p->arate);
       if (p->eof)
          target = p->apos + (int64_t)((double)p->arate / p->fps) + 1;
@@ -1210,16 +1282,26 @@ static bool webm_load_mp4(webm_player_t *p)
    }
 
    p->dur_ns = dur_ns > 0 ? dur_ns : 0;
-   if (nframes > 1 && dur_ns > 0)
-      p->fps = (double)nframes * 1000000000.0 / (double)dur_ns;
-   else
-      p->fps = 30.0;
+   /* the true mean rate comes from the timestamp span (presentation is
+    * paced against the timestamps, so the announced rate must be their
+    * mean or the pacing clock drifts); the duration-derived rate is
+    * the fallback */
+   {
+      int64_t span_ms = rmp4_video_stream_span_ms(p->mp4vs);
+      if (nframes > 1 && span_ms > 0)
+         p->fps = (double)(nframes - 1) * 1000.0 / (double)span_ms;
+      else if (nframes > 1 && dur_ns > 0)
+         p->fps = (double)nframes * 1000000000.0 / (double)dur_ns;
+      else
+         p->fps = 30.0;
+   }
    if (p->fps < 1.0 || p->fps > 240.0)
       p->fps = 30.0;
 
    p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
       sizeof(uint32_t));
    p->silence_frames = (size_t)(WEBM_AUDIO_RATE / p->fps) + 1;
+   p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
    if (!p->fb || !p->silence)
       return false;
@@ -1402,6 +1484,28 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          nvpkts++;
       }
       rwebm_rewind(p->webm);
+      /* Pacing schedule: every display slot's timestamp, sorted into
+       * display order (decode order visits them out of sequence under
+       * H.264 reordering; the sorted multiset is the display
+       * timeline). */
+      if (nvpkts > 0)
+      {
+         p->vts = (int64_t*)malloc((size_t)nvpkts * sizeof(int64_t));
+         if (!p->vts)
+            goto error;
+         while (rwebm_read_packet(p->webm, &pkt) == 1)
+         {
+            if (pkt.track != p->vtrack)
+               continue;
+            if (p->codec == RWEBM_CODEC_VP8
+                  && (!pkt.size || !(pkt.data[0] & 0x10)))
+               continue;
+            if (p->nvts < nvpkts)
+               p->vts[p->nvts++] = pkt.timestamp;
+         }
+         rwebm_rewind(p->webm);
+         qsort(p->vts, (size_t)p->nvts, sizeof(int64_t), webm_ts_cmp);
+      }
 #ifdef WEBM_HAVE_AUDIO
       /* Second pass: copy the audio packets into one contiguous blob
        * for the audio_transfer demuxed contract (the packets alias the
@@ -1507,7 +1611,14 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
    dur_ns = rwebm_duration_ns(p->webm);
    p->dur_ns = dur_ns > 0 ? dur_ns : 0;
-   if (nvpkts > 1 && dur_ns > 0)
+   /* The frame rate comes from the video track's own span, not the
+    * container duration (which includes the audio tail): presentation
+    * is paced against the timestamp schedule, so the announced rate
+    * must be the schedule's true mean or the pacing clock drifts. */
+   if (p->nvts > 1 && p->vts[p->nvts - 1] > p->vts[0])
+      p->fps = (double)(p->nvts - 1) * 1000000000.0
+         / (double)(p->vts[p->nvts - 1] - p->vts[0]);
+   else if (nvpkts > 1 && dur_ns > 0)
       p->fps = (double)nvpkts * 1000000000.0 / (double)dur_ns;
    else
       p->fps = 30.0;
@@ -1542,6 +1653,10 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    p->fb = (uint32_t*)calloc((size_t)p->width * p->height,
       sizeof(uint32_t));
    p->silence_frames = (size_t)(WEBM_AUDIO_RATE / p->fps) + 1;
+   p->frame_ns       = (int64_t)(1000000000.0 / p->fps + 0.5);
+   /* pace from the first frame's timestamp, wherever the container
+    * starts its clock */
+   p->play_ns        = p->nvts ? p->vts[0] : 0;
    p->silence = (int16_t*)calloc(p->silence_frames * 2, sizeof(int16_t));
    if (!p->fb || !p->silence)
       goto error;
