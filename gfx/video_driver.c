@@ -1753,7 +1753,7 @@ void video_driver_filter_free(void)
 
    video_st->state_scale     = 0;
    video_st->state_out_bpp   = 0;
-   video_st->flags          &= ~(VIDEO_FLAG_STATE_OUT_RGB32);
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_STATE_OUT_RGB32);
 }
 
 void video_driver_init_filter(enum retro_pixel_format colfmt_int,
@@ -1809,9 +1809,9 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
    video_st->state_scale     = maxsize / RARCH_SCALE_BASE;
    if (rarch_softfilter_get_output_format(
          video_st->state_filter) == RETRO_PIXEL_FORMAT_XRGB8888)
-      video_st->flags       |=  VIDEO_FLAG_STATE_OUT_RGB32;
+      video_driver_modify_disp_flags(VIDEO_FLAG_STATE_OUT_RGB32, 0);
    else
-      video_st->flags       &= ~VIDEO_FLAG_STATE_OUT_RGB32;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_STATE_OUT_RGB32);
 
    video_st->state_out_bpp   = (video_st->flags & VIDEO_FLAG_STATE_OUT_RGB32)
       ? sizeof(uint32_t) : sizeof(uint16_t);
@@ -3550,7 +3550,7 @@ size_t video_driver_get_window_title(char *s, size_t len)
    if (s && (video_st->flags & VIDEO_FLAG_WINDOW_TITLE_UPDATE))
    {
       size_t n = strlcpy(s, video_st->window_title, len);
-      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_WINDOW_TITLE_UPDATE);
       if (n >= len)
          return len ? len - 1 : 0;
       return n;
@@ -3572,7 +3572,7 @@ void video_driver_update_title(void *data)
          window->set_title((void*)video_st->display_userdata, video_st->window_title);
          strlcpy(video_st->window_title_prev, video_st->window_title, sizeof(video_st->window_title_prev));
       }
-      video_st->flags &= ~VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_WINDOW_TITLE_UPDATE);
    }
 #endif
 }
@@ -3909,7 +3909,7 @@ bool video_context_driver_get_flags(gfx_ctx_flags_t *flags)
          if (video_st->flags & VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS)
          {
             flags->flags     = video_st->deferred_flag_data.flags;
-            video_st->flags &= ~VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+            video_driver_modify_disp_flags(0, VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS);
          }
          else
             flags->flags     = ctx->get_flags(ctx_data);
@@ -3964,7 +3964,7 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
    if (!ctx->set_flags)
    {
       video_st->deferred_flag_data.flags  = flags->flags;
-      video_st->flags |= VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS;
+      video_driver_modify_disp_flags(VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS, 0);
       return false;
    }
 
@@ -4350,9 +4350,9 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.parent                      = 0;
 
    if (video.fullscreen)
-      video_st->flags |=  VIDEO_FLAG_STARTED_FULLSCREEN;
+      video_driver_modify_disp_flags(VIDEO_FLAG_STARTED_FULLSCREEN, 0);
    else
-      video_st->flags &= ~VIDEO_FLAG_STARTED_FULLSCREEN;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_STARTED_FULLSCREEN);
 
    /* Reset video frame count */
    video_st->frame_count             = 0;
@@ -4924,7 +4924,7 @@ void video_driver_frame(const void *data, unsigned width,
 
          curr_time                  = new_time;
          video_st->window_title_len = __len;
-         video_st->flags           |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+         video_driver_modify_disp_flags(VIDEO_FLAG_WINDOW_TITLE_UPDATE, 0);
       }
    }
    else
@@ -4938,7 +4938,7 @@ void video_driver_frame(const void *data, unsigned width,
 
       status_text[0] = '\0';
 
-      video_st->flags |= VIDEO_FLAG_WINDOW_TITLE_UPDATE;
+      video_driver_modify_disp_flags(VIDEO_FLAG_WINDOW_TITLE_UPDATE, 0);
    }
 
    /* Add core status message to status text */
@@ -5336,9 +5336,9 @@ void video_driver_frame(const void *data, unsigned width,
                ? ""
                : video_driver_msg,
                &video_info))
-         video_st->flags |=  VIDEO_FLAG_ACTIVE;
+         video_driver_modify_disp_flags(VIDEO_FLAG_ACTIVE, 0);
       else
-         video_st->flags &= ~VIDEO_FLAG_ACTIVE;
+         video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);
    }
 
    video_st->frame_count++;
@@ -5398,7 +5398,7 @@ void video_driver_frame(const void *data, unsigned width,
       unsigned native_width     = width;
       bool dynamic_super_width  = false;
 
-      video_st->flags          |= VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
+      video_driver_modify_disp_flags(VIDEO_FLAG_CRT_SWITCHING_ACTIVE, 0);
 
       switch (video_info.crt_switch_resolution_super)
       {
@@ -5432,7 +5432,7 @@ void video_driver_frame(const void *data, unsigned width,
    }
    else if (!video_info.crt_switch_resolution)
 #endif
-      video_st->flags          &= ~VIDEO_FLAG_CRT_SWITCHING_ACTIVE;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_CRT_SWITCHING_ACTIVE);
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_after_frame(video_st,
@@ -5467,12 +5467,12 @@ void video_driver_reinit(int flags)
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
 
    if (hwr->cache_context != false)
-      video_st->flags                     |=  VIDEO_FLAG_CACHE_CONTEXT;
+      video_driver_modify_disp_flags(VIDEO_FLAG_CACHE_CONTEXT, 0);
    else
-      video_st->flags                     &= ~VIDEO_FLAG_CACHE_CONTEXT;
+      video_driver_modify_disp_flags(0, VIDEO_FLAG_CACHE_CONTEXT);
    video_driver_cache_context_ack_clear();
    video_driver_reinit_context(settings, flags);
-   video_st->flags                        &= ~VIDEO_FLAG_CACHE_CONTEXT;
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_CACHE_CONTEXT);
 
    video_st->window_title_prev[0]          = '\0';
 }
