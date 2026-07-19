@@ -119,7 +119,7 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
          primary = iconfiles[@"CFBundlePrimaryIcon"][@"CFBundleIconName"];
 #endif
          list = string_list_new();
-         cstr = [primary cStringUsingEncoding:kCFStringEncodingUTF8];
+         cstr = [primary cStringUsingEncoding:NSUTF8StringEncoding];
          if (cstr)
             string_list_append(list, cstr, attr);
 
@@ -132,7 +132,7 @@ static struct string_list *ui_companion_cocoatouch_get_app_icons(void)
          NSArray<NSString *> *sorted = [alts sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
          for (NSString *str in sorted)
          {
-            cstr = [str cStringUsingEncoding:kCFStringEncodingUTF8];
+            cstr = [str cStringUsingEncoding:NSUTF8StringEncoding];
             if (cstr)
                string_list_append(list, cstr, attr);
          }
@@ -930,7 +930,7 @@ enum
       const char *icon_name;
 
       appicon_setting->default_value.string = icons->elems[0].data;
-      icon_name = [[application alternateIconName] cStringUsingEncoding:kCFStringEncodingUTF8]; /* need to ask uico_st for this */
+      icon_name = [[application alternateIconName] cStringUsingEncoding:NSUTF8StringEncoding]; /* need to ask uico_st for this */
       for (i = 0; i < (int)icons->size; i++)
       {
          _len += strlen(icons->elems[i].data) + 1;
@@ -1296,9 +1296,9 @@ enum
         /* +1 from alloc+init; per-iteration leak inside the loop under
          * MRR without an autorelease.  Statement-only macro, so on its
          * own line.  No-op under ARC. */
-        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:NSUTF8StringEncoding];
         RARCH_AUTORELEASE(json);
-        RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Metric Payload:\n%s\n", [json cStringUsingEncoding:NSUTF8StringEncoding]);
     }
 }
 
@@ -1309,9 +1309,9 @@ enum
         /* +1 from alloc+init; per-iteration leak inside the loop under
          * MRR without an autorelease.  Statement-only macro, so on its
          * own line.  No-op under ARC. */
-        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:kCFStringEncodingUTF8];
+        NSString *json = [[NSString alloc] initWithData:[payload JSONRepresentation] encoding:NSUTF8StringEncoding];
         RARCH_AUTORELEASE(json);
-        RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:kCFStringEncodingUTF8]);
+        RARCH_LOG("[Cocoa] Got Diagnostic Payload:\n%s\n", [json cStringUsingEncoding:NSUTF8StringEncoding]);
     }
 }
 
