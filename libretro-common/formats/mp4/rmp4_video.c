@@ -666,12 +666,12 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    {
       const uint8_t *y, *u, *v;
       int ys, uvs, w, h, cw, ch;
-      /* rh264 reconstructs IDR key frames and CAVLC-coded P and B frames,
-       * handing pictures out in display order. Anything it still cannot
-       * handle (CABAC entropy coding, High profile) is skipped rather than
-       * aborting the stream, so such clips keep animating across their key
-       * frames as before. A key frame that fails to decode is a real
-       * error. */
+      /* rh264 reconstructs Baseline through High profile (CAVLC and
+       * CABAC entropy coding), handing pictures out in display order.
+       * Anything it still cannot handle is skipped rather than
+       * aborting the stream, holding the last good picture until the
+       * next key frame restarts the prediction chain. A key frame
+       * that fails to decode is a real error. */
       {
          int dec;
          /* Once any frame in a prediction chain fails (e.g. an

@@ -397,10 +397,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
       const uint8_t *y, *u, *v;
       int ys, uvs, w, h, cw, ch, dec;
       /* Mirrors the mp4 glue: rh264 hands pictures out in display
-       * order; CABAC-coded frames it refuses are skipped, and once a
-       * frame in a prediction chain fails the following inter frames
-       * would drift, so hold on the last good picture until the next
-       * key frame restarts the chain. */
+       * order; if a frame in a prediction chain fails to decode the
+       * following inter frames would drift, so hold on the last good
+       * picture until the next key frame restarts the chain. */
       if (p->wait_key && !pkt->keyframe)
          return 0;
       dec = rh264_video_decode(p->h264, pkt->data, pkt->size);
