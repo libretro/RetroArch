@@ -56,6 +56,7 @@ static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
 typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cnt_type,
    max_num_ref_frames,
    log2_max_poc_lsb,frame_mbs_only_flag,mb_adaptive_frame_field_flag,
+   frame_mbs,
    pic_width_in_mbs,pic_height_in_map_units,
    frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
    poc_type1_always_zero,
@@ -184,6 +185,12 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    s->direct_8x8_inference_flag=rh264_u1(&b);
    { uint32_t cl=0,cr=0,ct=0,cb=0;
      int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
+     /* Coded height in macroblock rows.  This is not always the cropped
+      * height rounded up: a sequence that permits field coding always
+      * codes an even number of rows, so cropping can hide a whole row.
+      * Those macroblocks are still decoded and still take part in the
+      * deblocking of the visible ones. */
+     s->frame_mbs=mbh;
      if(rh264_u1(&b)){ cl=rh264_ue(&b); cr=rh264_ue(&b);
                        ct=rh264_ue(&b); cb=rh264_ue(&b); }
      /* Cropping is attacker-controlled too: keep each offset inside the
@@ -4948,7 +4955,8 @@ static void rh264_frame_free(rh264_frame *f)
 static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps)
 {
    int mbw = sps->pic_width_in_mbs;
-   int mbh = (sps->frame_height + 15) / 16;
+   int mbh = sps->frame_mbs > 0 ? sps->frame_mbs
+           : (sps->frame_height + 15) / 16;
    rh264_frame_free(f);
    f->w = sps->frame_width;  f->h = sps->frame_height;
    f->mbw = mbw;             f->mbh = mbh;
@@ -5018,7 +5026,8 @@ static int rh264_frame_alloc_if_needed(rh264_video *v)
    free(v->pic_mvg);
    {
       int gwmax = v->f.mbw * 4;
-      int ghmax = ((v->sps.frame_height + 15) / 16) * 4;
+      int ghmax = (v->sps.frame_mbs > 0 ? v->sps.frame_mbs
+                 : (v->sps.frame_height + 15) / 16) * 4;
       v->mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
       v->pic_mvg = (rh264_mv*)calloc((size_t)gwmax * ghmax, sizeof(rh264_mv));
       if (!v->mvg || !v->pic_mvg) return -1;
