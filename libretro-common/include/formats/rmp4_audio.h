@@ -46,8 +46,15 @@ RETRO_BEGIN_DECLS
 int rmp4_audio_decode(const void *buf, size_t len, int64_t max_ms,
       int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels);
 
-/* Same, but returns a complete in-memory RIFF/WAVE file (16-bit PCM),
- * ready for audio_mixer_load_wav / AUDIO_MIXER_TYPE_WAV. */
+/* Same, decoded through the codecs' float pipelines (unit scale,
+ * full scale +-1.0) with no 16-bit quantisation anywhere. */
+int rmp4_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
+      float **pcm, size_t *frames, unsigned *rate, unsigned *channels);
+
+/* Same, but returns a complete in-memory RIFF/WAVE file (IEEE-float
+ * samples from the float pipelines, so nothing quantises between the
+ * codec and the mixer's float voice), ready for audio_mixer_load_wav
+ * / AUDIO_MIXER_TYPE_WAV. */
 int rmp4_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       void **wav, size_t *wav_size);
 
