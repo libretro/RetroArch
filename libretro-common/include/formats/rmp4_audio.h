@@ -37,11 +37,12 @@ RETRO_BEGIN_DECLS
  * On success returns 1 and stores a malloc'd sample buffer (caller
  * frees), the per-channel frame count, the sample rate and the channel
  * count. max_ms > 0 caps the decoded duration. Returns 0 when the file
- * has no audio track, the codec is unsupported or not compiled in
- * (e.g. AAC), or the track is malformed.
+ * has no audio track, the codec is unsupported or not compiled in,
+ * or the track is malformed.
  *
- * Opus pre-skip (from the dOps box) is honoured; output is always
- * 48 kHz for Opus and the coded rate for Vorbis. */
+ * Opus pre-skip (from the dOps box) and the AAC encoder delay (from
+ * the track's edit list) are honoured; output is always 48 kHz for
+ * Opus and the coded rate for Vorbis and AAC. */
 int rmp4_audio_decode(const void *buf, size_t len, int64_t max_ms,
       int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels);
 

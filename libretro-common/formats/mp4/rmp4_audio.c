@@ -28,6 +28,10 @@
  * repacks the dOps box into an OpusHead, packets decode independently,
  * and pre-skip is dropped from the start of the stream.
  *
+ * AAC ('mp4a' with the MPEG-4 or MPEG-2 AAC object types) goes through
+ * raac packet by packet, and the track's edit-list media_time - the
+ * encoder delay - is dropped from the start of the stream.
+ *
  * Vorbis ('mp4a' with the Xiph object type) has no packet-level decoder
  * here, so the packets are wrapped into a well-formed in-memory Ogg
  * stream (one packet per page, correct CRCs, granule positions derived
@@ -44,6 +48,9 @@
 
 #ifdef HAVE_ROPUS
 #include <formats/ropus.h>
+#endif
+#ifdef HAVE_RAAC
+#include <formats/raac.h>
 #endif
 #ifdef HAVE_RVORBIS
 #include <formats/rvorbis.h>
@@ -136,6 +143,60 @@ static int rmp4_audio_decode_opus(rmp4_t *m, const rmp4_track *t,
    return a->frames > 0;
 }
 #endif /* HAVE_ROPUS */
+
+/* ==================================================================== */
+/* AAC                                                                  */
+/* ==================================================================== */
+
+#ifdef HAVE_RAAC
+static int rmp4_audio_decode_aac(rmp4_t *m, const rmp4_track *t,
+      int track_idx, rmp4_pcm_acc *a, unsigned *rate)
+{
+   raac_t *d = raac_open(t->codec_private, t->codec_private_size);
+   size_t  skip;
+   rmp4_packet pkt;
+
+   if (!d)
+      return 0;
+
+   a->channels = raac_channels(d);
+   *rate       = raac_sample_rate(d);
+   /* the track's edit list trims the encoder delay; media units are
+    * sample counts for audio */
+   skip        = (size_t)t->media_skip;
+
+   while (rmp4_read_packet(m, &pkt) == 1)
+   {
+      int produced;
+      if (pkt.track != track_idx)
+         continue;
+      if (!rmp4_pcm_reserve(a, 1024))
+         break;
+      produced = raac_decode_s16(d, pkt.data, pkt.size,
+            a->data + a->frames * a->channels);
+      if (produced < 0)
+         break;                    /* malformed packet: keep what we have */
+      if (skip)
+      {
+         size_t s = ((size_t)produced < skip) ? (size_t)produced : skip;
+         if (s)
+            memmove(a->data + a->frames * a->channels,
+                  a->data + (a->frames + s) * a->channels,
+                  ((size_t)produced - s) * a->channels * sizeof(int16_t));
+         produced -= (int)s;
+         skip     -= s;
+      }
+      a->frames += (size_t)produced;
+      if (a->max_frames && a->frames >= a->max_frames)
+      {
+         a->frames = a->max_frames;
+         break;
+      }
+   }
+   raac_close(d);
+   return a->frames > 0;
+}
+#endif /* HAVE_RAAC */
 
 /* ==================================================================== */
 /* Vorbis: in-memory Ogg synthesis feeding rvorbis                      */
@@ -386,7 +447,8 @@ int rmp4_audio_decode(const void *buf, size_t len, int64_t max_ms,
       const rmp4_track *c = rmp4_get_track(m, i);
       if (!c || c->type != RMP4_TRACK_AUDIO)
          continue;
-      if (c->codec == RMP4_CODEC_OPUS || c->codec == RMP4_CODEC_VORBIS)
+      if (c->codec == RMP4_CODEC_OPUS || c->codec == RMP4_CODEC_VORBIS
+            || c->codec == RMP4_CODEC_AAC)
       {
          t         = c;
          track_idx = i;
@@ -414,6 +476,11 @@ int rmp4_audio_decode(const void *buf, size_t len, int64_t max_ms,
 #ifdef HAVE_RVORBIS
       case RMP4_CODEC_VORBIS:
          ok = rmp4_audio_decode_vorbis(m, t, track_idx, &a, rate);
+         break;
+#endif
+#ifdef HAVE_RAAC
+      case RMP4_CODEC_AAC:
+         ok = rmp4_audio_decode_aac(m, t, track_idx, &a, rate);
          break;
 #endif
       default:
