@@ -977,7 +977,8 @@ static void rh264_dequant8x8(int32_t *c, int qp, const uint8_t *w)
    for (i = 0; i < 64; i++)
       if (c[i])
       {
-         int32_t v = (c[i] * (int32_t)rh264_deq8[rem][i] * w[i]) << per;
+         int32_t v = (int32_t)((uint32_t)(c[i]
+               * (int32_t)rh264_deq8[rem][i] * w[i]) << per);
          c[i] = (v + 32) >> 6;
       }
 }
@@ -2271,7 +2272,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
              * (flat weightScale matrix); shift per qP. */
             { int per=f->qp/6,rem=f->qp%6;
               int LS=f->w4[0][0]*rh264_dequant4_v[rem][0];
-              for(i=0;i<16;i++){ if(f->qp>=36)dc[i]=(tmp[i]*LS)<<(per-6);
+              for(i=0;i<16;i++){ if(f->qp>=36)
+                    dc[i]=(int32_t)(((uint32_t)(tmp[i]*LS))<<(per-6));
                  else dc[i]=(tmp[i]*LS+(1<<(5-per)))>>(6-per); } }
          }
          /* luma AC per 4x4 in block scan order */
@@ -5797,7 +5799,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
         for(k=0;k<16;k++) hin[rh264_zigzag4[k]]=dc[k];
         rh264_ihadamard4x4(hin,hout);
         for(k=0;k<16;k++){ int32_t val=hout[k];
-           if(per>=6) val=(val*LS)<<(per-6); else val=(val*LS+(1<<(5-per)))>>(6-per);
+           if(per>=6) val=(int32_t)(((uint32_t)(val*LS))<<(per-6));
+           else val=(val*LS+(1<<(5-per)))>>(6-per);
            tmp[k]=val; }
       }
       { int bi;
@@ -5967,7 +5970,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           e[1]=dcs[comp][0]-dcs[comp][1]+dcs[comp][2]-dcs[comp][3];
           e[2]=dcs[comp][0]+dcs[comp][1]-dcs[comp][2]-dcs[comp][3];
           e[3]=dcs[comp][0]-dcs[comp][1]-dcs[comp][2]+dcs[comp][3];
-          for(k=0;k<4;k++){ int32_t v=e[k]; v=((v*LS)<<per)>>5; cdc[comp][k]=v; }
+          for(k=0;k<4;k++){ int32_t v=e[k];
+             v=(int32_t)(((uint32_t)(v*LS))<<per)>>5; cdc[comp][k]=v; }
         }
      }
      /* chroma AC for both components */
@@ -6331,7 +6335,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
            int per = qpc/6, rem = qpc%6;
            int LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
            for (k = 0; k < 4; k++)
-              cdc[comp][k] = ((cdc[comp][k]*LS) << per) >> 5; }
+              cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
+                    << per) >> 5; }
       }
    }
    for (comp = 0; comp < 2; comp++)
