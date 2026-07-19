@@ -95,6 +95,12 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
  * stream without timing. */
 int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *stream, int64_t ms);
 
+/* Timestamp span of the display timeline: last frame's presentation
+ * time minus the first's, in ms.  (frames-1)/span is the stream's true
+ * mean rate; the track duration also counts the final frame's own
+ * duration, which skews a rate derived from it. */
+int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *stream);
+
 RETRO_END_DECLS
 
 #endif

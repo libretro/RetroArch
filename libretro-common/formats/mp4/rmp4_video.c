@@ -778,6 +778,13 @@ void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
    rmp4_video_stream_open_decoder(s);
 }
 
+int64_t rmp4_video_stream_span_ms(const rmp4_video_stream_t *s)
+{
+   if (!s || s->ts_count < 2)
+      return 0;
+   return (int64_t)((s->ts[s->ts_count - 1] - s->ts[0]) / 1000000);
+}
+
 int64_t rmp4_video_stream_seek_ms(rmp4_video_stream_t *s, int64_t ms)
 {
    int64_t target_ns;
