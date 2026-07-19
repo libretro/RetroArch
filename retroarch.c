@@ -3233,7 +3233,7 @@ bool command_event(enum event_command cmd, void *data)
          /* Because the overlay is a display widget,
           * it's going to be written
           * over the menu, so we unset it here. */
-         if (dispwidget_get_ptr()->ai_service_overlay_state != 0)
+         if (gfx_widgets_ai_service_overlay_get_state() != 0)
             gfx_widgets_ai_service_overlay_unload();
 #endif
          break;

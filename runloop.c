@@ -5154,7 +5154,7 @@ void runloop_pause_checks(void)
    }
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (p_dispwidget->ai_service_overlay_state == 1)
+   if (gfx_widgets_ai_service_overlay_get_state() == 1)
       gfx_widgets_ai_service_overlay_unload();
 #endif
 
@@ -5894,10 +5894,10 @@ static enum runloop_state_enum runloop_check_state(
 #endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_GFX_WIDGETS)
-   if (p_dispwidget->ai_service_overlay_state == 3)
+   if (gfx_widgets_ai_service_overlay_get_state() == 3)
    {
       command_event(CMD_EVENT_PAUSE, NULL);
-      p_dispwidget->ai_service_overlay_state = 1;
+      gfx_widgets_ai_service_overlay_set_state(1);
    }
 #endif
 

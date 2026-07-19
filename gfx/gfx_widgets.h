@@ -225,7 +225,11 @@ typedef struct dispgfx_widget
    size_t current_msgs_size;
 
 #ifdef HAVE_TRANSLATE
-   int ai_service_overlay_state;
+   /* ai_service_overlay_state moved out of this struct: the video
+    * thread advances 2 -> 3 in gfx_widgets_frame() while the main
+    * thread drives every other transition, so it needs release/acquire
+    * rather than a plain int.  Kept out of the struct so the atomic
+    * type is not exposed in this header. */
 #endif
 
    unsigned last_video_width;
@@ -411,6 +415,13 @@ bool gfx_widgets_ai_service_overlay_load(
       enum image_type_enum image_type);
 
 void gfx_widgets_ai_service_overlay_unload(void);
+
+/* AI service overlay handshake.  0 idle, 1 texture loaded, 2 awaiting a
+ * frame, 3 drawn once.  Only the 2 -> 3 step runs on the video thread;
+ * every other transition is main.  Acquire/release so the texture
+ * published before a transition is visible to the observer. */
+int  gfx_widgets_ai_service_overlay_get_state(void);
+void gfx_widgets_ai_service_overlay_set_state(int state);
 #endif
 
 #ifdef HAVE_CHEEVOS

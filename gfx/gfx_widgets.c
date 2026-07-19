@@ -15,6 +15,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -1615,7 +1616,7 @@ bool gfx_widgets_visible(void *data)
       return false;
 
 #ifdef HAVE_TRANSLATE
-   if (p_dispwidget->ai_service_overlay_state > 0)
+   if (gfx_widgets_ai_service_overlay_get_state() > 0)
       return true;
 #endif
 
@@ -1729,7 +1730,7 @@ void gfx_widgets_frame(void *data)
 
 #ifdef HAVE_TRANSLATE
    /* AI Service overlay */
-   if (p_dispwidget->ai_service_overlay_state > 0)
+   if (gfx_widgets_ai_service_overlay_get_state() > 0)
    {
       video_viewport_t content_vp;
       int overlay_x             = 0;
@@ -1831,8 +1832,8 @@ void gfx_widgets_frame(void *data)
             outline_color,
             NULL
             );
-      if (p_dispwidget->ai_service_overlay_state == 2)
-          p_dispwidget->ai_service_overlay_state = 3;
+      if (gfx_widgets_ai_service_overlay_get_state() == 2)
+          gfx_widgets_ai_service_overlay_set_state(3);
    }
 #endif
 
@@ -2355,12 +2356,25 @@ void gfx_widgets_deinit(bool widgets_persisting)
 }
 
 #ifdef HAVE_TRANSLATE
+static retro_atomic_int_t ai_service_overlay_state
+   = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+int gfx_widgets_ai_service_overlay_get_state(void)
+{
+   return (int)retro_atomic_load_acquire_int(&ai_service_overlay_state);
+}
+
+void gfx_widgets_ai_service_overlay_set_state(int state)
+{
+   retro_atomic_store_release_int(&ai_service_overlay_state, state);
+}
+
 bool gfx_widgets_ai_service_overlay_load(
       char* buffer, unsigned buffer_len,
       enum image_type_enum image_type)
 {
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
-   if (p_dispwidget->ai_service_overlay_state == 0)
+   if (gfx_widgets_ai_service_overlay_get_state() == 0)
    {
       if (!gfx_display_reset_textures_list_buffer(
                &p_dispwidget->ai_service_overlay_texture,
@@ -2369,7 +2383,7 @@ bool gfx_widgets_ai_service_overlay_load(
                &p_dispwidget->ai_service_overlay_width,
                &p_dispwidget->ai_service_overlay_height))
          return false;
-      p_dispwidget->ai_service_overlay_state = 1;
+      gfx_widgets_ai_service_overlay_set_state(1);
    }
    return true;
 }
@@ -2377,11 +2391,11 @@ bool gfx_widgets_ai_service_overlay_load(
 void gfx_widgets_ai_service_overlay_unload(void)
 {
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
-   if (p_dispwidget->ai_service_overlay_state == 1)
+   if (gfx_widgets_ai_service_overlay_get_state() == 1)
    {
       video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
       p_dispwidget->ai_service_overlay_texture = 0;
-      p_dispwidget->ai_service_overlay_state   = 0;
+      gfx_widgets_ai_service_overlay_set_state(0);
    }
 }
 #endif
