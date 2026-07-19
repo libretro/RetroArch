@@ -264,6 +264,17 @@
 #define RETRO_ATOMIC_BACKEND_SYNC 1
 #elif defined(RETRO_ATOMIC_FORCE_VOLATILE)
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
+/* Some targets ship a modern C11/GCC toolchain on hardware with no
+ * usable atomic instruction -- the PS2 R5900 is the case in point.  The
+ * builtins compile there, but the compiler lowers them to __atomic_*
+ * libcalls, and those SDKs do not ship libatomic, so the link fails with
+ * undefined references to e.g. __atomic_fetch_or_4.  GCC and Clang both
+ * publish __GCC_ATOMIC_INT_LOCK_FREE: 2 means always lock-free, anything
+ * less means the compiler may emit a call.  Only take a builtin backend
+ * when it is 2.  Such targets are single-core in practice, which is
+ * exactly the condition under which the volatile fallback is sound. */
+#elif defined(__GCC_ATOMIC_INT_LOCK_FREE) && __GCC_ATOMIC_INT_LOCK_FREE != 2
+#define RETRO_ATOMIC_BACKEND_VOLATILE 1
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && \
     !defined(__STDC_NO_ATOMICS__)
 #define RETRO_ATOMIC_BACKEND_C11 1
