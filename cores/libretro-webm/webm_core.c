@@ -118,8 +118,11 @@ typedef struct
    int64_t      apos;                /* frames emitted so far           */
    int64_t      atotal;              /* emit clamp; <0 = no clamp       */
    int          aeof;
-   int64_t      vpts_ns;             /* pts of the last presented frame */
 #endif
+   int64_t      vpts_ns;             /* pts of the last presented frame */
+   int64_t      dur_ns;              /* stream duration, 0 if unknown   */
+   unsigned     last_input;          /* previous frame's buttons        */
+   int          seeking;             /* suppress presentation           */
    int          pix10;               /* frontend accepted XRGB2101010   */
 } webm_player_t;
 
@@ -282,7 +285,8 @@ static int webm_present_vp9(webm_player_t *p, int show)
          if (p->pix10)
             webm_expand_8888_to_2101010(p->fb, p->width, w, h);
       }
-   WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
+   if (!p->seeking)
+      WEBM_CORE_PREFIX(video_cb)(p->fb, w, h, p->width * sizeof(uint32_t));
    return 1;
 }
 
@@ -368,8 +372,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
             webm_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
       }
-      WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
-         p->width * sizeof(uint32_t));
+      if (!p->seeking)
+         WEBM_CORE_PREFIX(video_cb)(p->fb, (unsigned)w, (unsigned)h,
+            p->width * sizeof(uint32_t));
       return 1;
    }
 #endif
@@ -516,9 +521,164 @@ void WEBM_CORE_PREFIX(retro_reset)(void)
       audio_transfer_seek(p->actx, p->atype, 0);
    p->apos    = 0;
    p->aeof    = 0;
-   p->vpts_ns = 0;
 #endif
+   p->vpts_ns = 0;
    p->eof = 0;
+}
+
+/* Seek both streams to about target_ns.  Video restarts at the
+ * preceding key frame and decodes forward discarding pictures; audio
+ * rewinds and decodes forward discarding samples (every codec here
+ * decodes far faster than real time, so even a long skip is a
+ * fraction of a second).  Returns the position actually reached. */
+static int64_t webm_seek(webm_player_t *p, int64_t target_ns)
+{
+   if (target_ns < 0)
+      target_ns = 0;
+   if (p->dur_ns > 0 && target_ns > p->dur_ns)
+      target_ns = p->dur_ns;
+
+#ifdef HAVE_RMP4
+   if (p->mp4vs)
+   {
+      int64_t ms = rmp4_video_stream_seek_ms(p->mp4vs,
+            target_ns / 1000000);
+      p->vpts_ns = ms >= 0 ? ms * 1000000 : 0;
+      p->eof     = 0;
+   }
+   else
+#endif
+   {
+      /* Pass 1: timestamp of the last video key frame at or before
+       * the target. */
+      rwebm_packet pkt;
+      int64_t kts = 0;
+      rwebm_rewind(p->webm);
+      while (rwebm_read_packet(p->webm, &pkt) == 1)
+      {
+         if (pkt.track != p->vtrack)
+            continue;
+         if (pkt.timestamp > target_ns)
+            break;
+         if (pkt.keyframe)
+            kts = pkt.timestamp;
+      }
+      /* Pass 2: fresh decoders; feed from that key frame on,
+       * presenting nothing, until the target. */
+      rwebm_rewind(p->webm);
+      if (p->vp9)
+      {
+         rvp9_free(p->vp9);
+         memset(p->vp9, 0, sizeof(*p->vp9));
+      }
+#ifdef HAVE_RWEBP
+      if (p->vp8)
+      {
+         rvp8_video_close(p->vp8);
+         p->vp8 = rvp8_video_open();
+      }
+#endif
+      p->vpts_ns = 0;
+      p->eof     = 0;
+      p->seeking = 1;
+      while (rwebm_read_packet(p->webm, &pkt) == 1)
+      {
+         int r;
+         if (pkt.track != p->vtrack || pkt.timestamp < kts)
+            continue;
+         r = webm_decode_packet(p, &pkt);
+         if (r < 0)
+            break;
+         if (pkt.timestamp > 0)
+            p->vpts_ns = pkt.timestamp;
+         if (pkt.timestamp >= target_ns)
+            break;
+      }
+      p->seeking = 0;
+   }
+
+#ifdef WEBM_HAVE_AUDIO
+   if (p->actx)
+   {
+      int64_t want = (int64_t)((double)p->vpts_ns * 1e-9
+            * (double)p->arate);
+      int16_t scratch[1024 * 2];
+      audio_transfer_seek(p->actx, p->atype, 0);
+      p->apos = 0;
+      p->aeof = 0;
+      if (p->atotal >= 0 && want > p->atotal)
+         want = p->atotal;
+      while (p->apos < want)
+      {
+         size_t chunk = (size_t)(want - p->apos);
+         size_t got   = 0;
+         int r;
+         if (chunk > 1024)
+            chunk = 1024;
+         r = audio_transfer_read_s16(p->actx, p->atype, scratch,
+               chunk, &got);
+         p->apos += (int64_t)got;
+         if (r != AUDIO_PROCESS_NEXT || !got)
+         {
+            p->aeof = 1;
+            break;
+         }
+      }
+   }
+#endif
+   return p->vpts_ns;
+}
+
+/* Edge-triggered transport controls: left/right seek 10 seconds,
+ * L/R seek a minute. */
+static void webm_check_input(webm_player_t *p)
+{
+   unsigned cur = 0;
+   int64_t  delta = 0;
+   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_LEFT))
+      cur |= 1;
+   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_RIGHT))
+      cur |= 2;
+   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_L))
+      cur |= 4;
+   if (WEBM_CORE_PREFIX(input_state_cb)(0, RETRO_DEVICE_JOYPAD, 0,
+         RETRO_DEVICE_ID_JOYPAD_R))
+      cur |= 8;
+   if ((cur & 1) && !(p->last_input & 1))
+      delta = (int64_t)-10000 * 1000000;
+   if ((cur & 2) && !(p->last_input & 2))
+      delta = (int64_t)10000 * 1000000;
+   if ((cur & 4) && !(p->last_input & 4))
+      delta = (int64_t)-60000 * 1000000;
+   if ((cur & 8) && !(p->last_input & 8))
+      delta = (int64_t)60000 * 1000000;
+   p->last_input = cur;
+   if (delta)
+   {
+      int64_t pos = webm_seek(p, p->vpts_ns + delta);
+      struct retro_message_ext msg;
+      char text[64];
+      unsigned ps = (unsigned)(pos / 1000000000);
+      sprintf(text, "%u:%02u", ps / 60, ps % 60);
+      if (p->dur_ns > 0)
+      {
+         unsigned ds = (unsigned)(p->dur_ns / 1000000000);
+         sprintf(text, "%u:%02u / %u:%02u",
+               ps / 60, ps % 60, ds / 60, ds % 60);
+      }
+      msg.msg      = text;
+      msg.duration = 1500;
+      msg.priority = 1;
+      msg.level    = RETRO_LOG_INFO;
+      msg.target   = RETRO_MESSAGE_TARGET_OSD;
+      msg.type     = RETRO_MESSAGE_TYPE_STATUS;
+      msg.progress = -1;
+      WEBM_CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_SET_MESSAGE_EXT,
+            &msg);
+   }
 }
 
 void WEBM_CORE_PREFIX(retro_run)(void)
@@ -527,6 +687,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    rwebm_packet pkt;
 
    WEBM_CORE_PREFIX(input_poll_cb)();
+   webm_check_input(p);
 
 #ifdef HAVE_RMP4
    if (p->mp4vs)
@@ -539,12 +700,10 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          {
             memcpy(p->fb, frame,
                   (size_t)p->width * p->height * sizeof(uint32_t));
-#ifdef WEBM_HAVE_AUDIO
             /* the running sum of presentation durations is the next
              * frame's timestamp: the same pacing clock the webm path
              * takes from packet timestamps */
             p->vpts_ns += (int64_t)dur_ms * 1000000;
-#endif
          }
          else
             p->eof = 1;
@@ -584,10 +743,8 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             p->eof = 1;
             break;
          }
-#ifdef WEBM_HAVE_AUDIO
          if (presented > 0 && pkt.timestamp > 0)
             p->vpts_ns = pkt.timestamp;
-#endif
       }
       if (!presented)
          WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
@@ -842,6 +999,7 @@ static bool webm_load_mp4(webm_player_t *p)
       }
    }
 
+   p->dur_ns = dur_ns > 0 ? dur_ns : 0;
    if (nframes > 1 && dur_ns > 0)
       p->fps = (double)nframes * 1000000000.0 / (double)dur_ns;
    else
@@ -1102,6 +1260,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
 #endif
    }
    dur_ns = rwebm_duration_ns(p->webm);
+   p->dur_ns = dur_ns > 0 ? dur_ns : 0;
    if (nvpkts > 1 && dur_ns > 0)
       p->fps = (double)nvpkts * 1000000000.0 / (double)dur_ns;
    else
