@@ -451,7 +451,7 @@ static void rh264_dequant4x4(int32_t *blk,int qP,int has_dc_sep,
    int i,per=qP/6,rem=qP%6;
    for(i=0;i<16;i++){ int sc=w[i]*rh264_dequant4_v[rem][rh264_dequant4_idx[i]];
       if(has_dc_sep&&i==0) continue;
-      if(per>=4) blk[i]=(blk[i]*sc)<<(per-4); else blk[i]=(blk[i]*sc+(1<<(3-per)))>>(4-per); }
+      if(per>=4) blk[i]=(int32_t)((uint32_t)(blk[i]*sc)<<(per-4)); else blk[i]=(blk[i]*sc+(1<<(3-per)))>>(4-per); }
 }
 static void rh264_itransform4x4(const int32_t *d,int32_t *r){
    int32_t e[16]; int i;
@@ -1240,7 +1240,7 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          int per=qpc/6, rem=qpc%6;
          int LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
          for (k=0;k<4;k++)
-            cdc[comp][k]=((cdc[comp][k]*LS)<<per)>>5;
+            cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>5;
       }
    }
    /* chroma AC blocks (only if cbp_chroma==2) + reconstruct */
@@ -1804,7 +1804,7 @@ static void rh264_filter_chroma_edge(uint8_t *e,int s,int bS,int a,int be,int tc
    int p1=e[-2*s],p0=e[-1*s],q0=e[0],q1=e[1*s];
    if(RH264_ABS(p0-q0)>=a||RH264_ABS(p1-p0)>=be||RH264_ABS(q1-q0)>=be) return;
    if(bS<4){
-      int tc=tc0v+1, d=(((q0-p0)<<2)+(p1-q1)+4)>>3;
+      int tc=tc0v+1, d=((q0-p0)*4+(p1-q1)+4)>>3;
       if(d<-tc)d=-tc; else if(d>tc)d=tc;
       e[-1*s]=(uint8_t)RH264_CLIP(p0+d);
       e[0]   =(uint8_t)RH264_CLIP(q0-d);
