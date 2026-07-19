@@ -831,7 +831,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       {
          struct resampler_data_int16 s16;
          const int16_t *rs_in = (const int16_t*)data;
-         unsigned rs_frames   = samples >> 1;
+         unsigned rs_frames   = (unsigned)(samples >> 1);
          double   i16_ratio;
          unsigned out_frames;
          bool     synth_on    = midi_driver_synth_active()
