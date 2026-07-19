@@ -551,7 +551,8 @@ bool task_push_audio_mixer_load_and_play(
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3_and_play;
    }
-   else if (string_is_equal(ext_lower, "m4a"))
+   else if (string_is_equal(ext_lower, "m4a")
+         || string_is_equal(ext_lower, "aac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_M4A;
       nbio->type      = NBIO_TYPE_M4A;
@@ -689,7 +690,8 @@ bool task_push_audio_mixer_load(
       nbio->type      = NBIO_TYPE_MP3;
       t->callback     = task_audio_mixer_handle_upload_mp3;
    }
-   else if (string_is_equal(ext_lower, "m4a"))
+   else if (string_is_equal(ext_lower, "m4a")
+         || string_is_equal(ext_lower, "aac"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_M4A;
       nbio->type      = NBIO_TYPE_M4A;
