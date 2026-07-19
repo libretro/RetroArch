@@ -194,12 +194,16 @@ struct audio_transfer_aac
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
    size_t      pkt_offset;  /* byte offset of that packet                */
-#ifdef HAVE_RMP4
-   /* Buffer input (set_buffer_ptr): a whole MP4/M4A file, demuxed here
-    * with rmp4; packets stream from the demuxer on demand and the edit
-    * list's start trim is picked up from the track. */
+   /* Buffer input (set_buffer_ptr): a whole file.  An ADTS stream
+    * (.aac) is walked here directly; an MP4/M4A is demuxed with rmp4
+    * when it is built in, packets streaming from the demuxer on
+    * demand with the edit list's start trim picked up from the
+    * track. */
    const uint8_t *buf;
    size_t      buf_size;
+   int         adts;        /* buffer is an ADTS stream                  */
+   size_t      adts_pos;    /* byte cursor of the next ADTS frame        */
+#ifdef HAVE_RMP4
    rmp4_t     *demux;
    int         track_idx;
 #endif
@@ -273,7 +277,7 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          break;
       }
 #endif
-#if defined(HAVE_RAAC) && defined(HAVE_RMP4)
+#ifdef HAVE_RAAC
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
@@ -699,6 +703,29 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
          if (!ac)
             return false;
+         /* buffer mode, ADTS stream: the header carries the setup,
+          * so synthesise the AudioSpecificConfig from it (LC only,
+          * matching the decoder's scope) and walk frames in place */
+         if (!ac->setup && ac->buf && ac->buf_size >= 7
+               && ac->buf[0] == 0xFF && (ac->buf[1] & 0xF6) == 0xF0)
+         {
+            unsigned profile = (ac->buf[2] >> 6) & 3;   /* 1 = LC     */
+            unsigned sfi     = (ac->buf[2] >> 2) & 15;
+            unsigned chcfg   = ((ac->buf[2] & 1) << 2)
+                             | ((ac->buf[3] >> 6) & 3);
+            uint8_t  asc[2];
+            if (profile != 1 || sfi > 12 || chcfg < 1 || chcfg > 2)
+               return false;
+            asc[0] = (uint8_t)((2u << 3) | (sfi >> 1));
+            asc[1] = (uint8_t)(((sfi & 1) << 7) | (chcfg << 3));
+            ac->handle = raac_open(asc, 2);
+            if (!ac->handle)
+               return false;
+            ac->adts       = 1;
+            ac->adts_pos   = 0;
+            ac->start_trim = 0;   /* ADTS carries no delay signalling  */
+         }
+         else
 #ifdef HAVE_RMP4
          /* buffer mode: a whole MP4/M4A; demux it here */
          if (!ac->setup && ac->buf)
@@ -996,6 +1023,27 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
       uint32_t plen;
       int r;
       uint64_t skip;
+      if (ac->adts)
+      {
+         /* walk the next ADTS frame: 12-bit sync, CRC flag choosing a
+          * 7- or 9-byte header, 13-bit total frame length */
+         size_t   pos = ac->adts_pos;
+         unsigned hdr, flen;
+         if (pos + 7 > ac->buf_size)
+            return 0;
+         if (ac->buf[pos] != 0xFF || (ac->buf[pos + 1] & 0xF6) != 0xF0)
+            return 0;             /* lost sync: treat as end of stream */
+         hdr  = (ac->buf[pos + 1] & 1) ? 7 : 9;
+         flen = ((unsigned)(ac->buf[pos + 3] & 3) << 11)
+              | ((unsigned)ac->buf[pos + 4] << 3)
+              | ((unsigned)ac->buf[pos + 5] >> 5);
+         if (flen <= hdr || pos + flen > ac->buf_size)
+            return 0;
+         pdata        = ac->buf + pos + hdr;
+         plen         = flen - hdr;
+         ac->adts_pos = pos + flen;
+      }
+      else
 #ifdef HAVE_RMP4
       if (ac->demux)
       {
@@ -1420,6 +1468,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          if (!ac || !ac->handle || frame != 0)
             return false;        /* rewind-only (used by looping)       */
          raac_reset(ac->handle);
+         ac->adts_pos = 0;
 #ifdef HAVE_RMP4
          if (ac->demux)
             rmp4_rewind(ac->demux);
