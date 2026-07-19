@@ -58,12 +58,22 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size);
 unsigned raac_channels(const raac_t *a);
 unsigned raac_sample_rate(const raac_t *a);
 
-/* Decode one access unit (one MP4 sample) into interleaved s16.
- * out must hold at least 1024 * channels samples. Returns the number
- * of samples produced per channel (1024), or -1 on a bitstream or
- * scope error - the decoder stays usable for following packets. */
+/* Decode one access unit (one MP4 sample). out must hold at least
+ * 1024 * channels samples. Returns the number of samples produced
+ * per channel (1024), or -1 on a bitstream or scope error - the
+ * decoder stays usable for following packets.
+ *
+ * The synthesis pipeline is float throughout; the two entry points
+ * differ only in the output conversion.  s16 rounds and saturates
+ * once at the edge.  f32 emits the float samples unquantised at unit
+ * scale (full scale = +-1.0, ffmpeg/libopus float convention) and is
+ * not clamped, so float consumers avoid the 16-bit round trip.  The
+ * overlap state is shared, so the entry points may be mixed freely
+ * on one instance. */
 int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       int16_t *out);
+int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
+      float *out);
 
 void raac_close(raac_t *a);
 

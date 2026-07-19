@@ -1635,13 +1635,16 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
 unsigned raac_channels(const raac_t *a)    { return a ? a->channels : 0; }
 unsigned raac_sample_rate(const raac_t *a) { return a ? a->sample_rate : 0; }
 
-int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
-      int16_t *out)
+/* Shared worker: parse and synthesise one access unit into per-channel
+ * float PCM in full-scale (+-32768) units. Both public entry points
+ * convert from here at the edge, so the pipeline stays float
+ * throughout with no intermediate quantisation. */
+static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
+      float pcm[RAAC_MAX_CH][RAAC_FRAME])
 {
    raac_bits b;
-   float     pcm[RAAC_MAX_CH][RAAC_FRAME];
    int       got[RAAC_MAX_CH];
-   int       done = 0, i;
+   int       done = 0;
    unsigned  ch;
 
    if (!a || !pkt || !size)
@@ -1707,16 +1710,49 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
          memset(a->ch[ch].coef, 0, sizeof(a->ch[ch].coef));
       raac_filterbank(a, &a->ch[ch], pcm[ch]);
    }
+   return RAAC_FRAME;
+}
+
+int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
+      int16_t *out)
+{
+   float    pcm[RAAC_MAX_CH][RAAC_FRAME];
+   int      ret = raac_decode_frame(a, pkt, size, pcm);
+   int      i;
+   unsigned ch;
+   if (ret < 0)
+      return ret;
    for (i = 0; i < RAAC_FRAME; i++)
       for (ch = 0; ch < a->channels; ch++)
       {
-         float v = pcm[ch][i];   /* spectra carry full-scale PCM units */
-         int   s = (int)(v + (v >= 0 ? 0.5f : -0.5f));
-         if (s >  32767) s =  32767;
-         if (s < -32768) s = -32768;
-         out[i * a->channels + ch] = (int16_t)s;
+         /* one rounding, clamped in the float domain: casting an
+          * out-of-range or non-finite float to int is undefined, and
+          * hostile TNS filters can push the synthesis arbitrarily
+          * high, so saturate before the cast (NaN pins to zero). */
+         float v = pcm[ch][i];
+         if (!(v > -1e9f && v < 1e9f))
+            v = 0.0f;
+         v += (v >= 0.0f) ? 0.5f : -0.5f;
+         if (v >  32767.0f) v =  32767.0f;
+         if (v < -32768.0f) v = -32768.0f;
+         out[i * a->channels + ch] = (int16_t)(int)v;
       }
-   return RAAC_FRAME;
+   return ret;
+}
+
+int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
+      float *out)
+{
+   float    pcm[RAAC_MAX_CH][RAAC_FRAME];
+   int      ret = raac_decode_frame(a, pkt, size, pcm);
+   int      i;
+   unsigned ch;
+   if (ret < 0)
+      return ret;
+   for (i = 0; i < RAAC_FRAME; i++)
+      for (ch = 0; ch < a->channels; ch++)
+         out[i * a->channels + ch] = pcm[ch][i] * (1.0f / 32768.0f);
+   return ret;
 }
 
 void raac_close(raac_t *a)
