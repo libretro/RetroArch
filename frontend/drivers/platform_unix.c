@@ -2416,16 +2416,12 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    JNIEnv *env = jni_thread_getenv();
    jint output           = 0;
-   jobject obj           = NULL;
    jstring jstr          = NULL;
 
    int volume_count = 0;
 
    if (!env || !g_android)
       return 0;
-
-   CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
-         g_android->getIntent);
 
    if (!g_android->is_play_store_build && g_android->getVolumeCount)
    {

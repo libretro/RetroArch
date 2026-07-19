@@ -912,7 +912,12 @@ static void skip(vorb *z, int n)
 static int set_file_offset(rvorbis *f, unsigned int loc)
 {
    f->eof = 0;
-   if (f->stream_start + loc >= f->stream_end || f->stream_start + loc < f->stream_start)
+   /* Compare in the integer domain: forming stream_start + loc first
+    * is undefined when loc exceeds the buffer, so compilers fold the
+    * pointer-wrap test 'start + loc < start' to false
+    * (-Wtautological-compare). stream_end >= stream_start by
+    * construction. */
+   if (loc >= (size_t)(f->stream_end - f->stream_start))
    {
       f->stream = f->stream_end;
       f->eof    = 1;
