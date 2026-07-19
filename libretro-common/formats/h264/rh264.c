@@ -189,13 +189,11 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
    s->frame_mbs_only_flag=rh264_u1(&b);
    if(!s->frame_mbs_only_flag)
       s->mb_adaptive_frame_field_flag=rh264_u1(&b);
-   /* Macroblock-adaptive frame/field coding switches frame and field
-    * macroblock pairs within one picture; every neighbour derivation,
-    * the deblocking filter and the reference addressing change with
-    * it.  None of that is implemented, and decoding such a picture as
-    * if it were progressive reconstructs garbage rather than failing,
-    * so refuse the sequence outright. */
-   if(s->mb_adaptive_frame_field_flag) return 0;
+   /* Macroblock-adaptive frame/field coding is accepted only so far as
+    * the slice header check below allows: the macroblocks arrive in
+    * vertical pairs, which changes their scan order, and a pair may be
+    * field coded, which changes every neighbour derivation.  Only the
+    * scan order is handled. */
    s->direct_8x8_inference_flag=rh264_u1(&b);
    { uint32_t cl=0,cr=0,ct=0,cb=0;
      int mbh=(2-s->frame_mbs_only_flag)*s->pic_height_in_map_units;
@@ -395,6 +393,14 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    {
       sh->field_pic_flag=rh264_u1(b);
       if(sh->field_pic_flag) sh->bottom_field_flag=rh264_u1(b);
+      /* A frame picture in a macroblock-adaptive sequence is scanned in
+       * pairs.  Only the scan order is handled, and only for CAVLC: the
+       * CABAC slice readers walk the picture row by row with neighbour
+       * caches that assume that order, and a field-coded pair changes
+       * every neighbour derivation. */
+      if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag
+            &&pps->entropy_coding_mode_flag)
+         return 0;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
        * CABAC ones: the significance maps of a field-coded block are
@@ -997,6 +1003,7 @@ typedef struct {
    uint8_t *Y,*U,*V;
    uint8_t *Yb,*Ub,*Vb;
    int ysb,csb,mbh_frame,field;
+   int mbaff;             /* macroblock pairs, scanned two rows at a time */
    int qp;
    int chroma_qp_offset;   /* Cb */
    int chroma_qp_offset2;  /* Cr (second_chroma_qp_index_offset) */
@@ -1017,6 +1024,39 @@ typedef struct {
    struct rh264_mv_s *mvg2;
    int poc;                /* picture order count of this picture */
 } rh264_frame;
+
+/* Macroblock position from its address.  With macroblock-adaptive
+ * frame/field coding the picture is scanned in vertical PAIRS:
+ * addresses 2p and 2p+1 are the top and bottom macroblock of pair p,
+ * and the pairs run in raster order.  A frame-coded pair puts its two
+ * macroblocks on consecutive rows. */
+/* Address of the macroblock at (mbx,mby): the inverse of rh264_mb_pos.
+ * Neighbour availability compares addresses against the slice's first
+ * macroblock, and under pair scanning the neighbour above is not
+ * simply one row of addresses back. */
+static int rh264_mb_addr(int mbx, int mby, int mbw, int mbaff)
+{
+   if (mbaff)
+      return ((mby >> 1) * mbw + mbx) * 2 + (mby & 1);
+   return mby * mbw + mbx;
+}
+
+static void rh264_mb_pos(int mbaddr, int mbw, int mbaff,
+      int *mbx, int *mby)
+{
+   if (mbaff)
+   {
+      int pair = mbaddr >> 1;
+      *mbx = pair % mbw;
+      *mby = (pair / mbw) * 2 + (mbaddr & 1);
+   }
+   else
+   {
+      *mbx = mbaddr % mbw;
+      *mby = mbaddr / mbw;
+   }
+}
+
 
 /* Apply mb_qp_delta (7-37).  The spec bounds the delta to [-26, 25] for
  * 8-bit video (7.4.5), which is exactly what makes the standard's
@@ -2138,15 +2178,20 @@ static void rh264_filter_chroma_edge_n(uint8_t *e, int s, int ls, int n,
 static void rh264_deblock(rh264_frame *f, const signed char *sidc,
       const signed char *soA, const signed char *soB)
 {
-   int mbx,mby,edge;
-   for(mby=0;mby<f->mbh;mby++)
-   for(mbx=0;mbx<f->mbw;mbx++)
+   int mbx,mby,edge,mba;
+   /* The filter runs macroblock by macroblock in ADDRESS order (8.7),
+    * and each macroblock filters against samples its neighbours have
+    * already had filtered - so the order matters.  Under pair scanning
+    * address order is not raster order. */
+   for(mba=0;mba<f->mbw*f->mbh;mba++)
    {
-      int mbi=mby*f->mbw+mbx;
-      int sl=f->mbslice?f->mbslice[mbi]:0;
-      int oA=soA[sl], oB=soB[sl];
-      int qp=f->mbqp?f->mbqp[mbi]:f->qp;
-      int mbt8 = f->mbt8 ? f->mbt8[mbi] : 0;
+      int mbi, sl, oA, oB, qp, mbt8;
+      rh264_mb_pos(mba, f->mbw, f->mbaff, &mbx, &mby);
+      mbi=mby*f->mbw+mbx;
+      sl=f->mbslice?f->mbslice[mbi]:0;
+      oA=soA[sl]; oB=soB[sl];
+      qp=f->mbqp?f->mbqp[mbi]:f->qp;
+      mbt8 = f->mbt8 ? f->mbt8[mbi] : 0;
       if(sidc[sl]==1) continue;   /* filter disabled for this slice */
       /* ---- vertical edges (filter columns), left to right ---- */
       for(edge=0;edge<4;edge++)
@@ -2223,11 +2268,22 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
       int mbx, int mby, int mb_type, int t8ena, int slice_first)
 {
    /* neighbouring macroblocks only exist within the current slice (6.4.8) */
-   int mbaddr=mby*f->mbw+mbx;
-   int have_up=(mby>0) && (mbaddr-f->mbw >= slice_first);
-   int have_left=(mbx>0) && (mbaddr-1 >= slice_first);
-   int have_ur=(mby>0) && (mbx+1<f->mbw) && (mbaddr-f->mbw+1 >= slice_first);
-   int have_ul=(mby>0) && (mbx>0) && (mbaddr-f->mbw-1 >= slice_first);
+   int mbaddr=rh264_mb_addr(mbx,mby,f->mbw,f->mbaff);
+   /* A neighbour is available when it belongs to this slice and has
+    * already been decoded (6.4.8).  In raster order the second follows
+    * from the first, but pair scanning breaks that: the up-right
+    * neighbour of a pair's BOTTOM macroblock is the TOP macroblock of
+    * the next pair, which comes later. */
+   int nb_up = rh264_mb_addr(mbx,mby-1,f->mbw,f->mbaff);
+   int nb_lf = rh264_mb_addr(mbx-1,mby,f->mbw,f->mbaff);
+   int nb_ur = rh264_mb_addr(mbx+1,mby-1,f->mbw,f->mbaff);
+   int nb_ul = rh264_mb_addr(mbx-1,mby-1,f->mbw,f->mbaff);
+   int have_up=(mby>0) && nb_up >= slice_first && nb_up < mbaddr;
+   int have_left=(mbx>0) && nb_lf >= slice_first && nb_lf < mbaddr;
+   int have_ur=(mby>0) && (mbx+1<f->mbw)
+      && nb_ur >= slice_first && nb_ur < mbaddr;
+   int have_ul=(mby>0) && (mbx>0)
+      && nb_ul >= slice_first && nb_ul < mbaddr;
    int gw=f->mbw*4, cgw=f->mbw*2;
    uint8_t *y=f->Y+(mby*16)*f->ystride+mbx*16;
    uint8_t *u=f->U+(mby*8)*f->cstride+mbx*8;
@@ -3632,6 +3688,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    int gw = f->mbw * 4, cgw = f->mbw * 2;
    int gwmax = f->mbw * 4, ghmax = f->mbh * 4;
    int skip_run = -1;
+   int prev_skipped = 0;
    int gi;
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -3668,8 +3725,9 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
 
    while (mbaddr < total)
    {
-      int mbx = mbaddr % f->mbw, mby = mbaddr / f->mbw;
+      int mbx, mby;
       int mb_type;
+      rh264_mb_pos(mbaddr, f->mbw, f->mbaff, &mbx, &mby);
 
       /* mb_skip_run; no further run or macroblock once the slice's RBSP is
        * exhausted (a trailing run can cover through the slice's last MB) */
@@ -3705,9 +3763,16 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
               f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; } }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
          skip_run--; mbaddr++;
+         prev_skipped = 1;
          continue;
       }
       skip_run = -1;
+      /* mb_field_decoding_flag precedes a pair's top macroblock, and
+       * also its bottom one when the top was skipped (7.3.4).  A
+       * field-coded pair is refused. */
+      if (f->mbaff && (!(mbaddr & 1) || prev_skipped) && rh264_u1(b))
+         return -1;
+      prev_skipped = 0;
       mb_type = rh264_ue(b);
 
       if (mb_type >= 5)
@@ -4369,6 +4434,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    int mbaddr = sh->first_mb_in_slice, total = f->mbw * f->mbh;
    int gw = f->mbw * 4, cgw = f->mbw * 2;
    int gwmax = f->mbw * 4, ghmax = f->mbh * 4;
+   int prev_skipped = 0;
    int skip_run = -1;
    int gi;
    f->qp = sh->slice_qp;
@@ -4395,8 +4461,9 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
 
    while (mbaddr < total)
    {
-      int mbx = mbaddr % f->mbw, mby = mbaddr / f->mbw;
+      int mbx, mby;
       int mb_type;
+      rh264_mb_pos(mbaddr, f->mbw, f->mbaff, &mbx, &mby);
 
       /* no further run or macroblock once the slice's RBSP is exhausted */
       if (skip_run <= 0 && !rh264_more_rbsp(b)) break;
@@ -4414,9 +4481,15 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
               f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; } }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
          skip_run--; mbaddr++;
+         prev_skipped = 1;
          continue;
       }
       skip_run = -1;
+      /* see the P-slice loop: the pair flag precedes the top macroblock,
+       * or the bottom one when the top was skipped (7.3.4) */
+      if (f->mbaff && (!(mbaddr & 1) || prev_skipped) && rh264_u1(b))
+         return -1;
+      prev_skipped = 0;
       mb_type = rh264_ue(b);
 
       if (mb_type >= 23)
@@ -4734,17 +4807,19 @@ static RH264_INLINE int rh264_bs_nz(const rh264_frame *f, int gw,
 static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
       const signed char *soA, const signed char *soB, const rh264_mv *mvg)
 {
-   int mbx, mby, edge, seg;
+   int mbx, mby, edge, seg, mba;
    int gw = f->mbw * 4, cgw = f->mbw * 2;
 
-   for (mby = 0; mby < f->mbh; mby++)
-   for (mbx = 0; mbx < f->mbw; mbx++)
+   /* address order, not raster: see rh264_deblock */
+   for (mba = 0; mba < f->mbw * f->mbh; mba++)
    {
-      int mbi = mby*f->mbw+mbx;
-      int sl  = f->mbslice ? f->mbslice[mbi] : 0;
-      int oA = soA[sl], oB = soB[sl];
-      int qp  = f->mbqp ? f->mbqp[mbi] : f->qp;
-      int mbt8 = f->mbt8 ? f->mbt8[mbi] : 0;
+      int mbi, sl, oA, oB, qp, mbt8;
+      rh264_mb_pos(mba, f->mbw, f->mbaff, &mbx, &mby);
+      mbi = mby*f->mbw+mbx;
+      sl  = f->mbslice ? f->mbslice[mbi] : 0;
+      oA = soA[sl]; oB = soB[sl];
+      qp  = f->mbqp ? f->mbqp[mbi] : f->qp;
+      mbt8 = f->mbt8 ? f->mbt8[mbi] : 0;
       if (sidc[sl] == 1) continue;   /* filter disabled for this slice */
 
       /* ---- vertical edges (filter columns), left to right ---- */
@@ -4924,9 +4999,15 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
    f->chroma_qp_offset=pps->chroma_qp_index_offset;
    f->chroma_qp_offset2=pps->chroma_qp_index_offset2;
    while(mbaddr<total){
-      int mbx=mbaddr%f->mbw, mby=mbaddr/f->mbw;
+      int mbx, mby;
       int mb_type;
+      rh264_mb_pos(mbaddr, f->mbw, f->mbaff, &mbx, &mby);
       if(!rh264_more_rbsp(b)) break;   /* end of this slice's data */
+      /* mb_field_decoding_flag is sent once per macroblock pair, ahead
+       * of its top macroblock (7.3.4).  A field-coded pair is refused:
+       * its two macroblocks hold alternate lines and every neighbour
+       * around them is derived differently. */
+      if(f->mbaff && !(mbaddr & 1) && rh264_u1(b)) return -1;
       mb_type=rh264_ue(b);
 
       if(rh264_decode_intra_mb_cavlc(b,f,mbx,mby,mb_type,
@@ -5842,11 +5923,22 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
       const int *mbt, int forced, int slice_first)
 {
    /* neighbouring macroblocks only exist within the current slice (6.4.8) */
-   int mbaddr=mby*f->mbw+mbx;
-   int have_up=(mby>0) && (mbaddr-f->mbw >= slice_first);
-   int have_left=(mbx>0) && (mbaddr-1 >= slice_first);
-   int have_ur=(mby>0) && (mbx+1<f->mbw) && (mbaddr-f->mbw+1 >= slice_first);
-   int have_ul=(mby>0) && (mbx>0) && (mbaddr-f->mbw-1 >= slice_first);
+   int mbaddr=rh264_mb_addr(mbx,mby,f->mbw,f->mbaff);
+   /* A neighbour is available when it belongs to this slice and has
+    * already been decoded (6.4.8).  In raster order the second follows
+    * from the first, but pair scanning breaks that: the up-right
+    * neighbour of a pair's BOTTOM macroblock is the TOP macroblock of
+    * the next pair, which comes later. */
+   int nb_up = rh264_mb_addr(mbx,mby-1,f->mbw,f->mbaff);
+   int nb_lf = rh264_mb_addr(mbx-1,mby,f->mbw,f->mbaff);
+   int nb_ur = rh264_mb_addr(mbx+1,mby-1,f->mbw,f->mbaff);
+   int nb_ul = rh264_mb_addr(mbx-1,mby-1,f->mbw,f->mbaff);
+   int have_up=(mby>0) && nb_up >= slice_first && nb_up < mbaddr;
+   int have_left=(mbx>0) && nb_lf >= slice_first && nb_lf < mbaddr;
+   int have_ur=(mby>0) && (mbx+1<f->mbw)
+      && nb_ur >= slice_first && nb_ur < mbaddr;
+   int have_ul=(mby>0) && (mbx>0)
+      && nb_ul >= slice_first && nb_ul < mbaddr;
    int gw=f->mbw*4, cgw=f->mbw*2, gx0=mbx*4, gy0=mby*4;
    int is_i16, i16mode=0, cbp_luma=0, cbp_chroma=0, chroma_mode=0, ctxInc, i;
    int t8 = 0;
@@ -7787,6 +7879,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
       v->last_poc = rh264_derive_poc(v, &sh, nri);
       v->cur_field = fld;
       rh264_frame_set_field(&v->f, fld);
+      v->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
       rh264_frame_reset_ex(&v->f, second);
       if (fld && second) { if(v->last_poc<v->pair_poc) v->pair_poc=v->last_poc;
                            v->pair_open=0; }
@@ -8090,6 +8183,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
       v->last_poc = rh264_derive_poc(v, &sh, nri);
       v->cur_field = fld;
       rh264_frame_set_field(&v->f, fld);
+      v->f.mbaff = (!fld && v->sps.mb_adaptive_frame_field_flag) ? 1 : 0;
       if (fld && second) { if(v->last_poc<v->pair_poc) v->pair_poc=v->last_poc;
                            v->pair_open=0; }
       else if (fld) { v->pair_open=1; v->pair_frame_num=sh.frame_num;
@@ -8378,8 +8472,15 @@ static void rh264_video_finish_picture(rh264_video *v, int *got_pic)
       int hi = (s + 1 < v->pic_nslices) ? v->pic_first[s + 1] : v->pic_end;
       int mb;
       if (hi > total) hi = total;
+      /* mbslice is read by raster position (deblocking walks the
+       * picture, not the bitstream), while a slice covers a range of
+       * ADDRESSES - and under pair scanning those differ. */
       for (mb = lo; mb < hi; mb++)
-         v->f.mbslice[mb] = (uint8_t)s;
+      {
+         int mx, my;
+         rh264_mb_pos(mb, v->f.mbw, v->f.mbaff, &mx, &my);
+         v->f.mbslice[my * v->f.mbw + mx] = (uint8_t)s;
+      }
    }
    if (v->pic_kind <= 2)
    {
