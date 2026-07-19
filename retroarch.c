@@ -6330,7 +6330,6 @@ int rarch_main(int argc, char *argv[], void *data)
    settings_t *settings;
    struct rarch_state *p_rarch         = &rarch_st;
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
-   video_driver_state_t *video_st      = video_state_get_ptr();
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    video_driver_modify_disp_flags(VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD, 0);
 #endif
@@ -8271,7 +8270,6 @@ bool retroarch_main_init(int argc, char *argv[])
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    input_driver_state_t
       *input_st                  = input_state_get_ptr();
-   video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
    recording_state_t *rec_st     = recording_state_get_ptr();
    global_t            *global   = global_get_ptr();

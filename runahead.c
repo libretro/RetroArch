@@ -1665,7 +1665,6 @@ void preempt_run(preempt_t *preempt, void *data)
    struct retro_core_t *current_core = &runloop_st->current_core;
    const char *_msg                  = NULL;
    audio_driver_state_t *audio_st    = audio_state_get_ptr();
-   video_driver_state_t *video_st    = video_state_get_ptr();
    settings_t *settings              = config_get_ptr();
    unsigned input_max_users          = settings->uints.input_max_users;
    bool run_ahead_hide_warnings      = settings->bools.run_ahead_hide_warnings;
@@ -1742,7 +1741,6 @@ error:
 void runahead_clear_variables(void *data)
 {
    runloop_state_t *runloop_st            = (runloop_state_t*)data;
-   video_driver_state_t *video_st         = video_state_get_ptr();
    runloop_st->runahead_save_state_size   = 0;
    runloop_st->flags                     &= ~RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN;
    video_driver_modify_disp_flags(VIDEO_FLAG_RUNAHEAD_IS_ACTIVE, 0);

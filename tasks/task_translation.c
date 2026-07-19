@@ -309,7 +309,6 @@ static void handle_translation_response(
 #ifdef HAVE_GFX_WIDGETS
    bool gfx_widgets_paused           = (video_st->flags &
       VIDEO_FLAG_WIDGETS_PAUSED) ? true : false;
-   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
 #endif
    bool ai_service_pause             = settings->bools.ai_service_pause;
    unsigned ai_service_mode          = settings->uints.ai_service_mode;
@@ -896,7 +895,6 @@ bool run_translation_service(settings_t *settings, bool paused)
    video_driver_state_t *video_st    = video_state_get_ptr();
    access_state_t *access_st         = access_state_get_ptr();
 #ifdef HAVE_GFX_WIDGETS
-   dispgfx_widget_t *p_dispwidget    = dispwidget_get_ptr();
    /* For the case when ai service pause is disabled. */
    if (     (gfx_widgets_ai_service_overlay_get_state() != 0)
          && (access_st->ai_service_auto == 1))

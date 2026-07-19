@@ -1286,7 +1286,6 @@ const char *video_display_server_get_ident(void)
 void* video_display_server_init(enum rarch_display_type type)
 {
    video_driver_state_t *video_st = &video_driver_st;
-   runloop_state_t *runloop_st    = runloop_state_get_ptr();
 
    /* Reuse when already and still running */
    if (current_display_server && runloop_is_inited())
