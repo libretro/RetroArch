@@ -339,12 +339,24 @@ static int16_t audio_mixer_sat_s16(int32_t v)
    return (int16_t)v;
 }
 
-/* Apply a Q16 gain to an s16 sample, rounding toward zero (matches the
- * fixed-point volume applied on the core int16 audio path). */
+/* Apply a Q16 gain to an s16 sample, rounding half away from zero and
+ * accumulating in 64 bits (matches the fixed-point volume applied on the
+ * core int16 audio path in audio_driver_flush).
+ *
+ * The product must not be accumulated in int32: voice volume ranges over
+ * -80..+12 dB, so gain_q16 reaches 260904, and 32768 * 260904 needs 34
+ * bits. Anything above 0 dB overflows on loud input and wraps to the
+ * wrong sign, turning peaks into clicks rather than clamping them.
+ *
+ * Rounding rather than truncating halves the quantisation error and
+ * mirrors the bias across the sign, which keeps the transform
+ * odd-symmetric and therefore DC-free on symmetric signals. */
 static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
 {
-   int32_t p = (int32_t)s * gain_q16;
-   return (p >= 0) ? (p >> 16) : -((-p) >> 16);
+   int64_t p = (int64_t)s * gain_q16;
+   return (int32_t)((p >= 0)
+         ?  ((  p + 0x8000) >> 16)
+         : -(((-p + 0x8000) >> 16)));
 }
 
 #if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
