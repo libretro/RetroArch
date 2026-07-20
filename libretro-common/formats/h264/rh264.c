@@ -3514,8 +3514,12 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
        * chroma half a chroma line away, because the two fields'
        * chroma sampling grids are offset (8.4.1.4).  The vector is in
        * eighths of a chroma sample, so the correction is 2. */
+      /* The offset exists because 4:2:0 samples chroma at half the
+       * vertical rate, so the two fields' chroma grids sit half a
+       * chroma line apart.  4:2:2 keeps every row, its fields' grids
+       * line up, and no correction applies. */
       int cmvy = c422 ? mvy * 2 : mvy;
-      if (f->field && ref->field && f->field != ref->field)
+      if (!c422 && f->field && ref->field && f->field != ref->field)
          cmvy += (f->field == 1) ? -2 : 2;
       rh264_mc_chroma(dU, f->cstride, ref->U, ref->cstride,
             rw >> 1, ch, cox, coy, cbw, cbh, mvx, cmvy);
@@ -4136,13 +4140,13 @@ static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
 {
    int rw = ref->mbw * 16, rh = ref->mbh * 16;
    int cmvy = mvy;
-   if (curfield && ref->field && curfield != ref->field)
+   if (!c422 && curfield && ref->field && curfield != ref->field)
       cmvy += (curfield == 1) ? -2 : 2;
    rh264_mc_luma(ty, 16, ref->Y, ref->ystride, rw, rh, ox, oy, bw, bh,
          mvx, mvy);
    /* 4:2:2 keeps the luma height: the chroma block is as tall as the
     * luma one and the vector spans twice the eighths vertically. */
-   if (c422) cmvy = cmvy - mvy + mvy * 2;
+   if (c422) cmvy = mvy * 2;   /* and no parity offset: see above */
    rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1,
          c422 ? rh : (rh >> 1), ox >> 1, c422 ? oy : (oy >> 1),
          bw >> 1, c422 ? bh : (bh >> 1), mvx, cmvy);
