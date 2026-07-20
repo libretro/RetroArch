@@ -266,6 +266,7 @@ typedef struct gfx_ctx_wayland_data
    bool maximized;
    bool resize;
    bool configured;
+   bool suspended;
    bool ignore_configuration;
    driver_configure_handler_t driver_configure_handler;
    /* State from xdg_toplevel.configure, held until the compositor's
@@ -279,6 +280,7 @@ typedef struct gfx_ctx_wayland_data
       bool resizing;
       bool activated;
       bool floating;
+      bool suspended;
       bool pending;
    } cfg_pending;
    bool activated;

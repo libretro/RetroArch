@@ -235,6 +235,23 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   /* While the compositor reports the surface suspended (occluded,
+    * minimized, screen locked), skip present/acquire: the surface is
+    * not being scanned out, and some drivers stall or spin when
+    * presenting to it.  Throttle only when vsync pacing is active;
+    * with swap_interval == 0 (fast-forward) the loop stays
+    * unthrottled, matching pre-suspend behavior.  Keep the event
+    * queue moving so the resume configure is seen.  Compositors
+    * older than xdg_wm_base v6 never send the state; wl->suspended
+    * then stays false and this block never runs. */
+   if (wl->suspended)
+   {
+      if (wl->swap_interval != 0)
+         retro_sleep(10);
+      flush_wayland_fd(&wl->input);
+      return;
+   }
+
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
       wl->vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;

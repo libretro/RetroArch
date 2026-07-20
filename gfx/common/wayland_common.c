@@ -118,6 +118,7 @@ static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
       wl->resize  = true;
    if (wl->cfg_pending.activated)
       wl->activated = true;
+   wl->suspended  = wl->cfg_pending.suspended;
 
    if (width == 0 || height == 0)
    {
@@ -192,8 +193,12 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    if (wl->libdecor_configuration_get_window_state(
          configuration, &window_state))
    {
+      /* LIBDECOR_WINDOW_STATE_SUSPENDED (libdecor >= 0.2.0); numeric
+       * value used so older libdecor headers still compile.  Older
+       * runtimes never set the bit. */
       wl->fullscreen = (window_state & LIBDECOR_WINDOW_STATE_FULLSCREEN) != 0;
       wl->maximized  = (window_state & LIBDECOR_WINDOW_STATE_MAXIMIZED) != 0;
+      wl->suspended  = (window_state & (1 << 7)) != 0;
 #if 0
       focused        = (window_state & LIBDECOR_WINDOW_STATE_ACTIVE) != 0;
       tiled          = (window_state & tiled_states) != 0;
@@ -300,6 +305,7 @@ static void xdg_toplevel_handle_configure(void *data,
    wl->cfg_pending.resizing   = false;
    wl->cfg_pending.activated  = false;
    wl->cfg_pending.floating   = true;
+   wl->cfg_pending.suspended  = false;
 
    WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
    {
@@ -323,6 +329,9 @@ static void xdg_toplevel_handle_configure(void *data,
             break;
          case XDG_TOPLEVEL_STATE_ACTIVATED:
             wl->cfg_pending.activated  = true;
+            break;
+         case XDG_TOPLEVEL_STATE_SUSPENDED:
+            wl->cfg_pending.suspended  = true;
             break;
       }
    }
@@ -359,9 +368,27 @@ static const struct xdg_surface_listener wl_xdg_surface_listener = {
    xdg_surface_handle_configure_latch,
 };
 
+static void xdg_toplevel_handle_configure_bounds(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      int32_t width, int32_t height)
+{
+   /* Advisory maximum size (since v4); RetroArch sizes from the
+    * configure events themselves, so nothing to do. */
+}
+
+static void xdg_toplevel_handle_wm_capabilities(void *data,
+      struct xdg_toplevel *xdg_toplevel,
+      struct wl_array *capabilities)
+{
+   /* Advertised WM actions (since v5); RetroArch does not currently
+    * tailor its UI to them. */
+}
+
 static const struct xdg_toplevel_listener wl_xdg_toplevel_listener = {
    xdg_toplevel_handle_configure,
    xdg_toplevel_handle_close,
+   xdg_toplevel_handle_configure_bounds,
+   xdg_toplevel_handle_wm_capabilities,
 };
 
 void gfx_ctx_wl_get_video_size_common(void *data,

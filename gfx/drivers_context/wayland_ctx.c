@@ -505,8 +505,15 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * disabled) means we explicitly do not want to wait for the
     * display cadence; blocking on the frame callback here would gate
     * unthrottled frames on vsync-rate callbacks and stall the core. */
+   /* Skip the frame-callback wait while the compositor reports the
+    * surface suspended (occluded, minimized, screen locked): hidden
+    * surfaces receive no frame callbacks, so waiting would burn the
+    * 50ms deadline every frame.  Compositors older than xdg_wm_base
+    * v6 never send the state; wl->suspended then stays false and
+    * behavior is unchanged. */
    bool frame_throttle            = (max_swapchain_images <= 2)
-      && (wl->egl.interval != 0);
+      && (wl->egl.interval != 0)
+      && !wl->suspended;
 
    if (frame_throttle)
    {
