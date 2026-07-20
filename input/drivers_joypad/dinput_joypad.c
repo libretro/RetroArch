@@ -462,17 +462,31 @@ static void dinput_joypad_poll(void)
    for (i = 0; i < g_joypad_cnt; i++)
    {
       HRESULT ret;
+      unsigned h;
       struct dinput_joypad_data *pad = &g_pads[i];
 
       if (!pad->joypad)
          continue;
 
       /* If Poll() fails, attempt to re-acquire and poll again.
-       * If that also fails, skip this pad for this frame. */
+       * If that also fails, skip this pad for this frame.
+       * Zero the cached state first: DirectInput devices lose
+       * acquisition on focus loss (alt-tab, UAC prompt, screen
+       * saver), and 'joy_state' would otherwise keep reporting
+       * whatever was held at that moment - including rgdwPOV[],
+       * so a D-pad direction held when focus was lost is seen as
+       * still held for the whole unfocused period and beyond. */
       if (FAILED(IDirectInputDevice8_Poll(pad->joypad)))
          if (  FAILED(IDirectInputDevice8_Acquire(pad->joypad))
             || FAILED(IDirectInputDevice8_Poll(pad->joypad)))
+         {
+            memset(&pad->joy_state, 0, sizeof(pad->joy_state));
+            /* Centre all hats - zero is a valid POV direction
+             * (north), so memset alone would report 'up' held */
+            for (h = 0; h < ARRAY_SIZE(pad->joy_state.rgdwPOV); h++)
+               pad->joy_state.rgdwPOV[h] = DINPUT_POV_CENTERED;
             continue;
+         }
 
       ret = IDirectInputDevice8_GetDeviceState(pad->joypad,
             sizeof(DIJOYSTATE2), &pad->joy_state);
