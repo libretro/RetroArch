@@ -446,6 +446,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       wp_viewport_destroy(wl->viewport);
    if (wl->fractional_scale)
       wp_fractional_scale_v1_destroy(wl->fractional_scale);
+   if (wl->tearing_control)
+      wp_tearing_control_v1_destroy(wl->tearing_control);
    if (wl->idle_inhibitor)
       zwp_idle_inhibitor_v1_destroy(wl->idle_inhibitor);
    if (wl->deco)
@@ -474,6 +476,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       dbus_close_connection();
 #endif
    }
+   if (wl->tearing_control_manager)
+      wp_tearing_control_manager_v1_destroy(wl->tearing_control_manager);
    if (wl->pointer_constraints)
       zwp_pointer_constraints_v1_destroy(wl->pointer_constraints);
    if (wl->relative_pointer_manager)
@@ -542,6 +546,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
    wl->idle_inhibit_manager      = NULL;
    wl->deco_manager              = NULL;
    wl->single_pixel_manager      = NULL;
+   wl->tearing_control_manager   = NULL;
+   wl->tearing_control           = NULL;
    wl->surface                   = NULL;
    wl->xdg_surface               = NULL;
    wl->xdg_toplevel              = NULL;
@@ -978,6 +984,11 @@ bool gfx_ctx_wl_init_common(
       RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", xdg_toplevel_tag_manager_v1_interface.name);
    }
 
+   if (!wl->tearing_control_manager)
+   {
+      RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_tearing_control_manager_v1_interface.name);
+   }
+
    wl->surface = wl_compositor_create_surface(wl->compositor);
    if (wl->viewporter)
       wl->viewport = wp_viewporter_get_viewport(wl->viewporter, wl->surface);
@@ -993,6 +1004,17 @@ bool gfx_ctx_wl_init_common(
    {
       wl->content_type = wp_content_type_manager_v1_get_surface_content_type(wl->content_type_manager, wl->surface);
       wp_content_type_v1_set_content_type(wl->content_type, WP_CONTENT_TYPE_V1_TYPE_GAME);
+   }
+
+   if (wl->tearing_control_manager)
+   {
+      bool video_vsync = settings->bools.video_vsync;
+      wl->tearing_control = wp_tearing_control_manager_v1_get_tearing_control(
+         wl->tearing_control_manager, wl->surface);
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  video_vsync
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
    }
 
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
