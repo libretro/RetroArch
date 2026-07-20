@@ -393,17 +393,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    {
       sh->field_pic_flag=rh264_u1(b);
       if(sh->field_pic_flag) sh->bottom_field_flag=rh264_u1(b);
-      /* A frame picture in a macroblock-adaptive sequence is scanned in
-       * pairs.  Only the scan order is handled, and only for CAVLC: the
-       * CABAC slice readers walk the picture row by row with neighbour
-       * caches that assume that order, and a field-coded pair changes
-       * every neighbour derivation. */
-      if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag
-            &&pps->entropy_coding_mode_flag
-            &&sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI
-            &&sh->slice_type!=RH264_SLICE_P&&sh->slice_type!=RH264_SLICE_SP
-            &&sh->slice_type!=RH264_SLICE_B)
-         return 0;
+      /* In a macroblock-adaptive frame picture first_mb_in_slice counts
+       * macroblock PAIRS, so the address of the slice's first
+       * macroblock is twice it (7.3.3).  Everything downstream wants
+       * the address. */
+      if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag)
+         sh->first_mb_in_slice*=2;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
        * CABAC ones: the significance maps of a field-coded block are
