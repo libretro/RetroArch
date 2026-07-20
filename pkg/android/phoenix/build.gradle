@@ -50,6 +50,14 @@ android {
     versionName "${getManifestAttribute("versionName")}_GIT"
   }
 
+  android {
+    packagingOptions {
+      jniLibs {
+        useLegacyPackaging = true
+      }
+    }
+  }
+
   productFlavors {
     normal {
       resValue "string", "app_name", "RetroArch"
