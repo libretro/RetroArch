@@ -7890,9 +7890,9 @@ static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
 /* Picture order count for the picture just parsed (8.2.1). Type 0 rebuilds
  * the count from its wrapping LSB against the previous reference picture;
  * type 2 makes it follow decode order, doubled, with non-reference pictures
- * sitting one below the next reference. Type 1 is not derived; the caller
- * refuses B slices under it, and without B pictures output order equals
- * decode order, so a synthetic increasing value keeps the queue ordered. */
+ * sitting one below the next reference; type 1 builds the expected count
+ * from the sequence's offset cycle, keyed by frame number, and adds the
+ * slice's deltas. */
 static int rh264_derive_poc(rh264_video *v, const rh264_slice_hdr *sh,
       int nal_ref_idc)
 {
