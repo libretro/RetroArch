@@ -372,7 +372,7 @@ enum { RH264_SLICE_P=0,RH264_SLICE_B=1,RH264_SLICE_I=2,RH264_SLICE_SP=3,RH264_SL
 #define RH264_OUT_SLOTS (RH264_MAX_REFS+2)
 typedef struct { int first_mb_in_slice,slice_type,pic_parameter_set_id,frame_num,
    idr_pic_id,poc_lsb,slice_qp,disable_deblocking_filter_idc,is_idr,
-   field_pic_flag,bottom_field_flag,
+   field_pic_flag,bottom_field_flag,switching,
    poc1_delta0,poc1_delta1,
    num_ref_idx_l0,num_ref_idx_l1,direct_spatial_mv_pred_flag,
    cabac_init_idc,frame_num_val,
@@ -459,8 +459,14 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
             }
          } while(op!=3&&rh264_more_data(b));
       }
-   } else if(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
-      return 0; /* SP/SI switching slices not supported */
+   }
+   /* Switching slices are refused.  They carry the same header as a
+    * predicted slice, so the branch above accepts SP without noticing,
+    * but their residual is reconstructed through a transform and
+    * quantisation of their own (8.5.13) - decoded as if predicted they
+    * come out wrong rather than failing. */
+   if(sh->slice_type==RH264_SLICE_SP||sh->slice_type==RH264_SLICE_SI)
+   { sh->switching=1; return 0; }
    /* pred_weight_table (7.3.3.2). Entries left unsignalled keep the default
     * of unit weight and zero offset. */
    if((pps->weighted_pred_flag
@@ -5163,6 +5169,10 @@ struct rh264_video
    #define RH264_MAX_SLICES 64
    int       pic_open;
    int       cur_field, pair_open, pair_frame_num, pair_poc;
+   /* A switching slice was seen.  Those are references, so once one is
+    * refused nothing after it can be reconstructed either; the stream
+    * is given up rather than decoded into drift. */
+   int       saw_switching;
    /* DPB slot the pair's first field opened, so the second can fill it */
    int       pair_slot;
    int       pic_kind;          /* 1 IDR-I, 2 recovery-I, 3 P, 4 B    */
@@ -8145,7 +8155,8 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
-   { free(rbsp); return -1; }
+   { if (sh.switching) v->saw_switching = 1;
+     free(rbsp); return -1; }
    if (sh.first_mb_in_slice == 0)
    {
       /* first slice: a new picture begins (a picture left unfinished by a
@@ -8446,7 +8457,8 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
-   { free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
+   { if (sh.switching) v->saw_switching = 1;
+     free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
    if (sh.slice_type != RH264_SLICE_P && sh.slice_type != RH264_SLICE_SP
          && sh.slice_type != RH264_SLICE_B
          && sh.slice_type != RH264_SLICE_I)
@@ -8817,6 +8829,9 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       size_t nl, int *got_pic)
 {
    int type = nal[0] & 0x1f;
+   /* a switching slice was refused earlier: everything after it would
+    * be predicted from a picture that was never reconstructed */
+   if (v->saw_switching) return -1;
    if (type == 7 || type == 8) { rh264_video_take_ps(v, nal, nl); return 0; }
    if (type == 5 || type == 1)
    {
