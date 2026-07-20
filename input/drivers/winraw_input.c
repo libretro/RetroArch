@@ -95,6 +95,7 @@ typedef struct
    uint8_t kb_keys[SC_LAST];
    uint8_t flags;
    bool last_focus;
+   bool kb_clear_pending;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
@@ -673,6 +674,35 @@ static void winraw_poll(void *data)
    if (winraw_focus && !wr->last_focus)
       winraw_sync_mouse_to_cursor(wr);
 
+   /* Release any keys still held at the moment focus is lost.
+    *
+    * The wndproc rejects background input (it returns early when
+    * GET_RAWINPUT_CODE_WPARAM() is not RIM_INPUT), so no key-up
+    * ever arrives for a key that was down when the window was
+    * deactivated, and it would stay latched indefinitely.
+    *
+    * The clear is deferred while Alt is still physically down,
+    * which is the case throughout an Alt-Tab. Latch it instead of
+    * testing the focus-loss edge directly, otherwise the edge is
+    * missed on exactly the Alt-Tab case that needs it and the
+    * keys stay latched until focus returns. */
+   if (!winraw_focus && wr->last_focus)
+      wr->kb_clear_pending = true;
+
+   if (wr->kb_clear_pending && !(GetKeyState(VK_MENU) & 0x8000))
+   {
+      /* LAlt is released through input_keyboard_event() rather
+       * than just zeroed, so the keyboard layer observes the
+       * transition and does not treat Alt as held afterwards. */
+      if (wr->kb_keys[SC_LALT])
+         input_keyboard_event(0,
+               input_keymaps_translate_keysym_to_rk(SC_LALT),
+               0, 0, RETRO_DEVICE_KEYBOARD);
+
+      memset(wr->kb_keys, 0, SC_LAST);
+      wr->kb_clear_pending = false;
+   }
+
    wr->last_focus = winraw_focus;
 
    for (i = 0; i < wr->mouse_cnt; ++i)
@@ -689,20 +719,6 @@ static void winraw_poll(void *data)
       wr->mice[i].whl_d   = InterlockedExchange(&g_mice[i].whl_d, 0);
       wr->mice[i].flags   = g_mice[i].flags;
    }
-
-   /* Prevent LAlt sticky after unfocusing with Alt-Tab */
-   if (     !winraw_focus
-         && wr->kb_keys[SC_LALT]
-         && !(GetKeyState(VK_MENU) & 0x8000))
-   {
-      wr->kb_keys[SC_LALT] = 0;
-      input_keyboard_event(0,
-            input_keymaps_translate_keysym_to_rk(SC_LALT),
-            0, 0, RETRO_DEVICE_KEYBOARD);
-   }
-   /* Clear all keyboard key states when unfocused */
-   else if (!winraw_focus && !(GetKeyState(VK_MENU) & 0x8000))
-      memset(wr->kb_keys, 0, SC_LAST);
 }
 
 static int16_t winraw_input_state(
