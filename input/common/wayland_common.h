@@ -46,6 +46,7 @@
 #include "../../gfx/common/wayland/pointer-constraints-unstable-v1.h"
 #include "../../gfx/common/wayland/relative-pointer-unstable-v1.h"
 #include "../../gfx/common/wayland/single-pixel-buffer-v1.h"
+#include "../../gfx/common/wayland/tearing-control-v1.h"
 #include "../../gfx/common/wayland/viewporter.h"
 #include "../../gfx/common/wayland/xdg-decoration-unstable-v1.h"
 #include "../../gfx/common/wayland/xdg-shell.h"
@@ -181,6 +182,8 @@ typedef struct gfx_ctx_wayland_data
    struct xdg_toplevel_icon_v1 *xdg_toplevel_icon;
    struct xdg_toplevel_icon_manager_v1 *xdg_toplevel_icon_manager;
    struct xdg_toplevel_tag_manager_v1 *xdg_toplevel_tag_manager;
+   struct wp_tearing_control_manager_v1 *tearing_control_manager;
+   struct wp_tearing_control_v1 *tearing_control;
    struct wl_keyboard *wl_keyboard;
    struct wl_pointer  *wl_pointer;
    struct zwp_relative_pointer_v1 *wl_relative_pointer;

@@ -255,6 +255,8 @@ gfx/common/wayland/webos-shell.c
 gfx/common/wayland/webos-shell.h
 gfx/common/wayland/webos-surface-group.c
 gfx/common/wayland/webos-surface-group.h
+gfx/common/wayland/tearing-control-v1.h
+gfx/common/wayland/tearing-control-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
