@@ -1515,12 +1515,21 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          int qpc=rh264_chroma_qp(f->qp,
                comp?f->chroma_qp_offset2:f->chroma_qp_offset);
          int per, rem, LS;
-         /* the 4:2:2 DC uses qP + 3 (8.5.11.2) */
+         /* the 4:2:2 DC uses qP + 3, and scales it two different ways
+          * either side of qP 36 - a shift up above it, a ROUNDED shift
+          * down below, which is where most streams sit (8.5.11.2) */
          if (nblk==8) qpc += 3;
          per=qpc/6; rem=qpc%6;
          LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
          for (k=0;k<nblk;k++)
-            cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>(nblk==8?6:5);
+         {
+            if (nblk==8)
+               cdc[comp][k] = (per >= 6)
+                  ? (int32_t)((uint32_t)(cdc[comp][k]*LS) << (per-6))
+                  : (int32_t)((cdc[comp][k]*LS + (1 << (5-per))) >> (6-per));
+            else
+               cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>5;
+         }
       }
    }
    /* chroma AC blocks (only if cbp_chroma==2) + reconstruct */
@@ -2628,14 +2637,17 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
           * samples. Neighbour bookkeeping matches the CABAC path: DC
           * prediction modes (8.3.1.1) and coefficient counts of 16
           * (9.2.1); QP is unchanged. */
-         int r,c2;
+         /* a macroblock carries 256 luma samples and, per chroma
+          * component, eight columns by as many rows as the format
+          * gives it - eight for 4:2:0, sixteen for 4:2:2 */
+         int r,c2,ch=f->cmbh;
          b->bitpos=(b->bitpos+7)&~(size_t)7;
-         if((b->size*8-b->bitpos)>>3 < 256+64+64) return -1;
+         if((b->size*8-b->bitpos)>>3 < 256+(size_t)ch*8*2) return -1;
          for(r=0;r<16;r++)for(c2=0;c2<16;c2++)
             y[r*f->ystride+c2]=(uint8_t)rh264_un(b,8);
-         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+         for(r=0;r<ch;r++)for(c2=0;c2<8;c2++)
             u[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
-         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+         for(r=0;r<ch;r++)for(c2=0;c2<8;c2++)
             v[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
          for(r=0;r<4;r++)for(c2=0;c2<4;c2++){
             f->nzL[(mby*4+r)*gw+mbx*4+c2]=16;
@@ -6141,14 +6153,14 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           * engine has fetched: drop the current byte's remaining bits. The
           * engine restarts behind the samples with its context variables
           * kept (9.3.1.2). */
-         int r, c2, k;
+         int r, c2, k, ch = f->cmbh;
          cb->bitcnt = 0;
-         if (cb->end - cb->buf < 256 + 64 + 64) return -1;
+         if (cb->end - cb->buf < 256 + ch*8*2) return -1;
          for (r = 0; r < 16; r++) for (c2 = 0; c2 < 16; c2++)
             Y[r*f->ystride + c2] = *cb->buf++;
-         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+         for (r = 0; r < ch; r++) for (c2 = 0; c2 < 8; c2++)
             U8[r*f->cstride + c2] = *cb->buf++;
-         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+         for (r = 0; r < ch; r++) for (c2 = 0; c2 < 8; c2++)
             V8[r*f->cstride + c2] = *cb->buf++;
          rh264_cabac_init_engine(cb, cb->buf, cb->end);
          /* neighbour state: mb_type counts as not-I_NxN (9.3.3.1.1.3),
@@ -6159,7 +6171,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
          cur->cbpLuma = 15; cur->cbpChroma = 2;   /* inferred, 7.4.5 */
          for (k = 0; k < 16; k++) cur->luma[k] = 1;
          cur->cDC[0] = cur->cDC[1] = 1;
-         for (k = 0; k < 4; k++) cur->cAC[0][k] = cur->cAC[1][k] = 1;
+         /* two columns of chroma blocks, ch/4 rows of them */
+         for (k = 0; k < (ch/4)*2; k++) cur->cAC[0][k] = cur->cAC[1][k] = 1;
          for (r = 0; r < 4; r++) for (c2 = 0; c2 < 4; c2++)
          {
             f->nzL[(gy0+r)*gw + gx0+c2] = 16;
@@ -6471,7 +6484,9 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           for(k=0;k<8;k++) e[s422[k]]=dcs[comp][k];
           rh264_chroma_dc_idct422(e);
           for(k=0;k<8;k++){ int32_t v=e[k];
-             v=(int32_t)(((uint32_t)(v*LS))<<per)>>6; cdc[comp][k]=v; }
+             v = (per >= 6) ? (int32_t)((uint32_t)(v*LS) << (per-6))
+                            : (int32_t)((v*LS + (1 << (5-per))) >> (6-per));
+             cdc[comp][k]=v; }
         } else { int per=qpcc[comp]/6,rem=qpcc[comp]%6;
           int LS=f->w4[1+comp][0]*rh264_dequant4_v[rem][0];
           int32_t e[4];
@@ -6885,8 +6900,15 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
            per = qpc/6; rem = qpc%6;
            LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
            for (k = 0; k < nblk; k++)
-              cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
-                    << per) >> (nblk==8?6:5); }
+           {
+              if (nblk==8)
+                 cdc[comp][k] = (per >= 6)
+                    ? (int32_t)((uint32_t)(cdc[comp][k]*LS) << (per-6))
+                    : (int32_t)((cdc[comp][k]*LS + (1 << (5-per))) >> (6-per));
+              else
+                 cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
+                       << per) >> 5;
+           } }
       }
    }
    for (comp = 0; comp < 2; comp++)
