@@ -413,12 +413,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * the address. */
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag)
          sh->first_mb_in_slice*=2;
-      /* 4:2:2 in a pair-scanned picture is refused.  The two are
-       * correct apart and wrong together: the chroma edges 4:2:2 adds
-       * come out filtered differently once the picture is walked in
-       * pairs, and the error feeds the pictures that follow. */
-      if(sps->chroma_format_idc==2&&sps->mb_adaptive_frame_field_flag)
-         return 0;
+
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
        * CABAC ones: the significance maps of a field-coded block are
@@ -3876,8 +3871,8 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    {
       memset(f->nzL, 0, (size_t)gw * f->mbh * 4);
       memset(f->mbt8, 0, (size_t)f->mbw * f->mbh);
-      memset(f->nzC[0], 0, (size_t)cgw * f->mbh * 2);
-      memset(f->nzC[1], 0, (size_t)cgw * f->mbh * 2);
+      memset(f->nzC[0], 0, (size_t)cgw * f->mbh * (f->cmbh/4));
+      memset(f->nzC[1], 0, (size_t)cgw * f->mbh * (f->cmbh/4));
       memset(f->i4mode, 0xff, (size_t)gw * f->mbh * 4);
    }
 
@@ -4620,8 +4615,8 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    {
       memset(f->nzL, 0, (size_t)gw * f->mbh * 4);
       memset(f->mbt8, 0, (size_t)f->mbw * f->mbh);
-      memset(f->nzC[0], 0, (size_t)cgw * f->mbh * 2);
-      memset(f->nzC[1], 0, (size_t)cgw * f->mbh * 2);
+      memset(f->nzC[0], 0, (size_t)cgw * f->mbh * (f->cmbh/4));
+      memset(f->nzC[1], 0, (size_t)cgw * f->mbh * (f->cmbh/4));
       memset(f->i4mode, 0xff, (size_t)gw * f->mbh * 4);
    }
 
@@ -6527,7 +6522,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
               int val=d[yy*f->cstride+xx]+((r[yy*4+xx]+32)>>6);
               d[yy*f->cstride+xx]=(uint8_t)RH264_CLIP(val);} }
-           f->nzC[comp][(mby*2+by)*cgw+(mbx*2+bx)]=cur->cAC[comp][blk];
+           f->nzC[comp][(mby*(f->cmbh/4)+by)*cgw+(mbx*2+bx)]=cur->cAC[comp][blk];
         }
      }
    }
@@ -6931,7 +6926,7 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
               for (k = 0; k < 15; k++) ac[sc[k+1]] = scan[k]; }
          }
          cur->cAC[comp][blk] = nz ? 1 : 0;
-         f->nzC[comp][(mby*2+by)*cgw + mbx*2+bx] = (uint8_t)(nz ? 1 : 0);
+         f->nzC[comp][(mby*(f->cmbh/4)+by)*cgw + mbx*2+bx] = (uint8_t)(nz ? 1 : 0);
          ac[0] = cdc[comp][blk];
          rh264_dequant4x4(ac, rh264_chroma_qp(f->qp,
                comp?f->chroma_qp_offset2:f->chroma_qp_offset), 1,
@@ -6981,8 +6976,8 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    if (sh->first_mb_in_slice == 0)
    {
       memset(f->nzL, 0, (size_t)gw * mbh * 4);
-      memset(f->nzC[0], 0, (size_t)cgw * mbh * 2);
-      memset(f->nzC[1], 0, (size_t)cgw * mbh * 2);
+      memset(f->nzC[0], 0, (size_t)cgw * mbh * (f->cmbh/4));
+      memset(f->nzC[1], 0, (size_t)cgw * mbh * (f->cmbh/4));
       memset(f->i4mode, 0xff, (size_t)gw * mbh * 4);
       memset(f->mbt8, 0, (size_t)mbw * mbh);
    }
@@ -7438,8 +7433,8 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    if (sh->first_mb_in_slice == 0)
    {
       memset(f->nzL, 0, (size_t)gw * mbh * 4);
-      memset(f->nzC[0], 0, (size_t)cgw * mbh * 2);
-      memset(f->nzC[1], 0, (size_t)cgw * mbh * 2);
+      memset(f->nzC[0], 0, (size_t)cgw * mbh * (f->cmbh/4));
+      memset(f->nzC[1], 0, (size_t)cgw * mbh * (f->cmbh/4));
       memset(f->i4mode, 0xff, (size_t)gw * mbh * 4);
       memset(f->mbt8, 0, (size_t)mbw * mbh);
    }
