@@ -5135,10 +5135,15 @@ unsigned menu_event(
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
    static unsigned ok_old                          = 0;
+   static uint8_t switch_old                       = 0;
+   static size_t ok_enum_idx                       = 0;
+   static bool keydown[RARCH_FIRST_CUSTOM_BIND]    = {false};
    static bool navigation_reset_delay              = true;
    static bool hold_initial                        = true;
    static bool hold_reset                          = true;
    unsigned ret                                    = MENU_ACTION_NOOP;
+   uint8_t switch_current                          = 0;
+   uint8_t switch_trigger                          = 0;
    bool set_scroll                                 = false;
    unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
@@ -5207,6 +5212,8 @@ unsigned menu_event(
    if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
    {
       ok_old                                       = ok_current;
+      switch_old                                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                                   | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       return MENU_ACTION_NOOP;
    }
 
@@ -5343,6 +5350,8 @@ unsigned menu_event(
                                         | MENU_INP_PTR_FLG_PRESS_RIGHT);
       menu_input->select_inhibit      = true;
       menu_input->cancel_inhibit      = true;
+      switch_old                      = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                      | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
       return MENU_ACTION_NOOP;
    }
 
@@ -5410,6 +5419,16 @@ unsigned menu_event(
 
    if (set_scroll)
       menu_st->scroll.acceleration  = new_scroll_accel;
+
+   /* Left/Right edge detection
+    * > Must be maintained regardless of the on-screen keyboard
+    *   state, otherwise 'switch_old' freezes for the duration of
+    *   the OSK session and a stale edge is emitted on the first
+    *   frame after it closes, bypassing the ST_BOOL debounce */
+   switch_current                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                    | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   switch_trigger                   = switch_current & ~switch_old;
+   switch_old                       = switch_current;
 
    if (display_kb)
    {
@@ -5521,16 +5540,8 @@ unsigned menu_event(
    }
    else
    {
-      static size_t ok_enum_idx = 0;
-      static uint8_t switch_old = 0;
-      static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
       unsigned onkeyup          =
             input_combo_type_onkeyup_lut[settings->uints.input_menu_toggle_gamepad_combo];
-      uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
-                                | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      uint8_t switch_trigger    = switch_current & ~switch_old;
-
-      switch_old                = switch_current;
 
       /* Always process Select and Start on release */
       onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
