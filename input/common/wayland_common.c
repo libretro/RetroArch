@@ -843,6 +843,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->xdg_toplevel_tag_manager = (struct xdg_toplevel_tag_manager_v1*)
          wl_registry_bind(
             reg, id, &xdg_toplevel_tag_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_tearing_control_manager_v1_interface.name) && found++)
+      wl->tearing_control_manager = (struct wp_tearing_control_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_tearing_control_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
    RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",

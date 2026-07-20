@@ -24,9 +24,9 @@
 #include <string.h>
 #include <psp2/types.h>
 #include <psp2/display.h>
-#include "../include/patches.h"
-#include "../include/hooks.h"
-#include "../include/debug.h"
+#include "patches.h"
+#include "hooks.h"
+#include "debug.h"
 
 static int swap_interval = 1;
 static void *displayBufferData[2];

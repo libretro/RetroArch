@@ -1149,6 +1149,7 @@ static void xinput_joypad_poll(void)
    for (i = 0; i < 4; ++i)
    {
       DWORD status;
+      XINPUT_STATE tmp_xstate;
       bool success, new_connected;
       xinput_joypad_state *state;
        /* On UWP, controllers may become available after initialization.
@@ -1163,9 +1164,22 @@ static void xinput_joypad_poll(void)
 #endif
 
       state         = &g_xinput_states[i];
-      status        = g_XInputGetStateEx(i, &state->xstate);
+      /* Read into a temporary: XInputGetStateEx() writing directly
+       * into the cached state would leave it indeterminate if the
+       * call fails partway. */
+      status        = g_XInputGetStateEx(i, &tmp_xstate);
       success       = (status == ERROR_SUCCESS);
       new_connected = (status != ERROR_DEVICE_NOT_CONNECTED);
+
+      if (success)
+         state->xstate = tmp_xstate;
+      else
+         /* Any status other than ERROR_DEVICE_NOT_CONNECTED leaves
+          * the pad marked connected, so the cached state would keep
+          * reporting the buttons held at the last good read - see
+          * the matching comment in xinput_joypad.c */
+         memset(&state->xstate, 0, sizeof(state->xstate));
+
       if (new_connected != state->connected)
       {
          state->connected = new_connected;

@@ -23,10 +23,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <psp2/types.h>
-#include "../include/shacccgpatch.h"
-#include "../include/hooks.h"
-#include "../include/patches.h"
-#include "../include/debug.h"
+#include "shacccgpatch.h"
+#include "hooks.h"
+#include "patches.h"
+#include "debug.h"
 
 tai_hook_ref_t hookRef[NUM_HOOKS];
 SceUID hook[NUM_HOOKS];

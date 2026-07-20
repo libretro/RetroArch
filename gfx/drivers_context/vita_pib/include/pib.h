@@ -49,9 +49,7 @@ typedef enum _PibError {
 typedef enum _PibOptions {
     PIB_NONE = 0,               //!< Defaults
     PIB_SHACCCG = 1,            //!< Enable Runtime CG Shader Compiler
-    PIB_NOSTDLIB = 2,           //!< Enable support for -nostdlib usage
     PIB_GET_PROC_ADDR_CORE = 4, //!< Enable EGL 1.5-like support for getting core GL functions with eglGetProcAddress
-    PIB_SYSTEM_MODE = 8,        //!< Enable use for System Applications
     PIB_ENABLE_MSAA = 16        //!< Enable forced MSAA x4 Support
 } PibOptions;
 

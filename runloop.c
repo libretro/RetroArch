@@ -6370,6 +6370,16 @@ static enum runloop_state_enum runloop_check_state(
 
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
+
+      /* 'trigger_input' is fully derived at this point, so record
+       * the input state now rather than at the end of the block.
+       * Several pending-action paths below (config replace, quick
+       * menu, startup page, close content) return early, which
+       * would otherwise leave 'old_input' holding a stale baseline
+       * and cause a still-held button to be re-reported as a fresh
+       * press on the following frame */
+      old_input                 = current_bits;
+
       action                    = (enum menu_action)menu_event(
             settings,
             &current_bits, &trigger_input, display_kb);
@@ -6776,7 +6786,8 @@ static enum runloop_state_enum runloop_check_state(
             audio_driver_menu_sample();
       }
 
-      old_input                 = current_bits;
+      /* Note: 'old_input' is recorded earlier, immediately after
+       * 'trigger_input' is derived */
       old_action                = action;
 
       /* Handle dialog confirmed event */

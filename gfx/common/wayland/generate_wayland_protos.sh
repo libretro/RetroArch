@@ -82,6 +82,7 @@ generate_source 'staging/cursor-shape' 'cursor-shape-v1'
 generate_source 'unstable/tablet' 'tablet-unstable-v2'
 generate_source 'staging/content-type' 'content-type-v1'
 generate_source 'staging/single-pixel-buffer' 'single-pixel-buffer-v1'
+generate_source 'staging/tearing-control' 'tearing-control-v1'
 generate_source 'staging/xdg-toplevel-icon' 'xdg-toplevel-icon-v1'
 generate_source 'staging/xdg-toplevel-tag' 'xdg-toplevel-tag-v1'
 

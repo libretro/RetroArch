@@ -2514,7 +2514,11 @@ static int16_t input_state_internal(
                            port_result |= (1 << bit);
                         else if (id == (unsigned)bit)
                         {
-                           port_result = bit;
+                           /* Digital results are OR'd together by the
+                            * caller, so this must be a plain 1 - not
+                            * the bind index, which would leave stray
+                            * high bits in the returned value */
+                           port_result = 1;
                            result      = 1;
                         }
                      }

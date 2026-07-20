@@ -213,7 +213,12 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       * one.  A frame_width or frame_height that came out negative was
       * cast to size_t by the frame allocator. */
      if(cl>16384u||cr>16384u||ct>16384u||cb>16384u) return 0;
-     { int sw=2, sh=2*(2-s->frame_mbs_only_flag);
+     /* The crop offsets count chroma samples, so the step they scale by
+      * is how many luma samples a chroma one spans (7.4.2.1.1).  That
+      * is two across for both 4:2:0 and 4:2:2, but two DOWN only for
+      * 4:2:0 - 4:2:2 keeps the luma height, so its vertical step is
+      * one.  A field-capable sequence doubles the vertical step again. */
+     { int sw=2, sh=(s->chroma_format_idc==1?2:1)*(2-s->frame_mbs_only_flag);
        int cw=s->pic_width_in_mbs*16, ch=mbh*16;
        int fw=cw-sw*(int)(cl+cr), fh=ch-sh*(int)(ct+cb);
        if(fw<16||fh<16||fw>cw||fh>ch) return 0;
@@ -408,6 +413,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * the address. */
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag)
          sh->first_mb_in_slice*=2;
+      /* 4:2:2 in a pair-scanned picture is refused.  The two are
+       * correct apart and wrong together: the chroma edges 4:2:2 adds
+       * come out filtered differently once the picture is walked in
+       * pairs, and the error feeds the pictures that follow. */
+      if(sps->chroma_format_idc==2&&sps->mb_adaptive_frame_field_flag)
+         return 0;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
        * CABAC ones: the significance maps of a field-coded block are
@@ -1504,12 +1515,21 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          int qpc=rh264_chroma_qp(f->qp,
                comp?f->chroma_qp_offset2:f->chroma_qp_offset);
          int per, rem, LS;
-         /* the 4:2:2 DC uses qP + 3 (8.5.11.2) */
+         /* the 4:2:2 DC uses qP + 3, and scales it two different ways
+          * either side of qP 36 - a shift up above it, a ROUNDED shift
+          * down below, which is where most streams sit (8.5.11.2) */
          if (nblk==8) qpc += 3;
          per=qpc/6; rem=qpc%6;
          LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
          for (k=0;k<nblk;k++)
-            cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>(nblk==8?6:5);
+         {
+            if (nblk==8)
+               cdc[comp][k] = (per >= 6)
+                  ? (int32_t)((uint32_t)(cdc[comp][k]*LS) << (per-6))
+                  : (int32_t)((cdc[comp][k]*LS + (1 << (5-per))) >> (6-per));
+            else
+               cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>5;
+         }
       }
    }
    /* chroma AC blocks (only if cbp_chroma==2) + reconstruct */
@@ -1528,9 +1548,13 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          {
             /* chroma AC nC from left/top chroma-block nonzero counts */
             int nA=0,nB=0,cnt=0,nC;
-            int cmbw=cgw>>1;
-            int hA=cgx>0 && ((cgy>>1)*cmbw+((cgx-1)>>1) >= slice_first);
-            int hB=cgy>0 && (((cgy-1)>>1)*cmbw+(cgx>>1) >= slice_first);
+            /* the slice test needs the neighbour's macroblock ADDRESS,
+             * so the chroma block row has to be divided by the block
+             * rows a macroblock holds - two for 4:2:0, four for 4:2:2,
+             * which keeps the luma height */
+            int cmbw=cgw>>1, csh=(cbh==4)?2:1;
+            int hA=cgx>0 && ((cgy>>csh)*cmbw+((cgx-1)>>1) >= slice_first);
+            int hB=cgy>0 && (((cgy-1)>>csh)*cmbw+(cgx>>1) >= slice_first);
             if (hA){ nA=f->nzC[comp][cgy*cgw+(cgx-1)]; cnt++; }
             if (hB){ nB=f->nzC[comp][(cgy-1)*cgw+cgx]; cnt++; }
             nC=(cnt==2)?((nA+nB+1)>>1):(cnt==1?(hA?nA:nB):0);
@@ -2341,7 +2365,12 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
       {
          int y=mby*16+edge*4;
          int bS,qpavg,a,be,t,idxA,idxB;
-         if(mbt8 && (edge&1)) continue;   /* 8x8 transform: no 4x4 edges */
+         /* The 8x8 transform removes the LUMA edges inside each 8x8
+          * block, not the chroma ones.  In 4:2:0 chroma has no edge
+          * there either, so skipping the whole edge is the same thing;
+          * in 4:2:2, which keeps every chroma row, it is not. */
+         int do_luma = !(mbt8 && (edge&1));
+         if(!do_luma && f->cmbh!=16) continue;
          if(edge==0){ if(mby==0) continue;
             if(sidc[sl]==2 && f->mbslice && f->mbslice[mbi-f->mbw]!=sl)
                continue;   /* no filtering across the slice boundary */
@@ -2354,8 +2383,9 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
          idxA=qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
          idxB=qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
          a=rh264_alpha[idxA]; be=rh264_beta[idxB]; t=rh264_tc0[bS==4?2:bS-1][idxA];
-         rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
-               1, 16, bS, a, be, t);
+         if(do_luma)
+            rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
+                  1, 16, bS, a, be, t);
          /* chroma has half the luma width but, in 4:2:2, its full
           * height - so every horizontal luma edge has a chroma edge
           * to match, where 4:2:0 has one for every second. */
@@ -2607,14 +2637,17 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
           * samples. Neighbour bookkeeping matches the CABAC path: DC
           * prediction modes (8.3.1.1) and coefficient counts of 16
           * (9.2.1); QP is unchanged. */
-         int r,c2;
+         /* a macroblock carries 256 luma samples and, per chroma
+          * component, eight columns by as many rows as the format
+          * gives it - eight for 4:2:0, sixteen for 4:2:2 */
+         int r,c2,ch=f->cmbh;
          b->bitpos=(b->bitpos+7)&~(size_t)7;
-         if((b->size*8-b->bitpos)>>3 < 256+64+64) return -1;
+         if((b->size*8-b->bitpos)>>3 < 256+(size_t)ch*8*2) return -1;
          for(r=0;r<16;r++)for(c2=0;c2<16;c2++)
             y[r*f->ystride+c2]=(uint8_t)rh264_un(b,8);
-         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+         for(r=0;r<ch;r++)for(c2=0;c2<8;c2++)
             u[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
-         for(r=0;r<8;r++)for(c2=0;c2<8;c2++)
+         for(r=0;r<ch;r++)for(c2=0;c2<8;c2++)
             v[r*f->cstride+c2]=(uint8_t)rh264_un(b,8);
          for(r=0;r<4;r++)for(c2=0;c2<4;c2++){
             f->nzL[(mby*4+r)*gw+mbx*4+c2]=16;
@@ -3509,8 +3542,12 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
        * chroma half a chroma line away, because the two fields'
        * chroma sampling grids are offset (8.4.1.4).  The vector is in
        * eighths of a chroma sample, so the correction is 2. */
+      /* The offset exists because 4:2:0 samples chroma at half the
+       * vertical rate, so the two fields' chroma grids sit half a
+       * chroma line apart.  4:2:2 keeps every row, its fields' grids
+       * line up, and no correction applies. */
       int cmvy = c422 ? mvy * 2 : mvy;
-      if (f->field && ref->field && f->field != ref->field)
+      if (!c422 && f->field && ref->field && f->field != ref->field)
          cmvy += (f->field == 1) ? -2 : 2;
       rh264_mc_chroma(dU, f->cstride, ref->U, ref->cstride,
             rw >> 1, ch, cox, coy, cbw, cbh, mvx, cmvy);
@@ -4131,13 +4168,13 @@ static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
 {
    int rw = ref->mbw * 16, rh = ref->mbh * 16;
    int cmvy = mvy;
-   if (curfield && ref->field && curfield != ref->field)
+   if (!c422 && curfield && ref->field && curfield != ref->field)
       cmvy += (curfield == 1) ? -2 : 2;
    rh264_mc_luma(ty, 16, ref->Y, ref->ystride, rw, rh, ox, oy, bw, bh,
          mvx, mvy);
    /* 4:2:2 keeps the luma height: the chroma block is as tall as the
     * luma one and the vector spans twice the eighths vertically. */
-   if (c422) cmvy = cmvy - mvy + mvy * 2;
+   if (c422) cmvy = mvy * 2;   /* and no parity offset: see above */
    rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1,
          c422 ? rh : (rh >> 1), ox >> 1, c422 ? oy : (oy >> 1),
          bw >> 1, c422 ? bh : (bh >> 1), mvx, cmvy);
@@ -5047,7 +5084,10 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
          int mbedge = (edge == 0);
          int qpavg, qpp;
          int hbS[4];
-         if (mbt8 && (edge & 1)) continue;  /* 8x8 transform: no 4x4 edges */
+         /* the 8x8 transform removes the LUMA edges inside each block,
+          * not the chroma ones - which 4:2:2 has at every luma edge */
+         int do_luma = !(mbt8 && (edge & 1));
+         if (!do_luma && f->cmbh != 16) continue;
          if (mbedge && mby == 0) continue;
          if (mbedge && sidc[sl] == 2 && f->mbslice
                && f->mbslice[mbi-f->mbw] != sl)
@@ -5074,7 +5114,7 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                st[seg] = hbS[seg]
                      ? rh264_tc0[hbS[seg]==4?2:hbS[seg]-1][idxA] : 0;
             }
-            for (seg = 0; seg < 4; )
+            for (seg = 0; do_luma && seg < 4; )
             {
                if (!hbS[seg]) { seg++; continue; }
                if (seg + 1 < 4 && hbS[seg+1]
@@ -6113,14 +6153,14 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           * engine has fetched: drop the current byte's remaining bits. The
           * engine restarts behind the samples with its context variables
           * kept (9.3.1.2). */
-         int r, c2, k;
+         int r, c2, k, ch = f->cmbh;
          cb->bitcnt = 0;
-         if (cb->end - cb->buf < 256 + 64 + 64) return -1;
+         if (cb->end - cb->buf < 256 + ch*8*2) return -1;
          for (r = 0; r < 16; r++) for (c2 = 0; c2 < 16; c2++)
             Y[r*f->ystride + c2] = *cb->buf++;
-         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+         for (r = 0; r < ch; r++) for (c2 = 0; c2 < 8; c2++)
             U8[r*f->cstride + c2] = *cb->buf++;
-         for (r = 0; r < 8; r++) for (c2 = 0; c2 < 8; c2++)
+         for (r = 0; r < ch; r++) for (c2 = 0; c2 < 8; c2++)
             V8[r*f->cstride + c2] = *cb->buf++;
          rh264_cabac_init_engine(cb, cb->buf, cb->end);
          /* neighbour state: mb_type counts as not-I_NxN (9.3.3.1.1.3),
@@ -6131,7 +6171,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
          cur->cbpLuma = 15; cur->cbpChroma = 2;   /* inferred, 7.4.5 */
          for (k = 0; k < 16; k++) cur->luma[k] = 1;
          cur->cDC[0] = cur->cDC[1] = 1;
-         for (k = 0; k < 4; k++) cur->cAC[0][k] = cur->cAC[1][k] = 1;
+         /* two columns of chroma blocks, ch/4 rows of them */
+         for (k = 0; k < (ch/4)*2; k++) cur->cAC[0][k] = cur->cAC[1][k] = 1;
          for (r = 0; r < 4; r++) for (c2 = 0; c2 < 4; c2++)
          {
             f->nzL[(gy0+r)*gw + gx0+c2] = 16;
@@ -6443,7 +6484,9 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           for(k=0;k<8;k++) e[s422[k]]=dcs[comp][k];
           rh264_chroma_dc_idct422(e);
           for(k=0;k<8;k++){ int32_t v=e[k];
-             v=(int32_t)(((uint32_t)(v*LS))<<per)>>6; cdc[comp][k]=v; }
+             v = (per >= 6) ? (int32_t)((uint32_t)(v*LS) << (per-6))
+                            : (int32_t)((v*LS + (1 << (5-per))) >> (6-per));
+             cdc[comp][k]=v; }
         } else { int per=qpcc[comp]/6,rem=qpcc[comp]%6;
           int LS=f->w4[1+comp][0]*rh264_dequant4_v[rem][0];
           int32_t e[4];
@@ -6857,8 +6900,15 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
            per = qpc/6; rem = qpc%6;
            LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
            for (k = 0; k < nblk; k++)
-              cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
-                    << per) >> (nblk==8?6:5); }
+           {
+              if (nblk==8)
+                 cdc[comp][k] = (per >= 6)
+                    ? (int32_t)((uint32_t)(cdc[comp][k]*LS) << (per-6))
+                    : (int32_t)((cdc[comp][k]*LS + (1 << (5-per))) >> (6-per));
+              else
+                 cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
+                       << per) >> 5;
+           } }
       }
    }
    for (comp = 0; comp < 2; comp++)

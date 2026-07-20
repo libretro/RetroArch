@@ -570,6 +570,17 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
    if (num_buttons > 0)
       memset(pad->buttons, 0, num_buttons * sizeof(pad->buttons[0]));
 
+   /* Hats are cleared for the same reason as buttons: a hat whose
+    * usage is absent from this report must read as centred rather
+    * than retaining the direction from the previous one. Zero is
+    * the centred bitmask here (see winraw_joypad_hat_value_to_bitmask),
+    * not a direction. Axes are deliberately not cleared - a missing
+    * axis reads as its neutral scaled value only if it was centred,
+    * and zeroing them would fight sticks that legitimately rest
+    * off-centre. */
+   if (pad->num_hats > 0)
+      memset(pad->hats, 0, pad->num_hats * sizeof(pad->hats[0]));
+
    usage_count = (ULONG)num_buttons;
    if (usage_count > RAWINPUT_MAX_BUTTONS)
       usage_count = RAWINPUT_MAX_BUTTONS;
@@ -606,7 +617,27 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
          USAGE usage = pad->val_caps[i].IsRange
                      ? pad->val_caps[i].Range.UsageMin
                      : pad->val_caps[i].NotRange.Usage;
+         bool  is_hat  = (usage == HID_USAGE_GENERIC_HATSWITCH);
+         bool  is_axis = !is_hat && winraw_joypad_is_axis_usage(&pad->val_caps[i]);
+         unsigned slot_idx;
 
+         /* Assign the destination index from the position of this
+          * cap in val_caps[], matching how num_hats/num_axes were
+          * counted at enumeration time. Deriving it from a running
+          * counter that only advances on a successful read would
+          * shift every subsequent value by one whenever a usage is
+          * missing from the current report. */
+         if (is_hat)
+            slot_idx = hat_idx++;
+         else if (is_axis)
+            slot_idx = axis_idx++;
+         else
+            continue; /* unknown/vendor value cap */
+
+         /* HidP_GetUsageValue() returns HIDP_STATUS_INCOMPATIBLE_REPORT_ID
+          * when the arriving report does not carry this usage, which is
+          * routine for devices that split their state across several
+          * report IDs. Leave the (already cleared) entry alone. */
          if (HidP_GetUsageValue(HidP_Input,
                   pad->val_caps[i].UsagePage,
                   0, usage,
@@ -614,32 +645,27 @@ static void winraw_joypad_parse_hid_report(winraw_joypad_joypad_data_t *pad,
                   (PCHAR)raw_data, raw_data_size) != HIDP_STATUS_SUCCESS)
             continue;
 
-         if (usage == HID_USAGE_GENERIC_HATSWITCH)
+         if (is_hat)
          {
-            if (hat_idx < max_hats)
-            {
-               pad->hats[hat_idx] = winraw_joypad_hat_value_to_bitmask(
+            if (slot_idx < max_hats)
+               pad->hats[slot_idx] = winraw_joypad_hat_value_to_bitmask(
                      (LONG)value,
                      pad->val_caps[i].LogicalMin,
                      pad->val_caps[i].LogicalMax);
-               hat_idx++;
-            }
          }
-         else if (winraw_joypad_is_axis_usage(&pad->val_caps[i]))
+         else
          {
-            if (axis_idx < max_axes)
+            if (slot_idx < max_axes)
             {
                LONG signed_value = (pad->val_caps[i].LogicalMin < 0)
                   ? winraw_joypad_sign_extend(value, pad->val_caps[i].BitSize)
                   : (LONG)value;
-               pad->axes[axis_idx] = winraw_joypad_scale_axis(
+               pad->axes[slot_idx] = winraw_joypad_scale_axis(
                      signed_value,
                      pad->val_caps[i].LogicalMin,
                      pad->val_caps[i].LogicalMax);
-               axis_idx++;
             }
          }
-         /* else: unknown/vendor value cap — skip */
       }
    }
 }

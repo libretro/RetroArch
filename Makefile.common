@@ -1322,7 +1322,8 @@ ifeq ($(HAVE_WAYLAND), 1)
         gfx/common/wayland/cursor-shape-v1.o \
         gfx/common/wayland/tablet-unstable-v2.o \
         gfx/common/wayland/content-type-v1.o \
-        gfx/common/wayland/single-pixel-buffer-v1.o
+        gfx/common/wayland/single-pixel-buffer-v1.o \
+        gfx/common/wayland/tearing-control-v1.o
 
    ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/wayland_vk_ctx.o
@@ -2877,8 +2878,8 @@ endif
 
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
-   INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
-   SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
+   INCLUDE_DIRS += -Igfx/drivers_context/vita_pib/include
+   SOURCES := gfx/drivers_context/vita_pib/src
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
