@@ -1089,7 +1089,10 @@ typedef struct {
    int chroma_qp_offset2;  /* Cr (second_chroma_qp_index_offset) */
    uint8_t *i4mode;   /* per-4x4-block intra mode, raster mbw*4 x mbh*4 */
    uint8_t *nzL;      /* per-4x4 luma nonzero count, same grid          */
-   uint8_t *nzC[2];   /* per-4x4 chroma nonzero (mbw*2 x mbh*2)         */
+   /* per-4x4 chroma nonzero counts.  One row per chroma BLOCK row, so
+    * mbw*2 wide and mbh*(cmbh/4) tall - twice as tall in 4:2:2, which
+    * keeps the luma height. */
+   uint8_t *nzC[2];
    uint8_t *mbqp;     /* per-MB luma QP (mbw x mbh)                     */
    uint8_t *mbt8;     /* per-MB 8x8-transform flag (mbw x mbh)          */
    uint8_t *mbslice;  /* per-MB slice index (mbw x mbh), for deblocking */
