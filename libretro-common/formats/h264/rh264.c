@@ -1539,9 +1539,13 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          {
             /* chroma AC nC from left/top chroma-block nonzero counts */
             int nA=0,nB=0,cnt=0,nC;
-            int cmbw=cgw>>1;
-            int hA=cgx>0 && ((cgy>>1)*cmbw+((cgx-1)>>1) >= slice_first);
-            int hB=cgy>0 && (((cgy-1)>>1)*cmbw+(cgx>>1) >= slice_first);
+            /* the slice test needs the neighbour's macroblock ADDRESS,
+             * so the chroma block row has to be divided by the block
+             * rows a macroblock holds - two for 4:2:0, four for 4:2:2,
+             * which keeps the luma height */
+            int cmbw=cgw>>1, csh=(cbh==4)?2:1;
+            int hA=cgx>0 && ((cgy>>csh)*cmbw+((cgx-1)>>1) >= slice_first);
+            int hB=cgy>0 && (((cgy-1)>>csh)*cmbw+(cgx>>1) >= slice_first);
             if (hA){ nA=f->nzC[comp][cgy*cgw+(cgx-1)]; cnt++; }
             if (hB){ nB=f->nzC[comp][(cgy-1)*cgw+cgx]; cnt++; }
             nC=(cnt==2)?((nA+nB+1)>>1):(cnt==1?(hA?nA:nB):0);
