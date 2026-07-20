@@ -394,8 +394,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
     * and inter prediction needs chroma motion compensation that does
     * not halve the vertical vector.  Refusing here keeps a wrongly
     * reconstructed picture off the screen. */
-   if(sps->chroma_format_idc==2&&pps->entropy_coding_mode_flag)
-      return 0;
+
    sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
    sh->frame_num_val=sh->frame_num;
@@ -1425,11 +1424,6 @@ static int rh264_cavlc_luma8x8(rh264_bits *b, rh264_frame *f,
 }
 
 
-
-static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,
-      int have_up,int have_left){
-   rh264_intra_chroma_h(dst,stride,mode,have_up,have_left,8);
-}
 
 /* Chroma QP derivation (8.5.8): map qPI -> QPc. */
 static int rh264_chroma_qp(int qpy, int offset)
@@ -5569,6 +5563,9 @@ typedef struct {
     * offsets and, for 8x8 blocks, their own position-to-context map
     * (Tables 9-11 and 9-43) */
    int      field;
+   /* 4:2:2 chroma: the DC block holds eight coefficients and its
+    * significance map counts them in pairs (NumC8x8 = 2, 9.3.3.1.3) */
+   int      c422;
 } rh264_cabac;
 
 static int rh264_cb_bit(rh264_cabac *c)
@@ -5940,13 +5937,18 @@ static int rh264_cabac_residual(rh264_cabac *c, int cat, int cbf_ctxinc,
    {
       int sinc = (cat==5) ? (c->field ? rh264_sig8map_fld[i]
                                       : rh264_sig8map[i])
-                          : (cat==3 && i>2) ? 2 : i;
+                          : (cat==3)
+                            ? (c->c422 ? ((i>>1)>2?2:(i>>1)) : (i>2?2:i))
+                            : i;
       int sctx = (cat==5) ? (c->field ? RH264_CTX_SIG8_F : RH264_CTX_SIG8) + sinc
                           : (c->field ? RH264_CTX_SIG_F : CTX_SIG)
                             + rh264_sig_catoff[cat] + sinc;
       if (rh264_cabac_decode(c, sctx))
       {
-         int linc = (cat==5) ? rh264_last8map[i] : (cat==3 && i>2) ? 2 : i;
+         int linc = (cat==5) ? rh264_last8map[i]
+                  : (cat==3)
+                    ? (c->c422 ? ((i>>1)>2?2:(i>>1)) : (i>2?2:i))
+                    : i;
          int lctx = (cat==5) ? (c->field ? RH264_CTX_LAST8_F
                                          : RH264_CTX_LAST8) + linc
                              : (c->field ? RH264_CTX_LAST_F : CTX_LAST)
@@ -6030,18 +6032,22 @@ typedef struct {
    int lumaDC;     /* I16 luma-DC cbf                             */
    int luma[16];   /* per-4x4 luma cbf (raster in-MB)             */
    int cDC[2];     /* chroma DC cbf [cb,cr]                       */
-   int cAC[2][4];  /* chroma AC cbf [cb,cr][blk]                  */
+   int cAC[2][8];  /* chroma AC cbf [cb,cr][blk]; 8 for 4:2:2     */
    int t8;         /* luma_transform_size_8x8_flag                */
 } rh264_cbf;
 
 /* chroma AC 4x4 block idx 0..3 (2x2), comp 0/1 */
-static int rh264_cbf_cac_ctx(int comp,int idx,rh264_cbf *cur,rh264_cbf *L,rh264_cbf *U)
+/* nblk is 4 for 4:2:0 (a 2x2 arrangement) or 8 for 4:2:2 (2x4), so the
+ * neighbour above a top-row block is the corresponding one in the
+ * bottom row of the macroblock above. */
+static int rh264_cbf_cac_ctx_n(int comp,int idx,rh264_cbf *cur,
+      rh264_cbf *L,rh264_cbf *U,int nblk)
 {
    int bx=idx&1, by=idx>>1, a, b;
    if (bx>0) a = cur->cAC[comp][idx-1];
    else      a = L->avail ? L->cAC[comp][by*2+1] : 1;
    if (by>0) b = cur->cAC[comp][idx-2];
-   else      b = U->avail ? U->cAC[comp][2+bx] : 1;
+   else      b = U->avail ? U->cAC[comp][nblk-2+bx] : 1;
    return a + 2*b;
 }
 
@@ -6400,24 +6406,35 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
 
    /* chroma prediction + residual (4:2:0). Bitstream order (7.3.5.3.1):
     * both chroma DC blocks first, then all chroma AC blocks. */
-   rh264_intra_chroma(U8,f->cstride,chroma_mode,have_up,have_left);
-   rh264_intra_chroma(V8,f->cstride,chroma_mode,have_up,have_left);
+   rh264_intra_chroma_h(U8,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
+   rh264_intra_chroma_h(V8,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
    { int comp, blk, k;
-     int32_t dcs[2][4], cdc[2][4], cac[2][4][16];
+     int32_t dcs[2][8], cdc[2][8], cac[2][8][16];
+     int nblk = (f->cmbh == 16) ? 8 : 4;
      int qpcc[2];
      qpcc[0]=rh264_chroma_qp(f->qp,f->chroma_qp_offset);
      qpcc[1]=rh264_chroma_qp(f->qp,f->chroma_qp_offset2);
      /* chroma DC for both components */
      for (comp=0; comp<2; comp++) {
-        for(k=0;k<4;k++) dcs[comp][k]=0;
+        for(k=0;k<nblk;k++) dcs[comp][k]=0;
         if (cbp_chroma) {
            int a = have_left ? (L->avail? L->cDC[comp]:1):1;
            int b = have_up   ? (U->avail? U->cDC[comp]:1):1;
            int inc = a + 2*b;
-           int ndc = rh264_cabac_residual(cb, 3, inc, 4, dcs[comp]);
+           int ndc = rh264_cabac_residual(cb, 3, inc, nblk, dcs[comp]);
            cur->cDC[comp] = ndc ? 1 : 0;
         }
-        { int per=qpcc[comp]/6,rem=qpcc[comp]%6;
+        if (nblk==8) {
+          /* 4:2:2: the eight coefficients arrive in their own scan
+           * order, transform as a 2x4 and quantise at qP+3 */
+          static const uint8_t s422[8]={0,2,1,4,6,3,5,7};
+          int32_t e[8]; int q=qpcc[comp]+3, per=q/6, rem=q%6;
+          int LS=f->w4[1+comp][0]*rh264_dequant4_v[rem][0];
+          for(k=0;k<8;k++) e[s422[k]]=dcs[comp][k];
+          rh264_chroma_dc_idct422(e);
+          for(k=0;k<8;k++){ int32_t v=e[k];
+             v=(int32_t)(((uint32_t)(v*LS))<<per)>>6; cdc[comp][k]=v; }
+        } else { int per=qpcc[comp]/6,rem=qpcc[comp]%6;
           int LS=f->w4[1+comp][0]*rh264_dequant4_v[rem][0];
           int32_t e[4];
           e[0]=dcs[comp][0]+dcs[comp][1]+dcs[comp][2]+dcs[comp][3];
@@ -6430,11 +6447,11 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
      }
      /* chroma AC for both components */
      for (comp=0; comp<2; comp++)
-        for (blk=0; blk<4; blk++) {
+        for (blk=0; blk<nblk; blk++) {
            int bx=blk&1, by=blk>>1;
            for(k=0;k<16;k++) cac[comp][blk][k]=0;
            if (cbp_chroma==2) {
-              int inc = rh264_cbf_cac_ctx(comp,blk,cur,L,U);
+              int inc = rh264_cbf_cac_ctx_n(comp,blk,cur,L,U,nblk);
               int32_t scan[16]; int nz;
               nz = rh264_cabac_residual(cb, 4, inc, 15, scan);
               { const uint8_t *sc = RH264_SCAN4(f);
@@ -6446,7 +6463,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
      /* reconstruct both components */
      for (comp=0; comp<2; comp++) {
         uint8_t *P = comp? V8:U8;
-        for (blk=0; blk<4; blk++) {
+        for (blk=0; blk<nblk; blk++) {
            int bx=blk&1, by=blk>>1;
            uint8_t *d=P+(by*4)*f->cstride+bx*4;
            int32_t q[16],r[16];
@@ -6495,6 +6512,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
    cb.field = f->field;
+   cb.c422 = (f->cmbh == 16);
    rh264_cabac_init_contexts(&cb, sh->slice_qp, -1);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -6723,13 +6741,13 @@ static int rh264_cabac_pcbf_cdc_ctx(int comp, rh264_cbf *L, rh264_cbf *U,
 }
 
 static int rh264_cabac_pcbf_cac_ctx(int comp, int idx, rh264_cbf *cur,
-      rh264_cbf *L, rh264_cbf *U, int have_left, int have_up)
+      rh264_cbf *L, rh264_cbf *U, int have_left, int have_up, int nblk)
 {
    int bx = idx & 1, by = idx >> 1, a, b;
    if (bx > 0) a = cur->cAC[comp][idx-1];
    else        a = (have_left && L->avail) ? L->cAC[comp][by*2+1] : 0;
    if (by > 0) b = cur->cAC[comp][idx-2];
-   else        b = (have_up && U->avail) ? U->cAC[comp][2+bx] : 0;
+   else        b = (have_up && U->avail) ? U->cAC[comp][nblk-2+bx] : 0;
    return a + 2*b;
 }
 
@@ -6743,7 +6761,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
    int gw = f->mbw*4, cgw = f->mbw*2, k, bi, comp;
    uint8_t *Y = f->Y + (mby*16)*f->ystride + mbx*16;
    uint8_t *planes[2];
-   int32_t cdc[2][4];
+   int32_t cdc[2][8];
+   int nblk = (f->cmbh == 16) ? 8 : 4;
    planes[0] = f->U + (mby*f->cmbh)*f->cstride + mbx*8;
    planes[1] = f->V + (mby*f->cmbh)*f->cstride + mbx*8;
 
@@ -6807,31 +6826,36 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
       f->nzL[(mby*4+by)*gw + mbx*4+bx] = (uint8_t)(nz ? 1 : 0);
    }
 
-   for (comp = 0; comp < 2; comp++) for (k = 0; k < 4; k++) cdc[comp][k] = 0;
+   for (comp = 0; comp < 2; comp++) for (k = 0; k < nblk; k++) cdc[comp][k] = 0;
    if (cbp_chroma)
    {
       for (comp = 0; comp < 2; comp++)
       {
-         int32_t scan[4];
+         static const uint8_t s422[8]={0,2,1,4,6,3,5,7};
+         int32_t scan[8];
          int inc = rh264_cabac_pcbf_cdc_ctx(comp, L, U, have_left, have_up);
-         int n = rh264_cabac_residual(cb, 3, inc, 4, scan);
-         for (k = 0; k < 4; k++) cdc[comp][k] = scan[k];
+         int n = rh264_cabac_residual(cb, 3, inc, nblk, scan);
+         if (nblk==8) for (k=0;k<8;k++) cdc[comp][s422[k]] = scan[k];
+         else         for (k=0;k<4;k++) cdc[comp][k] = scan[k];
          cur->cDC[comp] = n ? 1 : 0;
-         rh264_chroma_dc_idct(cdc[comp]);
+         if (nblk==8) rh264_chroma_dc_idct422(cdc[comp]);
+         else         rh264_chroma_dc_idct(cdc[comp]);
          { int qpc = rh264_chroma_qp(f->qp,
                  comp?f->chroma_qp_offset2:f->chroma_qp_offset);
-           int per = qpc/6, rem = qpc%6;
-           int LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
-           for (k = 0; k < 4; k++)
+           int per, rem, LS;
+           if (nblk==8) qpc += 3;
+           per = qpc/6; rem = qpc%6;
+           LS = f->w4[4+comp][0]*rh264_dequant4_v[rem][0];
+           for (k = 0; k < nblk; k++)
               cdc[comp][k] = (int32_t)(((uint32_t)(cdc[comp][k]*LS))
-                    << per) >> 5; }
+                    << per) >> (nblk==8?6:5); }
       }
    }
    for (comp = 0; comp < 2; comp++)
    {
       uint8_t *p = planes[comp];
       int blk;
-      for (blk = 0; blk < 4; blk++)
+      for (blk = 0; blk < nblk; blk++)
       {
          int bx = blk & 1, by = blk >> 1;
          int32_t ac[16], r[16];
@@ -6841,7 +6865,7 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
          {
             int32_t scan[16];
             int inc = rh264_cabac_pcbf_cac_ctx(comp, blk, cur, L, U,
-                  have_left, have_up);
+                  have_left, have_up, nblk);
             nz = rh264_cabac_residual(cb, 4, inc, 15, scan);
             { const uint8_t *sc = RH264_SCAN4(f);
               for (k = 0; k < 15; k++) ac[sc[k+1]] = scan[k]; }
@@ -6881,6 +6905,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
    cb.field = f->field;
+   cb.c422 = (f->cmbh == 16);
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
@@ -7337,6 +7362,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    bytepos = (b->bitpos + 7) >> 3;
    rh264_cabac_init_engine(&cb, b->buf + bytepos, b->buf + b->size);
    cb.field = f->field;
+   cb.c422 = (f->cmbh == 16);
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
