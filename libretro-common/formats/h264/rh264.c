@@ -420,9 +420,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
    /* Temporal direct prediction scales motion by picture order count
     * distances that are derived differently for fields; only the
     * spatial mode is handled for field pictures. */
-   if(sh->field_pic_flag&&sh->slice_type==RH264_SLICE_B
-         &&!sh->direct_spatial_mv_pred_flag)
-      return 0;
+
    if(sh->slice_type==RH264_SLICE_P||sh->slice_type==RH264_SLICE_SP
          ||sh->slice_type==RH264_SLICE_B){
       /* num_ref_idx_active_override_flag + ref_pic_list_modification (7.3.3). */
@@ -8547,10 +8545,15 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
             if (l0[i] == &v->dpb[j])
             { picid[i] = (signed char)j; l0poc[i] = v->dpb_poc[j]; break; }
          /* a field view aliases a stored frame, so it never matches a
-          * buffer slot above; take the identity recorded with it */
+          * buffer slot above; take the identity AND the order count
+          * recorded with it.  The count is what a later B picture's
+          * temporal direct prediction matches its colocated block's
+          * reference against, so leaving it zero makes that lookup
+          * fail. */
          for (j = 0; j < 68; j++)
             if (l0[i] == &v->fieldview[j])
-            { picid[i] = v->fieldview_id[j]; break; }
+            { picid[i] = v->fieldview_id[j];
+              l0poc[i] = v->fieldview[j].poc; break; }
       }
       (void)lpn;
       if (v->pps.entropy_coding_mode_flag)
