@@ -413,6 +413,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * the address. */
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag)
          sh->first_mb_in_slice*=2;
+      /* 4:2:2 in a pair-scanned picture is refused.  The two are
+       * correct apart and wrong together: the chroma edges 4:2:2 adds
+       * come out filtered differently once the picture is walked in
+       * pairs, and the error feeds the pictures that follow. */
+      if(sps->chroma_format_idc==2&&sps->mb_adaptive_frame_field_flag)
+         return 0;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
        * CABAC ones: the significance maps of a field-coded block are
