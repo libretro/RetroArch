@@ -400,7 +400,8 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
        * every neighbour derivation. */
       if(!sh->field_pic_flag&&sps->mb_adaptive_frame_field_flag
             &&pps->entropy_coding_mode_flag
-            &&sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)
+            &&sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI
+            &&sh->slice_type!=RH264_SLICE_P&&sh->slice_type!=RH264_SLICE_SP)
          return 0;
       /* B field pictures are still refused: their second list and the
        * direct modes need field machinery this does not have.  So are
@@ -6778,27 +6779,57 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    memset(&dummy, 0, sizeof(dummy));
 
    slice_end = mbw * mbh;
-   for (mby = sh->first_mb_in_slice/mbw; mby < mbh; mby++)
    {
-      rh264_cbf leftcbf; int leftskip = 0;
-      memset(&leftcbf, 0, sizeof(leftcbf));
-      for (mbx = (mby==sh->first_mb_in_slice/mbw)
-                 ? sh->first_mb_in_slice%mbw : 0;
-            mbx < mbw; mbx++)
+      /* address order, with the pair contexts the intra reader uses */
+      rh264_cbf leftT, leftB;
+      rh264_cbf *toprow = NULL;
+      uint8_t *topskip = NULL;
+      int leftskipT = 0, leftskipB = 0, mba, bot, prev_skipped = 0;
+      if (f->mbaff)
       {
-         /* neighbours only exist within the current slice (6.4.8) */
-         int have_up   = (mby > 0)
-               && ((mby-1)*mbw+mbx >= sh->first_mb_in_slice);
-         int have_left = (mbx > 0)
-               && (mby*mbw+mbx-1 >= sh->first_mb_in_slice);
-         int skip, inc, cx, cy;
+         toprow  = (rh264_cbf*)calloc((size_t)mbw+2, sizeof(rh264_cbf));
+         topskip = (uint8_t*)calloc((size_t)mbw+2, 1);
+         if (!toprow || !topskip)
+         { free(toprow); free(topskip); free(row); free(skiprow);
+           free(absmvd); return -1; }
+      }
+      memset(&leftT, 0, sizeof(leftT));
+      memset(&leftB, 0, sizeof(leftB));
+      for (mba = sh->first_mb_in_slice; mba < mbw*mbh; mba++)
+      {
+         int have_up, have_left, skip, inc, cx, cy, la, ua;
          rh264_cbf tmp, *L, *U;
+         uint8_t *upskip; int leftskip;
+         rh264_mb_pos(mba, mbw, f->mbaff, &mbx, &mby);
+         bot = f->mbaff && (mba & 1);
+         if (mbx == 0 && !bot)
+         {
+            memset(&leftT, 0, sizeof(leftT));
+            memset(&leftB, 0, sizeof(leftB));
+            leftskipT = 0; leftskipB = 0;
+         }
+         la = rh264_mb_addr(mbx-1, mby, mbw, f->mbaff);
+         ua = rh264_mb_addr(mbx, mby-1, mbw, f->mbaff);
+         /* neighbours only exist within the current slice (6.4.8) and
+          * must already be decoded, which pair scanning can break */
+         have_up   = (mby > 0) && ua >= sh->first_mb_in_slice && ua < mba;
+         have_left = (mbx > 0) && la >= sh->first_mb_in_slice && la < mba;
          memset(&tmp, 0, sizeof(tmp));
-         L = have_left ? &leftcbf  : &dummy;
-         U = have_up   ? &row[mbx] : &dummy;
-
-         inc  = rh264_cabac_pskip_ctx(have_left, have_up, skiprow, mbx, leftskip);
+         L = have_left ? (bot ? &leftB : &leftT) : &dummy;
+         U = have_up   ? (bot ? &toprow[mbx] : &row[mbx]) : &dummy;
+         upskip   = bot ? topskip : skiprow;
+         leftskip = bot ? leftskipB : leftskipT;
+         inc  = rh264_cabac_pskip_ctx(have_left, have_up, upskip, mbx, leftskip);
          skip = rh264_cabac_decode(&cb, RH264_CTX_MB_SKIP_P + inc);
+         /* mb_field_decoding_flag follows mb_skip_flag and is only sent
+          * for a macroblock that carries data: ahead of a pair's top
+          * macroblock, or its bottom one when the top was skipped
+          * (7.3.4).  Only frame pairs are handled. */
+         if (f->mbaff && !skip && (!bot || prev_skipped)
+               && rh264_cabac_decode(&cb, 70))
+         { free(toprow); free(topskip); free(row); free(skiprow);
+           free(absmvd); return -1; }
+         prev_skipped = skip;
 
          if (skip)
          {
@@ -6848,7 +6879,8 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                int r2 = rh264_cabac_decode_mb_ctx(&cb, sps, pps, f, mbx, mby,
                      &prevQpNZ, &tmp, L, U, mbt_p, -1, sh->first_mb_in_slice);
                if (r2 < 0)
-               { free(row); free(skiprow); free(absmvd); return r2; }
+               { free(toprow); free(topskip);
+                 free(row); free(skiprow); free(absmvd); return r2; }
                /* mark the macroblock intra in the MV grid and clear its mvd */
                for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
                {
@@ -6860,11 +6892,15 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                   absmvd[o*2] = 0; absmvd[o*2+1] = 0;
                }
                f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
-               leftcbf = tmp; row[mbx] = tmp;
-               leftskip = 0; skiprow[mbx] = 0;
-               if (mbx == mbw-1 && mby == mbh-1) break;
-               if (rh264_cabac_terminate(&cb))
-               { slice_end = mby*mbw+mbx+1; mby = mbh; break; }
+               if (bot) { leftB = tmp; row[mbx] = tmp;
+                          leftskipB = 0; skiprow[mbx] = 0; }
+               else if (f->mbaff) { leftT = tmp; toprow[mbx] = tmp;
+                          leftskipT = 0; topskip[mbx] = 0; }
+               else { leftT = tmp; row[mbx] = tmp;
+                          leftskipT = 0; skiprow[mbx] = 0; }
+               if (mba == mbw*mbh-1) break;
+               if (!(f->mbaff && !bot) && rh264_cabac_terminate(&cb))
+               { slice_end = mba+1; break; }
                continue;
             }
             {
@@ -7040,13 +7076,18 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
             f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
          }
 
-         leftcbf = tmp; row[mbx] = tmp;
-         leftskip = skip; skiprow[mbx] = (uint8_t)skip;
+         if (bot) { leftB = tmp; row[mbx] = tmp; }
+         else if (f->mbaff) { leftT = tmp; toprow[mbx] = tmp; }
+         else { leftT = tmp; row[mbx] = tmp; }
+         if (bot) { leftskipB = skip; skiprow[mbx] = (uint8_t)skip; }
+         else if (f->mbaff) { leftskipT = skip; topskip[mbx] = (uint8_t)skip; }
+         else { leftskipT = skip; skiprow[mbx] = (uint8_t)skip; }
 
-         if (mbx == mbw-1 && mby == mbh-1) break;
-         if (rh264_cabac_terminate(&cb))
-               { slice_end = mby*mbw+mbx+1; mby = mbh; break; }
+         if (mba == mbw*mbh-1) break;
+         if (!(f->mbaff && !bot) && rh264_cabac_terminate(&cb))
+               { slice_end = mba+1; break; }
       }
+      free(toprow); free(topskip);
    }
    free(row); free(skiprow); free(absmvd);
    if (end_mb) *end_mb = slice_end;
