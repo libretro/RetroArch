@@ -5230,11 +5230,22 @@ unsigned menu_event(
       ok_old                                       = ok_current;
       switch_old                                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                                    | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      /* The navigation auto-repeat clock must keep advancing too,
-       * otherwise the next 'delta_time' spans the whole blocked
-       * interval and overshoots 'delay_timer' in a single step,
-       * firing a repeat immediately after the next press */
+      /* Reset the navigation auto-repeat state machine, not just
+       * its clock. A hold that spans the blocked interval would
+       * otherwise resume with 'hold_reset' still false and
+       * 'delay_count' already partway to 'delay_timer', so the
+       * first unblocked frame fires a repeat immediately - and it
+       * does so at the accumulated scroll acceleration, which
+       * menu_driver_ctl() turns into up to six entries per step.
+       * That is what makes the selection jump several places when
+       * the menu unblocks mid-hold. Treat the block as ending the
+       * hold: the next press starts from the initial delay again. */
       last_time_us                                 = menu_st->current_time_us;
+      hold_reset                                   = true;
+      hold_initial                                 = true;
+      delay_count                                  = 0.0f;
+      navigation_initial                           = 0;
+      menu_st->scroll.acceleration                 = 0;
       return MENU_ACTION_NOOP;
    }
 
@@ -5373,9 +5384,14 @@ unsigned menu_event(
       menu_input->cancel_inhibit      = true;
       switch_old                      = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                       | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      /* Keep the navigation auto-repeat clock advancing, for the
+      /* Reset the navigation auto-repeat state machine, for the
        * same reason as the BLOCK_ALL_INPUT path above */
       last_time_us                    = menu_st->current_time_us;
+      hold_reset                      = true;
+      hold_initial                    = true;
+      delay_count                     = 0.0f;
+      navigation_initial              = 0;
+      menu_st->scroll.acceleration    = 0;
       return MENU_ACTION_NOOP;
    }
 
