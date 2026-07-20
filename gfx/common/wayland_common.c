@@ -469,8 +469,6 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       xdg_toplevel_tag_manager_v1_destroy(wl->xdg_toplevel_tag_manager);
    if (wl->idle_inhibit_manager)
       zwp_idle_inhibit_manager_v1_destroy(wl->idle_inhibit_manager);
-   if (wl->tearing_control_manager)
-      wp_tearing_control_manager_v1_destroy(wl->tearing_control_manager);
    else
    {
 #ifdef HAVE_DBUS
@@ -478,6 +476,8 @@ void gfx_ctx_wl_destroy_resources_common(gfx_ctx_wayland_data_t *wl)
       dbus_close_connection();
 #endif
    }
+   if (wl->tearing_control_manager)
+      wp_tearing_control_manager_v1_destroy(wl->tearing_control_manager);
    if (wl->pointer_constraints)
       zwp_pointer_constraints_v1_destroy(wl->pointer_constraints);
    if (wl->relative_pointer_manager)
