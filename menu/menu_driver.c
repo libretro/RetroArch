@@ -1925,7 +1925,17 @@ static void menu_input_get_mouse_hw_state(
    hw_state->flags                 = 0;
 
    if (!menu_mouse_enable)
+   {
+      /* 'hw_state->flags' has just been zeroed, but the button
+       * edge detectors below are not reached on this path. Reset
+       * them to match, otherwise they retain the state from the
+       * last enabled frame and report a spurious change - and so
+       * a spurious MENU_INP_PTR_FLG_ACTIVE - once mouse input is
+       * re-enabled (e.g. when an overlay is dismissed) */
+      last_select_pressed = false;
+      last_cancel_pressed = false;
       return;
+   }
 
    joypad_info.joy_idx             = 0;
    joypad_info.auto_binds          = NULL;
@@ -2159,6 +2169,12 @@ static void menu_input_get_touchscreen_hw_state(
       hw_state->y       = 0;
       hw_state->flags  &= ~(MENU_INP_PTR_FLG_PRESS_SELECT
                           | MENU_INP_PTR_FLG_PRESS_CANCEL);
+      /* Keep the edge detectors in step with the cleared flags,
+       * otherwise they retain the state from the last enabled
+       * frame and report a spurious change once touch input is
+       * re-enabled (e.g. when an overlay is dismissed) */
+      last_select_pressed = false;
+      last_cancel_pressed = false;
       return;
    }
 
