@@ -1726,7 +1726,13 @@ bool WEBM_CORE_PREFIX(retro_serialize)(void *data, size_t size)
    if (size < WEBM_STATE_SIZE)
       return false;
    d[0] = 'W'; d[1] = 'P'; d[2] = 'O'; d[3] = 'S';
-   d[4] = 2;   d[5] = 0;   d[6] = 0;   d[7] = 0;
+   d[4] = 2;   d[6] = 0;   d[7] = 0;
+   /* Whether playback had already ended.  The clock and slot below
+    * describe a position, and at the end of a movie that position is
+    * the last frame - restoring from them alone resumes just before
+    * the end instead of at it.  Older states leave this zero, which is
+    * what they meant. */
+   d[5] = (uint8_t)(p->eof ? 1 : 0);
    for (i = 0; i < 8; i++)
    {
       d[8 + i]  = (uint8_t)(v >> (8 * i));
@@ -1761,6 +1767,10 @@ bool WEBM_CORE_PREFIX(retro_unserialize)(const void *data, size_t size)
 #endif
          webm_seek_internal(p, (int64_t)v,
                s > 0 ? (int64_t)s - 1 : 0);
+      /* a state taken after the last frame restores to the end, with
+       * that frame held, rather than to just before it */
+      if (d[5])
+         p->eof = 1;
       return true;
    }
    if (d[4] != 1)
