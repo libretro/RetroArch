@@ -493,7 +493,7 @@ void gfx_ctx_wl_update_title_webos(void *data)
 }
 
 bool gfx_ctx_wl_init_webos(
-      const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
+      driver_configure_handler_t driver_configure_handler, gfx_ctx_wayland_data_t **wwl)
 {
    int i;
    gfx_ctx_wayland_data_t *wl;

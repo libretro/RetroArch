@@ -55,7 +55,7 @@
 extern void gfx_ctx_wl_get_video_size_webos(void*, unsigned*, unsigned*);
 extern void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t*);
 extern void gfx_ctx_wl_update_title_webos(void*);
-extern bool gfx_ctx_wl_init_webos(const toplevel_listener_t*, gfx_ctx_wayland_data_t**);
+extern bool gfx_ctx_wl_init_webos(driver_configure_handler_t, gfx_ctx_wayland_data_t**);
 extern bool gfx_ctx_wl_set_video_mode_common_size_webos(gfx_ctx_wayland_data_t*, unsigned, unsigned, bool);
 extern bool gfx_ctx_wl_set_video_mode_common_fullscreen_webos(gfx_ctx_wayland_data_t*, bool);
 extern bool gfx_ctx_wl_suppress_screensaver_webos(void*, bool);
@@ -73,16 +73,12 @@ extern void gfx_ctx_wl_check_window_webos(gfx_ctx_wayland_data_t*, void (*)(void
 
 static enum gfx_ctx_api wl_api   = GFX_CTX_NONE;
 
-/* Shell surface callbacks. */
-static void xdg_toplevel_handle_configure(void *data,
-      struct xdg_toplevel *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
 #ifdef HAVE_EGL
+/* Invoked from the common shell-surface configure handlers after the
+ * shared configure processing; resizes (or lazily creates) the
+ * wl_egl_window to the new buffer dimensions. */
+static void gfx_ctx_wl_egl_configure(gfx_ctx_wayland_data_t *wl)
+{
    if (wl->win)
       wl_egl_window_resize(wl->win,
             wl->buffer_width,
@@ -92,10 +88,8 @@ static void xdg_toplevel_handle_configure(void *data,
       wl->win = wl_egl_window_create(wl->surface,
             wl->buffer_width,
             wl->buffer_height);
-#endif
-
-   wl->configured = false;
 }
+#endif
 
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
@@ -138,49 +132,6 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
 
    return true;
 }
-
-#ifdef HAVE_LIBDECOR_H
-static void
-libdecor_frame_handle_configure(struct libdecor_frame *frame,
-      struct libdecor_configuration *configuration, void *data)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   libdecor_frame_handle_configure_common(frame, configuration, wl);
-
-#ifdef HAVE_EGL
-   if (wl->win)
-      wl_egl_window_resize(wl->win,
-            wl->buffer_width,
-            wl->buffer_height,
-            0, 0);
-   else
-      wl->win     = wl_egl_window_create(
-            wl->surface,
-            wl->buffer_width,
-            wl->buffer_height);
-#endif
-
-   wl->configured = false;
-}
-#endif
-
-static const toplevel_listener_t toplevel_listener = {
-#ifdef HAVE_LIBDECOR_H
-   .libdecor_frame_interface = {
-     libdecor_frame_handle_configure,
-     libdecor_frame_handle_close,
-     libdecor_frame_handle_commit,
-   },
-#endif
-   .xdg_toplevel_listener = {
-      xdg_toplevel_handle_configure,
-      xdg_toplevel_handle_close,
-   },
-};
-
-static const toplevel_listener_t xdg_toplevel_listener = {0};
 
 #ifdef HAVE_EGL
 #define WL_EGL_ATTRIBS_BASE \
@@ -280,7 +231,13 @@ static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
-   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(
+#ifdef HAVE_EGL
+         gfx_ctx_wl_egl_configure,
+#else
+         NULL,
+#endif
+         &wl))
       goto error;
 #ifdef HAVE_EGL
    if (!gfx_ctx_wl_egl_init_context(wl))

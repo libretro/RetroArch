@@ -102,7 +102,7 @@ static bool gfx_ctx_wl_should_use_legacy_fullscreen_configure(
    return false;
 }
 
-void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
+static void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
       void *toplevel,
       int32_t width, int32_t height, struct wl_array *states)
 {
@@ -179,14 +179,14 @@ void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
    }
 }
 
-void xdg_toplevel_handle_close(void *data,
+static void xdg_toplevel_handle_close(void *data,
       struct xdg_toplevel *xdg_toplevel)
 {
    frontend_driver_set_signal_handler_state(1);
 }
 
 #ifdef HAVE_LIBDECOR_H
-void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
+static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       struct libdecor_configuration *configuration,
       gfx_ctx_wayland_data_t *wl)
 {
@@ -265,14 +265,60 @@ void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    }
 }
 
-void libdecor_frame_handle_close(struct libdecor_frame *frame,
+static void libdecor_frame_handle_close(struct libdecor_frame *frame,
       void *data)
 {
    frontend_driver_set_signal_handler_state(1);
 }
-void libdecor_frame_handle_commit(struct libdecor_frame *frame,
+static void libdecor_frame_handle_commit(struct libdecor_frame *frame,
       void *data) { }
+
+static void libdecor_frame_handle_configure(struct libdecor_frame *frame,
+      struct libdecor_configuration *configuration, void *data)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->ignore_configuration)
+      return;
+   libdecor_frame_handle_configure_common(frame, configuration, wl);
+   if (wl->driver_configure_handler)
+      wl->driver_configure_handler(wl);
+   wl->configured = false;
+}
+
+static void libdecor_handle_err(struct libdecor *context,
+      enum libdecor_error err, const char *message)
+{
+   RARCH_ERR("[Wayland] libdecor Caught error (%d): %s.\n", err, message);
+}
+
+static const struct libdecor_interface libdecor_interface = {
+   .error = libdecor_handle_err,
+};
+
+static const struct libdecor_frame_interface wl_libdecor_frame_interface = {
+   libdecor_frame_handle_configure,
+   libdecor_frame_handle_close,
+   libdecor_frame_handle_commit,
+};
 #endif
+
+static void xdg_toplevel_handle_configure(void *data,
+      struct xdg_toplevel *toplevel,
+      int32_t width, int32_t height, struct wl_array *states)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+   if (wl->ignore_configuration)
+      return;
+   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
+   if (wl->driver_configure_handler)
+      wl->driver_configure_handler(wl);
+   wl->configured = false;
+}
+
+static const struct xdg_toplevel_listener wl_xdg_toplevel_listener = {
+   xdg_toplevel_handle_configure,
+   xdg_toplevel_handle_close,
+};
 
 void gfx_ctx_wl_get_video_size_common(void *data,
       unsigned *width, unsigned *height)
@@ -729,7 +775,8 @@ static bool wl_draw_splash_screen(gfx_ctx_wayland_data_t *wl)
 #endif
 
 bool gfx_ctx_wl_init_common(
-      const toplevel_listener_t *toplevel_listener, gfx_ctx_wayland_data_t **wwl)
+      driver_configure_handler_t driver_configure_handler,
+      gfx_ctx_wayland_data_t **wwl)
 {
    int i;
    gfx_ctx_wayland_data_t *wl;
@@ -751,6 +798,8 @@ bool gfx_ctx_wl_init_common(
    }
 #endif
 #endif
+
+   wl->driver_configure_handler = driver_configure_handler;
 
    wl_list_init(&wl->all_outputs);
    wl_list_init(&wl->current_outputs);
@@ -896,7 +945,7 @@ bool gfx_ctx_wl_init_common(
 
    if (wl->libdecor)
    {
-      wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &toplevel_listener->libdecor_frame_interface, wl);
+      wl->libdecor_frame = wl->libdecor_decorate(wl->libdecor_context, wl->surface, &wl_libdecor_frame_interface, wl);
       if (!wl->libdecor_frame)
       {
          RARCH_ERR("[Wayland] Failed to create libdecor frame.\n");
@@ -942,7 +991,7 @@ bool gfx_ctx_wl_init_common(
       xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
 
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
-      xdg_toplevel_add_listener(wl->xdg_toplevel, &toplevel_listener->xdg_toplevel_listener, wl);
+      xdg_toplevel_add_listener(wl->xdg_toplevel, &wl_xdg_toplevel_listener, wl);
 
       xdg_toplevel_set_app_id(wl->xdg_toplevel, WAYLAND_APP_ID);
       xdg_toplevel_set_title(wl->xdg_toplevel, DEFAULT_WINDOW_TITLE);
@@ -1204,20 +1253,6 @@ static void xdg_surface_handle_configure(void *data,
 }
 #endif
 
-#ifdef HAVE_LIBDECOR_H
-static void libdecor_handle_err(struct libdecor *context,
-      enum libdecor_error err, const char *message)
-{
-   RARCH_ERR("[Wayland] libdecor Caught error (%d): %s.\n", err, message);
-}
-#endif
-
 const struct wl_buffer_listener shm_buffer_listener = {
    shm_buffer_handle_release,
 };
-
-#ifdef HAVE_LIBDECOR_H
-const struct libdecor_interface libdecor_interface = {
-   .error = libdecor_handle_err,
-};
-#endif

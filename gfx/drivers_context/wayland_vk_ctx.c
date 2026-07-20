@@ -45,17 +45,6 @@
 #endif
 
 /* Shell surface callbacks. */
-static void xdg_toplevel_handle_configure(void *data,
-      struct xdg_toplevel *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
-{
-   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
-   wl->configured = false;
-}
-
 static void gfx_ctx_wl_destroy_resources(gfx_ctx_wayland_data_t *wl)
 {
    if (!wl)
@@ -103,40 +92,12 @@ static bool gfx_ctx_wl_set_resize(void *data, unsigned width, unsigned height)
    return false;
 }
 
-#ifdef HAVE_LIBDECOR_H
-static void
-libdecor_frame_handle_configure(struct libdecor_frame *frame,
-      struct libdecor_configuration *configuration, void *data)
-{
-   gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   libdecor_frame_handle_configure_common(frame, configuration, wl);
-
-   wl->configured = false;
-}
-#endif
-
-static const toplevel_listener_t toplevel_listener = {
-#ifdef HAVE_LIBDECOR_H
-   .libdecor_frame_interface = {
-     libdecor_frame_handle_configure,
-     libdecor_frame_handle_close,
-     libdecor_frame_handle_commit,
-   },
-#endif
-   .xdg_toplevel_listener = {
-      xdg_toplevel_handle_configure,
-      xdg_toplevel_handle_close,
-   },
-};
-
 static void *gfx_ctx_wl_init(void *data)
 {
    int i;
    gfx_ctx_wayland_data_t *wl = NULL;
 
-   if (!gfx_ctx_wl_init_common(&toplevel_listener, &wl))
+   if (!gfx_ctx_wl_init_common(NULL, &wl))
       goto error;
 
    if (!vulkan_context_init(&wl->vk, VULKAN_WSI_WAYLAND))
