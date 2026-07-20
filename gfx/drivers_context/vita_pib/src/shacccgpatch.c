@@ -25,7 +25,7 @@
 #include <psp2/types.h>
 #include <psp2/shacccg.h>
 #include <psp2/kernel/clib.h>
-#include "../include/debug.h"
+#include "debug.h"
 
 static SceShaccCgSourceFile source;
 static const SceShaccCgCompileOutput *output = NULL;
