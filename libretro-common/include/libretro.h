@@ -5927,7 +5927,6 @@ enum retro_pixel_format
     */
    RETRO_PIXEL_FORMAT_XRGB2101010 = 3,
 
-   /** Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>. Do not use. */
    /**
     * HDR10: PQ-encoded Rec.2020, 10 bits per channel, native endian.
     *
@@ -5960,6 +5959,10 @@ enum retro_pixel_format
     */
    RETRO_PIXEL_FORMAT_HDR10_2101010 = 4,
 
+   /** 
+    * @private Defined to ensure that <tt>sizeof(retro_pixel_format) == sizeof(int)</tt>.
+	* Do not use.
+	*/
    RETRO_PIXEL_FORMAT_UNKNOWN  = INT_MAX
 };
 
