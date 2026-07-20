@@ -193,7 +193,12 @@ static void ps3_joypad_poll(void)
       }
 
       if (pads_connected[port] == 0)
+      {
+         /* Clear the cached buttons, otherwise whatever was held
+          * at disconnect stays readable until the pad returns. */
+         pad_state[port] = 0;
          continue;
+      }
 
       ioPadGetData(port, &state_tmp);
 
