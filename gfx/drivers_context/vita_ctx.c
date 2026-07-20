@@ -16,7 +16,6 @@
 
 /* Vita context. */
 
-#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
 #include "../../retroarch.h"
 #ifdef HAVE_EGL
 #include "../common/egl_common.h"

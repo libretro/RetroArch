@@ -69,7 +69,7 @@
 #endif
 
 #if defined(HAVE_VITAGLES)
-#include "../../deps/Pigs-In-A-Blanket/include/pib.h"
+#include "../../gfx/drivers_context/vita_pib/include/pib.h"
 #endif
 
 #ifndef VITA

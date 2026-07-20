@@ -37,12 +37,10 @@ static SceBool pibIsInit = SCE_FALSE;
 
 static PibError loadModules(PibOptions options)
 {
-    if (!(options & PIB_NOSTDLIB)) {
-        if (modID[3] = sceKernelLoadStartModule("vs0:sys/external/libfios2.suprx", 0, NULL, 0, NULL, 0), modID[3] < 0 && modID[3] != 0x8002D014 && modID[3] != 0x8002D013)
-            return PIB_ERROR_FIOS2_FAILED;
-        if (modID[2] = sceKernelLoadStartModule("vs0:sys/external/libc.suprx", 0, NULL, 0, NULL, 0), modID[2] < 0 && modID[2] != 0x8002D014 && modID[2] != 0x8002D013)
-            return PIB_ERROR_LIBC_FAILED;
-    }
+    if (modID[3] = sceKernelLoadStartModule("vs0:sys/external/libfios2.suprx", 0, NULL, 0, NULL, 0), modID[3] < 0 && modID[3] != 0x8002D014 && modID[3] != 0x8002D013)
+        return PIB_ERROR_FIOS2_FAILED;
+    if (modID[2] = sceKernelLoadStartModule("vs0:sys/external/libc.suprx", 0, NULL, 0, NULL, 0), modID[2] < 0 && modID[2] != 0x8002D014 && modID[2] != 0x8002D013)
+        return PIB_ERROR_LIBC_FAILED;
     if (modID[1] = sceKernelLoadStartModule("ur0:data/external/libScePiglet.suprx", 0, NULL, 0, NULL, 0), modID[1] < 0)
         return PIB_ERROR_PIGLET_FAILED;
     if (options & PIB_SHACCCG) {
@@ -83,11 +81,8 @@ PibError pibInit(PibOptions options)
     PibError ret = loadModules(options);
     if (ret) return ret;
 
-    if (!(options & PIB_SYSTEM_MODE))
-        getResolutionConfig();
-    else
-        customResolutionMode = 7; // Custom System Mode Resolution Configuration 
-   
+    getResolutionConfig();
+
     loadHooks(options);
     pibIsInit = SCE_TRUE;
     return PIB_SUCCESS;

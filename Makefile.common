@@ -2876,8 +2876,8 @@ endif
 
 ifeq ($(HAVE_VITAGLES), 1)
    DEFINES += -DHAVE_VITAGLES
-   INCLUDE_DIRS += -I$(DEPS_DIR)/Pigs-In-A-Blanket/include
-   SOURCES := $(DEPS_DIR)/Pigs-In-A-Blanket/src
+   INCLUDE_DIRS += -Igfx/drivers_context/vita_pib/include
+   SOURCES := gfx/drivers_context/vita_pib/src
    OBJ += $(patsubst %.c,%.o,$(foreach dir,$(SOURCES), $(wildcard $(dir)/*.c)))
 endif
 
