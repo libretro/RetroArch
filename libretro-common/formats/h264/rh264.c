@@ -213,7 +213,12 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
       * one.  A frame_width or frame_height that came out negative was
       * cast to size_t by the frame allocator. */
      if(cl>16384u||cr>16384u||ct>16384u||cb>16384u) return 0;
-     { int sw=2, sh=2*(2-s->frame_mbs_only_flag);
+     /* The crop offsets count chroma samples, so the step they scale by
+      * is how many luma samples a chroma one spans (7.4.2.1.1).  That
+      * is two across for both 4:2:0 and 4:2:2, but two DOWN only for
+      * 4:2:0 - 4:2:2 keeps the luma height, so its vertical step is
+      * one.  A field-capable sequence doubles the vertical step again. */
+     { int sw=2, sh=(s->chroma_format_idc==1?2:1)*(2-s->frame_mbs_only_flag);
        int cw=s->pic_width_in_mbs*16, ch=mbh*16;
        int fw=cw-sw*(int)(cl+cr), fh=ch-sh*(int)(ct+cb);
        if(fw<16||fh<16||fw>cw||fh>ch) return 0;
