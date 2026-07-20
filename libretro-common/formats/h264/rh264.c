@@ -396,7 +396,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
     * reconstructed picture off the screen. */
    if(sps->chroma_format_idc==2
          &&(pps->entropy_coding_mode_flag
-            ||(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)))
+            ||sh->slice_type==RH264_SLICE_B))
       return 0;
    sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
@@ -3178,7 +3178,9 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
    int fx = mvx & 7, fy = mvy & 7;
    int x, y, r, c;
    /* bilinear window: block plus one sample right/below, edge clamp baked */
-   uint8_t pat[9 * 9];
+   /* bilinear window: 4:2:0 chroma blocks are at most 8x8, 4:2:2 ones
+    * at most 8x16, and the window is one sample wider and taller */
+   uint8_t pat[9 * 17];
    int pw = bw + 1;
    if (ix >= 0 && iy >= 0 && ix + bw + 1 <= rw && iy + bh + 1 <= rh)
    {
@@ -3495,21 +3497,27 @@ static void rh264_inter_pred_block(rh264_frame *f, const rh264_frame *ref,
    rh264_mc_luma(dY, f->ystride, ref->Y, ref->ystride, rw, rh,
          ox, oy, bw, bh, mvx, mvy);
    {
-      int cox = (mbx * 16 + bx) >> 1, coy = (mby * 16 + by) >> 1;
-      int cbw = bw >> 1, cbh = bh >> 1;
+      /* 4:2:2 halves the width but keeps the height, so its chroma
+       * blocks are as tall as the luma ones and a luma vector spans
+       * twice as many eighths of a chroma sample vertically. */
+      int c422 = (f->cmbh == 16);
+      int cox = (mbx * 16 + bx) >> 1;
+      int coy = c422 ? (mby * 16 + by) : ((mby * 16 + by) >> 1);
+      int cbw = bw >> 1, cbh = c422 ? bh : (bh >> 1);
+      int ch  = c422 ? rh : (rh >> 1);
       uint8_t *dU = f->U + coy * f->cstride + cox;
       uint8_t *dV = f->V + coy * f->cstride + cox;
       /* A field predicting from a field of the other parity samples
        * chroma half a chroma line away, because the two fields'
        * chroma sampling grids are offset (8.4.1.4).  The vector is in
        * eighths of a chroma sample, so the correction is 2. */
-      int cmvy = mvy;
+      int cmvy = c422 ? mvy * 2 : mvy;
       if (f->field && ref->field && f->field != ref->field)
          cmvy += (f->field == 1) ? -2 : 2;
       rh264_mc_chroma(dU, f->cstride, ref->U, ref->cstride,
-            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, cmvy);
+            rw >> 1, ch, cox, coy, cbw, cbh, mvx, cmvy);
       rh264_mc_chroma(dV, f->cstride, ref->V, ref->cstride,
-            rw >> 1, rh >> 1, cox, coy, cbw, cbh, mvx, cmvy);
+            rw >> 1, ch, cox, coy, cbw, cbh, mvx, cmvy);
    }
 }
 
@@ -5015,8 +5023,10 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                   if(cB<0)cB=0; else if(cB>51)cB=51;
                   ca=rh264_alpha[cA]; cbe=rh264_beta[cB];
                   ct=rh264_tc0[bS==4?2:bS-1][cA];
-                  for (ci = 0; ci < 2; ci++)
-                  { int cy = mby*8 + seg*2 + ci;
+                  /* 4:2:2 keeps the luma height, so each luma segment
+                   * covers twice as many chroma rows */
+                  for (ci = 0; ci < f->cmbh/4; ci++)
+                  { int cy = mby*f->cmbh + seg*(f->cmbh/4) + ci;
                     rh264_filter_chroma_edge(pl+cy*f->cstride+cx,1,bS,ca,cbe,ct); }
                }
                (void)cgw;
@@ -5077,14 +5087,15 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                seg++;
             }
          }
-         if ((edge&1)==0)
+         if ((edge&1)==0 || f->cmbh==16)
          for (seg = 0; seg < 4; seg++)
          {
             int bS = hbS[seg];
             if (bS == 0) continue;
-            if ((edge&1)==0)
+            if ((edge&1)==0 || f->cmbh==16)
             {
-               int cy = mby*8 + (edge>>1)*4, cc;
+               int cy = mby*f->cmbh
+                      + ((f->cmbh==16) ? edge*4 : (edge>>1)*4), cc;
                for (cc = 0; cc < 2; cc++)
                {
                   int coff = cc?f->chroma_qp_offset2:f->chroma_qp_offset;
@@ -6060,8 +6071,8 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
    int t8 = 0;
    int modes[16];
    uint8_t *Y=f->Y+(mby*16)*f->ystride+mbx*16;
-   uint8_t *U8=f->U+(mby*8)*f->cstride+mbx*8;
-   uint8_t *V8=f->V+(mby*8)*f->cstride+mbx*8;
+   uint8_t *U8=f->U+(mby*f->cmbh)*f->cstride+mbx*8;
+   uint8_t *V8=f->V+(mby*f->cmbh)*f->cstride+mbx*8;
    memset(cur,0,sizeof(*cur)); cur->avail=1;
 
    /* mb_type bin0 ctxIdxInc: neighbours available & NOT I_4x4 */
@@ -6727,8 +6738,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
    uint8_t *Y = f->Y + (mby*16)*f->ystride + mbx*16;
    uint8_t *planes[2];
    int32_t cdc[2][4];
-   planes[0] = f->U + (mby*8)*f->cstride + mbx*8;
-   planes[1] = f->V + (mby*8)*f->cstride + mbx*8;
+   planes[0] = f->U + (mby*f->cmbh)*f->cstride + mbx*8;
+   planes[1] = f->V + (mby*f->cmbh)*f->cstride + mbx*8;
 
    if (t8)
    {
