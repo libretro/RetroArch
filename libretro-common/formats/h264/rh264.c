@@ -2356,7 +2356,12 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
       {
          int y=mby*16+edge*4;
          int bS,qpavg,a,be,t,idxA,idxB;
-         if(mbt8 && (edge&1)) continue;   /* 8x8 transform: no 4x4 edges */
+         /* The 8x8 transform removes the LUMA edges inside each 8x8
+          * block, not the chroma ones.  In 4:2:0 chroma has no edge
+          * there either, so skipping the whole edge is the same thing;
+          * in 4:2:2, which keeps every chroma row, it is not. */
+         int do_luma = !(mbt8 && (edge&1));
+         if(!do_luma && f->cmbh!=16) continue;
          if(edge==0){ if(mby==0) continue;
             if(sidc[sl]==2 && f->mbslice && f->mbslice[mbi-f->mbw]!=sl)
                continue;   /* no filtering across the slice boundary */
@@ -2369,8 +2374,9 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
          idxA=qpavg+oA; if(idxA<0)idxA=0; else if(idxA>51)idxA=51;
          idxB=qpavg+oB; if(idxB<0)idxB=0; else if(idxB>51)idxB=51;
          a=rh264_alpha[idxA]; be=rh264_beta[idxB]; t=rh264_tc0[bS==4?2:bS-1][idxA];
-         rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
-               1, 16, bS, a, be, t);
+         if(do_luma)
+            rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
+                  1, 16, bS, a, be, t);
          /* chroma has half the luma width but, in 4:2:2, its full
           * height - so every horizontal luma edge has a chroma edge
           * to match, where 4:2:0 has one for every second. */
@@ -5066,7 +5072,10 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
          int mbedge = (edge == 0);
          int qpavg, qpp;
          int hbS[4];
-         if (mbt8 && (edge & 1)) continue;  /* 8x8 transform: no 4x4 edges */
+         /* the 8x8 transform removes the LUMA edges inside each block,
+          * not the chroma ones - which 4:2:2 has at every luma edge */
+         int do_luma = !(mbt8 && (edge & 1));
+         if (!do_luma && f->cmbh != 16) continue;
          if (mbedge && mby == 0) continue;
          if (mbedge && sidc[sl] == 2 && f->mbslice
                && f->mbslice[mbi-f->mbw] != sl)
@@ -5093,7 +5102,7 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                st[seg] = hbS[seg]
                      ? rh264_tc0[hbS[seg]==4?2:hbS[seg]-1][idxA] : 0;
             }
-            for (seg = 0; seg < 4; )
+            for (seg = 0; do_luma && seg < 4; )
             {
                if (!hbS[seg]) { seg++; continue; }
                if (seg + 1 < 4 && hbS[seg+1]
