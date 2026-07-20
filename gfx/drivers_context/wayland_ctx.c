@@ -541,7 +541,12 @@ static void gfx_ctx_wl_swap_buffers(void *data)
     * queue moving (dispatch above) so the resume configure is seen. */
    if (!wl->suspended)
    {
-      wait_for_next_frame(wl);
+      /* The EGL frame-callback throttle above already paces to the
+       * compositor's cadence.  Running presentation-time pacing on top
+       * of it double-throttles the frame, so only pace here when that
+       * throttle is not engaged (e.g. >2 max swapchain images). */
+      if (!frame_throttle)
+         wait_for_next_frame(wl);
 
       if (wl->present_clock)
          wl_request_presentation_feedback(wl);

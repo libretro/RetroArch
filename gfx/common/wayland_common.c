@@ -630,7 +630,7 @@ static void presentation_feedback_sync_output(void *data,
 static void presentation_feedback_remove(gfx_ctx_wayland_data_t *wl,
                                          struct wp_presentation_feedback *feedback)
 {
-   wp_presentation_feedback_t *fb, *tmp;
+   wl_present_feedback_t *fb, *tmp;
    wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
    {
       if (fb->feedback == feedback)
@@ -650,13 +650,14 @@ static void presentation_feedback_presented(void *data,
                                             uint32_t flags)
 {
    gfx_ctx_wayland_data_t *wl = data;
+   uint64_t                sec = ((uint64_t)tv_sec_hi << 32) | (uint64_t)tv_sec_lo;
+
    presentation_feedback_remove(wl, feedback);
 
-   uint64_t sec = ((uint64_t)tv_sec_hi << 32) | (uint64_t)tv_sec_lo;
-   wl->last_ust = sec * 1000000000ULL + (uint64_t)tv_nsec;
-   wl->last_msc = ((uint64_t)seq_hi << 32) | (uint64_t)seq_lo;
+   wl->last_ust         = sec * 1000000000ULL + (uint64_t)tv_nsec;
+   wl->last_msc         = ((uint64_t)seq_hi << 32) | (uint64_t)seq_lo;
    wl->refresh_interval = (uint64_t)refresh;
-   wl->is_presented = true;
+   wl->is_presented     = true;
 }
 
 static void presentation_feedback_discarded(void *data,
@@ -684,7 +685,7 @@ void wl_presentation_dispatch_pending(gfx_ctx_wayland_data_t *wl)
 
 void wl_presentation_destroy_feedbacks(gfx_ctx_wayland_data_t *wl)
 {
-   wp_presentation_feedback_t *fb, *tmp;
+   wl_present_feedback_t *fb, *tmp;
    wl_list_for_each_safe(fb, tmp, &wl->feedbacks, link)
    {
       wl_list_remove(&fb->link);
@@ -695,7 +696,7 @@ void wl_presentation_destroy_feedbacks(gfx_ctx_wayland_data_t *wl)
 
 void wl_request_presentation_feedback(gfx_ctx_wayland_data_t *wl)
 {
-   wp_presentation_feedback_t *fb = calloc(1, sizeof(*fb));
+   wl_present_feedback_t *fb = calloc(1, sizeof(*fb));
    if (!fb)
    {
       RARCH_ERR("[Wayland] Failed to allocate feedback struct\n");
@@ -1158,7 +1159,7 @@ bool gfx_ctx_wl_init_common(
       wl->last_msc = 0;
       wl->refresh_interval = 0;
    }
-  
+
    if (!wl->tearing_control_manager)
    {
       RARCH_LOG("[Wayland] Compositor doesn't support the %s protocol.\n", wp_tearing_control_manager_v1_interface.name);

@@ -17,6 +17,7 @@
 #define _WAYLAND_COMMON_H
 
 #include <stdint.h>
+#include <time.h>
 #include <boolean.h>
 
 #include <linux/input.h>
@@ -300,11 +301,11 @@ typedef struct gfx_ctx_wayland_data
    bool swap_complete;
 } gfx_ctx_wayland_data_t;
 
-typedef struct wp_presentation_feedback
+typedef struct wl_present_feedback
 {
    struct wp_presentation_feedback *feedback;
    struct wl_list link;
-} wp_presentation_feedback_t;
+} wl_present_feedback_t;
 
 #ifdef HAVE_XKBCOMMON
 /* FIXME: Move this into a header? */

@@ -264,8 +264,11 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       return;
    }
 
-   wait_for_next_frame(wl);
-
+   /* RetroArch's Vulkan WSI uses a FIFO present mode whenever vsync is
+    * active (swap_interval != 0), which already blocks to vblank; a
+    * manual clock_nanosleep here would stack a second wait on top of
+    * it.  Collect presentation feedback for timing data, but leave
+    * pacing to the swapchain. */
    if (wl->present_clock)
       wl_request_presentation_feedback(wl);
 
