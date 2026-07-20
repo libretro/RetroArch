@@ -305,19 +305,19 @@ static void rmp4_video_yuv_row_neon(uint32_t *dr,
 }
 #endif
 
-static void rmp4_video_blit_i420(uint32_t *dst, unsigned dst_stride,
+static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
       const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix)
+      unsigned matrix, int cvsh)
 {
    const int16_t *k = rmp4_video_coefs(matrix, h);
    unsigned j;
    for (j = 0; j < h; j++)
    {
       const uint8_t *yr = y + (size_t)j * ys;
-      const uint8_t *ur = u + (size_t)(j >> 1) * uvs;
-      const uint8_t *vr = v + (size_t)(j >> 1) * uvs;
+      const uint8_t *ur = u + (size_t)(j >> cvsh) * uvs;
+      const uint8_t *vr = v + (size_t)(j >> cvsh) * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
 #if defined(__SSE2__)
       rmp4_video_yuv_row_sse2(dr, yr, ur, vr, w, k);
@@ -331,6 +331,16 @@ static void rmp4_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       }
 #endif
    }
+}
+
+/* 4:2:0: two luma rows share a chroma row. */
+static void rmp4_video_blit_i420(uint32_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h,
+      const uint8_t *y, int ys,
+      const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned matrix)
+{
+   rmp4_video_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1);
 }
 
 /* ------------------------------------------------------------------ */
@@ -707,8 +717,9 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       if ((unsigned)h > s->height)
          h = (int)s->height;
       if (!s->catchup)
-         rmp4_video_blit_i420(s->frame, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+         rmp4_video_blit_yuv(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+               (ch < h) ? 1 : 0);
       return 1;
    }
    return -1;
@@ -754,8 +765,9 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
          if ((unsigned)h > s->height)
             h = (int)s->height;
          if (!s->catchup)
-            rmp4_video_blit_i420(s->frame, s->width,
-                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+            rmp4_video_blit_yuv(s->frame, s->width,
+                  (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+               (ch < h) ? 1 : 0);
          if (duration_ms)
             *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;

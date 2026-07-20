@@ -207,21 +207,29 @@ static void webm_expand_8888_to_2101010(uint32_t *dst, unsigned stride,
    }
 }
 
-static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
+static void webm_blit_yuv(uint32_t *dst, unsigned w, unsigned h,
       const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix)
+      unsigned matrix, int cvsh)
 {
    const int16_t *k = webm_yuv_coefs(matrix, h);
    unsigned i, j;
    for (j = 0; j < h; j++)
    {
       const uint8_t *yr = y + j * ys;
-      const uint8_t *ur = u + (j >> 1) * uvs;
-      const uint8_t *vr = v + (j >> 1) * uvs;
+      const uint8_t *ur = u + (j >> cvsh) * uvs;
+      const uint8_t *vr = v + (j >> cvsh) * uvs;
       uint32_t *dr      = dst + j * w;
       for (i = 0; i < w; i++)
          dr[i] = webm_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
    }
+}
+
+/* 4:2:0: two luma rows share a chroma row. */
+static void webm_blit_i420(uint32_t *dst, unsigned w, unsigned h,
+      const uint8_t *y, int ys, const uint8_t *u, const uint8_t *v, int uvs,
+      unsigned matrix)
+{
+   webm_blit_yuv(dst, w, h, y, ys, u, v, uvs, matrix, 1);
 }
 
 /* -------------------------------------------------------------------- */
@@ -439,8 +447,9 @@ static int webm_decode_packet(webm_player_t *p, const rwebm_packet *pkt)
          return 1;
       {
          const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-         webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
-            ct ? ct->matrix_coefficients : 0);
+         webm_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+            ct ? ct->matrix_coefficients : 0,
+               (ch < h) ? 1 : 0);
          if (p->pix10)
             webm_expand_8888_to_2101010(p->fb, p->width,
                (unsigned)w, (unsigned)h);
@@ -474,8 +483,9 @@ static int webm_drain_h264(webm_player_t *p)
       return 1;
    {
       const rwebm_track *ct = rwebm_get_track(p->webm, p->vtrack);
-      webm_blit_i420(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
-         ct ? ct->matrix_coefficients : 0);
+      webm_blit_yuv(p->fb, (unsigned)w, (unsigned)h, y, ys, u, v, uvs,
+         ct ? ct->matrix_coefficients : 0,
+         (ch < h) ? 1 : 0);
       if (p->pix10)
          webm_expand_8888_to_2101010(p->fb, p->width,
             (unsigned)w, (unsigned)h);
