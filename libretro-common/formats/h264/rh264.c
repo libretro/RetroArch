@@ -145,7 +145,9 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
        * transform; refusing here keeps a monochrome, 4:2:2, 4:4:4,
        * high-bit-depth or lossless transform-bypass stream from silently
        * decoding as if it were plain 4:2:0. */
-      if(s->chroma_format_idc!=1) return 0;
+      /* 4:2:0 and 4:2:2; 4:4:4 additionally needs the separate colour
+       * plane handling and is not decoded. */
+      if(s->chroma_format_idc!=1&&s->chroma_format_idc!=2) return 0;
       if(rh264_ue(&b)!=0) return 0;      /* bit_depth_luma_minus8   */
       if(rh264_ue(&b)!=0) return 0;      /* bit_depth_chroma_minus8 */
       if(rh264_u1(&b)) return 0;         /* qpprime_y transform bypass */
@@ -386,7 +388,17 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       const rh264_sps *sps,const rh264_pps *pps,rh264_slice_hdr *sh){
    int st; memset(sh,0,sizeof(*sh)); sh->is_idr=(nal_unit_type==5);
    sh->first_mb_in_slice=rh264_ue(b);
-   st=rh264_ue(b); sh->slice_type=st%5; sh->pic_parameter_set_id=rh264_ue(b);
+   st=rh264_ue(b); sh->slice_type=st%5;
+   /* Only intra 4:2:2 with CAVLC reconstructs: the CABAC residual
+    * layer needs its own block categories for the extra chroma blocks,
+    * and inter prediction needs chroma motion compensation that does
+    * not halve the vertical vector.  Refusing here keeps a wrongly
+    * reconstructed picture off the screen. */
+   if(sps->chroma_format_idc==2
+         &&(pps->entropy_coding_mode_flag
+            ||(sh->slice_type!=RH264_SLICE_I&&sh->slice_type!=RH264_SLICE_SI)))
+      return 0;
+   sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
    sh->frame_num_val=sh->frame_num;
    if(!sps->frame_mbs_only_flag)
@@ -666,6 +678,42 @@ static const uint8_t rh264_rb_code[8][15]={
  {3,0,1,3,2,5,4,0,0,0,0,0,0,0,0},
  {7,6,5,4,3,2,1,1,1,1,1,1,1,1,1},
 };
+/* coeff_token for the chroma DC block of a 4:2:2 macroblock (nC == -2,
+ * eight coefficients).  Indexed [trailing_ones][total_coeff]. */
+static const uint8_t rh264_ctc422_len[4][9]={
+   { 1, 7, 7, 9, 9,10,11,12,13},
+   { 0, 2, 7, 7, 9,10,11,12,12},
+   { 0, 0, 3, 7, 7, 9,10,11,12},
+   { 0, 0, 0, 5, 6, 7, 7,10,11}
+};
+static const uint8_t rh264_ctc422_code[4][9]={
+   { 1,15,14, 7, 6, 7, 7, 7, 7},
+   { 0, 1,13,12, 5, 6, 6, 6, 5},
+   { 0, 0, 1,11,10, 4, 5, 5, 4},
+   { 0, 0, 0, 1, 1, 9, 8, 4, 4}
+};
+/* total_zeros for the same block, indexed [total_coeff][zeros]. */
+static const uint8_t rh264_cdctz422_len[8][8]={
+   { 0},
+   { 1, 3, 3, 4, 4, 4, 5, 5},
+   { 3, 2, 3, 3, 3, 3, 3, 0},
+   { 3, 3, 2, 2, 3, 3, 0, 0},
+   { 3, 2, 2, 2, 3, 0, 0, 0},
+   { 2, 2, 2, 2, 0, 0, 0, 0},
+   { 2, 2, 1, 0, 0, 0, 0, 0},
+   { 1, 1, 0, 0, 0, 0, 0, 0}
+};
+static const uint8_t rh264_cdctz422_code[8][8]={
+   { 0},
+   { 1, 2, 3, 2, 3, 1, 1, 0},
+   { 0, 1, 1, 4, 5, 6, 7, 0},
+   { 0, 1, 1, 2, 6, 7, 0, 0},
+   { 6, 0, 1, 2, 7, 0, 0, 0},
+   { 0, 1, 2, 3, 0, 0, 0, 0},
+   { 0, 1, 1, 0, 0, 0, 0, 0},
+   { 0, 1, 0, 0, 0, 0, 0, 0}
+};
+
 static const uint8_t rh264_cdctz_len[4][4]={
  {0,0,0,0},
  {1,2,3,3},
@@ -751,20 +799,28 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
 {
    int total_coeff = 0, trailing_ones = 0;
    int level[16], run[16];
-   int i, is_chroma_dc = (nC == -1);
+   int i, is_chroma_dc = (nC == -1 || nC == -2);
    for (i = 0; i < maxNumCoeff; i++) out[i] = 0;
 
    if (is_chroma_dc)
    {
-      /* chroma-DC coeff_token (nC == -1), dedicated VLC table. */
+      /* chroma-DC coeff_token, dedicated VLC table: nC == -1 for the
+       * four coefficients of a 4:2:0 block, nC == -2 for the eight of
+       * a 4:2:2 one, whose table is indexed the other way round and
+       * runs to thirteen bits. */
       uint32_t acc = 0; int L = 0, tc, t1;
+      int f422 = (nC == -2), maxL = f422 ? 13 : 8, ntc = f422 ? 9 : 5;
       total_coeff = -1;
-      while (L < 8 && total_coeff < 0)
+      while (L < maxL && total_coeff < 0)
       {
          acc = (acc << 1) | rh264_u1(b); L++;
-         for (tc = 0; tc < 5 && total_coeff < 0; tc++)
+         for (tc = 0; tc < ntc && total_coeff < 0; tc++)
             for (t1 = 0; t1 <= (tc < 3 ? tc : 3); t1++)
-               if (rh264_ctc_len[tc][t1] == L && rh264_ctc_code[tc][t1] == acc)
+               if (f422
+                     ? (rh264_ctc422_len[t1][tc] == L
+                        && rh264_ctc422_code[t1][tc] == acc)
+                     : (rh264_ctc_len[tc][t1] == L
+                        && rh264_ctc_code[tc][t1] == acc))
                {
                   total_coeff = tc; trailing_ones = t1; break;
                }
@@ -830,7 +886,10 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
       if (total_coeff < maxNumCoeff)
       {
          int idx;
-         if (is_chroma_dc)
+         if (is_chroma_dc && maxNumCoeff == 8)
+            idx = rh264_vlc_match1(b, rh264_cdctz422_len[total_coeff],
+                  rh264_cdctz422_code[total_coeff], 8);
+         else if (is_chroma_dc)
             idx = rh264_vlc_match1(b, rh264_cdctz_len[total_coeff],
                   rh264_cdctz_code[total_coeff], 4);
          else
@@ -906,7 +965,13 @@ static void rh264_intra16x16(uint8_t *dst,int stride,int mode,int have_up,int ha
       break;}
    }
 }
-static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,int have_up,int have_left){
+/* Intra chroma prediction (8.3.4).  ch is the block height: 8 for
+ * 4:2:0, 16 for 4:2:2, where chroma keeps the luma height.  DC works
+ * per 4x4 block, so 4:2:2 simply has twice as many of them down the
+ * macroblock; the plane mode's vertical term is built from sixteen
+ * neighbours rather than eight and scaled to match. */
+static void rh264_intra_chroma_h(uint8_t *dst,int stride,int mode,
+      int have_up,int have_left,int ch){
    int x,y; const uint8_t *up=dst-stride;
    /* Horizontal(1)/Vertical(2)/Plane(3) require the corresponding neighbours.
     * A conformant stream never signals them when unavailable, but arbitrary
@@ -915,21 +980,28 @@ static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,int have_up,int 
    if((mode==1&&!have_left)||(mode==2&&!have_up)||(mode==3&&!(have_up&&have_left)))
       mode=0;
    switch(mode){
-   case 1: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=dst[y*stride-1]; break;
-   case 2: for(y=0;y<8;y++)for(x=0;x<8;x++)dst[y*stride+x]=up[x]; break;
+   case 1: for(y=0;y<ch;y++)for(x=0;x<8;x++)dst[y*stride+x]=dst[y*stride-1]; break;
+   case 2: for(y=0;y<ch;y++)for(x=0;x<8;x++)dst[y*stride+x]=up[x]; break;
    case 3:{int H=0,V=0,a,bb,c,i,val; const uint8_t *tl=dst-stride-1;
+      int yh=ch/2, cshift=(ch==16)?6:5, cmul=(ch==16)?5:17;
       for(i=0;i<3;i++)H+=(i+1)*(up[4+i]-up[2-i]);
       H+=4*(up[7]-tl[0]);
-      for(i=0;i<3;i++)V+=(i+1)*(dst[(4+i)*stride-1]-dst[(2-i)*stride-1]);
-      V+=4*(dst[7*stride-1]-tl[0]);
-      a=16*(up[7]+dst[7*stride-1]); bb=(17*H+16)>>5; c=(17*V+16)>>5;
-      for(y=0;y<8;y++)for(x=0;x<8;x++){val=(a+bb*(x-3)+c*(y-3)+16)>>5;dst[y*stride+x]=(uint8_t)RH264_CLIP(val);}
+      for(i=0;i<yh-1;i++)V+=(i+1)*(dst[(yh+i)*stride-1]-dst[(yh-2-i)*stride-1]);
+      V+=yh*(dst[(ch-1)*stride-1]-tl[0]);
+      a=16*(up[7]+dst[(ch-1)*stride-1]); bb=(17*H+16)>>5;
+      c=(cmul*V+(1<<(cshift-1)))>>cshift;
+      for(y=0;y<ch;y++)for(x=0;x<8;x++){
+         val=(a+bb*(x-3)+c*(y-(yh-1))+16)>>5;
+         dst[y*stride+x]=(uint8_t)RH264_CLIP(val);}
       break;}
    default:{int bx,by;
-      for(by=0;by<2;by++)for(bx=0;bx<2;bx++){
+      for(by=0;by<ch/4;by++)for(bx=0;bx<2;bx++){
          int sum=0,cnt=0,dc,i,ux=bx*4,uy=by*4,use_up=have_up,use_left=have_left;
+         /* 8.3.4.1-3: a block on the top row away from the left edge
+          * prefers the row above; one on the left column below the top
+          * prefers the left column. */
          if(bx==1&&by==0){use_left=use_up?0:have_left;}
-         else if(bx==0&&by==1){use_up=have_left?0:have_up;}
+         else if(bx==0&&by>0){use_up=have_left?0:have_up;}
          if(use_up){for(i=0;i<4;i++)sum+=up[ux+i];cnt+=4;}
          if(use_left){for(i=0;i<4;i++)sum+=dst[(uy+i)*stride-1];cnt+=4;}
          dc=(cnt==8)?(sum+4)>>3:(cnt==4)?(sum+2)>>2:128;
@@ -1000,6 +1072,9 @@ typedef struct {
    uint8_t *Yb,*Ub,*Vb;
    int ysb,csb,mbh_frame,field;
    int mbaff;             /* macroblock pairs, scanned two rows at a time */
+   /* chroma rows per macroblock: 8 for 4:2:0, 16 for 4:2:2, where
+    * chroma keeps the luma height */
+   int cmbh;
    int qp;
    int chroma_qp_offset;   /* Cb */
    int chroma_qp_offset2;  /* Cr (second_chroma_qp_index_offset) */
@@ -1352,6 +1427,12 @@ static int rh264_cavlc_luma8x8(rh264_bits *b, rh264_frame *f,
 }
 
 
+
+static void rh264_intra_chroma(uint8_t *dst,int stride,int mode,
+      int have_up,int have_left){
+   rh264_intra_chroma_h(dst,stride,mode,have_up,have_left,8);
+}
+
 /* Chroma QP derivation (8.5.8): map qPI -> QPc. */
 static int rh264_chroma_qp(int qpy, int offset)
 {
@@ -1360,6 +1441,30 @@ static int rh264_chroma_qp(int qpy, int offset)
    if (qpi < 0) qpi = 0; else if (qpi > 51) qpi = 51;
    if (qpi < 30) return qpi;
    return m[qpi-30];
+}
+
+/* Chroma DC inverse transform for 4:2:2 (8.5.11.1): the eight
+ * coefficients form a 2-wide, 4-tall array, transformed by a 4-point
+ * Hadamard down each column and a 2-point one across. */
+static void rh264_chroma_dc_idct422(int32_t *c)
+{
+   int col, r;
+   int32_t t[8];
+   for (col = 0; col < 2; col++)
+   {
+      int32_t a = c[col], b = c[2+col], e = c[4+col], d = c[6+col];
+      int32_t s0 = a + e, s1 = a - e, s2 = b - d, s3 = b + d;
+      t[col]     = s0 + s3;
+      t[2+col]   = s1 + s2;
+      t[4+col]   = s1 - s2;
+      t[6+col]   = s0 - s3;
+   }
+   for (r = 0; r < 4; r++)
+   {
+      int32_t a = t[r*2], b = t[r*2+1];
+      c[r*2]   = a + b;
+      c[r*2+1] = a - b;
+   }
 }
 
 /* chroma DC 2x2 inverse Hadamard (8.5.11.1). */
@@ -1375,38 +1480,49 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
       int mbx, int mby, uint8_t *u, uint8_t *v, int cbp_chroma, int slice_first, int inter)
 {
    uint8_t *planes[2]; int comp;
-   int32_t cdc[2][4];
+   int32_t cdc[2][8];
+   /* 4:2:0 has four chroma blocks per component in a 2x2 arrangement,
+    * 4:2:2 has eight in a 2x4 - chroma there keeps the luma height. */
+   int nblk = (f->cmbh == 16) ? 8 : 4;
    planes[0]=u; planes[1]=v;
-   /* chroma DC blocks (both components), nC == -1 */
+   /* chroma DC blocks (both components), nC == -1 or -2 */
    for (comp=0; comp<2; comp++)
    {
-      int32_t scan[4]; int k;
-      for (k=0;k<4;k++) cdc[comp][k]=0;
+      int32_t scan[8]; int k;
+      for (k=0;k<nblk;k++) cdc[comp][k]=0;
       {
-         int tc=rh264_residual_block(b,-1,4,scan);
+         /* the eight 4:2:2 DC coefficients arrive in their own scan
+          * order (Table 8-13); the four of 4:2:0 are already raster */
+         static const uint8_t s422[8]={0,2,1,4,6,3,5,7};
+         int tc=rh264_residual_block(b,nblk==8?-2:-1,nblk,scan);
          if (tc<0) return -1;
-         for (k=0;k<4;k++) cdc[comp][k]=scan[k];
+         if (nblk==8) for (k=0;k<8;k++) cdc[comp][s422[k]]=scan[k];
+         else         for (k=0;k<4;k++) cdc[comp][k]=scan[k];
       }
-      rh264_chroma_dc_idct(cdc[comp]);
+      if (nblk==8) rh264_chroma_dc_idct422(cdc[comp]);
+      else         rh264_chroma_dc_idct(cdc[comp]);
       /* scale (8.5.11.2): dcC = ((f * LevelScale[qpc%6][0]) << (qpc/6)) >> 5 */
       {
          int qpc=rh264_chroma_qp(f->qp,
                comp?f->chroma_qp_offset2:f->chroma_qp_offset);
-         int per=qpc/6, rem=qpc%6;
-         int LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
-         for (k=0;k<4;k++)
-            cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>5;
+         int per, rem, LS;
+         /* the 4:2:2 DC uses qP + 3 (8.5.11.2) */
+         if (nblk==8) qpc += 3;
+         per=qpc/6; rem=qpc%6;
+         LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
+         for (k=0;k<nblk;k++)
+            cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>(nblk==8?6:5);
       }
    }
    /* chroma AC blocks (only if cbp_chroma==2) + reconstruct */
    for (comp=0; comp<2; comp++)
    {
       uint8_t *p=planes[comp]; int blk;
-      int cgw=f->mbw*2;
-      for (blk=0; blk<4; blk++)
+      int cgw=f->mbw*2, cbh=f->cmbh/4;
+      for (blk=0; blk<nblk; blk++)
       {
          int bx=blk&1, by=blk>>1, k;
-         int cgx=mbx*2+bx, cgy=mby*2+by;
+         int cgx=mbx*2+bx, cgy=mby*cbh+by;
          int32_t ac[16],r[16];
          int nzc=0;
          for (k=0;k<16;k++) ac[k]=0;
@@ -2217,8 +2333,8 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
                uint8_t *pl=cc?f->V:f->U;
                if(cA<0)cA=0;else if(cA>51)cA=51; if(cB<0)cB=0;else if(cB>51)cB=51;
                ca=rh264_alpha[cA];cbe=rh264_beta[cB];ct=rh264_tc0[bS==4?2:bS-1][cA];
-               rh264_filter_chroma_edge_n(pl+(mby*8)*f->cstride+cx, 1,
-                     f->cstride, 8, bS, ca, cbe, ct);
+               rh264_filter_chroma_edge_n(pl+(mby*f->cmbh)*f->cstride+cx, 1,
+                     f->cstride, f->cmbh, bS, ca, cbe, ct);
             }
          }
       }
@@ -2242,8 +2358,11 @@ static void rh264_deblock(rh264_frame *f, const signed char *sidc,
          a=rh264_alpha[idxA]; be=rh264_beta[idxB]; t=rh264_tc0[bS==4?2:bS-1][idxA];
          rh264_filter_luma_edge_n(f->Y+y*f->ystride+mbx*16, f->ystride,
                1, 16, bS, a, be, t);
-         if((edge&1)==0){
-            int cy=mby*8+(edge>>1)*4, cc;
+         /* chroma has half the luma width but, in 4:2:2, its full
+          * height - so every horizontal luma edge has a chroma edge
+          * to match, where 4:2:0 has one for every second. */
+         if((edge&1)==0 || f->cmbh==16){
+            int cy=mby*f->cmbh+((f->cmbh==16)?edge*4:(edge>>1)*4), cc;
             for(cc=0;cc<2;cc++){
                int coff=cc?f->chroma_qp_offset2:f->chroma_qp_offset;
                int qc=rh264_chroma_qp(qp,coff);
@@ -2282,8 +2401,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
       && nb_ul >= slice_first && nb_ul < mbaddr;
    int gw=f->mbw*4, cgw=f->mbw*2;
    uint8_t *y=f->Y+(mby*16)*f->ystride+mbx*16;
-   uint8_t *u=f->U+(mby*8)*f->cstride+mbx*8;
-   uint8_t *v=f->V+(mby*8)*f->cstride+mbx*8;
+   uint8_t *u=f->U+(mby*f->cmbh)*f->cstride+mbx*8;
+   uint8_t *v=f->V+(mby*f->cmbh)*f->cstride+mbx*8;
    (void)cgw;
       if(mb_type==0 && t8ena && rh264_u1(b)){
          /* I_NxN with the 8x8 transform: four 8x8 predictions, CAVLC
@@ -2303,7 +2422,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             if(prev) predm=mpm;
             else { int rem=rh264_un(b,3); predm=(rem<mpm)?rem:rem+1; }
             modes[b8]=predm;
-            { int cy,cx; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++)
+            { int cy,cx; for (cy = 0; cy < 2; cy++)for(cx=0;cx<2;cx++)
                  f->i4mode[(cgy+cy)*gw+cgx+cx]=(uint8_t)predm; }
          }
          chroma_mode=rh264_ue(b);
@@ -2323,19 +2442,19 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             if(cbp_luma&(1<<b8)){
                if(rh264_cavlc_luma8x8(b,f,mbx,mby,b8,slice_first,1)<0)
                   return -1;
-            } else { int cy,cx; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++)
+            } else { int cy,cx; for (cy = 0; cy < 2; cy++)for(cx=0;cx<2;cx++)
                f->nzL[(mby*4+by8*2+cy)*gw+mbx*4+bx8*2+cx]=0; }
          }
-         rh264_intra_chroma(u,f->cstride,chroma_mode,have_up,have_left);
-         rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
+         rh264_intra_chroma_h(u,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
+         rh264_intra_chroma_h(v,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
          if(cbp_chroma) {
             if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,cbp_chroma,
                   slice_first,0)<0)
                return -1;
          }
-         if(!cbp_chroma){ int cx,cy; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++){
-            f->nzC[0][(mby*2+cy)*cgw+mbx*2+cx]=0;
-            f->nzC[1][(mby*2+cy)*cgw+mbx*2+cx]=0; } }
+         if(!cbp_chroma){ int cx,cy; for (cy = 0; cy < f->cmbh/4; cy++)for(cx=0;cx<2;cx++){
+            f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0;
+            f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0; } }
       }
       else if(mb_type==0){
          /* I_4x4 */
@@ -2419,17 +2538,17 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             }
          }
          /* chroma predict */
-         rh264_intra_chroma(u,f->cstride,chroma_mode,have_up,have_left);
-         rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
+         rh264_intra_chroma_h(u,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
+         rh264_intra_chroma_h(v,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
          if(cbp_chroma) {
             if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,cbp_chroma,
                   slice_first,0)<0)
                return -1;
          }
          /* mark chroma nz zero when no chroma residual */
-         if(!cbp_chroma){ int cx,cy; for(cy=0;cy<2;cy++)for(cx=0;cx<2;cx++){
-            f->nzC[0][(mby*2+cy)*cgw+mbx*2+cx]=0;
-            f->nzC[1][(mby*2+cy)*cgw+mbx*2+cx]=0; } }
+         if(!cbp_chroma){ int cx,cy; for (cy = 0; cy < f->cmbh/4; cy++)for(cx=0;cx<2;cx++){
+            f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0;
+            f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0; } }
       }
       else if(mb_type>=1&&mb_type<=24){
          int m=mb_type-1, pred=m%4, cbp_chroma=(m/4)%3, cbp_luma=(m>=12)?15:0;
@@ -2480,8 +2599,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             f->i4mode[gy*gw+gx]=2;  /* I_16x16 -> DC for neighbour MPM (8.3.1.1) */
          }
          (void)bx;(void)by;
-         rh264_intra_chroma(u,f->cstride,chroma_mode,have_up,have_left);
-         rh264_intra_chroma(v,f->cstride,chroma_mode,have_up,have_left);
+         rh264_intra_chroma_h(u,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
+         rh264_intra_chroma_h(v,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
          if(cbp_chroma){ if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,
                cbp_chroma,slice_first,0)<0)return -1; }
       }
@@ -2503,9 +2622,9 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             f->nzL[(mby*4+r)*gw+mbx*4+c2]=16;
             f->i4mode[(mby*4+r)*gw+mbx*4+c2]=0xff;
          }
-         for(r=0;r<2;r++)for(c2=0;c2<2;c2++){
-            f->nzC[0][(mby*2+r)*cgw+mbx*2+c2]=16;
-            f->nzC[1][(mby*2+r)*cgw+mbx*2+c2]=16;
+         for (r = 0; r < f->cmbh/4; r++)for(c2=0;c2<2;c2++){
+            f->nzC[0][(mby*(f->cmbh/4)+r)*cgw+mbx*2+c2]=16;
+            f->nzC[1][(mby*(f->cmbh/4)+r)*cgw+mbx*2+c2]=16;
          }
       }
       else return -2;
@@ -3754,9 +3873,9 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          /* skip MBs carry no residual */
          { int cx, cy; for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
               f->nzL[(mby * 4 + cy) * gw + mbx * 4 + cx] = 0; }
-         { int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
-              f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
-              f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; } }
+         { int cx, cy; for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++) {
+              f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0;
+              f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0; } }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
          skip_run--; mbaddr++;
          prev_skipped = 1;
@@ -3793,8 +3912,8 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          /* Inter P MB. */
          int cbp, cbp_luma, cbp_chroma;
          int t8 = 0, t8ok = 1;
-         uint8_t *u = f->U + (mby * 8) * f->cstride + mbx * 8;
-         uint8_t *v = f->V + (mby * 8) * f->cstride + mbx * 8;
+         uint8_t *u = f->U + (mby * f->cmbh) * f->cstride + mbx * 8;
+         uint8_t *v = f->V + (mby * f->cmbh) * f->cstride + mbx * 8;
          rh264_inter_clear_i4mode(f, mbx, mby);
 
       if (mb_type == 0)
@@ -3886,9 +4005,9 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
          }
          else
          {
-            int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
-               f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
-               f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; }
+            int cx, cy; for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++) {
+               f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0;
+               f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0; }
          }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
       }
@@ -4472,9 +4591,9 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          rh264_inter_clear_i4mode(f, mbx, mby);
          { int cx, cy; for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
               f->nzL[(mby * 4 + cy) * gw + mbx * 4 + cx] = 0; }
-         { int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
-              f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
-              f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; } }
+         { int cx, cy; for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++) {
+              f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0;
+              f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0; } }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
          skip_run--; mbaddr++;
          prev_skipped = 1;
@@ -4507,8 +4626,8 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
       {
          int cbp, cbp_luma, cbp_chroma;
          int t8 = 0, t8ok;
-         uint8_t *u = f->U + (mby * 8) * f->cstride + mbx * 8;
-         uint8_t *v = f->V + (mby * 8) * f->cstride + mbx * 8;
+         uint8_t *u = f->U + (mby * f->cmbh) * f->cstride + mbx * 8;
+         uint8_t *v = f->V + (mby * f->cmbh) * f->cstride + mbx * 8;
          rh264_inter_clear_i4mode(f, mbx, mby);
          /* noSubMbPartSizeLessThan8x8Flag (7.3.5): direct prediction
           * qualifies only under direct_8x8_inference; B_8x8 refines this
@@ -4720,9 +4839,9 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          }
          else
          {
-            int cx, cy; for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++) {
-               f->nzC[0][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0;
-               f->nzC[1][(mby * 2 + cy) * cgw + mbx * 2 + cx] = 0; }
+            int cx, cy; for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++) {
+               f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0;
+               f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx * 2 + cx] = 0; }
          }
          f->mbqp[mby * f->mbw + mbx] = (uint8_t)f->qp;
       }
@@ -5125,15 +5244,16 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps)
    f->mbw = mbw;             f->mbh = mbh;
    f->ystride = mbw * 16;    f->cstride = mbw * 8;
    f->mbh_frame = mbh; f->field = 0;
+   f->cmbh = (sps->chroma_format_idc == 2) ? 16 : 8;
    f->ysb = f->ystride; f->csb = f->cstride;
    f->Yb = (uint8_t*)calloc((size_t)f->ysb * mbh * 16, 1);
-   f->Ub = (uint8_t*)calloc((size_t)f->csb * mbh * 8, 1);
-   f->Vb = (uint8_t*)calloc((size_t)f->csb * mbh * 8, 1);
+   f->Ub = (uint8_t*)calloc((size_t)f->csb * mbh * f->cmbh, 1);
+   f->Vb = (uint8_t*)calloc((size_t)f->csb * mbh * f->cmbh, 1);
    f->Y = f->Yb; f->U = f->Ub; f->V = f->Vb;
    f->i4mode = (uint8_t*)calloc((size_t)mbw * 4 * mbh * 4, 1);
    f->nzL    = (uint8_t*)calloc((size_t)mbw * 4 * mbh * 4, 1);
-   f->nzC[0] = (uint8_t*)calloc((size_t)mbw * 2 * mbh * 2, 1);
-   f->nzC[1] = (uint8_t*)calloc((size_t)mbw * 2 * mbh * 2, 1);
+   f->nzC[0] = (uint8_t*)calloc((size_t)mbw*2 * mbh*(f->cmbh/4), 1);
+   f->nzC[1] = (uint8_t*)calloc((size_t)mbw*2 * mbh*(f->cmbh/4), 1);
    f->mbqp   = (uint8_t*)calloc((size_t)mbw * mbh, 1);
    f->mbt8   = (uint8_t*)calloc((size_t)mbw * mbh, 1);
    f->mbslice= (uint8_t*)calloc((size_t)mbw * mbh, 1);
@@ -5151,12 +5271,12 @@ static void rh264_frame_reset_ex(rh264_frame *f, int keep)
    int mbw = f->mbw, mbh = f->mbh_frame;
    if (!keep) {
    memset(f->Yb, 0, (size_t)f->ysb * mbh * 16);
-   memset(f->Ub, 0, (size_t)f->csb * mbh * 8);
-   memset(f->Vb, 0, (size_t)f->csb * mbh * 8); }
+   memset(f->Ub, 0, (size_t)f->csb * mbh * f->cmbh);
+   memset(f->Vb, 0, (size_t)f->csb * mbh * f->cmbh); }
    memset(f->i4mode, 0xff, (size_t)mbw * 4 * mbh * 4);
    memset(f->nzL, 0, (size_t)mbw * 4 * mbh * 4);
-   memset(f->nzC[0], 0, (size_t)mbw * 2 * mbh * 2);
-   memset(f->nzC[1], 0, (size_t)mbw * 2 * mbh * 2);
+   memset(f->nzC[0], 0, (size_t)mbw*2 * mbh*(f->cmbh/4));
+   memset(f->nzC[1], 0, (size_t)mbw*2 * mbh*(f->cmbh/4));
    memset(f->mbqp, 0, (size_t)mbw * mbh);
    memset(f->mbt8, 0, (size_t)mbw * mbh);
    memset(f->mbslice, 0, (size_t)mbw * mbh);
@@ -5984,10 +6104,10 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
             f->nzL[(gy0+r)*gw + gx0+c2] = 16;
             f->i4mode[(gy0+r)*gw + gx0+c2] = 0xff;
          }
-         for (r = 0; r < 2; r++) for (c2 = 0; c2 < 2; c2++)
+         for (r = 0; r < f->cmbh/4; r++) for (c2 = 0; c2 < 2; c2++)
          {
-            f->nzC[0][(mby*2+r)*cgw + mbx*2+c2] = 16;
-            f->nzC[1][(mby*2+r)*cgw + mbx*2+c2] = 16;
+            f->nzC[0][(mby*(f->cmbh/4)+r)*cgw + mbx*2+c2] = 16;
+            f->nzC[1][(mby*(f->cmbh/4)+r)*cgw + mbx*2+c2] = 16;
          }
          *prevQpDeltaNZ = 0;
          return 0;
@@ -6847,9 +6967,9 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                f->nzL[(mby*4+cy)*gw + mbx*4+cx] = 0;
                absmvd[o] = 0; absmvd[o+1] = 0;
             }
-            for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++)
-            { f->nzC[0][(mby*2+cy)*cgw + mbx*2+cx] = 0;
-              f->nzC[1][(mby*2+cy)*cgw + mbx*2+cx] = 0; }
+            for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++)
+            { f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx*2+cx] = 0;
+              f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx*2+cx] = 0; }
             tmp.avail = 1;
             prevQpNZ = 0;
             f->mbqp[mby*mbw+mbx] = (uint8_t)f->qp;
@@ -7297,9 +7417,9 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
               return -1; }
             for (cy = 0; cy < 4; cy++) for (cx = 0; cx < 4; cx++)
                f->nzL[(mby*4+cy)*gw + mbx*4+cx] = 0;
-            for (cy = 0; cy < 2; cy++) for (cx = 0; cx < 2; cx++)
-            { f->nzC[0][(mby*2+cy)*cgw + mbx*2+cx] = 0;
-              f->nzC[1][(mby*2+cy)*cgw + mbx*2+cx] = 0; }
+            for (cy = 0; cy < f->cmbh/4; cy++) for (cx = 0; cx < 2; cx++)
+            { f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw + mbx*2+cx] = 0;
+              f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw + mbx*2+cx] = 0; }
             rh264_inter_clear_i4mode(f, mbx, mby);
             tmp.avail = 1;
             prevQpNZ = 0;
@@ -7717,8 +7837,8 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
 static void rh264_frame_copy_planes(rh264_frame *dst, const rh264_frame *src)
 {
    memcpy(dst->Yb, src->Yb, (size_t)src->ysb * src->mbh_frame * 16);
-   memcpy(dst->Ub, src->Ub, (size_t)src->csb * src->mbh_frame * 8);
-   memcpy(dst->Vb, src->Vb, (size_t)src->csb * src->mbh_frame * 8);
+   memcpy(dst->Ub, src->Ub, (size_t)src->csb * src->mbh_frame * src->cmbh);
+   memcpy(dst->Vb, src->Vb, (size_t)src->csb * src->mbh_frame * src->cmbh);
    dst->qp = src->qp;
    dst->chroma_qp_offset = src->chroma_qp_offset;
    dst->chroma_qp_offset2 = src->chroma_qp_offset2;
@@ -8738,7 +8858,8 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
    if (!v) return NULL;
    f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->f;
    if (plane == 0)      { st = f->ysb;     w = f->w;         h = f->h;         p = f->Yb; }
-   else                 { st = f->csb;     w = (f->w+1)/2;   h = (f->h+1)/2;
+   else                 { st = f->csb;     w = (f->w+1)/2;
+                          h = (f->cmbh == 16) ? f->h : (f->h+1)/2;
                           p = (plane == 1) ? f->Ub : f->Vb; }
    if (stride) *stride = st;
    if (width)  *width  = w;
