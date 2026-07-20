@@ -394,9 +394,7 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
     * and inter prediction needs chroma motion compensation that does
     * not halve the vertical vector.  Refusing here keeps a wrongly
     * reconstructed picture off the screen. */
-   if(sps->chroma_format_idc==2
-         &&(pps->entropy_coding_mode_flag
-            ||sh->slice_type==RH264_SLICE_B))
+   if(sps->chroma_format_idc==2&&pps->entropy_coding_mode_flag)
       return 0;
    sh->pic_parameter_set_id=rh264_ue(b);
    sh->frame_num=rh264_un(b,sps->log2_max_frame_num);
@@ -4129,7 +4127,7 @@ static void rh264_b_setup_scales(rh264_bctx *bc)
  * line apart (8.4.1.4). */
 static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
       const rh264_frame *ref, int ox, int oy, int bw, int bh,
-      int mvx, int mvy, int curfield)
+      int mvx, int mvy, int curfield, int c422)
 {
    int rw = ref->mbw * 16, rh = ref->mbh * 16;
    int cmvy = mvy;
@@ -4137,10 +4135,15 @@ static void rh264_b_mc_tmp(uint8_t *ty, uint8_t *tu, uint8_t *tv,
       cmvy += (curfield == 1) ? -2 : 2;
    rh264_mc_luma(ty, 16, ref->Y, ref->ystride, rw, rh, ox, oy, bw, bh,
          mvx, mvy);
-   rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1, rh >> 1,
-         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, cmvy);
-   rh264_mc_chroma(tv, 8, ref->V, ref->cstride, rw >> 1, rh >> 1,
-         ox >> 1, oy >> 1, bw >> 1, bh >> 1, mvx, cmvy);
+   /* 4:2:2 keeps the luma height: the chroma block is as tall as the
+    * luma one and the vector spans twice the eighths vertically. */
+   if (c422) cmvy = cmvy - mvy + mvy * 2;
+   rh264_mc_chroma(tu, 8, ref->U, ref->cstride, rw >> 1,
+         c422 ? rh : (rh >> 1), ox >> 1, c422 ? oy : (oy >> 1),
+         bw >> 1, c422 ? bh : (bh >> 1), mvx, cmvy);
+   rh264_mc_chroma(tv, 8, ref->V, ref->cstride, rw >> 1,
+         c422 ? rh : (rh >> 1), ox >> 1, c422 ? oy : (oy >> 1),
+         bw >> 1, c422 ? bh : (bh >> 1), mvx, cmvy);
 }
 
 /* Single-list explicit weighting over samples just written (8.4.2.3.2),
@@ -4186,14 +4189,17 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
    int ox = mbx*16 + bx, oy = mby*16 + by;
    if (r0 >= 0 && r1 >= 0)
    {
-      uint8_t t0y[256], t0u[64], t0v[64];
-      uint8_t t1y[256], t1u[64], t1v[64];
+      /* chroma temporaries hold 8x8 for 4:2:0 and 8x16 for 4:2:2 */
+      uint8_t t0y[256], t0u[128], t0v[128];
+      uint8_t t1y[256], t1u[128], t1v[128];
       int x, y, c;
-      int cox = ox >> 1, coy = oy >> 1, cbw = bw >> 1, cbh = bh >> 1;
+      int c422 = (f->cmbh == 16);
+      int cox = ox >> 1, coy = c422 ? oy : (oy >> 1);
+      int cbw = bw >> 1, cbh = c422 ? bh : (bh >> 1);
       rh264_b_mc_tmp(t0y, t0u, t0v, bc->l0[r0], ox, oy, bw, bh, mv0x, mv0y,
-            f->field);
+            f->field, c422);
       rh264_b_mc_tmp(t1y, t1u, t1v, bc->l1[r1], ox, oy, bw, bh, mv1x, mv1y,
-            f->field);
+            f->field, c422);
       if (bc->wbidc == 1 && sh->wp_valid)
       {
          int ld = sh->luma_log2_denom, cd = sh->chroma_log2_denom;
