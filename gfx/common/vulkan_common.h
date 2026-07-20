@@ -344,6 +344,13 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
 
+#ifdef __APPLE__
+/* Returns the version string of the MoltenVK implementation in use,
+ * captured at Vulkan context creation. Returns an empty string if no
+ * Vulkan context has been initialized yet. */
+const char *vulkan_get_moltenvk_version(void);
+#endif
+
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface);
 

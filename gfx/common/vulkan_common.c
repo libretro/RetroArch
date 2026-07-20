@@ -73,6 +73,30 @@ static VkInstance                    cached_instance_vk;
 static VkDevice                      cached_device_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 
+#ifdef __APPLE__
+/* On Apple platforms the Vulkan implementation is provided by MoltenVK
+ * (loaded dynamically, either directly or through the Vulkan loader).
+ * The version string is captured once at instance creation time and
+ * cached here so that the System Information menu can report it without
+ * needing a live Vulkan context. Empty until a context has been brought
+ * up at least once. */
+static char                          moltenvk_version_str[32];
+
+/* PFN typedef for the MoltenVK-specific vkGetVersionStringsMVK entry
+ * point. Declared locally because RetroArch bundles the base Vulkan
+ * headers only, not the MoltenVK extension headers. */
+typedef VkResult (VKAPI_PTR *RARCH_PFN_vkGetVersionStringsMVK)(
+      char  *pMoltenVKVersionStringBuffer,
+      size_t moltenVKVersionStringBufferLength,
+      char  *pVulkanVersionStringBuffer,
+      size_t vulkanVersionStringBufferLength);
+
+const char *vulkan_get_moltenvk_version(void)
+{
+   return moltenvk_version_str;
+}
+#endif
+
 #if 0
 #define WSI_HARDENING_TEST
 #endif
@@ -2896,6 +2920,29 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan] Failed to load instance symbols.\n");
       return false;
    }
+
+#ifdef __APPLE__
+   /* Capture the MoltenVK version once, so that the System Information
+    * menu can report the implementation actually in use. */
+   if (!moltenvk_version_str[0] && vk->context.instance)
+   {
+      RARCH_PFN_vkGetVersionStringsMVK GetVersionStringsMVK =
+         (RARCH_PFN_vkGetVersionStringsMVK)GetInstanceProcAddr(
+               vk->context.instance, "vkGetVersionStringsMVK");
+      if (GetVersionStringsMVK)
+      {
+         char vulkan_ver[32];
+         vulkan_ver[0] = '\0';
+         if (GetVersionStringsMVK(moltenvk_version_str,
+                  sizeof(moltenvk_version_str),
+                  vulkan_ver, sizeof(vulkan_ver)) == VK_SUCCESS)
+            RARCH_LOG("[Vulkan] MoltenVK version: %s.\n",
+                  moltenvk_version_str);
+         else
+            moltenvk_version_str[0] = '\0';
+      }
+   }
+#endif
 
    return true;
 }

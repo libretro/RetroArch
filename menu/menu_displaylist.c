@@ -1925,6 +1925,12 @@ static unsigned menu_displaylist_parse_supported_cores(
    return count;
 }
 
+#if defined(HAVE_VULKAN) && defined(__APPLE__)
+/* Implemented in gfx/common/vulkan_common.c. Forward-declared here to
+ * avoid pulling the Vulkan headers into the menu translation unit. */
+const char *vulkan_get_moltenvk_version(void);
+#endif
+
 static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
@@ -1952,6 +1958,27 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
          MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
          0, 0, NULL))
       count++;
+#endif
+
+#if defined(HAVE_VULKAN) && defined(__APPLE__)
+   /* MoltenVK Version */
+   {
+      const char *moltenvk_version = vulkan_get_moltenvk_version();
+      _len        = strlcpy(entry,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION),
+            sizeof(entry));
+      _len       += strlcpy(entry + _len, ": ", sizeof(entry) - _len);
+      if (!moltenvk_version || !*moltenvk_version)
+         strlcpy(entry + _len,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
+               sizeof(entry) - _len);
+      else
+         strlcpy(entry + _len, moltenvk_version, sizeof(entry) - _len);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
+            0, 0, NULL))
+         count++;
+   }
 #endif
 
    /* Build Date */
