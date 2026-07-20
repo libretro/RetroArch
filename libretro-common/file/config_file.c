@@ -241,11 +241,18 @@ static char *config_file_extract_value(char *line)
 
             do
             {
-               line[idx - 1] = '\"'; /* Replace the backslash with a quote */
+               c = line[read_idx];
+               if (!c)
+               {
+                  /* If the quote is the last character of the line, assume it's not escaped */
+               }
+               else
+               {
+                  line[idx - 1] = '\"'; /* Replace the backslash with a quote */
 
-               while ((c = line[read_idx++]) && c != '\"')
-                  line[idx++] = c;
-
+                  while ((c = line[read_idx++]) && c != '\"')
+                     line[idx++] = c;
+               }
             } while (c && line[idx - 1] == '\\'); /* If it's another escaped quote, keep going */
          }
 
