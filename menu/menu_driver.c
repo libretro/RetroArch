@@ -7615,7 +7615,20 @@ static int generic_menu_iterate(
       /* If pointer devices are disabled, just ensure mouse
        * cursor is hidden */
       if (menu_input->pointer.type == MENU_POINTER_DISABLED)
+      {
+         /* menu_input_post_iterate() is skipped here, so its
+          * 'last_*_pressed' edge detectors stop being updated
+          * while the hardware press flags are left untouched.
+          * Clear the flags so that the two cannot desynchronise
+          * and emit a phantom press/release once pointer input
+          * is re-enabled */
+         menu_st->input_pointer_hw_state.flags &=
+               ~(MENU_INP_PTR_FLG_PRESS_SELECT
+               | MENU_INP_PTR_FLG_PRESS_CANCEL
+               | MENU_INP_PTR_FLG_PRESS_LEFT
+               | MENU_INP_PTR_FLG_PRESS_RIGHT);
          ret = 0;
+      }
       else
          ret = menu_input_post_iterate(p_disp, menu_st, action,
                current_time);
