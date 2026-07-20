@@ -268,6 +268,19 @@ typedef struct gfx_ctx_wayland_data
    bool configured;
    bool ignore_configuration;
    driver_configure_handler_t driver_configure_handler;
+   /* State from xdg_toplevel.configure, held until the compositor's
+    * xdg_surface.configure marks it current (xdg-shell latching). */
+   struct
+   {
+      int32_t width;
+      int32_t height;
+      bool fullscreen;
+      bool maximized;
+      bool resizing;
+      bool activated;
+      bool floating;
+      bool pending;
+   } cfg_pending;
    bool activated;
    bool reported_display_size;
    bool swap_complete;

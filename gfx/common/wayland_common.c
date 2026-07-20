@@ -102,41 +102,22 @@ static bool gfx_ctx_wl_should_use_legacy_fullscreen_configure(
    return false;
 }
 
-static void xdg_toplevel_handle_configure_common(gfx_ctx_wayland_data_t *wl,
-      void *toplevel,
-      int32_t width, int32_t height, struct wl_array *states)
+/* Apply a latched xdg_toplevel configuration.  Runs from the
+ * xdg_surface.configure handler: per xdg-shell, toplevel configure
+ * events describe pending state that only becomes current when the
+ * compositor sends xdg_surface.configure. */
+static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
 {
-   const uint32_t *state;
-   bool floating              = true;
+   int32_t width  = wl->cfg_pending.width;
+   int32_t height = wl->cfg_pending.height;
+   bool floating  = wl->cfg_pending.floating;
 
-   wl->fullscreen             = false;
-   wl->maximized              = false;
-
-   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
-   {
-      switch (*state)
-      {
-         case XDG_TOPLEVEL_STATE_FULLSCREEN:
-            wl->fullscreen = true;
-            floating       = false;
-            break;
-         case XDG_TOPLEVEL_STATE_MAXIMIZED:
-            wl->maximized  = true;
-            /* fall-through */
-         case XDG_TOPLEVEL_STATE_TILED_LEFT:
-         case XDG_TOPLEVEL_STATE_TILED_RIGHT:
-         case XDG_TOPLEVEL_STATE_TILED_TOP:
-         case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
-            floating       = false;
-            break;
-         case XDG_TOPLEVEL_STATE_RESIZING:
-            wl->resize     = true;
-            break;
-         case XDG_TOPLEVEL_STATE_ACTIVATED:
-            wl->activated  = true;
-            break;
-      }
-   }
+   wl->fullscreen = wl->cfg_pending.fullscreen;
+   wl->maximized  = wl->cfg_pending.maximized;
+   if (wl->cfg_pending.resizing)
+      wl->resize  = true;
+   if (wl->cfg_pending.activated)
+      wl->activated = true;
 
    if (width == 0 || height == 0)
    {
@@ -307,13 +288,76 @@ static void xdg_toplevel_handle_configure(void *data,
       int32_t width, int32_t height, struct wl_array *states)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
-   if (wl->ignore_configuration)
-      return;
-   xdg_toplevel_handle_configure_common(wl, toplevel, width, height, states);
-   if (wl->driver_configure_handler)
-      wl->driver_configure_handler(wl);
-   wl->configured = false;
+   const uint32_t *state;
+
+   /* Record only; the state is pending until xdg_surface.configure.
+    * A later toplevel.configure before the surface.configure
+    * supersedes this one (last-wins), matching the protocol. */
+   wl->cfg_pending.width      = width;
+   wl->cfg_pending.height     = height;
+   wl->cfg_pending.fullscreen = false;
+   wl->cfg_pending.maximized  = false;
+   wl->cfg_pending.resizing   = false;
+   wl->cfg_pending.activated  = false;
+   wl->cfg_pending.floating   = true;
+
+   WL_ARRAY_FOR_EACH(state, states, const uint32_t*)
+   {
+      switch (*state)
+      {
+         case XDG_TOPLEVEL_STATE_FULLSCREEN:
+            wl->cfg_pending.fullscreen = true;
+            wl->cfg_pending.floating   = false;
+            break;
+         case XDG_TOPLEVEL_STATE_MAXIMIZED:
+            wl->cfg_pending.maximized  = true;
+            /* fall-through */
+         case XDG_TOPLEVEL_STATE_TILED_LEFT:
+         case XDG_TOPLEVEL_STATE_TILED_RIGHT:
+         case XDG_TOPLEVEL_STATE_TILED_TOP:
+         case XDG_TOPLEVEL_STATE_TILED_BOTTOM:
+            wl->cfg_pending.floating   = false;
+            break;
+         case XDG_TOPLEVEL_STATE_RESIZING:
+            wl->cfg_pending.resizing   = true;
+            break;
+         case XDG_TOPLEVEL_STATE_ACTIVATED:
+            wl->cfg_pending.activated  = true;
+            break;
+      }
+   }
+
+   wl->cfg_pending.pending = true;
 }
+
+static void xdg_surface_handle_configure_latch(void *data,
+      struct xdg_surface *xdg_surface, uint32_t serial)
+{
+   gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   if (wl->cfg_pending.pending)
+   {
+      wl->cfg_pending.pending = false;
+      /* ignore_configuration drops the configuration exactly as the
+       * pre-latching code dropped it at toplevel.configure time;
+       * evaluated here, at the atomic point. */
+      if (!wl->ignore_configuration)
+      {
+         xdg_configure_apply(wl);
+         if (wl->driver_configure_handler)
+            wl->driver_configure_handler(wl);
+         wl->configured = false;
+      }
+   }
+
+   /* Always acknowledge; the new state takes effect on the next
+    * wl_surface.commit, which the frame loop performs. */
+   xdg_surface_ack_configure(xdg_surface, serial);
+}
+
+static const struct xdg_surface_listener wl_xdg_surface_listener = {
+   xdg_surface_handle_configure_latch,
+};
 
 static const struct xdg_toplevel_listener wl_xdg_toplevel_listener = {
    xdg_toplevel_handle_configure,
@@ -988,7 +1032,7 @@ bool gfx_ctx_wl_init_common(
 #endif
    {
       wl->xdg_surface = xdg_wm_base_get_xdg_surface(wl->xdg_shell, wl->surface);
-      xdg_surface_add_listener(wl->xdg_surface, &xdg_surface_listener, wl);
+      xdg_surface_add_listener(wl->xdg_surface, &wl_xdg_surface_listener, wl);
 
       wl->xdg_toplevel = xdg_surface_get_toplevel(wl->xdg_surface);
       xdg_toplevel_add_listener(wl->xdg_toplevel, &wl_xdg_toplevel_listener, wl);
