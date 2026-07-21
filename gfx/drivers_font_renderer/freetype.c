@@ -389,12 +389,16 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
        * font selection respects system (or user) configurations */
       FcDefaultSubstitute(pattern);
 
-      /* Box the locale data in a FcValue container */
-      locale_boxed.type = FcTypeString;
-      locale_boxed.u.s  = locale;
-
-      /* Override locale settings, since we are not using the system locale */
-      FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
+      /* Override locale settings, since we are not using the
+       * system locale; FcLangNormalize can fail, in which case the
+       * pattern is simply left without a language preference */
+      if (locale)
+      {
+         /* Box the locale data in a FcValue container */
+         locale_boxed.type = FcTypeString;
+         locale_boxed.u.s  = locale;
+         FcPatternAdd(pattern, FC_LANG, locale_boxed, false);
+      }
 
       /* Let's find the best matching font given our search criteria */
       found             = FcFontMatch(config, pattern, &result);
@@ -542,6 +546,8 @@ static void font_renderer_ft_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
+   if (!handle)
+      return;
    *metrics = &handle->line_metrics;
 }
 
