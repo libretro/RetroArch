@@ -1608,7 +1608,10 @@ static void rh264_filter_luma_edge(uint8_t *e,int s,int bS,int a,int be,int tc0v
       int tc=tc0v, ap=RH264_ABS(p2-p0), aq=RH264_ABS(q2-q0), d;
       if(ap<be) tc++;
       if(aq<be) tc++;
-      d=(((q0-p0)<<2)+(p1-q1)+4)>>3;
+      /* q0-p0 is a difference of two samples and so may be negative;
+       * shifting that left is undefined, and this is the scalar path a
+       * target without vector support takes (8.7.2.3). */
+      d=(((q0-p0)*4)+(p1-q1)+4)>>3;
       if(d<-tc)d=-tc; else if(d>tc)d=tc;
       e[-1*s]=(uint8_t)RH264_CLIP(p0+d);
       e[0]   =(uint8_t)RH264_CLIP(q0-d);
