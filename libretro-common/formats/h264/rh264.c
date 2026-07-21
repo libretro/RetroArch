@@ -491,8 +491,12 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
       sh->chroma_log2_denom=rh264_ue(b);
       /* 7.4.3.2 bounds both denominators to 0..7; a corrupt stream can
        * signal anything, and the unit-weight defaults below shift by
-       * the value read. */
-      if(sh->luma_log2_denom>7||sh->chroma_log2_denom>7)
+       * the value read.  Compare as unsigned: rh264_ue saturates to
+       * 0xFFFFFFFF on an over-long code, which lands in these ints as
+       * -1 and slips past a signed upper-bound test, leaving the shifts
+       * below - and the ones in the weighting itself - with a negative
+       * exponent. */
+      if((unsigned)sh->luma_log2_denom>7||(unsigned)sh->chroma_log2_denom>7)
          return 0;
       for(i=0;i<32;i++){
          sh->wp_lw[i]=(int16_t)(1<<sh->luma_log2_denom); sh->wp_lo[i]=0;
