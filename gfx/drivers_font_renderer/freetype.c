@@ -36,6 +36,24 @@
 #if defined(HAVE_FONTCONFIG_SUPPORT)
 #include <fontconfig/fontconfig.h>
 #include "../../msg_hash.h"
+
+/* Process-lifetime fontconfig configuration.
+ *
+ * This is initialized once and deliberately never passed to
+ * FcConfigDestroy(). Destroying the config unmaps the directory
+ * caches while fontconfig's static interned state (frozen
+ * charsets/langsets, cache hash tables) may still reference the
+ * mapped memory; a second in-process fontconfig consumer (e.g.
+ * the Qt UI companion calling FcInit()) can then dereference the
+ * stale pointers and crash with a use-after-munmap. Observed in
+ * practice on FreeBSD 14.3 (issue #18377), where the crash was
+ * masked under gdb because gdb disables ASLR and the remapped
+ * caches landed at their old addresses.
+ *
+ * Keeping one config for the lifetime of the process is the
+ * usage pattern fontconfig upstream recommends, and also avoids
+ * re-scanning every cache file on each font load. */
+static FcConfig *fc_config = NULL;
 #endif
 
 #ifdef WIIU
@@ -316,17 +334,16 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       FcPattern* pattern     = NULL;
       FcChar8* locale        = NULL;
 
-      config  = FcInitLoadConfigAndFonts();
+      if (!fc_config)
+         fc_config = FcInitLoadConfigAndFonts();
+      config  = fc_config;
       if (!config)
          goto error;
 
       /* select Sans fonts */
       pattern = FcNameParse((const FcChar8*)"Sans");
       if (!pattern)
-      {
-         FcConfigDestroy(config);
          goto error;
-      }
 
       /* since fontconfig uses LL-TT style, we need to normalize
        * locale names */
@@ -366,13 +383,14 @@ static void *font_renderer_ft_init(const char *font_path, float font_size)
       err = FT_New_Memory_Face(handle->lib, (const FT_Byte*)font_data,
             (FT_Long)font_data_size, (FT_Long)face_index, &handle->face);
 
-      /* free up fontconfig internal structures */
+      /* free up per-lookup fontconfig structures; the config
+       * itself is kept alive for the process lifetime (see the
+       * comment at the fc_config definition) */
       FcPatternDestroy(pattern);
       if (found)
          FcPatternDestroy(found);
       if (locale)
          FcStrFree(locale);
-      FcConfigDestroy(config);
 
       if (err)
       {
@@ -388,7 +406,6 @@ fc_cleanup:
          FcPatternDestroy(found);
       if (locale)
          FcStrFree(locale);
-      FcConfigDestroy(config);
       if (font_data)
          free(font_data);
       goto error;
