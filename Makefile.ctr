@@ -71,7 +71,6 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	CFLAGS += -I. \
 		-Ideps \
 		-Ideps/7zip \
-		-Ideps/stb \
 		-Ideps/mbedtls \
 		-Ideps/rcheevos/include \
 		-Ilibretro-common/include \

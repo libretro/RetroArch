@@ -156,8 +156,7 @@ HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
 
 INCLUDE += -I./libretro-common/include \
-           -Ideps \
-           -Ideps/stb
+           -Ideps
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
 OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o

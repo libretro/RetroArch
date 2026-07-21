@@ -27,7 +27,7 @@ ELF_TARGET  := retroarch_psl1ght.elf
 SELF_TARGET := $(ELF_TARGET:.elf=.self)
 CORE_PATH    = pkg/psl1ght/pkg/USRDIR/cores/CORE.SELF
 
-INCLUDE += -I. -Ideps -Ideps/stb -Ilibretro-common/include/compat/zlib -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2
+INCLUDE += -I. -Ideps -Ilibretro-common/include/compat/zlib -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2
 LIBDIRS += -L. -L$(PORTLIBS)/lib
 
 ifeq ($(HAVE_STATIC_DUMMY),1)

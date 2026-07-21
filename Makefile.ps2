@@ -90,7 +90,7 @@ ifneq ($(V),1)
 endif
 
 INCDIR = -I$(PS2DEV)/gsKit/include -I$(PS2SDK)/ports/include
-INCDIR += -Ilibretro-common/include -Ideps -Ideps/stb -Ideps/7zip
+INCDIR += -Ilibretro-common/include -Ideps -Ideps/7zip
 
 LDFLAGS += -L$(PS2DEV)/gsKit/lib -L$(PS2SDK)/ports/lib -L.
 # Lib cdvd is needed to get proper time

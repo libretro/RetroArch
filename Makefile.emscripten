@@ -293,7 +293,7 @@ endif
 
 include Makefile.common
 
-DEF_FLAGS += $(INCLUDE_DIRS) -Ideps -Ideps/stb
+DEF_FLAGS += $(INCLUDE_DIRS) -Ideps
 
 CFLAGS += $(DEF_FLAGS)
 CXXFLAGS += $(DEF_FLAGS) -D__STDC_CONSTANT_MACROS

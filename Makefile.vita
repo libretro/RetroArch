@@ -45,8 +45,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	INCDIRS += -I. \
 		   -Ideps/7zip \
 		   -Ilibretro-common/include \
-		   -Ilibretro-common/include/compat/zlib \
-		   -Ideps/stb
+		   -Ilibretro-common/include/compat/zlib
 else
 	HAVE_REWIND		:= 1
 	HAVE_UPDATE_ASSETS      := 1

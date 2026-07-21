@@ -158,7 +158,7 @@ TARGET = retroarch
 OBJ :=
 LINK := $(CC)
 DEF_FLAGS += -ffunction-sections -fdata-sections
-DEF_FLAGS += -I. -Ideps -Ideps/stb -DWEBOS=1 -MMD
+DEF_FLAGS += -I. -Ideps -DWEBOS=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 LIBS := -ldl -lz -lrt -pthread
 ifeq ($(findstring arm64,$(ARCH)),arm64)

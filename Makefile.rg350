@@ -122,7 +122,7 @@ LINK := $(CXX)
 DEF_FLAGS := -march=mips32 -mtune=mips32r2 -mhard-float -ffast-math -fomit-frame-pointer
 DEF_FLAGS += -mplt -mno-shared
 DEF_FLAGS += -ffunction-sections -fdata-sections
-DEF_FLAGS += -I. -Ideps -Ideps/stb -DDINGUX=1 -MMD
+DEF_FLAGS += -I. -Ideps -DDINGUX=1 -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE -flto
 LIBS := -ldl -lz -lrt -ludev -pthread

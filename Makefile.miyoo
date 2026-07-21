@@ -124,7 +124,7 @@ OBJ :=
 LINK := $(CXX)
 DEF_FLAGS := -march=armv5te -mtune=arm926ej-s -fomit-frame-pointer
 DEF_FLAGS += -ffunction-sections -fdata-sections
-DEF_FLAGS += -I. -Ideps -Ideps/stb -DMIYOO=1 -DDINGUX -MMD
+DEF_FLAGS += -I. -Ideps -DMIYOO=1 -DDINGUX -MMD
 DEF_FLAGS += -Wall -Wno-unused-variable -flto
 DEF_FLAGS += -std=gnu99 -D_GNU_SOURCE
 LIBS := -ldl -lz -lrt -pthread -lasound
