@@ -15,11 +15,16 @@
  */
 
 #include <ctype.h>
+#include <string.h>
 
 #include <file/file_path.h>
 #include <streams/file_stream.h>
-#include <retro_miscellaneous.h>
 #include <string/stdstring.h>
+#include <retro_miscellaneous.h>
+
+#ifdef WIIU
+#include <wiiu/os.h>
+#endif
 
 #include "../font_driver.h"
 
@@ -34,10 +39,41 @@
 #undef STATIC
 #endif
 
+#define STB_ATLAS_ROWS 16
+#define STB_ATLAS_COLS 16
+#define STB_ATLAS_SIZE (STB_ATLAS_ROWS * STB_ATLAS_COLS)
+/* Padding is required between each glyph in
+ * the atlas to prevent texture bleed when
+ * drawing with linear filtering enabled */
+#define STB_ATLAS_PADDING 1
+
+/* Improved hash: mix in upper bits to reduce clustering
+ * for CJK and other non-Latin codepoints */
+#define STB_HASH_SIZE 0x100
+#define STB_HASH(c) (((c) ^ ((c) >> 8)) & (STB_HASH_SIZE - 1))
+
+typedef struct stb_atlas_slot
+{
+   struct stb_atlas_slot* next;
+   struct font_glyph glyph;      /* unsigned alignment */
+   unsigned charcode;
+   unsigned last_used;
+} stb_atlas_slot_t;
+
 typedef struct
 {
-   struct font_atlas atlas;               /* ptr   alignment */
-   struct font_glyph glyphs[256];         /* unsigned alignment */
+   uint8_t *font_data;
+   /* Whether font_data was allocated by us (and must be freed) or points
+    * to OS-owned shared memory (WiiU) that must not be freed. */
+   bool font_data_owned;
+   struct font_atlas atlas;               /* ptr alignment */
+   stb_atlas_slot_t* uc_map[STB_HASH_SIZE];
+   stb_atlas_slot_t atlas_slots[STB_ATLAS_SIZE];
+   stbtt_fontinfo info;                   /* ptr alignment */
+   int max_glyph_width;
+   int max_glyph_height;
+   unsigned usage_counter;
+   float scale_factor;
    struct font_line_metrics line_metrics; /* float alignment */
 } stb_font_renderer_t;
 
@@ -47,151 +83,254 @@ static struct font_atlas *font_renderer_stb_get_atlas(void *data)
    return &self->atlas;
 }
 
-static const struct font_glyph *font_renderer_stb_get_glyph(
-      void *data, uint32_t code)
-{
-   stb_font_renderer_t *self = (stb_font_renderer_t*)data;
-   return code < 256 ? &self->glyphs[code] : NULL;
-}
-
 static void font_renderer_stb_free(void *data)
 {
    stb_font_renderer_t *self = (stb_font_renderer_t*)data;
 
    free(self->atlas.buffer);
+   /* Do not free WiiU shared-memory font data; it is owned by the OS. */
+   if (self->font_data_owned)
+      free(self->font_data);
    free(self);
 }
 
-static bool font_renderer_stb_create_atlas(stb_font_renderer_t *self,
-      uint8_t *font_data, float font_size, unsigned width, unsigned height)
+static stb_atlas_slot_t* font_renderer_stb_get_slot(stb_font_renderer_t *handle)
 {
    int i;
-   stbtt_packedchar chardata[256];
-   stbtt_pack_context pc = {NULL};
+   unsigned map_id;
+   unsigned oldest = 0;
+   stb_atlas_slot_t *ptr;
+   /* Find the least-recently-used slot.
+    * Unsigned subtraction handles wrap-around correctly. */
+   unsigned oldest_age = handle->usage_counter -
+      handle->atlas_slots[0].last_used;
 
-   if (width > 2048 || height > 2048)
-      goto error;
-
-   if (self->atlas.buffer)
-      free(self->atlas.buffer);
-
-   self->atlas.buffer = (uint8_t*)calloc(height, width);
-   self->atlas.width  = width;
-   self->atlas.height = height;
-
-   if (!self->atlas.buffer)
-      goto error;
-
-   /* Note: 1 pixel of padding is added to
-    * prevent texture bleed when drawing with
-    * linear filtering enabled */
-   stbtt_PackBegin(&pc, self->atlas.buffer,
-         self->atlas.width, self->atlas.height,
-         self->atlas.width, 1, NULL);
-
-   stbtt_PackFontRange(&pc, font_data, 0, font_size, 0, 256, chardata);
-   stbtt_PackEnd(&pc);
-
-   self->atlas.dirty = true;
-
-   for (i = 0; i < 256; ++i)
+   for (i = 1; i < STB_ATLAS_SIZE; i++)
    {
-      struct font_glyph *g = &self->glyphs[i];
-      stbtt_packedchar  *c = &chardata[i];
-
-      g->advance_x         = c->xadvance;
-      g->atlas_offset_x    = c->x0;
-      g->atlas_offset_y    = c->y0;
-      g->draw_offset_x     = c->xoff;
-      g->draw_offset_y     = c->yoff;
-      g->width             = c->x1 - c->x0;
-      g->height            = c->y1 - c->y0;
-
-      /* Make sure important characters fit */
-      if (ISALNUM(i) && (!g->width || !g->height))
+      unsigned age = handle->usage_counter - handle->atlas_slots[i].last_used;
+      if (age > oldest_age)
       {
-         int new_width  = width  * 1.2;
-         int new_height = height * 1.2;
-
-         /* Limit growth to 2048x2048 unless we already reached that */
-         if (width < 2048 || height < 2048)
-         {
-            new_width  = MIN(new_width,  2048);
-            new_height = MIN(new_height, 2048);
-         }
-
-         return font_renderer_stb_create_atlas(self, font_data, font_size,
-               new_width, new_height);
+         oldest_age = age;
+         oldest     = i;
       }
    }
 
-   return true;
+   /* Remove from map */
+   map_id = STB_HASH(handle->atlas_slots[oldest].charcode);
+   if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
+      handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
+   else if (handle->uc_map[map_id])
+   {
+      ptr = handle->uc_map[map_id];
+      while (ptr->next && ptr->next != &handle->atlas_slots[oldest])
+         ptr = ptr->next;
+      ptr->next = handle->atlas_slots[oldest].next;
+   }
 
-error:
-   if (self->atlas.buffer)
-      free(self->atlas.buffer);
-
-   self->atlas.width  = 0;
-   self->atlas.height = 0;
-   self->atlas.buffer = NULL;
-
-   return false;
+   return &handle->atlas_slots[oldest];
 }
 
-static void *font_renderer_stb_init(const char *font_path, float font_size)
+static const struct font_glyph *font_renderer_stb_get_glyph(
+      void *data, uint32_t charcode)
 {
-   float scale_factor;
-   stbtt_fontinfo info;
-   int ascent, descent, line_gap;
-   int font_offset           = 0;
-   uint8_t *font_data        = NULL;
-   stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
-
-   /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
-   font_size = STBTT_POINT_SIZE(font_size);
+   int glyph_index                      = 0;
+   int x0                               = 0;
+   int y1                               = 0;
+   int advance_width                    = 0;
+   int left_side_bearing                = 0;
+   unsigned map_id                      = 0;
+   uint8_t *dst                         = NULL;
+   stb_atlas_slot_t* atlas_slot = NULL;
+   stb_font_renderer_t *self    = (stb_font_renderer_t*)data;
+   float glyph_advance_x               = 0.0f;
+   float glyph_draw_offset_y           = 0.0f;
 
    if (!self)
       return NULL;
 
-   if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&font_data, NULL))
+   map_id                               = STB_HASH(charcode);
+   atlas_slot                           = self->uc_map[map_id];
+
+   while (atlas_slot)
+   {
+      if (atlas_slot->charcode == charcode)
+      {
+         atlas_slot->last_used = self->usage_counter++;
+         return &atlas_slot->glyph;
+      }
+      atlas_slot = atlas_slot->next;
+   }
+
+   atlas_slot             = font_renderer_stb_get_slot(self);
+   atlas_slot->charcode   = charcode;
+   atlas_slot->next       = self->uc_map[map_id];
+   self->uc_map[map_id]   = atlas_slot;
+
+   glyph_index            = stbtt_FindGlyphIndex(&self->info, charcode);
+
+   dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
+         + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
+
+   stbtt_GetGlyphHMetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
+
+   if (stbtt_GetGlyphBox(&self->info, glyph_index, &x0, NULL, NULL, &y1))
+      stbtt_MakeGlyphBitmap(&self->info, dst,
+         self->max_glyph_width, self->max_glyph_height,
+         self->atlas.width, self->scale_factor,
+         self->scale_factor, glyph_index);
+   else
+   {
+      /* This means the glyph is empty. In this case, stbtt_MakeGlyphBitmap()
+       * fills the corresponding region of the atlas buffer with garbage,
+       * so just zero it.
+       * Use row-major memset for cache-friendly clearing. */
+      int row;
+      for (row = 0; row < self->max_glyph_height; row++)
+         memset(dst + (row * self->atlas.width), 0,
+                (size_t)self->max_glyph_width);
+   }
+
+   atlas_slot->glyph.width          = self->max_glyph_width;
+   atlas_slot->glyph.height         = self->max_glyph_height;
+
+   /* advance_x must always be rounded to the
+    * *nearest* integer */
+   glyph_advance_x                  = (float)advance_width * self->scale_factor;
+   atlas_slot->glyph.advance_x      = (int)((glyph_advance_x > 0.0f)
+         ? (glyph_advance_x + 0.5f)
+         : (glyph_advance_x - 0.5f));
+   /* advance_y is always zero */
+   atlas_slot->glyph.advance_y      = 0;
+
+   /* draw_offset_x must always be rounded *down*
+    * to the nearest integer */
+   atlas_slot->glyph.draw_offset_x  = (int)((float)x0 * self->scale_factor);
+
+   /* draw_offset_y must always be rounded *up*
+    * to the nearest integer */
+   glyph_draw_offset_y              = (float)(-y1) * self->scale_factor;
+   atlas_slot->glyph.draw_offset_y  = (int)((glyph_draw_offset_y < 0.0f)
+         ? floor((double)glyph_draw_offset_y)
+         : ceil((double)glyph_draw_offset_y));
+
+   self->atlas.dirty                = true;
+   atlas_slot->last_used            = self->usage_counter++;
+   return &atlas_slot->glyph;
+}
+
+static bool font_renderer_stb_create_atlas(
+      stb_font_renderer_t *self, float font_size)
+{
+   unsigned i, x, y;
+   stb_atlas_slot_t* slot = NULL;
+   int max_glyph_size             = (font_size < 0) ? (int)(-font_size) : (int)font_size;
+
+   /* Bound the glyph size. Every glyph cell is max_glyph_size on a side and
+    * the atlas is (size + padding) * 16 in each dimension, so an unchecked
+    * size lets self->atlas.width * self->atlas.height overflow 'unsigned',
+    * after which the calloc below is undersized and every subsequent
+    * stbtt_MakeGlyphBitmap()/memset writes past the buffer. Mirror the
+    * 2048-per-axis ceiling used by the fixed-ASCII stb renderer. */
+   if (max_glyph_size < 1)
+      return false;
+   if (max_glyph_size > 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING)
+      max_glyph_size = 2048 / STB_ATLAS_COLS - STB_ATLAS_PADDING;
+
+   self->max_glyph_width          = max_glyph_size;
+   self->max_glyph_height         = max_glyph_size;
+
+   self->atlas.width              = (self->max_glyph_width  + STB_ATLAS_PADDING) * STB_ATLAS_COLS;
+   self->atlas.height             = (self->max_glyph_height + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
+
+   /* Pass the two dimensions separately so the C library's calloc overflow
+    * check applies, rather than pre-multiplying into a single argument. */
+   self->atlas.buffer             = (uint8_t*)calloc(
+      self->atlas.height, self->atlas.width);
+
+   if (!self->atlas.buffer)
+      return false;
+
+   slot = self->atlas_slots;
+
+   for (y = 0; y < STB_ATLAS_ROWS; y++)
+   {
+      for (x = 0; x < STB_ATLAS_COLS; x++)
+      {
+         slot->glyph.atlas_offset_x = x * (self->max_glyph_width  + STB_ATLAS_PADDING);
+         slot->glyph.atlas_offset_y = y * (self->max_glyph_height + STB_ATLAS_PADDING);
+         slot++;
+      }
+   }
+
+   /* Pre-populate only printable ASCII (32-126).
+    * Control characters (0-31) are never rendered and
+    * would waste atlas slots that could hold real glyphs. */
+   for (i = 32; i < 127; i++)
+      font_renderer_stb_get_glyph(self, i);
+
+   return true;
+}
+
+static void *font_renderer_stb_init(const char *font_path, float font_size)
+{
+   int ascent, descent, line_gap;
+   stb_font_renderer_t *self =
+      (stb_font_renderer_t*)calloc(1, sizeof(*self));
+
+   if (!self || font_size < 1.0f)
       goto error;
 
-   /* Validate the font before handing it to the packer.
-    * font_renderer_stb_create_atlas() below runs the full stb_truetype
-    * parse/rasterize path (stbtt_PackFontRange), which trusts its input
-    * and can read out of bounds on a malformed or truncated file. Reject
-    * anything stbtt_InitFont() does not recognise as a font first, and
-    * reuse the resolved offset for the metrics call afterwards. */
-   font_offset = stbtt_GetFontOffsetForIndex(font_data, 0);
-   if (font_offset < 0)
-      goto error;
-   if (!stbtt_InitFont(&info, font_data, font_offset))
+   /* See https://github.com/nothings/stb/blob/master/stb_truetype.h#L539 */
+   font_size = STBTT_POINT_SIZE(font_size);
+
+#ifdef WIIU
+   if (!*font_path)
+   {
+      uint32_t size = 0;
+      /* OS-owned shared memory: borrowed, not owned - must not be freed. */
+      if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
+         goto error;
+      self->font_data_owned = false;
+   }
+   else
+#endif
+   {
+      if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, NULL))
+         goto error;
+      self->font_data_owned = true;
+   }
+
+   /* Guard against empty/corrupt font files */
+   if (!self->font_data)
       goto error;
 
-   if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))
+   if (!stbtt_InitFont(&self->info, self->font_data,
+            stbtt_GetFontOffsetForIndex(self->font_data, 0)))
       goto error;
 
-   stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
+   stbtt_GetFontVMetrics(&self->info, &ascent, &descent, &line_gap);
 
-   scale_factor = (font_size < 0)
-         ? stbtt_ScaleForMappingEmToPixels(&info, -font_size)
-         : stbtt_ScaleForPixelHeight(&info, font_size);
+   if (font_size < 0)
+      self->scale_factor = stbtt_ScaleForMappingEmToPixels(&self->info, -font_size);
+   else
+      self->scale_factor = stbtt_ScaleForPixelHeight(&self->info, font_size);
+
+   if (self->scale_factor <= 0.0f)
+      goto error;
 
    /* Ascender, descender and line_gap values always
     * end up ~0.5 pixels too small when scaled...
     * > Add a manual correction factor */
-   self->line_metrics.ascender  = 0.5f + (float)ascent * scale_factor;
-   self->line_metrics.descender = 0.5f + (float)(-descent) * scale_factor;
-   self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * scale_factor;
+   self->line_metrics.ascender  = 0.5f + (float)ascent * self->scale_factor;
+   self->line_metrics.descender = 0.5f + ((float)(-descent) * self->scale_factor);
+   self->line_metrics.height    = 0.5f + (float)(ascent - descent + line_gap) * self->scale_factor;
 
-   free(font_data);
+   if (!font_renderer_stb_create_atlas(self, font_size))
+      goto error;
 
    return self;
 
 error:
-   if (font_data)
-      free(font_data);
-
    if (self)
       font_renderer_stb_free(self);
    return NULL;
@@ -199,6 +338,9 @@ error:
 
 static const char *font_renderer_stb_get_default_font(void)
 {
+#ifdef WIIU
+   return "";
+#else
    static const char *paths[] = {
 #if defined(_WIN32) && !defined(__WINRT__)
       "C:\\Windows\\Fonts\\consola.ttf",
@@ -221,6 +363,14 @@ static const char *font_renderer_stb_get_default_font(void)
       "vs0:data/external/font/pvf/k006004ds.ttf",
       "vs0:data/external/font/pvf/n023055ms.ttf",
       "vs0:data/external/font/pvf/n023055ts.ttf",
+#elif defined(ORBIS)
+      "/preinst/common/font/c041056ts.ttf",
+      "/preinst/common/font/d013013ds.ttf",
+      "/preinst/common/font/e046323ms.ttf",
+      "/preinst/common/font/e046323ts.ttf",
+      "/preinst/common/font/k006004ds.ttf",
+      "/preinst/common/font/n023055ms.ttf",
+      "/preinst/common/font/n023055ts.ttf",
 #elif !defined(__WINRT__)
       "/usr/share/fonts/TTF/DejaVuSansMono.ttf",
       "/usr/share/fonts/TTF/DejaVuSans.ttf",
@@ -240,6 +390,7 @@ static const char *font_renderer_stb_get_default_font(void)
          return *p;
 
    return NULL;
+#endif
 }
 
 static void font_renderer_stb_get_line_metrics(

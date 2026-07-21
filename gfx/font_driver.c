@@ -47,11 +47,7 @@ int font_renderer_create_default(
       &coretext_font_renderer,
 #endif
 #ifdef HAVE_STB_FONT
-#if defined(VITA) || defined(ORBIS) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)
-      &stb_unicode_font_renderer,
-#else
-      &stb_unicode_font_renderer,
-#endif
+      &stb_font_renderer,
 #endif
       &bitmap_font_renderer,
       NULL
