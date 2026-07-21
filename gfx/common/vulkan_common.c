@@ -76,20 +76,11 @@ static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 #ifdef __APPLE__
 /* On Apple platforms the Vulkan implementation is provided by MoltenVK
  * (loaded dynamically, either directly or through the Vulkan loader).
- * The version string is captured once at instance creation time and
- * cached here so that the System Information menu can report it without
- * needing a live Vulkan context. Empty until a context has been brought
- * up at least once. */
-static char                          moltenvk_version_str[32];
-
-/* PFN typedef for the MoltenVK-specific vkGetVersionStringsMVK entry
- * point. Declared locally because RetroArch bundles the base Vulkan
- * headers only, not the MoltenVK extension headers. */
-typedef VkResult (VKAPI_PTR *RARCH_PFN_vkGetVersionStringsMVK)(
-      char  *pMoltenVKVersionStringBuffer,
-      size_t moltenVKVersionStringBufferLength,
-      char  *pVulkanVersionStringBuffer,
-      size_t vulkanVersionStringBufferLength);
+ * The version string is captured once, when the physical device is
+ * selected, and cached here so that the System Information menu can
+ * report it without needing a live Vulkan context. Empty until a
+ * context has been brought up at least once. */
+static char                          moltenvk_version_str[64];
 
 const char *vulkan_get_moltenvk_version(void)
 {
@@ -653,6 +644,56 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
    }
 
    free(gpus);
+
+#ifdef __APPLE__
+   /* Capture the MoltenVK version from the selected physical device.
+    * The legacy VK_MVK_moltenvk entry points (vkGetVersionStringsMVK)
+    * are no longer vended through the Vulkan loader, so query the
+    * standard VK_KHR_driver_properties driverInfo string instead, which
+    * MoltenVK populates with its version (e.g. "1.2.11"). */
+   if (!moltenvk_version_str[0] && vk->context.gpu)
+   {
+      PFN_vkGetInstanceProcAddr gipa =
+         vulkan_symbol_wrapper_instance_proc_addr();
+      PFN_vkGetPhysicalDeviceProperties2 GetPhysicalDeviceProperties2 = NULL;
+
+      if (gipa)
+      {
+         GetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)
+            gipa(vk->context.instance, "vkGetPhysicalDeviceProperties2");
+         if (!GetPhysicalDeviceProperties2)
+            GetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)
+               gipa(vk->context.instance, "vkGetPhysicalDeviceProperties2KHR");
+      }
+
+      if (GetPhysicalDeviceProperties2)
+      {
+         VkPhysicalDeviceDriverPropertiesKHR driver_props;
+         VkPhysicalDeviceProperties2         props2;
+
+         driver_props.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
+         driver_props.pNext    = NULL;
+         driver_props.driverName[0] = '\0';
+         driver_props.driverInfo[0] = '\0';
+
+         props2.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+         props2.pNext          = &driver_props;
+
+         GetPhysicalDeviceProperties2(vk->context.gpu, &props2);
+
+         /* Only report when the implementation actually is MoltenVK. */
+         if (     strstr(driver_props.driverName, "MoltenVK")
+               && driver_props.driverInfo[0])
+         {
+            strlcpy(moltenvk_version_str, driver_props.driverInfo,
+                  sizeof(moltenvk_version_str));
+            RARCH_LOG("[Vulkan] MoltenVK version: %s.\n",
+                  moltenvk_version_str);
+         }
+      }
+   }
+#endif
+
    return true;
 }
 
@@ -2920,29 +2961,6 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       RARCH_ERR("[Vulkan] Failed to load instance symbols.\n");
       return false;
    }
-
-#ifdef __APPLE__
-   /* Capture the MoltenVK version once, so that the System Information
-    * menu can report the implementation actually in use. */
-   if (!moltenvk_version_str[0] && vk->context.instance)
-   {
-      RARCH_PFN_vkGetVersionStringsMVK GetVersionStringsMVK =
-         (RARCH_PFN_vkGetVersionStringsMVK)GetInstanceProcAddr(
-               vk->context.instance, "vkGetVersionStringsMVK");
-      if (GetVersionStringsMVK)
-      {
-         char vulkan_ver[32];
-         vulkan_ver[0] = '\0';
-         if (GetVersionStringsMVK(moltenvk_version_str,
-                  sizeof(moltenvk_version_str),
-                  vulkan_ver, sizeof(vulkan_ver)) == VK_SUCCESS)
-            RARCH_LOG("[Vulkan] MoltenVK version: %s.\n",
-                  moltenvk_version_str);
-         else
-            moltenvk_version_str[0] = '\0';
-      }
-   }
-#endif
 
    return true;
 }
