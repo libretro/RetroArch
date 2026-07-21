@@ -2648,6 +2648,16 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
          rh264_intra_chroma_h(v,f->cstride,chroma_mode,have_up,have_left,f->cmbh);
          if(cbp_chroma){ if(rh264_decode_chroma_residual(b,f,mbx,mby,u,v,
                cbp_chroma,slice_first,0)<0)return -1; }
+         /* an uncoded chroma block still has a coefficient count - zero -
+          * and the neighbouring blocks' nC derivation (9.2.1) reads it.
+          * The other intra branches record it; without this the counts
+          * of whatever macroblock previously occupied this address are
+          * read instead, which after an IDR is the freshly cleared grid
+          * (zero, coincidentally right) but on any later picture is the
+          * previous picture's counts. */
+         if(!cbp_chroma){ int cx,cy; for (cy = 0; cy < f->cmbh/4; cy++)for(cx=0;cx<2;cx++){
+            f->nzC[0][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0;
+            f->nzC[1][(mby*(f->cmbh/4)+cy)*cgw+mbx*2+cx]=0; } }
       }
       else if(mb_type==25){
          /* I_PCM: byte-align (pcm_alignment_zero_bit), then the raw
