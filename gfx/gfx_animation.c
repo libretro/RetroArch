@@ -1000,12 +1000,17 @@ bool gfx_animation_update(
 
       tween->running_since += p_anim->delta_time;
 
-      *tween->subject       = tween->easing(
-            tween->running_since,
-            tween->initial_value,
-            tween->target_value - tween->initial_value,
-            tween->duration);
-
+      /* Check completion *before* evaluating the easing:
+       * > On the completion frame the subject is snapped to
+       *   target_value anyway, so evaluating the easing first
+       *   was a wasted indirect call whose result was always
+       *   overwritten
+       * > It also evaluated easings outside their supported
+       *   domain: after a frame hitch running_since can
+       *   overshoot duration by an arbitrary amount, and e.g.
+       *   easing_out_circ()/easing_in_out_circ() then take
+       *   sqrtf() of a negative value, transiently writing
+       *   NaN to the subject before the snap */
       if (tween->running_since >= tween->duration)
       {
          *tween->subject = tween->target_value;
@@ -1019,6 +1024,12 @@ bool gfx_animation_update(
          tween->deleted              = true;
          p_anim->flags              |= GFX_ANIM_FLAG_PENDING_DELETES;
       }
+      else
+         *tween->subject = tween->easing(
+               tween->running_since,
+               tween->initial_value,
+               tween->target_value - tween->initial_value,
+               tween->duration);
    }
 
    /* Single cleanup pass: remove all tweens marked as deleted
