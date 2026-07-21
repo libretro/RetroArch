@@ -4599,7 +4599,6 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
       int newHeight        = (m_pixmap->height()
                            / static_cast<float>(m_pixmap->width())) * width();
       QPixmap pixmapScaled = *m_pixmap;
-      unsigned *buf        = new unsigned[w * h];
 
       if (newHeight > h)
          pixmapScaled = pixmapScaled.scaledToHeight(h, Qt::SmoothTransformation);
@@ -4623,8 +4622,6 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
          p.drawPixmap(rect(), pixmap, pixmap.rect());
          p.end();
       }
-
-      delete []buf;
    }
    else
       QWidget::paintEvent(event);
