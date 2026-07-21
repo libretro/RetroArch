@@ -205,21 +205,44 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
 
 static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer_t *handle, coretext_atlas_slot_t *slot, uint32_t charcode)
 {
-   CGGlyph glyph;
+   CGGlyph glyphs[2];
    CGRect bounds;
    CGSize advance;
    CGContextRef offscreen;
    void *bitmapData;
-   UniChar character = (UniChar)charcode;
+   /* UTF-16 encoding of the codepoint: one unit for the BMP, a
+    * surrogate pair beyond it. Truncating to a single UniChar would
+    * render the wrong glyph for anything above U+FFFF. */
+   UniChar utf16[2];
+   CFIndex utf16_len;
    CFStringRef glyph_cfstr;
    CFAttributedStringRef attrString;
    CTLineRef line;
    uint8_t *dst;
    const uint8_t *src;
    unsigned r, c;
+   bool has_glyph;
 
-   /* Get glyph for character */
-   bool has_glyph = CTFontGetGlyphsForCharacters(face, &character, &glyph, 1);
+   if (charcode > 0x10FFFF || (charcode >= 0xD800 && charcode <= 0xDFFF))
+      has_glyph = false;
+   else
+   {
+      if (charcode > 0xFFFF)
+      {
+         uint32_t v  = charcode - 0x10000;
+         utf16[0]    = (UniChar)(0xD800 + (v >> 10));
+         utf16[1]    = (UniChar)(0xDC00 + (v & 0x3FF));
+         utf16_len   = 2;
+      }
+      else
+      {
+         utf16[0]    = (UniChar)charcode;
+         utf16_len   = 1;
+      }
+
+      /* Get glyph for character */
+      has_glyph = CTFontGetGlyphsForCharacters(face, utf16, glyphs, utf16_len);
+   }
 
    /* If character is not available in font, render a missing glyph rectangle */
    if (!has_glyph)
@@ -273,7 +296,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         &glyph, &bounds, 1);
+         glyphs, &bounds, 1);
 
    CTFontGetAdvancesForGlyphs(face,
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
@@ -281,7 +304,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         &glyph, &advance, 1);
+         glyphs, &advance, 1);
 
    /* Set up glyph metrics using cached ascent */
    slot->glyph.draw_offset_x = (int)ceil(bounds.origin.x);
@@ -311,7 +334,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
    /* Create string from Unicode character using cached dictionary */
-   glyph_cfstr = CFStringCreateWithCharacters(NULL, &character, 1);
+   glyph_cfstr = CFStringCreateWithCharacters(NULL, utf16, utf16_len);
    attrString  = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
    CFRelease(glyph_cfstr);
    line        = CTLineCreateWithAttributedString(attrString);
@@ -355,7 +378,7 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    }
 
    if (!(cf_font_path = CFStringCreateWithCString(
-                     NULL, font_path, kCFStringEncodingASCII)))
+                     NULL, font_path, kCFStringEncodingUTF8)))
    {
       err = 1;
       goto error;
