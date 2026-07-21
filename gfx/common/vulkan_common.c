@@ -647,50 +647,26 @@ static bool vulkan_context_init_gpu(gfx_ctx_vulkan_data_t *vk)
 
 #ifdef __APPLE__
    /* Capture the MoltenVK version from the selected physical device.
-    * The legacy VK_MVK_moltenvk entry points (vkGetVersionStringsMVK)
-    * are no longer vended through the Vulkan loader, so query the
-    * standard VK_KHR_driver_properties driverInfo string instead, which
-    * MoltenVK populates with its version (e.g. "1.2.11"). */
+    * MoltenVK encodes its version into VkPhysicalDeviceProperties's
+    * driverVersion field as a decimal (major * 10000 + minor * 100 +
+    * patch) and derives the string it logs to the console the exact same
+    * way, so decode it identically here. This uses only core Vulkan 1.0
+    * data that is always populated; the legacy vkGetVersionStringsMVK
+    * entry point is no longer vended through the Vulkan loader, and the
+    * VK_KHR_driver_properties driverInfo string is not reliably filled
+    * for a standalone query. */
    if (!moltenvk_version_str[0] && vk->context.gpu)
    {
-      PFN_vkGetInstanceProcAddr gipa =
-         vulkan_symbol_wrapper_instance_proc_addr();
-      PFN_vkGetPhysicalDeviceProperties2 GetPhysicalDeviceProperties2 = NULL;
-
-      if (gipa)
-      {
-         GetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)
-            gipa(vk->context.instance, "vkGetPhysicalDeviceProperties2");
-         if (!GetPhysicalDeviceProperties2)
-            GetPhysicalDeviceProperties2 = (PFN_vkGetPhysicalDeviceProperties2)
-               gipa(vk->context.instance, "vkGetPhysicalDeviceProperties2KHR");
-      }
-
-      if (GetPhysicalDeviceProperties2)
-      {
-         VkPhysicalDeviceDriverPropertiesKHR driver_props;
-         VkPhysicalDeviceProperties2         props2;
-
-         driver_props.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES_KHR;
-         driver_props.pNext    = NULL;
-         driver_props.driverName[0] = '\0';
-         driver_props.driverInfo[0] = '\0';
-
-         props2.sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-         props2.pNext          = &driver_props;
-
-         GetPhysicalDeviceProperties2(vk->context.gpu, &props2);
-
-         /* Only report when the implementation actually is MoltenVK. */
-         if (     strstr(driver_props.driverName, "MoltenVK")
-               && driver_props.driverInfo[0])
-         {
-            strlcpy(moltenvk_version_str, driver_props.driverInfo,
-                  sizeof(moltenvk_version_str));
-            RARCH_LOG("[Vulkan] MoltenVK version: %s.\n",
-                  moltenvk_version_str);
-         }
-      }
+      VkPhysicalDeviceProperties props;
+      unsigned dv, major, minor, patch;
+      vkGetPhysicalDeviceProperties(vk->context.gpu, &props);
+      dv    = (unsigned)props.driverVersion;
+      major = dv / 10000;
+      minor = (dv % 10000) / 100;
+      patch = dv % 100;
+      snprintf(moltenvk_version_str, sizeof(moltenvk_version_str),
+            "%u.%u.%u", major, minor, patch);
+      RARCH_LOG("[Vulkan] MoltenVK version: %s.\n", moltenvk_version_str);
    }
 #endif
 
