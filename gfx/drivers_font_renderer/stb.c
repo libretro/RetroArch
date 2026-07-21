@@ -143,6 +143,7 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    float scale_factor;
    stbtt_fontinfo info;
    int ascent, descent, line_gap;
+   int font_offset           = 0;
    uint8_t *font_data        = NULL;
    stb_font_renderer_t *self = (stb_font_renderer_t*) calloc(1, sizeof(*self));
 
@@ -155,10 +156,19 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
    if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&font_data, NULL))
       goto error;
 
-   if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))
+   /* Validate the font before handing it to the packer.
+    * font_renderer_stb_create_atlas() below runs the full stb_truetype
+    * parse/rasterize path (stbtt_PackFontRange), which trusts its input
+    * and can read out of bounds on a malformed or truncated file. Reject
+    * anything stbtt_InitFont() does not recognise as a font first, and
+    * reuse the resolved offset for the metrics call afterwards. */
+   font_offset = stbtt_GetFontOffsetForIndex(font_data, 0);
+   if (font_offset < 0)
+      goto error;
+   if (!stbtt_InitFont(&info, font_data, font_offset))
       goto error;
 
-   if (!stbtt_InitFont(&info, font_data, stbtt_GetFontOffsetForIndex(font_data, 0)))
+   if (!font_renderer_stb_create_atlas(self, font_data, font_size, 512, 512))
       goto error;
 
    stbtt_GetFontVMetrics(&info, &ascent, &descent, &line_gap);
