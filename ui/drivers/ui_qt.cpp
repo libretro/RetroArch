@@ -1544,8 +1544,8 @@ MainWindow::MainWindow(QWidget *parent) :
     * selection changes don't flicker stale images in. */
    m_previewLoader = new ThumbnailLoader(this);
    connect(m_previewLoader,
-         SIGNAL(imageLoaded(QImage,QModelIndex,QString)), this,
-         SLOT(onPreviewImageLoaded(QImage,QModelIndex,QString)));
+         SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)), this,
+         SLOT(onPreviewImageLoaded(QImage,QPersistentModelIndex,QString)));
    m_previewLoader->start();
 
    /* Cancel all progress dialogs immediately since
@@ -3607,7 +3607,7 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
 }
 
 void MainWindow::onPreviewImageLoaded(const QImage image,
-      const QModelIndex & /* index */, const QString &path)
+      const QPersistentModelIndex & /* index */, const QString &path)
 {
    size_t i;
 

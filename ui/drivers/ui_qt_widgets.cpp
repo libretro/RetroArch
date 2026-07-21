@@ -7211,8 +7211,8 @@ PlaylistModel::PlaylistModel(QObject *parent)
    m_fileSanitizerRegex = QRegularExpression("[&*/:`<>?\\|]");
    m_thumbnailLoader    = new ThumbnailLoader(this);
    setThumbnailCacheLimit(500);
-   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QModelIndex,QString)),
-         this, SLOT(onImageLoaded(QImage,QModelIndex,QString)));
+   connect(m_thumbnailLoader, SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)),
+         this, SLOT(onImageLoaded(QImage,QPersistentModelIndex,QString)));
    m_thumbnailLoader->start();
 }
 
@@ -7422,13 +7422,19 @@ void PlaylistModel::loadThumbnail(const QModelIndex &index)
 }
 
 void PlaylistModel::onImageLoaded(const QImage image,
-		const QModelIndex &index, const QString &path)
+		const QPersistentModelIndex &index, const QString &path)
 {
    QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
    const int  cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
    m_cache.insert(path, pixmap, cost);
+   /* index is persistent: it tracks the row across insertions/moves and
+    * reports invalid if that row was removed or the model reset while the
+    * decode was in flight, so a stale row is never signalled. */
    if (index.isValid())
-      emit dataChanged(index, index, { THUMBNAIL });
+   {
+      const QModelIndex modelIndex(index);
+      emit dataChanged(modelIndex, modelIndex, { THUMBNAIL });
+   }
    m_pendingImages.remove(path);
 }
 
