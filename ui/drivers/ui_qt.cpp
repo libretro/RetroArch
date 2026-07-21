@@ -4403,9 +4403,16 @@ static void* ui_application_qt_initialize(void)
       /* Can't declare the pixmap at the top, because:
        * "QPixmap: Must construct a QGuiApplication before a QPixmap" */
       QImage iconImage(16, 16, QImage::Format_ARGB32);
-      unsigned char *bits = iconImage.bits();
+      int y;
 
-      memcpy(bits, retroarch_qt_icon_data, 16 * 16 * sizeof(unsigned));
+      /* Copy per scanline rather than one flat memcpy: QImage may pad
+       * each row to a larger bytesPerLine() than width * 4, so a single
+       * 16*16*4 copy into bits() is only correct as long as there is no
+       * padding. Per-row copies via scanLine() are safe regardless. */
+      for (y = 0; y < 16; y++)
+         memcpy(iconImage.scanLine(y),
+               retroarch_qt_icon_data + (y * 16),
+               16 * sizeof(unsigned));
 
       iconPixmap = QPixmap::fromImage(iconImage);
 

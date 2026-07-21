@@ -7425,7 +7425,16 @@ void PlaylistModel::onImageLoaded(const QImage image,
 		const QPersistentModelIndex &index, const QString &path)
 {
    QPixmap *pixmap = new QPixmap(QPixmap::fromImage(image));
-   const int  cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
+   int        cost = pixmap->width() * pixmap->height() * pixmap->depth() / (8 * 1024);
+   const int maxCost = m_cache.maxCost();
+   /* If a single decoded image would exceed the entire cache budget,
+    * QCache drops it on insert and it then gets re-decoded on every
+    * scroll. Cap the reported cost at the budget (when caching is
+    * enabled) so the pixmap is retained instead. When the cache is
+    * disabled (maxCost 0) the cost is left as-is and QCache does not
+    * retain it, which is the intended behaviour. */
+   if (maxCost > 0 && cost > maxCost)
+      cost = maxCost;
    m_cache.insert(path, pixmap, cost);
    /* index is persistent: it tracks the row across insertions/moves and
     * reports invalid if that row was removed or the model reset while the
