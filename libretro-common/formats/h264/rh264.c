@@ -795,7 +795,13 @@ static int rh264_coeff_token(rh264_bits *b, int nC,
 static int rh264_level_prefix(rh264_bits *b)
 {
    int lz = 0;
-   while (rh264_more_data(b) && rh264_u1(b) == 0)
+   /* level_prefix is a unary code the standard bounds well under 32 (a
+    * conformant level_code fits in the coefficient range); a corrupt or
+    * truncated stream can present an unbounded run of zeros, which would
+    * otherwise drive the 1 << (level_prefix - 3) below past the width of
+    * an int.  Stop counting at 32: the caller's level_code arithmetic
+    * then saturates harmlessly and the block is rejected downstream. */
+   while (lz < 32 && rh264_more_data(b) && rh264_u1(b) == 0)
       lz++;
    return lz;
 }
@@ -879,6 +885,15 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
                level[i] = (-level_code - 1) >> 1;
             else
                level[i] = (level_code + 2) >> 1;
+            /* A conformant coefficient level fits well inside 16 bits;
+             * anything larger is a corrupt or truncated stream.  Reject
+             * the block rather than let the value flow into the
+             * dequantisation multiplies (coeff * scale, scale up to a few
+             * hundred), where an out-of-range level would overflow the
+             * int product.  The bound is deliberately loose - it only
+             * rules out values no valid stream can produce. */
+            if (level[i] > (1 << 16) || level[i] < -(1 << 16))
+               return -1;
             if (suffix_length == 0)
                suffix_length = 1;
             if ((level[i] > (3 << (suffix_length - 1)) ||
@@ -1523,12 +1538,18 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
          LS=f->w4[(inter?4:1)+comp][0]*rh264_dequant4_v[rem][0];
          for (k=0;k<nblk;k++)
          {
+            /* the coefficient is attacker-controlled and LS is up to
+             * a few hundred; their product can exceed int.  Multiply in
+             * uint32_t so the wrap is defined - the reconstruction of a
+             * malformed block is discarded, only its arithmetic must not
+             * be undefined. */
             if (nblk==8)
                cdc[comp][k] = (per >= 6)
-                  ? (int32_t)((uint32_t)(cdc[comp][k]*LS) << (per-6))
-                  : (int32_t)((cdc[comp][k]*LS + (1 << (5-per))) >> (6-per));
+                  ? (int32_t)((uint32_t)cdc[comp][k]*(uint32_t)LS << (per-6))
+                  : (int32_t)(((int32_t)((uint32_t)cdc[comp][k]*(uint32_t)LS)
+                        + (1 << (5-per))) >> (6-per));
             else
-               cdc[comp][k]=(int32_t)((uint32_t)(cdc[comp][k]*LS)<<per)>>5;
+               cdc[comp][k]=(int32_t)((uint32_t)cdc[comp][k]*(uint32_t)LS<<per)>>5;
          }
       }
    }
@@ -2469,7 +2490,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
                  f->i4mode[(cgy+cy)*gw+cgx+cx]=(uint8_t)predm; }
          }
          chroma_mode=rh264_ue(b);
-         cbp=rh264_ue(b); if(cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
+         cbp=rh264_ue(b); if((unsigned)cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
          cbp_luma=cbp&15; cbp_chroma=cbp>>4;
          if(cbp_luma||cbp_chroma){ int d=rh264_se(b);
             if(rh264_qp_apply_delta(f,d)) return -1; }
@@ -2525,7 +2546,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             modes[i]=predm; f->i4mode[gy*gw+gx]=(uint8_t)predm;
          }
          chroma_mode=rh264_ue(b);
-         cbp=rh264_ue(b); if(cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
+         cbp=rh264_ue(b); if((unsigned)cbp>=48)return -3; cbp=rh264_cbp_intra[cbp];
          cbp_luma=cbp&15; cbp_chroma=cbp>>4;
          if(cbp_luma||cbp_chroma){ int d=rh264_se(b);
             if(rh264_qp_apply_delta(f,d)) return -1; }
@@ -4051,7 +4072,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
 
          /* coded_block_pattern */
          cbp = rh264_ue(b);
-         if (cbp >= 48) { return -3; }
+         if ((unsigned)cbp >= 48) { return -3; }
          cbp = rh264_cbp_inter[cbp];
          cbp_luma = cbp & 15; cbp_chroma = cbp >> 4;
          /* transform_size_8x8_flag sits between the cbp and mb_qp_delta
@@ -4783,7 +4804,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
             for (p = 0; p < 4; p++)
             {
                sub[p] = rh264_ue(b);
-               if (sub[p] > 12) return -3;
+               if ((unsigned)sub[p] > 12) return -3;
                if (rh264_b_sub_pdir[sub[p]] == 3) need_prepare = 1;
             }
             t8ok = 1;
@@ -4894,7 +4915,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          }
 
          cbp = rh264_ue(b);
-         if (cbp >= 48) return -3;
+         if ((unsigned)cbp >= 48) return -3;
          cbp = rh264_cbp_inter[cbp];
          cbp_luma = cbp & 15; cbp_chroma = cbp >> 4;
          /* transform_size_8x8_flag sits between the cbp and mb_qp_delta
@@ -7332,7 +7353,9 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
                   prevQpNZ = (dqp != 0);
                }
                else prevQpNZ = 0;
-               if (rh264_qp_apply_delta(f, dqp)) return -1;
+               if (rh264_qp_apply_delta(f, dqp))
+               { free(toprow); free(topskip);
+                 free(row); free(skiprow); free(absmvd); return -1; }
             }
 
             rh264_cabac_p_residual(&cb, f, mbx, mby, cbp_luma, cbp_chroma,
@@ -7953,7 +7976,10 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                   prevQpNZ = (dqp != 0);
                }
                else prevQpNZ = 0;
-               if (rh264_qp_apply_delta(f, dqp)) return -1;
+               if (rh264_qp_apply_delta(f, dqp))
+               { free(toprow); free(topskip); free(toptype);
+                 free(row); free(skiprow); free(typerow); free(am0);
+                 free(am1); return -1; }
             }
 
             rh264_cabac_p_residual(&cb, f, mbx, mby, cbp_luma, cbp_chroma,
