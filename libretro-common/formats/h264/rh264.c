@@ -1085,6 +1085,8 @@ typedef struct {
     * chroma keeps the luma height */
    int cmbh;
    int qp;
+   /* prediction may not use samples from inter-coded neighbours */
+   int constrained_intra;
    int chroma_qp_offset;   /* Cb */
    int chroma_qp_offset2;  /* Cr (second_chroma_qp_index_offset) */
    uint8_t *i4mode;   /* per-4x4-block intra mode, raster mbw*4 x mbh*4 */
@@ -2424,6 +2426,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
    int nb_ul = rh264_mb_addr(mbx-1,mby-1,f->mbw,f->mbaff);
    int have_up=(mby>0) && nb_up >= slice_first && nb_up < mbaddr;
    int have_left=(mbx>0) && nb_lf >= slice_first && nb_lf < mbaddr;
+
    int have_ur=(mby>0) && (mbx+1<f->mbw)
       && nb_ur >= slice_first && nb_ur < mbaddr;
    int have_ul=(mby>0) && (mbx>0)
@@ -2432,6 +2435,17 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
    uint8_t *y=f->Y+(mby*16)*f->ystride+mbx*16;
    uint8_t *u=f->U+(mby*f->cmbh)*f->cstride+mbx*8;
    uint8_t *v=f->V+(mby*f->cmbh)*f->cstride+mbx*8;
+
+   /* where the picture forbids predicting from inter samples, an
+    * inter-coded neighbour is not available to predict from at all
+    * (8.3.1.2).  0xff in the mode grid marks an inter macroblock. */
+   if (f->constrained_intra)
+   {
+      if (have_up   && f->i4mode[(mby*4-1)*(f->mbw*4)+mbx*4] == 0xff)
+         have_up = 0;
+      if (have_left && f->i4mode[(mby*4)*(f->mbw*4)+mbx*4-1] == 0xff)
+         have_left = 0;
+   }
    (void)cgw;
       if(mb_type==0 && t8ena && rh264_u1(b)){
          /* I_NxN with the 8x8 transform: four 8x8 predictions, CAVLC
@@ -2497,12 +2511,14 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             int la= (bx>0||have_left)? f->i4mode[gy*gw+(gx-1)] : -1;
             int ta= (by>0||have_up)?   f->i4mode[(gy-1)*gw+gx] : -1;
             int mpm;
-            /* 0xff marks an inter-coded neighbour: per 8.3.1.1 (with
-             * constrained_intra_pred_flag == 0) it contributes Intra_4x4 mode
-             * 2 (DC) to the most-probable-mode derivation, whereas a neighbour
-             * off the frame/slice edge is unavailable (-1 -> forces DC). */
-            if(la==0xff) la=2;
-            if(ta==0xff) ta=2;
+            /* 0xff marks an inter-coded neighbour.  It contributes
+             * Intra_4x4 mode 2 (DC) to the most-probable-mode
+             * derivation, unless the picture forbids predicting from
+             * inter samples, when it counts as unavailable instead
+             * (8.3.1.1).  A neighbour off the frame or slice edge is
+             * unavailable either way (-1 -> forces DC). */
+            if(la==0xff) la = f->constrained_intra ? -1 : 2;
+            if(ta==0xff) ta = f->constrained_intra ? -1 : 2;
             if(la<0||ta<0) mpm=2; else mpm=(la<ta?la:ta);
             if(prev) predm=mpm;
             else { int rem=rh264_un(b,3); predm=(rem<mpm)?rem:rem+1; }
@@ -3851,6 +3867,7 @@ static int rh264_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    int gi;
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   f->constrained_intra = pps->constrained_intra_pred_flag;
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
    (void)sps;
    if (nrefs < 1) return -1;
@@ -4606,6 +4623,7 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    int gi;
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   f->constrained_intra = pps->constrained_intra_pred_flag;
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
    (void)sps;
    if (bc->n0 < 1 || bc->n1 < 1) return -1;
@@ -6406,12 +6424,13 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            else mA=-1;
            if (by>0||have_up) mB=f->i4mode[(gy0+by-1)*gw+(gx0+bx)];
            else mB=-1;
-           /* An inter neighbour (0xff) contributes Intra_4x4 DC to the most
-            * probable mode per 8.3.1.1 when constrained_intra_pred_flag is 0.
-            * Only reachable from a P slice; in an I slice every neighbour is
-            * intra. */
-           if (mA==0xff) mA=2;
-           if (mB==0xff) mB=2;
+           /* An inter neighbour (0xff) contributes Intra_4x4 DC to the
+            * most probable mode, or counts as unavailable where the
+            * picture forbids predicting from inter samples (8.3.1.1).
+            * Only reachable from a P slice; in an I slice every
+            * neighbour is intra. */
+           if (mA==0xff) mA = f->constrained_intra ? -1 : 2;
+           if (mB==0xff) mB = f->constrained_intra ? -1 : 2;
            if (mA<0||mB<0) predmode=2; /* DC */
            else predmode=(mA<mB?mA:mB);
          }
@@ -6570,6 +6589,7 @@ static int rh264_cabac_decode_islice(rh264_bits *b, const rh264_sps *sps,
    rh264_cabac_init_contexts(&cb, sh->slice_qp, -1);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   f->constrained_intra = pps->constrained_intra_pred_flag;
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
 
    /* per-MB cbf caches: a full row for 'up', plus 'left' tracking */
@@ -6970,6 +6990,7 @@ static int rh264_cabac_decode_pslice(rh264_bits *b, const rh264_sps *sps,
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   f->constrained_intra = pps->constrained_intra_pred_flag;
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
    (void)sps;
    if (nrefs < 1) return -1;
@@ -7427,6 +7448,7 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
    rh264_cabac_init_contexts(&cb, sh->slice_qp, sh->cabac_init_idc);
    f->qp = sh->slice_qp;
    f->chroma_qp_offset = pps->chroma_qp_index_offset;
+   f->constrained_intra = pps->constrained_intra_pred_flag;
    f->chroma_qp_offset2 = pps->chroma_qp_index_offset2;
    (void)sps;
    if (bc->n0 < 1 || bc->n1 < 1) return -1;
