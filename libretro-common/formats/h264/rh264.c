@@ -266,7 +266,15 @@ static int rh264_parse_pps(const uint8_t *rbsp,size_t size,rh264_pps *p){
    p->num_ref_idx_l1_default=rh264_ue(&b)+1;
    p->weighted_pred_flag=rh264_u1(&b);
    p->weighted_bipred_idc=(int)rh264_un(&b,2);
-   p->pic_init_qp=rh264_se(&b)+26; rh264_se(&b); p->chroma_qp_index_offset=rh264_se(&b);
+   /* pic_init_qp_minus26 is -(26 + 6*bit_depth_luma_minus8) .. +25
+    * (7.4.2.2), so for the 8-bit streams decoded here pic_init_qp lands
+    * in 0..51.  The slice QP derived from it indexes the dequantisation
+    * tables by qp%6 and shifts by qp/6, so an out-of-range value reaches
+    * them as a negative index. */
+   { int32_t q = rh264_se(&b) + 26;
+     if (q < 0 || q > 51) return 0;
+     p->pic_init_qp = (int)q; }
+   rh264_se(&b); p->chroma_qp_index_offset=rh264_se(&b);
    p->deblocking_filter_control_present=rh264_u1(&b); p->constrained_intra_pred_flag=rh264_u1(&b);
    if(rh264_u1(&b)) return 0;   /* redundant_pic_cnt_present unsupported */
    p->chroma_qp_index_offset2=p->chroma_qp_index_offset;
@@ -540,6 +548,11 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
          &&sh->slice_type!=RH264_SLICE_SI)
       sh->cabac_init_idc=rh264_ue(b);
    sh->slice_qp=pps->pic_init_qp+rh264_se(b);
+   /* SliceQPY is 0..51 for 8-bit (7.4.3); the value feeds f->qp, which
+    * indexes the dequantisation tables by qp%6 and shifts by qp/6, and
+    * seeds the CABAC context initialisation.  Refuse the slice rather
+    * than let a corrupt delta drive those negative. */
+   if(sh->slice_qp<0||sh->slice_qp>51) return 0;
    if(pps->deblocking_filter_control_present){
       sh->disable_deblocking_filter_idc=rh264_ue(b);
       if(sh->disable_deblocking_filter_idc!=1){
@@ -4707,6 +4720,12 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
          return -1;
       prev_skipped = 0;
       mb_type = rh264_ue(b);
+      /* B mb_type is 0..22 for the inter types and 23..48 for the intra
+       * ones (Table 7-14).  An over-long code returns 0xFFFFFFFF from
+       * rh264_ue, which lands in the int as -1: too small for the intra
+       * branch below, but accepted by the mb_type <= 3 case, where it
+       * indexes rh264_b_pdir16[-1]. */
+      if ((unsigned)mb_type > 48) return -3;
 
       if (mb_type >= 23)
       {
