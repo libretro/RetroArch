@@ -406,8 +406,23 @@ static void ticker_smooth_scan_string_fw(
    /* Determine index of first character to copy */
    if (scroll_offset > 0)
    {
-      *char_offset = (scroll_offset / glyph_width) + 1;
-      *x_offset    = glyph_width - (scroll_offset % glyph_width);
+      unsigned rem = scroll_offset % glyph_width;
+
+      *char_offset = scroll_offset / glyph_width;
+
+      /* If scroll offset falls part-way through a glyph,
+       * skip that glyph and record the visible remainder
+       * as the x offset. If it falls exactly on a glyph
+       * boundary, the first glyph is drawn in full at
+       * x offset zero (previously this case erroneously
+       * skipped one extra character and produced a full
+       * glyph-width blank at the left edge for one frame
+       * per glyph traversed) */
+      if (rem > 0)
+      {
+         (*char_offset)++;
+         *x_offset = glyph_width - rem;
+      }
    }
 
    /* Determine number of characters remaining in
