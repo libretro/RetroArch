@@ -522,6 +522,14 @@ void rarch_log_file_init(
    static char timestamped_log_file_name[64] = {0};
    bool logging_to_file                      = main_verbosity_st.initialized;
 
+   /* The override branch below leaves log_directory untouched
+    * when the override path has no directory component
+    * (e.g. --log-file retroarch.log); an uninitialised buffer
+    * here was passed to path_mkdir(), creating garbage-named
+    * directories in the current working directory. */
+   log_directory[0] = '\0';
+   log_file_path[0] = '\0';
+
    /* If this is the first run, generate a timestamped log
     * file name (do this even when not outputting timestamped
     * log files, since user may decide to switch at any moment...) */
