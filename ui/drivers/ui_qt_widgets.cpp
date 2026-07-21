@@ -3110,6 +3110,16 @@ ShaderPass::ShaderPass(struct video_shader_pass *passToCopy) :
    }
 }
 
+ShaderPass::ShaderPass(const ShaderPass &other) :
+   pass(NULL)
+{
+   if (other.pass)
+   {
+      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+      memcpy(pass, other.pass, sizeof(*pass));
+   }
+}
+
 ShaderPass::~ShaderPass()
 {
    if (pass)
@@ -3118,10 +3128,22 @@ ShaderPass::~ShaderPass()
 
 ShaderPass& ShaderPass::operator=(const ShaderPass &other)
 {
-   if (this != &other && other.pass)
+   if (this != &other)
    {
-      pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
-      memcpy(pass, other.pass, sizeof(*pass));
+      /* Free any buffer we already own before taking a copy of
+       * other's, otherwise assigning into a non-empty ShaderPass
+       * leaks the previous allocation. */
+      if (pass)
+      {
+         free(pass);
+         pass = NULL;
+      }
+
+      if (other.pass)
+      {
+         pass = (struct video_shader_pass*)calloc(1, sizeof(*pass));
+         memcpy(pass, other.pass, sizeof(*pass));
+      }
    }
 
    return *this;

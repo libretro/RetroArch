@@ -748,6 +748,7 @@ class ShaderPass
 {
 public:
    ShaderPass(struct video_shader_pass *passToCopy = NULL);
+   ShaderPass(const ShaderPass &other);
    ~ShaderPass();
    ShaderPass& operator=(const ShaderPass &other);
    struct video_shader_pass *pass;
