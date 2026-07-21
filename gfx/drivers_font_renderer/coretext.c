@@ -39,6 +39,14 @@
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
 #define CT_ATLAS_SIZE (CT_ATLAS_ROWS * CT_ATLAS_COLS)
+/* Padding is required between each glyph in the atlas to prevent
+ * texture bleed when drawing with linear filtering enabled */
+#define CT_ATLAS_PADDING 1
+
+/* Mix in upper bits to reduce clustering for CJK and other
+ * non-Latin codepoints */
+#define CT_HASH_SIZE 0x100
+#define CT_HASH(c) (((c) ^ ((c) >> 8)) & (CT_HASH_SIZE - 1))
 
 typedef struct coretext_atlas_slot
 {
@@ -52,7 +60,7 @@ typedef struct coretext_renderer
 {
    struct font_atlas atlas;
    coretext_atlas_slot_t atlas_slots[CT_ATLAS_SIZE];
-   coretext_atlas_slot_t *uc_map[0x100];
+   coretext_atlas_slot_t *uc_map[CT_HASH_SIZE];
    struct font_line_metrics line_metrics;
    unsigned usage_counter;
    CTFontRef font_face;
@@ -81,7 +89,7 @@ static coretext_atlas_slot_t* coretext_font_renderer_get_slot(ct_font_renderer_t
          oldest = i;
 
    /* remove from map */
-   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   map_id = CT_HASH(handle->atlas_slots[oldest].charcode);
    if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
@@ -105,7 +113,7 @@ static const struct font_glyph *font_renderer_ct_get_glyph(
    if (!handle)
       return NULL;
 
-   map_id = charcode & 0xFF;
+   map_id = CT_HASH(charcode);
    atlas_slot = handle->uc_map[map_id];
 
    while (atlas_slot)
@@ -171,8 +179,8 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    if (max_glyph_size > 127)
       max_glyph_size = 127;
 
-   handle->atlas.width         = max_glyph_size * CT_ATLAS_COLS;
-   handle->atlas.height        = max_glyph_size * CT_ATLAS_ROWS;
+   handle->atlas.width         = (max_glyph_size + CT_ATLAS_PADDING) * CT_ATLAS_COLS;
+   handle->atlas.height        = (max_glyph_size + CT_ATLAS_PADDING) * CT_ATLAS_ROWS;
 
    handle->atlas.buffer        = (uint8_t*)calloc(
          (size_t)handle->atlas.height, (size_t)handle->atlas.width);
@@ -197,8 +205,8 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    {
       for (x = 0; x < CT_ATLAS_COLS; x++)
       {
-         slot->glyph.atlas_offset_x = x * max_glyph_size;
-         slot->glyph.atlas_offset_y = y * max_glyph_size;
+         slot->glyph.atlas_offset_x = x * (max_glyph_size + CT_ATLAS_PADDING);
+         slot->glyph.atlas_offset_y = y * (max_glyph_size + CT_ATLAS_PADDING);
          slot->glyph.width          = max_glyph_size;
          slot->glyph.height         = max_glyph_size;
          slot++;
