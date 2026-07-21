@@ -2276,7 +2276,9 @@ static const struct
    char s_0050d725[14];
    char s_21d7a1f6[8];
    char s_d2fe3ed2[37];
+   char s_1edf58ee[25];
    char s_d74474ce[10];
+   char s_541958e5[9];
    char s_ba3e4ee6[13];
    char s_45816e1d[24];
    char s_c017f975[13];
@@ -2416,7 +2418,7 @@ static const struct
    char s_daf6d7e2[53];
    char s_042502c4[64];
    char s_90ae9a9f[92];
-   char s_81b79d5b[443];
+   char s_81b79d5b[481];
    char s_c9235dab[51];
    char s_330be970_0[500];
    char s_330be970_1[58];
@@ -3539,6 +3541,7 @@ static const struct
    char s_3c679f0a[317];
    char s_5b059407[148];
    char s_36033606[191];
+   char s_d62ed5dc[355];
    char s_2e69508b[321];
    char s_7e96b5ce[40];
    char s_3547866d[174];
@@ -6684,7 +6687,9 @@ static const struct
    "Gry Facebooka",
    "Lokalny",
    "Jako\305\233\304\207 przesy\305\202ania strumieniowego",
+   "G\305\202\304\231bia bitowa wyj\305\233cia",
    "10-bitowe",
+   "8-bitowa",
    "Automatyczny",
    "Interwa\305\202 wymiany VSync",
    "Automatyczny",
@@ -6857,10 +6862,10 @@ static const struct
    "U\305\274ywaj resamplera ze sta\305\202\304\205 liczb\304\205 (ca\305\202kowit\304\205) zamiast "
    "zmiennoprzecinkowego, gdy rdze\305\204 wysy\305\202a 16-bitowy d\305\272wi\304\231k. Unika niepo"
    "trzebnej zmiany sta\305\202ej-na-zmiennoprzecinkow\304\205 i produkuje identyczne co do bita wyj"
-   "\305\233cie na ka\305\274dej platformie, co pomaga w determinizmie netplay. Nie ma wp\305\202ywu"
-   " na rdzenie kt\303\263re wysylaj\304\205 d\305\272wi\304\231k zmiennoprzecinkowy, wracaj\304\205"
-   " one na zmiennoprzecinkow\304\205 \305\233cie\305\274k\304\231 gdy aktywny jest niekompatybilny "
-   "filtr DSP.",
+   "\305\233cie na ka\305\274dej platformie, co czyni wyj\305\233cie audio odtwarzalnym przy ka\305"
+   "\274dym podej\305\233ciu i systemie. Nie ma wp\305\202ywu na rdzenie kt\303\263re wysylaj\304"
+   "\205 d\305\272wi\304\231k zmiennoprzecinkowy, wracaj\304\205 one na zmiennoprzecinkow\304\205 "
+   "\305\233cie\305\274k\304\231 gdy aktywny jest niekompatybilny filtr DSP.",
    "Filtry DSP audio s\304\205 przechowywane w tym katalogu.",
    "Format sampli o kt\303\263re sterownik audio prosi z urz\304\205dzenia wyj\305\233ciowego. 'Zmie"
    "nnoprzecinkowe' prosi o 32-bitow\304\205 liczb\304\231 zmiennoprzecinkow\304\205, 'Int16' 16-bit"
@@ -8712,6 +8717,11 @@ static const struct
    "Dodaje lekkie rozmycie do obrazu, aby zmi\304\231kczy\304\207 twarde kraw\304\231dzie pikseli. T"
    "a opcja ma bardzo niewielki wp\305\202yw na wydajno\305\233\304\207. Powinna by\304\207 wy\305"
    "\202\304\205czona w przypadku korzystania z shader\303\263w.",
+   "G\305\202\304\231bia bitowa ko\305\204cowej powierzchni wyj\305\233ciowej, gdy wy\305\202\304"
+   "\205czony jest HDR. 10-bitowa usuwa banding wprowadzany przez shadery kt\303\263re mocno przycie"
+   "mniaj\304\205 obraz, takie jak profile wi\304\205zek CRT i maski grilli. U\305\274ywa zast\304"
+   "\231pczo 8-bitowej je\305\274eli wy\305\233wietlacz lub kompozytor jej nie oferuj\304\205. Ignor"
+   "owane gdy w\305\202\304\205czony jest HDR, kt\303\263ry wybiera sw\303\263j format.",
    "U\305\274yj niestandardowego interwa\305\202u wymiany dla VSync. Efektywnie zmniejsza cz\304\231"
    "stotliwo\305\233\304\207 od\305\233wie\305\274ania monitora o okre\305\233lony czynnik. 'Auto' u"
    "stawia wsp\303\263\305\202czynnik oparty na raportowanej szybko\305\233ci ramki, zapewniaj\304"
@@ -9422,7 +9432,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (186646u
+      (sizeof(msg_hash_pl_blob) == (187073u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12101,7 +12111,9 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -13363,6 +13375,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

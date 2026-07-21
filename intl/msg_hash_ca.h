@@ -2260,6 +2260,7 @@ static const struct
    char s_6dcc2f9f[12];
    char s_48431da6[14];
    char s_d2fe3ed2[30];
+   char s_1edf58ee[34];
    char s_d74474ce[8];
    char s_ba3e4ee6[11];
    char s_45816e1d[31];
@@ -2348,6 +2349,7 @@ static const struct
    char s_f4b6d13e[35];
    char s_25e89959[4];
    char s_a7468d68[32];
+   char s_b1d6fea6[15];
    char s_aa0659db[18];
    char s_49757b91[18];
    char s_660eb9c4[18];
@@ -3523,6 +3525,7 @@ static const struct
    char s_3c679f0a[313];
    char s_5b059407[137];
    char s_36033606[174];
+   char s_d62ed5dc[331];
    char s_2e69508b[424];
    char s_7e96b5ce[49];
    char s_3547866d[157];
@@ -6615,6 +6618,7 @@ static const struct
    "Filtre suau",
    "Personalitzat",
    "Qualitat de la retransmissi\303\263",
+   "Profunditat de la sortida en bits",
    "10 bits",
    "Autom\303\240tic",
    "Interval d'intercanvi de VSync",
@@ -6705,6 +6709,7 @@ static const struct
    "Disposici\303\263 vertical de miniatures",
    "S\303\255",
    "Clau de transmissi\303\263 de Youtube",
+   "bideo_hdr_mode",
    "Shader predefinit",
    "Shader predefinit",
    "Shader predefinit",
@@ -8520,6 +8525,10 @@ static const struct
    "ar canvis en l'estat del maquinari entre fotogrames.",
    "Afegeix un difuminat lleuger a la imatge per a suavitzar les vores dels p\303\255xels. Aquesta o"
    "pci\303\263 t\303\251 molt poc impacte en el rendiment. S'hauria de desactivar si useu ombreig.",
+   "Profunditat en bits de la sortida quan el HDR est\303\240 apagat. 10-bit elimina les bandes de c"
+   "olor que introdueixen els shaders i que enfosqueixen molt la imatge, com els perfils CRT i certe"
+   "s m\303\240scares. Baixa a 8-bit si el monitor no ofereix m\303\251s. Ignora aquesta opci\303"
+   "\263 si el HDR est\303\240 activat, el qual selecciona el seu propi format.",
    "Usa un interval d\342\200\231intercanvi personalitzat per la sincronitzaci\303\263 vertical. Red"
    "ueix la freq\303\274\303\250ncia d\342\200\231actualitzaci\303\263 del monitor pel factor especi"
    "ficat. \302\253Autom\303\240tic\302\273 estableix el factor depenent dels fotogrames per segon q"
@@ -9213,7 +9222,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (198795u
+      (sizeof(msg_hash_ca_blob) == (199175u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11869,6 +11878,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
@@ -11957,6 +11967,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
@@ -13131,6 +13142,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

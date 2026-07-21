@@ -2209,7 +2209,9 @@ static const struct
    char s_48431da6[18];
    char s_21d7a1f6[6];
    char s_d2fe3ed2[19];
+   char s_1edf58ee[21];
    char s_d74474ce[7];
+   char s_541958e5[6];
    char s_45816e1d[21];
    char s_c017f975[12];
    char s_730df420[16];
@@ -2341,7 +2343,8 @@ static const struct
    char s_daf6d7e2[57];
    char s_042502c4[55];
    char s_90ae9a9f[102];
-   char s_81b79d5b[470];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[23];
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[47];
@@ -3464,6 +3467,7 @@ static const struct
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
+   char s_d62ed5dc[425];
    char s_2e69508b[389];
    char s_7e96b5ce[44];
    char s_3547866d[156];
@@ -6490,7 +6494,9 @@ static const struct
    "Benutzerdefiniert",
    "Lokal",
    "Streamingqualit\303\244t",
+   "Bittiefe der Ausgabe",
    "10-Bit",
+   "8-Bit",
    "VSync Swap-Intervall",
    "Automatisch",
    "Synchronisation",
@@ -6642,10 +6648,11 @@ static const struct
    "ber die Tonh\303\266he.",
    "Den Festkomma-(Ganzzahl)-Resampler anstelle des Gleitkomma-Resamplers verwenden, wenn ein Core 1"
    "6-Bit-Audio ausgibt. Dadurch wird die Umwandlung von Ganzzahlen in Gleitkommazahlen und zur\303"
-   "\274ck vermieden und auf jeder Plattform eine bitgenaue Ausgabe erzeugt, was den Netplay-Determi"
-   "nismus unterst\303\274tzt. Dies hat keinen Einfluss auf Cores, die Gleitkomma-Audio ausgeben, un"
-   "d es wird auf den Gleitkommapfad zur\303\274ckgegriffen, solange ein inkompatibler DSP-Filter ak"
-   "tiv ist.",
+   "\274ck vermieden und erzielt auf jeder Plattform eine bitgenaue Ausgabe, wodurch die Audioausgab"
+   "e \303\274ber verschiedene Durchl\303\244ufe und Systeme hinweg reproduzierbar ist. Dies hat kei"
+   "ne Auswirkungen auf Core, die Gleitkomma-Audio ausgeben, und es wird auf den Gleitkommapfad zur"
+   "\303\274ckgegriffen, solange ein inkompatibler",
+   " DSP-Filter aktiv ist.",
    "Audio-DSP-Filter werden in diesem Verzeichnis gespeichert.",
    "Das vom Audiotreiber vom Ausgabeger\303\244t angeforderte Samplingformat. \342\200\236Gleitkomma"
    "\342\200\234 fordert 32-Bit-Gleitkommazahlen an, \342\200\236Int16\342\200\234 16-Bit-Ganzzahlen"
@@ -8317,6 +8324,11 @@ static const struct
    "Dem Bild eine leichte Unsch\303\244rfe hinzuf\303\274gen, um harte Pixelkanten zu gl\303\244tten"
    ". Diese Option hat nur sehr geringe Auswirkungen auf die Leistung. Sollte bei Verwendung von Sha"
    "dern deaktiviert werden.",
+   "Bittiefe f\303\274r die endg\303\274ltige Ausgabe von Oberfl\303\244che bei deaktiviertem HDR. 1"
+   "0-Bit beseitigt Streifenbildung, verursacht durch Shader, die das Bild stark abdunkeln, wie beis"
+   "pielsweise CRT-Beam-Profile und Schlitzmasken. Es wird auf 8-Bit zur\303\274ckgegriffen, wenn da"
+   "s Display oder der Compositor diese Option nicht unterst\303\274tzt. Wird ignoriert, solange HDR"
+   " aktiviert ist, da in diesem Fall ein eigenes Format ausgew\303\244hlt wird.",
    "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
    "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
    "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
@@ -8978,7 +8990,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (190127u
+      (sizeof(msg_hash_de_blob) == (190632u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11588,7 +11600,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -12842,6 +12856,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

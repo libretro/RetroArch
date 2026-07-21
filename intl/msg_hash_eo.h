@@ -1157,6 +1157,7 @@ static const struct
    char s_5e519829[24];
 #endif
 #endif
+   char s_a6e5d0ee[30];
    char s_f228c6c5[15];
    char s_11926382[18];
    char s_645ae416[24];
@@ -1179,6 +1180,7 @@ static const struct
    char s_ac60056b[13];
    char s_54d6b95e[14];
    char s_1ad09b45[15];
+   char s_774e2332[25];
    char s_87064238[24];
    char s_2a273dd7[20];
    char s_5e5fc0ee[21];
@@ -2302,7 +2304,9 @@ static const struct
    char s_48431da6[7];
    char s_21d7a1f6[5];
    char s_d2fe3ed2[16];
+   char s_1edf58ee[20];
    char s_d74474ce[8];
+   char s_541958e5[8];
    char s_ba3e4ee6[10];
    char s_45816e1d[50];
    char s_c017f975[10];
@@ -2443,7 +2447,7 @@ static const struct
    char s_daf6d7e2[41];
    char s_042502c4[52];
    char s_90ae9a9f[89];
-   char s_81b79d5b[385];
+   char s_81b79d5b[397];
    char s_c9235dab[64];
    char s_330be970[449];
    char s_98b02857[220];
@@ -2981,6 +2985,7 @@ static const struct
    char s_6435c857[53];
 #endif
 #endif
+   char s_acca011c[93];
    char s_01efec73[44];
    char s_d3fc9970[47];
    char s_740bd7c4[53];
@@ -2998,6 +3003,7 @@ static const struct
    char s_8f707459[32];
    char s_5aa622cc[181];
    char s_2b908073[221];
+   char s_64bea160[190];
    char s_97c62766[146];
    char s_6f458a85[113];
    char s_41702fdc[57];
@@ -3564,6 +3570,7 @@ static const struct
    char s_3c679f0a[288];
    char s_5b059407[139];
    char s_36033606[159];
+   char s_d62ed5dc[349];
    char s_2e69508b[366];
    char s_7e96b5ce[39];
    char s_3547866d[135];
@@ -5505,6 +5512,7 @@ static const struct
    "Montri \"El\304\265eti diskon\"",
 #endif
 #endif
+   "Montri plenajn dosierindikojn",
    "Montri \"Helpo\"",
    "Montri \"Informoj\"",
    "Montri \"\305\234argi enhavon\"",
@@ -5527,6 +5535,7 @@ static const struct
    "Starta pa\304\235o",
    "\"Mip-mapping\"",
    "Bildetaj fonoj",
+   "Sono de animacia bildeto",
    "Skala sojlo de bildeto.",
    "Glata tekstrulumilo",
    "Tekstrulumila rapido",
@@ -6659,7 +6668,9 @@ static const struct
    "Propra",
    "Loka",
    "Elsenda kvalito",
+   "Eliga bitprofundeco",
    "10-bita",
+   "8 bitoj",
    "A\305\255tomata",
    "Intervalo de inter\305\235an\304\235o de vertikala sinkronigo",
    "A\305\255tomate",
@@ -6817,11 +6828,11 @@ static const struct
    "A\305\255tomate silentigi sonon kiam uzante rapidpluigon.",
    "Rapidpluigi sonon kiam rapidpluigante la ludon. Evitas kraketadon sed \305\235an\304\235as la to"
    "non.",
-   "Uzi la fikspunktan (entjeran) resonpcecigilon anstata\305\255 la glitpunkta kiam kerno eligas 16"
+   "Uzi la fikspunktan (entjeran) resonpecigilon anstata\305\255 la glitpunktan kiam kerno eligas 16"
    "-bitan sonon. Evitas la duoblan konverton el entjero al glita\304\265o kaj produktas bit-identan"
-   " eligon sur \304\211iu platformo, kio helpas retludan determinismon. Havas nenian efikon sur ker"
-   "noj, kiuj eligas glitpunktajn sonojn, kaj retropa\305\235as al glitpunkta vojo kiam nekongrua fi"
-   "ltrilo DSP estas aktiva.",
+   " eligon sur \304\211iu platformo, farante sonan eligon ludeblaj trans sistemojn. Havas nenian ef"
+   "ikon sur kernoj, kiuj eligas glitpunktajn sonojn, kaj retropa\305\235as al glitpunkta vojo kiam "
+   "nekongrua filtrilo DSP estas aktiva.",
    "Filtriloj de sono DSP estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Sonspeciga formato postulata de la sonpelilo de la eligaparato. \"Glita\304\265o\" postulas 32-b"
    "itan glitpunkta\304\265on; \"Int16\", 16-bitan entjeron. Nur influas pelilojn, kiuj povas intert"
@@ -7566,6 +7577,8 @@ static const struct
    "Montri la opcion \"El\304\265eti diskon\" en la \304\210efa menuo.",
 #endif
 #endif
+   "Montri plenajn dosierindikojn por dosierujaj agordojn, anstata\305\255 nur la elektita dosiernom"
+   "o.",
    "Montri la opcion \"Helpo\" en la \304\210efa menuo.",
    "Montri la opcion \"Informoj\" en la \304\210efa menuo.",
    "Montri la opcion \"\305\234argi enhavon\" en la \304\210efa menuo.",
@@ -7588,6 +7601,9 @@ static const struct
    "Aldonas \305\235topadon de neuzata spaco en bildetoj kun solida fono. \304\210i tio certigas ega"
    "lmezuran grandon por \304\211iuj bildoj, plibonigante menuan aspekton kiam vidante bildetojn de "
    "miksitaj enhavoj kun variemaj bazaj dimensioj.",
+   "Ludas la muzika\304\265on de animaciaj bildetoj de WebM dum ili estas montrataj. Sono de Vorbis "
+   "kaj Opus estas subtentata. La sono ripeti\304\235as kun la animacio kaj \304\211esas kiam la bil"
+   "deto fermi\304\235as.",
    "A\305\255tomate skali bildetojn kun malpli da lar\304\235o/alto ol la specifita valoro. Plibonig"
    "as bildan kvaliton. Havas mildan influon kontra\305\255 rendimento.",
    "Uzi glatan rulumilan animacion kiam montrante longan menuan tekston. Havas malgrandan influon su"
@@ -8408,6 +8424,10 @@ static const struct
    " \305\235an\304\235ojn de la aparataro inter filmeroj.",
    "Milde malklarigi la bildon por malakrigi akrajn rastrumerajn randojn. \304\210i tiu opcio malmul"
    "te influas rendimenton. Devus esti malebligita se uzante ombrigiloj.",
+   "Bitprofundeco de la fina eliga surfaco kiam HDR estas malebligita. 10-bitoj forigas striitan efi"
+   "kon enigita de ombrigiloj, kiuj treege malheligas la bildon, kiel profiloj de CRT-aj radioj kaj "
+   "aperturkradaj maskoj. Retropa\305\235as al 8 bitoj se la ekrano a\305\255 komponilo ne oferas "
+   "\304\235in. Ignorata kiam HDR estas ebligita, kio elektas sian propran formaton.",
    "Uzi propran intervalon de inter\305\235an\304\235o por vertikala sinkronigo. Efektive malpliigas"
    " la oftecon de aktualigo de la ekrano je la specifita faktoro. \"A\305\255tomate\" agordas la fa"
    "ktoron la\305\255 la ofteco de filmeroj raportitaj de la kerno, plibonigante ritmon de filmero k"
@@ -9062,7 +9082,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (172438u
+      (sizeof(msg_hash_eo_blob) == (173165u
 #ifdef ANDROID
        + 312u
 #endif
@@ -10618,6 +10638,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -10640,6 +10661,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -11762,7 +11784,9 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -12441,6 +12465,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -12458,6 +12483,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13024,6 +13050,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

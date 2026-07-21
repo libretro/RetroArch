@@ -2284,7 +2284,9 @@ static const struct
    char s_6dcc2f9f[20];
    char s_48431da6[14];
    char s_d2fe3ed2[21];
+   char s_1edf58ee[30];
    char s_d74474ce[8];
+   char s_541958e5[8];
    char s_ba3e4ee6[12];
    char s_45816e1d[34];
    char s_c017f975[12];
@@ -2425,7 +2427,7 @@ static const struct
    char s_daf6d7e2[73];
    char s_042502c4[78];
    char s_90ae9a9f[105];
-   char s_81b79d5b[443];
+   char s_81b79d5b[444];
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[143];
@@ -3548,6 +3550,7 @@ static const struct
    char s_3c679f0a[411];
    char s_5b059407[152];
    char s_36033606[159];
+   char s_d62ed5dc[450];
    char s_2e69508b[431];
    char s_7e96b5ce[49];
    char s_3547866d[154];
@@ -6670,7 +6673,9 @@ static const struct
    "Filtro de suavizado",
    "Personalizado",
    "Calidad de streaming",
+   "Profundidad de bits de salida",
    "10 bits",
+   "8\302\240bits",
    "Autom\303\241tico",
    "Intervalo de intercambio de VSync",
    "Autom\303\241tico",
@@ -6835,10 +6840,10 @@ static const struct
    "o cambiar\303\241 su tono.",
    "Utiliza el remuestrador de coma fija (por n\303\272meros enteros) en lugar del remuestrador de c"
    "oma flotante cuando un n\303\272cleo produzca audio a 16\302\240bits. Evita la conversi\303\263n"
-   " doble de entero a flotante y viceversa, produciendo un audio de salida id\303\251ntico al bit e"
-   "n todas las plataformas. Esta opci\303\263n no afecta a n\303\272cleos cuyo audio de salida sea "
-   "por coma flotante y utilizar\303\241 la ruta de coma flotante cuando se active un filtro DSP inc"
-   "ompatible.",
+   " doble de entero a flotante y viceversa, produciendo un audio de salida id\303\251ntico en todas"
+   " las partidas y sistemas. Esta opci\303\263n no afecta a n\303\272cleos cuyo audio de salida sea"
+   " por coma flotante y utilizar\303\241 la ruta de coma flotante cuando se active un filtro DSP in"
+   "compatible.",
    "En este directorio se guardar\303\241n los filtros de audio DSP.",
    "El formato de muestreo que solicitar\303\241 el controlador de audio al dispositivo de salida. "
    "\302\253Float\302\273 solicitar\303\241 un formato de coma flotante de 32\302\240bits y \302\253"
@@ -8617,6 +8622,12 @@ static const struct
    "ener que asumir cambios en el estado del hardware entre fotogramas.",
    "Aplica un ligero desenfoque a la imagen para suavizar los bordes de los p\303\255xeles. Esta opc"
    "i\303\263n apenas afecta al rendimiento. Desact\303\255vala si utilizas shaders.",
+   "Establece la profundidad de bits de la superficie final de salida cuando el modo HDR est\303\251"
+   " desactivado. \302\25310\302\240bits\302\273 elimina el efecto de bandas de color que introducen"
+   " aquellos shaders que oscurecen la imagen, como los perfiles de rayos CRT y las m\303\241scaras "
+   "de rejilla de apertura. Se utilizar\303\241 el modo de 8\302\240bits si la pantalla o el composi"
+   "tor no ofrecen el otro modo. Se ignorar\303\241 al activar el modo HDR, ya que este selecciona u"
+   "n formato propio.",
    "Utiliza un valor personalizado para el intervalo de intercambio de la sincron\303\255a vertical."
    " Esto reducir\303\241 la frecuencia de actualizaci\303\263n del monitor seg\303\272n el factor e"
    "specificado. \302\253Autom\303\241tico\302\273 cambiar\303\241 el factor seg\303\272n la velocid"
@@ -9302,7 +9313,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (206154u
+      (sizeof(msg_hash_es_blob) == (206643u
 #ifdef ANDROID
        + 329u
 #endif
@@ -11983,7 +11994,9 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -13246,6 +13259,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

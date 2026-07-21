@@ -160,6 +160,7 @@ static const struct
    char s_e914b65b[27];
    char s_0c7e02de[27];
    char s_29398124[22];
+   char s_cab81c29[27];
    char s_826b2d88[28];
    char s_0615a7c8[9];
    char s_67924166[25];
@@ -223,7 +224,10 @@ static const struct
    char s_f0c9c4c0[24];
 #ifdef _3DS
    char s_22a46583[35];
+   char s_a4d079f8[22];
+   char s_3f3d3a01[22];
    char s_6651ce29[29];
+   char s_04fed26b[23];
    char s_17813ad9[11];
    char s_1131883a[12];
 #endif
@@ -665,6 +669,7 @@ static const struct
    char s_331819c2[18];
    char s_56e1b335[17];
    char s_56e1b336[18];
+   char s_313d15c0[13];
    char s_e9f0dd82[41];
    char s_72765a06[13];
    char s_72765a07[13];
@@ -836,6 +841,7 @@ static const struct
    char s_96380b84[18];
    char s_981e8bbb[21];
    char s_16846b20[21];
+   char s_1fef6c42[20];
    char s_4441ee26[19];
    char s_5eeb3a8a[34];
    char s_a497674d[37];
@@ -906,6 +912,9 @@ static const struct
    char s_68d27147[11];
    char s_f02f73fc[30];
    char s_3a0a3fef[15];
+   char s_1b6ed818[22];
+   char s_89a75c21[22];
+   char s_9439ec8b[23];
    char s_1e09db79[12];
    char s_0d2d8eef[9];
    char s_400523e5[26];
@@ -957,6 +966,7 @@ static const struct
    char s_5e519829[31];
 #endif
 #endif
+   char s_a6e5d0ee[19];
    char s_f228c6c5[15];
    char s_11926382[17];
    char s_645ae416[28];
@@ -1600,14 +1610,18 @@ static const struct
    char s_addc7f89[77];
 #endif
 #endif
+   char s_8dec52be[49];
    char s_8fa632ab[19];
+   char s_7614d29f[45];
    char s_091f50ec[17];
+   char s_fe3e1d48[22];
    char s_6f16fab3[17];
    char s_dff02a9f[29];
    char s_87ee250e[29];
    char s_91e11405[36];
    char s_04681a15[26];
    char s_046a0f66[25];
+   char s_18fce787[27];
    char s_6f02b5b0[36];
    char s_a11934f5[25];
    char s_69b36417[14];
@@ -1616,6 +1630,7 @@ static const struct
    char s_68fc7d61[15];
    char s_a511a1be[8];
    char s_0500fecc[17];
+   char s_5f6853c5[22];
    char s_df763da7[11];
    char s_b443c25e[13];
    char s_4ad9adf8[24];
@@ -1677,8 +1692,18 @@ static const struct
    char s_44ebca0d[24];
    char s_608ac5a1[18];
 #ifdef HAVE_SMBCLIENT
+   char s_3839f91d[17];
+   char s_86b07599[16];
+   char s_8d5f85ee[22];
    char s_9b023eee[33];
+   char s_ccae82ba[13];
+   char s_ad6e88de[13];
+   char s_c7bc8298[20];
+   char s_e63b035a[14];
+   char s_d21d875b[9];
    char s_b12ae22e[17];
+   char s_b2d073c7[22];
+   char s_1cbc2657[15];
 #endif
    char s_467f06c1[7];
    char s_084af156[8];
@@ -1968,7 +1993,9 @@ static const struct
    char s_9e4df80d[23];
    char s_6a745184[26];
    char s_7ead653d[37];
+   char s_1f27c9a8[28];
    char s_8841e63d[26];
+   char s_b8e8ddb7[28];
    char s_8843db8e[25];
    char s_a9711945[28];
    char s_bdaa2cfe[36];
@@ -2765,6 +2792,8 @@ static const struct
    char s_7eb20ecf[60];
 #ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[61];
+   char s_907ef7cc[39];
+   char s_b0a46506[37];
    char s_f6492edc[49];
 #endif
    char s_f3bfa8b9[101];
@@ -3105,6 +3134,7 @@ static const struct
    char s_21580d7c[103];
    char s_fc5e1d2c[57];
    char s_51b22327[46];
+   char s_2f6a6e51[25];
    char s_dd3e560b[36];
    char s_805b6635[40];
    char s_2891880f[42];
@@ -3249,6 +3279,7 @@ static const struct
    char s_4d7ee7e2[26];
    char s_9d7c6772[36];
    char s_4bc518be[32];
+   char s_c8812645[55];
    char s_dd3ee761[130];
    char s_f9aa7e70[91];
    char s_509dd374[36];
@@ -3295,6 +3326,7 @@ static const struct
    char s_e9681e93[83];
    char s_ca174246[19];
    char s_9bcb3d77[39];
+   char s_c9d43668[42];
    char s_bc890b1b[33];
    char s_6095bb1c[40];
    char s_263efdcf[38];
@@ -3611,6 +3643,7 @@ static const struct
    "Lis\303\244\303\244 mikseriin ja soita",
    "Lis\303\244\303\244 mikseriin ja soita",
    "Lis\303\244\303\244 soittolistaan",
+   "Teko\303\244lypalvelun taustaosa",
    "Teko\303\244lypalvelu k\303\244yt\303\266ss\303\244",
    "Kuvatila",
    "Teko\303\244lypalvelun tuloste",
@@ -3674,7 +3707,10 @@ static const struct
    "N\303\244yt\303\244 akun varaustaso",
 #ifdef _3DS
    "Alemman n\303\244yt\303\266n resurssien kansio",
+   "Fontin v\303\244ri: sininen",
+   "Fontin v\303\244ri: vihre\303\244",
    "Fontin v\303\244rin l\303\244pin\303\244kyvyys",
+   "Fontin v\303\244ri: punainen",
    "Kirjasimet",
    "Fontin koko",
 #endif
@@ -4117,6 +4153,7 @@ static const struct
    "Ristiohjain yl\303\266s",
    "X-painike (Ylin)",
    "Y-painike (Vasen)",
+   "N\303\244pp\303\244in %s",
    "N\303\244pp\303\244imist\303\266 ohjaimen kartoitus tyyppi",
    "Pyssy, Aux A",
    "Pyssy, Aux B",
@@ -4289,6 +4326,7 @@ static const struct
    "<Ei m\303\244\303\244ritetty>",
    "Arcade DAT -tiedosto",
    "Arcade DAT -suodatin",
+   "Sis\303\244ll\303\266n sijainti",
    "Tiedostop\303\244\303\244tteet",
    "Korvaa olemassa oleva soittolista",
    "Skannaa arkistotiedostojen sis\303\244lt\303\244",
@@ -4359,6 +4397,9 @@ static const struct
    "Kioskitila",
    "Rajoita valikon kuvataajuutta",
    "Tiedostoselain",
+   "Fontin v\303\244ri: sininen",
+   "Fontin v\303\244ri: vihre\303\244",
+   "Fontin v\303\244ri: punainen",
    "Peitt\303\244vyys",
    "Kirkkaus",
    "Vaakasuuntainen animaatio",
@@ -4410,6 +4451,7 @@ static const struct
    "N\303\244yt\303\244 \"Poista levy asemasta\"",
 #endif
 #endif
+   "N\303\244yt\303\244 koko polku",
    "N\303\244yt\303\244 'Ohje'",
    "N\303\244yt\303\244 \"Tiedot\"",
    "N\303\244yt\303\244 \"Lataa sis\303\244lt\303\266\303\244\"",
@@ -5061,14 +5103,18 @@ static const struct
    "Retroflag Safe Shutdown\"\n#else\n   \"Retroflag Safe Shutdown (Reboot required)",
 #endif
 #endif
+   "Tallennustiedosto: kirjoita sis\303\244lt\303\266hakemistoon",
    "Tallennustiedostot",
+   "Tallennustila: kirjoita sis\303\244lt\303\266hakemistoon",
    "Tilatallennukset",
+   "Tilatallenne: pakkaus",
    "Tilatallennukset",
    "Tallenna kokoonpano nimell\303\244",
    "Tallenna nykyinen kokoonpano",
    "Tallenna sis\303\244lt\303\266kansion ohitukset",
    "Tallenna ytimen ohitukset",
    "Tallenna pelin ohitukset",
+   "Tallennustiedosto: pakkaus",
    "Tallenna p\303\244\303\244asiallinen kokoonpano",
    "Tallenna uusi kokoonpano",
    "Tallenna tila",
@@ -5077,6 +5123,7 @@ static const struct
    "Skannaa kansio",
    "Skannaa",
    "Skannaa tiedosto",
+   "T\303\244ysin automaattinen",
    "Mukautettu",
    "<Mukautettu>",
    "<Skannaa t\303\244m\303\244 kansio>",
@@ -5138,8 +5185,18 @@ static const struct
    "Ytimen asennus onnistui",
    "Hidastuksen tahti",
 #ifdef HAVE_SMBCLIENT
+   "SMB-todennustila",
+   "Selaa SMB-jakoa",
+   "K\303\244yt\303\244 SMB-asiakasta",
    "SMB-yhteyksien enimm\303\244ism\303\244\303\244r\303\244",
+   "SMB-salasana",
+   "SMB-palvelin",
+   "SMB-verkkoasetukset",
+   "SMB-jaon nimi",
+   "SMB-jako",
    "SMB-aikakatkaisu",
+   "SMB-k\303\244ytt\303\244j\303\244tunnus",
+   "SMB-ty\303\266ryhm\303\244",
 #endif
    "\303\204\303\244ni",
    "Speksit",
@@ -5431,7 +5488,9 @@ static const struct
    "Poista pelin esiasetus",
    "Poista globaali esiasetus",
    "Poista sis\303\244lt\303\266kansion esiasetukset",
+   "Tallenna esiasetus nimell\303\244",
    "Tallenna ytimen esiasetus",
+   "Tallenna nykyinen esiasetus",
    "Tallenna pelin esiasetus",
    "Tallenna globaali esiasetus",
    "Tallenna sis\303\244lt\303\266kansion esiasetus",
@@ -6608,6 +6667,8 @@ static const struct
    "Nopeus jolla sis\303\244lt\303\266 py\303\266rii kun k\303\244ytet\303\244\303\244n hidastusta.",
 #ifdef HAVE_SMBCLIENT
    "Valitse suurin mahdollinen yhteysm\303\244\303\244r\303\244 ymp\303\244rist\303\266ss\303\244si.",
+   "Palvelimen IP-osoite tai is\303\244nt\303\244nimi.",
+   "M\303\244\303\244rit\303\244 SMB-verkkojaon asetukset.",
    "Valitse oletusarvoinen aikakatkaisu sekunneissa.",
 #endif
    "Lajittele tallennustiedostot kansioihin, jotka on nimetty kansion mukaan, jossa sis\303\244lt"
@@ -7064,6 +7125,7 @@ static const struct
    "nnettu/k\303\244ynniss\303\244",
    "Sis\303\244ll\303\266n purkaminen pakatusta tiedostosta ep\303\244onnistui",
    "Nimimerkin saaminen asiakkaalta ep\303\244onnistui.",
+   "Lataaminen ep\303\244onnistui.",
    "Sis\303\244ll\303\266n lataaminen ep\303\244onnistui.",
    "Soittolistalta lataaminen ep\303\244onnistui.",
    "Elokuvatiedoston lataaminen ep\303\244onnistui.",
@@ -7214,6 +7276,7 @@ static const struct
    "Potkaistiin asiakas: \"%s\"",
    "Skannataan verkkopelin is\303\244nti\303\244...",
    "Verkkopelin skannaus valmistui.",
+   "Sis\303\244lt\303\266 on ladattava ennen verkkopelin aloittamista.",
    "Verkkopelin yhteysyritys ep\303\244onnistui, koska toinen osapuoli ei k\303\244yt\303\244 RetroA"
    "rchia tai k\303\244ytt\303\244\303\244 vanhaa versiota RetroArchista.",
    "Verkkopelin toinen osapuoli k\303\244ytt\303\244\303\244 vanhaa versiota RetroArchista. Ei voida"
@@ -7265,6 +7328,7 @@ static const struct
    "istoriaa: ",
    "Nollataan ytimet: ",
    "Valmistellaan sis\303\244ll\303\266n skannausta...",
+   "Paina uudelleen sulkeaksesi sis\303\244ll\303\266n...",
    "Paina uudelleen lopettaaksesi...",
    "Poistetaan vanhentuneet varmuuskopiot: ",
    "Verkkopelin porttim\303\244\303\244ritys onnistui",
@@ -7394,7 +7458,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123716u
+      (sizeof(msg_hash_fi_blob) == (124205u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7403,7 +7467,10 @@ typedef char msg_hash_fi_blob_check[
 #endif
 #ifdef _3DS
        + 35u
+       + 22u
+       + 22u
        + 29u
+       + 23u
        + 11u
        + 12u
 #endif
@@ -7485,8 +7552,18 @@ typedef char msg_hash_fi_blob_check[
 #endif
 #endif
 #ifdef HAVE_SMBCLIENT
-       + 33u
        + 17u
+       + 16u
+       + 22u
+       + 33u
+       + 13u
+       + 13u
+       + 20u
+       + 14u
+       + 9u
+       + 17u
+       + 22u
+       + 15u
 #endif
 #ifdef HAVE_MIST
        + 10u
@@ -7614,6 +7691,8 @@ typedef char msg_hash_fi_blob_check[
 #endif
 #ifdef HAVE_SMBCLIENT
        + 61u
+       + 39u
+       + 37u
        + 49u
 #endif
 #ifdef HAVE_LAKKA
@@ -7832,6 +7911,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_MIXER_AND_PLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ADD_TO_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_IMAGE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AI_SERVICE_MODE,
@@ -7895,7 +7975,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_BATTERY_LEVEL_ENABLE,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_ASSETS_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_BOTTOM_FONT_SCALE,
 #endif
@@ -8337,6 +8420,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -8508,6 +8592,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_FILE_EXTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_OVERWRITE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_SEARCH_ARCHIVES,
@@ -8578,6 +8663,9 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
@@ -8629,6 +8717,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -9271,14 +9360,18 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAFESHUTDOWN_ENABLE,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVEFILE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATES_IN_CONTENT_DIR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_GAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_FILE_COMPRESSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_MAIN_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_NEW_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_STATE,
@@ -9287,6 +9380,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_FILE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_METHOD_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
@@ -9348,8 +9442,18 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
 #ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SOUND_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SPECS_SETTINGS,
@@ -9639,7 +9743,9 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_GLOBAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_REMOVE_PARENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_AS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CORE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_CURRENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PRESET_SAVE_PARENT,
@@ -10436,6 +10542,8 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
@@ -10776,6 +10884,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
    (uint32_t)MSG_FAILED_TO_GET_NICKNAME_FROM_CLIENT,
+   (uint32_t)MSG_FAILED_TO_LOAD,
    (uint32_t)MSG_FAILED_TO_LOAD_CONTENT,
    (uint32_t)MSG_FAILED_TO_LOAD_FROM_PLAYLIST,
    (uint32_t)MSG_FAILED_TO_LOAD_MOVIE_FILE,
@@ -10920,6 +11029,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MSG_NETPLAY_KICKED_CLIENT_S,
    (uint32_t)MSG_NETPLAY_LAN_SCANNING,
    (uint32_t)MSG_NETPLAY_LAN_SCAN_COMPLETE,
+   (uint32_t)MSG_NETPLAY_NEED_CONTENT_LOADED,
    (uint32_t)MSG_NETPLAY_NOT_RETROARCH,
    (uint32_t)MSG_NETPLAY_OUT_OF_DATE,
    (uint32_t)MSG_NETPLAY_PEER_PAUSED,
@@ -10966,6 +11076,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MSG_PLAYLIST_MANAGER_REFRESH_MISSING_CONFIG,
    (uint32_t)MSG_PLAYLIST_MANAGER_RESETTING_CORES,
    (uint32_t)MSG_PREPARING_FOR_CONTENT_SCAN,
+   (uint32_t)MSG_PRESS_AGAIN_TO_CLOSE_CONTENT,
    (uint32_t)MSG_PRESS_AGAIN_TO_QUIT,
    (uint32_t)MSG_PRUNING_CORE_BACKUP_HISTORY,
    (uint32_t)MSG_PUBLIC_ADDRESS,

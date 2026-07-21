@@ -2303,6 +2303,7 @@ static const struct
    char s_bb346e8d[8];
    char s_21d7a1f6[10];
    char s_d2fe3ed2[37];
+   char s_1edf58ee[26];
    char s_ba3e4ee6[13];
    char s_45816e1d[31];
    char s_c017f975[13];
@@ -2447,8 +2448,8 @@ static const struct
    char s_daf6d7e2[65];
    char s_042502c4[70];
    char s_90ae9a9f[85];
-   char s_81b79d5b_0[500];
-   char s_81b79d5b_1[63];
+   char s_81b79d5b_0[499];
+   char s_81b79d5b_1[132];
    char s_c9235dab[62];
    char s_330be970_0[500];
    char s_330be970_1[341];
@@ -3572,6 +3573,7 @@ static const struct
    char s_3c679f0a[372];
    char s_5b059407[180];
    char s_36033606[213];
+   char s_d62ed5dc[325];
    char s_2e69508b[437];
    char s_7e96b5ce[49];
    char s_3547866d[182];
@@ -7356,6 +7358,7 @@ static const struct
    "\304\220\303\241 ra",
    "V\341\273\213 tr\303\255",
    "Ch\341\272\245t l\306\260\341\273\243ng ph\303\241t tr\341\273\261c tuy\341\272\277n",
+   "\304\220\341\273\231 s\303\242u m\303\240u \304\221\341\272\247u ra",
    "T\341\273\261 \304\221\341\273\231ng",
    "Th\341\273\235i gian ho\303\241n \304\221\341\273\225i VSync",
    "T\341\273\261 \304\221\341\273\231ng",
@@ -7594,20 +7597,22 @@ static const struct
    "\245ng ch\341\272\277 \304\221\341\273\231 tua \304\221i nhanh.",
    "T\304\203ng t\341\273\221c \303\242m thanh khi tua nhanh. Ng\304\203n ti\341\272\277ng r\303\250"
    " nh\306\260ng thay \304\221\341\273\225i cao \304\221\341\273\231.",
-   "S\341\273\255 d\341\273\245ng b\341\273\231 l\341\272\245y m\341\272\253u l\341\272\241i fixed-p"
-   "oint (s\341\273\221 nguy\303\252n) thay cho b\341\273\231 l\341\272\245y m\341\272\253u l\341"
-   "\272\241i floating-point khi core xu\341\272\245t \303\242m thanh 16-bit. Gi\303\272p tr\303\241"
-   "nh vi\341\273\207c chuy\341\273\203n \304\221\341\273\225i qua l\341\272\241i t\341\273\253 s"
-   "\341\273\221 nguy\303\252n sang s\341\273\221 th\341\273\261c d\341\272\245u ph\341\272\251y "
-   "\304\221\341\273\231ng v\303\240 t\341\272\241o ra \304\221\341\272\247u ra gi\341\273\221ng h"
-   "\341\273\207t t\341\273\253ng bit tr\303\252n m\341\273\215i n\341\273\201n t\341\272\243ng, "
-   "\304\221i\341\273\201u n\303\240y h\341\273\227 tr\341\273\243 t\303\255nh \304\221\341\273\223n"
-   "g b\341\273\231 c\341\273\247a netplay. Kh\303\264ng c\303\263 t\303\241c d\341\273\245ng v\341"
-   "\273\233i c\303\241c core xu\341\272\245t \303\242m thanh d\341\272\245u ph\341\272\251y \304"
-   "\221\341\273\231ng, v\303\240 s\341\272\275 quay l\341\272\241i \304\221\306\260\341\273\235ng x"
-   "\341\273\255 l\303\275 floati",
-   "ng-point khi \304\221ang b\341\272\255t b\341\273\231 l\341\273\215c DSP kh\303\264ng t\306\260"
-   "\306\241ng th\303\255ch.",
+   "S\341\273\255 d\341\273\245ng b\341\273\231 l\341\272\245y m\341\272\253u l\341\272\241i s\341"
+   "\273\221 nguy\303\252n (fixed-point) thay cho b\341\273\231 l\341\272\245y m\341\272\253u l\341"
+   "\272\241i d\341\272\245u ph\341\272\251y \304\221\341\273\231ng khi l\303\265i xu\341\272\245t "
+   "\303\242m thanh 16-bit. Tr\303\241nh vi\341\273\207c chuy\341\273\203n \304\221\341\273\225i qua"
+   " l\341\272\241i gi\341\273\257a s\341\273\221 nguy\303\252n v\303\240 d\341\272\245u ph\341\272"
+   "\251y \304\221\341\273\231ng, \304\221\341\273\223ng th\341\273\235i t\341\272\241o ra \304\221"
+   "\341\272\247u ra \303\242m thanh gi\341\273\221ng h\341\273\207t t\341\273\253ng bit tr\303\252n"
+   " m\341\273\215i n\341\273\201n t\341\272\243ng, gi\303\272p \303\242m thanh lu\303\264n nh\341"
+   "\272\245t qu\303\241n gi\341\273\257a c\303\241c l\341\272\247n ch\341\272\241y v\303\240 tr\303"
+   "\252n c\303\241c h\341\273\207 th\341\273\221ng kh\303\241c nhau. Kh\303\264ng c\303\263 t\303"
+   "\241c d\341\273\245ng v\341\273\233i c\303\241c l\303\265i xu\341\272\245t \303\242m thanh d\341"
+   "\272\245u ph\341\272\251y ",
+   "\304\221\341\273\231ng v\303\240 s\341\272\275 t\341\273\261 \304\221\341\273\231ng chuy\341\273"
+   "\203n v\341\273\201 ch\341\272\277 \304\221\341\273\231 d\341\272\245u ph\341\272\251y \304\221"
+   "\341\273\231ng khi b\341\273\231 l\341\273\215c DSP hi\341\273\207n t\341\272\241i kh\303\264ng "
+   "t\306\260\306\241ng th\303\255ch.",
    "B\341\273\231 l\341\273\215c DSP \303\242m thanh \304\221\306\260\341\273\243c l\306\260u trong "
    "th\306\260 m\341\273\245c n\303\240y.",
    "\304\220\341\273\213nh d\341\272\241ng m\341\272\253u \303\242m thanh m\303\240 tr\303\254nh "
@@ -10762,6 +10767,14 @@ static const struct
    "\341\272\243nh h\306\260\341\273\237ng \304\221\341\272\277n hi\341\273\207u su\341\272\245t. N"
    "\303\252n t\341\272\257t n\341\272\277u s\341\273\255 d\341\273\245ng b\341\273\231 \304\221\341"
    "\273\225 b\303\263ng.",
+   "\304\220\341\273\231 s\303\242u m\303\240u c\341\273\247a \304\221\341\272\247u ra khi HDR t\341"
+   "\272\257t. Ch\341\272\277 \304\221\341\273\231 10 bit gi\303\272p gi\341\272\243m hi\341\273\207"
+   "n t\306\260\341\273\243ng ph\303\242n d\341\272\243i m\303\240u do c\303\241c shader l\303\240m "
+   "t\341\273\221i h\303\254nh \341\272\243nh m\341\272\241nh. N\341\272\277u m\303\240n h\303\254nh"
+   " ho\341\272\267c compositor kh\303\264ng h\341\273\227 tr\341\273\243 s\341\272\275 t\341\273"
+   "\261 \304\221\341\273\231ng d\303\271ng 8 bit. B\341\273\213 b\341\273\217 qua khi HDR \304\221"
+   "\306\260\341\273\243c b\341\272\255t v\303\254 HDR t\341\273\261 ch\341\273\215n \304\221\341"
+   "\273\213nh d\341\272\241ng \304\221\341\272\247u ra.",
    "S\341\273\255 d\341\273\245ng kho\341\272\243ng th\341\273\235i gian ho\303\241n \304\221\341"
    "\273\225i t\303\271y ch\341\273\211nh cho VSync. Gi\341\272\243m hi\341\273\207u qu\341\272\243 "
    "t\341\273\221c \304\221\341\273\231 l\303\240m m\341\273\233i m\303\240n h\303\254nh theo h\341"
@@ -11751,7 +11764,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (218149u
+      (sizeof(msg_hash_vn_blob) == (218568u
 #ifdef ANDROID
        + 422u
 #endif
@@ -14448,6 +14461,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_KICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
@@ -15714,6 +15728,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,

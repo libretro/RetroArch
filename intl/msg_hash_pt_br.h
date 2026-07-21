@@ -2250,6 +2250,7 @@ static const struct
    char s_48431da6[14];
    char s_d2fe3ed2[26];
    char s_d74474ce[8];
+   char s_541958e5[7];
    char s_ba3e4ee6[12];
    char s_45816e1d[25];
    char s_c017f975[12];
@@ -6587,6 +6588,7 @@ static const struct
    "Personalizada",
    "Qualidade da transmiss\303\243o",
    "10 bits",
+   "8 bits",
    "Autom\303\241tico",
    "Intervalo da troca VSync",
    "Autom\303\241tico",
@@ -9158,7 +9160,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (190237u
+      (sizeof(msg_hash_pt_br_blob) == (190244u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11809,6 +11811,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,

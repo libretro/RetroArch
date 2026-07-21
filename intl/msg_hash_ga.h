@@ -2439,8 +2439,6 @@ static const struct
    char s_daf6d7e2[57];
    char s_042502c4[83];
    char s_90ae9a9f[110];
-   char s_81b79d5b_0[500];
-   char s_81b79d5b_1[16];
    char s_c9235dab[52];
    char s_330be970_0[500];
    char s_330be970_1[55];
@@ -6985,15 +6983,6 @@ static const struct
    "ar\303\272 ar aghaidh.",
    "Luasaigh an fhuaim agus t\303\272 ag luasgh\303\251ar\303\272 ar aghaidh. Coscann s\303\251 scoi"
    "lteadh ach athra\303\255onn s\303\251 an ph\303\241irc.",
-   "Bain \303\272s\303\241id as an athshampl\303\263ir pointe seasta (sl\303\241nuimhir) in ionad an"
-   " athshampl\303\263ra sn\303\241mhphointe nuair a bh\303\255onn cro\303\255 ag aschur fuaime 16-g"
-   "iot\303\241n. Seachna\303\255onn s\303\251 an turas cruinn sl\303\241nuimhir go sn\303\241mhphoi"
-   "nte agus t\303\241irgeann s\303\251 aschur at\303\241 comhionann leis an ngiot\303\241n ar gach "
-   "ard\303\241n, rud a chabhra\303\255onn le cinntitheacht l\303\255onraithe. N\303\255l aon \303"
-   "\251ifeacht aige ar chro\303\255the a aschurann fuaim sn\303\241mhphointe, agus titeann s\303"
-   "\251 ar ais chuig an gcos\303\241n sn\303\241mhphointe agus scagaire DSP neamh-chomhoiri\303\272"
-   "n",
-   "ach gn\303\255omhach.",
    "St\303\263r\303\241iltear scagair\303\255 DSP fuaime san eolaire seo.",
    "Form\303\241id shamplach a iarrann an tiom\303\241na\303\255 fuaime \303\263n bhfeiste aschuir. "
    "Iarrann 'Float' sn\303\241mhphointe 32-giot\303\241n, iarrann 'Int16' sl\303\241nuimhir 16-giot"
@@ -9792,7 +9781,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (202043u
+      (sizeof(msg_hash_ga_blob) == (201527u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12624,7 +12613,6 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
