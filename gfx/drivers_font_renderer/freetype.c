@@ -159,12 +159,56 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
    return &handle->atlas_slots[oldest];
 }
 
+/* Copy one rendered FreeType glyph bitmap into the atlas, clearing
+ * the unused remainder of the cell (otherwise garbage may bleed in
+ * at glyph edges when rendering with filtering enabled).
+ *
+ * This helper is the ONLY place that knows the atlas is 8-bit; a
+ * higher-bit-depth atlas (HDR output) needs a sibling of this
+ * routine and nothing else. Note that unlike rasterizers that can
+ * produce higher-precision coverage directly, FreeType's smooth
+ * rasterizer emits 256 coverage levels, so the HDR sibling is a
+ * lossless upconversion of those levels (v * 257 for 16-bit); this
+ * is adequate for coverage/alpha data. The OS/display requirements
+ * for HDR output are the video driver's concern, not this file's. */
+static void font_renderer_ft_copy_coverage(ft_font_renderer_t *handle,
+      const freetype_atlas_slot_t *atlas_slot, const FT_GlyphSlot slot,
+      unsigned copy_width, unsigned copy_height)
+{
+   unsigned y;
+   const uint8_t *src   = (const uint8_t*)slot->bitmap.buffer;
+   unsigned delta_width = handle->max_glyph_width - copy_width;
+   uint8_t *dst         = (uint8_t*)handle->atlas.buffer
+         + atlas_slot->glyph.atlas_offset_x
+         + atlas_slot->glyph.atlas_offset_y * handle->atlas.width;
+
+   for (y = 0; y < copy_height; y++)
+   {
+      /* Copy bitmap row */
+      memcpy(dst, src, copy_width * sizeof(uint8_t));
+      /* Zero out remaining atlas row */
+      if (delta_width > 0)
+         memset(dst + copy_width, 0, delta_width * sizeof(uint8_t));
+
+      dst += handle->atlas.width;
+      src += slot->bitmap.pitch;
+   }
+
+   if (copy_height < handle->max_glyph_height)
+   {
+      for (y = copy_height; y < handle->max_glyph_height; y++)
+      {
+         memset(dst, 0, handle->max_glyph_width * sizeof(uint8_t));
+         dst += handle->atlas.width;
+      }
+   }
+}
+
 static const struct font_glyph *font_renderer_ft_get_glyph(
       void *data, uint32_t charcode)
 {
    unsigned map_id;
    unsigned copy_width, copy_height;
-   uint8_t *dst;
    FT_GlyphSlot slot;
    freetype_atlas_slot_t* atlas_slot;
    ft_font_renderer_t *handle = (ft_font_renderer_t*)data;
@@ -213,43 +257,9 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    atlas_slot->glyph.draw_offset_x = slot->bitmap_left;
    atlas_slot->glyph.draw_offset_y = -slot->bitmap_top;
 
-   dst = (uint8_t*)handle->atlas.buffer + atlas_slot->glyph.atlas_offset_x
-         + atlas_slot->glyph.atlas_offset_y * handle->atlas.width;
-
    if (slot->bitmap.buffer)
-   {
-      unsigned y;
-      const uint8_t *src    = (const uint8_t*)slot->bitmap.buffer;
-      unsigned delta_width  = handle->max_glyph_width - copy_width;
-
-      /* When copying the glyph bitmap, it is
-       * necessary to clear any unused regions of
-       * the atlas texture, otherwise garbage
-       * (due to texture bleeding) may be drawn at
-       * the edges of the glyph when rendering with
-       * filtering enabled */
-
-      for (y = 0; y < copy_height; y++)
-      {
-         /* Copy bitmap row */
-         memcpy(dst, src, copy_width * sizeof(uint8_t));
-         /* Zero out remaining atlas row */
-         if (delta_width > 0)
-            memset(dst + copy_width, 0, delta_width * sizeof(uint8_t));
-
-         dst += handle->atlas.width;
-         src += slot->bitmap.pitch;
-      }
-
-      if (copy_height < handle->max_glyph_height)
-      {
-         for (y = copy_height; y < handle->max_glyph_height; y++)
-         {
-            memset(dst, 0, handle->max_glyph_width * sizeof(uint8_t));
-            dst += handle->atlas.width;
-         }
-      }
-   }
+      font_renderer_ft_copy_coverage(handle, atlas_slot, slot,
+            copy_width, copy_height);
 
    handle->atlas.dirty = true;
    atlas_slot->last_used = handle->usage_counter++;
