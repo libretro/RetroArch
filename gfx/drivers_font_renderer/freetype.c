@@ -247,19 +247,36 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    unsigned atlas_width, atlas_height;
    uint8_t *atlas_buffer;
    freetype_atlas_slot_t* slot = NULL;
-   int glyph_w = (int)round((handle->face->bbox.xMax - handle->face->bbox.xMin)
-         * font_size / handle->face->units_per_EM);
-   int glyph_h = (int)round((handle->face->bbox.yMax - handle->face->bbox.yMin)
-         * font_size / handle->face->units_per_EM);
+   int glyph_w, glyph_h;
+
+   /* units_per_EM is 0 for bitmap-only fonts; dividing by it would
+    * crash before FT_Set_Pixel_Sizes ever gets the chance to reject
+    * such a face. */
+   if (handle->face->units_per_EM == 0)
+      return false;
+
+   glyph_w = (int)floor((handle->face->bbox.xMax - handle->face->bbox.xMin)
+         * font_size / handle->face->units_per_EM + 0.5);
+   glyph_h = (int)floor((handle->face->bbox.yMax - handle->face->bbox.yMin)
+         * font_size / handle->face->units_per_EM + 0.5);
 
    if (glyph_w <= 0 || glyph_h <= 0)
       return false;
+
+   /* The cell size is derived from the font's own bbox, which is
+    * attacker-controlled for untrusted font files; clamp it so the
+    * atlas stays within common GPU texture limits and the
+    * width * height product cannot overflow. */
+   if (glyph_w > 127)
+      glyph_w = 127;
+   if (glyph_h > 127)
+      glyph_h = 127;
 
    max_width    = (unsigned)glyph_w;
    max_height   = (unsigned)glyph_h;
    atlas_width  = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
    atlas_height = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
-   atlas_buffer = (uint8_t*)calloc(atlas_width * atlas_height, 1);
+   atlas_buffer = (uint8_t*)calloc((size_t)atlas_height, (size_t)atlas_width);
 
    if (!atlas_buffer)
       return false;
