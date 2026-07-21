@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 #include <CoreFoundation/CFString.h>
 
@@ -162,11 +163,19 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    int max_glyph_size          = (font_size < 0) ? -font_size : font_size;
    float ascent, descent;
 
+   /* Clamp the per-glyph cell so the atlas stays within common GPU
+    * texture limits and the width * height product cannot overflow;
+    * font_size ultimately comes from user configuration. */
+   if (max_glyph_size < 1)
+      return false;
+   if (max_glyph_size > 127)
+      max_glyph_size = 127;
+
    handle->atlas.width         = max_glyph_size * CT_ATLAS_COLS;
    handle->atlas.height        = max_glyph_size * CT_ATLAS_ROWS;
 
    handle->atlas.buffer        = (uint8_t*)calloc(
-         handle->atlas.width * handle->atlas.height, 1);
+         (size_t)handle->atlas.height, (size_t)handle->atlas.width);
 
    if (!handle->atlas.buffer)
       return false;
@@ -252,33 +261,25 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
             slot->glyph.atlas_offset_x +
             slot->glyph.atlas_offset_y * handle->atlas.width;
 
-      /* Only draw rectangle if glyph is large enough and within atlas bounds */
+      /* Only draw the rectangle if the cell is large enough. All
+       * positions below are cell-relative and stay inside the cell,
+       * which tiles the atlas exactly, so no further bounds checks
+       * are needed. */
       if (slot->glyph.width >= 6 && slot->glyph.height >= 6)
       {
          unsigned max_r = slot->glyph.height - 2;
          unsigned max_c = slot->glyph.width - 2;
-         int atlas_size = handle->atlas.width * handle->atlas.height;
 
          /* Draw 2-pixel border rectangle */
          for (r = 2; r < max_r; r++)
          {
-            int left_pos = r * handle->atlas.width + 2;
-            int right_pos = r * handle->atlas.width + max_c - 1;
-            if (left_pos < atlas_size && right_pos < atlas_size)
-            {
-               dst[left_pos] = 255;   /* Left */
-               dst[right_pos] = 255;  /* Right */
-            }
+            dst[r * handle->atlas.width + 2]         = 255; /* Left  */
+            dst[r * handle->atlas.width + max_c - 1] = 255; /* Right */
          }
          for (c = 2; c < max_c; c++)
          {
-            int top_pos = 2 * handle->atlas.width + c;
-            int bottom_pos = (max_r - 1) * handle->atlas.width + c;
-            if (top_pos < atlas_size && bottom_pos < atlas_size)
-            {
-               dst[top_pos] = 255;    /* Top */
-               dst[bottom_pos] = 255; /* Bottom */
-            }
+            dst[2 * handle->atlas.width + c]           = 255; /* Top    */
+            dst[(max_r - 1) * handle->atlas.width + c] = 255; /* Bottom */
          }
       }
 
@@ -309,8 +310,10 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    /* Set up glyph metrics using cached ascent */
    slot->glyph.draw_offset_x = (int)ceil(bounds.origin.x);
    slot->glyph.draw_offset_y = (int)floor(-bounds.origin.y) - (int)floor(handle->cached_ascent) + 1;
-   slot->glyph.advance_x     = (int)round(advance.width);
-   slot->glyph.advance_y     = (int)round(advance.height);
+   /* round() is C99; advances are non-negative so floor(x + 0.5)
+    * is equivalent */
+   slot->glyph.advance_x     = (int)floor(advance.width + 0.5);
+   slot->glyph.advance_y     = (int)floor(advance.height + 0.5);
 
    /* Create bitmap context */
    bitmapData = calloc(slot->glyph.height, slot->glyph.width);
@@ -333,12 +336,31 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
-   /* Create string from Unicode character using cached dictionary */
-   glyph_cfstr = CFStringCreateWithCharacters(NULL, utf16, utf16_len);
-   attrString  = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
+   /* Create string from Unicode character using cached dictionary.
+    * Each CF/CT allocation is checked: passing NULL onwards or
+    * CFRelease(NULL) would crash rather than fail. */
+   if (!(glyph_cfstr = CFStringCreateWithCharacters(NULL, utf16, utf16_len)))
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
+   attrString = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
    CFRelease(glyph_cfstr);
-   line        = CTLineCreateWithAttributedString(attrString);
+   if (!attrString)
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
+   line = CTLineCreateWithAttributedString(attrString);
    CFRelease(attrString);
+   if (!line)
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
 
    /* Render glyph */
    CGContextSetTextPosition(offscreen, -bounds.origin.x, -bounds.origin.y);
@@ -384,13 +406,25 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
       goto error;
    }
 
-   url          = CFURLCreateWithFileSystemPath(
-         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false);
-   dataProvider = CGDataProviderCreateWithURL(url);
-   theCGFont    = CGFontCreateWithDataProvider(dataProvider);
-   face         = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL);
-
-   if (!face)
+   /* Each step is checked before use: several of these APIs do not
+    * accept NULL arguments. */
+   if (!(url = CFURLCreateWithFileSystemPath(
+         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(dataProvider = CGDataProviderCreateWithURL(url)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(theCGFont = CGFontCreateWithDataProvider(dataProvider)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(face = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL)))
    {
       err = 1;
       goto error;
@@ -402,10 +436,18 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
 
    /* Create reusable attribute dictionary for performance */
    {
-      CFTypeRef values[1] = {face};
-      CFStringRef keys[1] = {kCTFontAttributeName};
+      /* C89: block-scope aggregate initializers must be constant */
+      CFTypeRef values[1];
+      CFStringRef keys[1];
+      values[0] = face;
+      keys[0]   = kCTFontAttributeName;
       handle->attr_dict = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values,
             1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+   }
+   if (!handle->attr_dict)
+   {
+      err = 1;
+      goto error;
    }
 
    if (!coretext_font_renderer_create_atlas(face, handle, font_size))
@@ -466,6 +508,8 @@ static void font_renderer_ct_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
+   if (!handle)
+      return;
    *metrics = &handle->line_metrics;
 }
 
