@@ -848,7 +848,14 @@ bool gfx_animation_push(gfx_animation_ctx_entry_t *entry)
    gfx_animation_t *p_anim = &anim_st;
 
    t.duration           = entry->duration;
-   t.running_since      = 0;
+   /* p_anim->cur_time is the timestamp of the current (or most
+    * recent) update frame; using it as the tween start point
+    * reproduces the previous delta-accumulation semantics,
+    * where a freshly pushed tween's first evaluated time was
+    * the full delta of the following update frame. Before the
+    * first ever update this is zero, which the update loop
+    * treats as 'start now' */
+   t.start_time         = p_anim->cur_time;
    t.initial_value      = *entry->subject;
    t.target_value       = entry->target_value;
    t.subject            = entry->subject;
@@ -993,12 +1000,24 @@ bool gfx_animation_update(
 
    for (i = 0; i < RBUF_LEN(p_anim->list); i++)
    {
+      float elapsed_ms;
       struct tween *tween   = &p_anim->list[i];
 
       if (tween->deleted)
          continue;
 
-      tween->running_since += p_anim->delta_time;
+      /* Lazy start: covers tweens pushed before the first
+       * ever update frame (cur_time was still zero at push) */
+      if (tween->start_time == 0)
+         tween->start_time  = p_anim->cur_time;
+
+      /* Elapsed time is derived exactly from the two int64
+       * microsecond timestamps every frame, rather than by
+       * summing per-frame float millisecond deltas into the
+       * tween - the tween's position is a pure function of
+       * the clock, with no accumulated rounding history */
+      elapsed_ms            = (float)(p_anim->cur_time - tween->start_time)
+            / 1000.0f;
 
       /* Check completion *before* evaluating the easing:
        * > On the completion frame the subject is snapped to
@@ -1006,12 +1025,12 @@ bool gfx_animation_update(
        *   was a wasted indirect call whose result was always
        *   overwritten
        * > It also evaluated easings outside their supported
-       *   domain: after a frame hitch running_since can
+       *   domain: after a frame hitch elapsed time can
        *   overshoot duration by an arbitrary amount, and e.g.
        *   easing_out_circ()/easing_in_out_circ() then take
        *   sqrtf() of a negative value, transiently writing
        *   NaN to the subject before the snap */
-      if (tween->running_since >= tween->duration)
+      if (elapsed_ms >= tween->duration)
       {
          *tween->subject = tween->target_value;
 
@@ -1026,7 +1045,7 @@ bool gfx_animation_update(
       }
       else
          *tween->subject = tween->easing(
-               tween->running_since,
+               elapsed_ms,
                tween->initial_value,
                tween->target_value - tween->initial_value,
                tween->duration);

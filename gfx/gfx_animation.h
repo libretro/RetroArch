@@ -209,8 +209,14 @@ struct tween
    tween_cb    cb;
    void        *userdata;
    uintptr_t   tag;
+   /* Timestamp (us) of the update frame on which the tween
+    * became live. Zero means 'not yet started' - the field is
+    * lazily initialised on the tween's first update frame
+    * (gfx_animation timestamps use zero as a sentinel, and
+    * the monotonic microsecond clock never legitimately
+    * returns it) */
+   retro_time_t start_time;
    float       duration;
-   float       running_since;
    float       initial_value;
    float       target_value;
    float       *subject;
