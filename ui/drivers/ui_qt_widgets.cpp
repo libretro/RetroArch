@@ -3329,9 +3329,10 @@ void ShaderParamsDialog::onFilterComboBoxIndexChanged(int)
             if (menu_shader)
                menu_shader->pass[pass].filter = filter;
             if (video_shader)
+            {
                video_shader->pass[pass].filter = filter;
-
-            video_shader->flags |= SHDR_FLAG_MODIFIED;
+               video_shader->flags |= SHDR_FLAG_MODIFIED;
+            }
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -3391,9 +3392,8 @@ void ShaderParamsDialog::onScaleComboBoxIndexChanged(int)
                   video_shader->pass[pass].fbo.flags |=  FBO_SCALE_FLAG_VALID;
                else
                   video_shader->pass[pass].fbo.flags &= ~FBO_SCALE_FLAG_VALID;
+               video_shader->flags |= SHDR_FLAG_MODIFIED;
             }
-
-            video_shader->flags |= SHDR_FLAG_MODIFIED;
 
             command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
          }
@@ -3471,7 +3471,8 @@ void ShaderParamsDialog::onShaderPassMoveDownClicked()
       memcpy(&menu_shader->pass[pass + 1], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->flags |= SHDR_FLAG_MODIFIED;
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
@@ -3546,7 +3547,8 @@ void ShaderParamsDialog::onShaderPassMoveUpClicked()
       memcpy(&menu_shader->pass[pass], tempPass.pass, sizeof(struct video_shader_pass));
    }
 
-   menu_shader->flags |= SHDR_FLAG_MODIFIED;
+   if (menu_shader)
+      menu_shader->flags |= SHDR_FLAG_MODIFIED;
 
    reload();
 }
