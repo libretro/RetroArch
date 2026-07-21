@@ -66,6 +66,11 @@ static FcConfig *fc_config = NULL;
 #define FT_ATLAS_ROWS 16
 #define FT_ATLAS_COLS 16
 #define FT_ATLAS_SIZE (FT_ATLAS_ROWS * FT_ATLAS_COLS)
+
+/* Mix in upper bits to reduce clustering for CJK and other
+ * non-Latin codepoints */
+#define FT_HASH_SIZE 0x100
+#define FT_HASH(c) (((c) ^ ((c) >> 8)) & (FT_HASH_SIZE - 1))
 /* Padding is required between each glyph in
  * the atlas to prevent texture bleed when
  * drawing with linear filtering enabled */
@@ -85,7 +90,7 @@ typedef struct freetype_renderer
    FT_Face face;                                     /* ptr alignment   */
    struct font_atlas atlas;                          /* ptr alignment   */
    freetype_atlas_slot_t atlas_slots[FT_ATLAS_SIZE]; /* ptr alignment   */
-   freetype_atlas_slot_t* uc_map[0x100];             /* ptr alignment   */
+   freetype_atlas_slot_t* uc_map[FT_HASH_SIZE];      /* ptr alignment   */
    void *file_data;                                  /* ptr alignment   */
    unsigned max_glyph_width;
    unsigned max_glyph_height;
@@ -123,13 +128,24 @@ static freetype_atlas_slot_t* font_renderer_get_slot(ft_font_renderer_t *handle)
 {
    int i, map_id;
    unsigned oldest = 0;
+   /* Find the least-recently-used slot.
+    * Unsigned subtraction handles usage_counter wrap-around
+    * correctly. */
+   unsigned oldest_age = handle->usage_counter -
+      handle->atlas_slots[0].last_used;
 
    for (i = 1; i < FT_ATLAS_SIZE; i++)
-      if (handle->atlas_slots[i].last_used < handle->atlas_slots[oldest].last_used)
-         oldest = i;
+   {
+      unsigned age = handle->usage_counter - handle->atlas_slots[i].last_used;
+      if (age > oldest_age)
+      {
+         oldest_age = age;
+         oldest     = i;
+      }
+   }
 
    /* remove from map */
-   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   map_id = FT_HASH(handle->atlas_slots[oldest].charcode);
    if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
@@ -156,7 +172,7 @@ static const struct font_glyph *font_renderer_ft_get_glyph(
    if (!handle)
       return NULL;
 
-   map_id     = charcode & 0xFF;
+   map_id     = FT_HASH(charcode);
    atlas_slot = handle->uc_map[map_id];
 
    while (atlas_slot)
