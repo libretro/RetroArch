@@ -5199,6 +5199,22 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
    f->qp=sh->slice_qp;
    f->chroma_qp_offset=pps->chroma_qp_index_offset;
    f->chroma_qp_offset2=pps->chroma_qp_index_offset2;
+   /* the coefficient/mode context describes the picture being decoded; a
+    * continuation slice must keep what earlier slices of it produced.
+    * The P/B decoders reset it the same way; here the IDR path had it
+    * covered by the caller's frame reset, but a non-IDR I picture
+    * arrives with the previous picture's context - in particular its
+    * 8x8-transform flags, which the intra branches only ever set, and
+    * which steer the deblocking edge set (8.7). */
+   if (sh->first_mb_in_slice == 0)
+   {
+      int gw2=f->mbw*4, cgw2=f->mbw*2;
+      memset(f->nzL, 0, (size_t)gw2 * f->mbh * 4);
+      memset(f->mbt8, 0, (size_t)f->mbw * f->mbh);
+      memset(f->nzC[0], 0, (size_t)cgw2 * f->mbh * (f->cmbh/4));
+      memset(f->nzC[1], 0, (size_t)cgw2 * f->mbh * (f->cmbh/4));
+      memset(f->i4mode, 0xff, (size_t)gw2 * f->mbh * 4);
+   }
    while(mbaddr<total){
       int mbx, mby;
       int mb_type;
