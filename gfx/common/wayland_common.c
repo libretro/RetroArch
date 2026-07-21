@@ -1044,6 +1044,12 @@ bool gfx_ctx_wl_init_common(
 
    wl_list_init(&wl->all_outputs);
    wl_list_init(&wl->current_outputs);
+   /* Must be initialised before the registry roundtrips below:
+    * if init fails after wp_presentation is bound (e.g. missing
+    * compositor/shm/xdg_shell), gfx_ctx_wl_destroy_resources_common()
+    * walks this list, and a calloc-zeroed wl_list is not a valid
+    * empty list. */
+   wl_list_init(&wl->feedbacks);
 
    frontend_driver_destroy_signal_handler_state();
 
@@ -1152,13 +1158,7 @@ bool gfx_ctx_wl_init_common(
    {
       RARCH_LOG("[Wayland]: Compositor doesn't support the %s protocol.\n", wp_presentation_interface.name);
    }
-   else
-   {
-      wl_list_init(&wl->feedbacks);
-      wl->last_ust = 0;
-      wl->last_msc = 0;
-      wl->refresh_interval = 0;
-   }
+
 
    if (!wl->tearing_control_manager)
    {
