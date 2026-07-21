@@ -145,15 +145,27 @@ public:
       tex.pixels        = NULL;
       tex.supports_rgba = false;
 
+      tex.compressed = NULL;
+
       if (image_texture_load(&tex, pathArray.constData()))
       {
-         /* Transfer pixel ownership to QImage - no copy needed.
-          * QImage will call free() on the buffer when destroyed. */
-         return QImage((unsigned char*)tex.pixels,
-               tex.width, tex.height,
-               tex.width * sizeof(uint32_t),
-               QImage::Format_ARGB32,
-               cleanupTexturePixels, tex.pixels);
+         if (tex.pixels)
+         {
+            /* Transfer pixel ownership to QImage - no copy needed.
+             * QImage will call free() on the buffer when destroyed. */
+            return QImage((unsigned char*)tex.pixels,
+                  tex.width, tex.height,
+                  tex.width * sizeof(uint32_t),
+                  QImage::Format_ARGB32,
+                  cleanupTexturePixels, tex.pixels);
+         }
+
+         /* GPU-native (e.g. BCn) path: image_texture_load succeeded but
+          * handed back compressed blocks rather than an RGBA buffer.
+          * We have no way to display these here, so release them (this
+          * would otherwise leak the compressed struct + mips + storage)
+          * and fall back to Qt's own decoder. */
+         image_texture_free(&tex);
       }
 
       /* Fallback to Qt for unsupported formats */
