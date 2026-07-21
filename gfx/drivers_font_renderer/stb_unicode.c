@@ -63,6 +63,9 @@ typedef struct stb_unicode_atlas_slot
 typedef struct
 {
    uint8_t *font_data;
+   /* Whether font_data was allocated by us (and must be freed) or points
+    * to OS-owned shared memory (WiiU) that must not be freed. */
+   bool font_data_owned;
    struct font_atlas atlas;               /* ptr alignment */
    stb_unicode_atlas_slot_t* uc_map[STB_UNICODE_HASH_SIZE];
    stb_unicode_atlas_slot_t atlas_slots[STB_UNICODE_ATLAS_SIZE];
@@ -85,7 +88,9 @@ static void font_renderer_stb_unicode_free(void *data)
    stb_unicode_font_renderer_t *self = (stb_unicode_font_renderer_t*)data;
 
    free(self->atlas.buffer);
-   free(self->font_data);
+   /* Do not free WiiU shared-memory font data; it is owned by the OS. */
+   if (self->font_data_owned)
+      free(self->font_data);
    free(self);
 }
 
@@ -220,14 +225,27 @@ static bool font_renderer_stb_unicode_create_atlas(
    stb_unicode_atlas_slot_t* slot = NULL;
    int max_glyph_size             = (font_size < 0) ? (int)(-font_size) : (int)font_size;
 
+   /* Bound the glyph size. Every glyph cell is max_glyph_size on a side and
+    * the atlas is (size + padding) * 16 in each dimension, so an unchecked
+    * size lets self->atlas.width * self->atlas.height overflow 'unsigned',
+    * after which the calloc below is undersized and every subsequent
+    * stbtt_MakeGlyphBitmap()/memset writes past the buffer. Mirror the
+    * 2048-per-axis ceiling used by the fixed-ASCII stb renderer. */
+   if (max_glyph_size < 1)
+      return false;
+   if (max_glyph_size > 2048 / STB_UNICODE_ATLAS_COLS - STB_UNICODE_ATLAS_PADDING)
+      max_glyph_size = 2048 / STB_UNICODE_ATLAS_COLS - STB_UNICODE_ATLAS_PADDING;
+
    self->max_glyph_width          = max_glyph_size;
    self->max_glyph_height         = max_glyph_size;
 
    self->atlas.width              = (self->max_glyph_width  + STB_UNICODE_ATLAS_PADDING) * STB_UNICODE_ATLAS_COLS;
    self->atlas.height             = (self->max_glyph_height + STB_UNICODE_ATLAS_PADDING) * STB_UNICODE_ATLAS_ROWS;
 
+   /* Pass the two dimensions separately so the C library's calloc overflow
+    * check applies, rather than pre-multiplying into a single argument. */
    self->atlas.buffer             = (uint8_t*)calloc(
-      self->atlas.width * self->atlas.height, sizeof(uint8_t));
+      self->atlas.height, self->atlas.width);
 
    if (!self->atlas.buffer)
       return false;
@@ -269,13 +287,18 @@ static void *font_renderer_stb_unicode_init(const char *font_path, float font_si
    if (!*font_path)
    {
       uint32_t size = 0;
+      /* OS-owned shared memory: borrowed, not owned - must not be freed. */
       if (!OSGetSharedData(SHARED_FONT_DEFAULT, 0, (void**)&self->font_data, &size))
          goto error;
+      self->font_data_owned = false;
    }
    else
 #endif
-   if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, NULL))
-      goto error;
+   {
+      if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, NULL))
+         goto error;
+      self->font_data_owned = true;
+   }
 
    /* Guard against empty/corrupt font files */
    if (!self->font_data)
