@@ -355,6 +355,12 @@ static void gfx_animation_ticker_loop(uint64_t idx,
    if (width > (int)spacer_width)
       width   = (int)spacer_width;
    width     -= offset;
+   /* If the spacer is wider than the field, offset can
+    * exceed the clamped width, sending 'width' negative;
+    * storing that in an unsigned size_t would wrap to a
+    * huge value and produce garbage output downstream */
+   if (width < 0)
+      width   = 0;
 
    *offset2   = offset;
    *width2    = width;
