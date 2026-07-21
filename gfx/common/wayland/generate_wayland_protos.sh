@@ -69,6 +69,7 @@ generate_source () {
    "$WAYSCAN" $CODEGEN "$PROTO_FILE" "./$PROTO_NAME.c"
 }
 
+generate_source 'stable/presentation-time' 'presentation-time'
 generate_source 'stable/viewporter' 'viewporter'
 generate_source 'stable/xdg-shell' 'xdg-shell'
 generate_source 'unstable/xdg-decoration' 'xdg-decoration-unstable-v1'

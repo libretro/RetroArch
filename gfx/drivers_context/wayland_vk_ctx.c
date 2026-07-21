@@ -243,15 +243,19 @@ static void gfx_ctx_wl_swap_buffers(void *data)
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   if (wl->present_clock)
+      wl_presentation_dispatch_pending(wl);
+
    /* While the compositor reports the surface suspended (occluded,
-    * minimized, screen locked), skip present/acquire: the surface is
-    * not being scanned out, and some drivers stall or spin when
-    * presenting to it.  Throttle only when vsync pacing is active;
-    * with swap_interval == 0 (fast-forward) the loop stays
-    * unthrottled, matching pre-suspend behavior.  Keep the event
-    * queue moving so the resume configure is seen.  Compositors
-    * older than xdg_wm_base v6 never send the state; wl->suspended
-    * then stays false and this block never runs. */
+    * minimized, screen locked), skip presentation-time pacing,
+    * feedback, and present/acquire: the surface is not being scanned
+    * out, so there are no vblank events to track and no frame to
+    * present.  Throttle only when vsync pacing is active; with
+    * swap_interval == 0 (fast-forward) the loop stays unthrottled,
+    * matching pre-suspend behavior.  Keep the event queue moving so
+    * the resume configure is seen.  Compositors older than
+    * xdg_wm_base v6 never send the state; wl->suspended then stays
+    * false and this block never runs. */
    if (wl->suspended)
    {
       if (wl->swap_interval != 0)
@@ -259,6 +263,14 @@ static void gfx_ctx_wl_swap_buffers(void *data)
       flush_wayland_fd(&wl->input);
       return;
    }
+
+   /* RetroArch's Vulkan WSI uses a FIFO present mode whenever vsync is
+    * active (swap_interval != 0), which already blocks to vblank; a
+    * manual clock_nanosleep here would stack a second wait on top of
+    * it.  Collect presentation feedback for timing data, but leave
+    * pacing to the swapchain. */
+   if (wl->present_clock)
+      wl_request_presentation_feedback(wl);
 
    if (wl->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
