@@ -2428,7 +2428,7 @@ void MainWindow::appendLogMessage(const QString &msg)
 void MainWindow::onGotLogMessage(const QString &msg)
 {
    QString newMsg = msg;
-   if (newMsg.at(newMsg.size() - 1) == '\n')
+   if (!newMsg.isEmpty() && newMsg.at(newMsg.size() - 1) == '\n')
       newMsg.chop(1);
    m_logTextEdit->appendMessage(newMsg);
 }
@@ -4525,9 +4525,13 @@ void ThumbnailWidget::dropEvent(QDropEvent *event)
          emit(filesDropped(image, m_thumbnailType));
       else
       {
-         const char *string_data = QDir::toNativeSeparators(
-               imageString).toUtf8().constData();
-         RARCH_ERR("[Qt] Could not read image: \"%s\".\n", string_data);
+         /* Keep the QByteArray alive for the duration of the log call:
+          * calling constData() on a temporary QByteArray leaves a
+          * dangling pointer once the full expression ends. */
+         QByteArray stringArray = QDir::toNativeSeparators(
+               imageString).toUtf8();
+         RARCH_ERR("[Qt] Could not read image: \"%s\".\n",
+               stringArray.constData());
       }
    }
 }
