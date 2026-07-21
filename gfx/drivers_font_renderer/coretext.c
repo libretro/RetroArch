@@ -220,6 +220,36 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    return true;
 }
 
+/* Copy rasterized coverage into the atlas. This helper and the
+ * bitmap-context format in coretext_font_renderer_render_glyph() are
+ * the ONLY places that know the atlas is 8-bit; a higher-bit-depth
+ * atlas (HDR output) needs a sibling of this routine and an alternate
+ * context format, nothing else.
+ *
+ * Notes for that future path: kCGImageAlphaOnly contexts are 8 bits
+ * per pixel only. The >= 10-bit variant renders white-on-transparent
+ * into a 16 bits-per-component DeviceGray context
+ * (kCGImageAlphaNone | kCGBitmapByteOrder16Host) and copies the gray
+ * channel out as 16-bit coverage. CoreGraphics has no meaningful OS
+ * floor for such contexts; the version gates are all on the display
+ * side and are already the video driver's concern:
+ * CAMetalLayer.wantsExtendedDynamicRangeContent (scRGB/EDR) needs
+ * macOS 10.11+ / iOS 16.0+, CAEDRMetadata (HDR10 PQ tone mapping)
+ * needs macOS 10.15+ / iOS 16.0+, and neither exists on tvOS. */
+static void coretext_font_renderer_copy_coverage(
+      ct_font_renderer_t *handle, coretext_atlas_slot_t *slot,
+      const uint8_t *src)
+{
+   unsigned r, c;
+   uint8_t *dst = (uint8_t*)handle->atlas.buffer +
+         slot->glyph.atlas_offset_x +
+         slot->glyph.atlas_offset_y * handle->atlas.width;
+
+   for (r = 0; r < slot->glyph.height; r++)
+      for (c = 0; c < slot->glyph.width; c++)
+         dst[r * handle->atlas.width + c] = src[r * slot->glyph.width + c];
+}
+
 static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer_t *handle, coretext_atlas_slot_t *slot, uint32_t charcode)
 {
    CGGlyph glyphs[2];
@@ -236,7 +266,6 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CFAttributedStringRef attrString;
    CTLineRef line;
    uint8_t *dst;
-   const uint8_t *src;
    unsigned r, c;
    bool has_glyph;
 
@@ -333,6 +362,8 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
     * NULL-deref on the atlas copy step.  Fail cleanly now. */
    if (!bitmapData)
       return false;
+   /* 8-bit alpha-only coverage; see coretext_font_renderer_copy_coverage()
+    * for the higher-bit-depth (HDR) variant of this format. */
    offscreen  = CGBitmapContextCreate(bitmapData, slot->glyph.width, slot->glyph.height,
                                       8, slot->glyph.width, NULL, kCGImageAlphaOnly);
 
@@ -376,14 +407,8 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CFRelease(line);
 
    /* Copy bitmap to atlas */
-   dst = (uint8_t*)handle->atlas.buffer +
-         slot->glyph.atlas_offset_x +
-         slot->glyph.atlas_offset_y * handle->atlas.width;
-   src = (const uint8_t*)bitmapData;
-
-   for (r = 0; r < slot->glyph.height; r++)
-      for (c = 0; c < slot->glyph.width; c++)
-         dst[r * handle->atlas.width + c] = src[r * slot->glyph.width + c];
+   coretext_font_renderer_copy_coverage(handle, slot,
+         (const uint8_t*)bitmapData);
 
    CGContextRelease(offscreen);
    free(bitmapData);
