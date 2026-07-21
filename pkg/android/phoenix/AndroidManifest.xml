@@ -46,6 +46,12 @@
                 <action android:name="com.retroarch.QUERY_INSTALLED_CORES" />
             </intent-filter>
         </receiver>
+        <receiver android:name="com.retroarch.browser.receiver.RetroAchievementsHostOverrideReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="${applicationId}.action.SET_RETROACHIEVEMENTS_HOST_OVERRIDE" />
+                <action android:name="${applicationId}.action.CLEAR_RETROACHIEVEMENTS_HOST_OVERRIDE" />
+            </intent-filter>
+        </receiver>
       <provider
         android:name="com.retroarch.browser.provider.RetroDocumentsProvider"
         android:authorities="${applicationId}.documents"
