@@ -5039,7 +5039,8 @@ static void* ui_companion_qt_init(void)
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
 
    screen          = qApp->primaryScreen();
-   desktopRect     = screen->availableGeometry();
+   if (screen)
+      desktopRect  = screen->availableGeometry();
 
    mainwindow      = handle->window->qtWindow;
    qsettings       = mainwindow->settings();
@@ -5162,10 +5163,12 @@ static void ui_companion_qt_toggle(void *data, bool force)
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
+   ui_window_qt_t *win_handle = NULL;
 
    if (!handle)
       return;
+
+   win_handle = (ui_window_qt_t*)handle->window;
 
    switch (cmd)
    {
