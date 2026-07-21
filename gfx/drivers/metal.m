@@ -238,7 +238,8 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * caller supplies the source explicitly: the shader-chain's last-pass RT
  * if a preset is active, or the raw frame texture for the no-shader path. */
 - (void)hdrComposite:(const HDRUniforms *)uniforms
-          fromSource:(id<MTLTexture>)source;
+          fromSource:(id<MTLTexture>)source
+            rotation:(unsigned)rotation;
 
 /* HDR-specific setters exposed for the poke interface. */
 - (void)setHDRPaperWhiteNits:(float)nits;
@@ -867,6 +868,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
       _hdrUniforms.HDR10           = 1.0f;
       _hdrUniforms.HDRMode         = 0u;
       _hdrUniforms.PaperWhiteNits  = 200.0f;
+      _hdrUniforms.Rotation        = 0u;
       _hdrShaderEmitsHDR10 = false;
       _hdrShaderEmitsHDR16 = false;
 #endif
@@ -1634,6 +1636,7 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
  * encoder), opens the drawable, runs both passes, leaves _rce = nil. */
 - (void)hdrComposite:(const HDRUniforms *)uniforms
           fromSource:(id<MTLTexture>)source
+            rotation:(unsigned)rotation
 {
    if (!_hdrEnabled || !uniforms)
       return;
@@ -1684,6 +1687,9 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                             (float)_viewport.y,
                                             (float)_viewport.width,
                                             (float)_viewport.height);
+      /* Core content rotation.  Nonzero only for the no-shader source;
+       * the slang path pre-rotates via mvp_last_pass. */
+      local.Rotation     = rotation & 3u;
 
       id<MTLRenderCommandEncoder> cre = [_commandBuffer renderCommandEncoderWithDescriptor:rpd];
       cre.label = @"HDR composite (core)";
@@ -1734,6 +1740,8 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
                                               (float)drawable.texture.width,
                                               (float)drawable.texture.height);
       menuUni.BrightnessNits = uniforms->PaperWhiteNits;
+      /* The menu / OSD overlay is never rotated. */
+      menuUni.Rotation       = 0u;
       if (scRGB)
       {
          /* scRGB menu pass.  Force InverseTonemap=1 to bypass the
@@ -4314,10 +4322,17 @@ static void metal_pull_cached_frame_cb(void *userdata,
       if (hdrOn)
       {
          const HDRUniforms *u  = _context.currentHDRUniforms;
+         unsigned          rot = 0;
          id<MTLTexture>    src = _frameView.shaderOutputTexture;
          if (!src)
-            src                = _frameView.frameTexture;
-         [_context hdrComposite:u fromSource:src];
+         {
+            /* Raw frame texture: unrotated content, so the composite
+             * rotates the sampling.  The slang last pass (src != nil)
+             * already rendered rotated via mvp_last_pass. */
+            src = _frameView.frameTexture;
+            rot = retroarch_get_rotation() & 3;
+         }
+         [_context hdrComposite:u fromSource:src rotation:rot];
       }
 
       [self _endFrame];

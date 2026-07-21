@@ -122,6 +122,10 @@ typedef struct
    float           HDR10;            /* >0 applies linear->PQ encode        */
    unsigned int    HDRMode;          /* 0 off, 1 HDR10, 2 scRGB, 3 PQ->scRGB */
    float           PaperWhiteNits;   /* UI paper-white for SDR overlay blend */
+   unsigned int    Rotation;         /* content rotation 0..3 (x 270 deg); core
+                                        composite pass only -- nonzero ONLY for
+                                        the no-shader source, since the slang
+                                        path pre-rotates via mvp_last_pass */
 } HDRUniforms;
 
 #endif
