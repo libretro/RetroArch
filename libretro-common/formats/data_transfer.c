@@ -42,7 +42,6 @@
 #endif
 #endif
 
-#include <file/nbio.h>
 #include <streams/file_stream.h>
 #include <formats/data_transfer.h>
 
@@ -57,7 +56,6 @@
 
 struct data_transfer
 {
-   void   *nbio;     /* strategy 1: wrapped nbio handle              */
    /* strategy 2: internal prefix reader (open_prefix)               */
    RFILE  *f;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
@@ -72,23 +70,6 @@ struct data_transfer
    uint8_t failed;   /* ...but delivered less than the file          */
    uint8_t capped;   /* stopped at the commit ceiling                */
 };
-
-data_transfer_t *data_transfer_open(const char *path)
-{
-   data_transfer_t *dt;
-   void *handle = nbio_open(path, NBIO_READ);
-   if (!handle)
-      return NULL;
-   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
-   {
-      nbio_free(handle);
-      return NULL;
-   }
-   dt->nbio = handle;
-   nbio_get_ptr(handle, &dt->len);
-   nbio_begin_read(handle);
-   return dt;
-}
 
 data_transfer_t *data_transfer_open_prefix(const char *path,
       size_t commit_cap)
@@ -304,79 +285,12 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    return true;
 }
 
-data_transfer_t *data_transfer_adopt(void *nbio)
-{
-   data_transfer_t *dt;
-   size_t done = 0, total = 0;
-   if (!nbio)
-      return NULL;
-   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
-      return NULL;
-   dt->nbio = nbio;
-   nbio_get_ptr(nbio, &dt->len);
-   /* Fold in wherever the read already got to: mid-operation the
-    * progress is the valid prefix; an already-finished operation
-    * settles to complete or failed exactly as a fill would. */
-   if (nbio_get_progress(nbio, &done, &total))
-      dt->avail = done;
-   else
-   {
-      dt->done = 1;
-      if (total > 0 && done < total)
-      {
-         dt->failed = 1;
-         dt->avail  = done;
-      }
-      else
-         dt->avail = dt->len;
-   }
-   return dt;
-}
-
-/* Fold the backend's post-operation state into done/failed.  Backends
- * that do not track progress (the mmap family, whose iterate completes
- * immediately with the whole mapping) report zeros and count as
- * complete. */
-static void data_transfer_settle(data_transfer_t *dt)
-{
-   size_t done = 0, total = 0;
-   if (nbio_get_progress(dt->nbio, &done, &total))
-   {
-      /* still in flight */
-      if (done > dt->avail)
-         dt->avail = done;
-      return;
-   }
-   dt->done = 1;
-   if (total > 0 && done < total)
-   {
-      dt->failed = 1;
-      if (done > dt->avail)
-         dt->avail = done;
-   }
-   else
-      dt->avail = dt->len;
-}
-
 size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
 {
-   size_t start;
    if (!dt)
       return 0;
    if (dt->f)
       return data_transfer_prefix_iterate(dt, max_bytes);
-   if (dt->done)
-      return dt->avail;
-   start = dt->avail;
-   for (;;)
-   {
-      if (nbio_iterate(dt->nbio))
-         break;
-      data_transfer_settle(dt);
-      if (max_bytes && dt->avail - start >= max_bytes)
-         return dt->avail;
-   }
-   data_transfer_settle(dt);
    return dt->avail;
 }
 
@@ -390,9 +304,7 @@ const uint8_t *data_transfer_ptr(data_transfer_t *dt, size_t *len)
    }
    if (len)
       *len = dt->len;
-   if (dt->f)
-      return dt->map;
-   return (const uint8_t*)nbio_get_ptr(dt->nbio, NULL);
+   return dt->map;
 }
 
 size_t data_transfer_avail(data_transfer_t *dt)
@@ -419,11 +331,6 @@ void data_transfer_free(data_transfer_t *dt)
 {
    if (!dt)
       return;
-   if (dt->nbio)
-   {
-      nbio_cancel(dt->nbio);
-      nbio_free(dt->nbio);
-   }
    if (dt->f)
       filestream_close(dt->f);
    if (dt->map)

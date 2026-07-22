@@ -18,7 +18,6 @@
 #include <string.h>
 #include <math.h>
 
-#include <file/nbio.h>
 #include <formats/data_transfer.h>
 #ifdef HAVE_RWEBP
 #include <formats/rwebp.h>

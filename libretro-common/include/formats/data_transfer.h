@@ -52,9 +52,6 @@ RETRO_BEGIN_DECLS
 
 typedef struct data_transfer data_transfer_t;
 
-/* Open a file for incremental reading.  Returns NULL if it cannot be
- * opened or its buffer cannot be sized.  No bytes are read yet. */
-data_transfer_t *data_transfer_open(const char *path);
 
 /* Open a file of any size for prefix reading: address space for the
  * whole file is reserved up front, but physical memory is committed
@@ -99,14 +96,6 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to);
  * failed. */
 bool data_transfer_refill(data_transfer_t *dt, size_t from);
 
-/* Wrap an nbio handle whose read may already be in flight - the
- * adoption case, where one owner opened and partially read the file
- * and another takes over finishing it (a thumbnail adopting its
- * animation's handle from a completed task).  The transfer owns the
- * handle from here: free cancels and releases it.  The handle must
- * have been opened for reading; a completed or failed read settles
- * exactly as a fill would. */
-data_transfer_t *data_transfer_adopt(void *nbio);
 
 /* Read up to roughly max_bytes more of the file (rounded up to the
  * backend's chunk; 0 means no budget - fill to the end).  Returns the
