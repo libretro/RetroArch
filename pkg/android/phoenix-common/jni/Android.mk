@@ -148,7 +148,6 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_CC_RESAMPLER \
 	   -DHAVE_KEYMAPPER \
 	   -DHAVE_NETWORKGAMEPAD \
-	   -DHAVE_FLAC \
 	   -DHAVE_RFLAC \
 	   -DHAVE_RMP3 \
 	   -DHAVE_CHD \
@@ -194,10 +193,6 @@ ifeq ($(HAVE_BUILTINSMBCLIENT),1)
    DEFINES += -DHAVE_SMBCLIENT
 endif
 
-DEFINES += -DFLAC_PACKAGE_VERSION="\"retroarch\"" \
-	   -DHAVE_LROUND \
-	   -DFLAC__HAS_OGG=0
-
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
 LOCAL_CPPFLAGS := -fexceptions -fpermissive -std=gnu++11 -fno-rtti -Wno-reorder $(DEFINES)
 
@@ -215,8 +210,7 @@ LOCAL_C_INCLUDES := \
 INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/stb/ \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/ \
-		    -I$(LOCAL_PATH)/$(DEPS_DIR)/libFLAC/include
+		    -I$(LOCAL_PATH)/$(DEPS_DIR)/zstd/lib/
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
