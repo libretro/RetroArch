@@ -17,6 +17,10 @@
 #include <unordered_map>
 #include <vector>
 
+/* Rolled-in copy of cpp-peglib (peglib.h)
+ * Copyright (c) 2015-17 Yuji Hirose. All rights reserved.
+ * MIT License
+ */
 // guard for older versions of VC++
 #ifdef _MSC_VER
 // VS2013 has no constexpr
@@ -2777,7 +2781,6 @@ std::basic_ios<_Elem, _Traits> &operator << (std::basic_ios<_Elem, _Traits> &ios
    return ios << node.token.c_str();
 }
 
-#endif
 
 int main(int argc, const char** argv)
 {
