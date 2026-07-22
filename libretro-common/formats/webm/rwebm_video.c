@@ -454,15 +454,21 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 
    /* Pre-scan: count the track's packets and record their timestamps so
     * frame durations come straight from the container. This walks block
-    * headers only (no decode). */
+    * headers only (no decode), but Matroska has no sample table, so the
+    * walk touches every cluster in the file.  Stop at the timestamp
+    * table's capacity: frames past the cap reuse the last stored delta
+    * anyway, and the only external consumer of num_frames (the >= 2
+    * animation admission in gfx_thumbnail) is unaffected by the count
+    * saturating.  Unbounded, this loop swept the whole buffer of a
+    * long recording on the thread that opened the stream. */
    if (!(s->ts = (int64_t*)malloc(RWEBM_VIDEO_MAX_TS * sizeof(int64_t))))
       goto fail;
-   while (rwebm_read_packet(s->demux, &pkt) == 1)
+   while (   s->num_frames < RWEBM_VIDEO_MAX_TS
+          && rwebm_read_packet(s->demux, &pkt) == 1)
    {
       if (pkt.track != s->track)
          continue;
-      if (s->num_frames < RWEBM_VIDEO_MAX_TS)
-         s->ts[s->ts_count++] = pkt.timestamp;
+      s->ts[s->ts_count++] = pkt.timestamp;
       s->num_frames++;
    }
    if (s->num_frames < 1)

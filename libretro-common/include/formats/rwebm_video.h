@@ -100,9 +100,11 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 
 void rwebm_video_stream_close(rwebm_video_stream_t *stream);
 
-/* num_frames is the number of coded video packets (an upper bound on
- * displayed frames when the stream carries non-shown frames).
- * loop_count is always 0: video loops indefinitely. */
+/* num_frames is the number of coded video packets, saturating at the
+ * pre-scan cap (a few thousand): treat it as "at least this many", an
+ * upper bound on displayed frames only below the cap (the stream may
+ * carry non-shown frames).  loop_count is always 0: video loops
+ * indefinitely. */
 void rwebm_video_stream_get_info(const rwebm_video_stream_t *stream,
       unsigned *width, unsigned *height, int *num_frames, int *loop_count);
 
