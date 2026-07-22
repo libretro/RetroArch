@@ -507,6 +507,8 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
       case VK_FORMAT_B4G4R4A4_UNORM_PACK16:
       case VK_FORMAT_R5G6B5_UNORM_PACK16:
          return 2;
+      case VK_FORMAT_R16_UNORM:
+         return 2;
       case VK_FORMAT_R8_UNORM:
          return 1;
       default: /* Unknown format */
@@ -2179,11 +2181,18 @@ static INLINE void vulkan_font_update_glyph(
    unsigned gx_max = gx_min + glyph->width;
    unsigned gy_max = gy_min + glyph->height;
 
-   for (row = gy_min; row < gy_max; row++)
    {
-      uint8_t *src = font->atlas->buffer + row * font->atlas->width + gx_min;
-      uint8_t *dst = (uint8_t*)font->texture.mapped + row * font->texture.stride + gx_min;
-      memcpy(dst, src, glyph->width);
+      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      for (row = gy_min; row < gy_max; row++)
+      {
+         uint8_t *src = font->atlas->buffer
+               + ((size_t)row * font->atlas->width + gx_min) * esz;
+         uint8_t *dst = (uint8_t*)font->texture.mapped
+               + (size_t)row * font->texture.stride
+               + (size_t)gx_min * esz;
+         memcpy(dst, src, (size_t)glyph->width * esz);
+      }
    }
 
    /* Expand the dirty bounding box. */
@@ -2225,27 +2234,49 @@ static void *vulkan_font_init(void *data,
 
    font->vk = (vk_t*)data;
 
-   if (!font_renderer_create_default(
-            &font->font_driver,
-            &font->font_data, font_path, font_size))
    {
-      free(font);
-      return NULL;
+      enum font_atlas_format prev_fmt =
+            font_renderer_get_preferred_atlas_format();
+#ifdef VULKAN_HDR_SWAPCHAIN
+      /* When the swapchain is HDR, ask for a higher-precision
+       * coverage atlas (same policy as the d3d12 driver). */
+      if (     font->vk && font->vk->context
+            && (  font->vk->context->swapchain_format
+                     == VK_FORMAT_R16G16B16A16_SFLOAT
+               || font->vk->context->swapchain_format
+                     == VK_FORMAT_A2B10G10R10_UNORM_PACK32))
+         font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
+#endif
+      if (!font_renderer_create_default(
+               &font->font_driver,
+               &font->font_data, font_path, font_size))
+      {
+         font_renderer_set_preferred_atlas_format(prev_fmt);
+         free(font);
+         return NULL;
+      }
+      font_renderer_set_preferred_atlas_format(prev_fmt);
    }
 
    font->atlas   = font->font_driver->get_atlas(font->font_data);
-   font->texture = vulkan_create_texture(font->vk, NULL,
-         font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, font->atlas->buffer,
-         NULL, VULKAN_TEXTURE_STAGING);
+   {
+      /* font.frag samples channel .x, so R16_UNORM is a drop-in for
+       * R8_UNORM; the HDR font pipeline itself already exists. */
+      VkFormat tex_fmt = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? VK_FORMAT_R16_UNORM : VK_FORMAT_R8_UNORM;
+      font->texture = vulkan_create_texture(font->vk, NULL,
+            font->atlas->width, font->atlas->height, tex_fmt, font->atlas->buffer,
+            NULL, VULKAN_TEXTURE_STAGING);
 
    {
       struct vk_texture *texture = &font->texture;
       vkMapMemory(font->vk->context->device, texture->memory, texture->offset, texture->size, 0, &texture->mapped);
    }
 
-   font->texture_optimal = vulkan_create_texture(font->vk, NULL,
-         font->atlas->width, font->atlas->height, VK_FORMAT_R8_UNORM, NULL,
-         NULL, VULKAN_TEXTURE_DYNAMIC);
+      font->texture_optimal = vulkan_create_texture(font->vk, NULL,
+            font->atlas->width, font->atlas->height, tex_fmt, NULL,
+            NULL, VULKAN_TEXTURE_DYNAMIC);
+   }
 
    /* Initial upload is full atlas. */
    font->dirty_x_min  = 0;
@@ -2707,11 +2738,19 @@ static void vulkan_font_render_msg(
                   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                   VK_PIPELINE_STAGE_TRANSFER_BIT);
 
-            /* R8_UNORM => bpp = 1; stride is already in bytes. */
-            region.bufferOffset                    =
-               (VkDeviceSize)dy * staging_tex->stride + dx;
-            region.bufferRowLength                 =
-               (uint32_t)staging_tex->stride;
+            /* bufferOffset is in bytes; bufferRowLength is in
+             * TEXELS. For R8 the two coincide with the byte stride,
+             * for R16 they do not. */
+            {
+               unsigned bpp = vulkan_format_to_bpp(staging_tex->format);
+               if (!bpp)
+                  bpp = 1;
+               region.bufferOffset              =
+                  (VkDeviceSize)dy * staging_tex->stride
+                     + (VkDeviceSize)dx * bpp;
+               region.bufferRowLength           =
+                  (uint32_t)(staging_tex->stride / bpp);
+            }
             region.bufferImageHeight               = 0;
             region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
             region.imageSubresource.mipLevel       = 0;
