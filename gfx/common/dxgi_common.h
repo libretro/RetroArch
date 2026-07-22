@@ -496,6 +496,42 @@ bool dxgi_hdr_readback_to_bgr24(
       unsigned     height,
       float        paper_white_nits,
       uint8_t*     dst_bgr24);
+
+struct rpng_hdr_metadata;
+
+/* Native (no tone-map) HDR read-back decode for HDR screenshots:
+ * converts the raw swapchain pixels to three uint16_t per pixel
+ * (R,G,B host order), PQ-coded and bottom-up, matching the
+ * read_viewport_hdr contract and the vulkan driver's output:
+ *   - R10G10B10A2_UNORM : channels widened 10->16 by bit replication
+ *   - R16G16B16A16_FLOAT: halves decoded, scaled to nits, PQ-encoded
+ *     (extended range clamps to [0,10000] nits)
+ * MaxCLL / MaxFALL (nits, from the brightest channel per pixel) are
+ * returned for the PNG cLLI chunk.  Returns false on formats it does
+ * not handle. */
+bool dxgi_hdr_readback_to_rgb16(
+      DXGI_FORMAT  src_format,
+      const void*  src_data,
+      unsigned     src_pitch,
+      unsigned     src_x,
+      unsigned     src_y,
+      unsigned     width,
+      unsigned     height,
+      uint16_t*    dst_rgb48,
+      float*       out_max_cll,
+      float*       out_max_fall);
+
+/* Fills PNG HDR metadata the same way the vulkan driver does: PQ
+ * transfer, BT.2100 primaries for HDR10 sources or BT.709 for scRGB,
+ * D65 white point, cLLI from the measured light levels and mDCV from
+ * the configured output luminance range. */
+void dxgi_hdr_meta_fill(
+      struct rpng_hdr_metadata *meta,
+      bool         is_scrgb,
+      float        max_cll,
+      float        max_fall,
+      float        max_luminance,
+      float        min_luminance);
 #endif
 
 DXGI_FORMAT glslang_format_to_dxgi(glslang_format fmt);

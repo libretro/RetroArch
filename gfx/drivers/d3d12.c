@@ -6801,85 +6801,6 @@ cleanup:
 #endif /* HAVE_DXGI_HDR */
 
 #ifdef HAVE_DXGI_HDR
-/* CPU-side HDR pixel helpers for the native HDR screenshot read-back.
- * Verbatim ports of the vulkan driver's helpers so both drivers produce
- * bit-identical PNGs from identical backbuffers. */
-
-/* IEEE-754 half (binary16) -> float. Handles normals, subnormals, sign
- * and inf/nan. */
-static float d3d12_half_to_float(uint16_t h)
-{
-   uint32_t sign = (uint32_t)(h & 0x8000) << 16;
-   uint32_t exp  = (h >> 10) & 0x1F;
-   uint32_t mant = h & 0x3FF;
-   uint32_t f;
-   float    out;
-   if (exp == 0)
-   {
-      if (mant == 0)
-         f = sign;
-      else
-      {
-         exp = 127 - 15 + 1;
-         while (!(mant & 0x400)) { mant <<= 1; exp--; }
-         mant &= 0x3FF;
-         f = sign | (exp << 23) | (mant << 13);
-      }
-   }
-   else if (exp == 0x1F)
-      f = sign | 0x7F800000 | (mant << 13);
-   else
-      f = sign | ((exp - 15 + 127) << 23) | (mant << 13);
-   memcpy(&out, &f, sizeof(out));
-   return out;
-}
-
-/* ST.2084 (PQ) inverse-EOTF: normalised linear [0,1] -> PQ code [0,1]. */
-static float d3d12_pq_encode(float v)
-{
-   const float m1 = 0.1593017578125f, m2 = 78.84375f;
-   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
-   float yp;
-   if (v < 0.0f) v = 0.0f;
-   else if (v > 1.0f) v = 1.0f;
-   yp = powf(v, m1);
-   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
-}
-
-/* One scRGB (Rec.709 linear, 1.0 = 80 nits) channel -> 16-bit PQ code. */
-static uint16_t d3d12_scrgb_channel_to_pq16(float scrgb)
-{
-   float nits = scrgb * 80.0f;
-   float pq;
-   if (nits < 0.0f) nits = 0.0f;
-   else if (nits > 10000.0f) nits = 10000.0f;
-   pq = d3d12_pq_encode(nits / 10000.0f);
-   if (pq < 0.0f) pq = 0.0f;
-   else if (pq > 1.0f) pq = 1.0f;
-   return (uint16_t)(pq * 65535.0f + 0.5f);
-}
-
-/* 10-bit PQ code -> absolute nits, for MaxCLL / MaxFALL. Lazily built. */
-static float d3d12_pq10_to_nits_lut[1024];
-static bool  d3d12_pq10_lut_ready = false;
-
-static void d3d12_build_pq10_lut(void)
-{
-   const float m1 = 0.1593017578125f, m2 = 78.84375f;
-   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
-   int i;
-   for (i = 0; i < 1024; i++)
-   {
-      float e   = (float)i / 1023.0f;
-      float ep  = powf(e, 1.0f / m2);
-      float num = ep - c1;
-      float den = c2 - c3 * ep;
-      if (num < 0.0f) num = 0.0f;
-      d3d12_pq10_to_nits_lut[i] = powf(num / den, 1.0f / m1) * 10000.0f;
-   }
-   d3d12_pq10_lut_ready = true;
-}
-
 /* Native HDR screenshot read-back: copies the presented HDR backbuffer
  * raw (no tone-map) and converts to 48-bit RGB, bottom-up, mirroring
  * vulkan_read_viewport_hdr:
@@ -6916,11 +6837,11 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    UINT64                    row_size_bytes = 0;
    const uint8_t*            src_pixels     = NULL;
    uint8_t*                  mapped         = NULL;
-   unsigned                  vp_x, vp_y, vp_w, vp_h, y, x;
+   unsigned                  vp_x, vp_y, vp_w, vp_h;
    bool                      is_scrgb;
    DXGI_FORMAT               fmt;
-   float                     max_cll  = 0.0f;
-   double                    sum_fall = 0.0;
+   float                     max_cll      = 0.0f;
+   float                     max_fall_avg = 0.0f;
 
    if (!d3d12)
       return false;
@@ -7065,101 +6986,25 @@ static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
    vp_h = (d3d12->vp.height > d3d12->vp.full_height)
          ? d3d12->vp.full_height : d3d12->vp.height;
 
-   if (!is_scrgb && !d3d12_pq10_lut_ready)
-      d3d12_build_pq10_lut();
-
-   src_pixels += (size_t)footprint.Footprint.RowPitch * vp_y;
-   /* Bottom-up: start at the last output row and walk backwards,
-    * reading the (top-down) source rows forwards. */
-   buffer     += (size_t)3 * (vp_h - 1) * vp_w;
-
-   if (is_scrgb)
+   if (!dxgi_hdr_readback_to_rgb16(fmt, src_pixels,
+            footprint.Footprint.RowPitch, vp_x, vp_y, vp_w, vp_h,
+            buffer, &max_cll, &max_fall_avg))
    {
-      for (y = 0; y < vp_h; y++,
-            src_pixels += footprint.Footprint.RowPitch, buffer -= 3 * vp_w)
-      {
-         const uint16_t *row = (const uint16_t*)src_pixels;
-         for (x = 0; x < vp_w; x++)
-         {
-            float r = d3d12_half_to_float(row[(x + vp_x) * 4 + 0]);
-            float g = d3d12_half_to_float(row[(x + vp_x) * 4 + 1]);
-            float b = d3d12_half_to_float(row[(x + vp_x) * 4 + 2]);
-            float lvl;
-            buffer[x * 3 + 0] = d3d12_scrgb_channel_to_pq16(r);
-            buffer[x * 3 + 1] = d3d12_scrgb_channel_to_pq16(g);
-            buffer[x * 3 + 2] = d3d12_scrgb_channel_to_pq16(b);
-            lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
-            lvl *= 80.0f;
-            if (lvl < 0.0f) lvl = 0.0f;
-            else if (lvl > 10000.0f) lvl = 10000.0f;
-            if (lvl > max_cll) max_cll = lvl;
-            sum_fall += lvl;
-         }
-      }
-   }
-   else
-   {
-      for (y = 0; y < vp_h; y++,
-            src_pixels += footprint.Footprint.RowPitch, buffer -= 3 * vp_w)
-      {
-         const uint32_t *row = (const uint32_t*)src_pixels;
-         for (x = 0; x < vp_w; x++)
-         {
-            /* R10G10B10A2_UNORM: R[9:0] G[19:10] B[29:20] A[31:30] --
-             * same channel placement as Vulkan's A2B10G10R10. */
-            uint32_t w = row[x + vp_x];
-            uint32_t r = (w      ) & 0x3FF;
-            uint32_t g = (w >> 10) & 0x3FF;
-            uint32_t b = (w >> 20) & 0x3FF;
-            uint32_t mx;
-            float lvl;
-            buffer[x * 3 + 0] = (uint16_t)((r << 6) | (r >> 4));
-            buffer[x * 3 + 1] = (uint16_t)((g << 6) | (g >> 4));
-            buffer[x * 3 + 2] = (uint16_t)((b << 6) | (b >> 4));
-            mx = r; if (g > mx) mx = g; if (b > mx) mx = b;
-            lvl = d3d12_pq10_to_nits_lut[mx];
-            if (lvl > max_cll) max_cll = lvl;
-            sum_fall += lvl;
-         }
-      }
+      readback->lpVtbl->Unmap(readback, 0, NULL);
+      Release(readback);
+      return false;
    }
 
    readback->lpVtbl->Unmap(readback, 0, NULL);
    Release(readback);
 
    d3d12->hdr.max_cll  = max_cll;
-   d3d12->hdr.max_fall = (vp_w && vp_h)
-      ? (float)(sum_fall / ((double)vp_w * (double)vp_h))
-      : 0.0f;
+   d3d12->hdr.max_fall = max_fall_avg;
 
    if (out_meta)
-   {
-      memset(out_meta, 0, sizeof(*out_meta));
-      out_meta->colour_primaries      = is_scrgb ? 1 : 9;
-      out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
-      out_meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG) */
-      out_meta->video_full_range_flag = 1;
-
-      out_meta->max_cll  = d3d12->hdr.max_cll;
-      out_meta->max_fall = d3d12->hdr.max_fall;
-
-      out_meta->write_mdcv = 1;
-      if (is_scrgb)
-      {
-         out_meta->primary_chromaticity[0][0] = 0.640f; out_meta->primary_chromaticity[0][1] = 0.330f;
-         out_meta->primary_chromaticity[1][0] = 0.300f; out_meta->primary_chromaticity[1][1] = 0.600f;
-         out_meta->primary_chromaticity[2][0] = 0.150f; out_meta->primary_chromaticity[2][1] = 0.060f;
-      }
-      else
-      {
-         out_meta->primary_chromaticity[0][0] = 0.708f; out_meta->primary_chromaticity[0][1] = 0.292f;
-         out_meta->primary_chromaticity[1][0] = 0.170f; out_meta->primary_chromaticity[1][1] = 0.797f;
-         out_meta->primary_chromaticity[2][0] = 0.131f; out_meta->primary_chromaticity[2][1] = 0.046f;
-      }
-      out_meta->white_point[0] = 0.3127f; out_meta->white_point[1] = 0.3290f; /* D65 */
-      out_meta->max_luminance  = d3d12->hdr.max_output_nits;
-      out_meta->min_luminance  = d3d12->hdr.min_output_nits;
-   }
+      dxgi_hdr_meta_fill(out_meta, is_scrgb,
+            d3d12->hdr.max_cll, d3d12->hdr.max_fall,
+            d3d12->hdr.max_output_nits, d3d12->hdr.min_output_nits);
 
    return true;
 }
