@@ -4575,7 +4575,13 @@ static bool gl3_frame(void *data, const void *frame,
          glUniform4fv(gl->pipelines.hdr_scrgb_loc.flat_ubo_fragment,
                5, ubo_data);
 
-      glActiveTexture(GL_TEXTURE0);
+      /* The cross-compiled pipelines sample the unit matching the
+       * SPIR-V binding (shader_gl3.cpp forces sampler uniform N to
+       * texture unit N); uTex is binding 1, the same convention the
+       * alpha_blend / font draws use. Binding the offscreen to unit 0
+       * left the program sampling whatever unit 1 last held -- the
+       * OSD font atlas, hence the upside-down red glyphs. */
+      glActiveTexture(GL_TEXTURE1);
       glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
 
       glEnableVertexAttribArray(0);
@@ -4593,6 +4599,7 @@ static bool gl3_frame(void *data, const void *frame,
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
       glBindTexture(GL_TEXTURE_2D, 0);
+      glActiveTexture(GL_TEXTURE0);
       glUseProgram(0);
    }
 
