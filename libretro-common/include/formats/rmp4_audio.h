@@ -58,6 +58,22 @@ int rmp4_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
 int rmp4_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
       void **wav, size_t *wav_size);
 
+/* Same, but decodes from a partially-resident buffer: only the first
+ * 'avail' bytes are guaranteed present.  Decoding stops at max_ms, at
+ * the end of the audio track, or at the first sample whose bytes lie
+ * past 'avail' - whichever comes first - and returns what was decoded
+ * so far.  This lets a preview start from a prefix instead of waiting
+ * for the whole file, provided the moov box is within 'avail' (a
+ * streaming-ordered mp4 front-loads it; a trailing-moov file needs the
+ * bytes that carry it, so pass need_more to learn whether more of the
+ * file is required before any audio can be produced).  With
+ * avail == len this is exactly rmp4_audio_decode_wav.  need_more may
+ * be NULL; when non-NULL it is set to 1 iff the moov was not yet
+ * resident (no audio could be produced and a larger prefix should be
+ * retried). */
+int rmp4_audio_decode_wav_avail(const void *buf, size_t len, size_t avail,
+      int64_t max_ms, void **wav, size_t *wav_size, int *need_more);
+
 RETRO_END_DECLS
 
 #endif

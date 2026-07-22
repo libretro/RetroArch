@@ -390,8 +390,9 @@ out:
 /* ==================================================================== */
 
 static int rwebm_audio_decode_any(const void *buf, size_t len,
-      int64_t max_ms, size_t elem, void **pcm, size_t *frames,
-      unsigned *rate, unsigned *channels)
+      size_t avail, int64_t max_ms, size_t elem, void **pcm,
+      size_t *frames, unsigned *rate, unsigned *channels,
+      int *need_more)
 {
    rwebm_t      *m;
    rwebm_pcm_acc a;
@@ -402,8 +403,15 @@ static int rwebm_audio_decode_any(const void *buf, size_t len,
    *frames = 0;
    *rate = 0;
    *channels = 0;
+   if (need_more)
+      *need_more = 0;
 
-   if (!(m = rwebm_open_memory((const uint8_t*)buf, len)))
+   /* Open against the resident prefix (avail == len is the whole
+    * buffer).  The segment headers must be resident (need_more
+    * reports otherwise); the packet walk stops at the first block
+    * past the wall, which the codec loops treat as end-of-input. */
+   if (!(m = rwebm_open_memory_avail((const uint8_t*)buf, len, avail,
+         need_more)))
       return 0;
 
    for (i = 0; i < rwebm_num_tracks(m); i++)
@@ -462,34 +470,24 @@ out:
 int rwebm_audio_decode(const void *buf, size_t len, int64_t max_ms,
       int16_t **pcm, size_t *frames, unsigned *rate, unsigned *channels)
 {
-   return rwebm_audio_decode_any(buf, len, max_ms, sizeof(int16_t),
-         (void**)pcm, frames, rate, channels);
+   return rwebm_audio_decode_any(buf, len, len, max_ms, sizeof(int16_t),
+         (void**)pcm, frames, rate, channels, NULL);
 }
 
 int rwebm_audio_decode_f32(const void *buf, size_t len, int64_t max_ms,
       float **pcm, size_t *frames, unsigned *rate, unsigned *channels)
 {
-   return rwebm_audio_decode_any(buf, len, max_ms, sizeof(float),
-         (void**)pcm, frames, rate, channels);
+   return rwebm_audio_decode_any(buf, len, len, max_ms, sizeof(float),
+         (void**)pcm, frames, rate, channels, NULL);
 }
 
-int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
-      void **wav, size_t *wav_size)
+static int rwebm_audio_pcm_to_wav(float *pcm, size_t frames,
+      unsigned rate, unsigned channels, void **wav, size_t *wav_size)
 {
-   float   *pcm = NULL;
-   size_t   frames = 0;
-   unsigned rate = 0, channels = 0;
    size_t   data_size, total;
    uint8_t *w;
    uint32_t v32;
    uint16_t v16;
-
-   *wav = NULL;
-   *wav_size = 0;
-
-   if (!rwebm_audio_decode_f32(buf, len, max_ms, &pcm, &frames,
-         &rate, &channels))
-      return 0;
 
    data_size = frames * channels * sizeof(float);
    total     = 44 + data_size;
@@ -558,4 +556,28 @@ int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
    *wav      = w;
    *wav_size = total;
    return 1;
+}
+
+int rwebm_audio_decode_wav_avail(const void *buf, size_t len, size_t avail,
+      int64_t max_ms, void **wav, size_t *wav_size, int *need_more)
+{
+   float   *pcm    = NULL;
+   size_t   frames = 0;
+   unsigned rate = 0, channels = 0;
+
+   *wav      = NULL;
+   *wav_size = 0;
+
+   if (!rwebm_audio_decode_any(buf, len, avail, max_ms, sizeof(float),
+         (void**)&pcm, &frames, &rate, &channels, need_more))
+      return 0;
+   return rwebm_audio_pcm_to_wav(pcm, frames, rate, channels,
+         wav, wav_size);
+}
+
+int rwebm_audio_decode_wav(const void *buf, size_t len, int64_t max_ms,
+      void **wav, size_t *wav_size)
+{
+   return rwebm_audio_decode_wav_avail(buf, len, len, max_ms,
+         wav, wav_size, NULL);
 }
