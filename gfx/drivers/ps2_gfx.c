@@ -70,6 +70,7 @@ typedef struct
    GSTEXTURE *texture;
    const font_renderer_driver_t* font_driver;
    void* font_data;
+   struct font_atlas* atlas;
 } ps2_font_t;
 
 typedef struct ps2_video
@@ -136,7 +137,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    int text_size, clut_size;
    uint8_t *tex8;
    uint32_t *clut32;
-   const struct font_atlas* atlas = NULL;
+   struct font_atlas* atlas = NULL;
    ps2_font_t* font = (ps2_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -151,6 +152,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    }
 
    atlas                  = font->font_driver->get_atlas(font->font_data);
+   font->atlas            = atlas;
    font->texture          = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
    font->texture->Width   = atlas->width;
    font->texture->Height  = atlas->height;
