@@ -4499,6 +4499,20 @@ static bool gl3_frame(void *data, const void *frame,
    }
 #endif /* HAVE_SLANG */
 
+   /* Under scRGB output, re-assert the frame target before any UI
+    * draws: chain internals (history / feedback / original-history
+    * copies in end_frame and the GLSL chain, via
+    * gl3_framebuffer_copy) restore FBO 0 when they finish, which is
+    * correct for them but would send the menu, overlays, widgets and
+    * OSD to the raw FP16 backbuffer -- the end-of-frame encode then
+    * replaces the backbuffer with the offscreen, losing the UI (black
+    * screen with only the core frame's offscreen content). One
+    * re-bind at this choke point keeps the everything-in-one-target
+    * invariant without chasing every restore site. No-op in SDR. */
+   if (gl->scrgb.active)
+      glBindFramebuffer(GL_FRAMEBUFFER,
+            gl3_frame_target_fbo(gl, width, height));
+
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL3_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
       gl3_render_overlay(gl, width, height);
