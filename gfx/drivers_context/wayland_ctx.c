@@ -243,6 +243,17 @@ static void *gfx_ctx_wl_init(void *data)
    if (!gfx_ctx_wl_egl_init_context(wl))
       goto error;
 #endif
+   if (wl->tearing_control_manager)
+   {
+      settings_t *settings = config_get_ptr();
+      bool video_vsync     = settings->bools.video_vsync;
+      wl->tearing_control  = wp_tearing_control_manager_v1_get_tearing_control(
+         wl->tearing_control_manager, wl->surface);
+      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
+                                                  video_vsync
+                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC
+                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
+   }
    return wl;
 error:
    gfx_ctx_wl_destroy_resources(wl);
