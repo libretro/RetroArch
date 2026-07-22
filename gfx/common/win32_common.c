@@ -2066,6 +2066,13 @@ bool win32_backbuffer_is_scrgb(void)
 #ifndef WGL_TYPE_RGBA_FLOAT_ARB
 #define WGL_TYPE_RGBA_FLOAT_ARB   0x21A0
 #endif
+/* WGL_EXT_colorspace */
+#ifndef WGL_COLORSPACE_EXT
+#define WGL_COLORSPACE_EXT        0x309D
+#endif
+#ifndef WGL_COLORSPACE_LINEAR_EXT
+#define WGL_COLORSPACE_LINEAR_EXT 0x308A
+#endif
 
 /* Display-in-HDR-mode probe.  Goes through the DXGI helper, which
  * dylib_loads dxgi.dll at runtime -- no new imports; on systems
@@ -2158,20 +2165,34 @@ static int win32_try_scrgb_pixel_format(HDC target_hdc)
             {
                int  fmt      = 0;
                UINT num_fmts = 0;
-               const int attribs[] = {
-                  WGL_DRAW_TO_WINDOW_ARB, 1,
-                  WGL_SUPPORT_OPENGL_ARB, 1,
-                  WGL_DOUBLE_BUFFER_ARB,  1,
-                  WGL_ACCELERATION_ARB,   WGL_FULL_ACCELERATION_ARB,
-                  WGL_PIXEL_TYPE_ARB,     WGL_TYPE_RGBA_FLOAT_ARB,
-                  WGL_RED_BITS_ARB,       16,
-                  WGL_GREEN_BITS_ARB,     16,
-                  WGL_BLUE_BITS_ARB,      16,
-                  WGL_ALPHA_BITS_ARB,     16,
-                  WGL_DEPTH_BITS_ARB,     0,
-                  WGL_STENCIL_BITS_ARB,   0,
-                  0
-               };
+               int  attribs[26];
+               int  n        = 0;
+
+               attribs[n++] = WGL_DRAW_TO_WINDOW_ARB; attribs[n++] = 1;
+               attribs[n++] = WGL_SUPPORT_OPENGL_ARB; attribs[n++] = 1;
+               attribs[n++] = WGL_DOUBLE_BUFFER_ARB;  attribs[n++] = 1;
+               attribs[n++] = WGL_ACCELERATION_ARB;
+               attribs[n++] = WGL_FULL_ACCELERATION_ARB;
+               attribs[n++] = WGL_PIXEL_TYPE_ARB;
+               attribs[n++] = WGL_TYPE_RGBA_FLOAT_ARB;
+               attribs[n++] = WGL_RED_BITS_ARB;       attribs[n++] = 16;
+               attribs[n++] = WGL_GREEN_BITS_ARB;     attribs[n++] = 16;
+               attribs[n++] = WGL_BLUE_BITS_ARB;      attribs[n++] = 16;
+               attribs[n++] = WGL_ALPHA_BITS_ARB;     attribs[n++] = 16;
+               attribs[n++] = WGL_DEPTH_BITS_ARB;     attribs[n++] = 0;
+               attribs[n++] = WGL_STENCIL_BITS_ARB;   attribs[n++] = 0;
+               /* Formalize the linear (scRGB) interpretation of the
+                * float buffer where the driver supports saying so.
+                * Linear is also the extension's documented default, so
+                * this cannot change behavior on conforming drivers --
+                * and it is only passed when advertised, since unknown
+                * attributes can fail the choose call on others. */
+               if (strstr(exts, "WGL_EXT_colorspace"))
+               {
+                  attribs[n++] = WGL_COLORSPACE_EXT;
+                  attribs[n++] = WGL_COLORSPACE_LINEAR_EXT;
+               }
+               attribs[n]   = 0;
 
                if (     choose_fmt(target_hdc, attribs, NULL,
                               1, &fmt, &num_fmts)
