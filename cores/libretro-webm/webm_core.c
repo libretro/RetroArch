@@ -957,6 +957,7 @@ static void webm_check_input(webm_player_t *p)
        * fully-read file would give. */
       if (p->dt && !data_transfer_complete(p->dt)
             && !data_transfer_failed(p->dt)
+            && !data_transfer_capped(p->dt)
             && target > 0 && pos + 500000000 < target)
          p->pending_seek_ns = target;
       else
@@ -1000,6 +1001,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
        * video stream and the audio gather. */
       if (p->dt && !data_transfer_complete(p->dt)
             && !data_transfer_failed(p->dt)
+            && !data_transfer_capped(p->dt)
             && (   p->pending_seek_ns >= 0
                 || data_transfer_avail(p->dt)
                    < rmp4_video_stream_consumed(p->mp4vs)
@@ -1010,8 +1012,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          if (p->pending_seek_ns >= 0)
          {
             int64_t pos = webm_seek(p, p->pending_seek_ns);
-            if (data_transfer_complete(p->dt)
-                  || pos + 500000000 >= p->pending_seek_ns)
+            if (   data_transfer_complete(p->dt)
+                || data_transfer_capped(p->dt)
+                || pos + 500000000 >= p->pending_seek_ns)
                p->pending_seek_ns = -1;
          }
 #ifdef WEBM_HAVE_AUDIO
@@ -1021,14 +1024,23 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             webm_mp4_audio_pump(p);
          }
 #endif
-         if (data_transfer_failed(p->dt) && !p->fill_warned)
-         {
-            p->fill_warned = 1;
-            if (WEBM_CORE_PREFIX(log_cb))
-               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-                  "[webm] file read ended short; playing what "
-                  "arrived.\n");
-         }
+      }
+
+      /* Terminal short states are latched outside the fill block:
+       * once capped, the block above is no longer entered. */
+      if (   p->dt
+          && (   data_transfer_failed(p->dt)
+              || data_transfer_capped(p->dt))
+          && !p->fill_warned)
+      {
+         p->fill_warned = 1;
+         if (WEBM_CORE_PREFIX(log_cb))
+            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+               data_transfer_capped(p->dt)
+                  ? "[webm] file exceeds this platform's read "
+                    "window; playing the prefix.\n"
+                  : "[webm] file read ended short; playing what "
+                    "arrived.\n");
       }
 
       /* Bounded-memory streaming: release the pages behind what the
@@ -1113,6 +1125,7 @@ void WEBM_CORE_PREFIX(retro_run)(void)
     * arrivals to the playback demuxer and the gather. */
    if (p->dt && !data_transfer_complete(p->dt)
          && !data_transfer_failed(p->dt)
+         && !data_transfer_capped(p->dt)
          && (   p->pending_seek_ns >= 0
              || data_transfer_avail(p->dt)
                 < rwebm_tell(p->webm) + WEBM_FILL_LOOKAHEAD))
@@ -1127,17 +1140,28 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       if (p->pending_seek_ns >= 0)
       {
          int64_t pos = webm_seek(p, p->pending_seek_ns);
-         if (data_transfer_complete(p->dt)
-               || pos + 500000000 >= p->pending_seek_ns)
+         if (   data_transfer_complete(p->dt)
+             || data_transfer_capped(p->dt)
+             || pos + 500000000 >= p->pending_seek_ns)
             p->pending_seek_ns = -1;
       }
-      if (data_transfer_failed(p->dt) && !p->fill_warned)
-      {
-         p->fill_warned = 1;
-         if (WEBM_CORE_PREFIX(log_cb))
-            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-               "[webm] file read ended short; playing what arrived.\n");
-      }
+   }
+
+   /* Terminal short states are latched outside the fill block: once
+    * capped, the block above is no longer entered. */
+   if (   p->dt
+       && (   data_transfer_failed(p->dt)
+           || data_transfer_capped(p->dt))
+       && !p->fill_warned)
+   {
+      p->fill_warned = 1;
+      if (WEBM_CORE_PREFIX(log_cb))
+         WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+            data_transfer_capped(p->dt)
+               ? "[webm] file exceeds this platform's read "
+                 "window; playing the prefix.\n"
+               : "[webm] file read ended short; playing what "
+                 "arrived.\n");
    }
 
    /* Bounded-memory streaming, native arm: release behind the
