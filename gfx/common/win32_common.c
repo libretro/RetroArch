@@ -2078,7 +2078,7 @@ bool win32_backbuffer_is_scrgb(void)
  * dylib_loads dxgi.dll at runtime -- no new imports; on systems
  * without DXGI 1.6 / HDR it simply reports false and the legacy
  * pixel format is used. */
-static bool win32_display_hdr_active(HWND hwnd)
+bool win32_display_hdr_active(HWND hwnd)
 {
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
    bool         ret     = false;

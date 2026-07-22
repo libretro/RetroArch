@@ -391,6 +391,32 @@ void create_gl_context(HWND hwnd, bool *quit)
          }
       }
    }
+
+   /* HDR settings availability for the GL drivers: probe whether the
+    * display is in HDR mode and shape the display flags accordingly,
+    * so the menu offers the HDR options exactly when they can work.
+    * The trio is cleared first (it may be stale from a previous video
+    * driver); the probe's underlying DXGI check re-sets it when the
+    * display supports HDR. OpenGL HDR on Windows is scRGB-only (there
+    * is no WGL HDR10 / metadata API), so the HDR10 support bit is
+    * masked back out. On builds without a D3D driver the probe reports
+    * false and the settings simply stay hidden, as before. */
+   {
+      uint32_t disp_flags = video_driver_get_disp_flags();
+      disp_flags         &= ~(  VIDEO_FLAG_HDR_SUPPORT
+                              | VIDEO_FLAG_HDR10_SUPPORT
+                              | VIDEO_FLAG_SCRGB_SUPPORT);
+      video_driver_set_disp_flags(disp_flags);
+
+      if (win32_display_hdr_active(win32_get_window()))
+      {
+         disp_flags  = video_driver_get_disp_flags();
+         disp_flags |=  (VIDEO_FLAG_HDR_SUPPORT | VIDEO_FLAG_SCRGB_SUPPORT);
+         disp_flags &= ~VIDEO_FLAG_HDR10_SUPPORT;
+         video_driver_set_disp_flags(disp_flags);
+         RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
+      }
+   }
 }
 #endif
 
@@ -513,6 +539,10 @@ static void gfx_ctx_wgl_destroy(void *data)
    {
       case GFX_CTX_OPENGL_API:
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE)) && !defined(HAVE_OPENGLES)
+         video_driver_set_disp_flags(video_driver_get_disp_flags()
+               & ~(  VIDEO_FLAG_HDR_SUPPORT
+                   | VIDEO_FLAG_HDR10_SUPPORT
+                   | VIDEO_FLAG_SCRGB_SUPPORT));
          if (win32_hrc)
          {
             uint32_t video_st_flags;

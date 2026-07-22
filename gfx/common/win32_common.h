@@ -174,6 +174,14 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl);
  * setups behave exactly as before. */
 bool win32_backbuffer_is_scrgb(void);
 
+/* True when the display the window is on is currently in HDR mode.
+ * Probed through the dynamically-loaded DXGI helper; reports false in
+ * builds without a D3D driver or on systems without HDR. As a side
+ * effect of the underlying DXGI check, the video display HDR support
+ * flags are updated (set when supported; cleared -- and the HDR mode
+ * setting forced off -- when not). */
+bool win32_display_hdr_active(HWND hwnd);
+
 #if !defined(__WINRT__)
 /* Programmatic replacement for the menu, dialog, accelerator,
  * and manifest resources that were in media/rarch.rc.
