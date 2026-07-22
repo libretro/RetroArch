@@ -3660,10 +3660,32 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          /* Which HDR swapchain is presenting.  A core encoding its own gamut
           * needs this because the scRGB path rotates Rec.2020 -> Rec.709 on
           * the way to the display and the HDR10 path does not, so the same
-          * frame lands differently on the two. */
+          * frame lands differently on the two.
+          *
+          * The user setting is the request, not always what is presenting:
+          * the GL drivers can only build scRGB backbuffers regardless of
+          * the requested mode (WGL has no HDR10/metadata path), and the
+          * setting survives switches to drivers with no HDR path at all --
+          * only the D3D/Vulkan display checks force it back to 0.  Derive
+          * the answer from the swapchain that actually exists.  Before the
+          * video driver is up (a core querying from retro_load_game, the
+          * same window documented at SET_PIXEL_FORMAT's HDR10 gate) the
+          * capability flags are legitimately clear, so fall back to the
+          * setting rather than reporting HDR off on machines that will
+          * have it. */
          {
             settings_t *settings = config_get_ptr();
-            *(unsigned*)data     = settings->uints.video_hdr_mode;
+            unsigned mode        = settings->uints.video_hdr_mode;
+            if (mode > 0 && video_driver_get_ptr())
+            {
+               if (video_driver_test_all_flags(
+                        GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+                  mode = 2;
+               else if (!(video_driver_get_disp_flags()
+                        & VIDEO_FLAG_HDR_SUPPORT))
+                  mode = 0;
+            }
+            *(unsigned*)data     = mode;
          }
          break;
 
