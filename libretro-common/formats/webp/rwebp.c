@@ -1870,6 +1870,16 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf_data,
    return IMAGE_PROCESS_ERROR;
 }
 
+bool rwebp_still_ready(const void *buf, size_t avail)
+{
+   rw_ctr c;
+   /* rw_parse's chunk walk stops at the first chunk that does not fit
+    * inside 'avail', so success means the still image's chunk - and
+    * everything a decode of it touches - lies wholly within the
+    * prefix. */
+   return rw_parse((const uint8_t*)buf, avail, &c) != 0;
+}
+
 bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len)
 {
    if (!rwebp) return false;

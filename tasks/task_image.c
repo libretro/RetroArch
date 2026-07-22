@@ -20,6 +20,9 @@
 
 #include <file/nbio.h>
 #include <formats/data_transfer.h>
+#ifdef HAVE_RWEBP
+#include <formats/rwebp.h>
+#endif
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -241,9 +244,21 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
 
    ptr                             = (void*)nbio_xfer_ptr(nbio, &len);
 
+   if (partial && image->type == IMAGE_TYPE_WEBP)
+   {
+      /* The webp decoder has no avail wall of its own: freeze its
+       * view of the buffer at the bytes actually read.  The early-
+       * start gate only fires once the still's chunk lies wholly
+       * inside them, and the chunk walk must never cross the prefix
+       * guard. */
+      size_t done = 0, total = 0;
+      nbio_xfer_progress(nbio, &done, &total);
+      len = done;
+   }
+
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
 
-   if (partial)
+   if (partial && image->type != IMAGE_TYPE_WEBP)
    {
       /* Declare how much of the buffer has actually been read; the
        * video still decoders return IMAGE_PROCESS_WAIT at the wall
@@ -422,13 +437,26 @@ bool task_image_load_handler(retro_task_t *task)
              * delivered long before - and independently of - the rest
              * of the read.  Other types keep waiting for the
              * completion callback. */
-            if (is_video && !image->handle
+            if (!image->handle
+                  && (is_video || image->type == IMAGE_TYPE_WEBP)
                   && (nbio->handle || nbio->xfer)
                   && !nbio->is_finished)
             {
                size_t done = 0, total = 0;
-               if (nbio_xfer_progress(nbio, &done, &total)
-                     && done > 0)
+               int ready = 0;
+               if (nbio_xfer_progress(nbio, &done, &total) && done > 0)
+               {
+                  ready = is_video;
+#ifdef HAVE_RWEBP
+                  /* webp starts only when the still's chunk is wholly
+                   * within the prefix: its decode has no partial-
+                   * buffer wall to wait at */
+                  if (!ready && image->type == IMAGE_TYPE_WEBP)
+                     ready = rwebp_still_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+               }
+               if (ready)
                   task_image_thumbnail_setup(nbio, true);
             }
             return true;

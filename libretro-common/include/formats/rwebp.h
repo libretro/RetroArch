@@ -38,6 +38,13 @@ int rwebp_process_image(rwebp_t *rwebp, void **buf,
       size_t size, unsigned *width, unsigned *height,
       bool supports_rgba);
 
+/* Prefix probe for partial reads: true once the bytes [0, avail)
+ * contain the complete still-image chunk (the first VP8/VP8L,
+ * standalone or inside the first ANMF frame), i.e. a decode whose
+ * buffer length is bounded to avail will succeed without touching a
+ * byte beyond it. */
+bool rwebp_still_ready(const void *buf, size_t avail);
+
 bool rwebp_set_buf_ptr(rwebp_t *rwebp, void *data, size_t len);
 
 void rwebp_free(rwebp_t *rwebp);

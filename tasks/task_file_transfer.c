@@ -193,7 +193,11 @@ void task_file_load_handler(retro_task_t *task)
             {
                struct nbio_t *handle;
                if (     nbio->type == NBIO_TYPE_WEBM
-                     || nbio->type == NBIO_TYPE_MP4)
+                     || nbio->type == NBIO_TYPE_MP4
+#ifdef HAVE_RWEBP
+                     || nbio->type == NBIO_TYPE_WEBP
+#endif
+                     )
                {
                   /* Video: the data_transfer prefix spine.  Address
                    * space for the whole file, physical pages only as
