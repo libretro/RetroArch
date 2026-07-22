@@ -970,6 +970,18 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
             && cpu_features_get_time_usec() - now < 2000);
       if (!done)
          return;
+      {
+         /* An operation that ended short of the file (I/O error, the
+          * file shrank) must not feed the decoders its unwritten
+          * tail: keep the still, drop the animation. */
+         size_t rdone = 0, rtotal = 0;
+         if (   !nbio_get_progress(thumbnail->anim_nbio, &rdone, &rtotal)
+             && rtotal > 0 && rdone < rtotal)
+         {
+            gfx_thumbnail_anim_close(thumbnail);
+            return;
+         }
+      }
       thumbnail->anim_read_pending = 0;
       /* The adopted stream's demuxer captured its byte wall when the
        * still opened it (the still's task completed - and its

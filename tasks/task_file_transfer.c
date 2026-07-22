@@ -89,6 +89,19 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    return 0;
 }
 
+/* After the backend reports the operation over, verify it actually
+ * delivered everything: a read that failed midway (I/O error, file
+ * shrank) ends with no operation in flight but progress short of the
+ * total.  Backends that do not track progress report zeros, which
+ * passes. */
+static bool task_file_transfer_read_complete(void *handle)
+{
+   size_t done = 0, total = 0;
+   if (nbio_get_progress(handle, &done, &total))
+      return true;   /* still in flight: not a completed-short state */
+   return !(total > 0 && done < total);
+}
+
 static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
 {
    if (nbio->cb)
@@ -178,6 +191,12 @@ void task_file_load_handler(retro_task_t *task)
                      {
                         /* Small file: iterate until done in one tick */
                         while (!nbio_iterate(handle));
+                        if (!task_file_transfer_read_complete(handle))
+                        {
+                           task_set_flags(task,
+                                 RETRO_TASK_FLG_CANCELLED, true);
+                           break;
+                        }
                         nbio->status = NBIO_STATUS_TRANSFER_PARSE;
                         task_set_progress(task, 100);
                         goto do_transfer_parse;
@@ -200,6 +219,14 @@ do_transfer_parse:
          case NBIO_STATUS_TRANSFER:
             if (task_file_transfer_iterate_transfer(nbio) == -1)
             {
+               if (!task_file_transfer_read_complete(nbio->handle))
+               {
+                  /* The read ended short of the file: fail the task
+                   * rather than parse a buffer whose tail was never
+                   * written. */
+                  task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+                  break;
+               }
                nbio->status = NBIO_STATUS_TRANSFER_PARSE;
                /* Fall through to parse immediately instead of
                 * waiting for the next tick — saves one frame. */
