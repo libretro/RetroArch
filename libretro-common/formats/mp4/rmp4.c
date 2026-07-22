@@ -135,6 +135,11 @@ struct rmp4
 {
    const uint8_t *buf;
    size_t         len;
+   /* Bytes actually read into the buffer so far (== len for a fully
+    * resident file); a partial reader raises it with rmp4_set_avail.
+    * rmp4_read_packet returns RMP4_READ_AGAIN, consuming nothing, for
+    * a sample whose bytes lie beyond it. */
+   size_t         avail;
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
    int            fragmented;      /* an mvex box was present        */
@@ -983,23 +988,43 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
 
 /* ===== public API ===== */
 
-rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
+rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
+      size_t avail, int *need_more)
 {
    rmp4_t  *m;
    uint64_t pos = 0, next;
    rmp4_box b;
-   int      seen_known = 0, have_moov = 0;
+   int      seen_known = 0, have_moov = 0, hit_wall = 0;
 
+   if (need_more)
+      *need_more = 0;
+   if (avail > size)
+      avail = size;
    if (!data || size < 16)
       return NULL;
 
    if (!(m = (rmp4_t*)calloc(1, sizeof(*m))))
       return NULL;
-   m->buf = data;
-   m->len = size;
+   m->buf   = data;
+   m->len   = size;
+   m->avail = avail;
 
-   while (pos < size && rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
+   /* The top-level walk dereferences only box headers; bodies are
+    * skipped arithmetically, so an mdat crossing the available prefix
+    * costs nothing to hop over and a trailing moov becomes reachable
+    * exactly when its bytes arrive.  Box sizes are validated against
+    * the full file length; only actual reads (headers, and the moov
+    * body when parsed) are gated on the prefix. */
+   while (pos < size)
    {
+      /* Gate BEFORE parsing: the box header read below must lie
+       * wholly within the available prefix (16 covers the largest
+       * header; at worst this costs one extra retry near the wall,
+       * never a read past it). */
+      if (avail < size && pos + 16 > avail)
+      { hit_wall = 1; break; }
+      if (!rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
+         break;
       switch (b.type)
       {
          case RMP4_FOURCC('f','t','y','p'):
@@ -1012,18 +1037,29 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
             break;
          case RMP4_FOURCC('m','o','o','v'):
             seen_known = 1;
+            if ((uint64_t)(b.body - data) + b.size > avail)
+            { hit_wall = 1; break; }   /* moov body still arriving */
             if (rmp4_parse_moov(m, b.body, b.size))
                have_moov = 1;
             break;
          default:
             break;
       }
+      if (hit_wall || have_moov)
+         break;
       if (next <= pos)
          break;
       pos = next;
    }
 
-   if (!seen_known || !have_moov)
+   if (!have_moov)
+   {
+      rmp4_close(m);
+      if ((hit_wall || avail < size) && need_more)
+         *need_more = 1;
+      return NULL;
+   }
+   if (!seen_known)
    {
       rmp4_close(m);
       return NULL;
@@ -1034,6 +1070,16 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
     * trex defaults exist. */
    if (m->fragmented)
    {
+      /* moof boxes interleave with the media data through to the end
+       * of the file, so a fragmented movie effectively needs the whole
+       * file resident before its sample tables exist. */
+      if (avail < size)
+      {
+         rmp4_close(m);
+         if (need_more)
+            *need_more = 1;
+         return NULL;
+      }
       pos = 0;
       while (pos < size && rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
       {
@@ -1045,6 +1091,21 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
       }
    }
    return m;
+}
+
+rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
+{
+   return rmp4_open_memory_avail(data, size, size, NULL);
+}
+
+void rmp4_set_avail(rmp4_t *m, size_t avail)
+{
+   if (!m)
+      return;
+   if (avail > m->len)
+      avail = m->len;
+   if (avail > m->avail)   /* monotonic: bytes never un-arrive */
+      m->avail = avail;
 }
 
 void rmp4_close(rmp4_t *m)
@@ -1118,7 +1179,12 @@ int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
 
    {
       rmp4_itrack *t = &m->trk[best];
-      uint32_t     c = t->cursor++;
+      uint32_t     c = t->cursor;
+      /* Sample bytes not yet in the buffer: consume nothing and let
+       * the caller retry once more of the file has been read. */
+      if (t->off[c] + t->size[c] > (uint64_t)m->avail)
+         return RMP4_READ_AGAIN;
+      t->cursor++;
       pkt->data            = m->buf + t->off[c];
       pkt->size            = t->size[c];
       pkt->track           = best;
