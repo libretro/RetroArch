@@ -130,8 +130,29 @@ void task_file_load_handler(retro_task_t *task)
                    *
                    * Disabled on Android where the AIO fast path behind
                    * fuse/sdcardfs is counterproductive — fall through to
-                   * the iterative transfer path instead. */
-                  if (nbio_load_entire(handle, &_len))
+                   * the iterative transfer path instead.
+                   *
+                   * Also skipped for LARGE VIDEO files: their still
+                   * decoders work against the growing buffer
+                   * (task_image starts them early and they finish on a
+                   * few KiB of header + first keyframe), so for the
+                   * stdio backend - whose load_entire is one blocking
+                   * full-file fread - the fast path would serialise the
+                   * whole read in front of a decode that barely needs
+                   * any of it.  Small files keep the fast path (one
+                   * fread beats ticking), and the mmap backends lose
+                   * nothing: their iterate completes immediately. */
+                  {
+                     bool try_fast = true;
+                     if (     nbio->type == NBIO_TYPE_WEBM
+                           || nbio->type == NBIO_TYPE_MP4)
+                     {
+                        size_t file_len = 0;
+                        nbio_get_ptr(handle, &file_len);
+                        if (file_len > NBIO_SMALL_FILE_THRESHOLD)
+                           try_fast = false;
+                     }
+                  if (try_fast && nbio_load_entire(handle, &_len))
                   {
                      /* Fall through: run parse in the same tick instead
                       * of returning and waiting for the next frame.
@@ -139,6 +160,7 @@ void task_file_load_handler(retro_task_t *task)
                       * that complete via the fast path. */
                      nbio->status    = NBIO_STATUS_TRANSFER_PARSE;
                      goto do_transfer_parse;
+                  }
                   }
 #endif
 
