@@ -855,15 +855,26 @@ static void gx2_font_render_line(
 
    if (font->atlas->dirty)
    {
-      for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
+      /* Copy and invalidate only the dirty row band tracked by the
+       * font renderers instead of the whole atlas */
+      unsigned y0 = font->atlas->dirty_y0;
+      unsigned y1 = font->atlas->dirty_y1;
+      if (y1 > font->atlas->height)
+         y1 = font->atlas->height;
+      if (y1 > font->texture.surface.height)
+         y1 = font->texture.surface.height;
+
+      for (i = y0; i < y1; i++)
          memcpy(font->texture.surface.image
                + (i * font->texture.surface.pitch),
                 font->atlas->buffer + (i * font->atlas->width),
                 font->atlas->width);
 
-      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
-            font->texture.surface.image,
-            font->texture.surface.imageSize);
+      if (y1 > y0)
+         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+               font->texture.surface.image
+                     + (y0 * font->texture.surface.pitch),
+               (y1 - y0) * font->texture.surface.pitch);
       font->atlas->dirty = false;
    }
 
