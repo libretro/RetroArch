@@ -94,9 +94,21 @@ void rmp4_video_stream_get_info(const rmp4_video_stream_t *stream,
 /* Decode the next displayed frame. Returns the frame pixels (valid until
  * the next call on this stream) and writes its display duration in ms
  * (0 when unknown; the caller applies its default), or NULL at the end
- * of one pass; call rmp4_video_stream_rewind to loop. */
+ * of one pass; call rmp4_video_stream_rewind to loop.  Pixels are in
+ * memory order R,G,B,A by default; see rmp4_video_stream_set_argb. */
 const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
       int *duration_ms);
+
+/* Select the channel order of subsequent frames: non-zero emits ARGB
+ * words (memory order B,G,R,A on little-endian), zero restores the
+ * default R,G,B,A memory order.  Applies to the 8-bit output paths;
+ * 10-bit XRGB2101010 output is unaffected.  The order is baked by the
+ * blit, so this costs nothing per frame - it exists so a caller whose
+ * upload format is ARGB does not need its own full-frame swizzle pass.
+ * Takes effect from the next decoded frame; may be changed between
+ * frames.  A stream detached from a still-image transfer starts at
+ * the default order. */
+void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
 
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 

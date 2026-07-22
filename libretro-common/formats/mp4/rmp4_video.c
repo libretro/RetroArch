@@ -81,6 +81,8 @@ struct rmp4_video_stream
    unsigned     height;
    int          want10;     /* caller requested 10-bit output         */
    int          is10;       /* last decoded frame written as 10-bit    */
+   int          emit_argb;  /* emit ARGB words instead of the default
+                               R,G,B,A memory order (8-bit paths)     */
 };
 
 /* Still-image decode progress across sliced process calls. */
@@ -143,7 +145,7 @@ static const int16_t *rmp4_video_coefs(unsigned matrix, unsigned height)
 }
 
 static INLINE uint32_t rmp4_video_yuv_px(int y, int u, int v,
-      const int16_t *k)
+      const int16_t *k, int argb)
 {
    int c = 298 * (y - 16);
    int d = u - 128;
@@ -163,6 +165,11 @@ static INLINE uint32_t rmp4_video_yuv_px(int y, int u, int v,
       b = 0;
    else if (b > 255)
       b = 255;
+   if (argb)
+      return 0xFF000000u
+           | ((uint32_t)r << 16)
+           | ((uint32_t)g << 8)
+           |  (uint32_t)b;
    return 0xFF000000u
         | ((uint32_t)b << 16)
         | ((uint32_t)g << 8)
@@ -178,7 +185,7 @@ static INLINE uint32_t rmp4_video_yuv_px(int y, int u, int v,
  * without distortion. */
 static void rmp4_video_yuv_row_sse2(uint32_t *dr,
       const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w,
-      const int16_t *k)
+      const int16_t *k, int argb)
 {
    const __m128i k16   = _mm_set1_epi16(16);
    const __m128i k128  = _mm_set1_epi16(128);
@@ -252,16 +259,18 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
       g8  = _mm_packus_epi16(g16, g16);
       b8  = _mm_packus_epi16(b16, b16);
 
-      /* Interleave to memory order R,G,B,A (ABGR words) */
-      rg  = _mm_unpacklo_epi8(r8, g8);
-      ba  = _mm_unpacklo_epi8(b8, a255);
+      /* Interleave to memory order R,G,B,A (ABGR words), or B,G,R,A
+       * (ARGB words) when the caller asked for ARGB: the swap costs
+       * only operand selection, the arithmetic is shared. */
+      rg  = _mm_unpacklo_epi8(argb ? b8 : r8, g8);
+      ba  = _mm_unpacklo_epi8(argb ? r8 : b8, a255);
       _mm_storeu_si128((__m128i*)(dr + i),
             _mm_unpacklo_epi16(rg, ba));
       _mm_storeu_si128((__m128i*)(dr + i + 4),
             _mm_unpackhi_epi16(rg, ba));
    }
    for (; i < w; i++)
-      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
+      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, argb);
 }
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
 /* NEON translation of the SSE2 kernel above: identical integer
@@ -270,7 +279,7 @@ static void rmp4_video_yuv_row_sse2(uint32_t *dr,
  * the scalar path. */
 static void rmp4_video_yuv_row_neon(uint32_t *dr,
       const uint8_t *yr, const uint8_t *ur, const uint8_t *vr, unsigned w,
-      const int16_t *kc)
+      const int16_t *kc, int argb)
 {
    const int16x8_t k16  = vdupq_n_s16(16);
    const int16x8_t k128 = vdupq_n_s16(128);
@@ -317,14 +326,15 @@ static void rmp4_video_yuv_row_neon(uint32_t *dr,
       g16 = vcombine_s16(vqmovn_s32(g_lo), vqmovn_s32(g_hi));
       b16 = vcombine_s16(vqmovn_s32(b_lo), vqmovn_s32(b_hi));
 
-      out.val[0] = vqmovun_s16(r16);
+      /* R,G,B,A memory order, or B,G,R,A for ARGB words. */
+      out.val[0] = vqmovun_s16(argb ? b16 : r16);
       out.val[1] = vqmovun_s16(g16);
-      out.val[2] = vqmovun_s16(b16);
+      out.val[2] = vqmovun_s16(argb ? r16 : b16);
       out.val[3] = vdup_n_u8(0xFF);
       vst4_u8((uint8_t*)(dr + i), out);
    }
    for (; i < w; i++)
-      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], kc);
+      dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], kc, argb);
 }
 #endif
 
@@ -332,7 +342,7 @@ static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
       const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix, int cvsh)
+      unsigned matrix, int cvsh, int argb)
 {
    const int16_t *k = rmp4_video_coefs(matrix, h);
    unsigned j;
@@ -343,14 +353,14 @@ static void rmp4_video_blit_yuv(uint32_t *dst, unsigned dst_stride,
       const uint8_t *vr = v + (size_t)(j >> cvsh) * uvs;
       uint32_t      *dr = dst + (size_t)j * dst_stride;
 #if defined(__SSE2__)
-      rmp4_video_yuv_row_sse2(dr, yr, ur, vr, w, k);
+      rmp4_video_yuv_row_sse2(dr, yr, ur, vr, w, k, argb);
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__)
-      rmp4_video_yuv_row_neon(dr, yr, ur, vr, w, k);
+      rmp4_video_yuv_row_neon(dr, yr, ur, vr, w, k, argb);
 #else
       {
          unsigned i;
          for (i = 0; i < w; i++)
-            dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k);
+            dr[i] = rmp4_video_yuv_px(yr[i], ur[i >> 1], vr[i >> 1], k, argb);
       }
 #endif
    }
@@ -361,9 +371,10 @@ static void rmp4_video_blit_i420(uint32_t *dst, unsigned dst_stride,
       unsigned w, unsigned h,
       const uint8_t *y, int ys,
       const uint8_t *u, const uint8_t *v, int uvs,
-      unsigned matrix)
+      unsigned matrix, int argb)
 {
-   rmp4_video_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1);
+   rmp4_video_blit_yuv(dst, dst_stride, w, h, y, ys, u, v, uvs, matrix, 1,
+         argb);
 }
 
 /* ------------------------------------------------------------------ */
@@ -635,6 +646,12 @@ void rmp4_video_stream_get_info(const rmp4_video_stream_t *s,
       *loop_count = 0;   /* video loops indefinitely */
 }
 
+void rmp4_video_stream_set_argb(rmp4_video_stream_t *s, int argb)
+{
+   if (s)
+      s->emit_argb = argb ? 1 : 0;
+}
+
 /* Display duration of packet 'idx', in ms, from the pre-scanned
  * timestamp table; 0 when unknown (caller applies its default). */
 static int rmp4_video_duration_ms(const rmp4_video_stream_t *s, int idx)
@@ -715,11 +732,13 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
                rwebm_video_blit_i420_hbd(s->frame, s->width, w, h,
                      (const uint16_t*)fb->y, s->vp9->ys,
                      (const uint16_t*)fb->u, (const uint16_t*)fb->v,
-                     s->vp9->uvs, s->matrix, s->transfer, s->range, 0, 1);
+                     s->vp9->uvs, s->matrix, s->transfer, s->range, 0,
+                     s->emit_argb ? 0 : 1);
          }
          else if (!s->catchup)
             rmp4_video_blit_i420(s->frame, s->width, w, h,
-                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs, s->matrix);
+                  fb->y, s->vp9->ys, fb->u, fb->v, s->vp9->uvs, s->matrix,
+                  s->emit_argb);
          return 1;
       }
       return 0;
@@ -746,7 +765,8 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
          h = (int)s->height;
       if (!s->catchup)
          rmp4_video_blit_i420(s->frame, s->width,
-               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix);
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+               s->emit_argb);
       return 1;
    }
    if (s->codec == RMP4_CODEC_H264)
@@ -796,7 +816,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       if (!s->catchup)
          rmp4_video_blit_yuv(s->frame, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-               (ch < h) ? 1 : 0);
+               (ch < h) ? 1 : 0, s->emit_argb);
       return 1;
    }
    return -1;
@@ -847,7 +867,7 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
          if (!s->catchup)
             rmp4_video_blit_yuv(s->frame, s->width,
                   (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
-               (ch < h) ? 1 : 0);
+               (ch < h) ? 1 : 0, s->emit_argb);
          if (duration_ms)
             *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
@@ -985,9 +1005,12 @@ rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4)
    mp4->stream = NULL;
    /* The animation consumers upload plain 8-bit frames; the still may
     * have been decoded 10-bit, so drop the request before handing the
-    * stream over (each frame re-blits, no stale pixels survive). */
-   s->want10   = 0;
-   s->is10     = 0;
+    * stream over (each frame re-blits, no stale pixels survive).  The
+    * channel order likewise resets to the documented default; adopters
+    * re-select per frame via rmp4_video_stream_set_argb. */
+   s->want10    = 0;
+   s->is10      = 0;
+   s->emit_argb = 0;
    return s;
 }
 
@@ -1027,7 +1050,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    rmp4_video_stream_t *s;
    const uint32_t *frame;
    uint32_t *out;
-   size_t i, n;
+   size_t n;
    int r;
    int duration_ms = 0;
 
@@ -1058,9 +1081,13 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
          if (rmp4_video_stream_open_finish(mp4->stream) != 0)
             goto fail;
          /* Request 10-bit output; the stream honours it only for
-          * 10-bit sources. */
-         mp4->stream->want10 = mp4->want10;
-         mp4->still_stage    = RMP4_VIDEO_STILL_DECODE;
+          * 10-bit sources.  For 8-bit output, have the blit emit the
+          * caller's channel order directly (supports_rgba is sampled
+          * once per transfer by task_image, so the value seen here
+          * holds for the END slice's copy below). */
+         mp4->stream->want10    = mp4->want10;
+         mp4->stream->emit_argb = supports_rgba ? 0 : 1;
+         mp4->still_stage       = RMP4_VIDEO_STILL_DECODE;
          return IMAGE_PROCESS_NEXT;
 
       case RMP4_VIDEO_STILL_DECODE:
@@ -1083,23 +1110,12 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
       goto fail;
 
-   if (s->is10)
-      /* Packed XRGB2101010 already in the frontend's channel order; copy
-       * verbatim (no 8-bit R/B swizzle). */
-      memcpy(out, frame, n * sizeof(uint32_t));
-   else if (supports_rgba)
-      memcpy(out, frame, n * sizeof(uint32_t));
-   else
-   {
-      /* ABGR words -> ARGB words (swap R and B channels). */
-      for (i = 0; i < n; i++)
-      {
-         uint32_t px = frame[i];
-         out[i]      = (px & 0xFF00FF00u)
-                     | ((px & 0xFFu) << 16)
-                     | ((px >> 16) & 0xFFu);
-      }
-   }
+   /* The canvas is already in the caller's channel order: 10-bit
+    * output is packed XRGB2101010, and the 8-bit blit emitted ARGB or
+    * ABGR words per supports_rgba (set at the scan/decode transition
+    * above), so the copy is verbatim in every case - the per-pixel
+    * R/B swizzle this replaced was a full extra pass over the frame. */
+   memcpy(out, frame, n * sizeof(uint32_t));
 
    if (width)
       *width  = s->width;
