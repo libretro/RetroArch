@@ -73,7 +73,7 @@ static void task_audio_mixer_load_free(retro_task_t *task)
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
-   nbio_free(nbio->handle);
+   nbio_xfer_close(nbio);
    free(nbio);
 }
 
@@ -81,7 +81,7 @@ static int cb_nbio_audio_mixer_load(void *data, size_t len)
 {
    nbio_handle_t *nbio             = (nbio_handle_t*)data;
    struct audio_mixer_handle *mixer= (struct audio_mixer_handle*)nbio->data;
-   void *ptr                       = nbio_get_ptr(nbio->handle, &len);
+   void *ptr                       = (void*)nbio_xfer_ptr(nbio, &len);
    nbio_buf_t *buffer              = (nbio_buf_t*)calloc(1, sizeof(*mixer->buffer));
 
    if (!buffer)
@@ -731,7 +731,7 @@ error:
          free(nbio->path);
       if (nbio->data)
          free(nbio->data);
-      nbio_free(nbio->handle);
+      nbio_xfer_close(nbio);
       free(nbio);
    }
    if (user)
@@ -882,7 +882,7 @@ error:
          free(nbio->path);
       if (nbio->data)
          free(nbio->data);
-      nbio_free(nbio->handle);
+      nbio_xfer_close(nbio);
       free(nbio);
    }
    if (user)

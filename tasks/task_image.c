@@ -421,7 +421,7 @@ bool task_image_load_handler(retro_task_t *task)
        * reads and a monotonic store) and a no-op once the read has
        * completed. */
       if (is_video && image->handle && !nbio->is_finished
-            && (nbio->handle || nbio->xfer))
+            && nbio->xfer)
       {
          size_t done = 0, total = 0;
          if (nbio_xfer_progress(nbio, &done, &total))
@@ -439,7 +439,7 @@ bool task_image_load_handler(retro_task_t *task)
              * completion callback. */
             if (!image->handle
                   && (is_video || image->type == IMAGE_TYPE_WEBP)
-                  && (nbio->handle || nbio->xfer)
+                  && nbio->xfer
                   && !nbio->is_finished)
             {
                size_t done = 0, total = 0;
@@ -642,7 +642,6 @@ bool task_push_image_load(const char *fullpath,
    nbio->pos_increment = 0;
    nbio->status_flags  = 0;
    nbio->data          = NULL;
-   nbio->handle        = NULL;
    nbio->xfer          = NULL;
    nbio->cb            = &cb_nbio_image_thumbnail;
 

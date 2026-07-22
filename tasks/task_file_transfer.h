@@ -68,15 +68,16 @@ typedef int (*transfer_cb_t)(void *data, size_t len);
 
 struct data_transfer;
 
+/* Historical name: the task-transfer state, once built around an
+ * nbio handle.  Every load now travels a data_transfer prefix spine
+ * (filestream/VFS routing, 64-bit lengths, physical pages only as
+ * far as the read reaches, a hardware guard behind avail); the nbio
+ * backends remain available through the library's own
+ * data_transfer_open/adopt constructors. */
 typedef struct nbio_handle
 {
    void *data;
    char *path;
-   struct nbio_t *handle;
-   /* Video loads (WEBM/MP4) arrive through a data_transfer instead:
-    * address space for the whole file, physical pages only as far as
-    * the read reaches, so a thumbnail costs its prefix regardless of
-    * the file's size.  Exactly one of handle/xfer is set. */
    struct data_transfer *xfer;
    transfer_cb_t  cb;
 
