@@ -29,6 +29,7 @@
 #include <file/file_path.h>
 #include <lists/file_list.h>
 #include <streams/file_stream.h>
+#include <file/nbio.h>
 #include <formats/image.h>
 
 #include "gfx_display.h"
@@ -644,10 +645,17 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    if (thumbnail->anim)
       image_transfer_anim_stream_free(thumbnail->anim,
             (enum image_type_enum)thumbnail->anim_type);
-   if (thumbnail->anim_buf)
+   /* Stream first, buffer second: the stream borrows the buffer.
+    * An adopted animation's buffer lives inside the nbio handle
+    * (possibly as a file mapping) and is released with it; only the
+    * open-by-path fallback malloc's anim_buf. */
+   if (thumbnail->anim_nbio)
+      nbio_free(thumbnail->anim_nbio);
+   else if (thumbnail->anim_buf)
       free(thumbnail->anim_buf);
    thumbnail->anim            = NULL;
    thumbnail->anim_buf        = NULL;
+   thumbnail->anim_nbio       = NULL;
    thumbnail->anim_buf_len    = 0;
    thumbnail->anim_next_us    = 0;
    thumbnail->anim_loops_left = 0;
@@ -655,13 +663,18 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
 }
 
-static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
-      const char *path)
+/* Install an open animation stream on the thumbnail, applying the
+ * frame-count and memory admission checks.  'buf' is the container
+ * bytes the stream borrows: when 'nbio_owner' is non-NULL it owns
+ * 'buf' (released with nbio_free), otherwise 'buf' is a malloc'd
+ * block this thumbnail takes over (released with free).  Ownership of
+ * stream/buf/nbio_owner transfers in every outcome; on rejection they
+ * are released and the static thumbnail stays.  Returns true when the
+ * animation was installed. */
+static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
+      void *stream, enum image_type_enum type,
+      void *buf, size_t len, void *nbio_owner)
 {
-   enum image_type_enum type;
-   int64_t len              = 0;
-   void *buf                = NULL;
-   void *stream             = NULL;
    unsigned anim_w          = 0;
    unsigned anim_h          = 0;
    int num_frames           = 0;
@@ -671,32 +684,6 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
     * thumbnail before install; make the invariant local so a future
     * second call site cannot leak or double-borrow a live decoder. */
    gfx_thumbnail_anim_close(thumbnail);
-
-   if (string_is_empty(path))
-      return;
-
-   /* Cheap gate: only container types with an animation decoder */
-   type = image_texture_get_type(path);
-   if (   (type != IMAGE_TYPE_WEBP)
-       && (type != IMAGE_TYPE_WEBM)
-       && (type != IMAGE_TYPE_MP4))
-      return;
-
-   /* Gate on the file's size before reading it: rejecting after the
-    * read would itself be the allocation spike the cap exists to
-    * prevent. */
-   {
-      int64_t fsz = path_get_size(path);
-      if ((fsz <= 0) || !gfx_thumb_anim_mem_ok((uint64_t)fsz, 0))
-         return;
-   }
-   if (!filestream_read_file(path, &buf, &len))
-      return;
-   if (len <= 0)
-      goto fail;
-
-   if (!(stream = image_transfer_anim_stream_new(buf, (size_t)len, type)))
-      goto fail;   /* still image or malformed: keep static thumbnail */
 
    image_transfer_anim_stream_get_info(stream, type,
          &anim_w, &anim_h, &num_frames, &loop_count);
@@ -710,7 +697,8 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
 
    thumbnail->anim            = stream;
    thumbnail->anim_buf        = buf;
-   thumbnail->anim_buf_len    = (size_t)len;
+   thumbnail->anim_nbio       = nbio_owner;
+   thumbnail->anim_buf_len    = len;
    thumbnail->anim_type       = (uint8_t)type;
    thumbnail->anim_loops_left = (loop_count == 0) ? -1 : loop_count;
    thumbnail->anim_next_us    = 0;   /* first advance establishes timing */
@@ -753,12 +741,62 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
       }
    }
 #endif
-   return;
+   return true;
 
 fail:
-   if (stream)
-      image_transfer_anim_stream_free(stream, type);
-   free(buf);
+   image_transfer_anim_stream_free(stream, type);
+   if (nbio_owner)
+      nbio_free(nbio_owner);
+   else
+      free(buf);
+   return false;
+}
+
+static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
+      const char *path)
+{
+   enum image_type_enum type;
+   int64_t len              = 0;
+   void *buf                = NULL;
+   void *stream             = NULL;
+
+   gfx_thumbnail_anim_close(thumbnail);
+
+   if (string_is_empty(path))
+      return;
+
+   /* Cheap gate: only container types with an animation decoder */
+   type = image_texture_get_type(path);
+   if (   (type != IMAGE_TYPE_WEBP)
+       && (type != IMAGE_TYPE_WEBM)
+       && (type != IMAGE_TYPE_MP4))
+      return;
+
+   /* Gate on the file's size before reading it: rejecting after the
+    * read would itself be the allocation spike the cap exists to
+    * prevent. */
+   {
+      int64_t fsz = path_get_size(path);
+      if ((fsz <= 0) || !gfx_thumb_anim_mem_ok((uint64_t)fsz, 0))
+         return;
+   }
+   if (!filestream_read_file(path, &buf, &len))
+      return;
+   if (len <= 0)
+   {
+      free(buf);
+      return;
+   }
+
+   if (!(stream = image_transfer_anim_stream_new(buf, (size_t)len, type)))
+   {
+      /* still image or malformed: keep static thumbnail */
+      free(buf);
+      return;
+   }
+
+   gfx_thumbnail_anim_install(thumbnail, stream, type,
+         buf, (size_t)len, NULL);
 }
 
 /* Uploads one final-format animation frame as the thumbnail's texture.
@@ -1101,9 +1139,31 @@ static void gfx_thumbnail_handle_upload(
    /* If the file is an animation, open a streaming decoder for it;
     * frames are advanced by gfx_thumbnail_animate() while the
     * entry is on-screen. On failure the static image just uploaded
-    * remains as-is. */
-   gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
-         thumbnail_tag->path);
+    * remains as-is.
+    *
+    * For WEBM/MP4 the load task's still-frame decode already opened,
+    * pre-scanned, and advanced a stream past the first displayed
+    * frame; adopt it - together with the nbio handle whose buffer it
+    * borrows - instead of re-reading the file from disk and repeating
+    * the open on this (the main) thread.  The animation then resumes
+    * at the second displayed frame, which the static texture just
+    * uploaded precedes.  The path-based open remains for animated
+    * WEBP and any load where no stream was held. */
+   {
+      void *vstream               = NULL;
+      void *nbio_owner            = NULL;
+      void *vbuf                  = NULL;
+      size_t vlen                 = 0;
+      enum image_type_enum vtype  = IMAGE_TYPE_NONE;
+
+      if (task_image_detach_video_stream(task, &vstream, &vtype,
+            &nbio_owner, &vbuf, &vlen))
+         gfx_thumbnail_anim_install(thumbnail_tag->thumbnail,
+               vstream, vtype, vbuf, vlen, nbio_owner);
+      else
+         gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
+               thumbnail_tag->path);
+   }
 
 end:
    /* Clean up */

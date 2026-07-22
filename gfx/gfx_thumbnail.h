@@ -218,9 +218,13 @@ typedef struct
    /* Animated thumbnail state (all main-thread only). 'anim' is a
     * streaming image_transfer handle which BORROWS 'anim_buf'; both
     * are owned by the thumbnail and released in gfx_thumbnail_reset
-    * (or when the animation finishes its final loop). */
+    * (or when the animation finishes its final loop). 'anim_buf'
+    * is either a malloc'd file read (anim_nbio NULL, freed with
+    * free()) or borrowed from an adopted nbio handle (released via
+    * nbio_free(anim_nbio); anim_buf itself must not be freed). */
    void *anim;
    void *anim_buf;
+   void *anim_nbio;        /* nbio handle owning anim_buf, when adopted */
    void *anim_job;         /* decode-worker job (HAVE_THREADS builds)  */
    void *anim_audio_job;   /* preview-audio decode job                 */
    size_t anim_buf_len;    /* size of anim_buf (for the audio decoder) */
@@ -256,6 +260,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->texture         = 0;
    t->anim            = NULL;
    t->anim_buf        = NULL;
+   t->anim_nbio       = NULL;
    t->anim_job        = NULL;
    t->anim_audio_job  = NULL;
    t->anim_buf_len    = 0;
