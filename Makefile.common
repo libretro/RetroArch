@@ -2899,6 +2899,16 @@ endif
 
 ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
    DEFINES += -DHAVE_SMBCLIENT
+   # The libsmb2 public headers gate their <stdint.h> include on
+   # HAVE_STDINT_H (autoconf-style), and every TU that includes
+   # them - the bundled library sources and frontend consumers
+   # like network/cloud_sync/smb.c alike - needs the define.
+   # Previously it was only ever supplied as a side effect of the
+   # HAVE_BUILTINFLAC block, which silently coupled SMB support
+   # to the FLAC library; builds without builtin FLAC (e.g. webOS
+   # after switching to rflac) broke on hundreds of unknown
+   # uint*_t types. Own the dependency here.
+   DEFINES += -DHAVE_STDINT_H
 
    ifeq ($(HAVE_SMBCLIENT),1)
       # system libsmb2
