@@ -27,7 +27,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
-#include <file/nbio.h>
+#include <formats/data_transfer.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -340,27 +340,30 @@ bool image_texture_load(struct texture_image *out_img,
 
    if (type != IMAGE_TYPE_NONE)
    {
-      struct nbio_t *handle = (struct nbio_t*)
-         nbio_open(path, NBIO_READ);
-      if (handle)
+      /* The synchronous read rides the data_transfer prefix spine
+       * like every other loader: filestream/VFS routing (overlays
+       * and driver assets from archive members or content://
+       * documents), 64-bit lengths, the hardware guard behind the
+       * read, and honest short-read detection.  A zero budget fills
+       * to completion in one blocking call, which is this API's
+       * contract. */
+      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
+      if (dt)
       {
-         void *ptr       = NULL;
-         size_t file_len = 0;
+         size_t file_len    = 0;
+         const uint8_t *ptr = NULL;
 
-         /* Fast path: collapses begin_read + iterate-loop + get_ptr
-          * into a single call. For mmap this is zero-copy (instant),
-          * for AIO a single blocking syscall, for stdio one fread. */
-         if ((ptr = nbio_load_entire(handle, &file_len)))
-         {
-            if (image_texture_load_internal(
+         data_transfer_iterate(dt, 0);
+         ptr = data_transfer_ptr(dt, &file_len);
+         if (data_transfer_complete(dt) && ptr && file_len
+               && image_texture_load_internal(
                      type,
-                     ptr, file_len, out_img))
-            {
-               nbio_free(handle);
-               return true;
-            }
+                     (void*)ptr, file_len, out_img))
+         {
+            data_transfer_free(dt);
+            return true;
          }
-         nbio_free(handle);
+         data_transfer_free(dt);
       }
    }
 
