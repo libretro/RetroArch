@@ -63,6 +63,16 @@ fragment float4 sprite_fragment_a8(FontFragmentIn  in  [[ stage_in ]],
     return float4(in.color.rgb, in.color.a * colorSample.r);
 }
 
+/* 16-bit coverage sibling: identical math, float sampler so the
+ * R16Unorm atlas is not quantized to half precision (~11 bits). */
+fragment float4 sprite_fragment_a16(FontFragmentIn  in  [[ stage_in ]],
+                              texture2d<float> tex [[ texture(TextureIndexColor) ]],
+                              sampler samp         [[ sampler(SamplerIndexDraw) ]])
+{
+    float4 colorSample = tex.sample(samp, in.texCoord.xy);
+    return float4(in.color.rgb, in.color.a * colorSample.r);
+}
+
 #pragma mark - functions for rendering sprites
 
 vertex FontFragmentIn stock_vertex(const SpriteVertex in [[ stage_in ]], const device Uniforms &uniforms [[ buffer(BufferIndexUniforms) ]])

@@ -3077,6 +3077,8 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    struct font_atlas *_atlas;
 
    NSUInteger _stride;
+   /* Bytes per atlas coverage sample (1 for A8, 2 for A16) */
+   size_t _esz;
    id<MTLBuffer> _buffer;
    id<MTLTexture> _texture;
 
@@ -3117,14 +3119,29 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
       _driver  = driver;
       _context = driver.context;
-      if (!font_renderer_create_default(
-               &_font_driver,
-               &_font_data, font_path, font_size))
-         return nil;
+      {
+         /* When outputting HDR (scRGB or HDR10), ask the font
+          * renderer for a higher-precision coverage atlas; same
+          * policy as the d3d12 and vulkan drivers. */
+         enum font_atlas_format prev_fmt =
+               font_renderer_get_preferred_atlas_format();
+         if (driver.hdrEnabled)
+            font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
+         if (!font_renderer_create_default(
+                  &_font_driver,
+                  &_font_data, font_path, font_size))
+         {
+            font_renderer_set_preferred_atlas_format(prev_fmt);
+            return nil;
+         }
+         font_renderer_set_preferred_atlas_format(prev_fmt);
+      }
 
       _uniforms.projectionMatrix = matrix_proj_ortho(0, 1, 0, 1);
       _atlas  = _font_driver->get_atlas(_font_data);
-      _stride = MTL_ALIGN_BUFFER(_atlas->width);
+      _esz    = (_atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      _stride = MTL_ALIGN_BUFFER(_atlas->width * _esz);
 
       /* Allocate an uninitialized managed buffer and fill it through
        * .contents. This collapses two previous branches (fast path
@@ -3137,9 +3154,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
                                              options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
       {
          size_t i;
+         size_t row_bytes   = (size_t)_atlas->width * _esz;
          uint8_t       *dst = (uint8_t *)_buffer.contents;
          const uint8_t *src = (const uint8_t *)_atlas->buffer;
-         if (_stride == _atlas->width)
+         if (_stride == row_bytes)
          {
             memcpy(dst, src, (size_t)_stride * _atlas->height);
          }
@@ -3147,9 +3165,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
          {
             for (i = 0; i < _atlas->height; i++)
             {
-               memcpy(dst, src, _atlas->width);
+               memcpy(dst, src, row_bytes);
                dst += _stride;
-               src += _atlas->width;
+               src += row_bytes;
             }
          }
       }
@@ -3157,7 +3175,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       [_buffer didModifyRange:NSMakeRange(0, _buffer.length)];
 #endif
 
-      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatR8Unorm
+      MTLTextureDescriptor *td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+                                        (_atlas->format == FONT_ATLAS_FORMAT_A16)
+                                              ? MTLPixelFormatR16Unorm
+                                              : MTLPixelFormatR8Unorm
                                                                                     width:_atlas->width
                                                                                    height:_atlas->height
                                                                                 mipmapped:NO];
@@ -3205,7 +3226,10 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       psd.sampleCount                = 1;
       psd.vertexDescriptor           = vd;
       psd.vertexFunction             = [_context.library newFunctionWithName:@"sprite_vertex"];
-      psd.fragmentFunction           = [_context.library newFunctionWithName:@"sprite_fragment_a8"];
+      psd.fragmentFunction           = [_context.library newFunctionWithName:
+            (_atlas->format == FONT_ATLAS_FORMAT_A16)
+                  ? @"sprite_fragment_a16"
+                  : @"sprite_fragment_a8"];
 
       if (!psd.vertexFunction || !psd.fragmentFunction)
          return NO;
@@ -3231,9 +3255,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       unsigned row;
       for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
       {
-         uint8_t *src = _atlas->buffer + row * _atlas->width + glyph->atlas_offset_x;
-         uint8_t *dst = (uint8_t *)_buffer.contents + row * _stride + glyph->atlas_offset_x;
-         memcpy(dst, src, glyph->width);
+         uint8_t *src = _atlas->buffer
+               + ((size_t)row * _atlas->width + glyph->atlas_offset_x) * _esz;
+         uint8_t *dst = (uint8_t *)_buffer.contents
+               + (size_t)row * _stride
+               + (size_t)glyph->atlas_offset_x * _esz;
+         memcpy(dst, src, (size_t)glyph->width * _esz);
       }
 
 #if !defined(HAVE_COCOATOUCH)
