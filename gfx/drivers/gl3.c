@@ -933,6 +933,29 @@ static void gl3_raster_font_upload_atlas(gl3_raster_t *font)
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+/* Update only the atlas dirty rectangle in place. glcore/GLES3 both
+ * guarantee GL_UNPACK_ROW_LENGTH, so the exact sub-rectangle can be
+ * uploaded without staging or respecifying the (immutable) storage. */
+static void gl3_raster_font_update_atlas_region(gl3_raster_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   if (     x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+      return;
+
+   glBindTexture(GL_TEXTURE_2D, font->tex);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, (GLint)font->atlas->width);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, (GLint)x0, (GLint)y0,
+         (GLsizei)(x1 - x0), (GLsizei)(y1 - y0),
+         GL_RED, GL_UNSIGNED_BYTE,
+         font->atlas->buffer + (size_t)y0 * font->atlas->width + x0);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 static void *gl3_raster_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
@@ -1008,7 +1031,12 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
 {
    if (font->atlas->dirty)
    {
-      gl3_raster_font_upload_atlas(font);
+      if (font->tex)
+         gl3_raster_font_update_atlas_region(font,
+               font->atlas->dirty_x0, font->atlas->dirty_y0,
+               font->atlas->dirty_x1, font->atlas->dirty_y1);
+      else
+         gl3_raster_font_upload_atlas(font);
       font->atlas->dirty   = false;
    }
 
