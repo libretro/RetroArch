@@ -4126,6 +4126,29 @@ static void metal_pull_cached_frame_cb(void *userdata,
          unsigned    initial_hdr_mode = settings
             ? settings->uints.video_hdr_mode
             : METAL_HDR_MODE_OFF;
+         /* Clamp the request to the display before it configures the
+          * layer.  The capability announce further down correctly
+          * advertises no HDR on SDR displays, but two things trust the
+          * *setting* rather than the flags: SET_PIXEL_FORMAT's
+          * HDR10_2101010 gate (documented there: it runs too early in
+          * core init to test the flags, so "non-zero means requested
+          * and possible") and this very block, which would otherwise
+          * configure an EDR layer the display clamps.  The D3D and
+          * Vulkan paths already force the setting to 0 on unsupported
+          * displays; Metal was the one HDR driver that did not, so a
+          * stale mode on an SDR Mac accepted PQ frames from a core.
+          * Mirrors dxgi_check_display_hdr_support. */
+         if (     initial_hdr_mode != METAL_HDR_MODE_OFF
+               && !metal_display_supports_edr())
+         {
+            RARCH_WARN("[Metal] HDR requested but the display reports no EDR headroom; forcing HDR off.\n");
+            initial_hdr_mode = METAL_HDR_MODE_OFF;
+            if (settings)
+            {
+               settings->flags               |= SETTINGS_FLG_MODIFIED;
+               settings->uints.video_hdr_mode = METAL_HDR_MODE_OFF;
+            }
+         }
          metal_apply_hdr_layer_config(_layer, initial_hdr_mode);
          _initial_hdr_mode           = initial_hdr_mode;
       }
