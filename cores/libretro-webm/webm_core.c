@@ -152,6 +152,10 @@ typedef struct
                                         reached                         */
    int          nvts_cap;
    int          vts_unsorted;        /* out-of-order arrival this pump  */
+   int64_t      pending_seek_ns;     /* a seek whose target lay beyond
+                                        the fill's wall: retried as the
+                                        file arrives until reachable
+                                        (<0 = none)                     */
    int64_t      vpts_ns;             /* pts of the last presented frame */
    int64_t      play_ns;             /* wall clock: one frame interval
                                         per retro_run.  Presentation is
@@ -575,6 +579,7 @@ static void webm_free_player(webm_player_t *p)
    else
       free(p->file_buf);
    memset(p, 0, sizeof(*p));
+   p->pending_seek_ns = -1;
 }
 
 /* -------------------------------------------------------------------- */
@@ -918,7 +923,19 @@ static void webm_check_input(webm_player_t *p)
    p->last_input = cur;
    if (delta)
    {
-      int64_t pos = webm_seek(p, p->vpts_ns + delta);
+      int64_t target = p->vpts_ns + delta;
+      int64_t pos    = webm_seek(p, target);
+      /* The walk stops at the partial-read wall, landing as far as
+       * the file has arrived; remember the real target and keep
+       * retrying from the fill pump until it is reachable, so a seek
+       * ahead of the fill converges on exactly the position a
+       * fully-read file would give. */
+      if (p->dt && !data_transfer_complete(p->dt)
+            && !data_transfer_failed(p->dt)
+            && target > 0 && pos + 500000000 < target)
+         p->pending_seek_ns = target;
+      else
+         p->pending_seek_ns = -1;
       struct retro_message_ext msg;
       char text[64];
       unsigned ps = (unsigned)(pos / 1000000000);
@@ -961,6 +978,13 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       {
          size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
          rmp4_video_stream_set_avail(p->mp4vs, avail);
+         if (p->pending_seek_ns >= 0)
+         {
+            int64_t pos = webm_seek(p, p->pending_seek_ns);
+            if (data_transfer_complete(p->dt)
+                  || pos + 500000000 >= p->pending_seek_ns)
+               p->pending_seek_ns = -1;
+         }
 #ifdef WEBM_HAVE_AUDIO
          if (p->agather)
          {
@@ -1050,6 +1074,13 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       {
          rwebm_set_avail(p->wgather, avail);
          webm_native_pump(p);
+      }
+      if (p->pending_seek_ns >= 0)
+      {
+         int64_t pos = webm_seek(p, p->pending_seek_ns);
+         if (data_transfer_complete(p->dt)
+               || pos + 500000000 >= p->pending_seek_ns)
+            p->pending_seek_ns = -1;
       }
       if (data_transfer_failed(p->dt) && !p->fill_warned)
       {
@@ -1601,6 +1632,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       return false;
 
    memset(p, 0, sizeof(*p));
+   p->pending_seek_ns = -1;
 
    /* The file arrives through a data_transfer: a stable full-size
     * buffer filled incrementally.  MP4 plays progressively (the fill
