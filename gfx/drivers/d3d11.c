@@ -377,6 +377,9 @@ typedef struct
        * while the back-buffer composite will encode later. */
       d3d11_shader_t shader_hdr;
       d3d11_shader_t shader_font_hdr;
+      /* 16-bit (R16_UNORM) coverage atlas variant: no SRV component
+       * swizzle exists on d3d11, so a .r-sampling entry is needed */
+      d3d11_shader_t shader_font_a16_hdr;
       D3D11Buffer    hdr_cb;
 #endif
       D3D11Buffer    vbo;
@@ -1039,33 +1042,61 @@ typedef struct
    struct font_atlas*            atlas;
 } d3d11_font_t;
 
+static void d3d11_font_update_atlas_region(
+      D3D11DeviceContext ctx, d3d11_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1);
+
 static void * d3d11_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
    d3d11_font_t*  font  = (d3d11_font_t*)calloc(1, sizeof(*font));
+   bool           want_a16 = false;
+   enum font_atlas_format prev_fmt;
 
    if (!font)
       return NULL;
 
+#ifdef HAVE_DXGI_HDR
+   /* When outputting HDR, ask the font renderer for a
+    * higher-precision coverage atlas (same policy as d3d12) */
+   want_a16 = (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) ? true : false;
+#endif
+
+   prev_fmt = font_renderer_get_preferred_atlas_format();
+   if (want_a16)
+      font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
+
    if (!font_renderer_create_default(
              &font->font_driver, &font->font_data, font_path, font_size))
    {
+      font_renderer_set_preferred_atlas_format(prev_fmt);
       free(font);
       return NULL;
    }
+   font_renderer_set_preferred_atlas_format(prev_fmt);
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d11->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
    font->texture.desc.Width  = font->atlas->width;
    font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   font->texture.desc.Format = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         ? DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_A8_UNORM;
    d3d11_release_texture(&font->texture);
    d3d11_init_texture(d3d11->device, &font->texture);
    if (font->texture.staging)
-      d3d11_update_texture(
-            d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
-            DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   {
+      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         /* the generic path's conversion table does not cover R16;
+          * stage the whole atlas through the element-size-aware
+          * region helper instead */
+         d3d11_font_update_atlas_region(d3d11->context, font,
+               0, 0, font->atlas->width, font->atlas->height);
+      else
+         d3d11_update_texture(
+               d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
+               DXGI_FORMAT_A8_UNORM, font->atlas->buffer, &font->texture);
+   }
    font->atlas->dirty = false;
 
    return font;
@@ -1145,10 +1176,16 @@ static void d3d11_font_update_atlas_region(
          D3D11_MAP_WRITE, 0, &mapped)))
       return;
 
-   for (y = y0; y < y1; y++)
-      memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch + x0,
-             font->atlas->buffer + (size_t)y * font->atlas->width + x0,
-             x1 - x0);
+   {
+      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      for (y = y0; y < y1; y++)
+         memcpy((uint8_t*)mapped.pData + y * mapped.RowPitch
+                     + (size_t)x0 * esz,
+                font->atlas->buffer
+                     + ((size_t)y * font->atlas->width + x0) * esz,
+                (size_t)(x1 - x0) * esz);
+   }
 
    ctx->lpVtbl->Unmap(ctx, (D3D11Resource)font->texture.staging, 0);
 
@@ -1522,6 +1559,13 @@ static void d3d11_font_render_msg(
          NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
    /* Single draw call + single shader swap for all lines combined. */
+#ifdef HAVE_DXGI_HDR
+   if (     (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+         && (font->atlas->format == FONT_ATLAS_FORMAT_A16))
+      d3d11->context->lpVtbl->PSSetShader(
+            d3d11->context, d3d11->sprites.shader_font_a16_hdr.ps, NULL, 0);
+   else
+#endif
    d3d11->context->lpVtbl->PSSetShader(
          d3d11->context, d3d11_sprite_font_shader(d3d11)->ps, NULL, 0);
    d3d11->context->lpVtbl->Draw(
@@ -2901,6 +2945,7 @@ static void d3d11_gfx_free(void* data)
 #ifdef HAVE_DXGI_HDR
    d3d11_release_shader(&d3d11->sprites.shader_hdr);
    d3d11_release_shader(&d3d11->sprites.shader_font_hdr);
+   d3d11_release_shader(&d3d11->sprites.shader_font_a16_hdr);
    Release(d3d11->sprites.hdr_cb);
 #endif
    Release(d3d11->sprites.vbo);
@@ -3702,6 +3747,12 @@ static void *d3d11_gfx_init(const video_info_t* video,
                d3d11->device, shader,
                sizeof(shader), NULL, "VSMain", "PSMainA8HDR", "GSMain", desc,
                countof(desc), &d3d11->sprites.shader_font_hdr,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
+         goto error;
+      if (!d3d11_init_shader(
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMainA16HDR", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_font_a16_hdr,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
 

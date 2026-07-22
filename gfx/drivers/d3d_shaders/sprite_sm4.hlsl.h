@@ -222,5 +222,14 @@ SRC(
          return SpriteEncodeHDR(float4(input.color.rgb,
                input.color.a * t0.Sample(s0, input.texcoord).a));
       };
+      /* 16-bit coverage font atlas (R16_UNORM): D3D11 SRVs have no
+       * component swizzle, so the wider atlas is sampled from .r
+       * explicitly. Same encode / mode-0 passthrough behavior as
+       * PSMainA8HDR. */
+      float4 PSMainA16HDR(PSInput input) : SV_TARGET
+      {
+         return SpriteEncodeHDR(float4(input.color.rgb,
+               input.color.a * t0.Sample(s0, input.texcoord).r));
+      };
 
 )
