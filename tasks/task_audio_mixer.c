@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <formats/data_transfer.h>
+#include <formats/audio.h>
 #include <file/file_path.h>
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
@@ -143,6 +144,7 @@ static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -186,6 +188,7 @@ static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -229,6 +232,7 @@ static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -272,6 +276,7 @@ static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -315,6 +320,7 @@ static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -358,6 +364,7 @@ static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -401,6 +408,7 @@ static void task_audio_mixer_handle_upload_m4a(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -444,6 +452,7 @@ static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -487,6 +496,7 @@ static void task_audio_mixer_handle_upload_opus(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -530,6 +540,7 @@ static void task_audio_mixer_handle_upload_opus_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -573,6 +584,7 @@ static void task_audio_mixer_handle_upload_weba(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -616,6 +628,7 @@ static void task_audio_mixer_handle_upload_weba_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -659,6 +672,7 @@ static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -702,6 +716,7 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -746,6 +761,7 @@ static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -789,6 +805,7 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
    params.cb                   = NULL;
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
+   params.out_slot             = NULL;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -837,12 +854,234 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    return true;
 }
 
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+/* ---- windowed streaming for large background music ----
+ * Files past the threshold, in codecs whose buffer-mode access
+ * pattern is head-bounded-open + monotonic reads + loop-to-head
+ * (Vorbis and MP3, verified against the decoders), do not get read
+ * into memory at all: the sound borrows a data_transfer window - the
+ * head resident forever, a window sliding with the decoder - and
+ * this task, after opening the window and adding the stream, becomes
+ * its feeder for the stream's lifetime.  Residency is head plus
+ * window instead of the file. */
+
+/* the fallback path below re-enters the public push functions */
+bool task_push_audio_mixer_load(const char *fullpath,
+      retro_task_callback_t cb, void *user_data, bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
+bool task_push_audio_mixer_load_and_play(const char *fullpath,
+      retro_task_callback_t cb, void *user_data, bool system,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx);
+
+#define AMIX_WINDOW_THRESHOLD (8 * 1024 * 1024)
+#define AMIX_WINDOW_KEEP      (2 * 1024 * 1024)
+#define AMIX_WINDOW_LOOKAHEAD (2 * 1024 * 1024)
+#define AMIX_WINDOW_MARGIN    (1 * 1024 * 1024)
+
+struct audio_mixer_wfeed
+{
+   char *path;
+   struct data_transfer *dt;
+   struct audio_mixer_userdata *user;
+   int   slot;
+   enum audio_mixer_type mtype;
+   bool  play;
+   bool  added;          /* the sound borrows dt once this is set */
+   volatile bool dead;   /* set by the sound's release: wrap up    */
+};
+
+static void task_audio_mixer_wfeed_release(void *owner)
+{
+   /* runs when the sound is destroyed; the feeder task frees */
+   ((struct audio_mixer_wfeed*)owner)->dead = true;
+}
+
+static void task_audio_mixer_wfeed_free(retro_task_t *task)
+{
+   struct audio_mixer_wfeed *w =
+         (struct audio_mixer_wfeed*)task->state;
+   if (!w)
+      return;
+   if (!w->added && w->dt)
+      data_transfer_free(w->dt);   /* never handed over */
+   if (w->path)
+      free(w->path);
+   if (w->user)
+      free(w->user);
+   free(w);
+}
+
+static void task_audio_mixer_handle_wfeed(retro_task_t *task)
+{
+   struct audio_mixer_wfeed *w =
+         (struct audio_mixer_wfeed*)task->state;
+   int64_t tell;
+
+   if (w->dead)
+   {
+      /* the borrowing sound is gone: the window with it */
+      data_transfer_free(w->dt);
+      w->dt    = NULL;
+      w->added = false;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
+   if (!w->added)
+   {
+      /* first tick: open the window, identify the codec, hand the
+       * stream over, then settle into feeding */
+      audio_mixer_stream_params_t params;
+      size_t flen           = 0;
+      const uint8_t *base   = NULL;
+
+      if (!(w->dt = data_transfer_open_window(w->path,
+            AMIX_WINDOW_KEEP)))
+         goto bail;
+      base = data_transfer_window_base(w->dt, &flen);
+
+      if (w->mtype == AUDIO_MIXER_TYPE_OGG)
+      {
+         /* an .ogg can wrap Opus, whose seek pattern is not
+          * window-verified: only Vorbis streams windowed */
+         if (audio_transfer_ogg_audio_type(base,
+               flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP)
+               != AUDIO_TYPE_VORBIS)
+            goto bail;
+      }
+
+      params.volume               = 1.0f;
+      params.slot_selection_type  = w->user->slot_selection_type;
+      params.slot_selection_idx   = w->user->slot_selection_idx;
+      params.stream_type          = w->user->stream_type;
+      params.type                 = w->mtype;
+      params.state                = w->play
+            ? AUDIO_STREAM_STATE_PLAYING : AUDIO_STREAM_STATE_STOPPED;
+      params.buf                  = (void*)base;
+      params.bufsize              = flen;
+      params.cb                   = NULL;
+      params.basename             = (char*)path_basename_nocompression(
+            w->path);
+      params.buf_owner            = w;
+      params.buf_owner_free       = task_audio_mixer_wfeed_release;
+      params.out_slot             = &w->slot;
+
+      w->added = true;   /* ownership transfers on the call in every
+                          * outcome: from here the release runs */
+      if (!audio_driver_mixer_add_stream(&params))
+      {
+         /* release already ran synchronously: dead is set and the
+          * next tick frees the window */
+         return;
+      }
+      return;
+   }
+
+   tell = audio_driver_mixer_stream_byte_tell((unsigned)w->slot);
+   if (tell >= 0)
+      data_transfer_window_feed(w->dt, (size_t)tell,
+            AMIX_WINDOW_LOOKAHEAD, AMIX_WINDOW_MARGIN);
+   /* a stopped stream (tell < 0 while not dead) just idles */
+   return;
+
+bail:
+   if (w->dt)
+   {
+      data_transfer_free(w->dt);
+      w->dt = NULL;
+   }
+   /* fall back to the classic full-load path */
+   if (w->play)
+      task_push_audio_mixer_load_and_play(w->path, NULL, NULL,
+            w->user->stream_type == AUDIO_STREAM_TYPE_SYSTEM,
+            w->user->slot_selection_type, w->user->slot_selection_idx);
+   else
+      task_push_audio_mixer_load(w->path, NULL, NULL,
+            w->user->stream_type == AUDIO_STREAM_TYPE_SYSTEM,
+            w->user->slot_selection_type, w->user->slot_selection_idx);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Returns true when the load was taken over by the windowed path. */
+static bool task_audio_mixer_try_windowed(const char *fullpath,
+      bool system, bool play,
+      enum audio_mixer_slot_selection_type slot_selection_type,
+      int slot_selection_idx)
+{
+   enum audio_mixer_type mtype = AUDIO_MIXER_TYPE_NONE;
+   struct audio_mixer_wfeed *w = NULL;
+   retro_task_t *t             = NULL;
+   const char *ext             = path_get_extension(fullpath);
+   int64_t sz;
+
+   if (!ext)
+      return false;
+#ifdef HAVE_RVORBIS
+   if (string_is_equal_noncase(ext, "ogg"))
+      mtype = AUDIO_MIXER_TYPE_OGG;
+#endif
+#ifdef HAVE_RMP3
+   if (string_is_equal_noncase(ext, "mp3"))
+      mtype = AUDIO_MIXER_TYPE_MP3;
+#endif
+   if (mtype == AUDIO_MIXER_TYPE_NONE)
+      return false;
+   sz = path_get_size(fullpath);
+   if (sz < (int64_t)AMIX_WINDOW_THRESHOLD)
+      return false;
+
+   if (!(t = task_init()))
+      return false;
+   if (!(w = (struct audio_mixer_wfeed*)calloc(1, sizeof(*w))))
+      goto error;
+   if (!(w->user = (struct audio_mixer_userdata*)
+         calloc(1, sizeof(*w->user))))
+      goto error;
+   if (!(w->path = strdup(fullpath)))
+      goto error;
+   w->mtype                     = mtype;
+   w->play                      = play;
+   w->slot                      = -1;
+   w->user->stream_type         = system
+         ? AUDIO_STREAM_TYPE_SYSTEM : AUDIO_STREAM_TYPE_USER;
+   w->user->slot_selection_type = slot_selection_type;
+   w->user->slot_selection_idx  = slot_selection_idx;
+
+   t->state   = w;
+   t->handler = task_audio_mixer_handle_wfeed;
+   t->cleanup = task_audio_mixer_wfeed_free;
+   t->flags  |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(t);
+   return true;
+
+error:
+   if (w)
+   {
+      if (w->user)
+         free(w->user);
+      if (w->path)
+         free(w->path);
+      free(w);
+   }
+   free(t);
+   return false;
+}
+#endif /* windowed streaming */
+
 bool task_push_audio_mixer_load_and_play(
       const char *fullpath, retro_task_callback_t cb, void *user_data,
       bool system,
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx)
 {
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+   if (task_audio_mixer_try_windowed(fullpath, system, true,
+         slot_selection_type, slot_selection_idx))
+      return true;
+#endif
+   {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = task_init();
@@ -986,6 +1225,7 @@ error:
          fullpath);
 
    return false;
+   }
 }
 
 bool task_push_audio_mixer_load(
@@ -994,6 +1234,12 @@ bool task_push_audio_mixer_load(
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx)
 {
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+   if (task_audio_mixer_try_windowed(fullpath, system, false,
+         slot_selection_type, slot_selection_idx))
+      return true;
+#endif
+   {
    nbio_handle_t             *nbio    = NULL;
    struct audio_mixer_handle   *mixer = NULL;
    retro_task_t                   *t  = task_init();
@@ -1137,4 +1383,5 @@ error:
          fullpath);
 
    return false;
+   }
 }

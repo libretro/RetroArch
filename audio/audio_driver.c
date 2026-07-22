@@ -2216,6 +2216,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    /* Ownership of params->buf_owner transfers on this call in every
     * outcome: each failure return releases it. */
+   if (params->out_slot)
+      *params->out_slot = -1;
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
    {
       if (params->buf_owner)
@@ -2373,7 +2375,22 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
        || params->state == AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL)
       audio_driver_st.mixer_streams_playing++;
 
+   if (params->out_slot)
+      *params->out_slot = (int)free_slot;
+
    return true;
+}
+
+int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
+{
+   audio_mixer_voice_t *voice;
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return -1;
+   if (audio_driver_st.mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
+      return -1;
+   if (!(voice = audio_driver_st.mixer_streams[i].voice))
+      return -1;
+   return (int64_t)audio_mixer_voice_buffer_tell(voice);
 }
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)

@@ -84,6 +84,9 @@ typedef struct audio_mixer_stream_params
     * copy semantics. */
    void *buf_owner;
    void (*buf_owner_free)(void *owner);
+   /* Optional: receives the slot index the stream landed in (or -1 on
+    * failure).  NULL when the caller does not need it. */
+   int *out_slot;
 } audio_mixer_stream_params_t;
 #endif
 
@@ -376,6 +379,12 @@ bool *audio_get_bool_ptr(enum audio_action action);
 audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
+
+/* Compressed-byte read position of the stream in 'slot' (its
+ * decoder's offset within the source buffer), or -1 when the slot
+ * holds no live stream.  The windowed-source feeder's polling
+ * input. */
+int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
 
 void audio_driver_mixer_play_stream(unsigned i);
 

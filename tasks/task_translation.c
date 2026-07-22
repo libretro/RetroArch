@@ -576,6 +576,7 @@ static void handle_translation_response(
       params.cb                   = NULL;
       params.buf_owner            = NULL;
       params.buf_owner_free       = NULL;
+      params.out_slot             = NULL;
       params.basename             = NULL;
 
       audio_driver_mixer_add_stream(&params);
