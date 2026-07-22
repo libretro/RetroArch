@@ -863,9 +863,38 @@ void *image_transfer_anim_stream_new(void *buf, size_t len,
    return NULL;
 }
 
-void image_transfer_anim_stream_free(void *stream,
-      enum image_type_enum type)
+void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more)
 {
+   if (need_more)
+      *need_more = 0;
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_open_avail((const uint8_t*)buf, len,
+               avail, need_more);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_open_avail((const uint8_t*)buf, len,
+               avail, need_more);
+#else
+         break;
+#endif
+      /* Animated WEBP has no partial-buffer open (and is small enough
+       * that windowing it buys nothing); callers fall back to the
+       * whole-buffer path for it. */
+      default:
+         break;
+   }
+   return NULL;
+}
+
+void image_transfer_anim_stream_free(void *stream,
+      enum image_type_enum type){
    switch (type)
    {
       case IMAGE_TYPE_WEBP:

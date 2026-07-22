@@ -692,6 +692,7 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->anim_loops_left = 0;
    thumbnail->anim_type       = 0;
    thumbnail->anim_read_pending = 0;
+   thumbnail->anim_windowed   = 0;
    thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
 }
 

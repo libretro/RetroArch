@@ -250,6 +250,13 @@ typedef struct
    uint8_t anim_read_pending; /* adopted nbio read still in flight;
                                  animation/audio held at the static
                                  frame until it completes */
+   uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
+                              decoder frontier during playback, not a
+                              buffer pumped to completion: residency is
+                              the window, not the whole file (large
+                              video previews).  0 = classic whole-file
+                              buffer (audio preview, non-reserve
+                              platforms, adopted stills). */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -289,6 +296,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_type       = 0;
    t->anim_job_upload = 0;
    t->anim_read_pending = 0;
+   t->anim_windowed   = 0;
 }
 
 /* Holds all configuration parameters associated

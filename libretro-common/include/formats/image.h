@@ -246,6 +246,17 @@ const uint32_t *image_transfer_anim_get_frame(void *anim,
 void *image_transfer_anim_stream_new(void *buf, size_t len,
       enum image_type_enum type);
 
+/* Progressive open over a partially-resident buffer: only the first
+ * 'avail' bytes are guaranteed present.  On success the stream decodes
+ * forward as far as 'avail' allows; raise it with
+ * image_transfer_anim_stream_set_avail as more arrives.  need_more (may
+ * be NULL) is set when the header/index needed to open is not yet
+ * resident and a larger prefix should be retried.  Returns NULL for
+ * types without a partial open (animated WEBP), so the caller keeps
+ * the whole-buffer path for those. */
+void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
+      size_t avail, enum image_type_enum type, int *need_more);
+
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type);
 
