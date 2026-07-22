@@ -5552,6 +5552,113 @@ cleanup:
 }
 #endif /* HAVE_DXGI_HDR */
 
+#ifdef HAVE_DXGI_HDR
+/* Native HDR screenshot read-back: copies the presented HDR backbuffer
+ * raw (no tone-map) and converts to 48-bit RGB via the shared
+ * dxgi_hdr_readback_to_rgb16 decoder, mirroring the vulkan and d3d12
+ * implementations. The staging mechanics intentionally mirror
+ * d3d11_gfx_read_viewport below. */
+static bool d3d11_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   d3d11_video_t* d3d11 = (d3d11_video_t*)data;
+   ID3D11Texture2D* BackBuffer;
+   DXGISwapChain m_SwapChain;
+   ID3D11Texture2D* BackBufferStagingTexture = NULL;
+   ID3D11Resource* BackBufferStaging = NULL;
+   ID3D11Resource* BackBufferResource = NULL;
+   D3D11_TEXTURE2D_DESC StagingDesc;
+   D3D11_MAPPED_SUBRESOURCE Map;
+   bool is_scrgb;
+   bool ret = false;
+   float max_cll  = 0.0f;
+   float max_fall = 0.0f;
+
+   if (!d3d11)
+      return false;
+
+   /* Need an active HDR swapchain; SDR falls back to read_viewport. */
+   if (!(d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE))
+      return false;
+
+   m_SwapChain = d3d11->swapChain;
+#ifdef __cplusplus
+   m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, IID_ID3D11Texture2D, (void**)(&BackBuffer));
+#else
+   m_SwapChain->lpVtbl->GetBuffer(m_SwapChain, 0, &IID_ID3D11Texture2D, (void*)(&BackBuffer));
+#endif
+
+   if (!BackBuffer)
+      return false;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   BackBuffer->lpVtbl->GetDesc(BackBuffer, &StagingDesc);
+
+   is_scrgb = (StagingDesc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT);
+   if (!is_scrgb && (StagingDesc.Format != DXGI_FORMAT_R10G10B10A2_UNORM))
+   {
+      BackBuffer->lpVtbl->Release(BackBuffer);
+      return false;
+   }
+
+   StagingDesc.Usage          = D3D11_USAGE_STAGING;
+   StagingDesc.BindFlags      = 0;
+   StagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+   d3d11->device->lpVtbl->CreateTexture2D(d3d11->device, &StagingDesc, NULL, &BackBufferStagingTexture);
+   if (!BackBufferStagingTexture)
+   {
+      BackBuffer->lpVtbl->Release(BackBuffer);
+      return false;
+   }
+
+#ifdef __cplusplus
+   BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, IID_ID3D11Resource, (void**)&BackBufferStaging);
+   BackBuffer->lpVtbl->QueryInterface(BackBuffer, IID_ID3D11Resource, (void**)&BackBufferResource);
+#else
+   BackBufferStagingTexture->lpVtbl->QueryInterface(BackBufferStagingTexture, &IID_ID3D11Resource, (void**)&BackBufferStaging);
+   BackBuffer->lpVtbl->QueryInterface(BackBuffer, &IID_ID3D11Resource, (void**)&BackBufferResource);
+#endif
+
+   d3d11->context->lpVtbl->CopyResource(d3d11->context, BackBufferStaging, BackBufferResource);
+
+   if (SUCCEEDED(d3d11->context->lpVtbl->Map(d3d11->context,
+               BackBufferStaging, 0, D3D11_MAP_READ, 0, &Map)))
+   {
+      unsigned vp_x      = (d3d11->vp.x > 0) ? d3d11->vp.x : 0;
+      unsigned vp_y      = (d3d11->vp.y > 0) ? d3d11->vp.y : 0;
+      unsigned vp_width  = (d3d11->vp.width  > d3d11->vp.full_width)  ? d3d11->vp.full_width  : d3d11->vp.width;
+      unsigned vp_height = (d3d11->vp.height > d3d11->vp.full_height) ? d3d11->vp.full_height : d3d11->vp.height;
+
+      ret = dxgi_hdr_readback_to_rgb16(StagingDesc.Format,
+            Map.pData, Map.RowPitch, vp_x, vp_y, vp_width, vp_height,
+            buffer, &max_cll, &max_fall);
+
+      d3d11->context->lpVtbl->Unmap(d3d11->context, BackBufferStaging, 0);
+   }
+
+   BackBufferStaging->lpVtbl->Release(BackBufferStaging);
+   BackBufferResource->lpVtbl->Release(BackBufferResource);
+   BackBufferStagingTexture->lpVtbl->Release(BackBufferStagingTexture);
+   BackBuffer->lpVtbl->Release(BackBuffer);
+
+   if (!ret)
+      return false;
+
+   d3d11->hdr.max_cll  = max_cll;
+   d3d11->hdr.max_fall = max_fall;
+
+   if (out_meta)
+      dxgi_hdr_meta_fill(out_meta, is_scrgb,
+            d3d11->hdr.max_cll, d3d11->hdr.max_fall,
+            d3d11->hdr.max_output_nits, d3d11->hdr.min_output_nits);
+
+   return true;
+}
+#endif /* HAVE_DXGI_HDR */
+
 static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
 {
    d3d11_video_t* d3d11 = (d3d11_video_t*)data;
@@ -6120,6 +6227,12 @@ video_driver_t video_d3d11 = {
    d3d11_shader_load_begin,
    d3d11_shader_load_step,
 #if defined(HAVE_GFX_WIDGETS)
-   d3d11_gfx_widgets_enabled
+   d3d11_gfx_widgets_enabled,
+#endif
+   NULL, /* invalidate_hw_render_cache */
+#ifdef HAVE_DXGI_HDR
+   d3d11_gfx_read_viewport_hdr
+#else
+   NULL /* read_viewport_hdr */
 #endif
 };
