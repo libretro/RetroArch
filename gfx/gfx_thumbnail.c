@@ -383,6 +383,12 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    enum image_type_enum type = (enum image_type_enum)job->type;
    int duration_ms           = 0;
    size_t i, n;
+   /* Ask the stream to emit the upload order directly: the video
+    * streams bake it in their blit, which removes the per-pixel R/B
+    * swizzle pass below; WEBP always emits R,G,B,A and keeps the
+    * fallback conversion. */
+   bool native_order         = image_transfer_anim_stream_set_argb(
+         job->stream, type, job->use_rgba ? 0 : 1);
 
    if (!(frame = image_transfer_anim_stream_next(job->stream, type,
          &duration_ms)))
@@ -399,7 +405,10 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    }
 
    n = (size_t)job->width * job->height;
-   if (job->use_rgba)
+   if (job->use_rgba || native_order)
+      /* Frame is already in the upload order (RGBA requested, or the
+       * stream honoured the ARGB request); the copy just decouples the
+       * upload buffer from the decoder's canvas. */
       memcpy(job->frame, frame, n * sizeof(uint32_t));
    else
    {
@@ -875,6 +884,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
    int64_t now;
    int64_t decode_start;
    int duration_ms                    = 0;
+   bool sync_use_rgba                 = false;
+   bool sync_native_order             = false;
    enum image_type_enum type;
 
    if (   !thumbnail
@@ -1004,6 +1015,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    decode_start = now;
 
+   /* Sample the upload format once and ask the stream to emit it
+    * directly (video streams bake the order in their blit); WEBP is
+    * not honoured and takes the swizzle fallback below. */
+   sync_use_rgba     = (video_driver_get_disp_flags()
+         & VIDEO_FLAG_USE_RGBA) ? true : false;
+   sync_native_order = image_transfer_anim_stream_set_argb(
+         thumbnail->anim, type, sync_use_rgba ? 0 : 1);
+
    if (!(frame = image_transfer_anim_stream_next(thumbnail->anim, type,
          &duration_ms)))
    {
@@ -1027,9 +1046,10 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       }
    }
 
-   /* Upload the frame; the stream emits memory-order R,G,B,A, which
-    * matches the RGBA texture path. If the display pipeline expects
-    * ARGB words instead, swap into a shared scratch buffer first. */
+   /* Upload the frame.  The stream already emitted the upload order
+    * when the request above was honoured; otherwise (WEBP) it emits
+    * memory-order R,G,B,A and an ARGB pipeline needs the swap into
+    * the shared scratch buffer. */
    {
       static uint32_t *swap_scratch = NULL;
       static size_t swap_scratch_px = 0;
@@ -1038,13 +1058,12 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       int num_frames                = 0;
       int loop_count                = 0;
       const uint32_t *pixels        = frame;
-      bool use_rgba                 =
-            (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) ? true : false;
+      bool use_rgba                 = sync_use_rgba;
 
       image_transfer_anim_stream_get_info(thumbnail->anim, type,
             &anim_w, &anim_h, &num_frames, &loop_count);
 
-      if (!use_rgba)
+      if (!use_rgba && !sync_native_order)
       {
          size_t i, n = (size_t)anim_w * anim_h;
          if (swap_scratch_px < n)
