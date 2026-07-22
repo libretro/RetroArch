@@ -69,6 +69,16 @@ struct data_transfer
    uint8_t done;     /* the operation is over                        */
    uint8_t failed;   /* ...but delivered less than the file          */
    uint8_t capped;   /* stopped at the commit ceiling                */
+   /* window mode (open_window): cyclic streaming state */
+   uint8_t window;   /* this dt is a cyclic window                   */
+   size_t  keep;     /* head bytes always resident                   */
+   size_t  wlo, whi; /* the moving window [wlo, whi)                 */
+   size_t  wtell;    /* last consumer position seen by feed()        */
+   size_t  wfreed;   /* page-aligned decommit frontier: everything in
+                        [keep-page-ceil, wfreed) is released.  Kept
+                        across calls because the feeder advances in
+                        sub-page steps - per-call rounding of a tiny
+                        interval decommits nothing, ever.            */
 };
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling)
@@ -163,6 +173,157 @@ void data_transfer_arena_release(data_transfer_arena_t *a)
    a->committed = 0;
    a->cap       = 0;
    a->reserved  = 0;
+}
+
+
+/* ---- cyclic streaming window ---- */
+
+static int data_transfer_read_at(data_transfer_t *dt, size_t off,
+      uint8_t *dst, size_t n);
+
+/* Release whole pages from the decommit frontier up to (not
+ * including) the page containing 'to'.  The frontier survives calls,
+ * so sub-page feeder steps accumulate into page releases. */
+static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
+{
+   size_t from = dt->wfreed;
+   to   = (to / dt->page) * dt->page;
+   if (to <= from || !dt->map_len)
+      return;
+   dt->wfreed = to;
+#if defined(_WIN32)
+   VirtualFree(dt->map + from, to - from, MEM_DECOMMIT);
+#elif defined(DT_HAVE_RESERVE)
+#ifdef DT_WINDOW_STRICT
+   /* oracle mode: touching an advanced-past page faults loudly */
+   mprotect(dt->map + from, to - from, PROT_NONE);
+   madvise(dt->map + from, to - from, MADV_DONTNEED);
+#else
+   madvise(dt->map + from, to - from, MADV_DONTNEED);
+#endif
+#endif
+}
+
+static int data_transfer_wcommit(data_transfer_t *dt,
+      size_t from, size_t to)
+{
+   size_t f = (from / dt->page) * dt->page;
+   size_t t = (to + dt->page - 1) & ~(dt->page - 1);
+   if (t > dt->map_len)
+      t = dt->map_len;
+   if (t <= f)
+      return 1;
+   if (!dt->map_len)
+      return 1;                  /* fallback: whole file resident */
+#if defined(_WIN32)
+   if (!VirtualAlloc(dt->map + f, t - f, MEM_COMMIT, PAGE_READWRITE))
+      return 0;
+#elif defined(DT_HAVE_RESERVE)
+   if (mprotect(dt->map + f, t - f, PROT_READ | PROT_WRITE) != 0)
+      return 0;
+#endif
+   return 1;
+}
+
+data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
+{
+   data_transfer_t *dt = data_transfer_open_prefix(path, 0);
+   if (!dt)
+      return NULL;
+   dt->window = 1;
+   if (keep > dt->len)
+      keep = dt->len;
+   dt->keep   = keep;
+   dt->wlo    = keep;
+   dt->whi    = keep;
+   dt->wfreed = dt->page
+         ? ((keep + dt->page - 1) & ~(dt->page - 1)) : keep;
+   /* the head is resident from the start */
+   if (!data_transfer_wcommit(dt, 0, keep)
+         || !data_transfer_read_at(dt, 0, dt->map, keep))
+   {
+      data_transfer_free(dt);
+      return NULL;
+   }
+   if (!dt->map_len)
+   {
+      /* no reservation on this platform: the fallback path of
+       * open_prefix holds a plain buffer - fill it all; the window
+       * calls become no-ops and the file is simply resident */
+      data_transfer_iterate(dt, 0);
+      if (!data_transfer_complete(dt))
+      {
+         data_transfer_free(dt);
+         return NULL;
+      }
+   }
+   dt->avail = dt->len;          /* the consumer sees the full length */
+   return dt;
+}
+
+const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len)
+{
+   if (len)
+      *len = dt->len;
+   return dt->map;
+}
+
+bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
+{
+   if (!dt->window)
+      return false;
+   if (hi > dt->len)
+      hi = dt->len;
+   if (hi <= dt->whi)
+      return true;
+   if (!dt->map_len)
+      return true;               /* fallback: already whole */
+   if (!data_transfer_wcommit(dt, dt->whi, hi))
+      return false;
+   if (!data_transfer_read_at(dt, dt->whi, dt->map + dt->whi,
+         hi - dt->whi))
+      return false;
+   dt->whi = hi;
+   return true;
+}
+
+void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
+{
+   if (!dt->window || !dt->map_len)
+      return;
+   if (lo > dt->whi)
+      lo = dt->whi;
+   if (lo <= dt->wlo)
+      return;
+   data_transfer_wdecommit_to(dt, lo);
+   dt->wlo = lo;
+}
+
+void data_transfer_window_rewind(data_transfer_t *dt)
+{
+   if (!dt->window || !dt->map_len)
+      return;
+   /* drop the old window entirely (frontier through its end; the
+    * partial last page goes with the round-up), then restart the
+    * frontier at the head boundary for the next lap */
+   data_transfer_wdecommit_to(dt,
+         (dt->whi + dt->page - 1) & ~(dt->page - 1));
+   dt->wlo    = dt->keep;
+   dt->whi    = dt->keep;
+   dt->wfreed = (dt->keep + dt->page - 1) & ~(dt->page - 1);
+}
+
+bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin)
+{
+   if (!dt->window)
+      return false;
+   if (tell < dt->wtell)
+      data_transfer_window_rewind(dt);   /* the consumer looped */
+   dt->wtell = tell;
+   if (tell > margin && tell - margin > dt->wlo)
+      data_transfer_window_advance(dt, tell - margin);
+   return data_transfer_window_extend(dt, tell + lookahead);
 }
 
 data_transfer_t *data_transfer_open_prefix(const char *path,

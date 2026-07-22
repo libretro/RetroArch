@@ -70,6 +70,30 @@ typedef struct data_transfer_arena
 } data_transfer_arena_t;
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
+
+/* Cyclic streaming window over a file, for sequential consumers that
+ * loop (background music).  The whole file gets an address-space
+ * reservation so the consumer sees one stable base of the full
+ * length, but physical pages exist only for [0, keep) - the head,
+ * kept forever because loops land there - plus a moving window
+ * [lo, hi) that the feeder advances behind the consumer and extends
+ * ahead of it.  rewind() decommits the old window after the consumer
+ * loops; extend() re-reads from the file, so a second lap costs I/O,
+ * not memory.  Compile with DT_WINDOW_STRICT to make advanced-past
+ * pages fault on touch instead of reading as zeros - the oracle's
+ * proof that a consumer honours the sequential contract.  Platforms
+ * without reservations fall back to holding the whole file. */
+data_transfer_t *data_transfer_open_window(const char *path, size_t keep);
+const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
+bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
+void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
+void data_transfer_window_rewind(data_transfer_t *dt);
+/* One-call feeder policy: keep [tell - margin, tell + lookahead)
+ * resident, detecting a backwards tell as a loop.  Returns false on
+ * an I/O failure (the consumer will hit the end-of-data wall). */
+bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
+      size_t lookahead, size_t margin);
+
 bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need);
 void data_transfer_arena_release(data_transfer_arena_t *a);
 
