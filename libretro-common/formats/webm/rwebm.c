@@ -198,6 +198,12 @@ struct rwebm
    double         duration_ticks;   /* raw Duration element (scaled later) */
    const uint8_t *clusters_begin;   /* first byte after Tracks (first data)*/
    const uint8_t *segment_end;
+   /* End of the bytes that have actually been read into the buffer.
+    * Equal to segment_end for a fully-resident file; a partial reader
+    * raises it with rwebm_set_avail as bytes arrive.  The packet walk
+    * never parses past it: an element that would cross it yields
+    * RWEBM_READ_AGAIN without consuming anything. */
+   const uint8_t *avail_end;
    /* Packet-read cursor. */
    const uint8_t *cur;              /* walk position inside the segment    */
    int64_t        cluster_ts;       /* current cluster timestamp (ticks)   */
@@ -454,7 +460,11 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       return 1;
    }
 
-   r.p = webm->cur; r.end = webm->segment_end;
+   /* Parse against the available prefix only: bytes past avail_end are
+    * not yet in the buffer (a partial reader's tail is uninitialised),
+    * so an element crossing it must not be parsed - or consumed.  When
+    * avail_end == segment_end this clamp is the old behaviour. */
+   r.p = webm->cur; r.end = webm->avail_end;
    while (r.p < r.end)
    {
       int      ok;
@@ -463,6 +473,15 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       const uint8_t *body = r.p;
       if (!id || !ok || body + sz > r.end)
       {
+         /* Truncated at the wall: if the file continues past it, the
+          * element is merely not buffered yet - consume nothing (the
+          * cursor stays where this walk began; any elements skipped
+          * getting here are re-skipped on retry, which is idempotent)
+          * and ask the caller to retry with more data.  A genuinely
+          * malformed element yields spurious retries only until the
+          * read completes, when this path closes. */
+         if (webm->avail_end < webm->segment_end)
+            return RWEBM_READ_AGAIN;
          webm->cur = r.end;
          return 0;
       }
@@ -668,13 +687,22 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       /* Any other element: skip its body. */
       r.p = body + sz;
    }
+   if (webm->avail_end < webm->segment_end)
+   {
+      /* The walk consumed everything buffered so far without finding a
+       * block; remember the position so the retry resumes here instead
+       * of re-skipping (positions before r.p held no packets). */
+      webm->cur = r.p;
+      return RWEBM_READ_AGAIN;
+   }
    webm->cur = r.end;
    return 0;
 }
 
 /* ===== Open ===== */
 
-rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
+rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
+      size_t avail, int *need_more)
 {
    rwebm_t    *w;
    ebml_reader r;
@@ -682,11 +710,23 @@ rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
    uint32_t    id;
    uint64_t    sz;
    const uint8_t *seg_body;
+   const uint8_t *avail_end;
 
+   if (need_more)
+      *need_more = 0;
+   if (avail > size)
+      avail = size;
    if (!data || size < 8)
       return NULL;
+   if (avail < 8)
+      goto more;
 
-   r.p = data; r.end = data + size;
+   /* Header parsing is bounded by the available prefix: bytes past it
+    * are not yet in the buffer, and parsing them would read
+    * uninitialised memory.  At avail == size this is the old
+    * behaviour. */
+   avail_end = data + avail;
+   r.p = data; r.end = avail_end;
 
    /* EBML header must come first. */
    id = ebml_read_id(&r);
@@ -694,19 +734,19 @@ rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
       return NULL;
    sz = ebml_read_vint(&r, 1, &ok);
    if (!ok || r.p + sz > r.end)
-      return NULL;
+      goto more_or_fail;
    r.p += sz;   /* skip the EBML header body (DocType etc.) */
 
    /* Segment. */
    id = ebml_read_id(&r);
    if (id != ID_SEGMENT)
-      return NULL;
+      goto more_or_fail;
    sz = ebml_read_vint(&r, 1, &ok);
    if (!ok)
-      return NULL;
+      goto more_or_fail;
    seg_body = r.p;
-   if (seg_body + sz > r.end)
-      sz = (uint64_t)(r.end - seg_body);   /* tolerate unknown/overlong    */
+   if (seg_body + sz > data + size)
+      sz = (uint64_t)(data + size - seg_body); /* tolerate unknown/overlong */
 
    w = (rwebm_t*)calloc(1, sizeof(*w));
    if (!w)
@@ -715,13 +755,16 @@ rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
    w->size            = size;
    w->timestamp_scale = 1000000;   /* Matroska default: 1 ms per tick      */
    w->segment_end     = seg_body + sz;
+   w->avail_end       = avail_end < w->segment_end
+                      ? avail_end : w->segment_end;
 
    /* Walk the segment's top-level children for Info and Tracks; remember
     * where the first non-metadata element (usually the first Cluster)
     * begins so packet reading can start there. */
    {
       ebml_reader s;
-      s.p = seg_body; s.end = w->segment_end;
+      s.p = seg_body;
+      s.end = w->avail_end;   /* == segment_end when fully resident */
       w->clusters_begin = seg_body;
       while (s.p < s.end)
       {
@@ -781,11 +824,40 @@ rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
 
    if (w->num_tracks == 0)
    {
+      /* No Tracks within the available prefix: either the header is
+       * still arriving (retry with more) or the file is malformed. */
       free(w);
-      return NULL;
+      goto more_or_fail;
    }
 
    w->cur        = w->clusters_begin;
    w->cluster_ts = 0;
    return w;
+
+more_or_fail:
+   if (avail == size)
+      return NULL;
+more:
+   if (need_more)
+      *need_more = 1;
+   return NULL;
+}
+
+rwebm_t *rwebm_open_memory(const uint8_t *data, size_t size)
+{
+   return rwebm_open_memory_avail(data, size, size, NULL);
+}
+
+void rwebm_set_avail(rwebm_t *webm, size_t avail)
+{
+   const uint8_t *e;
+   if (!webm)
+      return;
+   if (avail > webm->size)
+      avail = webm->size;
+   e = webm->data + avail;
+   if (e > webm->segment_end)
+      e = webm->segment_end;
+   if (e > webm->avail_end)   /* monotonic: bytes never un-arrive */
+      webm->avail_end = e;
 }

@@ -107,7 +107,26 @@ int64_t rwebm_duration_ns(const rwebm_t *webm);
 /* Read the next elementary-stream packet in file order into *pkt. Returns
  * 1 on success, 0 at end of stream, -1 on a parse error. The packet's data
  * pointer aliases the input buffer and is valid until the next call. */
+/* Returned by rwebm_read_packet when the next packet lies beyond the
+ * bytes made available so far (see rwebm_set_avail): nothing was
+ * consumed; call again after more bytes arrive. */
+#define RWEBM_READ_AGAIN 2
+
 int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt);
+
+/* Open against a partially-read buffer: only the first 'avail' bytes
+ * are valid (the rest may be uninitialised); the parse never touches
+ * them.  On failure, *need_more (when non-NULL) is set when the
+ * failure was running out of available bytes rather than malformed
+ * data - retry with a larger avail.  rwebm_open_memory is this with
+ * avail == size. */
+rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
+      size_t avail, int *need_more);
+
+/* Raise the number of valid bytes (monotonic; clamped to the file
+ * size).  Until it reaches the segment end, rwebm_read_packet returns
+ * RWEBM_READ_AGAIN instead of end-of-stream at the wall. */
+void rwebm_set_avail(rwebm_t *webm, size_t avail);
 
 /* Restart packet reading from the first cluster. */
 void rwebm_rewind(rwebm_t *webm);
