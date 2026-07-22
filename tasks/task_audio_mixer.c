@@ -854,11 +854,12 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    return true;
 }
 
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RFLAC))
 /* ---- windowed streaming for large background music ----
  * Files past the threshold, in codecs whose buffer-mode access
  * pattern is head-bounded-open + monotonic reads + loop-to-head
- * (Vorbis and MP3, verified against the decoders), do not get read
+ * (Vorbis, MP3, and FLAC, verified against the decoders), do not
+ * get read
  * into memory at all: the sound borrows a data_transfer window - the
  * head resident forever, a window sliding with the decoder - and
  * this task, after opening the window and adding the stream, becomes
@@ -889,8 +890,51 @@ struct audio_mixer_wfeed
    enum audio_mixer_type mtype;
    bool  play;
    bool  added;          /* the sound borrows dt once this is set */
+   bool  keep_set;       /* head sized to the decoder's start     */
+   size_t punch_lo;      /* inert metadata span released from the  */
+   size_t punch_hi;      /*  head after the decoder skips it       */
    volatile bool dead;   /* set by the sound's release: wrap up    */
 };
+
+#ifdef HAVE_RFLAC
+/* Walk the FLAC metadata block headers (peeking 4 bytes per block,
+ * never reading block bodies) to learn where the first audio frame
+ * begins - PICTURE blocks can push it megabytes in - and where any
+ * large inert span sits.  Returns 0 on anything unexpected; the
+ * caller then falls back to the classic full load. */
+static size_t task_audio_mixer_flac_first_frame(struct data_transfer *dt,
+      size_t flen, size_t *inert_lo, size_t *inert_hi)
+{
+   uint8_t h[4];
+   size_t  off  = 4;             /* past the fLaC magic */
+   unsigned i;
+   *inert_lo = 0;
+   *inert_hi = 0;
+   if (!data_transfer_window_peek(dt, 0, h, 4))
+      return 0;
+   if (memcmp(h, "fLaC", 4) != 0)
+      return 0;
+   for (i = 0; i < 64; i++)
+   {
+      size_t  blen;
+      uint8_t last;
+      if (off + 4 > flen || !data_transfer_window_peek(dt, off, h, 4))
+         return 0;
+      last = h[0] >> 7;
+      blen = ((size_t)h[1] << 16) | ((size_t)h[2] << 8) | (size_t)h[3];
+      if ((h[0] & 0x7f) == 6 && blen > *inert_hi - *inert_lo)
+      {
+         /* the largest PICTURE block is the punch candidate */
+         *inert_lo = off + 4;
+         *inert_hi = off + 4 + blen;
+      }
+      off += 4 + blen;
+      if (last)
+         return off <= flen ? off : 0;
+   }
+   return 0;
+}
+#endif
 
 static void task_audio_mixer_wfeed_release(void *owner)
 {
@@ -951,6 +995,25 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
                != AUDIO_TYPE_VORBIS)
             goto bail;
       }
+#ifdef HAVE_RFLAC
+      if (w->mtype == AUDIO_MIXER_TYPE_FLAC)
+      {
+         /* the loop seek lands on the first audio frame - on the
+          * audio thread, before any feeder tick - and PICTURE
+          * metadata can push that frame past any fixed head.  Walk
+          * the block headers, grow the head to cover the frame, and
+          * remember the largest inert block to punch back out once
+          * the decoder has skipped it. */
+         size_t ff = task_audio_mixer_flac_first_frame(w->dt, flen,
+               &w->punch_lo, &w->punch_hi);
+         if (!ff)
+            goto bail;
+         if (ff + (512 * 1024) > AMIX_WINDOW_KEEP
+               && !data_transfer_window_grow_keep(w->dt,
+                     ff + AMIX_WINDOW_MARGIN))
+            goto bail;
+      }
+#endif
 
       params.volume               = 1.0f;
       params.slot_selection_type  = w->user->slot_selection_type;
@@ -976,13 +1039,33 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
           * next tick frees the window */
          return;
       }
+      /* the decoder has opened and seek-skipped the metadata: an
+       * inert block inside the grown head can leave residency now */
+      if (w->punch_hi > w->punch_lo
+            && w->punch_hi - w->punch_lo >= (256 * 1024))
+         data_transfer_window_punch(w->dt, w->punch_lo, w->punch_hi);
       return;
    }
 
    tell = audio_driver_mixer_stream_byte_tell((unsigned)w->slot);
    if (tell >= 0)
+   {
+      if (!w->keep_set)
+      {
+         /* First sighting of the decoder's start position.  The
+          * loop seek lands here on the audio thread, before any
+          * feeder tick, so the head must cover it - and FLAC
+          * metadata (PICTURE blocks) can push the first frame past
+          * any fixed head.  Grow the head to the decoder's start
+          * plus slack once, now that the position is known. */
+         if ((size_t)tell + (512 * 1024) > AMIX_WINDOW_KEEP)
+            data_transfer_window_grow_keep(w->dt,
+                  (size_t)tell + (1024 * 1024));
+         w->keep_set = true;
+      }
       data_transfer_window_feed(w->dt, (size_t)tell,
             AMIX_WINDOW_LOOKAHEAD, AMIX_WINDOW_MARGIN);
+   }
    /* a stopped stream (tell < 0 while not dead) just idles */
    return;
 
@@ -1025,6 +1108,10 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
 #ifdef HAVE_RMP3
    if (string_is_equal_noncase(ext, "mp3"))
       mtype = AUDIO_MIXER_TYPE_MP3;
+#endif
+#ifdef HAVE_RFLAC
+   if (string_is_equal_noncase(ext, "flac"))
+      mtype = AUDIO_MIXER_TYPE_FLAC;
 #endif
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;

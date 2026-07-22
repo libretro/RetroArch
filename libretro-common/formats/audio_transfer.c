@@ -1874,6 +1874,20 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
          return 0;
       }
 #endif
+#ifdef HAVE_RFLAC
+      case AUDIO_TYPE_FLAC:
+      {
+         struct audio_transfer_flac *fl =
+               (struct audio_transfer_flac*)data;
+         /* the raw read cursor runs slightly ahead of the decode
+          * position through bitstream caching, which is the safe
+          * side for a feeder: bytes behind it are never re-read
+          * (the loop jump lands in the kept head) */
+         if (fl->handle)
+            return (size_t)fl->handle->memoryStream.currentReadPos;
+         return 0;
+      }
+#endif
 #ifdef HAVE_RMP3
       case AUDIO_TYPE_MP3:
       {
