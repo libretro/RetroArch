@@ -1480,6 +1480,37 @@ false_end:
  * the intermediate buffer to grow arbitrarily. */
 #define RPNG_IDAT_MAX ((size_t)256 * 1024 * 1024)
 
+/* When the whole file is in the buffer (every in-tree caller: the
+ * task spine and the synchronous loader decode at completion), the
+ * compressed size is knowable before accumulating: walk the chunk
+ * headers from the first IDAT and sum them.  One exact allocation
+ * replaces the doubling - no copies during accumulation, no
+ * capacity overshoot held across the decode.  A walk that runs off
+ * the end (a truncated or genuinely streaming buffer) returns 0 and
+ * the doubling below stays the fallback. */
+static size_t rpng_idat_presize(const uint8_t *at, const uint8_t *end)
+{
+   size_t total = 0;
+   /* 'at' points at the length field of the first IDAT chunk;
+    * 'end' at the last byte of the input. */
+   while (at + 8 <= end + 1)
+   {
+      uint32_t len =   ((uint32_t)at[0] << 24) | ((uint32_t)at[1] << 16)
+                     | ((uint32_t)at[2] <<  8) |  (uint32_t)at[3];
+      if (len > RPNG_IDAT_MAX - total)
+         return 0;
+      if (!memcmp(at + 4, "IDAT", 4))
+         total += len;
+      else if (!memcmp(at + 4, "IEND", 4))
+         return total;
+      /* length + type + payload + CRC */
+      if ((size_t)(end + 1 - at) < (size_t)len + 12)
+         return 0;             /* truncated: fall back to doubling */
+      at += (size_t)len + 12;
+   }
+   return 0;
+}
+
 static bool rpng_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
 {
    size_t required;
@@ -1863,6 +1894,16 @@ bool rpng_iterate_image(rpng_t *rpng)
          break;
 
       case PNG_CHUNK_IDAT:
+         if (!rpng->idat_buf.data && !rpng->idat_buf.capacity)
+         {
+            size_t exact = rpng_idat_presize(buf, rpng->buff_end);
+            if (exact)
+            {
+               if (!(rpng->idat_buf.data = (uint8_t*)malloc(exact)))
+                  return false;
+               rpng->idat_buf.capacity = exact;
+            }
+         }
          if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR)
                ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
                ||  (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT
