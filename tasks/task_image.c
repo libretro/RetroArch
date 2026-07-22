@@ -19,6 +19,7 @@
 #include <math.h>
 
 #include <file/nbio.h>
+#include <formats/data_transfer.h>
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -194,17 +195,13 @@ static void task_image_cleanup(nbio_handle_t *nbio)
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
-   if (nbio->handle)
-      /* The video early-completion path can finish the task with the
-       * read still in flight; freeing an in-flight stdio handle
-       * aborts.  Cancelling first is a no-op on a completed handle -
-       * and for an unwanted (never-adopted) thumbnail it is the
-       * pay-off: the rest of the file is simply never read. */
-      nbio_cancel(nbio->handle);
-   nbio_free(nbio->handle);
+   /* The video early-completion path can finish the task with the
+    * read still in flight; both spines cancel it before releasing -
+    * for an unwanted (never-detached) thumbnail that is the pay-off:
+    * the rest of the file is simply never read. */
+   nbio_xfer_close(nbio);
    nbio->path        = NULL;
    nbio->data        = NULL;
-   nbio->handle      = NULL;
 }
 
 static void task_image_load_free(retro_task_t *task)
@@ -242,7 +239,7 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
    image->handle                   = handle;
    image->cb                       = &cb_image_thumbnail;
 
-   ptr                             = nbio_get_ptr(nbio->handle, &len);
+   ptr                             = (void*)nbio_xfer_ptr(nbio, &len);
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
 
@@ -252,7 +249,7 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
        * video still decoders return IMAGE_PROCESS_WAIT at the wall
        * and the handler raises this each tick as bytes arrive. */
       size_t done = 0, total = 0;
-      nbio_get_progress(nbio->handle, &done, &total);
+      nbio_xfer_progress(nbio, &done, &total);
       image_transfer_set_avail(image->handle, image->type, done);
    }
 
@@ -408,10 +405,11 @@ bool task_image_load_handler(retro_task_t *task)
        * decoder's byte wall in step with the read.  Cheap (two field
        * reads and a monotonic store) and a no-op once the read has
        * completed. */
-      if (is_video && image->handle && !nbio->is_finished && nbio->handle)
+      if (is_video && image->handle && !nbio->is_finished
+            && (nbio->handle || nbio->xfer))
       {
          size_t done = 0, total = 0;
-         if (nbio_get_progress(nbio->handle, &done, &total))
+         if (nbio_xfer_progress(nbio, &done, &total))
             image_transfer_set_avail(image->handle, image->type, done);
       }
 
@@ -424,11 +422,12 @@ bool task_image_load_handler(retro_task_t *task)
              * delivered long before - and independently of - the rest
              * of the read.  Other types keep waiting for the
              * completion callback. */
-            if (is_video && !image->handle && nbio->handle
+            if (is_video && !image->handle
+                  && (nbio->handle || nbio->xfer)
                   && !nbio->is_finished)
             {
                size_t done = 0, total = 0;
-               if (nbio_get_progress(nbio->handle, &done, &total)
+               if (nbio_xfer_progress(nbio, &done, &total)
                      && done > 0)
                   task_image_thumbnail_setup(nbio, true);
             }
@@ -546,7 +545,7 @@ bool task_image_load_handler(retro_task_t *task)
 
 bool task_image_detach_video_stream(retro_task_t *task,
       void **stream, enum image_type_enum *type,
-      void **nbio_owner, void **buf, size_t *len)
+      struct data_transfer **xfer_owner, void **buf, size_t *len)
 {
    nbio_handle_t *nbio;
    struct nbio_image_handle *image;
@@ -554,7 +553,7 @@ bool task_image_detach_video_stream(retro_task_t *task,
    void *ptr;
    size_t l                        = 0;
 
-   if (!task || !stream || !type || !nbio_owner || !buf || !len)
+   if (!task || !stream || !type || !xfer_owner || !buf || !len)
       return false;
    if (!(nbio = (nbio_handle_t*)task->state))
       return false;
@@ -567,12 +566,13 @@ bool task_image_detach_video_stream(retro_task_t *task,
       return false;
    if (!image->handle)
       return false;
-   /* The stream borrows the nbio buffer, so without the nbio handle to
-    * hand over there is nothing to detach onto: leave the stream
-    * attached (image_transfer_free closes it). */
-   if (!nbio->handle)
+   /* The stream borrows the transfer's buffer, so without a transfer
+    * to hand over there is nothing to detach onto: leave the stream
+    * attached (image_transfer_free closes it).  Video loads always
+    * travel the data_transfer spine. */
+   if (!nbio->xfer)
       return false;
-   if (!(ptr = nbio_get_ptr(nbio->handle, &l)) || !l)
+   if (!(ptr = (void*)data_transfer_ptr(nbio->xfer, &l)) || !l)
       return false;
 
    if (!(s = image_transfer_detach_anim_stream(image->handle,
@@ -583,12 +583,11 @@ bool task_image_detach_video_stream(retro_task_t *task,
    *type         = image->type;
    *buf          = ptr;
    *len          = l;
-   /* Transfer the nbio handle: the buffer the stream borrows lives
-    * inside it (for the mmap backends it is a file mapping, so it
-    * cannot be handed over as a malloc'd block).  task_image_cleanup
-    * tolerates the NULL. */
-   *nbio_owner   = nbio->handle;
-   nbio->handle  = NULL;
+   /* Hand over the transfer: the buffer the stream borrows lives
+    * inside it, and its fill may still be in flight (the adopter
+    * pumps it on).  task_image_cleanup tolerates the NULL. */
+   *xfer_owner   = nbio->xfer;
+   nbio->xfer    = NULL;
    return true;
 }
 
@@ -616,6 +615,7 @@ bool task_push_image_load(const char *fullpath,
    nbio->status_flags  = 0;
    nbio->data          = NULL;
    nbio->handle        = NULL;
+   nbio->xfer          = NULL;
    nbio->cb            = &cb_nbio_image_thumbnail;
 
    if (supports_rgba)

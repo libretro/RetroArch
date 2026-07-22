@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <file/nbio.h>
+#include <formats/data_transfer.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
@@ -66,6 +67,58 @@ void task_window_progress_cb(retro_task_t *task)
  * frame on every supported platform. */
 #define NBIO_SMALL_FILE_THRESHOLD  (1024 * 1024)
 
+static bool task_file_transfer_read_complete(void *handle);
+
+/* Per-tick fill budget for the video data_transfer spine: comfortably
+ * ahead of the still decoder's needs (it completes at 2-3% of the
+ * file) without monopolising the tick. */
+#define NBIO_XFER_TICK_BYTES       (1024 * 1024)
+
+const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
+{
+   if (nbio->xfer)
+      return data_transfer_ptr(nbio->xfer, len);
+   return (const uint8_t*)nbio_get_ptr(nbio->handle, len);
+}
+
+bool nbio_xfer_progress(nbio_handle_t *nbio, size_t *done, size_t *total)
+{
+   if (nbio->xfer)
+   {
+      size_t len = 0;
+      data_transfer_ptr(nbio->xfer, &len);
+      if (done)
+         *done  = data_transfer_avail(nbio->xfer);
+      if (total)
+         *total = len;
+      return !data_transfer_complete(nbio->xfer)
+          && !data_transfer_failed(nbio->xfer)
+          && !data_transfer_capped(nbio->xfer);
+   }
+   return nbio->handle
+       && nbio_get_progress(nbio->handle, done, total);
+}
+
+bool nbio_xfer_complete_ok(nbio_handle_t *nbio)
+{
+   if (nbio->xfer)
+      return data_transfer_complete(nbio->xfer);
+   return task_file_transfer_read_complete(nbio->handle);
+}
+
+void nbio_xfer_close(nbio_handle_t *nbio)
+{
+   if (nbio->xfer)
+      data_transfer_free(nbio->xfer);   /* cancels an in-flight read */
+   else if (nbio->handle)
+   {
+      nbio_cancel(nbio->handle);
+      nbio_free(nbio->handle);
+   }
+   nbio->xfer   = NULL;
+   nbio->handle = NULL;
+}
+
 static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 {
    size_t i;
@@ -73,6 +126,16 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 
    if (nbio->is_finished)
       return 0;
+
+   if (nbio->xfer)
+   {
+      data_transfer_iterate(nbio->xfer, NBIO_XFER_TICK_BYTES);
+      if (data_transfer_complete(nbio->xfer)
+            || data_transfer_failed(nbio->xfer)
+            || data_transfer_capped(nbio->xfer))
+         return -1;
+      return 0;
+   }
 
    /* Use caller-provided iteration count if set, otherwise default.
     * Unlike the old code this does NOT overwrite pos_increment, so
@@ -109,7 +172,7 @@ static int task_file_transfer_iterate_parse(nbio_handle_t *nbio)
       /* Retrieve the actual data length so the callback receives
        * a meaningful value instead of the previous hard-coded 0. */
       size_t len = 0;
-      nbio_get_ptr(nbio->handle, &len);
+      nbio_xfer_ptr(nbio, &len);
       if (nbio->cb(nbio, len) == -1)
          return -1;
    }
@@ -128,7 +191,42 @@ void task_file_load_handler(retro_task_t *task)
          case NBIO_STATUS_INIT:
             if (nbio->path)
             {
-               struct nbio_t *handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
+               struct nbio_t *handle;
+               if (     nbio->type == NBIO_TYPE_WEBM
+                     || nbio->type == NBIO_TYPE_MP4)
+               {
+                  /* Video: the data_transfer prefix spine.  Address
+                   * space for the whole file, physical pages only as
+                   * far as the read reaches - a still on a multi-GB
+                   * file costs its prefix, and the still decoder
+                   * (started early by task_image) usually finishes on
+                   * 2-3% of it. */
+                  if ((nbio->xfer = data_transfer_open_prefix(
+                              nbio->path, 0)))
+                  {
+                     size_t xlen = 0;
+                     data_transfer_ptr(nbio->xfer, &xlen);
+                     if (xlen <= NBIO_SMALL_FILE_THRESHOLD)
+                     {
+                        /* small file: finish in this tick */
+                        data_transfer_iterate(nbio->xfer, 0);
+                        if (!data_transfer_complete(nbio->xfer))
+                        {
+                           task_set_flags(task,
+                                 RETRO_TASK_FLG_CANCELLED, true);
+                           break;
+                        }
+                        nbio->status = NBIO_STATUS_TRANSFER_PARSE;
+                        task_set_progress(task, 100);
+                        goto do_transfer_parse;
+                     }
+                     nbio->status = NBIO_STATUS_TRANSFER;
+                     return;
+                  }
+                  task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+                  break;
+               }
+               handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
                if (handle)
                {
                   size_t _len = 0;
@@ -155,17 +253,10 @@ void task_file_load_handler(retro_task_t *task)
                    * any of it.  Small files keep the fast path (one
                    * fread beats ticking), and the mmap backends lose
                    * nothing: their iterate completes immediately. */
+                  /* (video no longer reaches this arm: it went down
+                   * the data_transfer spine above) */
                   {
-                     bool try_fast = true;
-                     if (     nbio->type == NBIO_TYPE_WEBM
-                           || nbio->type == NBIO_TYPE_MP4)
-                     {
-                        size_t file_len = 0;
-                        nbio_get_ptr(handle, &file_len);
-                        if (file_len > NBIO_SMALL_FILE_THRESHOLD)
-                           try_fast = false;
-                     }
-                  if (try_fast && nbio_load_entire(handle, &_len))
+                  if (nbio_load_entire(handle, &_len))
                   {
                      /* Fall through: run parse in the same tick instead
                       * of returning and waiting for the next frame.
@@ -219,7 +310,7 @@ do_transfer_parse:
          case NBIO_STATUS_TRANSFER:
             if (task_file_transfer_iterate_transfer(nbio) == -1)
             {
-               if (!task_file_transfer_read_complete(nbio->handle))
+               if (!nbio_xfer_complete_ok(nbio))
                {
                   /* The read ended short of the file: fail the task
                    * rather than parse a buffer whose tail was never
@@ -236,8 +327,8 @@ do_transfer_parse:
              * for local file transfers, not just HTTP downloads. */
             {
                size_t done = 0, total = 0;
-               if (nbio_get_progress(nbio->handle, &done, &total)
-                     && total > 0)
+               nbio_xfer_progress(nbio, &done, &total);
+               if (total > 0)
                {
                   if (done < (((size_t)-1) / 100))
                      task_set_progress(task, (int8_t)(done * 100 / total));

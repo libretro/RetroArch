@@ -696,10 +696,10 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 
 /* Install an open animation stream on the thumbnail, applying the
  * frame-count and memory admission checks.  'buf' is the container
- * bytes the stream borrows: when 'nbio_owner' is non-NULL it owns
- * 'buf' (released with nbio_free), otherwise 'buf' is a malloc'd
+ * bytes the stream borrows: when 'xfer' is non-NULL it owns 'buf'
+ * (released with data_transfer_free), otherwise 'buf' is a malloc'd
  * block this thumbnail takes over (released with free).  Ownership of
- * stream/buf/nbio_owner transfers in every outcome; on rejection they
+ * stream/buf/xfer transfers in every outcome; on rejection they
  * are released and the static thumbnail stays.  Returns true when the
  * animation was installed. */
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
@@ -749,7 +749,7 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 
 static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       void *stream, enum image_type_enum type,
-      void *buf, size_t len, void *nbio_owner)
+      void *buf, size_t len, struct data_transfer *xfer)
 {
    unsigned anim_w          = 0;
    unsigned anim_h          = 0;
@@ -771,27 +771,16 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
              (uint64_t)anim_w * anim_h))
       goto fail;
 
-   /* Take ownership of an adopted handle through a data_transfer,
-    * which packages the nbio edges (stable pointer, budgeted fill,
-    * honest short-read state, cancel-inside-free) this code used to
-    * handle by hand. */
-   thumbnail->anim_dt = NULL;
-   if (nbio_owner)
+   /* The task hands the buffer over as the data_transfer that owns
+    * it - possibly with its fill still in flight. */
+   thumbnail->anim_dt = xfer;
+   if (xfer && data_transfer_failed(xfer))
    {
-      if (!(thumbnail->anim_dt = data_transfer_adopt(nbio_owner)))
-         goto fail;
-      if (data_transfer_failed(thumbnail->anim_dt))
-      {
-         /* the read already ended short of the file: its unwritten
-          * tail must never feed the decoders - keep the still, drop
-          * the animation */
-         data_transfer_free(thumbnail->anim_dt);
-         thumbnail->anim_dt = NULL;
-         image_transfer_anim_stream_free(stream,
-               (enum image_type_enum)type);
-         return false;
-      }
-      nbio_owner = NULL;   /* owned by the transfer now */
+      /* the read already ended short of the file: its unwritten tail
+       * must never feed the decoders - keep the still, drop the
+       * animation */
+      thumbnail->anim_dt = NULL;
+      goto fail;
    }
 
    thumbnail->anim            = stream;
@@ -820,13 +809,9 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
 
 fail:
    image_transfer_anim_stream_free(stream, type);
-   if (nbio_owner)
-   {
-      /* The adopted read may still be in flight (freeing an in-flight
-       * stdio handle aborts); cancel is a no-op when complete. */
-      nbio_cancel(nbio_owner);
-      nbio_free(nbio_owner);
-   }
+   if (xfer)
+      /* cancels a fill still in flight before releasing the buffer */
+      data_transfer_free(xfer);
    else
       free(buf);
    return false;
@@ -1356,15 +1341,15 @@ static void gfx_thumbnail_handle_upload(
     * WEBP and any load where no stream was held. */
    {
       void *vstream               = NULL;
-      void *nbio_owner            = NULL;
+      struct data_transfer *vxfer = NULL;
       void *vbuf                  = NULL;
       size_t vlen                 = 0;
       enum image_type_enum vtype  = IMAGE_TYPE_NONE;
 
       if (task_image_detach_video_stream(task, &vstream, &vtype,
-            &nbio_owner, &vbuf, &vlen))
+            &vxfer, &vbuf, &vlen))
          gfx_thumbnail_anim_install(thumbnail_tag->thumbnail,
-               vstream, vtype, vbuf, vlen, nbio_owner);
+               vstream, vtype, vbuf, vlen, vxfer);
       else
          gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
                thumbnail_tag->path);

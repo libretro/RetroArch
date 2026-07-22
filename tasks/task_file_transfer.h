@@ -66,11 +66,18 @@ enum nbio_status_flags
 
 typedef int (*transfer_cb_t)(void *data, size_t len);
 
+struct data_transfer;
+
 typedef struct nbio_handle
 {
    void *data;
    char *path;
    struct nbio_t *handle;
+   /* Video loads (WEBM/MP4) arrive through a data_transfer instead:
+    * address space for the whole file, physical pages only as far as
+    * the read reaches, so a thumbnail costs its prefix regardless of
+    * the file's size.  Exactly one of handle/xfer is set. */
+   struct data_transfer *xfer;
    transfer_cb_t  cb;
 
    unsigned status;
@@ -80,6 +87,15 @@ typedef struct nbio_handle
    enum nbio_type type;
    bool is_finished;
 } nbio_handle_t;
+
+/* Spine folders for the shared call sites: raw nbio or the video
+ * data_transfer, one contract. */
+const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len);
+/* true while the read is still in flight */
+bool nbio_xfer_progress(nbio_handle_t *nbio, size_t *done, size_t *total);
+/* the read is over and delivered the whole file */
+bool nbio_xfer_complete_ok(nbio_handle_t *nbio);
+void nbio_xfer_close(nbio_handle_t *nbio);
 
 typedef struct
 {
