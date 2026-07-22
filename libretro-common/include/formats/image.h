@@ -252,10 +252,12 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
 
 /* Ask the stream to emit ARGB words (non-zero) or the default R,G,B,A
  * memory order (zero) from the next frame on.  Returns true when the
- * stream type honours the request (the video streams: WEBM, MP4) so
- * the caller can skip its own R/B swizzle pass; false for types that
- * always emit the default order (animated WEBP), where the caller
- * must keep converting. */
+ * stream type honours the request (WEBM, MP4, and animated WEBP - the
+ * video streams bake the order in their blit, WEBP in its sub-frame
+ * decode stores, converting its persistent canvas once if the order
+ * changes mid-animation) so the caller can skip its own R/B swizzle
+ * pass; false for types that always emit the default order, where the
+ * caller must keep converting. */
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb);
 

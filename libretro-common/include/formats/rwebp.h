@@ -93,6 +93,14 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *stream,
 
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *stream);
 
+/* Select the channel order of subsequently emitted frames: non-zero
+ * for ARGB words, zero for the default memory-order R,G,B,A.  The
+ * order is a property of the compositing canvas, so a switch after
+ * frames have been emitted converts the canvas in place once (a
+ * single full-canvas pass); sub-frame decoding then stores the new
+ * order directly at no per-frame cost.  Persists across rewind. */
+void rwebp_anim_stream_set_argb(rwebp_anim_stream_t *stream, int argb);
+
 RETRO_END_DECLS
 
 #endif

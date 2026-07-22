@@ -1207,7 +1207,7 @@ static uint32_t *rwebp_do(const uint8_t *buf, size_t len,
  * header) into RGBA. Mirrors rwebp_do's lossy/lossless + ALPH handling
  * but operates on the frame's local chunk list. */
 static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
-      unsigned *ow, unsigned *oh, int *out_opaque)
+      unsigned *ow, unsigned *oh, int *out_opaque, int swap_rb)
 {
    const uint8_t *fv = NULL, *fl = NULL, *fa = NULL;
    size_t fvs = 0, fls = 0, fas = 0;
@@ -1228,7 +1228,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
    if (out_opaque)
       *out_opaque = 0;
    if (fl && fls > 0)
-      pix = vl_decode_full(fl, fls, &w, &h, 1); /* canvas order directly */
+      pix = vl_decode_full(fl, fls, &w, &h, swap_rb); /* canvas order */
    else if (fv && fvs > 0)
    {
       /* A VP8 sub-image without an ALPH chunk decodes with every alpha
@@ -1237,7 +1237,7 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
        * caller can skip per-pixel blending for such frames. */
       if (out_opaque && !(fa && fas > 0))
          *out_opaque = 1;
-      pix = rvp8_decode(fv, fvs, &w, &h, 1); /* canvas order directly */
+      pix = rvp8_decode(fv, fvs, &w, &h, swap_rb); /* canvas order */
       if (pix && fa && fas > 0)
       {
          uint8_t *ap = alph_decode(fa, fas, w, h);
@@ -1251,9 +1251,12 @@ static uint32_t *rwebp_anim_frame_pixels(const uint8_t *d, size_t sz,
       }
    }
    if (!pix) return NULL;
-   /* Frames of both kinds now decode straight into canvas order
-    * (memory R,G,B,A): lossy via the rvp8_decode swap_rb store,
-    * lossless via the transform-fused swap in vl_decode_full. All
+   /* Frames of both kinds decode straight into the canvas's current
+    * channel order (the swap_rb parameter): lossy via the rvp8_decode
+    * store, lossless via the transform-fused swap in vl_decode_full.
+    * The ALPH merge and the opacity scan below touch only byte 3, so
+    * they are order-agnostic, as is everything downstream (the blend
+    * loops channels 0/8/16 symmetrically, disposal clears to zero). All
     * that remains is the AND-mask accumulation over the alpha bytes:
     * encoders routinely emit an ALPH chunk (or a VP8L alpha channel)
     * whose bytes are all 0xFF, and detecting that lets the compositor
@@ -1387,6 +1390,11 @@ struct rwebp_anim_stream
     * clear just that region when the next frame is prepared. */
    int       prev_fx, prev_fy, prev_fw, prev_fh;
    int       prev_disp_bg, prev_full, prev_key;
+   /* Channel order of the canvas (and of emitted frames): 0 = memory
+    * R,G,B,A (the default), 1 = ARGB words.  A property of the whole
+    * canvas, since frames blend onto it; switched at frame boundaries
+    * by rwebp_anim_stream_set_argb. */
+   int       emit_argb;
 };
 
 void rwebp_anim_stream_close(rwebp_anim_stream_t *s)
@@ -1464,6 +1472,33 @@ void rwebp_anim_stream_get_info(const rwebp_anim_stream_t *s,
    if (loop_count) *loop_count = s->loop_count;
 }
 
+void rwebp_anim_stream_set_argb(rwebp_anim_stream_t *s, int argb)
+{
+   int want;
+   if (!s)
+      return;
+   want = argb ? 1 : 0;
+   if (want == s->emit_argb)
+      return;
+   /* The order is a property of the persistent canvas - later frames
+    * blend onto earlier pixels - so switching converts the canvas in
+    * place once, at a frame boundary, and subsequent sub-frames decode
+    * directly in the new order.  Before the first emitted frame the
+    * canvas is all zeros (identical in either order) and the flag can
+    * simply flip; the first frame is a key frame and rebuilds it. */
+   if (s->emitted > 0 && s->canvas)
+   {
+      size_t i, n = (size_t)s->canvas_w * s->canvas_h;
+      for (i = 0; i < n; i++)
+      {
+         uint32_t px  = s->canvas[i];
+         s->canvas[i] = (px & 0xFF00FF00u)
+               | ((px & 0xFFu) << 16) | ((px >> 16) & 0xFFu);
+      }
+   }
+   s->emit_argb = want;
+}
+
 void rwebp_anim_stream_rewind(rwebp_anim_stream_t *s)
 {
    if (!s) return;
@@ -1506,7 +1541,7 @@ const uint32_t *rwebp_anim_stream_next(rwebp_anim_stream_t *s,
          continue;
 
       sub = rwebp_anim_frame_pixels(d + 16, sz - 16, &sub_w, &sub_h,
-            &sub_opaque);
+            &sub_opaque, s->emit_argb ? 0 : 1);
       if (!sub)
          continue;
       if ((int)sub_w != fw || (int)sub_h != fh)

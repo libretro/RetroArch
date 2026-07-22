@@ -584,6 +584,13 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 {
    switch (type)
    {
+      case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
+         rwebp_anim_stream_set_argb((rwebp_anim_stream_t*)stream, argb);
+         return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          rwebm_video_stream_set_argb((rwebm_video_stream_t*)stream, argb);
