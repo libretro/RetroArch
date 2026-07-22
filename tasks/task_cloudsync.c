@@ -518,13 +518,23 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
 {
    int rv;
    MD5_CTX md5;
-   unsigned char buf[4096];
+   /* 256 KB reads, same reasoning as intfstream_get_crc: hashing a
+    * large savestate at 4 KB a call is call overhead, not hashing.
+    * Heap once per file; this is a background sync path. */
+   size_t buf_len = 256 * 1024;
+   unsigned char *buf;
    unsigned char digest[16];
    libretro_vfs_implementation_file *hfile = filestream_get_vfs_handle(file);
    char *hash = (char*)malloc(33);
 
    if (!hash)
       return NULL;
+
+   if (!(buf = (unsigned char*)malloc(buf_len)))
+   {
+      free(hash);
+      return NULL;
+   }
 
    MD5_Init(&md5);
 
@@ -534,11 +544,12 @@ static char *task_cloud_sync_md5_rfile(RFILE *file)
    {
       do
       {
-         rv = (int)filestream_read(file, buf, sizeof(buf));
+         rv = (int)filestream_read(file, buf, (int64_t)buf_len);
          if (rv > 0)
             MD5_Update(&md5, buf, rv);
       } while (rv > 0);
    }
+   free(buf);
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
