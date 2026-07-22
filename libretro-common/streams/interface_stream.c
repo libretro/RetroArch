@@ -619,16 +619,27 @@ bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc)
 {
    int64_t data_read    = 0;
    uint32_t accumulator = 0;
-   uint8_t buffer[4096];
+   /* 256 KB reads instead of a 4 KB stack buffer: CRCing a scanned
+    * multi-gigabyte disc image at 4 KB a call is a quarter of a
+    * million reads per gigabyte, and the call overhead dominates
+    * the checksum.  Heap-allocated once per file - this runs on
+    * scan / updater / backup paths, never per-frame. */
+   size_t buffer_len    = 256 * 1024;
+   uint8_t *buffer      = NULL;
 
    if (!intf || !crc)
+      return false;
+
+   if (!(buffer = (uint8_t*)malloc(buffer_len)))
       return false;
 
    /* Ensure we start at the beginning of the file */
    intfstream_rewind(intf);
 
-   while ((data_read = intfstream_read(intf, buffer, sizeof(buffer))) > 0)
+   while ((data_read = intfstream_read(intf, buffer, buffer_len)) > 0)
       accumulator = encoding_crc32(accumulator, buffer, (size_t)data_read);
+
+   free(buffer);
 
    if (data_read < 0)
       return false;
