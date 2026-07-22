@@ -367,6 +367,11 @@ typedef struct
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
       D3D12Resource                    ubo_post;
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_post_view;
+      /* Tiny per-frame CB for the HDR-aware sprite/font entries
+       * (SpriteHDR at register b1, bound via ROOT_ID_PC):
+       * { mode, paper_white_nits, expand_gamut, pad } */
+      D3D12Resource                    ubo_sprites;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_sprites_view;
       D3D12PipelineState               pso_readback; /* lazy: HDR -> SDR tonemap PSO for read_viewport */
       float                            menu_nits;
       float                            max_output_nits;
@@ -3405,6 +3410,14 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
 
+      /* HDR-aware pixel entry replaces PSMain for these pipes:
+       * passthrough at sprite_hdr_mode 0, encodes for the
+       * direct-to-swapchain UI case otherwise */
+      Release(ps_code);
+      ps_code = NULL;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainHDR", "ps_5_0", &ps_code))
+         goto error;
+
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
       desc.InputLayout.pInputElementDescs = inputElementDesc;
       desc.InputLayout.NumElements        = countof(inputElementDesc);
@@ -3423,7 +3436,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(ps_code);
       ps_code = NULL;
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8HDR", "ps_5_0", &ps_code))
          goto error;
 
       Release(d3d12->sprites.pipe_font_hdr);
@@ -3784,6 +3797,7 @@ static void d3d12_gfx_free(void* data)
 
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->hdr.ubo);
+   Release(d3d12->hdr.ubo_sprites);
    Release(d3d12->hdr.ubo_post);
    Release(d3d12->hdr.pso_readback);
 #endif
@@ -4620,6 +4634,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.ubo_post_view.SizeInBytes      = sizeof(dxgi_hdr_uniform_t);
    d3d12->hdr.ubo_post_view.BufferLocation   =
       d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_post_view.SizeInBytes, &d3d12->hdr.ubo_post);
+   d3d12->hdr.ubo_sprites_view.SizeInBytes   = 256;
+   d3d12->hdr.ubo_sprites_view.BufferLocation =
+      d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_sprites_view.SizeInBytes, &d3d12->hdr.ubo_sprites);
 
    d3d12->hdr.ubo_values.mvp                 = d3d12->mvp_no_rot;
    d3d12->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
@@ -4999,6 +5016,38 @@ static bool d3d12_gfx_frame(
          && (   (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
              || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
       use_back_buffer = true;
+
+   /* HDR-aware sprite entries: when UI (widgets / OSD) draws
+    * directly into the HDR swapchain -- no back-buffer composite
+    * this frame -- the sprite shaders must encode SDR content
+    * themselves; when the composite runs later, they pass through
+    * (mode 0) and the composite encodes. The two cases never mix
+    * within one frame. */
+   {
+      void *mapped = NULL;
+      D3D12_RANGE read_range;
+      float vals[4];
+
+      vals[0] = 0.0f;
+      vals[1] = d3d12->hdr.menu_nits;
+      vals[2] = (float)d3d12->hdr.ubo_values.expand_gamut;
+      vals[3] = 0.0f;
+
+      if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            && !(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+            && !(d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE))
+         vals[0] = (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+               ? 2.0f : 1.0f;
+
+      read_range.Begin = 0;
+      read_range.End   = 0;
+      if (SUCCEEDED(D3D12Map(d3d12->hdr.ubo_sprites, 0, &read_range, &mapped))
+            && mapped)
+      {
+         memcpy(mapped, vals, sizeof(vals));
+         D3D12Unmap(d3d12->hdr.ubo_sprites, 0, NULL);
+      }
+   }
 
    d3d12->chain.current_rt_format = back_buffer_format;
 #endif
@@ -5887,6 +5936,10 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
 
       cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->chain.back_buffer.gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -5969,6 +6022,10 @@ static bool d3d12_gfx_frame(
 #endif
       cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
 
 #ifdef HAVE_GFX_WIDGETS
    const bool widgets_visible        = gfx_widgets_visible(video_info);
@@ -6171,6 +6228,10 @@ static bool d3d12_gfx_frame(
             FALSE, NULL);
 
       cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->chain.back_buffer.gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -6629,6 +6690,10 @@ static bool d3d12_gpu_hdr_readback_to_bgr24(
    /* Bind RT, root signature, descriptor tables, UBO. */
    cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &sdr_rt.rt_view, FALSE, NULL);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
          hdr_src.gpu_descriptor[0]);
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
