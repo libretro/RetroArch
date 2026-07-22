@@ -370,6 +370,15 @@ typedef struct
    {
       d3d11_shader_t shader;
       d3d11_shader_t shader_font;
+#ifdef HAVE_DXGI_HDR
+      /* HDR-aware sprite/font shaders (PSMainHDR / PSMainA8HDR):
+       * used whenever HDR output is enabled; sprite_hdr_mode 0 in
+       * hdr_cb makes them behave exactly like the plain entries
+       * while the back-buffer composite will encode later. */
+      d3d11_shader_t shader_hdr;
+      d3d11_shader_t shader_font_hdr;
+      D3D11Buffer    hdr_cb;
+#endif
       D3D11Buffer    vbo;
       int            offset;
       int            capacity;
@@ -435,6 +444,28 @@ typedef struct
    IDXGIAdapter1 *adapters[D3D11_MAX_GPU_COUNT];
    d3d11_texture_t      luts[GFX_MAX_TEXTURES];
 } d3d11_video_t;
+
+/* Sprite/font shader selection: HDR output uses the encoding
+ * entries (driven by sprites.hdr_cb at PS slot b1); SDR uses the
+ * plain ones. */
+static INLINE d3d11_shader_t *d3d11_sprite_shader(d3d11_video_t *d3d11)
+{
+#ifdef HAVE_DXGI_HDR
+   if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      return &d3d11->sprites.shader_hdr;
+#endif
+   return &d3d11->sprites.shader;
+}
+
+static INLINE d3d11_shader_t *d3d11_sprite_font_shader(d3d11_video_t *d3d11)
+{
+#ifdef HAVE_DXGI_HDR
+   if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      return &d3d11->sprites.shader_font_hdr;
+#endif
+   return &d3d11->sprites.shader_font;
+}
+
 
 
 #define D3D11_ROLLING_SCANLINE_SIMULATION
@@ -726,7 +757,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
          d3d11->context->lpVtbl->OMSetBlendState(d3d11->context, d3d11->blend_enable, NULL, D3D11_DEFAULT_SAMPLE_MASK);
 
          {
-            d3d11_shader_t *shader = &d3d11->sprites.shader;
+            d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
             d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
             d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
             d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
@@ -844,7 +875,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 
    if (vertex_count > 1)
    {
-      d3d11_shader_t *shader = &d3d11->sprites.shader;
+      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
       d3d11->context->lpVtbl->IASetInputLayout(d3d11->context, shader->layout);
       d3d11->context->lpVtbl->VSSetShader(d3d11->context, shader->vs, NULL, 0);
       d3d11->context->lpVtbl->PSSetShader(d3d11->context, shader->ps, NULL, 0);
@@ -1492,11 +1523,11 @@ static void d3d11_font_render_msg(
 
    /* Single draw call + single shader swap for all lines combined. */
    d3d11->context->lpVtbl->PSSetShader(
-         d3d11->context, d3d11->sprites.shader_font.ps, NULL, 0);
+         d3d11->context, d3d11_sprite_font_shader(d3d11)->ps, NULL, 0);
    d3d11->context->lpVtbl->Draw(
          d3d11->context, total_count, start_offset);
    d3d11->context->lpVtbl->PSSetShader(
-         d3d11->context, d3d11->sprites.shader.ps, NULL, 0);
+         d3d11->context, d3d11_sprite_shader(d3d11)->ps, NULL, 0);
 
    d3d11->sprites.offset = start_offset + total_count;
 }
@@ -2867,6 +2898,11 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_release_shader(&d3d11->sprites.shader);
    d3d11_release_shader(&d3d11->sprites.shader_font);
+#ifdef HAVE_DXGI_HDR
+   d3d11_release_shader(&d3d11->sprites.shader_hdr);
+   d3d11_release_shader(&d3d11->sprites.shader_font_hdr);
+   Release(d3d11->sprites.hdr_cb);
+#endif
    Release(d3d11->sprites.vbo);
 
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -3655,6 +3691,32 @@ static void *d3d11_gfx_init(const video_info_t* video,
                countof(desc), &d3d11->sprites.shader_font,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
+#ifdef HAVE_DXGI_HDR
+      if (!d3d11_init_shader(
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMainHDR", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_hdr,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
+         goto error;
+      if (!d3d11_init_shader(
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMainA8HDR", "GSMain", desc,
+               countof(desc), &d3d11->sprites.shader_font_hdr,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
+         goto error;
+
+      {
+         D3D11_BUFFER_DESC cb_desc;
+         cb_desc.ByteWidth           = 16; /* mode, nits, expand, pad */
+         cb_desc.Usage               = D3D11_USAGE_DYNAMIC;
+         cb_desc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+         cb_desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+         cb_desc.MiscFlags           = 0;
+         cb_desc.StructureByteStride = 0;
+         d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &cb_desc,
+               NULL, &d3d11->sprites.hdr_cb);
+      }
+#endif
    }
 
    if (string_is_equal(settings->arrays.menu_driver, "xmb"))
@@ -4755,10 +4817,42 @@ static bool d3d11_gfx_frame(
             context, 0, 1, nullSRV);
    }
 
+#ifdef HAVE_DXGI_HDR
+   /* Drive the HDR sprite entries: encode when UI draws directly
+    * into the HDR swapchain this frame; pass through (mode 0) when
+    * the menu composite will encode later. Mirrors the d3d12
+    * driver. */
+   if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+   {
+      D3D11_MAPPED_SUBRESOURCE cb_map;
+      float vals[4];
+
+      vals[0] = 0.0f;
+      vals[1] = d3d11->hdr.menu_nits;
+      vals[2] = (float)d3d11->hdr.ubo_values.expand_gamut;
+      vals[3] = 0.0f;
+
+      if (!(d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
+         vals[0] = (swapchain_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+               ? 2.0f : 1.0f;
+
+      if (SUCCEEDED(context->lpVtbl->Map(context,
+                  (D3D11Resource)d3d11->sprites.hdr_cb, 0,
+                  D3D11_MAP_WRITE_DISCARD, 0, &cb_map)))
+      {
+         memcpy(cb_map.pData, vals, sizeof(vals));
+         context->lpVtbl->Unmap(context,
+               (D3D11Resource)d3d11->sprites.hdr_cb, 0);
+      }
+      context->lpVtbl->PSSetConstantBuffers(context, 1, 1,
+            &d3d11->sprites.hdr_cb);
+   }
+#endif
+
    if((d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE) && 
       (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
    {
-      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+      static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d11->back_buffer.rt_view, NULL);
 
@@ -4808,7 +4902,7 @@ static bool d3d11_gfx_frame(
 
    context->lpVtbl->RSSetViewports(context, 1, &d3d11->viewport);
    {
-      d3d11_shader_t *shader = &d3d11->sprites.shader;
+      d3d11_shader_t *shader = d3d11_sprite_shader(d3d11);
       context->lpVtbl->IASetInputLayout(context, shader->layout);
       context->lpVtbl->VSSetShader(context, shader->vs, NULL, 0);
       context->lpVtbl->PSSetShader(context, shader->ps, NULL, 0);
