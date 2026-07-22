@@ -54,6 +54,8 @@ struct data_transfer
    size_t  cap;      /* commit ceiling (buffer size in fallback)     */
    size_t  len;      /* full file length, fixed at open              */
    size_t  avail;    /* bytes valid at the front; monotonic          */
+   size_t  low;      /* lowest readable offset after discards       */
+   size_t  page;     /* page size for the discard granularity        */
    uint8_t done;     /* the operation is over                        */
    uint8_t failed;   /* ...but delivered less than the file          */
    uint8_t capped;   /* stopped at the commit ceiling                */
@@ -109,7 +111,10 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
       dt->map = (uint8_t*)VirtualAlloc(NULL, rl, MEM_RESERVE,
             PAGE_NOACCESS);
       if (dt->map)
+      {
          dt->map_len = rl;
+         dt->page    = pg;
+      }
    }
 #elif defined(DT_HAVE_RESERVE)
    {
@@ -122,6 +127,7 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
       {
          dt->map     = (uint8_t*)m;
          dt->map_len = rl;
+         dt->page    = pg;
       }
    }
 #endif
@@ -211,6 +217,78 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
    if (dt->avail >= dt->len && !dt->failed)
       dt->done = 1;
    return dt->avail;
+}
+
+/* Positioned read that leaves the fill's own file cursor alone. */
+static int data_transfer_read_at(data_transfer_t *dt, size_t off,
+      uint8_t *dst, size_t n)
+{
+#if !defined(_WIN32) && defined(DT_HAVE_RESERVE)
+   while (n)
+   {
+      ssize_t r = pread(fileno(dt->f), dst, n, (off_t)off);
+      if (r <= 0)
+         return 0;
+      dst += (size_t)r; off += (size_t)r; n -= (size_t)r;
+   }
+   return 1;
+#else
+   long save = ftell(dt->f);
+   size_t r;
+   if (save < 0 || fseek(dt->f, (long)off, SEEK_SET) != 0)
+      return 0;
+   r = fread(dst, 1, n, dt->f);
+   fseek(dt->f, save, SEEK_SET);
+   return r == n;
+#endif
+}
+
+void data_transfer_discard(data_transfer_t *dt, size_t up_to)
+{
+   size_t lo;
+   if (!dt || !dt->f || !dt->map_len || !dt->page)
+      return;                     /* nbio or fallback: bytes stay */
+   if (up_to > dt->avail)
+      up_to = dt->avail;
+   lo = (up_to / dt->page) * dt->page;
+   if (lo <= dt->low)
+      return;
+#if defined(_WIN32)
+   VirtualFree(dt->map + dt->low, lo - dt->low, MEM_DECOMMIT);
+#elif defined(DT_HAVE_RESERVE)
+   madvise(dt->map + dt->low, lo - dt->low, MADV_DONTNEED);
+#endif
+   dt->low = lo;
+}
+
+bool data_transfer_refill(data_transfer_t *dt, size_t from)
+{
+   size_t lo, end;
+   if (!dt)
+      return false;
+   if (!dt->f || !dt->map_len || from >= dt->low)
+      return !dt->failed;         /* nothing was released there */
+   lo  = (from / dt->page) * dt->page;
+   end = dt->low;
+   if (end > dt->avail)
+      end = dt->avail;
+#if defined(_WIN32)
+   if (!VirtualAlloc(dt->map + lo, end - lo, MEM_COMMIT,
+         PAGE_READWRITE))
+      return false;
+#endif
+   /* (POSIX: MADV_DONTNEED left the pages committed; they refault as
+    * zeros and are simply written over.) */
+   if (end > lo && !data_transfer_read_at(dt, lo, dt->map + lo, end - lo))
+   {
+      /* the file shrank or errored underneath a re-read: the honest
+       * frozen-short state, same as a fill ending early */
+      dt->done   = 1;
+      dt->failed = 1;
+      return false;
+   }
+   dt->low = lo;
+   return true;
 }
 
 data_transfer_t *data_transfer_adopt(void *nbio)

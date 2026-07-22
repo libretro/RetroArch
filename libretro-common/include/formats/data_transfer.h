@@ -81,6 +81,24 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
  * Terminal: iterate() will not advance further. */
 bool data_transfer_capped(data_transfer_t *dt);
 
+/* Bounded-memory streaming over a prefix transfer: release the
+ * physical backing of the leading bytes below 'up_to' (rounded down
+ * to a page).  avail() is unchanged, but the released bytes are GONE
+ * - a caller that might read them again must data_transfer_refill()
+ * first, and the discard contract is a promise not to touch them
+ * meanwhile.  A consumer that discards behind its read position as
+ * it goes plays a file of any size in a constant residency window.
+ * Best-effort: a no-op on the nbio strategy and on the no-reservation
+ * fallback (whose bytes simply stay). */
+void data_transfer_discard(data_transfer_t *dt, size_t up_to);
+
+/* Make [from, avail) readable again after discards, re-reading any
+ * released span from the file (the transfer keeps it open).  The cost
+ * of a backward seek, paid honestly: false only if the re-read fails
+ * (the file shrank or errored), in which case the transfer settles
+ * failed. */
+bool data_transfer_refill(data_transfer_t *dt, size_t from);
+
 /* Wrap an nbio handle whose read may already be in flight - the
  * adoption case, where one owner opened and partially read the file
  * and another takes over finishing it (a thumbnail adopting its
