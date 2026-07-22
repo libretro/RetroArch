@@ -26,6 +26,7 @@
 #endif
 
 #include <stdlib.h>
+#include <math.h>
 
 #include "../common/gl3_defines.h"
 
@@ -1518,8 +1519,13 @@ static void gl3_pbo_async_readback(gl3_t *gl)
          gl->pbo_readback[gl->pbo_readback_index++]);
    glPixelStorei(GL_PACK_ALIGNMENT, 4);
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   /* See the screenshot read-back: under scRGB, recording reads the
+    * pre-encode SDR offscreen, roundtrip-free. */
+   if (gl->scrgb.active && gl->scrgb.fbo)
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->scrgb.fbo);
 #ifndef HAVE_OPENGLES
-   glReadBuffer(GL_BACK);
+   else
+      glReadBuffer(GL_BACK);
 #endif
    if (gl->pbo_readback_index >= GL_CORE_NUM_PBOS)
       gl->pbo_readback_index = 0;
@@ -1528,6 +1534,8 @@ static void gl3_pbo_async_readback(gl3_t *gl)
    glReadPixels(gl->vp.x, gl->vp.y,
                 gl->vp.width, gl->vp.height,
                 GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+   if (gl->scrgb.active && gl->scrgb.fbo)
+      glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
@@ -3664,6 +3672,119 @@ static void gl3_viewport_info(void *data, struct video_viewport *vp)
    vp->y           = top_dist;
 }
 
+/* CPU-side scRGB -> PQ helpers for the native HDR read-back; the math
+ * is verbatim from the vulkan driver's (unit-tested) helpers, minus
+ * the half decode -- GL hands us floats directly. */
+static float gl3_hdr_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+static uint16_t gl3_hdr_scrgb_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f;
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = gl3_hdr_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+
+/* Native (no tone-map) HDR read-back: read the encoded FP16 scRGB
+ * backbuffer as floats, row by row, and convert to 48-bit PQ-coded
+ * RGB bottom-up (GL rows already come bottom-up, so the buffer is
+ * filled sequentially). Metadata matches the other drivers' scRGB
+ * tagging: PQ transfer, BT.709 primaries, D65, measured cLLI and the
+ * same 1000 / 0.001 nit mastering defaults. */
+static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   gl3_t *gl = (gl3_t*)data;
+   int      vp_x, vp_y;
+   unsigned w, h, x;
+   size_t   y;
+   float   *row;
+   float    max_cll  = 0.0f;
+   double   sum_fall = 0.0;
+
+   if (!gl || !(gl->scrgb.active) || !buffer)
+      return false;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   vp_x = (gl->vp.x > 0) ? gl->vp.x : 0;
+   vp_y = (gl->vp.y > 0) ? gl->vp.y : 0;
+   w    = (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width;
+   h    = (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height;
+   if (!w || !h)
+      return false;
+
+   row = (float*)malloc((size_t)w * 4 * sizeof(float));
+   if (!row)
+      return false;
+
+   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+#ifndef HAVE_OPENGLES
+   glReadBuffer(GL_BACK);
+#endif
+
+   for (y = 0; y < h; y++)
+   {
+      uint16_t *dst = buffer + y * (size_t)w * 3;
+      glReadPixels(vp_x, vp_y + (int)y, w, 1, GL_RGBA, GL_FLOAT, row);
+      for (x = 0; x < w; x++)
+      {
+         float r        = row[4 * x + 0];
+         float g        = row[4 * x + 1];
+         float b        = row[4 * x + 2];
+         float lvl;
+         dst[3 * x + 0] = gl3_hdr_scrgb_to_pq16(r);
+         dst[3 * x + 1] = gl3_hdr_scrgb_to_pq16(g);
+         dst[3 * x + 2] = gl3_hdr_scrgb_to_pq16(b);
+         lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
+         lvl *= 80.0f;
+         if (lvl < 0.0f) lvl = 0.0f;
+         else if (lvl > 10000.0f) lvl = 10000.0f;
+         if (lvl > max_cll) max_cll = lvl;
+         sum_fall += lvl;
+      }
+   }
+
+   free(row);
+
+   if (out_meta)
+   {
+      memset(out_meta, 0, sizeof(*out_meta));
+      out_meta->colour_primaries      = 1;  /* BT.709 (scRGB) */
+      out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      out_meta->matrix_coefficients   = 0;  /* RGB */
+      out_meta->video_full_range_flag = 1;
+      out_meta->max_cll               = max_cll;
+      out_meta->max_fall              = (float)(sum_fall / ((double)w * (double)h));
+      out_meta->write_mdcv            = 1;
+      out_meta->primary_chromaticity[0][0] = 0.640f; out_meta->primary_chromaticity[0][1] = 0.330f;
+      out_meta->primary_chromaticity[1][0] = 0.300f; out_meta->primary_chromaticity[1][1] = 0.600f;
+      out_meta->primary_chromaticity[2][0] = 0.150f; out_meta->primary_chromaticity[2][1] = 0.060f;
+      out_meta->white_point[0] = 0.3127f;
+      out_meta->white_point[1] = 0.3290f; /* D65 */
+      out_meta->max_luminance  = 1000.0f;
+      out_meta->min_luminance  = 0.001f;
+   }
+   return true;
+}
+
 static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    gl3_t *gl = (gl3_t*)data;
@@ -4626,8 +4747,18 @@ static bool gl3_frame(void *data, const void *frame,
       glPixelStorei(GL_PACK_ALIGNMENT, 4);
       glPixelStorei(GL_PACK_ROW_LENGTH, 0);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+      /* Under scRGB output, read the SDR offscreen instead of the
+       * encoded FP16 backbuffer: it holds the exact pre-encode frame,
+       * so SDR screenshots are roundtrip-free (no paper-white /
+       * gamma / gamut inversion at all -- the other HDR drivers can
+       * only approximate this with a tonemap). */
+      if (gl->scrgb.active && gl->scrgb.fbo)
+         glBindFramebuffer(GL_READ_FRAMEBUFFER, gl->scrgb.fbo);
 #ifndef HAVE_OPENGLES
-      glReadBuffer(GL_BACK);
+      else
+         glReadBuffer(GL_BACK);
+#else
+      ;
 #endif
       glReadPixels(
             (gl->vp.x > 0) ? gl->vp.x : 0,
@@ -4636,6 +4767,8 @@ static bool gl3_frame(void *data, const void *frame,
             (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
             GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
+      if (gl->scrgb.active && gl->scrgb.fbo)
+         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    }
    else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
    {
@@ -5284,6 +5417,8 @@ video_driver_t video_gl3 = {
    NULL, /* shader_load_step */
 #endif
 #ifdef HAVE_GFX_WIDGETS
-   gl3_gfx_widgets_enabled
+   gl3_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   gl3_read_viewport_hdr
 };
