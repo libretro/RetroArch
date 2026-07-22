@@ -817,30 +817,50 @@ static void gl2_raster_font_free(void *data,
    free(font);
 }
 
-static void gl2_raster_font_upload_atlas(gl2_raster_t *font)
+/* Convert the atlas rows [y0, y1) to LUMINANCE_ALPHA and upload them.
+ * Uploading full-width row bands (rather than an x/y sub-rectangle)
+ * avoids GL_UNPACK_ROW_LENGTH, which OpenGL ES 2 does not have. When
+ * 'respecify' is set the texture storage is (re)created at full size;
+ * otherwise the band is updated in place with glTexSubImage2D. */
+static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
+      unsigned y0, unsigned y1, bool respecify)
 {
    int i, j;
    GLint  gl_internal          = GL_LUMINANCE_ALPHA;
    GLenum gl_format            = GL_LUMINANCE_ALPHA;
    size_t ncomponents          = 2;
-   uint8_t *tmp                = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+   unsigned band               = respecify ? font->tex_height : (y1 - y0);
+   uint8_t *tmp;
+
+   if (!respecify && (y1 <= y0 || y1 > (unsigned)font->atlas->height))
+      return;
+
+   tmp = (uint8_t*)calloc(band, font->tex_width * ncomponents);
+   if (!tmp)
+      return;
+
+   if (respecify)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
 
    switch (ncomponents)
    {
       case 1:
-         for (i = 0; i < (int)font->atlas->height; ++i)
+         for (i = (int)y0; i < (int)y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - (int)y0) * font->tex_width * ncomponents];
 
             memcpy(dst, src, font->atlas->width);
          }
          break;
       case 2:
-         for (i = 0; i < (int)font->atlas->height; ++i)
+         for (i = (int)y0; i < (int)y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - (int)y0) * font->tex_width * ncomponents];
 
             for (j = 0; j < (int)font->atlas->width; ++j)
             {
@@ -851,9 +871,14 @@ static void gl2_raster_font_upload_atlas(gl2_raster_t *font)
          break;
    }
 
-   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
-         font->tex_width, font->tex_height,
-         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   if (respecify)
+      glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
+            font->tex_width, font->tex_height,
+            0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   else
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (GLint)y0,
+            font->tex_width, band,
+            gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
 }
@@ -892,7 +917,7 @@ static void *gl2_raster_font_init(void *data,
    font->tex_width  = next_pow2(font->atlas->width);
    font->tex_height = next_pow2(font->atlas->height);
 
-   gl2_raster_font_upload_atlas(font);
+   gl2_raster_font_upload_atlas(font, 0, 0, true);
 
    font->atlas->dirty = false;
 
@@ -943,7 +968,8 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
 {
    if (font->atlas->dirty)
    {
-      gl2_raster_font_upload_atlas(font);
+      gl2_raster_font_upload_atlas(font,
+            font->atlas->dirty_y0, font->atlas->dirty_y1, false);
       font->atlas->dirty   = false;
    }
 
