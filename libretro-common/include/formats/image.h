@@ -250,6 +250,15 @@ void image_transfer_anim_stream_get_info(void *stream,
 const uint32_t *image_transfer_anim_stream_next(void *stream,
       enum image_type_enum type, int *duration_ms);
 
+/* Ask the stream to emit ARGB words (non-zero) or the default R,G,B,A
+ * memory order (zero) from the next frame on.  Returns true when the
+ * stream type honours the request (the video streams: WEBM, MP4) so
+ * the caller can skip its own R/B swizzle pass; false for types that
+ * always emit the default order (animated WEBP), where the caller
+ * must keep converting. */
+bool image_transfer_anim_stream_set_argb(void *stream,
+      enum image_type_enum type, int argb);
+
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type);
 
