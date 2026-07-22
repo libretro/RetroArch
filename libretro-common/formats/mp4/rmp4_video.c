@@ -83,6 +83,20 @@ struct rmp4_video_stream
    int          is10;       /* last decoded frame written as 10-bit    */
 };
 
+/* Still-image decode progress across sliced process calls. */
+enum
+{
+   RMP4_VIDEO_STILL_IDLE = 0,    /* nothing in progress (or done)      */
+   RMP4_VIDEO_STILL_SCAN,        /* stream open, pre-scan running      */
+   RMP4_VIDEO_STILL_DECODE       /* decoding to the first shown frame  */
+};
+
+/* Container packets walked per pre-scan slice of the sliced still
+ * path: cheap header parses, sized so a slice stays well under a
+ * display frame even on weak hardware while the full bounded scan
+ * still completes in a handful of slices. */
+#define RMP4_VIDEO_SCAN_SLICE    1024
+
 struct rmp4_video
 {
    const uint8_t *buf;
@@ -91,8 +105,11 @@ struct rmp4_video
     * to continue the video as an animation can detach it instead of
     * re-opening (and re-pre-scanning) the file.  Owned by this handle
     * until rmp4_video_detach_stream; closed by rmp4_video_free
-    * otherwise.  Borrows 'buf', which must outlive it either way. */
+    * otherwise.  Borrows 'buf', which must outlive it either way.
+    * While still_stage is not IDLE this holds the partially-opened
+    * stream the sliced still decode is building. */
    rmp4_video_stream_t *stream;
+   int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
 };
@@ -452,12 +469,21 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
 /* ------------------------------------------------------------------ */
 /* Streaming animation                                                 */
 /* ------------------------------------------------------------------ */
-rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
-      size_t len)
+
+/* Staged open, mirroring the WebM glue, so the sliced still-image path
+ * can spread the work over several calls:
+ *   begin      demuxer + track selection + timestamp-table allocation
+ *   scan_step  up to max_packets of the bounded pre-scan
+ *   finish     validate, sort composition times, rewind, decoder +
+ *              frame-canvas allocation
+ * rmp4_video_stream_open composes all three for callers that want the
+ * one-shot behaviour. */
+
+static rmp4_video_stream_t *rmp4_video_stream_open_begin(
+      const uint8_t *buf, size_t len)
 {
    rmp4_video_stream_t *s;
    const rmp4_track *trk = NULL;
-   rmp4_packet pkt;
    int i, num_tracks;
 
    if (!buf || !len)
@@ -500,27 +526,54 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    s->width  = trk->width;
    s->height = trk->height;
 
-   /* Pre-scan: count the track's packets and record their timestamps so
-    * frame durations come straight from the container. This walks the
-    * sample table only (no decode). */
    if (!(s->ts = (int64_t*)malloc(RMP4_VIDEO_MAX_TS * sizeof(int64_t))))
       goto fail;
-   /* Stop at the table's capacity, mirroring the WebM glue: frames past
-    * the cap reuse the last stored delta, and num_frames saturates (its
-    * only external consumer is the >= 2 animation admission).  For a
-    * plain MP4 the walk is cheap (moov-resident sample tables), but a
-    * fragmented file interleaves moof boxes with the media data, so an
-    * unbounded walk swept the whole buffer there too. */
-   while (   s->num_frames < RMP4_VIDEO_MAX_TS
-          && rmp4_read_packet(s->demux, &pkt) == 1)
+
+   return s;
+
+fail:
+   rmp4_video_stream_close(s);
+   return NULL;
+}
+
+/* Pre-scan: count the track's packets and record their timestamps so
+ * frame durations come straight from the container. This walks the
+ * sample table only (no decode).  Stop at the table's capacity,
+ * mirroring the WebM glue: frames past the cap reuse the last stored
+ * delta, and num_frames saturates (its only external consumer is the
+ * >= 2 animation admission).  For a plain MP4 the walk is cheap
+ * (moov-resident sample tables), but a fragmented file interleaves
+ * moof boxes with the media data, so an unbounded walk swept the
+ * whole buffer there too.
+ *
+ * Walks at most max_packets container packets (any track; <= 0 means
+ * no limit) and returns 1 when the scan is complete, 0 when there is
+ * more to walk. */
+static int rmp4_video_stream_scan_step(rmp4_video_stream_t *s,
+      int max_packets)
+{
+   rmp4_packet pkt;
+   int walked = 0;
+
+   while (s->num_frames < RMP4_VIDEO_MAX_TS)
    {
+      if (max_packets > 0 && walked >= max_packets)
+         return 0;
+      if (rmp4_read_packet(s->demux, &pkt) != 1)
+         break;
+      walked++;
       if (pkt.track != s->track)
          continue;
       s->ts[s->ts_count++] = pkt.timestamp;
       s->num_frames++;
    }
+   return 1;
+}
+
+static int rmp4_video_stream_open_finish(rmp4_video_stream_t *s)
+{
    if (s->num_frames < 1)
-      goto fail;
+      return -1;
    /* The sample table lists composition times in decode order; with
     * B-frames the decoder hands pictures out reordered by those times,
     * so sort them into the presentation timeline the displayed frames
@@ -530,17 +583,29 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    rmp4_rewind(s->demux);
 
    if (!rmp4_video_stream_open_decoder(s))
-      goto fail;
+      return -1;
 
    if (!(s->frame = (uint32_t*)malloc(
          (size_t)s->width * s->height * sizeof(uint32_t))))
-      goto fail;
+      return -1;
 
+   return 0;
+}
+
+rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
+      size_t len)
+{
+   rmp4_video_stream_t *s;
+
+   if (!(s = rmp4_video_stream_open_begin(buf, len)))
+      return NULL;
+   rmp4_video_stream_scan_step(s, 0);
+   if (rmp4_video_stream_open_finish(s) != 0)
+   {
+      rmp4_video_stream_close(s);
+      return NULL;
+   }
    return s;
-
-fail:
-   rmp4_video_stream_close(s);
-   return NULL;
 }
 
 void rmp4_video_stream_close(rmp4_video_stream_t *s)
@@ -737,13 +802,16 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    return -1;
 }
 
-const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
+/* Advance by exactly one of the chosen track's packets (skipping other
+ * tracks' packets, which are header reads only), or by one drained
+ * reorder-queue picture once the packets are exhausted.  Returns 1
+ * when a displayed picture is in s->frame (duration written), 0 when
+ * the packet decoded but is not displayed, -1 at the end of a pass or
+ * on a decode error. */
+static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       int *duration_ms)
 {
    rmp4_packet pkt;
-
-   if (!s)
-      return NULL;
 
    while (rmp4_read_packet(s->demux, &pkt) == 1)
    {
@@ -752,13 +820,13 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
          continue;
       r = rmp4_video_decode_packet(s, &pkt);
       if (r < 0)
-         return NULL;    /* decode error: end the animation */
+         return -1;      /* decode error: end the animation */
       if (r == 0)
-         continue;       /* non-shown frame: keep going      */
+         return 0;       /* non-shown frame                  */
       if (duration_ms)
          *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
       s->disp_idx++;
-      return s->frame;
+      return 1;
    }
    /* Out of packets. Display reordering can leave the last few pictures
     * queued inside the H.264 decoder; hand them out before ending the
@@ -783,10 +851,23 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
          if (duration_ms)
             *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
-         return s->frame;
+         return 1;
       }
    }
-   return NULL;           /* end of one pass */
+   return -1;             /* end of one pass */
+}
+
+const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *s,
+      int *duration_ms)
+{
+   int r;
+
+   if (!s)
+      return NULL;
+
+   while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
+      ;                   /* non-shown frame: keep going      */
+   return (r == 1) ? s->frame : NULL;
 }
 
 void rmp4_video_stream_rewind(rmp4_video_stream_t *s)
@@ -896,6 +977,10 @@ rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4)
    rmp4_video_stream_t *s;
    if (!mp4 || !mp4->stream)
       return NULL;
+   /* A stream mid-build in the sliced still decode is not complete
+    * (pre-scan or decoder setup may be pending); never hand it out. */
+   if (mp4->still_stage != RMP4_VIDEO_STILL_IDLE)
+      return NULL;
    s           = mp4->stream;
    mp4->stream = NULL;
    /* The animation consumers upload plain 8-bit frames; the still may
@@ -929,6 +1014,13 @@ bool rmp4_video_is_10bit(const rmp4_video_t *mp4)
    return mp4 && mp4->last_10bit;
 }
 
+/* Sliced still-image decode, mirroring the WebM glue: each call
+ * performs one bounded unit of work and returns IMAGE_PROCESS_NEXT
+ * until the first displayed frame is ready - stream open, pre-scan in
+ * RMP4_VIDEO_SCAN_SLICE-packet chunks, decoder setup, then one coded
+ * packet per call (an H.264 picture held for display reordering takes
+ * its own slice) - so the still decode no longer monopolises the
+ * cooperative task queue in a single process call. */
 int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
       size_t len, unsigned *width, unsigned *height, bool supports_rgba)
 {
@@ -936,6 +1028,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    const uint32_t *frame;
    uint32_t *out;
    size_t i, n;
+   int r;
    int duration_ms = 0;
 
    (void)len;
@@ -943,33 +1036,52 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    if (!mp4 || !mp4->buf || !buf)
       return IMAGE_PROCESS_ERROR;
 
-   /* Defensive: a repeated process call re-opens from scratch. */
-   if (mp4->stream)
+   switch (mp4->still_stage)
    {
-      rmp4_video_stream_close(mp4->stream);
-      mp4->stream = NULL;
+      case RMP4_VIDEO_STILL_IDLE:
+         /* Defensive: a repeated process call re-opens from scratch. */
+         if (mp4->stream)
+         {
+            rmp4_video_stream_close(mp4->stream);
+            mp4->stream = NULL;
+         }
+         if (!(mp4->stream = rmp4_video_stream_open_begin(
+               mp4->buf, mp4->len)))
+            return IMAGE_PROCESS_ERROR;
+         mp4->still_stage = RMP4_VIDEO_STILL_SCAN;
+         return IMAGE_PROCESS_NEXT;
+
+      case RMP4_VIDEO_STILL_SCAN:
+         if (!rmp4_video_stream_scan_step(mp4->stream,
+               RMP4_VIDEO_SCAN_SLICE))
+            return IMAGE_PROCESS_NEXT;
+         if (rmp4_video_stream_open_finish(mp4->stream) != 0)
+            goto fail;
+         /* Request 10-bit output; the stream honours it only for
+          * 10-bit sources. */
+         mp4->stream->want10 = mp4->want10;
+         mp4->still_stage    = RMP4_VIDEO_STILL_DECODE;
+         return IMAGE_PROCESS_NEXT;
+
+      case RMP4_VIDEO_STILL_DECODE:
+         break;
+
+      default:
+         return IMAGE_PROCESS_ERROR;
    }
 
-   if (!(s = rmp4_video_stream_open(mp4->buf, mp4->len)))
-      return IMAGE_PROCESS_ERROR;
-
-   /* Request 10-bit output; the stream honours it only for 10-bit sources. */
-   s->want10 = mp4->want10;
-
-   if (!(frame = rmp4_video_stream_next(s, &duration_ms)))
-   {
-      rmp4_video_stream_close(s);
-      return IMAGE_PROCESS_ERROR;
-   }
+   s = mp4->stream;
+   if ((r = rmp4_video_stream_step(s, &duration_ms)) == 0)
+      return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
+   if (r < 0)
+      goto fail;
+   frame = s->frame;
 
    mp4->last_10bit = s->is10;
 
    n = (size_t)s->width * s->height;
    if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
-   {
-      rmp4_video_stream_close(s);
-      return IMAGE_PROCESS_ERROR;
-   }
+      goto fail;
 
    if (s->is10)
       /* Packed XRGB2101010 already in the frontend's channel order; copy
@@ -999,6 +1111,12 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
     * so the caller can detach it and continue the video as an
     * animation without re-opening the file.  If nobody detaches it,
     * rmp4_video_free closes it. */
-   mp4->stream = s;
+   mp4->still_stage = RMP4_VIDEO_STILL_IDLE;
    return IMAGE_PROCESS_END;
+
+fail:
+   rmp4_video_stream_close(mp4->stream);
+   mp4->stream      = NULL;
+   mp4->still_stage = RMP4_VIDEO_STILL_IDLE;
+   return IMAGE_PROCESS_ERROR;
 }
