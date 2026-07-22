@@ -106,6 +106,12 @@ struct audio_mixer_sound
 
 
    } types;
+   /* Borrowed compressed data: when owner is set, destroy releases
+    * the source through release(owner) instead of free()ing it -
+    * the load's caller lent the bytes from inside a larger owned
+    * object (a file mapping, a data_transfer) and no copy was made. */
+   void  *data_owner;
+   void (*data_release)(void *owner);
 };
 
 struct audio_mixer_voice
@@ -762,11 +768,42 @@ audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size)
 #endif
 }
 
+void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
+      void *owner, void (*release)(void *owner))
+{
+   if (!sound)
+   {
+      /* ownership transfers in every outcome */
+      if (owner && release)
+         release(owner);
+      return;
+   }
+   sound->data_owner   = owner;
+   sound->data_release = release;
+}
+
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
    void *handle = NULL;
    if (!sound)
       return;
+
+   if (sound->data_owner)
+   {
+      /* the compressed source was borrowed: hand it back and keep
+       * the per-type free() path away from it */
+      sound->data_release(sound->data_owner);
+      switch (sound->type)
+      {
+         case AUDIO_MIXER_TYPE_WAV:
+         case AUDIO_MIXER_TYPE_NONE:
+            break;
+         default:
+            /* stream types: the data pointer is the borrowed block */
+            sound->types.stream.data = NULL;
+            break;
+      }
+   }
 
    switch (sound->type)
    {

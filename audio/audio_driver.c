@@ -2214,8 +2214,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
    bool looped                   = (params->state == AUDIO_STREAM_STATE_PLAYING_LOOPED);
    void *buf                     = NULL;
 
+   /* Ownership of params->buf_owner transfers on this call in every
+    * outcome: each failure return releases it. */
    if (params->stream_type == AUDIO_STREAM_TYPE_NONE)
+   {
+      if (params->buf_owner)
+         params->buf_owner_free(params->buf_owner);
       return false;
+   }
 
    switch (params->slot_selection_type)
    {
@@ -2232,17 +2238,31 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       default:
          if (!audio_driver_mixer_get_free_stream_slot(
                   &free_slot, params->stream_type))
+         {
+            if (params->buf_owner)
+               params->buf_owner_free(params->buf_owner);
             return false;
+         }
          break;
    }
 
    if (params->state == AUDIO_STREAM_STATE_NONE)
+   {
+      if (params->buf_owner)
+         params->buf_owner_free(params->buf_owner);
       return false;
+   }
 
-   if (!(buf = malloc(params->bufsize)))
-      return false;
-
-   memcpy(buf, params->buf, params->bufsize);
+   if (params->buf_owner)
+      /* borrowed: the sound reads straight out of the owner's bytes,
+       * and destroy hands them back - no copy is made */
+      buf = params->buf;
+   else
+   {
+      if (!(buf = malloc(params->bufsize)))
+         return false;
+      memcpy(buf, params->buf, params->bufsize);
+   }
 
    switch (params->type)
    {
@@ -2253,8 +2273,11 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
          /* WAV is a special case - input buffer is not
           * free()'d when sound playback is complete (it is
           * converted to a PCM buffer, which is free()'d instead),
-          * so have to do it here */
-         free(buf);
+          * so release the source here */
+         if (params->buf_owner)
+            params->buf_owner_free(params->buf_owner);
+         else
+            free(buf);
          buf = NULL;
          break;
       case AUDIO_MIXER_TYPE_OGG:
@@ -2294,7 +2317,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
 
    if (!handle)
    {
-      free(buf);
+      if (params->buf_owner)
+      {
+         /* WAV already released above; buf is NULL there */
+         if (buf)
+            params->buf_owner_free(params->buf_owner);
+      }
+      else
+         free(buf);
       return false;
    }
 
@@ -2316,6 +2346,12 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       default:
          break;
    }
+
+   if (params->buf_owner && buf)
+      /* the sound holds the borrowed bytes for its lifetime; destroy
+       * hands the owner back */
+      audio_mixer_sound_set_data_owner(handle,
+            params->buf_owner, params->buf_owner_free);
 
    audio_driver_st.flags |= AUDIO_FLAG_MIXER_ACTIVE;
 

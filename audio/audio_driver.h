@@ -74,6 +74,16 @@ typedef struct audio_mixer_stream_params
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
+   /* Optional ownership transfer: when buf_owner is non-NULL,
+    * add_stream borrows 'buf' from it instead of copying, and
+    * buf_owner_free(buf_owner) runs when the stream's sound is
+    * destroyed - or immediately on any failure path, or after the
+    * conversion for WAV.  Ownership transfers on the call in every
+    * outcome; 'buf' must stay valid inside the owner until release.
+    * Callers with no owned object set both to NULL and keep today's
+    * copy semantics. */
+   void *buf_owner;
+   void (*buf_owner_free)(void *owner);
 } audio_mixer_stream_params_t;
 #endif
 

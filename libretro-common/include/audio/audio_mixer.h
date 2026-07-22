@@ -80,6 +80,15 @@ audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
+/* Mark the sound's compressed source data as borrowed: destroy will
+ * hand it back through release(owner) instead of free()ing it.  For
+ * callers whose bytes live inside a larger owned object (a file
+ * mapping, a data_transfer) this removes the defensive copy.
+ * Ownership of 'owner' transfers on this call in every outcome
+ * (a NULL sound releases immediately). */
+void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
+      void *owner, void (*release)(void *owner));
+
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       bool repeat, float volume,
       const char *resampler_ident,

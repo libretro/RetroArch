@@ -607,6 +607,8 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
    params.bufsize             = wav_size;
    params.basename            = strdup(GFX_THUMB_PREVIEW_AUDIO_NAME);
    params.cb                  = NULL;
+   params.buf_owner           = NULL;
+   params.buf_owner_free      = NULL;
    params.slot_selection_idx  = 0;
    params.volume              = 1.0f;
    params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
