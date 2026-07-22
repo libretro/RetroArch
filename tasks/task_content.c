@@ -2491,6 +2491,19 @@ static bool task_content_defer_menu_load(content_state_t *p_content,
       return false;                /* only the plain menu shape     */
    if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
       return false;                /* one deferral at a time        */
+   /* The prefetch keys on this exact path, but the load rewrites
+    * some paths before reading them: a content:// SAF URI becomes a
+    * VFS path, and a bare archive ("foo.zip") becomes an explicit
+    * entry ("foo.zip#first").  Deferring either would prefetch under
+    * a key the load never looks up - a silent miss and a wasted
+    * read.  Decline them; they take the synchronous path, exactly as
+    * before this feature existed.  A path already carrying its entry
+    * ("foo.zip#rom") is stable and may defer. */
+   if (!strncmp(fullpath, "content://", STRLEN_CONST("content://")))
+      return false;
+   if (       path_is_compressed_file(fullpath)
+       && !path_contains_compressed_file(fullpath))
+      return false;                /* bare archive: load picks entry */
 
    if (!(d = (struct content_deferred_menu_load*)calloc(1, sizeof(*d))))
       return false;
