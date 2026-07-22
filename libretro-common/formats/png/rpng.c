@@ -140,14 +140,26 @@ enum rpng_flags
    RPNG_FLAG_HAS_IEND = (1 << 2),
    RPNG_FLAG_HAS_PLTE = (1 << 3),
    RPNG_FLAG_HAS_TRNS = (1 << 4),
-   RPNG_FLAG_HAS_HDR  = (1 << 5)
+   RPNG_FLAG_HAS_HDR  = (1 << 5),
+   RPNG_FLAG_AVAIL_SET = (1 << 6)  /* rpng_set_avail called: frontier
+                                      is caller-driven, not whole-buffer */
 };
 
 struct rpng
 {
    struct rpng_process *process;
    uint8_t *buff_data;
+   uint8_t *buff_start;  /* fixed buffer base (buff_data advances)     */
    uint8_t *buff_end;
+   /* Resident frontier for prefix decoding: the chunk walk reads only
+    * bytes at or before avail_end, even when buff_end (the true file
+    * end, known from the file size) lies further ahead.  A chunk that
+    * extends past avail_end while more of the file is still to arrive
+    * sets need_more instead of ending the walk, so a caller feeding a
+    * growing buffer can retry.  Defaults to buff_end (whole buffer
+    * resident) when never set. */
+   uint8_t *avail_end;
+   bool     need_more;   /* last iterate stopped at the resident wall */
    struct idat_buffer idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
@@ -1670,15 +1682,34 @@ bool rpng_iterate_image(rpng_t *rpng)
    uint32_t chunk_size      = 0;
    size_t   remaining;
 
+   rpng->need_more = false;
+
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
       return false;
 
-   /* Check whether reading the header will overflow
-    * the data buffer.  buff_end points at the LAST byte of the
-    * input, so bytes-remaining = (buff_end - buf) + 1. */
-   if ((size_t)(rpng->buff_end - buf) + 1 < 8)
+   /* The read cursor may have advanced past the resident frontier (the
+    * previous chunk ended near it): that is the wall, not EOF.  Guard
+    * before the size subtractions below, which are unsigned and would
+    * otherwise wrap to a huge "remaining" and wave a non-resident
+    * chunk through. */
+   if (buf > rpng->avail_end)
+   {
+      if (rpng->avail_end < rpng->buff_end)
+         rpng->need_more = true;
       return false;
+   }
+
+   /* The chunk header (length + type = 8 bytes) must lie within the
+    * resident frontier.  If it does not but more of the file is still
+    * to arrive, this is the resident wall, not a malformed header:
+    * flag need_more so the caller retries after feeding. */
+   if ((size_t)(rpng->avail_end - buf) + 1 < 8)
+   {
+      if (rpng->avail_end < rpng->buff_end)
+         rpng->need_more = true;
+      return false;
+   }
 
    chunk_size = rpng_dword_be(buf);
 
@@ -1693,10 +1724,27 @@ bool rpng_iterate_image(rpng_t *rpng)
     * check, letting the memcpy at the IDAT handler read ~4 GiB
     * past the end of the input).  Compare sizes instead of
     * pointers, and reject chunk_size that cannot possibly fit
-    * even before accounting for the type/CRC overhead. */
-   remaining = (size_t)(rpng->buff_end - buf) + 1;
+    * even before accounting for the type/CRC overhead.
+    *
+    * 'remaining' counts only RESIDENT bytes (to avail_end): a chunk
+    * whose body has not fully arrived yet is a wall, not an
+    * overflow.  A chunk that cannot fit within the TRUE end
+    * (buff_end) even when fully resident is genuinely malformed. */
+   remaining = (size_t)(rpng->avail_end - buf) + 1;
    if (chunk_size > remaining || remaining - chunk_size < 12)
+   {
+      /* Would the chunk fit if the rest of the file were resident?
+       * If so, we are only at the resident wall - ask for more. */
+      size_t true_remaining = (size_t)(rpng->buff_end - buf) + 1;
+      if (rpng->avail_end < rpng->buff_end
+            && chunk_size <= true_remaining
+            && true_remaining - chunk_size >= 12)
+      {
+         rpng->need_more = true;
+         return false;
+      }
       return false;
+   }
 
    switch (rpng_read_chunk_header(buf, chunk_size))
    {
@@ -1896,7 +1944,12 @@ bool rpng_iterate_image(rpng_t *rpng)
       case PNG_CHUNK_IDAT:
          if (!rpng->idat_buf.data && !rpng->idat_buf.capacity)
          {
-            size_t exact = rpng_idat_presize(buf, rpng->buff_end);
+            /* Scan only resident bytes: on a partial buffer the IDAT
+             * run past avail_end has not arrived, and presize reads
+             * chunk headers forward.  It already returns 0 (fall back
+             * to realloc doubling) on truncation, so a prefix simply
+             * gets the incremental path until the buffer completes. */
+            size_t exact = rpng_idat_presize(buf, rpng->avail_end);
             if (exact)
             {
                if (!(rpng->idat_buf.data = (uint8_t*)malloc(exact)))
@@ -2108,9 +2161,55 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
       return false;
 
    rpng->buff_data = (uint8_t*)data;
+   rpng->buff_start = rpng->buff_data;
    rpng->buff_end  = rpng->buff_data + (len - 1);
+   /* Default: the whole buffer is resident.  A prefix-feeding caller
+    * lowers the frontier with rpng_set_avail after this. */
+   rpng->avail_end = rpng->buff_end;
+   rpng->need_more = false;
 
    return true;
+}
+
+/* Prefix decoding: declare how many bytes from buff_data are actually
+ * resident.  'avail' is a byte count; the frontier is clamped to the
+ * true buffer end and only ever advances.  While the frontier is below
+ * buff_end, rpng_iterate_image treats a chunk that reaches past it as
+ * "need more" (rpng_need_more() returns true) rather than end-of-file,
+ * so a caller feeding a growing read can retry.  With avail == full
+ * length (the default) the walk is exactly the classic whole-buffer
+ * one. */
+void rpng_set_avail(rpng_t *rpng, size_t avail)
+{
+   uint8_t *front;
+   if (!rpng || !rpng->buff_start || !rpng->buff_end)
+      return;
+   /* Anchor on buff_start (the fixed buffer base captured at
+    * set_buf_ptr): buff_data advances as chunks are consumed, so
+    * deriving the frontier from it would place the wall 'avail' bytes
+    * past the CURSOR instead of past the start. */
+   front = rpng->buff_start + avail - 1;
+   if (front > rpng->buff_end)
+      front = rpng->buff_end;
+   /* The default frontier is the whole buffer (for callers that never
+    * feed a prefix).  The first set_avail switches to caller-driven
+    * mode and sets the frontier absolutely - it is lower than the
+    * default - after which it is strictly monotonic. */
+   if (!(rpng->flags & RPNG_FLAG_AVAIL_SET))
+   {
+      rpng->flags    |= RPNG_FLAG_AVAIL_SET;
+      rpng->avail_end = front;
+   }
+   else if (front > rpng->avail_end)
+      rpng->avail_end = front;
+}
+
+/* True when the last rpng_iterate_image stopped because a chunk lay
+ * past the resident frontier (not EOF, not malformed): raise the
+ * frontier with rpng_set_avail and iterate again. */
+bool rpng_need_more(const rpng_t *rpng)
+{
+   return rpng ? rpng->need_more : false;
 }
 
 rpng_t *rpng_alloc(void)

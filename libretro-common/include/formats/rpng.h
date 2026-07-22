@@ -40,6 +40,17 @@ bool rpng_is_valid(rpng_t *rpng);
 
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len);
 
+/* Prefix decoding support: rpng_set_avail declares how many bytes of
+ * the buffer passed to rpng_set_buf_ptr are actually resident (a byte
+ * count from the start; monotonic, clamped to the full length).  While
+ * the resident frontier is below the full length, rpng_iterate_image
+ * stops at a chunk that reaches past it with rpng_need_more() true -
+ * distinct from a malformed or final chunk - so a caller feeding a
+ * growing read can raise avail and iterate again.  Never calling
+ * rpng_set_avail leaves the whole buffer resident (classic behaviour). */
+void rpng_set_avail(rpng_t *rpng, size_t avail);
+bool rpng_need_more(const rpng_t *rpng);
+
 rpng_t *rpng_alloc(void);
 
 void rpng_free(rpng_t *rpng);
