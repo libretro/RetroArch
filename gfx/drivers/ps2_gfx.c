@@ -432,6 +432,41 @@ static void ps2_font_render_msg(
       drop_alpha              = 0.75f;
    }
 
+   /* The 8-bit texture copy is made once at init; when the font
+    * renderer has rasterized new glyphs since then, refresh the
+    * changed rows and invalidate the texture so the TexManager
+    * re-sends it, otherwise glyphs added after init (anything
+    * beyond the pre-cached first 256 code points) render from a
+    * stale texture. Only the dirty rectangle tracked by the font
+    * renderers is copied on the EE side; gsKit re-sends the whole
+    * texture on invalidate, which it does for every other texture
+    * as well. */
+   if (font->atlas->dirty && font->texture->Mem)
+   {
+      unsigned j;
+      uint8_t *tex8              = (uint8_t*)font->texture->Mem;
+      const struct font_atlas *a = font->atlas;
+      unsigned x0                = a->dirty_x0;
+      unsigned y0                = a->dirty_y0;
+      unsigned x1                = a->dirty_x1;
+      unsigned y1                = a->dirty_y1;
+
+      if (x1 <= x0 || y1 <= y0 || x1 > a->width || y1 > a->height)
+      {
+         x0 = 0;
+         y0 = 0;
+         x1 = a->width;
+         y1 = a->height;
+      }
+
+      for (j = y0; j < y1; j++)
+         memcpy(tex8 + (size_t)j * a->width + x0,
+                a->buffer + (size_t)j * a->width + x0, x1 - x0);
+
+      gsKit_TexManager_invalidate(ps2->gsGlobal, font->texture);
+      font->atlas->dirty = false;
+   }
+
    gsKit_TexManager_bind(ps2->gsGlobal, font->texture);
 
    if (drop_x || drop_y)
