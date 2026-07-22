@@ -2485,10 +2485,24 @@ static void vita2d_font_render_line(
         uint8_t *tex32         = vita2d_texture_get_datap(font->texture);
         const uint8_t *frame32 = font->atlas->buffer;
         unsigned int pitch     = font->atlas->width;
+        /* Copy only the dirty rectangle tracked by the font
+         * renderers, one row at a time */
+        unsigned int x0        = font->atlas->dirty_x0;
+        unsigned int y0        = font->atlas->dirty_y0;
+        unsigned int x1        = font->atlas->dirty_x1;
+        unsigned int y1        = font->atlas->dirty_y1;
 
-        for (j = 0; j < font->atlas->height; j++)
-           for (k = 0; k < font->atlas->width; k++)
-              tex32[k + j*stride] = frame32[k + j * pitch];
+        if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height)
+        {
+           x0 = 0;
+           y0 = 0;
+           x1 = pitch;
+           y1 = font->atlas->height;
+        }
+
+        for (j = y0; j < y1; j++)
+           memcpy(tex32 + x0 + j * stride,
+                  frame32 + x0 + j * pitch, x1 - x0);
 
          font->atlas->dirty = false;
       }
