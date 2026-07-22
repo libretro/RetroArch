@@ -110,6 +110,23 @@ const uint32_t *rmp4_video_stream_next(rmp4_video_stream_t *stream,
  * the default order. */
 void rmp4_video_stream_set_argb(rmp4_video_stream_t *stream, int argb);
 
+/* Advance past the next displayed frame without colour-converting it:
+ * the picture stays inside the decoder and no work is spent on its
+ * pixels.  Returns 1 when a frame was consumed (its display duration
+ * written as for _next), -1 at the end of a pass or on error.  For a
+ * caller pacing through several frames per tick, skip the passed-over
+ * frames and render only the one presented.  rmp4_video_stream_next
+ * is exactly skip followed by render. */
+int rmp4_video_stream_skip(rmp4_video_stream_t *stream, int *duration_ms);
+
+/* Colour-convert the most recently consumed displayed frame (from
+ * _next or _skip) into the stream canvas and return it - the planes
+ * stay valid inside the decoder until the next decode, so this can be
+ * called at any point after the frame was consumed, and repeatedly
+ * (idempotent).  NULL when no frame is pending (before the first
+ * frame, after rewind or seek, or at end of stream). */
+const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *stream);
+
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
 /* Seek to the display position at or before 'ms' milliseconds: the
