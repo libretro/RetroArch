@@ -408,6 +408,12 @@ void create_gl_context(HWND hwnd, bool *quit)
                               | VIDEO_FLAG_SCRGB_SUPPORT);
       video_driver_set_disp_flags(disp_flags);
 
+      /* The probe lives in win32_common's desktop-only region; UWP
+       * configurations that define HAVE_OPENGL compile this function
+       * (through ANGLE) but must not reference it -- doing so was an
+       * unresolved external at UWP release link. Under WinRT the trio
+       * simply stays cleared here and the d3d drivers manage it. */
+#if !defined(__WINRT__)
       if (win32_display_hdr_active(win32_get_window()))
       {
          disp_flags  = video_driver_get_disp_flags();
@@ -416,6 +422,7 @@ void create_gl_context(HWND hwnd, bool *quit)
          video_driver_set_disp_flags(disp_flags);
          RARCH_LOG("[WGL] Display is in HDR mode; HDR settings available (scRGB).\n");
       }
+#endif
    }
 }
 #endif
