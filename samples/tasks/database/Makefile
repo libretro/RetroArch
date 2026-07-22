@@ -116,7 +116,6 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
-	$(DEPS_DIR)/yxml/yxml.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/formats/xml/rxml.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \

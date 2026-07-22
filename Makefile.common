@@ -1355,8 +1355,7 @@ endif
 # XML
 OBJ += \
        $(LIBRETRO_COMM_DIR)/formats/xml/rxml.o \
-       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o \
-       deps/yxml/yxml.o
+       $(LIBRETRO_COMM_DIR)/formats/logiqx_dat/logiqx_dat.o
 
 #Input
 

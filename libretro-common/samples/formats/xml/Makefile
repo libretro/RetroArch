@@ -2,12 +2,10 @@ TARGET := rxml
 
 LIBRETRO_XML_DIR  := ../../../formats/xml
 LIBRETRO_COMM_DIR := ../../../
-LIBRETRO_DEPS_DIR := ../../../../deps
 
 SOURCES := \
 	rxml_test.c \
 	$(LIBRETRO_XML_DIR)/rxml.c \
-	$(LIBRETRO_DEPS_DIR)/yxml/yxml.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
