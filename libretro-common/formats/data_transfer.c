@@ -43,6 +43,7 @@
 #endif
 
 #include <file/nbio.h>
+#include <streams/file_stream.h>
 #include <formats/data_transfer.h>
 
 /* Prefix strategy: commit physical pages in steps of this as the
@@ -58,7 +59,7 @@ struct data_transfer
 {
    void   *nbio;     /* strategy 1: wrapped nbio handle              */
    /* strategy 2: internal prefix reader (open_prefix)               */
-   FILE   *f;
+   RFILE  *f;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
    size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
    size_t  committed;/* bytes with physical backing                  */
@@ -93,19 +94,25 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
       size_t commit_cap)
 {
    data_transfer_t *dt;
-   FILE *f;
-   long l;
-   if (!(f = fopen(path, "rb")))
+   RFILE *f;
+   int64_t l;
+   /* filestream: 64-bit lengths and offsets everywhere (a plain long
+    * ftell caps at 2 GB on LLP64 and 32-bit targets), and the read
+    * routes through the VFS interface when one is registered, so
+    * paths only the VFS can open - archive members, Android
+    * content:// documents, frontend overrides - work like any
+    * other. */
+   if (!(f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return NULL;
-   if (fseek(f, 0, SEEK_END) != 0 || (l = ftell(f)) <= 0
-         || fseek(f, 0, SEEK_SET) != 0)
+   if ((l = filestream_get_size(f)) <= 0)
    {
-      fclose(f);
+      filestream_close(f);
       return NULL;
    }
    if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
    {
-      fclose(f);
+      filestream_close(f);
       return NULL;
    }
    dt->f   = f;
@@ -153,7 +160,7 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
       dt->cap = w;
       if (!(dt->map = (uint8_t*)malloc(w ? w : 1)))
       {
-         fclose(f);
+         filestream_close(f);
          free(dt);
          return NULL;
       }
@@ -212,7 +219,11 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          dt->capped = 1;   /* commit refused: treat as the ceiling */
          break;
       }
-      got = fread(dt->map + dt->avail, 1, chunk, dt->f);
+      {
+         int64_t r = filestream_read(dt->f, dt->map + dt->avail,
+               (int64_t)chunk);
+         got = r > 0 ? (size_t)r : 0;
+      }
       dt->avail += got;
       if (got < chunk)
       {
@@ -234,24 +245,15 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n)
 {
-#if !defined(_WIN32) && defined(DT_HAVE_RESERVE)
-   while (n)
-   {
-      ssize_t r = pread(fileno(dt->f), dst, n, (off_t)off);
-      if (r <= 0)
-         return 0;
-      dst += (size_t)r; off += (size_t)r; n -= (size_t)r;
-   }
-   return 1;
-#else
-   long save = ftell(dt->f);
-   size_t r;
-   if (save < 0 || fseek(dt->f, (long)off, SEEK_SET) != 0)
+   int64_t save = filestream_tell(dt->f);
+   int64_t r;
+   if (save < 0
+         || filestream_seek(dt->f, (int64_t)off,
+               RETRO_VFS_SEEK_POSITION_START) < 0)
       return 0;
-   r = fread(dst, 1, n, dt->f);
-   fseek(dt->f, save, SEEK_SET);
-   return r == n;
-#endif
+   r = filestream_read(dt->f, dst, (int64_t)n);
+   filestream_seek(dt->f, save, RETRO_VFS_SEEK_POSITION_START);
+   return r == (int64_t)n;
 }
 
 void data_transfer_discard(data_transfer_t *dt, size_t up_to)
@@ -423,7 +425,7 @@ void data_transfer_free(data_transfer_t *dt)
       nbio_free(dt->nbio);
    }
    if (dt->f)
-      fclose(dt->f);
+      filestream_close(dt->f);
    if (dt->map)
    {
 #if defined(_WIN32)
