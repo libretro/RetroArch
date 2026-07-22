@@ -51,6 +51,35 @@ data_transfer_t *data_transfer_open(const char *path)
    return dt;
 }
 
+data_transfer_t *data_transfer_adopt(void *nbio)
+{
+   data_transfer_t *dt;
+   size_t done = 0, total = 0;
+   if (!nbio)
+      return NULL;
+   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
+      return NULL;
+   dt->nbio = nbio;
+   nbio_get_ptr(nbio, &dt->len);
+   /* Fold in wherever the read already got to: mid-operation the
+    * progress is the valid prefix; an already-finished operation
+    * settles to complete or failed exactly as a fill would. */
+   if (nbio_get_progress(nbio, &done, &total))
+      dt->avail = done;
+   else
+   {
+      dt->done = 1;
+      if (total > 0 && done < total)
+      {
+         dt->failed = 1;
+         dt->avail  = done;
+      }
+      else
+         dt->avail = dt->len;
+   }
+   return dt;
+}
+
 /* Fold the backend's post-operation state into done/failed.  Backends
  * that do not track progress (the mmap family, whose iterate completes
  * immediately with the whole mapping) report zeros and count as

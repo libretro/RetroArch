@@ -34,6 +34,8 @@
 
 #include "../playlist.h"
 
+struct data_transfer;
+
 RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
@@ -219,12 +221,14 @@ typedef struct
     * streaming image_transfer handle which BORROWS 'anim_buf'; both
     * are owned by the thumbnail and released in gfx_thumbnail_reset
     * (or when the animation finishes its final loop). 'anim_buf'
-    * is either a malloc'd file read (anim_nbio NULL, freed with
+    * is either a malloc'd file read (anim_dt NULL, freed with
     * free()) or borrowed from an adopted nbio handle (released via
-    * nbio_free(anim_nbio); anim_buf itself must not be freed). */
+    * data_transfer_free(anim_dt); anim_buf itself must not be
+    * freed). */
    void *anim;
    void *anim_buf;
-   void *anim_nbio;        /* nbio handle owning anim_buf, when adopted */
+   struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
+                                      adopted nbio handle beneath it)   */
    /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
     * the frame held in one job waits for its due time, the other is
     * already decoding its successor.  anim_job_upload selects which
@@ -269,7 +273,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->texture         = 0;
    t->anim            = NULL;
    t->anim_buf        = NULL;
-   t->anim_nbio       = NULL;
+   t->anim_dt         = NULL;
    t->anim_job        = NULL;
    t->anim_job2       = NULL;
    t->anim_audio_job  = NULL;

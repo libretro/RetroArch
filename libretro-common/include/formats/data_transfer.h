@@ -56,6 +56,15 @@ typedef struct data_transfer data_transfer_t;
  * opened or its buffer cannot be sized.  No bytes are read yet. */
 data_transfer_t *data_transfer_open(const char *path);
 
+/* Wrap an nbio handle whose read may already be in flight - the
+ * adoption case, where one owner opened and partially read the file
+ * and another takes over finishing it (a thumbnail adopting its
+ * animation's handle from a completed task).  The transfer owns the
+ * handle from here: free cancels and releases it.  The handle must
+ * have been opened for reading; a completed or failed read settles
+ * exactly as a fill would. */
+data_transfer_t *data_transfer_adopt(void *nbio);
+
 /* Read up to roughly max_bytes more of the file (rounded up to the
  * backend's chunk; 0 means no budget - fill to the end).  Returns the
  * bytes now valid at the front of the buffer.  Cheap once the fill is

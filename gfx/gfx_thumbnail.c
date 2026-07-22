@@ -34,6 +34,8 @@
 
 #include "gfx_display.h"
 #include "gfx_animation.h"
+#include <formats/data_transfer.h>
+
 #include "gfx_thumbnail.h"
 #include "../frontend/frontend_driver.h"
 
@@ -674,19 +676,16 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
     * An adopted animation's buffer lives inside the nbio handle
     * (possibly as a file mapping) and is released with it; only the
     * open-by-path fallback malloc's anim_buf. */
-   if (thumbnail->anim_nbio)
-   {
-      /* Deselected before the adopted read finished: cancel it (a
-       * no-op on a completed handle; freeing an in-flight stdio
-       * handle aborts) - the rest of the file is never read. */
-      nbio_cancel(thumbnail->anim_nbio);
-      nbio_free(thumbnail->anim_nbio);
-   }
+   if (thumbnail->anim_dt)
+      /* Deselected before the adopted read finished: the transfer
+       * cancels the in-flight read before releasing the handle - the
+       * rest of the file is never read. */
+      data_transfer_free(thumbnail->anim_dt);
    else if (thumbnail->anim_buf)
       free(thumbnail->anim_buf);
    thumbnail->anim            = NULL;
    thumbnail->anim_buf        = NULL;
-   thumbnail->anim_nbio       = NULL;
+   thumbnail->anim_dt         = NULL;
    thumbnail->anim_buf_len    = 0;
    thumbnail->anim_next_us    = 0;
    thumbnail->anim_loops_left = 0;
@@ -772,9 +771,31 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
              (uint64_t)anim_w * anim_h))
       goto fail;
 
+   /* Take ownership of an adopted handle through a data_transfer,
+    * which packages the nbio edges (stable pointer, budgeted fill,
+    * honest short-read state, cancel-inside-free) this code used to
+    * handle by hand. */
+   thumbnail->anim_dt = NULL;
+   if (nbio_owner)
+   {
+      if (!(thumbnail->anim_dt = data_transfer_adopt(nbio_owner)))
+         goto fail;
+      if (data_transfer_failed(thumbnail->anim_dt))
+      {
+         /* the read already ended short of the file: its unwritten
+          * tail must never feed the decoders - keep the still, drop
+          * the animation */
+         data_transfer_free(thumbnail->anim_dt);
+         thumbnail->anim_dt = NULL;
+         image_transfer_anim_stream_free(stream,
+               (enum image_type_enum)type);
+         return false;
+      }
+      nbio_owner = NULL;   /* owned by the transfer now */
+   }
+
    thumbnail->anim            = stream;
    thumbnail->anim_buf        = buf;
-   thumbnail->anim_nbio       = nbio_owner;
    thumbnail->anim_buf_len    = len;
    thumbnail->anim_type       = (uint8_t)type;
    thumbnail->anim_loops_left = (loop_count == 0) ? -1 : loop_count;
@@ -787,17 +808,9 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
     * preview at the static frame: the decode stream and the audio
     * decoder both need the full buffer.  gfx_thumbnail_animate pumps
     * the handle to completion; a fatter chunk shortens the catch-up. */
-   thumbnail->anim_read_pending = 0;
-   if (nbio_owner)
-   {
-      size_t done = 0, total = 0;
-      if (     nbio_get_progress(nbio_owner, &done, &total)
-            && done < total)
-      {
-         thumbnail->anim_read_pending = 1;
-         nbio_set_chunk_size(nbio_owner, 256 * 1024);
-      }
-   }
+   thumbnail->anim_read_pending =
+         (thumbnail->anim_dt
+          && !data_transfer_complete(thumbnail->anim_dt)) ? 1 : 0;
 
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
    if (!thumbnail->anim_read_pending)
@@ -962,26 +975,22 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
        * time budget per vsync, holding the static frame meanwhile.
        * Animation jobs and the audio decode only start on a complete
        * buffer, so the decoders never see the partial-read wall. */
-      bool done = false;
       do
       {
-         done = nbio_iterate(thumbnail->anim_nbio);
-      } while (!done
+         data_transfer_iterate(thumbnail->anim_dt, 256 * 1024);
+      } while (!data_transfer_complete(thumbnail->anim_dt)
+            && !data_transfer_failed(thumbnail->anim_dt)
             && cpu_features_get_time_usec() - now < 2000);
-      if (!done)
-         return;
+      if (data_transfer_failed(thumbnail->anim_dt))
       {
-         /* An operation that ended short of the file (I/O error, the
-          * file shrank) must not feed the decoders its unwritten
-          * tail: keep the still, drop the animation. */
-         size_t rdone = 0, rtotal = 0;
-         if (   !nbio_get_progress(thumbnail->anim_nbio, &rdone, &rtotal)
-             && rtotal > 0 && rdone < rtotal)
-         {
-            gfx_thumbnail_anim_close(thumbnail);
-            return;
-         }
+         /* A read that ended short of the file (I/O error, the file
+          * shrank) must not feed the decoders its unwritten tail:
+          * keep the still, drop the animation. */
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
       }
+      if (!data_transfer_complete(thumbnail->anim_dt))
+         return;
       thumbnail->anim_read_pending = 0;
       /* The adopted stream's demuxer captured its byte wall when the
        * still opened it (the still's task completed - and its
