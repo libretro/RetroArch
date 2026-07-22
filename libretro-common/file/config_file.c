@@ -433,13 +433,23 @@ static int config_file_load_internal(
       struct config_file *conf,
       const char *path, unsigned depth, config_file_cb_t *cb)
 {
-   RFILE         *file = NULL;
-   char      *new_path = strdup(path);
+   int64_t   length    = 0;
+   char     *buf       = NULL;
+   char     *line;
+   char     *new_path  = strdup(path);
    if (!new_path)
       return 1;
-   if (!(file = filestream_open(path,
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   /* Read the whole file once, then walk it line by line in memory.
+    * The previous loop fetched each line with filestream_getline,
+    * which reads a byte at a time through the VFS (getc == a 1-byte
+    * filestream_read): a config of N bytes cost N virtual read calls
+    * plus a malloc per line.  A single slurp turns that into one
+    * read and an in-place scan - the same load-then-parse split the
+    * from_string path already uses - while every line is handed to
+    * the identical config_file_parse_line, so include/reference
+    * directives, callbacks, and grammar are byte-for-byte
+    * unchanged. */
+   if (!filestream_read_file(path, (void**)&buf, &length) || !buf)
    {
       free(new_path);
       return 1;
@@ -447,22 +457,21 @@ static int config_file_load_internal(
 
    conf->path          = new_path;
    conf->include_depth = depth;
-   while (!filestream_eof(file))
+
+   line = buf;
+   while (line && *line)
    {
       struct config_entry_list *list = NULL;
-      char *line                     = filestream_getline(file);
-      if (!line)
-         continue;
-      if (line[0] == '\0')
-      {
-         free(line);
-         continue;
-      }
+      char *next                     = strchr(line, '\n');
+      if (next)
+         *next = '\0';               /* terminate this line in place */
+
+      if (*line == '\0')
+         goto next_line;
 
       if (!(list = (struct config_entry_list*)malloc(sizeof(*list))))
       {
-         free(line);
-         filestream_close(file);
+         free(buf);
          free(conf->path);
          conf->path = NULL;
          return -1;
@@ -501,10 +510,13 @@ static int config_file_load_internal(
       else
          free(list);
 
-      free(line);
+next_line:
+      if (!next)
+         break;
+      line = next + 1;
    }
 
-   filestream_close(file);
+   free(buf);
 
    return 0;
 }
