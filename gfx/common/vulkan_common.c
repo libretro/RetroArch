@@ -2711,9 +2711,20 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * Uses Rec.2020 primaries (matching the D3D path) and RetroArch's
     * configured output-luminance range. Touches no formats or pipelines, so
     * a wrong or ignored value at worst affects display tone mapping. */
+   /* MoltenVK before 1.3.0 over-releases the autoreleased CAEDRMetadata
+    * and NSData objects it creates inside MVKSwapchain::setHDRMetadataEXT()
+    * (upstream commits 3b77dea and 8caa1d5, first shipped in 1.3.0); the
+    * pending autoreleases then crash the main-thread pool drain shortly
+    * after the call.  MoltenVK encodes driverVersion as
+    * major * 10000 + minor * 100 + patch, so 1.3.0 is 10300.  Skipping
+    * the call on affected versions only omits the SMPTE-2086 mastering
+    * hint; the layer colour space and EDR flag are still derived from
+    * the swapchain colour space by MoltenVK itself. */
    if (     vk->set_hdr_metadata
          && (vk->context.flags & VK_CTX_FLAG_HDR_ENABLE)
-         && vulkan_is_hdr10_format(vk->context.swapchain_format))
+         && vulkan_is_hdr10_format(vk->context.swapchain_format)
+         && !(   vk->wsi_type == VULKAN_WSI_MVK_MACOS
+              && vk->context.gpu_properties.driverVersion < 10300))
    {
       VkHdrMetadataEXT meta;
       meta.sType                     = VK_STRUCTURE_TYPE_HDR_METADATA_EXT;
