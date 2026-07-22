@@ -167,6 +167,13 @@ BOOL IsIconic(HWND hwnd);
 
 void win32_setup_pixel_format(HDC hdc, bool supports_gl);
 
+/* True when win32_setup_pixel_format selected an FP16 (scRGB) backbuffer
+ * for HDR output.  Always false unless HDR was requested, the display is
+ * in HDR mode, and the WGL float-pixel-format path succeeded; every
+ * failure falls back to the ordinary 8-bit pixel format, so pre-HDR
+ * setups behave exactly as before. */
+bool win32_backbuffer_is_scrgb(void);
+
 #if !defined(__WINRT__)
 /* Programmatic replacement for the menu, dialog, accelerator,
  * and manifest resources that were in media/rarch.rc.
