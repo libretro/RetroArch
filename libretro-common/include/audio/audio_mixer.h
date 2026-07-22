@@ -98,6 +98,12 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound);
 void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
       void *owner, void (*release)(void *owner));
 
+/* Windowed Ogg-Opus only: supply the stream's last-page granule so
+ * the decoder skips its full-file end scan at play.  0 = not supplied.
+ * No-op for a NULL sound or any non-Opus stream. */
+void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
+      int64_t end_granule);
+
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       bool repeat, float volume,
       const char *resampler_ident,

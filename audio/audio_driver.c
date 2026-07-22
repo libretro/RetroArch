@@ -2332,6 +2332,13 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       return false;
    }
 
+#ifdef HAVE_ROPUS
+   /* Windowed Ogg-Opus supplies the last-page granule so the decoder
+    * skips its full-file end scan when it opens at play time. */
+   if (params->end_granule > 0)
+      audio_mixer_sound_set_end_granule(handle, params->end_granule);
+#endif
+
    switch (params->state)
    {
       case AUDIO_STREAM_STATE_PLAYING_SEQUENTIAL:

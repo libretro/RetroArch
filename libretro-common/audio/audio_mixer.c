@@ -112,6 +112,10 @@ struct audio_mixer_sound
     * object (a file mapping, a data_transfer) and no copy was made. */
    void  *data_owner;
    void (*data_release)(void *owner);
+   /* Windowed Ogg-Opus: the last-page granule supplied by the feeder,
+    * injected into the decoder at play so it skips the full-file end
+    * scan.  0 = not supplied (normal full scan). */
+   int64_t end_granule;
 };
 
 struct audio_mixer_voice
@@ -791,6 +795,15 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
    sound->data_release = release;
 }
 
+#ifdef HAVE_ROPUS
+void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
+      int64_t end_granule)
+{
+   if (sound)
+      sound->end_granule = end_granule;
+}
+#endif
+
 /* Compressed-byte read position of a stream voice's decoder within
  * its source buffer - the windowed-source feeder's input.  Returns
  * 0 for anything that is not a live buffer-mode stream voice.  Takes
@@ -990,6 +1003,15 @@ static bool audio_mixer_play_stream(
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
 
+#ifdef HAVE_ROPUS
+   /* Windowed Ogg-Opus: hand the decoder the last-page granule the
+    * feeder found, so its buffer setup skips the full-file end scan
+    * (the tail is not resident under windowing).  No-op for 0 (not
+    * supplied) and for every non-Opus type. */
+   if (sound->end_granule > 0)
+      audio_transfer_set_end_granule(xfer, type, sound->end_granule);
+#endif
+
    if (!audio_transfer_start(xfer, type))
       goto error;
 
@@ -1082,6 +1104,12 @@ static bool audio_mixer_play_stream_s16(
       return false;
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
+#ifdef HAVE_ROPUS
+   /* Windowed Ogg-Opus: skip the decoder's full-file end scan by
+    * handing it the feeder's last-page granule (see the f32 path). */
+   if (sound->end_granule > 0)
+      audio_transfer_set_end_granule(xfer, type, sound->end_granule);
+#endif
    if (!audio_transfer_start(xfer, type))
    {
       audio_transfer_free(xfer, type);

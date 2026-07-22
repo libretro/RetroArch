@@ -145,6 +145,7 @@ static void task_audio_mixer_handle_upload_ogg(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -189,6 +190,7 @@ static void task_audio_mixer_handle_upload_ogg_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -233,6 +235,7 @@ static void task_audio_mixer_handle_upload_flac(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -277,6 +280,7 @@ static void task_audio_mixer_handle_upload_flac_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -321,6 +325,7 @@ static void task_audio_mixer_handle_upload_mp3(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -365,6 +370,7 @@ static void task_audio_mixer_handle_upload_mp3_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -409,6 +415,7 @@ static void task_audio_mixer_handle_upload_m4a(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -453,6 +460,7 @@ static void task_audio_mixer_handle_upload_m4a_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -497,6 +505,7 @@ static void task_audio_mixer_handle_upload_opus(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -541,6 +550,7 @@ static void task_audio_mixer_handle_upload_opus_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -585,6 +595,7 @@ static void task_audio_mixer_handle_upload_weba(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -629,6 +640,7 @@ static void task_audio_mixer_handle_upload_weba_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -673,6 +685,7 @@ static void task_audio_mixer_handle_upload_mod(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -717,6 +730,7 @@ static void task_audio_mixer_handle_upload_mod_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -762,6 +776,7 @@ static void task_audio_mixer_handle_upload_wav(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -806,6 +821,7 @@ static void task_audio_mixer_handle_upload_wav_and_play(retro_task_t *task,
    params.buf_owner            = img->xfer;
    params.buf_owner_free       = task_audio_mixer_release_xfer;
    params.out_slot             = NULL;
+   params.end_granule          = 0;
    params.basename             = (img->b.path && *img->b.path) ? (char*)path_basename_nocompression(img->b.path) : NULL;
 
    audio_driver_mixer_add_stream(&params);
@@ -893,6 +909,7 @@ struct audio_mixer_wfeed
    bool  keep_set;       /* head sized to the decoder's start     */
    size_t punch_lo;      /* inert metadata span released from the  */
    size_t punch_hi;      /*  head after the decoder skips it       */
+   int64_t end_granule;  /* windowed Opus: last-page granule, or 0 */
    volatile bool dead;   /* set by the sound's release: wrap up    */
 };
 
@@ -933,6 +950,66 @@ static size_t task_audio_mixer_flac_first_frame(struct data_transfer *dt,
          return off <= flen ? off : 0;
    }
    return 0;
+}
+#endif
+
+#ifdef HAVE_ROPUS
+/* Ogg page size at 'off' within a peeked buffer 'b' of length 'n'
+ * (header only, no body needed): 0 if not a valid page there. */
+static size_t task_audio_mixer_ogg_page(const uint8_t *b, size_t n,
+      size_t off)
+{
+   size_t hdr, total;
+   unsigned i, segs;
+   if (off + 27 > n)
+      return 0;
+   if (memcmp(b + off, "OggS", 4) != 0 || b[off + 4] != 0)
+      return 0;
+   segs = b[off + 26];
+   hdr  = 27 + segs;
+   if (off + hdr > n)
+      return 0;
+   total = hdr;
+   for (i = 0; i < segs; i++)
+      total += b[off + 27 + i];
+   return off + total <= n ? total : 0;
+}
+
+/* Find an Ogg stream's last-page granule from a bounded tail peek: an
+ * Ogg page is at most 27 + 255 + 255*255 bytes, so a window past that
+ * always contains the final page's start.  Scans the tail forward for
+ * the last valid 'OggS' page and returns its granule, or -1 if the
+ * tail could not be read or no page was found.  Reads only the tail,
+ * never the whole file. */
+static int64_t task_audio_mixer_opus_end_granule(struct data_transfer *dt,
+      size_t flen)
+{
+   /* one max Ogg page (~65 KB) plus slack */
+   uint8_t buf[65536 + 8192];
+   size_t  win  = sizeof(buf);
+   size_t  base = flen > win ? flen - win : 0;
+   size_t  n    = flen - base;
+   size_t  i;
+   long    last = -1;
+   if (n < 27)
+      return -1;
+   if (!data_transfer_window_peek(dt, base, buf, n))
+      return -1;
+   for (i = 0; i + 27 <= n; i++)
+      if (buf[i] == 'O' && buf[i + 1] == 'g' && buf[i + 2] == 'g'
+            && buf[i + 3] == 'S' && buf[i + 4] == 0
+            && task_audio_mixer_ogg_page(buf, n, i))
+         last = (long)i;
+   if (last < 0)
+      return -1;
+   {
+      uint64_t g = 0;
+      unsigned k;
+      for (k = 0; k < 8; k++)
+         g |= (uint64_t)buf[(size_t)last + 6 + k] << (8 * k);
+      /* -1 granule (continued page) is not a valid end bound */
+      return g == (uint64_t)-1 ? -1 : (int64_t)g;
+   }
 }
 #endif
 
@@ -1008,6 +1085,24 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
             goto bail;
       }
 #endif
+#ifdef HAVE_ROPUS
+      if (w->mtype == AUDIO_MIXER_TYPE_OPUS)
+      {
+         /* Confirm this .opus is really Ogg-Opus (the head must open
+          * as an Opus stream, not e.g. a mislabelled Vorbis), then
+          * find the last-page granule from a bounded tail peek and
+          * carry it so add_stream can inject it - the decoder then
+          * skips its full-file end scan.  A tail that cannot be read
+          * or holds no page falls back to the classic full load. */
+         if (audio_transfer_ogg_audio_type(base,
+               flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP)
+               != AUDIO_TYPE_OPUS)
+            goto bail;
+         w->end_granule = task_audio_mixer_opus_end_granule(w->dt, flen);
+         if (w->end_granule <= 0)
+            goto bail;
+      }
+#endif
 #ifdef HAVE_RFLAC
       if (w->mtype == AUDIO_MIXER_TYPE_FLAC)
       {
@@ -1043,6 +1138,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       params.buf_owner            = w;
       params.buf_owner_free       = task_audio_mixer_wfeed_release;
       params.out_slot             = &w->slot;
+      params.end_granule          = w->end_granule;
 
       w->added = true;   /* ownership transfers on the call in every
                           * outcome: from here the release runs */
@@ -1136,6 +1232,15 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * confirms Vorbis rather than Opus. */
    if (string_is_equal_noncase(ext, "aac"))
       mtype = AUDIO_MIXER_TYPE_M4A;
+#endif
+#ifdef HAVE_ROPUS
+   /* An .opus is Ogg-Opus: pages read monotonically forward (pg_off)
+    * and the loop seek returns to the first audio page.  Its one
+    * whole-file dependency - the end-granule scan - is satisfied
+    * below from a bounded tail peek and injected, so it does not
+    * force the tail resident. */
+   if (string_is_equal_noncase(ext, "opus"))
+      mtype = AUDIO_MIXER_TYPE_OPUS;
 #endif
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;

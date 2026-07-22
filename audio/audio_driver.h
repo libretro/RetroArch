@@ -87,6 +87,11 @@ typedef struct audio_mixer_stream_params
    /* Optional: receives the slot index the stream landed in (or -1 on
     * failure).  NULL when the caller does not need it. */
    int *out_slot;
+   /* Optional (windowed Ogg-Opus only): the stream's last-page granule,
+    * found by the feeder from a bounded tail peek so the decoder need
+    * not scan the whole file for it.  0 means not supplied - the
+    * decoder does its normal full end-granule scan. */
+   int64_t end_granule;
 } audio_mixer_stream_params_t;
 #endif
 
