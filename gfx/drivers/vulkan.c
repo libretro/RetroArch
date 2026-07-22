@@ -2274,6 +2274,16 @@ static int vulkan_font_get_message_width(void *data, const char *msg,
       return 0;
 
    glyph_q = get_glyph(font_data, '?');
+   /* The fallback glyph can itself have just been rasterized (it is
+    * evicted like any other slot under atlas pressure); without this
+    * pairing its cell would be stranded once an unrelated glyph's
+    * update clears the dirty flag. */
+   if (glyph_q && font->atlas->dirty)
+   {
+      vulkan_font_update_glyph(font, glyph_q);
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
 
    while (msg < msg_end)
    {
@@ -2400,6 +2410,15 @@ static void vulkan_font_render_msg(
    font->pv         = (struct vk_vertex*)font->range.data;
    glyph_q          = (font->font_driver)
       ? font->font_driver->get_glyph(font->font_data, '?') : NULL;
+
+   /* Pair the fallback-glyph lookup with an upload like every other
+    * lookup, in case '?' was just (re)rasterized after eviction. */
+   if (glyph_q && font->atlas->dirty)
+   {
+      vulkan_font_update_glyph(font, glyph_q);
+      font->atlas->dirty = false;
+      font->needs_update = true;
+   }
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height      = line_metrics->height * scale / vk->vp.height;
 
