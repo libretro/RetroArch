@@ -1526,7 +1526,7 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_chd.c"
 #include "../libretro-common/formats/libchdr/libchdr_huffman.c"
 
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 #include "../libretro-common/formats/libchdr/libchdr_flac.c"
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif

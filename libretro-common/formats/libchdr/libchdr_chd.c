@@ -48,7 +48,7 @@
 #include <libchdr/huffman.h>
 #include <libchdr/minmax.h>
 
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 #include <libchdr/flac.h>
 #endif
 
@@ -232,7 +232,7 @@ struct _chd_file
 	lzma_codec_data			lzma_codec_data;		/* lzma codec data */
 	cdlz_codec_data			cdlz_codec_data;		/* cdlz codec data */
 #endif
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 	flac_codec_data			flac_codec_data;		/* flac codec data */
 	cdfl_codec_data			cdfl_codec_data;		/* cdfl codec data */
 #endif
@@ -472,7 +472,7 @@ static const codec_interface codec_interfaces[] =
 		huff_codec_decompress,
 		NULL
 	},
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 	/* V5 flac compression */
 	{
 		CHD_CODEC_FLAC,
@@ -1088,7 +1088,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 						codec = &newchd->flac_codec_data;
 #endif
 						break;
@@ -1112,7 +1112,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_CD_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 						codec = &newchd->cdfl_codec_data;
 #endif
 						break;
@@ -1267,7 +1267,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 					codec = &chd->flac_codec_data;
 #endif
 					break;
@@ -1291,7 +1291,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_CD_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 					codec = &chd->cdfl_codec_data;
 #endif
 					break;
@@ -2030,7 +2030,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 						codec = &chd->flac_codec_data;
 #endif
 						break;
@@ -2054,7 +2054,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_CD_FLAC:
-#ifdef HAVE_FLAC
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
 						codec = &chd->cdfl_codec_data;
 #endif
 						break;

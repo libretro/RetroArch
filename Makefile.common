@@ -235,9 +235,11 @@ endif
 ifeq ($(HAVE_RMP3), 1)
    DEFINES += -DHAVE_RMP3
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
+ifneq ($(HAVE_RFLAC),1)
 ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
 endif
 endif
 endif
@@ -2059,10 +2061,12 @@ endif
 ifeq ($(HAVE_RMODTRACKER), 1)
    DEFINES += -DHAVE_RMODTRACKER
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
+ifneq ($(HAVE_RFLAC),1)
 ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
 ifneq ($(HAVE_RMP3),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
 endif
 endif
 endif
@@ -2076,6 +2080,7 @@ endif
 ifeq ($(HAVE_ROPUS), 1)
    DEFINES += -DHAVE_ROPUS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
+ifneq ($(HAVE_RFLAC),1)
 ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
 ifneq ($(HAVE_RMP3),1)
@@ -2086,14 +2091,24 @@ endif
 endif
 endif
 endif
+endif
+
+ifeq ($(HAVE_RFLAC),1)
+   DEFINES += -DHAVE_RFLAC
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o \
+              $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
 
 ifeq ($(HAVE_BUILTINFLAC),1)
    HAVE_FLAC = 1
-   DEFINES += -DHAVE_FLAC -DHAVE_RFLAC  -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
+   DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
               -DFLAC_PACKAGE_VERSION="\"retroarch\""
    INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
+ifneq ($(HAVE_RFLAC),1)
+   DEFINES += -DHAVE_RFLAC
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
           $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+endif
    FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
              $(DEPS_DIR)/libFLAC/bitreader.o \
              $(DEPS_DIR)/libFLAC/cpu.o \
@@ -2124,8 +2139,10 @@ endif
 ifeq ($(HAVE_RVORBIS),1)
    DEFINES += -DHAVE_RVORBIS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
+ifneq ($(HAVE_RFLAC),1)
 ifneq ($(HAVE_BUILTINFLAC),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+endif
 endif
 endif
 
@@ -2257,13 +2274,15 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
                  $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
                  $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zlib.o
 
-      ifeq ($(HAVE_FLAC),1)
+      ifneq ($(filter 1,$(HAVE_FLAC) $(HAVE_RFLAC)),)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
                 $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
-         # libchdr decodes CHD FLAC through rflac; when the built-in FLAC
-         # library is not in use it has not already added the object.
+         # libchdr decodes CHD FLAC through rflac; add the object only
+         # when neither the RFLAC nor the BUILTINFLAC block already has.
+         ifneq ($(HAVE_RFLAC),1)
          ifneq ($(HAVE_BUILTINFLAC),1)
             OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+         endif
          endif
       endif
 

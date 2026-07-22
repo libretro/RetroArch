@@ -472,9 +472,17 @@ if [ "$HAVE_QT" != 'no' ]; then
    check_pkgconf OPENSSL openssl 1.0.0
 fi
 
-check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
-
-check_val '' FLAC '-lFLAC' '' flac '' '' false
+if [ "$HAVE_BUILTINFLAC" = 'yes' ]; then
+   if [ "${USER_FLAC:-}" = 'no' ]; then
+      die 1 'Error: flac is disabled and forced to build with builtin flac support.'
+   fi
+   # Builtin flac compiles the bundled libFLAC sources; no system
+   # library probe is required (or wanted - it may not be present).
+   HAVE_FLAC=yes
+else
+   [ "$HAVE_BUILTINFLAC" = 'auto' ] && HAVE_BUILTINFLAC=no
+   check_val '' FLAC '-lFLAC' '' flac '' '' false
+fi
 
 
 check_enabled SSL SYSTEMMBEDTLS 'system mbedtls' 'ssl is' false
