@@ -26,6 +26,7 @@
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
 #include <formats/data_transfer.h>
+#include <streams/file_stream.h>
 #include <formats/rwebm.h>
 #include <formats/rwebm_video.h>
 #include <formats/rvp9.h>
@@ -651,9 +652,22 @@ void WEBM_CORE_PREFIX(retro_get_system_av_info)(
 void WEBM_CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
 {
    struct retro_log_callback log;
+   struct retro_vfs_interface_info vfs;
    WEBM_CORE_PREFIX(environ_cb) = cb;
    if (cb(RETRO_ENVIRONMENT_GET_LOG_INTERFACE, &log))
       WEBM_CORE_PREFIX(log_cb) = log.log;
+   /* Route file access through the frontend's VFS when it offers
+    * one: the core's reads all go through filestream (via
+    * data_transfer), so this is what makes archive members and
+    * Android content:// paths loadable.  Version 1 covers the file
+    * operations used; without an offer, filestream falls back to its
+    * local implementation and plain paths behave as before.
+    * filestream's wrapper refuses anything below its own requirement
+    * (v2, for truncate), so request exactly that. */
+   vfs.required_interface_version = 2;
+   vfs.iface                      = NULL;
+   if (cb(RETRO_ENVIRONMENT_GET_VFS_INTERFACE, &vfs) && vfs.iface)
+      filestream_vfs_init(&vfs);
 }
 
 void WEBM_CORE_PREFIX(retro_set_video_refresh)(retro_video_refresh_t cb)
