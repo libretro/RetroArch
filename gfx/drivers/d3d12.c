@@ -482,6 +482,13 @@ typedef struct
    void*                         font_data;
    struct font_atlas*            atlas;
    d3d12_video_t*                d3d12; /* For GPU sync on free */
+   /* Pending atlas dirty rectangle, staged to the upload buffer on
+    * the CPU and awaiting the boxed GPU copy at draw time */
+   unsigned                      region_x0;
+   unsigned                      region_y0;
+   unsigned                      region_x1;
+   unsigned                      region_y1;
+   bool                          region_pending;
 } d3d12_font_t;
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
@@ -1441,6 +1448,96 @@ static int d3d12_font_get_message_width(void* data,
    return delta_x * scale;
 }
 
+/* Stage only the atlas dirty rectangle into the persistent upload
+ * buffer; previous contents are preserved, so untouched rows remain
+ * valid. The matching boxed GPU copy is issued at draw time by
+ * d3d12_font_upload_region(); the generic d3d12_update_texture() /
+ * d3d12_upload_texture() pair re-transfers the whole surface. */
+static void d3d12_font_update_atlas_region(d3d12_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   unsigned y;
+   uint8_t *dst;
+   D3D12_RANGE read_range;
+   ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
+   unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
+
+   if (     !resource
+         || x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+      return;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
+         || !dst)
+      return;
+
+   for (y = y0; y < y1; y++)
+      memcpy(dst + (size_t)y * row_pitch + x0,
+             font->atlas->buffer + (size_t)y * font->atlas->width + x0,
+             x1 - x0);
+
+   resource->lpVtbl->Unmap(resource, 0, NULL);
+
+   if (!font->region_pending)
+   {
+      font->region_x0      = x0;
+      font->region_y0      = y0;
+      font->region_x1      = x1;
+      font->region_y1      = y1;
+      font->region_pending = true;
+   }
+   else
+   {
+      if (x0 < font->region_x0) font->region_x0 = x0;
+      if (y0 < font->region_y0) font->region_y0 = y0;
+      if (x1 > font->region_x1) font->region_x1 = x1;
+      if (y1 > font->region_y1) font->region_y1 = y1;
+   }
+}
+
+/* Issue the boxed copy for the staged rectangle */
+static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
+      d3d12_font_t *font)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   D3D12_BOX box;
+
+   src.pResource        = font->texture.upload_buffer;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint  = font->texture.layout;
+
+   dst.pResource        = font->texture.handle;
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   box.left   = font->region_x0;
+   box.top    = font->region_y0;
+   box.front  = 0;
+   box.right  = font->region_x1;
+   box.bottom = font->region_y1;
+   box.back   = 1;
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         font->texture.handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst,
+         font->region_x0, font->region_y0, 0, &src, &box);
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         font->texture.handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+   font->region_pending = false;
+}
+
 static void d3d12_font_render_msg(
       void *userdata,
       void* data,
@@ -1561,11 +1658,9 @@ static void d3d12_font_render_msg(
 
    if (font->atlas->dirty)
    {
-      if (font->texture.upload_buffer)
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
+      d3d12_font_update_atlas_region(font,
+            font->atlas->dirty_x0, font->atlas->dirty_y0,
+            font->atlas->dirty_x1, font->atlas->dirty_y1);
       font->atlas->dirty = false;
    }
 
@@ -1733,6 +1828,8 @@ next_line:
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
+   if (font->region_pending)
+      d3d12_font_upload_region(cmd, font);
 
 #ifdef HAVE_DXGI_HDR
    if (   (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
