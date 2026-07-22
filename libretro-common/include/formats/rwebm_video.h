@@ -117,6 +117,14 @@ rwebm_video_stream_t *rwebm_video_detach_stream(rwebm_video_t *webm);
 rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
       size_t len);
 
+/* Open against a partially-read buffer: 'avail' leading bytes are
+ * valid (raise later with the stream set_avail).  On NULL, *need_more
+ * distinguishes "feed more bytes and retry" from malformed data.  For WebM the
+ * pre-scan is truncated at the wall once two frames are known (call
+ * rwebm_video_stream_complete_scan when the file has fully arrived). */
+rwebm_video_stream_t *rwebm_video_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more);
+
 void rwebm_video_stream_close(rwebm_video_stream_t *stream);
 
 /* num_frames is the number of coded video packets, saturating at the

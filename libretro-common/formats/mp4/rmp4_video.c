@@ -646,6 +646,26 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
    return s;
 }
 
+rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more)
+{
+   rmp4_video_stream_t *s;
+
+   if (need_more)
+      *need_more = 0;
+   if (!(s = rmp4_video_stream_open_begin(buf, len, avail, need_more)))
+      return NULL;
+   /* The pre-scan reads the moov sample tables (no media bytes), so
+    * once the open itself succeeded it always completes. */
+   rmp4_video_stream_scan_step(s, 0);
+   if (rmp4_video_stream_open_finish(s) != 0)
+   {
+      rmp4_video_stream_close(s);
+      return NULL;
+   }
+   return s;
+}
+
 void rmp4_video_stream_close(rmp4_video_stream_t *s)
 {
    if (!s)

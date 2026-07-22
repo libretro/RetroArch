@@ -90,6 +90,12 @@ rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4);
 rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
       size_t len);
 
+/* Open against a partially-read buffer: 'avail' leading bytes are
+ * valid (raise later with the stream set_avail).  On NULL, *need_more
+ * distinguishes "feed more bytes and retry" from malformed data. */
+rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more);
+
 void rmp4_video_stream_close(rmp4_video_stream_t *stream);
 
 /* num_frames is the number of coded video packets, saturating at the

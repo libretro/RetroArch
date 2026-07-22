@@ -585,6 +585,40 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
    return s;
 }
 
+rwebm_video_stream_t *rwebm_video_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more)
+{
+   rwebm_video_stream_t *s;
+   int sr;
+
+   if (need_more)
+      *need_more = 0;
+   if (!(s = rwebm_video_stream_open_begin(buf, len, avail, need_more)))
+      return NULL;
+   /* Same wall policy as the partial still decode: timestamps live in
+    * the block headers, so the pre-scan cannot run ahead of the media
+    * bytes.  Proceed once two frames are known (enough for a
+    * first-frame duration) with a table truncated at the wall - the
+    * duration helper degrades to its last-interval estimate past it,
+    * and rwebm_video_stream_complete_scan finishes the table once the
+    * file has fully arrived.  Below two frames the caller feeds more
+    * bytes and retries. */
+   sr = rwebm_video_stream_scan_step(s, 0);
+   if (sr == 2 && s->num_frames < 2)
+   {
+      if (need_more)
+         *need_more = 1;
+      rwebm_video_stream_close(s);
+      return NULL;
+   }
+   if (rwebm_video_stream_open_finish(s) != 0)
+   {
+      rwebm_video_stream_close(s);
+      return NULL;
+   }
+   return s;
+}
+
 void rwebm_video_stream_close(rwebm_video_stream_t *s)
 {
    if (!s)
