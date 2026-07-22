@@ -260,6 +260,17 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 - (void)setHDRShaderEmitsHDR10:(bool)emitsHDR10
                     emitsHDR16:(bool)emitsHDR16;
 
+/* Native (no tone-map) HDR read-back for HDR screenshots: reads the raw
+ * RGB10A2 / RGBA16F drawable rows and converts to three uint16_t per
+ * pixel (PQ-coded, bottom-up), with the same viewport clamping as
+ * readViewport:.  Reports the measured peak / average light levels and
+ * which encoding the swapchain used.  Returns NO when HDR is off or
+ * capture is unavailable; the caller then falls back to the SDR path. */
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 maxCLL:(float *)outMaxCLL
+                maxFALL:(float *)outMaxFALL
+                isSCRGB:(bool *)outIsSCRGB;
+
 /* Current HDRUniforms for composite pass — updated as settings change. */
 - (const HDRUniforms *)currentHDRUniforms;
 
@@ -372,6 +383,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 - (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
 - (bool)readViewport:(uint8_t *)buffer isIdle:(bool)isIdle;
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 isIdle:(bool)isIdle
+                   meta:(struct rpng_hdr_metadata *)meta;
 
 @end
 
@@ -2121,6 +2135,212 @@ static matrix_float4x4 matrix_proj_ortho(float left, float right, float top, flo
 
    return YES;
 }
+
+#if METAL_HDR_AVAILABLE
+/* CPU-side HDR pixel helpers for the native HDR read-back.  Verbatim
+ * ports of the vulkan driver's (unit-tested) helpers -- see
+ * vulkan_read_viewport_hdr -- so every driver produces equivalent HDR
+ * PNGs from identical backbuffers. */
+static float metal_hdr_half_to_float(uint16_t h)
+{
+   uint32_t sign = (uint32_t)(h & 0x8000) << 16;
+   uint32_t exp  = (h >> 10) & 0x1F;
+   uint32_t mant = h & 0x3FF;
+   uint32_t f;
+   float    out;
+   if (exp == 0)
+   {
+      if (mant == 0)
+         f = sign;
+      else
+      {
+         exp = 127 - 15 + 1;
+         while (!(mant & 0x400)) { mant <<= 1; exp--; }
+         mant &= 0x3FF;
+         f = sign | (exp << 23) | (mant << 13);
+      }
+   }
+   else if (exp == 0x1F)
+      f = sign | 0x7F800000 | (mant << 13);
+   else
+      f = sign | ((exp - 15 + 127) << 23) | (mant << 13);
+   memcpy(&out, &f, sizeof(out));
+   return out;
+}
+
+/* ST.2084 (PQ) inverse-EOTF: normalised linear [0,1] -> PQ code [0,1]. */
+static float metal_hdr_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+/* One scRGB (Rec.709 linear, 1.0 = 80 nits) channel -> 16-bit PQ code. */
+static uint16_t metal_hdr_scrgb_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f;
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = metal_hdr_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+
+/* ST.2084 EOTF: PQ code [0,1] -> nits, for MaxCLL / MaxFALL. */
+static float metal_hdr_pq_to_nits(float pq)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float np, num, den;
+   if (pq <= 0.0f)
+      return 0.0f;
+   np  = powf(pq, 1.0f / m2);
+   num = np - c1;
+   den = c2 - c3 * np;
+   if (num < 0.0f) num = 0.0f;
+   return powf(num / den, 1.0f / m1) * 10000.0f;
+}
+
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 maxCLL:(float *)outMaxCLL
+                maxFALL:(float *)outMaxFALL
+                isSCRGB:(bool *)outIsSCRGB
+{
+   size_t y;
+   NSUInteger rowBytes;
+   uint16_t *dst;
+   size_t dstStride;
+   uint8_t  stackRow[32 * 1024];
+   uint8_t *row     = stackRow;
+   uint8_t *heapRow = NULL;
+   bool     isSCRGB;
+   float    maxCLL  = 0.0f;
+   double   sumFALL = 0.0;
+   id<MTLTexture> srcTex = _backBuffer;
+
+   if (!_hdrEnabled || !_captureEnabled || srcTex == nil)
+      return NO;
+
+   if (srcTex.pixelFormat == MTLPixelFormatRGBA16Float)
+      isSCRGB = true;
+   else if (srcTex.pixelFormat == MTLPixelFormatRGB10A2Unorm)
+      isSCRGB = false;
+   else
+      return NO;
+
+   /* Native rows: 8 bytes/px for RGBA16F, 4 for RGB10A2. */
+   rowBytes = srcTex.width * (isSCRGB ? 8 : 4);
+   if (rowBytes > sizeof(stackRow))
+   {
+      heapRow = (uint8_t *)malloc(rowBytes);
+      if (!heapRow)
+         return NO;
+      row     = heapRow;
+   }
+
+   dstStride = (size_t)_viewport.width * 3;
+   dst       = buffer + (size_t)(_viewport.height - 1) * dstStride;
+
+   /* Same overscan clamping as readViewport: (issue #19038): off-texture
+    * rows / columns are written as black (PQ code 0). */
+   {
+      int texW     = (int)srcTex.width;
+      int texH     = (int)srcTex.height;
+      int colStart = -_viewport.x;
+      int colEnd   = texW - _viewport.x;
+      if (colStart < 0)
+         colStart = 0;
+      if (colEnd > (int)_viewport.width)
+         colEnd   = (int)_viewport.width;
+
+      for (y = 0; y < _viewport.height; y++, dst -= dstStride)
+      {
+         size_t x;
+         int    srcRow = _viewport.y + (int)y;
+
+         if (srcRow < 0 || srcRow >= texH || colEnd <= colStart)
+         {
+            memset(dst, 0, dstStride * sizeof(uint16_t));
+            continue;
+         }
+
+         [srcTex getBytes:row
+              bytesPerRow:rowBytes
+               fromRegion:MTLRegionMake2D(0, (NSUInteger)srcRow,
+                                          (NSUInteger)texW, 1)
+              mipmapLevel:0];
+
+         if (colStart > 0 || colEnd < (int)_viewport.width)
+            memset(dst, 0, dstStride * sizeof(uint16_t));
+
+         if (isSCRGB)
+         {
+            const uint16_t *srcPx = (const uint16_t *)row;
+            for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+            {
+               int   srcCol = _viewport.x + (int)x;
+               float r      = metal_hdr_half_to_float(srcPx[4 * srcCol + 0]);
+               float g      = metal_hdr_half_to_float(srcPx[4 * srcCol + 1]);
+               float b      = metal_hdr_half_to_float(srcPx[4 * srcCol + 2]);
+               float lvl;
+               dst[3 * x + 0] = metal_hdr_scrgb_to_pq16(r);
+               dst[3 * x + 1] = metal_hdr_scrgb_to_pq16(g);
+               dst[3 * x + 2] = metal_hdr_scrgb_to_pq16(b);
+               lvl = r; if (g > lvl) lvl = g; if (b > lvl) lvl = b;
+               lvl *= 80.0f;
+               if (lvl < 0.0f) lvl = 0.0f;
+               else if (lvl > 10000.0f) lvl = 10000.0f;
+               if (lvl > maxCLL) maxCLL = lvl;
+               sumFALL += lvl;
+            }
+         }
+         else
+         {
+            const uint32_t *srcPx = (const uint32_t *)row;
+            for (x = (size_t)colStart; x < (size_t)colEnd; x++)
+            {
+               /* MTLPixelFormatRGB10A2Unorm: R[9:0] G[19:10] B[29:20]
+                * A[31:30] -- same placement as DXGI R10G10B10A2 and
+                * Vulkan A2B10G10R10. */
+               uint32_t w = srcPx[_viewport.x + (int)x];
+               uint32_t r = (w      ) & 0x3FF;
+               uint32_t g = (w >> 10) & 0x3FF;
+               uint32_t b = (w >> 20) & 0x3FF;
+               uint32_t mx;
+               float    lvl;
+               dst[3 * x + 0] = (uint16_t)((r << 6) | (r >> 4));
+               dst[3 * x + 1] = (uint16_t)((g << 6) | (g >> 4));
+               dst[3 * x + 2] = (uint16_t)((b << 6) | (b >> 4));
+               mx  = r; if (g > mx) mx = g; if (b > mx) mx = b;
+               lvl = metal_hdr_pq_to_nits((float)mx * (1.0f / 1023.0f));
+               if (lvl > maxCLL) maxCLL = lvl;
+               sumFALL += lvl;
+            }
+         }
+      }
+   }
+
+   free(heapRow);
+
+   if (outMaxCLL)
+      *outMaxCLL  = maxCLL;
+   if (outMaxFALL)
+      *outMaxFALL = (_viewport.width && _viewport.height)
+            ? (float)(sumFALL / ((double)_viewport.width
+                               * (double)_viewport.height))
+            : 0.0f;
+   if (outIsSCRGB)
+      *outIsSCRGB = isSCRGB;
+   return YES;
+}
+#endif /* METAL_HDR_AVAILABLE */
 
 - (void)begin
 {
@@ -4812,6 +5032,67 @@ typedef struct MTLALIGN(16)
    return res;
 }
 
+- (bool)readViewportHDR:(uint16_t *)buffer
+                 isIdle:(bool)isIdle
+                   meta:(struct rpng_hdr_metadata *)meta
+{
+#if METAL_HDR_AVAILABLE
+   bool res      = NO;
+   bool isSCRGB  = false;
+   float maxCLL  = 0.0f;
+   float maxFALL = 0.0f;
+   bool enabled  = _context.captureEnabled;
+   if (!enabled)
+      _context.captureEnabled = YES;
+
+   if (!isIdle)
+      video_driver_cached_frame();
+
+   res = [_context readViewportHDR:buffer
+                            maxCLL:&maxCLL
+                           maxFALL:&maxFALL
+                           isSCRGB:&isSCRGB];
+
+   if (!enabled)
+      _context.captureEnabled = NO;
+
+   if (res && meta)
+   {
+      /* Same tagging as the vulkan / dxgi implementations: PQ transfer,
+       * BT.2100 primaries for HDR10 or BT.709 for scRGB, D65 white,
+       * cLLI from the measured levels, mDCV from the configured range. */
+      memset(meta, 0, sizeof(*meta));
+      meta->colour_primaries      = isSCRGB ? 1 : 9;
+      meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      meta->matrix_coefficients   = 0;  /* RGB (must be 0 for PNG) */
+      meta->video_full_range_flag = 1;
+      meta->max_cll               = maxCLL;
+      meta->max_fall              = maxFALL;
+      meta->write_mdcv            = 1;
+      if (isSCRGB)
+      {
+         meta->primary_chromaticity[0][0] = 0.640f; meta->primary_chromaticity[0][1] = 0.330f;
+         meta->primary_chromaticity[1][0] = 0.300f; meta->primary_chromaticity[1][1] = 0.600f;
+         meta->primary_chromaticity[2][0] = 0.150f; meta->primary_chromaticity[2][1] = 0.060f;
+      }
+      else
+      {
+         meta->primary_chromaticity[0][0] = 0.708f; meta->primary_chromaticity[0][1] = 0.292f;
+         meta->primary_chromaticity[1][0] = 0.170f; meta->primary_chromaticity[1][1] = 0.797f;
+         meta->primary_chromaticity[2][0] = 0.131f; meta->primary_chromaticity[2][1] = 0.046f;
+      }
+      meta->white_point[0] = 0.3127f; meta->white_point[1] = 0.3290f; /* D65 */
+      /* Same mastering-display defaults the vulkan and d3d12 drivers
+       * use; RetroArch has no per-display luminance query on Metal. */
+      meta->max_luminance  = 1000.0f;
+      meta->min_luminance  = 0.001f;
+   }
+   return res;
+#else
+   return NO;
+#endif
+}
+
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch
 {
    if (_shader && (_engine.frame.output_size.x != _viewport->width
@@ -5972,6 +6253,13 @@ static bool metal_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    return [md.frameView readViewport:buffer isIdle:is_idle];
 }
 
+static bool metal_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   MetalDriver *md = (__bridge MetalDriver *)data;
+   return [md.frameView readViewportHDR:buffer isIdle:is_idle meta:out_meta];
+}
+
 #ifdef HAVE_THREADS
 typedef struct
 {
@@ -6410,6 +6698,8 @@ video_driver_t video_metal = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   metal_widgets_enabled
+   metal_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   metal_read_viewport_hdr
 };
