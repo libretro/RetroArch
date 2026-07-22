@@ -471,7 +471,31 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
       uint32_t id  = ebml_read_id(&r);
       uint64_t sz  = ebml_read_vint(&r, 1, &ok);
       const uint8_t *body = r.p;
-      if (!id || !ok || body + sz > r.end)
+      if (!id || !ok)
+      {
+         if (webm->avail_end < webm->segment_end)
+            return RWEBM_READ_AGAIN;   /* header still arriving */
+         webm->cur = r.end;
+         return 0;
+      }
+      if (id == ID_CLUSTER)
+      {
+         /* Descend on the header alone: a short clip is often a single
+          * cluster spanning the whole file, so requiring the cluster's
+          * full extent inside the partial-read wall would hold every
+          * still hostage to the complete read.  Clamp the descent to
+          * the wall; each child gates itself, and the walker's
+          * established context-free resume (the cursor lands after
+          * each block, mid-cluster, every call) makes re-entry at the
+          * wall safe. */
+         const uint8_t *cend = body + sz;
+         if (cend > webm->segment_end)
+            cend = webm->segment_end;   /* malformed/overlong: clamp  */
+         r.p   = body;
+         r.end = cend < r.end ? cend : r.end;
+         continue;
+      }
+      if (body + sz > r.end)
       {
          /* Truncated at the wall: if the file continues past it, the
           * element is merely not buffered yet - consume nothing (the
@@ -479,19 +503,21 @@ int rwebm_read_packet(rwebm_t *webm, rwebm_packet *pkt)
           * getting here are re-skipped on retry, which is idempotent)
           * and ask the caller to retry with more data.  A genuinely
           * malformed element yields spurious retries only until the
-          * read completes, when this path closes. */
+          * read completes, when this path closes.  BlockGroup is
+          * deliberately NOT descended on a partial extent: its
+          * trailing siblings feed webm_group_discard, and a clamped
+          * group could yield a different DiscardPadding than the
+          * fully-resident decode. */
          if (webm->avail_end < webm->segment_end)
             return RWEBM_READ_AGAIN;
          webm->cur = r.end;
          return 0;
       }
-      if (id == ID_CLUSTER || id == ID_BLOCKGROUP)
+      if (id == ID_BLOCKGROUP)
       {
-         /* Descend: Cluster holds Timestamp + blocks; BlockGroup wraps a
-          * single Block (plus DiscardPadding/duration/refs). Scan
-          * children. */
-         if (id == ID_BLOCKGROUP)
-            webm->pending_discard = 0;
+         /* Descend: BlockGroup wraps a single Block (plus
+          * DiscardPadding/duration/refs). Scan children. */
+         webm->pending_discard = 0;
          r.p   = body;
          r.end = body + sz;
          continue;
