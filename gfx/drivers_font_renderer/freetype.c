@@ -178,19 +178,37 @@ static void font_renderer_ft_copy_coverage(ft_font_renderer_t *handle,
    unsigned y;
    const uint8_t *src   = (const uint8_t*)slot->bitmap.buffer;
    unsigned delta_width = handle->max_glyph_width - copy_width;
+   size_t   esz         = (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
+         ? sizeof(uint16_t) : sizeof(uint8_t);
    uint8_t *dst         = (uint8_t*)handle->atlas.buffer
-         + atlas_slot->glyph.atlas_offset_x
-         + atlas_slot->glyph.atlas_offset_y * handle->atlas.width;
+         + ((size_t)atlas_slot->glyph.atlas_offset_x
+         +  (size_t)atlas_slot->glyph.atlas_offset_y
+               * handle->atlas.width) * esz;
 
    for (y = 0; y < copy_height; y++)
    {
-      /* Copy bitmap row */
-      memcpy(dst, src, copy_width * sizeof(uint8_t));
-      /* Zero out remaining atlas row */
-      if (delta_width > 0)
-         memset(dst + copy_width, 0, delta_width * sizeof(uint8_t));
+      if (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
+      {
+         /* FreeType emits 256 coverage levels; v * 257 upconverts
+          * them losslessly to the 16-bit range (0xFF -> 0xFFFF) */
+         uint16_t *dst16 = (uint16_t*)(void*)dst;
+         unsigned  x;
+         for (x = 0; x < copy_width; x++)
+            dst16[x] = (uint16_t)((unsigned)src[x] * 257u);
+         if (delta_width > 0)
+            memset(dst16 + copy_width, 0,
+                  (size_t)delta_width * sizeof(uint16_t));
+      }
+      else
+      {
+         /* Copy bitmap row */
+         memcpy(dst, src, copy_width * sizeof(uint8_t));
+         /* Zero out remaining atlas row */
+         if (delta_width > 0)
+            memset(dst + copy_width, 0, delta_width * sizeof(uint8_t));
+      }
 
-      dst += handle->atlas.width;
+      dst += (size_t)handle->atlas.width * esz;
       src += slot->bitmap.pitch;
    }
 
@@ -198,8 +216,8 @@ static void font_renderer_ft_copy_coverage(ft_font_renderer_t *handle,
    {
       for (y = copy_height; y < handle->max_glyph_height; y++)
       {
-         memset(dst, 0, handle->max_glyph_width * sizeof(uint8_t));
-         dst += handle->atlas.width;
+         memset(dst, 0, (size_t)handle->max_glyph_width * esz);
+         dst += (size_t)handle->atlas.width * esz;
       }
    }
 }
@@ -334,7 +352,12 @@ static bool font_renderer_create_atlas(ft_font_renderer_t *handle, float font_si
    max_height   = (unsigned)glyph_h;
    atlas_width  = (max_width  + FT_ATLAS_PADDING) * FT_ATLAS_COLS;
    atlas_height = (max_height + FT_ATLAS_PADDING) * FT_ATLAS_ROWS;
-   atlas_buffer = (uint8_t*)calloc((size_t)atlas_height, (size_t)atlas_width);
+   /* Higher-precision coverage when the video driver asked for it
+    * (HDR output); the atlas then stores uint16_t samples. */
+   handle->atlas.format = font_renderer_get_preferred_atlas_format();
+   atlas_buffer = (uint8_t*)calloc((size_t)atlas_height,
+         (size_t)atlas_width *
+         ((handle->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
 
    if (!atlas_buffer)
       return false;
