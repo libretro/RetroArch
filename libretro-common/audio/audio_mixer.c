@@ -789,21 +789,9 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
       return;
 
    if (sound->data_owner)
-   {
-      /* the compressed source was borrowed: hand it back and keep
-       * the per-type free() path away from it */
+      /* the compressed source was borrowed: hand it back; the
+       * per-type paths below leave borrowed data alone */
       sound->data_release(sound->data_owner);
-      switch (sound->type)
-      {
-         case AUDIO_MIXER_TYPE_WAV:
-         case AUDIO_MIXER_TYPE_NONE:
-            break;
-         default:
-            /* stream types: the data pointer is the borrowed block */
-            sound->types.stream.data = NULL;
-            break;
-      }
-   }
 
    switch (sound->type)
    {
@@ -818,42 +806,42 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
       case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_RMODTRACKER
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_RFLAC
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_RMP3
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
       case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
          handle = (void*)sound->types.stream.data;
-         if (handle)
+         if (handle && !sound->data_owner)
             free(handle);
 #endif
          break;
