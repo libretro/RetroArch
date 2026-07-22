@@ -2556,6 +2556,32 @@ inline static int dxgi_compute_intersection_area(
            * MAX(0, MIN(ay2, by2) - MAX(ay1, by1));
 }
 
+/* Self-contained display-in-HDR-mode probe for callers that must not
+ * pull COM/DXGI headers into their own translation unit (win32_common
+ * compiles without the CINTERFACE / COBJMACROS arrangement the d3d
+ * driver TUs set up before including any Windows header, which breaks
+ * MSVC against the real SDK headers -- MinGW's are lenient and masked
+ * it). Creates a factory via the dynamically-loaded entry point, runs
+ * the support check (which also performs the display-flag bookkeeping)
+ * and releases it. */
+bool dxgi_display_hdr_active(HWND hwnd)
+{
+#ifdef __WINRT__
+   DXGIFactory2 factory = NULL;
+   bool         ret     = false;
+   if (FAILED(DXGICreateFactory2(&factory)) || !factory)
+      return false;
+#else
+   DXGIFactory1 factory = NULL;
+   bool         ret     = false;
+   if (FAILED(DXGICreateFactory1(&factory)) || !factory)
+      return false;
+#endif
+   ret = dxgi_check_display_hdr_support(factory, hwnd);
+   Release(factory);
+   return ret;
+}
+
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd)
 #else

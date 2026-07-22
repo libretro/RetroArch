@@ -461,6 +461,10 @@ void dxgi_copy(
 #ifdef HAVE_DXGI_HDR
 #ifdef __WINRT__
 bool dxgi_check_display_hdr_support(DXGIFactory2 factory, HWND hwnd);
+
+/* Self-contained probe: creates and releases its own factory, so the
+ * caller's TU needs no COM headers. See dxgi_common.c for details. */
+bool dxgi_display_hdr_active(HWND hwnd);
 #else
 bool dxgi_check_display_hdr_support(DXGIFactory1 factory, HWND hwnd);
 #endif

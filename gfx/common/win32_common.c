@@ -45,10 +45,6 @@
 
 #include "win32_common.h"
 
-#if !defined(_XBOX) && (defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12))
-#include "dxgi_common.h"
-#endif
-
 
 #ifdef HAVE_GDI
 #include "gdi_defines.h"
@@ -2074,6 +2070,16 @@ bool win32_backbuffer_is_scrgb(void)
 #define WGL_COLORSPACE_LINEAR_EXT 0x308A
 #endif
 
+#if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
+/* Implemented in dxgi_common.c; declared here rather than by including
+ * dxgi_common.h, so this TU pulls no COM/DXGI headers: their
+ * C-interface setup (CINTERFACE / COBJMACROS before any Windows
+ * include) differs from what the rest of this file establishes, and
+ * MSVC against the real SDK headers rejects the mix -- MinGW's
+ * headers are lenient and masked it. */
+bool dxgi_display_hdr_active(HWND hwnd);
+#endif
+
 /* Display-in-HDR-mode probe.  Goes through the DXGI helper, which
  * dylib_loads dxgi.dll at runtime -- no new imports; on systems
  * without DXGI 1.6 / HDR it simply reports false and the legacy
@@ -2081,16 +2087,7 @@ bool win32_backbuffer_is_scrgb(void)
 bool win32_display_hdr_active(HWND hwnd)
 {
 #if defined(HAVE_D3D10) || defined(HAVE_D3D11) || defined(HAVE_D3D12)
-   bool         ret     = false;
-   DXGIFactory1 factory = NULL;
-   if (FAILED(CreateDXGIFactory1(uuidof(IDXGIFactory1), (void**)&factory)))
-      return false;
-   if (factory)
-   {
-      ret = dxgi_check_display_hdr_support(factory, hwnd);
-      Release(factory);
-   }
-   return ret;
+   return dxgi_display_hdr_active(hwnd);
 #else
    /* No DXGI in this build: no way to know the display is in HDR
     * mode, so never select the float format. */
