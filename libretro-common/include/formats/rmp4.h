@@ -142,6 +142,13 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
  * size). */
 void rmp4_set_avail(rmp4_t *mp4, size_t avail);
 
+/* Borrow a track's presentation timestamps (decode order), straight
+ * from the sample tables - available as soon as the moov is parsed,
+ * with no reference to the media data.  Returns NULL for an invalid
+ * track; the array lives until rmp4_close. */
+const int64_t *rmp4_track_pts(const rmp4_t *mp4, int track,
+      uint32_t *count);
+
 /* Restart packet reading from the first sample. */
 void rmp4_rewind(rmp4_t *mp4);
 

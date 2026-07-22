@@ -1098,6 +1098,15 @@ rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
    return rmp4_open_memory_avail(data, size, size, NULL);
 }
 
+const int64_t *rmp4_track_pts(const rmp4_t *m, int track, uint32_t *count)
+{
+   if (!m || track < 0 || track >= m->num_tracks)
+      return NULL;
+   if (count)
+      *count = m->trk[track].count;
+   return m->trk[track].pts;
+}
+
 void rmp4_set_avail(rmp4_t *m, size_t avail)
 {
    if (!m)

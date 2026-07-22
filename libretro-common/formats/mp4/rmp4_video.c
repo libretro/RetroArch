@@ -121,6 +121,16 @@ struct rmp4_video
    int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
+   /* Bytes of 'buf' actually read so far, for decoding a still from a
+    * file whose read is in progress: 0 means fully resident (the
+    * default; set_buf_ptr keeps it), and the still decode returns
+    * IMAGE_PROCESS_WAIT instead of erroring when it runs into the
+    * wall.  Raised by rmp4_video_set_avail. */
+   size_t         avail;
+   int            partial;    /* set_avail was called: 'avail' is live
+                                 (0 is a valid value - nothing read
+                                 yet - so it cannot double as the
+                                 unset sentinel) */
 };
 
 static int rmp4_video_ts_cmp(const void *a, const void *b)
@@ -498,19 +508,21 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
  * one-shot behaviour. */
 
 static rmp4_video_stream_t *rmp4_video_stream_open_begin(
-      const uint8_t *buf, size_t len)
+      const uint8_t *buf, size_t len, size_t avail, int *need_more)
 {
    rmp4_video_stream_t *s;
    const rmp4_track *trk = NULL;
    int i, num_tracks;
 
+   if (need_more)
+      *need_more = 0;
    if (!buf || !len)
       return NULL;
 
    if (!(s = (rmp4_video_stream_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   if (!(s->demux = rmp4_open_memory(buf, len)))
+   if (!(s->demux = rmp4_open_memory_avail(buf, len, avail, need_more)))
       goto fail;
 
    /* Pick the first video track whose codec we can decode. */
@@ -570,20 +582,28 @@ fail:
 static int rmp4_video_stream_scan_step(rmp4_video_stream_t *s,
       int max_packets)
 {
-   rmp4_packet pkt;
-   int walked = 0;
+   /* Timestamps come straight from the moov sample tables - the old
+    * packet walk produced exactly these values (it recorded
+    * pkt.timestamp for the video track only, in cursor order) but
+    * went through rmp4_read_packet, which now gates on each sample's
+    * media bytes being resident; the tables need no media bytes at
+    * all, so a partially-read file can pre-scan the moment its moov
+    * is parsed. */
+   uint32_t       count = 0;
+   const int64_t *pts   = rmp4_track_pts(s->demux, s->track, &count);
+   int            walked = 0;
 
-   while (s->num_frames < RMP4_VIDEO_MAX_TS)
+   if (!pts)
+      return 1;
+   while (s->num_frames < RMP4_VIDEO_MAX_TS
+         && (uint32_t)s->ts_count < count)
    {
       if (max_packets > 0 && walked >= max_packets)
          return 0;
-      if (rmp4_read_packet(s->demux, &pkt) != 1)
-         break;
-      walked++;
-      if (pkt.track != s->track)
-         continue;
-      s->ts[s->ts_count++] = pkt.timestamp;
+      s->ts[s->ts_count] = pts[s->ts_count];
+      s->ts_count++;
       s->num_frames++;
+      walked++;
    }
    return 1;
 }
@@ -615,7 +635,7 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 {
    rmp4_video_stream_t *s;
 
-   if (!(s = rmp4_video_stream_open_begin(buf, len)))
+   if (!(s = rmp4_video_stream_open_begin(buf, len, len, NULL)))
       return NULL;
    rmp4_video_stream_scan_step(s, 0);
    if (rmp4_video_stream_open_finish(s) != 0)
@@ -782,17 +802,27 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
 /* Advance by exactly one of the chosen track's packets (skipping other
  * tracks' packets, which are header reads only), or by one drained
  * reorder-queue picture once the packets are exhausted.  Returns 1
- * when a displayed picture is in s->frame (duration written), 0 when
- * the packet decoded but is not displayed, -1 at the end of a pass or
- * on a decode error. */
+ * when a displayed picture was consumed (render it on demand), 0 when
+ * the packet decoded but is not displayed, 2 when the next packet's
+ * bytes are not yet resident (partial read; nothing consumed - retry
+ * after rmp4_video_stream_set_avail), -1 at the end of a pass or on a
+ * decode error. */
 static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       int *duration_ms)
 {
    rmp4_packet pkt;
 
-   while (rmp4_read_packet(s->demux, &pkt) == 1)
+   for (;;)
    {
-      int r;
+      int r = rmp4_read_packet(s->demux, &pkt);
+      if (r == RMP4_READ_AGAIN)
+         /* The sample's bytes are not buffered yet.  Do NOT fall
+          * through to the drain below: packets remain, and flushing
+          * the H.264 reorder queue now would present its held
+          * pictures early and out of order. */
+         return 2;
+      if (r != 1)
+         break;
       if (pkt.track != s->track)
          continue;
       r = rmp4_video_decode_packet(s, &pkt);
@@ -830,9 +860,18 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *s, int *duration_ms)
    if (!s)
       return -1;
 
+   /* 2 (not yet resident) also ends the loop: nothing was consumed,
+    * and the caller retries after feeding more bytes.  Fully-resident
+    * streams never see it. */
    while ((r = rmp4_video_stream_step(s, duration_ms)) == 0)
       ;                   /* non-shown frame: keep going      */
    return r;
+}
+
+void rmp4_video_stream_set_avail(rmp4_video_stream_t *s, size_t avail)
+{
+   if (s)
+      rmp4_set_avail(s->demux, avail);
 }
 
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
@@ -1071,6 +1110,19 @@ void rmp4_video_set_want_10bit(rmp4_video_t *mp4, int want)
       mp4->want10 = want ? 1 : 0;
 }
 
+void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail)
+{
+   if (!mp4)
+      return;
+   mp4->partial = 1;
+   if (avail > mp4->len)
+      avail = mp4->len;
+   if (avail > mp4->avail)   /* monotonic */
+      mp4->avail = avail;
+   if (mp4->stream)
+      rmp4_video_stream_set_avail(mp4->stream, mp4->avail);
+}
+
 /* True if the last rmp4_video_process_image() wrote packed XRGB2101010. */
 bool rmp4_video_is_10bit(const rmp4_video_t *mp4)
 {
@@ -1099,9 +1151,17 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    if (!mp4 || !mp4->buf || !buf)
       return IMAGE_PROCESS_ERROR;
 
+   /* A partial reader raises mp4->avail between calls; push it down
+    * so blocked stages can make progress this call. */
+   if (mp4->stream && mp4->partial)
+      rmp4_video_stream_set_avail(mp4->stream, mp4->avail);
+
    switch (mp4->still_stage)
    {
       case RMP4_VIDEO_STILL_IDLE:
+      {
+         int    need_more = 0;
+         size_t avail     = mp4->partial ? mp4->avail : mp4->len;
          /* Defensive: a repeated process call re-opens from scratch. */
          if (mp4->stream)
          {
@@ -1109,10 +1169,14 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
             mp4->stream = NULL;
          }
          if (!(mp4->stream = rmp4_video_stream_open_begin(
-               mp4->buf, mp4->len)))
-            return IMAGE_PROCESS_ERROR;
+               mp4->buf, mp4->len, avail, &need_more)))
+            /* The moov is still arriving (or, for a trailing moov or a
+             * fragmented movie, most of the file is): wait for more
+             * bytes rather than failing. */
+            return need_more ? IMAGE_PROCESS_WAIT : IMAGE_PROCESS_ERROR;
          mp4->still_stage = RMP4_VIDEO_STILL_SCAN;
          return IMAGE_PROCESS_NEXT;
+      }
 
       case RMP4_VIDEO_STILL_SCAN:
          if (!rmp4_video_stream_scan_step(mp4->stream,
@@ -1140,6 +1204,10 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
    s = mp4->stream;
    if ((r = rmp4_video_stream_step(s, &duration_ms)) == 0)
       return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
+   if (r == 2)
+      /* The next sample's bytes have not been read yet; nothing was
+       * consumed - resume here once more of the file has arrived. */
+      return IMAGE_PROCESS_WAIT;
    if (r < 0)
       goto fail;
    if (!(frame = rmp4_video_stream_render(s)))
