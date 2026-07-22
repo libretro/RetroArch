@@ -60,6 +60,11 @@ typedef struct
    /* CodecDelay: nanoseconds of decoded output to drop from the stream
     * start (the encoder delay; AAC priming), 0 when absent. */
    uint64_t               codec_delay_ns;
+   /* TrackEntry DefaultDuration: the muxer's declared nominal frame
+    * duration in nanoseconds, 0 when absent.  For video it is the
+    * exact intended rate, available from the header alone - no
+    * timestamp walk. */
+   uint64_t               default_duration_ns;
    /* Colour element (video): ISO/IEC 23001-8 code points, 0 = absent.
     * matrix: 1=BT.709 5/6=BT.601 9=BT.2020-ncl; transfer: 1/6=BT.709/601,
     * 16=PQ (HDR10), 18=HLG; range: 1=limited(TV) 2=full. */

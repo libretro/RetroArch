@@ -35,6 +35,7 @@
 #define ID_CODECID         0x86u
 #define ID_CODECPRIVATE    0x63A2u
 #define ID_CODECDELAY      0x56AAu
+#define ID_DEFAULTDURATION 0x23E383u
 #define ID_VIDEO           0xE0u
 #define ID_PIXELWIDTH      0xB0u
 #define ID_PIXELHEIGHT     0xBAu
@@ -356,6 +357,9 @@ static void parse_track_entry(const uint8_t *p, const uint8_t *end,
          case ID_CODECPRIVATE:
             trk->codec_private      = body;
             trk->codec_private_size = (size_t)sz;
+            break;
+         case ID_DEFAULTDURATION:
+            trk->default_duration_ns = be_uint(body, (size_t)sz);
             break;
          case ID_CODECDELAY:
             /* nanoseconds of decoded output to drop from the stream

@@ -131,17 +131,27 @@ typedef struct
    rmp4_t      *agather;             /* persistent audio-gather demuxer
                                         for the progressive MP4 path    */
    int          agtrack;
+#endif
    size_t       apkts_used, apkts_cap;
    size_t       anpkts,     anpkts_cap;
    int64_t      atoc;                /* opus TOC frame sum so far       */
    int64_t      apreskip;
-#endif
+   int64_t      adiscard_ns;         /* webm DiscardPadding sum         */
+   uint64_t     atrim;               /* AAC start trim (frames)         */
    unsigned     ach;                 /* decoded channels (1 or 2)       */
    unsigned     arate;
    int64_t      apos;                /* frames emitted so far           */
    int64_t      atotal;              /* emit clamp; <0 = no clamp       */
    int          aeof;
 #endif
+   rwebm_t     *wgather;             /* progressive native path: one
+                                        persistent gather walking both
+                                        tracks - video timestamps into
+                                        vts, audio packets into the
+                                        blob - as far as the fill has
+                                        reached                         */
+   int          nvts_cap;
+   int          vts_unsorted;        /* out-of-order arrival this pump  */
    int64_t      vpts_ns;             /* pts of the last presented frame */
    int64_t      play_ns;             /* wall clock: one frame interval
                                         per retro_run.  Presentation is
@@ -166,6 +176,8 @@ typedef struct
 #if defined(HAVE_RMP4) && defined(WEBM_HAVE_AUDIO)
 static void webm_mp4_audio_pump(webm_player_t *p);
 #endif
+static void webm_native_pump(webm_player_t *p);
+static int webm_ts_cmp(const void *a, const void *b);
 
 static webm_player_t webm_player;
 
@@ -553,6 +565,8 @@ static void webm_free_player(webm_player_t *p)
       rmp4_close(p->agather);
 #endif
 #endif
+   if (p->wgather)
+      rwebm_close(p->wgather);
    free(p->fb);
    free(p->vts);
    free(p->silence);
@@ -1025,6 +1039,27 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    }
 #endif
 
+   /* Progressive fill for the native path: budget, then fan the
+    * arrivals to the playback demuxer and the gather. */
+   if (p->dt && !data_transfer_complete(p->dt)
+         && !data_transfer_failed(p->dt))
+   {
+      size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
+      rwebm_set_avail(p->webm, avail);
+      if (p->wgather)
+      {
+         rwebm_set_avail(p->wgather, avail);
+         webm_native_pump(p);
+      }
+      if (data_transfer_failed(p->dt) && !p->fill_warned)
+      {
+         p->fill_warned = 1;
+         if (WEBM_CORE_PREFIX(log_cb))
+            WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+               "[webm] file read ended short; playing what arrived.\n");
+      }
+   }
+
    if (!p->eof)
    {
       int presented = 0, shown_now = 0;
@@ -1042,6 +1077,11 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       while (p->vshown <= target_slot)
       {
          int r = rwebm_read_packet(p->webm, &pkt);
+         if (r == 2 && p->dt && !data_transfer_complete(p->dt)
+               && !data_transfer_failed(p->dt))
+            /* the next block has not arrived: hold the picture; the
+             * catch-up next run passes through what it missed */
+            break;
          if (r != 1)
          {
 #ifdef WEBM_HAVE_H264
@@ -1095,7 +1135,9 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       /* every display slot shown and a further interval elapsed: the
        * stream is over (the packet reader no longer runs each frame,
        * so it cannot notice on its own) */
-      if (p->nvts > 0 && p->vshown >= p->nvts && !shown_now)
+      if (p->nvts > 0 && p->vshown >= p->nvts && !shown_now
+            && (!p->dt || data_transfer_complete(p->dt)
+               || data_transfer_failed(p->dt)))
          p->eof = 1;
    }
    else
@@ -1168,11 +1210,120 @@ audio:
 }
 
 
+/* Walk the native gather as far as the fill has reached, appending:
+ * video display slots (show-frame filtered) into the pacing table,
+ * audio packets into the growable blob.  Nothing is consumed at the
+ * partial-read wall; the walk resumes exactly there next call.  The
+ * pacing table stays sorted (a display-reordering codec can deliver
+ * out of order; the sorted multiset is the display timeline), and the
+ * audio decoder is rebased under the demuxed growth contract, its
+ * exact playable length growing with the packets. */
+static void webm_native_pump(webm_player_t *p)
+{
+   rwebm_packet pkt;
+   int agrew = 0;
+   if (!p->wgather)
+      return;
+   while (rwebm_read_packet(p->wgather, &pkt) == 1)
+   {
+#ifdef WEBM_HAVE_AUDIO
+      if (p->atrack >= 0 && pkt.track == p->atrack)
+      {
+         if (p->apkts_used + pkt.size > p->apkts_cap)
+         {
+            size_t nc = p->apkts_cap ? p->apkts_cap * 2 : 256 * 1024;
+            uint8_t *np;
+            while (nc < p->apkts_used + pkt.size)
+               nc *= 2;
+            if (!(np = (uint8_t*)realloc(p->apkts, nc)))
+               return;
+            p->apkts     = np;
+            p->apkts_cap = nc;
+         }
+         if (p->anpkts >= p->anpkts_cap)
+         {
+            size_t nc = p->anpkts_cap ? p->anpkts_cap * 2 : 4096;
+            uint32_t *ns;
+            if (!(ns = (uint32_t*)realloc(p->asizes,
+                  nc * sizeof(uint32_t))))
+               return;
+            p->asizes     = ns;
+            p->anpkts_cap = nc;
+         }
+         memcpy(p->apkts + p->apkts_used, pkt.data, pkt.size);
+         p->asizes[p->anpkts++] = (uint32_t)pkt.size;
+         p->apkts_used         += pkt.size;
+         if (p->atype == AUDIO_TYPE_OPUS)
+            p->atoc += webm_opus_pkt_frames(pkt.data, pkt.size);
+         if (pkt.discard_padding > 0)
+            p->adiscard_ns += pkt.discard_padding;
+         agrew = 1;
+         continue;
+      }
+#endif
+      if (pkt.track != p->vtrack)
+         continue;
+      if (p->codec == RWEBM_CODEC_VP8
+            && (!pkt.size || !(pkt.data[0] & 0x10)))
+         continue;
+      if (p->nvts >= p->nvts_cap)
+      {
+         int nc = p->nvts_cap ? p->nvts_cap * 2 : 1024;
+         int64_t *nv;
+         if (!(nv = (int64_t*)realloc(p->vts,
+               (size_t)nc * sizeof(int64_t))))
+            return;
+         p->vts      = nv;
+         p->nvts_cap = nc;
+      }
+      if (p->nvts > 0 && pkt.timestamp < p->vts[p->nvts - 1])
+         p->vts_unsorted = 1;
+      p->vts[p->nvts++] = pkt.timestamp;
+   }
+   if (p->vts_unsorted)
+   {
+      qsort(p->vts, (size_t)p->nvts, sizeof(int64_t), webm_ts_cmp);
+      p->vts_unsorted = 0;
+   }
+#ifdef WEBM_HAVE_AUDIO
+   if (agrew)
+   {
+      /* running exact playable length (binds only at the tail, long
+       * after the fill has finished) */
+      if (p->atype == AUDIO_TYPE_OPUS && p->atoc > 0)
+      {
+         p->atotal = p->atoc - p->apreskip
+            - (p->adiscard_ns * 48000 + 500000000) / 1000000000;
+         if (p->atotal < 0)
+            p->atotal = 0;
+      }
+#ifdef HAVE_RAAC
+      if (p->atype == AUDIO_TYPE_AAC)
+      {
+         p->atotal = (int64_t)p->anpkts * 1024 - (int64_t)p->atrim;
+         if (p->atotal < 0)
+            p->atotal = 0;
+      }
+#endif
+      if (p->actx)
+      {
+         const rwebm_track *at = rwebm_get_track(p->wgather, p->atrack);
+         audio_transfer_set_demuxed_ptr(p->actx, p->atype,
+               at->codec_private, at->codec_private_size,
+               p->apkts, p->apkts_used, p->asizes, p->anpkts);
+      }
+   }
+#else
+   (void)agrew;
+#endif
+}
+
 #ifdef HAVE_RMP4
 /* MP4 load path: video through the rmp4_video stream glue (H.264, VP9,
  * VP8, with display-order reordering and colr-driven conversion done
  * inside), audio through the audio_transfer demuxed arms (AAC, Opus,
  * Vorbis).  8-bit XRGB8888 output. */
+
 #ifdef WEBM_HAVE_AUDIO
 /* Append every audio packet the fill has reached to the growable
  * blob, then rebase the decoder onto the (possibly realloc-moved)
@@ -1443,7 +1594,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    int want10 = 0;
    const rwebm_track *vt = NULL;
    int64_t len = 0;
-   int i, nvpkts;
+   int i;
    int64_t dur_ns;
 
    if (!info || !info->path)
@@ -1518,13 +1669,19 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    }
    p->pix10 = want10;
 
-   data_transfer_iterate(p->dt, 0);   /* native path: whole file */
-   if (!data_transfer_complete(p->dt))
-      goto error;
-
-   p->webm = rwebm_open_memory(p->file_buf, (size_t)len);
-   if (!p->webm)
-      goto error;
+   /* Progressive open: the EBML header and Tracks sit at the front. */
+   for (;;)
+   {
+      int need_more = 0;
+      p->webm = rwebm_open_memory_avail(p->file_buf, (size_t)len,
+            data_transfer_avail(p->dt), &need_more);
+      if (p->webm)
+         break;
+      if (!need_more || data_transfer_failed(p->dt)
+            || data_transfer_complete(p->dt))
+         goto error;
+      data_transfer_iterate(p->dt, 256 * 1024);
+   }
 
    p->vtrack = -1;
    for (i = 0; i < rwebm_num_tracks(p->webm); i++)
@@ -1597,156 +1754,84 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
    p->width  = vt->width;
    p->height = vt->height;
 
-   /* Frame rate: shown video packets over stream duration; the scan is
-    * cheap since packets alias the file buffer.  VP8 invisible (alt-ref)
-    * frames are muxed as separate blocks and must not inflate the count;
-    * bit 4 of the frame tag is show_frame.  VP9 hides its invisible
-    * frames inside superframes, so each packet shows at most once. */
-   nvpkts = 0;
+   /* One persistent gather demuxer builds the pacing table and the
+    * audio blob as far as the fill has reached; retro_run keeps
+    * pumping it as the rest of the file arrives.  Feed here only far
+    * enough for a frame-rate estimate (the announced rate is the
+    * schedule's mean; a 512-slot prefix pins it for constant-rate
+    * files and approximates genuine VFR no worse than a mean ever
+    * did) and for the audio decoder's setup. */
    {
-      rwebm_packet pkt;
+      int need_more = 0;
+      p->wgather = rwebm_open_memory_avail(p->file_buf, (size_t)len,
+            data_transfer_avail(p->dt), &need_more);
+      if (!p->wgather)
+         goto error;
 #ifdef WEBM_HAVE_AUDIO
-      size_t napkts = 0, abytes = 0;
-#endif
-      while (rwebm_read_packet(p->webm, &pkt) == 1)
+      if (p->atrack >= 0)
       {
-#ifdef WEBM_HAVE_AUDIO
-         if (pkt.track == p->atrack)
-         {
-            napkts++;
-            abytes += pkt.size;
-            continue;
-         }
-#endif
-         if (pkt.track != p->vtrack)
-            continue;
-         if (p->codec == RWEBM_CODEC_VP8
-               && (!pkt.size || !(pkt.data[0] & 0x10)))
-            continue;
-         nvpkts++;
-      }
-      rwebm_rewind(p->webm);
-      /* Pacing schedule: every display slot's timestamp, sorted into
-       * display order (decode order visits them out of sequence under
-       * H.264 reordering; the sorted multiset is the display
-       * timeline). */
-      if (nvpkts > 0)
-      {
-         p->vts = (int64_t*)malloc((size_t)nvpkts * sizeof(int64_t));
-         if (!p->vts)
-            goto error;
-         while (rwebm_read_packet(p->webm, &pkt) == 1)
-         {
-            if (pkt.track != p->vtrack)
-               continue;
-            if (p->codec == RWEBM_CODEC_VP8
-                  && (!pkt.size || !(pkt.data[0] & 0x10)))
-               continue;
-            if (p->nvts < nvpkts)
-               p->vts[p->nvts++] = pkt.timestamp;
-         }
-         rwebm_rewind(p->webm);
-         qsort(p->vts, (size_t)p->nvts, sizeof(int64_t), webm_ts_cmp);
-      }
-#ifdef WEBM_HAVE_AUDIO
-      /* Second pass: copy the audio packets into one contiguous blob
-       * for the audio_transfer demuxed contract (the packets alias the
-       * file buffer but are interleaved with video, so they are not
-       * contiguous in place). */
-      if (p->atrack >= 0 && napkts)
-      {
-         size_t k = 0, off = 0;
-         p->apkts  = (uint8_t*)malloc(abytes ? abytes : 1);
-         p->asizes = (uint32_t*)malloc(napkts * sizeof(uint32_t));
-         if (p->apkts && p->asizes)
-         {
-            int64_t toc_frames = 0, discard_ns = 0;
-            while (rwebm_read_packet(p->webm, &pkt) == 1)
-            {
-               if (pkt.track != p->atrack)
-                  continue;
-               memcpy(p->apkts + off, pkt.data, pkt.size);
-               p->asizes[k++] = (uint32_t)pkt.size;
-               off += pkt.size;
-               if (p->atype == AUDIO_TYPE_OPUS)
-                  toc_frames += webm_opus_pkt_frames(pkt.data, pkt.size);
-               if (pkt.discard_padding > 0)
-                  discard_ns += pkt.discard_padding;
-            }
-            rwebm_rewind(p->webm);
-            /* Exact playable length: decoded total minus the pre-skip
-             * (dropped inside the decoder arm) minus container end
-             * trimming.  Computable for Opus, whose TOC encodes packet
-             * durations, and for AAC, whose access units are a fixed
-             * 1024 frames with the delay in CodecDelay; Vorbis
-             * emission is left unclamped. */
-            p->atotal = -1;
-            if (p->atype == AUDIO_TYPE_OPUS && toc_frames > 0)
-            {
-               const rwebm_track *at0 =
-                  rwebm_get_track(p->webm, p->atrack);
-               int64_t preskip = 0;
-               if (at0->codec_private_size >= 19)
-                  preskip = at0->codec_private[10]
-                     | ((int64_t)at0->codec_private[11] << 8);
-               p->atotal = toc_frames - preskip
-                  - (discard_ns * 48000 + 500000000) / 1000000000;
-               if (p->atotal < 0)
-                  p->atotal = 0;
-            }
-            {
-               const rwebm_track *at = rwebm_get_track(p->webm, p->atrack);
-               uint64_t trim = 0;
+         const rwebm_track *at0 = rwebm_get_track(p->webm, p->atrack);
+         if (p->atype == AUDIO_TYPE_OPUS
+               && at0->codec_private_size >= 19)
+            p->apreskip = at0->codec_private[10]
+               | ((int64_t)at0->codec_private[11] << 8);
 #ifdef HAVE_RAAC
-               if (p->atype == AUDIO_TYPE_AAC)
-               {
-                  /* CodecDelay is in nanoseconds; the decoder arm
-                   * trims in frames at the track's rate */
-                  trim = (at->codec_delay_ns
-                        * (uint64_t)(at->sample_rate ? at->sample_rate
-                           : 48000) + 500000000) / 1000000000;
-                  p->atotal = (int64_t)k * 1024 - (int64_t)trim;
-                  if (p->atotal < 0)
-                     p->atotal = 0;
-               }
+         if (p->atype == AUDIO_TYPE_AAC)
+            p->atrim = (at0->codec_delay_ns
+                  * (uint64_t)(at0->sample_rate ? at0->sample_rate
+                     : 48000) + 500000000) / 1000000000;
 #endif
-               p->actx = audio_transfer_new(p->atype);
-               if (p->actx
-                     && audio_transfer_set_demuxed_ptr(p->actx, p->atype,
-                        at->codec_private, at->codec_private_size,
-                        p->apkts, off, p->asizes, k)
-                     && (p->atype != AUDIO_TYPE_AAC
-                        || audio_transfer_set_start_trim(p->actx,
-                           p->atype, trim))
-                     && audio_transfer_start(p->actx, p->atype)
-                     && audio_transfer_info(p->actx, p->atype,
-                        &p->ach, &p->arate, NULL)
-                     && p->ach >= 1 && p->ach <= 2 && p->arate)
-               {
-                  if (WEBM_CORE_PREFIX(log_cb))
-                     WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
-                        "[webm] audio: %s, %u Hz, %u ch, %u packets.\n",
-                        p->atype == AUDIO_TYPE_OPUS ? "Opus"
-                        : p->atype == AUDIO_TYPE_AAC ? "AAC" : "Vorbis",
-                        p->arate, p->ach, (unsigned)k);
-               }
-               else
-               {
-                  if (WEBM_CORE_PREFIX(log_cb))
-                     WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
-                        "[webm] audio track unusable; playing silent.\n");
-                  if (p->actx)
-                     audio_transfer_free(p->actx, p->atype);
-                  p->actx = NULL;
-               }
-            }
-         }
-         if (!p->actx)
+         p->atotal = -1;
+      }
+#endif
+      for (;;)
+      {
+         webm_native_pump(p);
+         if (p->nvts >= 512
+               || data_transfer_complete(p->dt)
+               || data_transfer_failed(p->dt))
+            break;
+         data_transfer_iterate(p->dt, 256 * 1024);
+         rwebm_set_avail(p->webm, data_transfer_avail(p->dt));
+         rwebm_set_avail(p->wgather, data_transfer_avail(p->dt));
+      }
+#ifdef WEBM_HAVE_AUDIO
+      if (p->atrack >= 0 && p->anpkts)
+      {
+         const rwebm_track *at = rwebm_get_track(p->webm, p->atrack);
+         p->actx = audio_transfer_new(p->atype);
+         if (p->actx
+               && audio_transfer_set_demuxed_ptr(p->actx, p->atype,
+                  at->codec_private, at->codec_private_size,
+                  p->apkts, p->apkts_used, p->asizes, p->anpkts)
+               && (p->atype != AUDIO_TYPE_AAC
+                  || audio_transfer_set_start_trim(p->actx,
+                     p->atype, p->atrim))
+               && audio_transfer_start(p->actx, p->atype)
+               && audio_transfer_info(p->actx, p->atype,
+                  &p->ach, &p->arate, NULL)
+               && p->ach >= 1 && p->ach <= 2 && p->arate)
          {
+            if (WEBM_CORE_PREFIX(log_cb))
+               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_INFO,
+                  "[webm] audio: %s, %u Hz, %u ch.\n",
+                  p->atype == AUDIO_TYPE_OPUS ? "Opus"
+                  : p->atype == AUDIO_TYPE_AAC ? "AAC" : "Vorbis",
+                  p->arate, p->ach);
+         }
+         else
+         {
+            if (WEBM_CORE_PREFIX(log_cb))
+               WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
+                  "[webm] audio track unusable; playing silent.\n");
+            if (p->actx)
+               audio_transfer_free(p->actx, p->atype);
+            p->actx = NULL;
             free(p->apkts);
             free(p->asizes);
             p->apkts  = NULL;
             p->asizes = NULL;
+            p->atrack = -1;   /* the pump stops gathering it */
          }
       }
 #endif
@@ -1757,11 +1842,20 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
     * container duration (which includes the audio tail): presentation
     * is paced against the timestamp schedule, so the announced rate
     * must be the schedule's true mean or the pacing clock drifts. */
-   if (p->nvts > 1 && p->vts[p->nvts - 1] > p->vts[0])
+   /* Precedence: with the pacing table complete (the fill finished
+    * during load - every pre-progressive load did), the table's own
+    * span, exactly the historical derivation; otherwise the muxer's
+    * declared DefaultDuration, exact and header-only; last, the
+    * scanned prefix's mean. */
+   if ((!p->dt || data_transfer_complete(p->dt))
+         && p->nvts > 1 && p->vts[p->nvts - 1] > p->vts[0])
       p->fps = (double)(p->nvts - 1) * 1000000000.0
          / (double)(p->vts[p->nvts - 1] - p->vts[0]);
-   else if (nvpkts > 1 && dur_ns > 0)
-      p->fps = (double)nvpkts * 1000000000.0 / (double)dur_ns;
+   else if (vt->default_duration_ns > 0)
+      p->fps = 1000000000.0 / (double)vt->default_duration_ns;
+   else if (p->nvts > 1 && p->vts[p->nvts - 1] > p->vts[0])
+      p->fps = (double)(p->nvts - 1) * 1000000000.0
+         / (double)(p->vts[p->nvts - 1] - p->vts[0]);
    else
       p->fps = 30.0;
    if (p->fps < 1.0 || p->fps > 240.0)
@@ -1808,7 +1902,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          "[webm] %ux%u %s, %.3f fps, %d video packets.\n",
          p->width, p->height,
          p->codec == RWEBM_CODEC_VP9 ? "VP9"
-         : p->codec == RWEBM_CODEC_H264 ? "H.264" : "VP8", p->fps, nvpkts);
+         : p->codec == RWEBM_CODEC_H264 ? "H.264" : "VP8", p->fps, p->nvts);
    return true;
 
 error:
