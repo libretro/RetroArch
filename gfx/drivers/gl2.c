@@ -3626,7 +3626,11 @@ static void gl2_pbo_async_readback(gl2_t *gl)
  * paper-white / 80 scale). The matrices are the shared constants
  * transposed for GLSL column-major construction, identical to the
  * (column-by-column verified) glcore versions. */
-static const char *gl2_scrgb_vert_src =
+/* Sources are string arrays fed to glShaderSource as multiple
+ * segments: C90 only guarantees 509 characters per literal, and the
+ * fragment shader exceeds that as one string
+ * (-Werror=overlength-strings on the strict CI targets). */
+static const char *gl2_scrgb_vert_src[] = {
    "attribute vec2 Pos;\n"
    "attribute vec2 Tex;\n"
    "varying vec2 vTex;\n"
@@ -3634,9 +3638,10 @@ static const char *gl2_scrgb_vert_src =
    "{\n"
    "   gl_Position = vec4(Pos * 2.0 - 1.0, 0.0, 1.0);\n"
    "   vTex = Tex;\n"
-   "}\n";
+   "}\n"
+};
 
-static const char *gl2_scrgb_frag_src =
+static const char *gl2_scrgb_frag_src[] = {
    "uniform sampler2D uTex;\n"
    "uniform float uNits;\n"
    "uniform float uExpand;\n"
@@ -3648,7 +3653,7 @@ static const char *gl2_scrgb_frag_src =
    "const mat3 kExpanded709to2020 = mat3(\n"
    "   0.6274040, 0.0457456, -0.00121055,\n"
    "   0.3292820, 0.9417770,  0.0176041,\n"
-   "   0.0433136, 0.0124772,  0.9836070);\n"
+   "   0.0433136, 0.0124772,  0.9836070);\n",
    "const mat3 kP3to2020 = mat3(\n"
    "   0.753833,  0.045744, -0.001210,\n"
    "   0.198597,  0.941777,  0.017602,\n"
@@ -3656,7 +3661,7 @@ static const char *gl2_scrgb_frag_src =
    "const mat3 k2020to709 = mat3(\n"
    "    1.6604910, -0.1245505, -0.0181508,\n"
    "   -0.5876411,  1.1328999, -0.1005789,\n"
-   "   -0.0728499, -0.0083494,  1.1187297);\n"
+   "   -0.0728499, -0.0083494,  1.1187297);\n",
    "void main()\n"
    "{\n"
    "   vec4 sdr = texture2D(uTex, vTex);\n"
@@ -3671,15 +3676,17 @@ static const char *gl2_scrgb_frag_src =
    "   lin = k2020to709 * lin;\n"
    "   lin = lin * (uNits / 80.0);\n"
    "   gl_FragColor = vec4(lin, sdr.a);\n"
-   "}\n";
+   "}\n"
+};
 
-static GLuint gl2_scrgb_compile_stage(GLenum stage, const char *src)
+static GLuint gl2_scrgb_compile_stage(GLenum stage,
+      const char **src, GLsizei count)
 {
    GLint status = 0;
    GLuint sh;
    if (!(sh = glCreateShader(stage)))
       return 0;
-   glShaderSource(sh, 1, &src, NULL);
+   glShaderSource(sh, count, src, NULL);
    glCompileShader(sh);
    glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
    if (!status)
@@ -3697,13 +3704,23 @@ static bool gl2_scrgb_init_program(gl2_t *gl)
 
    /* On a GL 1.x context the GLSL entry points do not resolve;
     * without them the encode cannot exist and stage-1 dim output is
-    * the (documented) best available behavior. */
+    * the (documented) best available behavior. The check only makes
+    * sense where glsym remaps the names to loadable pointers (the
+    * remap is a macro, hence the defined() test); where they are
+    * directly linked functions the address is never null and clang
+    * (Orbis) rejects the comparison outright. */
+#if defined(glCreateShader) && defined(glCreateProgram)
    if (!glCreateShader || !glCreateProgram)
       return false;
+#endif
 
-   if (!(vs = gl2_scrgb_compile_stage(GL_VERTEX_SHADER, gl2_scrgb_vert_src)))
+   if (!(vs = gl2_scrgb_compile_stage(GL_VERTEX_SHADER,
+               gl2_scrgb_vert_src,
+               (GLsizei)ARRAY_SIZE(gl2_scrgb_vert_src))))
       return false;
-   if (!(fs = gl2_scrgb_compile_stage(GL_FRAGMENT_SHADER, gl2_scrgb_frag_src)))
+   if (!(fs = gl2_scrgb_compile_stage(GL_FRAGMENT_SHADER,
+               gl2_scrgb_frag_src,
+               (GLsizei)ARRAY_SIZE(gl2_scrgb_frag_src))))
    {
       glDeleteShader(vs);
       return false;

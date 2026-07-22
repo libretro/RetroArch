@@ -1768,15 +1768,18 @@ static void gl1_readback(gl1_t *gl1,
  * compatibility attributes (gl_Vertex / gl_MultiTexCoord0) so the
  * quad can be submitted with plain immediate mode -- no generic
  * attribute state to manage in a fixed-function driver. */
-static const char *gl1_scrgb_vert_src =
+/* String arrays for the same C90 509-character literal limit reason
+ * as the gl driver. */
+static const char *gl1_scrgb_vert_src[] = {
    "varying vec2 vTex;\n"
    "void main()\n"
    "{\n"
    "   gl_Position = vec4(gl_Vertex.xy, 0.0, 1.0);\n"
    "   vTex = gl_MultiTexCoord0.xy;\n"
-   "}\n";
+   "}\n"
+};
 
-static const char *gl1_scrgb_frag_src =
+static const char *gl1_scrgb_frag_src[] = {
    "uniform sampler2D uTex;\n"
    "uniform float uNits;\n"
    "uniform float uExpand;\n"
@@ -1788,7 +1791,7 @@ static const char *gl1_scrgb_frag_src =
    "const mat3 kExpanded709to2020 = mat3(\n"
    "   0.6274040, 0.0457456, -0.00121055,\n"
    "   0.3292820, 0.9417770,  0.0176041,\n"
-   "   0.0433136, 0.0124772,  0.9836070);\n"
+   "   0.0433136, 0.0124772,  0.9836070);\n",
    "const mat3 kP3to2020 = mat3(\n"
    "   0.753833,  0.045744, -0.001210,\n"
    "   0.198597,  0.941777,  0.017602,\n"
@@ -1796,7 +1799,7 @@ static const char *gl1_scrgb_frag_src =
    "const mat3 k2020to709 = mat3(\n"
    "    1.6604910, -0.1245505, -0.0181508,\n"
    "   -0.5876411,  1.1328999, -0.1005789,\n"
-   "   -0.0728499, -0.0083494,  1.1187297);\n"
+   "   -0.0728499, -0.0083494,  1.1187297);\n",
    "void main()\n"
    "{\n"
    "   vec4 sdr = texture2D(uTex, vTex);\n"
@@ -1811,7 +1814,8 @@ static const char *gl1_scrgb_frag_src =
    "   lin = k2020to709 * lin;\n"
    "   lin = lin * (uNits / 80.0);\n"
    "   gl_FragColor = vec4(lin, sdr.a);\n"
-   "}\n";
+   "}\n"
+};
 
 static bool gl1_scrgb_resolve(gl1_t *gl1)
 {
@@ -1845,13 +1849,13 @@ static bool gl1_scrgb_resolve(gl1_t *gl1)
 }
 
 static GLuint gl1_scrgb_compile_stage(gl1_t *gl1, GLenum stage,
-      const char *src)
+      const char **src, GLsizei count)
 {
    GLint status = 0;
    GLuint sh;
    if (!(sh = gl1->scrgb.CreateShader(stage)))
       return 0;
-   gl1->scrgb.ShaderSource(sh, 1, &src, NULL);
+   gl1->scrgb.ShaderSource(sh, count, src, NULL);
    gl1->scrgb.CompileShader(sh);
    gl1->scrgb.GetShaderiv(sh, GL_COMPILE_STATUS, &status);
    if (!status)
@@ -1871,10 +1875,12 @@ static bool gl1_scrgb_init_program(gl1_t *gl1)
       return false;
 
    if (!(vs = gl1_scrgb_compile_stage(gl1, GL_VERTEX_SHADER,
-               gl1_scrgb_vert_src)))
+               gl1_scrgb_vert_src,
+               (GLsizei)ARRAY_SIZE(gl1_scrgb_vert_src))))
       return false;
    if (!(fs = gl1_scrgb_compile_stage(gl1, GL_FRAGMENT_SHADER,
-               gl1_scrgb_frag_src)))
+               gl1_scrgb_frag_src,
+               (GLsizei)ARRAY_SIZE(gl1_scrgb_frag_src))))
    {
       gl1->scrgb.DeleteShader(vs);
       return false;
