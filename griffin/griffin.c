@@ -433,6 +433,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/image_transfer.c"
+#include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
 #include "../libretro-common/formats/png/rpng_encode.c"
