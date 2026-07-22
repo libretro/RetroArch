@@ -894,6 +894,16 @@ void rmp4_video_stream_set_avail(rmp4_video_stream_t *s, size_t avail)
       rmp4_set_avail(s->demux, avail);
 }
 
+size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s)
+{
+   return s ? rmp4_media_floor(s->demux) : 0;
+}
+
+size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s)
+{
+   return s ? rmp4_consumed(s->demux) : 0;
+}
+
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
 {
    if (!s)

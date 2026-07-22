@@ -109,6 +109,13 @@ void rmp4_close(rmp4_t *mp4);
 
 /* Track enumeration. */
 int               rmp4_num_tracks(const rmp4_t *mp4);
+
+/* Bounded-memory streaming support: the lowest media byte any track's
+ * first sample sits at (everything below is metadata the demuxer and
+ * its callers keep borrowed pointers into - it must stay resident),
+ * and the highest sample end delivered so far. */
+size_t            rmp4_media_floor(const rmp4_t *m);
+size_t            rmp4_consumed(const rmp4_t *m);
 const rmp4_track *rmp4_get_track(const rmp4_t *mp4, int index);
 
 /* Total duration in nanoseconds (from mvhd), or 0 if the file does not

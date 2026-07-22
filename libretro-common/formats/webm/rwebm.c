@@ -397,6 +397,20 @@ int rwebm_num_tracks(const rwebm_t *webm)
    return webm ? webm->num_tracks : 0;
 }
 
+size_t rwebm_media_floor(const rwebm_t *m)
+{
+   if (!m || !m->clusters_begin)
+      return 0;
+   return (size_t)(m->clusters_begin - m->data);
+}
+
+size_t rwebm_tell(const rwebm_t *m)
+{
+   if (!m || !m->cur)
+      return 0;
+   return (size_t)(m->cur - m->data);
+}
+
 const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index)
 {
    if (!webm || index < 0 || index >= webm->num_tracks)

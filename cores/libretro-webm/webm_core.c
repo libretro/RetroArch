@@ -41,6 +41,20 @@
 
 #if defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC)
 #define WEBM_HAVE_AUDIO 1
+
+/* Bounded-memory playback: how far behind the consumed position the
+ * physical pages are kept before release.  Covers the demuxers'
+ * short-reach references behind their cursors (lacing frames inside
+ * the current block, the reorder window) with a wide margin. */
+#define WEBM_DISCARD_MARGIN (4 * 1024 * 1024)
+
+/* How far the progressive fill is allowed to run ahead of the
+ * consumed position.  Together with the discard margin this is the
+ * playback residency bound: fill stalls at the lookahead, discard
+ * trims behind the margin, and a file of any size plays inside the
+ * window.  Seeks lift the gate (the pending-seek machinery must
+ * reach its target). */
+#define WEBM_FILL_LOOKAHEAD (16 * 1024 * 1024)
 #include <formats/audio.h>
 #endif
 
@@ -100,6 +114,7 @@ typedef struct
     * completion at load).  file_buf borrows the transfer's stable
     * buffer. */
    data_transfer_t *dt;
+   int discarded;             /* pages were released behind playback */
    int          fill_warned;         /* short-read logged once          */
    rwebm_t     *webm;
 #ifdef HAVE_RMP4
@@ -730,6 +745,16 @@ static int64_t webm_seek_internal(webm_player_t *p, int64_t target_ns,
    if (p->dur_ns > 0 && target_ns > p->dur_ns)
       target_ns = p->dur_ns;
 
+   if (p->dt && p->discarded)
+   {
+      /* Seeks re-walk from the head of the media (native) or decode
+       * forward from an arbitrary keyframe (mp4): everything released
+       * behind playback must be readable again first.  The honest
+       * cost of a backward seek: a re-read of the released span. */
+      data_transfer_refill(p->dt, 0);
+      p->discarded = 0;
+   }
+
 #ifdef HAVE_RMP4
    if (p->mp4vs)
    {
@@ -974,7 +999,11 @@ void WEBM_CORE_PREFIX(retro_run)(void)
        * startup transient at most - then the arrivals fan out to the
        * video stream and the audio gather. */
       if (p->dt && !data_transfer_complete(p->dt)
-            && !data_transfer_failed(p->dt))
+            && !data_transfer_failed(p->dt)
+            && (   p->pending_seek_ns >= 0
+                || data_transfer_avail(p->dt)
+                   < rmp4_video_stream_consumed(p->mp4vs)
+                     + WEBM_FILL_LOOKAHEAD))
       {
          size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
          rmp4_video_stream_set_avail(p->mp4vs, avail);
@@ -999,6 +1028,23 @@ void WEBM_CORE_PREFIX(retro_run)(void)
                WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
                   "[webm] file read ended short; playing what "
                   "arrived.\n");
+         }
+      }
+
+      /* Bounded-memory streaming: release the pages behind what the
+       * video stream has fully consumed (audio packets are copied
+       * into the pump's blob as they arrive, so the gather region
+       * needs no residency of its own).  The metadata floor - sample
+       * tables, codec private data - always stays. */
+      if (p->dt && p->pending_seek_ns < 0)
+      {
+         size_t mfloor  = rmp4_video_stream_media_floor(p->mp4vs);
+         size_t consumed = rmp4_video_stream_consumed(p->mp4vs);
+         if (   consumed > mfloor
+             && consumed - mfloor > WEBM_DISCARD_MARGIN)
+         {
+            data_transfer_discard(p->dt, consumed - WEBM_DISCARD_MARGIN);
+            p->discarded = 1;
          }
       }
       /* Pacing: one frame interval of wall time per run, advancing
@@ -1066,7 +1112,10 @@ void WEBM_CORE_PREFIX(retro_run)(void)
    /* Progressive fill for the native path: budget, then fan the
     * arrivals to the playback demuxer and the gather. */
    if (p->dt && !data_transfer_complete(p->dt)
-         && !data_transfer_failed(p->dt))
+         && !data_transfer_failed(p->dt)
+         && (   p->pending_seek_ns >= 0
+             || data_transfer_avail(p->dt)
+                < rwebm_tell(p->webm) + WEBM_FILL_LOOKAHEAD))
    {
       size_t avail = data_transfer_iterate(p->dt, 4 * 1024 * 1024);
       rwebm_set_avail(p->webm, avail);
@@ -1088,6 +1137,23 @@ void WEBM_CORE_PREFIX(retro_run)(void)
          if (WEBM_CORE_PREFIX(log_cb))
             WEBM_CORE_PREFIX(log_cb)(RETRO_LOG_WARN,
                "[webm] file read ended short; playing what arrived.\n");
+      }
+   }
+
+   /* Bounded-memory streaming, native arm: release behind the
+    * playback demuxer's walk position (the gather leads it and its
+    * audio bytes are copied at the pump; lacing references stay
+    * inside the margin).  The header floor - Tracks, codec private
+    * data - always stays. */
+   if (p->dt && p->webm && p->pending_seek_ns < 0)
+   {
+      size_t mfloor   = rwebm_media_floor(p->webm);
+      size_t consumed = rwebm_tell(p->webm);
+      if (   consumed > mfloor
+          && consumed - mfloor > WEBM_DISCARD_MARGIN)
+      {
+         data_transfer_discard(p->dt, consumed - WEBM_DISCARD_MARGIN);
+         p->discarded = 1;
       }
    }
 
@@ -1640,7 +1706,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
     * completion below, load-time behaviour unchanged. */
    {
       size_t l = 0;
-      if (!(p->dt = data_transfer_open(info->path)))
+      if (!(p->dt = data_transfer_open_prefix(info->path, 0)))
          goto error;
       p->file_buf = (uint8_t*)data_transfer_ptr(p->dt, &l);
       len         = (int64_t)l;

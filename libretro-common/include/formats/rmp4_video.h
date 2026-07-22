@@ -149,6 +149,10 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *stream);
 void rmp4_video_stream_set_avail(rmp4_video_stream_t *stream,
       size_t avail);
 
+/* Bounded-memory streaming support (see rmp4_media_floor/consumed). */
+size_t rmp4_video_stream_media_floor(rmp4_video_stream_t *s);
+size_t rmp4_video_stream_consumed(rmp4_video_stream_t *s);
+
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
 /* Seek to the display position at or before 'ms' milliseconds: the

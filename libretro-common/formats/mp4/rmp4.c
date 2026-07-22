@@ -143,6 +143,7 @@ struct rmp4
    rmp4_itrack    trk[RMP4_MAX_TRACKS];
    int            num_tracks;
    int            fragmented;      /* an mvex box was present        */
+   uint64_t       media_max_end;   /* highest sample end delivered   */
    uint32_t       movie_timescale;
    uint64_t       movie_duration;   /* in movie timescale ticks       */
 };
@@ -1137,6 +1138,23 @@ int rmp4_num_tracks(const rmp4_t *m)
    return m ? m->num_tracks : 0;
 }
 
+size_t rmp4_media_floor(const rmp4_t *m)
+{
+   size_t lo = (size_t)-1;
+   int i;
+   if (!m)
+      return 0;
+   for (i = 0; i < m->num_tracks; i++)
+      if (m->trk[i].count > 0 && (size_t)m->trk[i].off[0] < lo)
+         lo = (size_t)m->trk[i].off[0];
+   return lo == (size_t)-1 ? 0 : lo;
+}
+
+size_t rmp4_consumed(const rmp4_t *m)
+{
+   return m ? (size_t)m->media_max_end : 0;
+}
+
 const rmp4_track *rmp4_get_track(const rmp4_t *m, int index)
 {
    if (!m || index < 0 || index >= m->num_tracks)
@@ -1194,6 +1212,8 @@ int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
       if (t->off[c] + t->size[c] > (uint64_t)m->avail)
          return RMP4_READ_AGAIN;
       t->cursor++;
+      if (t->off[c] + t->size[c] > m->media_max_end)
+         m->media_max_end  = t->off[c] + t->size[c];
       pkt->data            = m->buf + t->off[c];
       pkt->size            = t->size[c];
       pkt->track           = best;

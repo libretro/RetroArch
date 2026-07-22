@@ -103,6 +103,13 @@ void rwebm_close(rwebm_t *webm);
 
 /* Track enumeration. */
 int                rwebm_num_tracks(const rwebm_t *webm);
+
+/* Bounded-memory streaming support: the first media byte (everything
+ * below it is header material - Tracks, codec private data - that the
+ * demuxer keeps borrowed pointers into and which must stay resident),
+ * and the packet walk's current byte position. */
+size_t             rwebm_media_floor(const rwebm_t *m);
+size_t             rwebm_tell(const rwebm_t *m);
 const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index);
 
 /* Total duration in nanoseconds (Duration * TimestampScale), or 0 if the
