@@ -597,6 +597,14 @@ static uint8_t rtt__cov_to_u8(float v)
    return (uint8_t)(c * 255.0f + 0.5f);
 }
 
+static uint16_t rtt__cov_to_u16(float v)
+{
+   float c = v < 0.0f ? -v : v;
+   if (c > 1.0f)
+      c = 1.0f;
+   return (uint16_t)(c * 65535.0f + 0.5f);
+}
+
 #if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
 #include <emmintrin.h>
 
@@ -641,6 +649,54 @@ static void rtt__resolve_row_u8(const float *acc, uint8_t *dst, int w)
       {
          sum   += acc[i];
          dst[i] = rtt__cov_to_u8(sum);
+      }
+   }
+}
+
+
+/* 16-bit resolve sibling for A16 (HDR) atlases; identical summation
+ * tree, quantized to 65535 with an unsigned saturating 16-bit pack. */
+static void rtt__resolve_row_u16(const float *acc, uint16_t *dst, int w)
+{
+   __m128 carry = _mm_setzero_ps();
+   __m128 sign  = _mm_castsi128_ps(_mm_set1_epi32((int)0x80000000u));
+   __m128 one   = _mm_set1_ps(1.0f);
+   __m128 kmax  = _mm_set1_ps(65535.0f);
+   __m128 half  = _mm_set1_ps(0.5f);
+   int i = 0;
+
+   for (; i + 4 <= w; i += 4)
+   {
+      __m128 x = _mm_loadu_ps(acc + i);
+      __m128i q;
+      x = _mm_add_ps(x, _mm_castsi128_ps(
+            _mm_slli_si128(_mm_castps_si128(x), 4)));
+      x = _mm_add_ps(x, _mm_castsi128_ps(
+            _mm_slli_si128(_mm_castps_si128(x), 8)));
+      x = _mm_add_ps(x, carry);
+      carry = _mm_shuffle_ps(x, x, _MM_SHUFFLE(3, 3, 3, 3));
+
+      x = _mm_andnot_ps(sign, x);
+      x = _mm_min_ps(x, one);
+      q = _mm_cvttps_epi32(_mm_add_ps(_mm_mul_ps(x, kmax), half));
+      /* unsigned 16-bit saturating pack: bias into signed range */
+      q = _mm_sub_epi32(q, _mm_set1_epi32(32768));
+      q = _mm_packs_epi32(q, q);
+      q = _mm_add_epi16(q, _mm_set1_epi16((short)0x8000));
+      {
+         int64_t v8;
+         memcpy(&v8, &q, 8);
+         memcpy(dst + i, &v8, 8);
+      }
+   }
+
+   if (i < w)
+   {
+      float sum = _mm_cvtss_f32(carry);
+      for (; i < w; i++)
+      {
+         sum   += acc[i];
+         dst[i] = rtt__cov_to_u16(sum);
       }
    }
 }
@@ -692,6 +748,43 @@ static void rtt__resolve_row_u8(const float *acc, uint8_t *dst, int w)
    }
 }
 
+
+/* 16-bit resolve sibling for A16 (HDR) atlases */
+static void rtt__resolve_row_u16(const float *acc, uint16_t *dst, int w)
+{
+   float32x4_t carry = vdupq_n_f32(0.0f);
+   float32x4_t one   = vdupq_n_f32(1.0f);
+   float32x4_t kmax  = vdupq_n_f32(65535.0f);
+   float32x4_t half  = vdupq_n_f32(0.5f);
+   float32x4_t zero  = vdupq_n_f32(0.0f);
+   int i = 0;
+
+   for (; i + 4 <= w; i += 4)
+   {
+      float32x4_t x = vld1q_f32(acc + i);
+      uint32x4_t  q;
+      x = vaddq_f32(x, vextq_f32(zero, x, 3));
+      x = vaddq_f32(x, vextq_f32(zero, x, 2));
+      x = vaddq_f32(x, carry);
+      carry = vdupq_n_f32(vgetq_lane_f32(x, 3));
+
+      x = vabsq_f32(x);
+      x = vminq_f32(x, one);
+      q = vcvtq_u32_f32(vaddq_f32(vmulq_f32(x, kmax), half));
+      vst1_u16(dst + i, vmovn_u32(q));
+   }
+
+   if (i < w)
+   {
+      float sum = vgetq_lane_f32(carry, 0);
+      for (; i < w; i++)
+      {
+         sum   += acc[i];
+         dst[i] = rtt__cov_to_u16(sum);
+      }
+   }
+}
+
 #else
 
 static void rtt__resolve_row_u8(const float *acc, uint8_t *dst, int w)
@@ -720,6 +813,35 @@ static void rtt__resolve_row_u8(const float *acc, uint8_t *dst, int w)
    {
       carry += acc[i];
       dst[i] = rtt__cov_to_u8(carry);
+   }
+}
+
+
+/* 16-bit resolve sibling for A16 (HDR) atlases */
+static void rtt__resolve_row_u16(const float *acc, uint16_t *dst, int w)
+{
+   float carry = 0.0f;
+   int   i = 0;
+
+   for (; i + 4 <= w; i += 4)
+   {
+      float x0 = acc[i],     x1 = acc[i + 1];
+      float x2 = acc[i + 2], x3 = acc[i + 3];
+      float t1 = x1 + x0;
+      float t2 = x2 + x1;
+      float t3 = x3 + x2;
+      float u2 = t2 + x0;
+      float u3 = t3 + t1;
+      dst[i]     = rtt__cov_to_u16(x0 + carry);
+      dst[i + 1] = rtt__cov_to_u16(t1 + carry);
+      dst[i + 2] = rtt__cov_to_u16(u2 + carry);
+      dst[i + 3] = rtt__cov_to_u16(u3 + carry);
+      carry      = u3 + carry;
+   }
+   for (; i < w; i++)
+   {
+      carry += acc[i];
+      dst[i] = rtt__cov_to_u16(carry);
    }
 }
 
@@ -1075,9 +1197,15 @@ simple_done:
  * sx/sy, positioned exactly like the code this replaces: the bitmap
  * origin is (floor(xmin*sx), floor(-ymax*sy)) of the glyph bbox. The
  * full out_w x out_h region is always written. */
-static void rtt_render_glyph(const rtt_font_t *f, uint8_t *dst,
-      int out_w, int out_h, int stride, float sx, float sy, int gi)
+/* dst points at coverage elements of the atlas format: uint8_t rows
+ * when fmt16 is 0, native-endian uint16_t rows when it is nonzero.
+ * 'stride' is in elements either way. Quantization happens only in
+ * the per-row resolve, so both formats share every other stage. */
+static void rtt_render_glyph(const rtt_font_t *f, void *dst,
+      int out_w, int out_h, int stride, float sx, float sy, int gi,
+      int fmt16)
 {
+   size_t esz = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
    rtt__raster_t r;
    rtt__xform_t  ident;
    int bx0, by0, bx1, by1, y;
@@ -1089,7 +1217,8 @@ static void rtt_render_glyph(const rtt_font_t *f, uint8_t *dst,
    if (!rtt_glyph_box(f, gi, &bx0, &by0, &bx1, &by1))
    {
       for (y = 0; y < out_h; y++)
-         memset(dst + (size_t)y * (size_t)stride, 0, (size_t)out_w);
+         memset((uint8_t*)dst + (size_t)y * (size_t)stride * esz, 0,
+               (size_t)out_w * esz);
       return;
    }
 
@@ -1108,7 +1237,8 @@ static void rtt_render_glyph(const rtt_font_t *f, uint8_t *dst,
    if (!r.acc)
    {
       for (y = 0; y < out_h; y++)
-         memset(dst + (size_t)y * (size_t)stride, 0, (size_t)out_w);
+         memset((uint8_t*)dst + (size_t)y * (size_t)stride * esz, 0,
+               (size_t)out_w * esz);
       return;
    }
    r.rowmax = (int*)(r.acc + cells);
@@ -1124,17 +1254,22 @@ static void rtt_render_glyph(const rtt_font_t *f, uint8_t *dst,
 
    for (y = 0; y < out_h; y++)
    {
-      uint8_t *drow = dst + (size_t)y * (size_t)stride;
+      uint8_t *drow = (uint8_t*)dst + (size_t)y * (size_t)stride * esz;
       int      dw   = r.rowmax[y];
       if (dw > out_w)
          dw = out_w;
       if (dw > 0)
-         rtt__resolve_row_u8(r.acc + (size_t)y * (size_t)(out_w + 2),
-               drow, dw);
+      {
+         const float *arow = r.acc + (size_t)y * (size_t)(out_w + 2);
+         if (fmt16)
+            rtt__resolve_row_u16(arow, (uint16_t*)(void*)drow, dw);
+         else
+            rtt__resolve_row_u8(arow, drow, dw);
+      }
       /* past the last edge the winding sum of a closed outline is
        * zero, so the tail of the row is empty */
       if (dw < out_w)
-         memset(drow + dw, 0, (size_t)(out_w - dw));
+         memset(drow + (size_t)dw * esz, 0, (size_t)(out_w - dw) * esz);
    }
 
    free(r.acc);
@@ -1298,8 +1433,14 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
 
    glyph_index            = rtt_find_glyph(&self->info, charcode);
 
-   dst = (uint8_t*)self->atlas.buffer + atlas_slot->glyph.atlas_offset_x
-         + atlas_slot->glyph.atlas_offset_y * self->atlas.width;
+   {
+      size_t esz = (self->atlas.format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      dst = (uint8_t*)self->atlas.buffer
+            + ((size_t)atlas_slot->glyph.atlas_offset_x
+            +  (size_t)atlas_slot->glyph.atlas_offset_y
+                  * self->atlas.width) * esz;
+   }
 
    rtt_glyph_hmetrics(&self->info, glyph_index, &advance_width, &left_side_bearing);
 
@@ -1307,15 +1448,18 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
       rtt_render_glyph(&self->info, dst,
          self->max_glyph_width, self->max_glyph_height,
          self->atlas.width, self->scale_factor,
-         self->scale_factor, glyph_index);
+         self->scale_factor, glyph_index,
+         self->atlas.format == FONT_ATLAS_FORMAT_A16);
    else
    {
       /* This means the glyph is empty; zero its atlas region.
        * Use row-major memset for cache-friendly clearing. */
       int row;
+      size_t esz = (self->atlas.format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
       for (row = 0; row < self->max_glyph_height; row++)
-         memset(dst + (row * self->atlas.width), 0,
-                (size_t)self->max_glyph_width);
+         memset(dst + (size_t)row * self->atlas.width * esz, 0,
+                (size_t)self->max_glyph_width * esz);
    }
 
    atlas_slot->glyph.width          = self->max_glyph_width;
@@ -1371,11 +1515,16 @@ static bool font_renderer_stb_create_atlas(
 
    self->atlas.width              = (self->max_glyph_width  + STB_ATLAS_PADDING) * STB_ATLAS_COLS;
    self->atlas.height             = (self->max_glyph_height + STB_ATLAS_PADDING) * STB_ATLAS_ROWS;
+   /* Higher-precision coverage when the video driver asked for it
+    * (HDR output); the atlas then stores uint16_t samples. */
+   self->atlas.format             = font_renderer_get_preferred_atlas_format();
 
    /* Pass the two dimensions separately so the C library's calloc overflow
     * check applies, rather than pre-multiplying into a single argument. */
    self->atlas.buffer             = (uint8_t*)calloc(
-      self->atlas.height, self->atlas.width);
+      self->atlas.height,
+      (size_t)self->atlas.width *
+      ((self->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
 
    if (!self->atlas.buffer)
       return false;
