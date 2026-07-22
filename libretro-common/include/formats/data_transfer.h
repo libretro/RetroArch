@@ -83,6 +83,29 @@ bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
  * pages fault on touch instead of reading as zeros - the oracle's
  * proof that a consumer honours the sequential contract.  Platforms
  * without reservations fall back to holding the whole file. */
+/* A producer-backed transfer: the bytes come from a callback instead
+ * of a file - an archive entry inflating as it is pulled, or any
+ * other decoder producing sequential output.  The total length must
+ * be known up front (a ZIP central directory carries it), so the
+ * buffer is one exact malloc: plain memory the consumer can adopt
+ * and free(), with no reservation machinery - a loaded ROM lives for
+ * the whole session, so there is nothing to discard.  The callback
+ * writes up to the room remaining at dst and returns bytes produced
+ * (n is a pacing hint - producers with chunked granularity may
+ * overshoot it; dst always has room to the declared end), 0 at end
+ * of stream, negative on error.  iterate()'s byte budget and the
+ * completion/ownership surface behave exactly as for files, which is
+ * the point: a decoding producer becomes tick-sliceable the same way
+ * a raw read is. */
+typedef int64_t (*data_transfer_source_read_t)(void *ud, uint8_t *dst,
+      size_t n);
+data_transfer_t *data_transfer_open_source(size_t len,
+      data_transfer_source_read_t read_cb, void *ud);
+/* Detach the filled buffer from a source-mode transfer: returns the
+ * exact-size malloc'd data (caller frees) and frees the transfer.
+ * NULL unless the transfer completed successfully. */
+uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len);
+
 data_transfer_t *data_transfer_open_window(const char *path, size_t keep);
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);

@@ -75,6 +75,8 @@ struct data_transfer
    size_t  keep;     /* head bytes always resident                   */
    size_t  wlo, whi; /* the moving window [wlo, whi)                 */
    size_t  wtell;    /* last consumer position seen by feed()        */
+   data_transfer_source_read_t src_cb; /* producer-backed transfer   */
+   void   *src_ud;
    size_t  wfreed;   /* page-aligned decommit frontier: everything in
                         [keep-page-ceil, wfreed) is released.  Kept
                         across calls because the feeder advances in
@@ -224,6 +226,41 @@ static int data_transfer_wcommit(data_transfer_t *dt,
       return 0;
 #endif
    return 1;
+}
+
+data_transfer_t *data_transfer_open_source(size_t len,
+      data_transfer_source_read_t read_cb, void *ud)
+{
+   data_transfer_t *dt;
+   if (!len || !read_cb)
+      return NULL;
+   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
+      return NULL;
+   dt->len       = len;
+   dt->src_cb    = read_cb;
+   dt->src_ud    = ud;
+   dt->committed = len;   /* the exact buffer exists in full: the
+                           * fill's commit step must be a no-op */
+   /* exact plain buffer: no reservation, adoptable via free() */
+   if (!(dt->map = (uint8_t*)malloc(len)))
+   {
+      free(dt);
+      return NULL;
+   }
+   return dt;
+}
+
+uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len)
+{
+   uint8_t *out;
+   if (!dt || !dt->src_cb || !dt->done || dt->failed)
+      return NULL;
+   out     = dt->map;
+   if (len)
+      *len = dt->len;
+   dt->map = NULL;               /* free() must not release it */
+   data_transfer_free(dt);
+   return out;
 }
 
 data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
@@ -520,6 +557,40 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          dt->capped = 1;   /* commit refused: treat as the ceiling */
          break;
       }
+      if (dt->src_cb)
+      {
+         /* producer: n is a pacing hint; production up to the room
+          * remaining is legitimate (chunk-granular decoders) */
+         int64_t r = dt->src_cb(dt->src_ud, dt->map + dt->avail,
+               chunk);
+         if (r < 0)
+         {
+            dt->done   = 1;
+            dt->failed = 1;
+            break;
+         }
+         got = (size_t)r;
+         if (got > dt->len - dt->avail)
+         {
+            /* produced past the declared end: broken producer */
+            dt->done   = 1;
+            dt->failed = 1;
+            break;
+         }
+         dt->avail += got;
+         if (got == 0)
+         {
+            if (dt->avail < dt->len)
+            {
+               dt->done   = 1;
+               dt->failed = 1;   /* ended short: frozen honestly */
+            }
+            break;
+         }
+         if (max_bytes && dt->avail - start >= max_bytes)
+            break;
+         continue;
+      }
       {
          int64_t r = filestream_read(dt->f, dt->map + dt->avail,
                (int64_t)chunk);
@@ -609,7 +680,7 @@ size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
 {
    if (!dt)
       return 0;
-   if (dt->f)
+   if (dt->f || dt->src_cb)
       return data_transfer_prefix_iterate(dt, max_bytes);
    return dt->avail;
 }
