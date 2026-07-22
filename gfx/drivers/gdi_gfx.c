@@ -1661,6 +1661,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
    BITMAPINFO bmi;
    void *pixels = NULL;
    unsigned i, j;
+   bool recreated = false;
 
    if (!font || !font->atlas || !font->gdi || !font->gdi->memDC)
       return false;
@@ -1669,6 +1670,7 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
          || font->atlas_width  != font->atlas->width
          || font->atlas_height != font->atlas->height)
    {
+      recreated = true;
       if (font->atlas_bmp)
       {
          DeleteObject(font->atlas_bmp);
@@ -1701,17 +1703,38 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
 
    /* Expand A8 -> BGRA premultiplied: A=atlas[i], R=G=B=A.  This
     * gives us a "white glyph with embedded alpha" source that
-    * AlphaBlend can composite directly with AC_SRC_ALPHA. */
-   for (j = 0; j < font->atlas->height; j++)
+    * AlphaBlend can composite directly with AC_SRC_ALPHA.  Only the
+    * dirty rectangle tracked by the font renderers is expanded; a
+    * freshly (re)created DIB has no previous contents and is
+    * converted in full. */
    {
-      uint32_t      *dst = font->atlas_pixels
-         + (size_t)j * font->atlas_width;
-      const uint8_t *src = font->atlas->buffer
-         + (size_t)j * font->atlas->width;
-      for (i = 0; i < font->atlas->width; i++)
+      unsigned x0 = font->atlas->dirty_x0;
+      unsigned y0 = font->atlas->dirty_y0;
+      unsigned x1 = font->atlas->dirty_x1;
+      unsigned y1 = font->atlas->dirty_y1;
+
+      if (     recreated
+            || x1 <= x0 || y1 <= y0
+            || x1 > (unsigned)font->atlas->width
+            || y1 > (unsigned)font->atlas->height)
       {
-         uint32_t a = src[i];
-         dst[i] = (a << 24) | (a << 16) | (a << 8) | a;
+         x0 = 0;
+         y0 = 0;
+         x1 = font->atlas->width;
+         y1 = font->atlas->height;
+      }
+
+      for (j = y0; j < y1; j++)
+      {
+         uint32_t      *dst = font->atlas_pixels
+            + (size_t)j * font->atlas_width + x0;
+         const uint8_t *src = font->atlas->buffer
+            + (size_t)j * font->atlas->width + x0;
+         for (i = 0; i < x1 - x0; i++)
+         {
+            uint32_t a = src[i];
+            dst[i] = (a << 24) | (a << 16) | (a << 8) | a;
+         }
       }
    }
 
