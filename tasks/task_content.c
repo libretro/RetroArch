@@ -90,6 +90,7 @@
 
 #include "task_content.h"
 #include "tasks_internal.h"
+#include "task_content_prefetch.h"
 
 #include "../command.h"
 #include "../core_info.h"
@@ -794,6 +795,68 @@ static int64_t content_file_entry_source_read(void *ud, uint8_t *dst,
 }
 #endif
 
+/* ---- prefetch cache: bytes read ahead of the load ---- */
+
+/* Take (transfer ownership of) a prefetched buffer for this exact
+ * path, if the prefetch task deposited one. */
+static uint8_t *content_file_prefetch_take(content_state_t *p_content,
+      const char *path, size_t *size)
+{
+   size_t i;
+   for (i = 0; i < p_content->prefetch_count; i++)
+   {
+      if (     p_content->prefetch[i].path
+            && string_is_equal(p_content->prefetch[i].path, path))
+      {
+         uint8_t *data = p_content->prefetch[i].data;
+         *size         = p_content->prefetch[i].size;
+         free(p_content->prefetch[i].path);
+         p_content->prefetch[i].path = NULL;
+         p_content->prefetch[i].data = NULL;
+         p_content->prefetch[i].size = 0;
+         return data;
+      }
+   }
+   return NULL;
+}
+
+/* Deposit callback for task_push_content_prefetch. */
+static void content_file_prefetch_deposit(void *ud, const char *path,
+      uint8_t *data, size_t size)
+{
+   content_state_t *p_content = (content_state_t*)ud;
+   if (p_content->prefetch_count
+         >= ARRAY_SIZE(p_content->prefetch))
+   {
+      free(data);
+      return;
+   }
+   if (!(p_content->prefetch[p_content->prefetch_count].path
+         = strdup(path)))
+   {
+      free(data);
+      return;
+   }
+   p_content->prefetch[p_content->prefetch_count].data = data;
+   p_content->prefetch[p_content->prefetch_count].size = size;
+   p_content->prefetch_count++;
+}
+
+/* Drop whatever the load did not consume. */
+static void content_file_prefetch_free(content_state_t *p_content)
+{
+   size_t i;
+   for (i = 0; i < p_content->prefetch_count; i++)
+   {
+      free(p_content->prefetch[i].path);
+      free(p_content->prefetch[i].data);
+      p_content->prefetch[i].path = NULL;
+      p_content->prefetch[i].data = NULL;
+      p_content->prefetch[i].size = 0;
+   }
+   p_content->prefetch_count = 0;
+}
+
 /**
  * content_file_load_into_memory:
  * @content_path : path of the content file.
@@ -821,9 +884,23 @@ static size_t content_file_load_into_memory(
    RARCH_LOG("[Content] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
 
+   /* A prefetched buffer for this exact path short-circuits the
+    * read entirely: the bytes streamed in ahead of the load, a
+    * budgeted slice per task tick, while the frontend kept
+    * running. */
+   {
+      size_t pre_size = 0;
+      if ((content_data = content_file_prefetch_take(p_content,
+            content_path, &pre_size)))
+         content_size = (int64_t)pre_size;
+   }
    /* Read content from file into memory buffer */
 #ifdef HAVE_COMPRESSION
-   if (content_compressed)
+   if (content_data)
+   {
+      /* prefetched above */
+   }
+   else if (content_compressed)
    {
       /* Prefer the incremental entry source on the data_transfer
        * spine: the entry inflates chunk by chunk directly into the
@@ -870,9 +947,12 @@ static size_t content_file_load_into_memory(
    }
    else
 #endif
+   if (!content_data)
+   {
       if (!filestream_read_file(content_path,
             (void**)&content_data, &content_size))
          return 0;
+   }
 
    if (content_size < 0)
       return 0;
@@ -2356,6 +2436,86 @@ end:
    return ret;
 }
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+/* ---- deferred menu load: prefetch, then the identical remainder ---- */
+
+struct content_deferred_menu_load
+{
+   char *fullpath;
+   enum rarch_core_type type;
+   content_ctx_info_t info;      /* argv-free by the deferral gate */
+};
+
+static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
+{
+   struct content_deferred_menu_load *d =
+         (struct content_deferred_menu_load*)ud;
+   content_state_t *p_content = content_state_get_ptr();
+   bool ret;
+
+   p_content->flags &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+
+   /* The identical remainder of
+    * task_push_load_content_with_new_core_from_menu: a prefetch
+    * that skipped files (all_ok false) changed nothing - the load's
+    * ordinary reads cover whatever is not in the cache. */
+   if (!(ret = content_load(&d->info, p_content)))
+   {
+      content_file_prefetch_free(p_content);
+      retroarch_menu_running();
+   }
+   else
+   {
+      task_push_to_history_list(p_content, true, false, false);
+      if (d->type != CORE_TYPE_DUMMY)
+         menu_driver_ctl(RARCH_MENU_CTL_SET_PENDING_QUICK_MENU, NULL);
+   }
+   content_file_prefetch_free(p_content);   /* leftovers, if any */
+   free(d->fullpath);
+   free(d);
+}
+
+/* Returns true when the load was taken over by the deferred path. */
+static bool task_content_defer_menu_load(content_state_t *p_content,
+      const char *fullpath, enum rarch_core_type type,
+      content_ctx_info_t *content_info)
+{
+   struct content_deferred_menu_load *d = NULL;
+   const char *paths[1];
+
+   if (type != CORE_TYPE_PLAIN)
+      return false;
+   if (!fullpath || !*fullpath)
+      return false;                /* contentless: nothing to read */
+   if (content_info->argc || content_info->argv || content_info->args)
+      return false;                /* only the plain menu shape     */
+   if (p_content->flags & CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING)
+      return false;                /* one deferral at a time        */
+
+   if (!(d = (struct content_deferred_menu_load*)calloc(1, sizeof(*d))))
+      return false;
+   if (!(d->fullpath = strdup(fullpath)))
+   {
+      free(d);
+      return false;
+   }
+   d->type = type;
+   d->info = *content_info;        /* argv-free: shallow is whole   */
+
+   paths[0] = d->fullpath;
+   if (!task_push_content_prefetch(paths, 1,
+         content_file_prefetch_deposit,
+         task_content_deferred_menu_load_done, d))
+   {
+      free(d->fullpath);
+      free(d);
+      return false;
+   }
+   p_content->flags |= CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+   return true;
+}
+#endif
+
 bool task_push_load_content_with_new_core_from_menu(
       const char *core_path,
       const char *fullpath,
@@ -2395,6 +2555,21 @@ bool task_push_load_content_with_new_core_from_menu(
    /* Load content */
    if (!content_info->environ_get)
       content_info->environ_get = menu_content_environment_get;
+
+   /* Stream the content's bytes in ahead of the load, a budgeted
+    * slice per task tick, so the menu keeps running instead of
+    * freezing for one long read.  The deferral is taken only in the
+    * exact shape this menu path produces (no argv, plain core type,
+    * no deferral already in flight); anything else keeps the
+    * synchronous path below, and if the prefetch cannot even be
+    * pushed, so does everything.  The continuation performs the
+    * identical remainder of this function. */
+   if (task_content_defer_menu_load(p_content, fullpath, type,
+         content_info))
+   {
+      content_information_ctx_free(&content_ctx);
+      return true;
+   }
 
    /* Loads content into currently selected core. */
    if (!(ret = content_load(content_info, p_content)))
