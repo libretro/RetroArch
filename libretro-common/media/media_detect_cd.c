@@ -59,7 +59,7 @@ static bool media_skip_spaces(const char **s, size_t len)
 /* Fill in "info" with detected CD info. Use this when you have a cue file and want it parsed to find the first data track and any pregap info. */
 bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
 {
-   RFILE *file                          = NULL;
+   char *buf                            = NULL;
    char *line                           = NULL;
    char track_path[PATH_MAX_LENGTH]     = {0};
    char track_abs_path[PATH_MAX_LENGTH] = {0};
@@ -72,7 +72,15 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
    if (!path || !*path || !info)
       return false;
 
-   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
+   /* Read the whole cue once, then walk it line by line in memory:
+    * filestream_getline reads a byte per call through the VFS
+    * (getc == a 1-byte filestream_read), so the previous loop cost
+    * one virtual read per character.  The cue grammar is a flat
+    * sequence of lines with no includes or mid-parse seeks, so a
+    * single slurp and an in-place newline scan parse identically -
+    * each line is exactly what getline would have returned (it split
+    * on \n and kept any trailing \r, and so does this). */
+   if (!filestream_read_file(path, (void**)&buf, NULL) || !buf)
    {
 #ifdef MEDIA_CUE_PARSE_DEBUG
       printf("[MEDIA] Could not open cue path for reading: %s\n", path);
@@ -81,16 +89,17 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
       return false;
    }
 
-   while (!filestream_eof(file) && (line = filestream_getline(file)))
+   line = buf;
+   while (line && *line)
    {
-      size_t _len = 0;
+      size_t _len         = 0;
       const char *command = NULL;
+      char *next          = strchr(line, '\n');
+      if (next)
+         *next = '\0';
 
-      if (!line || !*line)
-      {
-         free(line);
-         continue;
-      }
+      if (!*line)
+         goto next_line;
 
       _len    = strlen(line);
       command = line;
@@ -241,10 +250,13 @@ bool media_detect_cd_info_cue(const char *path, media_detect_cd_info_t *info)
          }
       }
 
-      free(line);
+next_line:
+      if (!next)
+         break;
+      line = next + 1;
    }
 
-   filestream_close(file);
+   free(buf);
 
    if (*track_path)
    {
