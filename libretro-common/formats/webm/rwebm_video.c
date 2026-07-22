@@ -103,6 +103,16 @@ struct rwebm_video
    int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
+   /* Bytes of 'buf' actually read so far, for decoding a still from a
+    * file whose read is in progress: 0 means fully resident (the
+    * default), and the still decode returns IMAGE_PROCESS_WAIT
+    * instead of erroring at the wall.  Raised by
+    * rwebm_video_set_avail. */
+   size_t         avail;
+   int            partial;    /* set_avail was called: 'avail' is live
+                                 (0 is a valid value - nothing read
+                                 yet - so it cannot double as the
+                                 unset sentinel) */
 };
 
 /* ------------------------------------------------------------------ */
@@ -451,19 +461,21 @@ static void rwebm_video_stream_close_decoder(rwebm_video_stream_t *s)
  * one-shot behaviour. */
 
 static rwebm_video_stream_t *rwebm_video_stream_open_begin(
-      const uint8_t *buf, size_t len)
+      const uint8_t *buf, size_t len, size_t avail, int *need_more)
 {
    rwebm_video_stream_t *s;
    const rwebm_track *trk = NULL;
    int i, num_tracks;
 
+   if (need_more)
+      *need_more = 0;
    if (!buf || !len)
       return NULL;
 
    if (!(s = (rwebm_video_stream_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   if (!(s->demux = rwebm_open_memory(buf, len)))
+   if (!(s->demux = rwebm_open_memory_avail(buf, len, avail, need_more)))
       goto fail;
 
    /* Pick the first video track whose codec we can decode. */
@@ -524,9 +536,13 @@ static int rwebm_video_stream_scan_step(rwebm_video_stream_t *s,
 
    while (s->num_frames < RWEBM_VIDEO_MAX_TS)
    {
+      int r;
       if (max_packets > 0 && walked >= max_packets)
          return 0;
-      if (rwebm_read_packet(s->demux, &pkt) != 1)
+      r = rwebm_read_packet(s->demux, &pkt);
+      if (r == RWEBM_READ_AGAIN)
+         return 2;   /* blocked at the partial-read wall; resumable */
+      if (r != 1)
          break;
       walked++;
       if (pkt.track != s->track)
@@ -558,7 +574,7 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 {
    rwebm_video_stream_t *s;
 
-   if (!(s = rwebm_video_stream_open_begin(buf, len)))
+   if (!(s = rwebm_video_stream_open_begin(buf, len, len, NULL)))
       return NULL;
    rwebm_video_stream_scan_step(s, 0);
    if (rwebm_video_stream_open_finish(s) != 0)
@@ -600,6 +616,12 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *s, int argb)
 {
    if (s)
       s->emit_argb = argb ? 1 : 0;
+}
+
+void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
+{
+   if (s)
+      rwebm_set_avail(s->demux, avail);
 }
 
 /* Display duration of packet 'idx', in ms, from the pre-scanned
@@ -738,9 +760,15 @@ static int rwebm_video_stream_step(rwebm_video_stream_t *s,
 {
    rwebm_packet pkt;
 
-   while (rwebm_read_packet(s->demux, &pkt) == 1)
+   for (;;)
    {
       int idx, r;
+      r = rwebm_read_packet(s->demux, &pkt);
+      if (r == RWEBM_READ_AGAIN)
+         return 2;   /* not yet resident; nothing consumed - retry
+                        after rwebm_video_stream_set_avail */
+      if (r != 1)
+         break;
       if (pkt.track != s->track)
          continue;
       idx = s->pkt_idx++;
@@ -837,6 +865,19 @@ void rwebm_video_set_want_10bit(rwebm_video_t *webm, int want)
       webm->want10 = want ? 1 : 0;
 }
 
+void rwebm_video_set_avail(rwebm_video_t *webm, size_t avail)
+{
+   if (!webm)
+      return;
+   webm->partial = 1;
+   if (avail > webm->len)
+      avail = webm->len;
+   if (avail > webm->avail)   /* monotonic */
+      webm->avail = avail;
+   if (webm->stream)
+      rwebm_video_stream_set_avail(webm->stream, webm->avail);
+}
+
 /* True if the last rwebm_video_process_image() wrote packed XRGB2101010. */
 bool rwebm_video_is_10bit(const rwebm_video_t *webm)
 {
@@ -870,9 +911,17 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    if (!webm || !webm->buf || !buf)
       return IMAGE_PROCESS_ERROR;
 
+   /* A partial reader raises webm->avail between calls; push it down
+    * so blocked stages can make progress this call. */
+   if (webm->stream && webm->partial)
+      rwebm_video_stream_set_avail(webm->stream, webm->avail);
+
    switch (webm->still_stage)
    {
       case RWEBM_VIDEO_STILL_IDLE:
+      {
+         int    need_more = 0;
+         size_t avail     = webm->partial ? webm->avail : webm->len;
          /* Defensive: a repeated process call re-opens from scratch. */
          if (webm->stream)
          {
@@ -880,15 +929,34 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
             webm->stream = NULL;
          }
          if (!(webm->stream = rwebm_video_stream_open_begin(
-               webm->buf, webm->len)))
-            return IMAGE_PROCESS_ERROR;
+               webm->buf, webm->len, avail, &need_more)))
+            /* The EBML header/Tracks are still arriving: wait for more
+             * bytes rather than failing. */
+            return need_more ? IMAGE_PROCESS_WAIT : IMAGE_PROCESS_ERROR;
          webm->still_stage = RWEBM_VIDEO_STILL_SCAN;
          return IMAGE_PROCESS_NEXT;
+      }
 
       case RWEBM_VIDEO_STILL_SCAN:
-         if (!rwebm_video_stream_scan_step(webm->stream,
-               RWEBM_VIDEO_SCAN_SLICE))
+      {
+         int sr = rwebm_video_stream_scan_step(webm->stream,
+               RWEBM_VIDEO_SCAN_SLICE);
+         if (sr == 0)
             return IMAGE_PROCESS_NEXT;
+         if (sr == 2)
+         {
+            /* The pre-scan hit the partial-read wall.  Timestamps live
+             * in the block headers, so unlike MP4 the scan cannot run
+             * ahead of the media bytes; rather than hold the still
+             * hostage to the whole file, proceed once two frames are
+             * known (enough to derive a first-frame duration) with a
+             * table truncated at the wall - the per-frame duration
+             * helper already degrades to its last-interval estimate
+             * past the table's end.  Below two frames the first
+             * displayed frame is not decodable anyway: wait. */
+            if (webm->stream->num_frames < 2)
+               return IMAGE_PROCESS_WAIT;
+         }
          if (rwebm_video_stream_open_finish(webm->stream) != 0)
             goto fail;
          /* Request 10-bit output; the stream honours it only for
@@ -900,6 +968,7 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
          webm->stream->emit_argb = supports_rgba ? 0 : 1;
          webm->still_stage       = RWEBM_VIDEO_STILL_DECODE;
          return IMAGE_PROCESS_NEXT;
+      }
 
       case RWEBM_VIDEO_STILL_DECODE:
          break;
@@ -911,6 +980,10 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    s = webm->stream;
    if ((r = rwebm_video_stream_step(s, &duration_ms)) == 0)
       return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
+   if (r == 2)
+      /* The next block's bytes have not been read yet; nothing was
+       * consumed - resume here once more of the file has arrived. */
+      return IMAGE_PROCESS_WAIT;
    if (r < 0)
       goto fail;
    frame = s->frame;

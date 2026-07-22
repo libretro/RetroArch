@@ -37,7 +37,13 @@ enum image_process_code
    IMAGE_PROCESS_ERROR     = -2,
    IMAGE_PROCESS_ERROR_END = -1,
    IMAGE_PROCESS_NEXT      =  0,
-   IMAGE_PROCESS_END       =  1
+   IMAGE_PROCESS_END       =  1,
+   /* The transfer cannot advance until more of the file has been read
+    * into the buffer (see image_transfer_set_avail); nothing was
+    * consumed.  Only the video still decoders (WEBM, MP4) return
+    * this, and only after the caller opts in by setting an avail
+    * short of the full length. */
+   IMAGE_PROCESS_WAIT      =  2
 };
 
 struct texture_compressed;  /* defined below, after enum image_type_enum */
@@ -260,6 +266,15 @@ const uint32_t *image_transfer_anim_stream_next(void *stream,
  * caller must keep converting. */
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb);
+
+/* For decoding a still from a file whose read is still in progress:
+ * declare how many leading bytes of the buffer are valid.  Monotonic.
+ * Only the video types (WEBM, MP4) honour it - their process step
+ * returns IMAGE_PROCESS_WAIT instead of erroring at the wall - and it
+ * is a no-op for every other type, whose transfers must keep seeing
+ * fully-resident buffers. */
+void image_transfer_set_avail(void *data, enum image_type_enum type,
+      size_t avail);
 
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type);

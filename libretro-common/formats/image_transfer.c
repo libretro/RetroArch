@@ -579,6 +579,26 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
    return true;
 }
 
+void image_transfer_set_avail(void *data, enum image_type_enum type,
+      size_t avail)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_set_avail((rwebm_video_t*)data, avail);
+#endif
+         break;
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_set_avail((rmp4_video_t*)data, avail);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb)
 {

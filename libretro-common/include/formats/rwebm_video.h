@@ -77,6 +77,14 @@ bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
  * sources are unaffected. Off by default. */
 void rwebm_video_set_want_10bit(rwebm_video_t *webm, int want);
 
+/* Partial-read support for the still decode: declare how many leading
+ * bytes of the buffer are valid (monotonic; 0 means fully resident).
+ * With a short avail, rwebm_video_process_image returns
+ * IMAGE_PROCESS_WAIT instead of failing when it needs bytes that have
+ * not arrived (the header, at least two scanned frames, or the first
+ * displayed frame's blocks). */
+void rwebm_video_set_avail(rwebm_video_t *webm, size_t avail);
+
 /* True if the last rwebm_video_process_image() produced XRGB2101010. */
 bool rwebm_video_is_10bit(const rwebm_video_t *webm);
 
@@ -137,6 +145,13 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *stream,
  * frames.  A stream detached from a still-image transfer starts at
  * the default order. */
 void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
+
+/* Partial-read support: raise the number of leading buffer bytes that
+ * are valid (monotonic).  A blocked step resumes once the needed
+ * block's bytes are inside the window; fully-resident streams never
+ * block. */
+void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
+      size_t avail);
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
 

@@ -49,6 +49,15 @@ bool rmp4_video_set_buf_ptr(rmp4_video_t *mp4, void *data, size_t len);
  * sources are unaffected. Off by default. */
 void rmp4_video_set_want_10bit(rmp4_video_t *mp4, int want);
 
+/* Partial-read support for the still decode: declare how many leading
+ * bytes of the buffer are valid (monotonic; 0 means fully resident).
+ * With a short avail, rmp4_video_process_image returns
+ * IMAGE_PROCESS_WAIT instead of failing when it needs bytes that have
+ * not arrived: the moov (for a trailing moov or a fragmented movie
+ * this effectively means the whole file) or the first displayed
+ * frame's sample. */
+void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail);
+
 /* True if the last rmp4_video_process_image() produced XRGB2101010. */
 bool rmp4_video_is_10bit(const rmp4_video_t *mp4);
 
@@ -126,6 +135,13 @@ int rmp4_video_stream_skip(rmp4_video_stream_t *stream, int *duration_ms);
  * (idempotent).  NULL when no frame is pending (before the first
  * frame, after rewind or seek, or at end of stream). */
 const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *stream);
+
+/* Partial-read support: raise the number of leading buffer bytes that
+ * are valid (monotonic).  A blocked skip/next (return 2 / NULL after
+ * a step that returned 2) resumes once the needed sample's bytes are
+ * inside the window.  Fully-resident streams never block. */
+void rmp4_video_stream_set_avail(rmp4_video_stream_t *stream,
+      size_t avail);
 
 void rmp4_video_stream_rewind(rmp4_video_stream_t *stream);
 
