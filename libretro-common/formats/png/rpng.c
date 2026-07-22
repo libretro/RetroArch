@@ -1536,6 +1536,17 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
 
    process->stream_backend         = trans_stream_get_zlib_inflate_backend();
 
+   /* A build without an inflate backend (no HAVE_ZLIB) gets a stub
+    * whose members are NULL; without this check the call below jumps
+    * to address zero.  Such a build cannot decode a PNG at all, so
+    * fail the open honestly. */
+   if (   !process->stream_backend
+       || !process->stream_backend->stream_new)
+   {
+      free(process);
+      return NULL;
+   }
+
    rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
          rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
    if (rpng->ihdr.interlace == 1) /* To be sure. */
