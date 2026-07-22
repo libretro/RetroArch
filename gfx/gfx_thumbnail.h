@@ -225,7 +225,12 @@ typedef struct
    void *anim;
    void *anim_buf;
    void *anim_nbio;        /* nbio handle owning anim_buf, when adopted */
-   void *anim_job;         /* decode-worker job (HAVE_THREADS builds)  */
+   /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
+    * the frame held in one job waits for its due time, the other is
+    * already decoding its successor.  anim_job_upload selects which
+    * of the two uploads next. */
+   void *anim_job;
+   void *anim_job2;
    void *anim_audio_job;   /* preview-audio decode job                 */
    size_t anim_buf_len;    /* size of anim_buf (for the audio decoder) */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
@@ -237,6 +242,7 @@ typedef struct
    retro_atomic_int_t status;
    uint8_t flags;
    uint8_t anim_type;      /* enum image_type_enum of 'anim' */
+   uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -262,6 +268,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_buf        = NULL;
    t->anim_nbio       = NULL;
    t->anim_job        = NULL;
+   t->anim_job2       = NULL;
    t->anim_audio_job  = NULL;
    t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
@@ -273,6 +280,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
    t->flags           = 0;
    t->anim_type       = 0;
+   t->anim_job_upload = 0;
 }
 
 /* Holds all configuration parameters associated
