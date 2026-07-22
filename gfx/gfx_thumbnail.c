@@ -960,10 +960,25 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       /* The adopted file is still being read; finish it here, a small
        * time budget per vsync, holding the static frame meanwhile.
        * Animation jobs and the audio decode only start on a complete
-       * buffer, so the decoders never see the partial-read wall. */
+       * buffer, so the decoders never see the partial-read wall.
+       *
+       * The 2 ms wall-clock cap is the frame-time guard; the chunk is
+       * only the granularity at which that cap is checked.  Filling
+       * the buffer is disk-read-bound (a warm 66 MB file iterates in
+       * ~44 ms of pure I/O), so a 256 KB granularity spread the read
+       * over dozens of vsyncs even though the cap was rarely reached
+       * - the prefix reader delivered the still frame in a few MB,
+       * then the animation waited seconds for this dribble to finish.
+       * A 2 MB chunk lets each vsync's 2 ms window move far more than
+       * the old 256 KB, so the read completes in a handful of frames
+       * instead of dozens and the animation starts promptly after the
+       * still.  The cap is only re-checked between iterates, so the
+       * chunk is also bounded by frame safety: a single 2 MB iterate
+       * measures ~1.2 ms on a warm file, comfortably inside one 60 Hz
+       * frame, whereas 4 MB approached a whole 2 ms in one go. */
       do
       {
-         data_transfer_iterate(thumbnail->anim_dt, 256 * 1024);
+         data_transfer_iterate(thumbnail->anim_dt, 2 * 1024 * 1024);
       } while (!data_transfer_complete(thumbnail->anim_dt)
             && !data_transfer_failed(thumbnail->anim_dt)
             && cpu_features_get_time_usec() - now < 2000);
