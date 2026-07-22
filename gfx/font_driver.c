@@ -35,6 +35,19 @@
 /* TODO/FIXME - global */
 static void *video_font_driver = NULL;
 
+/* Monotonic counter incremented whenever any font instance is
+ * freed. Consumers that cache per-font derived data (e.g. the
+ * smooth ticker glyph width cache in gfx_animation.c) key their
+ * entries on this value: font_data_t pointers can be recycled by
+ * the allocator across free/create cycles, so pointer equality
+ * alone cannot prove a cached entry still describes a live font */
+static uint32_t font_driver_generation = 0;
+
+uint32_t font_driver_get_generation(void)
+{
+   return font_driver_generation;
+}
+
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle, const char *font_path, unsigned font_size)
@@ -999,6 +1012,10 @@ void font_driver_free(font_data_t *font)
    if (font)
    {
       bool is_threaded        = false;
+
+      /* Invalidate any externally cached per-font derived data */
+      font_driver_generation++;
+
 #ifdef HAVE_THREADS
       bool *is_threaded_tmp   = video_driver_get_threaded();
       is_threaded             = *is_threaded_tmp;

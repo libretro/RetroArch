@@ -114,6 +114,11 @@ int font_driver_get_message_width(void *font_data, const char *msg, size_t len, 
 
 void font_driver_free(font_data_t *font);
 
+/* Returns a monotonic counter incremented on every font free;
+ * see font_driver.c for rationale. Used to validate externally
+ * cached per-font derived data */
+uint32_t font_driver_get_generation(void);
+
 void font_flush(
       unsigned video_width,
       unsigned video_height,
