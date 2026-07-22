@@ -1524,6 +1524,18 @@ void vulkan_filter_chain::build_offscreen_passes(VkCommandBuffer cmd,
 
    source = original;
 
+   /* A pass may sample PassOutput[j] for a j that has not been produced
+    * yet this frame (a forward or self reference), and on the first frame
+    * no pass output exists at all. common.pass_outputs entries are only
+    * filled lazily below, after each pass renders, so any not-yet-produced
+    * slot would otherwise still hold a zero-initialized Texture whose image
+    * view is VK_NULL_HANDLE. Binding that null view into a descriptor set
+    * and submitting it to vkUpdateDescriptorSets crashes inside the driver.
+    * Seed every slot with the current input texture so unproduced outputs
+    * sample defined data; real outputs overwrite their slot as they render. */
+   for (i = 0; i < common.pass_outputs.size(); i++)
+      common.pass_outputs[i] = original;
+
    for (i = 0; i < passes.size() - 1; i++)
    {
       passes[i]->build_commands(disposer, cmd,
@@ -3131,7 +3143,8 @@ void Pass::set_semantic_texture(VkDescriptorSet set,
       VkDescriptorImageInfo *image_infos, VkWriteDescriptorSet *writes,
       unsigned &write_count)
 {
-   if (reflection.semantic_textures[semantic][0].texture)
+   if (reflection.semantic_textures[semantic][0].texture
+         && texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
          vulkan_flush_descriptor_writes(device, writes, &write_count);
@@ -3146,7 +3159,8 @@ void Pass::set_semantic_texture_array(VkDescriptorSet set,
       unsigned &write_count)
 {
    if (index < reflection.semantic_textures[semantic].size() &&
-         reflection.semantic_textures[semantic][index].texture)
+         reflection.semantic_textures[semantic][index].texture &&
+         texture.texture.view != VK_NULL_HANDLE)
    {
       if (write_count >= VULKAN_MAX_DESCRIPTOR_WRITES)
          vulkan_flush_descriptor_writes(device, writes, &write_count);
