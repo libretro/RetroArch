@@ -921,29 +921,34 @@ void WEBM_CORE_PREFIX(retro_run)(void)
       p->play_ns += p->frame_ns;
       if (!p->eof)
       {
-         const uint32_t *frame = NULL;
+         int have = 0;
          while (!p->eof
                && p->vpts_ns + p->frame_ns / 2 <= p->play_ns)
          {
             int dur_ms = 0;
-            const uint32_t *fr = rmp4_video_stream_next(p->mp4vs, &dur_ms);
-            if (!fr)
+            /* Pass-over frames are consumed without colour
+             * conversion; only the frame actually presented is
+             * rendered, below.  In fast variable-rate stretches this
+             * saves a full-resolution blit per dropped frame. */
+            if (rmp4_video_stream_skip(p->mp4vs, &dur_ms) != 1)
             {
                p->eof = 1;
                break;
             }
-            frame       = fr;
+            have        = 1;
             p->vpts_ns += (int64_t)dur_ms * 1000000;
             p->vshown++;
          }
-         if (frame)
+         if (have)
+         {
             /* The stream emits XRGB8888 words directly (selected at
              * open via rmp4_video_stream_set_argb), so the copy into
-             * the core's framebuffer is verbatim - previously this was
-             * a full-resolution per-pixel R/B swizzle every displayed
-             * frame. */
-            memcpy(p->fb, frame,
-                  (size_t)p->width * p->height * sizeof(uint32_t));
+             * the core's framebuffer is verbatim. */
+            const uint32_t *frame = rmp4_video_stream_render(p->mp4vs);
+            if (frame)
+               memcpy(p->fb, frame,
+                     (size_t)p->width * p->height * sizeof(uint32_t));
+         }
       }
       WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
