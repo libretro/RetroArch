@@ -16,6 +16,7 @@
 #include <string.h>
 #include <file/nbio.h>
 #include <formats/data_transfer.h>
+#include <features/features_cpu.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 
@@ -74,6 +75,16 @@ static bool task_file_transfer_read_complete(void *handle);
  * file) without monopolising the tick. */
 #define NBIO_XFER_TICK_BYTES       (1024 * 1024)
 
+/* Full-file image types (PNG/JPEG/TGA/BMP) read under a time budget
+ * instead: they need every byte before decoding, so there is nothing
+ * to pace for - each tick reads as much as the storage delivers in a
+ * few milliseconds, giving fast media the whole file in a tick or
+ * two while slow media still never stalls a frame.  The video types
+ * keep the byte budget: their stills complete on a small prefix and
+ * a racing fill would just read past the point of use. */
+#define NBIO_XFER_TICK_USEC        4000
+#define NBIO_XFER_TIME_CHUNK       (256 * 1024)
+
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
 {
    if (nbio->xfer)
@@ -129,7 +140,23 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
 
    if (nbio->xfer)
    {
-      data_transfer_iterate(nbio->xfer, NBIO_XFER_TICK_BYTES);
+      if (     nbio->type == NBIO_TYPE_WEBM
+            || nbio->type == NBIO_TYPE_MP4
+            || nbio->type == NBIO_TYPE_WEBP)
+         data_transfer_iterate(nbio->xfer, NBIO_XFER_TICK_BYTES);
+      else
+      {
+         retro_time_t t0 = cpu_features_get_time_usec();
+         do
+         {
+            data_transfer_iterate(nbio->xfer, NBIO_XFER_TIME_CHUNK);
+            if (data_transfer_complete(nbio->xfer)
+                  || data_transfer_failed(nbio->xfer)
+                  || data_transfer_capped(nbio->xfer))
+               break;
+         } while (cpu_features_get_time_usec() - t0
+               < NBIO_XFER_TICK_USEC);
+      }
       if (data_transfer_complete(nbio->xfer)
             || data_transfer_failed(nbio->xfer)
             || data_transfer_capped(nbio->xfer))
@@ -192,12 +219,7 @@ void task_file_load_handler(retro_task_t *task)
             if (nbio->path)
             {
                struct nbio_t *handle;
-               if (     nbio->type == NBIO_TYPE_WEBM
-                     || nbio->type == NBIO_TYPE_MP4
-#ifdef HAVE_RWEBP
-                     || nbio->type == NBIO_TYPE_WEBP
-#endif
-                     )
+               if (BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
                {
                   /* Video: the data_transfer prefix spine.  Address
                    * space for the whole file, physical pages only as
@@ -233,7 +255,9 @@ void task_file_load_handler(retro_task_t *task)
                handle = (struct nbio_t*)nbio_open(nbio->path, NBIO_READ);
                if (handle)
                {
+#ifndef __ANDROID__
                   size_t _len = 0;
+#endif
                   nbio->handle       = handle;
 
 #ifndef __ANDROID__
