@@ -274,7 +274,17 @@ static void *nbio_stdio_get_ptr(void *data, size_t* len)
       return NULL;
    if (len)
       *len = handle->len;
-   if (handle->op == -1)
+   /* The buffer is allocated once at open and never moves, so during a
+    * READ it is safe to hand out: the leading get_progress() bytes are
+    * valid, the rest merely unread - which is exactly what the
+    * partial-read video still decoders consume (task_image sets their
+    * byte wall from the progress).  Returning NULL here mid-read made
+    * the early decode - and adoption of a still-reading handle - fail
+    * with a NULL buffer.  Write-class operations keep the old
+    * conservative NULL: their buffer may be resized. */
+   if (     handle->op == -1
+         || handle->op == NBIO_READ
+         || handle->op == BIO_READ)
       return handle->data;
    return NULL;
 }
