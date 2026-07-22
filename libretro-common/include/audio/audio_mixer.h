@@ -65,8 +65,13 @@ void audio_mixer_init(unsigned rate);
 
 void audio_mixer_done(void);
 
+/* want_s16 selects which PCM format is built at load - the one the
+ * mixer's current mode will play.  The other format derives on
+ * demand at the first mode-mismatched play (see the derivation notes
+ * in the implementation), so a WAV holds one PCM copy, not two. */
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
-      const char *resampler_ident, enum resampler_quality quality);
+      const char *resampler_ident, enum resampler_quality quality,
+      bool want_s16);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);

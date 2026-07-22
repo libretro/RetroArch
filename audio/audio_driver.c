@@ -2269,7 +2269,9 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_MIXER_TYPE_WAV:
          handle = audio_mixer_load_wav(buf, (int32_t)params->bufsize,
                audio_driver_st.resampler_ident,
-               audio_driver_st.resampler_quality);
+               audio_driver_st.resampler_quality,
+               audio_driver_mixer_use_s16(
+                     audio_driver_st.stat_core_is_float));
          /* WAV is a special case - input buffer is not
           * free()'d when sound playback is complete (it is
           * converted to a PCM buffer, which is free()'d instead),
