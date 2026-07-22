@@ -57,6 +57,7 @@
 #include <compat/posix_string.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
+#include <formats/data_transfer.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
@@ -783,6 +784,16 @@ static void content_information_ctx_free(
 #define BLCK_REQUIRED      4
 #define BLCK_PERSISTENT    8
 
+#ifdef HAVE_COMPRESSION
+/* data_transfer source bridge for archive entries */
+static int64_t content_file_entry_source_read(void *ud, uint8_t *dst,
+      size_t n)
+{
+   return file_archive_entry_source_read(
+         (file_archive_entry_source_t*)ud, dst, (int64_t)n);
+}
+#endif
+
 /**
  * content_file_load_into_memory:
  * @content_path : path of the content file.
@@ -814,9 +825,48 @@ static size_t content_file_load_into_memory(
 #ifdef HAVE_COMPRESSION
    if (content_compressed)
    {
-      if (!file_archive_compressed_read(content_path,
-            (void**)&content_data, NULL, &content_size))
-         return 0;
+      /* Prefer the incremental entry source on the data_transfer
+       * spine: the entry inflates chunk by chunk directly into the
+       * exact-size destination as it is read - decompression and
+       * loading interleave instead of running as one opaque gulp -
+       * and the pump takes a byte budget, so this read is ready to
+       * be sliced across task ticks once the surrounding load flow
+       * is.  (Today it is still pumped to completion in place:
+       * behaviour and bytes are identical to the classic path.)
+       * Backends without independently decodable entries (7z solid
+       * blocks) and anything unexpected fall back to the classic
+       * whole-entry read below. */
+      int64_t src_usize                 = 0;
+      file_archive_entry_source_t *src  =
+            file_archive_entry_source_open(content_path, &src_usize);
+      if (src)
+      {
+         if (src_usize > 0)
+         {
+            data_transfer_t *dt = data_transfer_open_source(
+                  (size_t)src_usize, content_file_entry_source_read,
+                  src);
+            if (dt)
+            {
+               size_t out_len = 0;
+               while (!data_transfer_complete(dt)
+                     && !data_transfer_failed(dt))
+                  data_transfer_iterate(dt, 0);
+               if ((content_data = (uint8_t*)
+                     data_transfer_source_detach(dt, &out_len)))
+                  content_size = (int64_t)out_len;
+               else
+                  data_transfer_free(dt);
+            }
+         }
+         file_archive_entry_source_close(src);
+      }
+      if (!content_data)
+      {
+         if (!file_archive_compressed_read(content_path,
+               (void**)&content_data, NULL, &content_size))
+            return 0;
+      }
    }
    else
 #endif
