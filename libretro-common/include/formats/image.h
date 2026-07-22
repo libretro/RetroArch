@@ -186,6 +186,19 @@ bool image_transfer_get_gpu_layout(
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
 
+/* Video-to-image transfers (WEBM, MP4) keep their decoder stream open
+ * after a successful image_transfer_process, positioned just past the
+ * first displayed frame.  This takes ownership of that stream so the
+ * caller can continue the video as an animation without re-opening the
+ * file; the returned handle is the same opaque stream the
+ * image_transfer_anim_stream_* helpers operate on (free it with
+ * image_transfer_anim_stream_free).  It BORROWS the buffer given via
+ * image_transfer_set_buffer_ptr, which must outlive it.  Returns NULL
+ * for other types, when no stream is held, or if it was already
+ * detached; an undetached stream is closed by image_transfer_free. */
+void *image_transfer_detach_anim_stream(void *data,
+      enum image_type_enum type);
+
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
 /* True if the last processed frame was written as packed XRGB2101010

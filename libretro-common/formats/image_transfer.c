@@ -579,6 +579,29 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
    return true;
 }
 
+void *image_transfer_detach_anim_stream(void *data,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_detach_stream((rwebm_video_t*)data);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_detach_stream((rmp4_video_t*)data);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return NULL;
+}
+
 /* ===== Animation ===== *
  * WEBP (animated) and WEBM (video track) support animation. These
  * helpers return NULL / false for every other image type, so callers

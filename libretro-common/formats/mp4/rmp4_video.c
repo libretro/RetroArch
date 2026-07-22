@@ -87,6 +87,12 @@ struct rmp4_video
 {
    const uint8_t *buf;
    size_t         len;
+   /* The stream opened for the still frame, kept so a caller that wants
+    * to continue the video as an animation can detach it instead of
+    * re-opening (and re-pre-scanning) the file.  Owned by this handle
+    * until rmp4_video_detach_stream; closed by rmp4_video_free
+    * otherwise.  Borrows 'buf', which must outlive it either way. */
+   rmp4_video_stream_t *stream;
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
 };
@@ -878,7 +884,26 @@ rmp4_video_t *rmp4_video_alloc(void)
 
 void rmp4_video_free(rmp4_video_t *mp4)
 {
+   if (!mp4)
+      return;
+   if (mp4->stream)
+      rmp4_video_stream_close(mp4->stream);
    free(mp4);
+}
+
+rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4)
+{
+   rmp4_video_stream_t *s;
+   if (!mp4 || !mp4->stream)
+      return NULL;
+   s           = mp4->stream;
+   mp4->stream = NULL;
+   /* The animation consumers upload plain 8-bit frames; the still may
+    * have been decoded 10-bit, so drop the request before handing the
+    * stream over (each frame re-blits, no stale pixels survive). */
+   s->want10   = 0;
+   s->is10     = 0;
+   return s;
 }
 
 bool rmp4_video_set_buf_ptr(rmp4_video_t *mp4, void *data, size_t len)
@@ -917,6 +942,13 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
 
    if (!mp4 || !mp4->buf || !buf)
       return IMAGE_PROCESS_ERROR;
+
+   /* Defensive: a repeated process call re-opens from scratch. */
+   if (mp4->stream)
+   {
+      rmp4_video_stream_close(mp4->stream);
+      mp4->stream = NULL;
+   }
 
    if (!(s = rmp4_video_stream_open(mp4->buf, mp4->len)))
       return IMAGE_PROCESS_ERROR;
@@ -963,6 +995,10 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
       *height = s->height;
    *buf = out;
 
-   rmp4_video_stream_close(s);
+   /* Keep the stream (positioned just past the first displayed frame)
+    * so the caller can detach it and continue the video as an
+    * animation without re-opening the file.  If nobody detaches it,
+    * rmp4_video_free closes it. */
+   mp4->stream = s;
    return IMAGE_PROCESS_END;
 }

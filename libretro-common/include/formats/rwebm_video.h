@@ -91,6 +91,17 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
 
 typedef struct rwebm_video_stream rwebm_video_stream_t;
 
+/* Take ownership of the stream a successful rwebm_video_process_image
+ * left open, positioned just past the first displayed frame, so the
+ * caller can continue the video as an animation without re-opening
+ * (and re-pre-scanning) the file.  Returns NULL if no stream is held
+ * (no process call yet, it failed, or the stream was already
+ * detached).  The stream borrows the buffer given via
+ * rwebm_video_set_buf_ptr, which must outlive it; close it with
+ * rwebm_video_stream_close.  10-bit output requested for the still is
+ * dropped: detached streams emit 8-bit frames. */
+rwebm_video_stream_t *rwebm_video_detach_stream(rwebm_video_t *webm);
+
 /* The buffer is BORROWED and must remain valid and unmodified until
  * rwebm_video_stream_close. Returns NULL when the data is not a WebM
  * stream, has no video track with a compiled-in codec, or contains no

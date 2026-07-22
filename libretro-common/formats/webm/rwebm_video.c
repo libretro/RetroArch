@@ -76,6 +76,12 @@ struct rwebm_video
 {
    const uint8_t *buf;
    size_t         len;
+   /* The stream opened for the still frame, kept so a caller that wants
+    * to continue the video as an animation can detach it instead of
+    * re-opening (and re-pre-scanning) the file.  Owned by this handle
+    * until rwebm_video_detach_stream; closed by rwebm_video_free
+    * otherwise.  Borrows 'buf', which must outlive it either way. */
+   rwebm_video_stream_t *stream;
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
 };
@@ -690,7 +696,26 @@ rwebm_video_t *rwebm_video_alloc(void)
 
 void rwebm_video_free(rwebm_video_t *webm)
 {
+   if (!webm)
+      return;
+   if (webm->stream)
+      rwebm_video_stream_close(webm->stream);
    free(webm);
+}
+
+rwebm_video_stream_t *rwebm_video_detach_stream(rwebm_video_t *webm)
+{
+   rwebm_video_stream_t *s;
+   if (!webm || !webm->stream)
+      return NULL;
+   s            = webm->stream;
+   webm->stream = NULL;
+   /* The animation consumers upload plain 8-bit frames; the still may
+    * have been decoded 10-bit, so drop the request before handing the
+    * stream over (each frame re-blits, no stale pixels survive). */
+   s->want10    = 0;
+   s->is10      = 0;
+   return s;
 }
 
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len)
@@ -729,6 +754,13 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
 
    if (!webm || !webm->buf || !buf)
       return IMAGE_PROCESS_ERROR;
+
+   /* Defensive: a repeated process call re-opens from scratch. */
+   if (webm->stream)
+   {
+      rwebm_video_stream_close(webm->stream);
+      webm->stream = NULL;
+   }
 
    if (!(s = rwebm_video_stream_open(webm->buf, webm->len)))
       return IMAGE_PROCESS_ERROR;
@@ -775,6 +807,10 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
       *height = s->height;
    *buf = out;
 
-   rwebm_video_stream_close(s);
+   /* Keep the stream (positioned just past the first displayed frame)
+    * so the caller can detach it and continue the video as an
+    * animation without re-opening the file.  If nobody detaches it,
+    * rwebm_video_free closes it. */
+   webm->stream = s;
    return IMAGE_PROCESS_END;
 }

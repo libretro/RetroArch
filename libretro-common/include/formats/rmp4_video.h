@@ -63,6 +63,17 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
 
 typedef struct rmp4_video_stream rmp4_video_stream_t;
 
+/* Take ownership of the stream a successful rmp4_video_process_image
+ * left open, positioned just past the first displayed frame, so the
+ * caller can continue the video as an animation without re-opening
+ * (and re-pre-scanning) the file.  Returns NULL if no stream is held
+ * (no process call yet, it failed, or the stream was already
+ * detached).  The stream borrows the buffer given via
+ * rmp4_video_set_buf_ptr, which must outlive it; close it with
+ * rmp4_video_stream_close.  10-bit output requested for the still is
+ * dropped: detached streams emit 8-bit frames. */
+rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4);
+
 /* The buffer is BORROWED and must remain valid and unmodified until
  * rmp4_video_stream_close. Returns NULL when the data is not an MP4
  * stream, has no video track with a compiled-in codec, or contains no
