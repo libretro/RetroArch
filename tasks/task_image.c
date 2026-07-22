@@ -159,6 +159,16 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
 
+   if (retval == IMAGE_PROCESS_WAIT)
+      /* Partial read: the decoder needs bytes that have not arrived.
+       * Stay in the processing state - the handler raises the
+       * decoder's avail each tick as the read progresses - and above
+       * all do NOT let WAIT become processing_final_state:
+       * cb_image_upload_generic treats any non-error final state as a
+       * successful decode and would finish the task with an empty
+       * texture. */
+      return 1;
+
    image->processing_final_state = retval;
    return -1;
 }
@@ -184,6 +194,13 @@ static void task_image_cleanup(nbio_handle_t *nbio)
       free(nbio->path);
    if (nbio->data)
       free(nbio->data);
+   if (nbio->handle)
+      /* The video early-completion path can finish the task with the
+       * read still in flight; freeing an in-flight stdio handle
+       * aborts.  Cancelling first is a no-op on a completed handle -
+       * and for an unwanted (never-adopted) thumbnail it is the
+       * pay-off: the rest of the file is simply never read. */
+      nbio_cancel(nbio->handle);
    nbio_free(nbio->handle);
    nbio->path        = NULL;
    nbio->data        = NULL;
@@ -201,10 +218,18 @@ static void task_image_load_free(retro_task_t *task)
    }
 }
 
-static int cb_nbio_image_thumbnail(void *data, size_t len)
+/* Create the image_transfer handle over the nbio buffer and start the
+ * transfer.  Called from cb_nbio_image_thumbnail when the read
+ * completes, and - for the video types, whose still decoders can work
+ * against a growing buffer - early, while the read is still running
+ * ('partial'): the buffer pointer is stable (every backend sizes or
+ * maps it up front), the decoder is told how much has arrived via
+ * image_transfer_set_avail, and nbio->is_finished is left unset so
+ * the task keeps pumping the file. */
+static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
 {
    void *ptr                       = NULL;
-   nbio_handle_t *nbio             = (nbio_handle_t*)data;
+   size_t len                      = 0;
    struct nbio_image_handle *image = nbio  ? (struct nbio_image_handle*)nbio->data : NULL;
    void *handle                    = image ? image_transfer_new(image->type)       : NULL;
    settings_t *settings            = config_get_ptr();
@@ -220,6 +245,16 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
    ptr                             = nbio_get_ptr(nbio->handle, &len);
 
    image_transfer_set_buffer_ptr(image->handle, image->type, ptr, len);
+
+   if (partial)
+   {
+      /* Declare how much of the buffer has actually been read; the
+       * video still decoders return IMAGE_PROCESS_WAIT at the wall
+       * and the handler raises this each tick as bytes arrive. */
+      size_t done = 0, total = 0;
+      nbio_get_progress(nbio->handle, &done, &total);
+      image_transfer_set_avail(image->handle, image->type, done);
+   }
 
    /* Ask video thumbnail decoders for native 10-bit output, but only when the
     * active video driver can sample a 10-bit texture; otherwise the decoded
@@ -256,9 +291,31 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
 
    image->flags                   &= ~IMAGE_FLAG_IS_BLOCKING;
    image->flags                   &= ~IMAGE_FLAG_IS_FINISHED;
-   nbio->is_finished               = true;
+   if (!partial)
+      nbio->is_finished            = true;
 
    return 0;
+}
+
+static int cb_nbio_image_thumbnail(void *data, size_t len)
+{
+   nbio_handle_t *nbio             = (nbio_handle_t*)data;
+   struct nbio_image_handle *image = nbio ? (struct nbio_image_handle*)nbio->data : NULL;
+
+   if (!image)
+      return -1;
+   if (image->handle)
+   {
+      /* The video early path already set the transfer up while the
+       * read was running; the read has now completed - tell the
+       * decoder the whole buffer is valid and let the task's normal
+       * completion gate see the read as done.  Recreating the handle
+       * here would leak it and restart a decode already in flight. */
+      image_transfer_set_avail(image->handle, image->type, (size_t)-1);
+      nbio->is_finished = true;
+      return 0;
+   }
+   return task_image_thumbnail_setup(nbio, false);
 }
 
 static bool upscale_image(
@@ -344,9 +401,37 @@ bool task_image_load_handler(retro_task_t *task)
 
    if (image)
    {
+      bool is_video = (image->type == IMAGE_TYPE_WEBM)
+                   || (image->type == IMAGE_TYPE_MP4);
+
+      /* Video stills decode against the growing buffer: keep the
+       * decoder's byte wall in step with the read.  Cheap (two field
+       * reads and a monotonic store) and a no-op once the read has
+       * completed. */
+      if (is_video && image->handle && !nbio->is_finished && nbio->handle)
+      {
+         size_t done = 0, total = 0;
+         if (nbio_get_progress(nbio->handle, &done, &total))
+            image_transfer_set_avail(image->handle, image->type, done);
+      }
+
       switch (image->status)
       {
          case IMAGE_STATUS_WAIT:
+            /* For the video types, start decoding while the file is
+             * still being read: the still usually needs only the
+             * header and the first keyframe, so the texture can be
+             * delivered long before - and independently of - the rest
+             * of the read.  Other types keep waiting for the
+             * completion callback. */
+            if (is_video && !image->handle && nbio->handle
+                  && !nbio->is_finished)
+            {
+               size_t done = 0, total = 0;
+               if (nbio_get_progress(nbio->handle, &done, &total)
+                     && done > 0)
+                  task_image_thumbnail_setup(nbio, true);
+            }
             return true;
          case IMAGE_STATUS_PROCESS_TRANSFER:
             if (task_image_iterate_process_transfer(image) == -1)
