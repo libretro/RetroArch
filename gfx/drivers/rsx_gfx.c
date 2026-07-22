@@ -540,7 +540,20 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
-   memcpy(texbuffer, atlas_data, font->atlas->height * font->atlas->width);
+   /* Texture pitch equals the atlas width, so the dirty row band is
+    * contiguous in both buffers and one memcpy of just that band
+    * suffices; the initial upload (dirty rect covering everything
+    * after the renderer pre-cache) still transfers the full atlas. */
+   unsigned y0                 = font->atlas->dirty_y0;
+   unsigned y1                 = font->atlas->dirty_y1;
+   if (y1 > font->atlas->height || y1 <= y0)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
+   memcpy(texbuffer   + (size_t)y0 * font->atlas->width,
+          atlas_data  + (size_t)y0 * font->atlas->width,
+          (size_t)(y1 - y0) * font->atlas->width);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;
