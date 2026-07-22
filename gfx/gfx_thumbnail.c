@@ -675,7 +675,13 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
     * (possibly as a file mapping) and is released with it; only the
     * open-by-path fallback malloc's anim_buf. */
    if (thumbnail->anim_nbio)
+   {
+      /* Deselected before the adopted read finished: cancel it (a
+       * no-op on a completed handle; freeing an in-flight stdio
+       * handle aborts) - the rest of the file is never read. */
+      nbio_cancel(thumbnail->anim_nbio);
       nbio_free(thumbnail->anim_nbio);
+   }
    else if (thumbnail->anim_buf)
       free(thumbnail->anim_buf);
    thumbnail->anim            = NULL;
@@ -685,6 +691,7 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->anim_next_us    = 0;
    thumbnail->anim_loops_left = 0;
    thumbnail->anim_type       = 0;
+   thumbnail->anim_read_pending = 0;
    thumbnail->flags          &= ~GFX_THUMB_FLAG_ANIM_ACTIVE;
 }
 
@@ -696,6 +703,51 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
  * stream/buf/nbio_owner transfers in every outcome; on rejection they
  * are released and the static thumbnail stays.  Returns true when the
  * animation was installed. */
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+/* Preview audio (opt-in): decode the file's audio track to PCM and
+ * loop it through the mixer while the animation is shown. WebM and
+ * MP4 only (animated WebP has no audio). With threads the decode
+ * runs on the shared worker; without, it runs here once (a one-shot
+ * cost when the preview opens).  Called from anim_install for a
+ * fully-resident buffer, or deferred to the moment the adopted read
+ * completes - the decode consumes the whole buffer, so it must never
+ * see a partially-read one. */
+static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
+{
+   enum image_type_enum type = (enum image_type_enum)thumbnail->anim_type;
+   if (     (   (type == IMAGE_TYPE_WEBM)
+             || (type == IMAGE_TYPE_MP4))
+         && config_get_ptr()->bools.menu_thumbnail_preview_audio)
+   {
+      gfx_thumb_anim_job_t *job =
+            (gfx_thumb_anim_job_t*)calloc(1, sizeof(*job));
+      if (job)
+      {
+         job->is_audio = true;
+         job->type     = (uint8_t)type;
+         job->src      = thumbnail->anim_buf;
+         job->src_len  = thumbnail->anim_buf_len;
+#ifdef HAVE_THREADS
+         if (gfx_thumbnail_anim_worker_init())
+         {
+            thumbnail->anim_audio_job = job;
+            gfx_thumbnail_anim_job_enqueue(job);
+         }
+         else
+#endif
+         {
+            if (gfx_thumb_preview_audio_decode(job->type,
+                  job->src, job->src_len, &job->wav, &job->wav_size))
+               job->status = GFX_THUMB_JOB_READY;
+            else
+               job->status = GFX_THUMB_JOB_FINISHED;
+            thumbnail->anim_audio_job = job;
+         }
+      }
+   }
+}
+#endif
+
 static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       void *stream, enum image_type_enum type,
       void *buf, size_t len, void *nbio_owner)
@@ -729,49 +781,39 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
    thumbnail->anim_next_us    = 0;   /* first advance establishes timing */
    thumbnail->flags          |= GFX_THUMB_FLAG_ANIM_ACTIVE;
 
-#if defined(GFX_THUMB_PREVIEW_AUDIO)
-   /* Preview audio (opt-in): decode the file's audio track to PCM and
-    * loop it through the mixer while the animation is shown. WebM and
-    * MP4 only (animated WebP has no audio). With threads the decode
-    * runs on the shared worker; without, it runs here once (a one-shot
-    * cost when the preview opens). */
-   if (     (   (type == IMAGE_TYPE_WEBM)
-             || (type == IMAGE_TYPE_MP4))
-         && config_get_ptr()->bools.menu_thumbnail_preview_audio)
+   /* The still's task can complete - and adoption run - while the
+    * file's read is still in flight (the still needs only a prefix).
+    * Until the read completes, hold the animation and the audio
+    * preview at the static frame: the decode stream and the audio
+    * decoder both need the full buffer.  gfx_thumbnail_animate pumps
+    * the handle to completion; a fatter chunk shortens the catch-up. */
+   thumbnail->anim_read_pending = 0;
+   if (nbio_owner)
    {
-      gfx_thumb_anim_job_t *job =
-            (gfx_thumb_anim_job_t*)calloc(1, sizeof(*job));
-      if (job)
+      size_t done = 0, total = 0;
+      if (     nbio_get_progress(nbio_owner, &done, &total)
+            && done < total)
       {
-         job->is_audio = true;
-         job->type     = (uint8_t)type;
-         job->src      = thumbnail->anim_buf;
-         job->src_len  = thumbnail->anim_buf_len;
-#ifdef HAVE_THREADS
-         if (gfx_thumbnail_anim_worker_init())
-         {
-            thumbnail->anim_audio_job = job;
-            gfx_thumbnail_anim_job_enqueue(job);
-         }
-         else
-#endif
-         {
-            if (gfx_thumb_preview_audio_decode(job->type,
-                  job->src, job->src_len, &job->wav, &job->wav_size))
-               job->status = GFX_THUMB_JOB_READY;
-            else
-               job->status = GFX_THUMB_JOB_FINISHED;
-            thumbnail->anim_audio_job = job;
-         }
+         thumbnail->anim_read_pending = 1;
+         nbio_set_chunk_size(nbio_owner, 256 * 1024);
       }
    }
+
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+   if (!thumbnail->anim_read_pending)
+      gfx_thumbnail_anim_audio_begin(thumbnail);
 #endif
    return true;
 
 fail:
    image_transfer_anim_stream_free(stream, type);
    if (nbio_owner)
+   {
+      /* The adopted read may still be in flight (freeing an in-flight
+       * stdio handle aborts); cancel is a no-op when complete. */
+      nbio_cancel(nbio_owner);
       nbio_free(nbio_owner);
+   }
    else
       free(buf);
    return false;
@@ -913,6 +955,26 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    now  = cpu_features_get_time_usec();
    type = (enum image_type_enum)thumbnail->anim_type;
+
+   if (thumbnail->anim_read_pending)
+   {
+      /* The adopted file is still being read; finish it here, a small
+       * time budget per vsync, holding the static frame meanwhile.
+       * Animation jobs and the audio decode only start on a complete
+       * buffer, so the decoders never see the partial-read wall. */
+      bool done = false;
+      do
+      {
+         done = nbio_iterate(thumbnail->anim_nbio);
+      } while (!done
+            && cpu_features_get_time_usec() - now < 2000);
+      if (!done)
+         return;
+      thumbnail->anim_read_pending = 0;
+#if defined(GFX_THUMB_PREVIEW_AUDIO)
+      gfx_thumbnail_anim_audio_begin(thumbnail);
+#endif
+   }
 
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
    /* Hand a finished preview-audio decode to the mixer (independent of

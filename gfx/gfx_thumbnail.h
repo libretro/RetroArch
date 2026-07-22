@@ -243,6 +243,9 @@ typedef struct
    uint8_t flags;
    uint8_t anim_type;      /* enum image_type_enum of 'anim' */
    uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
+   uint8_t anim_read_pending; /* adopted nbio read still in flight;
+                                 animation/audio held at the static
+                                 frame until it completes */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -281,6 +284,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->flags           = 0;
    t->anim_type       = 0;
    t->anim_job_upload = 0;
+   t->anim_read_pending = 0;
 }
 
 /* Holds all configuration parameters associated
