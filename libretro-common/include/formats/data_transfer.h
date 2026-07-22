@@ -56,6 +56,31 @@ typedef struct data_transfer data_transfer_t;
  * opened or its buffer cannot be sized.  No bytes are read yet. */
 data_transfer_t *data_transfer_open(const char *path);
 
+/* Open a file of any size for prefix reading: address space for the
+ * whole file is reserved up front, but physical memory is committed
+ * only as far as the fill actually reaches - the caller's iterate
+ * budget, not the file's size, decides the footprint.  A consumer
+ * that needs 2% of a 4 GB file to decode a still costs 2%, and the
+ * uncommitted tail is hardware-protected, so a read past avail()
+ * faults immediately instead of returning garbage.
+ *
+ * commit_cap (0 = none) is a hard ceiling on committed bytes: a
+ * transfer that reaches it stops there and reports capped() - a
+ * distinct terminal from complete (the whole file arrived) and
+ * failed (the read ended short inside the committed region).
+ * complete() keeps its whole-file meaning for every consumer.
+ *
+ * On platforms without address-space reservation the buffer degrades
+ * to a plain allocation of min(len, commit_cap) (or a built-in
+ * window when commit_cap is 0), so callers there should treat the
+ * cap as advisory sizing. */
+data_transfer_t *data_transfer_open_prefix(const char *path,
+      size_t commit_cap);
+
+/* The fill stopped at commit_cap with the file continuing beyond it.
+ * Terminal: iterate() will not advance further. */
+bool data_transfer_capped(data_transfer_t *dt);
+
 /* Wrap an nbio handle whose read may already be in flight - the
  * adoption case, where one owner opened and partially read the file
  * and another takes over finishing it (a thumbnail adopting its

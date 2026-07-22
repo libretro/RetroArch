@@ -20,18 +20,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(HAVE_MMAN) || defined(__unix__) || defined(__APPLE__)
+#define DT_HAVE_RESERVE 1
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 
 #include <file/nbio.h>
 #include <formats/data_transfer.h>
 
+/* Prefix strategy: commit physical pages in steps of this as the
+ * fill advances (one protection syscall per step). */
+#define DT_COMMIT_STEP  (1024 * 1024)
+/* Read granularity inside iterate. */
+#define DT_READ_CHUNK   (64 * 1024)
+/* Fallback window when the platform cannot reserve address space and
+ * the caller gave no cap. */
+#define DT_FALLBACK_WINDOW  (32 * 1024 * 1024)
+
 struct data_transfer
 {
-   void   *nbio;
+   void   *nbio;     /* strategy 1: wrapped nbio handle              */
+   /* strategy 2: internal prefix reader (open_prefix)               */
+   FILE   *f;
+   uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
+   size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
+   size_t  committed;/* bytes with physical backing                  */
+   size_t  cap;      /* commit ceiling (buffer size in fallback)     */
    size_t  len;      /* full file length, fixed at open              */
    size_t  avail;    /* bytes valid at the front; monotonic          */
-   uint8_t done;     /* backend reported the operation over          */
+   uint8_t done;     /* the operation is over                        */
    uint8_t failed;   /* ...but delivered less than the file          */
+   uint8_t capped;   /* stopped at the commit ceiling                */
 };
 
 data_transfer_t *data_transfer_open(const char *path)
@@ -49,6 +74,143 @@ data_transfer_t *data_transfer_open(const char *path)
    nbio_get_ptr(handle, &dt->len);
    nbio_begin_read(handle);
    return dt;
+}
+
+data_transfer_t *data_transfer_open_prefix(const char *path,
+      size_t commit_cap)
+{
+   data_transfer_t *dt;
+   FILE *f;
+   long l;
+   if (!(f = fopen(path, "rb")))
+      return NULL;
+   if (fseek(f, 0, SEEK_END) != 0 || (l = ftell(f)) <= 0
+         || fseek(f, 0, SEEK_SET) != 0)
+   {
+      fclose(f);
+      return NULL;
+   }
+   if (!(dt = (data_transfer_t*)calloc(1, sizeof(*dt))))
+   {
+      fclose(f);
+      return NULL;
+   }
+   dt->f   = f;
+   dt->len = (size_t)l;
+   dt->cap = commit_cap;
+
+#if defined(_WIN32)
+   {
+      SYSTEM_INFO si;
+      size_t pg, rl;
+      GetSystemInfo(&si);
+      pg = (size_t)si.dwPageSize;
+      rl = ((dt->len + pg - 1) / pg) * pg;
+      dt->map = (uint8_t*)VirtualAlloc(NULL, rl, MEM_RESERVE,
+            PAGE_NOACCESS);
+      if (dt->map)
+         dt->map_len = rl;
+   }
+#elif defined(DT_HAVE_RESERVE)
+   {
+      long pgl = sysconf(_SC_PAGESIZE);
+      size_t pg = pgl > 0 ? (size_t)pgl : 4096;
+      size_t rl = ((dt->len + pg - 1) / pg) * pg;
+      void *m   = mmap(NULL, rl, PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      if (m != MAP_FAILED)
+      {
+         dt->map     = (uint8_t*)m;
+         dt->map_len = rl;
+      }
+   }
+#endif
+   if (!dt->map)
+   {
+      /* No reservation (32-bit address space, or a platform without
+       * virtual memory): a bounded plain allocation.  The cap - or
+       * the built-in window - is the buffer. */
+      size_t w = dt->cap ? dt->cap : (size_t)DT_FALLBACK_WINDOW;
+      if (w > dt->len)
+         w = dt->len;
+      dt->cap = w;
+      if (!(dt->map = (uint8_t*)malloc(w ? w : 1)))
+      {
+         fclose(f);
+         free(dt);
+         return NULL;
+      }
+      dt->committed = w;
+   }
+   return dt;
+}
+
+/* Grow the physical backing to cover at least 'need' bytes. */
+static int data_transfer_commit(data_transfer_t *dt, size_t need)
+{
+   size_t target;
+   if (need <= dt->committed)
+      return 1;
+   if (!dt->map_len)         /* fallback buffer: fixed */
+      return 0;
+   target = dt->committed + DT_COMMIT_STEP;
+   if (target < need)
+      target = need;
+   if (target > dt->map_len)
+      target = dt->map_len;
+#if defined(_WIN32)
+   if (!VirtualAlloc(dt->map, target, MEM_COMMIT, PAGE_READWRITE))
+      return 0;
+#elif defined(DT_HAVE_RESERVE)
+   if (mprotect(dt->map, target, PROT_READ | PROT_WRITE) != 0)
+      return 0;
+#endif
+   dt->committed = target;
+   return 1;
+}
+
+static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
+      size_t max_bytes)
+{
+   size_t start = dt->avail;
+   while (!dt->done && !dt->capped)
+   {
+      size_t chunk = DT_READ_CHUNK, got;
+      if (dt->avail >= dt->len)
+      {
+         dt->done = 1;
+         break;
+      }
+      if (dt->cap && dt->avail >= dt->cap)
+      {
+         dt->capped = 1;
+         break;
+      }
+      if (chunk > dt->len - dt->avail)
+         chunk = dt->len - dt->avail;
+      if (dt->cap && chunk > dt->cap - dt->avail)
+         chunk = dt->cap - dt->avail;
+      if (!data_transfer_commit(dt, dt->avail + chunk))
+      {
+         dt->capped = 1;   /* commit refused: treat as the ceiling */
+         break;
+      }
+      got = fread(dt->map + dt->avail, 1, chunk, dt->f);
+      dt->avail += got;
+      if (got < chunk)
+      {
+         /* The file ended short of its opening length (I/O error,
+          * the file shrank): frozen honestly, never complete. */
+         dt->done   = 1;
+         dt->failed = 1;
+         break;
+      }
+      if (max_bytes && dt->avail - start >= max_bytes)
+         break;
+   }
+   if (dt->avail >= dt->len && !dt->failed)
+      dt->done = 1;
+   return dt->avail;
 }
 
 data_transfer_t *data_transfer_adopt(void *nbio)
@@ -110,6 +272,8 @@ size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
    size_t start;
    if (!dt)
       return 0;
+   if (dt->f)
+      return data_transfer_prefix_iterate(dt, max_bytes);
    if (dt->done)
       return dt->avail;
    start = dt->avail;
@@ -135,6 +299,8 @@ const uint8_t *data_transfer_ptr(data_transfer_t *dt, size_t *len)
    }
    if (len)
       *len = dt->len;
+   if (dt->f)
+      return dt->map;
    return (const uint8_t*)nbio_get_ptr(dt->nbio, NULL);
 }
 
@@ -146,6 +312,11 @@ size_t data_transfer_avail(data_transfer_t *dt)
 bool data_transfer_complete(data_transfer_t *dt)
 {
    return dt && dt->done && !dt->failed;
+}
+
+bool data_transfer_capped(data_transfer_t *dt)
+{
+   return dt && dt->capped;
 }
 
 bool data_transfer_failed(data_transfer_t *dt)
@@ -161,6 +332,24 @@ void data_transfer_free(data_transfer_t *dt)
    {
       nbio_cancel(dt->nbio);
       nbio_free(dt->nbio);
+   }
+   if (dt->f)
+      fclose(dt->f);
+   if (dt->map)
+   {
+#if defined(_WIN32)
+      if (dt->map_len)
+         VirtualFree(dt->map, 0, MEM_RELEASE);
+      else
+         free(dt->map);
+#elif defined(DT_HAVE_RESERVE)
+      if (dt->map_len)
+         munmap(dt->map, dt->map_len);
+      else
+         free(dt->map);
+#else
+      free(dt->map);
+#endif
    }
    free(dt);
 }
