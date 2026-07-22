@@ -22,6 +22,11 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include <lists/string_list.h>
+/* task_image_detach_video_stream takes enum image_type_enum: the enum
+ * must be a complete type here or a TU that includes this header first
+ * (griffin concatenates via runloop.h) declares it with prototype
+ * scope and the definition in task_image.c then conflicts. */
+#include <formats/image.h>
 
 #include <queues/task_queue.h>
 #include <gfx/scaler/scaler.h>
