@@ -48,6 +48,19 @@ uint32_t font_driver_get_generation(void)
    return font_driver_generation;
 }
 
+static enum font_atlas_format font_atlas_preferred_format =
+      FONT_ATLAS_FORMAT_A8;
+
+void font_renderer_set_preferred_atlas_format(enum font_atlas_format fmt)
+{
+   font_atlas_preferred_format = fmt;
+}
+
+enum font_atlas_format font_renderer_get_preferred_atlas_format(void)
+{
+   return font_atlas_preferred_format;
+}
+
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle, const char *font_path, unsigned font_size)

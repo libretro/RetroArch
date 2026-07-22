@@ -101,6 +101,14 @@ static INLINE void font_unbind(font_data_impl_t *font_data)
 }
 
 /* font_path can be NULL for default font. */
+/* Video drivers that want higher-precision glyph coverage (HDR
+ * output) set the preferred atlas format before creating their
+ * fonts; renderers consult it when allocating the atlas. The hint is
+ * process-global, so callers set it around font creation and restore
+ * it afterwards. Renderers without 16-bit support ignore it. */
+void font_renderer_set_preferred_atlas_format(enum font_atlas_format fmt);
+enum font_atlas_format font_renderer_get_preferred_atlas_format(void);
+
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle,
