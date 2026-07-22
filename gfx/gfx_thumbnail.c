@@ -607,8 +607,14 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
    params.bufsize             = wav_size;
    params.basename            = strdup(GFX_THUMB_PREVIEW_AUDIO_NAME);
    params.cb                  = NULL;
-   params.buf_owner           = NULL;
-   params.buf_owner_free      = NULL;
+   /* Donate the WAV blob: add_stream's WAV arm reads the borrowed
+    * bytes during the PCM conversion and releases the owner right
+    * after (or on any failure path) - the defensive input copy,
+    * which briefly tripled this allocation next to both PCM
+    * buffers, is gone.  Ownership transfers on the call in every
+    * outcome. */
+   params.buf_owner           = wav;
+   params.buf_owner_free      = free;
    params.slot_selection_idx  = 0;
    params.volume              = 1.0f;
    params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
@@ -1017,7 +1023,8 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       {
          gfx_thumbnail_preview_audio_start(thumbnail,
                ajob->wav, ajob->wav_size);
-         free(ajob->wav);          /* the mixer copied the buffer */
+         ajob->wav = NULL;         /* donated: the mixer releases it
+                                      in every outcome */
          free(ajob);
          thumbnail->anim_audio_job = NULL;
       }
