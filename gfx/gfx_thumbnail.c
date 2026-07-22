@@ -710,8 +710,13 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
  * runs on the shared worker; without, it runs here once (a one-shot
  * cost when the preview opens).  Called from anim_install for a
  * fully-resident buffer, or deferred to the moment the adopted read
- * completes - the decode consumes the whole buffer, so it must never
- * see a partially-read one. */
+ * completes: this path hands the decoder the whole buffer (src_len is
+ * the full length), so it must run after the read finishes.  The
+ * decoder itself can decode from a prefix - rmp4/rwebm_audio_decode_
+ * wav_avail stop at the resident wall and report need_more when the
+ * moov is not yet in - but feeding it a growing buffer from the
+ * worker while the render thread pumps the read is a cross-thread
+ * hand-off this path does not yet do. */
 static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 {
    enum image_type_enum type = (enum image_type_enum)thumbnail->anim_type;
@@ -795,9 +800,13 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
    /* The still's task can complete - and adoption run - while the
     * file's read is still in flight (the still needs only a prefix).
     * Until the read completes, hold the animation and the audio
-    * preview at the static frame: the decode stream and the audio
-    * decoder both need the full buffer.  gfx_thumbnail_animate pumps
-    * the handle to completion; a fatter chunk shortens the catch-up. */
+    * preview at the static frame: the animation's demuxer captured a
+    * byte wall at the walled open and must not treat it as EOF, and
+    * the audio begin below hands the decoder the whole buffer.  (The
+    * audio decoder can work from a prefix - see anim_audio_begin - but
+    * feeding it progressively is a cross-thread change not made here.)
+    * gfx_thumbnail_animate pumps the handle to completion; a fatter
+    * chunk shortens the catch-up. */
    thumbnail->anim_read_pending =
          (thumbnail->anim_dt
           && !data_transfer_complete(thumbnail->anim_dt)) ? 1 : 0;
