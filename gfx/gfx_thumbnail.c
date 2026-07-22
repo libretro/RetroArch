@@ -597,7 +597,7 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
       void *wav, size_t wav_size)
 {
    audio_mixer_stream_params_t params;
-   unsigned i;
+   int out_slot = -1;
 
    /* One preview stream at a time */
    gfx_thumbnail_preview_audio_stop(gfx_thumb_audio_owner);
@@ -614,7 +614,7 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
     * outcome. */
    params.buf_owner           = wav;
    params.buf_owner_free      = free;
-   params.out_slot             = NULL;
+   params.out_slot            = &out_slot;
    params.slot_selection_idx  = 0;
    params.volume              = 1.0f;
    params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
@@ -627,17 +627,10 @@ static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
       free(params.basename);
       return;
    }
-   /* add_stream copies the buffer and does not report the slot; find
-    * ours by its distinctive name. */
-   for (i = 0; i < AUDIO_MIXER_MAX_SYSTEM_STREAMS; i++)
-   {
-      const char *name = audio_driver_mixer_get_stream_name(i);
-      if (name && string_is_equal(name, GFX_THUMB_PREVIEW_AUDIO_NAME))
-      {
-         gfx_thumb_audio_slot = (int)i;
-         break;
-      }
-   }
+   /* add_stream reports the granted slot directly; the sentinel name
+    * remains only as the staleness guard at stop time, where the slot
+    * may since have been handed to another subsystem. */
+   gfx_thumb_audio_slot  = out_slot;
    gfx_thumb_audio_owner = thumbnail;
 }
 #endif /* GFX_THUMB_PREVIEW_AUDIO */
