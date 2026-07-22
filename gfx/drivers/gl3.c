@@ -4682,6 +4682,7 @@ static bool gl3_frame(void *data, const void *frame,
    {
       settings_t *settings = config_get_ptr();
       float ubo_data[20];
+      bool ui_visible      = false;
       static const float quad_pos[8] = {
          0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
       };
@@ -4689,9 +4690,33 @@ static bool gl3_frame(void *data, const void *frame,
          0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
       };
 
+      /* Same semantics as the vulkan composite's is_menu_composite:
+       * when any UI is composited this frame (menu, overlay, OSD
+       * message, statistics, widgets), the SDR content is scaled by
+       * Menu HDR Brightness (video_hdr_menu_nits) instead of paper
+       * white -- this is the setting that controls menu brightness on
+       * the other four HDR drivers and was previously ignored here. */
+#ifdef HAVE_MENU
+      if (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE)
+         ui_visible = true;
+#endif
+#ifdef HAVE_OVERLAY
+      if (gl->flags & GL3_FLAG_OVERLAY_ENABLE)
+         ui_visible = true;
+#endif
+      if ((msg && *msg) || statistics_show)
+         ui_visible = true;
+#ifdef HAVE_GFX_WIDGETS
+      if (widgets_active)
+         ui_visible = true;
+#endif
+
       memcpy(ubo_data, gl->mvp_no_rot.data, 16 * sizeof(float));
       ubo_data[16] = settings
-            ? settings->floats.video_hdr_paper_white_nits : 200.0f;
+            ? (ui_visible
+                  ? settings->floats.video_hdr_menu_nits
+                  : settings->floats.video_hdr_paper_white_nits)
+            : 200.0f;
       ubo_data[17] = settings
             ? (float)settings->uints.video_hdr_expand_gamut : 0.0f;
       ubo_data[18] = 0.0f;
