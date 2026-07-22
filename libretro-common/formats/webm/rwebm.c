@@ -169,6 +169,23 @@ static double be_float(const uint8_t *p, size_t n)
    return 0.0;
 }
 
+/* Matroska float elements are parsed straight from the file, so a
+ * malformed stream can carry a NaN, an infinity, or a finite value far
+ * outside any integer's range.  Converting such a double to an integer
+ * type is undefined behaviour in C (and in practice yields a garbage,
+ * often negative, value the caller would then trust as a rate or a
+ * duration).  Clamp to the destination range first; NaN maps to 0. */
+static double be_double_clamp(double v, double lo, double hi)
+{
+   if (!(v == v))   /* NaN */
+      return 0.0;
+   if (v < lo)
+      return lo;
+   if (v > hi)
+      return hi;
+   return v;
+}
+
 /* ===== Demuxer state ===== */
 
 struct rwebm
@@ -236,7 +253,11 @@ static void parse_track_av(const uint8_t *p, const uint8_t *end,
             trk->height      = (unsigned)be_uint(body, (size_t)sz);
             break;
          case ID_SAMPLINGFREQ:
-            trk->sample_rate = (unsigned)(be_float(body, (size_t)sz) + 0.5);
+            /* Clamp before the cast: an out-of-range float is UB to
+             * convert, and no real sampling frequency approaches
+             * UINT_MAX. */
+            trk->sample_rate = (unsigned)(be_double_clamp(
+                  be_float(body, (size_t)sz), 0.0, 4294967295.0) + 0.5);
             break;
          case ID_CHANNELS:
             trk->channels    = (unsigned)be_uint(body, (size_t)sz);
@@ -348,9 +369,17 @@ static void parse_track_entry(const uint8_t *p, const uint8_t *end,
 
 int64_t rwebm_duration_ns(const rwebm_t *webm)
 {
+   double ns;
    if (!webm || webm->duration_ticks <= 0.0)
       return 0;
-   return (int64_t)(webm->duration_ticks * (double)webm->timestamp_scale);
+   /* duration_ticks is a file-supplied float; the scaled product can
+    * exceed int64_t (or be NaN/inf), which is UB to convert.  Clamp to
+    * the int64 range - a saturated duration is harmless, an undefined
+    * conversion is not. */
+   ns = be_double_clamp(
+         webm->duration_ticks * (double)webm->timestamp_scale,
+         0.0, 9223372036854775807.0);
+   return (int64_t)ns;
 }
 
 int rwebm_num_tracks(const rwebm_t *webm)
