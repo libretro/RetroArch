@@ -801,6 +801,11 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          if (wgl_flags & WGL_FLAG_ADAPTIVE_VSYNC)
             BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
 
+#ifndef __WINRT__
+         if (win32_backbuffer_is_scrgb())
+            BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
+#endif
+
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)
             BIT32_SET(flags, GFX_CTX_FLAGS_GL_CORE_CONTEXT);
 

@@ -265,7 +265,11 @@ enum display_flags
    /* Set by a video driver that can present a native XRGB2101010 (10-bit
     * per channel) source frame without the frontend down-converting it to
     * XRGB8888 first. */
-   GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE
+   GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
+   /* Set by a context driver whose default framebuffer is FP16 scRGB
+    * (linear, 1.0 = 80 nits): the video driver must encode SDR content
+    * for HDR output itself (paper-white scaling etc.). */
+   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER
 };
 
 enum shader_uniform_type
