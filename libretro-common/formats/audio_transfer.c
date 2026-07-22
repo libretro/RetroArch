@@ -1898,6 +1898,23 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
          return 0;
       }
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_TYPE_AAC:
+      {
+         struct audio_transfer_aac *ac =
+               (struct audio_transfer_aac*)data;
+         /* Only the ADTS buffer path walks the caller's buffer
+          * linearly; adts_pos is the next frame's byte offset, i.e.
+          * the compressed frontier the feeder needs.  The demuxed
+          * (MP4/M4A) and set_demuxed_ptr paths read from the demuxer
+          * or a concatenated packet blob, not the caller's buffer, so
+          * they expose no windowable cursor - return 0, exactly as the
+          * vorbis synth/setup paths do. */
+         if (ac->handle && ac->adts)
+            return ac->adts_pos;
+         return 0;
+      }
+#endif
       default:
          break;
    }

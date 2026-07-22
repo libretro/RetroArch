@@ -822,6 +822,12 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
                AUDIO_TYPE_FLAC);
          break;
 #endif
+#ifdef HAVE_RAAC
+      case AUDIO_MIXER_TYPE_M4A:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_AAC);
+         break;
+#endif
       default:
          break;
    }

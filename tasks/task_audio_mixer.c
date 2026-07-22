@@ -995,6 +995,19 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
                != AUDIO_TYPE_VORBIS)
             goto bail;
       }
+#ifdef HAVE_RAAC
+      if (w->mtype == AUDIO_MIXER_TYPE_M4A)
+      {
+         /* Confirm a raw ADTS syncword (0xFFF*) at the head: only the
+          * ADTS buffer path exposes a windowable cursor.  A file that
+          * reached here as .aac but is really an MP4 (or anything
+          * without the syncword) falls back to the classic load. */
+         uint8_t sync[2];
+         if (!data_transfer_window_peek(w->dt, 0, sync, 2)
+               || sync[0] != 0xFF || (sync[1] & 0xF6) != 0xF0)
+            goto bail;
+      }
+#endif
 #ifdef HAVE_RFLAC
       if (w->mtype == AUDIO_MIXER_TYPE_FLAC)
       {
@@ -1112,6 +1125,17 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
 #ifdef HAVE_RFLAC
    if (string_is_equal_noncase(ext, "flac"))
       mtype = AUDIO_MIXER_TYPE_FLAC;
+#endif
+#ifdef HAVE_RAAC
+   /* Only a raw ADTS .aac stream is window-eligible: its decoder open
+    * reads just the first frame header, reads run monotonically
+    * forward (adts_pos), and the loop seek returns to the head.  An
+    * .m4a/MP4 is excluded here - its moov can be trailing and the
+    * demuxer seeks - so it keeps the classic full load.  The actual
+    * ADTS syncword is still verified from the head below, the way OGG
+    * confirms Vorbis rather than Opus. */
+   if (string_is_equal_noncase(ext, "aac"))
+      mtype = AUDIO_MIXER_TYPE_M4A;
 #endif
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;
