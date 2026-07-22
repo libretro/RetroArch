@@ -56,7 +56,12 @@ enum nbio_type
 enum nbio_status_flags
 {
    NBIO_FLAG_NONE = 0,
-   NBIO_FLAG_IMAGE_SUPPORTS_RGBA
+   NBIO_FLAG_IMAGE_SUPPORTS_RGBA,
+   /* Set by task_push_image_load: nbio->data is a
+    * struct nbio_image_handle.  Other nbio users (the audio mixer
+    * tasks) hang different structs off nbio->data, so accessors that
+    * reach through it must check this first. */
+   NBIO_FLAG_IMAGE_TASK
 };
 
 typedef int (*transfer_cb_t)(void *data, size_t len);

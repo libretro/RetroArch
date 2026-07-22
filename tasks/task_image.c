@@ -459,6 +459,54 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
+bool task_image_detach_video_stream(retro_task_t *task,
+      void **stream, enum image_type_enum *type,
+      void **nbio_owner, void **buf, size_t *len)
+{
+   nbio_handle_t *nbio;
+   struct nbio_image_handle *image;
+   void *s;
+   void *ptr;
+   size_t l                        = 0;
+
+   if (!task || !stream || !type || !nbio_owner || !buf || !len)
+      return false;
+   if (!(nbio = (nbio_handle_t*)task->state))
+      return false;
+   /* nbio->data is only a struct nbio_image_handle for image-load
+    * tasks; the audio mixer tasks share nbio_handle_t with a different
+    * payload. */
+   if (!BIT32_GET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK))
+      return false;
+   if (!(image = (struct nbio_image_handle*)nbio->data))
+      return false;
+   if (!image->handle)
+      return false;
+   /* The stream borrows the nbio buffer, so without the nbio handle to
+    * hand over there is nothing to detach onto: leave the stream
+    * attached (image_transfer_free closes it). */
+   if (!nbio->handle)
+      return false;
+   if (!(ptr = nbio_get_ptr(nbio->handle, &l)) || !l)
+      return false;
+
+   if (!(s = image_transfer_detach_anim_stream(image->handle,
+         image->type)))
+      return false;
+
+   *stream       = s;
+   *type         = image->type;
+   *buf          = ptr;
+   *len          = l;
+   /* Transfer the nbio handle: the buffer the stream borrows lives
+    * inside it (for the mmap backends it is a file mapping, so it
+    * cannot be handed over as a malloc'd block).  task_image_cleanup
+    * tolerates the NULL. */
+   *nbio_owner   = nbio->handle;
+   nbio->handle  = NULL;
+   return true;
+}
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       retro_task_callback_t cb, void *user_data)
@@ -487,6 +535,7 @@ bool task_push_image_load(const char *fullpath,
 
    if (supports_rgba)
       BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_SUPPORTS_RGBA);
+   BIT32_SET(nbio->status_flags, NBIO_FLAG_IMAGE_TASK);
 
    if (!(image = (struct nbio_image_handle*)malloc(sizeof(*image))))
    {
