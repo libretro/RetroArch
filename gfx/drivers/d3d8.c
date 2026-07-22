@@ -1164,22 +1164,45 @@ typedef struct
    unsigned                      scratch_capacity; /* in Vertex count */
 } d3d8_font_t;
 
-static void d3d8_font_upload_atlas(d3d8_font_t *font)
+/* Convert and lock only the given atlas rectangle; 'full' forces the
+ * whole surface (required right after the texture is recreated, when
+ * it has no previous contents). Managed pool textures track locked
+ * sub-rects natively, so only that region is transferred. */
+static void d3d8_font_upload_atlas(d3d8_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1, bool full)
 {
    D3DLOCKED_RECT lr;
+   RECT rect;
    unsigned i, j;
 
    if (!font->texture)
       return;
 
-   if (FAILED(IDirect3DTexture8_LockRect(font->texture, 0, &lr, NULL, 0)))
+   if (     full
+         || x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+   {
+      x0 = 0;
+      y0 = 0;
+      x1 = font->atlas->width;
+      y1 = font->atlas->height;
+   }
+   rect.left   = (LONG)x0;
+   rect.top    = (LONG)y0;
+   rect.right  = (LONG)x1;
+   rect.bottom = (LONG)y1;
+
+   if (FAILED(IDirect3DTexture8_LockRect(font->texture, 0, &lr, &rect, 0)))
       return;
 
-   for (j = 0; j < font->atlas->height; j++)
+   /* lr.pBits addresses the top-left of the locked rect */
+   for (j = 0; j < y1 - y0; j++)
    {
       uint32_t      *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
-      const uint8_t *src = font->atlas->buffer + j * font->atlas->width;
-      for (i = 0; i < font->atlas->width; i++)
+      const uint8_t *src = font->atlas->buffer
+            + (size_t)(y0 + j) * font->atlas->width + x0;
+      for (i = 0; i < x1 - x0; i++)
          dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
    }
 
@@ -1218,7 +1241,7 @@ static void *d3d8_font_init(void *data,
          D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
    if (font->texture)
-      d3d8_font_upload_atlas(font);
+      d3d8_font_upload_atlas(font, 0, 0, 0, 0, true);
 
    font->atlas->dirty = false;
    return font;
@@ -1616,12 +1639,15 @@ static void d3d8_font_render_msg(
     * have been emitted since the last frame. */
    if (font->atlas->dirty)
    {
+      bool respecified = false;
+
       if (   font->atlas->width  != font->tex_width
           || font->atlas->height != font->tex_height)
       {
          if (font->texture)
             IDirect3DTexture8_Release(font->texture);
 
+         respecified      = true;
          font->tex_width  = font->atlas->width;
          font->tex_height = font->atlas->height;
          font->texture    = (LPDIRECT3DTEXTURE8)d3d8_texture_new(d3d->dev,
@@ -1630,7 +1656,9 @@ static void d3d8_font_render_msg(
                D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
       }
 
-      d3d8_font_upload_atlas(font);
+      d3d8_font_upload_atlas(font,
+            font->atlas->dirty_x0, font->atlas->dirty_y0,
+            font->atlas->dirty_x1, font->atlas->dirty_y1, respecified);
       font->atlas->dirty = false;
    }
 
