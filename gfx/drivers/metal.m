@@ -3125,7 +3125,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
           * policy as the d3d12 and vulkan drivers. */
          enum font_atlas_format prev_fmt =
                font_renderer_get_preferred_atlas_format();
-         if (driver.hdrEnabled)
+         if (_context.hdrEnabled)
             font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
          if (!font_renderer_create_default(
                   &_font_driver,
