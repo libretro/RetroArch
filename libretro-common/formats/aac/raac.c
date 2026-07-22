@@ -490,7 +490,10 @@ typedef struct
 
 static void raac_bits_init(raac_bits *b, const uint8_t *buf, size_t size)
 {
-   b->buf = buf; b->size = size; b->pos = 0; b->err = 0;
+   b->buf  = buf;
+   b->size = size;
+   b->pos  = 0;
+   b->err  = 0;
 }
 
 static uint32_t raac_getbits(raac_bits *b, int n)
@@ -512,11 +515,6 @@ static uint32_t raac_getbits(raac_bits *b, int n)
       n      -= take;
    }
    return v;
-}
-
-static uint32_t raac_getbit(raac_bits *b)
-{
-   return raac_getbits(b, 1);
 }
 
 /* ===== Huffman decoding =====
@@ -581,7 +579,7 @@ static int raac_huff_decode(raac_bits *b, const raac_huff *h)
    /* peek up to 8 bits without committing */
    while (have < 8 && b->pos < b->size * 8)
    {
-      peek = (peek << 1) | raac_getbit(b);
+      peek = (peek << 1) | raac_getbits(b, 1);
       have++;
    }
    peek <<= (8 - have);
@@ -597,7 +595,7 @@ static int raac_huff_decode(raac_bits *b, const raac_huff *h)
       b->pos = save;
       for (len = 1; len <= h->max_len; len++)
       {
-         acc = (acc << 1) | raac_getbit(b);
+         acc = (acc << 1) | raac_getbits(b, 1);
          if (b->err)
             return -1;
          if (len < 9)
@@ -618,7 +616,7 @@ static int raac_huff_decode_sf(raac_bits *b, const raac_huff_sf *h)
    int      have = 0;
    while (have < 8 && b->pos < b->size * 8)
    {
-      peek = (peek << 1) | raac_getbit(b);
+      peek = (peek << 1) | raac_getbits(b, 1);
       have++;
    }
    peek <<= (8 - have);
@@ -631,7 +629,7 @@ static int raac_huff_decode_sf(raac_bits *b, const raac_huff_sf *h)
    b->pos = save;
    for (len = 1; len <= 19; len++)
    {
-      acc = (acc << 1) | raac_getbit(b);
+      acc = (acc << 1) | raac_getbits(b, 1);
       if (b->err)
          return -1;
       if (len < 9)
@@ -873,9 +871,9 @@ static int raac_num_swb(const raac_t *a, int short_win)
 static int raac_ics_info(raac_t *a, raac_bits *b, raac_ch *c)
 {
    int short_win;
-   raac_getbit(b);                        /* ics_reserved              */
+   raac_getbits(b, 1); /* ics_reserved              */
    c->window_sequence = (int)raac_getbits(b, 2);
-   c->window_shape    = (int)raac_getbit(b);
+   c->window_shape    = (int)raac_getbits(b, 1);
    short_win = (c->window_sequence == 2);
    if (short_win)
    {
@@ -901,8 +899,8 @@ static int raac_ics_info(raac_t *a, raac_bits *b, raac_ch *c)
    else
    {
       c->max_sfb = (int)raac_getbits(b, 6);
-      if (raac_getbit(b))                 /* predictor_data_present    */
-         return -1;                       /* Main/LTP tools: out of scope */
+      if (raac_getbits(b, 1)) /* predictor_data_present    */
+         return -1; /* Main/LTP tools: out of scope */
       c->num_windows       = 1;
       c->num_window_groups = 1;
       c->group_len[0]      = 1;
@@ -1031,7 +1029,7 @@ static int raac_tns_data(raac_t *a, raac_bits *b, raac_ch *c)
       int coef_res = 0, f;
       c->tns_n_filt[w] = nf;
       if (nf)
-         coef_res = (int)raac_getbit(b);
+         coef_res = (int)raac_getbits(b, 1);
       for (f = 0; f < nf; f++)
       {
          int length = (int)raac_getbits(b, short_win ? 4 : 6);
@@ -1043,8 +1041,8 @@ static int raac_tns_data(raac_t *a, raac_bits *b, raac_ch *c)
             return -1;
          if (order)
          {
-            int direction = (int)raac_getbit(b);
-            int compress  = (int)raac_getbit(b);
+            int direction = (int)raac_getbits(b, 1);
+            int compress  = (int)raac_getbits(b, 1);
             int coef_bits = coef_res + 3 - compress;
             /* inverse quantisation per 14496-3 tns_decode_coef:
              * negative codes count down from the top of the range */
@@ -1109,7 +1107,7 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
                      q[2] = idx / 3  % 3;
                      q[3] = idx      % 3;
                      for (j = 0; j < 4; j++)
-                        if (q[j] && raac_getbit(b))
+                        if (q[j] && raac_getbits(b, 1))
                            q[j] = -q[j];
                   }
                   for (j = 0; j < 4; j++)
@@ -1135,7 +1133,7 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
                      q[0] = idx / lav;
                      q[1] = idx % lav;
                      for (j = 0; j < 2; j++)
-                        if (q[j] && raac_getbit(b))
+                        if (q[j] && raac_getbits(b, 1))
                            q[j] = -q[j];
                   }
                   if (cb == RAAC_ESC_BOOK)
@@ -1146,7 +1144,7 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
                            int nb = 4;
                            int sign = q[j] < 0 ? -1 : 1;
                            int esc;
-                           while (raac_getbit(b))
+                           while (raac_getbits(b, 1))
                               nb++;
                            if (nb > 21 || b->err)
                               return -1;
@@ -1470,7 +1468,7 @@ static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
       return -1;
    if (raac_scale_factor_data(a, b, c, global_gain) < 0)
       return -1;
-   if (raac_getbit(b))               /* pulse_data_present            */
+   if (raac_getbits(b, 1)) /* pulse_data_present */
    {
       if (c->window_sequence == 2)
          return -1;                  /* pulse is long-window only     */
@@ -1478,12 +1476,12 @@ static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
       if (raac_pulse_data(b, &pulse) < 0)
          return -1;
    }
-   c->tns_present = (int)raac_getbit(b);
+   c->tns_present = (int)raac_getbits(b, 1);
    if (c->tns_present)
       if (raac_tns_data(a, b, c) < 0)
          return -1;
-   if (raac_getbit(b))               /* gain_control_data_present     */
-      return -1;                     /* SSR tool: out of scope        */
+   if (raac_getbits(b, 1)) /* gain_control_data_present     */
+      return -1; /* SSR tool: out of scope */
    if (raac_spectral_data(a, b, c, quant) < 0)
       return -1;
    if (pulse.pulse_present)
@@ -1526,7 +1524,7 @@ static int raac_decode_cpe(raac_t *a, raac_bits *b)
    int      ms_mask = 0;
    int      common;
    raac_getbits(b, 4);
-   common = (int)raac_getbit(b);
+   common = (int)raac_getbits(b, 1);
    memset(ms_used, 0, sizeof(ms_used));
    if (common)
    {
@@ -1542,7 +1540,7 @@ static int raac_decode_cpe(raac_t *a, raac_bits *b)
          int g, k;
          for (g = 0; g < l->num_window_groups; g++)
             for (k = 0; k < l->max_sfb; k++)
-               ms_used[g][k] = (uint8_t)raac_getbit(b);
+               ms_used[g][k] = (uint8_t)raac_getbits(b, 1);
       }
    }
    if (raac_decode_ics(a, b, l, common) < 0)
@@ -1578,18 +1576,18 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    if (sfi == 15)
    {
       raac_getbits(&b, 24);
-      return NULL;                    /* explicit-frequency oddity     */
+      return NULL; /* explicit-frequency oddity */
    }
    chcfg = raac_getbits(&b, 4);
-   if (aot != 2)                      /* AAC-LC only                   */
+   if (aot != 2) /* AAC-LC only */
       return NULL;
    if (sfi > 12 || chcfg < 1 || chcfg > 2)
       return NULL;
-   if (raac_getbit(&b))               /* frameLengthFlag: 960          */
+   if (raac_getbits(&b, 1)) /* frameLengthFlag: 960 */
       return NULL;
-   if (raac_getbit(&b))               /* dependsOnCoreCoder            */
+   if (raac_getbits(&b, 1)) /* dependsOnCoreCoder */
       return NULL;
-   if (raac_getbit(&b))               /* extensionFlag                 */
+   if (raac_getbits(&b, 1)) /* extensionFlag */
       return NULL;
    if (b.err)
       return NULL;
@@ -1678,7 +1676,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
          {
             unsigned cnt;
             raac_getbits(&b, 4);
-            if (raac_getbit(&b))
+            if (raac_getbits(&b, 1))
                raac_getbits(&b, 3);   /* byte alignment */
             cnt = raac_getbits(&b, 8);
             if (cnt == 255)
