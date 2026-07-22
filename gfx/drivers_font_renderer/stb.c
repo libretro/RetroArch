@@ -1235,6 +1235,31 @@ static stb_atlas_slot_t* font_renderer_stb_get_slot(stb_font_renderer_t *handle)
    return &handle->atlas_slots[oldest];
 }
 
+/* Merge one updated glyph cell into the atlas dirty region */
+static void font_renderer_stb_dirty_cell(struct font_atlas *atlas,
+      unsigned x, unsigned y, unsigned w, unsigned h)
+{
+   if (!atlas->dirty)
+   {
+      atlas->dirty_x0 = x;
+      atlas->dirty_y0 = y;
+      atlas->dirty_x1 = x + w;
+      atlas->dirty_y1 = y + h;
+      atlas->dirty    = true;
+   }
+   else
+   {
+      if (x < atlas->dirty_x0)
+         atlas->dirty_x0 = x;
+      if (y < atlas->dirty_y0)
+         atlas->dirty_y0 = y;
+      if (x + w > atlas->dirty_x1)
+         atlas->dirty_x1 = x + w;
+      if (y + h > atlas->dirty_y1)
+         atlas->dirty_y1 = y + h;
+   }
+}
+
 static const struct font_glyph *font_renderer_stb_get_glyph(
       void *data, uint32_t charcode)
 {
@@ -1316,7 +1341,9 @@ static const struct font_glyph *font_renderer_stb_get_glyph(
          ? floor((double)glyph_draw_offset_y)
          : ceil((double)glyph_draw_offset_y));
 
-   self->atlas.dirty                = true;
+   font_renderer_stb_dirty_cell(&self->atlas,
+         atlas_slot->glyph.atlas_offset_x, atlas_slot->glyph.atlas_offset_y,
+         self->max_glyph_width, self->max_glyph_height);
    atlas_slot->last_used            = self->usage_counter++;
    return &atlas_slot->glyph;
 }

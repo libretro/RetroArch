@@ -320,6 +320,15 @@ struct font_atlas
    uint8_t *buffer; /* Alpha channel. */
    unsigned width;
    unsigned height;
+   /* Dirty region in pixels, covering every glyph cell updated since
+    * the consumer last cleared the dirty flag; x1/y1 are exclusive
+    * and the values are only meaningful while dirty is set.
+    * Consumers may upload just this region (or any superset of it,
+    * such as the full-width row band) instead of the whole atlas. */
+   unsigned dirty_x0;
+   unsigned dirty_y0;
+   unsigned dirty_x1;
+   unsigned dirty_y1;
    bool dirty;
 };
 

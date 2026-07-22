@@ -103,6 +103,31 @@ static coretext_atlas_slot_t* coretext_font_renderer_get_slot(ct_font_renderer_t
    return &handle->atlas_slots[oldest];
 }
 
+/* Merge one updated glyph cell into the atlas dirty region */
+static void font_renderer_ct_dirty_cell(struct font_atlas *atlas,
+      unsigned x, unsigned y, unsigned w, unsigned h)
+{
+   if (!atlas->dirty)
+   {
+      atlas->dirty_x0 = x;
+      atlas->dirty_y0 = y;
+      atlas->dirty_x1 = x + w;
+      atlas->dirty_y1 = y + h;
+      atlas->dirty    = true;
+   }
+   else
+   {
+      if (x < atlas->dirty_x0)
+         atlas->dirty_x0 = x;
+      if (y < atlas->dirty_y0)
+         atlas->dirty_y0 = y;
+      if (x + w > atlas->dirty_x1)
+         atlas->dirty_x1 = x + w;
+      if (y + h > atlas->dirty_y1)
+         atlas->dirty_y1 = y + h;
+   }
+}
+
 static const struct font_glyph *font_renderer_ct_get_glyph(
       void *data, uint32_t charcode)
 {
@@ -133,11 +158,18 @@ static const struct font_glyph *font_renderer_ct_get_glyph(
    handle->uc_map[map_id] = atlas_slot;
 
    /* Render the glyph on demand */
-   if (handle->font_face)
-      coretext_font_renderer_render_glyph(handle->font_face, handle, atlas_slot, charcode);
+   if (handle->font_face &&
+         coretext_font_renderer_render_glyph(handle->font_face, handle,
+               atlas_slot, charcode))
+      /* The cell is always written in full (glyph coverage or the
+       * missing-glyph rectangle), so it is the dirty unit; failed
+       * renders write nothing and no longer mark the atlas dirty */
+      font_renderer_ct_dirty_cell(&handle->atlas,
+            atlas_slot->glyph.atlas_offset_x,
+            atlas_slot->glyph.atlas_offset_y,
+            atlas_slot->glyph.width, atlas_slot->glyph.height);
 
    atlas_slot->last_used = handle->usage_counter++;
-   handle->atlas.dirty = true;
    return &atlas_slot->glyph;
 }
 
