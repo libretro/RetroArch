@@ -1182,17 +1182,6 @@ bool gfx_ctx_wl_init_common(
       wp_content_type_v1_set_content_type(wl->content_type, WP_CONTENT_TYPE_V1_TYPE_GAME);
    }
 
-   if (wl->tearing_control_manager)
-   {
-      bool video_vsync = settings->bools.video_vsync;
-      wl->tearing_control = wp_tearing_control_manager_v1_get_tearing_control(
-         wl->tearing_control_manager, wl->surface);
-      wp_tearing_control_v1_set_presentation_hint(wl->tearing_control,
-                                                  video_vsync
-                                                  ? WP_TEARING_CONTROL_V1_PRESENTATION_HINT_VSYNC
-                                                  : WP_TEARING_CONTROL_V1_PRESENTATION_HINT_ASYNC);
-   }
-
    wl_surface_add_listener(wl->surface, &wl_surface_listener, wl);
 
 #ifdef HAVE_LIBDECOR_H
