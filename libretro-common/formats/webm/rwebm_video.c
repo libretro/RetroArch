@@ -658,6 +658,16 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
       rwebm_set_avail(s->demux, avail);
 }
 
+size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *s)
+{
+   return s ? rwebm_media_floor(s->demux) : 0;
+}
+
+size_t rwebm_video_stream_consumed(rwebm_video_stream_t *s)
+{
+   return s ? rwebm_tell(s->demux) : 0;
+}
+
 void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
       const uint8_t *buf, size_t len)
 {

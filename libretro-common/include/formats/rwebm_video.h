@@ -161,6 +161,14 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
       size_t avail);
 
+/* Bounded-memory streaming support: media_floor is the fixed byte
+ * offset where the cluster data begins (nothing below it is ever
+ * read); consumed is the monotonic high-water byte offset the demuxer
+ * has read up to.  Together they bound the window a feeder must keep
+ * resident: [media_floor, consumed + lookahead). */
+size_t rwebm_video_stream_media_floor(rwebm_video_stream_t *stream);
+size_t rwebm_video_stream_consumed(rwebm_video_stream_t *stream);
+
 /* For a stream adopted from a still decoded against a partial read:
  * once the whole file is in the buffer, finish the timestamp
  * pre-scan the partial open truncated at its byte wall, making every

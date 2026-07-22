@@ -621,9 +621,58 @@ void image_transfer_anim_stream_set_avail(void *stream,
    }
 }
 
-void image_transfer_anim_stream_complete_scan(void *stream,
-      enum image_type_enum type, const void *buf, size_t len)
+size_t image_transfer_anim_stream_media_floor(void *stream,
+      enum image_type_enum type)
 {
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_media_floor(
+               (rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_media_floor(
+               (rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
+size_t image_transfer_anim_stream_consumed(void *stream,
+      enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         return rwebm_video_stream_consumed(
+               (rwebm_video_stream_t*)stream);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         return rmp4_video_stream_consumed(
+               (rmp4_video_stream_t*)stream);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
+void image_transfer_anim_stream_complete_scan(void *stream,
+      enum image_type_enum type, const void *buf, size_t len){
    switch (type)
    {
       case IMAGE_TYPE_WEBM:

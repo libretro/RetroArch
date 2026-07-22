@@ -287,6 +287,17 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
 void image_transfer_anim_stream_set_avail(void *stream,
       enum image_type_enum type, size_t avail);
 
+/* Bounded-memory streaming: media_floor is the fixed byte offset
+ * where media data begins; consumed is the monotonic high-water byte
+ * offset the decoder has read to.  A feeder keeps
+ * [media_floor, consumed + lookahead) resident and can free below the
+ * floor.  Both return 0 for a type with no byte cursor (animated
+ * WEBP), which a caller reads as "not windowable - keep whole". */
+size_t image_transfer_anim_stream_media_floor(void *stream,
+      enum image_type_enum type);
+size_t image_transfer_anim_stream_consumed(void *stream,
+      enum image_type_enum type);
+
 /* Companion to the above for WEBM, whose timestamp pre-scan is
  * truncated by the wall (timestamps live in the block headers): once
  * the buffer is complete, finish the scan so per-frame durations
