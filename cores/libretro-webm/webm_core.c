@@ -141,14 +141,21 @@ typedef struct
    void        *actx;                /* audio_transfer context          */
    enum audio_type_enum atype;
    int          atrack;              /* audio track index, -1 = none    */
-   uint8_t     *apkts;               /* concatenated audio packets      */
+   uint8_t     *apkts;               /* concatenated audio packets
+                                        (arena base; re-read after
+                                        every ensure)                   */
+   data_transfer_arena_t aark;       /* backing for apkts: reserved to
+                                        the file's own length - the
+                                        audio track cannot exceed the
+                                        file it came from - so growth
+                                        never copies and never spikes  */
    uint32_t    *asizes;
 #ifdef HAVE_RMP4
    rmp4_t      *agather;             /* persistent audio-gather demuxer
                                         for the progressive MP4 path    */
    int          agtrack;
 #endif
-   size_t       apkts_used, apkts_cap;
+   size_t       apkts_used;
    size_t       anpkts,     anpkts_cap;
    int64_t      atoc;                /* opus TOC frame sum so far       */
    int64_t      apreskip;
@@ -578,7 +585,7 @@ static void webm_free_player(webm_player_t *p)
 #ifdef WEBM_HAVE_AUDIO
    if (p->actx)
       audio_transfer_free(p->actx, p->atype);
-   free(p->apkts);
+   data_transfer_arena_release(&p->aark);
    free(p->asizes);
 #if defined(HAVE_RMP4)
    if (p->agather)
@@ -1364,17 +1371,10 @@ static void webm_native_pump(webm_player_t *p)
 #ifdef WEBM_HAVE_AUDIO
       if (p->atrack >= 0 && pkt.track == p->atrack)
       {
-         if (p->apkts_used + pkt.size > p->apkts_cap)
-         {
-            size_t nc = p->apkts_cap ? p->apkts_cap * 2 : 256 * 1024;
-            uint8_t *np;
-            while (nc < p->apkts_used + pkt.size)
-               nc *= 2;
-            if (!(np = (uint8_t*)realloc(p->apkts, nc)))
-               return;
-            p->apkts     = np;
-            p->apkts_cap = nc;
-         }
+         if (!data_transfer_arena_ensure(&p->aark,
+               p->apkts_used + pkt.size))
+            return;
+         p->apkts = p->aark.base;
          if (p->anpkts >= p->anpkts_cap)
          {
             size_t nc = p->anpkts_cap ? p->anpkts_cap * 2 : 4096;
@@ -1475,17 +1475,10 @@ static void webm_mp4_audio_pump(webm_player_t *p)
    {
       if (pkt.track != p->agtrack)
          continue;
-      if (p->apkts_used + pkt.size > p->apkts_cap)
-      {
-         size_t nc = p->apkts_cap ? p->apkts_cap * 2 : 256 * 1024;
-         uint8_t *np;
-         while (nc < p->apkts_used + pkt.size)
-            nc *= 2;
-         if (!(np = (uint8_t*)realloc(p->apkts, nc)))
-            return;
-         p->apkts     = np;
-         p->apkts_cap = nc;
-      }
+      if (!data_transfer_arena_ensure(&p->aark,
+            p->apkts_used + pkt.size))
+         return;
+      p->apkts = p->aark.base;
       if (p->anpkts >= p->anpkts_cap)
       {
          size_t nc = p->anpkts_cap ? p->anpkts_cap * 2 : 4096;
@@ -1675,7 +1668,7 @@ static bool webm_load_mp4(webm_player_t *p)
                   if (p->actx)
                      audio_transfer_free(p->actx, p->atype);
                   p->actx = NULL;
-                  free(p->apkts);
+                  data_transfer_arena_release(&p->aark);
                   free(p->asizes);
                   p->apkts  = NULL;
                   p->asizes = NULL;
@@ -1744,6 +1737,9 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
     * completion below, load-time behaviour unchanged. */
    {
       size_t l = 0;
+      /* the audio blob's ceiling: packets are a subset of the file,
+       * so the file's own length bounds them - reserve that much
+       * address space and the blob commits only what it holds */
       if (!(p->dt = data_transfer_open_prefix(info->path, 0)))
          goto error;
       p->file_buf = (uint8_t*)data_transfer_ptr(p->dt, &l);
@@ -1759,6 +1755,9 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
          goto error;
    }
    p->file_len = len;
+#ifdef WEBM_HAVE_AUDIO
+   data_transfer_arena_init(&p->aark, (size_t)len);
+#endif
 
 #ifdef HAVE_RMP4
    /* Container sniff: ISO-BMFF starts with a box whose type sits at
@@ -1963,7 +1962,7 @@ bool WEBM_CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
             if (p->actx)
                audio_transfer_free(p->actx, p->atype);
             p->actx = NULL;
-            free(p->apkts);
+            data_transfer_arena_release(&p->aark);
             free(p->asizes);
             p->apkts  = NULL;
             p->asizes = NULL;

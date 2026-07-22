@@ -53,6 +53,26 @@ RETRO_BEGIN_DECLS
 typedef struct data_transfer data_transfer_t;
 
 
+/* A growable buffer on the same reservation machinery as the prefix
+ * reader: init reserves 'ceiling' bytes of address space (physical
+ * pages only as ensure() commits them), so growth never copies, the
+ * base never moves, and the buffer's cost is what it holds - no
+ * doubling spikes, no over-allocation tail.  Where the platform
+ * cannot reserve (or ceiling is 0), it degrades to realloc doubling,
+ * and base may move across ensure(); callers must re-read base after
+ * every ensure either way.  release() is idempotent. */
+typedef struct data_transfer_arena
+{
+   uint8_t *base;
+   size_t   committed;  /* bytes usable at base                     */
+   size_t   cap;        /* reservation ceiling / current allocation */
+   uint8_t  reserved;   /* 1: address-space reservation, stable base */
+} data_transfer_arena_t;
+
+bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
+bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need);
+void data_transfer_arena_release(data_transfer_arena_t *a);
+
 /* Open a file of any size for prefix reading: address space for the
  * whole file is reserved up front, but physical memory is committed
  * only as far as the fill actually reaches - the caller's iterate
