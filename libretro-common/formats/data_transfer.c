@@ -26,9 +26,20 @@
 #if defined(_WIN32)
 #include <windows.h>
 #elif defined(HAVE_MMAN) || defined(__unix__) || defined(__APPLE__)
-#define DT_HAVE_RESERVE 1
 #include <sys/mman.h>
 #include <unistd.h>
+/* Gate on what the headers actually provide, not on the platform
+ * list above: DJGPP defines __unix__ and ships stub mman/unistd
+ * headers that include cleanly but declare neither mmap nor the
+ * MAP_ constants nor _SC_PAGESIZE. Without the reservation the code
+ * already falls back to plain growth, so absence is graceful. Older
+ * BSD-family headers spell MAP_ANONYMOUS as MAP_ANON. */
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+#if defined(MAP_PRIVATE) && defined(MAP_ANONYMOUS) && defined(_SC_PAGESIZE)
+#define DT_HAVE_RESERVE 1
+#endif
 #endif
 
 #include <file/nbio.h>
