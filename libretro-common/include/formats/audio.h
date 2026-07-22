@@ -96,7 +96,18 @@ void  audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
  * frames are self-delimiting).  All buffers are borrowed and must outlive
  * the decoder.  Used by container demuxers (e.g. WebM) that have already
  * separated setup from payload; call instead of set_buffer_ptr, before
- * audio_transfer_start. Returns false if the codec has no demuxed path. */
+ * audio_transfer_start. Returns false if the codec has no demuxed path.
+ *
+ * GROWTH CONTRACT: this call may be repeated after audio_transfer_start,
+ * mid-stream, to grow the packet set for a progressive source - e.g. a
+ * player appending packets as a file arrives.  It only rebases the
+ * borrowed pointers and counts; no decoder or consumption state is
+ * touched (all demuxed arms track their position by packet index and
+ * byte offset, dereferencing the bases fresh at each read), so the new
+ * arrays may live at a different address (realloc).  Caller contract:
+ * counts and sizes are monotonic and the common prefix is identical.
+ * A read that exhausted the packets returned 0 frames without latching
+ * end-of-stream, so growth resumes decoding even after starvation. */
 bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
       const void *setup, size_t setup_size,
       const void *packets, size_t packets_size,
