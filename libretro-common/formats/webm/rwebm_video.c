@@ -72,6 +72,20 @@ struct rwebm_video_stream
    int          is10;       /* last decoded frame written as 10-bit    */
 };
 
+/* Still-image decode progress across sliced process calls. */
+enum
+{
+   RWEBM_VIDEO_STILL_IDLE = 0,   /* nothing in progress (or done)      */
+   RWEBM_VIDEO_STILL_SCAN,       /* stream open, pre-scan running      */
+   RWEBM_VIDEO_STILL_DECODE      /* decoding to the first shown frame  */
+};
+
+/* Container packets walked per pre-scan slice of the sliced still
+ * path: cheap header parses, sized so a slice stays well under a
+ * display frame even on weak hardware while the full bounded scan
+ * still completes in a handful of slices. */
+#define RWEBM_VIDEO_SCAN_SLICE   1024
+
 struct rwebm_video
 {
    const uint8_t *buf;
@@ -80,8 +94,11 @@ struct rwebm_video
     * to continue the video as an animation can detach it instead of
     * re-opening (and re-pre-scanning) the file.  Owned by this handle
     * until rwebm_video_detach_stream; closed by rwebm_video_free
-    * otherwise.  Borrows 'buf', which must outlive it either way. */
+    * otherwise.  Borrows 'buf', which must outlive it either way.
+    * While still_stage is not IDLE this holds the partially-opened
+    * stream the sliced still decode is building. */
    rwebm_video_stream_t *stream;
+   int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
 };
@@ -414,12 +431,20 @@ static void rwebm_video_stream_close_decoder(rwebm_video_stream_t *s)
 /* ------------------------------------------------------------------ */
 /* Streaming animation                                                 */
 /* ------------------------------------------------------------------ */
-rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
-      size_t len)
+
+/* Staged open, so a caller that must not stall (the sliced still-image
+ * path) can spread the work over several calls:
+ *   begin      demuxer + track selection + timestamp-table allocation
+ *   scan_step  up to max_packets of the bounded pre-scan
+ *   finish     validate, rewind, decoder + frame-canvas allocation
+ * rwebm_video_stream_open composes all three for callers that want the
+ * one-shot behaviour. */
+
+static rwebm_video_stream_t *rwebm_video_stream_open_begin(
+      const uint8_t *buf, size_t len)
 {
    rwebm_video_stream_t *s;
    const rwebm_track *trk = NULL;
-   rwebm_packet pkt;
    int i, num_tracks;
 
    if (!buf || !len)
@@ -458,34 +483,7 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
    s->width  = trk->width;
    s->height = trk->height;
 
-   /* Pre-scan: count the track's packets and record their timestamps so
-    * frame durations come straight from the container. This walks block
-    * headers only (no decode), but Matroska has no sample table, so the
-    * walk touches every cluster in the file.  Stop at the timestamp
-    * table's capacity: frames past the cap reuse the last stored delta
-    * anyway, and the only external consumer of num_frames (the >= 2
-    * animation admission in gfx_thumbnail) is unaffected by the count
-    * saturating.  Unbounded, this loop swept the whole buffer of a
-    * long recording on the thread that opened the stream. */
    if (!(s->ts = (int64_t*)malloc(RWEBM_VIDEO_MAX_TS * sizeof(int64_t))))
-      goto fail;
-   while (   s->num_frames < RWEBM_VIDEO_MAX_TS
-          && rwebm_read_packet(s->demux, &pkt) == 1)
-   {
-      if (pkt.track != s->track)
-         continue;
-      s->ts[s->ts_count++] = pkt.timestamp;
-      s->num_frames++;
-   }
-   if (s->num_frames < 1)
-      goto fail;
-   rwebm_rewind(s->demux);
-
-   if (!rwebm_video_stream_open_decoder(s))
-      goto fail;
-
-   if (!(s->frame = (uint32_t*)malloc(
-         (size_t)s->width * s->height * sizeof(uint32_t))))
       goto fail;
 
    return s;
@@ -493,6 +491,72 @@ rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
 fail:
    rwebm_video_stream_close(s);
    return NULL;
+}
+
+/* Pre-scan: count the track's packets and record their timestamps so
+ * frame durations come straight from the container. This walks block
+ * headers only (no decode), but Matroska has no sample table, so the
+ * walk touches every cluster in the file.  Stop at the timestamp
+ * table's capacity: frames past the cap reuse the last stored delta
+ * anyway, and the only external consumer of num_frames (the >= 2
+ * animation admission in gfx_thumbnail) is unaffected by the count
+ * saturating.  Unbounded, this loop swept the whole buffer of a
+ * long recording on the thread that opened the stream.
+ *
+ * Walks at most max_packets container packets (any track; <= 0 means
+ * no limit) and returns 1 when the scan is complete, 0 when there is
+ * more to walk. */
+static int rwebm_video_stream_scan_step(rwebm_video_stream_t *s,
+      int max_packets)
+{
+   rwebm_packet pkt;
+   int walked = 0;
+
+   while (s->num_frames < RWEBM_VIDEO_MAX_TS)
+   {
+      if (max_packets > 0 && walked >= max_packets)
+         return 0;
+      if (rwebm_read_packet(s->demux, &pkt) != 1)
+         break;
+      walked++;
+      if (pkt.track != s->track)
+         continue;
+      s->ts[s->ts_count++] = pkt.timestamp;
+      s->num_frames++;
+   }
+   return 1;
+}
+
+static int rwebm_video_stream_open_finish(rwebm_video_stream_t *s)
+{
+   if (s->num_frames < 1)
+      return -1;
+   rwebm_rewind(s->demux);
+
+   if (!rwebm_video_stream_open_decoder(s))
+      return -1;
+
+   if (!(s->frame = (uint32_t*)malloc(
+         (size_t)s->width * s->height * sizeof(uint32_t))))
+      return -1;
+
+   return 0;
+}
+
+rwebm_video_stream_t *rwebm_video_stream_open(const uint8_t *buf,
+      size_t len)
+{
+   rwebm_video_stream_t *s;
+
+   if (!(s = rwebm_video_stream_open_begin(buf, len)))
+      return NULL;
+   rwebm_video_stream_scan_step(s, 0);
+   if (rwebm_video_stream_open_finish(s) != 0)
+   {
+      rwebm_video_stream_close(s);
+      return NULL;
+   }
+   return s;
 }
 
 void rwebm_video_stream_close(rwebm_video_stream_t *s)
@@ -648,13 +712,15 @@ static int rwebm_video_decode_packet(rwebm_video_stream_t *s,
    return -1;
 }
 
-const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
+/* Advance by exactly one of the chosen track's packets (skipping other
+ * tracks' packets, which are header reads only).  Returns 1 when a
+ * displayed picture is in s->frame (duration written), 0 when the
+ * packet decoded but is not displayed, -1 at the end of a pass or on
+ * a decode error. */
+static int rwebm_video_stream_step(rwebm_video_stream_t *s,
       int *duration_ms)
 {
    rwebm_packet pkt;
-
-   if (!s)
-      return NULL;
 
    while (rwebm_read_packet(s->demux, &pkt) == 1)
    {
@@ -664,14 +730,27 @@ const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
       idx = s->pkt_idx++;
       r   = rwebm_video_decode_packet(s, &pkt);
       if (r < 0)
-         return NULL;    /* decode error: end the animation */
+         return -1;      /* decode error: end the animation */
       if (r == 0)
-         continue;       /* non-shown frame: keep going      */
+         return 0;       /* non-shown frame                  */
       if (duration_ms)
          *duration_ms = rwebm_video_duration_ms(s, idx);
-      return s->frame;
+      return 1;
    }
-   return NULL;           /* end of one pass */
+   return -1;             /* end of one pass */
+}
+
+const uint32_t *rwebm_video_stream_next(rwebm_video_stream_t *s,
+      int *duration_ms)
+{
+   int r;
+
+   if (!s)
+      return NULL;
+
+   while ((r = rwebm_video_stream_step(s, duration_ms)) == 0)
+      ;                   /* non-shown frame: keep going      */
+   return (r == 1) ? s->frame : NULL;
 }
 
 void rwebm_video_stream_rewind(rwebm_video_stream_t *s)
@@ -708,6 +787,10 @@ rwebm_video_stream_t *rwebm_video_detach_stream(rwebm_video_t *webm)
    rwebm_video_stream_t *s;
    if (!webm || !webm->stream)
       return NULL;
+   /* A stream mid-build in the sliced still decode is not complete
+    * (pre-scan or decoder setup may be pending); never hand it out. */
+   if (webm->still_stage != RWEBM_VIDEO_STILL_IDLE)
+      return NULL;
    s            = webm->stream;
    webm->stream = NULL;
    /* The animation consumers upload plain 8-bit frames; the still may
@@ -741,6 +824,18 @@ bool rwebm_video_is_10bit(const rwebm_video_t *webm)
    return webm && webm->last_10bit;
 }
 
+/* Sliced still-image decode: each call performs one bounded unit of
+ * work and returns IMAGE_PROCESS_NEXT until the first displayed frame
+ * is ready, at which point the pixels are handed out and
+ * IMAGE_PROCESS_END is returned - the contract rpng established, which
+ * task_image drives against a per-display-frame time budget.  The
+ * slices are: stream open (demuxer + track selection), pre-scan in
+ * RWEBM_VIDEO_SCAN_SLICE-packet chunks, decoder setup, then one coded
+ * packet per call (VP9 alt-refs and other non-shown frames each take
+ * their own slice) until a picture is displayed.  Previously all of
+ * this ran in a single process call, which stalled every sibling task
+ * behind the decode (and the main loop, on builds without a threaded
+ * task queue). */
 int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
       size_t len, unsigned *width, unsigned *height, bool supports_rgba)
 {
@@ -748,6 +843,7 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    const uint32_t *frame;
    uint32_t *out;
    size_t i, n;
+   int r;
    int duration_ms = 0;
 
    (void)len;
@@ -755,33 +851,52 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    if (!webm || !webm->buf || !buf)
       return IMAGE_PROCESS_ERROR;
 
-   /* Defensive: a repeated process call re-opens from scratch. */
-   if (webm->stream)
+   switch (webm->still_stage)
    {
-      rwebm_video_stream_close(webm->stream);
-      webm->stream = NULL;
+      case RWEBM_VIDEO_STILL_IDLE:
+         /* Defensive: a repeated process call re-opens from scratch. */
+         if (webm->stream)
+         {
+            rwebm_video_stream_close(webm->stream);
+            webm->stream = NULL;
+         }
+         if (!(webm->stream = rwebm_video_stream_open_begin(
+               webm->buf, webm->len)))
+            return IMAGE_PROCESS_ERROR;
+         webm->still_stage = RWEBM_VIDEO_STILL_SCAN;
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBM_VIDEO_STILL_SCAN:
+         if (!rwebm_video_stream_scan_step(webm->stream,
+               RWEBM_VIDEO_SCAN_SLICE))
+            return IMAGE_PROCESS_NEXT;
+         if (rwebm_video_stream_open_finish(webm->stream) != 0)
+            goto fail;
+         /* Request 10-bit output; the stream honours it only for
+          * 10-bit sources. */
+         webm->stream->want10 = webm->want10;
+         webm->still_stage    = RWEBM_VIDEO_STILL_DECODE;
+         return IMAGE_PROCESS_NEXT;
+
+      case RWEBM_VIDEO_STILL_DECODE:
+         break;
+
+      default:
+         return IMAGE_PROCESS_ERROR;
    }
 
-   if (!(s = rwebm_video_stream_open(webm->buf, webm->len)))
-      return IMAGE_PROCESS_ERROR;
-
-   /* Request 10-bit output; the stream honours it only for 10-bit sources. */
-   s->want10 = webm->want10;
-
-   if (!(frame = rwebm_video_stream_next(s, &duration_ms)))
-   {
-      rwebm_video_stream_close(s);
-      return IMAGE_PROCESS_ERROR;
-   }
+   s = webm->stream;
+   if ((r = rwebm_video_stream_step(s, &duration_ms)) == 0)
+      return IMAGE_PROCESS_NEXT;   /* non-shown frame decoded */
+   if (r < 0)
+      goto fail;
+   frame = s->frame;
 
    webm->last_10bit = s->is10;
 
    n = (size_t)s->width * s->height;
    if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
-   {
-      rwebm_video_stream_close(s);
-      return IMAGE_PROCESS_ERROR;
-   }
+      goto fail;
 
    if (s->is10)
       /* Packed XRGB2101010 already in the frontend's channel order; copy
@@ -811,6 +926,12 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
     * so the caller can detach it and continue the video as an
     * animation without re-opening the file.  If nobody detaches it,
     * rwebm_video_free closes it. */
-   webm->stream = s;
+   webm->still_stage = RWEBM_VIDEO_STILL_IDLE;
    return IMAGE_PROCESS_END;
+
+fail:
+   rwebm_video_stream_close(webm->stream);
+   webm->stream      = NULL;
+   webm->still_stage = RWEBM_VIDEO_STILL_IDLE;
+   return IMAGE_PROCESS_ERROR;
 }
