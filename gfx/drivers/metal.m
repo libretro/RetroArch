@@ -3255,8 +3255,9 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
 
 - (int)getWidthForMessage:(const char *)msg length:(NSUInteger)length scale:(float)scale
 {
-   NSUInteger i;
-   int delta_x = 0;
+   const char *walk     = msg;
+   const char *walk_end = msg + length;
+   int delta_x          = 0;
    const struct font_glyph* glyph_q;
 
    /* Validate font data before use - can become invalid during
@@ -3272,11 +3273,14 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
    if (glyph_q)
       [self updateGlyph:glyph_q];
 
-   for (i = 0; i < length; i++)
+   /* Decode UTF-8 exactly like the render path does; walking bytes
+    * here made the measured width of multi-byte text disagree with
+    * what is actually drawn, skewing right/center alignment. */
+   while (walk < walk_end)
    {
       const struct font_glyph *glyph;
-      /* Do something smarter here ... */
-      if (!(glyph = _font_driver->get_glyph(_font_data, (uint8_t)msg[i])))
+      uint32_t code = utf8_walk(&walk);
+      if (!(glyph = _font_driver->get_glyph(_font_data, code)))
          if (!(glyph = glyph_q))
             continue;
 
