@@ -126,6 +126,12 @@ bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
  * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
  * not Ogg or carries an unsupported codec.  An .ogg extension can
  * legitimately wrap either. */
+/* Windowed Opus only: inject the stream's last-page granule so the
+ * decoder's buffer setup does not scan the whole file for it (the tail
+ * is not resident under windowing).  No-op for non-Opus types. */
+void audio_transfer_set_end_granule(void *data, enum audio_type_enum type,
+      int64_t end_granule);
+
 enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
       size_t len);
 

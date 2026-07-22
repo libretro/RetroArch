@@ -190,6 +190,10 @@ struct audio_transfer_opus
    unsigned    seg_count;
    size_t      audio_off;    /* first audio page (for rewind)            */
    int64_t     limit;        /* emission bound from the end granule      */
+   int64_t     end_granule;  /* injected last-page granule (windowed
+                              * mode): >= 0 means use it as the emission
+                              * bound instead of scanning to EOF at open;
+                              * -1 means do the full forward scan. */
    int64_t     emitted;      /* frames handed out so far                 */
    uint8_t     asm_buf[61500]; /* only for packets spanning pages        */
    ropus_t    *handle;
@@ -364,8 +368,9 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (op)
          {
-            op->buf      = (const uint8_t*)ptr;
-            op->buf_size = len;
+            op->buf         = (const uint8_t*)ptr;
+            op->buf_size    = len;
+            op->end_granule = -1;   /* full scan unless injected */
          }
          break;
       }
@@ -662,6 +667,19 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
    (void)packets; (void)packets_size; (void)sizes; (void)num_packets;
    return false;
 }
+
+#ifdef HAVE_ROPUS
+/* Windowed Opus: inject the last Ogg page's granule so buffer setup
+ * skips the full-file end-granule scan (see audio_transfer_opus's
+ * end_granule).  No-op for any other type.  Must be called after
+ * set_buffer_ptr and before audio_transfer_start. */
+void audio_transfer_set_end_granule(void *data, enum audio_type_enum type,
+      int64_t end_granule)
+{
+   if (data && type == AUDIO_TYPE_OPUS)
+      ((struct audio_transfer_opus*)data)->end_granule = end_granule;
+}
+#endif
 
 enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
       size_t len)
@@ -1007,8 +1025,14 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             op->pg_off    = off;
             op->seg_idx   = 0;
             op->body_off  = 0;
-            /* end granule: walk the remaining pages once */
-            while (off < op->buf_size)
+            /* End granule: normally walk the remaining page headers
+             * once to the last granule.  In windowed mode the tail is
+             * not resident, so the feeder injected the last-page
+             * granule (found from a bounded tail peek) - use it and
+             * skip the walk, which would read past the head window. */
+            if (op->end_granule >= 0)
+               last_granule = op->end_granule;
+            else while (off < op->buf_size)
             {
                size_t psz = audio_transfer_ogg_page(op->buf, op->buf_size,
                      off, NULL, NULL);
@@ -1895,6 +1919,21 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
                (struct audio_transfer_mp3*)data;
          if (m->inited)
             return (size_t)m->handle.readPos;
+         return 0;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op =
+               (struct audio_transfer_opus*)data;
+         /* Ogg buffer mode walks pages forward from the caller's
+          * buffer; pg_off is the current page's byte offset, the
+          * compressed frontier the feeder needs.  The demuxed (WebM)
+          * and set_demuxed_ptr paths read a packet blob, not the
+          * caller's buffer, so they expose no windowable cursor. */
+         if (op->handle && op->ogg)
+            return op->pg_off;
          return 0;
       }
 #endif
