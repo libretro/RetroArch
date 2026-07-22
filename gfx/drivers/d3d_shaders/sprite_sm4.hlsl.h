@@ -125,4 +125,102 @@ SRC(
          return float4(input.color.rgb  , input.color.a * t0.Sample(s0, input.texcoord).a);
       };
 
+      /* ---- HDR-aware sprite entries ----------------------------------
+       * Used for UI (widgets / OSD text) drawn DIRECTLY into an HDR
+       * swapchain, i.e. when the back-buffer composite pass is not
+       * active.  The math replicates the SDR-source branches of the
+       * hdr_sm5 composite shader exactly, so notifications rendered
+       * this way match the appearance of the same UI when it goes
+       * through the menu composite.  All of it is SM4-clean ALU.
+       *
+       * sprite_hdr_mode: 0 = passthrough (identical to PSMain /
+       * PSMainA8; used while the composite pass will encode later),
+       * 1 = HDR10 (PQ, Rec.2020), 2 = scRGB (linear, 1.0 = 80 nits).
+       */
+      cbuffer SpriteHDR : register(b1)
+      {
+         float sprite_hdr_mode;
+         float sprite_paper_white_nits;
+         float sprite_expand_gamut;
+         float sprite_hdr_pad;
+      };
+
+      static const float kSprMaxNitsFor2084 = 10000.0f;
+      static const float kSprscRGBWhiteNits = 80.0f;
+
+      static const float3x3 kSpr709to2020 =
+      {
+         { 0.6274040f, 0.3292820f, 0.0433136f },
+         { 0.0690970f, 0.9195400f, 0.0113612f },
+         { 0.0163916f, 0.0880132f, 0.8955950f }
+      };
+      static const float3x3 kSprExpanded709to2020 =
+      {
+         { 0.6274040f,  0.3292820f, 0.0433136f },
+         { 0.0457456f,  0.9417770f, 0.0124772f },
+         {-0.00121055f, 0.0176041f, 0.9836070f }
+      };
+      static const float3x3 kSprP3to2020 =
+      {
+         { 0.753833f,  0.198597f,  0.047570f },
+         { 0.045744f,  0.941777f,  0.012479f },
+         {-0.001210f,  0.017602f,  0.983609f }
+      };
+      static const float3x3 kSpr2020to709 =
+      {
+         {  1.6604910f, -0.5876411f, -0.0728499f },
+         { -0.1245505f,  1.1328999f, -0.0083494f },
+         { -0.0181508f, -0.1005789f,  1.1187297f }
+      };
+
+      float3 SpriteLinearToST2084(float3 normalizedLinearValue)
+      {
+         return pow((0.8359375f + 18.8515625f * pow(abs(normalizedLinearValue), 0.1593017578f)) / (1.0f + 18.6875f * pow(abs(normalizedLinearValue), 0.1593017578f)), 78.84375f);
+      }
+
+      float3 SpriteTo2020(const float3 rgb)
+      {
+         float3 result;
+         if (sprite_expand_gamut < 0.5f)
+            result = mul(kSpr709to2020, rgb);
+         else if (sprite_expand_gamut < 1.5f)
+            result = mul(kSprExpanded709to2020, rgb);
+         else if (sprite_expand_gamut < 2.5f)
+            result = mul(kSprP3to2020, rgb);
+         else
+            result = rgb;
+         return max(result, float3(0.0f, 0.0f, 0.0f));
+      }
+
+      float4 SpriteEncodeHDR(float4 sdr)
+      {
+         if (sprite_hdr_mode > 1.5f)
+         {
+            /* scRGB: mirror of the composite's mode-2 SDR branch */
+            float3 linear_col = SpriteTo2020(pow(abs(sdr.rgb), 2.4f));
+            linear_col = mul(kSpr2020to709, linear_col);
+            linear_col *= sprite_paper_white_nits / kSprscRGBWhiteNits;
+            return float4(linear_col, sdr.a);
+         }
+         else if (sprite_hdr_mode > 0.5f)
+         {
+            /* HDR10: mirror of the composite's hdr10 SDR branch */
+            float3 pq_input = SpriteTo2020(sdr.rgb)
+                  * (sprite_paper_white_nits / kSprMaxNitsFor2084);
+            return float4(SpriteLinearToST2084(max(pq_input,
+                  float3(0.0f, 0.0f, 0.0f))), sdr.a);
+         }
+         return sdr; /* mode 0: passthrough */
+      }
+
+      float4 PSMainHDR(PSInput input) : SV_TARGET
+      {
+         return SpriteEncodeHDR(input.color * t0.Sample(s0, input.texcoord));
+      };
+      float4 PSMainA8HDR(PSInput input) : SV_TARGET
+      {
+         return SpriteEncodeHDR(float4(input.color.rgb,
+               input.color.a * t0.Sample(s0, input.texcoord).a));
+      };
+
 )
