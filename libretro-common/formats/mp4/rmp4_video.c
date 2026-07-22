@@ -499,12 +499,18 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
     * sample table only (no decode). */
    if (!(s->ts = (int64_t*)malloc(RMP4_VIDEO_MAX_TS * sizeof(int64_t))))
       goto fail;
-   while (rmp4_read_packet(s->demux, &pkt) == 1)
+   /* Stop at the table's capacity, mirroring the WebM glue: frames past
+    * the cap reuse the last stored delta, and num_frames saturates (its
+    * only external consumer is the >= 2 animation admission).  For a
+    * plain MP4 the walk is cheap (moov-resident sample tables), but a
+    * fragmented file interleaves moof boxes with the media data, so an
+    * unbounded walk swept the whole buffer there too. */
+   while (   s->num_frames < RMP4_VIDEO_MAX_TS
+          && rmp4_read_packet(s->demux, &pkt) == 1)
    {
       if (pkt.track != s->track)
          continue;
-      if (s->num_frames < RMP4_VIDEO_MAX_TS)
-         s->ts[s->ts_count++] = pkt.timestamp;
+      s->ts[s->ts_count++] = pkt.timestamp;
       s->num_frames++;
    }
    if (s->num_frames < 1)
