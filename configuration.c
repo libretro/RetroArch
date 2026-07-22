@@ -2577,6 +2577,10 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 
 
+#ifdef HAVE_LUA
+   SETTING_BOOL("lua_scripts_sandboxed",  &settings->bools.lua_scripts_sandboxed, true, 1, false);
+#endif
+
    *size = count;
 
    return tmp;
