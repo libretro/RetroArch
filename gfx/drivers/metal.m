@@ -3265,6 +3265,12 @@ gfx_display_ctx_driver_t gfx_display_ctx_metal = {
       return 0;
 
    glyph_q = _font_driver->get_glyph(_font_data, '?');
+   /* The fallback glyph can itself have just been rasterized after
+    * eviction; pair its lookup with an update like every other
+    * lookup so its cell is not stranded when an unrelated glyph
+    * clears the dirty flag. */
+   if (glyph_q)
+      [self updateGlyph:glyph_q];
 
    for (i = 0; i < length; i++)
    {
@@ -3378,6 +3384,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
    SpriteVertex *v = (SpriteVertex *)_range.data;
    v              += _vertices;
    glyph_q         = _font_driver->get_glyph(_font_data, '?');
+   /* Pair the fallback-glyph lookup with an update like every other
+    * lookup, in case '?' was just (re)rasterized after eviction. */
+   if (glyph_q)
+      [self updateGlyph:glyph_q];
 
    while (msg < msg_end)
    {
