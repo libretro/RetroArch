@@ -75,7 +75,7 @@ static const struct
    char s_550d5320[250];
    char s_2aa9ecfe[192];
    char s_d179d08d[228];
-   char s_70c7c198[335];
+   char s_70c7c198[340];
    char s_bed75ef8[218];
    char s_a4d0f03f[290];
    char s_1aa5e88e[329];
@@ -138,7 +138,7 @@ static const struct
    char s_4c991c18[391];
    char s_4b299805[186];
    char s_1bd35af2[41];
-   char s_24e40f00[315];
+   char s_24e40f00[287];
    char s_1382c258[265];
    char s_4caab10c[281];
    char s_03580e17[184];
@@ -326,7 +326,7 @@ static const struct
    char s_c2f41987[12];
    char s_327b2550[10];
    char s_bbb615a1[20];
-   char s_314539a4[15];
+   char s_314539a4[10];
    char s_8fc168f0[19];
    char s_213c44cf[23];
    char s_502f623c[14];
@@ -513,7 +513,7 @@ static const struct
    char s_78083010[20];
    char s_cc781d49[13];
    char s_19e9df3c[67];
-   char s_0a2e0504[15];
+   char s_0a2e0504[13];
    char s_49c9bf91[7];
    char s_04ecbe77[15];
    char s_525068d3[22];
@@ -810,7 +810,7 @@ static const struct
    char s_50e34bc5[16];
    char s_00ea00d3[17];
    char s_b43e2e98[21];
-   char s_f858d2c9[31];
+   char s_f858d2c9[37];
    char s_7b4aa4e9[51];
    char s_2f4cd458[35];
    char s_fc2d1328[32];
@@ -1206,7 +1206,7 @@ static const struct
    char s_60ff701a[10];
    char s_62564465[14];
    char s_96e64a19[19];
-   char s_af36f3b0[33];
+   char s_af36f3b0[34];
    char s_73312855[15];
    char s_e4405788[22];
    char s_6c4b8962[21];
@@ -1220,13 +1220,13 @@ static const struct
    char s_38311095[30];
    char s_b9e684ee[37];
    char s_cd66ffc9[32];
-   char s_788f3ba8[16];
+   char s_788f3ba8[30];
    char s_7481bc33[19];
    char s_6124fb03[20];
    char s_3ea5e8ac[29];
-   char s_5c487242[15];
+   char s_5c487242[14];
    char s_d95b4346[22];
-   char s_1adb7f60[64];
+   char s_1adb7f60[81];
    char s_21e6be74[13];
    char s_4327ffcc[36];
    char s_737c9877[10];
@@ -1244,7 +1244,7 @@ static const struct
    char s_28adc26d[37];
    char s_0b9c6082[33];
    char s_b80a2fc4[19];
-   char s_02b33f2e[50];
+   char s_02b33f2e[51];
    char s_d3b03946[14];
    char s_7567faa8[24];
    char s_ea0de502[8];
@@ -1261,7 +1261,6 @@ static const struct
    char s_04e3886f[36];
    char s_1d4d1099[29];
    char s_c19bc96b[61];
-   char s_733174db[14];
    char s_fc6e3a57[27];
    char s_8594979d[22];
    char s_c4ab544b[17];
@@ -1318,7 +1317,7 @@ static const struct
    char s_c813b6c6[17];
    char s_fd533325[23];
    char s_ed43994d[38];
-   char s_78ccdecc[31];
+   char s_78ccdecc[36];
    char s_15345f7c[24];
    char s_b78a0248[28];
    char s_3a15d6a9[24];
@@ -1953,6 +1952,7 @@ static const struct
    char s_519cd5f8[24];
    char s_43ac80a0[12];
    char s_6959ce80[14];
+   char s_886631ec[17];
    char s_ebe994b4[12];
    char s_1c62c301[8];
    char s_a8bb35b6[6];
@@ -2491,7 +2491,7 @@ static const struct
    char s_84c3b006[33];
    char s_e9815ce0[30];
    char s_78b01731[32];
-   char s_8cd0784d[76];
+   char s_8cd0784d[82];
    char s_0ce62f85[42];
    char s_c005b3b5[125];
    char s_ef7ad96b[140];
@@ -2513,7 +2513,7 @@ static const struct
    char s_89c3a7db[39];
    char s_35f2309a[34];
    char s_a607c53c[30];
-   char s_35f24807[249];
+   char s_35f24807[242];
    char s_c8781974[130];
 #ifdef HAVE_MIST
    char s_c9c04b6d[64];
@@ -2526,7 +2526,7 @@ static const struct
    char s_5bf01371[82];
    char s_791acb32[84];
    char s_92cf524f[28];
-   char s_48e88dc4[177];
+   char s_48e88dc4[159];
    char s_3d233cd0[77];
    char s_9198f1a0[218];
    char s_165e564b[313];
@@ -2594,7 +2594,7 @@ static const struct
    char s_877a8cd5[66];
    char s_6ff78e00[68];
    char s_693db7da[281];
-   char s_d43521db[89];
+   char s_d43521db[87];
    char s_44040aad[101];
    char s_64d24441[61];
    char s_ad7da224[60];
@@ -2661,7 +2661,7 @@ static const struct
    char s_16cae8d7[82];
    char s_3ad59606[40];
    char s_07b5d4d6[71];
-   char s_f12f9f93[58];
+   char s_f12f9f93[57];
    char s_be33bd85[89];
    char s_1cff5dd8[35];
    char s_b8c82a8b[73];
@@ -2989,7 +2989,7 @@ static const struct
    char s_bc33055d[93];
    char s_be8c2b47[45];
    char s_02526a85[77];
-   char s_8b64010b[169];
+   char s_8b64010b[170];
    char s_7279e585[62];
    char s_8bb9f63a[150];
    char s_a5ffd3d0[43];
@@ -3133,7 +3133,7 @@ static const struct
    char s_dd51dec4[57];
    char s_00961284[143];
    char s_a5962f42[85];
-   char s_0c7750cd[87];
+   char s_0c7750cd[91];
    char s_f3b31ef1[55];
    char s_331c623c[71];
    char s_279c08f7[57];
@@ -3207,7 +3207,7 @@ static const struct
    char s_7ede2061[40];
    char s_98d47f8f[367];
    char s_9385fbef[40];
-   char s_efb7504d[63];
+   char s_efb7504d[77];
    char s_70d6077c[45];
    char s_31124733[188];
    char s_2d24a503[149];
@@ -3592,7 +3592,7 @@ static const struct
    char s_96df643a[106];
    char s_150b4ebe[104];
    char s_0d212ca9[95];
-   char s_be02ba0f[117];
+   char s_be02ba0f[123];
    char s_059f98c0[71];
    char s_b077bb95[83];
    char s_48720114[54];
@@ -3613,7 +3613,7 @@ static const struct
    char s_12a68ed0[85];
    char s_d7065ee8[39];
    char s_89aa2160[14];
-   char s_76c4c7ce[26];
+   char s_76c4c7ce[28];
    char s_79eac1d9[17];
    char s_0ca1ef5c[17];
    char s_7f5044a4[88];
@@ -3845,9 +3845,9 @@ static const struct
    char s_dde3bd30[25];
    char s_1943a9c7[26];
    char s_030cab12[6];
-   char s_da69a32f[37];
+   char s_da69a32f[34];
    char s_b1e9bfbf[26];
-   char s_1de3d99f[40];
+   char s_1de3d99f[52];
    char s_dad076ef[55];
    char s_bff0b58f[42];
    char s_69a0990c[61];
@@ -3860,19 +3860,19 @@ static const struct
    char s_680d4c36[131];
    char s_0c53fe6c[72];
    char s_5b678bc4[38];
-   char s_a6abc697[29];
+   char s_a6abc697[26];
    char s_e3bb7f4c[46];
    char s_d15060ee[42];
    char s_a068841f[53];
-   char s_be840037[19];
+   char s_be840037[25];
    char s_11d0d482[18];
    char s_4d7ee7e2[33];
-   char s_9d7c6772[30];
+   char s_9d7c6772[38];
    char s_4bc518be[35];
    char s_c8812645[72];
    char s_dd3ee761[141];
-   char s_f9aa7e70[85];
-   char s_509dd374[43];
+   char s_f9aa7e70[91];
+   char s_509dd374[39];
    char s_a1aa4c42[79];
    char s_ef0f5f52[11];
    char s_52453850[37];
@@ -4043,7 +4043,7 @@ static const struct
    char s_88494936[35];
    char s_29c753ae[33];
    char s_afe38a0f[20];
-   char s_2f98e072[43];
+   char s_2f98e072[49];
    char s_a2250ebd[45];
    char s_cc5d39b1[64];
    char s_2bf9a406[42];
@@ -4152,7 +4152,7 @@ static const struct
    "Nach einer Libretro-Core-Implementierung suchen. In welchem Verzeichnis der Browser beginnt, h"
    "\303\244ngt von dem Core-Verzeichnispfad ab.\nIst als Core-Verzeichnis ein Ordner ausgew\303\244"
    "hlt, wird dieser als Startverzeichnis genutzt. Ist das Core-Verzeichnis ein vollst\303\244ndiger"
-   " Pfad, wird in dem Ordner begonnen, in dem sich die Datei befindet.",
+   " Dateipfad, wird in dem Ordner begonnen, in dem sich die Datei befindet.",
    "Eine neue Disc aus dem Dateisystem ausw\303\244hlen und der Indexliste hinzuf\303\274gen. \nHINW"
    "EIS: Dies ist eine veraltete Funktion. Es wird stattdessen empfohlen, f\303\274r Titel mit mehre"
    "ren Discs M3U-Wiedergabelisten zu verwenden.",
@@ -4300,10 +4300,10 @@ static const struct
    "spiel im Zuschauermodus starten. Es ist jederzeit m\303\266glich, den Modus sp\303\244ter zu "
    "\303\244ndern.",
    "Zur\303\274ck zum \303\274bergeordneten Verzeichnis.",
-   "RetroArch beenden. Durch das harte Beenden (SIGKILL usw.) des Programms wird RetroArch beendet, "
-   "ohne die Konfiguration zu speichern in jedem Fall. Auf Unix-\303\244hnlichen Systemen erm\303"
-   "\266glicht SIGINT/SIGTERM eine saubere Deinitialisierung, welche das Speichern der Konfiguration"
-   "sdatei mit einschlie\303\237t, falls aktiviert.",
+   "RetroArch beenden. Bei jeglichem harten Beenden des Programms (SIGKILL usw.), wird die Konfigura"
+   "tion nicht gesichert. Auf Unix-\303\244hnlichen Systemen erm\303\266glicht SIGINT/SIGTERM eine s"
+   "aubere Deinitialisierung, welche das Speichern der Konfigurationsdatei, falls aktiviert, mit ein"
+   "schlie\303\237t.",
    "Gibt an, ob Kontrollpunkte, die w\303\244hrend der regul\303\244ren Wiedergabe in Replays gespei"
    "chert werden, deserialisiert werden sollen. Sollte f\303\274r die meisten Kerne auf true gesetzt"
    " werden, aber einige k\303\266nnen bei der Deserialisierung von Inhalten janky Verhalten zeigen.",
@@ -4601,7 +4601,7 @@ static const struct
    "Besuche URL",
    "Verbunden",
    "Buildbot-Assets-URL",
-   "Bundle-Kennung",
+   "Bundle-ID",
    "Tempor\303\244re Dateien",
    "Erlaube Kamera-Zugriff",
    "Kameratreiber",
@@ -4787,15 +4787,15 @@ static const struct
    "Core-Name",
    "Vollst\303\244ndiger Pfad",
    "Core-Version",
-   "Hinweis: 'Systemdateien sind im Inhalteverzeichnis' ist aktiviert.",
-   "Schauen in: %s",
+   "Hinweis: \"Systemdateien sind im Inhaltsverzeichnis\" ist aktiviert.",
+   "Suche in: %s",
    "Lizenz",
    "Berechtigungen",
    "Ben\303\266tigte Grafik-API",
    "Grundlegend (Speichern/Laden)",
    "Umgehung der Core-Info-Savestates-Funktionen",
    "Deterministisch (Speichern/Laden, Zur\303\274ckspulen, Run-Ahead, Netplay)",
-   "Nein",
+   "Kein",
    "Serialisiert (Speichern/Laden, Zur\303\274ckspulen)",
    "Savestate-Unterst\303\274tzung",
    "Unterst\303\274tzte Erweiterungen",
@@ -5085,7 +5085,7 @@ static const struct
    "Savestate laden",
    "Men\303\274 umschalten",
    "Audio stumm schalten",
-   "Netplay Fade Chat (Umschalten)",
+   "Netzwerkspiel Fade Chat (Umschalten)",
    "Netzwerkspiel Spieler-/Zuschauermodus (Umschalten)",
    "Netzwerkspiel-Hosting (Umschalten)",
    "Netzwerkspiel-Ping (Umschalten)",
@@ -5481,7 +5481,7 @@ static const struct
    "N\303\244chster",
    "Netzwerkspiel",
    "Pausieren zulassen",
-   "Erlaube Slave-Modus f\303\274r Clients",
+   "Slave-Modus f\303\274r Clients zulassen",
    "Client sperren",
    "Chatfarbe (Nachricht)",
    "Chatfarbe (Nickname)",
@@ -5495,13 +5495,13 @@ static const struct
    "Netzwerkspiel-Hosting stoppen",
    "Verbindung zum Netzwerkspiel trennen",
    "Zu Netzwerkspiel-Host verbinden",
-   "Hosting starten",
+   "Netzwerkspiel-Hosting starten",
    "Verblassender Chat",
    "Eingabeverz\303\266gerung",
    "Erlaubte Eingabeverz\303\266gerung",
-   "Server-Adresse",
+   "Serveradresse",
    "Client rausschmei\303\237en",
-   "Konnte keinen geeigneten Core oder Inhalt finden, lade manuell.",
+   "Es konnte kein geeigneter Core oder Inhalt gefunden werden, bitte manuell laden.",
    "Lobby-Filter",
    "Maximale gleichzeitige Verbindungen",
    "Pinglimit",
@@ -5519,7 +5519,7 @@ static const struct
    "LAN-Netzwerkspielliste aktualisieren",
    "Netzwerkspielliste aktualisieren",
    "Ger\303\244t %u anfragen",
-   "Verbiete Clients, die nicht im Slave-Modus laufen",
+   "Clients verbieten, die nicht im Slave-Modus laufen",
    "Spitzname: %s",
    "Analoge Eingaben teilen",
    "Mitteln",
@@ -5536,7 +5536,6 @@ static const struct
    "Server-Passwort f\303\274r Zuschauermodus",
    "Netzwerkspiel-Zuschauermodus",
    "Netzwerkspiel wird gestartet, sobald der Inhalt geladen ist.",
-   "Netzwerkspiel",
    "Netzwerkspiel-TCP/UDP-Port",
    "Relayserver verwenden",
    "Netzwerk-Befehle",
@@ -5593,7 +5592,7 @@ static const struct
    "Keine Eintr\303\244ge.",
    "Keine Musik verf\303\274gbar",
    "Keine Netzwerkspiel-Clients gefunden.",
-   "Keine Netzwerkspiele gefunden.",
+   "Keine Netzwerkspiel-Hosts gefunden.",
    "Kein Netzwerk gefunden.",
    "Keine Leistungsindikatoren.",
    "Keine Wiedergabelisten.",
@@ -6236,6 +6235,7 @@ static const struct
    "Frontend-Betriebssystem",
    "Git-Version",
    "Lakka-Version",
+   "MoltenVK-Version",
    "Stromquelle",
    "Geladen",
    "L\303\244dt",
@@ -6853,8 +6853,8 @@ static const struct
    "Das Men\303\274 \342\200\236Bilder\342\200\234 anzeigen.",
    "Die Option \"Latenz\" anzeigen.",
    "Das Men\303\274 \342\200\236Musik\342\200\234 anzeigen.",
-   "Den Eintrag \342\200\236Netplay\342\200\234 im Hauptmen\303\274 oder den Wiedergabelisten anzeig"
-   "en.",
+   "Den Eintrag \342\200\236Netzwerkspiel\342\200\234 im Hauptmen\303\274 oder den Wiedergabelisten "
+   "anzeigen.",
    "Die Option \"Bildschirm-Overlay\" anzeigen.",
    "Wiedergabelisten im Hauptmen\303\274 anzeigen. Wird in GLUI ignoriert, wenn Wiedergabelisten und"
    " Navigationsleiste aktiviert sind.",
@@ -6884,7 +6884,7 @@ static const struct
    "Den geladenen Core freigeben.",
    "\303\204nderungen am aktuell installierten Core verhindern. Kann verwendet werden, um unerw\303"
    "\274nschte Updates zu vermeiden, wenn Inhalte eine bestimmte Core-Version ben\303\266tigen (z. B"
-   ". Arcade-ROM-Sets) oder sich das eigene Savestate-Format des Cores \303\244ndert.",
+   ". Arcade-ROM-Sets) oder sich das Savestate-Format des Cores \303\244ndert.",
    "Informationen zu installierten Cores anzeigen und Offline-Wartungsarbeiten ausf\303\274hren (Sic"
    "hern, Wiederherstellen, L\303\266schen usw.).",
 #ifdef HAVE_MIST
@@ -6902,9 +6902,8 @@ static const struct
    "en.",
    "Eine vorherige Version des Cores aus einer Liste von Sicherungskopien installieren.",
    "Core-Einstellungen \303\244ndern.",
-   "Verhindern, dass dieser Core auf der Registerkarte/im Men\303\274 \342\200\236Inhaltslose Cores"
-   "\342\200\234 angezeigt wird. Gilt nur, wenn der Anzeigemodus auf \342\200\236Benutzerdefiniert"
-   "\342\200\234 eingestellt ist.",
+   "Das Anzeigen des Cores auf der Registerkarte/im Men\303\274 \"Inhaltslose Cores\" verhindern. Gi"
+   "lt nur, wenn der Anzeigemodus auf \"Benutzerdefiniert\" eingestellt ist.",
    "Verf\303\274gbare Cores auch dann vorschlagen, wenn ein Core manuell geladen wird.",
    "Erstellt automatisch Sicherungskopien aller installierten Cores, wenn ein Online-Update ausgef"
    "\303\274hrt wird. Erm\303\266glicht einfaches Zur\303\274cksetzen auf einen funktionierenden Cor"
@@ -7004,7 +7003,7 @@ static const struct
    "Alle Core-Einstellungen in einer gemeinsamen Datei (retroarch-core-options.cfg) speichern. Wenn "
    "diese Option deaktiviert ist, werden die Einstellungen f\303\274r jeden Core in einem separaten "
    "Core-spezifischen Ordner / einer Datei im RetroArch-Verzeichnis 'Konfigurationen' gespeichert.",
-   "Installierte Cores, die ohne Laden von Inhalten arbeiten k\303\266nnen, werden hier angezeigt.",
+   "Installierte Cores, die ohne geladene Inhalte arbeiten k\303\266nnen, werden hier angezeigt.",
    "Alle mit der Datenbank \303\274bereinstimmenden Inhalte \303\274ber eine kategorisierte Oberfl"
    "\303\244che durchsuchen.",
    "Zu \"Favoriten\" hinzugef\303\274gte Inhalte werden hier erscheinen.",
@@ -7102,7 +7101,7 @@ static const struct
    "Schaltet das aktuelle Netzwerkspiel zwischen 'Spieler'- und 'Zuschauer'-Modus um.",
    "Schaltet Netzwerkspiel-Hosting ein/aus.",
    "Blendet den Ping-Z\303\244hler f\303\274r den aktuellen Netzwerkspielraum ein/aus.",
-   "Sendet eine Chat-Nachricht an das aktuelle Netzwerkspiel.",
+   "Sendet eine Chatnachricht an das aktuelle Netzwerkspiel.",
    "Spult das Replay zum n\303\244chsten automatisch oder manuell gespeicherten Kontrollpunkt vor.",
    "Schaltet Tastatur-Overlay ein/aus.",
    "Wechselt zum n\303\244chsten verf\303\274gbaren Layout des aktuell aktiven Overlays.",
@@ -7587,13 +7586,13 @@ static const struct
    "Im LAN nach Netzwerkspielen suchen.",
    "Nach Netzwerkspielen suchen.",
    "Anfragen, mit dem angegebenen Eingabeger\303\244t zu spielen.",
-   "Keine nicht-Slave-Modus-Verbindungen zulassen. Nicht empfohlen, au\303\237er f\303\274r sehr sch"
+   "Keine Nicht-Slave-Modus-Verbindungen zulassen. Nicht empfohlen, au\303\237er f\303\274r sehr sch"
    "nelle Netzwerke mit sehr schwachen Maschinen.",
    "Das Kennwort, das von Clients verwendet wird, die sich als Zuschauer mit dem Host verbinden.",
    "Das Netzwerkspiel im Zuschauermodus starten.",
    "Der Port der Host-IP-Adresse. Kann entweder ein TCP- oder ein UDP-Port sein.",
-   "Leite alle Netzwerkspiel-Verbindungen durch einen Man-in-the-middle-Server. Hilfreich, wenn sich"
-   " der Host hinter einer Firewall befindet oder Probleme mit NAT/UPnP hat.",
+   "Alle Netzwerkspiel-Verbindungen \303\274ber einen Man-in-the-middle-Server leiten. Hilfreich, we"
+   "nn sich der Host hinter einer Firewall befindet oder Probleme mit NAT/UPnP hat.",
    "Netzwerkschnittstelle(n) und zugeh\303\266rige IP-Adressen ansehen.",
    "Fehlende Vorschaubilder automatisch herunterladen, w\303\244hrend die Wiedergabelisten durchsuch"
    "t werden. Hat schwerwiegende Auswirkungen auf die Leistung.",
@@ -7821,7 +7820,7 @@ static const struct
    "RetroArch automatisch beenden, wenn Inhalte geschlossen werden. 'CLI' wird nur beendet, wenn der"
    " Inhalt \303\274ber die Befehlszeile gestartet wird.",
    "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist aktiviert.",
-   "RetroArch-Anwendung beenden. Speichern der Konfiguration beim Beenden ist deaktiviert.",
+   "RetroArch-Anwendung beenden. Das Speichern der Konfiguration beim Beenden ist deaktiviert.",
    "Datenbankinformationen f\303\274r aktuellen Inhalt anzeigen.",
    "Aufzeichnungskonfigurationen werden in diesem Verzeichnis gespeichert.",
    "Videoaufnahmen werden in diesem Verzeichnis gespeichert.",
@@ -7936,7 +7935,7 @@ static const struct
    " Index gel\303\266scht. Der Wert \342\200\2360\342\200\234 bedeutet, dass eine unbegrenzte Anzah"
    "l von Speicherst\303\244nden aufgezeichnet wird.",
    "Vorschaubilder von Savestates anzeigen.",
-   "Aktuelle Konfiguration als angepasste Konfiguration speichern.",
+   "Aktuelle Konfiguration als benutzerdefinierte Konfigurationsdatei speichern.",
    "Aktuelle Konfigurationsdatei \303\274berschreiben.",
    "Eine \303\274berschreibende Konfigurationsdatei speichern, die f\303\274r jeden Inhalt gilt, der"
    " aus demselben Verzeichnis wie die aktuelle Datei geladen wird. Hat Vorrang vor der Hauptkonfigu"
@@ -8487,8 +8486,8 @@ static const struct
    " deaktiviert.",
    "Errungenschaften-Hardcore-Modus aktiviert. Savestates & R\303\274ckspul-Funktion sind nicht nutz"
    "bar.",
-   "Netplay-Host muss aktualisiert werden. Hardcore-Modus f\303\274r Errungenschaften wurde f\303"
-   "\274r aktuelle Sitzung deaktiviert.",
+   "Netzwerkspiel-Host muss aktualisiert werden. Hardcore-Modus f\303\274r Errungenschaften wurde f"
+   "\303\274r aktuelle Sitzung deaktiviert.",
    "Hardcore pausiert. Das Einf\303\274gen schwarzer Rahmen ist nicht gestattet.",
    "Hardcore pausiert. Manuelle Einstellung der Videobildverz\303\266gerung nicht gestattet.",
    "Hardcore pausiert. Einstellung nicht gestattet: %s=%s",
@@ -8513,7 +8512,7 @@ static const struct
    "Konfigurations-Verzeichnis nicht definiert. Kann neue Konfiguration nicht speichern.",
    "Konfigurations\303\274berschreibung geladen.",
    "Verbunden mit",
-   "Verbinde zu Netzwerkspiel",
+   "Verbindung zu Netzwerkspiel",
    "Verbinde zu Port",
    "Verbindungs-Slot",
    "CRC32-Pr\303\274fsummen des Inhalts weichen ab. Andere Spiele k\303\266nnen nicht verwendet werd"
@@ -8751,9 +8750,9 @@ static const struct
    "Film-Wiedergabe beendet.",
    "Beende Film-Aufzeichnung.",
    "Nativ",
-   "Du wurdest von diesem Host verbannt.",
+   "Du bist auf diesem Host gesperrt.",
    "Client gesperrt: \342\200\236%s\342\200\234",
-   "Konnte nicht zum Spieler-Modus wechseln",
+   "Es konnte nicht zum Spieler-Modus gewechselt werden",
    "Die angeforderten Eingabeger\303\244te sind nicht verf\303\274gbar",
    "Es gibt keine freien Spieler-Pl\303\244tze mehr",
    "Du hast nicht die Berechtigung, an diesem Spiel teilzunehmen",
@@ -8768,20 +8767,20 @@ static const struct
    "ftreten, benutzt dieselbe Version.",
    "Dieser Core unterst\303\274tzt kein Netzwerkspiel zwischen diesen Plattformen",
    "Netzwerkspiel-Chatnachricht eingeben:",
-   "Gib das Server-Passwort ein:",
+   "Server-Passwort eingeben:",
    "Netzwerkspiel-Initialisierung fehlgeschlagen.",
    "Fehler beim Sperren des Clients: \342\200\236%s\342\200\234",
    "Client konnte nicht rausgeschmissen werden: \342\200\236%s\342\200\234",
-   "Netplay-Host voll.",
+   "Netzwerkspiel-Host voll.",
    "Falsches Passwort",
    "Client rausgeschmissen: \342\200\236%s\342\200\234",
-   "Suche nach Netzwerkspielen...",
+   "Nach Netzwerkspielen wird gesucht ...",
    "Netzwerkspiel-Suche abgeschlossen.",
    "Der Inhalt muss geladen werden, bevor das Netzwerkspiel gestartet wird.",
    "Ein Netzwerkspiel-Verbindungsversuch ist fehlgeschlagen, da beim Teilnehmer RetroArch nicht oder"
    " in einer \303\244lteren Version ausgef\303\274hrt wird.",
-   "Ein Netplay-Teilnehmer nutzt eine alte RetroArch-Version. Verbindung nicht m\303\266glich.",
-   "Netzwerkspiel-Teilnehmer \"%s\" hat pausiert",
+   "Ein Netzwerkspiel-Teilnehmer nutzt eine alte RetroArch-Version. Verbindung nicht m\303\266glich.",
+   "Netzwerkspiel-Teilnehmer \"%s\" pausiert",
    "Dieser Core unterst\303\274tzt kein Netzwerkspiel zwischen verschiedenen Plattformen",
    "%d Spieler",
    "Spieler %.*s hat das Spiel verlassen",
@@ -8961,7 +8960,7 @@ static const struct
    "Unbekannten Befehl \"%s\" erhalten.\n",
    "Nicht unterst\303\274tzter Video-Modus",
    "Aktualisiere Core: ",
-   "Netplay UPnP-Port-Zuordnung fehlgeschlagen",
+   "Netzwerkspiel-UPnP-Port-Zuordnung fehlgeschlagen",
    "Verwende Core-Namen f\303\274r neue Konfiguration.",
    "Libretro-Dummy-Core wird verwendet. Aufzeichnung \303\274bersprungen.",
    "Verbinde Ger\303\244t mit einem g\303\274ltigen Port.",
@@ -8990,7 +8989,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (190632u
+      (sizeof(msg_hash_de_blob) == (190681u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10653,7 +10652,6 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_CMD_ENABLE,
@@ -11344,6 +11342,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,

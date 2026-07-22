@@ -2001,6 +2001,7 @@ static const struct
    char s_519cd5f8[42];
    char s_43ac80a0[16];
    char s_6959ce80[17];
+   char s_886631ec[20];
    char s_ebe994b4[20];
    char s_1c62c301[10];
    char s_a8bb35b6[10];
@@ -6357,6 +6358,7 @@ static const struct
    "Sistema operatiu del processador d'acc\303\251s",
    "Versi\303\263 del Git",
    "Versi\303\263 de Lakka",
+   "Versi\303\263 de MoltenVK",
    "Font d'alimentaci\303\263",
    "Carregada",
    "Carregant",
@@ -9222,7 +9224,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (199175u
+      (sizeof(msg_hash_ca_blob) == (199195u
 #ifdef ANDROID
        + 281u
 #endif
@@ -11619,6 +11621,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,

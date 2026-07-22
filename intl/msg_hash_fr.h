@@ -2012,6 +2012,7 @@ static const struct
    char s_519cd5f8[48];
    char s_43ac80a0[13];
    char s_6959ce80[18];
+   char s_886631ec[20];
    char s_ebe994b4[14];
    char s_1c62c301[8];
    char s_a8bb35b6[10];
@@ -6427,6 +6428,7 @@ static const struct
    "Syst\303\250me d'exploitation de l'interface frontale",
    "Version Git ",
    "Version de Lakka ",
+   "Version de MoltenVK",
    "Alimentation ",
    "Charg\303\251",
    "En charge",
@@ -9436,7 +9438,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (214067u
+      (sizeof(msg_hash_fr_blob) == (214087u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11838,6 +11840,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
