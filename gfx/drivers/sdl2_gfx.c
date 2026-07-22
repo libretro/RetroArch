@@ -48,6 +48,8 @@
 #include "SDL_syswm.h"
 #include "../common/sdl2_common.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -1592,22 +1594,24 @@ static int sdl2_raster_font_get_message_width(void *data, const char *msg,
 {
    sdl2_raster_t *font = (sdl2_raster_t*)data;
    const char    *cur  = msg;
-   size_t         i    = 0;
+   const char    *end  = msg + msg_len;
    int            width = 0;
 
    if (!font || !msg)
       return 0;
 
-   while (i < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * byte-wise lookups turned multi-byte text into per-byte Latin-1
+    * glyph queries. */
+   while (cur < end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (glyph)
          width += glyph->advance_x;
-      i++;
-      cur++;
    }
 
    return (int)((float)width * scale);
@@ -1633,7 +1637,7 @@ static void sdl2_raster_font_render_line(
    int         idx[SDL2_FONT_MAX_GLYPHS * 6];
    int         n_glyphs = 0;
    const char *cur      = msg;
-   size_t      ci       = 0;
+   const char *cur_end  = msg + msg_len;
    float       x        = pos_x;
    float       y        = pos_y;
    float       inv_w;
@@ -1660,14 +1664,14 @@ static void sdl2_raster_font_render_line(
    inv_w = 1.0f / (float)font->tex_width;
    inv_h = 1.0f / (float)font->tex_height;
 
-   /* gfx_display draw_text passes 8-bit-clean strings; we walk byte
-    * by byte. UTF-8 multi-byte sequences are handled by the upstream
-    * font renderer's glyph lookup (which keys on uint32_t codepoints
-    * but tolerates byte-by-byte queries for the ASCII-only RA UI). */
-   while (ci < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * localized UI text is not ASCII-only and byte-wise lookups turned
+    * multi-byte sequences into per-byte Latin-1 glyph queries. */
+   while (cur < cur_end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       float gx, gy, gw, gh;
       float u0, v0, u1, v1;
       int   base;
@@ -1675,11 +1679,7 @@ static void sdl2_raster_font_render_line(
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (!glyph)
-      {
-         ci++;
-         cur++;
          continue;
-      }
 
       gx = x + glyph->draw_offset_x * scale;
       gy = y + glyph->draw_offset_y * scale;
@@ -1726,8 +1726,6 @@ static void sdl2_raster_font_render_line(
 
       x += glyph->advance_x * scale;
       n_glyphs++;
-      ci++;
-      cur++;
 
       if (n_glyphs >= SDL2_FONT_MAX_GLYPHS)
       {
