@@ -937,18 +937,13 @@ void WEBM_CORE_PREFIX(retro_run)(void)
             p->vshown++;
          }
          if (frame)
-         {
-            /* The stream glue emits memory-order R,G,B,A (its texture
-             * consumers upload that directly); the video callback
-             * wants XRGB8888 words, so swizzle during the copy. */
-            size_t n = (size_t)p->width * p->height, px;
-            for (px = 0; px < n; px++)
-            {
-               uint32_t c = frame[px];
-               p->fb[px]  = (c & 0xFF00FF00u)
-                     | ((c & 0xFF) << 16) | ((c >> 16) & 0xFF);
-            }
-         }
+            /* The stream emits XRGB8888 words directly (selected at
+             * open via rmp4_video_stream_set_argb), so the copy into
+             * the core's framebuffer is verbatim - previously this was
+             * a full-resolution per-pixel R/B swizzle every displayed
+             * frame. */
+            memcpy(p->fb, frame,
+                  (size_t)p->width * p->height * sizeof(uint32_t));
       }
       WEBM_CORE_PREFIX(video_cb)(p->fb, p->width, p->height,
             p->width * sizeof(uint32_t));
@@ -1138,6 +1133,11 @@ static bool webm_load_mp4(webm_player_t *p)
             "[webm] No supported (H.264/VP9/VP8) MP4 video track.\n");
       return false;
    }
+   /* The video callback consumes XRGB8888 words; have the stream's
+    * blit emit that order directly (the swap is baked at the blit's
+    * interleave stage at no per-frame cost), so the per-frame copy
+    * below needs no per-pixel swizzle. */
+   rmp4_video_stream_set_argb(p->mp4vs, 1);
    rmp4_video_stream_get_info(p->mp4vs, &w, &h, &nframes, &loops);
    if (!w || !h)
       return false;
