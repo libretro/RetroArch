@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <file/archive_file.h>
+#include <file/file_path.h>
 #include <streams/file_stream.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
@@ -751,6 +752,317 @@ static void zip_parse_file_free(void *context)
    zip_context_t *zip_context = (zip_context_t *)context;
    zip_context_free_stream(zip_context, false);
    free(zip_context);
+}
+
+/* ---- incremental archive entry source (see archive_file.h) ---- */
+
+struct file_archive_entry_source
+{
+   file_archive_transfer_t state;      /* keeps the mapping/file open */
+   int64_t  fdoffset;                  /* entry data start in archive */
+   uint32_t csize, usize;
+   uint32_t in_off, out_off;
+   unsigned cmode;
+   void    *z;                         /* z_stream / rinflate handle  */
+   uint8_t *tmpbuf;                    /* input chunks without mmap   */
+   uint8_t *out_expect;                /* rinflate cursor guard       */
+   const char *needle;                 /* entry name, during open only */
+   uint8_t  found;
+};
+
+/* capture callback: record the needle entry's location, extract nothing */
+static int file_archive_entry_source_capture(
+      const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode,
+      uint32_t csize, uint32_t size,
+      uint32_t crc32, struct archive_extract_userdata *userdata)
+{
+   file_archive_entry_source_t *s =
+         (file_archive_entry_source_t*)userdata->cb_data;
+   size_t name_len = name ? strlen(name) : 0;
+   if (name_len == 0)
+      return 1;
+   if (name[name_len - 1] == '/' || name[name_len - 1] == '\\')
+      return 1;
+   if (!strstr(name, s->needle))
+      return 1;
+   /* the local-header hop, both arms, mirroring the extract init */
+   {
+      struct file_archive_transfer *state = &s->state;
+      uint8_t local_header_buf[4];
+      uint8_t *local_header;
+      uint32_t nl, el;
+#ifdef HAVE_MMAP
+      if (state->archive_mmap_data)
+         local_header = state->archive_mmap_data + (size_t)cdata + 26;
+      else
+#endif
+      {
+         filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26,
+               RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
+            return -1;
+         local_header = local_header_buf;
+      }
+      nl          = read_le(local_header,     2);
+      el          = read_le(local_header + 2, 2);
+      s->fdoffset = (int64_t)(size_t)cdata + 26 + 4 + nl + el;
+   }
+   s->csize = csize;
+   s->usize = size;
+   s->cmode = cmode;
+   s->found = 1;
+   return 1;
+}
+
+file_archive_entry_source_t *file_archive_entry_source_open(
+      const char *path, int64_t *usize)
+{
+   file_archive_entry_source_t *s   = NULL;
+   char *archive                    = NULL;
+   const char *delim                = NULL;
+   struct archive_extract_userdata userdata = {0};
+   int ret                          = 0;
+
+   if (file_archive_get_file_backend(path) != &zlib_backend)
+      return NULL;                  /* 7z solid blocks: classic path */
+   if (!(delim = path_get_archive_delim(path)) || !delim[1])
+      return NULL;
+   if (!(archive = (char*)malloc((size_t)(delim - path) + 1)))
+      return NULL;
+   memcpy(archive, path, (size_t)(delim - path));
+   archive[delim - path] = '\0';
+   if (!(s = (file_archive_entry_source_t*)calloc(1, sizeof(*s))))
+      goto error;
+
+   s->state.type         = ARCHIVE_TRANSFER_INIT;
+   userdata.transfer     = &s->state;
+   userdata.cb_data      = s;
+   s->needle             = delim + 1;
+
+   do
+   {
+      bool returnerr = true;
+      ret = file_archive_parse_file_iterate(&s->state, &returnerr,
+            archive, "",
+            file_archive_entry_source_capture, &userdata);
+      if (!returnerr)
+         break;
+   } while (ret == 0 && !s->found);
+
+   if (!s->found)
+      goto error_stop;
+
+   if (s->cmode == ZIP_MODE_DEFLATED)
+   {
+#ifdef ARCHIVE_HAVE_ZLIB
+      z_stream *z = (z_stream*)calloc(1, sizeof(z_stream));
+      if (!z || inflateInit2(z, -MAX_WBITS) != Z_OK)
+      {
+         free(z);
+         goto error_stop;
+      }
+      s->z = z;
+#else
+      if (!(s->z = rinflate_new(-15)))
+         goto error_stop;
+#endif
+#ifdef HAVE_MMAP
+      if (!s->state.archive_mmap_data)
+#endif
+      {
+         if (!(s->tmpbuf = (uint8_t*)malloc(_READ_CHUNK_SIZE)))
+            goto error_stop;
+      }
+   }
+   else if (s->cmode != ZIP_MODE_STORED)
+      goto error_stop;               /* unknown method */
+
+   free(archive);
+   s->needle = NULL;               /* borrowed from caller's path */
+   if (usize)
+      *usize = (int64_t)s->usize;
+   return s;
+
+error_stop:
+   file_archive_parse_file_iterate_stop(&s->state);
+error:
+   if (s)
+   {
+      free(s->tmpbuf);
+      free(s);
+   }
+   free(archive);
+   return NULL;
+}
+
+int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
+      uint8_t *dst, int64_t n)
+{
+   int64_t remain_out = (int64_t)s->usize - (int64_t)s->out_off;
+   if (n > remain_out)
+      n = remain_out;
+   if (n <= 0)
+      return 0;
+
+   if (s->cmode == ZIP_MODE_STORED)
+   {
+#ifdef HAVE_MMAP
+      if (s->state.archive_mmap_data)
+         memcpy(dst, s->state.archive_mmap_data
+               + (size_t)s->fdoffset + s->out_off, (size_t)n);
+      else
+#endif
+      {
+         filestream_seek(s->state.archive_file,
+               s->fdoffset + s->out_off, RETRO_VFS_SEEK_POSITION_START);
+         if (filestream_read(s->state.archive_file, dst, n) != n)
+            return -1;
+      }
+      s->out_off += (uint32_t)n;
+      return n;
+   }
+
+   /* DEFLATED: inflate directly into dst until n produced or end */
+#ifdef ARCHIVE_HAVE_ZLIB
+   {
+      z_stream *z = (z_stream*)s->z;
+      z->next_out  = dst;
+      z->avail_out = (uInt)n;
+      while (z->avail_out > 0)
+      {
+         if (z->avail_in == 0)
+         {
+            uint32_t chunk = s->csize - s->in_off;
+            if (chunk == 0)
+               break;
+#ifdef HAVE_MMAP
+            if (s->state.archive_mmap_data)
+            {
+               z->next_in  = s->state.archive_mmap_data
+                     + (size_t)s->fdoffset + s->in_off;
+               z->avail_in = (uInt)chunk;
+            }
+            else
+#endif
+            {
+               int64_t rd;
+               if (chunk > _READ_CHUNK_SIZE)
+                  chunk = _READ_CHUNK_SIZE;
+               filestream_seek(s->state.archive_file,
+                     s->fdoffset + s->in_off,
+                     RETRO_VFS_SEEK_POSITION_START);
+               rd = filestream_read(s->state.archive_file,
+                     s->tmpbuf, chunk);
+               if (rd <= 0)
+                  return -1;
+               z->next_in  = s->tmpbuf;
+               z->avail_in = (uInt)rd;
+               chunk       = (uint32_t)rd;
+            }
+            s->in_off += chunk;
+         }
+         {
+            int zr = inflate(z, 0);
+            if (zr == Z_STREAM_END)
+               break;
+            if (zr < 0)
+               return -1;
+         }
+      }
+      {
+         int64_t produced = n - (int64_t)z->avail_out;
+         s->out_off += (uint32_t)produced;
+         return produced;
+      }
+   }
+#else
+   {
+      /* The built-in inflate binds its whole output window once and
+       * keeps its own cursor, so per-call production is capped by
+       * input granularity, not by n: this arm may overshoot the
+       * pacing hint (the API permits it - dst always has room to the
+       * entry's end).  Verify the caller honours the sequential-
+       * contiguous dst contract before trusting the binding. */
+      int64_t produced = 0;
+      if (!s->out_expect)
+      {
+         rinflate_set_out(s->z, dst, s->usize);
+         s->out_expect = dst;
+      }
+      else if (dst != s->out_expect)
+         return -1;
+      while (produced < n)
+      {
+         uint32_t chunk = s->csize - s->in_off;
+         const uint8_t *iptr;
+         if (chunk == 0)
+            break;
+#ifdef HAVE_MMAP
+         if (s->state.archive_mmap_data)
+         {
+            if (chunk > _READ_CHUNK_SIZE)
+               chunk = _READ_CHUNK_SIZE;
+            iptr = s->state.archive_mmap_data
+                  + (size_t)s->fdoffset + s->in_off;
+         }
+         else
+#endif
+         {
+            int64_t rd;
+            if (chunk > _READ_CHUNK_SIZE)
+               chunk = _READ_CHUNK_SIZE;
+            filestream_seek(s->state.archive_file,
+                  s->fdoffset + s->in_off,
+                  RETRO_VFS_SEEK_POSITION_START);
+            rd = filestream_read(s->state.archive_file,
+                  s->tmpbuf, chunk);
+            if (rd <= 0)
+               return -1;
+            iptr  = s->tmpbuf;
+            chunk = (uint32_t)rd;
+         }
+         rinflate_set_in(s->z, iptr, chunk);
+         s->in_off += chunk;
+         for (;;)
+         {
+            size_t got_in = 0, got_out = 0;
+            int st = rinflate_process(s->z, &got_in, &got_out);
+            produced += (int64_t)got_out;
+            if (st == RDEFLATE_PROCESS_ERROR)
+               return -1;
+            if (st == RDEFLATE_PROCESS_END)
+            {
+               s->in_off = s->csize;   /* drained */
+               break;
+            }
+            if (got_in == 0 && got_out == 0)
+               break;                  /* chunk consumed */
+         }
+      }
+      s->out_off    += (uint32_t)produced;
+      s->out_expect += produced;
+      return produced;
+   }
+#endif
+}
+
+void file_archive_entry_source_close(file_archive_entry_source_t *s)
+{
+   if (!s)
+      return;
+   if (s->z)
+   {
+#ifdef ARCHIVE_HAVE_ZLIB
+      inflateEnd((z_stream*)s->z);
+      free(s->z);
+#else
+      rinflate_free(s->z);
+#endif
+   }
+   free(s->tmpbuf);
+   file_archive_parse_file_iterate_stop(&s->state);
+   free(s);
 }
 
 const struct file_archive_file_backend zlib_backend = {

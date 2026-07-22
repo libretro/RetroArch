@@ -219,6 +219,32 @@ extern const struct file_archive_file_backend zlib_backend;
 extern const struct file_archive_file_backend sevenzip_backend;
 extern const struct file_archive_file_backend zstd_backend;
 
+/* ---- incremental archive entry source ----
+ *
+ * Pull decompressed bytes of a single archive entry ("/path/file.zip
+ * #entry") in caller-paced chunks, instead of extracting the whole
+ * entry in one blocking call.  Decompression happens inside read():
+ * each call inflates just enough compressed input (directly from the
+ * archive's mapping where available) to produce up to n output
+ * bytes, so I/O and decode interleave per chunk - the counterpart of
+ * the image and audio layers' decode-as-the-bytes-arrive.
+ *
+ * Contract: dst regions across successive read() calls must be
+ * sequential and contiguous (the data_transfer source fill satisfies
+ * this naturally); the built-in inflate binds its output window once
+ * and the source verifies the cursor.  Returns bytes produced, 0 at
+ * end of entry, -1 on error.  Only backends whose entries are
+ * independently decodable provide sources (ZIP; 7z solid blocks
+ * cannot), so a NULL open is a normal "use the classic whole-entry
+ * path" signal, not an error. */
+typedef struct file_archive_entry_source file_archive_entry_source_t;
+
+file_archive_entry_source_t *file_archive_entry_source_open(
+      const char *path, int64_t *usize);
+int64_t file_archive_entry_source_read(file_archive_entry_source_t *s,
+      uint8_t *dst, int64_t n);
+void file_archive_entry_source_close(file_archive_entry_source_t *s);
+
 RETRO_END_DECLS
 
 #endif
