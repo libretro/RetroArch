@@ -88,6 +88,25 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);
+/* Raise the permanently-resident head.  For codecs whose loop
+ * landing sits past metadata of unpredictable size (FLAC PICTURE
+ * blocks can push the first frame beyond any fixed head), the
+ * feeder grows the head to cover the decoder's start position once
+ * it is known - the loop must land on resident pages, because the
+ * jump happens on the audio thread before any feeder tick. */
+bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep);
+/* Positioned read of file bytes into a caller buffer, touching no
+ * window state and committing no pages - for walking container
+ * metadata (FLAC block headers) to learn the layout before deciding
+ * what the head must cover. */
+bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
+      void *dst, size_t n);
+/* Release an inert range inside the head - bytes the consumer will
+ * never revisit (a skipped PICTURE block between the stream info
+ * and the first frame).  Whole pages strictly inside (from, to)
+ * are decommitted; under DT_WINDOW_STRICT they fault on touch. */
+void data_transfer_window_punch(data_transfer_t *dt, size_t from,
+      size_t to);
 /* One-call feeder policy: keep [tell - margin, tell + lookahead)
  * resident, detecting a backwards tell as a loop.  Returns false on
  * an I/O failure (the consumer will hit the end-of-data wall). */

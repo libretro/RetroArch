@@ -43,6 +43,7 @@
 #endif
 
 #include <streams/file_stream.h>
+#include <string.h>
 #include <formats/data_transfer.h>
 
 /* Prefix strategy: commit physical pages in steps of this as the
@@ -311,6 +312,70 @@ void data_transfer_window_rewind(data_transfer_t *dt)
    dt->wlo    = dt->keep;
    dt->whi    = dt->keep;
    dt->wfreed = (dt->keep + dt->page - 1) & ~(dt->page - 1);
+}
+
+bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
+{
+   if (!dt->window)
+      return false;
+   if (keep > dt->len)
+      keep = dt->len;
+   if (keep <= dt->keep)
+      return true;
+   if (dt->map_len)
+   {
+      /* commit and read the extension; pages already inside the
+       * window are re-read harmlessly */
+      if (!data_transfer_wcommit(dt, dt->keep, keep))
+         return false;
+      if (!data_transfer_read_at(dt, dt->keep, dt->map + dt->keep,
+            keep - dt->keep))
+         return false;
+   }
+   dt->keep = keep;
+   if (dt->wlo < keep)
+      dt->wlo = keep;
+   if (dt->whi < keep)
+      dt->whi = keep;
+   if (dt->wfreed < ((keep + dt->page - 1) & ~(dt->page - 1)))
+      dt->wfreed = (keep + dt->page - 1) & ~(dt->page - 1);
+   return true;
+}
+
+bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
+      void *dst, size_t n)
+{
+   if (!dt->window || off + n > dt->len)
+      return false;
+   if (!dt->map_len)
+   {
+      /* fallback: whole file resident - copy out */
+      memcpy(dst, dt->map + off, n);
+      return true;
+   }
+   return data_transfer_read_at(dt, off, (uint8_t*)dst, n) != 0;
+}
+
+void data_transfer_window_punch(data_transfer_t *dt, size_t from,
+      size_t to)
+{
+   size_t f, t;
+   if (!dt->window || !dt->map_len)
+      return;
+   f = (from + dt->page - 1) & ~(dt->page - 1);
+   t = (to / dt->page) * dt->page;
+   if (t <= f)
+      return;
+#if defined(_WIN32)
+   VirtualFree(dt->map + f, t - f, MEM_DECOMMIT);
+#elif defined(DT_HAVE_RESERVE)
+#ifdef DT_WINDOW_STRICT
+   mprotect(dt->map + f, t - f, PROT_NONE);
+   madvise(dt->map + f, t - f, MADV_DONTNEED);
+#else
+   madvise(dt->map + f, t - f, MADV_DONTNEED);
+#endif
+#endif
 }
 
 bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
