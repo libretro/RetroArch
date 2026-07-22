@@ -1856,6 +1856,40 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
    return (produced == 0) ? AUDIO_PROCESS_END : AUDIO_PROCESS_NEXT;
 }
 
+size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
+{
+   if (!data)
+      return 0;
+   switch (type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_TYPE_VORBIS:
+      {
+         struct audio_transfer_vorbis *v =
+               (struct audio_transfer_vorbis*)data;
+         /* self-framed buffer mode only: the demuxed/synth paths read
+          * decoder-owned scratch, not the caller's buffer */
+         if (v->handle && !v->setup && !v->synth)
+            return (size_t)rvorbis_buffer_tell(v->handle);
+         return 0;
+      }
+#endif
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m =
+               (struct audio_transfer_mp3*)data;
+         if (m->inited)
+            return (size_t)m->handle.readPos;
+         return 0;
+      }
+#endif
+      default:
+         break;
+   }
+   return 0;
+}
+
 bool audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame)
 {

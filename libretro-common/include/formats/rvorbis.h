@@ -66,6 +66,11 @@ extern unsigned int rvorbis_stream_length_in_samples(rvorbis *f);
  * you can also use seek_frame(). */
 
 extern void rvorbis_seek_start(rvorbis *f);
+
+/* Current byte offset of the decoder's read cursor within the input
+ * buffer.  Monotonic through playback; seek_start returns it to the
+ * first audio page. */
+extern unsigned int rvorbis_buffer_tell(rvorbis *f);
 /* this function is equivalent to rvorbis_seek(f,0), but it
  * actually works */
 

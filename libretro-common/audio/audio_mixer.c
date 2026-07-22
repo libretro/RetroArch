@@ -791,6 +791,39 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
    sound->data_release = release;
 }
 
+/* Compressed-byte read position of a stream voice's decoder within
+ * its source buffer - the windowed-source feeder's input.  Returns
+ * 0 for anything that is not a live buffer-mode stream voice.  Takes
+ * the voice lock: safe against the mixing thread. */
+size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
+{
+   size_t r = 0;
+   if (!voice)
+      return 0;
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
+   AUDIO_MIXER_LOCK(voice);
+   switch (voice->type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_MIXER_TYPE_OGG:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_VORBIS);
+         break;
+#endif
+#ifdef HAVE_RMP3
+      case AUDIO_MIXER_TYPE_MP3:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_MP3);
+         break;
+#endif
+      default:
+         break;
+   }
+   AUDIO_MIXER_UNLOCK(voice);
+#endif
+   return r;
+}
+
 void audio_mixer_destroy(audio_mixer_sound_t* sound)
 {
    void *handle = NULL;

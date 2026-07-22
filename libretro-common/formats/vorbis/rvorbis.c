@@ -5558,6 +5558,11 @@ int rvorbis_seek(rvorbis *f, unsigned int sample_number)
    return 1;
 }
 
+unsigned int rvorbis_buffer_tell(rvorbis *f)
+{
+   return (unsigned int)(f->stream - f->stream_start);
+}
+
 void rvorbis_seek_start(rvorbis *f)
 {
    f->first_frame_pending = 0;

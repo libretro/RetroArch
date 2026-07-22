@@ -165,6 +165,14 @@ int   audio_transfer_read_s16(void *data, enum audio_type_enum type,
 int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
       float *out, size_t frames, size_t *frames_out);
 
+/* The codec's current byte offset within the buffer set by
+ * set_buffer_ptr - how far into the compressed stream the decoder
+ * has read.  Monotonic during playback, jumps back to the head on a
+ * loop seek.  A windowed source's feeder uses it to keep residency
+ * around the read position.  Returns 0 if the codec does not track
+ * a buffer offset (demuxed arms, MOD). */
+size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
+
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
  * success. */
 bool  audio_transfer_seek(void *data, enum audio_type_enum type,

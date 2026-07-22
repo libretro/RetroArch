@@ -83,6 +83,10 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size);
  * container carries no supported track. */
 audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size);
 
+/* Compressed-byte read position of a stream voice's decoder (0 when
+ * not a live buffer-mode stream voice).  Thread-safe. */
+size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice);
+
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
 
 /* Mark the sound's compressed source data as borrowed: destroy will
