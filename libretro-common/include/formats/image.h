@@ -276,6 +276,26 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 void image_transfer_set_avail(void *data, enum image_type_enum type,
       size_t avail);
 
+/* The stream-level counterpart, for an animation stream adopted from
+ * a still whose file read was still in flight: the demuxer's byte
+ * wall was captured at open, and nothing else raises it once the
+ * still's task is gone - without this, a stream adopted at N bytes
+ * read treats N as the end of the file and loops the animation
+ * there, forever.  Call with the full length once the read
+ * completes (or progressively, should a streaming consumer appear).
+ * No-op for types without a byte wall (animated WEBP). */
+void image_transfer_anim_stream_set_avail(void *stream,
+      enum image_type_enum type, size_t avail);
+
+/* Companion to the above for WEBM, whose timestamp pre-scan is
+ * truncated by the wall (timestamps live in the block headers): once
+ * the buffer is complete, finish the scan so per-frame durations
+ * match a stream opened over the whole file.  No-op for MP4 (its
+ * scan reads the moov tables and is never truncated) and for types
+ * without a scan. */
+void image_transfer_anim_stream_complete_scan(void *stream,
+      enum image_type_enum type, const void *buf, size_t len);
+
 void image_transfer_anim_stream_rewind(void *stream,
       enum image_type_enum type);
 

@@ -624,6 +624,44 @@ void rwebm_video_stream_set_avail(rwebm_video_stream_t *s, size_t avail)
       rwebm_set_avail(s->demux, avail);
 }
 
+void rwebm_video_stream_complete_scan(rwebm_video_stream_t *s,
+      const uint8_t *buf, size_t len)
+{
+   rwebm_t *d;
+   rwebm_packet pkt;
+   int skip;
+
+   if (!s || s->num_frames >= RWEBM_VIDEO_MAX_TS)
+      return;
+   /* A separate demuxer over the (now fully read) buffer: the live
+    * one's cursor is mid-playback and cannot be borrowed.  Skip the
+    * packets the original pre-scan already recorded - the walk they
+    * take is identical, so the appended timestamps are exactly the
+    * values an untruncated scan would have recorded, and every
+    * per-frame duration becomes bit-identical to a stream opened
+    * over the complete file.  If the original scan in fact ended at
+    * the file's end (not the wall), the skip consumes everything and
+    * nothing is appended - harmless. */
+   if (!(d = rwebm_open_memory(buf, len)))
+      return;
+   skip = s->ts_count;
+   while (rwebm_read_packet(d, &pkt) == 1)
+   {
+      if (pkt.track != s->track)
+         continue;
+      if (skip > 0)
+      {
+         skip--;
+         continue;
+      }
+      s->ts[s->ts_count++] = pkt.timestamp;
+      s->num_frames++;
+      if (s->num_frames >= RWEBM_VIDEO_MAX_TS)
+         break;
+   }
+   rwebm_close(d);
+}
+
 /* Display duration of packet 'idx', in ms, from the pre-scanned
  * timestamp table; 0 when unknown (caller applies its default). */
 static int rwebm_video_duration_ms(const rwebm_video_stream_t *s, int idx)

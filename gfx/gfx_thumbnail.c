@@ -971,6 +971,17 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
       if (!done)
          return;
       thumbnail->anim_read_pending = 0;
+      /* The adopted stream's demuxer captured its byte wall when the
+       * still opened it (the still's task completed - and its
+       * completion callback died - before the read did); lift it to
+       * the full length, or the animation would treat the wall as the
+       * end of the file and loop there forever. */
+      image_transfer_anim_stream_set_avail(thumbnail->anim, type,
+            thumbnail->anim_buf_len);
+      /* ...and finish the WEBM timestamp pre-scan the walled open
+       * truncated, so pacing matches a fully-read open exactly. */
+      image_transfer_anim_stream_complete_scan(thumbnail->anim, type,
+            thumbnail->anim_buf, thumbnail->anim_buf_len);
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
       gfx_thumbnail_anim_audio_begin(thumbnail);
 #endif

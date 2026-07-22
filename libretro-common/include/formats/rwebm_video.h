@@ -153,6 +153,18 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
 void rwebm_video_stream_set_avail(rwebm_video_stream_t *stream,
       size_t avail);
 
+/* For a stream adopted from a still decoded against a partial read:
+ * once the whole file is in the buffer, finish the timestamp
+ * pre-scan the partial open truncated at its byte wall, making every
+ * per-frame duration identical to a stream opened over the complete
+ * file (a wall-truncated table otherwise paces frames past it by a
+ * single-interval estimate - for ms-rounded 30 fps content, a
+ * constant 33 where the true cadence alternates 33/34, i.e. a third
+ * of a millisecond of drift per frame until the table's cap).
+ * A bounded, header-only walk of at most the table cap's packets. */
+void rwebm_video_stream_complete_scan(rwebm_video_stream_t *stream,
+      const uint8_t *buf, size_t len);
+
 void rwebm_video_stream_rewind(rwebm_video_stream_t *stream);
 
 RETRO_END_DECLS

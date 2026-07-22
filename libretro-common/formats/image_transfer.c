@@ -599,6 +599,48 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
    }
 }
 
+void image_transfer_anim_stream_set_avail(void *stream,
+      enum image_type_enum type, size_t avail)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_set_avail((rwebm_video_stream_t*)stream,
+               avail);
+#endif
+         break;
+      case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
+         rmp4_video_stream_set_avail((rmp4_video_stream_t*)stream,
+               avail);
+#endif
+         break;
+      default:
+         break;
+   }
+}
+
+void image_transfer_anim_stream_complete_scan(void *stream,
+      enum image_type_enum type, const void *buf, size_t len)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
+         rwebm_video_stream_complete_scan((rwebm_video_stream_t*)stream,
+               (const uint8_t*)buf, len);
+#endif
+         break;
+      case IMAGE_TYPE_MP4:
+         /* The MP4 pre-scan reads the moov sample tables, which need
+          * no media bytes: it is never truncated by the wall. */
+         break;
+      default:
+         break;
+   }
+}
+
 bool image_transfer_anim_stream_set_argb(void *stream,
       enum image_type_enum type, int argb)
 {
