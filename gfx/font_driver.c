@@ -1017,8 +1017,7 @@ void font_driver_free(font_data_t *font)
       font_driver_generation++;
 
 #ifdef HAVE_THREADS
-      bool *is_threaded_tmp   = video_driver_get_threaded();
-      is_threaded             = *is_threaded_tmp;
+      is_threaded             = *video_driver_get_threaded();
 #endif
 
       font_driver_release_renderer_state(font->renderer,
