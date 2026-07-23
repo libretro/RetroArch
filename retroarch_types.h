@@ -368,13 +368,27 @@ typedef struct content_state
    size_t prefetch_count;
 
    /* Background CRC32 of content the frontend never buffers (a core
-    * using need_fullpath).  The hashing task owns these while it runs:
-    * it writes crc_bg_value and only then sets crc_bg_done, so a reader
-    * that observes the flag observes a finished value.  Single writer,
-    * word-sized, and the reader falls back to hashing synchronously if
-    * the flag is not yet set. */
+    * using need_fullpath).
+    *
+    * crc_bg_epoch is bumped by the main thread for every load that
+    * starts a hashing task, and each task carries the epoch it was
+    * started for.  On completion a task writes crc_bg_value and only
+    * then stamps crc_bg_epoch_done with its own epoch, so a reader
+    * that sees a matching stamp is looking at a finished value that
+    * belongs to the content currently loaded.  A task left over from a
+    * previous load stamps its own, older epoch and is ignored - which
+    * matters because hashing a large image spans many ticks and can
+    * easily still be running when the next load begins.
+    *
+    * Task handlers run one at a time, so the only concurrency is
+    * task thread against main thread; the values are word-sized and
+    * a stamp that is missed or stale costs a synchronous hash rather
+    * than a wrong answer.  Epoch 0 is reserved for "no task has ever
+    * been started", so the zeroed state cannot read as a finished
+    * hash whose value happens to be zero. */
    uint32_t crc_bg_value;
-   volatile int crc_bg_done;
+   volatile uint32_t crc_bg_epoch;
+   volatile uint32_t crc_bg_epoch_done;
 
    char companion_ui_crc32[32];
    char pending_subsystem_ident[NAME_MAX_LENGTH];

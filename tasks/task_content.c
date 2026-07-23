@@ -3183,6 +3183,7 @@ struct content_crc_task_state
    unsigned char  *buf;
    content_state_t *p_content;
    uint32_t        crc;
+   uint32_t        epoch;
 };
 
 static void content_crc_task_handler(retro_task_t *task)
@@ -3201,7 +3202,7 @@ static void content_crc_task_handler(retro_task_t *task)
 
    if (nread < 0)
    {
-      /* Leave crc_bg_done clear: content_get_crc falls back to the
+      /* Leave the epoch unstamped: content_get_crc falls back to the
        * synchronous hash, which reports its own failure. */
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
@@ -3211,10 +3212,10 @@ static void content_crc_task_handler(retro_task_t *task)
 
    if (nread < CRC32_TICK_BYTES || filestream_eof(st->file))
    {
-      /* Publish the value before the flag, so a reader that sees the
-       * flag set is guaranteed to see the finished value. */
-      st->p_content->crc_bg_value = st->crc;
-      st->p_content->crc_bg_done  = 1;
+      /* Publish the value before the stamp, so a reader that sees a
+       * matching stamp is guaranteed to see the finished value. */
+      st->p_content->crc_bg_value      = st->crc;
+      st->p_content->crc_bg_epoch_done = st->epoch;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
 }
@@ -3240,7 +3241,10 @@ static void content_crc_task_push(content_state_t *p_content,
    struct content_crc_task_state *st = NULL;
    retro_task_t                  *t  = NULL;
 
-   p_content->crc_bg_done  = 0;
+   /* Bump first: any task still running for a previous load now
+    * carries a stale epoch and can no longer be mistaken for this
+    * one, whether or not the push below succeeds. */
+   p_content->crc_bg_epoch++;
    p_content->crc_bg_value = 0;
 
    if (!(st = (struct content_crc_task_state*)calloc(1, sizeof(*st))))
@@ -3267,6 +3271,7 @@ static void content_crc_task_push(content_state_t *p_content,
 
    st->p_content = p_content;
    st->crc       = 0;
+   st->epoch     = p_content->crc_bg_epoch;
    t->state      = st;
    t->handler    = content_crc_task_handler;
    t->cleanup    = content_crc_task_cleanup;
@@ -3335,7 +3340,10 @@ uint32_t content_get_crc(void)
        * now; take its value if so, and otherwise hash synchronously as
        * before.  Reading the flag first orders this against the task's
        * write of the value. */
-      if (p_content->crc_bg_done)
+      /* Epoch 0 is "no task was ever started": the zeroed state must
+       * not read as a finished hash of value zero. */
+      if (      p_content->crc_bg_epoch
+            &&  p_content->crc_bg_epoch_done == p_content->crc_bg_epoch)
          p_content->rom_crc = p_content->crc_bg_value;
       else
          p_content->rom_crc  = file_crc32(0,
