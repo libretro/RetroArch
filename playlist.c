@@ -25,6 +25,7 @@
 #include <compat/posix_string.h>
 #include <string/stdstring.h>
 #include <streams/interface_stream.h>
+#include <streams/file_stream.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <lists/string_list.h>
@@ -1727,11 +1728,52 @@ static void playlist_cached_after_write(playlist_t *written)
       playlist_free_cached();
 }
 
+/* Move @from onto @to, replacing whatever is there.
+ *
+ * POSIX rename() replaces atomically and that is the whole point of
+ * this, so try it first and take the single-syscall path where it
+ * works.  Windows' rename() refuses when the destination exists, so
+ * there the original is moved aside first: at every instant either the
+ * destination or the saved copy is a complete file, and if the second
+ * move fails the original is put back.  A failure anywhere leaves the
+ * existing playlist untouched, which is the outcome that matters. */
+static bool playlist_replace_file(const char *from, const char *to)
+{
+   char saved[PATH_MAX_LENGTH];
+   size_t _len;
+
+   if (filestream_rename(from, to) == 0)
+      return true;
+
+   /* Either the destination exists and this platform will not replace
+    * it, or the move itself failed.  Try moving the original aside. */
+   _len = strlcpy(saved, to, sizeof(saved));
+   if (_len + STRLEN_CONST(".old") >= sizeof(saved))
+      return false;
+   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
+
+   filestream_delete(saved);          /* a leftover from a previous run */
+   if (filestream_rename(to, saved) != 0)
+      return false;                   /* original untouched; give up   */
+
+   if (filestream_rename(from, to) == 0)
+   {
+      filestream_delete(saved);
+      return true;
+   }
+
+   /* Put the original back rather than leave nothing behind. */
+   filestream_rename(saved, to);
+   return false;
+}
+
 void playlist_write_file(playlist_t *playlist)
 {
    size_t i, _len;
    intfstream_t *file = NULL;
    bool compressed    = false;
+   bool wrote_ok      = false;
+   char write_path[PATH_MAX_LENGTH];
 
    /* Playlist will be written if any of the
     * following are true:
@@ -1753,19 +1795,35 @@ void playlist_write_file(playlist_t *playlist)
           ))
       return;
 
+   /* Write beside the target and move it into place at the end, rather
+    * than truncating the real file and filling it in.  A crash, a power
+    * loss or a full disk part way through a write would otherwise leave
+    * the user with a truncated playlist - and for a large one that
+    * window is tens of milliseconds on every scan and every favourite
+    * added.  The temporary sits in the same directory so the move stays
+    * within one filesystem. */
+   _len = strlcpy(write_path, playlist->config.path, sizeof(write_path));
+   if (_len + STRLEN_CONST(".tmp") >= sizeof(write_path))
+   {
+      RARCH_ERR("[Playlist] Path too long to write safely: \"%s\".\n",
+            playlist->config.path);
+      return;
+   }
+   strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+
 #if defined(HAVE_COMPRESSION)
    if (playlist->config.compress)
-      file = intfstream_open_rzip_file(playlist->config.path,
+      file = intfstream_open_rzip_file(write_path,
             RETRO_VFS_FILE_ACCESS_WRITE);
    else
 #endif
-      file = intfstream_open_file(playlist->config.path,
+      file = intfstream_open_file(write_path,
             RETRO_VFS_FILE_ACCESS_WRITE,
             RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
    {
-      RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", playlist->config.path);
+      RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", write_path);
       return;
    }
 
@@ -1803,6 +1861,11 @@ void playlist_write_file(playlist_t *playlist)
             playlist->sort_mode);
 
       playlist->flags  |=  (CNT_PLAYLIST_FLG_OLD_FMT);
+      /* intfstream_printf reports nothing useful per call here, so the
+       * old format's success is "we reached the end without bailing" -
+       * the same guarantee it gave before, now made explicit because
+       * the temporary is only moved into place on success. */
+      wrote_ok          = true;
    }
    else
 #endif
@@ -2099,10 +2162,14 @@ void playlist_write_file(playlist_t *playlist)
       rjsonwriter_raw(writer, "]\n", 2);
       rjsonwriter_raw(writer, "}\n", 2);
 
+      /* The writer's own failure is the signal that the temporary is
+       * incomplete; without it a short write would be moved over a
+       * good playlist. */
       if (!rjsonwriter_free(writer))
-      {
-         RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n", playlist->config.path);
-      }
+         RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n",
+               playlist->config.path);
+      else
+         wrote_ok = true;
 
       playlist->flags  &= ~(CNT_PLAYLIST_FLG_OLD_FMT);
    }
@@ -2114,12 +2181,25 @@ void playlist_write_file(playlist_t *playlist)
    else
       playlist->flags  &= ~(CNT_PLAYLIST_FLG_COMPRESSED);
 
-   RARCH_LOG("[Playlist] Written to file: \"%s\".\n", playlist->config.path);
 end:
    intfstream_close(file);
    free(file);
 
-   playlist_cached_after_write(playlist);
+   /* Only now does the new content replace the old one.  If anything
+    * above failed, the temporary is discarded and the playlist on disk
+    * is exactly what it was. */
+   if (wrote_ok && playlist_replace_file(write_path, playlist->config.path))
+   {
+      RARCH_LOG("[Playlist] Written to file: \"%s\".\n",
+            playlist->config.path);
+      playlist_cached_after_write(playlist);
+   }
+   else
+   {
+      filestream_delete(write_path);
+      RARCH_ERR("[Playlist] Failed to write to file: \"%s\".\n",
+            playlist->config.path);
+   }
 }
 
 /**
