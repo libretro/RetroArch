@@ -15,8 +15,7 @@
 
 #include <stdint.h>
 
-#include <LzmaEnc.h>
-#include <LzmaDec.h>
+#include <LzmaDec.h> /* decode-only: lzma_codec_init derives props without the encoder */
 
 #include <libchdr/libchdr_zlib.h>
 
