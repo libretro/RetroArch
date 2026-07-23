@@ -1515,9 +1515,24 @@ static bool rdds_parse_header(const uint8_t *data, size_t len,
 
    if (out->width == 0 || out->height == 0)
       return false;
-   /* Guard the malloc size (width*height*4) against overflow. */
-   if (out->width  > 0x7fffu || out->height > 0x7fffu)
-      return false;
+   /* Guard the malloc size (width*height*4) against overflow.
+    *
+    * DDS dimensions are 32-bit header fields, so their product times
+    * four can overflow even a 64-bit size_t and has to be checked
+    * rather than merely widened.  Check the product by dividing,
+    * though, rather than capping each side: a per-side ceiling of
+    * 0x7fff refuses a 32768x8192 surface that decodes to only 1 GiB,
+    * while admitting 32767x32767 at 4 GiB - it bounds the wrong
+    * quantity.  Rejecting only what cannot be addressed on this host
+    * lets the allocation decide, and a request malloc cannot satisfy
+    * fails there, which the caller already handles.  On a 32-bit host
+    * this is the same wrap guard the old constant approximated, now
+    * exact. */
+   {
+      size_t max_px = (size_t)-1 / sizeof(uint32_t);
+      if ((size_t)out->width > max_px / (size_t)out->height)
+         return false;
+   }
 
    if (pf_flags & RDDS_DDPF_FOURCC)
    {
