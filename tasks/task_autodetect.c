@@ -52,9 +52,19 @@ typedef struct
    char *dir_autoconfig;
    char *dir_driver_autoconfig;
    config_file_t *autoconfig_file;
-   unsigned port;
+   /* External scan, carried between ticks.  The directory listing is
+    * walked a slice at a time rather than in one go: on a cold cache
+    * the eight hundred odd profiles that ship take tens of
+    * milliseconds here and far longer on the slow storage a handheld
+    * has, and this task runs on the main loop. */
+   struct RDIR   *scan_rdir;
+   config_file_t *scan_best;
+   unsigned       scan_max_affinity;
+   unsigned       scan_dir_idx;
+   unsigned       port;
    input_device_info_t device_info; /* unsigned alignment */
    uint8_t flags;
+   uint8_t scan_done;
 } autoconfig_handle_t;
 
 /*********************/
@@ -65,6 +75,19 @@ static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
    if (!autoconfig_handle)
       return;
+
+   /* A scan may be part way through a directory. */
+   if (autoconfig_handle->scan_rdir)
+   {
+      retro_closedir(autoconfig_handle->scan_rdir);
+      autoconfig_handle->scan_rdir = NULL;
+   }
+
+   if (autoconfig_handle->scan_best)
+   {
+      config_file_free(autoconfig_handle->scan_best);
+      autoconfig_handle->scan_best = NULL;
+   }
 
    if (autoconfig_handle->dir_autoconfig)
    {
@@ -332,17 +355,28 @@ static bool input_autoconfigure_file_may_match(
    return false;
 }
 
+/* How many directory entries one tick will look at.
+ *
+ * Each is an open, a read and a close - cheap warm, and the dominant
+ * cost cold or on slow storage, where it is per-file rather than per
+ * byte.  This task runs on the main loop, so the whole listing is not
+ * walked in one go. */
+#define AUTOCONFIG_SCAN_ENTRIES_PER_TICK 48
+
+/* Advance the external scan by one slice.
+ *
+ * Returns false while there is more to do, in which case the caller
+ * returns and is called again on the next tick.  Returns true when the
+ * scan is finished, with autoconfig_handle->scan_best holding the best
+ * profile found, if any. */
 static bool input_autoconfigure_scan_config_files_external(
       autoconfig_handle_t *autoconfig_handle)
 {
-   const char *dir_autoconfig           = autoconfig_handle->dir_autoconfig;
-   const char *dir_driver_autoconfig    = autoconfig_handle->dir_driver_autoconfig;
-   unsigned max_affinity                = 0;
-   bool match_found                     = false;
-   config_file_t *best_config           = NULL;
+   const char *dir_autoconfig        = autoconfig_handle->dir_autoconfig;
+   const char *dir_driver_autoconfig = autoconfig_handle->dir_driver_autoconfig;
    const char *dirs[2];
-   unsigned num_dirs = 0;
-   unsigned d;
+   unsigned    num_dirs = 0;
+   unsigned    budget   = AUTOCONFIG_SCAN_ENTRIES_PER_TICK;
 
    if (     (dir_autoconfig && *dir_autoconfig)
          && path_is_directory(dir_autoconfig))
@@ -352,117 +386,123 @@ static bool input_autoconfigure_scan_config_files_external(
          && path_is_directory(dir_driver_autoconfig))
       dirs[num_dirs++] = dir_driver_autoconfig;
 
-   for (d = 0; d < num_dirs; d++)
+   while (budget > 0)
    {
-      struct RDIR *rdir = retro_opendir(dirs[d]);
-      if (!rdir)
-         continue;
+      const char *entry_name;
+      char        config_file_path[PATH_MAX_LENGTH];
+      config_file_t *config = NULL;
+      unsigned    affinity  = 0;
 
-      while (retro_readdir(rdir))
+      if (autoconfig_handle->scan_dir_idx >= num_dirs)
+         break;                            /* every directory walked */
+
+      if (!autoconfig_handle->scan_rdir)
       {
-         const char *entry_name    = retro_dirent_get_name(rdir);
-         char config_file_path[PATH_MAX_LENGTH];
-         config_file_t *config     = NULL;
-         unsigned affinity         = 0;
-
-         if (     (!entry_name || !*entry_name)
-               || !string_is_equal_noncase(
-                     path_get_extension(entry_name), "cfg"))
+         if (!(autoconfig_handle->scan_rdir = retro_opendir(
+                     dirs[autoconfig_handle->scan_dir_idx])))
+         {
+            autoconfig_handle->scan_dir_idx++;
             continue;
-
-         fill_pathname_join_special(config_file_path,
-               dirs[d], entry_name, sizeof(config_file_path));
-
-         /* Read once, and only parse what could win.  The Bliss-Box
-          * path rewrites the product id before comparing, so its
-          * devices skip the filter and are parsed as before. */
-         {
-            int64_t  buf_len = 0;
-            char    *buf     = NULL;
-            bool     candidate;
-
-            if (!filestream_read_file(config_file_path,
-                     (void**)&buf, &buf_len) || !buf)
-               continue;
-
-#ifdef HAVE_BLISSBOX
-            candidate = (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-                  || input_autoconfigure_file_may_match(buf,
-                        autoconfig_handle->device_info.name,
-                        autoconfig_handle->device_info.vid,
-                        autoconfig_handle->device_info.pid);
-#else
-            candidate = input_autoconfigure_file_may_match(buf,
-                  autoconfig_handle->device_info.name,
-                  autoconfig_handle->device_info.vid,
-                  autoconfig_handle->device_info.pid);
-#endif
-            if (!candidate)
-            {
-               free(buf);
-               continue;
-            }
-
-            config = config_file_new_from_string(buf, config_file_path);
-            free(buf);
-         }
-
-         if (!config)
-            continue;
-
-         affinity = input_autoconfigure_get_config_file_affinity(
-               autoconfig_handle, config);
-
-         if (affinity > max_affinity)
-         {
-            if (best_config)
-               config_file_free(best_config);
-
-            best_config  = config;
-            config       = NULL;
-            max_affinity = affinity;
-
-            if (affinity >= 60)
-            {
-               retro_closedir(rdir);
-               goto done;
-            }
-         }
-         else
-         {
-            config_file_free(config);
-            config = NULL;
          }
       }
 
-      retro_closedir(rdir);
+      if (!retro_readdir(autoconfig_handle->scan_rdir))
+      {
+         retro_closedir(autoconfig_handle->scan_rdir);
+         autoconfig_handle->scan_rdir = NULL;
+         autoconfig_handle->scan_dir_idx++;
+         continue;
+      }
 
-      if (best_config)
-         break;
+      budget--;
+
+      entry_name = retro_dirent_get_name(autoconfig_handle->scan_rdir);
+      if (     (!entry_name || !*entry_name)
+            || !string_is_equal_noncase(
+                  path_get_extension(entry_name), "cfg"))
+         continue;
+
+      fill_pathname_join_special(config_file_path,
+            dirs[autoconfig_handle->scan_dir_idx], entry_name,
+            sizeof(config_file_path));
+
+      /* Read once, and only parse what could win.  The Bliss-Box path
+       * rewrites the product id before comparing, so its devices skip
+       * the filter and are parsed as before. */
+      {
+         int64_t  buf_len = 0;
+         char    *buf     = NULL;
+         bool     candidate;
+
+         if (!filestream_read_file(config_file_path,
+                  (void**)&buf, &buf_len) || !buf)
+            continue;
+
+#ifdef HAVE_BLISSBOX
+         candidate = (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+               || input_autoconfigure_file_may_match(buf,
+                     autoconfig_handle->device_info.name,
+                     autoconfig_handle->device_info.vid,
+                     autoconfig_handle->device_info.pid);
+#else
+         candidate = input_autoconfigure_file_may_match(buf,
+               autoconfig_handle->device_info.name,
+               autoconfig_handle->device_info.vid,
+               autoconfig_handle->device_info.pid);
+#endif
+         if (!candidate)
+         {
+            free(buf);
+            continue;
+         }
+
+         config = config_file_new_from_string(buf, config_file_path);
+         free(buf);
+      }
+
+      if (!config)
+         continue;
+
+      affinity = input_autoconfigure_get_config_file_affinity(
+            autoconfig_handle, config);
+
+      if (affinity > autoconfig_handle->scan_max_affinity)
+      {
+         if (autoconfig_handle->scan_best)
+            config_file_free(autoconfig_handle->scan_best);
+
+         autoconfig_handle->scan_best         = config;
+         config                               = NULL;
+         autoconfig_handle->scan_max_affinity = affinity;
+
+         /* A vendor, product and physical location match is as good as
+          * it gets; nothing later can beat it. */
+         if (affinity >= 60)
+         {
+            retro_closedir(autoconfig_handle->scan_rdir);
+            autoconfig_handle->scan_rdir    = NULL;
+            autoconfig_handle->scan_dir_idx = num_dirs;
+            break;
+         }
+      }
+      else
+      {
+         config_file_free(config);
+         config = NULL;
+      }
    }
 
-done:
-   if (best_config)
+   if (autoconfig_handle->scan_dir_idx < num_dirs)
+      return false;                        /* resume on the next tick */
+
+   if (autoconfig_handle->scan_best)
    {
-      input_autoconfigure_set_config_file(
-            autoconfig_handle, best_config,
-            max_affinity % 10);
-      match_found = true;
+      autoconfig_handle->autoconfig_file = autoconfig_handle->scan_best;
+      autoconfig_handle->scan_best       = NULL;
    }
-
-   RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
-         autoconfig_handle->device_info.joypad_driver,
-         autoconfig_handle->device_info.name,
-         autoconfig_handle->device_info.vid, autoconfig_handle->device_info.pid,
-         autoconfig_handle->device_info.phys,
-         max_affinity);
-
-   return match_found;
+   return true;
 }
 
-/* Attempts to find an internal autoconfig definition
- * matching the connected input device
- * > Returns 'true' if successful */
 static bool input_autoconfigure_scan_config_files_internal(
       autoconfig_handle_t *autoconfig_handle)
 {
@@ -834,8 +874,17 @@ static void input_autoconfigure_connect_handler(retro_task_t *task)
    /* Scan in order of preference:
     * - External autoconfig files
     * - Internal autoconfig definitions */
-   if (!(match_found = input_autoconfigure_scan_config_files_external(
-         autoconfig_handle)))
+   /* The external scan walks the profile directory a slice at a time;
+    * until it reports itself finished there is nothing else to do this
+    * tick.  Everything below runs once, on the tick that completes it. */
+   if (!autoconfig_handle->scan_done)
+   {
+      if (!input_autoconfigure_scan_config_files_external(autoconfig_handle))
+         return;
+      autoconfig_handle->scan_done = 1;
+   }
+
+   if (!(match_found = (autoconfig_handle->autoconfig_file != NULL)))
       match_found = input_autoconfigure_scan_config_files_internal(
          autoconfig_handle);
 
