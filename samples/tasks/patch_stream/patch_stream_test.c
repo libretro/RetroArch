@@ -1,15 +1,23 @@
-/*  RetroArch - A frontend for libretro.
+/* Copyright  (C) 2010-2026 The RetroArch team
  *
- *  RetroArch is free software: you can redistribute it and/or modify it under the terms
- *  of the GNU General Public License as published by the Free Software Found-
- *  ation, either version 3 of the License, or (at your option) any later version.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (patch_stream_test.c).
+ * ---------------------------------------------------------------------------------------
  *
- *  RetroArch is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- *  without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- *  PURPOSE.  See the GNU General Public License for more details.
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- *  You should have received a copy of the GNU General Public License along with RetroArch.
- *  If not, see <http://www.gnu.org/licenses/>.
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
 /* Differential harness for the streaming patch appliers.
@@ -29,10 +37,8 @@
  * boundaries landing inside a patch command.  Those cases are generated
  * explicitly; the first of them caught a real bug during development.
  *
- * Build:
- *   cc -O2 -std=c89 -Wall -I../../libretro-common/include \
- *      test_patch_stream.c ../patch_stream.c -o test_patch_stream
- *   ./test_patch_stream
+ * Build:  make            (SANITIZER=address,undefined for a checked run)
+ * Run:    ./patch_stream_test
  */
 
 #include <stdint.h>
@@ -40,7 +46,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../patch_stream.h"
+#include "../../../tasks/patch_stream.h"
 
 #define PATCH_SUCCESS 0
 #define PATCH_FAIL    1
@@ -59,19 +65,105 @@ int oracle_ips(const uint8_t *pd, uint64_t pl, const uint8_t *sd, uint64_t sl, u
    uint32_t off=5, tlen=(uint32_t)sl;
    uint8_t *t;
    /* pass 1: target length */
-   { uint32_t o=5;
-     for(;;){ uint32_t a,l; if(o>pl-3)break; a=(pd[o]<<16)|(pd[o+1]<<8)|pd[o+2]; o+=3;
-       if(a==0x454f46){ if(o==pl)break; if(o==pl-3){ tlen=(pd[o]<<16)|(pd[o+1]<<8)|pd[o+2]; o+=3; break; } }
-       if(o>pl-2)break; l=(pd[o]<<8)|pd[o+1]; o+=2;
-       if(l){ if(o>pl-l)break; a+=l; o+=l; } else { uint32_t r; if(o>pl-3)break; r=(pd[o]<<8)|pd[o+1]; o+=2; if(!r)break; a+=r; o++; }
-       if(a>tlen)tlen=a; } }
-   t=(uint8_t*)malloc(tlen); if(!t)return PATCH_FAIL;
-   memcpy(t,sd,(size_t)sl); if(tlen>sl) memset(t+sl,0,tlen-sl);
-   for(;;){ uint32_t a,l; if(off>pl-3)break; a=(pd[off]<<16)|(pd[off+1]<<8)|pd[off+2]; off+=3;
-     if(a==0x454f46){ if(off==pl){*td=t;*tl=tlen;return PATCH_SUCCESS;} if(off==pl-3){*td=t;*tl=tlen;return PATCH_SUCCESS;} }
-     if(off>pl-2)break; l=(pd[off]<<8)|pd[off+1]; off+=2;
-     if(l){ if(off>pl-l)break; while(l--) t[a++]=pd[off++]; }
-     else { uint32_t r; if(off>pl-3)break; r=(pd[off]<<8)|pd[off+1]; off+=2; if(!r)break; while(r--) t[a++]=pd[off]; off++; } }
+   /* pass 1: determine the target length */
+   {
+      uint32_t o = 5;
+      for (;;)
+      {
+         uint32_t a, l;
+         if (o > pl - 3)
+            break;
+         a = (pd[o] << 16) | (pd[o + 1] << 8) | pd[o + 2];
+         o += 3;
+         if (a == 0x454f46) /* EOF */
+         {
+            if (o == pl)
+               break;
+            if (o == pl - 3)
+            {
+               tlen = (pd[o] << 16) | (pd[o + 1] << 8) | pd[o + 2];
+               o += 3;
+               break;
+            }
+         }
+         if (o > pl - 2)
+            break;
+         l = (pd[o] << 8) | pd[o + 1];
+         o += 2;
+         if (l)
+         {
+            if (o > pl - l)
+               break;
+            a += l;
+            o += l;
+         }
+         else
+         {
+            uint32_t r;
+            if (o > pl - 3)
+               break;
+            r = (pd[o] << 8) | pd[o + 1];
+            o += 2;
+            if (!r)
+               break;
+            a += r;
+            o++;
+         }
+         if (a > tlen)
+            tlen = a;
+      }
+   }
+
+   if (!(t = (uint8_t*)malloc(tlen ? tlen : 1)))
+      return PATCH_FAIL;
+   if (sl)
+      memcpy(t, sd, (size_t)sl);
+   if (tlen > sl)
+      memset(t + sl, 0, tlen - sl);
+
+   /* pass 2: apply the records */
+   for (;;)
+   {
+      uint32_t a, l;
+      if (off > pl - 3)
+         break;
+      a = (pd[off] << 16) | (pd[off + 1] << 8) | pd[off + 2];
+      off += 3;
+      if (a == 0x454f46) /* EOF */
+      {
+         if (off == pl || off == pl - 3)
+         {
+            *td = t;
+            *tl = tlen;
+            return PATCH_SUCCESS;
+         }
+      }
+      if (off > pl - 2)
+         break;
+      l = (pd[off] << 8) | pd[off + 1];
+      off += 2;
+      if (l)
+      {
+         if (off > pl - l)
+            break;
+         while (l--)
+            t[a++] = pd[off++];
+      }
+      else
+      {
+         uint32_t r;
+         if (off > pl - 3)
+            break;
+         r = (pd[off] << 8) | pd[off + 1];
+         off += 2;
+         if (!r)
+            break;
+         while (r--)
+            t[a++] = pd[off];
+         off++;
+      }
+   }
+
    *td=t;*tl=tlen;return PATCH_SUCCESS;
 }
 
@@ -230,9 +322,17 @@ static size_t make_bps(uint8_t*pat,const uint8_t*src,size_t sl,uint8_t*tgt,size_
          break; }
       }
    }
-   { uint32_t sc=crc2(src,sl),tc=crc2(tgt,tl),pc; int k;
-     for(k=0;k<4;k++)pat[o++]=sc>>(k*8); for(k=0;k<4;k++)pat[o++]=tc>>(k*8);
-     pc=crc2(pat,o); for(k=0;k<4;k++)pat[o++]=pc>>(k*8); }
+   {
+      uint32_t sc = crc2(src, sl), tc = crc2(tgt, tl), pc;
+      int k;
+      for (k = 0; k < 4; k++)
+         pat[o++] = sc >> (k * 8);
+      for (k = 0; k < 4; k++)
+         pat[o++] = tc >> (k * 8);
+      pc = crc2(pat, o);
+      for (k = 0; k < 4; k++)
+         pat[o++] = pc >> (k * 8);
+   }
    return o;
 }
 
