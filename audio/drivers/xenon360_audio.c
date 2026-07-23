@@ -51,6 +51,13 @@ static void *xenon360_audio_init(const char *device,
    return calloc(1, sizeof(xenon_audio_t));
 }
 
+/* Full 32-bit byte reversal of a packed stereo frame.  On this
+ * big-endian host that is a per-sample 16-bit byteswap AND an L/R
+ * channel swap fused together - i.e. the hardware is being fed
+ * little-endian samples in R,L order.  Whether the channel swap is a
+ * hardware requirement or a long-standing accident is unverifiable
+ * without a devkit; the swap has shipped this way since the driver
+ * was introduced, so it is documented rather than changed. */
 static INLINE uint32_t xenon360_bswap_32(uint32_t val)
 {
    return (val >> 24) | (val << 24) |
