@@ -1,9 +1,9 @@
-TARGET := data_transfer_source_test
+TARGET       := data_transfer_source_test
+TARGET_TEST2 := data_transfer_prefix_test
 
 LIBRETRO_COMM_DIR := ../../..
 
-SOURCES := \
-	data_transfer_source_test.c \
+COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
@@ -14,7 +14,8 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
+OBJS        := data_transfer_source_test.o data_transfer_prefix_test.o $(COMMON_OBJS)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -23,15 +24,18 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_TEST2)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS)
+$(TARGET): data_transfer_source_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST2): data_transfer_prefix_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST2) $(OBJS)
 
 .PHONY: clean
