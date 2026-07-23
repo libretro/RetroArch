@@ -390,6 +390,36 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
       if ((size_t)s->img_x > max_px / (size_t)s->img_y)
          return 0;
    }
+
+   /* The dimensions are representable, but that alone does not make
+    * them real: they are attacker-controlled header fields, and letting
+    * the allocation decide only works where an over-large request
+    * actually fails.  Under Linux overcommit it does not - a 128-byte
+    * file declaring 0x10001 x 0x10000 gets a 16 GiB mapping and the
+    * decoder then faults it all in, one zero-filled row at a time, for
+    * an out-of-memory kill or a very long stall from a trivially small
+    * input.
+    *
+    * A declared image cannot need more pixel data than the file has
+    * left to give, so require the input to hold what it claims: one
+    * padded row stride per row, from the pixel-data offset onwards.
+    * That is a property of the file rather than a guess about what a
+    * realistic asset looks like, so it refuses nothing a real decode
+    * would have produced - a genuinely large BMP carries genuinely
+    * large pixel data and still loads.  Rows are computed in size_t
+    * from values already bounded above, so nothing here can wrap. */
+   {
+      size_t total     = (size_t)(s->img_buffer_end - s->img_buffer_original);
+      size_t data_off  = (offset > 0) ? (size_t)offset : 0;
+      size_t row_bits  = (size_t)s->img_x * (size_t)((bpp > 0) ? bpp : 1);
+      size_t row_bytes = ((row_bits + 31) / 32) * 4; /* 4-byte aligned rows */
+
+      if (data_off >= total)
+         return 0;
+      if (row_bytes > (total - data_off) / (size_t)s->img_y)
+         return 0;
+   }
+
    output = (uint32_t*)malloc(
          (size_t)s->img_x * (size_t)s->img_y * sizeof(uint32_t));
    if (!output)
