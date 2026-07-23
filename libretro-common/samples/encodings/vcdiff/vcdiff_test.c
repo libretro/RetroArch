@@ -33,7 +33,16 @@
  * Between them they exercise both window kinds, every instruction type,
  * and the address caches.
  *
- * The second half feeds the decoder hundreds of thousands of random
+ * The golden vectors cannot reach everything, because they are limited
+ * to what one encoder chooses to emit: xdelta3 only ever produced
+ * VCD_SOURCE windows, and it reaches for some address modes far more
+ * readily than others.  Two crafted patches cover the rest - a window
+ * whose source segment is the target already produced, and a sequence
+ * of copies that walks all nine address modes, both caches included -
+ * built byte by byte from the specification and checked against
+ * addresses computed independently of the decoder.
+ *
+ * The last part feeds the decoder hundreds of thousands of random
  * byte strings behind a valid magic number. Practically none of them
  * are valid patches; the point is that a damaged or hostile patch is
  * refused rather than followed off the end of a buffer, so build with
@@ -4439,6 +4448,145 @@ static void golden(void)
    }
 }
 
+
+/* --------------------------------------------------------------------
+ * crafted patches, for what an encoder would not give us
+ * -------------------------------------------------------------------- */
+
+static unsigned char cp[512];
+static size_t cn;
+
+static void cp_b(unsigned char v) { cp[cn++] = v; }
+
+static void cp_varint(unsigned int v)
+{
+   unsigned char t[5];
+   int i = 0;
+   do { t[i++] = (unsigned char)(v & 0x7f); v >>= 7; } while (v);
+   while (i--)
+      cp_b((unsigned char)(t[i] | (i ? 0x80 : 0)));
+}
+
+/* A second window whose "source" is the target the first one produced. */
+static void target_window(void)
+{
+   unsigned char *out = NULL;
+   size_t len = 0;
+   const char *expect = "ABCDEFGHABCD";
+   int i;
+
+   cn = 0;
+   cp_b(0xD6); cp_b(0xC3); cp_b(0xC4); cp_b(0x00); cp_b(0x00);
+
+   cp_b(0x00);                    /* window 1: no source            */
+   cp_varint(13); cp_varint(8); cp_b(0x00);
+   cp_varint(8); cp_varint(1); cp_varint(0);
+   for (i = 0; i < 8; i++)
+      cp_b((unsigned char)("ABCDEFGH"[i]));
+   cp_b(9);                       /* ADD size 8                     */
+
+   cp_b(0x02);                    /* window 2: VCD_TARGET           */
+   cp_varint(4); cp_varint(0);    /* segment: four bytes at offset 0 */
+   cp_varint(6); cp_varint(4); cp_b(0x00);
+   cp_varint(0); cp_varint(1); cp_varint(1);
+   cp_b(20);                      /* COPY size 4, mode 0            */
+   cp_b(0);                       /* address 0                      */
+
+   if (!vcdiff_decode(cp, cn, NULL, 0, &out, &len))
+   { printf("[FAIL] %-26s refused\n", "VCD_TARGET window"); failures++; return; }
+   if (len != 12 || memcmp(out, expect, 12))
+   { printf("[FAIL] %-26s produced '%.*s'\n", "VCD_TARGET window",
+            (int)len, (const char*)out); failures++; }
+   else
+      printf("[ok]   %-26s target-sourced window resolved\n", "VCD_TARGET window");
+   free(out);
+}
+
+/* Walk every address mode.  The expected output is built from the
+ * addresses being encoded, and the cache is mirrored here, so the check
+ * is against an independent account of what each mode should resolve
+ * to rather than against the decoder's own answer. */
+static unsigned char am_inst[64], am_addr[64], am_want[128], am_src[256];
+static size_t am_ni, am_na, am_no;
+static unsigned int am_near[4], am_same[3 * 256];
+static unsigned am_slot;
+
+static void am_update(unsigned int a)
+{
+   am_same[a % (3 * 256)] = a;
+   am_near[am_slot]       = a;
+   am_slot                = (am_slot + 1) % 4;
+}
+
+static void am_ivarint(unsigned char *dst, size_t *n, unsigned int v)
+{
+   unsigned char t[5];
+   int i = 0;
+   do { t[i++] = (unsigned char)(v & 0x7f); v >>= 7; } while (v);
+   while (i--)
+      dst[(*n)++] = (unsigned char)(t[i] | (i ? 0x80 : 0));
+}
+
+static void am_copy4(unsigned mode, unsigned int a)
+{
+   unsigned int here = (unsigned int)(256 + am_no);
+   am_inst[am_ni++]  = (unsigned char)(19 + mode * 16 + 1);
+   if (mode == 0)
+      am_ivarint(am_addr, &am_na, a);
+   else if (mode == 1)
+      am_ivarint(am_addr, &am_na, here - a);
+   else if (mode < 6)
+      am_ivarint(am_addr, &am_na, a - am_near[mode - 2]);
+   else
+      am_addr[am_na++] = (unsigned char)(a % 256);
+   am_update(a);
+   memcpy(am_want + am_no, am_src + a, 4);
+   am_no += 4;
+}
+
+static void address_modes(void)
+{
+   unsigned char *out = NULL;
+   size_t len = 0, i;
+
+   memset(am_near, 0, sizeof(am_near));
+   memset(am_same, 0, sizeof(am_same));
+   am_slot = 0; am_ni = am_na = am_no = 0;
+   for (i = 0; i < 256; i++)
+      am_src[i] = (unsigned char)(i * 7 + 3);
+
+   am_copy4(0, 100);   /* SELF, seeding the caches      */
+   am_copy4(0, 200);
+   am_copy4(2, 105);   /* near[0]                       */
+   am_copy4(3, 210);   /* near[1]                       */
+   am_copy4(1, 120);   /* HERE                          */
+   am_copy4(6, 100);   /* same, page 0                  */
+   am_copy4(4, 130);   /* near[2]                       */
+   /* a near-cache offset is unsigned: the address must be at or above
+    * the slot it is encoded against, which by now holds 210 */
+   am_copy4(5, 220);   /* near[3]                       */
+
+   cn = 0;
+   cp_b(0xD6); cp_b(0xC3); cp_b(0xC4); cp_b(0x00); cp_b(0x00);
+   cp_b(0x01);                                   /* VCD_SOURCE       */
+   cp_varint(256); cp_varint(0);
+   cp_varint(0); cp_varint((unsigned int)am_no); cp_b(0x00);
+   cp_varint(0);
+   cp_varint((unsigned int)am_ni);
+   cp_varint((unsigned int)am_na);
+   memcpy(cp + cn, am_inst, am_ni); cn += am_ni;
+   memcpy(cp + cn, am_addr, am_na); cn += am_na;
+
+   if (!vcdiff_decode(cp, cn, am_src, 256, &out, &len))
+   { printf("[FAIL] %-26s refused\n", "address modes"); failures++; return; }
+   if (len != am_no || memcmp(out, am_want, am_no))
+   { printf("[FAIL] %-26s %lu bytes, expected %lu\n", "address modes",
+            (unsigned long)len, (unsigned long)am_no); failures++; }
+   else
+      printf("[ok]   %-26s all nine modes, both caches\n", "address modes");
+   free(out);
+}
+
 static unsigned rng = 31337;
 static unsigned xr(void)
 {
@@ -4486,6 +4634,8 @@ static void malformed(void)
 int main(void)
 {
    golden();
+   target_window();
+   address_modes();
    malformed();
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;
