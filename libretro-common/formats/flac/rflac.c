@@ -459,16 +459,6 @@ static INLINE uint64_t rflac__be2host_64(uint64_t n)
 #endif
 }
 
-
-static INLINE uint32_t rflac__le2host_32(uint32_t n)
-{
-#ifdef MSB_FIRST
-    return n;
-#else
-    return rflac__swap_endian_uint32(n);
-#endif
-}
-
 static INLINE uint32_t rflac__le2host_32_ptr_unaligned(const void* pData)
 {
     const uint8_t* pNum = (uint8_t*)pData;
@@ -2448,18 +2438,6 @@ static uint32_t rflac__decode_samples_with_residual__rice__sse41(rflac_bs* bs, u
 #endif
 
 #if defined(RFLAC_SUPPORT_NEON)
-static INLINE void rflac__vst2q_s32(int32_t* p, int32x4x2_t x)
-{
-    vst1q_s32(p+0, x.val[0]);
-    vst1q_s32(p+4, x.val[1]);
-}
-
-static INLINE void rflac__vst2q_u32(uint32_t* p, uint32x4x2_t x)
-{
-    vst1q_u32(p+0, x.val[0]);
-    vst1q_u32(p+4, x.val[1]);
-}
-
 static INLINE void rflac__vst2q_f32(float* p, float32x4x2_t x)
 {
     vst1q_f32(p+0, x.val[0]);
