@@ -1018,6 +1018,29 @@ static void asio_atexit_cleanup(void)
  *  RetroArch audio_driver_t implementation
  * ═══════════════════════════════════════════════════════════════════ */
 
+/* Prime the ring to the rate-control setpoint (half capacity) with
+ * silence.  Init/reclaim-time only - not on any streaming path.
+ *
+ * Streaming starts the moment ASIOStart is called, but the writer has
+ * produced nothing yet: an empty ring means a deterministic burst of
+ * underruns (a pop) on every fresh init and on every park/reclaim -
+ * i.e. every content load, fullscreen toggle and settings change.
+ * Half capacity is exactly where rate control holds the ring in
+ * steady state, so priming there adds no latency beyond the setpoint
+ * and no convergence transient: the stream begins already balanced,
+ * with silence draining ahead of the first real audio. */
+static void asio_prime_ring(ra_asio_t *ad)
+{
+   static const char zeros[512]; /* zero-initialised */
+   size_t left = retro_spsc_write_avail(&ad->ring) / 2;
+   while (left > 0)
+   {
+      size_t n = (left < sizeof(zeros)) ? left : sizeof(zeros);
+      retro_spsc_write(&ad->ring, zeros, n);
+      left -= n;
+   }
+}
+
 static void *ra_asio_init(const char *device, unsigned rate,
       unsigned latency, unsigned block_frames, unsigned *new_rate)
 {
@@ -1100,6 +1123,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
          else
             retro_spsc_clear(&ad->ring);
       }
+      asio_prime_ring(ad);
 
       g_asio = ad;
       ad->running = true;
@@ -1296,6 +1320,7 @@ static void *ra_asio_init(const char *device, unsigned rate,
     * rather than the pre-rounding request.  An empty ring's write
     * avail is exactly its capacity. */
    ad->ring_size = retro_spsc_write_avail(&ad->ring);
+   asio_prime_ring(ad);
    RARCH_LOG("[ASIO] Ring buffer: %u frames (%.1f ms).\n",
          (unsigned)(ad->ring_size / (2 * sizeof(float))),
          (double)(ad->ring_size / (2 * sizeof(float)))
