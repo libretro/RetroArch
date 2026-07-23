@@ -229,6 +229,73 @@ static bool netplay_process_savestate(netplay_t* netplay, retro_ctx_serialize_in
 #define NETPLAYSTATE_CHEEVOS_BLOCK "ACHV"
 #define NETPLAYSTATE_END_BLOCK "END "
 
+#ifdef HAVE_NETWORKING
+/* The content fingerprint netplay advertises, compares and searches by.
+ *
+ * Netplay is the only thing in the frontend that wants this, so it is
+ * derived here and nowhere else.  A session that never hosts, joins or
+ * answers a discovery query never computes it - which for a core
+ * opening a multi-gigabyte disc image is the difference between
+ * reading that image and not touching it.
+ *
+ * The content path is the whole input, and it has to be read the way
+ * the scanner reads it, because the lobby searches the playlists the
+ * scanner wrote: an "archive#entry" path is hashed by decompressing
+ * the entry, and everything else by hashing the file.  Getting that
+ * split wrong yields zero, which reads as "no CRC" and quietly
+ * disables both the handshake check and the lookup.
+ *
+ * Soft-patched content is reported by the CRC of the ROM on disk, not
+ * of the patched bytes.  That is the useful answer: patched bytes
+ * match no playlist entry anywhere, so hashing them broke the lobby's
+ * lookup for every patched user, and two peers running the same patch
+ * agree on the unpatched file anyway.  What it gives up is the warning
+ * when one peer has applied a patch and the other has not - a warning
+ * that never blocked the session it warned about.
+ *
+ * Cached because the callers repeat: the LAN ad server answers every
+ * discovery query. Keyed on the content path, so a different load
+ * recomputes on its own without anything having to invalidate it.
+ */
+uint32_t netplay_content_crc(void)
+{
+   static char     cached_path[PATH_MAX_LENGTH] = {0};
+   static uint32_t cached_crc                   = 0;
+   const char     *path                         = path_get(RARCH_PATH_CONTENT);
+
+   if (!path || !*path)
+      return 0;
+
+   if (!string_is_equal(cached_path, path))
+   {
+      uint32_t crc = 0;
+
+      if (path_contains_compressed_file(path))
+      {
+         uint64_t size = 0;
+         crc = file_archive_get_file_crc32_and_size(path, &size);
+      }
+      else
+      {
+         intfstream_t *fd = intfstream_open_file(path,
+               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (fd)
+         {
+            if (!intfstream_get_crc(fd, &crc))
+               crc = 0;
+            intfstream_close(fd);
+            free(fd);
+         }
+      }
+
+      cached_crc = crc;
+      strlcpy(cached_path, path, sizeof(cached_path));
+   }
+   return cached_crc;
+}
+#endif
+
+
 #ifdef HAVE_NETPLAYDISCOVERY
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
@@ -527,69 +594,6 @@ static void deinit_lan_ad_server_socket(void)
  *
  * Respond to any LAN ad queries that the netplay server has received.
  */
-/* The content fingerprint netplay advertises, compares and searches by.
- *
- * Netplay is the only thing in the frontend that wants this, so it is
- * derived here and nowhere else.  A session that never hosts, joins or
- * answers a discovery query never computes it - which for a core
- * opening a multi-gigabyte disc image is the difference between
- * reading that image and not touching it.
- *
- * The content path is the whole input, and it has to be read the way
- * the scanner reads it, because the lobby searches the playlists the
- * scanner wrote: an "archive#entry" path is hashed by decompressing
- * the entry, and everything else by hashing the file.  Getting that
- * split wrong yields zero, which reads as "no CRC" and quietly
- * disables both the handshake check and the lookup.
- *
- * Soft-patched content is reported by the CRC of the ROM on disk, not
- * of the patched bytes.  That is the useful answer: patched bytes
- * match no playlist entry anywhere, so hashing them broke the lobby's
- * lookup for every patched user, and two peers running the same patch
- * agree on the unpatched file anyway.  What it gives up is the warning
- * when one peer has applied a patch and the other has not - a warning
- * that never blocked the session it warned about.
- *
- * Cached because the callers repeat: the LAN ad server answers every
- * discovery query. Keyed on the content path, so a different load
- * recomputes on its own without anything having to invalidate it.
- */
-uint32_t netplay_content_crc(void)
-{
-   static char     cached_path[PATH_MAX_LENGTH] = {0};
-   static uint32_t cached_crc                   = 0;
-   const char     *path                         = path_get(RARCH_PATH_CONTENT);
-
-   if (!path || !*path)
-      return 0;
-
-   if (!string_is_equal(cached_path, path))
-   {
-      uint32_t crc = 0;
-
-      if (path_contains_compressed_file(path))
-      {
-         uint64_t size = 0;
-         crc = file_archive_get_file_crc32_and_size(path, &size);
-      }
-      else
-      {
-         intfstream_t *fd = intfstream_open_file(path,
-               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-         if (fd)
-         {
-            if (!intfstream_get_crc(fd, &crc))
-               crc = 0;
-            intfstream_close(fd);
-            free(fd);
-         }
-      }
-
-      cached_crc = crc;
-      strlcpy(cached_path, path, sizeof(cached_path));
-   }
-   return cached_crc;
-}
 
 static bool netplay_lan_ad_server(netplay_t *netplay)
 {
