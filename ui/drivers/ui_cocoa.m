@@ -63,6 +63,9 @@
 #include "../../tasks/task_content.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../verbosity.h"
+#include "../../defaults.h"
+#include "../../playlist.h"
+#include "../../core_info.h"
 
 #include "ui_cocoa.h"
 
@@ -654,6 +657,7 @@ static ui_application_t ui_application_cocoa = {
 @end
 #endif
 
+static NSStatusItem *statusBarItem = nil;
 
 @implementation RetroArch_OSX
 
@@ -756,6 +760,156 @@ static ui_application_t ui_application_cocoa = {
 #else
    rarch_start_draw_observer();
 #endif
+
+   settings_t *settings = config_get_ptr();
+   if (!statusBarItem) {
+           statusBarItem = RARCH_RETAIN([[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength]);
+           NSImage *invaderImg = nil;
+           if (settings && *settings->paths.directory_assets) {
+               NSString *assetsDir = [NSString stringWithUTF8String:settings->paths.directory_assets];
+               NSString *invaderPath = [assetsDir stringByAppendingPathComponent:@"xmb/monochrome/png/retroarch.png"];
+               invaderImg = [[NSImage alloc] initWithContentsOfFile:invaderPath];
+           }
+           
+           if (invaderImg) {
+               [invaderImg setSize:NSMakeSize(18, 18)];
+               [invaderImg setTemplate:YES];
+               statusBarItem.button.image = invaderImg;
+               statusBarItem.button.title = @"";
+               RARCH_RELEASE(invaderImg);
+           } else {
+               NSImage *appIcon = [NSApp applicationIconImage];
+               if (appIcon) {
+                   NSImage *resizedIcon = [[NSImage alloc] initWithSize:NSMakeSize(18, 18)];
+                   [resizedIcon lockFocus];
+                   [appIcon drawInRect:NSMakeRect(0, 0, 18, 18) fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1.0];
+                   [resizedIcon unlockFocus];
+                   statusBarItem.button.image = resizedIcon;
+                   statusBarItem.button.title = @"";
+                   RARCH_RELEASE(resizedIcon);
+               } else {
+                   statusBarItem.button.title = @"RetroArch";
+               }
+           }
+           
+           NSMenu *menu = [[NSMenu alloc] initWithTitle:@"RetroArch"];
+           NSMenu *coreMenu = [[NSMenu alloc] initWithTitle:@"Load Core"];
+           if (settings && *settings->paths.directory_libretro) {
+               NSString *coreDir = [NSString stringWithUTF8String:settings->paths.directory_libretro];
+               NSFileManager *fm = [NSFileManager defaultManager];
+               NSArray *files = [fm contentsOfDirectoryAtPath:coreDir error:nil];
+               for (NSString *file in files) {
+                   if ([file hasSuffix:@"_libretro.dylib"]) {
+                       NSString *coreName = [file stringByReplacingOccurrencesOfString:@"_libretro.dylib" withString:@""];
+                       NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:coreName action:@selector(loadSpecificCore:) keyEquivalent:@""];
+                       item.representedObject = [coreDir stringByAppendingPathComponent:file];
+                       [item setTarget:self];
+                       [coreMenu addItem:item];
+                       RARCH_RELEASE(item);
+                   }
+               }
+           }
+           NSMenuItem *coreParentItem = [[NSMenuItem alloc] initWithTitle:@"Load Core" action:NULL keyEquivalent:@""];
+           [menu setSubmenu:coreMenu forItem:coreParentItem];
+           [menu addItem:coreParentItem];
+           RARCH_RELEASE(coreMenu);
+           RARCH_RELEASE(coreParentItem);
+           
+           NSMenuItem *contentItem = [[NSMenuItem alloc] initWithTitle:@"Load Content" action:@selector(loadContentClicked:) keyEquivalent:@""];
+           [contentItem setTarget:self];
+           [menu addItem:contentItem];
+           RARCH_RELEASE(contentItem);
+           
+           NSMenuItem *favItem = [[NSMenuItem alloc] initWithTitle:@"Favorites" action:NULL keyEquivalent:@""];
+           NSMenu *favMenu = [[NSMenu alloc] initWithTitle:@"Favorites"];
+           if (g_defaults.content_favorites && playlist_size(g_defaults.content_favorites) > 0) {
+               for (size_t i = 0; i < playlist_size(g_defaults.content_favorites); i++) {
+                   const struct playlist_entry *entry = NULL;
+                   playlist_get_index(g_defaults.content_favorites, i, &entry);
+                   if (entry) {
+                       NSString *label = [NSString stringWithUTF8String:(entry->label && *entry->label) ? entry->label : entry->path];
+                       NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:label action:@selector(loadFavoriteItem:) keyEquivalent:@""];
+                       [item setTag:i];
+                       [item setTarget:self];
+                       [favMenu addItem:item];
+                       RARCH_RELEASE(item);
+                   }
+               }
+           } else {
+               NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"No Favorites" action:nil keyEquivalent:@""];
+               [item setEnabled:NO];
+               [favMenu addItem:item];
+               RARCH_RELEASE(item);
+           }
+           [menu setSubmenu:favMenu forItem:favItem];
+           [menu addItem:favItem];
+           RARCH_RELEASE(favItem);
+           
+           NSMenuItem *histItem = [[NSMenuItem alloc] initWithTitle:@"History" action:NULL keyEquivalent:@""];
+           NSMenu *histMenu = [[NSMenu alloc] initWithTitle:@"History"];
+           if (g_defaults.content_history && playlist_size(g_defaults.content_history) > 0) {
+               for (size_t i = 0; i < playlist_size(g_defaults.content_history); i++) {
+                   const struct playlist_entry *entry = NULL;
+                   playlist_get_index(g_defaults.content_history, i, &entry);
+                   if (entry) {
+                       NSString *label = [NSString stringWithUTF8String:(entry->label && *entry->label) ? entry->label : entry->path];
+                       NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:label action:@selector(loadHistoryItem:) keyEquivalent:@""];
+                       [item setTag:i];
+                       [item setTarget:self];
+                       [histMenu addItem:item];
+                       RARCH_RELEASE(item);
+                   }
+               }
+           } else {
+               NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"No History" action:nil keyEquivalent:@""];
+               [item setEnabled:NO];
+               [histMenu addItem:item];
+               RARCH_RELEASE(item);
+           }
+           [menu setSubmenu:histMenu forItem:histItem];
+           [menu addItem:histItem];
+           RARCH_RELEASE(histItem);
+           
+           [menu addItem:[NSMenuItem separatorItem]];
+           
+           NSMenuItem *helpItem = [[NSMenuItem alloc] initWithTitle:@"Help" action:NULL keyEquivalent:@""];
+           NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
+           
+           NSMenuItem *websiteItem = [[NSMenuItem alloc] initWithTitle:@"Website" action:@selector(openWebsiteClicked:) keyEquivalent:@""];
+           [websiteItem setTarget:self];
+           [helpMenu addItem:websiteItem];
+           RARCH_RELEASE(websiteItem);
+
+           NSMenuItem *docsItem = [[NSMenuItem alloc] initWithTitle:@"Docs" action:@selector(openDocsClicked:) keyEquivalent:@""];
+           [docsItem setTarget:self];
+           [helpMenu addItem:docsItem];
+           RARCH_RELEASE(docsItem);
+           
+           NSMenuItem *forumItem = [[NSMenuItem alloc] initWithTitle:@"Forum" action:@selector(openForumClicked:) keyEquivalent:@""];
+           [forumItem setTarget:self];
+           [helpMenu addItem:forumItem];
+           RARCH_RELEASE(forumItem);
+           
+           NSMenuItem *discordItem = [[NSMenuItem alloc] initWithTitle:@"Discord" action:@selector(openDiscordClicked:) keyEquivalent:@""];
+           [discordItem setTarget:self];
+           [helpMenu addItem:discordItem];
+           RARCH_RELEASE(discordItem);
+           
+           [menu setSubmenu:helpMenu forItem:helpItem];
+           [menu addItem:helpItem];
+           RARCH_RELEASE(helpItem);
+           RARCH_RELEASE(helpMenu);
+           
+           [menu addItem:[NSMenuItem separatorItem]];
+           
+           NSMenuItem *quitItem = [[NSMenuItem alloc] initWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
+           [quitItem setTarget:NSApp];
+           [menu addItem:quitItem];
+           RARCH_RELEASE(quitItem);
+           
+           statusBarItem.menu = menu;
+           RARCH_RELEASE(menu);
+       }
 }
 
 #pragma mark - ApplePlatform
@@ -996,7 +1150,9 @@ static ui_application_t ui_application_cocoa = {
 {
    apple_input_keyboard_reset();
 }
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication {
+    return NO;
+}
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
    NSApplicationTerminateReply reply = NSTerminateNow;
@@ -1233,6 +1389,98 @@ static void open_document_handler(
 - (void)alertDidEnd:(NSAlert *)alert returnCode:(int32_t)returnCode contextInfo:(void *)contextInfo
 {
    [[NSApplication sharedApplication] stopModal];
+}
+
+- (void)loadSpecificCore:(id)sender {
+    NSString *path = [sender representedObject];
+    if (path) {
+        ui_browser_window_state_t state = {0};
+        state.result = strdup([path UTF8String]);
+        open_core_handler(&state, true);
+        free(state.result);
+        [self.window makeKeyAndOrderFront:self];
+        [NSApp activateIgnoringOtherApps:YES];
+    }
+}
+
+- (void)loadContentClicked:(id)sender {
+    [self.window makeKeyAndOrderFront:self];
+    [NSApp activateIgnoringOtherApps:YES];
+    [self openDocument:sender];
+}
+
+- (void)loadFromPlaylist:(playlist_t *)playlist index:(NSInteger)idx {
+    const struct playlist_entry *entry = NULL;
+    playlist_get_index(playlist, idx, &entry);
+    
+    if (!entry)
+        return;
+    
+    char core_path[PATH_MAX_LENGTH];
+    char content_path[PATH_MAX_LENGTH];
+    char content_label[PATH_MAX_LENGTH];
+    core_path[0] = '\0';
+    content_path[0] = '\0';
+    content_label[0] = '\0';
+    
+    if (entry->path && *entry->path) {
+        strlcpy(content_path, entry->path, sizeof(content_path));
+        playlist_resolve_path(PLAYLIST_LOAD, false, content_path, sizeof(content_path));
+    }
+    if (entry->label && *entry->label) {
+        strlcpy(content_label, entry->label, sizeof(content_label));
+    }
+    
+    const core_info_t *core_info = NULL;
+    if (!playlist_entry_has_core(entry)) {
+        core_info = playlist_get_default_core_info(playlist);
+    } else {
+        core_info = playlist_entry_get_core_info(entry);
+    }
+    
+    if (core_info && core_info->path && *core_info->path) {
+        strlcpy(core_path, core_info->path, sizeof(core_path));
+    } else if (entry->core_path && *entry->core_path) {
+        strlcpy(core_path, entry->core_path, sizeof(core_path));
+        playlist_resolve_path(PLAYLIST_LOAD, true, core_path, sizeof(core_path));
+    }
+    
+    if (*core_path && *content_path) {
+        content_ctx_info_t content_info;
+        content_info.argc = 0;
+        content_info.argv = NULL;
+        content_info.args = NULL;
+        content_info.environ_get = NULL;
+        task_push_load_content_from_playlist_from_menu(
+            core_path, content_path, *content_label ? content_label : NULL,
+            &content_info, NULL, NULL);
+        [self.window makeKeyAndOrderFront:self];
+        [NSApp activateIgnoringOtherApps:YES];
+    }
+}
+
+- (void)loadFavoriteItem:(id)sender {
+    [self loadFromPlaylist:g_defaults.content_favorites index:[sender tag]];
+}
+
+- (void)loadHistoryItem:(id)sender {
+    [self loadFromPlaylist:g_defaults.content_history index:[sender tag]];
+}
+
+- (void)openWebsiteClicked:(id)sender {
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://www.retroarch.com/"]];
+}
+
+- (void)openDocsClicked:(id)sender {
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://docs.libretro.com/"]];
+}
+
+- (void)openForumClicked:(id)sender {
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://forums.libretro.com/"]];
+}
+
+- (void)openDiscordClicked:(id)sender {
+    [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:@"https://discord.gg/libretro-184109094070779904"]];
 }
 
 @end
