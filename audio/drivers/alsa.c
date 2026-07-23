@@ -394,7 +394,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          else if (frames < 0)
             return -1;
 
-         _len  += frames;
+         _len  += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          buf   += (frames << 1) * frames_size;
          size  -= frames;
       }
@@ -437,7 +437,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
          else if (frames < 0)
             return -1;
 
-         _len += frames;
+         _len += FRAMES_TO_BYTES(frames, alsa->stream_info.frame_bits);
          buf  += (frames << 1) * frames_size;
          size -= frames;
       }
