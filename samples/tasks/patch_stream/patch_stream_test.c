@@ -37,6 +37,15 @@
  * boundaries landing inside a patch command.  Those cases are generated
  * explicitly; the first of them caught a real bug during development.
  *
+ * Note what is deliberately not asserted: that a damaged patch is
+ * refused.  That holds for BPS, UPS and xdelta, which can detect
+ * damage, but not for IPS, which carries no checksum, no length and no
+ * framing beyond a terminator - a truncated IPS is a shorter valid IPS
+ * as far as the format is concerned, and both appliers apply its
+ * intact records.  The contract enforced here is the one that holds
+ * for every format: whatever the whole-buffer applier does with a
+ * given patch, the streaming one does too.
+ *
  * The .xdelta format is covered differently from the other three.  Its
  * decoder is verified against the reference implementation in
  * samples/encodings/vcdiff; what is checked here is the delegation -

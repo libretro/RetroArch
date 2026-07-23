@@ -45,6 +45,20 @@ RETRO_BEGIN_DECLS
  *   xdelta - as BPS: a window names the source segment it needs, which
  *         may be anywhere, so the source is retained.
  *
+ * What a damaged patch does also differs per format, and not in the way
+ * one would assume, so it is worth stating.  BPS and UPS carry
+ * checksums and xdelta is structured enough that damage almost always
+ * violates it, so for those three a damaged patch is refused: finish()
+ * fails, the caller keeps the unpatched buffer, and the content runs
+ * unpatched.  IPS carries no checksum, no length and no framing beyond
+ * a terminator, so a truncated one is indistinguishable from a shorter
+ * patch that simply ends - its intact leading records are applied and
+ * the result is a partially patched target.  That is what the
+ * whole-buffer applier has always done and these appliers reproduce it
+ * exactly; it is a property of the format, not a decision taken here.
+ * A caller that needs to know a patch applied in full cannot learn it
+ * from IPS.
+ *
  * Usage:
  *   ps = patch_stream_ips_open(patch, patch_len, source_len);
  *   ... per tick: patch_stream_feed(ps, chunk, chunk_len);
