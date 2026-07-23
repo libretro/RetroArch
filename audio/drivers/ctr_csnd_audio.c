@@ -198,8 +198,29 @@ static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
       ctr->pos &= CTR_CSND_AUDIO_COUNT_MASK;
    }
 
-   GSPGPU_FlushDataCache(ctr->l, CTR_CSND_AUDIO_SIZE);
-   GSPGPU_FlushDataCache(ctr->r, CTR_CSND_AUDIO_SIZE);
+   {
+      /* Flush only the region just written (split at the ring wrap)
+       * rather than both full channel buffers on every write.  The
+       * ring is 2048 samples per channel and a typical write is a few
+       * hundred frames, so the full-buffer flush pushed ~8 KiB of
+       * lines per call where under 2 KiB carry new data. */
+      uint32_t start  = (ctr->pos - (uint32_t)(len >> 2))
+            & CTR_CSND_AUDIO_COUNT_MASK;
+      uint32_t frames = (uint32_t)(len >> 2);
+      if (start + frames > CTR_CSND_AUDIO_COUNT)
+      {
+         uint32_t first = CTR_CSND_AUDIO_COUNT - start;
+         GSPGPU_FlushDataCache(ctr->l + start, first * sizeof(int16_t));
+         GSPGPU_FlushDataCache(ctr->r + start, first * sizeof(int16_t));
+         GSPGPU_FlushDataCache(ctr->l, (frames - first) * sizeof(int16_t));
+         GSPGPU_FlushDataCache(ctr->r, (frames - first) * sizeof(int16_t));
+      }
+      else
+      {
+         GSPGPU_FlushDataCache(ctr->l + start, frames * sizeof(int16_t));
+         GSPGPU_FlushDataCache(ctr->r + start, frames * sizeof(int16_t));
+      }
+   }
 
    return len;
 }
