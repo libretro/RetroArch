@@ -130,6 +130,10 @@ typedef struct
 
 /* TODO/FIXME - global state - perhaps move outside this file */
 static playlist_t *playlist_cached = NULL;
+/* Set when the cached playlist's file has been rewritten by something
+ * else, so the next request re-reads it.  See
+ * playlist_cached_after_write for why this is a flag and not a free. */
+static bool playlist_cached_stale  = false;
 
 typedef int (playlist_sort_fun_t)(
       const struct playlist_entry *a,
@@ -1725,7 +1729,23 @@ static void playlist_cached_after_write(playlist_t *written)
       return;
    }
    if (string_is_equal(playlist_cached->config.path, written->config.path))
-      playlist_free_cached();
+   {
+      /* Mark it, do not free it.
+       *
+       * This runs from whatever happened to write the file, and the
+       * commonest case is the history list: launching an entry pushes
+       * it onto g_defaults.content_history, which is a different
+       * playlist_t for the same path as the one the menu is displaying
+       * from.  Freeing here would pull that object out from under
+       * every menu_displaylist caller still holding what
+       * playlist_get_cached returned - a use after free whose symptoms
+       * appear later and somewhere else entirely.
+       *
+       * The staleness is what matters, not the memory: flagging it
+       * makes the next playlist_init_cached re-read, which is a point
+       * where nothing is holding the old pointer. */
+      playlist_cached_stale = true;
+   }
 }
 
 /* Move @from onto @to, replacing whatever is there.
@@ -2961,7 +2981,8 @@ void playlist_free_cached(void)
 {
    if (playlist_cached && !(playlist_cached->flags & CNT_PLAYLIST_FLG_CACHED_EXT))
       playlist_free(playlist_cached);
-   playlist_cached = NULL;
+   playlist_cached       = NULL;
+   playlist_cached_stale = false;
 }
 
 playlist_t *playlist_get_cached(void)
@@ -2988,7 +3009,7 @@ playlist_t *playlist_get_cached(void)
  * size is the one signal the VFS layer offers portably. */
 static bool playlist_cached_is_reusable(const playlist_config_t *config)
 {
-   if (!playlist_cached)
+   if (!playlist_cached || playlist_cached_stale)
       return false;
    if (!string_is_equal(playlist_cached->config.path, config->path))
       return false;
@@ -3033,7 +3054,8 @@ bool playlist_init_cached(const playlist_config_t *config)
        (pl_old_fmt != playlist->config.old_format))
       playlist_write_file(playlist);
 
-   playlist_cached = playlist;
+   playlist_cached       = playlist;
+   playlist_cached_stale = false;
    return true;
 }
 
