@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <file/file_path.h>
 #include <formats/audio.h>
 #include <compat/strcasestr.h>
 #include <string/stdstring.h>
@@ -141,20 +142,33 @@ struct audio_transfer_mod
 
 enum audio_type_enum audio_decode_get_type(const char *path)
 {
-   if (string_is_empty(path))
+   /* The extension, not a substring of the path.
+    *
+    * This searched the whole path for ".flac" and the rest, so a track
+    * living under a directory called ".flac_backups" was decoded as
+    * FLAC whatever it actually was, and "song.ogg.bak" was decoded as
+    * Vorbis.  Both are the sort of path that turns up in a music
+    * folder rather than a contrived one.
+    *
+    * Comparing the extension also removes the ordering dependency the
+    * substring form had, where a path matching two of these took
+    * whichever was tested first rather than whichever it ends with. */
+   const char *ext = path_get_extension(path);
+
+   if (string_is_empty(ext))
       return AUDIO_TYPE_NONE;
-   if (compat_strcasestr(path, ".flac"))
+   if (string_is_equal_noncase(ext, "flac"))
       return AUDIO_TYPE_FLAC;
-   if (compat_strcasestr(path, ".ogg"))
+   if (string_is_equal_noncase(ext, "ogg"))
       return AUDIO_TYPE_VORBIS;
-   if (compat_strcasestr(path, ".mp3"))
+   if (string_is_equal_noncase(ext, "mp3"))
       return AUDIO_TYPE_MP3;
-   if (compat_strcasestr(path, ".wav"))
+   if (string_is_equal_noncase(ext, "wav"))
       return AUDIO_TYPE_WAV;
 #ifdef HAVE_RMODTRACKER
-   if (     compat_strcasestr(path, ".mod")
-         || compat_strcasestr(path, ".s3m")
-         || compat_strcasestr(path, ".xm"))
+   if (     string_is_equal_noncase(ext, "mod")
+         || string_is_equal_noncase(ext, "s3m")
+         || string_is_equal_noncase(ext, "xm"))
       return AUDIO_TYPE_MOD;
 #endif
    return AUDIO_TYPE_NONE;
