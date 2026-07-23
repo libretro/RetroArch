@@ -1317,7 +1317,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
                   /* first differing byte is the 
                    * most-significant nonzero byte */
 #if defined(__GNUC__) || defined(__clang__)
-                  l += (uint32_t)__builtin_clzll(x >> 3);
+                  l += (uint32_t)(__builtin_clzll(x) >> 3);
 #else
                   int n = 0;
                   while (!(x & ((uint64_t)1 << 63)))
