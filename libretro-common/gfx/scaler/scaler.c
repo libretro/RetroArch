@@ -352,7 +352,7 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       if (ctx->scaler_horiz)
          ctx->scaler_horiz(ctx, input_frame, input_stride);
       if (ctx->scaler_vert)
-         ctx->scaler_vert (ctx, output, output_stride);
+         ctx->scaler_vert (ctx, output_frame, output_stride);
    }
 
    if (ctx->out_fmt != SCALER_FMT_ARGB8888)
