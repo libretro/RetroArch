@@ -1360,6 +1360,7 @@ DATA RUNLOOP
 #include "../tasks/task_content_disc.c"
 #endif
 #ifdef HAVE_PATCH
+#include "../tasks/patch_stream.c"
 #include "../tasks/task_patch.c"
 #ifdef HAVE_XDELTA
 #define adler32(...) xdelta_adler32(__VA_ARGS__)

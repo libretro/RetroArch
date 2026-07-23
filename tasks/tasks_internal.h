@@ -244,6 +244,23 @@ bool task_push_overlay_load_default(
       void *user_data);
 #endif
 
+/* Open a streaming applier for the patch a load would apply, resolved
+ * with patch_content's own selection rules.  NULL means "no streamable
+ * patch": load and call patch_content as before.  See task_patch.c. */
+struct patch_stream;
+struct patch_stream *patch_content_stream_open(
+      bool is_ips_pref,
+      bool is_bps_pref,
+      bool is_ups_pref,
+      bool is_xdelta_pref,
+      const char *name_ips,
+      const char *name_bps,
+      const char *name_ups,
+      const char *name_xdelta,
+      size_t src_len,
+      void **patch_data,
+      const char **fmt_name);
+
 bool patch_content(
       bool is_ips_pref,
       bool is_bps_pref,

@@ -89,6 +89,7 @@
 #endif
 
 #include "task_content.h"
+#include "patch_stream.h"
 #include "tasks_internal.h"
 #include "task_content_prefetch.h"
 
@@ -880,6 +881,19 @@ static size_t content_file_load_into_memory(
 {
    uint8_t *content_data = NULL;
    int64_t content_size  = 0;
+#ifdef HAVE_PATCH
+   /* Soft patching normally runs as a separate pass once the whole file
+    * is resident.  When the patch can be resolved ahead of the load - it
+    * depends only on the preference flags and which patch files exist,
+    * never on the content - the applier is opened here and advanced over
+    * each span as it arrives, so the patch keeps pace with the load
+    * instead of following it.  NULL means there is nothing streamable
+    * and the existing patch_content pass below runs unchanged. */
+   patch_stream_t *patch_ps   = NULL;
+   void           *patch_data = NULL;
+   const char     *patch_fmt  = NULL;
+   bool            streamed   = false;
+#endif
 
    RARCH_LOG("[Content] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
@@ -926,9 +940,49 @@ static size_t content_file_load_into_memory(
             if (dt)
             {
                size_t out_len = 0;
+#ifdef HAVE_PATCH
+               size_t fed     = 0;
+               const uint8_t *dt_base = NULL;
+               if (      idx == 0
+                     && first_content_type == RARCH_CONTENT_NONE
+                     && !(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+               {
+                  size_t dt_total = 0;
+                  patch_ps = patch_content_stream_open(
+                        content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
+                        content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
+                        content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
+                        content_ctx->flags & CONTENT_INFO_FLAG_IS_XDELTA_PREF,
+                        content_ctx->name_ips,
+                        content_ctx->name_bps,
+                        content_ctx->name_ups,
+                        content_ctx->name_xdelta,
+                        (size_t)src_usize, &patch_data, &patch_fmt);
+                  if (patch_ps)
+                     dt_base = data_transfer_ptr(dt, &dt_total);
+               }
+#endif
                while (!data_transfer_complete(dt)
                      && !data_transfer_failed(dt))
-                  data_transfer_iterate(dt, 0);
+               {
+                  size_t avail = data_transfer_iterate(dt, 0);
+#ifdef HAVE_PATCH
+                  /* Advance the patch over whatever just landed. */
+                  if (patch_ps && avail > fed)
+                  {
+                     patch_stream_feed(patch_ps, dt_base + fed, avail - fed);
+                     fed = avail;
+                  }
+#endif
+               }
+#ifdef HAVE_PATCH
+               if (patch_ps)
+               {
+                  size_t avail = data_transfer_avail(dt);
+                  if (avail > fed)
+                     patch_stream_feed(patch_ps, dt_base + fed, avail - fed);
+               }
+#endif
                if ((content_data = (uint8_t*)
                      data_transfer_source_detach(dt, &out_len)))
                   content_size = (int64_t)out_len;
@@ -957,6 +1011,43 @@ static size_t content_file_load_into_memory(
    if (content_size < 0)
       return 0;
 
+#ifdef HAVE_PATCH
+   /* Complete a streamed patch.  The source is still fully resident here
+    * (the transfer buffer we just detached), so a patch that turns out to
+    * be malformed costs nothing: keep the unpatched buffer and let the
+    * normal pass below try again, which is exactly what happens today
+    * when an applier rejects a patch. */
+   if (patch_ps)
+   {
+      uint8_t *patched = NULL;
+      size_t   patched_len = 0;
+
+      if (      content_data
+            &&  patch_stream_finish(patch_ps, &patched, &patched_len)
+            &&  patched)
+      {
+         free(content_data);
+         content_data = patched;
+         content_size = (int64_t)patched_len;
+         streamed     = true;
+
+         if (config_get_ptr()->bools.notification_show_patch_applied)
+         {
+            char msg[128];
+            size_t _len = snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_APPLYING_PATCH),
+                  patch_fmt ? patch_fmt : "");
+            runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+      }
+      patch_stream_free(patch_ps);
+      patch_ps = NULL;
+      free(patch_data);
+      patch_data = NULL;
+   }
+#endif
+
    /* First content file is significant: attempt to do
     * soft patching, CRC checking, etc. */
    if (idx == 0)
@@ -968,8 +1059,11 @@ static size_t content_file_load_into_memory(
          bool has_patch = false;
 
 #ifdef HAVE_PATCH
-         /* Attempt to apply a patch. */
-         if (!(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+         /* Attempt to apply a patch (already done if it was streamed
+          * alongside the load above). */
+         if (streamed)
+            has_patch = true;
+         else if (!(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
             has_patch = patch_content(
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
