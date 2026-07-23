@@ -41,6 +41,8 @@ extern "C" {
 #include "../../menu/menu_driver.h"
 #endif
 
+#include <queues/task_queue.h>
+
 #include "../input_keymaps.h"
 
 #include "../../configuration.h"
@@ -151,44 +153,149 @@ static HWND winraw_create_window(WNDPROC wnd_proc)
    return wnd;
 }
 
-static void winraw_log_mice_info(winraw_mouse_t *mice, unsigned mouse_cnt)
+/* Deferred mouse display-name resolution.
+ *
+ * Resolving a friendly mouse name requires
+ * GetRawInputDeviceInfoA(RIDI_DEVICENAME) followed by CreateFile() +
+ * HidD_GetProductString() on the HID interface. Opening the HID
+ * interface of e.g. a Bluetooth mouse right after a fresh boot can
+ * block for seconds while the device stack is still coming up, and
+ * the result is purely cosmetic (menu display names / log lines), so
+ * this work runs on the task queue instead of the input driver init
+ * path. Win32 queries happen in the task handler; publishing the
+ * names to global input config state happens in the task callback,
+ * which runs on the main thread (same split as the joypad
+ * autoconfig task). */
+
+typedef struct
+{
+   HANDLE hnd;      /* raw input device handle; used for queries only */
+   char name[256];
+} winraw_mouse_name_entry_t;
+
+typedef struct
+{
+   winraw_mouse_name_entry_t *entries;
+   unsigned count;
+} winraw_mouse_names_handle_t;
+
+static void winraw_mouse_names_free(retro_task_t *task)
+{
+   winraw_mouse_names_handle_t *h = NULL;
+   if (!task)
+      return;
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
+   {
+      free(h->entries);
+      free(h);
+   }
+   task->state = NULL;
+}
+
+static void winraw_mouse_names_handler(retro_task_t *task)
 {
    unsigned i;
-   char name[256];
-   UINT name_size = sizeof(name);
+   winraw_mouse_names_handle_t *h = NULL;
 
-   name[0] = '\0';
+   if (!task)
+      return;
 
-   for (i = 0; i < mouse_cnt; ++i)
+   if ((h = (winraw_mouse_names_handle_t*)task->state))
    {
-      UINT r = GetRawInputDeviceInfoA(mice[i].hnd, RIDI_DEVICENAME,
-            name, &name_size);
-      if (r == (UINT)-1 || r == 0)
-         name[0] = '\0';
-
-      if (name[0])
+      for (i = 0; i < h->count; ++i)
       {
-         HANDLE hhid = CreateFile(name,
-               0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         char *name     = h->entries[i].name;
+         /* Reset the in/out size argument every iteration -
+          * GetRawInputDeviceInfoA() may modify it. */
+         UINT name_size = sizeof(h->entries[i].name);
+         UINT r         = GetRawInputDeviceInfoA(h->entries[i].hnd,
+               RIDI_DEVICENAME, name, &name_size);
+         if (r == (UINT)-1 || r == 0)
+            name[0] = '\0';
 
-         if (hhid != INVALID_HANDLE_VALUE)
+         if (name[0])
          {
-            wchar_t prod_buf[128];
-            prod_buf[0] = '\0';
-            if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
-               wcstombs(name, prod_buf, sizeof(name));
+            HANDLE hhid = CreateFile(name,
+                  0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+            if (hhid != INVALID_HANDLE_VALUE)
+            {
+               wchar_t prod_buf[128];
+               prod_buf[0] = '\0';
+               if (HidD_GetProductString(hhid, prod_buf, sizeof(prod_buf)))
+                  wcstombs(name, prod_buf, sizeof(h->entries[i].name));
+               CloseHandle(hhid);
+            }
          }
-         CloseHandle(hhid);
+
+         if (!name[0])
+            strlcpy(name, "<name not found>",
+                  sizeof(h->entries[i].name));
       }
-
-      if (!name[0])
-         strlcpy(name, "<name not found>", sizeof(name));
-
-      input_config_set_mouse_display_name(i, name);
-
-      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n", i + 1, name);
    }
+
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void winraw_mouse_names_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   unsigned i;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!task)
+      return;
+   if (!(h = (winraw_mouse_names_handle_t*)task->state))
+      return;
+
+   /* input_config_set_mouse_display_name() writes global input
+    * config state, so it must run here on the main thread. */
+   for (i = 0; i < h->count; ++i)
+   {
+      input_config_set_mouse_display_name(i, h->entries[i].name);
+      RARCH_LOG("[WinRaw] Found mouse #%u: \"%s\".\n",
+            i + 1, h->entries[i].name);
+   }
+}
+
+static void winraw_push_mouse_names_task(
+      winraw_mouse_t *mice, unsigned mouse_cnt)
+{
+   unsigned i;
+   retro_task_t *task             = NULL;
+   winraw_mouse_names_handle_t *h = NULL;
+
+   if (!mouse_cnt)
+      return;
+
+   if (!(h = (winraw_mouse_names_handle_t*)calloc(1, sizeof(*h))))
+      return;
+   if (!(h->entries = (winraw_mouse_name_entry_t*)calloc(
+         mouse_cnt, sizeof(*h->entries))))
+   {
+      free(h);
+      return;
+   }
+   h->count = mouse_cnt;
+   for (i = 0; i < mouse_cnt; ++i)
+      h->entries[i].hnd = mice[i].hnd;
+
+   if (!(task = task_init()))
+   {
+      free(h->entries);
+      free(h);
+      return;
+   }
+
+   task->handler  = winraw_mouse_names_handler;
+   task->state    = h;
+   task->title    = NULL;
+   task->callback = winraw_mouse_names_cb;
+   task->cleanup  = winraw_mouse_names_free;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+
+   task_queue_push(task);
 }
 
 static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
@@ -246,7 +353,7 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
 
    *mice      = mice_r;
 
-   winraw_log_mice_info(mice_r, mouse_cnt_r);
+   winraw_push_mouse_names_task(mice_r, mouse_cnt_r);
    free(devs);
 
    return true;
