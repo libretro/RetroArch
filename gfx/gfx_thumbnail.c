@@ -1566,6 +1566,21 @@ static void gfx_thumbnail_handle_upload(
          gfx_thumbnail_anim_install(thumbnail_tag->thumbnail,
                vstream, vtype, vbuf, vlen, vxfer);
       else
+         /* Everything without a stream to hand over opens by path.
+          * For the video types adoption is the fast route because the
+          * still decode had to build the demuxer stream anyway, so
+          * handing it over saves a second open and a pre-scan.
+          *
+          * APNG deliberately stays on this branch: decoding a still
+          * PNG needs no animation stream at all (rpng ignores
+          * acTL/fcTL/fdAT as unknown ancillary chunks and decodes the
+          * default image), so making PNG adoptable would mean opening
+          * an APNG stream during every still decode purely so the rare
+          * animated one could inherit it - a cost on the hot path for
+          * a benefit that is one file open and a chunk walk.  The
+          * open-by-path route is windowed, so an animated PNG already
+          * streams over a sliding window rather than a whole-file
+          * read; adoption would not change its footprint. */
          gfx_thumbnail_anim_open(thumbnail_tag->thumbnail,
                thumbnail_tag->path);
    }
