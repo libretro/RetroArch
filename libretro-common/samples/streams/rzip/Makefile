@@ -77,7 +77,7 @@ OBJS      := $(SOURCES:.c=.o)
 OBJS_TEST := $(SOURCES_TEST:.c=.o)
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS += -DHAVE_ZLIB -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+CFLAGS += -DHAVE_ZLIB -DHAVE_COMPRESSION -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
 
 # Silence "ISO C does not support the 'I64' ms_printf length modifier"
 # warnings when using MinGW
