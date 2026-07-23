@@ -49,6 +49,8 @@ struct content_prefetch_item
 #ifdef HAVE_COMPRESSION
    file_archive_entry_source_t *src;   /* archive-entry source     */
 #endif
+   uint8_t *out;                       /* completed buffer, held   */
+   size_t   out_len;                   /* until the task callback  */
    uint8_t opened;
    uint8_t finished;
 };
@@ -139,16 +141,26 @@ static bool content_prefetch_item_open(struct content_prefetch_item *it)
    return true;
 }
 
+/* The handler runs wherever the task queue runs it - the worker
+ * thread, under the threaded queue - so it only reads and stores.
+ * Deposits and done are delivered by content_prefetch_task_callback,
+ * which the queue invokes from task_queue_check() on the thread
+ * that pumps it. */
 static void content_prefetch_handler(retro_task_t *task)
 {
    struct content_prefetch_state *st =
          (struct content_prefetch_state*)task->state;
    struct content_prefetch_item *it;
 
+   if ((task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) > 0)
+   {
+      st->all_ok = 0;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
    if (st->cursor >= st->count)
    {
-      if (st->done)
-         st->done(st->ud, st->all_ok ? true : false);
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
       return;
    }
@@ -184,13 +196,44 @@ static void content_prefetch_handler(retro_task_t *task)
       uint8_t *out = data_transfer_source_detach(it->dt, &len);
       it->dt       = NULL;
       if (out)
-         st->deposit(st->ud, it->path, out, len);
+      {
+         it->out     = out;
+         it->out_len = len;
+      }
       else
          st->all_ok = 0;
       it->finished = 1;
       content_prefetch_item_close(it);
       st->cursor++;
    }
+}
+
+/* Invoked by the task queue from task_queue_check(), on the thread
+ * that pumps the queue, after the handler set FINISHED: hand every
+ * held buffer to the deposit callback (ownership transfers), then
+ * fire done exactly once.  Cleanup runs right after this and frees
+ * whatever was not handed off. */
+static void content_prefetch_task_callback(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct content_prefetch_state *st =
+         (struct content_prefetch_state*)task->state;
+   size_t i;
+
+   if (!st)
+      return;
+   for (i = 0; i < st->count; i++)
+   {
+      struct content_prefetch_item *it = &st->items[i];
+      if (it->out)
+      {
+         st->deposit(st->ud, it->path, it->out, it->out_len);
+         it->out     = NULL;   /* ownership transferred */
+         it->out_len = 0;
+      }
+   }
+   if (st->done)
+      st->done(st->ud, st->all_ok ? true : false);
 }
 
 static void content_prefetch_cleanup(retro_task_t *task)
@@ -203,6 +246,7 @@ static void content_prefetch_cleanup(retro_task_t *task)
    for (i = 0; i < st->count; i++)
    {
       content_prefetch_item_close(&st->items[i]);
+      free(st->items[i].out);          /* not handed off, if any */
       free(st->items[i].path);
    }
    free(st->items);
@@ -239,6 +283,7 @@ bool task_push_content_prefetch(const char **paths, size_t count,
 
    t->state    = st;
    t->handler  = content_prefetch_handler;
+   t->callback = content_prefetch_task_callback;
    t->cleanup  = content_prefetch_cleanup;
    t->flags   |= RETRO_TASK_FLG_MUTE;
    task_queue_push(t);

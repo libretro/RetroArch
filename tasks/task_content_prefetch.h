@@ -35,14 +35,20 @@ RETRO_BEGIN_DECLS
  * entry decompressing as it is read - streams in while the frontend
  * keeps running, instead of freezing it for one long gulp.
  *
- * Paths may be plain files or "archive#entry".  Each completed path
- * is handed to the deposit callback (main thread, ownership of the
- * exact-size free()able buffer transfers); when every path has been
- * deposited or failed, done_cb fires (also main thread).  A path
- * that cannot be prefetched (a 7z solid block, a vanished file) is
- * simply skipped - the load's ordinary read path remains the
- * authority, and a missing deposit costs a blocking read, not
- * correctness. */
+ * Paths may be plain files or "archive#entry".  The reads happen on
+ * whatever thread the task queue runs handlers on - the worker
+ * thread, under the threaded queue.  Delivery happens later, in one
+ * batch, from the task's completion callback: every deposit
+ * (ownership of the exact-size free()able buffer transfers), then
+ * done, exactly once, both invoked from task_queue_check() on the
+ * thread that pumps the queue.  Neither callback may reenter the
+ * task system or run anything that reinitializes it (content_load()
+ * does, via retroarch_init_task_queue()) - park such work and
+ * perform it from the runloop.  A path that cannot be prefetched (a
+ * 7z solid block, a vanished file) is simply skipped - the load's
+ * ordinary read path remains the authority, and a missing deposit
+ * costs a blocking read, not correctness.  Same for cancellation:
+ * buffers already completed still deposit, the rest never arrive. */
 typedef void (*content_prefetch_deposit_t)(void *ud, const char *path,
       uint8_t *data, size_t size);
 typedef void (*content_prefetch_done_t)(void *ud, bool all_ok);
