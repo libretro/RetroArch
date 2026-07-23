@@ -146,7 +146,10 @@ struct vcdiff_stream
    size_t         out_len;    /* bytes produced so far                */
    size_t         out_cap;
 
-   uint32_t       near[VCD_NEAR];
+   /* Named near_cache, not near: MSVC still reserves "near" (and "far")
+    * from its segmented-memory days, so a member called near does not
+    * parse there even though it is a perfectly ordinary C identifier. */
+   uint32_t       near_cache[VCD_NEAR];
    uint32_t       same[VCD_SAME * 256];
    unsigned       next_slot;
 };
@@ -221,7 +224,7 @@ static bool vcd_reserve(struct vcd_dec *d, size_t need)
 
 static void vcd_cache_reset(struct vcd_dec *d)
 {
-   memset(d->near, 0, sizeof(d->near));
+   memset(d->near_cache, 0, sizeof(d->near_cache));
    memset(d->same, 0, sizeof(d->same));
    d->next_slot = 0;
 }
@@ -229,7 +232,7 @@ static void vcd_cache_reset(struct vcd_dec *d)
 static void vcd_cache_update(struct vcd_dec *d, uint32_t addr)
 {
    d->same[addr % (VCD_SAME * 256)] = addr;
-   d->near[d->next_slot]            = addr;
+   d->near_cache[d->next_slot]      = addr;
    d->next_slot                     = (d->next_slot + 1) % VCD_NEAR;
 }
 
@@ -253,7 +256,7 @@ static bool vcd_addr(struct vcd_dec *d, unsigned mode, uint32_t here,
    }
    else if (mode < 2 + VCD_NEAR)        /* near cache                */
    {
-      uint32_t base = d->near[mode - 2];
+      uint32_t base = d->near_cache[mode - 2];
       uint32_t off  = 0;
       if (!vcd_varint(ap, aend, &off) || off > (uint32_t)0xFFFFFFFFu - base)
          return false;
