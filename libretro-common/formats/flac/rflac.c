@@ -98,43 +98,6 @@ Unfortuantely rflac depends on this for a few things so we're just going to disa
     #include <intrin.h>
 #endif
 
-static INLINE uint32_t rflac_has_sse2(void)
-{
-#if defined(RFLAC_SUPPORT_SSE2)
-    #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE2)
-        #if defined(RFLAC_X64)
-            return 1;    /* 64-bit targets always support SSE2. */
-        #elif (defined(_M_IX86_FP) && _M_IX86_FP == 2) || defined(__SSE2__)
-            return 1;    /* If the compiler is allowed to freely generate SSE2 code we can assume support. */
-        #else
-            return (cpu_features_get() & RETRO_SIMD_SSE2) != 0;
-        #endif
-    #else
-        return 0;       /* SSE2 is only supported on x86 and x64 architectures. */
-    #endif
-#else
-    return 0;           /* No compiler support. */
-#endif
-}
-
-static INLINE uint32_t rflac_has_sse41(void)
-{
-#if defined(RFLAC_SUPPORT_SSE41)
-    #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE41)
-        #if defined(__SSE4_1__) || defined(__AVX__)
-            return 1;    /* If the compiler is allowed to freely generate SSE41 code we can assume support. */
-        #else
-            return (cpu_features_get() & RETRO_SIMD_SSE4) != 0;
-        #endif
-    #else
-        return 0;       /* SSE41 is only supported on x86 and x64 architectures. */
-    #endif
-#else
-    return 0;           /* No compiler support. */
-#endif
-}
-
-
 #if defined(_MSC_VER) && _MSC_VER >= 1500 && (defined(RFLAC_X86) || defined(RFLAC_X64)) && !defined(__clang__)
     #define RFLAC_HAS_LZCNT_INTRINSIC
 #elif (defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7)))
@@ -298,6 +261,44 @@ static uint32_t rflac__gIsLZCNTSupported = 0;
 static uint32_t rflac__gIsSSE2Supported  = 0;
 static uint32_t rflac__gIsSSE41Supported = 0;
 
+static INLINE uint32_t rflac_has_sse2(void)
+{
+#if defined(RFLAC_SUPPORT_SSE2)
+    #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE2)
+        #if defined(RFLAC_X64)
+            return 1;    /* 64-bit targets always support SSE2. */
+        #elif (defined(_M_IX86_FP) && _M_IX86_FP == 2) || defined(__SSE2__)
+            return 1;    /* If the compiler is allowed to freely generate SSE2 code we can assume support. */
+        #else
+            return (cpu_features_get() & RETRO_SIMD_SSE2) != 0;
+        #endif
+    #else
+        return 0;       /* SSE2 is only supported on x86 and x64 architectures. */
+    #endif
+#else
+    return 0;           /* No compiler support. */
+#endif
+}
+
+static INLINE uint32_t rflac_has_sse41(void)
+{
+#if defined(RFLAC_SUPPORT_SSE41)
+    #if (defined(RFLAC_X64) || defined(RFLAC_X86)) && !defined(RFLAC_NO_SSE41)
+        #if defined(__SSE4_1__) || defined(__AVX__)
+            return 1;    /* If the compiler is allowed to freely generate SSE41 code we can assume support. */
+        #else
+            return (cpu_features_get() & RETRO_SIMD_SSE4) != 0;
+        #endif
+    #else
+        return 0;       /* SSE41 is only supported on x86 and x64 architectures. */
+    #endif
+#else
+    return 0;           /* No compiler support. */
+#endif
+}
+
+
+
 /*
 I've had a bug report that Clang's ThreadSanitizer presents a warning in this function. Having reviewed this, this does
 actually make sense. However, since CPU caps should never differ for a running process, I don't think the trade off of
@@ -352,7 +353,6 @@ static INLINE uint32_t rflac__has_neon(void)
 RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
 {
     rflac__gIsNEONSupported = rflac__has_neon();
-
 #if defined(RFLAC_HAS_LZCNT_INTRINSIC) && defined(RFLAC_ARM) && (defined(__ARM_ARCH) && __ARM_ARCH >= 5)
     rflac__gIsLZCNTSupported = 1;
 #endif
@@ -362,18 +362,18 @@ RFLAC_NO_THREAD_SANITIZE static void rflac__init_cpu_caps(void)
 static INLINE uint16_t rflac__swap_endian_uint16(uint16_t n)
 {
 #ifdef RFLAC_HAS_BYTESWAP16_INTRINSIC
-    #if defined(_MSC_VER) && !defined(__clang__)
-        return _byteswap_ushort(n);
-    #elif defined(__GNUC__) || defined(__clang__)
-        return __builtin_bswap16(n);
-    #elif defined(__WATCOMC__) && defined(__386__)
-        return _watcom_bswap16(n);
-    #else
-        #error "This compiler does not support the byte swap intrinsic."
-    #endif
+#if defined(_MSC_VER) && !defined(__clang__)
+	return _byteswap_ushort(n);
+#elif defined(__GNUC__) || defined(__clang__)
+	return __builtin_bswap16(n);
+#elif defined(__WATCOMC__) && defined(__386__)
+	return _watcom_bswap16(n);
 #else
-    return ((n & 0xFF00) >> 8) |
-           ((n & 0x00FF) << 8);
+#error "This compiler does not support the byte swap intrinsic."
+#endif
+#else
+	return (   (n & 0xFF00) >> 8)
+		| ((n & 0x00FF) << 8);
 #endif
 }
 
@@ -432,16 +432,6 @@ static INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
            ((n & ((uint64_t)0x00FF0000      )) << 24) |
            ((n & ((uint64_t)0x0000FF00      )) << 40) |
            ((n & ((uint64_t)0x000000FF      )) << 56);
-#endif
-}
-
-
-static INLINE uint16_t rflac__be2host_16(uint16_t n)
-{
-#ifdef MSB_FIRST
-    return n;
-#else
-    return rflac__swap_endian_uint16(n);
 #endif
 }
 
@@ -2423,11 +2413,11 @@ static uint32_t rflac__decode_samples_with_residual__rice__sse41_64(rflac_bs* bs
 
     /* Make sure we process the last few samples. */
     i = (count & ~3);
-    while (i < (int)count) {
+    while (i < (int)count)
+    {
         /* Rice extraction. */
-        if (!rflac__read_rice_parts_x1(bs, riceParam, &zeroCountParts0, &riceParamParts0)) {
+        if (!rflac__read_rice_parts_x1(bs, riceParam, &zeroCountParts0, &riceParamParts0))
             return 0;
-        }
 
         /* Rice reconstruction. */
         riceParamParts0 &= riceParamMask;
@@ -2447,15 +2437,13 @@ static uint32_t rflac__decode_samples_with_residual__rice__sse41_64(rflac_bs* bs
 static uint32_t rflac__decode_samples_with_residual__rice__sse41(rflac_bs* bs, uint32_t bitsPerSample, uint32_t count, uint8_t riceParam, uint32_t lpcOrder, int32_t lpcShift, uint32_t lpcPrecision, const int32_t* coefficients, int32_t* pSamplesOut)
 {
     /* In my testing the order is rarely > 12, so in this case I'm going to simplify the SSE implementation by only handling order <= 12. */
-    if (lpcOrder > 0 && lpcOrder <= 12) {
-        if (rflac__use_64_bit_prediction(bitsPerSample, lpcOrder, lpcPrecision)) {
+    if (lpcOrder > 0 && lpcOrder <= 12)
+    {
+        if (rflac__use_64_bit_prediction(bitsPerSample, lpcOrder, lpcPrecision))
             return rflac__decode_samples_with_residual__rice__sse41_64(bs, count, riceParam, lpcOrder, lpcShift, coefficients, pSamplesOut);
-        } else {
-            return rflac__decode_samples_with_residual__rice__sse41_32(bs, count, riceParam, lpcOrder, lpcShift, coefficients, pSamplesOut);
-        }
-    } else {
-        return rflac__decode_samples_with_residual__rice__scalar(bs, bitsPerSample, count, riceParam, lpcOrder, lpcShift, lpcPrecision, coefficients, pSamplesOut);
+	return rflac__decode_samples_with_residual__rice__sse41_32(bs, count, riceParam, lpcOrder, lpcShift, coefficients, pSamplesOut);
     }
+    return rflac__decode_samples_with_residual__rice__scalar(bs, bitsPerSample, count, riceParam, lpcOrder, lpcShift, lpcPrecision, coefficients, pSamplesOut);
 }
 #endif
 
@@ -2488,83 +2476,17 @@ static INLINE void rflac__vst2q_u16(uint16_t* p, uint16x4x2_t x)
     vst1q_u16(p, vcombine_u16(x.val[0], x.val[1]));
 }
 
-static INLINE int32x4_t rflac__vdupq_n_s32x4(int32_t x3, int32_t x2, int32_t x1, int32_t x0)
-{
-    int32_t x[4];
-    x[3] = x3;
-    x[2] = x2;
-    x[1] = x1;
-    x[0] = x0;
-    return vld1q_s32(x);
-}
-
 static INLINE int32x4_t rflac__valignrq_s32_1(int32x4_t a, int32x4_t b)
 {
     /* Equivalent to SSE's _mm_alignr_epi8(a, b, 4) */
-
-    /* Reference */
-    /*return rflac__vdupq_n_s32x4(
-        vgetq_lane_s32(a, 0),
-        vgetq_lane_s32(b, 3),
-        vgetq_lane_s32(b, 2),
-        vgetq_lane_s32(b, 1)
-    );*/
-
     return vextq_s32(b, a, 1);
-}
-
-static INLINE uint32x4_t rflac__valignrq_u32_1(uint32x4_t a, uint32x4_t b)
-{
-    /* Equivalent to SSE's _mm_alignr_epi8(a, b, 4) */
-
-    /* Reference */
-    /*return rflac__vdupq_n_s32x4(
-        vgetq_lane_s32(a, 0),
-        vgetq_lane_s32(b, 3),
-        vgetq_lane_s32(b, 2),
-        vgetq_lane_s32(b, 1)
-    );*/
-
-    return vextq_u32(b, a, 1);
 }
 
 static INLINE int32x2_t rflac__vhaddq_s32(int32x4_t x)
 {
     /* The sum must end up in position 0. */
-
-    /* Reference */
-    /*return vdupq_n_s32(
-        vgetq_lane_s32(x, 3) +
-        vgetq_lane_s32(x, 2) +
-        vgetq_lane_s32(x, 1) +
-        vgetq_lane_s32(x, 0)
-    );*/
-
     int32x2_t r = vadd_s32(vget_high_s32(x), vget_low_s32(x));
     return vpadd_s32(r, r);
-}
-
-static INLINE int64x1_t rflac__vhaddq_s64(int64x2_t x)
-{
-    return vadd_s64(vget_high_s64(x), vget_low_s64(x));
-}
-
-static INLINE int32x4_t rflac__vrevq_s32(int32x4_t x)
-{
-    /* Reference */
-    /*return rflac__vdupq_n_s32x4(
-        vgetq_lane_s32(x, 0),
-        vgetq_lane_s32(x, 1),
-        vgetq_lane_s32(x, 2),
-        vgetq_lane_s32(x, 3)
-    );*/
-
-    return vrev64q_s32(vcombine_s32(vget_high_s32(x), vget_low_s32(x)));
-}
-
-static INLINE int32x4_t rflac__vnotq_s32(int32x4_t x)
-{
-    return veorq_s32(x, vdupq_n_s32(0xFFFFFFFF));
 }
 
 static INLINE uint32x4_t rflac__vnotq_u32(uint32x4_t x)
@@ -2595,10 +2517,9 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_32(rflac_bs* bs,
 
     riceParamMask    = (uint32_t)~((~0UL) << riceParam);
     riceParamMask128 = vdupq_n_u32(riceParamMask);
-
-    riceParam128 = vdupq_n_s32(riceParam);
-    shift64 = vdup_n_s32(-shift); /* Negate the shift because we'll be doing a variable shift using vshlq_s32(). */
-    one128 = vdupq_n_u32(1);
+    riceParam128     = vdupq_n_s32(riceParam);
+    shift64          = vdup_n_s32(-shift); /* Negate the shift because we'll be doing a variable shift using vshlq_s32(). */
+    one128           = vdupq_n_u32(1);
 
     /*
     Pre-loading the coefficients and prior samples is annoying because we need to ensure we don't try reading more than
@@ -2663,9 +2584,9 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_32(rflac_bs* bs,
         }
 
         /* Coefficients need to be shuffled for our streaming algorithm below to work. Samples are already in the correct order from the loading routine above. */
-        coefficients128_0 = rflac__vrevq_s32(coefficients128_0);
-        coefficients128_4 = rflac__vrevq_s32(coefficients128_4);
-        coefficients128_8 = rflac__vrevq_s32(coefficients128_8);
+        coefficients128_0 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_0), vget_low_s32(coefficients128_0)));
+        coefficients128_4 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_4), vget_low_s32(coefficients128_4)));
+        coefficients128_8 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_8), vget_low_s32(coefficients128_8)));
     }
 
     /* For this version we are doing one sample at a time. */
@@ -2699,7 +2620,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_32(rflac_bs* bs,
                 prediction64 = vadd_s32(prediction64, vget_low_s32(vreinterpretq_s32_u32(riceParamPart128)));
 
                 samples128_0 = rflac__valignrq_s32_1(vcombine_s32(prediction64, vdup_n_s32(0)), samples128_0);
-                riceParamPart128 = rflac__valignrq_u32_1(vdupq_n_u32(0), riceParamPart128);
+                riceParamPart128 = vextq_u32(riceParamPart128, vdupq_n_u32(0), 1);
             }
         } else if (order <= 8) {
             for (i = 0; i < 4; i += 1) {
@@ -2713,7 +2634,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_32(rflac_bs* bs,
 
                 samples128_4 = rflac__valignrq_s32_1(samples128_0, samples128_4);
                 samples128_0 = rflac__valignrq_s32_1(vcombine_s32(prediction64, vdup_n_s32(0)), samples128_0);
-                riceParamPart128 = rflac__valignrq_u32_1(vdupq_n_u32(0), riceParamPart128);
+                riceParamPart128 = vextq_u32(riceParamPart128, vdupq_n_u32(0), 1);
             }
         } else {
             for (i = 0; i < 4; i += 1) {
@@ -2729,7 +2650,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_32(rflac_bs* bs,
                 samples128_8 = rflac__valignrq_s32_1(samples128_4, samples128_8);
                 samples128_4 = rflac__valignrq_s32_1(samples128_0, samples128_4);
                 samples128_0 = rflac__valignrq_s32_1(vcombine_s32(prediction64, vdup_n_s32(0)), samples128_0);
-                riceParamPart128 = rflac__valignrq_u32_1(vdupq_n_u32(0), riceParamPart128);
+                riceParamPart128 = vextq_u32(riceParamPart128, vdupq_n_u32(0), 1);
             }
         }
 
@@ -2787,10 +2708,9 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_64(rflac_bs* bs,
 
     riceParamMask    = (uint32_t)~((~0UL) << riceParam);
     riceParamMask128 = vdupq_n_u32(riceParamMask);
-
-    riceParam128 = vdupq_n_s32(riceParam);
-    shift64 = vdup_n_s64(-shift); /* Negate the shift because we'll be doing a variable shift using vshlq_s32(). */
-    one128 = vdupq_n_u32(1);
+    riceParam128     = vdupq_n_s32(riceParam);
+    shift64          = vdup_n_s64(-shift); /* Negate the shift because we'll be doing a variable shift using vshlq_s32(). */
+    one128           = vdupq_n_u32(1);
 
     /*
     Pre-loading the coefficients and prior samples is annoying because we need to ensure we don't try reading more than
@@ -2855,9 +2775,9 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_64(rflac_bs* bs,
         }
 
         /* Coefficients need to be shuffled for our streaming algorithm below to work. Samples are already in the correct order from the loading routine above. */
-        coefficients128_0 = rflac__vrevq_s32(coefficients128_0);
-        coefficients128_4 = rflac__vrevq_s32(coefficients128_4);
-        coefficients128_8 = rflac__vrevq_s32(coefficients128_8);
+        coefficients128_0 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_0), vget_low_s32(coefficients128_0)));
+        coefficients128_4 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_4), vget_low_s32(coefficients128_4)));
+        coefficients128_8 = vrev64q_s32(vcombine_s32(vget_high_s32(coefficients128_8), vget_low_s32(coefficients128_8)));
     }
 
     /* For this version we are doing one sample at a time. */
@@ -2897,7 +2817,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_64(rflac_bs* bs,
             }
 
             /* Horizontal add and shift. */
-            prediction64 = rflac__vhaddq_s64(prediction128);
+            prediction64 = vadd_s64(vget_high_s64(prediction128), vget_low_s64(prediction128));
             prediction64 = vshl_s64(prediction64, shift64);
             prediction64 = vadd_s64(prediction64, vdup_n_s64(vgetq_lane_u32(riceParamPart128, 0)));
 
@@ -2907,7 +2827,7 @@ static uint32_t rflac__decode_samples_with_residual__rice__neon_64(rflac_bs* bs,
             samples128_0 = rflac__valignrq_s32_1(vcombine_s32(vreinterpret_s32_s64(prediction64), vdup_n_s32(0)), samples128_0);
 
             /* Slide our rice parameter down so that the value in position 0 contains the next one to process. */
-            riceParamPart128 = rflac__valignrq_u32_1(vdupq_n_u32(0), riceParamPart128);
+            riceParamPart128 = vextq_u32(riceParamPart128, vdupq_n_u32(0), 1);
         }
 
         /* We store samples in groups of 4. */
@@ -4343,7 +4263,7 @@ static INLINE void rflac__decode_block_header(uint32_t blockHeader, uint8_t* isL
     blockHeader = rflac__be2host_32(blockHeader);
     *isLastBlock = (uint8_t)((blockHeader & 0x80000000UL) >> 31);
     *blockType   = (uint8_t)((blockHeader & 0x7F000000UL) >> 24);
-    *blockSize   =                (blockHeader & 0x00FFFFFFUL);
+    *blockSize   = (blockHeader & 0x00FFFFFFUL);
 }
 
 static INLINE uint32_t rflac__read_and_decode_block_header(rflac_read_proc onRead, void* pUserData, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
@@ -4478,7 +4398,9 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
                         /* Endian swap. */
                         pSeekpoint->firstPCMFrame   = rflac__be2host_64(pSeekpoint->firstPCMFrame);
                         pSeekpoint->flacFrameOffset = rflac__be2host_64(pSeekpoint->flacFrameOffset);
-                        pSeekpoint->pcmFrameCount   = rflac__be2host_16(pSeekpoint->pcmFrameCount);
+#ifndef MSB_FIRST
+                        pSeekpoint->pcmFrameCount   = rflac__swap_endian_uint16(pSeekpoint->pcmFrameCount);
+#endif
                     }
 
                     metadata.pRawData = pRawData;
@@ -5732,9 +5654,8 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     /* CPU support first. */
     rflac__init_cpu_caps();
 
-    if (!rflac__init_private(&init, onRead, onSeek, onMeta, container, pUserData, pUserDataMD)) {
+    if (!rflac__init_private(&init, onRead, onSeek, onMeta, container, pUserData, pUserDataMD))
         return NULL;
-    }
 
     /*
     The size of the allocation for the rflac object needs to be large enough to fit the following:
@@ -5869,7 +5790,9 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
                         /* Endian swap. */
                         pFlac->pSeekpoints[iSeekpoint].firstPCMFrame   = rflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].firstPCMFrame);
                         pFlac->pSeekpoints[iSeekpoint].flacFrameOffset = rflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].flacFrameOffset);
-                        pFlac->pSeekpoints[iSeekpoint].pcmFrameCount   = rflac__be2host_16(pFlac->pSeekpoints[iSeekpoint].pcmFrameCount);
+#ifndef MSB_FIRST
+                        pFlac->pSeekpoints[iSeekpoint].pcmFrameCount   = rflac__swap_endian_uint16(pFlac->pSeekpoints[iSeekpoint].pcmFrameCount);
+#endif
                     } else {
                         /* Failed to read the seektable. Pretend we don't have one. */
                         pFlac->pSeekpoints = NULL;
@@ -6116,11 +6039,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(rflac* pFla
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
     uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
-    int32x4_t shift0_4;
-    int32x4_t shift1_4;
-
-    shift0_4 = vdupq_n_s32(shift0);
-    shift1_4 = vdupq_n_s32(shift1);
+    int32x4_t shift0_4 = vdupq_n_s32(shift0);
+    int32x4_t shift1_4 = vdupq_n_s32(shift1);
 
     for (i = 0; i < frameCount4; ++i) {
         uint32x4_t left;
@@ -6270,11 +6190,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_right_side__neon(rflac* pFl
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
     uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
-    int32x4_t shift0_4;
-    int32x4_t shift1_4;
-
-    shift0_4 = vdupq_n_s32(shift0);
-    shift1_4 = vdupq_n_s32(shift1);
+    int32x4_t shift0_4 = vdupq_n_s32(shift0);
+    int32x4_t shift1_4 = vdupq_n_s32(shift1);
 
     for (i = 0; i < frameCount4; ++i) {
         uint32x4_t side;
@@ -6536,11 +6453,9 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(rflac* pFlac
     const uint32_t* pInputSamples0U32 = (const uint32_t*)pInputSamples0;
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift = unusedBitsPerSample;
-    int32x4_t wbpsShift0_4; /* wbps = Wasted Bits Per Sample */
-    int32x4_t wbpsShift1_4; /* wbps = Wasted Bits Per Sample */
-
-    wbpsShift0_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
-    wbpsShift1_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
+    /* wbps = Wasted Bits Per Sample */
+    int32x4_t wbpsShift0_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
+    int32x4_t wbpsShift1_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
 
     if (shift == 0) {
         for (i = 0; i < frameCount4; ++i) {
@@ -6709,9 +6624,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__neon(rf
     uint64_t frameCount4 = frameCount >> 2;
     const uint32_t* pInputSamples0U32 = (const uint32_t*)pInputSamples0;
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
-    uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
-    uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
-
+    uint32_t shift0    = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
+    uint32_t shift1    = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
     int32x4_t shift0_4 = vdupq_n_s32(shift0);
     int32x4_t shift1_4 = vdupq_n_s32(shift1);
 
@@ -6921,13 +6835,9 @@ static INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(rflac* pFla
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift0 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample) - 8;
     uint32_t shift1 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample) - 8;
-    float32x4_t factor4;
-    int32x4_t shift0_4;
-    int32x4_t shift1_4;
-
-    factor4  = vdupq_n_f32(1.0f / 8388608.0f);
-    shift0_4 = vdupq_n_s32(shift0);
-    shift1_4 = vdupq_n_s32(shift1);
+    float32x4_t factor4  = vdupq_n_f32(1.0f / 8388608.0f);
+    int32x4_t shift0_4   = vdupq_n_s32(shift0);
+    int32x4_t shift1_4   = vdupq_n_s32(shift1);
 
     for (i = 0; i < frameCount4; ++i) {
         uint32x4_t left;
@@ -7063,13 +6973,9 @@ static INLINE void rflac_read_pcm_frames_f32__decode_right_side__neon(rflac* pFl
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift0 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample) - 8;
     uint32_t shift1 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample) - 8;
-    float32x4_t factor4;
-    int32x4_t shift0_4;
-    int32x4_t shift1_4;
-
-    factor4  = vdupq_n_f32(1.0f / 8388608.0f);
-    shift0_4 = vdupq_n_s32(shift0);
-    shift1_4 = vdupq_n_s32(shift1);
+    float32x4_t factor4 = vdupq_n_f32(1.0f / 8388608.0f);
+    int32x4_t shift0_4  = vdupq_n_s32(shift0);
+    int32x4_t shift1_4  = vdupq_n_s32(shift1);
 
     for (i = 0; i < frameCount4; ++i) {
         uint32x4_t side;
@@ -7317,20 +7223,15 @@ static INLINE void rflac_read_pcm_frames_f32__decode_mid_side__sse2(rflac* pFlac
 static INLINE void rflac_read_pcm_frames_f32__decode_mid_side__neon(rflac* pFlac, uint64_t frameCount, uint32_t unusedBitsPerSample, const int32_t* pInputSamples0, const int32_t* pInputSamples1, float* pOutputSamples)
 {
     uint64_t i;
+    int32x4_t shift4;
     uint64_t frameCount4 = frameCount >> 2;
     const uint32_t* pInputSamples0U32 = (const uint32_t*)pInputSamples0;
     const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
     uint32_t shift = unusedBitsPerSample - 8;
-    float factor;
-    float32x4_t factor4;
-    int32x4_t shift4;
-    int32x4_t wbps0_4;  /* Wasted Bits Per Sample */
-    int32x4_t wbps1_4;  /* Wasted Bits Per Sample */
-
-    factor  = 1.0f / 8388608.0f;
-    factor4 = vdupq_n_f32(factor);
-    wbps0_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
-    wbps1_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
+    float factor        = 1.0f / 8388608.0f;
+    float32x4_t factor4 = vdupq_n_f32(factor);
+    int32x4_t wbps0_4   = vdupq_n_s32(pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
+    int32x4_t wbps1_4   = vdupq_n_s32(pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
 
     if (shift == 0) {
         for (i = 0; i < frameCount4; ++i) {
