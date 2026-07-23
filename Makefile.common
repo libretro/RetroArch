@@ -2322,6 +2322,7 @@ endif
 ifeq ($(HAVE_RPNG), 1)
    DEFINES += -DHAVE_RPNG
    OBJ += $(LIBRETRO_COMM_DIR)/formats/png/rpng.o \
+          $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.o \
           $(LIBRETRO_COMM_DIR)/formats/png/rpng_encode.o
 endif
 

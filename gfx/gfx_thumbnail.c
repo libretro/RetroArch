@@ -841,12 +841,47 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    if (string_is_empty(path))
       return;
 
-   /* Cheap gate: only container types with an animation decoder */
+   /* Cheap gate: only container types with an animation decoder.
+    * PNG is included for APNG. */
    type = image_texture_get_type(path);
-   if (   (type != IMAGE_TYPE_WEBP)
+   if (   (type != IMAGE_TYPE_PNG)
+       && (type != IMAGE_TYPE_WEBP)
        && (type != IMAGE_TYPE_WEBM)
        && (type != IMAGE_TYPE_MP4))
       return;
+
+#ifdef HAVE_RPNG
+   /* PNG is the dominant thumbnail format and almost all of them are
+    * still images, so deciding "animated?" only after reading the whole
+    * file would add a full extra read to the common path.  APNG puts
+    * its acTL control chunk before the first IDAT, i.e. within the
+    * first few hundred bytes, so probe a small header window first and
+    * bail out early for ordinary PNGs. */
+   if (type == IMAGE_TYPE_PNG)
+   {
+      uint8_t  probe[4096];
+      int64_t  got  = 0;
+      int      more = 0;
+      RFILE   *fp   = filestream_open(path,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (!fp)
+         return;
+      got = filestream_read(fp, probe, sizeof(probe));
+      filestream_close(fp);
+      if (got <= 0)
+         return;
+      if (!rpng_is_apng_ex(probe, (size_t)got, &more))
+      {
+         /* Conclusive "still PNG" - or the acTL would lie beyond this
+          * window, which only happens with unusually large ancillary
+          * chunks ahead of it.  Treating that as still keeps the hot
+          * path cheap; such a file simply shows its default image, the
+          * behaviour before APNG support existed. */
+         (void)more;
+         return;
+      }
+   }
+#endif
 
    /* Gate on the file's size before reading it: rejecting after the
     * read would itself be the allocation spike the cap exists to

@@ -56,6 +56,30 @@ bool rpng_need_more(const rpng_t *rpng);
  * can begin.  Mirrors rjpeg_header_ready. */
 bool rpng_header_ready(const uint8_t *data, size_t len);
 
+/* APNG (Animated PNG) streaming decode.  rpng_is_apng cheaply reports
+ * whether a buffer carries an acTL animation-control chunk before the
+ * first IDAT; a still PNG returns false and decodes through the ordinary
+ * rpng path.  The stream emits composited RGBA frames one at a time onto
+ * a persistent canvas (memory independent of frame count), mirroring the
+ * rwebp_anim_stream / video-stream contract.  next() returns the canvas
+ * (valid until the next call, do not free); NULL means end of one pass -
+ * rewind to loop.  The buffer is BORROWED and must outlive the stream. */
+typedef struct rpng_apng_stream rpng_apng_stream_t;
+
+bool rpng_is_apng(const uint8_t *buf, size_t len);
+/* As rpng_is_apng, but 'need_more' (may be NULL) is set when the answer
+ * lies beyond the supplied bytes, so a caller probing a short header
+ * prefix can tell that apart from a conclusive "still PNG". */
+bool rpng_is_apng_ex(const uint8_t *buf, size_t len, int *need_more);
+rpng_apng_stream_t *rpng_apng_stream_open(const uint8_t *buf, size_t len);
+void rpng_apng_stream_close(rpng_apng_stream_t *s);
+void rpng_apng_stream_get_info(const rpng_apng_stream_t *s,
+      unsigned *width, unsigned *height, int *num_frames, int *loop_count);
+const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
+      int *duration_ms);
+bool rpng_apng_stream_set_argb(rpng_apng_stream_t *s, int argb);
+void rpng_apng_stream_rewind(rpng_apng_stream_t *s);
+
 rpng_t *rpng_alloc(void);
 
 void rpng_free(rpng_t *rpng);
