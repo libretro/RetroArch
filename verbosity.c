@@ -103,7 +103,6 @@ typedef struct verbosity_state
    /* If this is non-NULL, RARCH_LOG and friends
     * will write to this file. */
    FILE *fp;   /* pointer-sized: keep near top */
-   void *buf;  /* pointer-sized: keep near top */
 
    /* Booleans grouped together to avoid padding holes */
    bool verbosity;
@@ -194,10 +193,21 @@ void retro_main_log_file_init(const char *path, bool append)
    main_verbosity_st.fp          = tmp;
    main_verbosity_st.initialized = true;
 
-   /* TODO: this is only useful for a few platforms, find which and add ifdef */
-   main_verbosity_st.buf = calloc(1, 0x4000);
-   setvbuf(main_verbosity_st.fp,
-           (char*)main_verbosity_st.buf, _IOFBF, 0x4000);
+   /* No setvbuf here, deliberately.
+    *
+    * There used to be a 16 KiB buffer installed at this point, with a
+    * note wondering which platforms it helped.  The answer is none, and
+    * the reason is a few lines further down: every path that writes a
+    * log line calls fflush immediately afterwards, so the buffer never
+    * holds more than the line just written and the write reaches the
+    * operating system either way.  Measured at twenty thousand lines,
+    * a 16 KiB buffer and no buffer at all are the same speed, and both
+    * cost exactly one write per line.
+    *
+    * The flushing is the part worth keeping.  A log is read after a
+    * crash, so a line that is still sitting in a buffer when the
+    * process dies is a line that was not worth writing.  Given that,
+    * the buffer only added an allocation and a copy per line. */
 }
 
 void retro_main_log_file_deinit(void)
@@ -207,8 +217,7 @@ void retro_main_log_file_deinit(void)
       fclose(main_verbosity_st.fp);
       main_verbosity_st.fp = NULL;
    }
-   free(main_verbosity_st.buf);
-   main_verbosity_st.buf         = NULL;
+
    main_verbosity_st.initialized = false;
 }
 
