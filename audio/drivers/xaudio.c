@@ -56,7 +56,18 @@ typedef struct xaudio2 xaudio2_t;
 
 #define MAX_BUFFERS      16
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
-#define XAUDIO2_WRITE_AVAILABLE(handle) ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1))
+/* Bytes writable without blocking: free queue slots minus what the
+ * current staging sub-buffer has already consumed.  The previous form
+ * ignored bufptr, overstating free space by up to one sub-buffer
+ * (1/16 of the whole window) in the rate-control occupancy report and
+ * the nonblocking clamp.  At a full queue this reports 0 rather than
+ * underflowing size_t on the bufptr subtraction; the staging remainder
+ * it forgoes there cannot be flushed without blocking anyway. */
+#define XAUDIO2_WRITE_AVAILABLE(handle) \
+   (((handle)->buffers < MAX_BUFFERS - 1) \
+    ? ((handle)->bufsize * (MAX_BUFFERS - (handle)->buffers - 1) \
+       - (handle)->bufptr) \
+    : 0)
 #define XAUDIO_TIMEOUT   256
 
 enum xa_flags
@@ -388,7 +399,12 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
                new_rate  = xa_device_get_samplerate(i);
                if (new_rate > 0)
                {
-                  xaudio2_set_format(&desired_wf, true, channels, new_rate);
+                  /* Re-derive the format at the device's native rate,
+                   * honouring the negotiated sample format - this
+                   * previously hardcoded float, silently overriding an
+                   * int16 negotiation whenever a named device was
+                   * matched. */
+                  xaudio2_set_format(&desired_wf, float_fmt, channels, new_rate);
                   *rate = desired_wf.nSamplesPerSec;
                }
                break;
@@ -412,7 +428,14 @@ static xaudio2_t *xaudio2_new(unsigned *rate, unsigned channels,
 #if (_WIN32_WINNT >= 0x0602 /*_WIN32_WINNT_WIN8*/)
    {
       wchar_t *temp = NULL;
-      if (dev_id)
+      /* Only dereference the enumeration list for a validated index.
+       * idx_found can come from the unclamped strtoul fallback (any
+       * number the user typed), and list can be NULL or empty while
+       * dev_id is set - either way the previous unconditional
+       * list->elems[idx_found] access read out of bounds or through
+       * NULL.  An unmatched name falls through with temp == NULL,
+       * which selects the default device. */
+      if (dev_id && list && idx_found >= 0 && (size_t)idx_found < list->size)
          temp = utf8_to_utf16_string_alloc((const char*)list->elems[idx_found].userdata);
 
       if (FAILED(IXAudio2_CreateMasteringVoice(handle->pXAudio2,
