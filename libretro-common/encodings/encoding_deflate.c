@@ -1250,6 +1250,21 @@ static int32_t rd_insert(struct rdeflate *s, uint32_t pos)
    return prev;
 }
 
+/* __builtin_clzll / __builtin_ctzll need GCC >= 3.4 (where the
+ * clz/ctz builtin family was introduced) or Clang (which has had
+ * them from the start). Anything older takes the portable
+ * bit-loop fallback. Pre-definable so unusual toolchains (or
+ * tests) can force either path. */
+#ifndef RD_HAS_BIT_BUILTINS
+#if defined(__clang__) || \
+    (defined(__GNUC__) && (__GNUC__ > 3 || \
+    (__GNUC__ == 3 && defined(__GNUC_MINOR__) && __GNUC_MINOR__ >= 4)))
+#define RD_HAS_BIT_BUILTINS 1
+#else
+#define RD_HAS_BIT_BUILTINS 0
+#endif
+#endif
+
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
       uint32_t max_len, uint32_t best_start, uint32_t *dist_out)
 {
@@ -1316,7 +1331,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
 #if RETRO_IS_BIG_ENDIAN
                   /* first differing byte is the 
                    * most-significant nonzero byte */
-#if defined(__GNUC__) || defined(__clang__)
+#if RD_HAS_BIT_BUILTINS
                   l += (uint32_t)(__builtin_clzll(x) >> 3);
 #else
                   int n = 0;
@@ -1330,7 +1345,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
 #else
                   /* first differing byte is the least-significant 
                    * nonzero byte */
-#if defined(__GNUC__) || defined(__clang__)
+#if RD_HAS_BIT_BUILTINS
                   l += (uint32_t)(__builtin_ctzll(x) >> 3);
 #else
                   int n = 0;
