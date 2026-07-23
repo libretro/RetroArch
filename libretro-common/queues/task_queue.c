@@ -66,6 +66,14 @@ struct retro_task_impl
 static retro_task_queue_msg_t msg_push_bak  = NULL;
 static task_queue_t tasks_running           = {NULL, NULL};
 static task_queue_t tasks_finished          = {NULL, NULL};
+#ifdef HAVE_THREADS
+/* Tasks whose callbacks are currently being run by
+ * retro_task_threaded_gather(); guarded by finished_lock. Keeps
+ * such tasks visible to retro_task_threaded_find() from any thread
+ * until they are fully retired, without holding finished_lock
+ * across the callbacks themselves. */
+static task_queue_t tasks_retiring          = {NULL, NULL};
+#endif
 
 static struct retro_task_impl *impl_current = NULL;
 static bool task_threaded_enable            = false;
@@ -188,37 +196,41 @@ static retro_task_t *task_queue_get(task_queue_t *queue)
    return task;
 }
 
+static void retro_task_internal_retire_body(retro_task_t *task)
+{
+   task_queue_push_progress(task);
+
+   if (task->callback)
+      task->callback(task, task->task_data, task->user_data, task->error);
+
+   if (task->cleanup)
+       task->cleanup(task);
+
+#ifdef HAVE_THREADS
+   slock_lock(property_lock);
+#endif
+   if (task->error)
+   {
+      free(task->error);
+      task->error = NULL;
+   }
+
+   if (task->title)
+   {
+      free(task->title);
+      task->title = NULL;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(property_lock);
+#endif
+}
+
 static void retro_task_internal_gather(void)
 {
    retro_task_t *task = NULL;
    while ((task = task_queue_get(&tasks_finished)))
    {
-      task_queue_push_progress(task);
-
-      if (task->callback)
-         task->callback(task, task->task_data, task->user_data, task->error);
-
-      if (task->cleanup)
-          task->cleanup(task);
-
-#ifdef HAVE_THREADS
-      slock_lock(property_lock);
-#endif
-      if (task->error)
-      {
-         free(task->error);
-         task->error = NULL;
-      }
-
-      if (task->title)
-      {
-         free(task->title);
-         task->title = NULL;
-      }
-#ifdef HAVE_THREADS
-      slock_unlock(property_lock);
-#endif
-
+      retro_task_internal_retire_body(task);
       free(task);
    }
 }
@@ -442,9 +454,66 @@ static void retro_task_threaded_gather(void)
       task_queue_push_progress(task);
    slock_unlock(running_lock);
 
-   slock_lock(finished_lock);
-   retro_task_internal_gather();
-   slock_unlock(finished_lock);
+   /* Detach the entire finished list under the lock, then retire
+    * the tasks (progress push, callback, cleanup, free) outside
+    * it. Task callbacks routinely push follow-up tasks - which
+    * takes running_lock - so holding finished_lock across them
+    * would invert the running_lock -> finished_lock nesting order
+    * used by the worker's finished-move and by
+    * retro_task_threaded_find(), a classic ABBA deadlock.
+    *
+    * Tasks move to the retiring list (still under finished_lock)
+    * for the span between 'finished' and 'fully retired', so
+    * find() remains truthful from any thread throughout. */
+   {
+      /* Task callbacks can transitively call task_queue_check()
+       * (and thus re-enter this function on the same thread); a
+       * nested invocation walking and freeing the retiring list
+       * would invalidate the outer one. Gather only ever runs on
+       * the task-callback thread, so a simple recursion guard
+       * suffices: the nested call becomes a no-op and the outer
+       * loop - which re-reads the list head every iteration -
+       * picks the work up. */
+      static bool in_gather = false;
+      retro_task_t *task    = NULL;
+
+      if (in_gather)
+         return;
+      in_gather = true;
+
+      /* Move every finished task to the retiring list while
+       * holding the lock, so it stays visible to find() from any
+       * thread for the whole span between 'finished' and 'fully
+       * retired' */
+      slock_lock(finished_lock);
+      while ((task = task_queue_get(&tasks_finished)))
+         task_queue_put(&tasks_retiring, task);
+      slock_unlock(finished_lock);
+
+      /* Retire outside the lock (callbacks may push tasks, taking
+       * running_lock; see the deadlock note above), pruning each
+       * task from the retiring list - under the lock - before it
+       * is freed */
+      for (;;)
+      {
+         slock_lock(finished_lock);
+         task = tasks_retiring.front;
+         slock_unlock(finished_lock);
+
+         if (!task)
+            break;
+
+         retro_task_internal_retire_body(task);
+
+         slock_lock(finished_lock);
+         task_queue_remove(&tasks_retiring, task);
+         slock_unlock(finished_lock);
+
+         free(task);
+      }
+
+      in_gather = false;
+   }
 }
 
 static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
@@ -484,7 +553,28 @@ static bool retro_task_threaded_find(
    retro_task_t *task = NULL;
    bool ret = false;
 
+   /* A task is 'findable' until it has been fully retired,
+    * i.e. including the window where the worker has finished it
+    * but its main-thread callback has not yet run. Callers use
+    * find() for deduplication and liveness ('is this work fully
+    * done?'), and reporting 'not found' in that window lets a
+    * duplicate task be pushed - racing the first over shared
+    * destinations - or lets a find-based task_queue_wait()
+    * condition return before the callback has run (a teardown
+    * ordering hazard). Both queues are scanned under both locks
+    * (nesting order running_lock -> finished_lock, matching the
+    * worker's finished-move), which makes the scan atomic with
+    * respect to the worker: a task missing from the running queue
+    * while running_lock is held is either already in the finished
+    * queue or fully retired (the gather pops it and runs its
+    * callback while holding finished_lock, so once it is absent
+    * from both queues, its callback has completed). Tasks whose
+    * callback is currently executing block this function on
+    * finished_lock until the callback has finished - which
+    * reports 'not found', correctly. */
    slock_lock(running_lock);
+   slock_lock(finished_lock);
+
    for (task = tasks_running.front; task; task = task->next)
    {
       if (func(task, user_data))
@@ -493,6 +583,32 @@ static bool retro_task_threaded_find(
          break;
       }
    }
+
+   if (!ret)
+   {
+      for (task = tasks_finished.front; task; task = task->next)
+      {
+         if (func(task, user_data))
+         {
+            ret = true;
+            break;
+         }
+      }
+   }
+
+   if (!ret)
+   {
+      for (task = tasks_retiring.front; task; task = task->next)
+      {
+         if (func(task, user_data))
+         {
+            ret = true;
+            break;
+         }
+      }
+   }
+
+   slock_unlock(finished_lock);
    slock_unlock(running_lock);
 
    return ret;
@@ -578,17 +694,25 @@ static void threaded_worker(void *userdata)
       }
       else
       {
-         /* Remove task from running queue */
+         /* Move the task from the running queue to the finished
+          * queue while continuously holding running_lock: if the
+          * locks were dropped between the remove and the put, the
+          * task would briefly be in neither queue, and
+          * retro_task_threaded_find() - which scans both queues
+          * under both locks - could miss a task that is not yet
+          * fully retired. Lock nesting order is
+          * running_lock -> finished_lock, matching the find
+          * function; no other path nests these locks. */
          slock_lock(running_lock);
          slock_lock(queue_lock);
          task_queue_remove(&tasks_running, task);
          slock_unlock(queue_lock);
-         slock_unlock(running_lock);
 
          /* Add task to finished queue */
          slock_lock(finished_lock);
          task_queue_put(&tasks_finished, task);
          slock_unlock(finished_lock);
+         slock_unlock(running_lock);
       }
    }
 }
