@@ -49,6 +49,34 @@ RETRO_BEGIN_DECLS
  * user could act on is logged where it is detected.
  */
 
+/* Incremental form, for applying a patch while the source is still
+ * arriving.
+ *
+ * A VCDIFF window names the source segment it needs, so a window can be
+ * decoded as soon as that segment has been fed and must wait otherwise.
+ * Feeding is therefore window-granular: chunks accumulate, and each one
+ * releases however many windows it completes.
+ *
+ * Source bytes are retained in full, because a window may name any
+ * segment of the source regardless of how far the stream has got - the
+ * gain here is overlapping the decode with the read, not a smaller
+ * footprint.
+ *
+ * Chunks must arrive in order and must not overlap; any sizes are
+ * accepted.  finish() refuses a stream that was fed less than the
+ * source length declared at open, since a decoder cannot tell a
+ * truncated feed from a legitimately short source and would otherwise
+ * return a plausible target built from a partial one. */
+typedef struct vcdiff_stream vcdiff_stream_t;
+
+vcdiff_stream_t *vcdiff_stream_open(const uint8_t *patch, size_t patch_len,
+      size_t src_len);
+size_t vcdiff_stream_feed(vcdiff_stream_t *s, const uint8_t *chunk,
+      size_t len);
+bool vcdiff_stream_finish(vcdiff_stream_t *s, uint8_t **out,
+      size_t *out_len);
+void vcdiff_stream_free(vcdiff_stream_t *s);
+
 /* Apply @patch to @src, allocating the result.
  *
  * On success *out receives a malloc'd buffer the caller frees and
@@ -56,7 +84,10 @@ RETRO_BEGIN_DECLS
  * content should be used unpatched.
  *
  * @src may be NULL only when @src_len is 0 (a patch that carries its
- * whole target as literal data). */
+ * whole target as literal data).
+ *
+ * This is the streaming form with the whole source handed over at once,
+ * and takes the caller's buffer by reference rather than copying it. */
 bool vcdiff_decode(const uint8_t *patch, size_t patch_len,
       const uint8_t *src, size_t src_len,
       uint8_t **out, size_t *out_len);

@@ -128,10 +128,19 @@ static const struct vcd_inst vcd_table[256] = {
    {3, 4,5,1,1,0}, {3, 4,6,1,1,0}, {3, 4,7,1,1,0}, {3, 4,8,1,1,0}
 };
 
-struct vcd_dec
+struct vcdiff_stream
 {
-   const uint8_t *src;        /* source file, may be NULL when empty  */
-   size_t         src_len;
+   const uint8_t *patch;      /* borrowed, must outlive the stream    */
+   size_t         patch_len;
+   size_t         p_off;      /* first window not yet decoded         */
+
+   const uint8_t *src;        /* caller's buffer, or own_src below    */
+   size_t         src_len;    /* declared total                       */
+   size_t         src_seen;   /* how much of it has arrived           */
+   uint8_t       *own_src;    /* retained copy, streaming only        */
+   size_t         own_cap;
+   uint8_t        owns_src;   /* 1 when own_src is in use             */
+   uint8_t        failed;
 
    uint8_t       *out;        /* target being built                   */
    size_t         out_len;    /* bytes produced so far                */
@@ -141,6 +150,9 @@ struct vcd_dec
    uint32_t       same[VCD_SAME * 256];
    unsigned       next_slot;
 };
+
+/* kept for the internal functions, which predate the streaming form */
+#define vcd_dec vcdiff_stream
 
 /* --------------------------------------------------------------------
  * primitives
@@ -377,7 +389,17 @@ static size_t vcd_total_target(const uint8_t *p, const uint8_t *pend,
    return total;
 }
 
-static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
+/* A window either decodes, or waits for source it has not been given
+ * yet, or is malformed.  The middle case is not an error: the caller
+ * feeds more and the same window is attempted again. */
+enum vcd_win
+{
+   VCD_WIN_OK = 0,
+   VCD_WIN_WAIT,
+   VCD_WIN_ERROR
+};
+
+static enum vcd_win vcd_window(struct vcd_dec *d, const uint8_t **pp,
       const uint8_t *pend)
 {
    const uint8_t *p = *pp;
@@ -390,19 +412,25 @@ static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
    uint8_t  win_ind, delta_ind;
 
    if (p >= pend)
-      return false;
+      return VCD_WIN_ERROR;
    win_ind = *p++;
 
    if (win_ind & (VCD_SOURCE | VCD_TARGET))
    {
       if (     !vcd_varint(&p, pend, &seg_len)
             || !vcd_varint(&p, pend, &seg_pos))
-         return false;
+         return VCD_WIN_ERROR;
       if (win_ind & VCD_SOURCE)
       {
          if (      (size_t)seg_pos > d->src_len
                || (size_t)seg_len > d->src_len - seg_pos)
-            return false;
+            return VCD_WIN_ERROR;
+         /* The segment this window needs may not have arrived yet.
+          * Nothing has been consumed at this point - the cursor is
+          * still at the window header - so the caller can simply try
+          * again once more source has been fed. */
+         if ((size_t)seg_pos + seg_len > d->src_seen)
+            return VCD_WIN_WAIT;
          seg = d->src + seg_pos;
       }
       else
@@ -410,41 +438,41 @@ static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
          /* the segment comes from the target already produced */
          if (      (size_t)seg_pos > d->out_len
                || (size_t)seg_len > d->out_len - seg_pos)
-            return false;
+            return VCD_WIN_ERROR;
          seg = d->out + seg_pos;
       }
    }
 
    if (     !vcd_varint(&p, pend, &enc_len)
          || !vcd_varint(&p, pend, &tgt_len))
-      return false;
+      return VCD_WIN_ERROR;
    if (p >= pend)
-      return false;
+      return VCD_WIN_ERROR;
    delta_ind = *p++;
 
    /* Any of the three sections being compressed means a secondary
     * compressor, which this decoder does not implement and must not
     * pretend to. */
    if (delta_ind != 0)
-      return false;
+      return VCD_WIN_ERROR;
 
    if (     !vcd_varint(&p, pend, &data_len)
          || !vcd_varint(&p, pend, &inst_len)
          || !vcd_varint(&p, pend, &addr_len))
-      return false;
+      return VCD_WIN_ERROR;
 
    /* the three sections follow, back to back */
    if (      (size_t)(pend - p) < (size_t)data_len
          || (size_t)(pend - p) - data_len < (size_t)inst_len
          || (size_t)(pend - p) - data_len - inst_len < (size_t)addr_len)
-      return false;
+      return VCD_WIN_ERROR;
 
    dp = p;             dend = dp + data_len;
    ip = dend;          iend = ip + inst_len;
    ap = iend;          aend = ap + addr_len;
 
    if (!vcd_reserve(d, win_start + tgt_len))
-      return false;
+      return VCD_WIN_ERROR;
 
    vcd_cache_reset(d);
 
@@ -454,7 +482,7 @@ static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
       unsigned half;
 
       if (ip >= iend)
-         return false;
+         return VCD_WIN_ERROR;
       e = &vcd_table[*ip++];
 
       for (half = 0; half < 2; half++)
@@ -467,23 +495,23 @@ static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
          if (type == VCD_NOOP)
             continue;
          if (size == 0 && !vcd_varint(&ip, iend, &size))
-            return false;
+            return VCD_WIN_ERROR;
          if (      size == 0
                || (size_t)size > win_start + tgt_len - at)
-            return false;
+            return VCD_WIN_ERROR;
 
          switch (type)
          {
             case VCD_ADD:
                if ((size_t)(dend - dp) < (size_t)size)
-                  return false;
+                  return VCD_WIN_ERROR;
                memcpy(d->out + at, dp, size);
                dp += size;
                break;
 
             case VCD_RUN:
                if (dp >= dend)
-                  return false;
+                  return VCD_WIN_ERROR;
                memset(d->out + at, *dp++, size);
                break;
 
@@ -492,85 +520,202 @@ static bool vcd_window(struct vcd_dec *d, const uint8_t **pp,
                uint32_t addr = 0;
                uint32_t here = (uint32_t)(seg_len + (at - win_start));
                if (!vcd_addr(d, mode, here, &ap, aend, &addr))
-                  return false;
+                  return VCD_WIN_ERROR;
                if (!vcd_copy(d, seg, seg_len, win_start, addr, size, at))
-                  return false;
+                  return VCD_WIN_ERROR;
                break;
             }
 
             default:
-               return false;
+               return VCD_WIN_ERROR;
          }
          d->out_len = at + size;
       }
    }
 
    if (d->out_len != win_start + tgt_len)
-      return false;
+      return VCD_WIN_ERROR;
 
    *pp = aend;
-   return true;
+   return VCD_WIN_OK;
 }
 
 /* --------------------------------------------------------------------
- * entry point
+ * public API
  * -------------------------------------------------------------------- */
+
+/* Decode every window whose source has arrived.  Stops at the first one
+ * that must wait, leaving p_off on its header so the next feed retries
+ * it from a clean cursor. */
+static bool vcd_drain(struct vcdiff_stream *s)
+{
+   const uint8_t *pend = s->patch + s->patch_len;
+   const uint8_t *p    = s->patch + s->p_off;
+
+   while (p < pend)
+   {
+      const uint8_t *before = p;
+      switch (vcd_window(s, &p, pend))
+      {
+         case VCD_WIN_OK:
+            s->p_off = (size_t)(p - s->patch);
+            break;
+         case VCD_WIN_WAIT:
+            p        = before;
+            s->p_off = (size_t)(before - s->patch);
+            return true;
+         default:
+            s->failed = 1;
+            return false;
+      }
+   }
+   s->p_off = s->patch_len;
+   return true;
+}
+
+vcdiff_stream_t *vcdiff_stream_open(const uint8_t *patch, size_t patch_len,
+      size_t src_len)
+{
+   struct vcdiff_stream *s;
+   const uint8_t        *p;
+   uint8_t               hdr;
+
+   if (!patch || patch_len < 5)
+      return NULL;
+   if (      patch[0] != 0xD6 || patch[1] != 0xC3
+         ||  patch[2] != 0xC4 || patch[3] != 0x00)
+      return NULL;
+
+   p   = patch + 4;
+   hdr = *p++;
+
+   /* A secondary compressor or a replacement code table would change
+    * how everything below is read.  Refuse rather than misread. */
+   if (hdr & (VCD_DECOMPRESS | VCD_CODETABLE))
+      return NULL;
+
+   if (hdr & VCD_APPHEADER)
+   {
+      uint32_t alen = 0;
+      if (     !vcd_varint(&p, patch + patch_len, &alen)
+            || (size_t)(patch + patch_len - p) < (size_t)alen)
+         return NULL;
+      p += alen;                       /* informational only */
+   }
+
+   if (!(s = (struct vcdiff_stream*)calloc(1, sizeof(*s))))
+      return NULL;
+
+   s->patch     = patch;
+   s->patch_len = patch_len;
+   s->p_off     = (size_t)(p - patch);
+   s->src_len   = src_len;
+
+   {
+      size_t hint = vcd_total_target(p, patch + patch_len, src_len);
+      if (hint && !vcd_reserve(s, hint))
+      {
+         free(s);
+         return NULL;
+      }
+   }
+   return s;
+}
+
+size_t vcdiff_stream_feed(vcdiff_stream_t *s, const uint8_t *chunk,
+      size_t len)
+{
+   if (!s || !chunk || !len || s->failed)
+      return 0;
+
+   /* Retain the source: a later window may name any part of it. */
+   if (s->src_seen + len > s->own_cap)
+   {
+      size_t   cap = s->own_cap ? s->own_cap : 65536;
+      uint8_t *tmp;
+      while (s->src_seen + len > cap)
+      {
+         if (cap > ((size_t)-1) / 2)
+         {
+            s->failed = 1;
+            return 0;
+         }
+         cap <<= 1;
+      }
+      if (!(tmp = (uint8_t*)realloc(s->own_src, cap)))
+      {
+         s->failed = 1;
+         return 0;
+      }
+      s->own_src = tmp;
+      s->own_cap = cap;
+   }
+   memcpy(s->own_src + s->src_seen, chunk, len);
+   s->owns_src = 1;
+   s->src      = s->own_src;
+   s->src_seen += len;
+
+   if (!vcd_drain(s))
+      return 0;
+   return len;
+}
+
+bool vcdiff_stream_finish(vcdiff_stream_t *s, uint8_t **out,
+      size_t *out_len)
+{
+   if (!s || !out || !out_len || s->failed)
+      return false;
+
+   /* A feed that stopped short is indistinguishable from a source that
+    * is genuinely shorter, and the windows would decode against
+    * whatever did arrive.  Refuse instead. */
+   if (s->src_seen < s->src_len)
+      return false;
+
+   if (!vcd_drain(s) || s->p_off != s->patch_len)
+      return false;
+
+   *out     = s->out;
+   *out_len = s->out_len;
+   s->out   = NULL;
+   return true;
+}
+
+void vcdiff_stream_free(vcdiff_stream_t *s)
+{
+   if (!s)
+      return;
+   free(s->out);
+   free(s->own_src);
+   free(s);
+}
 
 bool vcdiff_decode(const uint8_t *patch, size_t patch_len,
       const uint8_t *src, size_t src_len,
       uint8_t **out, size_t *out_len)
 {
-   struct vcd_dec d;
-   const uint8_t *p, *pend;
-   uint8_t hdr;
+   struct vcdiff_stream *s;
+   bool ok;
 
-   if (!patch || !out || !out_len || patch_len < 5)
-      return false;
    if (!src && src_len)
       return false;
-
-   /* header (s4.1): magic, version, indicator */
-   if (      patch[0] != 0xD6 || patch[1] != 0xC3
-         ||  patch[2] != 0xC4 || patch[3] != 0x00)
+   if (!(s = vcdiff_stream_open(patch, patch_len, src_len)))
       return false;
 
-   p    = patch + 4;
-   pend = patch + patch_len;
-   hdr  = *p++;
+   /* The whole source is already here, so point at the caller's buffer
+    * rather than taking a copy of it - this path decodes patches
+    * against multi-megabyte ROMs and the copy would cost more than the
+    * decode. */
+   s->src      = src;
+   s->src_seen = src_len;
 
-   /* A secondary compressor or a replacement code table would change
-    * how everything below is read.  Refuse rather than misread. */
-   if (hdr & (VCD_DECOMPRESS | VCD_CODETABLE))
-      return false;
-
-   if (hdr & VCD_APPHEADER)
+   ok = vcd_drain(s) && s->p_off == patch_len;
+   if (ok)
    {
-      uint32_t alen = 0;
-      if (!vcd_varint(&p, pend, &alen) || (size_t)(pend - p) < (size_t)alen)
-         return false;
-      p += alen;                       /* informational only */
+      *out     = s->out;
+      *out_len = s->out_len;
+      s->out   = NULL;
    }
-
-   memset(&d, 0, sizeof(d));
-   d.src     = src;
-   d.src_len = src_len;
-
-   {
-      size_t hint = vcd_total_target(p, pend, src_len);
-      if (hint && !vcd_reserve(&d, hint))
-         return false;
-   }
-
-   while (p < pend)
-   {
-      if (!vcd_window(&d, &p, pend))
-      {
-         free(d.out);
-         return false;
-      }
-   }
-
-   *out     = d.out;
-   *out_len = d.out_len;
-   return true;
+   vcdiff_stream_free(s);
+   return ok;
 }

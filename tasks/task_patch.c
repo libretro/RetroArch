@@ -910,8 +910,9 @@ static bool patch_stream_indexed_exists(const char *name)
  *
  * Returns NULL, leaving the caller on the existing whole-buffer path,
  * when there is nothing to apply, when the resolved patch is a format
- * with no streaming applier (xdelta), when indexed continuation patches
- * are present, or on any read/parse failure.  In every one of those
+ * with no streaming applier for this build (xdelta, where support was
+ * compiled out), when indexed continuation patches are present, or on
+ * any read/parse failure.  In every one of those
  * cases the caller loads as before and calls patch_content, so the
  * fallback is the untouched original flow rather than a reimplementation
  * of it.
@@ -973,7 +974,10 @@ patch_stream_t *patch_content_stream_open(
    }
    else if (allow_xdelta && !string_is_empty(name_xdelta)
          && path_is_valid(name_xdelta))
-      return NULL; /* no streaming applier for xdelta yet */
+   {
+      name  = name_xdelta;
+      which = 3;
+   }
    else
       return NULL;
 
@@ -1006,10 +1010,18 @@ patch_stream_t *patch_content_stream_open(
                (size_t)patch_size, src_len);
          fmt = "BPS";
          break;
-      default:
+      case 2:
          ps  = patch_stream_ups_open((const uint8_t*)*patch_data,
                (size_t)patch_size, src_len);
          fmt = "UPS";
+         break;
+      default:
+         /* Returns NULL when built without xdelta support, which the
+          * caller already reads as "not streamable" and answers with
+          * the whole-buffer pass. */
+         ps  = patch_stream_xdelta_open((const uint8_t*)*patch_data,
+               (size_t)patch_size, src_len);
+         fmt = "xdelta";
          break;
    }
 

@@ -17,11 +17,16 @@
 
 #include "patch_stream.h"
 
+#ifdef HAVE_XDELTA
+#include <encodings/encoding_vcdiff.h>
+#endif
+
 enum patch_stream_fmt
 {
    PATCH_STREAM_IPS = 0,
    PATCH_STREAM_UPS,
-   PATCH_STREAM_BPS
+   PATCH_STREAM_BPS,
+   PATCH_STREAM_XDELTA
 };
 
 /* One IPS record, pre-parsed at open().  The patch file is small and
@@ -69,6 +74,12 @@ struct patch_stream
 
    uint8_t        fmt;
    uint8_t        failed;
+
+#ifdef HAVE_XDELTA
+   /* The VCDIFF decoder carries its own streaming state, so this
+    * format is a shell around it rather than a second implementation. */
+   vcdiff_stream_t *vcd;
+#endif
 };
 
 /* --------------------------------------------------------------------
@@ -790,6 +801,40 @@ static bool patch_stream_bps_finish(patch_stream_t *ps,
 }
 
 /* --------------------------------------------------------------------
+ * xdelta (VCDIFF)
+ * -------------------------------------------------------------------- */
+
+#ifdef HAVE_XDELTA
+patch_stream_t *patch_stream_xdelta_open(const uint8_t *patch,
+      size_t patch_len, size_t src_len)
+{
+   patch_stream_t *ps;
+
+   if (!(ps = (patch_stream_t*)calloc(1, sizeof(*ps))))
+      return NULL;
+   if (!(ps->vcd = vcdiff_stream_open(patch, patch_len, src_len)))
+   {
+      free(ps);
+      return NULL;
+   }
+   ps->fmt       = PATCH_STREAM_XDELTA;
+   ps->patch     = patch;
+   ps->patch_len = patch_len;
+   ps->src_len   = src_len;
+   return ps;
+}
+#else
+patch_stream_t *patch_stream_xdelta_open(const uint8_t *patch,
+      size_t patch_len, size_t src_len)
+{
+   (void)patch;
+   (void)patch_len;
+   (void)src_len;
+   return NULL;
+}
+#endif
+
+/* --------------------------------------------------------------------
  * dispatch
  * -------------------------------------------------------------------- */
 
@@ -804,6 +849,13 @@ size_t patch_stream_feed(patch_stream_t *ps, const uint8_t *chunk, size_t len)
          return patch_stream_ips_feed(ps, chunk, len);
       case PATCH_STREAM_UPS:
          return patch_stream_ups_feed(ps, chunk, len);
+#ifdef HAVE_XDELTA
+      case PATCH_STREAM_XDELTA:
+         ps->src_seen += len;
+         if (vcdiff_stream_feed(ps->vcd, chunk, len) != len)
+            ps->failed = 1;
+         return len;
+#endif
       default:
          break;
    }
@@ -833,6 +885,10 @@ bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len)
          return patch_stream_ips_finish(ps, out, out_len);
       case PATCH_STREAM_UPS:
          return patch_stream_ups_finish(ps, out, out_len);
+#ifdef HAVE_XDELTA
+      case PATCH_STREAM_XDELTA:
+         return vcdiff_stream_finish(ps->vcd, out, out_len);
+#endif
       default:
          break;
    }
@@ -848,6 +904,9 @@ void patch_stream_free(patch_stream_t *ps)
 {
    if (!ps)
       return;
+#ifdef HAVE_XDELTA
+   vcdiff_stream_free(ps->vcd);
+#endif
    free(ps->out);
    free(ps->recs);
    free(ps->carry);

@@ -42,6 +42,8 @@ RETRO_BEGIN_DECLS
  *   BPS - SourceCopy seeks arbitrarily, so the source must be retained
  *         in full (as it is today).  The gain here is the overlap with
  *         the load, not reduced memory.
+ *   xdelta - as BPS: a window names the source segment it needs, which
+ *         may be anywhere, so the source is retained.
  *
  * Usage:
  *   ps = patch_stream_ips_open(patch, patch_len, source_len);
@@ -67,6 +69,12 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
       size_t src_len);
 patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
       size_t src_len);
+/* .xdelta (VCDIFF).  Like BPS, a window may name any part of the
+ * source, so the source is retained in full and the gain is the
+ * overlap with the load.  Built only when HAVE_XDELTA is set; returns
+ * NULL otherwise, which the caller already treats as "not streamable". */
+patch_stream_t *patch_stream_xdelta_open(const uint8_t *patch,
+      size_t patch_len, size_t src_len);
 
 /* Feed the next consecutive span of source bytes.  Chunks must arrive in
  * order and must not overlap; any sizes are accepted.  Returns the bytes
