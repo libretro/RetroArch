@@ -108,6 +108,12 @@ uint8_t *data_transfer_source_detach(data_transfer_t *dt, size_t *len);
 
 data_transfer_t *data_transfer_open_window(const char *path, size_t keep);
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
+/* True when the transfer is genuinely windowed - address space was
+ * reserved and only the window is committed.  False when the platform
+ * has no reservation and data_transfer_open_window degraded to holding
+ * the whole file, so a caller can charge admission against the window
+ * in the first case and against the file in the second. */
+bool data_transfer_window_is_reserved(data_transfer_t *dt);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);

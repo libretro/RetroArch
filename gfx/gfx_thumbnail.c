@@ -277,6 +277,18 @@ static void gfx_thumbnail_init_fade(
  * absolute ceiling so a workstation with tens of gigabytes free does
  * not synchronously slurp a multi-gigabyte movie for a hover preview. */
 #define GFX_THUMB_ANIM_ABS_MAX_FILE (1024 * 1024 * 1024)
+/* Sliding-window sizing for the file-browser animation path.  KEEP is
+ * the permanently resident head (container header plus index: an MP4
+ * moov or a WebM cues block sits here and is revisited on every loop).
+ * LOOKAHEAD is committed ahead of the decoder's byte frontier and
+ * MARGIN behind it - the margin must exceed the largest single frame's
+ * packet so a decommit can never overtake a read the decoder is still
+ * inside.  Measured single-frame frontier steps on 4K H.264 stay in
+ * the low tens of KiB, so 8 MiB of margin is three orders of headroom.
+ */
+#define GFX_THUMB_ANIM_WINDOW_KEEP  (4 * 1024 * 1024)
+#define GFX_THUMB_ANIM_WINDOW_AHEAD (8 * 1024 * 1024)
+#define GFX_THUMB_ANIM_WINDOW_BACK  (8 * 1024 * 1024)
 /* Frame-duration handling: <= 0 is undefined by the container spec
  * (browsers substitute 100 ms); very small durations are floored so
  * a hostile file cannot request thousands of decodes per second. */
@@ -316,6 +328,32 @@ static bool gfx_thumb_anim_mem_ok(uint64_t file_len, uint64_t px)
           && (gfx_thumb_anim_mem_need(file_len, px) <= free_mem / 4);
    return (file_len <= GFX_THUMB_ANIM_MAX_FILE)
        && (px == 0 || px <= GFX_THUMB_ANIM_MAX_PIXELS);
+}
+
+/* Admission for the windowed path.  A windowed open commits only the
+ * head plus the sliding window, never the whole file, so the file
+ * length no longer bounds the footprint - what matters is the window
+ * and the decoder's own buffers.  Charge that instead, which is what
+ * lets a multi-gigabyte video preview on a platform that could not
+ * have held it.
+ *
+ * The file length is still bounded, but only by the absolute ceiling:
+ * a file whose address space cannot be reserved at all is refused by
+ * data_transfer_open_window itself, and on a platform with no
+ * reservation the open degrades to a whole-file read - so fall back to
+ * the unwindowed test there rather than admitting something the
+ * fallback would then slurp. */
+static bool gfx_thumb_anim_window_ok(uint64_t px)
+{
+   uint64_t free_mem = frontend_driver_get_free_memory();
+   uint64_t win      = (uint64_t)GFX_THUMB_ANIM_WINDOW_KEEP
+                     + GFX_THUMB_ANIM_WINDOW_AHEAD
+                     + GFX_THUMB_ANIM_WINDOW_BACK;
+   if (free_mem)
+      return gfx_thumb_anim_mem_need(win, px) <= free_mem / 4;
+   /* No free-memory report: the window is a fixed, small footprint, so
+    * only the pixel cap still applies. */
+   return (px == 0 || px <= GFX_THUMB_ANIM_MAX_PIXELS);
 }
 
 enum gfx_thumb_anim_job_status
@@ -771,12 +809,28 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
    image_transfer_anim_stream_get_info(stream, type,
          &anim_w, &anim_h, &num_frames, &loop_count);
 
-   if (   (num_frames < 2)
-       || (anim_w < 1)
-       || (anim_h < 1)
-       || !gfx_thumb_anim_mem_ok((uint64_t)len,
-             (uint64_t)anim_w * anim_h))
-      goto fail;
+   /* Admission charges what the playback actually pins.  A windowed
+    * transfer only ever commits its head plus the sliding window, so
+    * the file length is not the cost - substituting it here would
+    * throw away the whole point of windowing and refuse a long video
+    * that comfortably fits.  An unwindowed buffer really is resident
+    * in full, so it is still charged at its length.  The pixel term is
+    * unchanged either way: the decoder's reference frames and the
+    * upload buffers scale with resolution, not with file size, and on
+    * a large frame they dominate the footprint. */
+   {
+      uint64_t charge = (uint64_t)len;
+      if (xfer && data_transfer_window_is_reserved(xfer))
+         charge = (uint64_t)GFX_THUMB_ANIM_WINDOW_KEEP
+                + GFX_THUMB_ANIM_WINDOW_AHEAD
+                + GFX_THUMB_ANIM_WINDOW_BACK;
+      if (   (num_frames < 2)
+          || (anim_w < 1)
+          || (anim_h < 1)
+          || !gfx_thumb_anim_mem_ok(charge,
+                (uint64_t)anim_w * anim_h))
+         goto fail;
+   }
 
    /* The task hands the buffer over as the data_transfer that owns
     * it - possibly with its fill still in flight. */
@@ -883,31 +937,97 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    }
 #endif
 
-   /* Gate on the file's size before reading it: rejecting after the
-    * read would itself be the allocation spike the cap exists to
-    * prevent. */
+   /* Bound the file length before touching it: an unreservable path
+    * degrades to a whole-file read, and rejecting after that read
+    * would itself be the allocation spike the cap exists to prevent.
+    * The tighter, window-aware test happens once the open reports
+    * whether it genuinely windowed. */
    {
       int64_t fsz = path_get_size(path);
-      if ((fsz <= 0) || !gfx_thumb_anim_mem_ok((uint64_t)fsz, 0))
+      if (fsz <= 0)
+         return;
+      if (fsz > GFX_THUMB_ANIM_ABS_MAX_FILE)
          return;
    }
-   if (!filestream_read_file(path, &buf, &len))
-      return;
-   if (len <= 0)
-   {
-      free(buf);
-      return;
-   }
 
-   if (!(stream = image_transfer_anim_stream_new(buf, (size_t)len, type)))
+   /* Open the file as a sliding window: address space for the whole
+    * file is reserved, but only [tell - margin, tell + lookahead) is
+    * ever committed, so a long video costs its window rather than its
+    * length.  The demuxers borrow a fixed base pointer (stable across
+    * extends by the reserve model) and are already avail-aware, and
+    * the feeder below keeps the window ahead of the decode frontier.
+    *
+    * On a platform with no address-space reservation
+    * data_transfer_open_window fills the whole file and the window
+    * calls become no-ops, which is exactly the previous behaviour -
+    * so admission there stays the whole-file test. */
    {
-      /* still image or malformed: keep static thumbnail */
-      free(buf);
-      return;
-   }
+      data_transfer_t *dt = data_transfer_open_window(path,
+            GFX_THUMB_ANIM_WINDOW_KEEP);
+      const uint8_t   *base;
+      size_t           blen = 0;
+      bool             reserved;
 
-   gfx_thumbnail_anim_install(thumbnail, stream, type,
-         buf, (size_t)len, NULL);
+      if (!dt)
+         return;
+      reserved = data_transfer_window_is_reserved(dt);
+      if (!(base = data_transfer_window_base(dt, &blen)) || blen == 0)
+      {
+         data_transfer_free(dt);
+         return;
+      }
+      if (!(reserved ? gfx_thumb_anim_window_ok(0)
+                     : gfx_thumb_anim_mem_ok((uint64_t)blen, 0)))
+      {
+         data_transfer_free(dt);
+         return;
+      }
+
+      /* The demuxer must see the whole logical length; only the head is
+       * resident at this point, so open progressively and grow the
+       * window until the header/index is covered. */
+      {
+         int need_more = 0;
+         size_t avail  = GFX_THUMB_ANIM_WINDOW_KEEP;
+         if (avail > blen)
+            avail = blen;
+         for (;;)
+         {
+            stream = image_transfer_anim_stream_new_avail(
+                  (void*)base, blen, avail, type, &need_more);
+            if (stream || !need_more || avail >= blen)
+               break;
+            avail += GFX_THUMB_ANIM_WINDOW_KEEP;
+            if (avail > blen)
+               avail = blen;
+            if (!data_transfer_window_extend(dt, avail))
+               break;
+         }
+         /* Types without a progressive open (animated WEBP) return
+          * NULL with need_more clear: fall back to the whole buffer,
+          * which the window has to make resident. */
+         if (!stream && !need_more)
+         {
+            if (data_transfer_window_extend(dt, blen))
+               stream = image_transfer_anim_stream_new(
+                     (void*)base, blen, type);
+         }
+      }
+
+      if (!stream)
+      {
+         /* still image or malformed: keep static thumbnail */
+         data_transfer_free(dt);
+         return;
+      }
+
+      buf = (void*)base;
+      len = (int64_t)blen;
+      gfx_thumbnail_anim_install(thumbnail, stream, type,
+            buf, (size_t)len, dt);
+      /* The transfer owns the mapping; the install borrows it. */
+      thumbnail->anim_windowed = 1;
+   }
 }
 
 /* Uploads one final-format animation frame as the thumbnail's texture.
@@ -999,6 +1119,39 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    now  = cpu_features_get_time_usec();
    type = (enum image_type_enum)thumbnail->anim_type;
+
+   /* Windowed playback: keep the committed range straddling the
+    * decoder's byte frontier.  The demuxers report a monotonic
+    * consumed offset (the end of the last packet handed out) and a
+    * fixed media floor, so the feeder can decommit behind and commit
+    * ahead without ever touching the range the decoder is reading.
+    * The margin exceeds the largest single frame's packet by orders of
+    * magnitude, which is what makes the decommit disjoint from any
+    * read in flight - the safety rests on that static invariant, not
+    * on timing. */
+   if (thumbnail->anim_windowed && thumbnail->anim_dt && thumbnail->anim)
+   {
+      size_t tell = image_transfer_anim_stream_consumed(thumbnail->anim,
+            type);
+      if (tell > 0)
+      {
+         size_t floor_off = image_transfer_anim_stream_media_floor(
+               thumbnail->anim, type);
+         size_t margin    = GFX_THUMB_ANIM_WINDOW_BACK;
+         /* Never decommit below the media floor: the demuxer revisits
+          * the header/index there on every loop. */
+         if (tell > floor_off && tell - floor_off < margin)
+            margin = tell - floor_off;
+         if (!data_transfer_window_feed(thumbnail->anim_dt, tell,
+                  GFX_THUMB_ANIM_WINDOW_AHEAD, margin))
+         {
+            /* An I/O failure while extending: the decoder would hit
+             * the end-of-data wall and loop early.  Keep the still. */
+            gfx_thumbnail_anim_close(thumbnail);
+            return;
+         }
+      }
+   }
 
    if (thumbnail->anim_read_pending)
    {

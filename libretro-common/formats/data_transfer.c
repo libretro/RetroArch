@@ -299,6 +299,11 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
    return dt;
 }
 
+bool data_transfer_window_is_reserved(data_transfer_t *dt)
+{
+   return dt && dt->window && dt->map_len != 0;
+}
+
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len)
 {
    if (len)
