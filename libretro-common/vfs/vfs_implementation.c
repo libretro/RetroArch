@@ -526,24 +526,37 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
        * Since C89 does not support specifying a NULL buffer
        * with a non-zero size, we create and track our own buffer for it.
        */
-      /* The C library's default buffer is the filesystem block size,
-       * typically 4 KiB, and callers here write in small pieces - a
-       * JSON writer flushing a kilobyte at a time, for instance - so
-       * that default decides how many syscalls a file costs.
+      /* stdio sizes a file stream's buffer from st_blksize, which the
+       * filesystem reports and which is 4 KiB on every platform
+       * checked.  Callers here write in much smaller pieces than that
+       * - a JSON writer flushing a kilobyte at a time, for instance -
+       * so that default decides how many syscalls a file costs.
        *
-       * Measured on a 7.3 MiB file with 1 KiB writes: the 4 KiB
-       * default took 4.7-5.1 ms, 16 KiB took 2.7 ms and 64 KiB took
-       * 2.2 ms, with nothing further to gain past that.  Reads over
-       * the same file improved from 1.40 ms to 0.71 ms.  Roughly half
-       * the time in both directions, for one allocation per open file.
+       * Measured writing 8 MiB in 1 KiB pieces, default against
+       * 64 KiB:
        *
-       * The cost is that allocation, held for as long as the file is
-       * open, so it is applied only where a spare 64 KiB is not worth
-       * thinking about.  The two console cases below predate this and
-       * carry sizes somebody picked deliberately; they are left alone.
-       * Everything not named here keeps the C library default, which
-       * is the conservative choice for a platform whose memory budget
-       * is not known. */
+       *   desktop Linux   14.02 ms -> 3.05 ms   reads 1.68 -> 0.75 ms
+       *   macOS            9.35 ms -> 1.58 ms   reads 1.59 -> 0.80 ms
+       *
+       * Sixteen times fewer syscalls for the same bytes, and the
+       * dearer a syscall is the more that is worth - which is why the
+       * platforms with the slowest storage are the ones that already
+       * did this, and with the largest buffers.
+       *
+       * This is deliberately not gated on a platform list.  Such a
+       * list has to be maintained, is wrong the moment a target is
+       * added, and would leave that target silently on 4 KiB forever -
+       * which is exactly the state everything but the two consoles
+       * below was in.  The rest of this codebase does not gate it
+       * either: config_file.c and verbosity.c both buffer
+       * unconditionally.
+       *
+       * The memory is one allocation per open file, released when the
+       * file closes, and a handful of files are open at once.  Where
+       * even that is too much the allocation simply fails and the C
+       * library default is used, so a platform under real pressure
+       * degrades rather than breaks.  A platform wanting a different
+       * size says so, as the two below do. */
 #if defined(_3DS)
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
@@ -559,39 +572,7 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
          if (stream->fp)
             setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
       }
-#elif (defined(_WIN32) && !defined(_XBOX)) \
-   || defined(__APPLE__) \
-   || defined(__linux__) \
-   || defined(__FreeBSD__) || defined(__OpenBSD__) \
-   || defined(__NetBSD__)  || defined(__DragonFly__) \
-   || defined(__HAIKU__)
-      /* Windows, Apple platforms, Linux including Android, the BSDs
-       * and Haiku.
-       *
-       * macOS was measured after the fact and is the strongest case so
-       * far: st_blksize is 4096 there as everywhere else, and writing
-       * 8 MiB in 1 KiB pieces went from 9.35 ms to 1.58 ms, with reads
-       * halving.  iOS and tvOS are included on the strength of that,
-       * sharing the same C library and the same filesystem; nothing
-       * about them changes what st_blksize reports or what a buffer
-       * costs.
-       *
-       * Android is in here on reasoning rather than measurement, so it
-       * is the first thing to drop if a device disagrees.  Its stdio
-       * sizes the default buffer from st_blksize exactly as glibc
-       * does, so the same 4 KiB default applies; both of its file
-       * paths end up as FILE* streams, ordinary ones through fopen and
-       * SAF ones through fdopen on the descriptor the content provider
-       * hands back, so both are covered.  SAF is the reason to expect
-       * more here than on a desktop rather than less: under scoped
-       * storage those descriptors commonly resolve through FUSE, where
-       * a read or write is a userspace round trip, and what this
-       * changes is how many of those a file costs.
-       *
-       * The memory is not the constraint it looks like.  A handful of
-       * files are open at once - config, log, save, content - so this
-       * is a few hundred KiB against video buffers measured in
-       * megabytes, on any device new enough to run the frontend. */
+#else
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
          const int bufsize = 64 * 1024;
