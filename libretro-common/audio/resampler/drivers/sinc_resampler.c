@@ -883,19 +883,18 @@ static void *resampler_sinc_new(const struct resampler_config *config,
       re->taps = (unsigned)ceil(re->taps / bandwidth_mod);
    }
 
-   /* Be SIMD-friendly. */
-#if defined(__AVX__)
-   if (enable_avx)
-      re->taps = (re->taps + 7) & ~7;
-   else
-#endif
-   {
-#if (defined(__ARM_NEON__) || defined(HAVE_NEON))
-      re->taps = (re->taps + 7) & ~7;
-#else
-      re->taps = (re->taps + 3) & ~3;
-#endif
-   }
+   /* Be SIMD-friendly: round taps up to a multiple of 8 on every platform.
+    * NEON and AVX builds always required this; SSE/scalar builds only
+    * required a multiple of 4, which made LOWEST a different filter per
+    * platform: 4 taps on x86, 8 on ARM (identical to LOWER there).  The
+    * 4-tap variant carries 0.117 dB of per-phase DC gain ripple - audible
+    * as slow amplitude wobble on sustained tones as rate control sweeps
+    * the phase - while the 8-tap variant measures 0.003 dB.  A uniform
+    * multiple of 8 gives every platform the same filter and retires the
+    * one quality tier with audible gain ripple.  LOWEST thereby becomes
+    * an alias of LOWER for upsampling, matching what ARM and AVX builds
+    * have always shipped. */
+   re->taps = (re->taps + 7) & ~7;
 
    phase_elems = ((1 << re->phase_bits) * re->taps);
    if (window_type == SINC_WINDOW_KAISER)

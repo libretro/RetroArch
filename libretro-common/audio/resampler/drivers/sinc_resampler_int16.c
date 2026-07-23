@@ -495,8 +495,10 @@ void *sinc_resampler_int16_init(double bandwidth_mod,
       re->taps = (unsigned)ceil((double)re->taps / bandwidth_mod);
    }
 
-   /* Keep taps a multiple of 4 (scalar unroll / future SIMD friendliness). */
-   re->taps = (re->taps + 3u) & ~3u;
+   /* Keep taps a multiple of 8, matching the float driver's rounding so
+    * the two drivers select the same filter on every platform.  (Also
+    * satisfies the scalar unroll's multiple-of-4 requirement.) */
+   re->taps = (re->taps + 7u) & ~7u;
 
    stride      = (window == SINC_I16_WINDOW_KAISER) ? 2 : 1;
    phases      = 1 << re->phase_bits;
