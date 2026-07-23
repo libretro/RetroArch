@@ -139,8 +139,6 @@ struct rpng_apng_stream
    int       emit_argb;      /* 0 = R,G,B,A memory order; 1 = ARGB */
 };
 
-typedef struct rpng_apng_stream rpng_apng_stream_t;
-
 static INLINE uint32_t apng_be32(const uint8_t *p)
 {
    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
