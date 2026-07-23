@@ -6809,6 +6809,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
           * tasks to complete */
          menu_explore_wait_for_init_task();
          menu_explore_free();
+
+         /* Likewise for any in-flight database info
+          * scan, then drop its result cache */
+         menu_dbinfo_wait_for_task();
+         menu_dbinfo_cache_free();
 #endif
          menu_contentless_cores_free();
 #endif

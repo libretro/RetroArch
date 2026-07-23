@@ -557,7 +557,8 @@ ifeq ($(HAVE_LIBRETRODB), 1)
 
    ifeq ($(HAVE_MENU), 1)
       OBJ += menu/menu_explore.o \
-             tasks/task_menu_explore.o
+             tasks/task_menu_explore.o \
+             tasks/task_database_info.o
    endif
 endif
 

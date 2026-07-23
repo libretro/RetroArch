@@ -154,6 +154,13 @@ typedef struct
 database_info_list_t *database_info_list_new(const char *rdb_path,
       const char *query);
 
+/* One-slot cache of the most recent async database scan result
+ * (see tasks/task_database_info.c). The cache retains ownership
+ * of the returned list - callers must not free it. */
+database_info_list_t *menu_dbinfo_cache_get(const char *path,
+      const char *query);
+bool menu_dbinfo_cache_has(const char *path, const char *query);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 

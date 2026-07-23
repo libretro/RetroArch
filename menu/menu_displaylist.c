@@ -2882,8 +2882,28 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    database_info_build_query_enum(query, sizeof(query),
          DATABASE_QUERY_ENTRY, info->path_b);
 
-   if (!(db_info = database_info_list_new(info->path, query)))
-      return -1;
+   /* The scan walks the entire .rdb; it runs on the task queue and
+    * the result arrives via the one-slot cache. While pending, show
+    * a placeholder - the task callback refreshes this list. */
+   if (!(db_info = menu_dbinfo_cache_get(info->path, query)))
+   {
+      /* A cached NULL means the scan already ran and failed -
+       * behave like the old synchronous failure path instead of
+       * re-pushing the scan on every rebuild. */
+      if (menu_dbinfo_cache_has(info->path, query))
+         return -1;
+
+      if (!menu_dbinfo_load_in_progress(NULL))
+         task_push_dbinfo_load(info->path, query);
+
+      menu_entries_append(info->list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST),
+            msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST),
+            MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
+            FILE_TYPE_NONE, 0, 0, NULL);
+
+      return 0;
+   }
 
    _len = fill_pathname(path_base, path_basename(info->path), "",
          sizeof(path_base));
@@ -3166,17 +3186,11 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       info->flags |= MD_FLAG_NEED_PUSH_NO_PLAYLIST_ENTRIES;
 
    playlist_free(playlist);
-   database_info_list_free(db_info);
-   free(db_info);
+   /* db_info is owned by the dbinfo cache - do not free */
 
    return 0;
 
 error:
-   if (db_info)
-   {
-      database_info_list_free(db_info);
-      free(db_info);
-   }
    playlist_free(playlist);
 
    return -1;
@@ -13690,7 +13704,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                unsigned i;
                const char *query             = (info->path_c && *info->path_c) ? info->path_c : NULL;
-               database_info_list_t *db_list = database_info_list_new(info->path, query);
+               /* Full .rdb scan - runs on the task queue; result
+                * arrives via the one-slot cache and this list is
+                * refreshed by the task callback. The cache owns the
+                * returned list. */
+               database_info_list_t *db_list = menu_dbinfo_cache_get(info->path, query);
 
                if (db_list)
                {
@@ -13702,9 +13720,21 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                            count++;
                   }
                }
+               else if (!menu_dbinfo_cache_has(info->path, query))
+               {
+                  /* Never scanned (a cached NULL means the scan
+                   * failed: fall through with no entries so the
+                   * empty-list fallback shows, without re-pushing) */
+                  if (!menu_dbinfo_load_in_progress(NULL))
+                     task_push_dbinfo_load(info->path, query);
 
-               database_info_list_free(db_list);
-               free(db_list);
+                  if (menu_entries_append(info->list,
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST),
+                        msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST),
+                        MENU_ENUM_LABEL_EXPLORE_INITIALISING_LIST,
+                        FILE_TYPE_NONE, 0, 0, NULL))
+                     count++;
+               }
             }
 #endif
             if (info->path && *info->path)

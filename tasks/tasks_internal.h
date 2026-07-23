@@ -367,6 +367,13 @@ bool task_push_menu_explore_init(const char *directory_playlist,
       const char *directory_database);
 bool menu_explore_init_in_progress(void *data);
 void menu_explore_wait_for_init_task(void);
+
+/* Menu database info tasks
+ * (cache accessors with database types live in database_info.h) */
+void menu_dbinfo_cache_free(void);
+bool menu_dbinfo_load_in_progress(void *data);
+void menu_dbinfo_wait_for_task(void);
+bool task_push_dbinfo_load(const char *path, const char *query);
 #endif
 
 extern const char* const input_builtin_autoconfs[];
