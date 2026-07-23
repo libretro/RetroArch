@@ -1257,6 +1257,108 @@ static INLINE uint32_t rgui_rand(void)
  * pixel format conversion START
  * ============================== */
 
+/* 8-bit -> N-bit channel quantisation.
+ *
+ * These formats reconstruct an N-bit value by bit replication: a 4-bit
+ * v is displayed as (v << 4) | v, i.e. v * 17, and a 5-bit v as
+ * v * 33 / 4.  Quantising with a plain shift assumes a step of 16 (or
+ * 8) against a reconstruction spaced by 17 (or 33/4), which biases
+ * every channel downwards - 127 truncates to 7, shown as 119, when 8
+ * would show as 136 and 127 sits almost exactly between the two.  The
+ * whole menu is slightly dark as a result.
+ *
+ * Divide by the actual step instead, rounding to nearest. */
+static INLINE unsigned rgui_quant4(unsigned v)
+{
+   unsigned q = ((v * 15) + 127) / 255;
+   return (q > 15) ? 15 : q;
+}
+
+static INLINE unsigned rgui_quant5(unsigned v)
+{
+   unsigned q = ((v * 31) + 127) / 255;
+   return (q > 31) ? 31 : q;
+}
+
+static INLINE unsigned rgui_quant6(unsigned v)
+{
+   unsigned q = ((v * 63) + 127) / 255;
+   return (q > 63) ? 63 : q;
+}
+
+static INLINE unsigned rgui_quant3(unsigned v)
+{
+   unsigned q = ((v * 7) + 127) / 255;
+   return (q > 7) ? 7 : q;
+}
+
+/* Ordered (Bayer) dither threshold, 0..15 for a 4x4 cell.
+ *
+ * Rounding alone still lands every pixel of a slow gradient on the
+ * same level until the source crosses a step boundary, so the banding
+ * remains - 4 bits is only 16 levels.  Dithering pushes pixels either
+ * side of the boundary in a fixed pattern, so the local average
+ * follows the source continuously even though no single pixel can.
+ * The eye integrates over the pattern and sees a smooth ramp.
+ *
+ * Only worth applying to photographic sources - thumbnails and
+ * wallpaper.  A flat UI colour has no spatial extent to average
+ * over, so dithering it would just add visible noise. */
+static const uint8_t rgui_bayer4x4[4][4] = {
+   {  0,  8,  2, 10 },
+   { 12,  4, 14,  6 },
+   {  3, 11,  1,  9 },
+   { 15,  7, 13,  5 }
+};
+
+static INLINE unsigned rgui_quant4_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 15;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 15))
+      q++;
+
+   return (q > 15) ? 15 : q;
+}
+
+static INLINE unsigned rgui_quant5_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 31;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 31))
+      q++;
+
+   return (q > 31) ? 31 : q;
+}
+
+static INLINE unsigned rgui_quant6_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 63;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 63))
+      q++;
+
+   return (q > 63) ? 63 : q;
+}
+
+static INLINE unsigned rgui_quant3_dither(unsigned v, unsigned x, unsigned y)
+{
+   unsigned n = v * 7;
+   unsigned q = n / 255;
+   unsigned f = n % 255;
+
+   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 7))
+      q++;
+
+   return (q > 7) ? 7 : q;
+}
+
 /* PS2 */
 static uint16_t argb32_to_abgr1555(uint32_t col)
 {
@@ -1284,9 +1386,9 @@ static uint16_t argb32_to_abgr1555(uint32_t col)
       b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
    /* Convert from 8 bit to 5 bit */
-   r = r >> 3;
-   g = g >> 3;
-   b = b >> 3;
+   r = rgui_quant5(r);
+   g = rgui_quant5(g);
+   b = rgui_quant5(b);
    /* Return final value - alpha always set to 1 */
    return (1 << 15) | (b << 10) | (g << 5) | r;
 }
@@ -1327,9 +1429,9 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
          b = 0xFF;
    }
    /* Convert RGB from 8 bit to 4 bit */
-   r = r >> 4;
-   g = g >> 4;
-   b = b >> 4;
+   r = rgui_quant4(r);
+   g = rgui_quant4(g);
+   b = rgui_quant4(b);
    /* Return final value */
    return (a3 << 12) | (r << 8) | (g << 4) | b;
 }
@@ -1337,30 +1439,30 @@ static uint16_t argb32_to_rgb5a3(uint32_t col)
 /* PSP */
 static uint16_t argb32_to_abgr4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (a << 12) | (b << 8) | (g << 4) | r;
 }
 
 /* PS3 */
 static uint16_t argb32_to_argb4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (a << 12) | (r << 8) | (g << 4) | b;
 }
 
 /* D3D10/11/12 */
 static uint16_t argb32_to_bgra4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (b << 12) | (g << 8) | (r << 4) | a;
 }
 
@@ -1382,10 +1484,10 @@ static uint16_t argb32_to_rgb565(uint32_t col)
       g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
       b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
    }
-   /* Convert from 8 bit to 5 bit */
-   r = r >> 3;
-   g = g >> 3;
-   b = b >> 3;
+   /* Convert from 8 bit to 5/6 bit */
+   r = rgui_quant5(r);
+   g = rgui_quant6(g);
+   b = rgui_quant5(b);
    /* Return final value */
    return (r << 11) | (g << 6) | b;
 }
@@ -1393,14 +1495,139 @@ static uint16_t argb32_to_rgb565(uint32_t col)
 /* All other platforms */
 static uint16_t argb32_to_rgba4444(uint32_t col)
 {
-   unsigned a = ((col >> 24) & 0xFF) >> 4;
-   unsigned r = ((col >> 16) & 0xFF) >> 4;
-   unsigned g = ((col >> 8)  & 0xFF) >> 4;
-   unsigned b = ( col        & 0xFF) >> 4;
+   unsigned a = rgui_quant4((col >> 24) & 0xFF);
+   unsigned r = rgui_quant4((col >> 16) & 0xFF);
+   unsigned g = rgui_quant4((col >> 8)  & 0xFF);
+   unsigned b = rgui_quant4( col        & 0xFF);
    return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
 static uint16_t (*argb32_to_pixel_platform_format)(uint32_t col) = argb32_to_rgba4444;
+
+/* Dithered variants, for photographic sources only (thumbnails and
+ * wallpaper).  Identical to the plain conversions above except that
+ * the channel quantisation is dithered against the pixel position;
+ * see rgui_quant4_dither(). */
+
+/* PS2 */
+static uint16_t argb32_to_abgr1555_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
+   {
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
+   }
+   r = rgui_quant5_dither(r, x, y);
+   g = rgui_quant5_dither(g, x, y);
+   b = rgui_quant5_dither(b, x, y);
+   return (1 << 15) | (b << 10) | (g << 5) | r;
+}
+
+/* GEKKO */
+static uint16_t argb32_to_rgb5a3_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a  = (col >> 24) & 0xFF;
+   unsigned r  = (col >> 16) & 0xFF;
+   unsigned g  = (col >> 8)  & 0xFF;
+   unsigned b  =  col        & 0xFF;
+   unsigned a3 =  a   >> 5;
+   if (a < 0xFF)
+   {
+      unsigned a4    = a >> 4;
+      float a_factor = (a4 > 0)
+            ? ((float)((a3 << 1) | (a3 >> 2)) / (float)a4)
+            : 1.0f;
+      r = (unsigned)(((float)r * a_factor) + 0.5f);
+      g = (unsigned)(((float)g * a_factor) + 0.5f);
+      b = (unsigned)(((float)b * a_factor) + 0.5f);
+      if (r >= 0xFF)
+         r = 0xFF;
+      if (g >= 0xFF)
+         g = 0xFF;
+      if (b >= 0xFF)
+         b = 0xFF;
+   }
+   r = rgui_quant4_dither(r, x, y);
+   g = rgui_quant4_dither(g, x, y);
+   b = rgui_quant4_dither(b, x, y);
+   return (a3 << 12) | (r << 8) | (g << 4) | b;
+}
+
+/* PSP */
+static uint16_t argb32_to_abgr4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (a << 12) | (b << 8) | (g << 4) | r;
+}
+
+/* PS3 */
+static uint16_t argb32_to_argb4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (a << 12) | (r << 8) | (g << 4) | b;
+}
+
+/* D3D10/11/12 */
+static uint16_t argb32_to_bgra4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (b << 12) | (g << 8) | (r << 4) | a;
+}
+
+/* DINGUX SDL */
+static uint16_t argb32_to_rgb565_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = (col >> 24) & 0xFF;
+   unsigned r = (col >> 16) & 0xFF;
+   unsigned g = (col >> 8)  & 0xFF;
+   unsigned b =  col        & 0xFF;
+   if (a < 0xFF)
+   {
+      float a_factor = (float)a * (1.0f / 255.0f);
+      r = (unsigned)(((float)r * a_factor) + 0.5f) & 0xFF;
+      g = (unsigned)(((float)g * a_factor) + 0.5f) & 0xFF;
+      b = (unsigned)(((float)b * a_factor) + 0.5f) & 0xFF;
+   }
+   r = rgui_quant5_dither(r, x, y);
+   g = rgui_quant6_dither(g, x, y);
+   b = rgui_quant5_dither(b, x, y);
+   return (r << 11) | (g << 6) | b;
+}
+
+/* All other platforms */
+static uint16_t argb32_to_rgba4444_dither(uint32_t col,
+      unsigned x, unsigned y)
+{
+   unsigned a = rgui_quant4_dither((col >> 24) & 0xFF, x, y);
+   unsigned r = rgui_quant4_dither((col >> 16) & 0xFF, x, y);
+   unsigned g = rgui_quant4_dither((col >> 8)  & 0xFF, x, y);
+   unsigned b = rgui_quant4_dither( col        & 0xFF, x, y);
+   return (r << 12) | (g << 8) | (b << 4) | a;
+}
+
+static uint16_t (*argb32_to_pixel_platform_format_dither)(
+      uint32_t col, unsigned x, unsigned y) = argb32_to_rgba4444_dither;
 
 /* Per-driver RGUI pixel-format dispatch.
  *
@@ -1418,25 +1645,26 @@ typedef struct
 {
    const char *driver_ident;
    uint16_t (*conv)(uint32_t);
+   uint16_t (*conv_dither)(uint32_t, unsigned, unsigned);
    bool transparency_supported;
 } rgui_pixel_format_entry;
 
 static const rgui_pixel_format_entry rgui_pixel_format_map[] =
 {
-   { "ps2",        argb32_to_abgr1555, false }, /* PS2 */
-   { "gx",         argb32_to_rgb5a3,   true  }, /* GEKKO */
-   { "psp1",       argb32_to_abgr4444, true  }, /* PSP */
-   { "rsx",        argb32_to_argb4444, true  }, /* PS3 */
-   { "d3d8",       argb32_to_argb4444, true  }, /* D3D8 (Original Xbox + legacy Windows) */
-   { "d3d9_hlsl",  argb32_to_argb4444, true  }, /* D3D9 PC/Xbox 360 */
-   { "d3d9_cg",    argb32_to_argb4444, true  }, /* D3D9 PC */
-   { "d3d10",      argb32_to_bgra4444, true  }, /* D3D10/11/12 */
-   { "d3d11",      argb32_to_bgra4444, true  },
-   { "d3d12",      argb32_to_bgra4444, true  },
-   { "metal",      argb32_to_bgra4444, true  }, /* Metal */
-   { "sdl_dingux", argb32_to_rgb565,   false }, /* DINGUX SDL */
-   { "sdl_rs90",   argb32_to_rgb565,   false },
-   { "xvideo",     argb32_to_rgb565,   false }
+   { "ps2",        argb32_to_abgr1555, argb32_to_abgr1555_dither, false }, /* PS2 */
+   { "gx",         argb32_to_rgb5a3,   argb32_to_rgb5a3_dither,   true  }, /* GEKKO */
+   { "psp1",       argb32_to_abgr4444, argb32_to_abgr4444_dither, true  }, /* PSP */
+   { "rsx",        argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* PS3 */
+   { "d3d8",       argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D8 (Original Xbox + legacy Windows) */
+   { "d3d9_hlsl",  argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D9 PC/Xbox 360 */
+   { "d3d9_cg",    argb32_to_argb4444, argb32_to_argb4444_dither, true  }, /* D3D9 PC */
+   { "d3d10",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  }, /* D3D10/11/12 */
+   { "d3d11",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  },
+   { "d3d12",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  },
+   { "metal",      argb32_to_bgra4444, argb32_to_bgra4444_dither, true  }, /* Metal */
+   { "sdl_dingux", argb32_to_rgb565,   argb32_to_rgb565_dither,   false }, /* DINGUX SDL */
+   { "sdl_rs90",   argb32_to_rgb565,   argb32_to_rgb565_dither,   false },
+   { "xvideo",     argb32_to_rgb565,   argb32_to_rgb565_dither,   false }
 };
 
 /* Returns true if current pixel format supports
@@ -1455,6 +1683,8 @@ static bool rgui_set_pixel_format_function(void)
          {
             argb32_to_pixel_platform_format =
                   rgui_pixel_format_map[i].conv;
+            argb32_to_pixel_platform_format_dither =
+                  rgui_pixel_format_map[i].conv_dither;
             return rgui_pixel_format_map[i].transparency_supported;
          }
       }
@@ -1462,7 +1692,8 @@ static bool rgui_set_pixel_format_function(void)
 
    /* Default fallback for unknown / empty driver ident:
     * RGBA4444 with transparency support. */
-   argb32_to_pixel_platform_format = argb32_to_rgba4444;
+   argb32_to_pixel_platform_format        = argb32_to_rgba4444;
+   argb32_to_pixel_platform_format_dither = argb32_to_rgba4444_dither;
    return true;
 }
 
@@ -2378,7 +2609,7 @@ static void rgui_process_wallpaper(
       const uint32_t *src = image->pixels + x_crop_offset
             + (y + y_crop_offset) * image->width;
       for (x = 0; x < background_buf->width; x++)
-         dst[x] = argb32_to_pixel_platform_format(src[x]);
+         dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
    }
 
    /* Tell menu that a display update is required */
@@ -2721,7 +2952,7 @@ static void rgui_process_thumbnail(
       uint16_t       *dst = thumbnail->data   + y * thumbnail->width;
       const uint32_t *src = image->pixels     + y * thumbnail->width;
       for (x = 0; x < thumbnail->width; x++)
-         dst[x] = argb32_to_pixel_platform_format(src[x]);
+         dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
    }
 
    thumbnail->is_valid    = true;
