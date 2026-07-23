@@ -560,12 +560,21 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
             setvbuf(stream->fp, stream->buf, _IOFBF, bufsize);
       }
 #elif (defined(_WIN32) && !defined(_XBOX)) \
-   || (defined(__APPLE__) && !defined(HAVE_COCOATOUCH)) \
+   || defined(__APPLE__) \
    || defined(__linux__) \
    || defined(__FreeBSD__) || defined(__OpenBSD__) \
    || defined(__NetBSD__)  || defined(__DragonFly__) \
    || defined(__HAIKU__)
-      /* Windows, macOS, Linux including Android, the BSDs and Haiku.
+      /* Windows, Apple platforms, Linux including Android, the BSDs
+       * and Haiku.
+       *
+       * macOS was measured after the fact and is the strongest case so
+       * far: st_blksize is 4096 there as everywhere else, and writing
+       * 8 MiB in 1 KiB pieces went from 9.35 ms to 1.58 ms, with reads
+       * halving.  iOS and tvOS are included on the strength of that,
+       * sharing the same C library and the same filesystem; nothing
+       * about them changes what st_blksize reports or what a buffer
+       * costs.
        *
        * Android is in here on reasoning rather than measurement, so it
        * is the first thing to drop if a device disagrees.  Its stdio
