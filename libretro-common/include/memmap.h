@@ -38,6 +38,33 @@
 #endif
 
 #if !defined(HAVE_MMAN) || defined(_WIN32)
+/* PROT_/MAP_ request bits for the shim platforms (real <sys/mman.h>
+ * provides them elsewhere).  Only the combinations the shim can
+ * honour are defined. */
+#ifndef PROT_NONE
+#define PROT_NONE       0x0
+#endif
+#ifndef PROT_READ
+#define PROT_READ       0x1
+#endif
+#ifndef PROT_WRITE
+#define PROT_WRITE      0x2
+#endif
+#ifndef PROT_EXEC
+#define PROT_EXEC       0x4
+#endif
+#ifndef MAP_PRIVATE
+#define MAP_PRIVATE     0x02
+#endif
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS   0x20
+#endif
+#ifndef MAP_ANON
+#define MAP_ANON        MAP_ANONYMOUS
+#endif
+#ifndef MAP_FAILED
+#define MAP_FAILED      ((void *)-1)
+#endif
 void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
 
 int munmap(void *addr, size_t len);

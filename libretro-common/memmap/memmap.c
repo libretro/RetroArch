@@ -49,62 +49,114 @@
 #endif
 
 #ifdef _WIN32
+/* Map POSIX prot bits to a PAGE_* protection constant.  Windows has
+ * no write-only or exec-only protections; those requests take the
+ * nearest expressible superset, as every mman shim does. */
+static DWORD win32_page_prot(int prot)
+{
+   if (prot == PROT_NONE)
+      return PAGE_NOACCESS;
+   if (prot & PROT_EXEC)
+      return (prot & PROT_WRITE) ? PAGE_EXECUTE_READWRITE
+                                 : PAGE_EXECUTE_READ;
+   return (prot & PROT_WRITE) ? PAGE_READWRITE : PAGE_READONLY;
+}
+
+/* The FILE_MAP_* access for a view of a section created with the
+ * protection above. */
+static DWORD win32_view_access(int prot)
+{
+   DWORD access = FILE_MAP_READ;
+   if (prot & PROT_WRITE)
+      access = FILE_MAP_ALL_ACCESS;
+   if (prot & PROT_EXEC)
+      access |= FILE_MAP_EXECUTE;
+   return access;
+}
+
 void* mmap(void *addr, size_t len, int prot, int flags,
       int fildes, size_t offset)
 {
-   void     *map = (void*)NULL;
-   HANDLE handle = INVALID_HANDLE_VALUE;
+   void  *map    = NULL;
+   HANDLE handle;
+   /* Sections are created with the maximum protection a later
+    * mprotect may need: VirtualProtect on a view cannot exceed the
+    * section's protection, so an anonymous mapping opened without
+    * PROT_EXEC can never later become executable (request PROT_EXEC
+    * up front, as every JIT does), and PROT_NONE starts from a
+    * readable section and is locked down after mapping. */
+   int    sect_prot = (prot == PROT_NONE) ? PROT_READ : prot;
 
-   switch (prot)
+   (void)addr; /* placement hint not honoured, as before */
+
+   if ((flags & MAP_ANONYMOUS) || fildes < 0)
    {
-      case PROT_READ:
-      default:
-         handle = CreateFileMapping((HANDLE)
-               _get_osfhandle(fildes), 0, PAGE_READONLY, 0,
-               len, 0);
-         if (!handle)
-            break;
-         map = (void*)MapViewOfFile(handle, FILE_MAP_READ, 0, 0, len);
-         CloseHandle(handle);
-         break;
-      case PROT_WRITE:
-         handle = CreateFileMapping((HANDLE)
-               _get_osfhandle(fildes),0,PAGE_READWRITE,0,
-               len, 0);
-         if (!handle)
-            break;
-         map = (void*)MapViewOfFile(handle, FILE_MAP_WRITE, 0, 0, len);
-         CloseHandle(handle);
-         break;
-      case PROT_READWRITE:
-         handle = CreateFileMapping((HANDLE)
-               _get_osfhandle(fildes),0,PAGE_READWRITE,0,
-               len, 0);
-         if (!handle)
-            break;
-         map = (void*)MapViewOfFile(handle, FILE_MAP_ALL_ACCESS, 0, 0, len);
-         CloseHandle(handle);
-         break;
+      /* Anonymous: a pagefile-backed section, so munmap stays
+       * UnmapViewOfFile for every mapping this function returns. */
+      handle = CreateFileMapping(INVALID_HANDLE_VALUE, NULL,
+            win32_page_prot(sect_prot) | SEC_COMMIT,
+            (DWORD)((uint64_t)len >> 32), (DWORD)len, NULL);
+      if (!handle)
+         return MAP_FAILED;
+      map = MapViewOfFile(handle, win32_view_access(sect_prot),
+            0, 0, len);
+      CloseHandle(handle);
+   }
+   else
+   {
+      /* File-backed.  The file offset must be a multiple of the
+       * allocation granularity (64 KiB): MapViewOfFile accepts
+       * nothing finer, and the historical behaviour here - mapping
+       * from 0 and adding the offset to the returned pointer - both
+       * read the wrong bytes past the mapped length and broke the
+       * later UnmapViewOfFile, which needs the view base. */
+      SYSTEM_INFO si;
+      uint64_t    end = (uint64_t)offset + len;
+
+      GetSystemInfo(&si);
+      if (offset & (si.dwAllocationGranularity - 1))
+         return MAP_FAILED;
+
+      handle = CreateFileMapping((HANDLE)_get_osfhandle(fildes), NULL,
+            win32_page_prot(sect_prot),
+            (DWORD)(end >> 32), (DWORD)end, NULL);
+      if (!handle)
+         return MAP_FAILED;
+      map = MapViewOfFile(handle, win32_view_access(sect_prot),
+            (DWORD)((uint64_t)offset >> 32), (DWORD)offset, len);
+      CloseHandle(handle);
    }
 
-   if (map == (void*)NULL)
-      return((void*)MAP_FAILED);
-   return((void*) ((int8_t*)map + offset));
+   if (!map)
+      return MAP_FAILED;
+
+   if (prot == PROT_NONE)
+   {
+      DWORD old;
+      VirtualProtect(map, len, PAGE_NOACCESS, &old);
+   }
+
+   return map;
 }
 
 int munmap(void *addr, size_t len)
 {
+   (void)len;
    return (UnmapViewOfFile(addr)) ? 0 : -1;
 }
 
 int mprotect(void *addr, size_t len, int prot)
 {
-   /* Incomplete, just assumes PAGE_EXECUTE_READWRITE right now
-    * instead of correctly handling prot */
-   prot = 0;
-   if (prot & (PROT_READ | PROT_WRITE | PROT_EXEC))
-      prot = PAGE_EXECUTE_READWRITE;
-   return VirtualProtect(addr, len, prot, 0);
+   /* The previous version dead-stored prot to 0 on entry and passed
+    * a NULL old-protection pointer, so VirtualProtect failed on
+    * every call (protection 0 is invalid and lpflOldProtect is
+    * mandatory) - and the raw BOOL return inverted the POSIX
+    * convention on top.  Nothing in this tree exercised it on
+    * Windows, which is how it survived. */
+   DWORD old;
+   if (!VirtualProtect(addr, len, win32_page_prot(prot), &old))
+      return -1;
+   return 0;
 }
 
 #elif !defined(HAVE_MMAN)
