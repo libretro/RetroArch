@@ -2109,6 +2109,25 @@ bool rpng_start(rpng_t *rpng)
    return true;
 }
 
+/* Prefix early-start gate: return true once the resident bytes contain
+ * the 8-byte signature and the whole IHDR chunk, so the chunk walk can
+ * begin (it parses IHDR before anything else, then gathers IDAT with
+ * per-chunk need_more waits as the read progresses).  IHDR is a fixed
+ * 13-byte payload: signature (8) + length (4) + "IHDR" (4) + data (13)
+ * + CRC (4) = 33 bytes.  No allocation, no decode. */
+bool rpng_header_ready(const uint8_t *data, size_t len)
+{
+   if (!data || len < 33)
+      return false;
+   if (memcmp(data, png_magic, sizeof(png_magic)) != 0)
+      return false;
+   /* Bytes 12..15 are the chunk type of the first chunk after the
+    * signature; per spec it must be IHDR. */
+   if (memcmp(data + 12, "IHDR", 4) != 0)
+      return false;
+   return true;
+}
+
 /**
  * rpng_is_valid:
  *
@@ -2182,7 +2201,17 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
 void rpng_set_avail(rpng_t *rpng, size_t avail)
 {
    uint8_t *front;
+   size_t   full;
    if (!rpng || !rpng->buff_start || !rpng->buff_end)
+      return;
+   /* Clamp in the size domain first: a caller signalling "whole buffer
+    * resident" passes (size_t)-1, and buff_start + (avail - 1) would
+    * overflow the pointer (UB) before the buff_end clamp below could
+    * catch it.  full = total length = (buff_end - buff_start) + 1. */
+   full = (size_t)(rpng->buff_end - rpng->buff_start) + 1;
+   if (avail > full)
+      avail = full;
+   if (avail == 0)   /* nothing resident yet: keep the frontier unset */
       return;
    /* Anchor on buff_start (the fixed buffer base captured at
     * set_buf_ptr): buff_data advances as chunks are consumed, so

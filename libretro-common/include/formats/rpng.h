@@ -51,6 +51,11 @@ bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len);
 void rpng_set_avail(rpng_t *rpng, size_t avail);
 bool rpng_need_more(const rpng_t *rpng);
 
+/* Prefix early-start gate: true once the resident bytes contain the
+ * signature and the whole IHDR chunk (33 bytes), i.e. the chunk walk
+ * can begin.  Mirrors rjpeg_header_ready. */
+bool rpng_header_ready(const uint8_t *data, size_t len);
+
 rpng_t *rpng_alloc(void);
 
 void rpng_free(rpng_t *rpng);

@@ -584,6 +584,16 @@ void image_transfer_set_avail(void *data, enum image_type_enum type,
 {
    switch (type)
    {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         rpng_set_avail((rpng_t*)data, avail);
+#endif
+         break;
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+         rjpeg_set_avail((rjpeg_t*)data, avail);
+#endif
+         break;
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          rwebm_video_set_avail((rwebm_video_t*)data, avail);

@@ -22,6 +22,12 @@
 #ifdef HAVE_RWEBP
 #include <formats/rwebp.h>
 #endif
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
+#ifdef HAVE_RJPEG
+#include <formats/rjpeg.h>
+#endif
 #include <formats/image.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
@@ -414,12 +420,25 @@ bool task_image_load_handler(retro_task_t *task)
    {
       bool is_video = (image->type == IMAGE_TYPE_WEBM)
                    || (image->type == IMAGE_TYPE_MP4);
+      /* Types whose decoders decode against a growing buffer with a
+       * resident-frontier wall: video stills, and (avail-aware) PNG and
+       * JPEG.  Their avail must be raised each tick as the read
+       * advances.  WEBP is excluded - it has no wall and instead starts
+       * only once its still chunk is wholly resident. */
+      bool is_prefix = is_video
+#ifdef HAVE_RPNG
+                    || (image->type == IMAGE_TYPE_PNG)
+#endif
+#ifdef HAVE_RJPEG
+                    || (image->type == IMAGE_TYPE_JPEG)
+#endif
+                    ;
 
-      /* Video stills decode against the growing buffer: keep the
+      /* Prefix decoders decode against the growing buffer: keep the
        * decoder's byte wall in step with the read.  Cheap (two field
        * reads and a monotonic store) and a no-op once the read has
        * completed. */
-      if (is_video && image->handle && !nbio->is_finished
+      if (is_prefix && image->handle && !nbio->is_finished
             && nbio->xfer)
       {
          size_t done = 0, total = 0;
@@ -430,14 +449,14 @@ bool task_image_load_handler(retro_task_t *task)
       switch (image->status)
       {
          case IMAGE_STATUS_WAIT:
-            /* For the video types, start decoding while the file is
+            /* For the prefix types, start decoding while the file is
              * still being read: the still usually needs only the
-             * header and the first keyframe, so the texture can be
-             * delivered long before - and independently of - the rest
-             * of the read.  Other types keep waiting for the
-             * completion callback. */
+             * header and the first keyframe (video) or paints/gathers
+             * incrementally (PNG/JPEG), so decode overlaps the read
+             * instead of waiting for the completion callback.  Other
+             * types keep waiting for the completion callback. */
             if (!image->handle
-                  && (is_video || image->type == IMAGE_TYPE_WEBP)
+                  && (is_prefix || image->type == IMAGE_TYPE_WEBP)
                   && nbio->xfer
                   && !nbio->is_finished)
             {
@@ -452,6 +471,25 @@ bool task_image_load_handler(retro_task_t *task)
                    * buffer wall to wait at */
                   if (!ready && image->type == IMAGE_TYPE_WEBP)
                      ready = rwebp_still_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RPNG
+                  /* PNG starts once the signature and IHDR are resident;
+                   * the chunk walk then gathers IDAT with per-chunk
+                   * need_more waits as the read advances. */
+                  if (!ready && image->type == IMAGE_TYPE_PNG)
+                     ready = rpng_header_ready(
+                           nbio_xfer_ptr(nbio, NULL), done);
+#endif
+#ifdef HAVE_RJPEG
+                  /* Baseline JPEG starts once the header through the SOS
+                   * scan segment is resident; the MCU-row driver then
+                   * paints rows from the prefix, walling at the resident
+                   * frontier.  Single-component/progressive scans
+                   * decline (rjpeg_header_ready returns false) and load
+                   * whole-buffer as before. */
+                  if (!ready && image->type == IMAGE_TYPE_JPEG)
+                     ready = rjpeg_header_ready(
                            nbio_xfer_ptr(nbio, NULL), done);
 #endif
                }
