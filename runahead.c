@@ -31,6 +31,7 @@
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
+#include <queues/task_queue.h>
 #include <time/rtime.h>
 
 #include "configuration.h"
@@ -146,6 +147,10 @@ void runahead_set_load_content_info(void *data,
 
 /* RUNAHEAD - SECONDARY CORE  */
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
+/* enum runahead_copy_status lives in runloop.h (shared with the
+ * secondary_core_ensure_exists() callers) */
+static void runahead_copy_reset(bool delete_file);
+
 static void strcat_alloc(char **dst, const char *s)
 {
    char *tmp;
@@ -186,6 +191,13 @@ static void strcat_alloc(char **dst, const char *s)
 void runahead_secondary_core_destroy(void *data)
 {
    runloop_state_t *runloop_st      = (runloop_state_t*)data;
+
+   /* Drop any unconsumed async copy result (deleting its temp
+    * file) and tell an in-flight copy task to discard its result;
+    * this runs regardless of whether a secondary instance was
+    * ever actually created. */
+   runahead_copy_reset(true);
+
    if (!runloop_st->secondary_lib_handle)
       return;
 
@@ -264,8 +276,108 @@ static char *get_tmpdir_alloc(const char *override_dir)
    return path;
 }
 
-static bool write_file_with_random_name(char **temp_dll_path,
-      const char *tmp_path, const void* data, ssize_t dataSize)
+/* ===== BEGIN runahead core-copy fragment =====
+ * Everything between the BEGIN/END markers depends only on
+ * libretro-common (filestream, task_queue, path) plus libc and the
+ * static helpers above, so a test harness can extract and execute
+ * it verbatim.
+ *
+ * Duplicating the core binary for the secondary instance is pure
+ * file IO sized by the core (MAME and friends run hundreds of
+ * megabytes), so it must not run synchronously on the thread that
+ * drives frames. The copy runs as a task; while it is in flight,
+ * secondary_core_create() reports 'pending' and run-ahead falls
+ * back to the single-instance savestate method for those frames -
+ * identical output, no stall - then upgrades to the secondary
+ * instance when the copy completes. All slot state below is
+ * touched only from the main thread (the task callback runs on the
+ * main thread); the worker touches only its own task state. */
+
+#define RUNAHEAD_COPY_CHUNK_SIZE (1 * 1024 * 1024)
+
+/* Result slot, published by the task callback (main thread) */
+static char *runahead_copy_slot_path     = NULL;
+static char *runahead_copy_slot_src      = NULL; /* identity of the copy */
+static bool  runahead_copy_slot_done     = false;
+static bool  runahead_copy_slot_failed   = false;
+/* Bumped by runahead_copy_reset(); a task publishes its result only
+ * if its recorded generation still matches, otherwise it discards
+ * it (deleting the temp file). This covers every teardown window,
+ * including the race where the worker has already finished but the
+ * main-thread callback has not yet run - a plain 'in flight?' check
+ * misses that window. All reads/writes happen on the main thread
+ * (the handler never touches it). */
+static unsigned runahead_copy_generation = 0;
+/* True from a successful task push until that task's main-thread
+ * callback has run. This must NOT be derived from
+ * task_queue_find(): the threaded queue has a window where the
+ * worker has finished (task no longer in the running list) but the
+ * callback has not yet executed - a find-based check reports 'not
+ * in flight' there, and a concurrent poll would push a second copy
+ * task racing the first onto the same destination path. The flag
+ * transitions strictly on the main thread (push / callback), so no
+ * such window exists. */
+static bool runahead_copy_task_pending   = false;
+
+typedef struct runahead_copy_handle
+{
+   char *src_path;
+   char *dir_libretro;
+   char *out_path;   /* produced temp file on success */
+   bool  failed;
+   unsigned generation;
+} runahead_copy_handle_t;
+
+static bool runahead_copy_file_chunked(const char *src_path,
+      const char *dst_path)
+{
+   RFILE *src   = NULL;
+   RFILE *dst   = NULL;
+   char *buf    = NULL;
+   bool  okay   = false;
+
+   if (!(buf = (char*)malloc(RUNAHEAD_COPY_CHUNK_SIZE)))
+      return false;
+
+   if (!(src = filestream_open(src_path,
+         RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      goto end;
+
+   if (!(dst = filestream_open(dst_path,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      goto end;
+
+   for (;;)
+   {
+      int64_t n = filestream_read(src, buf, RUNAHEAD_COPY_CHUNK_SIZE);
+      if (n < 0)
+         goto end;
+      if (n == 0)
+         break;
+      if (filestream_write(dst, buf, n) != n)
+         goto end;
+   }
+
+   okay = true;
+
+end:
+   if (src)
+      filestream_close(src);
+   if (dst)
+   {
+      filestream_close(dst);
+      /* Don't leave a truncated copy behind on failure */
+      if (!okay)
+         filestream_delete(dst_path);
+   }
+   free(buf);
+   return okay;
+}
+
+static bool copy_file_with_random_name(char **temp_dll_path,
+      const char *tmp_path, const char *src_dll_path)
 {
    int i;
    char number_buf[32];
@@ -315,7 +427,7 @@ static bool write_file_with_random_name(char **temp_dll_path,
       strcat_alloc(temp_dll_path, number_buf);
       strcat_alloc(temp_dll_path, ext);
 
-      if (filestream_write_file(*temp_dll_path, data, dataSize))
+      if (runahead_copy_file_chunked(src_dll_path, *temp_dll_path))
       {
          okay = true;
          break;
@@ -328,72 +440,213 @@ static bool write_file_with_random_name(char **temp_dll_path,
    return okay;
 }
 
-
-static char *copy_core_to_temp_file(
-      const char *core_path,
-      const char *dir_libretro)
+/* Worker: builds the temp path and performs the chunked copy into
+ * the task's own state. No shared state is touched here. */
+static void runahead_copy_task_handler(retro_task_t *task)
 {
-   char tmp_path[PATH_MAX_LENGTH];
-   bool  failed                = false;
-   char  *tmpdir               = NULL;
-   char  *tmp_dll_path         = NULL;
-   void  *dll_file_data        = NULL;
-   int64_t  dll_file_size      = 0;
-   const char  *core_base_name = path_basename_nocompression(core_path);
-
-   if (!core_base_name || !*core_base_name)
-      return NULL;
-
-   if (!(tmpdir = get_tmpdir_alloc(dir_libretro)))
-      return NULL;
-
-   fill_pathname_join_special(tmp_path,
-         tmpdir, "retroarch_temp",
-         sizeof(tmp_path));
-
-   if (!path_mkdir(tmp_path))
+   if (task)
    {
-      failed = true;
-      goto end;
+      runahead_copy_handle_t *h = (runahead_copy_handle_t*)task->state;
+      if (h)
+      {
+         char tmp_path[PATH_MAX_LENGTH];
+         char *tmpdir              = NULL;
+         char *dst                 = NULL;
+         const char *core_base     = path_basename_nocompression(h->src_path);
+
+         h->failed = true;
+
+         if (     core_base && *core_base
+               && (tmpdir = get_tmpdir_alloc(h->dir_libretro)))
+         {
+            fill_pathname_join_special(tmp_path,
+                  tmpdir, "retroarch_temp", sizeof(tmp_path));
+
+            if (path_mkdir(tmp_path))
+            {
+               strcat_alloc(&dst, tmp_path);
+               strcat_alloc(&dst, PATH_DEFAULT_SLASH());
+               strcat_alloc(&dst, core_base);
+
+               if (runahead_copy_file_chunked(h->src_path, dst))
+               {
+                  h->out_path = dst;
+                  h->failed   = false;
+                  dst         = NULL;
+               }
+               else if (copy_file_with_random_name(&dst,
+                        tmp_path, h->src_path))
+               {
+                  h->out_path = dst;
+                  h->failed   = false;
+                  dst         = NULL;
+               }
+            }
+         }
+
+         if (dst)
+            free(dst);
+         if (tmpdir)
+            free(tmpdir);
+      }
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
    }
-
-   if (!filestream_read_file(core_path, &dll_file_data, &dll_file_size))
-   {
-      failed = true;
-      goto end;
-   }
-
-   strcat_alloc(&tmp_dll_path, tmp_path);
-   strcat_alloc(&tmp_dll_path, PATH_DEFAULT_SLASH());
-   strcat_alloc(&tmp_dll_path, core_base_name);
-
-   if (!filestream_write_file(tmp_dll_path, dll_file_data, dll_file_size))
-   {
-      /* try other file names */
-      if (!write_file_with_random_name(&tmp_dll_path,
-               tmp_path, dll_file_data, dll_file_size))
-         failed = true;
-   }
-
-end:
-   if (tmpdir)
-      free(tmpdir);
-   if (dll_file_data)
-      free(dll_file_data);
-
-   tmpdir              = NULL;
-   dll_file_data       = NULL;
-
-   if (!failed)
-      return tmp_dll_path;
-
-   if (tmp_dll_path)
-      free(tmp_dll_path);
-
-   tmp_dll_path     = NULL;
-
-   return NULL;
 }
+
+/* Main thread: publish the result to the slot - unless teardown
+ * abandoned the copy in the meantime, in which case discard it. */
+static void runahead_copy_task_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   runahead_copy_handle_t *h = NULL;
+
+   if (!task)
+      return;
+   if (!(h = (runahead_copy_handle_t*)task->state))
+      return;
+
+   /* The pipeline is free again in every case below - including
+    * the discard path: that task is done. */
+   runahead_copy_task_pending = false;
+
+   if (h->generation != runahead_copy_generation)
+   {
+      /* Teardown happened while this copy was running (or after it
+       * finished but before this callback ran): discard. */
+      if (h->out_path)
+         filestream_delete(h->out_path);
+      return;
+   }
+
+   runahead_copy_slot_path   = h->out_path;
+   h->out_path               = NULL;
+   runahead_copy_slot_src    = h->src_path;
+   h->src_path               = NULL;
+   runahead_copy_slot_failed = h->failed;
+   runahead_copy_slot_done   = true;
+}
+
+static void runahead_copy_task_free(retro_task_t *task)
+{
+   runahead_copy_handle_t *h = NULL;
+   if (!task)
+      return;
+   if ((h = (runahead_copy_handle_t*)task->state))
+   {
+      if (h->src_path)
+         free(h->src_path);
+      if (h->dir_libretro)
+         free(h->dir_libretro);
+      if (h->out_path)
+         free(h->out_path);
+      free(h);
+   }
+   task->state = NULL;
+}
+
+static bool runahead_copy_in_flight(void)
+{
+   return runahead_copy_task_pending;
+}
+
+/* Main thread. Resets the result slot; if a copy is in flight, the
+ * callback is told to discard its result. delete_file also removes
+ * an already-published (but unconsumed) temp file. */
+static void runahead_copy_reset(bool delete_file)
+{
+   if (runahead_copy_slot_path)
+   {
+      if (delete_file)
+         filestream_delete(runahead_copy_slot_path);
+      free(runahead_copy_slot_path);
+      runahead_copy_slot_path = NULL;
+   }
+   if (runahead_copy_slot_src)
+   {
+      free(runahead_copy_slot_src);
+      runahead_copy_slot_src = NULL;
+   }
+   runahead_copy_slot_done   = false;
+   runahead_copy_slot_failed = false;
+   /* Invalidate any copy that is in flight or awaiting its
+    * callback; see runahead_copy_generation. Note that
+    * runahead_copy_task_pending is deliberately NOT cleared here:
+    * a superseded task still occupies the pipeline until its
+    * callback runs, which keeps poll from starting an overlapping
+    * copy to the same destination path. */
+   runahead_copy_generation++;
+}
+
+/* Main thread. Polls / advances the async copy:
+ * - no result and no task -> push the task, report PENDING
+ * - task in flight        -> PENDING
+ * - finished with failure -> UNAVAILABLE (slot reset, so a later
+ *                            attempt starts a fresh copy)
+ * - finished ok           -> READY; ownership of the temp path is
+ *                            transferred to *out_path */
+static enum runahead_copy_status runahead_copy_poll(
+      const char *core_path, const char *dir_libretro,
+      char **out_path)
+{
+   /* A published result for a different core binary is stale
+    * (e.g. core switched without an intervening teardown, or any
+    * path we have not anticipated): drop it and start over. */
+   if (     runahead_copy_slot_done
+         && !string_is_equal(runahead_copy_slot_src ? runahead_copy_slot_src : "",
+               core_path ? core_path : ""))
+      runahead_copy_reset(true);
+
+   if (!runahead_copy_slot_done)
+   {
+      if (!runahead_copy_in_flight())
+      {
+         retro_task_t *task        = NULL;
+         runahead_copy_handle_t *h = NULL;
+
+         task = task_init();
+         h    = (runahead_copy_handle_t*)calloc(1, sizeof(*h));
+
+         if (!task || !h)
+         {
+            if (task)
+               free(task);
+            if (h)
+               free(h);
+            return RUNAHEAD_COPY_UNAVAILABLE;
+         }
+
+         h->src_path     = strdup(core_path);
+         h->dir_libretro = dir_libretro ? strdup(dir_libretro) : NULL;
+         h->generation   = runahead_copy_generation;
+
+         task->handler   = runahead_copy_task_handler;
+         task->state     = h;
+         task->title     = NULL;
+         task->callback  = runahead_copy_task_cb;
+         task->cleanup   = runahead_copy_task_free;
+         task->flags    |= RETRO_TASK_FLG_MUTE;
+
+         runahead_copy_task_pending = true;
+         task_queue_push(task);
+      }
+      return RUNAHEAD_COPY_PENDING;
+   }
+
+   if (runahead_copy_slot_failed)
+   {
+      runahead_copy_reset(false);
+      return RUNAHEAD_COPY_UNAVAILABLE;
+   }
+
+   *out_path               = runahead_copy_slot_path;
+   runahead_copy_slot_path = NULL;
+   runahead_copy_reset(false);
+   return RUNAHEAD_COPY_READY;
+   /* note: the generation bump in the reset above also invalidates
+    * any concurrent task, which cannot exist here (poll is the only
+    * pusher and the slot was occupied) - harmless */
+}
+/* ===== END runahead core-copy fragment ===== */
 
 static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
@@ -424,9 +677,12 @@ void runahead_clear_controller_port_map(void *data)
       runloop_st->port_map[i] = -1;
 }
 
-static bool secondary_core_create(runloop_state_t *runloop_st,
+static enum runahead_copy_status secondary_core_create(
+      runloop_state_t *runloop_st,
       const char *path_directory_libretro, unsigned num_active_users)
 {
+   enum runahead_copy_status copy_status;
+   char *copied_path             = NULL;
    const enum rarch_core_type
       last_core_type             = runloop_st->last_core_type;
    rarch_system_info_t *sys_info = &runloop_st->system;
@@ -435,16 +691,20 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    if (     (last_core_type != CORE_TYPE_PLAIN)
          || (!runloop_st->load_content_info)
          || ( runloop_st->load_content_info->special))
-      return false;
+      return RUNAHEAD_COPY_UNAVAILABLE;
+
+   /* The core binary is duplicated by a task; until the copy
+    * completes this reports PENDING and the caller runs the
+    * single-instance fallback for the frame - no stall. */
+   copy_status = runahead_copy_poll(
+         path_get(RARCH_PATH_CORE), path_directory_libretro,
+         &copied_path);
+   if (copy_status != RUNAHEAD_COPY_READY)
+      return copy_status;
 
    if (runloop_st->secondary_library_path)
       free(runloop_st->secondary_library_path);
-   runloop_st->secondary_library_path = NULL;
-   runloop_st->secondary_library_path = copy_core_to_temp_file(
-		   path_get(RARCH_PATH_CORE), path_directory_libretro);
-
-   if (!runloop_st->secondary_library_path)
-      return false;
+   runloop_st->secondary_library_path = copied_path;
 
    /* Load Core */
    if (!runloop_init_libretro_symbols(runloop_st,
@@ -529,15 +789,16 @@ static bool secondary_core_create(runloop_state_t *runloop_st,
    runahead_clear_controller_port_map(runloop_st);
 #endif
 
-   return true;
+   return RUNAHEAD_COPY_READY;
 
 error:
    runahead_secondary_core_destroy(runloop_st);
-   return false;
+   return RUNAHEAD_COPY_UNAVAILABLE;
 }
 
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
-bool secondary_core_ensure_exists(void *data, settings_t *settings)
+enum runahead_copy_status secondary_core_ensure_exists(void *data,
+      settings_t *settings)
 {
    runloop_state_t *runloop_st         = (runloop_state_t*)data;
    const char *path_directory_libretro = settings->paths.directory_libretro;
@@ -545,7 +806,7 @@ bool secondary_core_ensure_exists(void *data, settings_t *settings)
    if (!runloop_st->secondary_lib_handle)
       return secondary_core_create(runloop_st, path_directory_libretro,
                input_max_users);
-   return true;
+   return RUNAHEAD_COPY_READY;
 }
 #endif
 
@@ -554,15 +815,20 @@ static bool secondary_core_deserialize(runloop_state_t *runloop_st,
       settings_t *settings, const void *data, size_t len)
 {
    bool ret = false;
+   enum runahead_copy_status status =
+      secondary_core_ensure_exists(runloop_st, settings);
 
-   if (secondary_core_ensure_exists(runloop_st, settings))
+   if (status == RUNAHEAD_COPY_READY)
    {
       runloop_st->flags |=  RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
       ret                = runloop_st->secondary_core.retro_unserialize(data, len);
       runloop_st->flags &= ~RUNLOOP_FLAG_REQUEST_SPECIAL_SAVESTATE;
    }
-   else
+   else if (status == RUNAHEAD_COPY_UNAVAILABLE)
       runahead_secondary_core_destroy(runloop_st);
+   /* PENDING: copy still in flight - report failure quietly and
+    * leave the task running; do NOT destroy (that would abandon
+    * the copy and restart it on the next call). */
 
    return ret;
 }
@@ -575,10 +841,16 @@ static bool secondary_core_run_use_last_input(runloop_state_t *runloop_st)
    retro_input_poll_t old_poll_function;
    retro_input_state_t old_input_function;
 
-   if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
    {
-      runahead_secondary_core_destroy(runloop_st);
-      return false;
+      enum runahead_copy_status status =
+         secondary_core_ensure_exists(runloop_st, config_get_ptr());
+      if (status != RUNAHEAD_COPY_READY)
+      {
+         if (status == RUNAHEAD_COPY_UNAVAILABLE)
+            runahead_secondary_core_destroy(runloop_st);
+         /* PENDING: leave the copy task running */
+         return false;
+      }
    }
 
    old_poll_function                        = runloop_st->secondary_callbacks.poll_cb;
@@ -1186,6 +1458,11 @@ void runahead_run(void *data,
 #else
    const bool have_dynamic = false;
 #endif
+#if HAVE_DYNAMIC
+   enum runahead_copy_status sec_status = RUNAHEAD_COPY_UNAVAILABLE;
+#else
+   const enum runahead_copy_status sec_status = RUNAHEAD_COPY_UNAVAILABLE;
+#endif
    video_driver_state_t
       *video_st            = video_state_get_ptr();
    uint64_t frame_count    = video_st->frame_count;
@@ -1237,9 +1514,36 @@ void runahead_run(void *data,
 
    runloop_st->runahead_last_frame_count  = frame_count;
 
+#if HAVE_DYNAMIC
+   if (     use_secondary
+         && have_dynamic
+         && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE))
+   {
+      sec_status = secondary_core_ensure_exists(runloop_st, config_get_ptr());
+      if (sec_status == RUNAHEAD_COPY_UNAVAILABLE)
+      {
+         const char *_msg =
+            msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
+         runahead_secondary_core_destroy(runloop_st);
+         runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
+         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         RARCH_WARN("[Run-Ahead] %s\n", _msg);
+         goto force_input_dirty;
+      }
+      /* PENDING: the copy task is still duplicating the core
+       * binary. Run the single-instance savestate method for this
+       * frame (identical output) and retry next frame; the
+       * secondary instance attaches seamlessly once ready, since
+       * it is (re)synchronised from a savestate every time it
+       * runs anyway. */
+   }
+#endif
+
    if (     !use_secondary
          || !have_dynamic
-         || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE))
+         || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
+         || (sec_status != RUNAHEAD_COPY_READY))
    {
       /* TODO: multiple savestates for higher performance
        * when not using secondary core */
@@ -1298,17 +1602,7 @@ void runahead_run(void *data,
    else
    {
 #if HAVE_DYNAMIC
-      if (!secondary_core_ensure_exists(runloop_st, config_get_ptr()))
-      {
-         const char *_msg =
-            msg_hash_to_str(MSG_RUNAHEAD_FAILED_TO_CREATE_SECONDARY_INSTANCE);
-         runahead_secondary_core_destroy(runloop_st);
-         runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
-         runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
-               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-         RARCH_WARN("[Run-Ahead] %s\n", _msg);
-         goto force_input_dirty;
-      }
+      /* sec_status == RUNAHEAD_COPY_READY here (checked above) */
 
       /* run main core with video suspended */
       video_driver_modify_disp_flags(0, VIDEO_FLAG_ACTIVE);

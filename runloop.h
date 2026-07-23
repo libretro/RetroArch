@@ -422,7 +422,20 @@ void runloop_task_msg_queue_push(
       unsigned prio, unsigned duration,
       bool flush);
 
-bool secondary_core_ensure_exists(void *data, settings_t *settings);
+/* Status of the asynchronous secondary-core binary copy. Only
+ * RUNAHEAD_COPY_READY means the secondary instance exists and its
+ * function pointers are safe to call; PENDING means the copy task
+ * is still running (callers should skip quietly and retry later,
+ * NOT tear the secondary state down). */
+enum runahead_copy_status
+{
+   RUNAHEAD_COPY_UNAVAILABLE = 0,
+   RUNAHEAD_COPY_PENDING,
+   RUNAHEAD_COPY_READY
+};
+
+enum runahead_copy_status secondary_core_ensure_exists(void *data,
+      settings_t *settings);
 
 void runloop_log_counters(
       struct retro_perf_counter **counters, unsigned num);

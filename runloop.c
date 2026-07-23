@@ -3209,7 +3209,8 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                settings_t *settings = config_get_ptr();
                if (      settings->bools.run_ahead_secondary_instance
                      && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-                     &&  secondary_core_ensure_exists(runloop_st, settings))
+                     && (secondary_core_ensure_exists(runloop_st, settings)
+                         == RUNAHEAD_COPY_READY))
                   result = RETRO_SAVESTATE_CONTEXT_RUNAHEAD_SAME_BINARY;
                else
 #endif
@@ -8360,7 +8361,8 @@ bool core_set_cheat(retro_ctx_cheat_info_t *info)
    if (     (want_runahead)
          && (run_ahead_secondary_instance)
          && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-         && (secondary_core_ensure_exists(runloop_st, settings))
+         && (secondary_core_ensure_exists(runloop_st, settings)
+             == RUNAHEAD_COPY_READY)
          && (runloop_st->secondary_core.retro_cheat_set))
       runloop_st->secondary_core.retro_cheat_set(
             info->index, info->enabled, info->code);
@@ -8400,7 +8402,8 @@ bool core_reset_cheat(void)
    if (   (want_runahead)
        && (run_ahead_secondary_instance)
        && (runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
-       && (secondary_core_ensure_exists(runloop_st, settings))
+       && (secondary_core_ensure_exists(runloop_st, settings)
+           == RUNAHEAD_COPY_READY)
        && (runloop_st->secondary_core.retro_cheat_reset))
       runloop_st->secondary_core.retro_cheat_reset();
 #endif

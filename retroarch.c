@@ -3566,7 +3566,14 @@ bool command_event(enum event_command cmd, void *data)
 
          if (!runloop_st->secondary_lib_handle)
          {
-            if (!secondary_core_ensure_exists(runloop_st, settings))
+            enum runahead_copy_status status =
+               secondary_core_ensure_exists(runloop_st, settings);
+            if (status == RUNAHEAD_COPY_PENDING)
+               /* Copy task still running: not loaded yet, but do
+                * not tear down - the task completes in the
+                * background and a later attempt succeeds. */
+               return false;
+            if (status == RUNAHEAD_COPY_UNAVAILABLE)
             {
                runahead_secondary_core_destroy(runloop_st);
                runloop_st->flags &=
