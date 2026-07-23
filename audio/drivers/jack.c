@@ -263,8 +263,14 @@ static ssize_t ja_write(void *data, const void *buf_, size_t len)
       avail = jack_ringbuffer_write_space(jd->buffer);
 
       to_write = (len < avail) ? len : avail;
-      /* make sure to only write multiples of the sample size */
-      to_write = (to_write / sizeof(float)) * sizeof(float);
+      /* Quantise to whole stereo frames, not single floats.  JACK's
+       * ringbuffer holds size-1 bytes, so with frame-aligned usage the
+       * free space is never frame-aligned: rounding to sizeof(float)
+       * let the first ring-full write land on a half frame, after which
+       * every sample was L/R-swapped (with a one-sample interchannel
+       * skew) for the rest of the session.  The process callback reads
+       * in whole frames, so the writer must feed whole frames. */
+      to_write = (to_write / (2 * sizeof(float))) * (2 * sizeof(float));
 
       if (to_write > 0)
       {
