@@ -40,7 +40,10 @@ enum scaler_pix_fmt
    SCALER_FMT_RGB565,
    SCALER_FMT_BGR24,
    SCALER_FMT_YUYV,
-   SCALER_FMT_RGBA4444
+   SCALER_FMT_RGBA4444,
+   /* Packed 10-bit: A [31:30], R [29:20], G [19:10], B [9:0].
+    * The layout the 10-bit upload paths and rpng agree on. */
+   SCALER_FMT_XRGB2101010
 };
 
 enum scaler_type

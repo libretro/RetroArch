@@ -45,7 +45,8 @@ static bool allocate_frames(struct scaler_ctx *ctx)
 
    ctx->scaled.frame      = scaled_frame;
 
-   if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->in_fmt != SCALER_FMT_ARGB8888
+           && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
       uint32_t *input_frame = NULL;
       ctx->input.stride     = ((ctx->in_width + 7) & ~7) * sizeof(uint32_t);
@@ -59,7 +60,8 @@ static bool allocate_frames(struct scaler_ctx *ctx)
       ctx->input.frame      = input_frame;
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
       uint32_t *output_frame = NULL;
       ctx->output.stride     = ((ctx->out_width + 7) & ~7) * sizeof(uint32_t);
@@ -199,11 +201,38 @@ bool scaler_ctx_gen_filter(struct scaler_ctx *ctx)
                      break;
                }
                break;
+
+            case SCALER_FMT_XRGB2101010:
+               /* No cross-format direct conversion: every counterpart
+                * here is 8-bit, and the narrowing direction is the
+                * caller's decision to make, not this switch's.  The
+                * same-format case never reaches here (conv_copy is
+                * bound above). */
+               break;
          }
 
          if (!ctx->direct_pixconv)
             return false;
       }
+   }
+   else if (   ctx->in_fmt  == SCALER_FMT_XRGB2101010
+            || ctx->out_fmt == SCALER_FMT_XRGB2101010)
+   {
+      /* 10-bit is filtered natively rather than through the ARGB8888
+       * canonical form: the 8-bit chain saturates to 8 bits at the end,
+       * so routing 10-bit samples through it would discard exactly the
+       * precision the format exists to carry.  Only 10-bit to 10-bit is
+       * offered; mixing with the 8-bit formats would need a conversion
+       * whose direction silently decides what is lost, which is better
+       * left to the caller. */
+      if (ctx->in_fmt != ctx->out_fmt)
+         return false;
+
+      ctx->scaler_horiz = scaler_xrgb2101010_horiz;
+      ctx->scaler_vert  = scaler_xrgb2101010_vert;
+
+      if (!scaler_gen_filter(ctx))
+         return false;
    }
    else
    {
@@ -324,7 +353,8 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    int input_stride        = ctx->in_stride;
    int output_stride       = ctx->out_stride;
 
-   if (ctx->in_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->in_fmt != SCALER_FMT_ARGB8888
+           && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
       ctx->in_pixconv(ctx->input.frame, input,
             ctx->in_width, ctx->in_height,
@@ -334,7 +364,8 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
       input_stride      = ctx->input.stride;
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
    {
       output_frame  = ctx->output.frame;
       output_stride = ctx->output.stride;
@@ -355,7 +386,8 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
          ctx->scaler_vert (ctx, output_frame, output_stride);
    }
 
-   if (ctx->out_fmt != SCALER_FMT_ARGB8888)
+   if (       ctx->out_fmt != SCALER_FMT_ARGB8888
+           && ctx->out_fmt != SCALER_FMT_XRGB2101010)
       ctx->out_pixconv(output, ctx->output.frame,
             ctx->out_width, ctx->out_height,
             ctx->out_stride, ctx->output.stride);
