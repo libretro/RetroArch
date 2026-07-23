@@ -25,6 +25,8 @@
 #include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
+#include <compat/strcasestr.h>
+#include <streams/file_stream.h>
 
 #include "../configuration.h"
 #include "../file_path_special.h"
@@ -249,6 +251,87 @@ static void input_autoconfigure_set_config_file(
  * (in the autoconfig directory) matching the connected
  * input device
  * > Returns 'true' if successful */
+/* Could this file possibly score above zero for the device we are
+ * looking for?
+ *
+ * A profile is only ever selected on a positive affinity, and affinity
+ * only becomes positive through a matching vendor+product id or a
+ * matching device name - input_phys merely adjusts a score that is
+ * already at least 20.  So a file containing neither the name nor the
+ * ids cannot win, and does not need parsing.
+ *
+ * That matters because parsing is the expensive part by a wide margin:
+ * building a config_file_t reads and hashes every binding in the file,
+ * some fifty entries, to answer questions about four of them.  Reading
+ * the bytes is cheap - one open, one read - and the file is read here
+ * either way, so a candidate is parsed from the buffer already in hand
+ * rather than opened a second time.
+ *
+ * The test is deliberately generous.  A false positive costs one parse
+ * that would have happened anyway; a false negative would silently
+ * pick the wrong profile, so anything uncertain must pass.  Hence:
+ *
+ *  - the name is matched as a substring, which is sound because the
+ *    affinity check compares it with string_is_equal - the exact text
+ *    has to be present for that to succeed;
+ *  - the ids are read by config_get_int, which uses strtol with base
+ *    0, so decimal, hexadecimal and octal are all legal spellings of
+ *    the same number and all three are looked for.
+ */
+static bool input_autoconfigure_file_may_match(
+      const char *buf,
+      const char *device_name,
+      unsigned vid, unsigned pid)
+{
+   char num[24];
+
+   if (!buf)
+      return false;
+
+   if (device_name && *device_name && strstr(buf, device_name))
+      return true;
+
+   if (vid && pid)
+   {
+      bool have_vid = false;
+      bool have_pid = false;
+
+      snprintf(num, sizeof(num), "%u", vid);
+      have_vid = (strstr(buf, num) != NULL);
+      if (!have_vid)
+      {
+         snprintf(num, sizeof(num), "0x%x", vid);
+         have_vid = (strcasestr(buf, num) != NULL);
+      }
+      if (!have_vid)
+      {
+         snprintf(num, sizeof(num), "0%o", vid);
+         have_vid = (strstr(buf, num) != NULL);
+      }
+
+      if (have_vid)
+      {
+         snprintf(num, sizeof(num), "%u", pid);
+         have_pid = (strstr(buf, num) != NULL);
+         if (!have_pid)
+         {
+            snprintf(num, sizeof(num), "0x%x", pid);
+            have_pid = (strcasestr(buf, num) != NULL);
+         }
+         if (!have_pid)
+         {
+            snprintf(num, sizeof(num), "0%o", pid);
+            have_pid = (strstr(buf, num) != NULL);
+         }
+      }
+
+      if (have_vid && have_pid)
+         return true;
+   }
+
+   return false;
+}
+
 static bool input_autoconfigure_scan_config_files_external(
       autoconfig_handle_t *autoconfig_handle)
 {
@@ -290,7 +373,41 @@ static bool input_autoconfigure_scan_config_files_external(
          fill_pathname_join_special(config_file_path,
                dirs[d], entry_name, sizeof(config_file_path));
 
-         if (!(config = config_file_new_from_path_to_string(config_file_path)))
+         /* Read once, and only parse what could win.  The Bliss-Box
+          * path rewrites the product id before comparing, so its
+          * devices skip the filter and are parsed as before. */
+         {
+            int64_t  buf_len = 0;
+            char    *buf     = NULL;
+            bool     candidate;
+
+            if (!filestream_read_file(config_file_path,
+                     (void**)&buf, &buf_len) || !buf)
+               continue;
+
+#ifdef HAVE_BLISSBOX
+            candidate = (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+                  || input_autoconfigure_file_may_match(buf,
+                        autoconfig_handle->device_info.name,
+                        autoconfig_handle->device_info.vid,
+                        autoconfig_handle->device_info.pid);
+#else
+            candidate = input_autoconfigure_file_may_match(buf,
+                  autoconfig_handle->device_info.name,
+                  autoconfig_handle->device_info.vid,
+                  autoconfig_handle->device_info.pid);
+#endif
+            if (!candidate)
+            {
+               free(buf);
+               continue;
+            }
+
+            config = config_file_new_from_string(buf, config_file_path);
+            free(buf);
+         }
+
+         if (!config)
             continue;
 
          affinity = input_autoconfigure_get_config_file_affinity(
