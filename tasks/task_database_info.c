@@ -47,6 +47,18 @@ typedef struct db_info_handle
 static database_info_list_t *db_info_cache_list = NULL;
 static char *db_info_cache_path                 = NULL;
 static char *db_info_cache_query                = NULL;
+/* True from task push until the task's main-thread callback has
+ * run. Deliberately NOT derived from task_queue_find(): the
+ * threaded queue has a window where the worker has finished (task
+ * no longer in the running list) but the callback has not yet
+ * executed. A find-based in-progress check reports false there,
+ * which lets a displaylist rebuild push a duplicate scan - and,
+ * worse, lets menu_dbinfo_wait_for_task() return during teardown
+ * before the callback has run, so the callback then repopulates
+ * the cache after menu deinit freed it. The flag transitions
+ * strictly on the main thread (push / callback), so no such
+ * window exists. */
+static bool  db_info_task_pending               = false;
 
 static bool db_info_key_equal(const char *a, const char *b)
 {
@@ -160,6 +172,10 @@ static void cb_task_database_info(
 
    if (!task)
       return;
+
+   /* The pipeline is free again in every case below. */
+   db_info_task_pending = false;
+
    if (!(db = (db_info_handle_t*)task->state))
       return;
 
@@ -187,22 +203,9 @@ static void cb_task_database_info(
                       |  MENU_ST_FLAG_PREVENT_POPULATE;
 }
 
-static bool task_database_info_finder(retro_task_t *task, void *user_data)
-{
-   return (task && task->handler == task_database_info_handler);
-}
-
 bool menu_dbinfo_load_in_progress(void *data)
 {
-   task_finder_data_t find_data;
-
-   find_data.func     = task_database_info_finder;
-   find_data.userdata = NULL;
-
-   if (task_queue_find(&find_data))
-      return true;
-
-   return false;
+   return db_info_task_pending;
 }
 
 void menu_dbinfo_wait_for_task(void)
@@ -212,7 +215,6 @@ void menu_dbinfo_wait_for_task(void)
 
 bool task_push_dbinfo_load(const char *path, const char *query)
 {
-   task_finder_data_t find_data;
    retro_task_t *task   = NULL;
    db_info_handle_t *db = NULL;
 
@@ -227,10 +229,7 @@ bool task_push_dbinfo_load(const char *path, const char *query)
 
    /* One database scan at a time - the cache has a single slot,
     * and a second concurrent scan would just fight over it. */
-   find_data.func     = task_database_info_finder;
-   find_data.userdata = NULL;
-
-   if (task_queue_find(&find_data))
+   if (db_info_task_pending)
       goto error;
 
    db->db_list = NULL;
@@ -246,6 +245,7 @@ bool task_push_dbinfo_load(const char *path, const char *query)
    task->cleanup  = task_database_info_free;
    task->flags   |= RETRO_TASK_FLG_MUTE;
 
+   db_info_task_pending = true;
    task_queue_push(task);
 
    return true;
