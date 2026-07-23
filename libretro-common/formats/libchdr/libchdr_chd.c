@@ -52,7 +52,7 @@
 #include <libchdr/flac.h>
 #endif
 
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 #include <libchdr/libchdr_zlib.h>
 #endif
 
@@ -224,7 +224,7 @@ struct _chd_file
 	const codec_interface *	codecintf[4];	/* interface to the codec */
 
 	huff_codec_data			huff_codec_data;		/* huff codec data */
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 	zlib_codec_data			zlib_codec_data;		/* zlib codec data */
 	cdzl_codec_data			cdzl_codec_data;		/* cdzl codec data */
 #endif
@@ -396,7 +396,7 @@ static const codec_interface codec_interfaces[] =
 		NULL
 	},
 
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 	/* standard zlib compression */
 	{
 		CHDCOMPRESSION_ZLIB,
@@ -1036,7 +1036,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 		if (intfnum == ARRAY_LENGTH(codec_interfaces))
 			EARLY_EXIT(err = CHDERR_UNSUPPORTED_FORMAT);
 
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 		/* initialize the codec */
 		if (newchd->codecintf[0]->init != NULL)
 		{
@@ -1072,7 +1072,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 				switch (newchd->header.compression[decompnum])
 				{
 					case CHD_CODEC_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 						codec = &newchd->zlib_codec_data;
 #endif
 						break;
@@ -1100,7 +1100,7 @@ CHD_EXPORT chd_error chd_open_core_file(core_file *file, int mode, chd_file *par
 						break;
 
 					case CHD_CODEC_CD_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 						codec = &newchd->cdzl_codec_data;
 #endif
 						break;
@@ -1232,7 +1232,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 	/* deinit the codec */
 	if (chd->header.version < 5)
 	{
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 		if (chd->codecintf[0] != NULL && chd->codecintf[0]->free != NULL)
 			(*chd->codecintf[0]->free)(&chd->zlib_codec_data);
 #endif
@@ -1251,7 +1251,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 			switch (chd->codecintf[i]->compression)
 			{
 				case CHD_CODEC_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 					codec = &chd->zlib_codec_data;
 #endif
 					break;
@@ -1279,7 +1279,7 @@ CHD_EXPORT void chd_close(chd_file *chd)
 					break;
 
 				case CHD_CODEC_CD_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 					codec = &chd->cdzl_codec_data;
 #endif
 					break;
@@ -1934,7 +1934,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 					return CHDERR_READ_ERROR;
 					}
 
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 				/* now decompress using the codec */
 				err = CHDERR_NONE;
 				codec = &chd->zlib_codec_data;
@@ -2030,7 +2030,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 				switch (chd->codecintf[rawmap[0]]->compression)
 				{
 					case CHD_CODEC_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 						codec = &chd->zlib_codec_data;
 #endif
 						break;
@@ -2058,7 +2058,7 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 						break;
 
 					case CHD_CODEC_CD_ZLIB:
-#ifdef HAVE_ZLIB
+#if defined(HAVE_ZLIB) || defined(CHD_USE_BUILTIN_DEFLATE) /* zlib codec exists either way */
 						codec = &chd->cdzl_codec_data;
 #endif
 						break;
