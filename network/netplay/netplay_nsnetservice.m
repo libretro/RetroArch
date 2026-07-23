@@ -194,7 +194,7 @@ static NetplayBonjourMan *nbm_instance;
     uint32_t crc = 0;
     struct string_list *subsystem = path_get_subsystem_list();
     if (!subsystem || subsystem->size <= 0)
-        crc = content_get_crc();
+        crc = netplay_content_crc();
     return [[NSString stringWithFormat:@"%08x", (uint32_t)htonl(crc)] dataUsingEncoding:NSUTF8StringEncoding];
 }
 

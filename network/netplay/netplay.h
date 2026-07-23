@@ -172,6 +172,10 @@ typedef struct
 
 net_driver_state_t *networking_state_get_ptr(void);
 
+/* The content fingerprint netplay advertises, compares and searches by.
+ * Derived on first use and cached; see netplay_frontend.c. */
+uint32_t netplay_content_crc(void);
+
 bool netplay_compatible_version(const char *version);
 bool netplay_decode_hostname(const char *hostname,
    char *address, unsigned *port, char *session, size_t len);

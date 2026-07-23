@@ -1194,19 +1194,15 @@ static size_t content_file_load_into_memory(
     * soft patching, CRC checking, etc. */
    if (idx == 0)
    {
-      /* If we have a media type, ignore patches/CRC32
-       * calculation. */
+      /* If we have a media type, ignore patches. */
       if (first_content_type == RARCH_CONTENT_NONE)
       {
-         bool has_patch = false;
 #ifdef HAVE_PATCH
          /* Attempt to apply a patch, unless one was already streamed
-          * alongside the load above.  Whether one was applied decides
-          * below whether the file on disk still matches the content. */
-         if (streamed)
-            has_patch = true;
-         else if (!(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
-            has_patch = patch_content(
+          * alongside the load above. */
+         if (     !streamed
+               && !(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+            patch_content(
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
                   content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
@@ -1218,42 +1214,7 @@ static size_t content_file_load_into_memory(
                   (uint8_t**)&content_data,
                   (void*)&content_size);
 #endif
-         /* If content is compressed or a patch has been
-          * applied, must determine CRC value using the
-          * actual data buffer, since the content path
-          * cannot be used for this purpose...
-          * In all other cases, cache the content path
-          * and defer CRC calculation until the value is
-          * actually needed.
-          *
-          * Hash now only when the file on disk is no longer what the
-          * core was handed: decompressed out of an archive, or
-          * soft-patched.  In those cases the two differ and the buffer
-          * holding the real content is freed as soon as the core has
-          * loaded it, so this is the only chance to hash it.
-          *
-          * Otherwise the file is the content and the value can wait.
-          * Nothing reads it but netplay, movie recording and the
-          * command interface, none of which an ordinary session
-          * touches, so an ordinary session should not pay for it -
-          * and for a core using need_fullpath the bytes are a disc
-          * image that would have to be read in full. */
-         if (content_compressed || has_patch)
-         {
-            p_content->rom_crc = encoding_crc32(0, content_data,
-                  (size_t)content_size);
-            RARCH_LOG("[Content] CRC32: 0x%x.\n",
-                  (unsigned)p_content->rom_crc);
-         }
-         else
-         {
-            strlcpy(p_content->pending_rom_crc_path, content_path,
-                  sizeof(p_content->pending_rom_crc_path));
-            p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
-         }
       }
-      else
-         p_content->rom_crc = 0;
    }
 
    *data      = content_data;
@@ -1617,15 +1578,6 @@ static bool content_file_load(
              * until value is used */
             if (i == 0)
             {
-               /* If we have a media type, ignore CRC32 calculation. */
-               if (first_content_type == RARCH_CONTENT_NONE)
-               {
-                  strlcpy(p_content->pending_rom_crc_path, content_path,
-                        sizeof(p_content->pending_rom_crc_path));
-                  p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
-               }
-               else
-                  p_content->rom_crc = 0;
             }
          }
       }
@@ -3182,79 +3134,8 @@ void content_unset_does_not_need_content(void)
    p_content->flags &= ~CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT;
 }
 
-#ifndef CRC32_BUFFER_SIZE
-#define CRC32_BUFFER_SIZE 1048576
-#endif
 
-/**
- * Calculate a CRC32 over the whole of the given file.
- *
- * This used to stop after a fixed number of buffers, which meant any
- * file larger than that ceiling was identified by the CRC of its
- * prefix - a wrong value, returned without any indication that it was
- * partial.  Only content the frontend never holds in memory reaches
- * here now (a core using need_fullpath), and for that a correct hash
- * is the whole point of computing one.
- *
- * @return The calculated CRC32 hash, or 0 if there was an error.
- */
-static uint32_t file_crc32(uint32_t crc, const char *path)
-{
-   RFILE *file        = NULL;
-   unsigned char *buf = NULL;
-   if (!path)
-      return 0;
 
-   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, 0)))
-      return 0;
-
-   if (!(buf = (unsigned char*)malloc(CRC32_BUFFER_SIZE)))
-   {
-      filestream_close(file);
-      return 0;
-   }
-
-   for (;;)
-   {
-      int64_t nread = filestream_read(file, buf, CRC32_BUFFER_SIZE);
-      if (nread < 0)
-      {
-         free(buf);
-         filestream_close(file);
-         return 0;
-      }
-
-      crc = encoding_crc32(crc, buf, (size_t)nread);
-      if (nread < CRC32_BUFFER_SIZE || filestream_eof(file))
-         break;
-   }
-   free(buf);
-   filestream_close(file);
-   return crc;
-}
-
-uint32_t content_get_crc(void)
-{
-   content_state_t *p_content = content_state_get_ptr();
-   if (p_content->flags & CONTENT_ST_FLAG_PENDING_ROM_CRC)
-   {
-      p_content->flags   &= ~CONTENT_ST_FLAG_PENDING_ROM_CRC;
-      /* Only reached for content the frontend never loaded into
-       * memory - a core using need_fullpath.  Everything that does
-       * pass through a buffer is hashed at load time instead.
-       *
-       * Hashed here, on demand, and not before: the callers are
-       * netplay, movie recording and the command interface, so an
-       * ordinary session never asks and never pays.  Hashing eagerly
-       * at load would mean reading a whole disc image from disk for a
-       * number nothing is going to look at. */
-      p_content->rom_crc = file_crc32(0,
-            (const char*)p_content->pending_rom_crc_path);
-      RARCH_LOG("[Content] CRC32: 0x%x.\n",
-            (unsigned)p_content->rom_crc);
-   }
-   return p_content->rom_crc;
-}
 
 char* content_get_subsystem_rom(unsigned index)
 {
@@ -3276,9 +3157,7 @@ void content_deinit(void)
    content_file_list_free(p_content->content_list);
 
    p_content->content_list = NULL;
-   p_content->rom_crc      = 0;
-   p_content->flags       &= ~(CONTENT_ST_FLAG_PENDING_ROM_CRC
-                             | CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
+   p_content->flags       &= ~(CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT
                              | CONTENT_ST_FLAG_IS_INITED);
 }
 

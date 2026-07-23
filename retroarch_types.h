@@ -151,7 +151,6 @@ enum content_state_flags
    CONTENT_ST_FLAG_IS_INITED                  = (1 << 0),
    CONTENT_ST_FLAG_CORE_DOES_NOT_NEED_CONTENT = (1 << 1),
    CONTENT_ST_FLAG_PENDING_SUBSYSTEM_INIT     = (1 << 2),
-   CONTENT_ST_FLAG_PENDING_ROM_CRC            = (1 << 3),
    CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING      = (1 << 4)
 };
 
@@ -351,7 +350,6 @@ typedef struct content_state
    int pending_subsystem_rom_num;
    int pending_subsystem_id;
    unsigned pending_subsystem_rom_id;
-   uint32_t rom_crc;
    uint8_t flags;
 
    /* Bytes prefetched ahead of the load by the content prefetch
@@ -369,7 +367,6 @@ typedef struct content_state
 
    char companion_ui_crc32[32];
    char pending_subsystem_ident[NAME_MAX_LENGTH];
-   char pending_rom_crc_path[PATH_MAX_LENGTH];
    char companion_ui_db_name[PATH_MAX_LENGTH];
 } content_state_t;
 
