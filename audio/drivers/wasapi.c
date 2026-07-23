@@ -1521,8 +1521,19 @@ static size_t wasapi_write_avail(void *wh)
       return FIFO_WRITE_AVAIL(w->buffer);
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
-   if (w->buffer) /* Exaggerate available size for best results.. */
-      return FIFO_WRITE_AVAIL(w->buffer) + padding;
+   if (w->buffer)
+   {
+      /* Free space across the whole pipeline the writer can fill:
+       * free fifo bytes plus free engine-buffer bytes.  The previous
+       * form added GetCurrentPadding() directly - a frame count
+       * (1/8 scale for float frames) added to a byte count, and a
+       * measure of *queued* data rather than free space, so a fuller
+       * engine reported more room.  Rate control consumed that as a
+       * mis-scaled, inverted, period-rate noise term in its occupancy
+       * measurement. */
+      return FIFO_WRITE_AVAIL(w->buffer)
+            + (w->engine_buffer_size - padding * w->frame_size);
+   }
    return w->engine_buffer_size - padding * w->frame_size;
 }
 
@@ -1530,8 +1541,15 @@ static size_t wasapi_buffer_size(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
 
-   if (w->buffer)
+   /* Must bound what write_avail reports: exclusive mode's avail spans
+    * the fifo only (the engine double buffer is the device's own), and
+    * shared mode's spans fifo + engine.  Reporting only the fifo in
+    * shared mode let avail exceed the "buffer size", pushing the rate
+    * controller's direction term past its intended +-1 range. */
+   if (w->flags & WASAPI_FLG_EXCLUSIVE && w->buffer)
       return w->buffer->size;
+   if (w->buffer)
+      return w->buffer->size + w->engine_buffer_size;
    return w->engine_buffer_size;
 }
 
