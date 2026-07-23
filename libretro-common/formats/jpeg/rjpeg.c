@@ -4722,6 +4722,21 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
             return true;
          }
 
+         /* Safety net: this path decodes a whole scan in one pass with
+          * no resident-frontier awareness, so it must never run over a
+          * partial buffer.  rjpeg_header_ready already declines
+          * progressive files from early start, so a caller feeding a
+          * prefix does not get here; if one ever does, fail the load
+          * rather than decode un-arrived bytes.  (The state is not
+          * re-entrant mid-setup, so yielding for more would resume on
+          * an already-consumed marker - erroring is the honest
+          * outcome.) */
+         if (j->img_buffer_end < j->img_buffer_true_end)
+         {
+            rjpeg->iter_state = RJPEG_ITER_ERROR;
+            return false;
+         }
+
          /* Process this SOS scan */
          if (!rjpeg_process_scan_header(j))
          {
@@ -5087,6 +5102,16 @@ bool rjpeg_header_ready(const uint8_t *data, size_t len)
       if (p >= len)
          return false;
       marker = data[p++];
+      /* SOF2 is a progressive frame.  Its scans are decoded whole by
+       * rjpeg_parse_entropy_coded_data, which has no resident-frontier
+       * awareness, and the surrounding marker walk is not re-entrant -
+       * yielding mid-setup leaves iter_marker on an already-consumed
+       * segment.  Decline the early start so a progressive file loads
+       * whole-buffer, exactly as it did before prefix decoding existed.
+       * Baseline (SOF0/SOF1) is unaffected: its MCU-row driver
+       * checkpoints and rolls back at the wall. */
+      if (marker == 0xC2)
+         return false;
       if (marker == JPEG_MARKER_SOS)
       {
          /* SOS: the scan header (its 2-byte length plus that many
