@@ -84,7 +84,18 @@ static void rtga_skip(rtga_context *s, int n)
 
 static int rtga_get16le(rtga_context *s)
 {
-   return rtga_get8(s) + (rtga_get8(s) << 8);
+   /* Sequenced explicitly.  Combining the two reads in one expression
+    * (rtga_get8(s) + (rtga_get8(s) << 8)) leaves no sequence point
+    * between them, so their order is unspecified: a compiler free to
+    * evaluate the high byte first swaps them, and since this reader
+    * supplies the frame's width and height a 320x240 image is decoded
+    * as 16385x61440 - reported as success, with the garbage dimensions
+    * then driving a multi-gigabyte allocation.  It works today only by
+    * the order GCC happens to pick; building with -fsanitize=undefined
+    * already flips it. */
+   int lo = rtga_get8(s);
+   int hi = rtga_get8(s);
+   return lo + (hi << 8);
 }
 
 static uint32_t *rtga_tga_load(rtga_context *s,
