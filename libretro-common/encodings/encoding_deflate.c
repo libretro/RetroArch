@@ -1250,6 +1250,7 @@ static int32_t rd_insert(struct rdeflate *s, uint32_t pos)
    return prev;
 }
 
+#if RETRO_IS_BIG_ENDIAN
 /* find the longest match for the string at `pos`, searching the chain.
  * Returns match length (>=MIN_MATCH) and sets *dist, or 0 if none. */
 /* count-trailing / leading zero bits on a 64-bit word, for the word-at-a-time
@@ -1270,6 +1271,7 @@ static INLINE int rd_clz64(uint64_t x)
    while (!(x & ((uint64_t)1 << 63))) { x <<= 1; n++; }
    return n;
 }
+#endif
 #endif
 
 static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,

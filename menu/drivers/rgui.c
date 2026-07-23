@@ -1286,12 +1286,6 @@ static INLINE unsigned rgui_quant6(unsigned v)
    return (q > 63) ? 63 : q;
 }
 
-static INLINE unsigned rgui_quant3(unsigned v)
-{
-   unsigned q = ((v * 7) + 127) / 255;
-   return (q > 7) ? 7 : q;
-}
-
 /* Ordered (Bayer) dither threshold, 0..15 for a 4x4 cell.
  *
  * Rounding alone still lands every pixel of a slow gradient on the
@@ -1345,18 +1339,6 @@ static INLINE unsigned rgui_quant6_dither(unsigned v, unsigned x, unsigned y)
       q++;
 
    return (q > 63) ? 63 : q;
-}
-
-static INLINE unsigned rgui_quant3_dither(unsigned v, unsigned x, unsigned y)
-{
-   unsigned n = v * 7;
-   unsigned q = n / 255;
-   unsigned f = n % 255;
-
-   if ((f > ((unsigned)rgui_bayer4x4[y & 3][x & 3] * 255) / 16) && (q < 7))
-      q++;
-
-   return (q > 7) ? 7 : q;
 }
 
 /* PS2 */
