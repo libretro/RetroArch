@@ -3383,8 +3383,11 @@ static void menu_displaylist_set_new_playlist(
 
    menu->db_playlist_file[0]           = '\0';
 
-   if (playlist_get_cached())
-      playlist_free_cached();
+   /* The cache is not dropped here any more: playlist_init_cached
+    * decides whether the cached playlist can stand in for the one being
+    * asked for, and freeing it first would make that decision always
+    * come out "no" - which is exactly what made every rebuild of this
+    * list re-read and re-parse the same file. */
 
    /* Get proper playlist capacity */
    if (playlist_file_name && *playlist_file_name)

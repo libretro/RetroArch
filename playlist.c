@@ -89,6 +89,14 @@ struct content_playlist
    enum playlist_thumbnail_match_mode thumbnail_match_mode;
    enum playlist_sort_mode sort_mode;
 
+   /* Size of the file this playlist was read from, at the moment it was
+    * read.  Used only to decide whether a cached playlist may be reused
+    * rather than parsed again - see playlist_init_cached.  The VFS layer
+    * exposes no modification time portably, so this is a backstop for
+    * edits made outside the process; changes made inside it invalidate
+    * the cache explicitly. */
+   int64_t file_size;
+
    uint8_t flags;
 };
 
@@ -1699,6 +1707,26 @@ end:
    free(file);
 }
 
+/* A playlist file has just been written.  If the cached playlist is a
+ * different object reading the same path, its contents are now stale -
+ * a scan or a playlist-manager task writing the file the menu happens
+ * to have open is the ordinary way this happens.  Drop it rather than
+ * let a later reuse serve what is on disk no longer.  When the cached
+ * playlist is the one that was written, it is still authoritative; only
+ * its size stamp needs to catch up. */
+static void playlist_cached_after_write(playlist_t *written)
+{
+   if (!playlist_cached || !written || !*written->config.path)
+      return;
+   if (playlist_cached == written)
+   {
+      playlist_cached->file_size = path_get_size(written->config.path);
+      return;
+   }
+   if (string_is_equal(playlist_cached->config.path, written->config.path))
+      playlist_free_cached();
+}
+
 void playlist_write_file(playlist_t *playlist)
 {
    size_t i, _len;
@@ -2090,6 +2118,8 @@ void playlist_write_file(playlist_t *playlist)
 end:
    intfstream_close(file);
    free(file);
+
+   playlist_cached_after_write(playlist);
 }
 
 /**
@@ -2861,11 +2891,54 @@ playlist_t *playlist_get_cached(void)
    return NULL;
 }
 
+/* May the cached playlist stand in for the one being asked for?
+ *
+ * Reading a playlist is not cheap - a large one is tens of milliseconds
+ * of JSON parsing and six allocations per entry - and the menu asks for
+ * the same file every time it rebuilds a display list, so answering
+ * from the cache is the difference between paying that once and paying
+ * it on every navigation.
+ *
+ * The bar for reuse is deliberately high, because the previous
+ * behaviour of always re-reading was never wrong. Everything the parse
+ * depends on has to match: the file, and every config field that
+ * changes how it is read or what is kept from it.  Anything modified
+ * inside this process invalidates the cache where it happens, so this
+ * only has to catch changes made behind our back - for which the file
+ * size is the one signal the VFS layer offers portably. */
+static bool playlist_cached_is_reusable(const playlist_config_t *config)
+{
+   if (!playlist_cached)
+      return false;
+   if (!string_is_equal(playlist_cached->config.path, config->path))
+      return false;
+   if (     playlist_cached->config.capacity            != config->capacity
+         || playlist_cached->config.old_format          != config->old_format
+         || playlist_cached->config.compress            != config->compress
+         || playlist_cached->config.fuzzy_archive_match != config->fuzzy_archive_match
+         || playlist_cached->config.autofix_paths       != config->autofix_paths)
+      return false;
+   if (!string_is_equal(playlist_cached->base_content_directory
+            ? playlist_cached->base_content_directory : "",
+            config->base_content_directory))
+      return false;
+   /* Changed underneath us since it was read. */
+   if (playlist_cached->file_size != path_get_size(config->path))
+      return false;
+   return true;
+}
+
 bool playlist_init_cached(const playlist_config_t *config)
 {
    bool pl_compressed, pl_old_fmt;
-   playlist_t *playlist = playlist_init(config);
-   if (!playlist)
+   playlist_t *playlist;
+
+   if (playlist_cached_is_reusable(config))
+      return true;
+
+   playlist_free_cached();
+
+   if (!(playlist = playlist_init(config)))
       return false;
 
    pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
@@ -2880,9 +2953,7 @@ bool playlist_init_cached(const playlist_config_t *config)
        (pl_old_fmt != playlist->config.old_format))
       playlist_write_file(playlist);
 
-   /* Free any previously cached playlist to prevent leaks */
-   playlist_free_cached();
-   playlist_cached      = playlist;
+   playlist_cached = playlist;
    return true;
 }
 
@@ -2927,6 +2998,8 @@ playlist_t *playlist_init(const playlist_config_t *config)
       goto error;
 
    /* Attempt to read any existing playlist file */
+   playlist->file_size = path_get_size(playlist->config.path);
+
    if (!playlist_read_file(playlist))
       goto error;
 
