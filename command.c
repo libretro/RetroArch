@@ -1215,8 +1215,7 @@ bool command_get_status(command_t *cmd, const char* arg)
       else
          strlcpy_append(reply, sizeof(reply), &_len, "UNKNOWN");
 
-      _len += snprintf(reply + _len, sizeof(reply) - _len,
-            ",crc32=%lx\n", (unsigned long)content_get_crc());
+      strlcpy_append(reply, sizeof(reply), &_len, "\n");
    }
    else
       _len = strlcpy(reply, "GET_STATUS CONTENTLESS", sizeof(reply));
