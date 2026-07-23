@@ -1137,7 +1137,15 @@ static size_t content_file_load_into_memory(
    }
 
    if (content_size < 0)
+   {
+      /* Nothing downstream can use this, and the patch stream must not
+       * outlive the function that owns it. */
+#ifdef HAVE_PATCH
+      content_file_patch_stream_drop(&patch_ps, &patch_data);
+#endif
+      free(content_data);
       return 0;
+   }
 
 #ifdef HAVE_PATCH
    /* Complete a streamed patch.  The source is still fully resident here
@@ -3190,7 +3198,22 @@ static void content_crc_task_handler(retro_task_t *task)
 {
    struct content_crc_task_state *st =
          (struct content_crc_task_state*)task->state;
+   uint8_t flg = task_get_flags(task);
    int64_t nread;
+
+   /* Cancellation is advisory - the queue keeps calling handlers until
+    * one reports itself finished - so honour it here.  Without this,
+    * unloading content or shutting down while a large image is still
+    * being hashed would keep ticking this handler to the end of the
+    * file, which is precisely the stall the task exists to avoid.
+    * The epoch is left unstamped, so anything that still wants the
+    * value falls back to hashing synchronously. */
+   if (      !st
+         || ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
 
    if (!st->file || !st->buf)
    {
