@@ -86,7 +86,9 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
          for (y = 0; (y + 1) < ctx->vert.filter_len; y += 2,
                input_base_y += (ctx->scaled.stride >> 2))
          {
-            __m128i coeff = _mm_set_epi64x(filter_vert[y + 1] * 0x0001000100010001ll, filter_vert[y + 0] * 0x0001000100010001ll);
+            __m128i coeff = _mm_unpacklo_epi64(
+                  _mm_set1_epi16(filter_vert[y + 0]),
+                  _mm_set1_epi16(filter_vert[y + 1]));
             __m128i col   = _mm_set_epi64x(input_base_y[ctx->scaled.stride >> 3], input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
@@ -94,7 +96,7 @@ void scaler_argb8888_vert(const struct scaler_ctx *ctx, void *output_, int strid
 
          for (; y < ctx->vert.filter_len; y++, input_base_y += (ctx->scaled.stride >> 3))
          {
-            __m128i coeff = _mm_set_epi64x(0, filter_vert[y] * 0x0001000100010001ll);
+            __m128i coeff = _mm_set1_epi16(filter_vert[y]);
             __m128i col   = _mm_set_epi64x(0, input_base_y[0]);
 
             res           = _mm_adds_epi16(_mm_mulhi_epi16(col, coeff), res);
@@ -171,7 +173,9 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 #endif
          for (x = 0; (x + 1) < ctx->horiz.filter_len; x += 2)
          {
-            __m128i coeff = _mm_set_epi64x(filter_horiz[x + 1] * 0x0001000100010001ll, filter_horiz[x + 0] * 0x0001000100010001ll);
+            __m128i coeff = _mm_unpacklo_epi64(
+                  _mm_set1_epi16(filter_horiz[x + 0]),
+                  _mm_set1_epi16(filter_horiz[x + 1]));
 
             __m128i col   = _mm_unpacklo_epi8(_mm_set_epi64x(0,
                      ((uint64_t)input_base_x[x + 1] << 32) | input_base_x[x + 0]), _mm_setzero_si128());
@@ -182,7 +186,7 @@ void scaler_argb8888_horiz(const struct scaler_ctx *ctx, const void *input_, int
 
          for (; x < ctx->horiz.filter_len; x++)
          {
-            __m128i coeff = _mm_set_epi64x(0, filter_horiz[x] * 0x0001000100010001ll);
+            __m128i coeff = _mm_set1_epi16(filter_horiz[x]);
             __m128i col   = _mm_unpacklo_epi8(_mm_set_epi32(0, 0, 0, input_base_x[x]), _mm_setzero_si128());
 
             col           = _mm_slli_epi16(col, 7);
