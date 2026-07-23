@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
+
 #include "patch_stream.h"
 
 #ifdef HAVE_XDELTA
@@ -60,6 +62,17 @@ struct patch_stream
    /* IPS */
    struct patch_stream_rec *recs;
    size_t         recs_len;
+
+   /* UPS carries a checksum for the patch, the source and the target,
+    * and the whole-buffer applier refuses a patch whose checksums do
+    * not agree.  Track the same three so this applier can refuse the
+    * same patches: a caller that keeps the unpatched buffer when a
+    * patch is rejected would otherwise be handed a silently corrupt
+    * one instead. */
+   uint32_t       ups_src_crc;
+   uint32_t       ups_tgt_crc;
+   uint32_t       ups_declared_src_len;
+   uint32_t       ups_declared_tgt_len;
 
    /* UPS: source not yet consumed by the state machine */
    uint8_t       *carry;
@@ -403,10 +416,12 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
    ps->src_len   = src_len;
    ps->p_off     = 4;
 
-   /* declared source length is read but not used: the caller's src_len
-    * is authoritative, exactly as in the whole-buffer applier */
-   patch_stream_decode(ps);
-   ps->tgt_len   = (size_t)patch_stream_decode(ps);
+   /* The caller's src_len stays authoritative for decoding, exactly as
+    * in the whole-buffer applier, but the declared lengths are part of
+    * what the trailer is checked against. */
+   ps->ups_declared_src_len = (uint32_t)patch_stream_decode(ps);
+   ps->tgt_len              = (size_t)patch_stream_decode(ps);
+   ps->ups_declared_tgt_len = (uint32_t)ps->tgt_len;
 
    ps->carry_cap = 65536;
    if (     !(ps->carry = (uint8_t*)malloc(ps->carry_cap))
@@ -536,6 +551,7 @@ static size_t patch_stream_ups_feed(patch_stream_t *ps,
 
    memcpy(ps->carry + ps->carry_len, chunk, len);
    ps->carry_len += len;
+   ps->ups_src_crc = encoding_crc32(ps->ups_src_crc, chunk, len);
    ps->src_seen  += len;
    patch_stream_ups_run(ps);
    return len;
@@ -563,6 +579,48 @@ static bool patch_stream_ups_finish(patch_stream_t *ps,
       return false;
 
    ps->out_len = ps->tgt_len;
+
+   /* The trailer: source checksum, target checksum, patch checksum,
+    * four bytes each, little endian.  Refuse exactly what the
+    * whole-buffer applier refuses - including its allowance for a
+    * patch applied in reverse, where the two content checksums swap. */
+   {
+      uint32_t want_src = 0, want_tgt = 0, want_pat = 0;
+      uint32_t have_pat;
+      unsigned i;
+
+      if (ps->patch_len < 12)
+         return false;
+      for (i = 0; i < 4; i++)
+      {
+         want_src |= (uint32_t)ps->patch[ps->patch_len - 12 + i] << (i * 8);
+         want_tgt |= (uint32_t)ps->patch[ps->patch_len -  8 + i] << (i * 8);
+         want_pat |= (uint32_t)ps->patch[ps->patch_len -  4 + i] << (i * 8);
+      }
+      have_pat = encoding_crc32(0, ps->patch, ps->patch_len - 4);
+      if (have_pat != want_pat)
+         return false;
+
+      ps->ups_tgt_crc = encoding_crc32(0, ps->out, ps->out_len);
+
+      if (      ps->ups_src_crc == want_src
+            &&  ps->ups_declared_src_len == (uint32_t)ps->src_len)
+      {
+         if (      ps->ups_tgt_crc != want_tgt
+               ||  ps->ups_declared_tgt_len != (uint32_t)ps->out_len)
+            return false;
+      }
+      else if (      ps->ups_src_crc == want_tgt
+                 &&  ps->ups_declared_tgt_len == (uint32_t)ps->src_len)
+      {
+         if (      ps->ups_tgt_crc != want_src
+               ||  ps->ups_declared_src_len != (uint32_t)ps->out_len)
+            return false;
+      }
+      else
+         return false;
+   }
+
    *out        = ps->out;
    *out_len    = ps->out_len;
    ps->out     = NULL;

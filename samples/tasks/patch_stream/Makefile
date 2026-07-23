@@ -1,7 +1,8 @@
 TARGET := patch_stream_test
 
 SOURCES := patch_stream_test.c ../../../tasks/patch_stream.c \
-	../../../libretro-common/encodings/encoding_vcdiff.c
+	../../../libretro-common/encodings/encoding_vcdiff.c \
+	../../../libretro-common/encodings/encoding_crc32.c
 
 OBJS := $(SOURCES:.c=.o)
 
