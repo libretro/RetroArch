@@ -46,6 +46,41 @@ enum scaler_pix_fmt
    SCALER_FMT_XRGB2101010
 };
 
+/* Reducing by a large ratio in one step loses brightness.
+ *
+ * The filtered types accumulate with a mulhi that truncates on every
+ * tap, and the sinc kernel widens with the ratio - 8 taps at 2:1, 128
+ * at 16:1 - so the loss grows with it.  Measured at the centre of a
+ * flat 8-bit field, output against input:
+ *
+ *    1.1:1     8 taps   -0.78%
+ *    2:1      16 taps   -0.78%
+ *    4:1      32 taps   -2.34%
+ *    8:1      64 taps   -4.69%
+ *   16:1     128 taps   -7.81%
+ *
+ * A uniform grey shrunk 16:1 comes back visibly darker.  Nothing
+ * reports this - the scale succeeds and the image simply is not the
+ * brightness it was - so it is worth knowing before it is diagnosed
+ * as a decoder or upload bug.
+ *
+ * A caller reducing by more than about 2:1 should decimate first,
+ * with an integer box average, and leave this a ratio under 2 (see
+ * downscale_image() in tasks/task_image.c, or rgui_downscale_box()).
+ * Averaging whole pixels is exact, so the staging costs nothing in
+ * quality, and it is faster besides - the filter sees far fewer input
+ * pixels.  What remains at 8 taps is a single LSB.
+ *
+ * SCALER_TYPE_POINT does not filter and is unaffected.
+ *
+ * Fixing this in the scaler would mean rounding rather than
+ * truncating in the accumulate, in both the C and SSE2 paths, which
+ * are deliberately bit-identical so the C version can test the SIMD
+ * one.  SSE2 has no rounding mulhi (_mm_mulhrs_epi16 is SSSE3), so it
+ * would cost roughly five instructions where there is now one, in the
+ * inner loop of every video path.  Staging at the caller avoids the
+ * error entirely and costs nothing per frame, which is why every
+ * caller in tree does that instead. */
 enum scaler_type
 {
    SCALER_TYPE_UNKNOWN = 0,
