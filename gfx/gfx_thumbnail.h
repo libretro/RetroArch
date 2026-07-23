@@ -235,8 +235,7 @@ typedef struct
     * of the two uploads next. */
    void *anim_job;
    void *anim_job2;
-   void *anim_audio_job;   /* preview-audio decode job                 */
-   size_t anim_buf_len;    /* size of anim_buf (for the audio decoder) */
+   size_t anim_buf_len;    /* size of anim_buf                         */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
@@ -283,7 +282,6 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_dt         = NULL;
    t->anim_job        = NULL;
    t->anim_job2       = NULL;
-   t->anim_audio_job  = NULL;
    t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
    t->anim_loops_left = 0;

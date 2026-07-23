@@ -302,7 +302,6 @@ static void gfx_thumbnail_init_fade(
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #define GFX_THUMB_PREVIEW_AUDIO 1
 /* Cap decoded PCM (memory bound: 90 s stereo 48 kHz s16 = ~17 MB). */
-#define GFX_THUMB_PREVIEW_AUDIO_MAX_MS 90000
 #define GFX_THUMB_PREVIEW_AUDIO_NAME   "__gfx_thumb_preview"
 #endif
 
@@ -380,13 +379,6 @@ typedef struct gfx_thumb_anim_job
    int       status;                 /* enum gfx_thumb_anim_job_status */
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
-   /* Preview-audio jobs (is_audio): decode src/src_len (the thumbnail's
-    * file buffer, borrowed) into a job-owned in-memory WAV. */
-   bool      is_audio;
-   const void *src;
-   size_t    src_len;
-   void     *wav;
-   size_t    wav_size;
 } gfx_thumb_anim_job_t;
 
 #ifdef HAVE_THREADS
@@ -404,25 +396,6 @@ static bool                   gfx_thumb_worker_die    = false;
  * convert it into job->frame in its final upload format. Returns false
  * when the animation is over. Runs on the worker thread; the job is
  * RUNNING, so it owns the stream exclusively. */
-#if defined(GFX_THUMB_PREVIEW_AUDIO)
-/* Decode the preview audio of the container type the job carries. */
-static bool gfx_thumb_preview_audio_decode(uint8_t type,
-      const void *src, size_t src_len, void **wav, size_t *wav_size)
-{
-#ifdef HAVE_RWEBM
-   if (type == IMAGE_TYPE_WEBM)
-      return rwebm_audio_decode_wav(src, src_len,
-            GFX_THUMB_PREVIEW_AUDIO_MAX_MS, wav, wav_size) ? true : false;
-#endif
-#ifdef HAVE_RMP4
-   if (type == IMAGE_TYPE_MP4)
-      return rmp4_audio_decode_wav(src, src_len,
-            GFX_THUMB_PREVIEW_AUDIO_MAX_MS, wav, wav_size) ? true : false;
-#endif
-   return false;
-}
-#endif
-
 static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
 {
    const uint32_t *frame;
@@ -493,13 +466,7 @@ static void gfx_thumbnail_anim_worker(void *unused)
       job->status           = GFX_THUMB_JOB_RUNNING;
 
       slock_unlock(gfx_thumb_worker_lock);
-#if defined(GFX_THUMB_PREVIEW_AUDIO)
-      if (job->is_audio)
-         alive = gfx_thumb_preview_audio_decode(job->type,
-               job->src, job->src_len, &job->wav, &job->wav_size);
-      else
-#endif
-         alive = gfx_thumbnail_anim_job_step(job);
+      alive = gfx_thumbnail_anim_job_step(job);
       slock_lock(gfx_thumb_worker_lock);
 
       job->status = alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED;
@@ -632,37 +599,55 @@ static void gfx_thumbnail_preview_audio_stop(const gfx_thumbnail_t *owner)
 }
 
 static void gfx_thumbnail_preview_audio_start(gfx_thumbnail_t *thumbnail,
-      void *wav, size_t wav_size)
+      void *container, size_t container_size, enum image_type_enum type)
 {
    audio_mixer_stream_params_t params;
    int out_slot = -1;
+   void *copy;
 
    /* One preview stream at a time */
    gfx_thumbnail_preview_audio_stop(gfx_thumb_audio_owner);
 
-   params.buf                 = wav;
-   params.bufsize             = wav_size;
+   /* The mixer decodes the container incrementally on the audio flush,
+    * so it must own bytes that outlive this thumbnail: the animation's
+    * own buffer is released the moment the entry is deselected, and
+    * for a windowed transfer it is a sliding mapping whose pages move
+    * under the video decoder.  Hand the mixer its own copy.
+    *
+    * That copy is the compressed container, not decoded PCM: the audio
+    * a stream voice holds decoded at any moment is a ring of about a
+    * hundred milliseconds, so the footprint no longer scales with the
+    * clip's length the way a fully decoded WAV did. */
+   if (!(copy = malloc(container_size)))
+      return;
+   memcpy(copy, container, container_size);
+
+   params.buf                 = copy;
+   params.bufsize             = container_size;
    params.basename            = strdup(GFX_THUMB_PREVIEW_AUDIO_NAME);
    params.cb                  = NULL;
-   /* Donate the WAV blob: add_stream's WAV arm reads the borrowed
-    * bytes during the PCM conversion and releases the owner right
-    * after (or on any failure path) - the defensive input copy,
-    * which briefly tripled this allocation next to both PCM
-    * buffers, is gone.  Ownership transfers on the call in every
-    * outcome. */
-   params.buf_owner           = wav;
+   /* Donate the container bytes: audio_mixer_destroy takes ownership
+    * and releases them on every teardown path, so the caller must not
+    * free them afterwards. */
+   params.buf_owner           = copy;
    params.buf_owner_free      = free;
    params.out_slot            = &out_slot;
    params.slot_selection_idx  = 0;
    params.volume              = 1.0f;
    params.slot_selection_type = AUDIO_MIXER_SLOT_SELECTION_AUTOMATIC;
    params.stream_type         = AUDIO_STREAM_TYPE_SYSTEM;
-   params.type                = AUDIO_MIXER_TYPE_WAV;
+   /* Stream the container's audio track rather than pre-decoding it.
+    * Both arms pick the audio track out of an A/V file themselves, so
+    * the video track's presence is irrelevant here. */
+   params.type                = (type == IMAGE_TYPE_WEBM)
+                                 ? AUDIO_MIXER_TYPE_WEBA
+                                 : AUDIO_MIXER_TYPE_M4A;
    params.state               = AUDIO_STREAM_STATE_PLAYING_LOOPED;
 
    if (!audio_driver_mixer_add_stream(&params))
    {
       free(params.basename);
+      /* add_stream releases the donated buffer on its failure paths */
       return;
    }
    /* add_stream reports the granted slot directly; the sentinel name
@@ -695,17 +680,8 @@ static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
    thumbnail->anim_job_upload = 0;
 #endif
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
-   if (thumbnail->anim_audio_job)
-   {
-      gfx_thumb_anim_job_t *job =
-            (gfx_thumb_anim_job_t*)thumbnail->anim_audio_job;
-#ifdef HAVE_THREADS
-      gfx_thumbnail_anim_job_release(job);
-#endif
-      free(job->wav);
-      free(job);
-      thumbnail->anim_audio_job = NULL;
-   }
+   /* Stopping the mixer stream is the whole teardown now: it releases
+    * the decoder and the container bytes it owns. */
    gfx_thumbnail_preview_audio_stop(thumbnail);
 #endif
    if (thumbnail->anim)
@@ -762,33 +738,13 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
    if (     (   (type == IMAGE_TYPE_WEBM)
              || (type == IMAGE_TYPE_MP4))
          && config_get_ptr()->bools.menu_thumbnail_preview_audio)
-   {
-      gfx_thumb_anim_job_t *job =
-            (gfx_thumb_anim_job_t*)calloc(1, sizeof(*job));
-      if (job)
-      {
-         job->is_audio = true;
-         job->type     = (uint8_t)type;
-         job->src      = thumbnail->anim_buf;
-         job->src_len  = thumbnail->anim_buf_len;
-#ifdef HAVE_THREADS
-         if (gfx_thumbnail_anim_worker_init())
-         {
-            thumbnail->anim_audio_job = job;
-            gfx_thumbnail_anim_job_enqueue(job);
-         }
-         else
-#endif
-         {
-            if (gfx_thumb_preview_audio_decode(job->type,
-                  job->src, job->src_len, &job->wav, &job->wav_size))
-               job->status = GFX_THUMB_JOB_READY;
-            else
-               job->status = GFX_THUMB_JOB_FINISHED;
-            thumbnail->anim_audio_job = job;
-         }
-      }
-   }
+      /* The mixer streams the container's audio track, decoding it on
+       * the audio flush as it plays.  There is nothing to decode up
+       * front, so no worker job and no waiting for one to finish -
+       * playback starts here and the clip is no longer truncated to a
+       * fixed preview length. */
+      gfx_thumbnail_preview_audio_start(thumbnail,
+            thumbnail->anim_buf, thumbnail->anim_buf_len, type);
 }
 #endif
 
@@ -1213,39 +1169,9 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
    }
 
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
-   /* Hand a finished preview-audio decode to the mixer (independent of
-    * the video frame cadence). */
-   if (thumbnail->anim_audio_job)
-   {
-      gfx_thumb_anim_job_t *ajob =
-            (gfx_thumb_anim_job_t*)thumbnail->anim_audio_job;
-      int astatus;
-#ifdef HAVE_THREADS
-      if (gfx_thumb_worker_lock)
-      {
-         slock_lock(gfx_thumb_worker_lock);
-         astatus = ajob->status;
-         slock_unlock(gfx_thumb_worker_lock);
-      }
-      else
-#endif
-         astatus = ajob->status;
-      if (astatus == GFX_THUMB_JOB_READY)
-      {
-         gfx_thumbnail_preview_audio_start(thumbnail,
-               ajob->wav, ajob->wav_size);
-         ajob->wav = NULL;         /* donated: the mixer releases it
-                                      in every outcome */
-         free(ajob);
-         thumbnail->anim_audio_job = NULL;
-      }
-      else if (astatus == GFX_THUMB_JOB_FINISHED)
-      {
-         free(ajob->wav);
-         free(ajob);
-         thumbnail->anim_audio_job = NULL;
-      }
-   }
+   /* Preview audio needs no per-poll handling: the mixer streams it
+    * from the container, so there is no decode to wait for and no
+    * finished blob to hand over. */
 #endif
 
 #ifdef HAVE_THREADS
