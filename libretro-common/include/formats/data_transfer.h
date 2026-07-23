@@ -82,7 +82,36 @@ bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
  * not memory.  Compile with DT_WINDOW_STRICT to make advanced-past
  * pages fault on touch instead of reading as zeros - the oracle's
  * proof that a consumer honours the sequential contract.  Platforms
- * without reservations fall back to holding the whole file. */
+ * without reservations fall back to holding the whole file.
+ *
+ * SINGLE OWNER, ONE THREAD.  A windowed transfer serves exactly one
+ * consumer, and every call on it - feed/advance/extend/rewind and
+ * every read of window_base() - belongs to that one owner.  This is a
+ * hard contract, not a convention: sharing one window between two
+ * consumers (the obvious way to serve audio and video from a single
+ * transfer) was measured and does not work.
+ *
+ * The reason is page lifetime, which no amount of refcounting fixes.
+ * feed() advances the window behind the consumer, and advancing
+ * decommits: MADV_DONTNEED, or PROT_NONE under DT_WINDOW_STRICT.  A
+ * second consumer trailing the first - audio behind video, the normal
+ * case - reads pages the feeder is releasing underneath it.  Keeping
+ * the struct alive keeps the struct alive; the pages still go.  Under
+ * STRICT that faults.  Without it the read silently returns zeros,
+ * which is worse: measured at 8-58 MB of zero-filled bytes per run,
+ * no crash, decoders consuming them as if they were file content.
+ *
+ * There is deliberately no accessor for the committed frontier (whi).
+ * A second consumer would need it to know which bytes are readable at
+ * all, and exposing it would make sharing look supportable when the
+ * decommit hazard above still stands.  Reading past the frontier hits
+ * reserved PROT_NONE address space and dies immediately - which is
+ * the intended outcome for code that should not be there.
+ *
+ * Two consumers wanting the same bytes should each hold their own
+ * transfer, or one should copy what the other needs.  The copy is
+ * cheap; sharing is a concurrency redesign whose failure mode is
+ * silent corruption. */
 /* A producer-backed transfer: the bytes come from a callback instead
  * of a file - an archive entry inflating as it is pulled, or any
  * other decoder producing sequential output.  The total length must
