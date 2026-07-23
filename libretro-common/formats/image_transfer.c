@@ -535,6 +535,28 @@ bool image_transfer_is_10bit(void *data, enum image_type_enum type)
    return false;
 }
 
+bool image_transfer_need_more(void *data, enum image_type_enum type)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_need_more((const rpng_t*)data);
+#else
+         break;
+#endif
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+         return rjpeg_need_more((const rjpeg_t*)data);
+#else
+         break;
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 bool image_transfer_iterate(void *data, enum image_type_enum type)
 {
 

@@ -192,6 +192,15 @@ bool image_transfer_get_gpu_layout(
 
 bool image_transfer_iterate(void *data, enum image_type_enum type);
 
+/* True when the last image_transfer_iterate stopped because the decoder
+ * reached the resident byte frontier declared by
+ * image_transfer_set_avail, rather than because the image finished.
+ * Both cases return false from iterate, so a caller feeding a growing
+ * read MUST consult this before concluding the transfer is complete -
+ * treating a wall as completion decodes a partially-gathered image and
+ * fails.  Always false for types without an avail wall. */
+bool image_transfer_need_more(void *data, enum image_type_enum type);
+
 /* Video-to-image transfers (WEBM, MP4) keep their decoder stream open
  * after a successful image_transfer_process, positioned just past the
  * first displayed frame.  This takes ownership of that stream so the

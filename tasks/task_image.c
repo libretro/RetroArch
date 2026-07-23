@@ -323,11 +323,17 @@ static int cb_nbio_image_thumbnail(void *data, size_t len)
       return -1;
    if (image->handle)
    {
-      /* The video early path already set the transfer up while the
-       * read was running; the read has now completed - tell the
-       * decoder the whole buffer is valid and let the task's normal
-       * completion gate see the read as done.  Recreating the handle
-       * here would leak it and restart a decode already in flight. */
+      /* The early path already set the transfer up while the read was
+       * running; the read has now completed - tell the decoder the
+       * whole buffer is valid and let the task's normal completion gate
+       * see the read as done.  Recreating the handle here would leak it
+       * and restart a decode already in flight.
+       *
+       * The decoder may still be mid-walk (it was stalled at the byte
+       * frontier when the last bytes landed); that is fine, because the
+       * frontier is now the whole buffer and the next tick resumes and
+       * completes it.  What must not happen is the transfer being
+       * abandoned here - the status machine owns finishing it. */
       image_transfer_set_avail(image->handle, image->type, (size_t)-1);
       nbio->is_finished = true;
       return 0;
@@ -520,6 +526,19 @@ bool task_image_load_handler(retro_task_t *task)
                {
                   if (!image_transfer_iterate(image->handle, image->type))
                   {
+                     /* iterate() returns false both when the transfer
+                      * has finished AND when an avail-aware decoder
+                      * stalled at the resident byte frontier (PNG/JPEG
+                      * started early against a read still in flight).
+                      * Advancing to TRANSFER_PARSE on a stall would
+                      * decode a partially gathered image and fail the
+                      * task, leaving the thumbnail as a placeholder.
+                      * Stay in TRANSFER: the per-tick avail bump above
+                      * raises the frontier as bytes arrive and the next
+                      * tick resumes the walk. */
+                     if (image_transfer_need_more(image->handle,
+                              image->type))
+                        break;
                      image->status = IMAGE_STATUS_TRANSFER_PARSE;
                      break;
                   }
