@@ -33,6 +33,11 @@ typedef struct alsa_thread_info
 {
    snd_pcm_t *pcm;
    fifo_buffer_t *buffer;
+   /* True only while the playback worker is inside its bounded wait
+    * for the producer; lets the producer skip the condition signal
+    * entirely in steady state (checked under fifo_lock, so no torn
+    * reads). */
+   volatile bool worker_waiting;
    sthread_t *worker_thread;
    slock_t *fifo_lock;
    scond_t *cond;
@@ -453,6 +458,21 @@ static void alsa_worker_thread(void *data)
    }
 
    RARCH_DBG("[ALSA] [playback thread %p] Beginning playback worker thread.\n", thread_id);
+   /* Bounded wait budget for a late producer, expressed in wall time:
+    * after a blocking writei returns, the device still holds close to
+    * a full buffer of queued audio, so the worker can afford to wait
+    * (buffer/period - 1) periods for the fifo to reach a full period
+    * before padding with silence.  Waiting there absorbs ordinary
+    * producer lateness (scheduler jitter, video-frame beat against
+    * the period grid) without injecting an audible mid-stream gap;
+    * only a genuinely stalled producer still degrades to silence,
+    * and it does so before the device xruns. */
+   int64_t period_us = (int64_t)alsa->info.stream_info.period_frames
+         * 1000000 / alsa->info.stream_info.rate;
+   int64_t budget_us = period_us
+         * ((int64_t)(alsa->info.stream_info.buffer_size
+               / alsa->info.stream_info.period_size) - 1);
+
    while (!alsa->info.thread_dead)
    {
       size_t avail;
@@ -460,12 +480,36 @@ static void alsa_worker_thread(void *data)
       snd_pcm_sframes_t frames;
       slock_lock(alsa->info.fifo_lock);
       avail     = FIFO_READ_AVAIL(alsa->info.buffer);
+      if (avail < alsa->info.stream_info.period_size)
+      {
+         int64_t waited_us = 0;
+         while (   avail < alsa->info.stream_info.period_size
+                && waited_us < budget_us
+                && !alsa->info.thread_dead)
+         {
+            alsa->info.worker_waiting = true;
+            slock_unlock(alsa->info.fifo_lock);
+            slock_lock(alsa->info.cond_lock);
+            if (!alsa->info.thread_dead)
+               scond_wait_timeout(alsa->info.cond,
+                     alsa->info.cond_lock, period_us / 2);
+            slock_unlock(alsa->info.cond_lock);
+            /* Upper bound on time spent regardless of early wakeups:
+             * overestimating only makes the worker give up sooner,
+             * never lets the device xrun. */
+            waited_us += period_us / 2;
+            slock_lock(alsa->info.fifo_lock);
+            avail = FIFO_READ_AVAIL(alsa->info.buffer);
+         }
+         alsa->info.worker_waiting = false;
+      }
       fifo_size = MIN(alsa->info.stream_info.period_size, avail);
       fifo_read(alsa->info.buffer, buf, fifo_size);
       scond_signal(alsa->info.cond);
       slock_unlock(alsa->info.fifo_lock);
 
-      /* If underrun, fill rest with silence. */
+      /* Genuine underrun (producer stalled past the wait budget):
+       * fill the rest with silence. */
       memset(buf + fifo_size, 0, alsa->info.stream_info.period_size - fifo_size);
 
       frames = snd_pcm_writei(alsa->info.pcm, buf, alsa->info.stream_info.period_frames);
@@ -579,6 +623,8 @@ static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
       _len  = MIN(avail, len);
 
       fifo_write(alsa->info.buffer, s, _len);
+      if (alsa->info.worker_waiting)
+         scond_signal(alsa->info.cond);
       slock_unlock(alsa->info.fifo_lock);
    }
    else
@@ -602,6 +648,8 @@ static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
             size_t write_amt = MIN(len - _len, avail);
             fifo_write(alsa->info.buffer,
                   (const char*)s + _len, write_amt);
+            if (alsa->info.worker_waiting)
+               scond_signal(alsa->info.cond);
             slock_unlock(alsa->info.fifo_lock);
             _len += write_amt;
          }

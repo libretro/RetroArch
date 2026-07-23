@@ -148,6 +148,8 @@ int alsa_init_pcm(snd_pcm_t **pcm,
       goto error;
    }
 
+   stream_info->rate = rate;
+
    if (new_rate)
       *new_rate = rate;
 

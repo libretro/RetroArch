@@ -32,6 +32,7 @@ typedef struct alsa_stream_info
    size_t period_size;
    snd_pcm_uframes_t period_frames;
    unsigned int frame_bits;
+   unsigned int rate;
    bool has_float;
    bool can_pause;
 } alsa_stream_info_t;
