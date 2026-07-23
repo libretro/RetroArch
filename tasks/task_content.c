@@ -841,6 +841,27 @@ static patch_stream_t *content_file_patch_stream_open(
 }
 #endif
 
+#ifdef HAVE_PATCH
+/* Abandon a streaming patch whose source never fully arrived.
+ *
+ * A stream that has seen only part of its source must never be
+ * finished: the appliers treat a short source as a legitimately short
+ * one and zero-fill the rest, so finishing here would silently replace
+ * the content with a patch applied to a truncated ROM.  Dropping the
+ * stream instead leaves the load to its fallback read, after which the
+ * ordinary whole-buffer pass patches the complete buffer. */
+static void content_file_patch_stream_drop(void **ps, void **patch_data)
+{
+   if (*ps)
+   {
+      patch_stream_free((patch_stream_t*)*ps);
+      *ps = NULL;
+   }
+   free(*patch_data);
+   *patch_data = NULL;
+}
+#endif
+
 /* Drive a source-mode transfer to completion, advancing a streaming
  * patch (if any) over each span as it arrives, and detach the filled
  * buffer.  Shared by the archive-entry and plain-file loads so both get
@@ -1047,6 +1068,10 @@ static size_t content_file_load_into_memory(
                if ((content_data = content_file_pump_source(dt,
                      patch_ps, &out_len)))
                   content_size = (int64_t)out_len;
+#ifdef HAVE_PATCH
+               else
+                  content_file_patch_stream_drop(&patch_ps, &patch_data);
+#endif
             }
          }
          file_archive_entry_source_close(src);
@@ -1095,15 +1120,8 @@ static size_t content_file_load_into_memory(
                      patch_ps, &out_len)))
                   content_size = (int64_t)out_len;
 #ifdef HAVE_PATCH
-               else if (patch_ps)
-               {
-                  /* transfer failed: drop the stream, the fallback
-                   * read below feeds the whole-buffer pass instead */
-                  patch_stream_free((patch_stream_t*)patch_ps);
-                  patch_ps = NULL;
-                  free(patch_data);
-                  patch_data = NULL;
-               }
+               else
+                  content_file_patch_stream_drop(&patch_ps, &patch_data);
 #endif
             }
          }

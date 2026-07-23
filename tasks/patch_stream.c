@@ -525,6 +525,7 @@ static size_t patch_stream_ups_feed(patch_stream_t *ps,
 
    memcpy(ps->carry + ps->carry_len, chunk, len);
    ps->carry_len += len;
+   ps->src_seen  += len;
    patch_stream_ups_run(ps);
    return len;
 }
@@ -812,6 +813,18 @@ size_t patch_stream_feed(patch_stream_t *ps, const uint8_t *chunk, size_t len)
 bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len)
 {
    if (!ps || !out || !out_len)
+      return false;
+
+   /* Refuse to finish a stream whose source never fully arrived.
+    *
+    * The appliers cannot tell a truncated feed from a legitimately
+    * short source - both look like "the bytes stopped" - so they would
+    * zero-fill the remainder and hand back a plausible-looking buffer
+    * built from a partial ROM.  A caller whose read failed part way
+    * must fall back to its own error path, not adopt that result, so
+    * make the failure explicit here rather than trusting every caller
+    * to notice. */
+   if (ps->src_seen < ps->src_len)
       return false;
 
    switch (ps->fmt)
