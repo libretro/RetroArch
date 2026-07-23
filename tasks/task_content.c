@@ -3211,11 +3211,17 @@ static void content_crc_task_handler(retro_task_t *task)
    uint8_t flg = task_get_flags(task);
    int64_t nread;
 
-   /* Cancellation is advisory - the queue keeps calling handlers until
-    * one reports itself finished - so honour it here.  Without this,
-    * unloading content or shutting down while a large image is still
-    * being hashed would keep ticking this handler to the end of the
-    * file, which is precisely the stall the task exists to avoid.
+   /* Cancellation is advisory: the queue calls every handler on every
+    * gather and a task leaves the running list only once it reports
+    * itself finished, so a handler that ignores the flag runs to the
+    * end of its file no matter what asked it to stop.  Nothing in the
+    * frontend sets the flag today - task_queue_reset and
+    * task_queue_cancel_task have no callers outside libretro-common -
+    * so this is honouring the contract every other task honours
+    * (task_save, task_database, task_translation), not a fix for an
+    * observed stall.  It matters as soon as anything does cancel:
+    * hashing a multi-gigabyte image spans thousands of ticks.
+    *
     * The epoch is left unstamped, so anything that still wants the
     * value falls back to hashing synchronously. */
    if (      !st
