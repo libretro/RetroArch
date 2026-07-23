@@ -5209,7 +5209,16 @@ static void cb_decompressed(retro_task_t *task,
             generic_action_ok_command(CMD_EVENT_REINIT);
             break;
          case MENU_ENUM_LABEL_CB_UPDATE_CORE_INFO_FILES:
-            generic_action_ok_command(CMD_EVENT_CORE_INFO_INIT);
+            {
+               /* Forced: info files just changed on disk. Direct
+                * command_event() instead of generic_action_ok_command()
+                * so the force flag can be passed; the menu 'ok' sound
+                * is intentionally dropped here, as this is an async
+                * download-complete callback rather than a direct
+                * user action. */
+               bool refresh = true;
+               command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+            }
             break;
          default:
             break;
@@ -8956,8 +8965,12 @@ static int action_ok_core_delete(const char *path,
 #endif
       filestream_delete(core_path);
 
-   /* Reload core info files */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+   /* Reload core info files
+    * > Forced: a core file changed on disk */
+   {
+      bool refresh = true;
+      command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+   }
 
    /* Force reload of contentless cores icons */
    menu_contentless_cores_free();

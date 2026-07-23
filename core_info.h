@@ -183,6 +183,13 @@ bool core_info_init_list(const char *path_info, const char *dir_cores,
       const char *exts, bool show_hidden_files,
       bool enable_cache, bool *cache_supported);
 
+/* Returns true if the current core info list was built with the
+ * given parameters, i.e. a rescan with these parameters would be
+ * redundant. */
+bool core_info_list_is_current(const char *path_info,
+      const char *dir_cores, bool dir_show_hidden_files,
+      bool enable_cache);
+
 bool core_info_get_list(core_info_list_t **core);
 
 /* Returns number of installed cores */

@@ -4497,6 +4497,19 @@ bool command_event(enum event_command cmd, void *data)
             const char *path_libretro_info = settings->paths.path_libretro_info;
             bool show_hidden_files         = settings->bools.show_hidden_files;
             bool core_info_cache_enable    = settings->bools.core_info_cache_enable;
+            /* data is an optional bool: when true, rescan even if the
+             * list is already current (used after cores or info files
+             * change on disk - core install/delete/restore, info file
+             * download). All other callers only need the list to
+             * exist, so a redundant rescan (a full pass over the info
+             * directory) is skipped. */
+            bool force                     = data ? *(bool*)data : false;
+
+            if (  !force
+                && core_info_list_is_current(
+                     path_libretro_info, dir_libretro,
+                     show_hidden_files, core_info_cache_enable))
+               break;
 
             command_event(CMD_EVENT_CORE_INFO_DEINIT, NULL);
 

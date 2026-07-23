@@ -513,8 +513,10 @@ static void cb_task_core_updater_download(
       void *user_data, const char *err)
 {
    /* Reload core info files
-    * > This must be done on the main thread */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+    * > This must be done on the main thread
+    * > Forced: a core file changed on disk */
+   bool refresh = true;
+   command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
    /* Force reload of contentless cores icons */

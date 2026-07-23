@@ -62,7 +62,11 @@ void steam_poll(void)
       {
          /* Reload core info and Steam Core DLC mappings */
          case MistCallback_DlcInstalled:
-            command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+            {
+               /* Forced: a core file changed on disk */
+               bool refresh = true;
+               command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
+            }
             steam_get_core_dlcs(&core_dlc_list, false);
             break;
          /* The Steam OSK is dismissed */

@@ -97,6 +97,14 @@ static core_info_state_t core_info_st = {
    NULL
 };
 
+/* Parameters of the last successful core info scan; used by
+ * core_info_list_is_current() to let CMD_EVENT_CORE_INFO_INIT
+ * skip redundant rescans when nothing relevant has changed. */
+static char *core_info_last_path_info   = NULL;
+static char *core_info_last_dir_cores   = NULL;
+static bool core_info_last_show_hidden  = false;
+static bool core_info_last_enable_cache = false;
+
 #ifdef HAVE_CORE_INFO_CACHE
 /* JSON Handlers START */
 
@@ -2445,6 +2453,35 @@ bool core_info_init_list(
                dir_show_hidden_files,
                enable_cache,
                cache_supported)))
+      return false;
+
+   /* Remember the parameters of this scan so
+    * core_info_list_is_current() can identify redundant rescans. */
+   free(core_info_last_path_info);
+   free(core_info_last_dir_cores);
+   core_info_last_path_info    = strdup(path_info ? path_info : "");
+   core_info_last_dir_cores    = strdup(dir_cores ? dir_cores : "");
+   core_info_last_show_hidden  = dir_show_hidden_files;
+   core_info_last_enable_cache = enable_cache;
+
+   return true;
+}
+
+bool core_info_list_is_current(const char *path_info,
+      const char *dir_cores, bool dir_show_hidden_files,
+      bool enable_cache)
+{
+   core_info_state_t *p_coreinfo = &core_info_st;
+   if (!p_coreinfo->curr_list)
+      return false;
+   if (   (dir_show_hidden_files != core_info_last_show_hidden)
+       || (enable_cache          != core_info_last_enable_cache))
+      return false;
+   if (!string_is_equal(path_info ? path_info : "",
+            core_info_last_path_info ? core_info_last_path_info : ""))
+      return false;
+   if (!string_is_equal(dir_cores ? dir_cores : "",
+            core_info_last_dir_cores ? core_info_last_dir_cores : ""))
       return false;
    return true;
 }
