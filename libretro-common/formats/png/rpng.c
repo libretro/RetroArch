@@ -1482,15 +1482,23 @@ false_end:
    return -1;
 }
 
-/* Cap on the accumulated IDAT stream.  The IHDR check rejects
- * images whose decoded output would exceed 4 GiB, so any legitimate
- * IDAT stream will be well under this ceiling.  256 MiB of
- * compressed IDAT is far larger than any realistic libretro asset
- * and small enough that even on 32-bit the doubling loop below
- * cannot overflow.  Rejecting here closes off a decompression-bomb
- * path where a hostile PNG streams many large IDAT chunks to force
- * the intermediate buffer to grow arbitrarily. */
-#define RPNG_IDAT_MAX ((size_t)256 * 1024 * 1024)
+/* Ceiling on the accumulated IDAT stream.  The PNG specification sets
+ * no limit here: IDAT may repeat without bound and the accumulated
+ * compressed stream can legitimately be very large, so this is not a
+ * policy number - a 320 MiB screenshot or scan is a real file, not a
+ * hostile one.  What the arithmetic below genuinely needs is a value
+ * to subtract from so the running total, the per-chunk addition and
+ * the capacity doubling cannot overflow size_t.  Use the largest
+ * quantity that can actually be addressed: SIZE_MAX/2 leaves the
+ * doubling loop headroom (new_cap *= 2 stays representable) and still
+ * rejects only what malloc could never satisfy.
+ *
+ * The decompression-bomb concern the old, much lower cap also served
+ * is covered independently: the IHDR guards reject any image whose
+ * decoded output or intermediate inflate buffer would exceed 4 GiB, so
+ * an IDAT stream far larger than its declared geometry is refused at
+ * inflate time regardless of how much of it accumulated. */
+#define RPNG_IDAT_MAX ((size_t)-1 / 2)
 
 /* When the whole file is in the buffer (every in-tree caller: the
  * task spine and the synchronous loader decode at completion), the
