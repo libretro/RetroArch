@@ -561,12 +561,28 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
       }
 #elif (defined(_WIN32) && !defined(_XBOX)) \
    || (defined(__APPLE__) && !defined(HAVE_COCOATOUCH)) \
-   || (defined(__linux__) && !defined(ANDROID)) \
+   || defined(__linux__) \
    || defined(__FreeBSD__) || defined(__OpenBSD__) \
    || defined(__NetBSD__)  || defined(__DragonFly__) \
    || defined(__HAIKU__)
-      /* Desktop-class targets: Windows, macOS, Linux (not Android),
-       * the BSDs and Haiku. */
+      /* Windows, macOS, Linux including Android, the BSDs and Haiku.
+       *
+       * Android is in here on reasoning rather than measurement, so it
+       * is the first thing to drop if a device disagrees.  Its stdio
+       * sizes the default buffer from st_blksize exactly as glibc
+       * does, so the same 4 KiB default applies; both of its file
+       * paths end up as FILE* streams, ordinary ones through fopen and
+       * SAF ones through fdopen on the descriptor the content provider
+       * hands back, so both are covered.  SAF is the reason to expect
+       * more here than on a desktop rather than less: under scoped
+       * storage those descriptors commonly resolve through FUSE, where
+       * a read or write is a userspace round trip, and what this
+       * changes is how many of those a file costs.
+       *
+       * The memory is not the constraint it looks like.  A handful of
+       * files are open at once - config, log, save, content - so this
+       * is a few hundred KiB against video buffers measured in
+       * megabytes, on any device new enough to run the frontend. */
       if (stream->scheme != VFS_SCHEME_CDROM)
       {
          const int bufsize = 64 * 1024;
