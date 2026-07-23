@@ -1363,18 +1363,10 @@ DATA RUNLOOP
 #include "../tasks/patch_stream.c"
 #include "../tasks/task_patch.c"
 #ifdef HAVE_XDELTA
-#define adler32(...) xdelta_adler32(__VA_ARGS__)
-#include "../deps/xdelta3/xdelta3.c"
-#undef adler32
-#ifdef Q
-#undef Q
-#endif
-#ifdef W
-#undef W
-#endif
-#ifdef Z
-#undef Z
-#endif
+/* The VCDIFF decoder defines no macros of its own, so the unity build
+ * needs no cleanup after it - xdelta3 leaked adler32, Q, W and Z into
+ * every translation unit that followed. */
+#include "../libretro-common/encodings/encoding_vcdiff.c"
 #endif
 #endif
 #include "../save.c"

@@ -149,7 +149,10 @@ if [ "$HAVE_EGL" = 'yes' ]; then
    EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
-check_header '' XDELTA lzma.h
+# .xdelta softpatching is a self-contained VCDIFF decoder in
+# libretro-common now; it has no external dependency, so there is
+# nothing to probe for.
+[ "$HAVE_XDELTA" = 'auto' ] && HAVE_XDELTA='yes'
 check_lib '' SSA '-lfribidi -lass' ass_library_init
 check_lib '' SSE '-msse -msse2'
 check_pkgconf EXYNOS libdrm_exynos

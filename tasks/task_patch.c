@@ -40,7 +40,7 @@
 #include "patch_stream.h"
 
 #ifdef HAVE_XDELTA
-#include "../deps/xdelta3/xdelta3.h"
+#include <encodings/encoding_vcdiff.h>
 #endif
 
 enum bps_mode
@@ -695,109 +695,28 @@ static enum patch_error ips_apply_patch(
 }
 
 #if defined(HAVE_PATCH) && defined(HAVE_XDELTA)
+/* .xdelta patches are VCDIFF (RFC 3284); the decoder lives in
+ * libretro-common and this is only the shape adapter. */
 static enum patch_error xdelta_apply_patch(
         const uint8_t *patchdata, uint64_t patchlen,
         const uint8_t *sourcedata, uint64_t sourcelength,
         uint8_t **targetdata, uint64_t *targetlength)
 {
-   int ret;
-   enum patch_error error_patch = PATCH_SUCCESS;
-   xd3_stream stream;
-   xd3_config config;
-   xd3_source source;
+   uint8_t *out = NULL;
+   size_t   len = 0;
 
-   /* Validate the magic number, as given by RFC 3284 section 4.1 */
-   if (   patchlen      < 8
-       || patchdata[0] != 0xD6
-       || patchdata[1] != 0xC3
-       || patchdata[2] != 0xC4
-       || patchdata[3] != 0x00)
-      return PATCH_PATCH_INVALID_HEADER;
+   if (      patchlen     > (uint64_t)((size_t)-1)
+         ||  sourcelength > (uint64_t)((size_t)-1))
+      return PATCH_PATCH_INVALID;
 
-   xd3_init_config(&config, XD3_SKIP_EMIT);
-   /* The first pass is just to compute the buffer size,
-    * no need to emit patched data yet */
+   if (!vcdiff_decode(patchdata, (size_t)patchlen,
+            sourcedata, (size_t)sourcelength, &out, &len))
+      return PATCH_PATCH_INVALID;
 
-   if (xd3_config_stream(&stream, &config) != 0)
-      return PATCH_UNKNOWN;
-
-   memset(&source, 0, sizeof(source));
-   source.blksize  = sourcelength;
-   source.onblk    = sourcelength;
-   source.curblk   = sourcedata;
-   source.curblkno = 0;
-   xd3_set_source_and_size(&stream, &source, sourcelength);
-
-   do
-   { /* Make a first pass over the patch, to compute the target size.
-      * XDelta3 doesn't store the target size in the patch file,
-      * so we have to either compute it ourselves
-      * or keep reallocating a buffer as we go.
-      * I went with the former because it's simpler and fails sooner.
-      */
-      switch (ret = xd3_decode_input(&stream))
-      { /* xd3 works like a zlib-styled state machine (stream is the machine) */
-         case XD3_INPUT: /* When starting the first pass, provide the input */
-            xd3_avail_input(&stream, patchdata, patchlen);
-            RARCH_DBG("[xdelta] Provided %lu bytes of input to xd3_stream\n", patchlen);
-            break;
-         case XD3_GOTHEADER:
-         case XD3_WINSTART:
-            *targetlength += stream.winsize;
-            RARCH_DBG("[xdelta] Discovered a window of %lu bytes (target filesize is %lu bytes)\n", stream.winsize, *targetlength);
-            /* xdelta updates the active stream window in the GOTHEADER and WINSTART states */
-            break;
-         case XD3_OUTPUT:
-            xd3_consume_output(&stream); /* Need to call this after every output */
-            break;
-         case XD3_INVALID_INPUT:
-            error_patch = PATCH_PATCH_INVALID;
-            RARCH_ERR("[xdelta] Invalid input in xd3_stream (%s)\n", xd3_errstring(&stream));
-            goto cleanup_stream;
-         case XD3_INTERNAL:
-            error_patch = PATCH_UNKNOWN;
-            RARCH_ERR("[xdelta] Internal error in xd3_stream (%s)\n", xd3_errstring(&stream));
-            goto cleanup_stream;
-         case XD3_WINFINISH:
-            RARCH_DBG("[xdelta] Finished processing window #%d\n", stream.current_window);
-            break;
-         default:
-            RARCH_DBG("[xdelta] xd3_decode_input returned %ld (%s; %s)\n", ret, xd3_strerror(ret), stream.msg);
-      }
-   } while (stream.avail_in);
-
-   *targetdata = (uint8_t*)malloc(*targetlength);
-   /* NULL-check: xd3_decode_memory writes into *targetdata.
-    * Passing NULL is either a crash or an opaque xdelta error
-    * depending on the library version.  On OOM set
-    * PATCH_TARGET_ALLOC_FAILED to match the explicit ENOSPC
-    * error path below and skip the decode. */
-   if (!*targetdata)
-   {
-      error_patch = PATCH_TARGET_ALLOC_FAILED;
-      goto cleanup_stream;
-   }
-   switch (xd3_decode_memory(
-           patchdata, patchlen,
-           sourcedata, sourcelength,
-           *targetdata, targetlength, *targetlength, 0))
-   {
-      case 0: /* Success */
-         break;
-      case ENOSPC:
-         error_patch = PATCH_TARGET_ALLOC_FAILED;
-         free(*targetdata);
-         break;
-      default:
-         error_patch = PATCH_UNKNOWN;
-         free(*targetdata);
-         break;
-   }
-
-cleanup_stream:
-   xd3_close_stream(&stream);
-   xd3_free_stream(&stream);
-   return error_patch;
+   free(*targetdata);
+   *targetdata   = out;
+   *targetlength = (uint64_t)len;
+   return PATCH_SUCCESS;
 }
 #endif
 
