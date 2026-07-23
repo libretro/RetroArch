@@ -49,6 +49,9 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+#include <queues/task_queue.h>
+#include <retro_timers.h>
+
 #ifndef __DINPUT_JOYPAD_H
 #define __DINPUT_JOYPAD_H
 
@@ -227,11 +230,14 @@ static const uint16_t button_index_to_bitmap_code[] =  {
 extern struct dinput_joypad_data g_pads[MAX_USERS];
 extern unsigned g_joypad_cnt;
 extern LPDIRECTINPUT8 g_dinput_ctx;
+extern LPDIRECTINPUT8 g_dinput_joypad_ctx;
+extern volatile bool g_dinput_enum_inflight;
 
 void dinput_destroy_context(void);
 bool dinput_init_context(void);
 
-static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
+static void dinput_create_rumble_effects(struct dinput_joypad_data *pad,
+      LPDIRECTINPUTDEVICE8 dev)
 {
    DIENVELOPE        dienv;
    DICONSTANTFORCE   dicf;
@@ -262,10 +268,10 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
 
    /* --- strong motor (X axis) --- */
 #ifdef __cplusplus
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+   if (IDirectInputDevice8_CreateEffect(dev, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
 #else
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+   if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[0], NULL) != DI_OK)
 #endif
       RARCH_WARN("[DInput] Strong rumble unavailable.\n");
@@ -273,10 +279,10 @@ static void dinput_create_rumble_effects(struct dinput_joypad_data *pad)
    /* --- weak motor (Y axis) --- */
    axis = DIJOFS_Y;
 #ifdef __cplusplus
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, GUID_ConstantForce,
+   if (IDirectInputDevice8_CreateEffect(dev, GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
 #else
-   if (IDirectInputDevice8_CreateEffect(pad->joypad, &GUID_ConstantForce,
+   if (IDirectInputDevice8_CreateEffect(dev, &GUID_ConstantForce,
          &pad->rumble_props, &pad->rumble_iface[1], NULL) != DI_OK)
 #endif
       RARCH_WARN("[DInput] Weak rumble unavailable.\n");
@@ -486,9 +492,48 @@ static bool dinput_joypad_set_rumble(unsigned port,
    return true;
 }
 
+static bool dinput_joypad_ctx_create(void)
+{
+   if (!g_dinput_joypad_ctx)
+   {
+#ifdef __cplusplus
+      if (!(SUCCEEDED(DirectInput8Create(
+                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     IID_IDirectInput8,
+                     (void**)&g_dinput_joypad_ctx, NULL))))
+#else
+      if (!(SUCCEEDED(DirectInput8Create(
+                     GetModuleHandle(NULL), DIRECTINPUT_VERSION,
+                     &IID_IDirectInput8,
+                     (void**)&g_dinput_joypad_ctx, NULL))))
+#endif
+         return false;
+   }
+   return true;
+}
+
+/* Blocks until any in-flight pad enumeration task has fully
+ * finished, including its main-thread callback. Must be called from
+ * the main thread. IDirectInput8_EnumDevices() cannot be cancelled,
+ * so teardown joins it; the stall this can incur only occurs if the
+ * user quits or hotplugs while an enumeration is still running,
+ * instead of unconditionally blocking startup as the old
+ * synchronous enumeration did. */
+static void dinput_joypad_enum_wait(void)
+{
+   while (g_dinput_enum_inflight)
+   {
+      task_queue_check();
+      retro_sleep(1);
+   }
+}
+
 static void dinput_joypad_destroy(void)
 {
    unsigned i;
+
+   /* Join any in-flight enumeration before touching pad state. */
+   dinput_joypad_enum_wait();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -519,8 +564,11 @@ static void dinput_joypad_destroy(void)
    g_joypad_cnt = 0;
    memset(g_pads, 0, sizeof(g_pads));
 
-   /* Can be blocked by global DInput context. */
-   dinput_destroy_context();
+   if (g_dinput_joypad_ctx)
+   {
+      IDirectInput8_Release(g_dinput_joypad_ctx);
+      g_dinput_joypad_ctx = NULL;
+   }
 }
 
 static const char *dinput_joypad_name(unsigned port)
@@ -801,32 +849,19 @@ static bool guid_is_xinput_device(const GUID* product_guid)
    return false;
 }
 
-static bool dinput_joypad_get_vidpid_from_xinput_index(
-      int32_t index, int32_t *vid,
-      int32_t *pid, int32_t *dinput_index)
-{
-   size_t i;
-
-   for (i = 0; i < ARRAY_SIZE(g_xinput_pad_indexes); i++)
-   {
-      /* Found XInput pad? */
-      if (index == g_xinput_pad_indexes[i])
-      {
-         *vid          = g_pads[i].vid;
-         *pid          = g_pads[i].pid;
-         *dinput_index = i;
-         return true;
-      }
-   }
-
-   return false;
-}
-
 static BOOL CALLBACK enum_joypad_cb_hybrid(
       const DIDEVICEINSTANCE *inst, void *p)
 {
+   /* May run on a task queue worker thread while the main thread is
+    * polling: create and configure the device through a local
+    * pointer, fill the g_pads[] entry, and only then publish the
+    * device pointer (which gates the main-thread accessors) and the
+    * pad count (which gates poll), each behind a barrier. */
    bool is_xinput_pad;
-   LPDIRECTINPUTDEVICE8 *pad = NULL;
+   LPDIRECTINPUTDEVICE8 dev       = NULL;
+   struct dinput_joypad_data *pad = NULL;
+   unsigned idx;
+
    if (g_joypad_cnt == MAX_USERS)
       return DIENUM_STOP;
 
@@ -835,20 +870,21 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
       g_last_xinput_pad_idx++;
    }
 
-   pad = &g_pads[g_joypad_cnt].joypad;
+   idx = g_joypad_cnt;
+   pad = &g_pads[idx];
 
 #ifdef __cplusplus
    if (FAILED(IDirectInput8_CreateDevice(
-               g_dinput_ctx, inst->guidInstance, pad, NULL)))
+               g_dinput_joypad_ctx, inst->guidInstance, &dev, NULL)))
 #else
    if (FAILED(IDirectInput8_CreateDevice(
-               g_dinput_ctx, &inst->guidInstance, pad, NULL)))
+               g_dinput_joypad_ctx, &inst->guidInstance, &dev, NULL)))
 #endif
       return DIENUM_CONTINUE;
 
-   g_pads[g_joypad_cnt].joy_name          =
+   pad->joy_name          =
       strdup((const char*)inst->tszProductName);
-   g_pads[g_joypad_cnt].joy_friendly_name =
+   pad->joy_friendly_name =
       strdup((const char*)inst->tszInstanceName);
 
    /* there may be more useful info in the GUID,
@@ -868,8 +904,8 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    inst->guidProduct.Data4[7]);
 #endif
 
-   g_pads[g_joypad_cnt].vid = inst->guidProduct.Data1 & 0xFFFF;
-   g_pads[g_joypad_cnt].pid = inst->guidProduct.Data1 >> 16;
+   pad->vid = inst->guidProduct.Data1 & 0xFFFF;
+   pad->pid = inst->guidProduct.Data1 >> 16;
 
    is_xinput_pad            =    g_xinput_block_pads
                               && guid_is_xinput_device(&inst->guidProduct);
@@ -877,38 +913,106 @@ static BOOL CALLBACK enum_joypad_cb_hybrid(
    if (is_xinput_pad)
    {
       if (g_last_xinput_pad_idx < 4)
-         g_xinput_pad_indexes[g_joypad_cnt] = g_last_xinput_pad_idx++;
+         g_xinput_pad_indexes[idx] = g_last_xinput_pad_idx++;
       goto enum_iteration_done;
    }
 
    /* Set data format to simple joystick */
-   IDirectInputDevice8_SetDataFormat(*pad, &c_dfDIJoystick2);
-   IDirectInputDevice8_SetCooperativeLevel(*pad,
+   IDirectInputDevice8_SetDataFormat(dev, &c_dfDIJoystick2);
+   IDirectInputDevice8_SetCooperativeLevel(dev,
          (HWND)video_driver_window_get(),
          DISCL_EXCLUSIVE | DISCL_BACKGROUND);
 
-   IDirectInputDevice8_EnumObjects(*pad, enum_axes_cb,
-         *pad, DIDFT_ABSAXIS);
+   IDirectInputDevice8_EnumObjects(dev, enum_axes_cb,
+         dev, DIDFT_ABSAXIS);
 
-   dinput_create_rumble_effects(&g_pads[g_joypad_cnt]);
-
-   input_autoconfigure_connect(
-         g_pads[g_joypad_cnt].joy_name,
-         g_pads[g_joypad_cnt].joy_friendly_name,
-         NULL,
-         dinput_joypad.ident,
-         g_joypad_cnt,
-         g_pads[g_joypad_cnt].vid,
-         g_pads[g_joypad_cnt].pid);
+   dinput_create_rumble_effects(pad, dev);
 
 enum_iteration_done:
-   g_joypad_cnt++;
+   /* Publish: entry fields (and, for XInput pads, the xuser index)
+    * first, then the device pointer, then the pad count.
+    * Autoconfiguration happens later, on the main thread, in the
+    * enumeration task callback. */
+   MemoryBarrier();
+   pad->joypad = dev;
+   MemoryBarrier();
+   g_joypad_cnt = idx + 1;
    return DIENUM_CONTINUE;
+}
+
+static void dinput_enum_hybrid_run(void)
+{
+   /* Build the RAWINPUT HID device snapshot consulted by
+    * guid_is_xinput_device() for the duration of this enumeration.
+    * EnumDevices() walks the whole HID/PnP tree synchronously and
+    * can stall for seconds if a device driver stack (e.g. Bluetooth)
+    * is still coming up after a fresh boot - which is exactly why
+    * this runs on the task queue instead of blocking startup. */
+   dinput_hid_dev_cache_build();
+
+   IDirectInput8_EnumDevices(g_dinput_joypad_ctx, DI8DEVCLASS_GAMECTRL,
+         enum_joypad_cb_hybrid, NULL, DIEDFL_ATTACHEDONLY);
+
+   dinput_hid_dev_cache_free();
+}
+
+static void dinput_enum_hybrid_task_handler(retro_task_t *task)
+{
+   dinput_enum_hybrid_run();
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Main thread: fire autoconfiguration for the published pads (both
+ * the dinput-handled ones and the XInput-blocked ones), mark the
+ * active XInput ports, then flag the enumeration as complete for
+ * waiters. */
+static void dinput_enum_hybrid_autoconf_flush(void)
+{
+   unsigned i;
+
+   for (i = 0; i < g_joypad_cnt; i++)
+   {
+      int xuser = g_xinput_pad_indexes[i];
+
+      if (!g_pads[i].joypad)
+         continue;
+
+      if (xuser > -1)
+      {
+         input_autoconfigure_connect(
+               g_pads[i].joy_name,
+               NULL, NULL,
+               xinput_joypad.ident,
+               i,
+               g_pads[i].vid,
+               g_pads[i].pid);
+
+         if (xuser < 4)
+            xinput_active_port[xuser] = true;
+      }
+      else
+         input_autoconfigure_connect(
+               g_pads[i].joy_name,
+               g_pads[i].joy_friendly_name,
+               NULL,
+               dinput_joypad.ident,
+               i,
+               g_pads[i].vid,
+               g_pads[i].pid);
+   }
+}
+
+static void dinput_enum_hybrid_task_cb(retro_task_t *task,
+      void *task_data, void *user_data, const char *err)
+{
+   dinput_enum_hybrid_autoconf_flush();
+   g_dinput_enum_inflight = false;
 }
 
 static void dinput_joypad_init_hybrid(void *data)
 {
    int i;
+   retro_task_t *task    = NULL;
 
    g_last_xinput_pad_idx = 0;
 
@@ -919,14 +1023,23 @@ static void dinput_joypad_init_hybrid(void *data)
       g_pads[i].joy_friendly_name = NULL;
    }
 
-   /* Build the RAWINPUT HID device snapshot consulted by
-    * guid_is_xinput_device() for the duration of this enumeration. */
-   dinput_hid_dev_cache_build();
+   if (!(task = task_init()))
+   {
+      /* Allocation failure: fall back to the old synchronous
+       * enumeration. */
+      dinput_enum_hybrid_run();
+      dinput_enum_hybrid_autoconf_flush();
+      return;
+   }
 
-   IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
-         enum_joypad_cb_hybrid, NULL, DIEDFL_ATTACHEDONLY);
-
-   dinput_hid_dev_cache_free();
+   g_dinput_enum_inflight = true;
+   task->handler  = dinput_enum_hybrid_task_handler;
+   task->state    = NULL;
+   task->title    = NULL;
+   task->callback = dinput_enum_hybrid_task_cb;
+   task->cleanup  = NULL;
+   task->flags   |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(task);
 }
 
 #define PAD_INDEX_TO_XUSER_INDEX(pad) (g_xinput_pad_indexes[(pad)])
@@ -940,7 +1053,7 @@ static const char *xinput_joypad_name(unsigned pad)
 
 static void *xinput_joypad_init(void *data)
 {
-   int i, j;
+   int i;
    XINPUT_STATE dummy_state;
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
@@ -1025,47 +1138,21 @@ static void *xinput_joypad_init(void *data)
    g_xinput_block_pads = true;
 
    /* We're going to have to be buddies with dinput if we want to be able
-    * to use XInput and non-XInput controllers together. */
-   if (!dinput_init_context())
+    * to use XInput and non-XInput controllers together. This creates
+    * the joypad-owned DirectInput context (separate from the shared
+    * keyboard/mouse context); creation is cheap and stays
+    * synchronous so a failure still selects the fallback driver
+    * exactly as before. */
+   if (!dinput_joypad_ctx_create())
    {
       g_xinput_block_pads = false;
       goto error;
    }
 
+   /* Pad enumeration - the actual stall vector - runs on the task
+    * queue; autoconfiguration and XInput active-port marking happen
+    * in its main-thread callback once the pads are published. */
    dinput_joypad_init_hybrid(data);
-
-   for (j = 0; j < MAX_USERS; j++)
-   {
-      const char *name = xinput_joypad_name(j);
-
-      if (PAD_INDEX_TO_XUSER_INDEX(j) > -1)
-      {
-         int32_t vid          = 0;
-         int32_t pid          = 0;
-         int32_t dinput_index = 0;
-         bool success         = dinput_joypad_get_vidpid_from_xinput_index((int32_t)PAD_INDEX_TO_XUSER_INDEX(j), (int32_t*)&vid, (int32_t*)&pid,
-			 (int32_t*)&dinput_index);
-
-         /* On success, found VID/PID from dinput index */
-         if (!success)
-            continue;
-
-         input_autoconfigure_connect(
-               name,
-               NULL, NULL,
-               xinput_joypad.ident,
-               j,
-               vid,
-               pid);
-      }
-   }
-
-   for (i = 0; i < MAX_USERS; ++i)
-   {
-      int xuser = PAD_INDEX_TO_XUSER_INDEX(i);
-      if (xuser >= 0 && xuser < 4)
-         xinput_active_port[xuser] = true;
-   }
 
 #ifdef __WINRT__
 succeeded:
@@ -1174,6 +1261,12 @@ static void xinput_joypad_poll(void)
    if (xinput_poll_counter >= 15)
    {
       xinput_poll_counter = 0;
+      /* Defer hotplug detection while the initial enumeration task
+       * is still running: active-port marking happens in its
+       * callback, and probing before that would autoconfigure the
+       * same port twice. */
+      if (g_dinput_enum_inflight)
+         return;
       if (!xinput_active_port[xinput_hotplug_index])
       {
          XINPUT_STATE tmp_state;
