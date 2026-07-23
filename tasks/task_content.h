@@ -92,6 +92,14 @@ bool task_push_load_content_with_new_core_from_menu(
       retro_task_callback_t cb,
       void *user_data);
 
+#ifdef HAVE_DYNAMIC
+/* Performs the parked remainder of a deferred (prefetched) menu
+ * load, if one is ready.  Called once per frame from
+ * runloop_iterate(); content_load() reinitializes the task queue,
+ * so this must run outside the task system's dispatch. */
+void task_content_deferred_load_check(void);
+#endif
+
 bool task_push_load_content_from_playlist_from_menu(
       const char *core_path,
       const char *fullpath,

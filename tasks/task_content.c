@@ -938,11 +938,14 @@ static uint8_t *content_file_prefetch_take(content_state_t *p_content,
    return NULL;
 }
 
-/* Deposit callback for task_push_content_prefetch. */
+/* Deposit callback for task_push_content_prefetch.  ud carries the
+ * deferred-load continuation for the done callback, not the content
+ * state - the state is a singleton and is fetched here, never cast
+ * from ud. */
 static void content_file_prefetch_deposit(void *ud, const char *path,
       uint8_t *data, size_t size)
 {
-   content_state_t *p_content = (content_state_t*)ud;
+   content_state_t *p_content = content_state_get_ptr();
    if (p_content->prefetch_count
          >= ARRAY_SIZE(p_content->prefetch))
    {
@@ -2644,20 +2647,43 @@ struct content_deferred_menu_load
    content_ctx_info_t info;      /* argv-free by the deferral gate */
 };
 
+/* The continuation parked by the prefetch's done callback, consumed
+ * by task_content_deferred_load_check() from the runloop.  One
+ * deferral at a time (the CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING
+ * gate), so a single pointer is the whole queue. */
+static struct content_deferred_menu_load *deferred_menu_load_ready = NULL;
+
+/* Fires when the prefetch task completes.  The remainder of the
+ * load cannot run here: content_load() reaches
+ * retroarch_init_task_queue(), which tears down and recreates the
+ * task queue - fatal from inside the queue's own dispatch (and,
+ * under the threaded queue, this may not be the main thread).  So
+ * the continuation is parked, and runloop_iterate() performs it at
+ * the top of the next frame - the same call depth the synchronous
+ * path ran it from. */
 static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
 {
-   struct content_deferred_menu_load *d =
-         (struct content_deferred_menu_load*)ud;
-   content_state_t *p_content = content_state_get_ptr();
-   bool ret;
+   deferred_menu_load_ready = (struct content_deferred_menu_load*)ud;
+}
 
-   p_content->flags &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+/* Called once per frame from runloop_iterate(): performs the
+ * remainder of task_push_load_content_with_new_core_from_menu for a
+ * completed prefetch, byte-for-byte the sequence the synchronous
+ * path runs - content_load, history, quick menu.  A prefetch that
+ * skipped files changed nothing; the load's ordinary reads cover
+ * whatever is not in the cache. */
+void task_content_deferred_load_check(void)
+{
+   struct content_deferred_menu_load *d = deferred_menu_load_ready;
+   content_state_t *p_content;
 
-   /* The identical remainder of
-    * task_push_load_content_with_new_core_from_menu: a prefetch
-    * that skipped files (all_ok false) changed nothing - the load's
-    * ordinary reads cover whatever is not in the cache. */
-   if (!(ret = content_load(&d->info, p_content)))
+   if (!d)
+      return;
+   deferred_menu_load_ready  = NULL;
+   p_content                 = content_state_get_ptr();
+   p_content->flags         &= ~CONTENT_ST_FLAG_DEFERRED_LOAD_PENDING;
+
+   if (!content_load(&d->info, p_content))
    {
       content_file_prefetch_free(p_content);
       retroarch_menu_running();

@@ -7738,6 +7738,14 @@ int runloop_iterate(void)
    bsv_movie_dequeue_next(input_st);
 #endif
 
+#if defined(HAVE_DYNAMIC) && defined(HAVE_MENU)
+   /* Perform the parked remainder of a deferred (prefetched) menu
+    * load.  It runs here, not from the prefetch task's callback,
+    * because content_load() reinitializes the task queue - fatal
+    * from inside the queue's own dispatch. */
+   task_content_deferred_load_check();
+#endif
+
    /* Tick deferred shader compilation (one pass per frame) */
    video_driver_shader_deferred_tick();
 
