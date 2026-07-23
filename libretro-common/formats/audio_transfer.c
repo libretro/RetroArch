@@ -143,18 +143,18 @@ enum audio_type_enum audio_decode_get_type(const char *path)
 {
    if (string_is_empty(path))
       return AUDIO_TYPE_NONE;
-   if (strcasestr(path, ".flac"))
+   if (compat_strcasestr(path, ".flac"))
       return AUDIO_TYPE_FLAC;
-   if (strcasestr(path, ".ogg"))
+   if (compat_strcasestr(path, ".ogg"))
       return AUDIO_TYPE_VORBIS;
-   if (strcasestr(path, ".mp3"))
+   if (compat_strcasestr(path, ".mp3"))
       return AUDIO_TYPE_MP3;
-   if (strcasestr(path, ".wav"))
+   if (compat_strcasestr(path, ".wav"))
       return AUDIO_TYPE_WAV;
 #ifdef HAVE_RMODTRACKER
-   if (     strcasestr(path, ".mod")
-         || strcasestr(path, ".s3m")
-         || strcasestr(path, ".xm"))
+   if (     compat_strcasestr(path, ".mod")
+         || compat_strcasestr(path, ".s3m")
+         || compat_strcasestr(path, ".xm"))
       return AUDIO_TYPE_MOD;
 #endif
    return AUDIO_TYPE_NONE;

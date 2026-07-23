@@ -536,7 +536,7 @@ static bool gfx_ctx_x_set_video_mode(void *data,
          if (wm_name)
          {
             RARCH_LOG("[GLX] Window manager is %s.\n", wm_name);
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[GLX] Using override-redirect workaround.\n");
                swa.override_redirect = True;

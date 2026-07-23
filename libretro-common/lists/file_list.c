@@ -331,7 +331,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
             continue;
       }
 
-      if ((str = (const char *)strcasestr(alt, needle)) == alt)
+      if ((str = (const char *)compat_strcasestr(alt, needle)) == alt)
       {
          /* Found match with first chars, best possible match. */
          *idx = i;

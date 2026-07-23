@@ -307,7 +307,7 @@ static bool gfx_ctx_x_vk_set_video_mode(void *data,
          {
             RARCH_LOG("[Vulkan] Window manager is %s.\n", wm_name);
 
-            if (strcasestr(wm_name, "xfwm"))
+            if (compat_strcasestr(wm_name, "xfwm"))
             {
                RARCH_LOG("[Vulkan] Using override-redirect workaround.\n");
                swa.override_redirect = True;

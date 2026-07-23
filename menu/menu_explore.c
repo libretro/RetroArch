@@ -1669,7 +1669,7 @@ unsigned menu_displaylist_explore(file_list_t *list, settings_t *settings)
             }
          }
 
-         if (has_search && !strcasestr(e->playlist_entry->label, view_search))
+         if (has_search && !compat_strcasestr(e->playlist_entry->label, view_search))
             goto SKIP_ENTRY;
 
          if (is_filtered_category)

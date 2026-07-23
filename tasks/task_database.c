@@ -976,7 +976,7 @@ static enum scan_verdict database_info_list_iterate_found_match(
        * matches with the last disk, which is never bootable */
       char *delim = (char*)strchr(entry_path_str, '#');
 
-      if (delim && strcasestr(entry_path_str, " (Disk "))
+      if (delim && compat_strcasestr(entry_path_str, " (Disk "))
          *delim = '\0';
 
       strlcpy(entry_lbl, db_info_entry->name, sizeof(entry_lbl));

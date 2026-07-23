@@ -90,9 +90,7 @@ COMPATIBILITY
 #include "../compat/compat_getopt.c"
 #endif
 
-#ifndef HAVE_STRCASESTR
 #include "../compat/compat_strcasestr.c"
-#endif
 
 #ifndef HAVE_STRL
 #include "../compat/compat_strl.c"

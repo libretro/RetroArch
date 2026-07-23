@@ -468,9 +468,9 @@ ifneq ($(HAVE_GETOPT_LONG), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_getopt.o
 endif
 
-ifneq ($(HAVE_STRCASESTR), 1)
-   OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.o
-endif
+# Always built: compat_strcasestr is used by name rather than as a
+# fallback for a missing C library function.
+OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.o
 
 ifneq ($(HAVE_STRL), 1)
    OBJ += $(LIBRETRO_COMM_DIR)/compat/compat_strl.o

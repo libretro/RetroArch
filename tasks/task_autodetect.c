@@ -324,7 +324,7 @@ static bool input_autoconfigure_file_may_match(
       if (!have_vid)
       {
          snprintf(num, sizeof(num), "0x%x", vid);
-         have_vid = (strcasestr(buf, num) != NULL);
+         have_vid = (compat_strcasestr(buf, num) != NULL);
       }
       if (!have_vid)
       {
@@ -339,7 +339,7 @@ static bool input_autoconfigure_file_may_match(
          if (!have_pid)
          {
             snprintf(num, sizeof(num), "0x%x", pid);
-            have_pid = (strcasestr(buf, num) != NULL);
+            have_pid = (compat_strcasestr(buf, num) != NULL);
          }
          if (!have_pid)
          {

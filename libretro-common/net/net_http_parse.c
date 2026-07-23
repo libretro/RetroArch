@@ -46,7 +46,7 @@ int string_parse_html_anchor(const char *line, char *link, char *name,
    memset(link, 0, link_size);
    memset(name, 0, name_size);
 
-   line = strcasestr(line, "<a href=\"");
+   line = compat_strcasestr(line, "<a href=\"");
 
    if (!line)
       return 1;

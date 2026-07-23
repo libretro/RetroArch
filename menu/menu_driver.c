@@ -606,7 +606,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
        * comparison */
       else
       {
-         const char *found_str = (const char *)strcasestr(entry_label, needle);
+         const char *found_str = (const char *)compat_strcasestr(entry_label, needle);
 
          /* Found a match with the first characters
           * of the label -> best possible match,

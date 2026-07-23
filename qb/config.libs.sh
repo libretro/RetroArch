@@ -734,7 +734,8 @@ if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
 
-check_lib '' STRCASESTR "$CLIB" strcasestr
+# strcasestr: not probed - compat_strcasestr is used by name on every
+# platform, so whether the C library has one is irrelevant.
 check_lib '' MMAP "$CLIB" mmap
 check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 

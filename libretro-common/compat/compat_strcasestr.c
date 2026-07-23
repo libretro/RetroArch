@@ -64,7 +64,7 @@ static int casencmp(const char *a, const char *b, size_t n)
  * where a match is actually possible.  A needle whose first character
  * has no case of its own - a digit, a punctuation mark - costs one
  * memchr rather than two. */
-char *strcasestr_retro__(const char *haystack, const char *needle)
+char *compat_strcasestr(const char *haystack, const char *needle)
 {
    size_t      nlen = strlen(needle);
    size_t      hlen = strlen(haystack);

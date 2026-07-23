@@ -1750,7 +1750,7 @@ struct string_list* cdrom_get_available_drives(void)
          {
             for (i = 0; i < (int)mods.size; i++)
             {
-               if (strcasestr(mods.elems[i].data, "sg "))
+               if (compat_strcasestr(mods.elems[i].data, "sg "))
                {
 #ifdef CDROM_DEBUG
                   found = true;

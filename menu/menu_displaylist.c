@@ -381,7 +381,7 @@ static int filebrowser_parse(
          {
             const char *search_term = search_terms->terms[j];
             if (search_term && *search_term
-                && !strcasestr(file_path, search_term))
+                && !compat_strcasestr(file_path, search_term))
             {
                skip_entry = true;
                break;
@@ -1299,7 +1299,7 @@ static unsigned menu_displaylist_parse_core_manager_list(file_list_t *list,
                   const char *search_term = search_terms->terms[j];
                   if (   (search_term && *search_term)
                       && (core_info->display_name && *core_info->display_name)
-                      && !strcasestr(core_info->display_name, search_term))
+                      && !compat_strcasestr(core_info->display_name, search_term))
                   {
                      entry_valid = false;
                      break;
@@ -2781,7 +2781,7 @@ static int menu_displaylist_parse_playlist(
             const char *search_term = search_terms->terms[j];
 
             if (   (search_term && *search_term)
-                && !strcasestr(menu_entry_lbl, search_term))
+                && !compat_strcasestr(menu_entry_lbl, search_term))
             {
                entry_valid = false;
                break;
@@ -8911,7 +8911,7 @@ unsigned menu_displaylist_build_list(
                               entry_valid = false;
                         }
                         /* Normal label comparison */
-                        else if (!strcasestr(cheat_label, search_term))
+                        else if (!compat_strcasestr(cheat_label, search_term))
                            entry_valid = false;
                      }
 
@@ -14001,7 +14001,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                               if (     (search_term && *search_term)
                                     && (entry->display_name && *entry->display_name)
-                                    && !strcasestr(entry->display_name, search_term))
+                                    && !compat_strcasestr(entry->display_name, search_term))
                               {
                                  entry_valid = false;
                                  break;
