@@ -1034,6 +1034,22 @@ static void task_audio_mixer_wfeed_free(retro_task_t *task)
    free(w);
 }
 
+/* Note on cancellation: this handler deliberately does not check
+ * RETRO_TASK_FLG_CANCELLED, and must not be "fixed" to.
+ *
+ * Once the stream is handed over, the sound decodes on the audio
+ * thread straight out of the window this task advances.  Pages ahead
+ * of the frontier are reserved but uncommitted, so a decoder that
+ * outruns its feeder faults rather than reading zeros - which means
+ * the feeder is not a background convenience that can stop early, it
+ * is a liveness requirement for as long as the sound exists.  A task
+ * that finished on the cancelled flag would leave the sound playing
+ * with nobody extending the window ahead of it.
+ *
+ * The sound's own release callback sets w->dead, and that - not
+ * cancellation - is what ends this task.  Everything before the
+ * handover can still bail freely; every goto bail below sits above
+ * the point where ownership transfers. */
 static void task_audio_mixer_handle_wfeed(retro_task_t *task)
 {
    struct audio_mixer_wfeed *w =
