@@ -47,7 +47,6 @@
 #include <libchdr/cdrom.h>
 #include <libchdr/huffman.h>
 #include <libchdr/libchdr_zlib.h>
-#include <zlib.h>
 #include <libchdr/libchdr_zstd.h>
 #include <zstd.h>
 

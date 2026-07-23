@@ -42,8 +42,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
 #include <libchdr/chd.h>
+#include <libchdr/libchdr_zlib.h>
 #include <libchdr/minmax.h>
 #include <libchdr/cdrom.h>
 #include <libchdr/huffman.h>
