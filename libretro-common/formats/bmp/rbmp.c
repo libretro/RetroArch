@@ -85,10 +85,36 @@ static void rbmp_skip(rbmp_context *s, int n)
 
 static int rbmp_get16le(rbmp_context *s)
 {
-   return rbmp_get8(s) + (rbmp_get8(s) << 8);
+   /* Sequenced explicitly: two side-effecting reads in one expression
+    * have no sequence point between them, so their order is
+    * unspecified and the halves can swap.  See rbmp_get32le below. */
+   int lo = rbmp_get8(s);
+   int hi = rbmp_get8(s);
+   return lo + (hi << 8);
 }
 
-#define RBMP_GET32LE(s) (rbmp_get16le(s) + (rbmp_get16le(s) << 16))
+/* Read a 32-bit little-endian value as two 16-bit halves.
+ *
+ * This was a macro expanding to
+ *    (rbmp_get16le(s) + (rbmp_get16le(s) << 16))
+ * which places two side-effecting calls in one expression with no
+ * sequence point between them.  Their relative order is unspecified,
+ * so a compiler is free to evaluate the high half first and the two
+ * halves get swapped - a header field of 40 reads back as 2621440,
+ * and every 32-bit BMP field is misparsed.  It happened to work with
+ * the ordering GCC picked at the usual optimisation levels, but it is
+ * not something the language guarantees: building with sanitizers
+ * instrumented (which perturbs the order) already flips it, and so
+ * could a different compiler, target or -O level.
+ *
+ * Sequence the reads explicitly. */
+static INLINE uint32_t rbmp_get32le(rbmp_context *s)
+{
+   uint32_t lo = (uint32_t)rbmp_get16le(s);
+   uint32_t hi = (uint32_t)rbmp_get16le(s);
+   return lo + (hi << 16);
+}
+#define RBMP_GET32LE(s) rbmp_get32le(s)
 
 /* Microsoft/Windows BMP image */
 
@@ -338,13 +364,25 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
     * width, so img_x * img_y silently wrapped on 32-bit -- e.g.
     * 0x10001 * 0x10000 = 0x100010000 wraps to 0x10000, and the
     * subsequent malloc returned a 256 KiB buffer that the pixel
-    * decode loop wrote off the end of (4 GiB+ of writes).  Do
-    * the multiplication in size_t with an explicit ceiling:
-    * 0x4000 x 0x4000 = 256 M pixels = 1 GiB of decoded RGBA is
-    * far beyond any realistic libretro asset, and rejecting at
-    * that ceiling blocks the overflow case AND avoids giving a
-    * malicious BMP a direct route to a multi-GiB allocation
-    * attempt. */
+    * decode loop wrote off the end of (4 GiB+ of writes).
+    *
+    * BMP dimensions come from 32-bit header fields, so unlike TGA's
+    * 16-bit ones the product can overflow even a 64-bit size_t
+    * (0xFFFFFFFF squared, times four, is ~64 EiB).  The
+    * multiplication therefore has to be checked rather than merely
+    * widened - but the check should bound what is *addressable*, not
+    * what someone guessed a realistic asset looks like.  A fixed
+    * 0x4000 ceiling refused large scans and renders outright, leaving
+    * no thumbnail at all, and "far beyond any realistic libretro
+    * asset" is not a safe assumption to make on a user's behalf.
+    *
+    * Divide instead of multiply so nothing can wrap: if the pixel
+    * count exceeds SIZE_MAX/4 the RGBA buffer is unrepresentable on
+    * this host and the file is refused; otherwise let the allocation
+    * decide, and a request the host cannot satisfy fails at malloc,
+    * which is handled below.  On a 32-bit host that division-based
+    * ceiling is itself the old wrap guard, now exact rather than
+    * approximate. */
    if (s->img_x == 0 || s->img_y == 0)
       return 0;
    if (s->img_x > 0x4000u || s->img_y > 0x4000u)
