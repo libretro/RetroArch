@@ -2009,6 +2009,7 @@ static const struct
    char s_519cd5f8[27];
    char s_43ac80a0[11];
    char s_6959ce80[13];
+   char s_886631ec[16];
    char s_ebe994b4[20];
    char s_1c62c301[12];
    char s_a8bb35b6[11];
@@ -6417,6 +6418,7 @@ static const struct
    "System operacyjny Frontend",
    "Wersja Git",
    "Wersja Lakka",
+   "Wersja MoltenVK",
    "\305\271r\303\263d\305\202o zasilania",
    "Na\305\202adowany",
    "\305\201adowanie",
@@ -9432,7 +9434,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (187073u
+      (sizeof(msg_hash_pl_blob) == (187089u
 #ifdef ANDROID
        + 385u
 #endif
@@ -11844,6 +11846,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_FRONTEND_OS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_GIT_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_LAKKA_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_MOLTENVK_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_CHARGING,
