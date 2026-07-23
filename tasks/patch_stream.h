@@ -80,6 +80,12 @@ size_t patch_stream_feed(patch_stream_t *ps, const uint8_t *chunk, size_t len);
  * untouched and the caller should fall back to the unpatched content. */
 bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len);
 
+/* True once the stream can no longer produce a result - a malformed
+ * patch, or an allocation that failed.  A caller feeding a long source
+ * can stop early on this rather than pushing the remaining megabytes
+ * through a stream whose finish is already going to fail. */
+bool patch_stream_failed(patch_stream_t *ps);
+
 /* NULL-safe. */
 void patch_stream_free(patch_stream_t *ps);
 

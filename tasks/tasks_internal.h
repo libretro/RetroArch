@@ -259,7 +259,7 @@ struct patch_stream *patch_content_stream_open(
       const char *name_xdelta,
       size_t src_len,
       void **patch_data,
-      const char **fmt_name);
+      const char **patch_path);
 
 bool patch_content(
       bool is_ips_pref,

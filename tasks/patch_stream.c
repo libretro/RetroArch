@@ -839,6 +839,11 @@ bool patch_stream_finish(patch_stream_t *ps, uint8_t **out, size_t *out_len)
    return patch_stream_bps_finish(ps, out, out_len);
 }
 
+bool patch_stream_failed(patch_stream_t *ps)
+{
+   return !ps || ps->failed;
+}
+
 void patch_stream_free(patch_stream_t *ps)
 {
    if (!ps)

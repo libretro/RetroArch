@@ -817,14 +817,14 @@ static patch_stream_t *content_file_patch_stream_open(
       enum rarch_content_type first_content_type,
       size_t src_len,
       void **patch_data,
-      const char **patch_fmt)
+      const char **patch_path)
 {
    if (      idx != 0
          ||  first_content_type != RARCH_CONTENT_NONE
          || (content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
    {
       *patch_data = NULL;
-      *patch_fmt  = NULL;
+      *patch_path = NULL;
       return NULL;
    }
 
@@ -837,7 +837,7 @@ static patch_stream_t *content_file_patch_stream_open(
          content_ctx->name_bps,
          content_ctx->name_ups,
          content_ctx->name_xdelta,
-         src_len, patch_data, patch_fmt);
+         src_len, patch_data, patch_path);
 }
 #endif
 
@@ -895,6 +895,11 @@ static uint8_t *content_file_pump_source(data_transfer_t *dt,
       {
          patch_stream_feed(ps, base + fed, avail - fed);
          fed = avail;
+         /* Once the stream is dead its finish will fail anyway, so
+          * stop pushing the rest of the content through it - the load
+          * itself still has to complete. */
+         if (patch_stream_failed(ps))
+            ps = NULL;
       }
 #endif
    }
@@ -1007,7 +1012,7 @@ static size_t content_file_load_into_memory(
     * instead of following it.  NULL means there is nothing streamable
     * and the existing patch_content pass below runs unchanged. */
    void           *patch_data = NULL;
-   const char     *patch_fmt  = NULL;
+   const char     *patch_src  = NULL;
    bool            streamed   = false;
 #endif
    /* Streaming patch handle, kept opaque and declared unconditionally so
@@ -1063,7 +1068,7 @@ static size_t content_file_load_into_memory(
 #ifdef HAVE_PATCH
                patch_ps = content_file_patch_stream_open(content_ctx,
                      idx, first_content_type, (size_t)src_usize,
-                     &patch_data, &patch_fmt);
+                     &patch_data, &patch_src);
 #endif
                if ((content_data = content_file_pump_source(dt,
                      patch_ps, &out_len)))
@@ -1114,7 +1119,7 @@ static size_t content_file_load_into_memory(
 #ifdef HAVE_PATCH
                patch_ps = content_file_patch_stream_open(content_ctx,
                      idx, first_content_type, (size_t)fsize,
-                     &patch_data, &patch_fmt);
+                     &patch_data, &patch_src);
 #endif
                if ((content_data = content_file_pump_source(dt,
                      patch_ps, &out_len)))
@@ -1170,10 +1175,15 @@ static size_t content_file_load_into_memory(
 
          if (config_get_ptr()->bools.notification_show_patch_applied)
          {
+            /* Same wording as the whole-buffer path: the patch's
+             * file name, not the format it happens to be. */
             char msg[128];
+            const char *patch_filename = patch_src
+                  ? path_basename_nocompression(patch_src) : NULL;
             size_t _len = snprintf(msg, sizeof(msg),
                   msg_hash_to_str(MSG_APPLYING_PATCH),
-                  patch_fmt ? patch_fmt : "");
+                  patch_filename ? patch_filename :
+                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_UNKNOWN));
             runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }

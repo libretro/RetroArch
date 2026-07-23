@@ -1011,7 +1011,7 @@ patch_stream_t *patch_content_stream_open(
       const char *name_xdelta,
       size_t src_len,
       void **patch_data,
-      const char **fmt_name)
+      const char **patch_path)
 {
    bool allow_ups    = !is_bps_pref && !is_ips_pref && !is_xdelta_pref;
    bool allow_ips    = !is_ups_pref && !is_bps_pref && !is_xdelta_pref;
@@ -1022,9 +1022,11 @@ patch_stream_t *patch_content_stream_open(
    int64_t patch_size   = 0;
    int     which        = -1; /* 0 ips, 1 bps, 2 ups */
 
+   const char *fmt = NULL;
+
    *patch_data = NULL;
-   if (fmt_name)
-      *fmt_name = NULL;
+   if (patch_path)
+      *patch_path = NULL;
 
    /* Several explicitly-defined preferences: patch_content refuses the
     * whole operation, so there is nothing to stream. */
@@ -1076,22 +1078,19 @@ patch_stream_t *patch_content_stream_open(
    switch (which)
    {
       case 0:
-         ps = patch_stream_ips_open((const uint8_t*)*patch_data,
+         ps  = patch_stream_ips_open((const uint8_t*)*patch_data,
                (size_t)patch_size, src_len);
-         if (fmt_name)
-            *fmt_name = "IPS";
+         fmt = "IPS";
          break;
       case 1:
-         ps = patch_stream_bps_open((const uint8_t*)*patch_data,
+         ps  = patch_stream_bps_open((const uint8_t*)*patch_data,
                (size_t)patch_size, src_len);
-         if (fmt_name)
-            *fmt_name = "BPS";
+         fmt = "BPS";
          break;
       default:
-         ps = patch_stream_ups_open((const uint8_t*)*patch_data,
+         ps  = patch_stream_ups_open((const uint8_t*)*patch_data,
                (size_t)patch_size, src_len);
-         if (fmt_name)
-            *fmt_name = "UPS";
+         fmt = "UPS";
          break;
    }
 
@@ -1099,13 +1098,14 @@ patch_stream_t *patch_content_stream_open(
    {
       free(*patch_data);
       *patch_data = NULL;
-      if (fmt_name)
-         *fmt_name = NULL;
       return NULL;
    }
 
+   if (patch_path)
+      *patch_path = name;
+
    RARCH_LOG("[Patch] Found \"%s\" file in \"%s\", streaming with content...\n",
-         fmt_name ? *fmt_name : "", name);
+         fmt, name);
    return ps;
 }
 
