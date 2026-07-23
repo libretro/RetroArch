@@ -655,6 +655,112 @@ static int16_t xinput_joypad_axis_state(
 
 #endif
 
+/* Per-enumeration snapshot of RAWINPUT HID devices, built in
+ * dinput_joypad_init_hybrid() before IDirectInput8_EnumDevices() and
+ * freed after it returns. The old code re-fetched the entire raw
+ * device list and re-queried RIDI_DEVICEINFO for every device once
+ * per enumerated pad - O(pads x devices) queries against the device
+ * stack. The snapshot reduces that to one RIDI_DEVICEINFO query per
+ * HID device per enumeration; the RIDI_DEVICENAME / "IG_" check is
+ * resolved lazily and memoized, so name queries keep the old
+ * behavior (only VID/PID-matched devices) but now happen at most
+ * once per device across all pads. */
+typedef struct
+{
+   HANDLE hDevice;
+   LONG   vidpid;
+   int8_t is_ig;   /* -1 = not yet checked, 0 = no, 1 = yes */
+} dinput_hid_dev_cache_entry_t;
+
+static dinput_hid_dev_cache_entry_t *g_hid_dev_cache = NULL;
+static unsigned g_hid_dev_cache_cnt                  = 0;
+
+static void dinput_hid_dev_cache_build(void)
+{
+   unsigned i;
+   unsigned num_raw_devs        = 0;
+   PRAWINPUTDEVICELIST raw_devs = NULL;
+
+   g_hid_dev_cache     = NULL;
+   g_hid_dev_cache_cnt = 0;
+
+   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
+   if ((GetRawInputDeviceList(NULL, &num_raw_devs,
+               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
+      return;
+
+   if (!(raw_devs = (PRAWINPUTDEVICELIST)
+         malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs)))
+      return;
+
+   if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
+            sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+   {
+      free(raw_devs);
+      return;
+   }
+
+   if (!(g_hid_dev_cache = (dinput_hid_dev_cache_entry_t*)
+         malloc(sizeof(*g_hid_dev_cache) * num_raw_devs)))
+   {
+      free(raw_devs);
+      return;
+   }
+
+   for (i = 0; i < num_raw_devs; i++)
+   {
+      RID_DEVICE_INFO rdi;
+      UINT rdi_size = sizeof(rdi);
+
+      rdi.cbSize    = rdi_size;
+
+      if (   (raw_devs[i].dwType == RIM_TYPEHID)
+          && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
+              RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1)))
+      {
+         dinput_hid_dev_cache_entry_t *e =
+            &g_hid_dev_cache[g_hid_dev_cache_cnt++];
+         e->hDevice = raw_devs[i].hDevice;
+         e->vidpid  = MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId);
+         e->is_ig   = -1;
+      }
+   }
+
+   free(raw_devs);
+}
+
+static void dinput_hid_dev_cache_free(void)
+{
+   free(g_hid_dev_cache);
+   g_hid_dev_cache     = NULL;
+   g_hid_dev_cache_cnt = 0;
+}
+
+/* Lazily resolves and memoizes whether the device ID of a cached
+ * HID device contains "IG_" (the XInput marker; this information
+ * can not be found from DirectInput). */
+static bool dinput_hid_dev_cache_is_ig(dinput_hid_dev_cache_entry_t *e)
+{
+   UINT name_size = 0;
+   char *dev_name = NULL;
+
+   if (e->is_ig >= 0)
+      return (e->is_ig == 1);
+
+   e->is_ig = 0;
+   if (   (GetRawInputDeviceInfoA(e->hDevice,
+           RIDI_DEVICENAME, NULL, &name_size) != ((UINT)-1))
+       && ((dev_name = (char*)malloc(name_size)) != NULL)
+       && (GetRawInputDeviceInfoA(e->hDevice,
+           RIDI_DEVICENAME, dev_name, &name_size) != ((UINT)-1))
+       && (strstr(dev_name, "IG_")))
+      e->is_ig = 1;
+
+   if (dev_name)
+      free(dev_name);
+   return (e->is_ig == 1);
+}
+
 /* Based on SDL2's implementation. */
 static bool guid_is_xinput_device(const GUID* product_guid)
 {
@@ -664,8 +770,6 @@ static bool guid_is_xinput_device(const GUID* product_guid)
       {MAKELONG(0x045E, 0x028E),0x0000,0x0000,{0x00,0x00,0x50,0x49,0x44,0x56,0x49,0x44}}  /* wireless 360 pad */
    };
    size_t i;
-   unsigned num_raw_devs        = 0;
-   PRAWINPUTDEVICELIST raw_devs = NULL;
 
    /* Check for well known XInput device GUIDs,
     * thereby removing the need for the IG_ check.
@@ -681,70 +785,19 @@ static bool guid_is_xinput_device(const GUID* product_guid)
          return true;
    }
 
-   /* Go through RAWINPUT (WinXP and later) to find HID devices. */
-   if ((GetRawInputDeviceList(NULL, &num_raw_devs,
-               sizeof(RAWINPUTDEVICELIST)) == (UINT)-1) || (!num_raw_devs))
-      return false;
-
-   raw_devs = (PRAWINPUTDEVICELIST)
-      malloc(sizeof(RAWINPUTDEVICELIST) * num_raw_devs);
-   if (!raw_devs)
-      return false;
-
-   if (GetRawInputDeviceList(raw_devs, &num_raw_devs,
-            sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+   /* Consult the per-enumeration HID device snapshot. If the
+    * snapshot could not be built, this reports 'not XInput' - the
+    * same result the old per-pad code produced when the raw device
+    * list queries failed. */
+   for (i = 0; i < g_hid_dev_cache_cnt; i++)
    {
-      free(raw_devs);
-      return false;
-   }
-
-   for (i = 0; i < num_raw_devs; i++)
-   {
-      RID_DEVICE_INFO rdi;
-      char *dev_name  = NULL;
-      UINT rdi_size   = sizeof(rdi);
-      UINT name_size  = 0;
-
-      rdi.cbSize      = rdi_size;
-
-      /*
-       * Step 1 -
-       * Check if device type is HID
-       * Step 2 -
-       * Query size of name
-       * Step 3 -
-       * Allocate string holding ID of device
-       * Step 4 -
-       * query ID of device
-       * Step 5 -
-       * Check if the device ID contains "IG_".
-       * If it does, then it's an XInput device
-       * This information can not be found from DirectInput
-       */
-      if (
-               (raw_devs[i].dwType == RIM_TYPEHID)                    /* 1 */
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICEINFO, &rdi, &rdi_size) != ((UINT)-1))
-            && (MAKELONG(rdi.hid.dwVendorId, rdi.hid.dwProductId)
-             == ((LONG)product_guid->Data1))
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICENAME, NULL, &name_size) != ((UINT)-1))     /* 2 */
-            && ((dev_name = (char*)malloc(name_size)) != NULL)        /* 3 */
-            && (GetRawInputDeviceInfoA(raw_devs[i].hDevice,
-                RIDI_DEVICENAME, dev_name, &name_size) != ((UINT)-1)) /* 4 */
-            && (strstr(dev_name, "IG_"))                              /* 5 */
-         )
-      {
-         free(dev_name);
-         free(raw_devs);
+      dinput_hid_dev_cache_entry_t *e = &g_hid_dev_cache[i];
+      if (e->vidpid != (LONG)product_guid->Data1)
+         continue;
+      if (dinput_hid_dev_cache_is_ig(e))
          return true;
-      }
-
-      if (dev_name)
-         free(dev_name);
    }
 
-   free(raw_devs);
    return false;
 }
 
@@ -866,8 +919,14 @@ static void dinput_joypad_init_hybrid(void *data)
       g_pads[i].joy_friendly_name = NULL;
    }
 
+   /* Build the RAWINPUT HID device snapshot consulted by
+    * guid_is_xinput_device() for the duration of this enumeration. */
+   dinput_hid_dev_cache_build();
+
    IDirectInput8_EnumDevices(g_dinput_ctx, DI8DEVCLASS_GAMECTRL,
          enum_joypad_cb_hybrid, NULL, DIEDFL_ATTACHEDONLY);
+
+   dinput_hid_dev_cache_free();
 }
 
 #define PAD_INDEX_TO_XUSER_INDEX(pad) (g_xinput_pad_indexes[(pad)])
