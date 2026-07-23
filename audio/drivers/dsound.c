@@ -310,7 +310,13 @@ static DWORD CALLBACK dsound_thread(PVOID data)
          SetEvent(ds->event);
    }
 
-   ExitThread(0);
+   /* Return normally: under HAVE_THREADS this function runs inside the
+    * sthread wrapper, which frees its thunk allocation after the
+    * function returns - ExitThread here skipped that epilogue and
+    * leaked the thunk on every driver teardown. */
+#ifndef HAVE_THREADS
+   return 0;
+#endif
 }
 
 static void dsound_stop_thread(dsound_t *ds)
@@ -525,11 +531,6 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    if (!ds->event)
       goto error;
 
-   ds->fifo_bufsize = 4 * 1024;
-   ds->buffer = fifo_new(ds->fifo_bufsize);
-   if (!ds->buffer)
-      goto error;
-
    if (IDirectSound_CreateSoundBuffer(ds->ds, &bufdesc, &ds->dsb, 0) != DS_OK)
    {
       /* Only a float request has a lower format to fall back to. An int16
@@ -557,6 +558,23 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
    }
    else
       ds->use_float = want_float;
+
+   /* Staging fifo between dsound_write and the feeder thread.  This is
+    * the only occupancy rate control can observe (write_avail /
+    * buffer_size report it), so it must span a useful measurement
+    * window: the previous fixed 4 KiB was 10.7 ms of float at 48 kHz -
+    * smaller than a single video frame's write, which slammed the
+    * controller's occupancy signal rail-to-rail on every batch.
+    * Mirror the DirectSound ring (latency-scaled, format-aware via
+    * nAvgBytesPerSec, already CHUNK_SIZE-aligned), sized after the
+    * float->int16 fallback so both agree on the final format.  Keep
+    * the old 4 KiB as the floor for very low latency settings. */
+   ds->fifo_bufsize = ds->buffer_size;
+   if (ds->fifo_bufsize < 4 * 1024)
+      ds->fifo_bufsize = 4 * 1024;
+   ds->buffer = fifo_new(ds->fifo_bufsize);
+   if (!ds->buffer)
+      goto error;
 
    RARCH_LOG("[DirectSound] Initialized %u-bit %s buffer, %u bytes, latency %u ms.\n",
          wf.wBitsPerSample,
