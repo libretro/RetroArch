@@ -796,6 +796,97 @@ static int64_t content_file_entry_source_read(void *ud, uint8_t *dst,
 }
 #endif
 
+/* data_transfer source bridge for a plain file */
+static int64_t content_file_plain_source_read(void *ud, uint8_t *dst,
+      size_t n)
+{
+   return filestream_read((RFILE*)ud, dst, (int64_t)n);
+}
+
+#ifdef HAVE_PATCH
+/* Open a streaming applier for whatever patch this load would apply, or
+ * NULL to leave the load on the existing whole-buffer patch pass. */
+static patch_stream_t *content_file_patch_stream_open(
+      content_information_ctx_t *content_ctx,
+      size_t idx,
+      enum rarch_content_type first_content_type,
+      size_t src_len,
+      void **patch_data,
+      const char **patch_fmt)
+{
+   if (      idx != 0
+         ||  first_content_type != RARCH_CONTENT_NONE
+         || (content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
+   {
+      *patch_data = NULL;
+      *patch_fmt  = NULL;
+      return NULL;
+   }
+
+   return patch_content_stream_open(
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
+         content_ctx->flags & CONTENT_INFO_FLAG_IS_XDELTA_PREF,
+         content_ctx->name_ips,
+         content_ctx->name_bps,
+         content_ctx->name_ups,
+         content_ctx->name_xdelta,
+         src_len, patch_data, patch_fmt);
+}
+#endif
+
+/* Drive a source-mode transfer to completion, advancing a streaming
+ * patch (if any) over each span as it arrives, and detach the filled
+ * buffer.  Shared by the archive-entry and plain-file loads so both get
+ * the same interleaving and the same ownership handoff.
+ *
+ * Returns the detached buffer (caller frees) or NULL, in which case the
+ * transfer has already been released. */
+static uint8_t *content_file_pump_source(data_transfer_t *dt,
+      void *patch_stream, size_t *out_len)
+{
+   uint8_t *out   = NULL;
+   size_t   avail = 0;
+#ifdef HAVE_PATCH
+   patch_stream_t *ps     = (patch_stream_t*)patch_stream;
+   const uint8_t  *base   = NULL;
+   size_t          fed    = 0;
+   size_t          total  = 0;
+
+   if (ps)
+      base = data_transfer_ptr(dt, &total);
+#else
+   (void)patch_stream;
+#endif
+
+   while (     !data_transfer_complete(dt)
+            && !data_transfer_failed(dt))
+   {
+      avail = data_transfer_iterate(dt, 0);
+#ifdef HAVE_PATCH
+      if (ps && avail > fed)
+      {
+         patch_stream_feed(ps, base + fed, avail - fed);
+         fed = avail;
+      }
+#endif
+   }
+
+#ifdef HAVE_PATCH
+   if (ps)
+   {
+      avail = data_transfer_avail(dt);
+      if (avail > fed)
+         patch_stream_feed(ps, base + fed, avail - fed);
+   }
+#endif
+
+   if (!(out = (uint8_t*)data_transfer_source_detach(dt, out_len)))
+      data_transfer_free(dt);
+   return out;
+}
+
 /* ---- prefetch cache: bytes read ahead of the load ---- */
 
 /* Take (transfer ownership of) a prefetched buffer for this exact
@@ -889,11 +980,14 @@ static size_t content_file_load_into_memory(
     * each span as it arrives, so the patch keeps pace with the load
     * instead of following it.  NULL means there is nothing streamable
     * and the existing patch_content pass below runs unchanged. */
-   patch_stream_t *patch_ps   = NULL;
    void           *patch_data = NULL;
    const char     *patch_fmt  = NULL;
    bool            streamed   = false;
 #endif
+   /* Streaming patch handle, kept opaque and declared unconditionally so
+    * the load paths can hand it to the pump without a HAVE_PATCH branch
+    * of their own.  Always NULL when patching is compiled out. */
+   void           *patch_ps   = NULL;
 
    RARCH_LOG("[Content] %s: \"%s\".\n",
          msg_hash_to_str(MSG_LOADING_CONTENT_FILE), content_path);
@@ -941,53 +1035,13 @@ static size_t content_file_load_into_memory(
             {
                size_t out_len = 0;
 #ifdef HAVE_PATCH
-               size_t fed     = 0;
-               const uint8_t *dt_base = NULL;
-               if (      idx == 0
-                     && first_content_type == RARCH_CONTENT_NONE
-                     && !(content_ctx->flags & CONTENT_INFO_FLAG_PATCH_IS_BLOCKED))
-               {
-                  size_t dt_total = 0;
-                  patch_ps = patch_content_stream_open(
-                        content_ctx->flags & CONTENT_INFO_FLAG_IS_IPS_PREF,
-                        content_ctx->flags & CONTENT_INFO_FLAG_IS_BPS_PREF,
-                        content_ctx->flags & CONTENT_INFO_FLAG_IS_UPS_PREF,
-                        content_ctx->flags & CONTENT_INFO_FLAG_IS_XDELTA_PREF,
-                        content_ctx->name_ips,
-                        content_ctx->name_bps,
-                        content_ctx->name_ups,
-                        content_ctx->name_xdelta,
-                        (size_t)src_usize, &patch_data, &patch_fmt);
-                  if (patch_ps)
-                     dt_base = data_transfer_ptr(dt, &dt_total);
-               }
+               patch_ps = content_file_patch_stream_open(content_ctx,
+                     idx, first_content_type, (size_t)src_usize,
+                     &patch_data, &patch_fmt);
 #endif
-               while (!data_transfer_complete(dt)
-                     && !data_transfer_failed(dt))
-               {
-                  size_t avail = data_transfer_iterate(dt, 0);
-#ifdef HAVE_PATCH
-                  /* Advance the patch over whatever just landed. */
-                  if (patch_ps && avail > fed)
-                  {
-                     patch_stream_feed(patch_ps, dt_base + fed, avail - fed);
-                     fed = avail;
-                  }
-#endif
-               }
-#ifdef HAVE_PATCH
-               if (patch_ps)
-               {
-                  size_t avail = data_transfer_avail(dt);
-                  if (avail > fed)
-                     patch_stream_feed(patch_ps, dt_base + fed, avail - fed);
-               }
-#endif
-               if ((content_data = (uint8_t*)
-                     data_transfer_source_detach(dt, &out_len)))
+               if ((content_data = content_file_pump_source(dt,
+                     patch_ps, &out_len)))
                   content_size = (int64_t)out_len;
-               else
-                  data_transfer_free(dt);
             }
          }
          file_archive_entry_source_close(src);
@@ -1003,9 +1057,60 @@ static size_t content_file_load_into_memory(
 #endif
    if (!content_data)
    {
-      if (!filestream_read_file(content_path,
-            (void**)&content_data, &content_size))
-         return 0;
+      /* Plain file: pump it through the same source-mode transfer the
+       * archive path uses, rather than one blocking whole-file read.
+       * That puts uncompressed content - the common case - on the
+       * sliceable spine too, and lets a patch advance alongside the
+       * read instead of running as a pass afterwards.
+       *
+       * Falls back to filestream_read_file if the file cannot be
+       * opened, sized, or transferred, so nothing that loaded before
+       * stops loading now. */
+      RFILE *fp = filestream_open(content_path,
+            RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+      if (fp)
+      {
+         int64_t fsize = filestream_get_size(fp);
+
+         if (fsize > 0)
+         {
+            data_transfer_t *dt = data_transfer_open_source((size_t)fsize,
+                  content_file_plain_source_read, fp);
+
+            if (dt)
+            {
+               size_t out_len = 0;
+#ifdef HAVE_PATCH
+               patch_ps = content_file_patch_stream_open(content_ctx,
+                     idx, first_content_type, (size_t)fsize,
+                     &patch_data, &patch_fmt);
+#endif
+               if ((content_data = content_file_pump_source(dt,
+                     patch_ps, &out_len)))
+                  content_size = (int64_t)out_len;
+#ifdef HAVE_PATCH
+               else if (patch_ps)
+               {
+                  /* transfer failed: drop the stream, the fallback
+                   * read below feeds the whole-buffer pass instead */
+                  patch_stream_free((patch_stream_t*)patch_ps);
+                  patch_ps = NULL;
+                  free(patch_data);
+                  patch_data = NULL;
+               }
+#endif
+            }
+         }
+         filestream_close(fp);
+      }
+
+      if (!content_data)
+      {
+         if (!filestream_read_file(content_path,
+               (void**)&content_data, &content_size))
+            return 0;
+      }
    }
 
    if (content_size < 0)
@@ -1023,7 +1128,8 @@ static size_t content_file_load_into_memory(
       size_t   patched_len = 0;
 
       if (      content_data
-            &&  patch_stream_finish(patch_ps, &patched, &patched_len)
+            &&  patch_stream_finish((patch_stream_t*)patch_ps,
+                     &patched, &patched_len)
             &&  patched)
       {
          free(content_data);
@@ -1041,7 +1147,7 @@ static size_t content_file_load_into_memory(
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
          }
       }
-      patch_stream_free(patch_ps);
+      patch_stream_free((patch_stream_t*)patch_ps);
       patch_ps = NULL;
       free(patch_data);
       patch_data = NULL;
