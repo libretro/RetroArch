@@ -1274,6 +1274,17 @@ static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
  * those magnitudes the Q20 step (9.5e-7) is ~32x finer than float32's
  * ULP (3e-5).  Saturation gives malformed streams defined clamping. */
 #define RVQ_RBITS 20
+/* __builtin_{add,sub}_overflow arrived in GCC 5; older GCC (and any
+ * compiler without the builtins) treats the unknown __builtin_ names as
+ * external calls and fails at link time, so gate on version /
+ * __has_builtin and fall back to the widening implementation. */
+#if defined(__clang__)
+#  if __has_builtin(__builtin_add_overflow) && __has_builtin(__builtin_sub_overflow)
+#    define RVQ_HAS_OVERFLOW_BUILTINS 1
+#  endif
+#elif defined(__GNUC__) && (__GNUC__ >= 5)
+#  define RVQ_HAS_OVERFLOW_BUILTINS 1
+#endif
 /* Saturating 32-bit add/sub via the overflow flag: the hot form is
  * one add plus a never-taken branch (x86 add+jo, ARM adds+b.vs) --
  * measured 4x fewer instructions than widening to int64 and cmov-
@@ -1282,7 +1293,7 @@ static INLINE int codebook_decode_scalar(vorb *f, Codebook *c)
  * first operand's sign equals clamping the true 64-bit result. */
 static INLINE int32_t rvq_sat_add32(int32_t a, int32_t b)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#ifdef RVQ_HAS_OVERFLOW_BUILTINS
    int32_t r;
    if (__builtin_add_overflow(a, b, &r))
       r = (a < 0) ? (int32_t)-0x7FFFFFFF - 1 : 0x7FFFFFFF;
@@ -1296,7 +1307,7 @@ static INLINE int32_t rvq_sat_add32(int32_t a, int32_t b)
 }
 static INLINE int32_t rvq_sat_sub32(int32_t a, int32_t b)
 {
-#if defined(__GNUC__) || defined(__clang__)
+#ifdef RVQ_HAS_OVERFLOW_BUILTINS
    int32_t r;
    if (__builtin_sub_overflow(a, b, &r))
       r = (a < 0) ? (int32_t)-0x7FFFFFFF - 1 : 0x7FFFFFFF;
