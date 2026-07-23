@@ -367,6 +367,15 @@ typedef struct content_state
    } prefetch[8];
    size_t prefetch_count;
 
+   /* Background CRC32 of content the frontend never buffers (a core
+    * using need_fullpath).  The hashing task owns these while it runs:
+    * it writes crc_bg_value and only then sets crc_bg_done, so a reader
+    * that observes the flag observes a finished value.  Single writer,
+    * word-sized, and the reader falls back to hashing synchronously if
+    * the flag is not yet set. */
+   uint32_t crc_bg_value;
+   volatile int crc_bg_done;
+
    char companion_ui_crc32[32];
    char pending_subsystem_ident[NAME_MAX_LENGTH];
    char pending_rom_crc_path[PATH_MAX_LENGTH];

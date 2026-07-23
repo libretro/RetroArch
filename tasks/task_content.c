@@ -782,6 +782,11 @@ static void content_information_ctx_free(
 /********************************/
 
 #define BLCK_BLOCK_EXTRACT 1
+/* Defined further down, next to the synchronous file_crc32 it backs up;
+ * used by the load path well before that point. */
+static void content_crc_task_push(content_state_t *p_content,
+      const char *path);
+
 #define BLCK_NEED_FULLPATH 2
 #define BLCK_REQUIRED      4
 #define BLCK_PERSISTENT    8
@@ -1574,6 +1579,9 @@ static bool content_file_load(
                   strlcpy(p_content->pending_rom_crc_path, content_path,
                         sizeof(p_content->pending_rom_crc_path));
                   p_content->flags |= CONTENT_ST_FLAG_PENDING_ROM_CRC;
+                  /* Get the hashing under way now, in slices, so the
+                   * value is ready before anything asks for it. */
+                  content_crc_task_push(p_content, content_path);
                }
                else
                   p_content->rom_crc = 0;
@@ -3137,6 +3145,117 @@ void content_unset_does_not_need_content(void)
 #define CRC32_BUFFER_SIZE 1048576
 #endif
 
+/* Bytes hashed per task tick by the background CRC task.  The whole
+ * point is not to stall the frontend, so this is a slice, not the
+ * buffer size. */
+#define CRC32_TICK_BYTES (1024 * 1024)
+
+/* ---- background CRC32 for content the frontend never buffers ----
+ *
+ * A core using need_fullpath opens the file itself, so the frontend has
+ * no buffer to hash.  The value was therefore computed on first use,
+ * synchronously, reading the whole file while the frontend waited.
+ * Hash it in budgeted slices from load time instead: by the time
+ * anything asks - netplay handshakes and movie recording happen well
+ * after the content is up - the answer is already there, and
+ * content_get_crc still hashes synchronously if it is not. */
+struct content_crc_task_state
+{
+   RFILE          *file;
+   unsigned char  *buf;
+   content_state_t *p_content;
+   uint32_t        crc;
+};
+
+static void content_crc_task_handler(retro_task_t *task)
+{
+   struct content_crc_task_state *st =
+         (struct content_crc_task_state*)task->state;
+   int64_t nread;
+
+   if (!st->file || !st->buf)
+   {
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
+   nread = filestream_read(st->file, st->buf, CRC32_TICK_BYTES);
+
+   if (nread < 0)
+   {
+      /* Leave crc_bg_done clear: content_get_crc falls back to the
+       * synchronous hash, which reports its own failure. */
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
+   st->crc = encoding_crc32(st->crc, st->buf, (size_t)nread);
+
+   if (nread < CRC32_TICK_BYTES || filestream_eof(st->file))
+   {
+      /* Publish the value before the flag, so a reader that sees the
+       * flag set is guaranteed to see the finished value. */
+      st->p_content->crc_bg_value = st->crc;
+      st->p_content->crc_bg_done  = 1;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
+}
+
+static void content_crc_task_cleanup(retro_task_t *task)
+{
+   struct content_crc_task_state *st =
+         (struct content_crc_task_state*)task->state;
+   if (!st)
+      return;
+   if (st->file)
+      filestream_close(st->file);
+   free(st->buf);
+   free(st);
+   task->state = NULL;
+}
+
+/* Best-effort: on any failure the deferred synchronous hash still
+ * covers the value, so there is nothing to report. */
+static void content_crc_task_push(content_state_t *p_content,
+      const char *path)
+{
+   struct content_crc_task_state *st = NULL;
+   retro_task_t                  *t  = NULL;
+
+   p_content->crc_bg_done  = 0;
+   p_content->crc_bg_value = 0;
+
+   if (!(st = (struct content_crc_task_state*)calloc(1, sizeof(*st))))
+      return;
+   if (!(st->buf = (unsigned char*)malloc(CRC32_TICK_BYTES)))
+   {
+      free(st);
+      return;
+   }
+   if (!(st->file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      free(st->buf);
+      free(st);
+      return;
+   }
+   if (!(t = task_init()))
+   {
+      filestream_close(st->file);
+      free(st->buf);
+      free(st);
+      return;
+   }
+
+   st->p_content = p_content;
+   st->crc       = 0;
+   t->state      = st;
+   t->handler    = content_crc_task_handler;
+   t->cleanup    = content_crc_task_cleanup;
+   t->flags     |= RETRO_TASK_FLG_MUTE;
+   task_queue_push(t);
+}
+
 /**
  * Calculate a CRC32 over the whole of the given file.
  *
@@ -3192,9 +3311,17 @@ uint32_t content_get_crc(void)
       p_content->flags   &= ~CONTENT_ST_FLAG_PENDING_ROM_CRC;
       /* Only reached for content the frontend never loaded into
        * memory - a core using need_fullpath.  Everything that does
-       * pass through a buffer is hashed at load time instead. */
-      p_content->rom_crc  = file_crc32(0,
-            (const char*)p_content->pending_rom_crc_path);
+       * pass through a buffer is hashed at load time instead.
+       *
+       * The background task started at load has normally finished by
+       * now; take its value if so, and otherwise hash synchronously as
+       * before.  Reading the flag first orders this against the task's
+       * write of the value. */
+      if (p_content->crc_bg_done)
+         p_content->rom_crc = p_content->crc_bg_value;
+      else
+         p_content->rom_crc  = file_crc32(0,
+               (const char*)p_content->pending_rom_crc_path);
       RARCH_LOG("[Content] CRC32: 0x%x.\n",
             (unsigned)p_content->rom_crc);
    }
