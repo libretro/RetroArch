@@ -1662,6 +1662,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
                   NULL, NULL))
                task_push_image_load(path,
                      (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                     0,
                      menu_display_handle_wallpaper_upload, NULL);
 
             gfx_display_init_white_texture();
@@ -1669,6 +1670,7 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
          else
             task_push_image_load(path,
                   (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA), 0,
+                  0,
                   menu_display_handle_wallpaper_upload, NULL);
 
          free(xmb->bg_file_path);

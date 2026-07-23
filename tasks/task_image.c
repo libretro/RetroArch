@@ -29,6 +29,7 @@
 #include <formats/rjpeg.h>
 #endif
 #include <formats/image.h>
+#include <gfx/scaler/scaler.h>
 #include <compat/strl.h>
 #include <retro_miscellaneous.h>
 #include <features/features_cpu.h>
@@ -65,6 +66,7 @@ struct nbio_image_handle
    int processing_final_state;
    unsigned frame_duration;
    unsigned upscale_threshold;
+   unsigned downscale_cap;
    enum image_type_enum type;
    enum image_status_enum status;
    uint8_t flags;
@@ -410,6 +412,186 @@ static bool upscale_image(
    return true;
 }
 
+/* Integer box decimate by 'f', averaging f*f source pixels.
+ *
+ * This is the first of two stages, and it is not just an
+ * optimisation.  The sinc kernel widens with the ratio - 128 taps per
+ * axis at 16:1 - and the accumulate truncates on every tap, so a
+ * single-stage reduction loses DC roughly in proportion to the tap
+ * count: ~7.8% at 16:1, against ~0.4% at 2:1.  Decimating first keeps
+ * the sinc stage at a small ratio, which keeps both the cost and the
+ * energy loss down.  Box averaging is itself an exact low-pass here -
+ * it averages precisely the pixels being discarded - so nothing is
+ * given up by doing it this way.
+ *
+ * Both packings are handled: 8-bit ARGB, and the packed 10-bit
+ * XRGB2101010 the video paths and rpng agree on (A [31:30],
+ * R [29:20], G [19:10], B [9:0]). */
+static uint32_t *downscale_box(const uint32_t *src,
+      unsigned sw, unsigned sh, unsigned f, bool pix10,
+      unsigned *dw, unsigned *dh)
+{
+   unsigned x, y, i, j;
+   unsigned n  = f * f;
+   uint32_t *d;
+
+   *dw = sw / f;
+   *dh = sh / f;
+
+   if ((*dw < 1) || (*dh < 1))
+      return NULL;
+
+   if (!(d = (uint32_t*)malloc((size_t)*dw * *dh * sizeof(uint32_t))))
+      return NULL;
+
+   for (y = 0; y < *dh; y++)
+   {
+      for (x = 0; x < *dw; x++)
+      {
+         unsigned a = 0, r = 0, g = 0, b = 0;
+
+         for (j = 0; j < f; j++)
+         {
+            const uint32_t *row = src + (size_t)(y * f + j) * sw + x * f;
+
+            if (pix10)
+            {
+               for (i = 0; i < f; i++)
+               {
+                  uint32_t p  = row[i];
+                  r          += (p >> 20) & 0x3ff;
+                  g          += (p >> 10) & 0x3ff;
+                  b          +=  p        & 0x3ff;
+               }
+            }
+            else
+            {
+               for (i = 0; i < f; i++)
+               {
+                  uint32_t p  = row[i];
+                  a          += (p >> 24) & 0xff;
+                  r          += (p >> 16) & 0xff;
+                  g          += (p >>  8) & 0xff;
+                  b          +=  p        & 0xff;
+               }
+            }
+         }
+
+         if (pix10)
+            d[(size_t)y * *dw + x] = 0xc0000000u
+                  | ((r / n) << 20) | ((g / n) << 10) | (b / n);
+         else
+            d[(size_t)y * *dw + x] =
+                  ((a / n) << 24) | ((r / n) << 16)
+                | ((g / n) <<  8) |  (b / n);
+      }
+   }
+
+   return d;
+}
+
+/* Cap a decoded image to 'cap' pixels on its longest side, preserving
+ * aspect ratio.
+ *
+ * The sidebar thumbnail and the fullscreen view share one texture -
+ * going fullscreen only raises a flag and fades alpha, it never
+ * re-requests the image - so the cap has to be the size the larger of
+ * the two views can use, which is the display, not the sidebar box.
+ * At display size the fullscreen view is unchanged, since it can
+ * never be drawn larger than the panel, and the sidebar downsamples
+ * from it on the GPU for free.  Sizing to the sidebar instead would
+ * make the fullscreen view soft.
+ *
+ * Returns true if the image was replaced. */
+static bool downscale_image(unsigned cap, struct texture_image *img)
+{
+   struct scaler_ctx ctx;
+   unsigned sw, sh, dw, dh, f;
+   uint32_t *mid = NULL;
+   uint32_t *out = NULL;
+   const uint32_t *src;
+   double ratio;
+
+   if (!cap || !img || !img->pixels)
+      return false;
+   if ((img->width < 1) || (img->height < 1))
+      return false;
+   if ((img->width <= cap) && (img->height <= cap))
+      return false;
+
+   ratio = (img->width > img->height)
+         ? (double)cap / (double)img->width
+         : (double)cap / (double)img->height;
+
+   dw    = (unsigned)(img->width  * ratio);
+   dh    = (unsigned)(img->height * ratio);
+
+   if ((dw < 1) || (dh < 1))
+      return false;
+
+   src   = img->pixels;
+   sw    = img->width;
+   sh    = img->height;
+
+   /* Stage 1: decimate as far as can be done without undershooting
+    * the target, leaving the sinc stage a ratio below 2 - and so its
+    * minimum 8-tap kernel.  Stopping earlier (at a ratio of 2 or
+    * more) widens the kernel to 16 taps or beyond and costs another
+    * LSB of DC per step, since the accumulate truncates once per
+    * tap. */
+   for (f = 1; (sw / (f * 2)) >= dw; f *= 2) ;
+
+   if (f > 1)
+   {
+      unsigned bw, bh;
+
+      if ((mid = downscale_box(src, sw, sh, f, img->pix10, &bw, &bh)))
+      {
+         src = mid;
+         sw  = bw;
+         sh  = bh;
+      }
+   }
+
+   /* Stage 2: sinc to the exact target. */
+   if (!(out = (uint32_t*)malloc((size_t)dw * dh * sizeof(uint32_t))))
+   {
+      free(mid);
+      return false;
+   }
+
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.in_width    = sw;
+   ctx.in_height   = sh;
+   ctx.in_stride   = sw * sizeof(uint32_t);
+   ctx.out_width   = dw;
+   ctx.out_height  = dh;
+   ctx.out_stride  = dw * sizeof(uint32_t);
+   ctx.in_fmt      = img->pix10
+         ? SCALER_FMT_XRGB2101010 : SCALER_FMT_ARGB8888;
+   ctx.out_fmt     = ctx.in_fmt;
+   ctx.scaler_type = SCALER_TYPE_SINC;
+
+   if (!scaler_ctx_gen_filter(&ctx))
+   {
+      free(out);
+      free(mid);
+      return false;
+   }
+
+   scaler_ctx_scale(&ctx, out, src);
+   scaler_ctx_gen_reset(&ctx);
+
+   free(mid);
+   free(img->pixels);
+
+   img->pixels = out;
+   img->width  = dw;
+   img->height = dh;
+
+   return true;
+}
+
 bool task_image_load_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -608,6 +790,16 @@ bool task_image_load_handler(retro_task_t *task)
             }
          }
 
+         /* Cap oversized images before they reach the GPU.  The
+          * still path uploaded at full resolution regardless of how
+          * small it would be drawn: an 11000x11000 PNG cost ~462 MB
+          * of RGBA to occupy a few hundred pixels.  Applies to
+          * 10-bit as well - a 16-bit PNG, which rpng packs as
+          * XRGB2101010, is exactly the kind of file that gets this
+          * large. */
+         if (image->downscale_cap > 0)
+            downscale_image(image->downscale_cap, &image->ti);
+
          img->width         = image->ti.width;
          img->height        = image->ti.height;
          img->pixels        = image->ti.pixels;
@@ -677,6 +869,7 @@ bool task_image_detach_video_stream(retro_task_t *task,
 
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
+      unsigned downscale_cap,
       retro_task_callback_t cb, void *user_data)
 {
    nbio_handle_t             *nbio   = NULL;
@@ -727,6 +920,7 @@ bool task_push_image_load(const char *fullpath,
    image->frame_duration             = 0;
    image->size                       = 0;
    image->upscale_threshold          = upscale_threshold;
+   image->downscale_cap              = downscale_cap;
    image->handle                     = NULL;
    image->cb                         = NULL;
 
@@ -870,6 +1064,7 @@ bool task_push_icon_load(const char *fullpath,
    tag->generation_ptr = generation_ptr;
 
    if (!task_push_image_load(fullpath, supports_rgba, 0,
+         0,
          cb_task_icon_load, tag))
    {
       free(tag);

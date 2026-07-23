@@ -2437,6 +2437,7 @@ static bool rgui_request_thumbnail(
          if (task_push_image_load(thumbnail->path,
                (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                0,
+               0,
                (thumbnail_id == GFX_THUMBNAIL_LEFT)
                      ? rgui_handle_left_thumbnail_upload
                      : rgui_handle_thumbnail_upload,
@@ -3347,6 +3348,7 @@ end:
              * and then forgotten, so performance issues are not a concern */
             task_push_image_load(wallpaper_path,
                   (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
+                  0,
                   0,
                   menu_display_handle_wallpaper_upload,
                   NULL);

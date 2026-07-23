@@ -196,8 +196,16 @@ bool task_push_core_restore(const char *backup_path,
 bool task_push_pl_manager_reset_cores(const playlist_config_t *playlist_config);
 bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_config);
 
+/* downscale_cap: if non-zero, the decoded image is capped to this many
+ * pixels on its longest side before upload, preserving aspect ratio.
+ * The sidebar thumbnail and the fullscreen view share one texture -
+ * going fullscreen only raises a flag, it never re-requests the image
+ * - so the cap has to be what the larger view can use, i.e. the
+ * display size.  0 disables it, for callers whose image is already
+ * display-sized (wallpaper) or drawn at a fixed small size (icons). */
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
+      unsigned downscale_cap,
       retro_task_callback_t cb, void *userdata);
 
 /* For an image-load task whose file is a video (WEBM/MP4): take

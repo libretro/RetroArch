@@ -1604,6 +1604,34 @@ static bool gfx_thumbnail_get_path(
  * NOTE 2: 'playlist' and 'idx' are only required here for
  *         on-demand thumbnail download support
  *         (an annoyance...) */
+/* The cap to hand task_push_image_load for a thumbnail: the display's
+ * longest side.
+ *
+ * The sidebar thumbnail and the fullscreen view share one texture -
+ * pressing the fullscreen key only raises a flag and fades alpha, it
+ * never re-requests the image - so a single size has to serve both.
+ * The display is that size: the fullscreen view can never be drawn
+ * larger than the panel, so it is unaffected, and the sidebar
+ * downsamples from it on the GPU for free.
+ *
+ * Falls back to 0 (no cap, previous behaviour) when the viewport is
+ * not known yet, rather than guessing a size the display might
+ * exceed and softening the fullscreen view. */
+static unsigned gfx_thumbnail_downscale_cap(void)
+{
+   struct video_viewport vp;
+
+   vp.width  = 0;
+   vp.height = 0;
+
+   if (!video_driver_get_viewport_info(&vp))
+      return 0;
+   if ((vp.width < 1) || (vp.height < 1))
+      return 0;
+
+   return (vp.width > vp.height) ? vp.width : vp.height;
+}
+
 void gfx_thumbnail_request(
       gfx_thumbnail_path_data_t *path_data,
       enum gfx_thumbnail_id thumbnail_id,
@@ -1651,6 +1679,7 @@ void gfx_thumbnail_request(
                if (task_push_image_load(
                         thumbnail_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
                         gfx_thumbnail_upscale_threshold,
+                        gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
                   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
             }
@@ -1756,6 +1785,7 @@ void gfx_thumbnail_request_file(
    if (task_push_image_load(
          file_path, (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA),
          gfx_thumbnail_upscale_threshold,
+         gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))
       GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
 }
