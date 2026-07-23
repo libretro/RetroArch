@@ -132,6 +132,21 @@ struct rpng_apng_stream
     * animation would otherwise churn the heap every loop. */
    uint8_t  *synth;
    size_t    synth_cap;
+
+   /* Progressive indexing over a still-arriving buffer.  avail is the
+    * resident byte count (== len once the read completes); scan_pos is
+    * where the chunk walk stopped, so raising avail resumes from there
+    * instead of re-walking.  indexed is how many frames are fully
+    * described so far - next() will not run past it, and returns NULL
+    * (end of pass) rather than decoding a frame whose fdAT has not
+    * arrived. */
+   size_t    avail;
+   size_t    scan_pos;
+   int       indexed;      /* frames fully described so far          */
+   int       scan_frame;   /* fcTL index the walk is currently on;
+                              persisted because the walk can stop
+                              between a frame's fcTL and its data     */
+   int       index_done;
    int       prev_x, prev_y, prev_w, prev_h;
    uint8_t   prev_dispose;
    int       have_prev;
@@ -258,26 +273,38 @@ bool rpng_is_apng(const uint8_t *buf, size_t len)
 /* Index the file: capture IHDR, optional PLTE/tRNS, acTL, and every
  * fcTL and its following IDAT/fdAT run.  Returns false on malformed or
  * non-APNG input. */
+/* Walk chunks from the last stop up to the resident frontier, filling
+ * in whatever frames have arrived.  Called once for a whole-buffer open
+ * and again from rpng_apng_stream_set_avail as the read progresses.
+ * Returns false only on malformed input - an incomplete index is not an
+ * error, it just leaves s->indexed short of s->num_frames. */
 static bool apng_index(rpng_apng_stream_t *s)
 {
-   size_t p = 8;
-   int cur_frame = -1;
-   int frame_cap = 0;
-   uint32_t ihdr_w = 0, ihdr_h = 0;
+   size_t p = s->scan_pos ? s->scan_pos : 8;
+   int cur_frame = s->scan_pos ? s->scan_frame : -1;
+   int frame_cap = s->num_frames;
+   uint32_t ihdr_w = (uint32_t)s->canvas_w;
+   uint32_t ihdr_h = (uint32_t)s->canvas_h;
 
+   if (s->index_done)
+      return true;
    if (s->len < 8 || memcmp(s->buf, apng_png_sig, 8) != 0)
       return false;
 
-   while (p + 12 <= s->len)
+   while (p + 12 <= s->avail)
    {
       uint32_t clen = apng_be32(s->buf + p);
       const uint8_t *typ = s->buf + p + 4;
       const uint8_t *pay = s->buf + p + 8;
       size_t chunk_total;
 
-      if (clen > s->len - p - 12)   /* body + type + crc must fit */
+      /* Not all here yet: stop and resume when more arrives.  Only a
+       * chunk that cannot fit even in the complete file is malformed. */
+      if (clen > s->len - p - 12)
          return false;
       chunk_total = (size_t)clen + 12;
+      if (p + chunk_total > s->avail)
+         break;
 
       if (!memcmp(typ, "IHDR", 4))
       {
@@ -384,20 +411,29 @@ static bool apng_index(rpng_apng_stream_t *s)
          }
       }
       else if (!memcmp(typ, "IEND", 4))
+      {
+         s->index_done = 1;
+         p += chunk_total;
          break;
+      }
 
       p += chunk_total;
+      /* A frame is usable once its fcTL and at least one data chunk are
+       * in; the next fcTL (or IEND) proves no more data chunks follow
+       * the previous frame. */
+      if (cur_frame >= 0 && s->frames && s->frames[cur_frame].num_parts > 0)
+         s->indexed = cur_frame + 1;
    }
+   s->scan_pos   = p;
+   s->scan_frame = cur_frame;
 
-   if (!s->ihdr || !s->frames || cur_frame + 1 != s->num_frames)
+   /* IHDR and acTL must be present to have a usable stream at all; the
+    * frame index may still be partial (s->indexed < s->num_frames) when
+    * the read is in flight. */
+   if (!s->ihdr || !s->frames)
       return false;
-   /* Every frame must have at least one data part. */
-   {
-      int i;
-      for (i = 0; i < s->num_frames; i++)
-         if (s->frames[i].num_parts == 0)
-            return false;
-   }
+   if (s->index_done && s->indexed != s->num_frames)
+      return false;   /* file ended with fewer frames than acTL declared */
    return true;
 }
 
@@ -411,6 +447,7 @@ rpng_apng_stream_t *rpng_apng_stream_open(const uint8_t *buf, size_t len)
       return NULL;
    s->buf        = buf;
    s->len        = len;
+   s->avail      = len;   /* whole buffer resident */
    s->loop_count = 0;
    if (!apng_index(s))
    {
@@ -425,6 +462,77 @@ rpng_apng_stream_t *rpng_apng_stream_open(const uint8_t *buf, size_t len)
       return NULL;
    }
    return s;
+}
+
+/* Progressive open over a partially-resident buffer.  Succeeds as soon
+ * as the signature, IHDR and acTL are in and at least one frame is
+ * fully described; the rest of the index fills in through
+ * rpng_apng_stream_set_avail as the read advances.  Returns NULL with
+ * *need_more set when the header is not resident yet (retry on a larger
+ * prefix), NULL with it clear when the data is not an APNG at all. */
+rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more)
+{
+   rpng_apng_stream_t *s;
+   int nm = 0;
+   if (need_more)
+      *need_more = 0;
+   if (avail > len)
+      avail = len;
+   if (!rpng_is_apng_ex(buf, avail, &nm))
+   {
+      if (nm && need_more)
+         *need_more = 1;
+      return NULL;
+   }
+   if (!(s = (rpng_apng_stream_t*)calloc(1, sizeof(*s))))
+      return NULL;
+   s->buf   = buf;
+   s->len   = len;
+   s->avail = avail;
+   if (!apng_index(s))
+   {
+      /* apng_index fails both for malformed input and for a prefix
+       * that has not reached IHDR/acTL yet.  Only the latter is worth
+       * retrying: it is distinguishable because the walk stopped short
+       * of the resident frontier with the file still incomplete. */
+      int retry = (avail < len);
+      rpng_apng_stream_close(s);
+      if (retry && need_more)
+         *need_more = 1;
+      return NULL;
+   }
+   /* Need the geometry and at least one decodable frame to start. */
+   if (s->canvas_w <= 0 || s->canvas_h <= 0 || s->indexed < 1)
+   {
+      int retry = (avail < len);
+      rpng_apng_stream_close(s);
+      if (retry && need_more)
+         *need_more = 1;
+      return NULL;
+   }
+   s->canvas = (uint32_t*)calloc(
+         (size_t)s->canvas_w * (size_t)s->canvas_h, sizeof(uint32_t));
+   if (!s->canvas)
+   {
+      rpng_apng_stream_close(s);
+      return NULL;
+   }
+   return s;
+}
+
+/* Declare how many leading bytes are resident; monotonic.  Resumes the
+ * chunk walk so frames that have since arrived become playable. */
+void rpng_apng_stream_set_avail(rpng_apng_stream_t *s, size_t avail)
+{
+   if (!s)
+      return;
+   if (avail > s->len)
+      avail = s->len;
+   if (avail <= s->avail)
+      return;
+   s->avail = avail;
+   apng_index(s);   /* extends s->indexed; malformed input just stops it */
 }
 
 void rpng_apng_stream_get_info(const rpng_apng_stream_t *s,
@@ -639,6 +747,12 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
       return NULL;
    if (s->cursor >= s->num_frames)
       return NULL;   /* end of one pass; caller rewinds to loop */
+   /* Frame not indexed yet: the read has not delivered its fcTL/fdAT.
+    * Report end-of-pass rather than decode from bytes that have not
+    * arrived - the caller loops what it has, and the frame becomes
+    * available once rpng_apng_stream_set_avail admits it. */
+   if (s->cursor >= s->indexed)
+      return NULL;
 
    f = &s->frames[s->cursor];
 

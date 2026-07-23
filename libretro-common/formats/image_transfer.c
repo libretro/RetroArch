@@ -636,6 +636,11 @@ void image_transfer_anim_stream_set_avail(void *stream,
 {
    switch (type)
    {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         rpng_apng_stream_set_avail((rpng_apng_stream_t*)stream, avail);
+#endif
+         break;
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          rwebm_video_stream_set_avail((rwebm_video_stream_t*)stream,
@@ -916,6 +921,13 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
       *need_more = 0;
    switch (type)
    {
+      case IMAGE_TYPE_PNG:
+#ifdef HAVE_RPNG
+         return rpng_apng_stream_open_avail((const uint8_t*)buf, len,
+               avail, need_more);
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
 #ifdef HAVE_RWEBM
          return rwebm_video_stream_open_avail((const uint8_t*)buf, len,

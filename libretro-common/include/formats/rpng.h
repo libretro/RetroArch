@@ -80,6 +80,17 @@ const uint32_t *rpng_apng_stream_next(rpng_apng_stream_t *s,
 bool rpng_apng_stream_set_argb(rpng_apng_stream_t *s, int argb);
 void rpng_apng_stream_rewind(rpng_apng_stream_t *s);
 
+/* Progressive open over a partially-resident buffer: only the first
+ * 'avail' bytes are guaranteed present.  Succeeds once the header and
+ * at least one frame are in; raise the frontier with
+ * rpng_apng_stream_set_avail as the read advances and later frames
+ * become playable.  Returns NULL with *need_more set when the header is
+ * not resident yet.  Until a frame is indexed, next() reports
+ * end-of-pass rather than decoding un-arrived bytes. */
+rpng_apng_stream_t *rpng_apng_stream_open_avail(const uint8_t *buf,
+      size_t len, size_t avail, int *need_more);
+void rpng_apng_stream_set_avail(rpng_apng_stream_t *s, size_t avail);
+
 rpng_t *rpng_alloc(void);
 
 void rpng_free(rpng_t *rpng);
