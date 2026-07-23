@@ -1420,34 +1420,50 @@ CHD_EXPORT const chd_header *chd_get_header(chd_file *chd)
     chd_read_header - read CHD header data
 	from file into the pointed struct
 -------------------------------------------------*/
+/* Read and validate a header from an already-opened core_file.  The
+ * file is NOT consumed: the caller keeps ownership regardless of the
+ * result (the read leaves the file position undefined).  Lets VFS-
+ * backed callers peek headers - e.g. to resolve a parent chain -
+ * without going through stdio. */
+CHD_EXPORT chd_error chd_read_header_core_file(core_file *file, chd_header *header)
+{
+	chd_error err;
+	chd_file fake;
+
+	/* punt if NULL */
+	if (file == NULL || header == NULL)
+		return CHDERR_INVALID_PARAMETER;
+
+	/* header_read only touches ->file, but hand it a fully zeroed
+	 * struct so that stays true by inspection. */
+	memset(&fake, 0, sizeof(fake));
+	fake.file = file;
+
+	err = header_read(&fake, header);
+	if (err != CHDERR_NONE)
+		return err;
+
+	return header_validate(header);
+}
+
 CHD_EXPORT chd_error chd_read_header(const char *filename, chd_header *header)
 {
-	chd_error err = CHDERR_NONE;
-	chd_file *chd = NULL;
+	chd_error  err;
+	core_file *file;
 
 	/* punt if NULL */
 	if (filename == NULL || header == NULL)
-		EARLY_EXIT(err = CHDERR_INVALID_PARAMETER);
+		return CHDERR_INVALID_PARAMETER;
 
-	/* open the file */
-	chd->file = core_stdio_fopen(filename);
-	if (chd->file == NULL)
-		EARLY_EXIT(err = CHDERR_FILE_NOT_FOUND);
+	/* open the file.  The previous version wrote through a chd_file
+	 * pointer initialised to NULL, crashing on every call; route it
+	 * through the core_file variant instead. */
+	file = core_stdio_fopen(filename);
+	if (file == NULL)
+		return CHDERR_FILE_NOT_FOUND;
 
-	/* attempt to read the header */
-	err = header_read(chd, header);
-	if (err != CHDERR_NONE)
-		EARLY_EXIT(err);
-
-	/* validate the header */
-	err = header_validate(header);
-	if (err != CHDERR_NONE)
-		EARLY_EXIT(err);
-
-cleanup:
-	if (chd->file != NULL)
-		core_fclose(chd->file);
-
+	err = chd_read_header_core_file(file, header);
+	core_fclose(file);
 	return err;
 }
 
