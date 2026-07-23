@@ -789,9 +789,26 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          float tmp[2];
          for (i = 0; i < have; i++)
          {
+            double l, r;
             retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = (int32_t)((double)tmp[0] * 2147483647.0);
-            dr[i] = (int32_t)((double)tmp[1] * 2147483647.0);
+            /* Symmetric full-scale (2^31) with round-half-away and
+             * saturation, matching convert_float_to_s16's semantics at
+             * 16-bit.  The previous (2^31 - 1) truncating form had an
+             * asymmetric transfer curve and doubled the quantisation
+             * error; it also relied on the frontend's float clamp for
+             * range safety.  Computed in double: float's 24-bit mantissa
+             * cannot address 32-bit steps, and the +-0.5 bias would be
+             * absorbed at float precision. */
+            l = (double)tmp[0] * 2147483648.0;
+            r = (double)tmp[1] * 2147483648.0;
+            l += (l >= 0.0) ? 0.5 : -0.5;
+            r += (r >= 0.0) ? 0.5 : -0.5;
+            if      (l >  2147483647.0) dl[i] = INT32_MAX;
+            else if (l < -2147483648.0) dl[i] = INT32_MIN;
+            else                        dl[i] = (int32_t)l;
+            if      (r >  2147483647.0) dr[i] = INT32_MAX;
+            else if (r < -2147483648.0) dr[i] = INT32_MIN;
+            else                        dr[i] = (int32_t)r;
          }
          for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
          break;
@@ -805,11 +822,20 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
+            float fl, fr;
             retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            l = (int32_t)(tmp[0] * 8388607.0f);
-            r = (int32_t)(tmp[1] * 8388607.0f);
-            l = l >  8388607 ?  8388607 : (l < -8388608 ? -8388608 : l);
-            r = r >  8388607 ?  8388607 : (r < -8388608 ? -8388608 : r);
+            /* Symmetric full-scale (2^23), round-half-away, saturate -
+             * see the Int32 branch comment. */
+            fl = tmp[0] * 8388608.0f;
+            fr = tmp[1] * 8388608.0f;
+            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
+            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
+            if      (fl >  8388607.0f) l =  8388607;
+            else if (fl < -8388608.0f) l = -8388608;
+            else                       l = (int32_t)fl;
+            if      (fr >  8388607.0f) r =  8388607;
+            else if (fr < -8388608.0f) r = -8388608;
+            else                       r = (int32_t)fr;
             dl[i*3+0]=(char)(l&0xFF); dl[i*3+1]=(char)((l>>8)&0xFF); dl[i*3+2]=(char)((l>>16)&0xFF);
             dr[i*3+0]=(char)(r&0xFF); dr[i*3+1]=(char)((r>>8)&0xFF); dr[i*3+2]=(char)((r>>16)&0xFF);
          }
@@ -829,11 +855,24 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
+            float fl, fr;
             retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            l = (int32_t)(tmp[0] * 32767.0f);
-            r = (int32_t)(tmp[1] * 32767.0f);
-            dl[i] = (int16_t)(l > 32767 ? 32767 : (l < -32768 ? -32768 : l));
-            dr[i] = (int16_t)(r > 32767 ? 32767 : (r < -32768 ? -32768 : r));
+            /* Same semantics as convert_float_to_s16's scalar path:
+             * symmetric 0x8000 scale, round-half-away, saturate.  The
+             * previous 32767-scale truncating form cost ~6 dB of
+             * quantisation noise and skewed the transfer curve. */
+            fl = tmp[0] * 32768.0f;
+            fr = tmp[1] * 32768.0f;
+            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
+            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
+            if      (fl >  32767.0f) l =  32767;
+            else if (fl < -32768.0f) l = -32768;
+            else                     l = (int32_t)fl;
+            if      (fr >  32767.0f) r =  32767;
+            else if (fr < -32768.0f) r = -32768;
+            else                     r = (int32_t)fr;
+            dl[i] = (int16_t)l;
+            dr[i] = (int16_t)r;
          }
          for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
          break;
