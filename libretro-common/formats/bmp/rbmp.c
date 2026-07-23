@@ -385,8 +385,11 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
     * approximate. */
    if (s->img_x == 0 || s->img_y == 0)
       return 0;
-   if (s->img_x > 0x4000u || s->img_y > 0x4000u)
-      return 0;
+   {
+      size_t max_px = (size_t)-1 / sizeof(uint32_t);
+      if ((size_t)s->img_x > max_px / (size_t)s->img_y)
+         return 0;
+   }
    output = (uint32_t*)malloc(
          (size_t)s->img_x * (size_t)s->img_y * sizeof(uint32_t));
    if (!output)
