@@ -70,13 +70,25 @@
 #define PATCH_FAIL    1
 
 /* Verbatim extraction of ips_apply_patch/ups_apply_patch logic from
- * tasks/task_patch.c (checksums simplified: we compare bytes, not
- * validation verdicts - the streaming applier's job is byte-identical
- * output). */
+ * tasks/task_patch.c, including the checksum validation.
+ *
+ * The validation is here deliberately.  An earlier version of this
+ * oracle omitted it and compared output bytes alone, on the reasoning
+ * that byte-identical output was the streaming appliers' job.  That
+ * left the appliers free to accept patches the whole-buffer form
+ * refuses, and both the UPS and the BPS applier did exactly that -
+ * applying a patch built for a different revision of the content and
+ * returning a plausible target instead of refusing.  Comparing bytes
+ * cannot see that: on a patch whose checksums are correct, which is
+ * everything this file generates, both sides agree on the bytes while
+ * disagreeing on whether the patch should have been applied at all.
+ * So the oracle returns a verdict and the verdict is compared. */
 #include <stdlib.h>
 #include <string.h>
 static uint32_t CT[256]; static int I=0;
 static void ct(void){uint32_t i,j,c;if(I)return;for(i=0;i<256;i++){c=i;for(j=0;j<8;j++)c=(c&1)?0xEDB88320u^(c>>1):c>>1;CT[i]=c;}I=1;}
+static uint32_t ocrc(const uint8_t*p,size_t n)
+{ uint32_t c=~0u; ct(); while(n--) c=CT[(c^*p++)&0xFF]^(c>>8); return ~c; }
 
 int oracle_ips(const uint8_t *pd, uint64_t pl, const uint8_t *sd, uint64_t sl, uint8_t **td, uint64_t *tl)
 {
@@ -207,6 +219,22 @@ int oracle_ups(const uint8_t *pd, uint64_t pl, const uint8_t *sd, uint64_t sl, u
      for(;;){ uint8_t px=upr(&d); utw(&d, px^usr(&d)); if(px==0)break; } }
    while(d.so<srl) utw(&d,usr(&d));
    while(d.to<trl) utw(&d,usr(&d));
+   /* trailer: source, target and patch checksums, four bytes each */
+   { uint32_t want_s=0,want_t=0,want_p=0,have_s,have_t,have_p; int k;
+     if(pl<12){ free(t); return PATCH_FAIL; }
+     for(k=0;k<4;k++){
+       want_s|=(uint32_t)pd[pl-12+k]<<(k*8);
+       want_t|=(uint32_t)pd[pl- 8+k]<<(k*8);
+       want_p|=(uint32_t)pd[pl- 4+k]<<(k*8); }
+     have_p=ocrc(pd,(size_t)(pl-4));
+     have_s=ocrc(sd,(size_t)sl);
+     have_t=ocrc(t,(size_t)trl);
+     if(have_p!=want_p){ free(t); return PATCH_FAIL; }
+     if(have_s==want_s && srl==(unsigned)sl)
+     { if(have_t!=want_t || trl!=(unsigned)trl){ free(t); return PATCH_FAIL; } }
+     else if(have_s==want_t && trl==(unsigned)sl)
+     { if(have_t!=want_s){ free(t); return PATCH_FAIL; } }
+     else { free(t); return PATCH_FAIL; } }
    *td=t;*tl=trl;return PATCH_SUCCESS;
 }
 
@@ -244,6 +272,15 @@ int oracle_bps(const uint8_t *md,uint64_t ml,const uint8_t *sd,uint64_t sl,uint8
          break;}
       }
    }
+   { uint32_t want_s=0,want_t=0,want_p=0; int k;
+     if(ml<12){ free(t); return PATCH_FAIL; }
+     for(k=0;k<4;k++){
+       want_s|=(uint32_t)md[ml-12+k]<<(k*8);
+       want_t|=(uint32_t)md[ml- 8+k]<<(k*8);
+       want_p|=(uint32_t)md[ml- 4+k]<<(k*8); }
+     if(ocrc(sd,(size_t)sl)!=want_s){ free(t); return PATCH_FAIL; }
+     if(ocrc(t,(size_t)ts)!=want_t){ free(t); return PATCH_FAIL; }
+     if(ocrc(md,(size_t)(ml-4))!=want_p){ free(t); return PATCH_FAIL; } }
    *td=t;*tl=ts;return PATCH_SUCCESS;
 }
 
@@ -1476,15 +1513,93 @@ static int run_xdelta(void)
 }
 #endif
 
+/* --------------------------------------------------------------------
+ * refusal parity: both appliers must reject the same patches
+ * -------------------------------------------------------------------- */
+
+/* Applying a patch to content it was not built against is the ordinary
+ * way patching goes wrong - the wrong dump, the wrong revision - and
+ * the source checksum is what the formats carry to catch it.  Comparing
+ * output bytes cannot test it, because when a patch is refused there is
+ * no output to compare; the verdicts have to be compared instead.  Both
+ * the UPS and the BPS streaming appliers once accepted these and
+ * returned a plausible target. */
+static int run_refusal_parity(void)
+{
+   static uint8_t src[8192], bad[8192], tgt[8192], pat[65536];
+   size_t i, pl;
+   int t, bad_count = 0, checked = 0;
+
+   for (t = 0; t < 200; t++)
+   {
+      size_t sl = 512 + (xr() % 4096);
+      size_t k;
+
+      for (i = 0; i < sl; i++)
+         src[i] = (uint8_t)xr();
+      memcpy(tgt, src, sl);
+      for (k = 0; k < 1 + sl / 256; k++)
+      { size_t at = xr() % sl; tgt[at] = (uint8_t)xr(); }
+
+      /* the same content, one byte different: a different revision */
+      memcpy(bad, src, sl);
+      bad[xr() % sl] ^= 0xFF;
+
+      /* UPS */
+      pl = make_ups(pat, src, sl, tgt, sl);
+      {
+         uint8_t *o = NULL, *m = NULL; uint64_t ol = 0; size_t ml = 0;
+         int ora, mine;
+         patch_stream_t *ps;
+         ora = (oracle_ups(pat, pl, bad, sl, &o, &ol) == PATCH_SUCCESS);
+         free(o); o = NULL;
+         ps  = patch_stream_ups_open(pat, pl, sl);
+         patch_stream_feed(ps, bad, sl);
+         mine = patch_stream_finish(ps, &m, &ml) ? 1 : 0;
+         free(m); patch_stream_free(ps);
+         checked++;
+         if (ora != mine)
+         { printf("[FAIL] UPS on wrong source: oracle %s, streamed %s\n",
+                  ora ? "accepted" : "refused", mine ? "accepted" : "refused");
+           bad_count++; }
+      }
+
+      /* BPS */
+      pl = make_bps(pat, src, sl, tgt, sl);
+      {
+         uint8_t *o = NULL, *m = NULL; uint64_t ol = 0; size_t ml = 0;
+         int ora, mine;
+         patch_stream_t *ps;
+         ora = (oracle_bps(pat, pl, bad, sl, &o, &ol) == PATCH_SUCCESS);
+         free(o); o = NULL;
+         ps  = patch_stream_bps_open(pat, pl, sl);
+         patch_stream_feed(ps, bad, sl);
+         mine = patch_stream_finish(ps, &m, &ml) ? 1 : 0;
+         free(m); patch_stream_free(ps);
+         checked++;
+         if (ora != mine)
+         { printf("[FAIL] BPS on wrong source: oracle %s, streamed %s\n",
+                  ora ? "accepted" : "refused", mine ? "accepted" : "refused");
+           bad_count++; }
+      }
+   }
+   if (!bad_count)
+      printf("PASS: %d wrong-source patches, verdicts agree (all refused)\n",
+             checked);
+   return bad_count != 0;
+}
+
 int main(void)
 {
-   int a, b, x;
+   int a, b, x, r;
    printf("--- IPS / UPS ---\n");
    a = run_ips_ups();
    printf("--- BPS ---\n");
    b = run_bps();
    printf("--- xdelta ---\n");
    x = run_xdelta();
-   printf("%s\n", (a || b || x) ? "FAILED" : "OK");
-   return (a || b || x) ? 1 : 0;
+   printf("--- refusal parity ---\n");
+   r = run_refusal_parity();
+   printf("%s\n", (a || b || x || r) ? "FAILED" : "OK");
+   return (a || b || x || r) ? 1 : 0;
 }
