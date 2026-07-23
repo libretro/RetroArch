@@ -973,7 +973,6 @@ AUDIO
 #else
 #include "../audio/drivers/alsa.c"
 #include "../audio/common/alsa.c"
-#include "../audio/drivers/alsathread.c"
 #endif
 #endif
 

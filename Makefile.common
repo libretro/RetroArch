@@ -874,11 +874,6 @@ ifeq ($(HAVE_ALSA), 1)
       endif
    endif
 
-   ifneq ($(MIYOO), 1)
-      ifeq ($(HAVE_THREADS), 1)
-         OBJ += audio/drivers/alsathread.o
-      endif
-   endif
 
    LIBS += $(ALSA_LIBS)
    DEF_FLAGS += $(ALSA_CFLAGS)
