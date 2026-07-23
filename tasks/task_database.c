@@ -915,7 +915,24 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * We should use less fullsize paths in the future so that we don't
     * need to have all these big char arrays here */
    size_t str_len                 = PATH_MAX_LENGTH * sizeof(char);
-   char* db_crc                   = (char*)malloc(str_len); /* this is needlessly large */
+   /* db_crc holds one of two things: a serial with "|serial" after it,
+    * or a CRC as "%08lX|crc" - thirteen bytes.  It was a PATH_MAX_LENGTH
+    * heap allocation for both, per matched entry, which is four
+    * kilobytes to hold thirteen.
+    *
+    * The worst case is still large, because db_state->serial is itself
+    * a 4 KiB field, so it cannot simply move to the stack - that is
+    * what the note below about limited stack sizes is about.  Take a
+    * small buffer for what actually occurs and fall back to the heap
+    * only for a serial that does not fit, which no real disc serial
+    * comes close to. */
+   char  db_crc_buf[128];
+   size_t db_crc_len              = (*db_state->serial)
+      ? (strlen(db_state->serial) + STRLEN_CONST("|serial") + 1)
+      : (STRLEN_CONST("XXXXXXXX|crc") + 1);
+   char* db_crc                   = (db_crc_len <= sizeof(db_crc_buf))
+      ? db_crc_buf
+      : (char*)malloc(db_crc_len);
    char* entry_path_str           = (char*)malloc(str_len);
    char *hash                     = NULL;
    const char         *db_path    =
@@ -942,7 +959,8 @@ static enum scan_verdict database_info_list_iterate_found_match(
     * build, so treat it like the OOM case and skip this entry. */
    if (!db_crc || !entry_path_str || !db_path)
    {
-      free(db_crc);
+      if (db_crc != db_crc_buf)
+         free(db_crc);
       free(entry_path_str);
       return SCAN_VERDICT_ERROR;
    }
@@ -955,13 +973,13 @@ static enum scan_verdict database_info_list_iterate_found_match(
 
    if (*db_state->serial)
    {
-      size_t _len = strlcpy(db_crc, db_state->serial, str_len);
+      size_t _len = strlcpy(db_crc, db_state->serial, db_crc_len);
       strlcpy(db_crc  + _len,
             "|serial",
-            str_len   - _len);
+            db_crc_len - _len);
    }
    else
-      snprintf(db_crc, str_len, "%08lX|crc",
+      snprintf(db_crc, db_crc_len, "%08lX|crc",
       (unsigned long)db_info_entry->crc32);
 
    if (entry_path)
@@ -1048,7 +1066,8 @@ static enum scan_verdict database_info_list_iterate_found_match(
       db_state->flags[0]      |= DB_STATE_FLAG_MATCHED;
    }
 
-   free(db_crc);
+   if (db_crc != db_crc_buf)
+      free(db_crc);
    free(entry_path_str);
    return SCAN_VERDICT_MATCHED_DB;
 }
