@@ -24,6 +24,14 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#ifdef __MACH__
+/* The GENERATED REGION rows below are gated on TARGET_OS_IPHONE /
+ * TARGET_OS_IOS.  msg_hash.h is pulled in by translation units that
+ * never include config.def.h, so without this the macros are
+ * undefined there and Apple clang emits -Wundef-prefix=TARGET_OS_. */
+#include <TargetConditionals.h>
+#endif
+
 #include "input/input_defines.h"
 
 #define MSG_HASH(Id, str) case Id: return str;
