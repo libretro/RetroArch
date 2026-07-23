@@ -293,16 +293,26 @@ static bool vcd_copy(struct vcd_dec *d, const uint8_t *seg, size_t seg_len,
       return true;
    }
    {
-      size_t from = win_start + (size_t)(addr - seg_len);
-      uint32_t i;
       /* A COPY that reads the target must read bytes already produced.
        * Anything at or past the cursor names output that does not
-       * exist yet - and the arithmetic below would underflow its
-       * distance and hand memcpy overlapping ranges, copying whatever
-       * the allocation happened to contain into the decoded content.
-       * Reject the whole class here rather than the far end of it. */
-      if (from >= at)
+       * exist yet - and the distance arithmetic below would underflow,
+       * handing memcpy overlapping ranges and copying whatever the
+       * allocation happened to contain into the decoded content.
+       *
+       * Compare inside the window's own address space rather than on
+       * the derived pointer offsets: an address near the top of the
+       * 32-bit range added to win_start wraps on a 32-bit host, and a
+       * wrapped value can land below the cursor and pass a check made
+       * after the addition.  Both terms here are bounded by the window
+       * itself, so neither can wrap. */
+      size_t produced = at - win_start;      /* target bytes so far    */
+      size_t off      = (size_t)(addr - seg_len);
+      size_t from;
+      uint32_t i;
+
+      if (off >= produced)
          return false;
+      from = win_start + off;
       if (from + len <= at)
       {
          memcpy(d->out + at, d->out + from, len);
@@ -473,6 +483,11 @@ static enum vcd_win vcd_window(struct vcd_dec *d, const uint8_t **pp,
    ip = dend;          iend = ip + inst_len;
    ap = iend;          aend = ap + addr_len;
 
+   /* On a 32-bit host a large enough window could carry the end past
+    * SIZE_MAX; every bound below is expressed against that sum, so it
+    * has to be real before any of them mean anything. */
+   if ((size_t)tgt_len > ((size_t)-1) - win_start)
+      return VCD_WIN_ERROR;
    if (!vcd_reserve(d, win_start + tgt_len))
       return VCD_WIN_ERROR;
 
