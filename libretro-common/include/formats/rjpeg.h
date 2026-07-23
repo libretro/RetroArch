@@ -46,6 +46,19 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf,
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data, size_t len);
 
+/* Prefix decoding support (mirrors rpng): rjpeg_set_avail declares how
+ * many bytes from the buffer start are resident (monotonic, clamped to
+ * the full length).  While the frontier is below the full length the
+ * baseline entropy row driver yields at the frontier with
+ * rjpeg_need_more() true instead of decoding past it, so a caller
+ * feeding a growing read can raise avail and iterate again.
+ * rjpeg_header_ready reports whether the resident bytes already contain
+ * the full JPEG header (SOI..SOS), i.e. whether decode can start.
+ * Never calling rjpeg_set_avail leaves the whole buffer resident. */
+void rjpeg_set_avail(rjpeg_t *rjpeg, size_t avail);
+bool rjpeg_need_more(const rjpeg_t *rjpeg);
+bool rjpeg_header_ready(const uint8_t *data, size_t len);
+
 void rjpeg_free(rjpeg_t *rjpeg);
 
 rjpeg_t *rjpeg_alloc(void);
