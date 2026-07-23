@@ -411,6 +411,10 @@ static bool input_autoconfigure_scan_config_files_external(
          retro_closedir(autoconfig_handle->scan_rdir);
          autoconfig_handle->scan_rdir = NULL;
          autoconfig_handle->scan_dir_idx++;
+         /* A directory that produced a match ends the search; the
+          * later directory is only a fallback. */
+         if (autoconfig_handle->scan_best)
+            autoconfig_handle->scan_dir_idx = num_dirs;
          continue;
       }
 
@@ -497,9 +501,24 @@ static bool input_autoconfigure_scan_config_files_external(
 
    if (autoconfig_handle->scan_best)
    {
-      autoconfig_handle->autoconfig_file = autoconfig_handle->scan_best;
-      autoconfig_handle->scan_best       = NULL;
+      /* Not a bare assignment: this attaches the file, records its
+       * name, and reads the display name for whichever alternative
+       * matched - which is the digit the affinity carries in its
+       * units place. */
+      input_autoconfigure_set_config_file(autoconfig_handle,
+            autoconfig_handle->scan_best,
+            autoconfig_handle->scan_max_affinity % 10);
+      autoconfig_handle->scan_best = NULL;
    }
+
+   RARCH_DBG("[Autoconf] Config files scanned: driver \"%s\", name \"%s\" (%04x/%04x), phys \"%s\", affinity %d.\n",
+         autoconfig_handle->device_info.joypad_driver,
+         autoconfig_handle->device_info.name,
+         autoconfig_handle->device_info.vid,
+         autoconfig_handle->device_info.pid,
+         autoconfig_handle->device_info.phys,
+         autoconfig_handle->scan_max_affinity);
+
    return true;
 }
 
