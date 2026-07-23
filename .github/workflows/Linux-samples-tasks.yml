@@ -194,3 +194,30 @@ jobs:
           test -x bps_patch_bounds_test
           timeout 60 ./bps_patch_bounds_test
           echo "[pass] bps_patch_bounds_test"
+
+      - name: Build and run patch_stream_test (ASan/UBSan)
+        shell: bash
+        working-directory: samples/tasks/patch_stream
+        run: |
+          set -eu
+          # Differential harness for the streaming patch appliers in
+          # tasks/patch_stream.c.  Each streamed applier must produce
+          # output byte-identical to the whole-buffer applier it
+          # mirrors in tasks/task_patch.c, at every chunk size - the
+          # oracle for IPS, UPS and BPS is a copy of that whole-buffer
+          # logic held in the test, so if task_patch.c changes its
+          # appliers the copy has to follow.  The .xdelta case checks
+          # the delegation to the VCDIFF decoder instead, since that
+          # decoder is verified separately against the reference
+          # implementation.
+          #
+          # The cases that matter most are the ones a whole-buffer
+          # applier cannot have: an empty source, a source that ends
+          # short of its declared length, and chunk boundaries landing
+          # inside a patch command.  A truncated feed must be refused
+          # rather than answered with a target built from a partial
+          # source.
+          make clean all SANITIZER=address,undefined
+          test -x patch_stream_test
+          timeout 900 ./patch_stream_test
+          echo "[pass] patch_stream_test"
