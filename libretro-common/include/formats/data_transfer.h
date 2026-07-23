@@ -114,6 +114,13 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len);
  * the whole file, so a caller can charge admission against the window
  * in the first case and against the file in the second. */
 bool data_transfer_window_is_reserved(data_transfer_t *dt);
+/* True when this build can reserve address space, i.e. when
+ * data_transfer_open_window will map a window rather than degrading to
+ * reading the whole file.  Lets a caller decide before opening whether
+ * the open is cheap (head only) or is going to slurp - the capability
+ * macro itself is private to data_transfer.c, so testing it outside
+ * would silently take the wrong branch. */
+bool data_transfer_reserve_supported(void);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);

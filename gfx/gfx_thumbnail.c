@@ -937,19 +937,6 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
    }
 #endif
 
-   /* Bound the file length before touching it: an unreservable path
-    * degrades to a whole-file read, and rejecting after that read
-    * would itself be the allocation spike the cap exists to prevent.
-    * The tighter, window-aware test happens once the open reports
-    * whether it genuinely windowed. */
-   {
-      int64_t fsz = path_get_size(path);
-      if (fsz <= 0)
-         return;
-      if (fsz > GFX_THUMB_ANIM_ABS_MAX_FILE)
-         return;
-   }
-
    /* Open the file as a sliding window: address space for the whole
     * file is reserved, but only [tell - margin, tell + lookahead) is
     * ever committed, so a long video costs its window rather than its
@@ -958,9 +945,26 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
     * the feeder below keeps the window ahead of the decode frontier.
     *
     * On a platform with no address-space reservation
-    * data_transfer_open_window fills the whole file and the window
-    * calls become no-ops, which is exactly the previous behaviour -
-    * so admission there stays the whole-file test. */
+    * data_transfer_open_window fills the whole file before returning,
+    * so the absolute bound has to be applied BEFORE the open there -
+    * checking afterwards would mean the multi-hundred-MB read had
+    * already happened, which is the allocation spike the cap exists to
+    * prevent.  Where the reservation works the open reads only the
+    * head, so the bound can come from the length the open reports and
+    * the extra stat is skipped: this runs on the menu hot path for
+    * every entry the user highlights, and on slow storage that
+    * round-trip is not free.
+    *
+    * The capability is asked for at runtime rather than tested with a
+    * macro: DT_HAVE_RESERVE is private to data_transfer.c, so a
+    * compile-time check here would silently take the wrong branch
+    * everywhere. */
+   if (!data_transfer_reserve_supported())
+   {
+      int64_t fsz = path_get_size(path);
+      if (fsz <= 0 || fsz > GFX_THUMB_ANIM_ABS_MAX_FILE)
+         return;
+   }
    {
       data_transfer_t *dt = data_transfer_open_window(path,
             GFX_THUMB_ANIM_WINDOW_KEEP);
@@ -976,8 +980,9 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
          data_transfer_free(dt);
          return;
       }
-      if (!(reserved ? gfx_thumb_anim_window_ok(0)
-                     : gfx_thumb_anim_mem_ok((uint64_t)blen, 0)))
+      if (   blen > GFX_THUMB_ANIM_ABS_MAX_FILE
+          || !(reserved ? gfx_thumb_anim_window_ok(0)
+                        : gfx_thumb_anim_mem_ok((uint64_t)blen, 0)))
       {
          data_transfer_free(dt);
          return;

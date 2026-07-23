@@ -299,6 +299,15 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
    return dt;
 }
 
+bool data_transfer_reserve_supported(void)
+{
+#if defined(_WIN32) || defined(DT_HAVE_RESERVE)
+   return true;
+#else
+   return false;
+#endif
+}
+
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
 {
    return dt && dt->window && dt->map_len != 0;
