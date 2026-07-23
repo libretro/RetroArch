@@ -295,12 +295,14 @@ static bool vcd_copy(struct vcd_dec *d, const uint8_t *seg, size_t seg_len,
    {
       size_t from = win_start + (size_t)(addr - seg_len);
       uint32_t i;
-      if (from >= at + len)
-      {
-         /* cannot happen for a well-formed patch: the source of a
-          * target COPY is always behind the cursor */
+      /* A COPY that reads the target must read bytes already produced.
+       * Anything at or past the cursor names output that does not
+       * exist yet - and the arithmetic below would underflow its
+       * distance and hand memcpy overlapping ranges, copying whatever
+       * the allocation happened to contain into the decoded content.
+       * Reject the whole class here rather than the far end of it. */
+      if (from >= at)
          return false;
-      }
       if (from + len <= at)
       {
          memcpy(d->out + at, d->out + from, len);

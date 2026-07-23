@@ -40,7 +40,9 @@
  * whose source segment is the target already produced, and a sequence
  * of copies that walks all nine address modes, both caches included -
  * built byte by byte from the specification and checked against
- * addresses computed independently of the decoder.
+ * addresses computed independently of the decoder.  A third checks
+ * that a COPY naming target bytes that do not exist yet is refused
+ * rather than served from whatever the allocation held.
  *
  * The last part feeds the decoder hundreds of thousands of random
  * byte strings behind a valid magic number. Practically none of them
@@ -4587,6 +4589,45 @@ static void address_modes(void)
    free(out);
 }
 
+
+/* A COPY that names target bytes not yet produced must be refused.
+ * Accepting one copies whatever the allocation happened to contain into
+ * the decoded content, and the distance arithmetic underflows on the
+ * way there. */
+static void forward_reference(void)
+{
+   unsigned char src[64];
+   unsigned char *out = NULL;
+   size_t len = 0, i;
+
+   for (i = 0; i < sizeof(src); i++)
+      src[i] = (unsigned char)(i + 1);
+
+   cn = 0;
+   cp_b(0xD6); cp_b(0xC3); cp_b(0xC4); cp_b(0x00); cp_b(0x00);
+   cp_b(0x01);                       /* VCD_SOURCE                  */
+   cp_varint(64); cp_varint(0);      /* segment: the whole source   */
+   cp_varint(0); cp_varint(20); cp_b(0x00);
+   cp_varint(0); cp_varint(2); cp_varint(2);
+   cp_b(20);                         /* COPY 4 from the source      */
+   cp_b(20);                         /* COPY 4 ...                  */
+   cp_b(0);                          /* ... at source offset 0      */
+   /* 64 + 6: target offset 6, while only four bytes of target
+    * exist.  Past the cursor, but inside cursor + length, which is
+    * the case a bound on the far end alone would let through. */
+   cp_b(70);
+
+   if (vcdiff_decode(cp, cn, src, sizeof(src), &out, &len))
+   {
+      printf("[FAIL] %-26s accepted a forward reference\n",
+             "forward reference");
+      failures++;
+      free(out);
+   }
+   else
+      printf("[ok]   %-26s refused\n", "forward reference");
+}
+
 static unsigned rng = 31337;
 static unsigned xr(void)
 {
@@ -4636,6 +4677,7 @@ int main(void)
    golden();
    target_window();
    address_modes();
+   forward_reference();
    malformed();
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;
