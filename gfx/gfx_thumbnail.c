@@ -1620,16 +1620,42 @@ static bool gfx_thumbnail_get_path(
 static unsigned gfx_thumbnail_downscale_cap(void)
 {
    struct video_viewport vp;
+   unsigned cap = 0;
+   unsigned w   = 0;
+   unsigned h   = 0;
+   char desc[64];
 
+   desc[0] = '\0';
+
+   /* Prefer the display's own size over the current window: a
+    * thumbnail is cached for as long as the entry stays selected, so
+    * a cap taken from a small window would leave the texture
+    * undersized after the window grows - and nothing re-requests it,
+    * since going fullscreen only raises a flag.  Sizing to the
+    * display costs nothing while windowed (the extra texels are
+    * simply downsampled) and keeps the fullscreen view sharp at any
+    * window size the display can reach. */
+   if (     video_driver_get_video_output_size(&w, &h, desc, sizeof(desc))
+         && (w > 0) && (h > 0))
+      cap = (w > h) ? w : h;
+
+   /* The display size is not always available - it depends on the
+    * driver and display server - so fall back to the viewport, and
+    * take the larger of the two when both are known rather than
+    * assuming either bounds the other. */
    vp.width  = 0;
    vp.height = 0;
 
-   if (!video_driver_get_viewport_info(&vp))
-      return 0;
-   if ((vp.width < 1) || (vp.height < 1))
-      return 0;
+   if (     video_driver_get_viewport_info(&vp)
+         && (vp.width > 0) && (vp.height > 0))
+   {
+      unsigned v = (vp.width > vp.height) ? vp.width : vp.height;
 
-   return (vp.width > vp.height) ? vp.width : vp.height;
+      if (v > cap)
+         cap = v;
+   }
+
+   return cap;
 }
 
 void gfx_thumbnail_request(
