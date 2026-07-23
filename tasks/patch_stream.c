@@ -69,8 +69,7 @@ struct patch_stream
     * same patches: a caller that keeps the unpatched buffer when a
     * patch is rejected would otherwise be handed a silently corrupt
     * one instead. */
-   uint32_t       ups_src_crc;
-   uint32_t       ups_tgt_crc;
+   uint32_t       src_crc;      /* over the source as it is fed  */
    uint32_t       ups_declared_src_len;
    uint32_t       ups_declared_tgt_len;
 
@@ -551,7 +550,7 @@ static size_t patch_stream_ups_feed(patch_stream_t *ps,
 
    memcpy(ps->carry + ps->carry_len, chunk, len);
    ps->carry_len += len;
-   ps->ups_src_crc = encoding_crc32(ps->ups_src_crc, chunk, len);
+   ps->src_crc = encoding_crc32(ps->src_crc, chunk, len);
    ps->src_seen  += len;
    patch_stream_ups_run(ps);
    return len;
@@ -586,7 +585,7 @@ static bool patch_stream_ups_finish(patch_stream_t *ps,
     * patch applied in reverse, where the two content checksums swap. */
    {
       uint32_t want_src = 0, want_tgt = 0, want_pat = 0;
-      uint32_t have_pat;
+      uint32_t have_pat, tgt_crc;
       unsigned i;
 
       if (ps->patch_len < 12)
@@ -600,20 +599,19 @@ static bool patch_stream_ups_finish(patch_stream_t *ps,
       have_pat = encoding_crc32(0, ps->patch, ps->patch_len - 4);
       if (have_pat != want_pat)
          return false;
+      tgt_crc = encoding_crc32(0, ps->out, ps->out_len);
 
-      ps->ups_tgt_crc = encoding_crc32(0, ps->out, ps->out_len);
-
-      if (      ps->ups_src_crc == want_src
+      if (      ps->src_crc == want_src
             &&  ps->ups_declared_src_len == (uint32_t)ps->src_len)
       {
-         if (      ps->ups_tgt_crc != want_tgt
+         if (      tgt_crc != want_tgt
                ||  ps->ups_declared_tgt_len != (uint32_t)ps->out_len)
             return false;
       }
-      else if (      ps->ups_src_crc == want_tgt
+      else if (      ps->src_crc == want_tgt
                  &&  ps->ups_declared_tgt_len == (uint32_t)ps->src_len)
       {
-         if (      ps->ups_tgt_crc != want_src
+         if (      tgt_crc != want_src
                ||  ps->ups_declared_src_len != (uint32_t)ps->out_len)
             return false;
       }
@@ -832,6 +830,7 @@ static size_t patch_stream_bps_feed(patch_stream_t *ps,
    }
 
    memcpy(ps->src_buf + ps->src_seen, chunk, len);
+   ps->src_crc   = encoding_crc32(ps->src_crc, chunk, len);
    ps->src_seen += len;
    patch_stream_bps_run(ps);
    return len;
@@ -852,6 +851,29 @@ static bool patch_stream_bps_finish(patch_stream_t *ps,
    }
 
    ps->out_len = ps->tgt_len;
+
+   /* The footer: source, target and patch checksums, four bytes each,
+    * little endian.  Refuse what bps_apply_patch refuses, and in the
+    * same order, so the reason a patch is rejected matches too. */
+   {
+      uint32_t want_src = 0, want_tgt = 0, want_pat = 0;
+      unsigned i;
+
+      if (ps->patch_len < 12)
+         return false;
+      for (i = 0; i < 4; i++)
+      {
+         want_src |= (uint32_t)ps->patch[ps->patch_len - 12 + i] << (i * 8);
+         want_tgt |= (uint32_t)ps->patch[ps->patch_len -  8 + i] << (i * 8);
+         want_pat |= (uint32_t)ps->patch[ps->patch_len -  4 + i] << (i * 8);
+      }
+      if (ps->src_crc != want_src)
+         return false;
+      if (encoding_crc32(0, ps->out, ps->out_len) != want_tgt)
+         return false;
+      if (encoding_crc32(0, ps->patch, ps->patch_len - 4) != want_pat)
+         return false;
+   }
    *out        = ps->out;
    *out_len    = ps->out_len;
    ps->out     = NULL;
