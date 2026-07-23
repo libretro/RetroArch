@@ -14,32 +14,12 @@ GitHub: https://github.com/mackron/dr_libs
 extern "C" {
 #endif
 
-#define RFLAC_STRINGIFY(x)      #x
-#define RFLAC_XSTRINGIFY(x)     RFLAC_STRINGIFY(x)
-
-#define RFLAC_VERSION_MAJOR     0
-#define RFLAC_VERSION_MINOR     12
-#define RFLAC_VERSION_REVISION  42
-#define RFLAC_VERSION_STRING    RFLAC_XSTRINGIFY(RFLAC_VERSION_MAJOR) "." RFLAC_XSTRINGIFY(RFLAC_VERSION_MINOR) "." RFLAC_XSTRINGIFY(RFLAC_VERSION_REVISION)
-
 #include <stddef.h> /* For size_t. */
-
 /* Fixed-width integer types come straight from <stdint.h> rather than a
  * private set of aliases. RetroArch guarantees stdint on every target
  * (via its compat shim for legacy MSVC), so no fallback typedefs are
  * needed here. */
 #include <stdint.h>
-
-#define RFLAC_TRUE             1
-#define RFLAC_FALSE            0
-
-/* Decorations */
-#if !defined(RFLAC_API)
-#define RFLAC_API extern
-#define RFLAC_PRIVATE static
-#endif
-/* End Decorations */
-
 
 /*
 As data is read from the client it is placed into an internal buffer for fast access. This controls the size of that buffer. Larger values means more speed,
@@ -48,7 +28,6 @@ but also more memory. In my testing there is diminishing returns after about 4KB
 #ifndef RFLAC_BUFFER_SIZE
 #define RFLAC_BUFFER_SIZE   4096
 #endif
-
 
 /* Architecture Detection */
 #if defined(_WIN64) || defined(_LP64) || defined(__LP64__)
@@ -264,7 +243,7 @@ The offset will never be negative. Whether or not it is relative to the beginnin
 either rflac_seek_origin_start or rflac_seek_origin_current.
 
 When seeking to a PCM frame using rflac_seek_to_pcm_frame(), rflac may call this with an offset beyond the end of the FLAC stream. This needs to be detected
-and handled by returning RFLAC_FALSE.
+and handled by returning 0.
 */
 typedef uint32_t (* rflac_seek_proc)(void* pUserData, int offset, rflac_seek_origin origin);
 
@@ -522,7 +501,7 @@ rflac_open_memory()
 rflac_open_with_metadata()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData);
+rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData);
 
 /*
 Opens a FLAC decoder and notifies the caller of the metadata chunks (album art, etc.).
@@ -573,7 +552,7 @@ Seek Also
 rflac_open()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData);
+rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData);
 
 /*
 Closes the given FLAC decoder.
@@ -596,7 +575,7 @@ rflac_open()
 rflac_open_with_metadata()
 rflac_open_memory()
 */
-RFLAC_API void rflac_close(rflac* pFlac);
+void rflac_close(rflac* pFlac);
 
 /*
 Reads sample data from the given FLAC decoder, output as interleaved signed 16-bit PCM.
@@ -625,7 +604,7 @@ pBufferOut can be null, in which case the call will act as a seek, and the retur
 
 Note that this is lossy for streams where the bits per sample is larger than 16.
 */
-RFLAC_API uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead, int16_t* pBufferOut);
+uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead, int16_t* pBufferOut);
 
 /*
 Reads sample data from the given FLAC decoder, output as interleaved 32-bit floating point PCM.
@@ -654,7 +633,7 @@ pBufferOut can be null, in which case the call will act as a seek, and the retur
 
 Note that this should be considered lossy due to the nature of floating point numbers not being able to exactly represent every possible number.
 */
-RFLAC_API uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead, float* pBufferOut);
+uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead, float* pBufferOut);
 
 /*
 Seeks to the PCM frame at the given index.
@@ -671,9 +650,9 @@ pcmFrameIndex (in)
 
 Return Value
 -------------
-`RFLAC_TRUE` if successful; `RFLAC_FALSE` otherwise.
+1 if successful; 0 otherwise.
 */
-RFLAC_API uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex);
+uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex);
 
 /*
 Opens a FLAC decoder from a pre-allocated block of memory
@@ -703,7 +682,7 @@ See Also
 rflac_open()
 rflac_close()
 */
-RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize);
+rflac* rflac_open_memory(const void* pData, size_t dataSize);
 
 /* High Level APIs */
 

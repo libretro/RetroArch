@@ -5650,11 +5650,10 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     The allocation size for decoded frames depends on the number of 32-bit integers that fit inside the largest SIMD vector
     we are supporting.
     */
-    if ((init.maxBlockSizeInPCMFrames % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) == 0) {
+    if ((init.maxBlockSizeInPCMFrames % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) == 0)
         wholeSIMDVectorCountPerChannel = (init.maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t)));
-    } else {
+    else
         wholeSIMDVectorCountPerChannel = (init.maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) + 1;
-    }
 
     decodedSamplesAllocationSize = wholeSIMDVectorCountPerChannel * RFLAC_MAX_SIMD_VECTOR_SIZE * init.channels;
 
@@ -5801,27 +5800,24 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     {
         pFlac->currentFLACFrame.header = init.firstFrameHeader;
         for (;;)
-	{
-            int32_t result = rflac__decode_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS)
-                break;
-	    else
-	    {
-                if (result == RFLAC_CRC_MISMATCH)
-		{
-                    if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-		    {
-                        free(pFlac);
-                        return NULL;
-                    }
-                    continue;
-                }
-		else
-		{
-                    free(pFlac);
-                    return NULL;
-                }
-            }
+        {
+           int32_t result = rflac__decode_flac_frame(pFlac);
+           if (result == RFLAC_SUCCESS)
+              break;
+           if (result == RFLAC_CRC_MISMATCH)
+           {
+              if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
+              {
+                 free(pFlac);
+                 return NULL;
+              }
+              continue;
+           }
+           else
+           {
+              free(pFlac);
+              return NULL;
+           }
         }
     }
 
@@ -5869,7 +5865,7 @@ static uint32_t rflac__on_seek_memory(void* pUserData, int offset, rflac_seek_or
     return 1;
 }
 
-RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize)
+rflac* rflac_open_memory(const void* pData, size_t dataSize)
 {
     rflac__memory_stream memoryStream;
     rflac* pFlac;
@@ -5899,17 +5895,17 @@ RFLAC_API rflac* rflac_open_memory(const void* pData, size_t dataSize)
     return pFlac;
 }
 
-RFLAC_API rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData)
+rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData)
 {
     return rflac_open_with_metadata_private(onRead, onSeek, NULL, rflac_container_unknown, pUserData, pUserData);
 }
 
-RFLAC_API rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData)
+rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData)
 {
     return rflac_open_with_metadata_private(onRead, onSeek, onMeta, rflac_container_unknown, pUserData, pUserData);
 }
 
-RFLAC_API void rflac_close(rflac* pFlac)
+void rflac_close(rflac* pFlac)
 {
     if (pFlac)
        free(pFlac);
@@ -6644,7 +6640,7 @@ static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo(rflac* p
     }
 }
 
-RFLAC_API uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead, int16_t* pBufferOut)
+uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead, int16_t* pBufferOut)
 {
     uint64_t framesRead;
     uint32_t unusedBitsPerSample;
@@ -7423,7 +7419,7 @@ static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo(rflac* p
     }
 }
 
-RFLAC_API uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead, float* pBufferOut)
+uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead, float* pBufferOut)
 {
     uint64_t framesRead;
     uint32_t unusedBitsPerSample;
@@ -7505,7 +7501,7 @@ RFLAC_API uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead
 }
 
 
-RFLAC_API uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
+uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
 {
     if (pFlac == NULL)
         return 0;
