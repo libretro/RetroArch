@@ -1068,8 +1068,38 @@ static void *ra_asio_init(const char *device, unsigned rate,
       /* Discard any stale audio left over from the previous
        * session.  Safe here because the ASIO callback isn't
        * running yet (g_asio is still NULL until the next line),
-       * so the SPSC is single-threaded at this point. */
-      retro_spsc_clear(&ad->ring);
+       * so the SPSC is single-threaded at this point.  For the
+       * same reason it is safe to recreate the ring outright when
+       * the latency-derived size changed (audio settings changes
+       * reinit the driver through free()/init(), which lands here
+       * on the reuse path - without this, a latency change would
+       * silently keep the old ring size). */
+      {
+         size_t latency_frames = (size_t)ad->sample_rate * latency / 1000;
+         size_t period_frames  = (size_t)ad->buffer_frames * ASIO_RING_MULT;
+         size_t ring_frames    = (latency_frames > period_frames)
+               ? latency_frames : period_frames;
+         size_t want           = ring_frames * 2 * sizeof(float);
+         if (want > ad->ring_size || want * 2 <= ad->ring_size)
+         {
+            retro_spsc_free(&ad->ring);
+            ad->ring_initialized = false;
+            if (!retro_spsc_init(&ad->ring, want))
+            {
+               RARCH_ERR("[ASIO] Failed to resize ring buffer.\n");
+               g_asio_persistent = ad; /* Park it again */
+               return NULL;
+            }
+            ad->ring_initialized = true;
+            ad->ring_size        = retro_spsc_write_avail(&ad->ring);
+            RARCH_LOG("[ASIO] Ring buffer resized: %u frames (%.1f ms).\n",
+                  (unsigned)(ad->ring_size / (2 * sizeof(float))),
+                  (double)(ad->ring_size / (2 * sizeof(float)))
+                        * 1000.0 / ad->sample_rate);
+         }
+         else
+            retro_spsc_clear(&ad->ring);
+      }
 
       g_asio = ad;
       ad->running = true;
@@ -1237,16 +1267,39 @@ static void *ra_asio_init(const char *device, unsigned rate,
    /* Create ring buffer BEFORE ASIO buffers — the driver may issue
     * a bufferSwitch callback during ASIOCreateBuffers, and the
     * callback needs the ring buffer to exist (even if empty).
-    * retro_spsc_init rounds capacity up to a power of 2; the
-    * over-allocation is small (factor of < 2) and irrelevant to
-    * the ASIO latency calculation, which uses ad->buffer_frames
-    * not the ring's actual byte capacity. */
-   ad->ring_size = pref_sz * 2 * sizeof(float) * ASIO_RING_MULT;
+    *
+    * Size the ring from the user's audio latency setting, floored at
+    * ASIO_RING_MULT device periods.  The previous sizing used device
+    * periods alone, which ignored the latency setting entirely: a pro
+    * interface at a typical 32-128 sample ASIO buffer produced a
+    * 1.3-5 ms ring at 96 kHz, far below main-thread scheduling jitter
+    * (the writer runs once per video frame), so the ring chronically
+    * underran and every underrun's zero-fill in bufferSwitch was an
+    * audible pop.  Like other drivers, the DRC steady state holds the
+    * ring about half full, so effective added latency is roughly half
+    * this size plus the device's own double buffer. */
+   {
+      size_t latency_frames = (size_t)ad->sample_rate * latency / 1000;
+      size_t period_frames  = (size_t)pref_sz * ASIO_RING_MULT;
+      size_t ring_frames    = (latency_frames > period_frames)
+            ? latency_frames : period_frames;
+      ad->ring_size = ring_frames * 2 * sizeof(float);
+   }
    if (!retro_spsc_init(&ad->ring, ad->ring_size))
    {
       RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
       goto error;
    }
+   /* retro_spsc_init rounds capacity up to a power of 2.  Report the
+    * true capacity as the driver buffer size, so the frontend's rate
+    * control computes its setpoint against the ring's real bounds
+    * rather than the pre-rounding request.  An empty ring's write
+    * avail is exactly its capacity. */
+   ad->ring_size = retro_spsc_write_avail(&ad->ring);
+   RARCH_LOG("[ASIO] Ring buffer: %u frames (%.1f ms).\n",
+         (unsigned)(ad->ring_size / (2 * sizeof(float))),
+         (double)(ad->ring_size / (2 * sizeof(float)))
+               * 1000.0 / ad->sample_rate);
    ad->ring_initialized = true;
 
 #ifdef HAVE_THREADS
