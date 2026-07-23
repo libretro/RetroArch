@@ -41,6 +41,18 @@
  *     window rather than tracking the file, which the last check
  *     measures directly where the platform can report it.
  *
+ * One asymmetry is worth stating outright, because it is surprising
+ * and it decides how a feeder bug presents.  Reading *behind* the
+ * window - bytes the feeder has advanced past - yields zeros on a
+ * normal build, so a consumer that looks back gets silence.  Reading
+ * *ahead* of the frontier is not like that: the reservation is mapped
+ * PROT_NONE until committed, so a consumer that outruns its feeder
+ * takes a fault, not zeros.  A feeder must therefore keep its
+ * lookahead genuinely ahead of the consumer; falling behind is fatal
+ * rather than merely wrong.  The last check pins that behaviour so a
+ * change to the window logic cannot quietly turn a crash into silent
+ * corruption, or the reverse.
+ *
  * The test reports whether this build can reserve address space. Where
  * it cannot, window mode degrades to holding the whole file and the
  * correctness checks still apply - only the residency bound does not.
@@ -119,6 +131,85 @@ static int residency_check(void)
       printf("[ok]   residency bound: grew %zu KiB for a %zu MiB file\n",
              grew, n >> 20);
    }
+   return 0;
+}
+#endif
+
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/wait.h>
+
+/* Reading ahead of the frontier must fault rather than yield zeros.
+ * Run it in a child so either answer is observable. */
+static int ahead_of_frontier_check(void)
+{
+   const char *path = "/tmp/dtwin_ahead.bin";
+   size_t n = 16u << 20, i;
+   uint8_t *buf = (uint8_t*)malloc(n);
+   FILE *f;
+   pid_t pid;
+   int status = 0;
+
+   if (!buf)
+      return 0;
+   for (i = 0; i < n; i++)
+      buf[i] = (uint8_t)(i | 1);
+   f = fopen(path, "wb"); fwrite(buf, 1, n, f); fclose(f);
+   free(buf);
+
+   if (!data_transfer_reserve_supported())
+   {
+      printf("[skip] read-ahead fault: no reservations on this build\n");
+      remove(path);
+      return 0;
+   }
+
+   /* A sanitizer traps the access itself and terminates the child its
+    * own way, so the signal this check looks for never arrives and the
+    * fault it is verifying would be reported as an absence.  The other
+    * checks still run under sanitizers; this one only means anything
+    * without them. */
+#if defined(__SANITIZE_ADDRESS__)
+   printf("[skip] read-ahead fault: the sanitizer intercepts it\n");
+   remove(path);
+   return 0;
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+   printf("[skip] read-ahead fault: the sanitizer intercepts it\n");
+   remove(path);
+   return 0;
+#endif
+#endif
+
+   if ((pid = fork()) == 0)
+   {
+      data_transfer_t *dt = data_transfer_open_window(path, KEEP);
+      const uint8_t *base; size_t blen = 0;
+      volatile uint8_t s;
+      if (!dt)
+         _exit(3);
+      base = data_transfer_window_base(dt, &blen);
+      s = base[0];              /* the head is resident */
+      s = base[8u << 20];       /* far ahead, with no feed between */
+      _exit(42);                /* reached only if it did not fault */
+      (void)s;
+   }
+   waitpid(pid, &status, 0);
+   remove(path);
+
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 42)
+   {
+      printf("[FAIL] read ahead of the frontier did not fault "
+             "(a feeder falling behind would corrupt silently)\n");
+      return 1;
+   }
+   printf("[ok]   read ahead of the frontier faults, as designed\n");
+   return 0;
+}
+#else
+static int ahead_of_frontier_check(void)
+{
+   printf("[skip] read-ahead fault: needs fork()\n");
    return 0;
 }
 #endif
@@ -203,6 +294,8 @@ int main(void)
 #else
    printf("[skip] residency bound: not measurable on this platform\n");
 #endif
+
+   bad |= ahead_of_frontier_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;
