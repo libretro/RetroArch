@@ -1,5 +1,6 @@
 TARGET       := data_transfer_source_test
 TARGET_TEST2 := data_transfer_prefix_test
+TARGET_TEST3 := data_transfer_window_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -15,7 +16,8 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
 COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
-OBJS        := data_transfer_source_test.o data_transfer_prefix_test.o $(COMMON_OBJS)
+OBJS        := data_transfer_source_test.o data_transfer_prefix_test.o \
+	data_transfer_window_test.o $(COMMON_OBJS)
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -24,7 +26,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET) $(TARGET_TEST2)
+all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -35,7 +37,10 @@ $(TARGET): data_transfer_source_test.o $(COMMON_OBJS)
 $(TARGET_TEST2): data_transfer_prefix_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST3): data_transfer_window_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST2) $(OBJS)
+	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS)
 
 .PHONY: clean
