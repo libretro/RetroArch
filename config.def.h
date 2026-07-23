@@ -946,6 +946,12 @@
 
 #define DEFAULT_RGUI_INLINE_THUMBNAILS false
 #define DEFAULT_RGUI_SWAP_THUMBNAILS false
+
+/* Dithering trades banding for a fine pattern, which is the better
+ * bargain at normal menu scales.  It is magnified by the menu's
+ * nearest-neighbour upscale though, so users running a large scale
+ * factor may prefer it off. */
+#define DEFAULT_RGUI_THUMBNAIL_DITHER true
 #define DEFAULT_RGUI_THUMBNAIL_DOWNSCALER RGUI_THUMB_SCALE_POINT
 #define DEFAULT_RGUI_THUMBNAIL_DELAY 0
 #define DEFAULT_RGUI_INTERNAL_UPSCALE_LEVEL RGUI_UPSCALE_NONE

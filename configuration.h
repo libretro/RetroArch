@@ -907,6 +907,7 @@ typedef struct settings
       bool menu_rgui_shadows;
       bool menu_rgui_inline_thumbnails;
       bool menu_rgui_swap_thumbnails;
+      bool menu_rgui_thumbnail_dither;
       bool menu_rgui_extended_ascii;
       bool menu_rgui_switch_icons;
       bool menu_rgui_particle_effect_screensaver;

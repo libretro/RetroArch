@@ -2577,6 +2577,8 @@ static void rgui_process_wallpaper(
    unsigned x, y;
    unsigned x_crop_offset;
    unsigned y_crop_offset;
+   settings_t *settings        = config_get_ptr();
+   bool dither                 = settings->bools.menu_rgui_thumbnail_dither;
    frame_buf_t *background_buf = &rgui->background_buf;
 
    /* Sanity check */
@@ -2608,8 +2610,16 @@ static void rgui_process_wallpaper(
       uint16_t   *dst = background_buf->data + y * background_buf->width;
       const uint32_t *src = image->pixels + x_crop_offset
             + (y + y_crop_offset) * image->width;
-      for (x = 0; x < background_buf->width; x++)
-         dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      if (dither)
+      {
+         for (x = 0; x < background_buf->width; x++)
+            dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      }
+      else
+      {
+         for (x = 0; x < background_buf->width; x++)
+            dst[x] = argb32_to_pixel_platform_format(src[x]);
+      }
    }
 
    /* Tell menu that a display update is required */
@@ -2900,6 +2910,7 @@ static void rgui_process_thumbnail(
       thumbnail_t *thumbnail,
       uint32_t *queue_size,
       unsigned menu_rgui_thumbnail_downscaler,
+      bool dither,
       struct texture_image *image_src)
 {
    unsigned x, y;
@@ -2951,8 +2962,16 @@ static void rgui_process_thumbnail(
    {
       uint16_t       *dst = thumbnail->data   + y * thumbnail->width;
       const uint32_t *src = image->pixels     + y * thumbnail->width;
-      for (x = 0; x < thumbnail->width; x++)
-         dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      if (dither)
+      {
+         for (x = 0; x < thumbnail->width; x++)
+            dst[x] = argb32_to_pixel_platform_format_dither(src[x], x, y);
+      }
+      else
+      {
+         for (x = 0; x < thumbnail->width; x++)
+            dst[x] = argb32_to_pixel_platform_format(src[x]);
+      }
    }
 
    thumbnail->is_valid    = true;
@@ -3012,18 +3031,22 @@ static bool rgui_load_image(
             settings_t *settings                    = config_get_ptr();
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
+            bool dither                             =
+                  settings->bools.menu_rgui_thumbnail_dither;
 
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui,
                      &rgui->fs_thumbnail,
                      &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
             else
                rgui_process_thumbnail(rgui,
                      &rgui->mini_thumbnail,
                      &rgui->thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
 
             /* If user toggles settings rapidly on very slow systems,
@@ -3041,18 +3064,22 @@ static bool rgui_load_image(
             settings_t *settings                    = config_get_ptr();
             unsigned menu_rgui_thumbnail_downscaler =
                   settings->uints.menu_rgui_thumbnail_downscaler;
+            bool dither                             =
+                  settings->bools.menu_rgui_thumbnail_dither;
 
             if (rgui->flags & RGUI_FLAG_SHOW_FULLSCREEN_THUMBNAIL)
                rgui_process_thumbnail(rgui,
                      &rgui->fs_thumbnail,
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
             else
                rgui_process_thumbnail(rgui,
                      &rgui->mini_left_thumbnail,
                      &rgui->left_thumbnail_queue_size,
                      menu_rgui_thumbnail_downscaler,
+                     dither,
                      image);
 
             if (rgui->left_thumbnail_queue_size > 0)
