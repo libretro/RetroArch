@@ -793,7 +793,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (is_slowmotion)
          rate_adjust                *= slowmotion_ratio;
 
-      /* Note: mute/volume is not applied here - driver must handle or ignore */
+      /* Note: mute/volume is not applied here.  Per the write_raw
+       * contract in audio_driver.h the driver MUST apply the passed
+       * gain (0.0 when muted) to its output - a driver that drops it
+       * silently disables the volume and mute settings. */
       audio_st->stat_frontend_is_float = false;
       audio->write_raw(audio_st->context_audio_data,
             data, frames, input_rate, rate_adjust, audio_volume_gain);
