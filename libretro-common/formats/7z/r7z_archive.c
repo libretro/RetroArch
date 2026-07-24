@@ -334,6 +334,13 @@ struct r7z_archive
    folder_t      *folders;
    uint32_t       num_folders;
 
+   /* Last folder decoded, kept so that extracting several members of
+    * one solid folder decodes it once rather than once per member.
+    * cached_folder is 0xFFFFFFFF when nothing is held. */
+   uint8_t       *cached_data;
+   size_t         cached_len;
+   uint32_t       cached_folder;
+
    r7z_entry_t   *entries;
    uint32_t       num_entries;
    uint16_t      *names;
@@ -2079,8 +2086,9 @@ int r7z_archive_open(r7z_archive_t **out, const uint8_t *data, size_t len)
    a = (r7z_archive_t *)calloc(1, sizeof(*a));
    if (!a)
       return R7Z_ERROR_MEM;
-   a->data = data;
-   a->len  = len;
+   a->data          = data;
+   a->len           = len;
+   a->cached_folder = 0xFFFFFFFFu;
 
    r.p   = data + 32 + next_off;
    r.end = r.p + (size_t)next_size;
@@ -2122,6 +2130,7 @@ void r7z_archive_close(r7z_archive_t *a)
 {
    if (!a)
       return;
+   free(a->cached_data);
    free(a->header_buf);
    free(a->pack_sizes);
    free(a->coders);
@@ -2180,29 +2189,35 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
    if (e->folder >= a->num_folders)
       return R7Z_ERROR_DATA;
 
-   res = decode_folder(a, e->folder, &folder_data);
-   if (res != R7Z_OK)
-      return res;
+   /* Decode the folder unless the last call already left it here. A
+    * solid folder holds many members, and without this each one costs
+    * a full decode of everything around it. */
+   if (a->cached_folder == e->folder && a->cached_data)
+      folder_data = a->cached_data;
+   else
+   {
+      res = decode_folder(a, e->folder, &folder_data);
+      if (res != R7Z_OK)
+         return res;
+
+      free(a->cached_data);
+      a->cached_data   = folder_data;
+      a->cached_len    = (size_t)a->folders[e->folder].unpack_size;
+      a->cached_folder = e->folder;
+   }
 
    {
       uint64_t fsize = a->folders[e->folder].unpack_size;
 
       if (e->offset_in_folder > fsize
             || e->size > fsize - e->offset_in_folder)
-      {
-         free(folder_data);
          return R7Z_ERROR_DATA;
-      }
    }
 
    buf = (uint8_t *)malloc((size_t)e->size);
    if (!buf)
-   {
-      free(folder_data);
       return R7Z_ERROR_MEM;
-   }
    memcpy(buf, folder_data + (size_t)e->offset_in_folder, (size_t)e->size);
-   free(folder_data);
 
    if (e->has_crc && crc_calc(buf, (size_t)e->size) != e->crc)
    {
