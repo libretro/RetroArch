@@ -409,28 +409,10 @@ static INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
 #endif
 }
 
-static INLINE uint32_t rflac__be2host_32(uint32_t n)
-{
-#ifdef MSB_FIRST
-   return n;
-#else
-   return rflac__swap_endian_uint32(n);
-#endif
-}
-
 static INLINE uint32_t rflac__be2host_32_ptr_unaligned(const void* pData)
 {
    const uint8_t* pNum = (uint8_t*)pData;
    return *(pNum) << 24 | *(pNum+1) << 16 | *(pNum+2) << 8 | *(pNum+3);
-}
-
-static INLINE uint64_t rflac__be2host_64(uint64_t n)
-{
-#ifdef MSB_FIRST
-   return n;
-#else
-   return rflac__swap_endian_uint64(n);
-#endif
 }
 
 static INLINE uint32_t rflac__le2host_32_ptr_unaligned(const void* pData)
@@ -513,12 +495,6 @@ static INLINE uint8_t rflac_crc8_byte(uint8_t crc, uint8_t data)
 
 static INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
 {
-#ifdef RFLAC_NO_CRC
-   (void)crc;
-   (void)data;
-   (void)count;
-   return 0;
-#else
    uint32_t wholeBytes;
    uint32_t leftoverBits;
    uint64_t leftoverDataMask;
@@ -539,7 +515,6 @@ static INLINE uint8_t rflac_crc8(uint8_t crc, uint32_t data, uint32_t count)
       case 0: if (leftoverBits > 0) crc = (uint8_t)((crc << leftoverBits) ^ rflac__crc8_table[(crc >> (8 - leftoverBits)) ^ (data & leftoverDataMask)]);
    }
    return crc;
-#endif
 }
 
 static INLINE uint16_t rflac_crc16_byte(uint16_t crc, uint8_t data)
@@ -583,10 +558,12 @@ static INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data,
    return crc;
 }
 
-#ifdef RFLAC_64BIT
-#define rflac__be2host__cache_line rflac__be2host_64
+#if defined(MSB_FIRST)
+#define rflac__be2host__cache_line(x) (x)
+#elif defined(RFLAC_64BIT)
+#define rflac__be2host__cache_line rflac__swap_endian_uint64
 #else
-#define rflac__be2host__cache_line rflac__be2host_32
+#define rflac__be2host__cache_line rflac__swap_endian_uint32
 #endif
 
 /* BIT READING ATTEMPT #2  This uses a 32- or 64-bit bit-shifted cache - as bits
@@ -611,7 +588,6 @@ static INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data,
 #define RFLAC_CACHE_L2_LINES_REMAINING(bs)                 (RFLAC_CACHE_L2_LINE_COUNT(bs) - (bs)->nextL2Line)
 
 
-#ifndef RFLAC_NO_CRC
 static INLINE void rflac__update_crc16(rflac_bs* bs)
 {
    if (bs->crc16CacheIgnoredBytes == 0)
@@ -643,7 +619,6 @@ static INLINE uint16_t rflac__flush_crc16(rflac_bs* bs)
 
    return bs->crc16;
 }
-#endif
 
 static INLINE uint32_t rflac__reload_l1_cache_from_l2(rflac_bs* bs)
 {
@@ -710,18 +685,14 @@ static uint32_t rflac__reload_cache(rflac_bs* bs)
 {
    size_t bytesRead;
 
-#ifndef RFLAC_NO_CRC
    rflac__update_crc16(bs);
-#endif
 
    /* Fast path: try just moving the next value from the L2 to the L1 cache. */
    if (rflac__reload_l1_cache_from_l2(bs))
    {
       bs->cache = rflac__be2host__cache_line(bs->cache);
       bs->consumedBits = 0;
-#ifndef RFLAC_NO_CRC
       bs->crc16Cache = bs->cache;
-#endif
       return 1;
    }
 
@@ -750,10 +721,8 @@ static uint32_t rflac__reload_cache(rflac_bs* bs)
     * we thus have no more unaligned bytes. */
    bs->unalignedByteCount = 0;
 
-#ifndef RFLAC_NO_CRC
    bs->crc16Cache = bs->cache >> bs->consumedBits;
    bs->crc16CacheIgnoredBytes = bs->consumedBits >> 3;
-#endif
    return 1;
 }
 
@@ -768,10 +737,8 @@ static void rflac__reset_cache(rflac_bs* bs)
    bs->unalignedByteCount = 0;
    bs->unalignedCache = 0;
 
-#ifndef RFLAC_NO_CRC
    bs->crc16Cache = 0;
    bs->crc16CacheIgnoredBytes = 0;
-#endif
 }
 
 
@@ -969,10 +936,8 @@ static uint32_t rflac__find_and_seek_to_next_sync_code(rflac_bs* bs)
      {
         uint8_t hi;
 
-#ifndef RFLAC_NO_CRC
         bs->crc16 = 0;
         bs->crc16CacheIgnoredBytes = bs->consumedBits >> 3;
-#endif
 
         if (!rflac__read_uint8(bs, 8, &hi))
           return 0;
@@ -1672,14 +1637,10 @@ RFLAC_HOT_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs,
 
          /* Now reload the cache. */
          if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
-         #ifndef RFLAC_NO_CRC
             rflac__update_crc16(bs);
-         #endif
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
             bs_consumedBits = riceParamPartLoBitCount;
-         #ifndef RFLAC_NO_CRC
             bs->crc16Cache = bs_cache;
-         #endif
          } else {
             /* Slow path. We need to fetch more data from the client. */
             if (!rflac__reload_cache(bs))
@@ -1708,14 +1669,10 @@ RFLAC_HOT_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs,
       uint32_t zeroCounter = (uint32_t)(RFLAC_CACHE_L1_SIZE_BITS(bs) - bs_consumedBits);
       for (;;) {
          if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
-         #ifndef RFLAC_NO_CRC
             rflac__update_crc16(bs);
-         #endif
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
             bs_consumedBits = 0;
-         #ifndef RFLAC_NO_CRC
             bs->crc16Cache = bs_cache;
-         #endif
          } else {
             /* Slow path. We need to fetch more data from the client. */
             if (!rflac__reload_cache(bs))
@@ -1786,14 +1743,10 @@ static INLINE uint32_t rflac__seek_rice_parts(rflac_bs* bs, uint8_t riceParam)
 
          /* Now reload the cache. */
          if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
-         #ifndef RFLAC_NO_CRC
             rflac__update_crc16(bs);
-         #endif
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
             bs_consumedBits = riceParamPartLoBitCount;
-         #ifndef RFLAC_NO_CRC
             bs->crc16Cache = bs_cache;
-         #endif
          } else {
             /* Slow path. We need to fetch more data from the client. */
             if (!rflac__reload_cache(bs))
@@ -1817,14 +1770,10 @@ static INLINE uint32_t rflac__seek_rice_parts(rflac_bs* bs, uint8_t riceParam)
        */
       for (;;) {
          if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
-         #ifndef RFLAC_NO_CRC
             rflac__update_crc16(bs);
-         #endif
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
             bs_consumedBits = 0;
-         #ifndef RFLAC_NO_CRC
             bs->crc16Cache = bs_cache;
-         #endif
          } else {
             /* Slow path. We need to fetch more data from the client. */
             if (!rflac__reload_cache(bs))
@@ -2916,11 +2865,9 @@ static uint32_t rflac__read_next_flac_frame_header(rflac_bs* bs,
       if (!rflac__read_uint8(bs, 8, &header->crc8))
          return 0;
 
-#ifndef RFLAC_NO_CRC
       if (header->crc8 != crc8)
          /* CRC mismatch. Loop back to the top and find the next sync code. */
          continue;
-#endif
       return 1;
    }
 }
@@ -3123,9 +3070,7 @@ static int32_t rflac__decode_flac_frame(rflac* pFlac)
    int i;
    uint8_t paddingSizeInBits;
    uint16_t desiredCRC16;
-#ifndef RFLAC_NO_CRC
    uint16_t actualCRC16;
-#endif
 
    /* This function should be called while the stream is sitting on the first
     * byte after the frame header. */
@@ -3156,16 +3101,12 @@ static int32_t rflac__decode_flac_frame(rflac* pFlac)
          return RFLAC_AT_END;
    }
 
-#ifndef RFLAC_NO_CRC
    actualCRC16 = rflac__flush_crc16(&pFlac->bs);
-#endif
    if (!rflac__read_uint16(&pFlac->bs, 16, &desiredCRC16))
       return RFLAC_AT_END;
 
-#ifndef RFLAC_NO_CRC
    if (actualCRC16 != desiredCRC16)
       return RFLAC_CRC_MISMATCH;    /* CRC mismatch. */
-#endif
 
    pFlac->currentFLACFrame.pcmFramesRemaining = pFlac->currentFLACFrame.header.blockSizeInPCMFrames;
 
@@ -3179,9 +3120,7 @@ static int32_t rflac__seek_flac_frame(rflac* pFlac)
    int channelCount;
    int i;
    uint16_t desiredCRC16;
-#ifndef RFLAC_NO_CRC
    uint16_t actualCRC16;
-#endif
 
    channelCount = rflac__get_channel_count_from_channel_assignment(pFlac->currentFLACFrame.header.channelAssignment);
    for (i = 0; i < channelCount; ++i)
@@ -3195,16 +3134,12 @@ static int32_t rflac__seek_flac_frame(rflac* pFlac)
       return RFLAC_ERROR;
 
    /* CRC. */
-#ifndef RFLAC_NO_CRC
    actualCRC16 = rflac__flush_crc16(&pFlac->bs);
-#endif
    if (!rflac__read_uint16(&pFlac->bs, 16, &desiredCRC16))
       return RFLAC_AT_END;
 
-#ifndef RFLAC_NO_CRC
    if (actualCRC16 != desiredCRC16)
       return RFLAC_CRC_MISMATCH;    /* CRC mismatch. */
-#endif
 
    return RFLAC_SUCCESS;
 }
@@ -3408,7 +3343,6 @@ next_iteration:
 }
 
 
-#if !defined(RFLAC_NO_CRC)
 /* We use an average compression ratio to determine our approximate start
  * location. FLAC files are generally about 50%-70% the size of their
  * uncompressed counterparts so we'll use this as a basis. I'm going to split
@@ -3619,7 +3553,6 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search(rflac* pFlac,
 
    return rflac__seek_to_pcm_frame__binary_search_internal(pFlac, pcmFrameIndex, byteRangeLo, byteRangeHi);
 }
-#endif  /* !RFLAC_NO_CRC */
 
 static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
       uint64_t pcmFrameIndex)
@@ -3651,7 +3584,6 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
    if (pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame > pFlac->totalPCMFrameCount && pFlac->totalPCMFrameCount > 0)
       return 0;
 
-#if !defined(RFLAC_NO_CRC)
    /* At this point we should know the closest seek point. We can use a binary
     * search for this. We need to know the total sample count for this. */
    if (pFlac->totalPCMFrameCount > 0) {
@@ -3696,7 +3628,6 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
          }
       }
    }
-#endif  /* !RFLAC_NO_CRC */
 
    /* Getting here means we need to use a slower algorithm because the binary
     * search method failed or cannot be used. */
@@ -3838,7 +3769,9 @@ static INLINE uint32_t rflac__read_and_decode_block_header(
    if (onRead(pUserData, &blockHeader, 4) != 4)
       return 0;
 
-   blockHeader  = rflac__be2host_32(blockHeader);
+#ifndef MSB_FIRST
+   blockHeader  = rflac__swap_endian_uint32(blockHeader);
+#endif
    *isLastBlock = (uint8_t)((blockHeader & 0x80000000UL) >> 31);
    *blockType   = (uint8_t)((blockHeader & 0x7F000000UL) >> 24);
    *blockSize   = (blockHeader & 0x00FFFFFFUL);
@@ -3869,9 +3802,11 @@ static uint32_t rflac__read_streaminfo(rflac_read_proc onRead, void* pUserData,
    if (onRead(pUserData, md5, sizeof(md5)) != sizeof(md5))
       return 0;
 
-   blockSizes     = rflac__be2host_32(blockSizes);
-   frameSizes     = rflac__be2host_64(frameSizes);
-   importantProps = rflac__be2host_64(importantProps);
+#ifndef MSB_FIRST
+   blockSizes     = rflac__swap_endian_uint32(blockSizes);
+   frameSizes     = rflac__swap_endian_uint64(frameSizes);
+   importantProps = rflac__swap_endian_uint64(importantProps);
+#endif
 
    pStreamInfo->minBlockSizeInPCMFrames = (uint16_t)((blockSizes & 0xFFFF0000) >> 16);
    pStreamInfo->maxBlockSizeInPCMFrames = (uint16_t) (blockSizes & 0x0000FFFF);
@@ -3932,7 +3867,10 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
 
                metadata.pRawData = pRawData;
                metadata.rawDataSize = blockSize;
-               metadata.data.application.id       = rflac__be2host_32(*(uint32_t*)pRawData);
+               metadata.data.application.id       = *(uint32_t*)pRawData;
+#ifndef MSB_FIRST
+               metadata.data.application.id       = rflac__swap_endian_uint32(metadata.data.application.id);
+#endif
                metadata.data.application.pData    = (const void*)((uint8_t*)pRawData + sizeof(uint32_t));
                metadata.data.application.dataSize = blockSize - sizeof(uint32_t);
                onMeta(pUserDataMD, &metadata);
@@ -3967,8 +3905,10 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                   }
 
                   /* Endian swap. */
-                  pSeekpoint->firstPCMFrame   = rflac__be2host_64(pSeekpoint->firstPCMFrame);
-                  pSeekpoint->flacFrameOffset = rflac__be2host_64(pSeekpoint->flacFrameOffset);
+#ifndef MSB_FIRST
+                  pSeekpoint->firstPCMFrame   = rflac__swap_endian_uint64(pSeekpoint->firstPCMFrame);
+                  pSeekpoint->flacFrameOffset = rflac__swap_endian_uint64(pSeekpoint->flacFrameOffset);
+#endif
 #ifndef MSB_FIRST
                   pSeekpoint->pcmFrameCount   = rflac__swap_endian_uint16(pSeekpoint->pcmFrameCount);
 #endif
@@ -4094,7 +4034,11 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                pRunningDataEnd = (const char*)pRawData + blockSize;
 
                memcpy(metadata.data.cuesheet.catalog, pRunningData, 128);                              pRunningData += 128;
-               metadata.data.cuesheet.leadInSampleCount = rflac__be2host_64(*(const uint64_t*)pRunningData); pRunningData += 8;
+               metadata.data.cuesheet.leadInSampleCount = *(const uint64_t*)pRunningData;
+#ifndef MSB_FIRST
+               metadata.data.cuesheet.leadInSampleCount = rflac__swap_endian_uint64(metadata.data.cuesheet.leadInSampleCount);
+#endif
+               pRunningData += 8;
                metadata.data.cuesheet.isCD              = (pRunningData[0] & 0x80) != 0;                           pRunningData += 259;
                metadata.data.cuesheet.trackCount        = pRunningData[0];                                         pRunningData += 1;
                /* Will be filled later. */
@@ -4174,7 +4118,9 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                         pRunningData      += RFLAC_CUESHEET_TRACK_INDEX_SIZE_IN_BYTES;
                         pRunningTrackData += sizeof(rflac_cuesheet_track_index);
 
-                        pTrackIndex->offset = rflac__be2host_64(pTrackIndex->offset);
+#ifndef MSB_FIRST
+                        pTrackIndex->offset = rflac__swap_endian_uint64(pTrackIndex->offset);
+#endif
                      }
                   }
 
@@ -4424,7 +4370,10 @@ static uint32_t rflac__init_private(rflac_init_info* pInit,
          flags = header[1];
 
          memcpy(&headerSize, header+2, 4);
-         headerSize = rflac__unsynchsafe_32(rflac__be2host_32(headerSize));
+#ifndef MSB_FIRST
+         headerSize = rflac__swap_endian_uint32(headerSize);
+#endif
+         headerSize = rflac__unsynchsafe_32(headerSize);
          if (flags & 0x10)
             headerSize += 10;
 
@@ -4550,8 +4499,10 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
             for (iSeekpoint = 0; iSeekpoint < seekpointCount; iSeekpoint += 1) {
                if (pFlac->bs.onRead(pFlac->bs.pUserData, pFlac->pSeekpoints + iSeekpoint, RFLAC_SEEKPOINT_SIZE_IN_BYTES) == RFLAC_SEEKPOINT_SIZE_IN_BYTES) {
                   /* Endian swap. */
-                  pFlac->pSeekpoints[iSeekpoint].firstPCMFrame   = rflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].firstPCMFrame);
-                  pFlac->pSeekpoints[iSeekpoint].flacFrameOffset = rflac__be2host_64(pFlac->pSeekpoints[iSeekpoint].flacFrameOffset);
+#ifndef MSB_FIRST
+                  pFlac->pSeekpoints[iSeekpoint].firstPCMFrame   = rflac__swap_endian_uint64(pFlac->pSeekpoints[iSeekpoint].firstPCMFrame);
+                  pFlac->pSeekpoints[iSeekpoint].flacFrameOffset = rflac__swap_endian_uint64(pFlac->pSeekpoints[iSeekpoint].flacFrameOffset);
+#endif
 #ifndef MSB_FIRST
                   pFlac->pSeekpoints[iSeekpoint].pcmFrameCount   = rflac__swap_endian_uint16(pFlac->pSeekpoints[iSeekpoint].pcmFrameCount);
 #endif
@@ -6466,12 +6417,10 @@ uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
          if (!pFlac->_noSeekTableSeek)
             wasSuccessful = rflac__seek_to_pcm_frame__seek_table(pFlac, pcmFrameIndex);
 
-#if !defined(RFLAC_NO_CRC)
          /* Fall back to binary search if seek table seeking fails.
           * This requires the length of the stream to be known. */
          if (!wasSuccessful && !pFlac->_noBinarySearchSeek && pFlac->totalPCMFrameCount > 0)
             wasSuccessful = rflac__seek_to_pcm_frame__binary_search(pFlac, pcmFrameIndex);
-#endif
 
          /* Fall back to brute force if all else fails. */
          if (!wasSuccessful && !pFlac->_noBruteForceSeek)
