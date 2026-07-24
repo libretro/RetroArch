@@ -265,13 +265,17 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
    uint8_t *member     = NULL;
    size_t   member_len = 0;
 
+   /* The callers loop while this returns 0, so 0 means "not finished,
+    * call again" and never "failed". Returning it on error spins them
+    * forever, and because each spin decodes the member afresh the hang
+    * is not even cheap. Failure is -1. */
    if (!sevenzip_context || !sevenzip_context->archive)
-      return 0;
+      return -1;
 
    if (r7z_archive_extract(sevenzip_context->archive,
             sevenzip_context->decompress_index,
             &member, &member_len) != R7Z_OK)
-      return 0;
+      return -1;
 
    /* The caller reads through handle->data until it calls back in, so
     * the previous member cannot be released any earlier than this. */
