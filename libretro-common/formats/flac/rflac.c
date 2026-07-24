@@ -818,7 +818,9 @@ static uint32_t rflac__read_int32(rflac_bs* bs, unsigned int bitCount,
    return 1;
 }
 
-#ifdef RFLAC_64BIT
+/* Composes a 64-bit value out of two 32-bit reads, so it needs no native
+ * 64-bit support and must stay available on ILP32 targets: the RFC 9639
+ * 32-bit sample path (rflac__read_int64w) calls it unconditionally. */
 static uint32_t rflac__read_uint64(rflac_bs* bs, unsigned int bitCount,
       uint64_t* pResultOut)
 {
@@ -834,7 +836,6 @@ static uint32_t rflac__read_uint64(rflac_bs* bs, unsigned int bitCount,
    *pResultOut = (((uint64_t)resultHi) << 32) | ((uint64_t)resultLo);
    return 1;
 }
-#endif
 
 static uint32_t rflac__read_uint16(rflac_bs* bs, unsigned int bitCount,
       uint16_t* pResult)
