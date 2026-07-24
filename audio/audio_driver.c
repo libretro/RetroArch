@@ -647,6 +647,58 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
  * agnostic: a session may move between the two paths mid-fast-forward and the
  * wall-clock series stays continuous.  Returns 1.0 (no adjustment) on the
  * first flush, seeding last_flush_time for the next one. */
+/* Bound a resampler ratio against the capacity of the output scratch.
+ *
+ * Neither struct resampler_data nor struct resampler_data_int16 carries an
+ * output-capacity field: every driver emits frames until its phase
+ * accumulator runs out of input and writes them straight to data_out (see
+ * the unbounded `while (resamp->time < phases)` loop in the sinc driver).
+ * The caller therefore owns the bound.
+ *
+ * audio_driver_init_internal sizes both output scratches at
+ * max_buffer_samples * AUDIO_MAX_RATIO * slowmotion_ratio samples, i.e. it
+ * assumes the effective ratio never exceeds AUDIO_MAX_RATIO relative to a
+ * full input batch.  But the effective ratio is a product -
+ * src_ratio_orig (output rate / core rate) * the rate-control adjustment *
+ * slowmotion_ratio * the fast-forward pitch multiplier - and only the last
+ * factor is clamped to AUDIO_MAX_RATIO.  src_ratio_orig is taken straight
+ * from the core's reported sample rate with no upper limit, so a core
+ * declaring a low rate against a high output rate overruns the headroom on
+ * its own; the fast-forward multiplier (which exceeds 1.0 whenever the core
+ * runs slower than realtime with fast-forward held) multiplies on top.
+ *
+ * Clamping rather than asserting keeps the failure mode proportionate: an
+ * over-range ratio only mistunes the output for as long as the condition
+ * lasts, whereas letting it through writes past the end of a heap block.
+ *
+ * The worst-case output count is not ceil(input_frames * ratio).  The drivers
+ * carry a phase accumulator between calls, and a call that begins with the
+ * accumulator already below `phases` emits before it consumes, so a single
+ * call can run ahead of the steady-state rate.  Measured across the sinc
+ * float, sinc int16, CC int16 and nearest drivers, the overshoot is about one
+ * input frame's worth of output at moderate ratios and grows with
+ * accumulator drift at extreme ones (~64 frames at a ratio of 1177).
+ *
+ * Rather than model that, reserve 16 input frames' worth of output, which is
+ * an order of magnitude more than any overshoot measured over the full ratio
+ * range.  The reservation is proportional, so the absolute margin scales with
+ * the buffer: ~470 frames at the default sizing, ~4700 at slowmotion_ratio
+ * 10.  It still admits every ratio the buffer can physically hold - the
+ * allocation supports 32 and this permits 31.5 - so a legitimate extreme such
+ * as an 8 kHz core against 192 kHz output (ratio 24) passes unclamped. */
+static double audio_driver_bound_ratio(double ratio,
+      size_t input_frames, size_t capacity_frames)
+{
+   double max_ratio;
+
+   if (input_frames == 0 || capacity_frames == 0)
+      return ratio;
+
+   max_ratio = (double)capacity_frames / (double)(input_frames + 16);
+
+   return (ratio > max_ratio) ? max_ratio : ratio;
+}
+
 static double audio_driver_fastforward_ratio_mult(
       audio_driver_state_t *audio_st, size_t input_frames)
 {
@@ -912,6 +964,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             i16_ratio *= audio_driver_fastforward_ratio_mult(
                   audio_st, rs_frames);
 
+         /* The int16 resampler writes to output_samples_int16 with no
+          * capacity argument; bound the ratio to what that buffer holds. */
+         i16_ratio         = audio_driver_bound_ratio(i16_ratio, rs_frames,
+               audio_st->output_samples_int16_length
+                     / (2 * sizeof(int16_t)));
+
          s16.data_in       = rs_in;
          s16.data_out      = audio_st->output_samples_int16;
          s16.input_frames  = rs_frames;
@@ -1164,6 +1222,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    if (is_fastforward && config_get_ptr()->bools.audio_fastforward_speedup)
       src_data.ratio *= audio_driver_fastforward_ratio_mult(
             audio_st, src_data.input_frames);
+
+   /* Bound the ratio to what the output scratch holds.  The float result is
+    * later narrowed into output_samples_int16 for s16 drivers, so take the
+    * smaller of the two capacities rather than assuming they match. */
+   {
+      size_t cap_f = audio_st->output_samples_buf_length
+            / (2 * sizeof(float));
+      size_t cap_i = audio_st->output_samples_int16_length
+            / (2 * sizeof(int16_t));
+
+      src_data.ratio = audio_driver_bound_ratio(src_data.ratio,
+            src_data.input_frames, (cap_f < cap_i) ? cap_f : cap_i);
+   }
 
    /* Unity passthrough: with dynamic rate control disabled the resampler
     * ratio is static, and when it is exactly 1.0 (input rate == output
