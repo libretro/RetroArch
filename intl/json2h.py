@@ -3,6 +3,7 @@
 # Convert *.json to *.h
 # Usage: ./json2h.py msg_hash_fr.json
 
+import os
 import re
 import sys
 import json
@@ -20,8 +21,15 @@ except IndexError:
     print("Usage: ./json2h.py <msg_hash_xx.json> | --repack <msg_hash_xx.h>")
     sys.exit(1)
 
-if h_filename in ('msg_hash_us.h', 'msg_hash_lbl.h') or (
-      json_filename in ('msg_hash_us.json', 'msg_hash_lbl.json')):
+# Compare and derive the language tag on the basename: the arguments may
+# carry a directory (intl/msg_hash_fr.json), and matching the raw string
+# would both miss the skip list and, worse, bake the path into every
+# emitted C symbol via LANG below.
+h_basename = os.path.basename(h_filename)
+json_basename = os.path.basename(json_filename) if json_filename else None
+
+if h_basename in ('msg_hash_us.h', 'msg_hash_lbl.h') or (
+      json_basename in ('msg_hash_us.json', 'msg_hash_lbl.json')):
     print("Skip")
     sys.exit(0)
 
@@ -564,13 +572,22 @@ def pack(text, lang, source=None):
     out.append('')
     return '\n'.join(out)
 
-LANG = h_filename.replace('msg_hash_', '').replace('.h', '')
+LANG = h_basename.replace('msg_hash_', '').replace('.h', '')
 
 if repack_mode:
     with open(h_filename, 'r', encoding='utf-8') as f:
-        packed = pack(f.read(), LANG)
+        text = f.read()
+    if not parse_rows_with_guards(text):
+        # --repack converts a hand-written MSG_HASH header into packed form.
+        # A header that has already been packed carries no MSG_HASH rows, so
+        # the parser legitimately finds nothing; that is a no-op, not the
+        # "no rows" failure below, which means the input is neither form.
+        if re.search(r'static const uint32_t msg_hash_\w+_ids\[\]', text):
+            print('%s is already packed; nothing to do' % h_filename)
+            sys.exit(0)
+        raise SystemExit('packed emitter: no MSG_HASH rows in ' + h_filename)
     with open(h_filename, 'w', encoding='utf-8') as f:
-        f.write(packed)
+        f.write(pack(text, LANG))
     sys.exit(0)
 
 with open('msg_hash_us.h', 'r', encoding='utf-8') as template_file:
