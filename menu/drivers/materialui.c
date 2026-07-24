@@ -12008,7 +12008,7 @@ static void materialui_list_insert(void *userdata,
             }
             else if (
                      string_is_equal(label, MENU_ENUM_LABEL_DATABASE_MANAGER_LIST_STR)
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CURSOR_MANAGER_LIST))
+                  || string_is_equal(label, "cursor_manager_list")
                   )
             {
                node->icon_texture_index = MUI_TEXTURE_DATABASE;
@@ -12442,8 +12442,8 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_KICK_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETPLAY_BAN_STR)
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_THUMBNAILS_MATERIALUI))
-                  || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LEFT_THUMBNAILS_MATERIALUI))
+                  || string_is_equal(label, MENU_ENUM_LABEL_THUMBNAILS_STR)
+                  || string_is_equal(label, MENU_ENUM_LABEL_LEFT_THUMBNAILS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_CORE_MANAGER_LIST_STR)
                   || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS))
