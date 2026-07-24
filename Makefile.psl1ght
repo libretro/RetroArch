@@ -40,7 +40,7 @@ endif
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
 CFLAGS += -Wall $(DEFINES) $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lcamera -lgem -lspurs
+LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -llv2 -lnet -lnetctl -lsysfs -lcamera -lgem -lspurs
 
 # system platform
 system_platform = unix
