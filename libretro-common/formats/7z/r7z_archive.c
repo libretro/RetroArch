@@ -2214,6 +2214,15 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
          return R7Z_ERROR_DATA;
    }
 
+   /* Sizes are 64-bit in the format but the buffer below is indexed by
+    * size_t. decode_folder() already refuses a folder it cannot
+    * address, which makes this unreachable for a member inside one,
+    * but the narrowing is here and should not depend on a check in
+    * another function to stay safe. */
+   if (e->size > (uint64_t)((size_t)-1)
+         || e->offset_in_folder > (uint64_t)((size_t)-1))
+      return R7Z_ERROR_DATA;
+
    buf = (uint8_t *)malloc((size_t)e->size);
    if (!buf)
       return R7Z_ERROR_MEM;
