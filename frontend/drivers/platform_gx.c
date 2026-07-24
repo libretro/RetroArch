@@ -58,7 +58,7 @@
 #include "../../menu/menu_entries.h"
 
 #if defined(HW_RVL)
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 #endif
 

@@ -526,7 +526,7 @@ VIDEO DRIVER
 #if defined(GEKKO)
 #ifdef HW_RVL
 #include "../gfx/drivers/gx_gfx_vi_encoder.c"
-#include "../memory/wii/mem2_manager.c"
+#include "../libretro-common/memory/mem2_manager.c"
 #endif
 #endif
 

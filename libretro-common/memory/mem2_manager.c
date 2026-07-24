@@ -10,7 +10,7 @@
 
 #include <retro_inline.h>
 
-#include "mem2_manager.h"
+#include <memory/mem2_manager.h>
 
 /* Forbid the use of MEM2 through malloc */
 uint32_t MALLOC_MEM2 = 0;

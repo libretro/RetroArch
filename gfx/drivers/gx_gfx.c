@@ -34,7 +34,7 @@
 #endif
 
 #ifdef HW_RVL
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 
 #include <defines/gx_defines.h>
