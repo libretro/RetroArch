@@ -403,6 +403,14 @@ typedef struct
     /* A pointer to the decoded sample data. This is an offset of pExtraData. */
     int32_t* pDecodedSamples;
 
+    /* 64-bit plane for the 33-bit stereo difference channel of 32-bit
+     * streams; NULL otherwise. This is an offset of pExtraData. */
+    int64_t* pWideSamples;
+
+    /* Subframe index of the wide (33-bit) channel in the current frame, or
+     * 0xFF when the current frame has none. */
+    uint8_t wideChannelIndex;
+
     /* A pointer to the seek table. This is an offset of pExtraData, or NULL if there is no seek table. */
     rflac_seekpoint* pSeekpoints;
 
