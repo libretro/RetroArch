@@ -38,16 +38,21 @@
 #define SEVENZIP_MAGIC "7z\xBC\xAF\x27\x1C"
 #define SEVENZIP_MAGIC_LEN 6
 
-/* r7z_archive parses from a buffer rather than a stream, so the archive
- * is read in whole. That matches how this backend is used: every caller
- * already holds the file open and goes on to decode entire members into
- * memory, and 7z itself cannot decode a solid folder without holding
- * all of it anyway. */
+/* r7z_archive parses from a buffer rather than a stream.
+ *
+ * archive_file.c has already opened the file and, for archives up to
+ * 256 MiB, mmapped it before this backend is entered. Where that
+ * mapping exists it is used directly, exactly as the zip and zstd
+ * backends do; reading the file again would mean a second full copy of
+ * the archive alongside the mapping. Only when there is no mapping
+ * (mmap unavailable, or an archive over the cap) does this read the
+ * file itself, and `owns_data` records which of the two happened. */
 struct sevenzip_context_t
 {
    r7z_archive_t *archive;
-   uint8_t       *data;
+   const uint8_t *data;
    size_t         data_len;
+   int            owns_data;
    /* Cache of the last extracted member, owned here so the handle
     * handed to the caller stays valid until the next call. */
    uint8_t       *output;
@@ -55,7 +60,8 @@ struct sevenzip_context_t
    uint32_t       decompress_index;
 };
 
-/* Read a whole file into memory. Returns NULL on any failure. */
+/* Read a whole file into memory, for the no-mapping case only.
+ * Returns NULL on any failure. */
 static uint8_t *sevenzip_slurp(const char *path, size_t *out_len)
 {
    RFILE   *f;
@@ -98,6 +104,33 @@ static uint8_t *sevenzip_slurp(const char *path, size_t *out_len)
    return buf;
 }
 
+/* Point the context at the archive bytes, preferring the mapping the
+ * caller already made. */
+static int sevenzip_bind_data(struct sevenzip_context_t *ctx,
+      file_archive_transfer_t *state, const char *file)
+{
+#ifdef HAVE_MMAP
+   if (state->archive_mmap_data && state->archive_size > 0)
+   {
+      ctx->data      = state->archive_mmap_data;
+      ctx->data_len  = (size_t)state->archive_size;
+      ctx->owns_data = 0;
+      return 1;
+   }
+#else
+   (void)state;
+#endif
+
+   {
+      uint8_t *buf = sevenzip_slurp(file, &ctx->data_len);
+      if (!buf)
+         return 0;
+      ctx->data      = buf;
+      ctx->owns_data = 1;
+   }
+   return 1;
+}
+
 /* Convert a stored UTF-16 name into the caller's char buffer. */
 static bool sevenzip_name_to_char(const uint16_t *name, char *s, size_t len)
 {
@@ -116,7 +149,10 @@ static void sevenzip_parse_file_free(void *context)
 
    free(sevenzip_context->output);
    r7z_archive_close(sevenzip_context->archive);
-   free(sevenzip_context->data);
+   /* Only free what this backend allocated; the mapping belongs to
+    * archive_file.c and is unmapped there. */
+   if (sevenzip_context->owns_data)
+      free((void*)sevenzip_context->data);
    free(sevenzip_context);
 }
 
@@ -271,8 +307,7 @@ static int sevenzip_parse_file_init(file_archive_transfer_t *state,
 
    state->context = sevenzip_context;
 
-   if (!(sevenzip_context->data =
-            sevenzip_slurp(file, &sevenzip_context->data_len)))
+   if (!sevenzip_bind_data(sevenzip_context, state, file))
       goto error;
 
    if (r7z_archive_open(&sevenzip_context->archive,
