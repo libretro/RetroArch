@@ -55,6 +55,31 @@
  * pass over all of it. r7z_bcj2_decode() does the whole thing;
  * r7z_bcj2_decode_part() does as much as a caller asks for and can be
  * resumed. See r7z_bcj2_state_t.
+ *
+ * ------------------------------------------------------------------
+ * Test coverage
+ * ------------------------------------------------------------------
+ *
+ * The converter is verified against 39 streams whose encoder was
+ * written separately rather than derived from this decoder, each
+ * decoded whole and then in slices of 1, 2, 3, 4, 5, 7, 64, 1024 and
+ * 65536 bytes. The small sizes are the point: a converted branch
+ * writes four bytes at once, and slicing at 1 to 3 bytes is what
+ * proves that write is never split across calls.
+ *
+ * The container path above it is verified against eight real 7-Zip
+ * archives, from 206 bytes to 1.2 MiB, covering tiny synthetic code, a
+ * real binary, several megabytes of concatenated binaries,
+ * incompressible data, branch-free text, a multi-file archive and an
+ * encoded header.
+ *
+ * One path in r7z_archive.c is not covered. A BCJ2 input port fed by a
+ * chain of coders, rather than by a single coder reading a packed
+ * stream, is refused by the slicer and resolved whole instead. That
+ * fallback is correct but never exercised, because no 7-Zip version
+ * produces that shape: every BCJ2 folder it writes is BCJ2 plus one
+ * coder per port. A stream in the wild using a chain would take a path
+ * whose parts are all tested, in a combination no test drives.
  */
 
 #ifndef __LIBRETRO_SDK_R7Z_BCJ2_H

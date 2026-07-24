@@ -2672,7 +2672,10 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
          }
       }
 
-      /* Not the simple shape: resolve it whole. */
+      /* Not the simple shape: resolve it whole. Correct, but not
+       * exercised by any test - no 7-Zip version writes a BCJ2 folder
+       * whose port is fed by a chain. See the coverage note in
+       * r7z_bcj2.h before changing this. */
       res = resolve_input(a, fi, a->pend_b2in + i, a->pend_base,
             &a->pend_b2buf[i], &a->pend_b2len[i]);
       if (res != R7Z_OK)
