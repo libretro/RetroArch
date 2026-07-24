@@ -227,7 +227,10 @@ static uint32_t *rtga_tga_load(rtga_context *s,
       for (row = 0; row < tga_height; ++row)
       {
          int dst_row     = tga_inverted ? (tga_height - 1 - row) : row;
-         uint32_t *dst   = output + dst_row * tga_width;
+         /* size_t index so dst_row * tga_width does not overflow
+          * signed int for a legitimate 65535 x 65535 image - the
+          * same widening the indexed path below already does. */
+         uint32_t *dst   = output + (size_t)dst_row * (size_t)tga_width;
          int bytes_needed = tga_width * tga_comp;
          int col;
 
