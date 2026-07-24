@@ -2269,8 +2269,14 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
          endif
       endif
 
-      ifeq ($(HAVE_7ZIP), 1)
-         OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      ifeq ($(HAVE_RLZMA), 1)
+         DEFINES += -DHAVE_RLZMA
+         OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o \
+                    $(LIBRETRO_COMM_DIR)/streams/rlzma.o
+      else
+         ifeq ($(HAVE_7ZIP), 1)
+            OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+         endif
       endif
 
       ifeq ($(HAVE_ZSTD), 1)

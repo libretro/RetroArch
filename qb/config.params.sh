@@ -145,6 +145,7 @@ HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
 HAVE_CHD=yes               # Compile in chd support
 CXX_CHD=no
 HAVE_7ZIP=yes              # Compile in 7z support
+HAVE_RLZMA=no              # Use the builtin LZMA decoder for CHD instead of the 7z SDK
 HAVE_ZSTD=yes              # Compile in Zstandard support
 HAVE_FLAC=no               # Link against libFLAC (unused by default; FLAC decode is provided by rflac)
 HAVE_RMP3=yes            # Compile in Dr. MP3 support

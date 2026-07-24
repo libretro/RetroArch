@@ -15,13 +15,18 @@
 
 #include <stdint.h>
 
+#ifdef HAVE_RLZMA
+#include <rlzma.h>
+#else
 #include <LzmaDec.h> /* decode-only: lzma_codec_init derives props without the encoder */
+#endif
 
 #include <libchdr/libchdr_zlib.h>
 
 /* codec-private data for the LZMA codec */
 #define MAX_LZMA_ALLOCS 64
 
+#ifndef HAVE_RLZMA
 typedef struct _lzma_allocator lzma_allocator;
 struct _lzma_allocator
 {
@@ -31,12 +36,19 @@ struct _lzma_allocator
 	uint32_t*	allocptr[MAX_LZMA_ALLOCS];
 	uint32_t*	allocptr2[MAX_LZMA_ALLOCS];
 };
+#endif
 
 typedef struct _lzma_codec_data lzma_codec_data;
 struct _lzma_codec_data
 {
+#ifdef HAVE_RLZMA
+	/* rlzma decodes into the caller's buffer, so there is no dictionary
+	 * to allocate and no allocator to thread through. */
+	rlzma_dec_t	decoder;
+#else
 	CLzmaDec		decoder;
 	lzma_allocator	allocator;
+#endif
 };
 
 /* codec-private data for the CDLZ codec */

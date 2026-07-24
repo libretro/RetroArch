@@ -57,6 +57,8 @@
  ***************************************************************************
  */
 
+#ifndef HAVE_RLZMA
+/* rlzma performs no allocation, so none of this is needed with it. */
 void *lzma_fast_alloc(void *p, size_t size);
 void lzma_fast_free(void *p, void *address);
 
@@ -194,6 +196,8 @@ void lzma_fast_free(void *p, void *address)
  *-------------------------------------------------
  */
 
+#endif /* !HAVE_RLZMA */
+
 /*-------------------------------------------------
  *  lzma_compute_dictionary_size
  *
@@ -251,10 +255,26 @@ static uint32_t lzma_compute_dictionary_size(uint32_t hunkbytes)
 chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 {
 	unsigned int i;
-	Byte decoder_props[LZMA_PROPS_SIZE];
-	lzma_allocator* alloc;
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 	const uint32_t dictSize = lzma_compute_dictionary_size(hunkbytes);
+#ifdef HAVE_RLZMA
+	uint8_t decoder_props[RLZMA_PROPS_SIZE];
+
+	/* properties byte 0 encodes (pb * 5 + lp) * 9 + lc for the encoder
+	 * defaults lc=3 lp=0 pb=2 -> 93; bytes 1..4 the dictionary size LE */
+	decoder_props[0] = 93;
+	for (i = 0; i < RLZMA_PROPS_SIZE - 1; ++i)
+		decoder_props[1 + i] = (uint8_t)((dictSize >> (8 * i)) & 0xFF);
+
+	/* No allocation: the decoder state is inline and the dictionary is
+	 * the caller's own output buffer. */
+	if (rlzma_dec_init(&lzma_codec->decoder, decoder_props) != RLZMA_OK)
+		return CHDERR_DECOMPRESSION_ERROR;
+
+	return CHDERR_NONE;
+#else
+	Byte decoder_props[LZMA_PROPS_SIZE];
+	lzma_allocator* alloc;
 
 	/* construct the decoder */
 	LzmaDec_Construct(&lzma_codec->decoder);
@@ -274,6 +294,7 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 
 	/* Okay */
 	return CHDERR_NONE;
+#endif
 }
 
 /*-------------------------------------------------
@@ -283,11 +304,16 @@ chd_error lzma_codec_init(void* codec, uint32_t hunkbytes)
 
 void lzma_codec_free(void* codec)
 {
+#ifdef HAVE_RLZMA
+	/* rlzma holds no resources. */
+	(void)codec;
+#else
 	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
 
 	/* free memory */
 	LzmaDec_Free(&lzma_codec->decoder, (ISzAlloc*)&lzma_codec->allocator);
 	lzma_allocator_free(&lzma_codec->allocator);
+#endif
 }
 
 /*-------------------------------------------------
@@ -298,6 +324,15 @@ void lzma_codec_free(void* codec)
 
 chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t complen, uint8_t *dest, uint32_t destlen)
 {
+#ifdef HAVE_RLZMA
+	lzma_codec_data* lzma_codec = (lzma_codec_data*) codec;
+
+	/* Decodes straight into dest, which doubles as the dictionary window.
+	 * The decoder resets itself, so hunks stay independent. */
+	if (rlzma_dec_decode(&lzma_codec->decoder, dest, destlen, src, complen) != RLZMA_OK)
+		return CHDERR_DECOMPRESSION_ERROR;
+	return CHDERR_NONE;
+#else
 	ELzmaStatus status;
 	SRes res;
 	SizeT consumedlen, decodedlen;
@@ -312,6 +347,7 @@ chd_error lzma_codec_decompress(void* codec, const uint8_t *src, uint32_t comple
 	if ((res != SZ_OK && res != LZMA_STATUS_MAYBE_FINISHED_WITHOUT_MARK) || consumedlen != complen || decodedlen != destlen)
 		return CHDERR_DECOMPRESSION_ERROR;
 	return CHDERR_NONE;
+#endif
 }
 
 /* cdlz */
