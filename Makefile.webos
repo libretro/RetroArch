@@ -371,6 +371,8 @@ clean:
 	$(Q)rm -f $(TARGET)
 	$(Q)rm -f *.d
 	$(Q)rm -rf SDL
+	$(Q)rm -rf SDL.tmp
+	$(Q)rm -f SDL2-prebuilt.tar.gz.tmp
 	$(Q)rm -rf webos/*.ipk
 	$(Q)rm -rf webos/dist
 
@@ -378,8 +380,17 @@ sdl2: $(TARGET)
 ifeq ($(ADD_SDL2_LIB), 1)
 	@if [ ! -f SDL/lib/libSDL2-2.0.so.0 ]; then \
 		echo "Downloading SDL2 prebuilt"; \
-		mkdir -p SDL; \
-		wget -qO - $(SDL2_PREBUILT_ARCHIVE) | tar -C SDL -zxvf -; \
+		rm -rf SDL.tmp SDL2-prebuilt.tar.gz.tmp; \
+		mkdir -p SDL.tmp; \
+		wget --tries=5 --timeout=30 --retry-connrefused \
+			-qO SDL2-prebuilt.tar.gz.tmp $(SDL2_PREBUILT_ARCHIVE) \
+			|| { echo "error: SDL2 prebuilt download failed: $(SDL2_PREBUILT_ARCHIVE)"; \
+			     rm -rf SDL.tmp SDL2-prebuilt.tar.gz.tmp; exit 1; }; \
+		tar -C SDL.tmp -zxf SDL2-prebuilt.tar.gz.tmp \
+			|| { echo "error: SDL2 prebuilt archive is corrupt or truncated"; \
+			     rm -rf SDL.tmp SDL2-prebuilt.tar.gz.tmp; exit 1; }; \
+		rm -f SDL2-prebuilt.tar.gz.tmp; \
+		mv SDL.tmp SDL; \
 	else \
 		echo "SDL2 prebuilt already exists, skipping download"; \
 	fi
