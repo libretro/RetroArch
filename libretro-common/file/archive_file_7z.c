@@ -156,84 +156,152 @@ static void sevenzip_parse_file_free(void *context)
    free(sevenzip_context);
 }
 
+/* State for the compressed_file_read driver below. */
+typedef struct
+{
+   char   *opt_file;
+   char   *needle;
+   void  **buf;
+   size_t  size;
+   bool    found;
+} sevenzip_decomp_state_t;
+
+/* Called once per entry while the driver walks the archive. Starts the
+ * decode of the wanted member and stops the scan; the iterate loop
+ * finishes the decode across later calls. */
+static int sevenzip_file_decompressed(
+      const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode,
+      uint32_t csize, uint32_t size,
+      uint32_t crc32, struct archive_extract_userdata *userdata)
+{
+   sevenzip_decomp_state_t *st =
+      (sevenzip_decomp_state_t*)userdata->cb_data;
+
+   if (!name || !*name || !st || !st->needle)
+      return 1;
+   if (!string_is_equal(name, st->needle))
+      return 1;   /* keep looking */
+
+   if (st->opt_file)
+   {
+      /* Decode straight to the requested path. */
+      if (file_archive_perform_mode_start(st->opt_file, valid_exts,
+               cdata, cmode, csize, size, crc32, userdata) == -1)
+         return 1;
+      st->size  = size;
+      st->found = true;
+      return 0;
+   }
+
+   /* Decode into memory. perform_mode writes to a file, so this path
+    * cannot use it; take the member directly and stop. */
+   {
+      struct sevenzip_context_t *ctx =
+         (struct sevenzip_context_t*)userdata->transfer->context;
+      uint8_t *member     = NULL;
+      size_t   member_len = 0;
+      int      res;
+
+      if (!ctx || !ctx->archive)
+         return 1;
+
+      /* Sliced, but driven to completion here: the caller of
+       * compressed_file_read wants the bytes on return and has nowhere
+       * to yield to. */
+      do
+      {
+         res = r7z_archive_extract_slice(ctx->archive,
+               (uint32_t)(size_t)cdata, &member, &member_len);
+      } while (res == R7Z_PENDING);
+
+      if (res != R7Z_OK)
+         return 1;
+
+      /* RetroArch expects a NUL after the data. */
+      if ((*st->buf = malloc(member_len + 1)))
+      {
+         ((char*)(*st->buf))[member_len] = '\0';
+         if (member_len)
+            memcpy(*st->buf, member, member_len);
+         st->size  = member_len;
+         st->found = true;
+      }
+      free(member);
+   }
+
+   return 0;
+}
+
 /* Extract the relative path (needle) from a 7z archive
  * (path) and allocate a buf for it to write it in.
  * If optional_outfile is set, extract to that instead
  * and don't allocate buffer.
+ *
+ * Driven through file_archive_parse_file_iterate() rather than
+ * reimplementing the walk, which is how the zip backend does it. That
+ * inherits the archive mapping, the per-entry stepping and the shared
+ * teardown instead of duplicating all three.
  */
 static int64_t sevenzip_file_read(
       const char *path,
       const char *needle, void **buf,
       const char *optional_outfile)
 {
-   r7z_archive_t *archive = NULL;
-   uint8_t       *data;
-   size_t         data_len = 0;
-   int64_t        outsize  = -1;
-   uint32_t       i;
-   uint32_t       num;
+   file_archive_transfer_t state;
+   sevenzip_decomp_state_t decomp;
+   struct archive_extract_userdata userdata;
+   int ret = 0;
 
-   if (!(data = sevenzip_slurp(path, &data_len)))
-      return -1;
+   memset(&state,    0, sizeof(state));
+   memset(&decomp,   0, sizeof(decomp));
+   memset(&userdata, 0, sizeof(userdata));
 
-   if (r7z_archive_open(&archive, data, data_len) != R7Z_OK)
+   /* strldup rather than strdup: this file builds as C89, where
+    * strdup is not standard. */
+   if (needle)
+      decomp.needle   = strldup(needle, strlen(needle) + 1);
+   if (optional_outfile)
+      decomp.opt_file = strldup(optional_outfile,
+            strlen(optional_outfile) + 1);
+
+   /* A needle that failed to duplicate would make the callback compare
+    * against NULL. Bail rather than risk it. */
+   if (     (needle && !decomp.needle)
+         || (optional_outfile && !decomp.opt_file))
    {
-      free(data);
+      free(decomp.needle);
+      free(decomp.opt_file);
       return -1;
    }
 
-   num = r7z_archive_num_entries(archive);
+   state.type        = ARCHIVE_TRANSFER_INIT;
+   userdata.transfer = &state;
+   userdata.cb_data  = &decomp;
+   decomp.buf        = buf;
 
-   for (i = 0; i < num; i++)
+   do
    {
-      const r7z_entry_t *entry = r7z_archive_entry(archive, i);
-      char               infile[PATH_MAX_LENGTH];
+      bool returnerr = true;
+      ret = file_archive_parse_file_iterate(&state, &returnerr, path,
+            "", sevenzip_file_decompressed, &userdata);
+      if (!returnerr)
+         break;
+      /* found is set when the decode *starts*, and the member may
+       * still be parked in the transfer. Keep ticking until it has
+       * drained, or the file mode would stop before anything was
+       * written. */
+   } while (ret == 0 && (!decomp.found || state.pending_active));
 
-      if (!entry || entry->is_dir)
-         continue;
+   file_archive_parse_file_iterate_stop(&state);
 
-      infile[0] = '\0';
-      if (!sevenzip_name_to_char(entry->name, infile, sizeof(infile)))
-         continue;
+   free(decomp.opt_file);
+   free(decomp.needle);
 
-      if (!string_is_equal(infile, needle))
-         continue;
+   if (!decomp.found)
+      return -1;
 
-      {
-         uint8_t *member     = NULL;
-         size_t   member_len = 0;
-
-         if (r7z_archive_extract(archive, i, &member, &member_len)
-               != R7Z_OK)
-            break;
-
-         if (optional_outfile)
-         {
-            if (filestream_write_file(optional_outfile,
-                     (const void*)member, (int64_t)member_len))
-               outsize = (int64_t)member_len;
-         }
-         else
-         {
-            /* RetroArch expects a NUL after the data, so this cannot
-             * simply hand over the decoder's buffer. */
-            if ((*buf = malloc(member_len + 1)))
-            {
-               ((char*)(*buf))[member_len] = '\0';
-               if (member_len)
-                  memcpy(*buf, member, member_len);
-               outsize = (int64_t)member_len;
-            }
-         }
-
-         free(member);
-      }
-      break;
-   }
-
-   r7z_archive_close(archive);
-   free(data);
-   return outsize;
+   return (int64_t)decomp.size;
 }
 
 static bool sevenzip_stream_decompress_data_to_file_init(
