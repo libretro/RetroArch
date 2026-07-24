@@ -344,23 +344,26 @@ struct r7z_archive
  * CRC32
  * -------------------------------------------------------------------- */
 
-static uint32_t crc_table[256];
-static int      crc_ready = 0;
+/* Prefixed because griffin builds every file in this directory into one
+ * translation unit alongside deps/libz, which has its own const
+ * crc_table at file scope. */
+static uint32_t r7z_crc_table[256];
+static int      r7z_crc_ready = 0;
 
 static void crc_init(void)
 {
    uint32_t i, j, c;
 
-   if (crc_ready)
+   if (r7z_crc_ready)
       return;
    for (i = 0; i < 256; i++)
    {
       c = i;
       for (j = 0; j < 8; j++)
          c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
-      crc_table[i] = c;
+      r7z_crc_table[i] = c;
    }
-   crc_ready = 1;
+   r7z_crc_ready = 1;
 }
 
 static uint32_t crc_calc(const uint8_t *p, size_t len)
@@ -370,7 +373,7 @@ static uint32_t crc_calc(const uint8_t *p, size_t len)
 
    crc_init();
    for (i = 0; i < len; i++)
-      c = crc_table[(c ^ p[i]) & 0xFF] ^ (c >> 8);
+      c = r7z_crc_table[(c ^ p[i]) & 0xFF] ^ (c >> 8);
    return c ^ 0xFFFFFFFFu;
 }
 

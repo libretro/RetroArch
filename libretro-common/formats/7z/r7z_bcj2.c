@@ -39,9 +39,16 @@
 
 #include <7z/r7z_bcj2.h>
 
+#undef NUM_MODEL_BITS
+/* griffin compiles this alongside r7z_lzma.c and r7z_lzma_stream.c,
+ * which define the same range coder constants to the same values.
+ * #undef first so the repeat is silent rather than a warning. */
 #define NUM_MODEL_BITS  11
+#undef BIT_MODEL_TOTAL
 #define BIT_MODEL_TOTAL (1 << NUM_MODEL_BITS)
+#undef NUM_MOVE_BITS
 #define NUM_MOVE_BITS   5
+#undef TOP_VALUE
 #define TOP_VALUE       ((uint32_t)1 << 24)
 
 /* A byte is a branch candidate if it is E8 (call), E9 (jump), or the

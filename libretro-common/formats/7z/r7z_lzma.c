@@ -44,40 +44,68 @@
 
 /* --------------------------------------------------------------------
  * Model constants
+ *
+ * Each definition below is preceded by an #undef, for the same reason
+ * as in r7z_lzma_stream.c: griffin builds this whole directory as one
+ * translation unit. Guarding both files rather than just one means no
+ * include order can leave a decoder holding the other's RC_NORMALIZE,
+ * which differ in whether they bounds-check the input.
  * -------------------------------------------------------------------- */
 
+#undef NUM_POS_BITS_MAX
 #define NUM_POS_BITS_MAX   4
+#undef NUM_POS_STATES_MAX
 #define NUM_POS_STATES_MAX (1 << NUM_POS_BITS_MAX)
 
+#undef LEN_NUM_LOW_BITS
 #define LEN_NUM_LOW_BITS     3
+#undef LEN_NUM_LOW_SYMBOLS
 #define LEN_NUM_LOW_SYMBOLS  (1 << LEN_NUM_LOW_BITS)
+#undef LEN_NUM_HIGH_BITS
 #define LEN_NUM_HIGH_BITS    8
+#undef LEN_NUM_HIGH_SYMBOLS
 #define LEN_NUM_HIGH_SYMBOLS (1 << LEN_NUM_HIGH_BITS)
 
 /* Length coder. LEN_CHOICE aliases LEN_LOW, and LEN_CHOICE_2 sits inside
  * the low-symbol array. The overlap is intentional. */
+#undef LEN_LOW
 #define LEN_LOW       0
+#undef LEN_HIGH
 #define LEN_HIGH      (LEN_LOW + 2 * (NUM_POS_STATES_MAX << LEN_NUM_LOW_BITS))
+#undef NUM_LEN_PROBS
 #define NUM_LEN_PROBS (LEN_HIGH + LEN_NUM_HIGH_SYMBOLS)
 
+#undef LEN_CHOICE
 #define LEN_CHOICE    LEN_LOW
+#undef LEN_CHOICE_2
 #define LEN_CHOICE_2  (LEN_LOW + (1 << LEN_NUM_LOW_BITS))
 
+#undef NUM_STATES
 #define NUM_STATES     12
 /* Tables indexed by a match-biased state need 16 slots, not 12. */
+#undef NUM_STATES_2
 #define NUM_STATES_2   16
+#undef NUM_LIT_STATES
 #define NUM_LIT_STATES  7
 
+#undef START_POS_MODEL_INDEX
 #define START_POS_MODEL_INDEX 4
+#undef END_POS_MODEL_INDEX
 #define END_POS_MODEL_INDEX   14
+#undef NUM_FULL_DISTANCES
 #define NUM_FULL_DISTANCES    (1 << (END_POS_MODEL_INDEX >> 1))
 
+#undef NUM_POS_SLOT_BITS
 #define NUM_POS_SLOT_BITS     6
+#undef NUM_LEN_TO_POS_STATES
 #define NUM_LEN_TO_POS_STATES 4
 
+#undef NUM_ALIGN_BITS
 #define NUM_ALIGN_BITS   4
+#undef ALIGN_TABLE_SIZE
 #define ALIGN_TABLE_SIZE (1 << NUM_ALIGN_BITS)
 
+#undef MATCH_MIN_LEN
 #define MATCH_MIN_LEN 2
 
 /* --------------------------------------------------------------------
@@ -88,20 +116,34 @@
  * base. Do not reorder.
  * -------------------------------------------------------------------- */
 
+#undef START_OFFSET
 #define START_OFFSET 1664
 
+#undef SPEC_POS
 #define SPEC_POS       (-START_OFFSET)
+#undef IS_REP0_LONG
 #define IS_REP0_LONG   (SPEC_POS + NUM_FULL_DISTANCES)
+#undef REP_LEN_CODER
 #define REP_LEN_CODER  (IS_REP0_LONG + (NUM_STATES_2 << NUM_POS_BITS_MAX))
+#undef LEN_CODER
 #define LEN_CODER      (REP_LEN_CODER + NUM_LEN_PROBS)
+#undef IS_MATCH
 #define IS_MATCH       (LEN_CODER + NUM_LEN_PROBS)
+#undef ALIGN_OFFS
 #define ALIGN_OFFS     (IS_MATCH + (NUM_STATES_2 << NUM_POS_BITS_MAX))
+#undef IS_REP
 #define IS_REP         (ALIGN_OFFS + ALIGN_TABLE_SIZE)
+#undef IS_REP_G0
 #define IS_REP_G0      (IS_REP + NUM_STATES)
+#undef IS_REP_G1
 #define IS_REP_G1      (IS_REP_G0 + NUM_STATES)
+#undef IS_REP_G2
 #define IS_REP_G2      (IS_REP_G1 + NUM_STATES)
+#undef POS_SLOT
 #define POS_SLOT       (IS_REP_G2 + NUM_STATES)
+#undef LITERAL
 #define LITERAL        (POS_SLOT + (NUM_LEN_TO_POS_STATES << NUM_POS_SLOT_BITS))
+#undef NUM_BASE_PROBS
 #define NUM_BASE_PROBS (LITERAL + START_OFFSET)
 
 /* Guard the layout the way the reference does. If either of these fires,
@@ -113,22 +155,30 @@
 #error rlzma: bad probability layout (NUM_BASE_PROBS must be 1984)
 #endif
 
+#undef LIT_SIZE
 #define LIT_SIZE 0x300
 
+#undef NUM_MODEL_BITS
 #define NUM_MODEL_BITS  11
+#undef BIT_MODEL_TOTAL
 #define BIT_MODEL_TOTAL (1 << NUM_MODEL_BITS)
+#undef NUM_MOVE_BITS
 #define NUM_MOVE_BITS   5
 
+#undef TOP_VALUE
 #define TOP_VALUE ((uint32_t)1 << 24)
 
 /* Position/state context, used to index IS_MATCH and IS_REP0_LONG. */
+#undef COMBINED_PS_STATE
 #define COMBINED_PS_STATE (pos_state + state)
+#undef GET_LEN_STATE
 #define GET_LEN_STATE     pos_state
 
 /* --------------------------------------------------------------------
  * Range decoder
  * -------------------------------------------------------------------- */
 
+#undef RC_NORMALIZE
 #define RC_NORMALIZE \
    if (range < TOP_VALUE) \
    { \
@@ -138,21 +188,25 @@
       code = (code << 8) | (*src++); \
    }
 
+#undef RC_IF_BIT_0
 #define RC_IF_BIT_0(p) \
    ttt = *(p); \
    RC_NORMALIZE \
    bound = (range >> NUM_MODEL_BITS) * (uint32_t)ttt; \
    if (code < bound)
 
+#undef RC_UPDATE_0
 #define RC_UPDATE_0(p) \
    range = bound; \
    *(p)  = (uint16_t)(ttt + ((BIT_MODEL_TOTAL - ttt) >> NUM_MOVE_BITS));
 
+#undef RC_UPDATE_1
 #define RC_UPDATE_1(p) \
    range -= bound; \
    code  -= bound; \
    *(p)   = (uint16_t)(ttt - (ttt >> NUM_MOVE_BITS));
 
+#undef RC_GET_BIT_2
 #define RC_GET_BIT_2(p, dest, a0, a1) \
    RC_IF_BIT_0(p) \
    { \
@@ -167,8 +221,10 @@
       a1; \
    }
 
+#undef RC_GET_BIT
 #define RC_GET_BIT(p, dest) RC_GET_BIT_2(p, dest, ; , ;)
 
+#undef TREE_GET_BIT
 #define TREE_GET_BIT(base, dest) { RC_GET_BIT((base) + (dest), dest); }
 
 /* Branchless tree-bit decode.
@@ -241,6 +297,7 @@
       offs  ^= bit & ~m; \
    }
 
+#undef TREE_DECODE
 #define TREE_DECODE(base, limit, dest) \
    { \
       dest = 1; \
