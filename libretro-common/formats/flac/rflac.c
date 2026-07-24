@@ -471,20 +471,53 @@ static INLINE uint16_t rflac_crc16_byte(uint16_t crc, uint8_t data)
    return (crc << 8) ^ rflac__crc16_table[(uint8_t)(crc >> 8) ^ data];
 }
 
+/* Slice tables for whole-cache-line CRC-16 accumulation.
+ * rflac__crc16_slices[k][v] is the CRC-16 of byte v followed by k zero
+ * bytes, so a full line can be folded with one independent table lookup
+ * per byte instead of a serial byte-by-byte dependency chain.
+ * Generated once at open time from the canonical byte table; the
+ * initialization is idempotent, so the benign race on first concurrent
+ * use is harmless (same reasoning as the CPU caps above). */
+static uint16_t rflac__crc16_slices[8][256];
+static uint32_t rflac__crc16_slices_initialized = 0;
+
+RFLAC_NO_THREAD_SANITIZE static void rflac__crc16_init_slices(void)
+{
+   int v, k;
+   if (rflac__crc16_slices_initialized)
+      return;
+   for (v = 0; v < 256; v++)
+   {
+      uint16_t crc = rflac__crc16_table[v];
+      rflac__crc16_slices[0][v] = crc;
+      for (k = 1; k < 8; k++)
+      {
+         crc = (uint16_t)((crc << 8) ^ rflac__crc16_table[(uint8_t)(crc >> 8)]);
+         rflac__crc16_slices[k][v] = crc;
+      }
+   }
+   rflac__crc16_slices_initialized = 1;
+}
+
 static INLINE uint16_t rflac_crc16_cache(uint16_t crc, size_t data)
 {
+   /* The 16-bit running CRC folds into the first two message bytes;
+    * every byte then takes one independent lookup. */
 #ifdef RFLAC_64BIT
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 56) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 48) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 40) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 32) & 0xFF));
+   return (uint16_t)(rflac__crc16_slices[7][(uint8_t)((data >> 56) ^ (crc >> 8))]
+                   ^ rflac__crc16_slices[6][(uint8_t)((data >> 48) ^  crc      )]
+                   ^ rflac__crc16_slices[5][(uint8_t) (data >> 40)]
+                   ^ rflac__crc16_slices[4][(uint8_t) (data >> 32)]
+                   ^ rflac__crc16_slices[3][(uint8_t) (data >> 24)]
+                   ^ rflac__crc16_slices[2][(uint8_t) (data >> 16)]
+                   ^ rflac__crc16_slices[1][(uint8_t) (data >>  8)]
+                   ^ rflac__crc16_slices[0][(uint8_t) (data      )]);
+#else
+   return (uint16_t)(rflac__crc16_slices[3][(uint8_t)((data >> 24) ^ (crc >> 8))]
+                   ^ rflac__crc16_slices[2][(uint8_t)((data >> 16) ^  crc      )]
+                   ^ rflac__crc16_slices[1][(uint8_t) (data >>  8)]
+                   ^ rflac__crc16_slices[0][(uint8_t) (data      )]);
 #endif
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 24) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >> 16) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >>  8) & 0xFF));
-   crc = rflac_crc16_byte(crc, (uint8_t)((data >>  0) & 0xFF));
-
-   return crc;
 }
 
 static INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data,
@@ -4368,6 +4401,7 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
 
    /* CPU support first. */
    rflac__init_cpu_caps();
+   rflac__crc16_init_slices();
 
    if (!rflac__init_private(&init, onRead, onSeek, onMeta, pUserData, pUserDataMD))
       return NULL;
