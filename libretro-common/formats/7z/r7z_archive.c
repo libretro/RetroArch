@@ -2225,10 +2225,12 @@ static void decode_pending_reset(r7z_archive_t *a)
    a->pend_base   = 0;
 }
 
-/* True when this coder is one whose decode can be paused. */
+/* True when this coder is one whose decode can be paused. Both LZMA
+ * flavours qualify: LZMA2 through r7z_lzma2, plain LZMA through
+ * r7z_lzma_stream. Everything else is a single linear pass. */
 static int coder_is_resumable(const coder_t *c)
 {
-   return (c->method == METHOD_LZMA2);
+   return (c->method == METHOD_LZMA2 || c->method == METHOD_LZMA);
 }
 
 /* Run one slice of a paused LZMA2 stage. Returns R7Z_OK with *done set
@@ -2271,6 +2273,43 @@ static int decode_slice_lzma2(r7z_archive_t *a, const coder_t *c, int *done)
    return R7Z_OK;
 }
 
+/* Run one slice of a paused plain-LZMA stage. */
+static int decode_slice_lzma(r7z_archive_t *a, int *done)
+{
+   rlzma_stream_t *s = (rlzma_stream_t *)a->pend_dec;
+   size_t          limit;
+   size_t          got;
+   int             status;
+
+   *done = 0;
+
+   limit = s->dic_pos + R7Z_SLICE_BYTES;
+   if (limit > a->pend_out_len)
+      limit = a->pend_out_len;
+
+   got = a->pend_in_len - a->pend_fed;
+
+   if (rlzma_stream_decode(s, limit, a->pend_in + a->pend_fed, &got, 1,
+            &status) != RLZMA_OK)
+      return R7Z_ERROR_DATA;
+
+   a->pend_fed += got;
+
+   if (s->dic_pos >= a->pend_out_len
+         || status == RLZMA_STATUS_FINISHED)
+   {
+      if (s->dic_pos != a->pend_out_len)
+         return R7Z_ERROR_DATA;
+      *done = 1;
+      return R7Z_OK;
+   }
+
+   if (got == 0 && a->pend_fed >= a->pend_in_len)
+      return R7Z_ERROR_DATA;
+
+   return R7Z_OK;
+}
+
 /* Set up the stage at a->pend_coder, ready for slicing or immediate
  * execution. */
 static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
@@ -2294,20 +2333,60 @@ static int decode_stage_begin(r7z_archive_t *a, const folder_t *f)
    if (!coder_is_resumable(c))
       return R7Z_OK;
 
-   /* LZMA2: stand up a decoder that survives between slices. */
-   if (c->prop_size < 1)
-      return R7Z_ERROR_DATA;
+   /* Stand up a decoder that survives between slices. */
+   if (c->method == METHOD_LZMA2)
+   {
+      if (c->prop_size < 1)
+         return R7Z_ERROR_DATA;
 
-   a->pend_dec   = malloc(sizeof(rlzma2_dec_t));
-   a->pend_probs = (uint16_t *)malloc(RLZMA2_NUM_PROBS * sizeof(uint16_t));
-   if (!a->pend_dec || !a->pend_probs)
-      return R7Z_ERROR_MEM;
+      a->pend_dec   = malloc(sizeof(rlzma2_dec_t));
+      a->pend_probs = (uint16_t *)malloc(RLZMA2_NUM_PROBS
+            * sizeof(uint16_t));
+      if (!a->pend_dec || !a->pend_probs)
+         return R7Z_ERROR_MEM;
 
-   if (rlzma2_dec_init((rlzma2_dec_t *)a->pend_dec,
-            a->props[c->prop_offset], a->pend_probs,
-            a->pend_out, a->pend_out_len ? a->pend_out_len : 1)
-         != RLZMA_OK)
-      return R7Z_ERROR_DATA;
+      if (rlzma2_dec_init((rlzma2_dec_t *)a->pend_dec,
+               a->props[c->prop_offset], a->pend_probs,
+               a->pend_out, a->pend_out_len ? a->pend_out_len : 1)
+            != RLZMA_OK)
+         return R7Z_ERROR_DATA;
+
+      return R7Z_OK;
+   }
+
+   /* Plain LZMA. The streaming decoder takes a caller-sized
+    * probability array, and 7z permits lc + lp up to 12, so the size
+    * comes from the stream's own properties rather than a fixed
+    * maximum. */
+   {
+      uint32_t d, lc, lp;
+
+      if (c->prop_size < RLZMA_PROPS_SIZE)
+         return R7Z_ERROR_DATA;
+
+      d = (uint32_t)a->props[c->prop_offset];
+      if (d >= 9 * 5 * 5)
+         return R7Z_ERROR_DATA;
+      lc = d % 9;
+      d /= 9;
+      lp = d % 5;
+      if (lc + lp > RLZMA_STREAM_LCLP_MAX)
+         return R7Z_ERROR_DATA;
+
+      a->pend_dec   = malloc(sizeof(rlzma_stream_t));
+      a->pend_probs = (uint16_t *)malloc(
+            (size_t)RLZMA_STREAM_NUM_PROBS(lc, lp) * sizeof(uint16_t));
+      if (!a->pend_dec || !a->pend_probs)
+         return R7Z_ERROR_MEM;
+
+      if (rlzma_stream_init((rlzma_stream_t *)a->pend_dec,
+               a->props + c->prop_offset, a->pend_probs,
+               a->pend_out, a->pend_out_len ? a->pend_out_len : 1)
+            != RLZMA_OK)
+         return R7Z_ERROR_DATA;
+
+      rlzma_stream_reset((rlzma_stream_t *)a->pend_dec);
+   }
 
    return R7Z_OK;
 }
@@ -2425,7 +2504,11 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
    {
       int stage_done = 0;
 
-      if ((res = decode_slice_lzma2(a, c, &stage_done)) != R7Z_OK)
+      res = (c->method == METHOD_LZMA2)
+         ? decode_slice_lzma2(a, c, &stage_done)
+         : decode_slice_lzma(a, &stage_done);
+
+      if (res != R7Z_OK)
       {
          decode_pending_reset(a);
          return res;
