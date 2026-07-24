@@ -7,6 +7,16 @@
 #include "../../../core_info.h"
 #include "../../../tasks/tasks_internal.h"
 
+#define SCAN_TIMEOUT_SECONDS 120
+
+#include <time.h>
+
+#include <retro_timers.h>
+
+#include "../../../manual_content_scan.h"
+#include "../../../configuration.h"
+#include "../../../verbosity.h"
+
 static bool loop_active = true;
 
 /* Stubs for symbols referenced by the retroarch-tree sources we pull
@@ -16,11 +26,11 @@ static bool loop_active = true;
  * exercises task_push_dbscan; none of these symbols are actually
  * invoked on the path through task_push_dbscan / task_queue_check.
  *
- * The `msg` parameter is declared as int rather than
- * `enum msg_hash_enums` because that enum lives in msg_hash.h, which
- * is not on the include path for this sample.  At the link level the
- * signatures match since enum values promote to int. */
-int msg_hash_get_help_us_enum(int msg, char *s, size_t len)
+ * These take enum msg_hash_enums now that configuration.h - included
+ * for settings_t - brings msg_hash.h with it.  They used to be
+ * declared with int, which matched at the link level but conflicts
+ * once the real prototypes are visible. */
+int msg_hash_get_help_us_enum(enum msg_hash_enums msg, char *s, size_t len)
 {
    (void)msg;
    if (s && len)
@@ -28,7 +38,7 @@ int msg_hash_get_help_us_enum(int msg, char *s, size_t len)
    return 0;
 }
 
-const char *msg_hash_to_str_us(int msg)
+const char *msg_hash_to_str_us(enum msg_hash_enums msg)
 {
    (void)msg;
    return "";
@@ -41,15 +51,21 @@ void msg_hash_us_index_init(void)
 {
 }
 
-void *config_get_ptr(void)
+settings_t *config_get_ptr(void)
 {
-   /* core_info_current_supports_savestate_level dereferences the
-    * return as a settings_t*.  That code path is never exercised
-    * during a dbscan, but returning NULL would SEGV if it ever were.
-    * A single static zeroed buffer is enough to keep dereferences
-    * from crashing for any read -- the sample doesn't write to it. */
-   static long long zeros[1024];  /* ~8 KiB, covers settings_t */
-   return zeros;
+   /* A real settings_t, not a zeroed blob.
+    *
+    * The scan reads settings->paths.directory_playlist before it does
+    * anything else and refuses to start if it is empty - so a stub that
+    * returned zeros meant no task was ever created, the completion
+    * callback never fired, and this sample sat in its loop until the CI
+    * runner killed it.  The playlist directory argument it accepts on
+    * the command line went nowhere.
+    *
+    * Static so it is zero-initialised; main() fills in the one field
+    * the scan actually consults. */
+   static settings_t settings;
+   return &settings;
 }
 
 /* Additional stubs for retroarch-core symbols referenced transitively.
@@ -123,12 +139,22 @@ static void main_msg_queue_push(retro_task_t *task,
  * error    exit: -1
  */
 
+static bool scan_completed = false;
+static bool scan_errored   = false;
+
 static void main_db_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    (void)task;
-   fprintf(stderr, "DB CB: %s\n", err);
-   loop_active = false;
+   (void)task_data;
+   (void)user_data;
+   if (err && *err)
+   {
+      fprintf(stderr, "scan reported an error: %s\n", err);
+      scan_errored = true;
+   }
+   scan_completed = true;
+   loop_active    = false;
 }
 
 int main(int argc, char *argv[])
@@ -163,6 +189,11 @@ int main(int argc, char *argv[])
    fprintf(stderr, "Core info    dir: %s\n", core_info_dir);
    fprintf(stderr, "Input        dir: %s\n", input_dir);
    fprintf(stderr, "Playlist     dir: %s\n", playlist_dir);
+   /* The scanner traces its state through RARCH_LOG/RARCH_DBG; without
+    * this the sample runs blind. */
+   verbosity_enable();
+   retro_main_log_file_init(NULL, false);
+
 #ifdef HAVE_THREADS
    task_queue_init(true /* threaded enable */, main_msg_queue_push);
 #else
@@ -170,16 +201,58 @@ int main(int argc, char *argv[])
 #endif
    core_info_init_list(core_info_dir, core_dir, exts, true, false, NULL);
 
-   task_push_dbscan(playlist_dir, db_dir, input_dir, true,
-         true, main_db_cb);
+   /* The scan reads its playlist directory from settings, not from the
+    * argument below, so put it where the scan will look. */
+   strlcpy(config_get_ptr()->paths.directory_playlist, playlist_dir,
+         sizeof(config_get_ptr()->paths.directory_playlist));
 
-   while (loop_active)
-      task_queue_check();
+   /* A scan needs a system name to build its playlist from.  Without
+    * one manual_content_scan_get_task_config refuses and no task is
+    * created - which is what this sample used to do, silently, before
+    * spinning in the loop below until CI killed it. */
+   if (!manual_content_scan_set_menu_system_name(
+            MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM, "SampleScan"))
+   {
+      fprintf(stderr, "could not set a system name for the scan\n");
+      goto done;
+   }
 
-   fprintf(stderr, "Exit loop\n");
+   /* The return value matters: false means no task exists, so nothing
+    * will ever call main_db_cb and the loop below would never end. */
+   if (!task_push_dbscan(playlist_dir, db_dir, input_dir, true,
+            true, main_db_cb))
+   {
+      fprintf(stderr, "task_push_dbscan refused to start a scan\n");
+      goto done;
+   }
+
+   /* Bounded, so a scanner that stalls is a reportable failure rather
+    * than a job that hangs until the runner times out. */
+   {
+      time_t started = time(NULL);
+      while (loop_active)
+      {
+         task_queue_check();
+         if (difftime(time(NULL), started) > SCAN_TIMEOUT_SECONDS)
+         {
+            fprintf(stderr, "scan did not finish within %d seconds\n",
+                  SCAN_TIMEOUT_SECONDS);
+            break;
+         }
+         retro_sleep(1);
+      }
+   }
+
+done:
+   if (!scan_completed)
+      fprintf(stderr, "FAILED: the scan never ran to completion\n");
+   else if (scan_errored)
+      fprintf(stderr, "FAILED: the scan completed with an error\n");
+   else
+      fprintf(stderr, "PASS: scan completed\n");
 
    core_info_deinit_list();
    task_queue_deinit();
 
-   return 0;
+   return (scan_completed && !scan_errored) ? 0 : 1;
 }
