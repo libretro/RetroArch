@@ -1,6 +1,18 @@
-/* rh264 -- clean-room H.264 I/P decoder (amalgamated single TU).
+/* rh264 -- clean-room H.264 decoder (amalgamated single TU).
  * Public API: include/formats/rh264.h. CAVLC tables extracted from libopenh264
- * encoder rodata (verified prefix-free). I and CAVLC P pictures. */
+ * encoder rodata (verified prefix-free).
+ *
+ * What it implements: I pictures with both CAVLC and CABAC entropy coding,
+ * P pictures with CAVLC, 8-bit 4:2:0 reconstruction (4:2:2 additionally
+ * reconstructs for intra CAVLC streams), the full integer transforms
+ * (4x4 and 8x8), intra and inter prediction with quarter-pel motion
+ * compensation, and the in-loop deblocking filter.
+ *
+ * What it does not implement: B slices; CABAC-coded P residuals; field
+ * and macroblock-adaptive (interlaced) coding; monochrome, 4:4:4,
+ * high-bit-depth and lossless transform-bypass streams; FMO/ASO and
+ * redundant pictures; encoding.  Out-of-scope streams are refused at
+ * the parameter-set or slice level rather than decoded wrongly. */
 #include <formats/rh264.h>
 #include <stdint.h>
 #include <stdlib.h>

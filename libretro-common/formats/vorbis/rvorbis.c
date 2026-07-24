@@ -19,6 +19,15 @@
  *                 the floor, and runs the inverse MDCT (SIMD kernels
  *                 near imdct_step3_iter0_loop) followed by the windowed
  *                 overlap-add in vorbis_finish_frame.
+ *
+ * What it implements: Ogg-encapsulated Vorbis I, all residue types and
+ * floor type 1, sample-accurate seeking, and interleaved f32 output.
+ *
+ * What it does not implement: floor type 0 (ancient encoders only;
+ * such streams are refused with a dedicated error), chained or
+ * multiplexed Ogg streams (the first logical stream is decoded), raw
+ * unencapsulated Vorbis packets, file/callback I/O (memory only), and
+ * encoding.
  */
 /* Two complete pipelines, selected at runtime by which read the mixer
  * calls: rvorbis_get_samples_float_interleaved drives the float

@@ -18,6 +18,11 @@
  *     (WebP 'VP8 ' chunks are always a single key frame);
  *   - the rvp8_video_* persistent decoder for VP8 video streams.
  *
+ * What it does not implement: encoding; error concealment (packets must
+ * arrive intact and in order); the show-frame/altref compositing games
+ * some encoders play are handled only to the extent RFC 6386 defines
+ * them.
+ *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */
 #include <stdio.h>

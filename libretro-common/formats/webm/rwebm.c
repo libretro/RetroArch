@@ -13,6 +13,12 @@
  * The whole input is supplied up front and borrowed, not copied; returned
  * packet pointers alias into it.
  *
+ * What it does not implement: seeking (packets are delivered in file
+ * order only; Cues/SeekHead are skipped), chapters, tags, attachments,
+ * subtitle tracks, and encrypted streams.  Codecs other than
+ * VP8/VP9/Vorbis/Opus are reported as unknown and their packets can be
+ * skipped by the caller.
+ *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */
 #include <stdlib.h>

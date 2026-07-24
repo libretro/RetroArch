@@ -30,7 +30,19 @@
  * overlap-add. Spec-defined constant tables (Huffman codebooks,
  * scalefactor band offsets, TNS band limits) are transcribed from
  * ISO/IEC 14496-3; windows, twiddles and TNS coefficient maps are
- * computed at open from their defining formulas. */
+ * computed at open from their defining formulas.
+ *
+ * What it implements: AAC-LC (audio object type 2) raw access units,
+ * mono and stereo (channel configurations 1 and 2), M/S and intensity
+ * stereo, PNS, TNS, and both the s16 and f32 output paths from a
+ * shared float synthesis pipeline.
+ *
+ * What it does not implement: other object types (Main, SSR, LTP,
+ * HE-AAC's SBR/PS - configurations other than plain LC are refused at
+ * open, as are the 960-sample frame variant and channel configurations
+ * above stereo), ADTS/LATM/LOAS framing (the caller supplies the
+ * AudioSpecificConfig and raw access units, as rmp4 does), and
+ * encoding. */
 
 #include <stdlib.h>
 #include <string.h>

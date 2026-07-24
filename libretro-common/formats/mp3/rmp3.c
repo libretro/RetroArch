@@ -1,5 +1,14 @@
 /* rmp3 - MP3 decoder implementation (minimp3-derived).
- * Declarations live in <formats/rmp3.h>; this file is the implementation. */
+ * Declarations live in <formats/rmp3.h>; this file is the implementation.
+ *
+ * What it implements: MPEG-1/2/2.5 audio layers 1, 2 and 3 including
+ * free-format streams, seeking, and both s16 and f32 output from
+ * memory-resident files.  Leading tags are stepped over by the
+ * frame-sync scan rather than parsed.
+ *
+ * What it does not implement: ID3/APE tag parsing, Xing/Info/LAME
+ * header interpretation (VBR duration estimates and gapless
+ * delay/padding trimming are the caller's concern), and encoding. */
 #include <formats/rmp3.h>
 
 #include <stdlib.h>

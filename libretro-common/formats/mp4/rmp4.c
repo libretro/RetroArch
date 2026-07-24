@@ -3,17 +3,23 @@
  * A pure demuxer: it parses the ISO-BMFF box tree and hands out the
  * elementary-stream packets, without decoding.  See rmp4.h for the API.
  *
- * Scope: progressive (non-fragmented) files whose sample tables live in
- * moov/trak/mdia/minf/stbl.  The parser reads the boxes it needs (mvhd
+ * What it implements: progressive files whose sample tables live in
+ * moov/trak/mdia/minf/stbl - the parser reads the boxes it needs (mvhd
  * for the movie timescale and duration, per-trak mdhd/hdlr for the
  * track timescale and kind, stsd for the codec and its setup data, and
  * the stts/ctts/stss/stsz/stsc/stco|co64 tables to place every sample)
- * and then streams the samples out in file order.
+ * - as well as fragmented files (moof/traf/trun with trex defaults),
+ * streaming the samples out in file order either way.  Recognised
+ * codecs: H.264, VP8, VP9, AAC, Vorbis and Opus.
  *
  * The whole input is supplied up front and borrowed, not copied;
  * returned packet pointers alias into it.  Opus setup data is the one
  * exception: the dOps payload is repacked into an OpusHead held by the
  * demuxer (see rmp4.h).
+ *
+ * What it does not implement: seeking (delivery is file order only),
+ * edit lists (elst is ignored, so encoder-delay trimming is the
+ * caller's concern), encrypted streams, and muxing.
  *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */

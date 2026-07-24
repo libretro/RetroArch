@@ -22,7 +22,15 @@
  * inverse transforms, 4x4 and 16x16 intra prediction, both the simple
  * and normal loop filters, fancy chroma upsampling and YUV->RGB. Only
  * VP8 key frames occur in WebP, so inter-frame prediction (motion
- * vectors, golden/altref reference frames) is intentionally absent. */
+ * vectors, golden/altref reference frames) is intentionally absent.
+ *
+ * Alpha (ALPH chunks, all filter methods) is applied to lossy images,
+ * and animated WebP (ANMF) is decoded into fully composited canvas
+ * frames following the container spec's canvas/blend/dispose model.
+ *
+ * What it does not implement: encoding, color profiles and EXIF/XMP
+ * metadata (the chunks are skipped), and fragments (an abandoned spec
+ * draft). */
 
 #include <stdio.h>
 #include <stdint.h>

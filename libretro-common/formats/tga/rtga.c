@@ -20,7 +20,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Modified version of stb_image's TGA sources. */
+/* rtga -- Targa (TGA) decoder (modified version of stb_image's TGA
+ * sources).
+ *
+ * What it implements: image types 1 (palettised), 2 (truecolour) and
+ * 3 (greyscale), both raw and RLE-compressed variants, at 8/16/24/32
+ * bits per pixel, with palettes of 8-32 bits per entry, either row
+ * origin, and 32-bit RGBA output.
+ *
+ * What it does not implement: the extension and developer areas of
+ * TGA 2.0 (footer metadata is ignored), interleaved (legacy
+ * two/four-way) scanline order, and encoding. */
 
 #include <stdio.h>
 #include <stdint.h>

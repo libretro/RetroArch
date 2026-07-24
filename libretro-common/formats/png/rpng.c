@@ -20,6 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* rpng -- PNG decoder.
+ *
+ * What it implements: all PNG colour types at their legal bit depths
+ * (greyscale 1-16, palette 1-8, RGB / greyscale+alpha / RGBA at 8 and
+ * 16 bits), tRNS transparency, Adam7 interlacing, incremental decoding
+ * over partially resident buffers (rpng_set_avail), and 32-bit XRGB
+ * output with an optional packed-XRGB2101010 path for 16-bit sources.
+ * APNG animation streaming lives in rpng_apng.c and a PNG encoder in
+ * rpng_encode.c.
+ *
+ * What it does not implement: colour management (gAMA/cHRM/iCCP and
+ * other ancillary chunks are skipped), 16-bit-per-channel output
+ * beyond the XRGB2101010 path, and MNG/JNG.
+ */
+
 #ifdef DEBUG
 #include <stdio.h>
 #endif

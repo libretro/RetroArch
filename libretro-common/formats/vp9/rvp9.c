@@ -8,9 +8,14 @@
  * management and the full loop filter), developed and verified
  * byte-identical against libvpx across intra and inter test corpora.
  *
- * Profile 0 (8-bit 4:2:0) streams (tiled or not) without segmentation or
- * reference scaling are supported; see <formats/rvp9.h> for the exact
- * limits and the public API.
+ * What it implements: profile 0 (8-bit 4:2:0) streams, tiled or not,
+ * including show-existing-frame and full reference-slot management; see
+ * <formats/rvp9.h> for the exact limits and the public API.
+ *
+ * What it does not implement: profiles 1-3 (10/12-bit and 4:2:2/4:4:4
+ * sampling), segmentation, reference-frame scaling (all references must
+ * match the frame size), and encoding.  Out-of-scope streams are
+ * refused at the header stage.
  *
  * SPDX-License-Identifier: MIT  (RetroArch libretro-common)
  */

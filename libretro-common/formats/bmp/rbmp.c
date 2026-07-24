@@ -20,7 +20,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Modified version of stb_image's BMP sources. */
+/* rbmp -- BMP decoder (modified version of stb_image's BMP sources).
+ *
+ * What it implements: Windows BMP with core (12-byte) and
+ * BITMAPINFOHEADER/V4/V5 (40/56/108/124-byte) headers, 1/4/8-bit
+ * palettised, 16-bit with arbitrary channel bitfields, and 24/32-bit
+ * images, top-down and bottom-up row order, with all-alpha-zero
+ * detection for 32-bit files that leave the alpha channel empty.
+ * A matching encoder (24/32-bit uncompressed) lives in
+ * rbmp_encode.c.
+ *
+ * What it does not implement: RLE4/RLE8 compression (rejected up
+ * front), embedded PNG/JPEG payloads (BI_PNG/BI_JPEG), and colour
+ * management from the V4/V5 header extensions (the fields are
+ * skipped). */
 
 #include <stdio.h>
 #include <stdint.h>

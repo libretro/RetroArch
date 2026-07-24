@@ -22,6 +22,15 @@
 
 /* Baseline and progressive JPEG decoder.
  *
+ * What it implements: baseline sequential and progressive JFIF/EXIF
+ * streams, 8-bit precision, grayscale and YCbCr with all common chroma
+ * subsamplings, restart markers, and BGRA/RGBA output with SIMD IDCT,
+ * upsampling and colour conversion.
+ *
+ * What it does not implement: arithmetic entropy coding, hierarchical
+ * and lossless JPEG modes, 12-bit precision, CMYK/YCCK four-component
+ * streams, and encoding.
+ *
  * Originally derived from stb_image's JPEG sources and since reworked
  * for RetroArch: the decoder is driven incrementally (rjpeg_process_image
  * yields between bounded row batches so a large image never blocks the
