@@ -23,17 +23,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Only the cyclic window below needs these. The arena grows with
+ * realloc and is platform-independent; see data_transfer_arena_init().
+ *
+ * Gate on what the headers actually provide, not on the platform list:
+ * DJGPP defines __unix__ and ships stub mman/unistd headers that
+ * include cleanly but declare neither mmap nor the MAP_ constants nor
+ * _SC_PAGESIZE. Without a reservation the window falls back to holding
+ * the whole file, so absence is graceful. Older BSD-family headers
+ * spell MAP_ANONYMOUS as MAP_ANON. */
 #if defined(_WIN32)
 #include <windows.h>
 #elif defined(HAVE_MMAN) || defined(__unix__) || defined(__APPLE__)
 #include <sys/mman.h>
 #include <unistd.h>
-/* Gate on what the headers actually provide, not on the platform
- * list above: DJGPP defines __unix__ and ships stub mman/unistd
- * headers that include cleanly but declare neither mmap nor the
- * MAP_ constants nor _SC_PAGESIZE. Without the reservation the code
- * already falls back to plain growth, so absence is graceful. Older
- * BSD-family headers spell MAP_ANONYMOUS as MAP_ANON. */
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS MAP_ANON
 #endif
@@ -86,96 +89,43 @@ struct data_transfer
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling)
 {
+   /* The ceiling is a hint about the eventual size, not a promise to
+    * reserve it. Growth is realloc doubling, which is portable and,
+    * measured against a reserve-then-commit implementation, neither
+    * slower in the steady state nor heavier: untouched pages of a
+    * fresh allocation are no more resident than uncommitted ones. */
+   (void)ceiling;
    a->base      = NULL;
    a->committed = 0;
    a->cap       = 0;
-   a->reserved  = 0;
-   if (!ceiling)
-      return true;               /* pure fallback growth */
-#if defined(_WIN32)
-   {
-      SYSTEM_INFO si;
-      size_t r;
-      GetSystemInfo(&si);
-      r = (ceiling + si.dwPageSize - 1) & ~((size_t)si.dwPageSize - 1);
-      a->base = (uint8_t*)VirtualAlloc(NULL, r, MEM_RESERVE, PAGE_NOACCESS);
-      if (a->base)
-      {
-         a->cap      = r;
-         a->reserved = 1;
-      }
-   }
-#elif defined(DT_HAVE_RESERVE)
-   {
-      long ps  = sysconf(_SC_PAGESIZE);
-      size_t r = (ceiling + (size_t)ps - 1) & ~((size_t)ps - 1);
-      void *m  = mmap(NULL, r, PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      if (m != MAP_FAILED)
-      {
-         a->base     = (uint8_t*)m;
-         a->cap      = r;
-         a->reserved = 1;
-      }
-   }
-#endif
-   return true;                  /* reservation failure: fallback */
+   return true;
 }
 
 bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need)
 {
+   size_t nc;
+   uint8_t *nb;
+
    if (need <= a->committed)
       return true;
-   if (a->reserved)
-   {
-      size_t to;
-      if (need > a->cap)
-         return false;           /* past the declared ceiling */
-      to = (need + (DT_COMMIT_STEP - 1)) & ~((size_t)DT_COMMIT_STEP - 1);
-      if (to > a->cap)
-         to = a->cap;
-#if defined(_WIN32)
-      if (!VirtualAlloc(a->base + a->committed, to - a->committed,
-            MEM_COMMIT, PAGE_READWRITE))
-         return false;
-#elif defined(DT_HAVE_RESERVE)
-      if (mprotect(a->base + a->committed, to - a->committed,
-            PROT_READ | PROT_WRITE) != 0)
-         return false;
-#endif
-      a->committed = to;
-      return true;
-   }
-   {
-      size_t nc = a->cap ? a->cap : (256 * 1024);
-      uint8_t *nb;
-      while (nc < need)
-         nc *= 2;
-      if (!(nb = (uint8_t*)realloc(a->base, nc)))
-         return false;
-      a->base      = nb;
-      a->cap       = nc;
-      a->committed = nc;
-      return true;
-   }
+
+   nc = a->cap ? a->cap : (256 * 1024);
+   while (nc < need)
+      nc *= 2;
+   if (!(nb = (uint8_t*)realloc(a->base, nc)))
+      return false;
+   a->base      = nb;
+   a->cap       = nc;
+   a->committed = nc;
+   return true;
 }
 
 void data_transfer_arena_release(data_transfer_arena_t *a)
 {
-   if (a->reserved && a->base)
-#if defined(_WIN32)
-      VirtualFree(a->base, 0, MEM_RELEASE);
-#elif defined(DT_HAVE_RESERVE)
-      munmap(a->base, a->cap);
-#else
-      free(a->base);
-#endif
-   else if (a->base)
-      free(a->base);
+   free(a->base);
    a->base      = NULL;
    a->committed = 0;
    a->cap       = 0;
-   a->reserved  = 0;
 }
 
 

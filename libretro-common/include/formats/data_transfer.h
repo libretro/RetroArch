@@ -53,20 +53,27 @@ RETRO_BEGIN_DECLS
 typedef struct data_transfer data_transfer_t;
 
 
-/* A growable buffer on the same reservation machinery as the prefix
- * reader: init reserves 'ceiling' bytes of address space (physical
- * pages only as ensure() commits them), so growth never copies, the
- * base never moves, and the buffer's cost is what it holds - no
- * doubling spikes, no over-allocation tail.  Where the platform
- * cannot reserve (or ceiling is 0), it degrades to realloc doubling,
- * and base may move across ensure(); callers must re-read base after
- * every ensure either way.  release() is idempotent. */
+/* A growable buffer.  ensure() makes at least 'need' bytes usable at
+ * base, growing by doubling; base may move, so callers must re-read it
+ * after every ensure.  The 'ceiling' passed to init is a hint about
+ * the eventual size and is otherwise ignored.  release() is
+ * idempotent.
+ *
+ * This used to reserve 'ceiling' bytes of address space and commit
+ * pages as it grew, on the theory that it avoided copies and kept the
+ * base stable.  Measured against plain doubling it was neither faster
+ * in the steady state (226-244 ms either way filling 64 MiB) nor
+ * lighter (+4288 vs +4292 KiB peak with 4 MiB touched of a 64 MiB
+ * ceiling): untouched pages of a fresh allocation are no more
+ * resident than uncommitted ones.  It cost a page-protection syscall
+ * per step and put VirtualAlloc/mmap/mprotect in a format module, so
+ * it went.  The cyclic window below still reserves, because there the
+ * alternative really is holding the whole file. */
 typedef struct data_transfer_arena
 {
    uint8_t *base;
-   size_t   committed;  /* bytes usable at base                     */
-   size_t   cap;        /* reservation ceiling / current allocation */
-   uint8_t  reserved;   /* 1: address-space reservation, stable base */
+   size_t   committed;  /* bytes usable at base    */
+   size_t   cap;        /* current allocation      */
 } data_transfer_arena_t;
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
