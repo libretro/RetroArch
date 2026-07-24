@@ -4,6 +4,7 @@
  */
 
 #include <retro_inline.h>
+#include <retro_endianness.h>
 #include <formats/rflac.h>
 #include <features/features_cpu.h>
 
