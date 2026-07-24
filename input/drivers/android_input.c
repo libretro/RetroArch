@@ -48,6 +48,10 @@
 #include "../../runloop.h"
 #include "../input_driver.h"
 
+#ifdef HAVE_THREADS
+#include "../../gfx/video_thread_wrapper.h"
+#endif
+
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 #define DEFAULT_ASENSOR_EVENT_RATE 60
@@ -365,6 +369,20 @@ bool android_input_can_be_keyboard(void *data, int port)
     return android_input_can_be_keyboard_jni(device->id);
 }
 
+static void android_input_destroy_surface(video_driver_state_t *state)
+{
+   if (!state || !state->current_video_context.destroy_surface)
+      return;
+
+#ifdef HAVE_THREADS
+   /* The video worker may still be recording a frame that references the
+    * surface. Drain it before the context driver frees the surface. */
+   video_thread_wait_idle();
+#endif
+
+   state->current_video_context.destroy_surface(state->context_data);
+}
+
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
@@ -421,32 +439,64 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_RESUME:
       case APP_CMD_START:
       case APP_CMD_PAUSE:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         /* RESUME/START can arrive before INIT_WINDOW. In that case,
+          * wait for INIT_WINDOW rather than falling back to a full
+          * video-driver reinitialization without a native window. */
+         if (  (cmd == APP_CMD_RESUME || cmd == APP_CMD_START)
+             && state->current_video_context.ident
+             && string_is_equal(state->current_video_context.ident,
+                   "vk_android")
+             && android_app->window
+             && state->current_video_context.create_surface)
+            android_app->reinitRequested = 1;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+      }
+
       case APP_CMD_STOP:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
          slock_lock(android_app->mutex);
          android_app->activityState = cmd;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
+
+         /* Android may retain the same ANativeWindow while the app is
+          * backgrounded. Release Vulkan's acquired buffers anyway so BLAST
+          * cannot wedge before APP_CMD_TERM_WINDOW is delivered. */
+         if (     state->current_video_context.ident
+               && string_is_equal(state->current_video_context.ident,
+                     "vk_android"))
+            android_input_destroy_surface(state);
          break;
+      }
 
       case APP_CMD_CONFIG_CHANGED:
          AConfiguration_fromAssetManager(android_app->config,
                android_app->activity->assetManager);
          break;
       case APP_CMD_TERM_WINDOW:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
+         android_input_destroy_surface(state);
+
          slock_lock(android_app->mutex);
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         {
-            video_driver_state_t *state = video_state_get_ptr();
-            if (state->current_video_context.destroy_surface != NULL)
-               state->current_video_context.destroy_surface(state->context_data);
-         }
-
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
          break;
+      }
 
       case APP_CMD_GAINED_FOCUS:
          {
@@ -1884,11 +1934,10 @@ static void android_input_reinit(void)
 
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
-      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
-       * will result in the EGL window surface being destroyed, but the actual
-       * OpenGL context will be preserved on most devices, so we may be able to
-       * get away with reinitializing only the window surface without having to
-       * do a full video driver reinitialization. */
+      /* When the app is paused (e.g. by opening the app switcher), Android may
+       * destroy the presentation surface while retaining the OpenGL context or
+       * Vulkan device. Recreate only the surface when supported before falling
+       * back to a full video driver reinitialization. */
       video_driver_state_t *state = video_state_get_ptr();
       if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
          command_event(CMD_EVENT_REINIT, NULL);
