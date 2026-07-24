@@ -154,6 +154,14 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
    {
       /* navigate the path to the directory record for the file */
       const int dir_length = (int)(slash - path);
+      /* buffer is 2048 bytes and gets a NUL at [dir_length], so the
+       * directory component must be shorter than that.  path comes
+       * from the caller; the in-tree caller passes NULL, but this is
+       * a libretro-common entry point other consumers reach with an
+       * arbitrary path, and without this a long component overruns
+       * the stack buffer. */
+      if (dir_length >= (int)sizeof(buffer))
+         return -1;
       memcpy(buffer, path, dir_length);
       buffer[dir_length] = '\0';
 
