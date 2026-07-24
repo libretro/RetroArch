@@ -772,24 +772,33 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
          rep1 = rep0;
          rep0 = dist + 1;
 
-         /* A distance must not reach back further than the data
-          * produced so far, nor beyond the dictionary the stream
-          * declared. Checking against dic_size instead would reject
-          * valid distances near the start of a window.
+         /* Mirrors the reference's
+          *   distance >= (checkDicSize == 0 ? processedPos : checkDicSize)
           *
-          * It must also fit inside the window the caller actually
-          * supplied. That is a separate limit: a stream may declare a
-          * 256 MiB dictionary and still be decoded through a window far
-          * smaller than that, and a distance larger than the window has
-          * no byte to refer to. Without this the wrap arithmetic below
-          * (dic_pos + dic_size - rep0) underflows and reads in front of
-          * the buffer. */
-         if (   (uint64_t)dist >= total_pos
-             || dist >= s->dict_size
-             || (size_t)dist >= dic_size)
+          * Until the stream has produced dict_size bytes, a distance
+          * may not reach back further than what has actually been
+          * produced; after that, the dictionary bounds it.
+          *
+          * The effective dictionary is the larger of what the stream
+          * declared and the window the caller supplied. liblzma treats
+          * an LZMA2 dict_size as a floor rather than a cap and emits
+          * distances well beyond it, so bounding on the declared size
+          * alone rejects valid streams. Bounding on the window is safe:
+          * it is the memory that actually exists, and the wrap
+          * arithmetic below is defined for any distance within it. */
          {
-            ret = RLZMA_ERROR_DATA;
-            goto done;
+            uint64_t reach = (uint64_t)s->dict_size;
+
+            if ((uint64_t)dic_size > reach)
+               reach = (uint64_t)dic_size;
+            if (total_pos < reach)
+               reach = total_pos;
+
+            if ((uint64_t)dist >= reach)
+            {
+               ret = RLZMA_ERROR_DATA;
+               goto done;
+            }
          }
       }
 
@@ -851,16 +860,15 @@ done:
  * Public entry points
  * -------------------------------------------------------------------- */
 
-int rlzma_stream_init(rlzma_stream_t *s, const uint8_t *props,
-      uint16_t *probs, uint8_t *dic, size_t dic_size)
+/* Parse the five props bytes into the fields they set. Shared by
+ * rlzma_stream_init() and rlzma_stream_set_props() so the two cannot
+ * disagree about what a props byte means. */
+static int stream_parse_props(rlzma_stream_t *s, const uint8_t *props)
 {
    uint32_t d;
    uint32_t lc;
    uint32_t lp;
    uint32_t pb;
-
-   if (!s || !props || !probs || !dic || dic_size == 0)
-      return RLZMA_ERROR_PARAM;
 
    d = (uint32_t)props[0];
    if (d >= 9 * 5 * 5)
@@ -874,8 +882,6 @@ int rlzma_stream_init(rlzma_stream_t *s, const uint8_t *props,
    if (lc + lp > RLZMA_STREAM_LCLP_MAX)
       return RLZMA_ERROR_PARAM;
 
-   memset(s, 0, sizeof(*s));
-
    s->dict_size = (uint32_t)props[1]
                 | ((uint32_t)props[2] << 8)
                 | ((uint32_t)props[3] << 16)
@@ -884,37 +890,93 @@ int rlzma_stream_init(rlzma_stream_t *s, const uint8_t *props,
    s->lc        = lc;
    s->lp        = lp;
    s->pb        = pb;
-   s->probs     = probs;
-   s->dic       = dic;
-   s->dic_size  = dic_size;
    s->num_probs = (uint32_t)LITERAL + ((uint32_t)LIT_SIZE << (lc + lp));
 
    return RLZMA_OK;
 }
 
-void rlzma_stream_reset(rlzma_stream_t *s)
+int rlzma_stream_init(rlzma_stream_t *s, const uint8_t *props,
+      uint16_t *probs, uint8_t *dic, size_t dic_size)
 {
-   uint32_t i;
+   if (!s || !props || !probs || !dic || dic_size == 0)
+      return RLZMA_ERROR_PARAM;
 
+   memset(s, 0, sizeof(*s));
+
+   if (stream_parse_props(s, props) != RLZMA_OK)
+      return RLZMA_ERROR_PARAM;
+
+   s->probs     = probs;
+   s->dic       = dic;
+   s->dic_size  = dic_size;
+
+   return RLZMA_OK;
+}
+
+int rlzma_stream_set_props(rlzma_stream_t *s, const uint8_t *props)
+{
+   if (!s || !props)
+      return RLZMA_ERROR_PARAM;
+   return stream_parse_props(s, props);
+}
+
+int rlzma_stream_put_uncompressed(rlzma_stream_t *s,
+      const uint8_t *src, size_t len)
+{
+   if (!s || !src)
+      return RLZMA_ERROR_PARAM;
+   if (len > s->dic_size - s->dic_pos)
+      return RLZMA_ERROR_PARAM;
+
+   /* An LZMA2 uncompressed chunk is literal bytes that still become
+    * part of the dictionary, so later matches can refer back into
+    * them. total_pos must advance too, or the distance check would
+    * treat those bytes as never having been produced. */
+   memcpy(s->dic + s->dic_pos, src, len);
+   s->dic_pos   += len;
+   s->total_pos += (uint64_t)len;
+   return RLZMA_OK;
+}
+
+void rlzma_stream_reset_parts(rlzma_stream_t *s, int init_dic, int init_state)
+{
    if (!s)
       return;
 
-   s->need_init   = 1;
-   s->remain_len  = 0;
-   s->got_marker  = 0;
-   s->temp_size   = 0;
-   s->dic_pos     = 0;
-   s->total_pos   = 0;
-   s->state       = 0;
-   s->rep0        = 1;
-   s->rep1        = 1;
-   s->rep2        = 1;
-   s->rep3        = 1;
-   s->range       = 0;
-   s->code        = 0;
+   /* LZMA2 needs these two independently. A chunk may reset the decoder
+    * state while continuing the previous chunk's dictionary, or reset
+    * the dictionary while the range coder carries on. Collapsing them
+    * into one operation would make those chunk types undecodable. */
+   if (init_dic)
+   {
+      s->dic_pos    = 0;
+      s->total_pos  = 0;
+      s->got_marker = 0;
+   }
 
-   for (i = 0; i < s->num_probs + START_OFFSET; i++)
-      s->probs[i] = BIT_MODEL_TOTAL >> 1;
+   if (init_state)
+   {
+      uint32_t i;
+
+      s->need_init  = 1;
+      s->remain_len = 0;
+      s->temp_size  = 0;
+      s->state      = 0;
+      s->rep0       = 1;
+      s->rep1       = 1;
+      s->rep2       = 1;
+      s->rep3       = 1;
+      s->range      = 0;
+      s->code       = 0;
+
+      for (i = 0; i < s->num_probs + START_OFFSET; i++)
+         s->probs[i] = BIT_MODEL_TOTAL >> 1;
+   }
+}
+
+void rlzma_stream_reset(rlzma_stream_t *s)
+{
+   rlzma_stream_reset_parts(s, 1, 1);
 }
 
 /* Consume the five-byte range coder prologue. */

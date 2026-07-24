@@ -143,6 +143,53 @@ int rlzma_stream_init(rlzma_stream_t *s, const uint8_t *props,
 void rlzma_stream_reset(rlzma_stream_t *s);
 
 /**
+ * rlzma_stream_reset_parts:
+ * @s          : initialized decoder state
+ * @init_dic   : non-zero to reset the dictionary position
+ * @init_state : non-zero to reset the range coder, probabilities and
+ *               match history
+ *
+ * The two halves of rlzma_stream_reset(), separately. LZMA2 chunks
+ * choose which to apply: a chunk may reset decoder state while
+ * continuing the previous chunk's dictionary, or reset the dictionary
+ * while the range coder carries on.
+ */
+void rlzma_stream_reset_parts(rlzma_stream_t *s, int init_dic,
+      int init_state);
+
+/**
+ * rlzma_stream_set_props:
+ * @s          : initialized decoder state
+ * @props      : RLZMA_PROPS_SIZE bytes of LZMA stream properties
+ *
+ * Re-parses @props into an already-initialized decoder, keeping the
+ * bound buffers and the dictionary contents. LZMA2 chunks may change
+ * lc/lp/pb mid-stream, which this exists for.
+ *
+ * The caller is responsible for having sized the probability array for
+ * the largest lc + lp any chunk will ask for.
+ *
+ * Returns: RLZMA_OK, or RLZMA_ERROR_PARAM if @props is out of range.
+ */
+int rlzma_stream_set_props(rlzma_stream_t *s, const uint8_t *props);
+
+/**
+ * rlzma_stream_put_uncompressed:
+ * @s          : initialized decoder state
+ * @src        : bytes to append
+ * @len        : number of bytes
+ *
+ * Appends literal bytes to the dictionary at the current position, as
+ * an LZMA2 uncompressed chunk requires. The bytes become part of the
+ * dictionary, so later matches may refer back into them.
+ *
+ * Returns: RLZMA_OK, or RLZMA_ERROR_PARAM if @len exceeds the space
+ * left in the window.
+ */
+int rlzma_stream_put_uncompressed(rlzma_stream_t *s,
+      const uint8_t *src, size_t len);
+
+/**
  * rlzma_stream_decode:
  * @s          : initialized, reset decoder state
  * @dic_limit  : decode until @s->dic_pos reaches this, at most @dic_size
