@@ -43,7 +43,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
 	INCDIRS += -I. \
-		   -Ideps/7zip \
+		   \
 		   -Ilibretro-common/include \
 		   -Ilibretro-common/include/compat/zlib
 else

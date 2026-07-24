@@ -335,7 +335,7 @@ ifneq ($(ASSERTIONS), 0)
    LDFLAGS += -s ASSERTIONS=$(ASSERTIONS)
 endif
 
-CFLAGS += -Wall -I. -Ilibretro-common/include -Ideps/7zip -std=gnu99
+CFLAGS += -Wall -I. -Ilibretro-common/include -std=gnu99
 
 RARCH_OBJ := $(addprefix $(OBJDIR)/,$(OBJ))
 

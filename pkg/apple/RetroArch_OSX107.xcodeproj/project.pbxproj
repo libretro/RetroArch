@@ -378,7 +378,6 @@
 					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
 					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -420,7 +419,6 @@
 					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
 					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -464,7 +462,6 @@
 					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
 					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -502,7 +499,6 @@
 					"$(SRCROOT)/../../deps/glslang/glslang/SPIRV",
 					"$(SRCROOT)/../../deps/glslang/",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 					"$(DEPS_DIR)/SPIRV-Cross",
@@ -598,7 +594,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
@@ -689,7 +684,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",

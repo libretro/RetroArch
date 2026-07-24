@@ -1524,9 +1524,11 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_flac_codec.c"
 #endif
 
-#ifdef HAVE_7ZIP
+/* CHD decodes LZMA through r7z_lzma, which no longer has anything to
+ * do with whether the 7z archive backend is built. */
 #include "../libretro-common/formats/libchdr/libchdr_lzma.c"
-#endif
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#include "../libretro-common/formats/7z/r7z_lzma.c"
 
 #ifdef HAVE_ZSTD
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
@@ -1537,21 +1539,15 @@ DEPENDENCIES
 #endif
 
 #ifdef HAVE_7ZIP
-#include "../deps/7zip/7zArcIn.c"
-#include "../deps/7zip/7zBuf.c"
-#include "../deps/7zip/7zCrc.c"
-#include "../deps/7zip/7zCrcOpt.c"
-#include "../deps/7zip/7zDec.c"
-#include "../deps/7zip/CpuArch.c"
-#include "../deps/7zip/Delta.c"
-#include "../deps/7zip/LzmaDec.c"
-#include "../deps/7zip/Lzma2Dec.c"
-#include "../deps/7zip/Bra.c"
-#include "../deps/7zip/Bra86.c"
-#include "../deps/7zip/BraIA64.c"
-#include "../deps/7zip/Bcj2.c"
-#include "../deps/7zip/7zFile.c"
-#include "../deps/7zip/7zStream.c"
+#ifndef GRIFFIN_HAVE_R7Z_LZMA
+#include "../libretro-common/formats/7z/r7z_lzma.c"
+#define GRIFFIN_HAVE_R7Z_LZMA 1
+#endif
+#include "../libretro-common/formats/7z/r7z_archive.c"
+#include "../libretro-common/formats/7z/r7z_lzma_stream.c"
+#include "../libretro-common/formats/7z/r7z_lzma2.c"
+#include "../libretro-common/formats/7z/r7z_bcj2.c"
+#include "../libretro-common/formats/7z/r7z_filters.c"
 #endif
 
 #ifdef HAVE_ZSTD

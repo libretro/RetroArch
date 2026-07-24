@@ -100,7 +100,7 @@ ifeq ($(CONSOLE_LOG), 1)
    CFLAGS	+= -DCONSOLE_LOG
 endif
 
-CFLAGS += -I. -Ideps/7zip -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
+CFLAGS += -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
 
 #CFLAGS += -DRARCH_INTERNAL
 CFLAGS += -DRARCH_CONSOLE -DIS_SALAMANDER

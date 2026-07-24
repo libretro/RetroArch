@@ -1419,7 +1419,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.libretro.dist.ios.RetroArch;
@@ -1531,7 +1530,6 @@
 					"-DHAVE_PATCH",
 					"-DHAVE_UPDATE_CORE_INFO",
 					"-DHAVE_VULKAN",
-					"-D_7ZIP_ST",
 					"-DHAVE_7ZIP",
 				);
 				"OTHER_CFLAGS[arch=*]" = (
@@ -1585,7 +1583,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
@@ -1882,7 +1879,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_FILTERS_BUILTIN",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_XMB",
 					"-DHAVE_OZONE",
 					"-DHAVE_SHADERPIPELINE",

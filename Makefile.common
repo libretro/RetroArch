@@ -1989,24 +1989,14 @@ OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file.o \
 HAVE_COMPRESSION = 1
 
 ifeq ($(HAVE_7ZIP),1)
-   INCLUDE_DIRS += -I$(DEPS_DIR)/7zip
    HAVE_COMPRESSION = 1
-   DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
-   7ZOBJ = $(DEPS_DIR)/7zip/7zArcIn.o \
-           $(DEPS_DIR)/7zip/7zBuf.o \
-           $(DEPS_DIR)/7zip/7zCrc.o \
-           $(DEPS_DIR)/7zip/7zCrcOpt.o \
-           $(DEPS_DIR)/7zip/7zDec.o \
-           $(DEPS_DIR)/7zip/CpuArch.o \
-           $(DEPS_DIR)/7zip/Delta.o \
-           $(DEPS_DIR)/7zip/LzmaDec.o \
-           $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/Bra.o \
-           $(DEPS_DIR)/7zip/Bra86.o \
-           $(DEPS_DIR)/7zip/BraIA64.o \
-           $(DEPS_DIR)/7zip/Bcj2.o \
-           $(DEPS_DIR)/7zip/7zFile.o \
-           $(DEPS_DIR)/7zip/7zStream.o
+   DEFINES += -DHAVE_7ZIP
+   7ZOBJ = $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.o \
+           $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.o
 
    OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_7z.o \
            $(7ZOBJ)
@@ -2269,14 +2259,12 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
          endif
       endif
 
-      ifeq ($(HAVE_RLZMA), 1)
-         DEFINES += -DHAVE_RLZMA
-         OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o \
-                    $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
-      else
-         ifeq ($(HAVE_7ZIP), 1)
-            OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
-         endif
+      # CHD always decodes LZMA through r7z_lzma now; there is no
+      # longer an SDK implementation to fall back to.
+      DEFINES += -DHAVE_RLZMA
+      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      ifneq ($(HAVE_7ZIP), 1)
+         OBJ  += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
       endif
 
       ifeq ($(HAVE_ZSTD), 1)

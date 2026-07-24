@@ -177,7 +177,7 @@ DEFINES += -DHAVE_VULKAN \
 	   -D__STDC_LIMIT_MACROS
 endif
 DEFINES += -DHAVE_7ZIP \
-	   -D_7ZIP_ST \
+	   \
 	   -DHAVE_SL
 
 ifeq ($(HAVE_CHEEVOS),1)
@@ -204,7 +204,6 @@ LOCAL_C_INCLUDES := \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/libretro-common/include \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/stb \
-		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/7zip \
 		    $(LOCAL_PATH)/$(RARCH_DIR)/deps/zstd/lib
 
 INCLUDE_DIRS     := \

@@ -99,7 +99,7 @@ OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
 OTHER_CFLAGS = $(inherited) -DWANT_RAW_DATA_SECTOR=1
 OTHER_CFLAGS = $(inherited) -DWANT_SUBCODE=1
-OTHER_CFLAGS = $(inherited) -D_7ZIP_ST
+OTHER_CFLAGS = $(inherited)
 OTHER_CFLAGS = $(inherited) -D__LIBRETRO__
 
 OTHER_CFLAGS[arch=x86_64] = $(inherited) -DHAVE_SSE

@@ -101,10 +101,6 @@ if [ "$HAVE_DISPMANX" = 'yes' ] && [ "$HAVE_VIDEOCORE" != 'yes' ]; then
    die : 'Notice: Dispmanx support disabled, VideoCore (bcm_host) was not found.'
 fi
 
-if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_dirs INCLUDE ./deps/7zip
-fi
-
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
 fi

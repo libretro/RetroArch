@@ -552,7 +552,7 @@ ms = ms[:tm.start(1)] + new_body + ms[tm.end(1):]
 open('menu/menu_setting.c','w').write(ms)
 print("surgeries ok")
 
-CFB = "-std=gnu89 -pedantic-errors -Wno-long-long -Wno-overlength-strings -O2 -fsyntax-only -I. -Imenu -Ilibretro-common/include -Ideps/7zip -Ideps/rcheevos/include -I/tmp/settings_mig_stubs -DRARCH_INTERNAL -DHAVE_MENU"
+CFB = "-std=gnu89 -pedantic-errors -Wno-long-long -Wno-overlength-strings -O2 -fsyntax-only -I. -Imenu -Ilibretro-common/include -Ideps/rcheevos/include -I/tmp/settings_mig_stubs -DRARCH_INTERNAL -DHAVE_MENU"
 CF = CFB + " -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
 # Guard-isolation lanes: exercise every flag that gates a row *in
 # isolation*.  A dropped inner guard nested under an outer flag only
@@ -609,7 +609,7 @@ print("gate: lanes clean (%d base + %d guard-isolation + %d headless)" % (
     len(_LANES), len(_iso), len(_headless)))
 
 # ---- TOKEN-STREAM GATE: preprocessor-level emission identity ----
-CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/7zip -Ideps/rcheevos/include -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
+CPP = "gcc -E -P -I. -Imenu -Ilibretro-common/include -Ideps/rcheevos/include -DRARCH_INTERNAL -DHAVE_MENU -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_REWIND -DHAVE_SCREENSHOTS -DHAVE_CHEATS -DHAVE_OVERLAY -DHAVE_MICROPHONE"
 def table_tokens(src_path, extra=""):
     """Preprocessed initializer token stream, or None when the table's
     enclosing guards eliminate it in this polarity."""

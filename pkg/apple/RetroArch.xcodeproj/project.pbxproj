@@ -400,7 +400,6 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -442,7 +441,6 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -487,7 +485,6 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -526,7 +523,6 @@
 					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps/discord-rpc/include",
 					"$(SRCROOT)/../../deps/rcheevos/include",
-					"$(SRCROOT)/../../deps/7zip",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps",
 				);
@@ -613,7 +609,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",
@@ -701,7 +696,6 @@
 					"-DHAVE_THREADS",
 					"-DHAVE_DYLIB",
 					"-DHAVE_7ZIP",
-					"-D_7ZIP_ST",
 					"-DHAVE_MATERIALUI",
 					"-DHAVE_HID",
 					"-DHAVE_XMB",

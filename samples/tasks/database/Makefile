@@ -150,24 +150,15 @@ endif
 ifeq ($(HAVE_7ZIP), 1)
 SOURCES_C +=  \
 				 $(LIBRETRO_COMM_DIR)/file/archive_file_7z.c
-DEFINES += -DHAVE_7ZIP -D_7ZIP_ST
+DEFINES += -DHAVE_7ZIP
 INCDIRS += -I$(DEPS_DIR)
 
-SOURCES_C += $(DEPS_DIR)/7zip/7zArcIn.c \
-				 $(DEPS_DIR)/7zip/7zBuf.c \
-				 $(DEPS_DIR)/7zip/7zCrc.c \
-				 $(DEPS_DIR)/7zip/7zCrcOpt.c \
-				 $(DEPS_DIR)/7zip/7zDec.c \
-				 $(DEPS_DIR)/7zip/7zFile.c \
-				 $(DEPS_DIR)/7zip/7zStream.c \
-				 $(DEPS_DIR)/7zip/Bcj2.c \
-				 $(DEPS_DIR)/7zip/Bra.c \
-				 $(DEPS_DIR)/7zip/Bra86.c \
-				 $(DEPS_DIR)/7zip/BraIA64.c \
-				 $(DEPS_DIR)/7zip/CpuArch.c \
-				 $(DEPS_DIR)/7zip/Delta.c \
-				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
-				 $(DEPS_DIR)/7zip/LzmaDec.c
+SOURCES_C += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
+				 $(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)
