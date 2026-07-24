@@ -132,7 +132,6 @@ HAVE_RBMP                := 1
 HAVE_RTGA                := 1
 HAVE_RMODTRACKER                := 1
 HAVE_OVERLAY             := 1
-HAVE_ZLIB                := 1
 HAVE_7ZIP                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
@@ -147,7 +146,6 @@ HAVE_CHEATS              := 1
 HAVE_CORE_INFO_CACHE     := 1
 HAVE_MENU_COMMON         := 1
 HAVE_MENU                := 1
-HAVE_BUILTINZLIB         := 1
 HAVE_STATIC_AUDIO_FILTERS := 1
 HAVE_STATIC_VIDEO_FILTERS := 1
 HAVE_XMB                 := 0
@@ -198,10 +196,6 @@ ifeq ($(HAVE_RARCH_EXEC), 1)
    CFLAGS      += -DHAVE_RARCH_EXEC
 endif
 
-ifeq ($(HAVE_ZLIB), 1)
-   CFLAGS      += -DHAVE_ZLIB
-   CFLAGS      += -I./libretro-common/include/compat/zlib
-endif
 
 ifeq ($(RARCH_CONSOLE), 1)
    CFLAGS += -DRARCH_CONSOLE

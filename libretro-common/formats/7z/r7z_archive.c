@@ -375,9 +375,9 @@ static void decode_pending_reset(r7z_archive_t *a);
  * CRC32
  * -------------------------------------------------------------------- */
 
-/* Prefixed because griffin builds every file in this directory into one
- * translation unit alongside deps/libz, which has its own const
- * crc_table at file scope. */
+/* Prefixed because griffin builds every file in this directory into a
+ * single translation unit, so a file-scope crc_table would be liable to
+ * collide with another unit's. */
 static uint32_t r7z_crc_table[256];
 static int      r7z_crc_ready = 0;
 

@@ -112,7 +112,6 @@ HAVE_EGL=auto              # EGL context support
 HAVE_VG=auto               # OpenVG support
 HAVE_CG=auto               # Cg shader support
 HAVE_HLSL=no               # HLSL9 shader support (for Direct3D9)
-HAVE_BUILTINZLIB=no        # Bake in zlib
 HAVE_ZLIB=no               # zlib support (uses the built-in DEFLATE codec when disabled)
 HAVE_ALSA=auto             # ALSA support
 C89_ALSA=no

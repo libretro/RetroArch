@@ -35,7 +35,6 @@ HAVE_WINMM               := 1
 HAVE_RPNG                := 1
 HAVE_RWEBP               := 1
 HAVE_RDDS                := 1
-HAVE_ZLIB                := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
 HAVE_MENU                := 1
@@ -52,7 +51,6 @@ HAVE_DYLIB               := 1
 HAVE_DYNAMIC             := 1
 HAVE_DINPUT              := 1
 HAVE_MENU_COMMON         := 1
-HAVE_BUILTINZLIB         := 1
 
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1

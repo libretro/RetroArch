@@ -1494,24 +1494,6 @@ DEPENDENCIES
 #include "../deps/libFLAC/stream_decoder.c"
 #endif
 
-#ifdef HAVE_ZLIB
-#ifndef HAVE_NO_BUILTINZLIB
-#include "../deps/libz/adler32.c"
-#include "../deps/libz/compress.c"
-#include "../deps/libz/libz-crc32.c"
-#include "../deps/libz/deflate.c"
-#include "../deps/libz/gzclose.c"
-#include "../deps/libz/gzlib.c"
-#include "../deps/libz/gzread.c"
-#include "../deps/libz/gzwrite.c"
-#include "../deps/libz/inffast.c"
-#include "../deps/libz/inflate.c"
-#include "../deps/libz/inftrees.c"
-#include "../deps/libz/trees.c"
-#include "../deps/libz/uncompr.c"
-#include "../deps/libz/zutil.c"
-#endif
-
 #ifdef HAVE_CHD
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
@@ -1535,7 +1517,6 @@ DEPENDENCIES
 #endif
 
 #include "../libretro-common/streams/chd_stream.c"
-#endif
 #endif
 
 #ifdef HAVE_7ZIP
