@@ -166,10 +166,8 @@ SOURCES_C += $(DEPS_DIR)/7zip/7zArcIn.c \
 				 $(DEPS_DIR)/7zip/BraIA64.c \
 				 $(DEPS_DIR)/7zip/CpuArch.c \
 				 $(DEPS_DIR)/7zip/Delta.c \
-				 $(DEPS_DIR)/7zip/LzFind.c \
 				 $(DEPS_DIR)/7zip/Lzma2Dec.c \
-				 $(DEPS_DIR)/7zip/LzmaDec.c \
-				 $(DEPS_DIR)/7zip/LzmaEnc.c
+				 $(DEPS_DIR)/7zip/LzmaDec.c
 endif
 
 ifeq ($(HAVE_THREADS), 1)

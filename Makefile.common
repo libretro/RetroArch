@@ -1999,10 +1999,8 @@ ifeq ($(HAVE_7ZIP),1)
            $(DEPS_DIR)/7zip/7zDec.o \
            $(DEPS_DIR)/7zip/CpuArch.o \
            $(DEPS_DIR)/7zip/Delta.o \
-           $(DEPS_DIR)/7zip/LzFind.o \
            $(DEPS_DIR)/7zip/LzmaDec.o \
            $(DEPS_DIR)/7zip/Lzma2Dec.o \
-           $(DEPS_DIR)/7zip/LzmaEnc.o \
            $(DEPS_DIR)/7zip/Bra.o \
            $(DEPS_DIR)/7zip/Bra86.o \
            $(DEPS_DIR)/7zip/BraIA64.o \
