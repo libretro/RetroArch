@@ -3326,13 +3326,6 @@ next_iteration:
 }
 
 
-/* We use an average compression ratio to determine our approximate start
- * location. FLAC files are generally about 50%-70% the size of their
- * uncompressed counterparts so we'll use this as a basis. I'm going to split
- * the middle and use a factor of 0.6 to determine the starting location.
- */
-#define RFLAC_BINARY_SEARCH_APPROX_COMPRESSION_RATIO 0.6f
-
 static uint32_t rflac__seek_to_approximate_flac_frame_to_byte(rflac* pFlac,
       uint64_t targetByte, uint64_t rangeLo, uint64_t rangeHi,
       uint64_t* pLastSuccessfulSeekOffset)
@@ -3415,7 +3408,10 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
    uint64_t lastSuccessfulSeekOffset = (uint64_t)-1;
    uint64_t closestSeekOffsetBeforeTargetPCMFrame = byteRangeLo;
    uint32_t seekForwardThreshold = (pFlac->maxBlockSizeInPCMFrames != 0) ? pFlac->maxBlockSizeInPCMFrames*2 : 4096;
-   uint64_t targetByte = byteRangeLo + (uint64_t)(((int64_t)((pcmFrameIndex - pFlac->currentPCMFrame) * pFlac->channels * pFlac->bitsPerSample)/8.0f) * RFLAC_BINARY_SEARCH_APPROX_COMPRESSION_RATIO);
+   /* Integer estimate: uncompressed byte count scaled by the approximate
+    * compression ratio (3/5, i.e. the former 0.6f), keeping the seek
+    * probe sequence identical across platforms and FPUs. */
+   uint64_t targetByte = byteRangeLo + (((pcmFrameIndex - pFlac->currentPCMFrame) * pFlac->channels * pFlac->bitsPerSample) / 8) * 3 / 5;
    if (targetByte > byteRangeHi)
       targetByte = byteRangeHi;
 
@@ -3451,7 +3447,13 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
          }
          else
          {
-            const float approxCompressionRatio = (int64_t)(lastSuccessfulSeekOffset - pFlac->firstFLACFramePosInBytes) / ((int64_t)(pcmRangeLo * pFlac->channels * pFlac->bitsPerSample)/8.0f);
+            /* Observed compression ratio so far, in Q16 fixed point.
+             * (The float version divided by zero when pcmRangeLo was 0;
+             * fall back to a 1:1 ratio in that case.) */
+            uint64_t uncompressedSoFar   = (pcmRangeLo * pFlac->channels * pFlac->bitsPerSample) / 8;
+            uint64_t compressionRatioQ16 = uncompressedSoFar
+               ? (((lastSuccessfulSeekOffset - pFlac->firstFLACFramePosInBytes) << 16) / uncompressedSoFar)
+               : ((uint64_t)1 << 16);
 
             if (pcmRangeLo > pcmFrameIndex) {
                /* We seeked too far forward. We need to move our target byte
@@ -3481,7 +3483,7 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
                   if (byteRangeHi < byteRangeLo)
                      byteRangeHi = byteRangeLo;
 
-                  targetByte = lastSuccessfulSeekOffset + (uint64_t)(((int64_t)((pcmFrameIndex-pcmRangeLo) * pFlac->channels * pFlac->bitsPerSample)/8.0f) * approxCompressionRatio);
+                  targetByte = lastSuccessfulSeekOffset + (((((pcmFrameIndex - pcmRangeLo) * pFlac->channels * pFlac->bitsPerSample) / 8) * compressionRatioQ16) >> 16);
                   if (targetByte > byteRangeHi)
                      targetByte = byteRangeHi;
 
@@ -3525,7 +3527,7 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search(rflac* pFlac,
     * searching logic will handle it.
     */
    byteRangeLo = pFlac->firstFLACFramePosInBytes;
-   byteRangeHi = pFlac->firstFLACFramePosInBytes + (uint64_t)((int64_t)(pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample)/8.0f);
+   byteRangeHi = pFlac->firstFLACFramePosInBytes + (pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample) / 8;
 
    return rflac__seek_to_pcm_frame__binary_search_internal(pFlac, pcmFrameIndex, byteRangeLo, byteRangeHi);
 }
@@ -3564,7 +3566,7 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
     * search for this. We need to know the total sample count for this. */
    if (pFlac->totalPCMFrameCount > 0)
    {
-      uint64_t byteRangeHi = pFlac->firstFLACFramePosInBytes + (uint64_t)((int64_t)(pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample)/8.0f);
+      uint64_t byteRangeHi = pFlac->firstFLACFramePosInBytes + (pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample) / 8;
       uint64_t byteRangeLo = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset;
 
       /* If our closest seek point is not the last one, we only need to search
