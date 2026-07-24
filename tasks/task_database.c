@@ -227,6 +227,11 @@ typedef struct manual_scan_handle
    database_state_handle_t state;
    uint8_t flags;
 #endif
+   /* The caller's completion callback, run after the task's own.
+    * task_push_dbscan takes one and used to drop it, so a caller that
+    * wanted to know when a scan finished never found out - see
+    * cb_task_manual_content_scan. */
+   retro_task_callback_t user_cb;
 } manual_scan_handle_t;
 
 enum scan_verdict
@@ -1720,7 +1725,7 @@ bool task_push_dbscan(
 {
    manual_content_scan_set_menu_content_dir(fullpath);
    /*manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);*/
-   return task_push_manual_content_scan(false);
+   return task_push_manual_content_scan(false, cb);
 }
 
 #endif
@@ -1851,6 +1856,14 @@ static void cb_task_manual_content_scan(
 
 #if defined(HAVE_MENU)
 end:
+   /* The caller's callback, if it gave one.  Read before the handle is
+    * released below; the menu refresh that follows is the task's own
+    * and is deliberately kept, because three of the four in-tree
+    * callers rely on it happening whether or not they pass a callback
+    * of their own. */
+   if (manual_scan && manual_scan->user_cb)
+      manual_scan->user_cb(task, task_data, user_data, err);
+
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
    if (   
@@ -2536,7 +2549,8 @@ static bool task_manual_content_scan_finder(retro_task_t *task, void *user_data)
 }
 
 bool task_push_manual_content_scan(
-      bool do_menu_refresh)
+      bool do_menu_refresh,
+      retro_task_callback_t user_cb)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -2649,6 +2663,7 @@ bool task_push_manual_content_scan(
    task->progress_cb             = NULL;
 #endif
 
+   manual_scan->user_cb          = user_cb;
    task->callback                = cb_task_manual_content_scan;
    task->cleanup                 = task_manual_content_scan_free;
    task->flags                  |= RETRO_TASK_FLG_ALTERNATIVE_LOOK;

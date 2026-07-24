@@ -242,7 +242,8 @@ bool task_push_dbscan(
 #endif
 
 bool task_push_manual_content_scan(
-      bool do_menu_refresh);
+      bool do_menu_refresh,
+      retro_task_callback_t user_cb);
 
 #ifdef HAVE_OVERLAY
 bool task_push_overlay_load_default(
