@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <boolean.h>
 #include <file/archive_file.h>
@@ -257,13 +258,10 @@ static int64_t sevenzip_file_read(
    memset(&decomp,   0, sizeof(decomp));
    memset(&userdata, 0, sizeof(userdata));
 
-   /* strldup rather than strdup: this file builds as C89, where
-    * strdup is not standard. */
    if (needle)
-      decomp.needle   = strldup(needle, strlen(needle) + 1);
+      decomp.needle   = strdup(needle);
    if (optional_outfile)
-      decomp.opt_file = strldup(optional_outfile,
-            strlen(optional_outfile) + 1);
+      decomp.opt_file = strdup(optional_outfile);
 
    /* A needle that failed to duplicate would make the callback compare
     * against NULL. Bail rather than risk it. */
