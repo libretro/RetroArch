@@ -360,6 +360,21 @@ static int sevenzip_parse_file_iterate_step_internal(
       if (!sevenzip_name_to_char(entry->name, s, PATH_MAX_LENGTH))
          return -1;
 
+      /* The vtable reports sizes as uint32_t, but 7z stores them as
+       * 64-bit. A member of 4 GiB or more cannot be described here, and
+       * truncating would hand the caller a wrapped length to write from
+       * a full-length buffer. Skip such an entry instead: the scan
+       * carries on and everything else in the archive stays usable. */
+      if (entry->size > (uint64_t)0xFFFFFFFFu)
+      {
+         /* Blank the name too: the caller passes whatever is in it to
+          * file_cb, and a named entry reporting zero bytes is worse
+          * than no entry at all. */
+         s[0]     = '\0';
+         *payback = 1;
+         return 1;
+      }
+
       *cmode    = 0; /* unused for 7zip */
       *checksum = entry->crc;
       *size     = (uint32_t)entry->size;
