@@ -4092,19 +4092,9 @@ static char *d3d9_hlsl_decompose_struct_samplers(const char *source)
       /* Remove sampler member lines from sampler-containing structs.
        * Look for lines containing 'sampler' followed by ';' */
       {
-         bool skip_sampler_line = false;
-         if (strncmp(p, "sampler", 7) == 0 || (p > source && p[-1] != '\n'
-               && strstr(p, "sampler") == p))
-         {
-            /* Actually, let's detect sampler lines more carefully:
-             * at the start of a line (after whitespace), check if we see
-             * 'sampler2D' followed by '_texture' and ';' */
-         }
-
          /* Simpler approach: detect 'sampler2D _texture;' or 'sampler2D _texture ;'
           * as a standalone line (with optional leading whitespace) */
          {
-            const char *line_start = p;
             /* Check if we're at line start */
             if (p == source || p[-1] == '\n')
             {
@@ -5378,12 +5368,6 @@ static bool d3d9_hlsl_compile_cg_compat(
    D3DBlob error_blob = NULL;
    HRESULT hr;
 
-   /* D3D_SHADER_MACRO compatible: { Name, Definition }, null-terminated */
-   struct { const char *n; const char *d; } cg_defines[] = {
-      { "CG", "1" },
-      { NULL, NULL }
-   };
-
    if (!out_blob)
       return false;
 
@@ -5817,7 +5801,6 @@ static char *d3d9_hlsl_convert_macro_loops(const char *source)
                                  && s[(size_t)(nm_end - nm)] == '(')
                            {
                               /* Check if this starts a consecutive run from 0 */
-                              const char *call = s;
                               const char *after_name = s + (size_t)(nm_end - nm);
                               /* Parse the argument */
                               if (after_name[0] == '(' && after_name[1] == '0'
@@ -6092,7 +6075,6 @@ static bool d3d9_hlsl_load_program_from_file_ex(
       char *p = resolved;
       while ((p = strstr(p, "#pragma parameter")) != NULL)
       {
-         const char *line_start = p;
          const char *pp = p + 17; /* skip "#pragma parameter" */
          const char *name_start, *name_end;
          size_t name_len;

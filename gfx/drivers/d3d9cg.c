@@ -2203,7 +2203,6 @@ static bool d3d9_cg_renderchain_init_shader_fvf(
    static const D3DVERTEXELEMENT9 decl_end     = D3DDECL_END();
    D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH]    = {{0}};
    bool *indices                               = NULL;
-   CGprogram fprg                              = (CGprogram)pass->fprg;
    CGprogram vprg                              = (CGprogram)pass->vprg;
 
    if (cgD3D9GetVertexDeclaration(vprg, decl) == CG_FALSE)
@@ -3745,7 +3744,6 @@ static void d3d9_cg_set_viewport(void *data,
 static bool d3d9_cg_initialize(d3d9_video_t *d3d, const video_info_t *info)
 {
    bool ret             = true;
-   settings_t *settings = config_get_ptr();
 
    if (!d3d->d3d9)
       ret = d3d9_cg_init_base(d3d, info);
