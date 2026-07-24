@@ -78,3 +78,11 @@ _convert_float_s16_asm:
    bx lr
 
 #endif
+
+/* Prevent the stack from becoming executable for no reason...
+ * Placed last: a bare .section switches the active section, and these
+ * files emit into the assembler default (.text) with no .text directive
+ * of their own to switch back. */
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
