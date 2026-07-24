@@ -69,15 +69,19 @@
  *     through retro_atomic_*_int (verified at preprocessing
  *     by token-pasting their expansion).
  *
- *  2. Runtime: a 1M-iteration producer/consumer stress test
- *     that mirrors the upload/draw shape: producer writes a
- *     monotonic (texture, width, height) triple before
- *     publishing AVAILABLE; consumer waits for AVAILABLE and
- *     verifies the triple is internally consistent (all three
- *     fields belong to the same generation).  Intended to be
- *     run under ThreadSanitizer, which instruments every
- *     atomic load/store and would flag the missing-barrier
- *     case as a data race even on x86 TSO (where the
+ *  2. Runtime: a 1M-iteration producer/consumer stress test in
+ *     which the .status field itself carries every ordering
+ *     edge: the producer stages a monotonic (texture, width,
+ *     height) triple and publishes it with
+ *     STATUS_STORE(AVAILABLE); the consumer polls STATUS_LOAD
+ *     until it observes AVAILABLE, verifies the triple, and
+ *     acknowledges with STATUS_STORE(PENDING), which is the
+ *     edge the producer waits on before staging the next
+ *     generation.  Intended to be run under ThreadSanitizer:
+ *     because the accessors under test are the only
+ *     synchronisation in the loop, de-atomicising either macro
+ *     is immediately a reported data race - on the status field
+ *     and on the staged triple - even on x86 TSO (where the
  *     hardware otherwise hides the bug).
  *
  * If gfx_thumbnail.c amends GFX_THUMB_STATUS_STORE /
@@ -181,55 +185,60 @@ typedef char _gfx_thumb_status_size_check[
 /* Number of producer/consumer iterations.  1M is enough to flush
  * out a missing-barrier bug under TSan within a few seconds; on
  * real weak-memory hardware (qemu-aarch64) it surfaces faster.
- * Adjust upward if the bug becomes harder to reproduce. */
+ * Adjust upward if the bug becomes harder to reproduce.
+ * Overridable (-DSTRESS_ITERS=...) for constrained environments:
+ * the lock-step handshake costs scheduler timeslices per
+ * iteration on a single-CPU host, and TSan's happens-before
+ * detection does not depend on the count. */
+#ifndef STRESS_ITERS
 #define STRESS_ITERS 1000000
+#endif
 
-/* SPSC handshake state.
+/* SPSC latch state.
  *
  * The real gfx_thumbnail upload/draw pairing is single-publication:
  * the upload-callback thread writes the texture once and publishes
  * AVAILABLE; the video thread observes AVAILABLE and reads the
- * triple every frame thereafter.  There is no high-frequency
- * back-and-forth.
+ * triple every frame thereafter.  A stress test needs repetition,
+ * and a naive repeating status-gated handshake has a stale window:
+ * after acknowledging generation i through a side channel, the
+ * consumer can observe the still-AVAILABLE status of generation i
+ * while the producer is already restaging the triple for i+1 - a
+ * genuine race in the harness, not in the primitives.  An earlier
+ * revision of this test dodged the window by gating the handshake
+ * on separate produced/consumed counters, but that quietly moved
+ * every synchronising edge off the field under test: with the
+ * counters carrying the ordering, de-atomicising the status macros
+ * was invisible to TSan, because the status accesses were always
+ * ordered by the counter edges (verified by mutation).
  *
- * To mirror that shape under stress we need a per-generation
- * handshake so the texture / width / height fields are NOT being
- * rewritten while the consumer is reading them.  Without that,
- * a tight loop where the producer rewrites the data while the
- * consumer reads it would generate torn reads even with correct
- * barriers, because the data is mutating concurrently -- a
- * property of the test design, not of the synchronisation
- * primitives.
+ * So the stress runs the status field as a two-phase latch in
+ * which BOTH edges are the macros under test:
  *
- * We pair two atomic counters for the handshake:
- *  - `produced`: producer increments it after staging a generation,
- *    via release-store so the staged data is visible to any thread
- *    that observes the new value.  Consumer waits for it to exceed
- *    the last-seen value via acquire-load.  This is the actual
- *    publish edge the consumer keys on (rather than a status
- *    transition, which would require the consumer to observe a
- *    transient UNKNOWN that the producer might overwrite faster
- *    than the consumer can poll).
- *  - `consumed`: consumer increments it after reading; producer
- *    waits for `consumed == produced` before staging the next
- *    generation.
+ *   producer: poll STATUS_LOAD  until PENDING   (acquire: orders
+ *             staging after the consumer's reads of the previous
+ *             generation)
+ *             stage texture/width/height
+ *             STATUS_STORE(AVAILABLE)           (release: publishes
+ *             the staged triple)
  *
- * The .status field (the actual subject of the test) is updated
- * on the same pattern as in gfx_thumbnail.c -- each generation
- * stores AVAILABLE through GFX_THUMB_STATUS_STORE before the
- * counter bump, and the consumer reads it through
- * GFX_THUMB_STATUS_LOAD as part of the per-generation read.  This
- * exercises the macros under test even though the counter is what
- * gates the handshake. */
+ *   consumer: poll STATUS_LOAD  until AVAILABLE (acquire: orders
+ *             the triple reads after staging)
+ *             read and verify the triple
+ *             STATUS_STORE(PENDING)             (release: the ack
+ *             the producer waits on)
+ *
+ * Strict alternation: AVAILABLE uniquely means "current staged,
+ * unconsumed generation", so there is no stale window and no side
+ * channel.  The one deviation from production is that the reader
+ * stores status; this is the minimal repeating structure whose
+ *
+ * every ordering edge is the accessor pair, which is the property
+ * the suite exists to verify.  Shutdown rides the same field: the
+ * producer stores MISSING after the final ack. */
 typedef struct
 {
    gfx_thumbnail_t    thumb;
-   /* Producer's generation counter.  Bumped via release-store
-    * after staging the data; consumer reads via acquire-load. */
-   retro_atomic_int_t produced;
-   /* Consumer's acknowledgement counter.  Bumped via release-
-    * store after reading; producer reads via acquire-load. */
-   retro_atomic_int_t consumed;
    /* Counter of mismatches the consumer observed.  Read by main
     * thread after the join, so it doesn't need to be atomic. */
    unsigned long      mismatches;
@@ -242,10 +251,13 @@ static void producer_thread(void *arg)
 
    for (i = 1; i <= STRESS_ITERS; i++)
    {
-      /* Wait for the consumer to acknowledge the previous
-       * generation.  On the first iteration this is true
-       * immediately (consumed starts at 0). */
-      while (retro_atomic_load_acquire_int(&s->consumed) != (i - 1))
+      /* Wait for the consumer's ack of the previous generation.
+       * run_stress primes the latch to PENDING, so the first
+       * iteration proceeds immediately.  Acquire semantics order
+       * our staging writes after the consumer's reads of the
+       * previous triple. */
+      while (GFX_THUMB_STATUS_LOAD(&s->thumb.status)
+            != GFX_THUMBNAIL_STATUS_PENDING)
          ; /* spin */
 
       /* Stage the generation's data (no ordering required
@@ -254,28 +266,20 @@ static void producer_thread(void *arg)
       s->thumb.width   = (unsigned)i;
       s->thumb.height  = (unsigned)i;
 
-      /* Update status via the macros under test.  Same shape as
-       * the production gfx_thumbnail.c upload path:
+      /* Publish.  Same shape as the production upload path:
        * STATUS_STORE(AVAILABLE) after staging the texture, with
        * release-store semantics that fence the earlier writes. */
       GFX_THUMB_STATUS_STORE(&s->thumb.status,
             GFX_THUMBNAIL_STATUS_AVAILABLE);
-
-      /* Publish the new generation.  Release-store so the staged
-       * data and the AVAILABLE status are visible before the
-       * consumer observes the new generation. */
-      retro_atomic_store_release_int(&s->produced, i);
    }
 
-   /* Wait for the final ack, then signal shutdown via a
-    * sentinel value `produced = STRESS_ITERS + 1`, paired with
-    * a final STATUS_STORE so the consumer exercises the macro
-    * one last time. */
-   while (retro_atomic_load_acquire_int(&s->consumed) != STRESS_ITERS)
+   /* Wait for the final ack, then signal shutdown through the
+    * same field. */
+   while (GFX_THUMB_STATUS_LOAD(&s->thumb.status)
+         != GFX_THUMBNAIL_STATUS_PENDING)
       ; /* drain */
    GFX_THUMB_STATUS_STORE(&s->thumb.status,
          GFX_THUMBNAIL_STATUS_MISSING);
-   retro_atomic_store_release_int(&s->produced, STRESS_ITERS + 1);
 }
 
 static void consumer_thread(void *arg)
@@ -284,49 +288,43 @@ static void consumer_thread(void *arg)
    unsigned long   mismatches    = 0;
    int             expected      = 1;
 
-   /* Per-generation loop.  Wait for produced >= expected, then
-    * read the staged data and the status.  The status read
-    * goes through GFX_THUMB_STATUS_LOAD (the macro under test);
-    * it should always observe AVAILABLE for the current
-    * generation.  Both reads are acquire-loads; the producer's
-    * release-stores ensure ordering between staging and
-    * publication. */
+   /* Per-generation loop.  Poll the status field - the macro
+    * under test is the only forward edge - until it observes
+    * AVAILABLE (or MISSING, the shutdown sentinel).  The
+    * acquire-load orders the triple reads after the producer's
+    * staging; the release-store of PENDING afterwards is the ack
+    * the producer's next generation waits on. */
    for (;;)
    {
-      int                       prod;
       uintptr_t                 tex;
       unsigned                  w, h;
       enum gfx_thumbnail_status st;
 
-      /* Wait for the producer to publish the next generation
-       * (or the shutdown sentinel STRESS_ITERS + 1). */
       do {
-         prod = retro_atomic_load_acquire_int(&s->produced);
-      } while (prod < expected);
+         st = GFX_THUMB_STATUS_LOAD(&s->thumb.status);
+      } while (st != GFX_THUMBNAIL_STATUS_AVAILABLE
+            && st != GFX_THUMBNAIL_STATUS_MISSING);
 
-      if (prod == STRESS_ITERS + 1)
+      if (st == GFX_THUMBNAIL_STATUS_MISSING)
          break;
 
-      /* Read the staged data and status.  The acquire-load on
-       * `produced` fences these reads; if any field disagrees
-       * with the expected generation, the fence failed.  We
-       * additionally exercise GFX_THUMB_STATUS_LOAD here -- it
-       * should always observe AVAILABLE for the current
-       * generation. */
+      /* Read the staged data.  The acquire-load of AVAILABLE
+       * fences these reads; if any field disagrees with the
+       * expected generation, the fence failed. */
       tex = s->thumb.texture;
       w   = s->thumb.width;
       h   = s->thumb.height;
-      st  = GFX_THUMB_STATUS_LOAD(&s->thumb.status);
 
       if (tex != (uintptr_t)expected
             || w != (unsigned)expected
-            || h != (unsigned)expected
-            || st != GFX_THUMBNAIL_STATUS_AVAILABLE)
+            || h != (unsigned)expected)
          mismatches++;
 
       /* Ack: producer waits on this before staging the next
-       * generation. */
-      retro_atomic_store_release_int(&s->consumed, expected);
+       * generation.  Release semantics publish our reads as
+       * complete. */
+      GFX_THUMB_STATUS_STORE(&s->thumb.status,
+            GFX_THUMBNAIL_STATUS_PENDING);
       expected++;
    }
 
@@ -343,9 +341,13 @@ static int run_stress(void)
     * -Wclass-memaccess under CXX_BUILD where .status is
     * std::atomic<int> and the struct is non-trivially-copyable. */
    gfx_thumbnail_test_init_blank(&s.thumb);
-   retro_atomic_int_init(&s.produced, 0);
-   retro_atomic_int_init(&s.consumed, 0);
    s.mismatches = 0;
+
+   /* Prime the latch: PENDING is the "consumer ready" state the
+    * producer's first generation waits on.  Single-threaded here,
+    * before either thread exists. */
+   GFX_THUMB_STATUS_STORE(&s.thumb.status,
+         GFX_THUMBNAIL_STATUS_PENDING);
 
    prod = sthread_create(producer_thread, &s);
    if (!prod)
