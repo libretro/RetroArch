@@ -6492,21 +6492,6 @@ uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
 }
 
 
-
-/* High Level APIs */
-
-/* SIZE_MAX */
-#if defined(SIZE_MAX)
-   #define RFLAC_SIZE_MAX  SIZE_MAX
-#else
-   #if defined(RFLAC_64BIT)
-      #define RFLAC_SIZE_MAX  ((uint64_t)0xFFFFFFFFFFFFFFFF)
-   #else
-      #define RFLAC_SIZE_MAX  0xFFFFFFFF
-   #endif
-#endif
-/* End SIZE_MAX */
-
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
    #pragma GCC diagnostic pop
 #endif
