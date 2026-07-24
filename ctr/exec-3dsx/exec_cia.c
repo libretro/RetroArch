@@ -4,7 +4,7 @@
 #include <math.h>
 #include <sys/stat.h>
 #include <3ds.h>
-#include "ctr/ctr_debug.h"
+#include "../ctr_debug.h"
 
 #define FILE_CHUNK_SIZE 4096
 
