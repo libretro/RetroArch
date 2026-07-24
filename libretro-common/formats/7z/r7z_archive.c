@@ -361,6 +361,17 @@ struct r7z_archive
    size_t         pend_fed;        /* input consumed by this stage */
    uint32_t       pend_base;       /* coder_unpack_sizes base for folder */
 
+   /* A BCJ2 folder part way through. Its four inputs must all be
+    * complete before the converter can run, but they need not be
+    * resolved in the same call: one port per call keeps each call
+    * bounded by that port's own decode. */
+   uint8_t       *pend_b2buf[4];
+   size_t         pend_b2len[4];
+   uint32_t       pend_b2port;     /* next port to resolve, 0..4 */
+   uint32_t       pend_b2at;       /* index of the BCJ2 coder */
+   uint32_t       pend_b2in;       /* input-port base of that coder */
+   uint32_t       pend_b2active;
+
    r7z_entry_t   *entries;
    uint32_t       num_entries;
    uint16_t      *names;
@@ -2220,6 +2231,20 @@ static void decode_pending_reset(r7z_archive_t *a)
    a->pend_in_len = 0;
    a->pend_out_len = 0;
    a->pend_fed    = 0;
+   {
+      uint32_t k;
+      for (k = 0; k < 4; k++)
+      {
+         free(a->pend_b2buf[k]);
+         a->pend_b2buf[k] = NULL;
+         a->pend_b2len[k] = 0;
+      }
+   }
+   a->pend_b2port   = 0;
+   a->pend_b2at     = 0;
+   a->pend_b2in     = 0;
+   a->pend_b2active = 0;
+
    a->pend_folder = 0xFFFFFFFFu;
    a->pend_coder  = 0;
    a->pend_base   = 0;
@@ -2410,6 +2435,282 @@ static int decode_stage_finish(r7z_archive_t *a, const folder_t *f)
    return (a->pend_coder >= f->num_coders) ? 1 : 0;
 }
 
+
+
+/* Find the coder feeding an input port, when that port is fed by a
+ * bond from a coder whose own input is a packed stream. That is the
+ * shape every BCJ2 folder 7-Zip produces has: BCJ2 plus one LZMA per
+ * port, no chains.
+ *
+ * Returns 1 and fills the outputs when the port matches that shape, 0
+ * when it does not and the caller should fall back to resolving the
+ * port whole.
+ */
+static int bcj2_port_coder(r7z_archive_t *a, uint32_t fi, uint32_t port,
+      uint32_t *coder_idx, uint32_t *out_index)
+{
+   folder_t *f = &a->folders[fi];
+   uint32_t  b;
+
+   for (b = 0; b < f->num_bonds; b++)
+   {
+      uint32_t out_port;
+      uint32_t ci;
+      uint32_t seen = 0;
+
+      if (a->bonds[f->bond_first + b * 2] != port)
+         continue;
+
+      out_port = a->bonds[f->bond_first + b * 2 + 1];
+
+      for (ci = 0; ci < f->num_coders; ci++)
+      {
+         const coder_t *c = &a->coders[f->coder_first + ci];
+
+         if (out_port < seen + c->num_out)
+         {
+            uint32_t in_base = 0;
+            uint32_t z;
+            uint32_t k;
+
+            /* Only the single-input, sliceable case. */
+            if (c->num_in != 1 || !coder_is_resumable(c))
+               return 0;
+
+            for (z = 0; z < ci; z++)
+               in_base += a->coders[f->coder_first + z].num_in;
+
+            /* And only when that input is a packed stream directly,
+             * so there is no chain behind it to resume. */
+            for (k = 0; k < f->num_pack; k++)
+               if (a->folder_pack[f->pack_first + k] == in_base)
+               {
+                  *coder_idx = ci;
+                  *out_index = out_port;
+                  return 1;
+               }
+            return 0;
+         }
+         seen += c->num_out;
+      }
+      return 0;
+   }
+   return 0;
+}
+
+/* One call's worth of a BCJ2 folder.
+ *
+ * The converter needs all four inputs complete before it can emit a
+ * byte, so this cannot interleave them the way a linear chain is
+ * sliced. What it can do is resolve one input per call: the cost of a
+ * call is then one input's decode rather than all four plus the
+ * conversion. On a 4.9 MiB folder that is the difference between one
+ * 85 ms block and four bounded ones.
+ *
+ * Sets *done when the folder is complete and cached.
+ */
+static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
+      uint32_t bcj2_at, int *done)
+{
+   folder_t *f = &a->folders[fi];
+   uint32_t  i;
+   int       res;
+
+   *done = 0;
+
+   if (!a->pend_b2active)
+   {
+      /* Starting: work out the port base and the coder-output base
+       * once, then resolve a port per call from here. */
+      if (a->coders[f->coder_first + bcj2_at].num_in != 4)
+         return R7Z_ERROR_UNSUPPORTED;
+      if (f->unpack_size > (uint64_t)((size_t)-1))
+         return R7Z_ERROR_DATA;
+
+      decode_pending_reset(a);
+
+      a->pend_folder   = fi;
+      a->pend_b2at     = bcj2_at;
+      a->pend_b2port   = 0;
+      a->pend_b2active = 1;
+
+      a->pend_b2in = 0;
+      for (i = 0; i < bcj2_at; i++)
+         a->pend_b2in += a->coders[f->coder_first + i].num_in;
+
+      a->pend_base = 0;
+      for (i = 0; i < fi; i++)
+      {
+         uint32_t k;
+         for (k = 0; k < a->folders[i].num_coders; k++)
+            a->pend_base +=
+               a->coders[a->folders[i].coder_first + k].num_out;
+      }
+      return R7Z_OK;   /* setup only; decode starts next call */
+   }
+
+   if (a->pend_b2port < 4)
+   {
+      uint32_t ci, oi;
+
+      i = a->pend_b2port;
+
+      /* When the port is fed by a single sliceable coder reading a
+       * packed stream directly - which is what every BCJ2 folder
+       * 7-Zip writes looks like - slice that coder rather than
+       * decoding it whole. Otherwise the call would be bounded by the
+       * largest input, and BCJ2's main stream is nearly the whole
+       * folder. */
+      if (bcj2_port_coder(a, fi, a->pend_b2in + i, &ci, &oi))
+      {
+         const coder_t *pc = &a->coders[f->coder_first + ci];
+
+         if (!a->pend_out)
+         {
+            /* Begin this port's coder: point the stage machinery at
+             * it and let the existing slicer do the work. */
+            a->pend_coder = ci;
+            a->pend_fed   = 0;
+
+            {
+               uint32_t pk_first;
+               uint64_t pk_off;
+               uint32_t k, in_base = 0;
+               size_t   n = 0;
+
+               if ((res = folder_input_offsets(a, fi, &pk_first, &pk_off))
+                     != R7Z_OK)
+               {
+                  decode_pending_reset(a);
+                  return res;
+               }
+               for (k = 0; k < ci; k++)
+                  in_base += a->coders[f->coder_first + k].num_in;
+
+               for (k = 0; k < f->num_pack; k++)
+                  if (a->folder_pack[f->pack_first + k] == in_base)
+                  {
+                     uint64_t off = pk_off;
+                     uint32_t z;
+
+                     for (z = 0; z < k; z++)
+                        off += a->pack_sizes[pk_first + z];
+                     if (pk_first + k >= a->num_pack
+                           || a->pack_sizes[pk_first + k]
+                              > (uint64_t)((size_t)-1))
+                     {
+                        decode_pending_reset(a);
+                        return R7Z_ERROR_DATA;
+                     }
+                     n = (size_t)a->pack_sizes[pk_first + k];
+                     if (off > (uint64_t)a->len - 32
+                           || (uint64_t)n > (uint64_t)a->len - 32 - off)
+                     {
+                        decode_pending_reset(a);
+                        return R7Z_ERROR_DATA;
+                     }
+                     free(a->pend_in);
+                     if (!(a->pend_in = (uint8_t *)malloc(n ? n : 1)))
+                     {
+                        decode_pending_reset(a);
+                        return R7Z_ERROR_MEM;
+                     }
+                     memcpy(a->pend_in, a->data + 32 + off, n);
+                     a->pend_in_len = n;
+                     break;
+                  }
+            }
+
+            if ((res = decode_stage_begin(a, f)) != R7Z_OK)
+            {
+               decode_pending_reset(a);
+               return res;
+            }
+            return R7Z_OK;
+         }
+
+         {
+            int stage_done = 0;
+
+            res = (pc->method == METHOD_LZMA2)
+               ? decode_slice_lzma2(a, pc, &stage_done)
+               : decode_slice_lzma(a, &stage_done);
+
+            if (res != R7Z_OK)
+            {
+               decode_pending_reset(a);
+               return res;
+            }
+            if (!stage_done)
+               return R7Z_OK;
+
+            /* Port complete: hand its buffer over and move on. */
+            free(a->pend_dec);
+            free(a->pend_probs);
+            a->pend_dec   = NULL;
+            a->pend_probs = NULL;
+
+            a->pend_b2buf[i] = a->pend_out;
+            a->pend_b2len[i] = a->pend_out_len;
+            a->pend_out      = NULL;
+            a->pend_out_len  = 0;
+            a->pend_b2port++;
+            return R7Z_OK;
+         }
+      }
+
+      /* Not the simple shape: resolve it whole. */
+      res = resolve_input(a, fi, a->pend_b2in + i, a->pend_base,
+            &a->pend_b2buf[i], &a->pend_b2len[i]);
+      if (res != R7Z_OK)
+      {
+         decode_pending_reset(a);
+         return res;
+      }
+      a->pend_b2port++;
+      return R7Z_OK;
+   }
+
+   /* All four resolved: convert, check and cache. */
+   {
+      size_t   dst_len = (size_t)f->unpack_size;
+      uint8_t *dst     = (uint8_t *)malloc(dst_len ? dst_len : 1);
+
+      if (!dst)
+      {
+         decode_pending_reset(a);
+         return R7Z_ERROR_MEM;
+      }
+
+      if (r7z_bcj2_decode(dst, dst_len,
+               a->pend_b2buf[0], a->pend_b2len[0],
+               a->pend_b2buf[1], a->pend_b2len[1],
+               a->pend_b2buf[2], a->pend_b2len[2],
+               a->pend_b2buf[3], a->pend_b2len[3]) != RBCJ2_OK)
+      {
+         free(dst);
+         decode_pending_reset(a);
+         return R7Z_ERROR_DATA;
+      }
+
+      if (f->has_crc && crc_calc(dst, dst_len) != f->crc)
+      {
+         free(dst);
+         decode_pending_reset(a);
+         return R7Z_ERROR_CRC;
+      }
+
+      free(a->cached_data);
+      a->cached_data   = dst;
+      a->cached_len    = dst_len;
+      a->cached_folder = fi;
+   }
+
+   decode_pending_reset(a);
+   *done = 1;
+   return R7Z_OK;
+}
+
 /* Do one slice of a folder decode.
  *
  * Returns R7Z_OK with *done set when the folder is complete, in which
@@ -2428,6 +2729,10 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
       return R7Z_ERROR_PARAM;
    f = &a->folders[fi];
 
+   /* A BCJ2 folder already in flight continues in its own slicer. */
+   if (a->pend_b2active && a->pend_folder == fi)
+      return decode_folder_bcj2_slice(a, fi, a->pend_b2at, done);
+
    /* A request for a different folder abandons whatever was in flight;
     * only one decode is ever pending. */
    if (a->pend_folder != fi)
@@ -2439,12 +2744,11 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
       if (f->unpack_size > (uint64_t)((size_t)-1))
          return R7Z_ERROR_DATA;
 
-      /* Chains with a BCJ2 coder, and anything else this reader treats
-       * as a special shape, are not sliced: fall back to the whole-
-       * folder path, which is correct and already verified. */
+      /* A BCJ2 folder has its own slicer: its four inputs cannot be
+       * interleaved, but they can be resolved one per call. */
       for (k = 0; k < f->num_coders; k++)
          if (a->coders[f->coder_first + k].method == METHOD_BCJ2)
-            return R7Z_ERROR_UNSUPPORTED;
+            return decode_folder_bcj2_slice(a, fi, k, done);
 
       a->pend_folder = fi;
       a->pend_coder  = 0;
