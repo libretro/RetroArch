@@ -13,7 +13,6 @@ AUTH_INFO = 000000000000000000000000001C004000FF00000000008000000000000000000000
 
 
 
-endif
 
 ifeq ($(strip $(ORBISDEV)),)
 $(error "Please set ORBISDEV in your environment. export ORBISDEV=<path to>orbisdev")
