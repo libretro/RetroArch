@@ -46,6 +46,14 @@
  * Sergii "iOrange" Kudlai, released into the public domain
  * (MIT / The Unlicense). See https://github.com/iOrange/bcdec .
  *
+ * Uncompressed images are accepted when mask-described (DDPF_RGB or
+ * DDPF_LUMINANCE) at 24 or 32 bits per pixel with arbitrary channel
+ * masks.
+ *
+ * What it does not implement: mip levels beyond 0, cubemap and volume
+ * surfaces, texture arrays, 16-bit-packed and palettised uncompressed
+ * formats, YUV/float non-BC formats, and encoding.
+ *
  * NOTE (endianness): all on-disk block and header fields are read
  * through explicit little-endian accessors, so decoding is byte-for-byte
  * identical on little- and big-endian hosts (verified on ppc/Wii-class

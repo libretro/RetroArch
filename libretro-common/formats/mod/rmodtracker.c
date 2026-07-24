@@ -8,6 +8,16 @@
  * Replay engine based on ibxm/ac 20191214 (c) Martin Cameron,
  * https://github.com/martincameron/micromod -- BSD licence retained at
  * the end of this file.
+ *
+ * What it implements: ProTracker MOD (including multi-channel
+ * variants), Scream Tracker 3 S3M and FastTracker 2 XM modules with
+ * their effect sets, instrument envelopes and 8/16-bit mono samples,
+ * played to interleaved stereo s16 or float at the engine rate, with
+ * duration calculation and rewind.
+ *
+ * What it does not implement: Impulse Tracker (IT) and other later
+ * formats, stereo or compressed sample data, arbitrary seeking
+ * (rewind restarts from the top), and MIDI-style external control.
  */
 #include <stdlib.h>
 #include <string.h>

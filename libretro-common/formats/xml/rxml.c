@@ -31,6 +31,16 @@
 
 /* Self-contained XML parser.
  *
+ * What it implements: well-formed element trees with attributes,
+ * character data, CDATA sections, comments, processing instructions,
+ * numeric character references and the five predefined entities,
+ * building the rxml_node tree declared in <formats/rxml.h>.
+ *
+ * What it does not implement: DTD interpretation (a DOCTYPE
+ * declaration is skipped, so internally defined entities and attribute
+ * defaults have no effect), namespace processing (prefixes stay part
+ * of the name), validation, non-UTF-8 encodings, and serialisation.
+ *
  * This replaces the previously vendored yxml push parser (deps/yxml)
  * with a direct span scanner over the input string, written from
  * scratch.  The accepted document set and the resulting tree match the

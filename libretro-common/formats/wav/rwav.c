@@ -20,6 +20,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* rwav -- minimal RIFF WAVE reader.
+ *
+ * What it implements: canonical 44-byte-header WAV files holding
+ * integer PCM at 8 or 16 bits or IEEE float at 32 bits, any channel
+ * count and sample rate, loaded whole from memory (one-shot or through
+ * the resumable iterator).  Samples are delivered in native memory
+ * order: unsigned bytes for 8-bit, host-endian int16 for 16-bit,
+ * host-endian float words for 32-bit - byte order is fixed up from the
+ * file's little-endian layout on big-endian hosts.
+ *
+ * What it does not implement: chunk walking (fmt/data are expected at
+ * their canonical offsets, so files with LIST/fact/cue chunks before
+ * the sample data are rejected), 24-bit and extensible
+ * (WAVE_FORMAT_EXTENSIBLE) formats, compressed codecs (ADPCM, a-law,
+ * mu-law), and writing.
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>

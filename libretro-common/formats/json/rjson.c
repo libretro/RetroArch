@@ -20,6 +20,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* rjson -- streaming JSON parser and writer.
+ *
+ * What it implements: a pull (SAX-style) parser over strings, buffers,
+ * RFILE/intfstream handles or a user I/O callback, delivering the
+ * element stream through rjson_next with string/double/int accessors
+ * and the callback-driven rjson_parse convenience driver; UTF-8
+ * validation with
+ * configurable handling of invalid input; opt-in extensions
+ * (JavaScript comments, UTF-8 BOM, unescaped control characters,
+ * trailing data - see enum rjson_option); a depth limit; and a
+ * matching writer (rjsonwriter_*) with the same sink choices and
+ * proper string escaping.
+ *
+ * What it does not implement: an in-memory DOM (callers consume the
+ * event stream), JSON5/NaN/Infinity extensions beyond the listed
+ * options, and sorting or pretty-printing beyond the writer's simple
+ * indentation helpers.
+ */
+
 /* The parser is based on Public Domain JSON Parser for C by Christopher Wellons - https://github.com/skeeto/pdjson */
 
 #include <stdio.h>  /* snprintf, vsnprintf */
