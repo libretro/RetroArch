@@ -78,6 +78,9 @@ RETRO_BEGIN_DECLS
 #define R7Z_ERROR_UNSUPPORTED (-4)
 #define R7Z_ERROR_CRC      (-5)
 
+/* Not an error: more calls are needed. See r7z_archive_extract_slice(). */
+#define R7Z_PENDING          1
+
 /* Signature length at the head of every archive. */
 #define R7Z_SIGNATURE_SIZE 6
 
@@ -139,6 +142,33 @@ uint32_t r7z_archive_num_entries(const r7z_archive_t *a);
  */
 const r7z_entry_t *r7z_archive_entry(const r7z_archive_t *a,
       uint32_t index);
+
+/**
+ * r7z_archive_extract_slice:
+ * @a          : opened archive
+ * @index      : entry index
+ * @out        : receives a malloc'd buffer holding the entry's data
+ * @out_len    : receives the entry's size
+ *
+ * The same as r7z_archive_extract(), but bounded: it decodes at most a
+ * slice of the entry's folder per call and returns R7Z_PENDING when
+ * there is more to do. Call it again until it returns something else.
+ * A 2.8 MiB solid folder takes about 67 ms decoded in one go; a slice
+ * is around 1.8 ms.
+ *
+ * @out is written only on R7Z_OK.
+ *
+ * Requesting a different entry mid-decode abandons the pending work,
+ * so callers should finish one entry before starting another.
+ *
+ * Folders whose coder chain this cannot slice (BCJ2) fall back to
+ * decoding whole, so a single call may still block for that shape.
+ *
+ * Returns: R7Z_OK when the entry is ready, R7Z_PENDING when more calls
+ * are needed, or a negative R7Z_ERROR_* code.
+ */
+int r7z_archive_extract_slice(r7z_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *out_len);
 
 /**
  * r7z_archive_extract:
