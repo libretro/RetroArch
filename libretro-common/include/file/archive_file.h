@@ -71,6 +71,26 @@ typedef struct file_archive_transfer
    unsigned step_total;
    unsigned step_current;
    enum file_archive_transfer_type type;
+
+   /* A member whose decode has started but not finished.
+    *
+    * Decoding one member used to be atomic however long it took: the
+    * backends can say "not finished, call me again" but every caller
+    * consumed that in a do/while loop, so it never reached a frame
+    * boundary. The work now parks here between frames instead, and
+    * file_archive_parse_file_iterate() picks it up before stepping to
+    * the next entry.
+    *
+    * pending_active is what makes this visible to the iterate loop;
+    * everything else is the state that call needs to resume. */
+   file_archive_file_handle_t pending_handle;
+   char     pending_path[PATH_MAX_LENGTH];
+   uint32_t pending_size;
+   bool     pending_active;
+   /* The scan asked to stop while a member was still parked. The stop
+    * is honoured once the pending decode has drained, not before, or
+    * the member would be dropped half-written. */
+   bool     pending_stop;
 } file_archive_transfer_t;
 
 typedef struct
@@ -179,6 +199,30 @@ bool file_archive_get_file_list_noalloc(struct string_list *list,
  * Returns: string listing of files from archive on success, otherwise NULL.
  **/
 struct string_list* file_archive_get_file_list(const char *path, const char *valid_exts);
+
+/**
+ * file_archive_perform_mode_start:
+ *
+ * Begins decoding one member into the transfer's pending slot and does
+ * a first slice of the work.
+ *
+ * Returns: 1 if the member finished immediately, 0 if it is parked and
+ * should be resumed with file_archive_perform_mode_step(), -1 on
+ * failure.
+ */
+int file_archive_perform_mode_start(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t crc32, struct archive_extract_userdata *userdata);
+
+/**
+ * file_archive_perform_mode_step:
+ *
+ * Does one more slice of a parked member's decode.
+ *
+ * Returns: 1 when the member is complete and written, 0 when there is
+ * more to do, -1 on failure. The pending slot is cleared on 1 and -1.
+ */
+int file_archive_perform_mode_step(file_archive_transfer_t *state);
 
 bool file_archive_perform_mode(const char *name, const char *valid_exts,
       const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
