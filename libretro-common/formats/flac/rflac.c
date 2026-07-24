@@ -4288,6 +4288,15 @@ static uint32_t rflac__init_private__native(rflac_init_info* pInit,
    if (!rflac__read_streaminfo(onRead, pUserData, &streaminfo))
       return 0;
 
+   /* This decoder generation (dr_flac 0.12.x lineage) does not implement
+    * the 32-bit extension formalized by RFC 9639; streams above 24 bits
+    * per sample fail mid-decode (verified empirically for both stereo,
+    * where side channels need 33-bit residual reads, and mono). Reject
+    * them cleanly at open instead of failing after the caller has
+    * already allocated and started reading. */
+   if (streaminfo.bitsPerSample > 24)
+      return 0;
+
    pInit->sampleRate              = streaminfo.sampleRate;
    pInit->channels                = streaminfo.channels;
    pInit->bitsPerSample           = streaminfo.bitsPerSample;
