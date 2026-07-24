@@ -7305,6 +7305,42 @@ static void ozone_draw_osk(
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
+   if (input_st->osk_textbox_focus)
+   {
+      float cursor_color[16];
+      int cursor_s = ozone->dimensions.spacer_5px;
+      int cursor_x = margin;
+      int cursor_y = margin;
+      int cursor_w = video_width - (margin * 2);
+      int cursor_h = bottom_end - (margin * 2);
+      unsigned j;
+
+      memcpy(cursor_color, ozone->theme_dynamic.cursor_border, sizeof(cursor_color));
+      gfx_display_set_alpha(cursor_color, 1.0f);
+
+      for (j = 0; j < 4; j++)
+      {
+         int rect_x = (j == 3) ? cursor_x + cursor_w - cursor_s : cursor_x;
+         int rect_y = (j == 1) ? cursor_y + cursor_h - cursor_s : cursor_y;
+         int rect_w = (j < 2) ? cursor_w : cursor_s;
+         int rect_h = (j < 2) ? cursor_s : cursor_h;
+
+         gfx_display_draw_quad(
+            p_disp, 
+            userdata, 
+            video_width, 
+            video_height,
+            rect_x, 
+            rect_y, 
+            rect_w, 
+            rect_h,
+            video_width, 
+            video_height, 
+            cursor_color, 
+            NULL);
+      }
+   }
+
    if (!draw_placeholder && input_st->keyboard_line.buffer)
    {
       char cursor_message[2048];
@@ -7420,9 +7456,35 @@ static void ozone_draw_osk(
                   : ozone->textures[OZONE_TEXTURE_CURSOR_BORDER],
             ozone->fonts.entries_label.font,
             input_st->osk_grid,
-            input_st->osk_ptr,
+            input_st->osk_textbox_focus ? 44 : input_st->osk_ptr,
             ozone->theme->text_rgba);
    }
+}
+
+static bool ozone_osk_pointer_over_textbox(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)data;
+
+   if (ozone && menu_input_dialog_get_display_kb())
+   {
+      unsigned margin     = 75 * ozone->last_scale_factor;
+      unsigned bottom_end = height / 2;
+
+      if (     width > (margin * 2)
+            && bottom_end > (margin * 2)
+            && (unsigned)x > margin
+            && (unsigned)x < width - margin
+            && (unsigned)y > margin
+            && (unsigned)y < bottom_end - margin)
+         return true;
+   }
+
+   return false;
 }
 
 static void ozone_draw_messagebox(
@@ -13777,6 +13839,7 @@ menu_ctx_driver_t menu_ctx_ozone = {
    ozone_refresh_thumbnail_image,
    ozone_set_thumbnail_content,
    gfx_display_osk_ptr_at_pos,
+   ozone_osk_pointer_over_textbox,
    ozone_update_savestate_thumbnail_path,
    ozone_update_savestate_thumbnail_image,
    NULL,                         /* pointer_down */

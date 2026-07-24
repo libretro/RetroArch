@@ -5130,6 +5130,35 @@ static void rgui_render_messagebox(
    }
 }
 
+static bool rgui_osk_pointer_over_textbox(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
+{
+   rgui_t *rgui                = (rgui_t*)data;
+
+   if (!rgui)
+      return false;
+
+   {
+      gfx_display_t *p_disp      = disp_get_ptr();
+      unsigned key_width         = rgui->font_width  + 16;
+      unsigned key_height        = rgui->font_height + 12;
+      unsigned keyboard_offset_y = 10 + 15 + (2 * rgui->font_height_stride);
+      unsigned osk_width         = (key_width * OSK_CHARS_PER_LINE) + 20;
+      unsigned osk_height        = keyboard_offset_y + (key_height * 4) + 10;
+      unsigned osk_x             = (p_disp->framebuf_width  - osk_width)  / 2;
+      unsigned osk_y             = (p_disp->framebuf_height - osk_height) / 2;
+
+      return (unsigned)x > osk_x + 5
+          && (unsigned)x < osk_x + osk_width - 5
+          && (unsigned)y > osk_y + 5
+          && (unsigned)y < osk_y + keyboard_offset_y - 10;
+   }
+}
+
 static int rgui_osk_ptr_at_pos(
       void *data,
       int x,
@@ -5164,6 +5193,24 @@ static int rgui_osk_ptr_at_pos(
       unsigned fb_height                = p_disp->framebuf_height;
       unsigned osk_x                    = (fb_width  - osk_width)  / 2;
       unsigned osk_y                    = (fb_height - osk_height) / 2;
+
+      if (     (unsigned)x > osk_x + 5
+            && (unsigned)x < osk_x + osk_width - 5
+            && (unsigned)y > osk_y + keyboard_offset_y - 10
+            && (unsigned)y < osk_y + osk_height - 5)
+      {
+         unsigned key_row    = ((unsigned)y > osk_y + keyboard_offset_y)
+               ? ((unsigned)y - osk_y - keyboard_offset_y) / key_height : 0;
+         unsigned key_column = ((unsigned)x > osk_x + keyboard_offset_x)
+               ? ((unsigned)x - osk_x - keyboard_offset_x) / key_width : 0;
+
+         if (key_row > 3)
+            key_row = 3;
+         if (key_column > OSK_CHARS_PER_LINE - 1)
+            key_column = OSK_CHARS_PER_LINE - 1;
+
+         return (int)(key_row * OSK_CHARS_PER_LINE + key_column);
+      }
 
       for (key_index = 0; key_index < 44; key_index++)
       {
@@ -5407,6 +5454,44 @@ static void rgui_render_osk(
          last_cursor_time   = current_time;
       }
 
+      if (input_st->osk_textbox_focus)
+      {
+         unsigned input_ptr_x      = osk_x + 5;
+         unsigned input_ptr_y      = osk_y + 5;
+         unsigned input_ptr_width  = osk_width - 10;
+         unsigned input_ptr_height = keyboard_offset_y - 15;
+         unsigned j;
+
+         for (j = 0; j < 4; j++)
+         {
+            unsigned rect_x = (j == 3) ? input_ptr_x + input_ptr_width - 1 : input_ptr_x;
+            unsigned rect_y = (j == 1) ? input_ptr_y + input_ptr_height - 1 : input_ptr_y;
+            unsigned rect_w = (j < 2) ? input_ptr_width : 1;
+            unsigned rect_h = (j < 2) ? 1 : input_ptr_height;
+
+            if (rgui->flags & RGUI_FLAG_SHADOW_ENABLE)
+               rgui_color_rect(
+                  frame_buf_data,
+                  fb_width,
+                  fb_height,
+                  rect_x + 1,
+                  rect_y + 1,
+                  rect_w,
+                  rect_h,
+                  rgui->colors.shadow_color);
+
+            rgui_color_rect(
+               frame_buf_data,
+               fb_width,
+               fb_height,
+               rect_x,
+               rect_y,
+               rect_w,
+               rect_h,
+               rgui->colors.hover_color);
+         }
+      }
+
       if (!(((current_time - last_cursor_time) / 500000) & 1))
          rgui_blit_symbol(rgui, fb_width, text_cursor_x, input_str_y, RGUI_SYMBOL_TEXT_CURSOR,
                rgui->colors.normal_color, rgui->colors.shadow_color);
@@ -5465,7 +5550,7 @@ static void rgui_render_osk(
                rgui->colors.normal_color, rgui->colors.shadow_color);
 
       /* Draw selection pointer */
-      if (key_index == osk_ptr)
+      if (!input_st->osk_textbox_focus && (key_index == osk_ptr))
       {
          unsigned osk_ptr_x = osk_x + keyboard_offset_x + ptr_offset_x + (key_column * key_width);
          unsigned osk_ptr_y = osk_y + keyboard_offset_y + ptr_offset_y + (key_row    * key_height);
@@ -8951,6 +9036,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_refresh_thumbnail_image,
    NULL,                               /* set_thumbnail_content */
    rgui_osk_ptr_at_pos,
+   rgui_osk_pointer_over_textbox,
    rgui_update_savestate_thumbnail_path,
    rgui_update_savestate_thumbnail_image,
    NULL,                               /* pointer_down */

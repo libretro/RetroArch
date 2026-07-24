@@ -701,6 +701,10 @@ typedef struct materialui_handle
    /* Scrollbar parameters */
    materialui_scrollbar_t scrollbar;   /* int alignment */
    int cursor_size;
+   int osk_textbox_x;
+   int osk_textbox_y;
+   int osk_textbox_w;
+   int osk_textbox_h;
    /* Cached system bar data */
    materialui_sys_bar_cache_t sys_bar_cache; /* int alignment */
    float last_scale_factor;
@@ -2811,6 +2815,7 @@ static void materialui_render_messagebox(
       int y_centre,
       const char *msg,
       bool draw_caret,
+      bool draw_focus,
       math_matrix_4x4 *mymat)
 {
    int i;
@@ -2956,6 +2961,14 @@ static void materialui_render_messagebox(
    if (confirm_dialog)
       slice_h             += (mui->font_data.list.line_height + mui->margin) * 2;
 
+   if (draw_focus)
+   {
+      mui->osk_textbox_x = slice_x;
+      mui->osk_textbox_y = slice_y;
+      mui->osk_textbox_w = slice_w;
+      mui->osk_textbox_h = slice_h;
+   }
+
    /* Draw message box background */
    gfx_display_set_alpha(
          mui->colors.surface_background, mui->transition_alpha);
@@ -2972,6 +2985,36 @@ static void materialui_render_messagebox(
          video_height,
          mui->colors.surface_background,
          NULL);
+
+   if (draw_focus && input_state_get_ptr()->osk_textbox_focus)
+   {
+      int cursor_s = ((int)(mui->last_scale_factor * 4.0f) < 3)
+            ? 3 : (int)(mui->last_scale_factor * 4.0f);
+      unsigned j;
+
+      for (j = 0; j < 4; j++)
+      {
+         int cursor_x = (j == 3) ? slice_x + slice_w - cursor_s : slice_x;
+         int cursor_y = (j == 1) ? slice_y + slice_h - cursor_s : slice_y;
+         int cursor_w = (j < 2) ? slice_w : cursor_s;
+         int cursor_h = (j < 2) ? cursor_s : slice_h;
+
+         gfx_display_draw_quad(
+            p_disp, 
+            userdata, 
+            video_width, 
+            video_height,
+            cursor_x, 
+            cursor_y, 
+            cursor_w, 
+            cursor_h,
+            video_width, 
+            video_height, 
+            mui->colors.list_icon, 
+            NULL);
+      }
+   }
+
    /* Print each line of the message */
    for (i = 0; i < line_count; i++)
    {
@@ -3149,6 +3192,26 @@ static void materialui_render_messagebox(
       if (dispctx->blend_end)
          dispctx->blend_end(userdata);
    }
+}
+
+static bool materialui_osk_pointer_over_textbox(
+      void *data,
+      int x,
+      int y,
+      unsigned width,
+      unsigned height)
+{
+   materialui_handle_t *mui = (materialui_handle_t*)data;
+
+   if (     mui
+         && menu_input_dialog_get_display_kb()
+         && x > mui->osk_textbox_x
+         && x < mui->osk_textbox_x + mui->osk_textbox_w
+         && y > mui->osk_textbox_y
+         && y < mui->osk_textbox_y + mui->osk_textbox_h)
+      return true;
+
+   return false;
 }
 
 /* Initialises scrollbar parameters (width/height) */
@@ -8503,7 +8566,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 4, msg, true,
+            video_height / 4, msg, true, true,
             &mymat);
 
       /* Draw onscreen keyboard */
@@ -8516,7 +8579,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                tex_list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
                input_st->osk_grid,
-               input_st->osk_ptr,
+               input_st->osk_textbox_focus ? 44 : input_st->osk_ptr,
                0xFFFFFFFF);
       }
 
@@ -8546,7 +8609,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
       materialui_render_messagebox(mui,
             p_disp,
             userdata, video_width, video_height,
-            video_height / 2, mui->msgbox, false,
+            video_height / 2, mui->msgbox, false, false,
             &mymat);
       mui->msgbox[0] = '\0';
 
@@ -12683,6 +12746,7 @@ menu_ctx_driver_t menu_ctx_mui = {
    materialui_refresh_thumbnail_image,
    NULL,
    gfx_display_osk_ptr_at_pos,
+   materialui_osk_pointer_over_textbox,
    materialui_update_savestate_thumbnail_path,
    materialui_update_savestate_thumbnail_image,
    materialui_pointer_down,
