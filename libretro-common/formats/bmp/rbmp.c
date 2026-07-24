@@ -660,8 +660,13 @@ static uint32_t *rbmp_bmp_load(rbmp_context *s, unsigned *x, unsigned *y,
        * zeroed pad byte): force opaque, like stb_image. */
       if ((easy == 2 || (bpp == 32 && ma == 0xffu << 24)) && all_a == 0)
       {
-         for (j = 0; j < (int)(s->img_x * s->img_y); ++j)
-            output[j] |= 0xFF000000u;
+         size_t n = (size_t)s->img_x * (size_t)s->img_y;
+         size_t k;
+         /* size_t bound: img_x * img_y as int wraps negative at
+          * 65535 x 65535 (~4.29G), which would skip this loop and
+          * leave a large image fully transparent instead of opaque. */
+         for (k = 0; k < n; ++k)
+            output[k] |= 0xFF000000u;
       }
    }
 
