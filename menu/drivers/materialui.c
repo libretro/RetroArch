@@ -43,6 +43,10 @@
 #include "../menu_driver.h"
 #include "../menu_screensaver.h"
 
+#ifdef HAVE_COCOATOUCH
+#include "../../ui/drivers/cocoa/apple_platform.h"
+#endif
+
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 #include "../../msg_hash_lbl_str.h"
@@ -6877,6 +6881,10 @@ static void materialui_render_entry_touch_feedback(
    }
 }
 
+static bool materialui_search_filter_enabled(void);
+static bool materialui_settings_search_filter_enabled(void);
+static const char *materialui_search_filter_get_value(void);
+
 static void materialui_render_header(
       materialui_handle_t *mui,
       const uintptr_t *tex_list,
@@ -6900,7 +6908,10 @@ static void materialui_render_header(
    bool show_search_icon                 =
          (mui->flags & MUI_FLAG_IS_PLAYLIST)
       || (mui->flags & MUI_FLAG_IS_FILE_LIST)
-      || (mui->flags & MUI_FLAG_IS_CORE_UPDATER_LIST);
+      || (mui->flags & MUI_FLAG_IS_CORE_UPDATER_LIST)
+      || materialui_search_filter_enabled();
+   bool show_search_field                =
+         materialui_settings_search_filter_enabled();
    bool show_switch_view_icon            =
          (mui->flags & MUI_FLAG_IS_PLAYLIST)
       && (mui->flags & MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE);
@@ -7177,20 +7188,145 @@ static void materialui_render_header(
    /* > Draw 'search' icon, if required */
    if (show_search_icon)
    {
-      materialui_draw_icon(
-            userdata, p_disp,
-            video_width,
-            video_height,
-            mui->icon_size,
-            tex_list[MUI_TEXTURE_SEARCH],
-            (int)video_width - (int)mui->icon_size - (int)mui->nav_bar_layout_width,
-            (int)mui->sys_bar_height,
-            0,
-            1,
-            mui->colors.header_icon,
-            mymat);
+      int search_icon_x = (int)video_width - (int)mui->icon_size
+            - (int)mui->nav_bar_layout_width;
+      bool draw_search_icon = true;
 
-      usable_title_bar_width -= mui->icon_size;
+      if (show_search_field)
+      {
+         const char *search_value = materialui_search_filter_get_value();
+         bool search_has_value = !string_is_empty(search_value);
+         const char *search_label = search_has_value
+               ? search_value
+               : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH);
+         unsigned search_field_width = mui->icon_size * 4;
+         unsigned search_field_height = mui->title_bar_height;
+         int search_field_x = (int)video_width - (int)search_field_width
+               - (int)mui->nav_bar_layout_width;
+         int search_field_y = (int)mui->sys_bar_height + (int)(mui->margin >> 2);
+         unsigned search_text_width = search_field_width
+               - mui->icon_size - mui->margin;
+         char search_label_buf[NAME_MAX_LENGTH];
+
+         search_label_buf[0] = '\0';
+
+         if (mui->title_bar_height > (mui->margin >> 1))
+            search_field_height = mui->title_bar_height - (mui->margin >> 1);
+
+         gfx_display_draw_quad(
+               p_disp,
+               userdata,
+               video_width,
+               video_height,
+               search_field_x,
+               search_field_y,
+               search_field_width,
+               search_field_height,
+               video_width,
+               video_height,
+               mui->colors.sys_bar_background,
+               NULL);
+
+         mui->ticker.s        = search_label_buf;
+         mui->ticker.len      = (unsigned)(search_text_width / mui->font_data.hint.glyph_width);
+         if (mui->ticker.len < 1)
+            mui->ticker.len   = 1;
+         mui->ticker.str      = search_label;
+         mui->ticker.selected = true;
+
+         gfx_animation_ticker(&mui->ticker);
+
+         gfx_display_draw_text(mui->font_data.hint.font,
+               search_label_buf,
+               search_field_x + (int)(mui->margin >> 1),
+               (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + mui->font_data.hint.line_centre_offset),
+               video_width, video_height, mui->colors.header_text,
+               TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+
+         if (menu_input_dialog_get_display_kb())
+         {
+            retro_time_t caret_time = menu_driver_get_current_time();
+            if (((caret_time / 500000) % 2) == 0)
+            {
+               int caret_x;
+               unsigned caret_h = (unsigned)(mui->font_data.hint.line_height * 0.8f);
+               int caret_y      = (int)(mui->sys_bar_height
+                                + (mui->title_bar_height / 2.0f))
+                                - (int)(caret_h / 2);
+
+               if (search_has_value)
+               {
+                  unsigned text_w = font_driver_get_message_width(
+                        mui->font_data.hint.font,
+                        search_label_buf,
+                        strlen(search_label_buf),
+                        1.0f);
+                  caret_x = search_field_x + (int)(mui->margin >> 1) + (int)text_w;
+                  if (caret_x > search_field_x + (int)search_text_width)
+                     caret_x = search_field_x + (int)search_text_width;
+               }
+               else
+                  caret_x = search_field_x + (int)(mui->margin >> 1);
+
+               gfx_display_draw_quad(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     caret_x,
+                     caret_y,
+                     2,
+                     caret_h,
+                     video_width,
+                     video_height,
+                     mui->colors.header_icon,
+                     NULL);
+            }
+         }
+
+         search_icon_x = search_field_x + (int)search_field_width
+               - (int)mui->icon_size;
+         usable_title_bar_width -= search_field_width;
+
+         if (search_has_value)
+         {
+            unsigned clear_icon_size = (mui->icon_size * 2) / 3;
+            int clear_icon_x = search_icon_x
+                  + ((int)mui->icon_size - (int)clear_icon_size) / 2;
+            int clear_icon_y = (int)mui->sys_bar_height
+                  + ((int)mui->title_bar_height - (int)clear_icon_size) / 2;
+
+            materialui_draw_icon(
+                  userdata, p_disp,
+                  video_width,
+                  video_height,
+                  clear_icon_size,
+                  tex_list[MUI_TEXTURE_CLOSE],
+                  clear_icon_x,
+                  clear_icon_y,
+                  0,
+                  1,
+                  mui->colors.header_icon,
+                  mymat);
+            draw_search_icon = false;
+         }
+      }
+      else
+         usable_title_bar_width -= mui->icon_size;
+
+      if (draw_search_icon)
+         materialui_draw_icon(
+               userdata, p_disp,
+               video_width,
+               video_height,
+               mui->icon_size,
+               tex_list[MUI_TEXTURE_SEARCH],
+               search_icon_x,
+               (int)mui->sys_bar_height,
+               0,
+               1,
+               mui->colors.header_icon,
+               mymat);
 
       /* > Draw 'switch view' icon, if required
        *   Note: We can take a shortcut here because
@@ -7297,6 +7433,41 @@ static void materialui_render_header(
          (int)(mui->sys_bar_height + (mui->title_bar_height / 2.0f) + mui->font_data.title.line_centre_offset),
          video_width, video_height, mui->colors.header_text,
          TEXT_ALIGN_LEFT, 1.0f, false, 0.0f, false);
+}
+
+static bool materialui_search_filter_enabled(void)
+{
+   const char *label = NULL;
+   unsigned type     = MENU_SETTINGS_NONE;
+
+   menu_entries_get_last_stack(NULL, &label, &type, NULL, NULL);
+
+   return menu_driver_search_filter_enabled(label, type);
+}
+
+static bool materialui_settings_search_filter_enabled(void)
+{
+   const char *label = NULL;
+   unsigned type     = MENU_SETTINGS_NONE;
+
+   menu_entries_get_last_stack(NULL, &label, &type, NULL, NULL);
+
+   return    !string_is_empty(label)
+          && string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR)
+          && menu_driver_search_filter_enabled(label, type);
+}
+
+static const char *materialui_search_filter_get_value(void)
+{
+   menu_search_terms_t *search_terms = menu_entries_search_get_terms();
+
+   if (menu_input_dialog_get_display_kb())
+      return menu_input_dialog_get_buffer();
+
+   if (search_terms && search_terms->size > 0)
+      return search_terms->terms[search_terms->size - 1];
+
+   return "";
 }
 
 /* Use separate functions for bottom/right navigation
@@ -8472,6 +8643,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    font_flush(video_width, video_height, &mui->font_data.title);
    font_flush(video_width, video_height, &mui->font_data.hint);
 
+#ifndef HAVE_COCOATOUCH
    /* Handle onscreen keyboard */
    if (menu_input_dialog_get_display_kb())
    {
@@ -8524,6 +8696,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
        * > Message box & osk only use list font */
       font_flush(video_width, video_height, &mui->font_data.list);
    }
+#endif
 
    /* Draw message box */
    if (*mui->msgbox)
@@ -10586,6 +10759,15 @@ static int materialui_switch_tabs(materialui_handle_t *mui,
       if (!selection_buf)
          return -1;
 
+      /* Dismiss keyboard if search was active on the current tab */
+      if (menu_input_dialog_get_display_kb())
+         menu_input_dialog_end();
+
+      /* Clear any active search filter when switching tabs — search
+       * terms are global and would otherwise leak into other tabs
+       * (playlists, core manager, etc.) */
+      menu_entries_search_set_term("");
+
       /* Perform pre-switch operations */
       stack_flushed = materialui_preswitch_tabs(mui, target_tab);
 
@@ -11480,25 +11662,46 @@ static int materialui_pointer_up(void *userdata,
             /* Tap/press header: Menu back/cancel, or search/switch view */
             else if (y < header_height)
             {
-               /* If this is a playlist, file list or core
-                * updater list, enable search functionality */
-               if (     (mui->flags & MUI_FLAG_IS_PLAYLIST)
+               /* If this list supports search filtering,
+                * enable search functionality */
+               if (     materialui_search_filter_enabled()
+                     || (mui->flags & MUI_FLAG_IS_PLAYLIST)
                      || (mui->flags & MUI_FLAG_IS_FILE_LIST)
                      || (mui->flags & MUI_FLAG_IS_CORE_UPDATER_LIST))
                {
+                  bool settings_search_enabled =
+                        materialui_settings_search_filter_enabled();
+                  bool search_has_value = settings_search_enabled
+                        && !string_is_empty(materialui_search_filter_get_value());
                   bool switch_view_enabled  =
                            (mui->flags & MUI_FLAG_IS_PLAYLIST)
                         && (mui->flags & MUI_FLAG_PRIMARY_THUMBNAIL_AVAILABLE);
+                  unsigned search_width = settings_search_enabled
+                        ? mui->icon_size * 4
+                        : mui->icon_size;
                   /* Note: We add a little extra padding to minimise
                    * the risk of accidentally triggering a cancel */
                   unsigned back_x_threshold =
                         width -
-                        ((switch_view_enabled ? 3 : 2) * mui->icon_size) -
-                         mui->nav_bar_layout_width;
+                        (switch_view_enabled ? (search_width + 2 * mui->icon_size)
+                                             : (search_width + mui->icon_size)) -
+                        mui->nav_bar_layout_width;
 
-                  /* Check if user has touched search icon */
-                  if (x > width - mui->icon_size - mui->nav_bar_layout_width)
+                  /* Check if user has touched search affordance */
+                  if (x > width - search_width - mui->nav_bar_layout_width)
+                  {
+                     if (     settings_search_enabled
+                           && search_has_value
+                           && x > width - mui->icon_size - mui->nav_bar_layout_width)
+                     {
+                        menu_driver_search_filter_update("");
+#ifdef HAVE_COCOATOUCH
+                        ios_keyboard_set_text("");
+#endif
+                        return 0;
+                     }
                      return menu_input_dialog_start_search() ? 0 : -1;
+                  }
                   /* Check if user has touched switch view icon */
                   else if (switch_view_enabled &&
                            x > width - (2 * mui->icon_size) - mui->nav_bar_layout_width)
