@@ -117,7 +117,7 @@ NM      := $(PREFIX)nm
 LD      := clang
 
 LIBDIRS += -L. -Lcores -Lbuild -L$(ORBISDEV)/usr/lib
-INCDIRS += -I. -Idefines -Ideps -Ilibretro-common/include \ -Ideps/rcheevos/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
+INCDIRS += -I. -Idefines -Ideps -Ilibretro-common/include -Ideps/rcheevos/include -I$(ORBISDEV)/usr/include -I$(ORBISDEV)/usr/include/c++/v1 -I$(ORBISDEV)/usr/include/orbis
 
 ARCHFLAGS += --target=x86_64-scei-ps4 -DORBIS -D__ORBIS__ -D__PS4__ -D_BSD_SOURCE
 DEFINES += -DRARCH_INTERNAL -DRARCH_CONSOLE -DHAVE_FILTERS_BUILTIN \

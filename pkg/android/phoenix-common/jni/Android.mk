@@ -108,7 +108,6 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_REWIND \
 	   -DHAVE_CHEATS \
 	   -DHAVE_BSV_MOVIE \
-	   -DHAVE_ZLIB \
 	   -DHAVE_ZSTD \
 	   -DZSTD_DISABLE_ASM \
 	   -DHAVE_CHEEVOS_RVZ \
@@ -238,7 +237,7 @@ LOCAL_CFLAGS    += -Wno-sign-compare -Wno-unused-variable -Wno-parentheses
 LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
 endif
 
-LOCAL_LDLIBS += -lOpenSLES -lz
+LOCAL_LDLIBS += -lOpenSLES
 
 ifneq ($(SANITIZER),)
    LOCAL_CFLAGS   += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer

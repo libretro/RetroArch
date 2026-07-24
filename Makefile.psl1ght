@@ -27,7 +27,7 @@ ELF_TARGET  := retroarch_psl1ght.elf
 SELF_TARGET := $(ELF_TARGET:.elf=.self)
 CORE_PATH    = pkg/psl1ght/pkg/USRDIR/cores/CORE.SELF
 
-INCLUDE += -I. -Ideps -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2
+INCLUDE += -I. -Ideps -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines -I$(PORTLIBS)/include
 LIBDIRS += -L. -L$(PORTLIBS)/lib
 
 ifeq ($(HAVE_STATIC_DUMMY),1)
@@ -40,7 +40,7 @@ endif
 MACHDEP := -D__PSL1GHT__ -D__PS3__ -mcpu=cell
 CFLAGS += -Wall $(DEFINES) $(MACHDEP) $(INCLUDE)
 LDFLAGS := $(MACHDEP)
-LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lfreetype -lcamera -lgem -lspurs
+LIBS += -lrt -laudio -lrsx -lgcm_sys -lnet -lio -lsysutil -lsysmodule -lm -ljpgdec -lpngdec -llv2 -lnet -lnetctl -lsysfs -lcamera -lgem -lspurs
 
 # system platform
 system_platform = unix
@@ -92,7 +92,6 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DHAVE_RARCH_EXEC \
 		-DHAVE_MOUSE \
 		-DHAVE_LIGHTGUN \
-		-DHAVE_ZLIB \
 		-DHAVE_RPNG \
 		-DHAVE_RWEBP \
 		-DHAVE_RDDS \
@@ -113,7 +112,7 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DHAVE_OZONE \
 		-DHAVE_GFX_WIDGETS \
 		-DHAVE_MENU_BUFFER \
-		-DHAVE_FREETYPE \
+		-DHAVE_STB_FONT \
 		-DHAVE_CORE_INFO_CACHE \
 		-DHAVE_7ZIP \
 

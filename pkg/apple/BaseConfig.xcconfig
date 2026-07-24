@@ -92,7 +92,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_VIDEO_FILTER
 OTHER_CFLAGS = $(inherited) -DHAVE_VULKAN
 OTHER_CFLAGS = $(inherited) -DHAVE_XDELTA
 OTHER_CFLAGS = $(inherited) -DHAVE_XMB
-OTHER_CFLAGS = $(inherited) -DHAVE_ZLIB
+OTHER_CFLAGS = $(inherited)
 OTHER_CFLAGS = $(inherited) -DHAVE_ZSTD
 OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL

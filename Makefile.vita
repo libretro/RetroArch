@@ -30,7 +30,6 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		   -DHAVE_MATERIALUI \
 		   -DHAVE_LIBRETRODB \
 		   -DHAVE_KEYMAPPER \
-		   -DHAVE_ZLIB \
 		   -DHAVE_RPNG \
 		   -DHAVE_RWEBP \
 		   -DHAVE_RDDS \
@@ -43,8 +42,7 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		DEFINES += -DHAVE_NETLOGGER
 	endif
 	INCDIRS += -I. \
-		   \
-		   -Ilibretro-common/include \
+		   -Ilibretro-common/include
 else
 	HAVE_REWIND		:= 1
 	HAVE_UPDATE_ASSETS      := 1
@@ -59,7 +57,6 @@ else
 	HAVE_RJPEG		:= 1
 	HAVE_RBMP		:= 1
 	HAVE_RTGA		:= 1
-	HAVE_ZLIB		:= 1
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
 	HAVE_VITA2D		:= 0
@@ -174,7 +171,7 @@ CXXFLAGS := $(CFLAGS) -fno-rtti -fno-exceptions
 VITA_LIBS := -lSceDisplay_stub -lSceGxm_stub -lSceNet_stub -lSceNetCtl_stub -lSceAppUtil_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceHid_stub -lSceTouch_stub -lSceAudio_stub \
 	-lScePower_stub -lSceRtc_stub -lSceCommonDialog_stub -lScePgf_stub -lSceMotion_stub \
-	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lpng -lz -lSceShaccCg_stub
+	-lSceFiber_stub -lSceMotion_stub -lSceAppMgr_stub -lpthread -lSceShaccCg_stub
 
 ifeq ($(HAVE_VITAGLES), 1)
    VITA_LIBS += -llibScePiglet_stub -ltaihen_stub

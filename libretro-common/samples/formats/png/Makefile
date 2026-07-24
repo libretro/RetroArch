@@ -8,7 +8,6 @@ LIBRETRO_COMM_DIR := ../../..
 
 HAVE_IMLIB2=0
 
-LDFLAGS +=  -lz
 
 ifeq ($(HAVE_IMLIB2),1)
 CFLAGS += -DHAVE_IMLIB2
@@ -40,7 +39,6 @@ SOURCES_C := 	\
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
@@ -56,7 +54,6 @@ TEST_SOURCES_C := \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
@@ -90,7 +87,6 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/memory_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/rzip_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
-	$(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
@@ -101,7 +97,7 @@ OBJS := $(SOURCES_C:.c=.o)
 TEST_OBJS := $(TEST_SOURCES_C:.c=.o)
 TEST2_OBJS := $(TEST2_SOURCES_C:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DHAVE_ZLIB -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -DRPNG_TEST -I$(LIBRETRO_COMM_DIR)/include
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 

@@ -4,7 +4,6 @@ use_neon     := 0
 release	    := release
 EXE_EXT	    :=
 TARGET       := database_task
-HAVE_ZLIB    := 1
 HAVE_7ZIP    := 1
 HAVE_THREADS := 1
 
@@ -115,6 +114,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
 	$(LIBRETRO_COMM_DIR)/formats/xml/rxml.c \
@@ -139,13 +139,7 @@ SOURCES_C := \
 
 DEFINES    = -DHAVE_LIBRETRODB -DHAVE_COMPRESSION
 
-ifeq ($(HAVE_ZLIB), 1)
-SOURCES_C += \
-				 $(LIBRETRO_COMM_DIR)/streams/trans_stream_zlib.c
-DEFINES += -DHAVE_ZLIB
-LIBS += -lz
 LIBS += -lm
-endif
 
 ifeq ($(HAVE_7ZIP), 1)
 SOURCES_C +=  \

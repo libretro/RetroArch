@@ -221,7 +221,6 @@ else ifeq ($(libogc_platform), 1)
    HAVE_RTGA                := 1
    HAVE_RMODTRACKER                := 1
    HAVE_OVERLAY             := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_CONFIGFILE          := 1
    HAVE_PATCH               := 1
@@ -350,7 +349,6 @@ else ifeq ($(platform), vita)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_VITA2D              := 1
    HAVE_NETWORKING          := 1
@@ -374,7 +372,6 @@ else ifeq ($(platform), windows_msvc6_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 0
    HAVE_IFINFO              := 0
@@ -423,7 +420,6 @@ else ifeq ($(platform), windows_msvc2003_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 0
@@ -480,7 +476,6 @@ else ifeq ($(platform), windows_msvc2005_x86)
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 0
@@ -566,7 +561,6 @@ else ifneq (,$(findstring windows_msvc2010,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -664,7 +658,6 @@ else ifneq (,$(findstring windows_msvc2012,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -753,7 +746,6 @@ else ifneq (,$(findstring windows_msvc2013,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -842,7 +834,6 @@ else ifneq (,$(findstring windows_msvc2015,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -946,7 +937,6 @@ else ifeq (qnx,$(platform))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -995,7 +985,6 @@ else ifneq (,$(findstring unix,$(platform)))
    HAVE_RJPEG               := 1
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
-   HAVE_ZLIB                := 1
    HAVE_7ZIP                := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
@@ -1089,11 +1078,6 @@ endif
 
 ifeq ($(HAVE_RARCH_EXEC), 1)
    CFLAGS      += -DHAVE_RARCH_EXEC
-endif
-
-ifeq ($(HAVE_ZLIB), 1)
-   CFLAGS      += -DHAVE_ZLIB
-   CFLAGS      +=
 endif
 
 ifeq ($(HAVE_RPNG), 1)

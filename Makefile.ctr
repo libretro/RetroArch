@@ -70,10 +70,9 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 	CFLAGS += -I. \
 		-Ideps \
-		\
 		-Ideps/mbedtls \
 		-Ideps/rcheevos/include \
-		-Ilibretro-common/include \
+		-Ilibretro-common/include
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1

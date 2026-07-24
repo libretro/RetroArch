@@ -25,9 +25,10 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
-		streams/trans_stream.c streams/trans_stream_zlib.c \
+		streams/trans_stream.c streams/trans_stream_deflate.c \
+		encodings/encoding_deflate.c \
 		streams/trans_stream_pipe.c
-TEST_RPNG_LIBS = -lz
+TEST_RPNG_LIBS =
 
 all:
 	# Build and execute tests in order, to avoid coverage file collision
