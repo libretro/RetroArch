@@ -1102,7 +1102,10 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
       buf[  _len] = ':';
       buf[++_len] = ' ';
       buf[++_len] = '\0';
-      strlcpy(buf + _len, status, sizeof(buf) - _len);
+      /* Reserve the byte the '\n' below needs: without it a long
+       * localized label plus status can fill buf to sizeof(buf) - 1,
+       * and buf[++_len] then writes one past the end of the array. */
+      strlcpy(buf + _len, status, sizeof(buf) - _len - 1);
       _len        = strlen(buf);
       buf[  _len] = '\n';
       buf[++_len] = '\0';
@@ -1129,7 +1132,11 @@ static int action_bind_sublabel_netplay_kick_client(file_list_t *list,
 
                if (dev_len <= 0)
                {
-                  _len = -1;
+                  /* _len is size_t, so the old -1 sentinel wrapped to
+                   * SIZE_MAX and sailed straight through the
+                   * "if (_len > 0)" guard below.  0 is what that guard
+                   * was written to reject. */
+                  _len = 0;
                   break;
                }
 
