@@ -67,7 +67,9 @@ SHADER_OBJS = gfx/drivers/rsx_shaders/modern_opaque.vpo.o \
 
 LIBCO_OBJ = libretro-common/libco/ps3.o
 
-OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) libretro-common/memmap/memmap.o griffin/griffin.o
+# memmap.o is not listed here: griffin.c includes memmap.c, so
+# building it separately as well would define every symbol twice.
+OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) griffin/griffin.o
 
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
