@@ -23,28 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Only the cyclic window below needs these. The arena grows with
- * realloc and is platform-independent; see data_transfer_arena_init().
- *
- * Gate on what the headers actually provide, not on the platform list:
- * DJGPP defines __unix__ and ships stub mman/unistd headers that
- * include cleanly but declare neither mmap nor the MAP_ constants nor
- * _SC_PAGESIZE. Without a reservation the window falls back to holding
- * the whole file, so absence is graceful. Older BSD-family headers
- * spell MAP_ANONYMOUS as MAP_ANON. */
-#if defined(_WIN32)
-#include <windows.h>
-#elif defined(HAVE_MMAN) || defined(__unix__) || defined(__APPLE__)
-#include <sys/mman.h>
-#include <unistd.h>
-#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-#if defined(MAP_PRIVATE) && defined(MAP_ANONYMOUS) && defined(_SC_PAGESIZE)
-#define DT_HAVE_RESERVE 1
-#endif
-#endif
-
+#include <memmap.h>
 #include <streams/file_stream.h>
 #include <string.h>
 #include <formats/data_transfer.h>
@@ -144,16 +123,10 @@ static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
    if (to <= from || !dt->map_len)
       return;
    dt->wfreed = to;
-#if defined(_WIN32)
-   VirtualFree(dt->map + from, to - from, MEM_DECOMMIT);
-#elif defined(DT_HAVE_RESERVE)
 #ifdef DT_WINDOW_STRICT
-   /* oracle mode: touching an advanced-past page faults loudly */
-   mprotect(dt->map + from, to - from, PROT_NONE);
-   madvise(dt->map + from, to - from, MADV_DONTNEED);
+   memdecommit(dt->map + from, to - from, true);
 #else
-   madvise(dt->map + from, to - from, MADV_DONTNEED);
-#endif
+   memdecommit(dt->map + from, to - from, false);
 #endif
 }
 
@@ -168,13 +141,8 @@ static int data_transfer_wcommit(data_transfer_t *dt,
       return 1;
    if (!dt->map_len)
       return 1;                  /* fallback: whole file resident */
-#if defined(_WIN32)
-   if (!VirtualAlloc(dt->map + f, t - f, MEM_COMMIT, PAGE_READWRITE))
+   if (!memcommit(dt->map + f, t - f))
       return 0;
-#elif defined(DT_HAVE_RESERVE)
-   if (mprotect(dt->map + f, t - f, PROT_READ | PROT_WRITE) != 0)
-      return 0;
-#endif
    return 1;
 }
 
@@ -251,11 +219,7 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
 
 bool data_transfer_reserve_supported(void)
 {
-#if defined(_WIN32) || defined(DT_HAVE_RESERVE)
-   return true;
-#else
-   return false;
-#endif
+   return mempagesize() != 0;
 }
 
 bool data_transfer_window_is_reserved(data_transfer_t *dt)
@@ -367,15 +331,10 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
    t = (to / dt->page) * dt->page;
    if (t <= f)
       return;
-#if defined(_WIN32)
-   VirtualFree(dt->map + f, t - f, MEM_DECOMMIT);
-#elif defined(DT_HAVE_RESERVE)
 #ifdef DT_WINDOW_STRICT
-   mprotect(dt->map + f, t - f, PROT_NONE);
-   madvise(dt->map + f, t - f, MADV_DONTNEED);
+   memdecommit(dt->map + f, t - f, true);
 #else
-   madvise(dt->map + f, t - f, MADV_DONTNEED);
-#endif
+   memdecommit(dt->map + f, t - f, false);
 #endif
 }
 
@@ -421,36 +380,22 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    dt->len = (size_t)l;
    dt->cap = commit_cap;
 
-#if defined(_WIN32)
    {
-      SYSTEM_INFO si;
-      size_t pg, rl;
-      GetSystemInfo(&si);
-      pg = (size_t)si.dwPageSize;
-      rl = ((dt->len + pg - 1) / pg) * pg;
-      dt->map = (uint8_t*)VirtualAlloc(NULL, rl, MEM_RESERVE,
-            PAGE_NOACCESS);
-      if (dt->map)
+      size_t pg = mempagesize();
+
+      if (pg)
       {
-         dt->map_len = rl;
-         dt->page    = pg;
+         size_t rl = ((dt->len + pg - 1) / pg) * pg;
+         void  *m  = memreserve(rl);
+
+         if (m)
+         {
+            dt->map     = (uint8_t*)m;
+            dt->map_len = rl;
+            dt->page    = pg;
+         }
       }
    }
-#elif defined(DT_HAVE_RESERVE)
-   {
-      long pgl = sysconf(_SC_PAGESIZE);
-      size_t pg = pgl > 0 ? (size_t)pgl : 4096;
-      size_t rl = ((dt->len + pg - 1) / pg) * pg;
-      void *m   = mmap(NULL, rl, PROT_NONE,
-            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-      if (m != MAP_FAILED)
-      {
-         dt->map     = (uint8_t*)m;
-         dt->map_len = rl;
-         dt->page    = pg;
-      }
-   }
-#endif
    if (!dt->map)
    {
       /* No reservation (32-bit address space, or a platform without
@@ -484,13 +429,8 @@ static int data_transfer_commit(data_transfer_t *dt, size_t need)
       target = need;
    if (target > dt->map_len)
       target = dt->map_len;
-#if defined(_WIN32)
-   if (!VirtualAlloc(dt->map, target, MEM_COMMIT, PAGE_READWRITE))
+   if (!memcommit(dt->map, target))
       return 0;
-#elif defined(DT_HAVE_RESERVE)
-   if (mprotect(dt->map, target, PROT_READ | PROT_WRITE) != 0)
-      return 0;
-#endif
    dt->committed = target;
    return 1;
 }
@@ -602,11 +542,7 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to)
    lo = (up_to / dt->page) * dt->page;
    if (lo <= dt->low)
       return;
-#if defined(_WIN32)
-   VirtualFree(dt->map + dt->low, lo - dt->low, MEM_DECOMMIT);
-#elif defined(DT_HAVE_RESERVE)
-   madvise(dt->map + dt->low, lo - dt->low, MADV_DONTNEED);
-#endif
+   memdecommit(dt->map + dt->low, lo - dt->low, false);
    dt->low = lo;
 }
 
@@ -621,13 +557,11 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    end = dt->low;
    if (end > dt->avail)
       end = dt->avail;
-#if defined(_WIN32)
-   if (!VirtualAlloc(dt->map + lo, end - lo, MEM_COMMIT,
-         PAGE_READWRITE))
+   /* Windows needs the range committing again; on POSIX
+    * MADV_DONTNEED left the pages committed and they refault as
+    * zeros, so memcommit() is a cheap no-op there. */
+   if (!memcommit(dt->map + lo, end - lo))
       return false;
-#endif
-   /* (POSIX: MADV_DONTNEED left the pages committed; they refault as
-    * zeros and are simply written over.) */
    if (end > lo && !data_transfer_read_at(dt, lo, dt->map + lo, end - lo))
    {
       /* the file shrank or errored underneath a re-read: the honest
@@ -690,19 +624,10 @@ void data_transfer_free(data_transfer_t *dt)
       filestream_close(dt->f);
    if (dt->map)
    {
-#if defined(_WIN32)
       if (dt->map_len)
-         VirtualFree(dt->map, 0, MEM_RELEASE);
+         memrelease(dt->map, dt->map_len);
       else
          free(dt->map);
-#elif defined(DT_HAVE_RESERVE)
-      if (dt->map_len)
-         munmap(dt->map, dt->map_len);
-      else
-         free(dt->map);
-#else
-      free(dt->map);
-#endif
    }
    free(dt);
 }

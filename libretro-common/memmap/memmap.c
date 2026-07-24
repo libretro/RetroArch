@@ -211,3 +211,121 @@ int memprotect(void *addr, size_t len)
 {
    return mprotect(addr, len, PROT_READ | PROT_WRITE | PROT_EXEC);
 }
+
+/* --------------------------------------------------------------------
+ * Reserve/commit. See memmap.h for why this cannot go through mmap().
+ * -------------------------------------------------------------------- */
+
+#if defined(_WIN32)
+#define MEMMAP_HAVE_RESERVE 1
+#elif defined(HAVE_MMAN)
+/* memmap.h has already included <sys/mman.h> in this case; sysconf and
+ * _SC_PAGESIZE need <unistd.h> as well. */
+#include <unistd.h>
+/* Gate on what the headers provide rather than the platform list:
+ * DJGPP defines __unix__ and ships stub mman/unistd headers that
+ * include cleanly but declare neither mmap nor the MAP_ constants nor
+ * _SC_PAGESIZE. Older BSD-family headers spell MAP_ANONYMOUS as
+ * MAP_ANON. */
+#if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+#if defined(MAP_PRIVATE) && defined(MAP_ANONYMOUS) && defined(_SC_PAGESIZE)
+#define MEMMAP_HAVE_RESERVE 1
+#endif
+#endif
+
+size_t mempagesize(void)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   return 0;
+#elif defined(_WIN32)
+   SYSTEM_INFO si;
+   GetSystemInfo(&si);
+   return (size_t)si.dwPageSize;
+#else
+   long ps = sysconf(_SC_PAGESIZE);
+   return (ps > 0) ? (size_t)ps : 0;
+#endif
+}
+
+void *memreserve(size_t len)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)len;
+   return NULL;
+#else
+   size_t ps = mempagesize();
+   size_t r;
+
+   if (!len || !ps)
+      return NULL;
+   r = (len + ps - 1) & ~(ps - 1);
+
+#if defined(_WIN32)
+   return VirtualAlloc(NULL, r, MEM_RESERVE, PAGE_NOACCESS);
+#else
+   {
+      void *m = mmap(NULL, r, PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      return (m == MAP_FAILED) ? NULL : m;
+   }
+#endif
+#endif
+}
+
+bool memcommit(void *addr, size_t len)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)addr;
+   (void)len;
+   return false;
+#else
+   if (!addr || !len)
+      return true;
+#if defined(_WIN32)
+   return VirtualAlloc(addr, len, MEM_COMMIT, PAGE_READWRITE) != NULL;
+#else
+   return mprotect(addr, len, PROT_READ | PROT_WRITE) == 0;
+#endif
+#endif
+}
+
+void memdecommit(void *addr, size_t len, bool strict)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)addr;
+   (void)len;
+   (void)strict;
+#else
+   if (!addr || !len)
+      return;
+#if defined(_WIN32)
+   /* MEM_DECOMMIT already leaves the range inaccessible, so strict
+    * costs nothing extra here. */
+   (void)strict;
+   VirtualFree(addr, len, MEM_DECOMMIT);
+#else
+   if (strict)
+      mprotect(addr, len, PROT_NONE);
+   madvise(addr, len, MADV_DONTNEED);
+#endif
+#endif
+}
+
+void memrelease(void *addr, size_t len)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)addr;
+   (void)len;
+#else
+   if (!addr)
+      return;
+#if defined(_WIN32)
+   (void)len;
+   VirtualFree(addr, 0, MEM_RELEASE);
+#else
+   munmap(addr, len);
+#endif
+#endif
+}

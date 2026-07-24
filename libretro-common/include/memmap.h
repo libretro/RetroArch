@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <boolean.h>
 
 #if defined(PSP) || defined(PS2) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH) || defined(HAVE_LIBNX) || defined(__PS3__) || defined(__PSL1GHT__)
 /* No mman available */
@@ -75,5 +76,78 @@ int mprotect(void *addr, size_t len, int prot);
 int memsync(void *start, void *end);
 
 int memprotect(void *addr, size_t len);
+
+/* --------------------------------------------------------------------
+ * Reserve/commit
+ *
+ * A different model from mmap() above, and not expressible through it:
+ * reserve a range of address space with no physical pages behind it,
+ * then commit and decommit sub-ranges as they are needed. Windows has
+ * this natively (MEM_RESERVE / MEM_COMMIT / MEM_DECOMMIT); on POSIX it
+ * is PROT_NONE plus mprotect() and MADV_DONTNEED.
+ *
+ * The mmap() shim above cannot stand in for it: on Windows it maps
+ * SEC_COMMIT sections, so the whole length is committed up front,
+ * which is the one thing a reservation exists to avoid.
+ *
+ * Useful when a consumer needs one stable base covering a large range
+ * while only a moving part of it is resident - a streaming window over
+ * a file, say. Where the platform has no reservation at all,
+ * memreserve() returns NULL and the caller is expected to fall back to
+ * holding the range outright.
+ * -------------------------------------------------------------------- */
+
+/**
+ * mempagesize:
+ *
+ * Returns: the granularity commit and decommit operate on. Ranges
+ * passed to the functions below are rounded to it internally, so
+ * callers only need it when they want to align their own bookkeeping.
+ * Returns 0 if reservations are unsupported.
+ */
+size_t mempagesize(void);
+
+/**
+ * memreserve:
+ * @len        : bytes of address space to reserve
+ *
+ * Reserves @len bytes with nothing committed behind them. The range is
+ * unreadable and unwritable until memcommit() covers it.
+ *
+ * Returns: the base of the reservation, or NULL if reservations are
+ * unsupported or the request failed.
+ */
+void *memreserve(size_t len);
+
+/**
+ * memcommit:
+ * @addr       : start of the sub-range, within a memreserve() result
+ * @len        : bytes to make readable and writable
+ *
+ * Returns: true on success.
+ */
+bool memcommit(void *addr, size_t len);
+
+/**
+ * memdecommit:
+ * @addr       : start of the sub-range
+ * @len        : bytes to release the physical pages of
+ * @strict     : when true, also make the range fault on access rather
+ *               than read back as zeroes. Costs an extra syscall on
+ *               POSIX; useful for proving a consumer does not read
+ *               behind itself.
+ *
+ * The address space stays reserved either way; only the pages go.
+ */
+void memdecommit(void *addr, size_t len, bool strict);
+
+/**
+ * memrelease:
+ * @addr       : base returned by memreserve()
+ * @len        : the length passed to memreserve()
+ *
+ * Releases the reservation and everything committed in it.
+ */
+void memrelease(void *addr, size_t len);
 
 #endif
