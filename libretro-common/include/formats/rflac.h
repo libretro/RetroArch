@@ -56,28 +56,6 @@ but also more memory. In my testing there is diminishing returns after about 4KB
 #define RFLAC_METADATA_BLOCK_TYPE_PICTURE          6
 #define RFLAC_METADATA_BLOCK_TYPE_INVALID          127
 
-/* The various picture types specified in the PICTURE block. */
-#define RFLAC_PICTURE_TYPE_OTHER                   0
-#define RFLAC_PICTURE_TYPE_FILE_ICON               1
-#define RFLAC_PICTURE_TYPE_OTHER_FILE_ICON         2
-#define RFLAC_PICTURE_TYPE_COVER_FRONT             3
-#define RFLAC_PICTURE_TYPE_COVER_BACK              4
-#define RFLAC_PICTURE_TYPE_LEAFLET_PAGE            5
-#define RFLAC_PICTURE_TYPE_MEDIA                   6
-#define RFLAC_PICTURE_TYPE_LEAD_ARTIST             7
-#define RFLAC_PICTURE_TYPE_ARTIST                  8
-#define RFLAC_PICTURE_TYPE_CONDUCTOR               9
-#define RFLAC_PICTURE_TYPE_BAND                    10
-#define RFLAC_PICTURE_TYPE_COMPOSER                11
-#define RFLAC_PICTURE_TYPE_LYRICIST                12
-#define RFLAC_PICTURE_TYPE_RECORDING_LOCATION      13
-#define RFLAC_PICTURE_TYPE_DURING_RECORDING        14
-#define RFLAC_PICTURE_TYPE_DURING_PERFORMANCE      15
-#define RFLAC_PICTURE_TYPE_SCREEN_CAPTURE          16
-#define RFLAC_PICTURE_TYPE_BRIGHT_COLORED_FISH     17
-#define RFLAC_PICTURE_TYPE_ILLUSTRATION            18
-#define RFLAC_PICTURE_TYPE_BAND_LOGOTYPE           19
-#define RFLAC_PICTURE_TYPE_PUBLISHER_LOGOTYPE      20
 
 typedef enum
 {
@@ -127,11 +105,6 @@ typedef struct
     union
     {
         rflac_streaminfo streaminfo;
-
-        struct
-        {
-            int unused;
-        } padding;
 
         struct
         {
@@ -434,9 +407,6 @@ typedef struct
     rflac_seekpoint* pSeekpoints;
 
     /* Internal use only. Used for profiling and testing different seeking modes. */
-    uint32_t _noSeekTableSeek    : 1;
-    uint32_t _noBinarySearchSeek : 1;
-    uint32_t _noBruteForceSeek   : 1;
 
     /* The bit streamer. The raw FLAC data is fed through this object. */
     rflac_bs bs;

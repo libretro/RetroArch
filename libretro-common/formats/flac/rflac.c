@@ -150,57 +150,6 @@
 #define RFLAC_SUCCESS                                   0
 /* A generic error. */
 #define RFLAC_ERROR                                    -1
-#define RFLAC_INVALID_ARGS                             -2
-#define RFLAC_INVALID_OPERATION                        -3
-#define RFLAC_OUT_OF_MEMORY                            -4
-#define RFLAC_OUT_OF_RANGE                             -5
-#define RFLAC_ACCESS_DENIED                            -6
-#define RFLAC_DOES_NOT_EXIST                           -7
-#define RFLAC_ALREADY_EXISTS                           -8
-#define RFLAC_TOO_MANY_OPEN_FILES                      -9
-#define RFLAC_INVALID_FILE                             -10
-#define RFLAC_TOO_BIG                                  -11
-#define RFLAC_PATH_TOO_LONG                            -12
-#define RFLAC_NAME_TOO_LONG                            -13
-#define RFLAC_NOT_DIRECTORY                            -14
-#define RFLAC_IS_DIRECTORY                             -15
-#define RFLAC_DIRECTORY_NOT_EMPTY                      -16
-#define RFLAC_END_OF_FILE                              -17
-#define RFLAC_NO_SPACE                                 -18
-#define RFLAC_BUSY                                     -19
-#define RFLAC_IO_ERROR                                 -20
-#define RFLAC_INTERRUPT                                -21
-#define RFLAC_UNAVAILABLE                              -22
-#define RFLAC_ALREADY_IN_USE                           -23
-#define RFLAC_BAD_ADDRESS                              -24
-#define RFLAC_BAD_SEEK                                 -25
-#define RFLAC_BAD_PIPE                                 -26
-#define RFLAC_DEADLOCK                                 -27
-#define RFLAC_TOO_MANY_LINKS                           -28
-#define RFLAC_NOT_IMPLEMENTED                          -29
-#define RFLAC_NO_MESSAGE                               -30
-#define RFLAC_BAD_MESSAGE                              -31
-#define RFLAC_NO_DATA_AVAILABLE                        -32
-#define RFLAC_INVALID_DATA                             -33
-#define RFLAC_TIMEOUT                                  -34
-#define RFLAC_NO_NETWORK                               -35
-#define RFLAC_NOT_UNIQUE                               -36
-#define RFLAC_NOT_SOCKET                               -37
-#define RFLAC_NO_ADDRESS                               -38
-#define RFLAC_BAD_PROTOCOL                             -39
-#define RFLAC_PROTOCOL_UNAVAILABLE                     -40
-#define RFLAC_PROTOCOL_NOT_SUPPORTED                   -41
-#define RFLAC_PROTOCOL_FAMILY_NOT_SUPPORTED            -42
-#define RFLAC_ADDRESS_FAMILY_NOT_SUPPORTED             -43
-#define RFLAC_SOCKET_NOT_SUPPORTED                     -44
-#define RFLAC_CONNECTION_RESET                         -45
-#define RFLAC_ALREADY_CONNECTED                        -46
-#define RFLAC_NOT_CONNECTED                            -47
-#define RFLAC_CONNECTION_REFUSED                       -48
-#define RFLAC_NO_HOST                                  -49
-#define RFLAC_IN_PROGRESS                              -50
-#define RFLAC_CANCELLED                                -51
-#define RFLAC_MEMORY_ALREADY_MAPPED                    -52
 #define RFLAC_AT_END                                   -53
 
 #define RFLAC_CRC_MISMATCH                             -100
@@ -582,10 +531,8 @@ static INLINE uint16_t rflac_crc16_bytes(uint16_t crc, size_t data,
 #define RFLAC_CACHE_L1_SELECTION_SHIFT(bs, _bitCount)      (RFLAC_CACHE_L1_SIZE_BITS(bs) - (_bitCount))
 #define RFLAC_CACHE_L1_SELECT(bs, _bitCount)               (((bs)->cache) & RFLAC_CACHE_L1_SELECTION_MASK(_bitCount))
 #define RFLAC_CACHE_L1_SELECT_AND_SHIFT(bs, _bitCount)     (RFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >>  RFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)))
-#define RFLAC_CACHE_L1_SELECT_AND_SHIFT_SAFE(bs, _bitCount)(RFLAC_CACHE_L1_SELECT((bs), (_bitCount)) >> (RFLAC_CACHE_L1_SELECTION_SHIFT((bs), (_bitCount)) & (RFLAC_CACHE_L1_SIZE_BITS(bs)-1)))
 #define RFLAC_CACHE_L2_SIZE_BYTES(bs)                      (sizeof((bs)->cacheL2))
 #define RFLAC_CACHE_L2_LINE_COUNT(bs)                      (RFLAC_CACHE_L2_SIZE_BYTES(bs) / sizeof((bs)->cacheL2[0]))
-#define RFLAC_CACHE_L2_LINES_REMAINING(bs)                 (RFLAC_CACHE_L2_LINE_COUNT(bs) - (bs)->nextL2Line)
 
 
 static INLINE void rflac__update_crc16(rflac_bs* bs)
@@ -969,11 +916,6 @@ static uint32_t rflac__find_and_seek_to_next_sync_code(rflac_bs* bs)
 #if  defined(__WATCOMC__) && defined(__386__)
 #define RFLAC_IMPLEMENT_CLZ_WATCOM
 #endif
-#ifdef __MRC__
-#include <intrinsics.h>
-#define RFLAC_IMPLEMENT_CLZ_MRC
-#endif
-
 static INLINE uint32_t rflac__clz_software(size_t x)
 {
    uint32_t n;
@@ -4213,7 +4155,6 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
          case RFLAC_METADATA_BLOCK_TYPE_PADDING:
          {
             if (onMeta) {
-               metadata.data.padding.unused = 0;
 
                /* Padding doesn't have anything meaningful in it, so just skip
                 * over it, but make sure the caller is aware of it by firing the
@@ -6431,16 +6372,15 @@ uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
       {
          /* First try seeking via the seek table. If this fails, fall back to a
           * brute force seek which is much slower. */
-         if (!pFlac->_noSeekTableSeek)
-            wasSuccessful = rflac__seek_to_pcm_frame__seek_table(pFlac, pcmFrameIndex);
+         wasSuccessful = rflac__seek_to_pcm_frame__seek_table(pFlac, pcmFrameIndex);
 
          /* Fall back to binary search if seek table seeking fails.
           * This requires the length of the stream to be known. */
-         if (!wasSuccessful && !pFlac->_noBinarySearchSeek && pFlac->totalPCMFrameCount > 0)
+         if (!wasSuccessful && pFlac->totalPCMFrameCount > 0)
             wasSuccessful = rflac__seek_to_pcm_frame__binary_search(pFlac, pcmFrameIndex);
 
          /* Fall back to brute force if all else fails. */
-         if (!wasSuccessful && !pFlac->_noBruteForceSeek)
+         if (!wasSuccessful)
             wasSuccessful = rflac__seek_to_pcm_frame__brute_force(pFlac, pcmFrameIndex);
       }
 
