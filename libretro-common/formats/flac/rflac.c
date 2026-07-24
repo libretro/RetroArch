@@ -1310,15 +1310,13 @@ static int32_t rflac__read_utf8_coded_number(rflac_bs* bs, uint64_t* pNumberOut,
 
 static INLINE uint32_t rflac__ilog2_u32(uint32_t x)
 {
-#if 1   /* Needs optimizing. */
    uint32_t result = 0;
-   while (x > 0) {
+   while (x > 0)
+   {
       result += 1;
       x >>= 1;
    }
-
    return result;
-#endif
 }
 
 static INLINE uint32_t rflac__use_64_bit_prediction(uint32_t bitsPerSample,
@@ -1661,13 +1659,16 @@ RFLAC_HOT_INLINE uint32_t rflac__read_rice_parts_x1(rflac_bs* bs,
 
          bs_cache <<= riceParamPartLoBitCount;
       }
-   } else {
+   }
+   else
+   {
       /* Getting here means there are no bits set on the cache line. This is a
        * less optimal case because we just wasted a call to rflac__clz() and we
        * need to reload the cache.
        */
       uint32_t zeroCounter = (uint32_t)(RFLAC_CACHE_L1_SIZE_BITS(bs) - bs_consumedBits);
-      for (;;) {
+      for (;;)
+      {
          if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
             rflac__update_crc16(bs);
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
@@ -1763,13 +1764,17 @@ static INLINE uint32_t rflac__seek_rice_parts(rflac_bs* bs, uint8_t riceParam)
 
          bs_cache <<= riceParamPartLoBitCount;
       }
-   } else {
+   }
+   else
+   {
       /* Getting here means there are no bits set on the cache line. This is a
        * less optimal case because we just wasted a call to rflac__clz() and we
        * need to reload the cache.
        */
-      for (;;) {
-         if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs)) {
+      for (;;)
+      {
+         if (bs->nextL2Line < RFLAC_CACHE_L2_LINE_COUNT(bs))
+         {
             rflac__update_crc16(bs);
             bs_cache = rflac__be2host__cache_line(bs->cacheL2[bs->nextL2Line++]);
             bs_consumedBits = 0;
@@ -2483,9 +2488,10 @@ static uint32_t rflac__decode_samples_with_residual(rflac_bs* bs,
    if ((blockSize / (1 << partitionOrder)) < lpcOrder)
       return 0;
 
-   samplesInPartition = (blockSize / (1 << partitionOrder)) - lpcOrder;
+   samplesInPartition  = (blockSize / (1 << partitionOrder)) - lpcOrder;
    partitionsRemaining = (1 << partitionOrder);
-   for (;;) {
+   for (;;)
+   {
       uint8_t riceParam = 0;
       if (residualMethod == RFLAC_RESIDUAL_CODING_METHOD_PARTITIONED_RICE) {
          if (!rflac__read_uint8(bs, 4, &riceParam))
@@ -2723,7 +2729,8 @@ static uint32_t rflac__read_next_flac_frame_header(rflac_bs* bs,
    const uint8_t bitsPerSampleTable[8] = {0, 8, 12, (uint8_t)-1, 16, 20, 24, (uint8_t)-1};
 
    /* Keep looping until we find a valid sync code. */
-   for (;;) {
+   for (;;)
+   {
       uint8_t crc8 = 0xCE; /* 0xCE = rflac_crc8(0, 0x3FFE, 14); */
       uint8_t reserved = 0;
       uint8_t blockingStrategy = 0;
@@ -3146,14 +3153,16 @@ static int32_t rflac__seek_flac_frame(rflac* pFlac)
 
 static uint32_t rflac__read_and_decode_next_flac_frame(rflac* pFlac)
 {
-   for (;;) {
+   for (;;)
+   {
       int32_t result;
 
       if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
          return 0;
 
       result = rflac__decode_flac_frame(pFlac);
-      if (result != RFLAC_SUCCESS) {
+      if (result != RFLAC_SUCCESS)
+      {
          if (result == RFLAC_CRC_MISMATCH)
             continue;   /* CRC mismatch. Skip to the next frame. */
          return 0;
@@ -3173,9 +3182,8 @@ static void rflac__get_pcm_frame_range_of_current_flac_frame(rflac* pFlac,
       firstPCMFrame = ((uint64_t)pFlac->currentFLACFrame.header.flacFrameNumber) * pFlac->maxBlockSizeInPCMFrames;
 
    lastPCMFrame = firstPCMFrame + pFlac->currentFLACFrame.header.blockSizeInPCMFrames;
-   if (lastPCMFrame > 0) {
+   if (lastPCMFrame > 0)
       lastPCMFrame -= 1; /* Needs to be zero based. */
-   }
 
    if (pFirstPCMFrame)
       *pFirstPCMFrame = firstPCMFrame;
@@ -3356,17 +3364,20 @@ static uint32_t rflac__seek_to_approximate_flac_frame_to_byte(rflac* pFlac,
 {
    *pLastSuccessfulSeekOffset = pFlac->firstFLACFramePosInBytes;
 
-   for (;;) {
+   for (;;)
+   {
       /* After rangeLo == rangeHi == targetByte fails, we need to break out. */
       uint64_t lastTargetByte = targetByte;
 
       /* When seeking to a byte, failure probably means we've attempted to seek
        * beyond the end of the stream. To counter this we just halve it each
        * attempt. */
-      if (!rflac__seek_to_byte(&pFlac->bs, targetByte)) {
+      if (!rflac__seek_to_byte(&pFlac->bs, targetByte))
+      {
          /* If we couldn't even seek to the first byte in the stream we have a
           * problem. Just abandon the whole thing. */
-         if (targetByte == 0) {
+         if (targetByte == 0)
+         {
             rflac__seek_to_first_frame(pFlac); /* Try to recover. */
             return 0;
          }
@@ -3391,27 +3402,18 @@ static uint32_t rflac__seek_to_approximate_flac_frame_to_byte(rflac* pFlac,
           * unlikely, this has happened to me in testing so it needs to stay
           * this way for now.
           */
-#if 1
-         if (!rflac__read_and_decode_next_flac_frame(pFlac)) {
+         if (!rflac__read_and_decode_next_flac_frame(pFlac))
+         {
             /* Halve the byte location and continue. */
             targetByte = rangeLo + ((rangeHi - rangeLo)/2);
-            rangeHi = targetByte;
-         } else {
-            break;
+            rangeHi    = targetByte;
          }
-#else
-         if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header)) {
-            /* Halve the byte location and continue. */
-            targetByte = rangeLo + ((rangeHi - rangeLo)/2);
-            rangeHi = targetByte;
-         } else {
+         else
             break;
-         }
-#endif
       }
 
       /* We already tried this byte and there are no more to try, break out. */
-      if(targetByte == lastTargetByte)
+      if (targetByte == lastTargetByte)
          return 0;
    }
 
@@ -3429,24 +3431,21 @@ static uint32_t rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(
    return rflac__seek_forward_by_pcm_frames(pFlac, offset) == offset;
 }
 
-
 static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
       uint64_t pcmFrameIndex, uint64_t byteRangeLo, uint64_t byteRangeHi)
 {
    /* Assumes pFlac->currentPCMFrame is sitting on byteRangeLo upon entry. */
-
-   uint64_t targetByte;
    uint64_t pcmRangeLo = pFlac->totalPCMFrameCount;
    uint64_t pcmRangeHi = 0;
    uint64_t lastSuccessfulSeekOffset = (uint64_t)-1;
    uint64_t closestSeekOffsetBeforeTargetPCMFrame = byteRangeLo;
    uint32_t seekForwardThreshold = (pFlac->maxBlockSizeInPCMFrames != 0) ? pFlac->maxBlockSizeInPCMFrames*2 : 4096;
-
-   targetByte = byteRangeLo + (uint64_t)(((int64_t)((pcmFrameIndex - pFlac->currentPCMFrame) * pFlac->channels * pFlac->bitsPerSample)/8.0f) * RFLAC_BINARY_SEARCH_APPROX_COMPRESSION_RATIO);
+   uint64_t targetByte = byteRangeLo + (uint64_t)(((int64_t)((pcmFrameIndex - pFlac->currentPCMFrame) * pFlac->channels * pFlac->bitsPerSample)/8.0f) * RFLAC_BINARY_SEARCH_APPROX_COMPRESSION_RATIO);
    if (targetByte > byteRangeHi)
       targetByte = byteRangeHi;
 
-   for (;;) {
+   for (;;)
+   {
       if (rflac__seek_to_approximate_flac_frame_to_byte(pFlac, targetByte, byteRangeLo, byteRangeHi, &lastSuccessfulSeekOffset)) {
          /* We found a FLAC frame. We need to check if it contains the sample
           * we're looking for. */
@@ -3489,7 +3488,9 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
                targetByte = byteRangeLo + ((byteRangeHi - byteRangeLo) / 2);
                if (targetByte < byteRangeLo)
                   targetByte = byteRangeLo;
-            } else /*if (pcmRangeHi < pcmFrameIndex)*/ {
+            }
+            else
+            {
                /* We didn't seek far enough. We need to move our target byte
                 * forward and try again. */
 
@@ -3497,10 +3498,10 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
                if ((pcmFrameIndex - pcmRangeLo) < seekForwardThreshold) {
                   if (rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(pFlac, pcmFrameIndex - pFlac->currentPCMFrame))
                      return 1;
-                  else {
-                     break;  /* Failed to seek to FLAC frame. */
-                  }
-               } else {
+                  break;  /* Failed to seek to FLAC frame. */
+               }
+               else
+               {
                   byteRangeLo = lastSuccessfulSeekOffset;
                   if (byteRangeHi < byteRangeLo)
                      byteRangeHi = byteRangeLo;
@@ -3514,11 +3515,11 @@ static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
                }
             }
          }
-      } else {
+      }
+      else
          /* Getting here is really bad. We just recover as best we can, but
           * moving to the first frame in the stream, and then abort. */
          break;
-      }
    }
 
    rflac__seek_to_first_frame(pFlac); /* <-- Try to recover. */
@@ -3586,12 +3587,10 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
 
    /* At this point we should know the closest seek point. We can use a binary
     * search for this. We need to know the total sample count for this. */
-   if (pFlac->totalPCMFrameCount > 0) {
-      uint64_t byteRangeLo;
-      uint64_t byteRangeHi;
-
-      byteRangeHi = pFlac->firstFLACFramePosInBytes + (uint64_t)((int64_t)(pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample)/8.0f);
-      byteRangeLo = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset;
+   if (pFlac->totalPCMFrameCount > 0)
+   {
+      uint64_t byteRangeHi = pFlac->firstFLACFramePosInBytes + (uint64_t)((int64_t)(pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample)/8.0f);
+      uint64_t byteRangeLo = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset;
 
       /* If our closest seek point is not the last one, we only need to search
        * between it and the next one. The section below calculates an
@@ -3602,25 +3601,26 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
        * consists of seek points where every byte offset is set to 0 which
        * causes problems. If this happens we need to abort.
        */
-      if (iClosestSeekpoint < pFlac->seekpointCount-1) {
+      if (iClosestSeekpoint < pFlac->seekpointCount-1)
+      {
          uint32_t iNextSeekpoint = iClosestSeekpoint + 1;
 
          /* Basic validation on the seekpoints to ensure they're usable. */
-         if (pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset >= pFlac->pSeekpoints[iNextSeekpoint].flacFrameOffset || pFlac->pSeekpoints[iNextSeekpoint].pcmFrameCount == 0) {
+         if (pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset >= pFlac->pSeekpoints[iNextSeekpoint].flacFrameOffset || pFlac->pSeekpoints[iNextSeekpoint].pcmFrameCount == 0)
             /* The next seekpoint doesn't look right. The seek table cannot be
              * trusted from here. Abort. */
             return 0;
-         }
 
          /* Make sure it's not a placeholder seekpoint. */
-         if (pFlac->pSeekpoints[iNextSeekpoint].firstPCMFrame != (((uint64_t)0xFFFFFFFF << 32) | 0xFFFFFFFF)) {
+         if (pFlac->pSeekpoints[iNextSeekpoint].firstPCMFrame != (((uint64_t)0xFFFFFFFF << 32) | 0xFFFFFFFF))
             /* byteRangeHi must be zero based. */
             byteRangeHi = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iNextSeekpoint].flacFrameOffset - 1;
-         }
       }
 
-      if (rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset)) {
-         if (rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header)) {
+      if (rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset))
+      {
+         if (rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
+         {
             rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &pFlac->currentPCMFrame, NULL);
 
             if (rflac__seek_to_pcm_frame__binary_search_internal(pFlac, pcmFrameIndex, byteRangeLo, byteRangeHi))
@@ -3636,19 +3636,23 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
     * current sample, we just seek forward from where we are. Otherwise we start
     * seeking from the seekpoint's first sample.
     */
-   if (pcmFrameIndex >= pFlac->currentPCMFrame && pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame <= pFlac->currentPCMFrame) {
+   if (pcmFrameIndex >= pFlac->currentPCMFrame && pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame <= pFlac->currentPCMFrame)
+   {
       /* Optimized case. Just seek forward from where we are. */
       runningPCMFrameCount = pFlac->currentPCMFrame;
 
       /* The frame header for the first frame may not yet have been read. We
        * need to do that if necessary. */
-      if (pFlac->currentPCMFrame == 0 && pFlac->currentFLACFrame.pcmFramesRemaining == 0) {
+      if (pFlac->currentPCMFrame == 0 && pFlac->currentFLACFrame.pcmFramesRemaining == 0)
+      {
          if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
             return 0;
-      } else {
-         isMidFrame = 1;
       }
-   } else {
+      else
+         isMidFrame = 1;
+   }
+   else
+   {
       /* Slower case. Seek to the start of the seekpoint and then seek forward
        * from there. */
       runningPCMFrameCount = pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame;
@@ -3662,7 +3666,8 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
          return 0;
    }
 
-   for (;;) {
+   for (;;)
+   {
       uint64_t pcmFrameCountInThisFLACFrame;
       uint64_t firstPCMFrameInFLACFrame = 0;
       uint64_t lastPCMFrameInFLACFrame = 0;
@@ -3685,25 +3690,28 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
                /* <-- If this fails, something bad has happened (it should never
                 * fail). */
                return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-            } else {
-               if (result == RFLAC_CRC_MISMATCH) {
+            }
+            else
+            {
+               if (result == RFLAC_CRC_MISMATCH)
                   /* CRC mismatch. Pretend this frame never existed. */
                   goto next_iteration;
-               } else {
-                  return 0;
-               }
+               return 0;
             }
-         } else {
+         }
+         else
             /* We started seeking mid-frame which means we need to skip the
              * frame decoding part. */
             return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-         }
-      } else {
+      }
+      else
+      {
          /* It's not in this frame. We need to seek past the frame, but check if
           * there was a CRC mismatch. If so, we pretend this frame never existed
           * and leave the running sample count untouched.
           */
-         if (!isMidFrame) {
+         if (!isMidFrame)
+         {
             int32_t result = rflac__seek_flac_frame(pFlac);
             if (result == RFLAC_SUCCESS)
                runningPCMFrameCount += pcmFrameCountInThisFLACFrame;
@@ -3714,7 +3722,9 @@ static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
                   goto next_iteration;
                return 0;
             }
-         } else {
+         }
+         else
+         {
             /* We started seeking mid-frame which means we need to seek by
              * reading to the end of the frame instead of with
              * rflac__seek_flac_frame() which only works if the decoder is
@@ -3737,8 +3747,6 @@ next_iteration:
          return 0;
    }
 }
-
-
 
 typedef struct
 {
@@ -3834,7 +3842,8 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
    uint64_t seektablePos   = 0;
    uint32_t seektableSize  = 0;
 
-   for (;;) {
+   for (;;)
+   {
       rflac_metadata metadata;
       uint8_t isLastBlock = 0;
       uint8_t blockType = 0;
@@ -3884,14 +3893,11 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
             seektablePos  = runningFilePos;
             seektableSize = blockSize;
 
-            if (onMeta) {
-               uint32_t seekpointCount;
+            if (onMeta)
+            {
                uint32_t iSeekpoint;
-               void* pRawData;
-
-               seekpointCount = blockSize/RFLAC_SEEKPOINT_SIZE_IN_BYTES;
-
-               pRawData = malloc(seekpointCount * sizeof(rflac_seekpoint));
+               uint32_t seekpointCount = blockSize/RFLAC_SEEKPOINT_SIZE_IN_BYTES;
+               void *pRawData = malloc(seekpointCount * sizeof(rflac_seekpoint));
                if (pRawData == NULL)
                   return 0;
 
@@ -3899,7 +3905,8 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                for (iSeekpoint = 0; iSeekpoint < seekpointCount; ++iSeekpoint) {
                   rflac_seekpoint* pSeekpoint = (rflac_seekpoint*)pRawData + iSeekpoint;
 
-                  if (onRead(pUserData, pSeekpoint, RFLAC_SEEKPOINT_SIZE_IN_BYTES) != RFLAC_SEEKPOINT_SIZE_IN_BYTES) {
+                  if (onRead(pUserData, pSeekpoint, RFLAC_SEEKPOINT_SIZE_IN_BYTES) != RFLAC_SEEKPOINT_SIZE_IN_BYTES)
+                  {
                      free(pRawData);
                      return 0;
                   }
@@ -3908,8 +3915,6 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
 #ifndef MSB_FIRST
                   pSeekpoint->firstPCMFrame   = rflac__swap_endian_uint64(pSeekpoint->firstPCMFrame);
                   pSeekpoint->flacFrameOffset = rflac__swap_endian_uint64(pSeekpoint->flacFrameOffset);
-#endif
-#ifndef MSB_FIRST
                   pSeekpoint->pcmFrameCount   = rflac__swap_endian_uint16(pSeekpoint->pcmFrameCount);
 #endif
                }
@@ -3930,17 +3935,17 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
             if (blockSize < 8)
                return 0;
 
-            if (onMeta) {
-               void* pRawData;
+            if (onMeta)
+            {
                const char* pRunningData;
                const char* pRunningDataEnd;
                uint32_t i;
-
-               pRawData = malloc(blockSize);
+               void *pRawData = malloc(blockSize);
                if (pRawData == NULL)
                   return 0;
 
-               if (onRead(pUserData, pRawData, blockSize) != blockSize) {
+               if (onRead(pUserData, pRawData, blockSize) != blockSize)
+               {
                   free(pRawData);
                   return 0;
                }
@@ -3956,7 +3961,8 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                /* Need space for the rest of the block */
                /* Note the order of operations to avoid overflow to a valid
                 * value */
-               if ((pRunningDataEnd - pRunningData) - 4 < (int64_t)metadata.data.vorbis_comment.vendorLength) {
+               if ((pRunningDataEnd - pRunningData) - 4 < (int64_t)metadata.data.vorbis_comment.vendorLength)
+               {
                   free(pRawData);
                   return 0;
                }
@@ -3967,7 +3973,8 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
                 * at minimum is a uint32_t per comment */
                /* Note the order of operations to avoid overflow to a valid
                 * value */
-               if ((pRunningDataEnd - pRunningData) / sizeof(uint32_t) < metadata.data.vorbis_comment.commentCount) {
+               if ((pRunningDataEnd - pRunningData) / sizeof(uint32_t) < metadata.data.vorbis_comment.commentCount)
+               {
                   free(pRawData);
                   return 0;
                }
@@ -4004,21 +4011,21 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead,
             if (blockSize < 396)
                return 0;
 
-            if (onMeta) {
-               void* pRawData;
+            if (onMeta)
+            {
                const char* pRunningData;
                const char* pRunningDataEnd;
                size_t bufferSize;
                uint8_t iTrack;
                uint8_t iIndex;
-               void* pTrackData;
+               void *pTrackData;
 
                /* This needs to be loaded in two passes. The first pass is used
                 * to calculate the size of the memory allocation we need for
                 * storing the necessary data. The second pass will fill that
                 * buffer with usable data.
                 */
-               pRawData = malloc(blockSize);
+               void *pRawData = malloc(blockSize);
                if (pRawData == NULL)
                   return 0;
 
@@ -4352,10 +4359,10 @@ static uint32_t rflac__init_private(rflac_init_info* pInit,
 
 
    /* Skip over any ID3 tags. */
-   for (;;) {
-      if (onRead(pUserData, id, 4) != 4) {
+   for (;;)
+   {
+      if (onRead(pUserData, id, 4) != 4)
          return 0;    /* Ran out of data. */
-      }
       pInit->runningFilePos += 4;
 
       if (id[0] == 'I' && id[1] == 'D' && id[2] == '3') {
@@ -4404,7 +4411,6 @@ static void rflac__init_from_info(rflac* pFlac, const rflac_init_info* pInit)
    pFlac->bitsPerSample           = (uint8_t)pInit->bitsPerSample;
    pFlac->totalPCMFrameCount      = pInit->totalPCMFrameCount;
 }
-
 
 static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
       rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData,
@@ -4621,7 +4627,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(
    uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
    uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
-   for (i = 0; i < frameCount4; ++i) {
+   for (i = 0; i < frameCount4; ++i)
+   {
       uint32_t left0 = pInputSamples0U32[i*4+0] << shift0;
       uint32_t left1 = pInputSamples0U32[i*4+1] << shift0;
       uint32_t left2 = pInputSamples0U32[i*4+2] << shift0;
@@ -4657,7 +4664,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(
       pOutputSamples[i*8+7] = (int16_t)right3;
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t left  = pInputSamples0U32[i] << shift0;
       uint32_t side  = pInputSamples1U32[i] << shift1;
       uint32_t right = left - side;
@@ -4723,14 +4731,11 @@ static INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(
    int32x4_t shift0_4 = vdupq_n_s32(shift0);
    int32x4_t shift1_4 = vdupq_n_s32(shift1);
 
-   for (i = 0; i < frameCount4; ++i) {
-      uint32x4_t left;
-      uint32x4_t side;
-      uint32x4_t right;
-
-      left  = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
-      side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
-      right = vsubq_u32(left, side);
+   for (i = 0; i < frameCount4; ++i)
+   {
+      uint32x4_t left  = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
+      uint32x4_t side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
+      uint32x4_t right = vsubq_u32(left, side);
 
       left  = vshrq_n_u32(left,  16);
       right = vshrq_n_u32(right, 16);
@@ -4744,7 +4749,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_left_side__neon(
       }
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t left  = pInputSamples0U32[i] << shift0;
       uint32_t side  = pInputSamples1U32[i] << shift1;
       uint32_t right = left - side;
@@ -4790,7 +4796,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_right_side__scalar(
    uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
    uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
-   for (i = 0; i < frameCount4; ++i) {
+   for (i = 0; i < frameCount4; ++i)
+   {
       uint32_t side0  = pInputSamples0U32[i*4+0] << shift0;
       uint32_t side1  = pInputSamples0U32[i*4+1] << shift0;
       uint32_t side2  = pInputSamples0U32[i*4+2] << shift0;
@@ -4826,7 +4833,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_right_side__scalar(
       pOutputSamples[i*8+7] = (int16_t)right3;
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t side  = pInputSamples0U32[i] << shift0;
       uint32_t right = pInputSamples1U32[i] << shift1;
       uint32_t left  = right + side;
@@ -4852,7 +4860,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_right_side__sse2(
    uint32_t shift0 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
    uint32_t shift1 = unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
-   for (i = 0; i < frameCount4; ++i) {
+   for (i = 0; i < frameCount4; ++i)
+   {
       __m128i side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), shift0);
       __m128i right = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), shift1);
       __m128i left  = _mm_add_epi32(right, side);
@@ -4892,14 +4901,11 @@ static INLINE void rflac_read_pcm_frames_s16__decode_right_side__neon(
    int32x4_t shift0_4 = vdupq_n_s32(shift0);
    int32x4_t shift1_4 = vdupq_n_s32(shift1);
 
-   for (i = 0; i < frameCount4; ++i) {
-      uint32x4_t side;
-      uint32x4_t right;
-      uint32x4_t left;
-
-      side  = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
-      right = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
-      left  = vaddq_u32(right, side);
+   for (i = 0; i < frameCount4; ++i)
+   {
+      uint32x4_t side  = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
+      uint32x4_t right = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
+      uint32x4_t left  = vaddq_u32(right, side);
 
       left  = vshrq_n_u32(left,  16);
       right = vshrq_n_u32(right, 16);
@@ -4958,9 +4964,11 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(
    const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
    uint32_t shift = unusedBitsPerSample;
 
-   if (shift > 0) {
+   if (shift > 0)
+   {
       shift -= 1;
-      for (i = 0; i < frameCount4; ++i) {
+      for (i = 0; i < frameCount4; ++i)
+      {
          uint32_t temp0L;
          uint32_t temp1L;
          uint32_t temp2L;
@@ -5014,8 +5022,11 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(
          pOutputSamples[i*8+6] = (int16_t)temp3L;
          pOutputSamples[i*8+7] = (int16_t)temp3R;
       }
-   } else {
-      for (i = 0; i < frameCount4; ++i) {
+   }
+   else
+   {
+      for (i = 0; i < frameCount4; ++i)
+      {
          uint32_t temp0L;
          uint32_t temp1L;
          uint32_t temp2L;
@@ -5071,7 +5082,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__scalar(
       }
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t mid  = pInputSamples0U32[i] << pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
       uint32_t side = pInputSamples1U32[i] << pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
@@ -5094,15 +5106,14 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(
    const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
    uint32_t shift = unusedBitsPerSample;
 
-   if (shift == 0) {
-      for (i = 0; i < frameCount4; ++i) {
-         __m128i mid;
-         __m128i side;
+   if (shift == 0)
+   {
+      for (i = 0; i < frameCount4; ++i)
+      {
          __m128i left;
          __m128i right;
-
-         mid   = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
-         side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
+         __m128i mid   = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
+         __m128i side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
 
          mid   = _mm_or_si128(_mm_slli_epi32(mid, 1), _mm_and_si128(side, _mm_set1_epi32(0x01)));
 
@@ -5124,16 +5135,16 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(
          pOutputSamples[i*2+0] = (int16_t)(((int32_t)(mid + side) >> 1) >> 16);
          pOutputSamples[i*2+1] = (int16_t)(((int32_t)(mid - side) >> 1) >> 16);
       }
-   } else {
+   }
+   else
+   {
       shift -= 1;
-      for (i = 0; i < frameCount4; ++i) {
-         __m128i mid;
-         __m128i side;
+      for (i = 0; i < frameCount4; ++i)
+      {
          __m128i left;
          __m128i right;
-
-         mid   = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
-         side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
+         __m128i mid   = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
+         __m128i side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
 
          mid   = _mm_or_si128(_mm_slli_epi32(mid, 1), _mm_and_si128(side, _mm_set1_epi32(0x01)));
 
@@ -5146,7 +5157,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__sse2(
          _mm_storeu_si128((__m128i*)(pOutputSamples + i*8), rflac__mm_packs_interleaved_epi32(left, right));
       }
 
-      for (i = (frameCount4 << 2); i < frameCount; ++i) {
+      for (i = (frameCount4 << 2); i < frameCount; ++i)
+      {
          uint32_t mid  = pInputSamples0U32[i] << pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
          uint32_t side = pInputSamples1U32[i] << pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
@@ -5174,15 +5186,14 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(
    int32x4_t wbpsShift0_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample);
    int32x4_t wbpsShift1_4 = vdupq_n_s32(pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample);
 
-   if (shift == 0) {
-      for (i = 0; i < frameCount4; ++i) {
-         uint32x4_t mid;
-         uint32x4_t side;
+   if (shift == 0)
+   {
+      for (i = 0; i < frameCount4; ++i)
+      {
          int32x4_t left;
          int32x4_t right;
-
-         mid   = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), wbpsShift0_4);
-         side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), wbpsShift1_4);
+         uint32x4_t mid   = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), wbpsShift0_4);
+         uint32x4_t side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), wbpsShift1_4);
 
          mid   = vorrq_u32(vshlq_n_u32(mid, 1), vandq_u32(side, vdupq_n_u32(1)));
 
@@ -5201,7 +5212,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(
          }
       }
 
-      for (i = (frameCount4 << 2); i < frameCount; ++i) {
+      for (i = (frameCount4 << 2); i < frameCount; ++i)
+      {
          uint32_t mid  = pInputSamples0U32[i] << pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
          uint32_t side = pInputSamples1U32[i] << pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
@@ -5210,20 +5222,21 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(
          pOutputSamples[i*2+0] = (int16_t)(((int32_t)(mid + side) >> 1) >> 16);
          pOutputSamples[i*2+1] = (int16_t)(((int32_t)(mid - side) >> 1) >> 16);
       }
-   } else {
+   }
+   else
+   {
       int32x4_t shift4;
 
       shift -= 1;
       shift4 = vdupq_n_s32(shift);
 
-      for (i = 0; i < frameCount4; ++i) {
-         uint32x4_t mid;
-         uint32x4_t side;
+      for (i = 0; i < frameCount4; ++i)
+      {
          int32x4_t left;
          int32x4_t right;
 
-         mid   = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), wbpsShift0_4);
-         side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), wbpsShift1_4);
+         uint32x4_t mid   = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), wbpsShift0_4);
+         uint32x4_t side  = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), wbpsShift1_4);
 
          mid   = vorrq_u32(vshlq_n_u32(mid, 1), vandq_u32(side, vdupq_n_u32(1)));
 
@@ -5242,7 +5255,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_mid_side__neon(
          }
       }
 
-      for (i = (frameCount4 << 2); i < frameCount; ++i) {
+      for (i = (frameCount4 << 2); i < frameCount; ++i)
+      {
          uint32_t mid  = pInputSamples0U32[i] << pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample;
          uint32_t side = pInputSamples1U32[i] << pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample;
 
@@ -5390,7 +5404,8 @@ static INLINE void rflac_read_pcm_frames_s16__decode_independent_stereo__neon(
       }
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       pOutputSamples[i*2+0] = (int16_t)((pInputSamples0U32[i] << shift0) >> 16);
       pOutputSamples[i*2+1] = (int16_t)((pInputSamples1U32[i] << shift1) >> 16);
    }
@@ -5432,14 +5447,18 @@ uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead,
    unusedBitsPerSample = 32 - pFlac->bitsPerSample;
 
    framesRead = 0;
-   while (framesToRead > 0) {
+   while (framesToRead > 0)
+   {
       /* If we've run out of samples in this frame, go to the next. */
-      if (pFlac->currentFLACFrame.pcmFramesRemaining == 0) {
+      if (pFlac->currentFLACFrame.pcmFramesRemaining == 0)
+      {
          if (!rflac__read_and_decode_next_flac_frame(pFlac))
             /* Couldn't read the next frame, so just break from the loop and
              * return. */
             break;
-      } else {
+      }
+      else
+      {
          unsigned int channelCount = rflac__get_channel_count_from_channel_assignment(pFlac->currentFLACFrame.header.channelAssignment);
          uint64_t iFirstPCMFrame = pFlac->currentFLACFrame.header.blockSizeInPCMFrames - pFlac->currentFLACFrame.pcmFramesRemaining;
          uint64_t frameCountThisIteration = framesToRead;
@@ -5454,25 +5473,25 @@ uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead,
             switch (pFlac->currentFLACFrame.header.channelAssignment)
             {
                case RFLAC_CHANNEL_ASSIGNMENT_LEFT_SIDE:
-               {
-                  rflac_read_pcm_frames_s16__decode_left_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
-               } break;
+                  {
+                     rflac_read_pcm_frames_s16__decode_left_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
+                  } break;
 
                case RFLAC_CHANNEL_ASSIGNMENT_RIGHT_SIDE:
-               {
-                  rflac_read_pcm_frames_s16__decode_right_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
-               } break;
+                  {
+                     rflac_read_pcm_frames_s16__decode_right_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
+                  } break;
 
                case RFLAC_CHANNEL_ASSIGNMENT_MID_SIDE:
-               {
-                  rflac_read_pcm_frames_s16__decode_mid_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
-               } break;
+                  {
+                     rflac_read_pcm_frames_s16__decode_mid_side(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
+                  } break;
 
                case RFLAC_CHANNEL_ASSIGNMENT_INDEPENDENT:
                default:
-               {
-                  rflac_read_pcm_frames_s16__decode_independent_stereo(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
-               } break;
+                  {
+                     rflac_read_pcm_frames_s16__decode_independent_stereo(pFlac, frameCountThisIteration, unusedBitsPerSample, pDecodedSamples0, pDecodedSamples1, pBufferOut);
+                  } break;
             }
          } else {
             /* Generic interleaving. */
@@ -5559,11 +5578,10 @@ static INLINE void rflac_read_pcm_frames_f32__decode_left_side__sse2(
    const uint32_t* pInputSamples1U32 = (const uint32_t*)pInputSamples1;
    uint32_t shift0 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[0].wastedBitsPerSample) - 8;
    uint32_t shift1 = (unusedBitsPerSample + pFlac->currentFLACFrame.subframes[1].wastedBitsPerSample) - 8;
-   __m128 factor;
+   __m128 factor = _mm_set1_ps(1.0f / 8388608.0f);
 
-   factor = _mm_set1_ps(1.0f / 8388608.0f);
-
-   for (i = 0; i < frameCount4; ++i) {
+   for (i = 0; i < frameCount4; ++i)
+   {
       __m128i left  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), shift0);
       __m128i side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), shift1);
       __m128i right = _mm_sub_epi32(left, side);
@@ -5574,7 +5592,8 @@ static INLINE void rflac_read_pcm_frames_f32__decode_left_side__sse2(
       _mm_storeu_ps(pOutputSamples + i*8 + 4, _mm_unpackhi_ps(leftf, rightf));
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t left  = pInputSamples0U32[i] << shift0;
       uint32_t side  = pInputSamples1U32[i] << shift1;
       uint32_t right = left - side;
@@ -5601,18 +5620,13 @@ static INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(
    int32x4_t shift0_4   = vdupq_n_s32(shift0);
    int32x4_t shift1_4   = vdupq_n_s32(shift1);
 
-   for (i = 0; i < frameCount4; ++i) {
-      uint32x4_t left;
-      uint32x4_t side;
-      uint32x4_t right;
-      float32x4_t leftf;
-      float32x4_t rightf;
-
-      left   = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
-      side   = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
-      right  = vsubq_u32(left, side);
-      leftf  = vmulq_f32(vcvtq_f32_s32(vreinterpretq_s32_u32(left)),  factor4);
-      rightf = vmulq_f32(vcvtq_f32_s32(vreinterpretq_s32_u32(right)), factor4);
+   for (i = 0; i < frameCount4; ++i)
+   {
+      uint32x4_t left    = vshlq_u32(vld1q_u32(pInputSamples0U32 + i*4), shift0_4);
+      uint32x4_t side    = vshlq_u32(vld1q_u32(pInputSamples1U32 + i*4), shift1_4);
+      uint32x4_t right   = vsubq_u32(left, side);
+      float32x4_t leftf  = vmulq_f32(vcvtq_f32_s32(vreinterpretq_s32_u32(left)),  factor4);
+      float32x4_t rightf = vmulq_f32(vcvtq_f32_s32(vreinterpretq_s32_u32(right)), factor4);
 
       {
          /* interleaving store; replaces vzip + contiguous store */
@@ -5623,7 +5637,8 @@ static INLINE void rflac_read_pcm_frames_f32__decode_left_side__neon(
       }
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t left  = pInputSamples0U32[i] << shift0;
       uint32_t side  = pInputSamples1U32[i] << shift1;
       uint32_t right = left - side;
@@ -5693,7 +5708,8 @@ static INLINE void rflac_read_pcm_frames_f32__decode_right_side__scalar(
       pOutputSamples[i*8+7] = (int32_t)right3 * factor;
    }
 
-   for (i = (frameCount4 << 2); i < frameCount; ++i) {
+   for (i = (frameCount4 << 2); i < frameCount; ++i)
+   {
       uint32_t side  = pInputSamples0U32[i] << shift0;
       uint32_t right = pInputSamples1U32[i] << shift1;
       uint32_t left  = right + side;
@@ -5719,7 +5735,8 @@ static INLINE void rflac_read_pcm_frames_f32__decode_right_side__sse2(
 
    factor = _mm_set1_ps(1.0f / 8388608.0f);
 
-   for (i = 0; i < frameCount4; ++i) {
+   for (i = 0; i < frameCount4; ++i)
+   {
       __m128i side  = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples0 + i), shift0);
       __m128i right = _mm_slli_epi32(_mm_loadu_si128((const __m128i*)pInputSamples1 + i), shift1);
       __m128i left  = _mm_add_epi32(right, side);
