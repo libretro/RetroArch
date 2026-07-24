@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2026 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rlzma.h).
+ * The following license statement only applies to this file (r7z_lzma.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -37,8 +37,8 @@
  * dictionary size recorded in the stream properties.
  */
 
-#ifndef __LIBRETRO_SDK_RLZMA_H
-#define __LIBRETRO_SDK_RLZMA_H
+#ifndef __LIBRETRO_SDK_R7Z_LZMA_H
+#define __LIBRETRO_SDK_R7Z_LZMA_H
 
 #include <stddef.h>
 #include <stdint.h>

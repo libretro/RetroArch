@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2026 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (rlzma.c).
+ * The following license statement only applies to this file (r7z_lzma.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -35,12 +35,12 @@
  * dictionary is the caller's own output buffer rather than a separate
  * allocation, so there is no window to allocate and no copy-out step;
  * there is no allocator indirection; and one call decodes one complete
- * block. See rlzma.h.
+ * block. See r7z_lzma.h.
  */
 
 #include <string.h>
 
-#include <rlzma.h>
+#include <7z/r7z_lzma.h>
 
 /* --------------------------------------------------------------------
  * Model constants

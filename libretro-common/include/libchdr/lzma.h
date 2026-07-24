@@ -16,7 +16,7 @@
 #include <stdint.h>
 
 #ifdef HAVE_RLZMA
-#include <rlzma.h>
+#include <7z/r7z_lzma.h>
 #else
 #include <LzmaDec.h> /* decode-only: lzma_codec_init derives props without the encoder */
 #endif
