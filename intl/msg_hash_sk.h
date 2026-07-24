@@ -2191,6 +2191,7 @@ static const struct
    char s_0050d725[20];
    char s_21d7a1f6[8];
    char s_d2fe3ed2[16];
+   char s_541958e5[8];
    char s_45816e1d[23];
    char s_730df420[16];
    char s_bcddf275[7];
@@ -6506,6 +6507,7 @@ static const struct
    "Hranie na Facebooku",
    "Miestne",
    "Kvalita streamu",
+   "8 bitov",
    "Interval v\303\275meny VSync",
    "Synchroniz\303\241cia",
    "Vide\303\241",
@@ -9293,7 +9295,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (175615u
+      (sizeof(msg_hash_sk_blob) == (175623u
 #ifdef ANDROID
        + 389u
 #endif
@@ -11881,6 +11883,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,

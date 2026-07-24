@@ -273,6 +273,7 @@ static const struct
    char s_d95f1db1[41];
    char s_3c9950ad[34];
    char s_aafc147d[18];
+   char s_734f5242[41];
    char s_792e0069[25];
    char s_a9d2227f[42];
    char s_76e73138[16];
@@ -1132,6 +1133,7 @@ static const struct
    char s_5e519829[23];
 #endif
 #endif
+   char s_a6e5d0ee[27];
    char s_f228c6c5[16];
    char s_11926382[24];
    char s_645ae416[29];
@@ -1153,6 +1155,7 @@ static const struct
    char s_d3213ff3[24];
    char s_ac60056b[27];
    char s_1ad09b45[22];
+   char s_774e2332[30];
    char s_87064238[42];
    char s_2a273dd7[35];
    char s_5e5fc0ee[29];
@@ -2250,6 +2253,7 @@ static const struct
    char s_6dcc2f9f[33];
    char s_48431da6[14];
    char s_d2fe3ed2[26];
+   char s_1edf58ee[31];
    char s_d74474ce[8];
    char s_541958e5[7];
    char s_ba3e4ee6[12];
@@ -2388,7 +2392,9 @@ static const struct
    char s_daf6d7e2[72];
    char s_042502c4[62];
    char s_90ae9a9f[79];
+   char s_81b79d5b[451];
    char s_c9235dab[60];
+   char s_330be970[482];
    char s_98b02857[202];
    char s_6c3c586d[190];
    char s_950e7a66[28];
@@ -2923,6 +2929,7 @@ static const struct
    char s_6435c857[51];
 #endif
 #endif
+   char s_acca011c[117];
    char s_01efec73[44];
    char s_d3fc9970[52];
    char s_740bd7c4[57];
@@ -2938,7 +2945,9 @@ static const struct
    char s_aebcb136[144];
    char s_8b636a26[42];
    char s_8f707459[44];
+   char s_5aa622cc[194];
    char s_2b908073[238];
+   char s_64bea160[242];
    char s_97c62766[148];
    char s_6f458a85[103];
    char s_41702fdc[71];
@@ -3505,6 +3514,7 @@ static const struct
    char s_3c679f0a[269];
    char s_5b059407[150];
    char s_36033606[154];
+   char s_d62ed5dc[385];
    char s_2e69508b[320];
    char s_7e96b5ce[56];
    char s_3547866d[170];
@@ -4595,6 +4605,7 @@ static const struct
    "Acelera\303\247\303\243o do \303\201udio (Avan\303\247o R\303\241pido)",
    "Reamostrar para Ponto Fixo (Dica)",
    "Filtros de \303\241udio",
+   "Negocia\303\247\303\243o de Formato de \303\201udio (Dica)",
    "Lat\303\252ncia de \303\241udio (ms)",
    "Varia\303\247\303\243o m\303\241xima da sincronia de \303\241udio",
    "Silenciar mixer",
@@ -5457,6 +5468,7 @@ static const struct
    "Mostrar \"Ejetar disco\"",
 #endif
 #endif
+   "Mostrar Caminhos Completos",
    "Mostrar \"Ajuda\"",
    "Mostrar \"Informa\303\247\303\265es\"",
    "Mostrar \"Carregar conte\303\272do\"",
@@ -5478,6 +5490,7 @@ static const struct
    "Ativar som de \"Rolagem\"",
    "P\303\241gina de Inicializa\303\247\303\243o",
    "Fundos das Miniaturas",
+   "\303\201udio de Miniaturas Animadas",
    "Limite de redimensionamento de miniaturas",
    "Suavizar rolagem dos textos longos",
    "Velocidade dos textos longos",
@@ -6589,6 +6602,7 @@ static const struct
    "Habilitar filtro de suaviza\303\247\303\243o",
    "Personalizada",
    "Qualidade da transmiss\303\243o",
+   "Profundidade de Bits de Sa\303\255da",
    "10 bits",
    "8 bits",
    "Autom\303\241tico",
@@ -6748,7 +6762,19 @@ static const struct
    "Silenciar automaticamente o \303\241udio ao usar o avan\303\247o r\303\241pido.",
    "Acelerar o \303\241udio ao usar avan\303\247o r\303\241pido. Previne ru\303\255dos, mas aumenta "
    "o tom.",
+   "Usar o reamostrador de ponto fixo (inteiro) em vez do de ponto flutuante quando um n\303\272cleo"
+   " produzir \303\241udio de 16 bits. Evita a convers\303\243o de inteiro para float e produz uma s"
+   "a\303\255da bit a bit id\303\252ntica em todas as plataformas, tornando a sa\303\255da de \303"
+   "\241udio reproduz\303\255vel entre execu\303\247\303\265es e sistemas. N\303\243o tem efeito em "
+   "n\303\272cleos que produzem \303\241udio de ponto flutuante e usa o caminho de ponto flutuante e"
+   "nquanto um filtro DSP incompat\303\255vel estiver ativo.",
    "Os filtros DSP de \303\241udio s\303\243o armazenadas neste diret\303\263rio.",
+   "Formato de amostra que o driver de \303\241udio solicita ao dispositivo de sa\303\255da. 'Float'"
+   " solicita ponto flutuante de 32 bits; 'Int16', inteiro de 16 bits. Afeta apenas drivers capazes "
+   "de negociar o formato (WASAPI, DirectSound, XAudio2, ALSA, SDL2); os demais usam formato fixo. A"
+   "penas uma dica: um driver usa o formato alternativo se o dispositivo rejeitar o solicitado. 'Int"
+   "16' combina com a dica 'Reamostrar para Ponto Fixo' para manter todo o caminho de \303\241udio n"
+   "o dom\303\255nio inteiro.",
    "Lat\303\252ncia m\303\241xima de \303\241udio em milissegundos. O driver tenta manter a lat\303"
    "\252ncia real em 50% desse valor. Pode n\303\243o ser respeitada se o driver de \303\241udio n"
    "\303\243o conseguir fornecer a lat\303\252ncia especificada.",
@@ -7556,6 +7582,8 @@ static const struct
    "Mostra a op\303\247\303\243o \"Ejetar disco\" no menu principal.",
 #endif
 #endif
+   "Mostrar caminhos completos para as configura\303\247\303\265es de diret\303\263rio, em vez de ap"
+   "enas o nome do diret\303\263rio selecionado.",
    "Mostra a op\303\247\303\243o \"Ajuda\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Informa\303\247\303\265es\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Carregar conte\303\272do\" no menu principal.",
@@ -7573,9 +7601,16 @@ static const struct
    "recional enquanto segura OK para acessar o menu 'Executar'.",
    "Altera as configura\303\247\303\265es de som do menu.",
    "P\303\241gina inicial do menu na inicializa\303\247\303\243o.",
+   "Gerar mipmaps para imagens do menu. Mant\303\251m \303\255cones, miniaturas e pap\303\251is de p"
+   "arede suaves quando exibidos abaixo de seu tamanho nativo, ao custo de um uso um pouco maior de "
+   "mem\303\263ria de v\303\255deo.",
    "Preenche o espa\303\247o n\303\243o utilizado nas imagens em miniatura com um fundo s\303\263lid"
    "o. Isso garante um tamanho de exibi\303\247\303\243o uniforme para todas as imagens, melhorando "
    "a apar\303\252ncia do menu ao exibir itens com miniaturas de diferentes tamanhos.",
+   "Reproduz a faixa de \303\241udio das miniaturas animadas em formato WebM enquanto elas s\303\243"
+   "o exibidas. Os formatos de \303\241udio Vorbis e Opus s\303\243o suportados. O \303\241udio \303"
+   "\251 reproduzido em loop junto com a anima\303\247\303\243o e para quando a miniatura \303\251 f"
+   "echada.",
    "Redimensiona automaticamente imagens em miniatura com altura e/ou largura menor do que o valor e"
    "specificado. Tem um impacto moderado no desempenho.",
    "Use anima\303\247\303\243o de rolagem suave ao exibir longos textos de menu. Tem um pequeno impa"
@@ -8476,6 +8511,11 @@ static const struct
    "e assumir as altera\303\247\303\265es do estado do hardware entre os quadros.",
    "Adiciona um leve desfoque para suavizar arestas dos p\303\255xeis. Esta op\303\247\303\243o tem "
    "um pequeno impacto no desempenho. Deve ser desativada ao usar sombreadores.",
+   "Profundidade de bits da superf\303\255cie de sa\303\255da final quando o HDR estiver desativado."
+   " 10 bits reduz o banding introduzido por shaders que escurecem muito a imagem, como perfis de fe"
+   "ixe CRT e m\303\241scaras de grade de abertura. Usa 8 bits se a tela ou o compositor n\303\243o "
+   "oferecer essa op\303\247\303\243o. Essa op\303\247\303\243o \303\251 ignorada enquanto o HDR est"
+   "iver ativado, pois ele seleciona seu pr\303\263prio formato.",
    "Usa um intervalo personalizado para a sincroniza\303\247\303\243o vertical (VSync). Reduz a taxa"
    " de atualiza\303\247\303\243o do monitor pelo fator especificado. \"Auto\" define o fator com ba"
    "se na taxa de quadros do n\303\272cleo, fornecendo quadros melhores ao executar em, por exemplo,"
@@ -9162,7 +9202,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (190264u
+      (sizeof(msg_hash_pt_br_blob) == (192264u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9837,6 +9877,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
@@ -10696,6 +10737,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
@@ -10717,6 +10759,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -11813,6 +11856,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
@@ -11951,7 +11995,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
@@ -12486,6 +12532,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
@@ -12501,7 +12548,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -13068,6 +13117,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
