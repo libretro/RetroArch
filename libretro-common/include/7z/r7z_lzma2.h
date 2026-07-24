@@ -27,9 +27,14 @@
  * chunks, each with a header saying how big it is, whether it is
  * compressed at all, and how much decoder state to reset beforehand.
  * The chunk payloads are decoded by r7z_lzma_stream, which is why that
- * decoder is resumable: a chunk boundary can fall anywhere, including
- * mid-symbol, and a chunk may continue the previous chunk's dictionary
- * and range coder with no reset whatsoever.
+ * decoder is resumable: a chunk's packed data can arrive across several
+ * calls, and a chunk may continue the previous chunk's dictionary and
+ * probability model with no reset at all.
+ *
+ * The range coder is not carried across chunks. Every LZMA chunk's
+ * packed data begins with its own five-byte prologue, so the control
+ * byte selects whether the dictionary and the probability model
+ * persist, never the coder. See the note in r7z_lzma2.c.
  *
  * Chunk header, from the reference:
  *
@@ -44,6 +49,48 @@
  * where u is the top five bits of the unpacked size, U U the remaining
  * sixteen, P P the packed size, and S the LZMA props byte. Both sizes
  * are stored biased by one.
+ *
+ * ------------------------------------------------------------------
+ * Test coverage: control bytes 0xA0 to 0xDF
+ * ------------------------------------------------------------------
+ *
+ * All four reset levels are implemented, but two of them have never
+ * been exercised end to end, because nothing available produces a
+ * stream that uses them.
+ *
+ * liblzma, which every LZMA2 test stream here comes from, emits only
+ * 0x00, 0x01, 0x02, 0x80-0x9F and 0xE0-0xFF. A sweep over five
+ * presets, four dictionary sizes and four payload shapes at sizes from
+ * 1 KiB to 5 MiB produced no 0xA0-0xDF chunk of any kind: it either
+ * continues a chunk with no reset at all, or resets everything. The
+ * 7-Zip reference encoder behaves the same way for the same reason,
+ * since resetting decoder state without also resetting the dictionary
+ * buys nothing an encoder wants.
+ *
+ * Such a stream also cannot easily be built by hand. Chunks cannot be
+ * encoded independently and concatenated: an LZMA encoder assumes it
+ * starts at stream position zero, so a chunk produced that way is
+ * rejected even when the control byte says 0xE0. Producing a genuine
+ * 0xA0-0xDF stream needs an encoder that can be driven a chunk at a
+ * time, which is out of scope here.
+ *
+ * What that leaves untested is narrow, and worth stating precisely
+ * rather than as a blanket warning. The two branches are a pair of
+ * comparisons feeding rlzma_stream_reset_parts():
+ *
+ *     init_dic   = (control >= 0xE0)
+ *     init_state = (control >= 0xA0)
+ *
+ * Three of the four resulting combinations are covered by the corpus:
+ * 0x8x gives (0, 0), 0xEx gives (1, 1), and the uncompressed 0x01
+ * chunk gives (1, 0). Only (0, 1) -- reset the probability model and
+ * match history while keeping the dictionary -- is never selected by a
+ * real stream, and that combination is verified directly against
+ * rlzma_stream_reset_parts() rather than through a decode.
+ *
+ * So the mechanism is tested and the selection of it is not. A stream
+ * in the wild using 0xA0-0xDF would take a path whose parts are all
+ * exercised, in a combination no test drives end to end.
  *
  * Note LZMA2 caps lc + lp at 4, not the 12 that bare LZMA allows, so
  * the probability array is far smaller here than r7z_lzma_stream's

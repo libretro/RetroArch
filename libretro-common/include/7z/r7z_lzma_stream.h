@@ -42,6 +42,39 @@
  * Both decoders share one decode core; see r7z_lzma_stream.c.
  *
  * Nothing here allocates. The caller owns every buffer.
+ *
+ * ------------------------------------------------------------------
+ * Test coverage: lc + lp above 4
+ * ------------------------------------------------------------------
+ *
+ * The whole point of the caller-supplied probability array is the top
+ * of the lc/lp range, and that is the part no test stream reaches.
+ *
+ * Every LZMA stream this has been verified against comes from one of
+ * two sources, and both stop at lc + lp <= 4: liblzma refuses to
+ * construct an encoder above that, and CHD hardcodes lc=3 lp=0 pb=2.
+ * So the 48,645 captured CHD streams and the 750 synthetic ones cover
+ * 15 of the 45 legal lc/lp pairs, none of them needing more than
+ * 387 KiB of probabilities.
+ *
+ * A 7z file may legally use up to lc + lp == 12, which is 3,147,712
+ * entries, about 6 MiB. Nothing here can generate such a stream to
+ * decode, so what is verified instead is everything around it:
+ * r7z_lzma_stream's props parser accepts and correctly decomposes all
+ * 256 props bytes, rejects lc + lp > 12, and reset() writes exactly
+ * RLZMA_STREAM_NUM_PROBS entries and no more at every legal
+ * combination including 8/4, all checked under ASan and UBSan with
+ * guard words either side of the array.
+ *
+ * So the sizing and the bounds are tested; decoding an actual stream
+ * in that range is not. The decode path itself does not branch on
+ * lc or lp -- they only widen a mask and an array index -- so the risk
+ * is a sizing error rather than a logic error, which is the part that
+ * is covered.
+ *
+ * Note this concerns bare LZMA only. LZMA2 caps lc + lp at 4, which is
+ * exactly what liblzma will encode, so r7z_lzma2 has no equivalent
+ * gap.
  */
 
 #ifndef __LIBRETRO_SDK_R7Z_LZMA_STREAM_H

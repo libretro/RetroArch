@@ -332,6 +332,14 @@ int rlzma2_dec_decode(rlzma2_dec_t *p, size_t dic_limit,
                 * the next chunk decode its prologue bytes as symbols,
                 * which corrupts output from the chunk's very first
                 * byte. */
+               /* Of the four combinations these two comparisons can
+                * produce, three are reachable with streams liblzma
+                * emits: 0x8x gives (0, 0), 0xEx gives (1, 1), and an
+                * uncompressed 0x01 chunk gives (1, 0). No encoder here
+                * emits 0xA0-0xDF, so (0, 1) is never selected by a test
+                * stream and is verified directly against
+                * rlzma_stream_reset_parts() instead. See the coverage
+                * note in r7z_lzma2.h before changing this. */
                int init_dic   = (p->control >= 0xE0);
                int init_state = (p->control >= 0xA0);
 
