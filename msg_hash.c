@@ -549,6 +549,11 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
  * The hash dispatch saved ~2 us/frame in menu-mode file browsing
  * vs a linear strcmp scan — not enough to justify the obscurity.
  *
+ * The table below stays that plain declarative list; the speed is
+ * recovered instead by a first-byte bucket index built once from the
+ * table itself, so there is still exactly one source of truth, no
+ * magic constants to collide, and no added TOC entries.
+ *
  * Callers passing case-insensitively must lowercase their input
  * before calling this; only the lowercase entries below are
  * checked for those cases (jpg, png, etc. include uppercase
@@ -556,6 +561,7 @@ const char *msg_hash_to_str(enum msg_hash_enums msg)
 enum msg_file_type msg_hash_to_file_type(const char *value)
 {
    size_t i;
+   unsigned short slot;
    struct ft_entry {
       const char *value;
       enum msg_file_type type;
@@ -692,19 +698,46 @@ enum msg_file_type msg_hash_to_file_type(const char *value)
 #endif
    };
 
+   /* First-byte bucket index over table[].
+    *
+    * ft_head[c] is a 1-based index of the first row whose value starts
+    * with byte c; ft_next[] chains the remainder.  0 is the
+    * end-of-chain sentinel, so the zero-initialised (BSS) state of
+    * both arrays reads as "every bucket empty": a reader that observes
+    * a partially built index can only miss - never follow a bogus row,
+    * never cycle - and every surviving candidate is still compared in
+    * full below before it is returned.  The build is idempotent, so
+    * concurrent builders store identical bytes. */
+   static unsigned short ft_head[256];
+   static unsigned short ft_next[ARRAY_SIZE(table)];
+   static unsigned char  ft_ready;
+
    if (!value || !*value)
       return FILE_TYPE_NONE;
 
-   for (i = 0; i < ARRAY_SIZE(table); i++)
+   if (!ft_ready)
+   {
+      for (i = ARRAY_SIZE(table); i > 0; i--)
+      {
+         unsigned char c = (unsigned char)table[i - 1].value[0];
+         ft_next[i - 1]  = ft_head[c];
+         ft_head[c]      = (unsigned short)i;
+      }
+      /* Publish only once every bucket is populated. */
+      ft_ready = 1;
+   }
+
+   for (slot = ft_head[(unsigned char)*value]; slot; slot = ft_next[slot - 1])
    {
       /* Inline short string compare: most entries are 2-6 bytes so
        * the strcmp/string_is_equal overhead would dominate.  Bail
-       * on first mismatch. */
-      const char *a = value;
-      const char *b = table[i].value;
+       * on first mismatch.  The first byte already matched via the
+       * bucket, so start at the second. */
+      const char *a = value + 1;
+      const char *b = table[slot - 1].value + 1;
       while (*a && *a == *b) { a++; b++; }
       if (!*a && !*b)
-         return table[i].type;
+         return table[slot - 1].type;
    }
    return FILE_TYPE_NONE;
 }
