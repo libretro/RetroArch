@@ -49,10 +49,12 @@
  * step corrupts everything after that point, so all four are advanced
  * together in one pass.
  *
- * This decoder takes all four streams whole rather than resumably. 7z
- * hands over complete folders, and a resumable version would need to
- * carry a partially-scanned candidate across the boundary for no
- * benefit here.
+ * The streams arrive whole - 7z hands over complete folders - but the
+ * conversion itself can be done in bounded pieces, which matters
+ * because a folder can be several megabytes and this is one linear
+ * pass over all of it. r7z_bcj2_decode() does the whole thing;
+ * r7z_bcj2_decode_part() does as much as a caller asks for and can be
+ * resumed. See r7z_bcj2_state_t.
  */
 
 #ifndef __LIBRETRO_SDK_R7Z_BCJ2_H
@@ -69,9 +71,73 @@ RETRO_BEGIN_DECLS
 #define RBCJ2_ERROR_DATA (-1)
 #define RBCJ2_ERROR_PARAM (-2)
 
+/* Not an error: the requested limit was reached and more calls are
+ * needed. See r7z_bcj2_decode_part(). */
+#define RBCJ2_PENDING       1
+
 /* One context for a non-E8 candidate, one for E9, and 256 for E8
  * selected by the preceding byte. */
 #define RBCJ2_NUM_PROBS (2 + 256)
+
+/* A conversion in progress. Zero it, or use r7z_bcj2_state_init(),
+ * before the first call to r7z_bcj2_decode_part(). */
+typedef struct r7z_bcj2_state
+{
+   uint16_t probs[RBCJ2_NUM_PROBS];
+   size_t   main_pos;
+   size_t   call_pos;
+   size_t   jump_pos;
+   size_t   rc_pos;
+   size_t   dst_pos;
+   uint32_t range;
+   uint32_t code;
+   uint32_t ip;
+   uint8_t  prev;
+   uint8_t  started;
+} r7z_bcj2_state_t;
+
+/**
+ * r7z_bcj2_state_init:
+ * @st         : state to prepare
+ *
+ * Readies @st for a fresh conversion.
+ */
+void r7z_bcj2_state_init(r7z_bcj2_state_t *st);
+
+/**
+ * r7z_bcj2_decode_part:
+ * @st         : conversion state, prepared with r7z_bcj2_state_init()
+ * @dst        : output buffer
+ * @dst_len    : total size of the output, the same on every call
+ * @dst_limit  : produce at most this many bytes in total before
+ *               returning; pass @dst_len to run to completion
+ * @main_buf   : main stream
+ * @main_len   : length of @main_buf
+ * @call_buf   : call target stream, length must be a multiple of 4
+ * @call_len   : length of @call_buf
+ * @jump_buf   : jump target stream, length must be a multiple of 4
+ * @jump_len   : length of @jump_buf
+ * @rc_buf     : range coder stream
+ * @rc_len     : length of @rc_buf
+ *
+ * Converts until @st->dst_pos reaches @dst_limit, then returns. The
+ * limit is a floor rather than an exact stop: a converted branch
+ * writes four bytes at once and is never split across calls, so a
+ * call may overshoot by up to three bytes.
+ *
+ * Call again with a higher @dst_limit to continue. The stream
+ * arguments must be identical on every call for one conversion.
+ *
+ * Returns: RBCJ2_OK when @dst_len bytes have been produced,
+ * RBCJ2_PENDING when the limit was reached first, or a negative
+ * RBCJ2_ERROR_* code.
+ */
+int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
+      uint8_t *dst, size_t dst_len, size_t dst_limit,
+      const uint8_t *main_buf, size_t main_len,
+      const uint8_t *call_buf, size_t call_len,
+      const uint8_t *jump_buf, size_t jump_len,
+      const uint8_t *rc_buf,   size_t rc_len);
 
 /**
  * r7z_bcj2_decode:

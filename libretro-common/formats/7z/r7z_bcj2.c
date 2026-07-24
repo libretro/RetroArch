@@ -56,24 +56,29 @@
 #define IS_E8_OR_E9(b) (((b) & 0xFE) == 0xE8)
 #define IS_NEAR_JMP(prev, b) ((prev) == 0x0F && ((b) & 0xF0) == 0x80)
 
-int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
+void r7z_bcj2_state_init(r7z_bcj2_state_t *st)
+{
+   uint32_t i;
+
+   if (!st)
+      return;
+
+   memset(st, 0, sizeof(*st));
+   for (i = 0; i < RBCJ2_NUM_PROBS; i++)
+      st->probs[i] = BIT_MODEL_TOTAL >> 1;
+   st->range   = 0xFFFFFFFFu;
+   st->started = 0;
+}
+
+int r7z_bcj2_decode_part(r7z_bcj2_state_t *st,
+      uint8_t *dst, size_t dst_len, size_t dst_limit,
       const uint8_t *main_buf, size_t main_len,
       const uint8_t *call_buf, size_t call_len,
       const uint8_t *jump_buf, size_t jump_len,
       const uint8_t *rc_buf,   size_t rc_len)
 {
-   uint16_t probs[RBCJ2_NUM_PROBS];
-   size_t   main_pos = 0;
-   size_t   call_pos = 0;
-   size_t   jump_pos = 0;
-   size_t   rc_pos   = 0;
-   size_t   dst_pos  = 0;
-   uint32_t range;
-   uint32_t code;
-   uint32_t ip       = 0;
-   uint32_t i;
-   uint8_t  prev     = 0;
-
+   if (!st)
+      return RBCJ2_ERROR_PARAM;
    if (!dst && dst_len != 0)
       return RBCJ2_ERROR_PARAM;
    if (!main_buf && main_len != 0)
@@ -93,26 +98,30 @@ int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
    if (dst_len == 0)
       return RBCJ2_OK;
 
-   for (i = 0; i < RBCJ2_NUM_PROBS; i++)
-      probs[i] = BIT_MODEL_TOTAL >> 1;
+   if (!st->started)
+   {
+      /* Range coder prologue: one ignored byte then four value bytes.
+       * The reference reads five and requires the resulting code to
+       * differ from 0xFFFFFFFF. */
+      if (rc_len < 5)
+         return RBCJ2_ERROR_DATA;
+      if (rc_buf[0] != 0)
+         return RBCJ2_ERROR_DATA;
+      st->code = ((uint32_t)rc_buf[1] << 24)
+               | ((uint32_t)rc_buf[2] << 16)
+               | ((uint32_t)rc_buf[3] << 8)
+               |  (uint32_t)rc_buf[4];
+      if (st->code == 0xFFFFFFFFu)
+         return RBCJ2_ERROR_DATA;
+      st->range   = 0xFFFFFFFFu;
+      st->rc_pos  = 5;
+      st->started = 1;
+   }
 
-   /* Range coder prologue: one ignored byte then four value bytes. The
-    * reference reads five and requires the resulting code to differ
-    * from 0xFFFFFFFF. */
-   if (rc_len < 5)
-      return RBCJ2_ERROR_DATA;
-   if (rc_buf[0] != 0)
-      return RBCJ2_ERROR_DATA;
-   code  = ((uint32_t)rc_buf[1] << 24)
-         | ((uint32_t)rc_buf[2] << 16)
-         | ((uint32_t)rc_buf[3] << 8)
-         |  (uint32_t)rc_buf[4];
-   if (code == 0xFFFFFFFFu)
-      return RBCJ2_ERROR_DATA;
-   range  = 0xFFFFFFFFu;
-   rc_pos = 5;
+   if (dst_limit > dst_len)
+      dst_limit = dst_len;
 
-   while (dst_pos < dst_len)
+   while (st->dst_pos < dst_len)
    {
       uint8_t  b;
       uint32_t idx;
@@ -120,58 +129,66 @@ int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
       uint32_t ttt;
       int      converted;
 
-      if (main_pos == main_len)
+      /* Checked at the top of a symbol, never inside one, so the
+       * four-byte operand write below always completes within the
+       * call that started it. That is why the limit is a floor and
+       * a call may overshoot by up to three bytes. */
+      if (st->dst_pos >= dst_limit)
+         return RBCJ2_PENDING;
+
+      if (st->main_pos == main_len)
          return RBCJ2_ERROR_DATA;
 
-      b = main_buf[main_pos++];
-      dst[dst_pos++] = b;
-      ip++;
+      b = main_buf[st->main_pos++];
+      dst[st->dst_pos++] = b;
+      st->ip++;
 
       /* Copy through anything that cannot start a branch. */
-      if (!IS_E8_OR_E9(b) && !IS_NEAR_JMP(prev, b))
+      if (!IS_E8_OR_E9(b) && !IS_NEAR_JMP(st->prev, b))
       {
-         prev = b;
+         st->prev = b;
          continue;
       }
 
       /* A candidate. Which context its bit is coded against depends on
        * the opcode, and for E8 on the byte before it. */
       if (b == 0xE8)
-         idx = 2 + (uint32_t)prev;
+         idx = 2 + (uint32_t)st->prev;
       else if (b == 0xE9)
          idx = 1;
       else
          idx = 0;
 
       /* Normalize before reading the bit. */
-      if (range < TOP_VALUE)
+      if (st->range < TOP_VALUE)
       {
-         if (rc_pos == rc_len)
+         if (st->rc_pos == rc_len)
             return RBCJ2_ERROR_DATA;
-         range <<= 8;
-         code = (code << 8) | (uint32_t)rc_buf[rc_pos++];
+         st->range <<= 8;
+         st->code = (st->code << 8) | (uint32_t)rc_buf[st->rc_pos++];
       }
 
-      ttt   = (uint32_t)probs[idx];
-      bound = (range >> NUM_MODEL_BITS) * ttt;
+      ttt   = (uint32_t)st->probs[idx];
+      bound = (st->range >> NUM_MODEL_BITS) * ttt;
 
-      if (code < bound)
+      if (st->code < bound)
       {
-         range     = bound;
-         probs[idx] = (uint16_t)(ttt + ((BIT_MODEL_TOTAL - ttt) >> NUM_MOVE_BITS));
-         converted = 0;
+         st->range      = bound;
+         st->probs[idx] = (uint16_t)(ttt
+               + ((BIT_MODEL_TOTAL - ttt) >> NUM_MOVE_BITS));
+         converted      = 0;
       }
       else
       {
-         range     -= bound;
-         code      -= bound;
-         probs[idx] = (uint16_t)(ttt - (ttt >> NUM_MOVE_BITS));
-         converted  = 1;
+         st->range     -= bound;
+         st->code      -= bound;
+         st->probs[idx] = (uint16_t)(ttt - (ttt >> NUM_MOVE_BITS));
+         converted      = 1;
       }
 
       if (!converted)
       {
-         prev = b;
+         st->prev = b;
          continue;
       }
 
@@ -188,13 +205,13 @@ int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
          if (b == 0xE8)
          {
             src = call_buf;
-            pos = &call_pos;
+            pos = &st->call_pos;
             len = call_len;
          }
          else
          {
             src = jump_buf;
-            pos = &jump_pos;
+            pos = &st->jump_pos;
             len = jump_len;
          }
 
@@ -210,21 +227,21 @@ int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
          /* ip already counts the opcode byte; the displacement is
           * relative to the end of the instruction, so advance past the
           * four operand bytes before subtracting. */
-         ip += 4;
-         val -= ip;
+         st->ip += 4;
+         val    -= st->ip;
 
-         if (dst_len - dst_pos < 4)
+         if (dst_len - st->dst_pos < 4)
             return RBCJ2_ERROR_DATA;
 
-         dst[dst_pos]     = (uint8_t)( val        & 0xFF);
-         dst[dst_pos + 1] = (uint8_t)((val >>  8) & 0xFF);
-         dst[dst_pos + 2] = (uint8_t)((val >> 16) & 0xFF);
-         dst[dst_pos + 3] = (uint8_t)((val >> 24) & 0xFF);
-         dst_pos += 4;
+         dst[st->dst_pos]     = (uint8_t)( val        & 0xFF);
+         dst[st->dst_pos + 1] = (uint8_t)((val >>  8) & 0xFF);
+         dst[st->dst_pos + 2] = (uint8_t)((val >> 16) & 0xFF);
+         dst[st->dst_pos + 3] = (uint8_t)((val >> 24) & 0xFF);
+         st->dst_pos += 4;
 
          /* The context byte for whatever follows is the last byte
           * written, exactly as if it had come from the main stream. */
-         prev = (uint8_t)((val >> 24) & 0xFF);
+         st->prev = (uint8_t)((val >> 24) & 0xFF);
       }
    }
 
@@ -232,8 +249,24 @@ int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
     * mean the streams disagree about how many branches were
     * converted, which would have produced wrong output had the output
     * been longer. */
-   if (call_pos != call_len || jump_pos != jump_len)
+   if (st->call_pos != call_len || st->jump_pos != jump_len)
       return RBCJ2_ERROR_DATA;
 
    return RBCJ2_OK;
+}
+
+int r7z_bcj2_decode(uint8_t *dst, size_t dst_len,
+      const uint8_t *main_buf, size_t main_len,
+      const uint8_t *call_buf, size_t call_len,
+      const uint8_t *jump_buf, size_t jump_len,
+      const uint8_t *rc_buf,   size_t rc_len)
+{
+   /* The whole-stream form, for callers with nowhere to yield to. */
+   r7z_bcj2_state_t st;
+
+   r7z_bcj2_state_init(&st);
+
+   return r7z_bcj2_decode_part(&st, dst, dst_len, dst_len,
+         main_buf, main_len, call_buf, call_len,
+         jump_buf, jump_len, rc_buf, rc_len);
 }

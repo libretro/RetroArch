@@ -371,6 +371,13 @@ struct r7z_archive
    uint32_t       pend_b2at;       /* index of the BCJ2 coder */
    uint32_t       pend_b2in;       /* input-port base of that coder */
    uint32_t       pend_b2active;
+   /* The conversion itself, once all four inputs are in. It is one
+    * linear pass over the whole folder, so on a multi-megabyte folder
+    * it is worth slicing too. */
+   void          *pend_b2st;
+   uint8_t       *pend_b2dst;
+   size_t         pend_b2dstlen;
+   size_t         pend_b2done;
 
    r7z_entry_t   *entries;
    uint32_t       num_entries;
@@ -2240,6 +2247,12 @@ static void decode_pending_reset(r7z_archive_t *a)
          a->pend_b2len[k] = 0;
       }
    }
+   free(a->pend_b2st);
+   free(a->pend_b2dst);
+   a->pend_b2st     = NULL;
+   a->pend_b2dst    = NULL;
+   a->pend_b2dstlen = 0;
+   a->pend_b2done   = 0;
    a->pend_b2port   = 0;
    a->pend_b2at     = 0;
    a->pend_b2in     = 0;
@@ -2671,40 +2684,62 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
       return R7Z_OK;
    }
 
-   /* All four resolved: convert, check and cache. */
+   /* All four inputs are in. The conversion is a single linear pass
+    * over the whole folder, so slice it as well rather than paying it
+    * all in the call that happens to finish the last input. */
+   if (!a->pend_b2st)
    {
-      size_t   dst_len = (size_t)f->unpack_size;
-      uint8_t *dst     = (uint8_t *)malloc(dst_len ? dst_len : 1);
-
-      if (!dst)
+      a->pend_b2dstlen = (size_t)f->unpack_size;
+      a->pend_b2dst    = (uint8_t *)malloc(
+            a->pend_b2dstlen ? a->pend_b2dstlen : 1);
+      a->pend_b2st     = malloc(sizeof(r7z_bcj2_state_t));
+      if (!a->pend_b2dst || !a->pend_b2st)
       {
          decode_pending_reset(a);
          return R7Z_ERROR_MEM;
       }
+      r7z_bcj2_state_init((r7z_bcj2_state_t *)a->pend_b2st);
+      a->pend_b2done = 0;
+      return R7Z_OK;
+   }
 
-      if (r7z_bcj2_decode(dst, dst_len,
-               a->pend_b2buf[0], a->pend_b2len[0],
-               a->pend_b2buf[1], a->pend_b2len[1],
-               a->pend_b2buf[2], a->pend_b2len[2],
-               a->pend_b2buf[3], a->pend_b2len[3]) != RBCJ2_OK)
+   {
+      size_t limit = a->pend_b2done + R7Z_SLICE_BYTES;
+
+      if (limit > a->pend_b2dstlen)
+         limit = a->pend_b2dstlen;
+
+      res = r7z_bcj2_decode_part((r7z_bcj2_state_t *)a->pend_b2st,
+            a->pend_b2dst, a->pend_b2dstlen, limit,
+            a->pend_b2buf[0], a->pend_b2len[0],
+            a->pend_b2buf[1], a->pend_b2len[1],
+            a->pend_b2buf[2], a->pend_b2len[2],
+            a->pend_b2buf[3], a->pend_b2len[3]);
+
+      if (res == RBCJ2_PENDING)
       {
-         free(dst);
+         a->pend_b2done = ((r7z_bcj2_state_t *)a->pend_b2st)->dst_pos;
+         return R7Z_OK;
+      }
+      if (res != RBCJ2_OK)
+      {
          decode_pending_reset(a);
          return R7Z_ERROR_DATA;
       }
-
-      if (f->has_crc && crc_calc(dst, dst_len) != f->crc)
-      {
-         free(dst);
-         decode_pending_reset(a);
-         return R7Z_ERROR_CRC;
-      }
-
-      free(a->cached_data);
-      a->cached_data   = dst;
-      a->cached_len    = dst_len;
-      a->cached_folder = fi;
    }
+
+   if (f->has_crc
+         && crc_calc(a->pend_b2dst, a->pend_b2dstlen) != f->crc)
+   {
+      decode_pending_reset(a);
+      return R7Z_ERROR_CRC;
+   }
+
+   free(a->cached_data);
+   a->cached_data   = a->pend_b2dst;
+   a->cached_len    = a->pend_b2dstlen;
+   a->cached_folder = fi;
+   a->pend_b2dst    = NULL;
 
    decode_pending_reset(a);
    *done = 1;
