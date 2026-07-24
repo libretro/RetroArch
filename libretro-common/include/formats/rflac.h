@@ -81,13 +81,6 @@ but also more memory. In my testing there is diminishing returns after about 4KB
 
 typedef enum
 {
-    rflac_container_native,
-    rflac_container_ogg,
-    rflac_container_unknown
-} rflac_container;
-
-typedef enum
-{
     rflac_seek_origin_start,
     rflac_seek_origin_current
 } rflac_seek_origin;
@@ -195,7 +188,7 @@ Callback for when data needs to be read from the client.
 Parameters
 ----------
 pUserData (in)
-    The user data that was passed to rflac_open() and family.
+    The user data that was passed to rflac_open_memory() and family.
 
 pBufferOut (out)
     The output buffer.
@@ -223,7 +216,7 @@ Callback for when data needs to be seeked.
 Parameters
 ----------
 pUserData (in)
-    The user data that was passed to rflac_open() and family.
+    The user data that was passed to rflac_open_memory() and family.
 
 offset (in)
     The number of bytes to move, relative to the origin. Will never be negative.
@@ -254,7 +247,7 @@ Callback for when a metadata block is read.
 Parameters
 ----------
 pUserData (in)
-    The user data that was passed to rflac_open() and family.
+    The user data that was passed to rflac_open_memory() and family.
 
 pMetadata (in)
     A pointer to a structure containing the data of the metadata block.
@@ -415,9 +408,6 @@ typedef struct
     uint64_t totalPCMFrameCount;
 
 
-    /* The container type. This is set based on whether or not the decoder was opened from a native or Ogg stream. */
-    rflac_container container;
-
     /* The number of seekpoints in the seektable. */
     uint32_t seekpointCount;
 
@@ -443,9 +433,6 @@ typedef struct
     /* A pointer to the seek table. This is an offset of pExtraData, or NULL if there is no seek table. */
     rflac_seekpoint* pSeekpoints;
 
-    /* Internal use only. Only used with Ogg containers. Points to a rflac_oggbs object. This is an offset of pExtraData. */
-    void* _oggbs;
-
     /* Internal use only. Used for profiling and testing different seeking modes. */
     uint32_t _noSeekTableSeek    : 1;
     uint32_t _noBinarySearchSeek : 1;
@@ -459,49 +446,6 @@ typedef struct
 } rflac;
 
 
-/*
-Opens a FLAC decoder.
-
-
-Parameters
-----------
-onRead (in)
-    The function to call when data needs to be read from the client.
-
-onSeek (in)
-    The function to call when the read position of the client data needs to move.
-
-pUserData (in, optional)
-    A pointer to application defined data that will be passed to onRead and onSeek.
-
-
-Return Value
-------------
-Returns a pointer to an object representing the decoder.
-
-
-Remarks
--------
-Close the decoder with `rflac_close()`.
-
-
-This function will automatically detect whether or not you are attempting to open a native or Ogg encapsulated FLAC, both of which should work seamlessly
-without any manual intervention. Ogg encapsulation also works with multiplexed streams which basically means it can play FLAC encoded audio tracks in videos.
-
-This is the lowest level function for opening a FLAC stream. You can also use `rflac_open_memory()` to open the stream from a block of memory.
-
-The STREAMINFO block must be present for this to succeed.
-
-Use `rflac_open_with_metadata()` if you need access to metadata.
-
-
-Seek Also
----------
-rflac_open_memory()
-rflac_open_with_metadata()
-rflac_close()
-*/
-rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData);
 
 /*
 Opens a FLAC decoder and notifies the caller of the metadata chunks (album art, etc.).
@@ -532,7 +476,7 @@ Remarks
 Close the decoder with `rflac_close()`.
 
 
-This is slower than `rflac_open()`, so avoid this one if you don't need metadata. Internally, this will allocate and free memory on the heap for every
+Internally, this will allocate and free memory on the heap for every
 metadata block except for STREAMINFO and PADDING blocks.
 
 The caller is notified of the metadata via the `onMeta` callback. All metadata blocks will be handled before the function returns. This callback takes a
@@ -541,15 +485,10 @@ the different metadata types.
 
 The STREAMINFO block must be present for this to succeed.
 
-Note that this will behave inconsistently with `rflac_open()` if the stream is an Ogg encapsulated stream and a metadata block is corrupted. This is due to
-the way the Ogg stream recovers from corrupted pages. When `rflac_open_with_metadata()` is being used, the open routine will try to read the contents of the
-metadata block, whereas `rflac_open()` will simply seek past it (for the sake of efficiency). This inconsistency can result in different samples being
-returned depending on whether or not the stream is being opened with metadata.
-
 
 Seek Also
 ---------
-rflac_open()
+rflac_open_memory()
 rflac_close()
 */
 rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData);
@@ -571,9 +510,8 @@ This will destroy the decoder object.
 
 See Also
 --------
-rflac_open()
-rflac_open_with_metadata()
 rflac_open_memory()
+rflac_open_with_metadata()
 */
 void rflac_close(rflac* pFlac);
 
@@ -679,7 +617,7 @@ This does not create a copy of the data. It is up to the application to ensure t
 
 See Also
 --------
-rflac_open()
+rflac_open_memory()
 rflac_close()
 */
 rflac* rflac_open_memory(const void* pData, size_t dataSize);

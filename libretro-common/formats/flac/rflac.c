@@ -4195,27 +4195,12 @@ next_iteration:
 }
 
 
-#ifndef RFLAC_NO_OGG
-typedef struct
-{
-    uint8_t capturePattern[4];  /* Should be "OggS" */
-    uint8_t structureVersion;   /* Always 0. */
-    uint8_t headerType;
-    uint64_t granulePosition;
-    uint32_t serialNumber;
-    uint32_t sequenceNumber;
-    uint32_t checksum;
-    uint8_t segmentCount;
-    uint8_t segmentTable[255];
-} rflac_ogg_page_header;
-#endif
 
 typedef struct
 {
     rflac_read_proc onRead;
     rflac_seek_proc onSeek;
     rflac_meta_proc onMeta;
-    rflac_container container;
     void* pUserData;
     void* pUserDataMD;
     uint32_t sampleRate;
@@ -4224,16 +4209,9 @@ typedef struct
     uint64_t totalPCMFrameCount;
     uint16_t maxBlockSizeInPCMFrames;
     uint64_t runningFilePos;
-    uint32_t hasStreamInfoBlock;
     uint32_t hasMetadataBlocks;
     rflac_bs bs;                           /* <-- A bit streamer is required for loading data during initialization. */
-    rflac_frame_header firstFrameHeader;   /* <-- The header of the first frame that was read during relaxed initalization. Only set if there is no STREAMINFO block. */
 
-#ifndef RFLAC_NO_OGG
-    uint32_t oggSerial;
-    uint64_t oggFirstBytePos;
-    rflac_ogg_page_header oggBosHeader;
-#endif
 } rflac_init_info;
 
 static INLINE void rflac__decode_block_header(uint32_t blockHeader, uint8_t* isLastBlock, uint8_t* blockType, uint32_t* blockSize)
@@ -4715,812 +4693,55 @@ static uint32_t rflac__read_and_decode_metadata(rflac_read_proc onRead, rflac_se
     return 1;
 }
 
-static uint32_t rflac__init_private__native(rflac_init_info* pInit, rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, uint32_t relaxed)
+static uint32_t rflac__init_private__native(rflac_init_info* pInit, rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD)
 {
     /* Pre Condition: The bit stream should be sitting just past the 4-byte id header. */
 
     uint8_t isLastBlock;
     uint8_t blockType;
     uint32_t blockSize;
+    rflac_streaminfo streaminfo;
 
     (void)onSeek;
-
-    pInit->container = rflac_container_native;
 
     /* The first metadata block should be the STREAMINFO block. */
     if (!rflac__read_and_decode_block_header(onRead, pUserData, &isLastBlock, &blockType, &blockSize)) {
         return 0;
     }
 
+    /* The first block must be the STREAMINFO block. (The old 'relaxed'
+     * mode that tolerated its absence was only reachable through the
+     * removed dr_flac container-selection API.) */
     if (blockType != RFLAC_METADATA_BLOCK_TYPE_STREAMINFO || blockSize != 34) {
-        if (!relaxed) {
-            /* We're opening in strict mode and the first block is not the STREAMINFO block. Error. */
-            return 0;
-        } else {
-            /*
-            Relaxed mode. To open from here we need to just find the first frame and set the sample rate, etc. to whatever is defined
-            for that frame.
-            */
-            pInit->hasStreamInfoBlock = 0;
-            pInit->hasMetadataBlocks  = 0;
-
-            if (!rflac__read_next_flac_frame_header(&pInit->bs, 0, &pInit->firstFrameHeader)) {
-                return 0;    /* Couldn't find a frame. */
-            }
-
-            if (pInit->firstFrameHeader.bitsPerSample == 0) {
-                return 0;    /* Failed to initialize because the first frame depends on the STREAMINFO block, which does not exist. */
-            }
-
-            pInit->sampleRate              = pInit->firstFrameHeader.sampleRate;
-            pInit->channels                = rflac__get_channel_count_from_channel_assignment(pInit->firstFrameHeader.channelAssignment);
-            pInit->bitsPerSample           = pInit->firstFrameHeader.bitsPerSample;
-            pInit->maxBlockSizeInPCMFrames = 65535;   /* <-- See notes here: https://xiph.org/flac/format.html#metadata_block_streaminfo */
-            return 1;
-        }
-    } else {
-        rflac_streaminfo streaminfo;
-        if (!rflac__read_streaminfo(onRead, pUserData, &streaminfo)) {
-            return 0;
-        }
-
-        pInit->hasStreamInfoBlock      = 1;
-        pInit->sampleRate              = streaminfo.sampleRate;
-        pInit->channels                = streaminfo.channels;
-        pInit->bitsPerSample           = streaminfo.bitsPerSample;
-        pInit->totalPCMFrameCount      = streaminfo.totalPCMFrameCount;
-        pInit->maxBlockSizeInPCMFrames = streaminfo.maxBlockSizeInPCMFrames;    /* Don't care about the min block size - only the max (used for determining the size of the memory allocation). */
-        pInit->hasMetadataBlocks       = !isLastBlock;
-
-        if (onMeta) {
-            rflac_metadata metadata;
-            metadata.type = RFLAC_METADATA_BLOCK_TYPE_STREAMINFO;
-            metadata.pRawData = NULL;
-            metadata.rawDataSize = 0;
-            metadata.data.streaminfo = streaminfo;
-            onMeta(pUserDataMD, &metadata);
-        }
-
-        return 1;
-    }
-}
-
-#ifndef RFLAC_NO_OGG
-#define RFLAC_OGG_MAX_PAGE_SIZE            65307
-#define RFLAC_OGG_CAPTURE_PATTERN_CRC32    1605413199  /* CRC-32 of "OggS". */
-
-typedef enum
-{
-    rflac_ogg_recover_on_crc_mismatch,
-    rflac_ogg_fail_on_crc_mismatch
-} rflac_ogg_crc_mismatch_recovery;
-
-#ifndef RFLAC_NO_CRC
-static uint32_t rflac__crc32_table[] = {
-    0x00000000L, 0x04C11DB7L, 0x09823B6EL, 0x0D4326D9L,
-    0x130476DCL, 0x17C56B6BL, 0x1A864DB2L, 0x1E475005L,
-    0x2608EDB8L, 0x22C9F00FL, 0x2F8AD6D6L, 0x2B4BCB61L,
-    0x350C9B64L, 0x31CD86D3L, 0x3C8EA00AL, 0x384FBDBDL,
-    0x4C11DB70L, 0x48D0C6C7L, 0x4593E01EL, 0x4152FDA9L,
-    0x5F15ADACL, 0x5BD4B01BL, 0x569796C2L, 0x52568B75L,
-    0x6A1936C8L, 0x6ED82B7FL, 0x639B0DA6L, 0x675A1011L,
-    0x791D4014L, 0x7DDC5DA3L, 0x709F7B7AL, 0x745E66CDL,
-    0x9823B6E0L, 0x9CE2AB57L, 0x91A18D8EL, 0x95609039L,
-    0x8B27C03CL, 0x8FE6DD8BL, 0x82A5FB52L, 0x8664E6E5L,
-    0xBE2B5B58L, 0xBAEA46EFL, 0xB7A96036L, 0xB3687D81L,
-    0xAD2F2D84L, 0xA9EE3033L, 0xA4AD16EAL, 0xA06C0B5DL,
-    0xD4326D90L, 0xD0F37027L, 0xDDB056FEL, 0xD9714B49L,
-    0xC7361B4CL, 0xC3F706FBL, 0xCEB42022L, 0xCA753D95L,
-    0xF23A8028L, 0xF6FB9D9FL, 0xFBB8BB46L, 0xFF79A6F1L,
-    0xE13EF6F4L, 0xE5FFEB43L, 0xE8BCCD9AL, 0xEC7DD02DL,
-    0x34867077L, 0x30476DC0L, 0x3D044B19L, 0x39C556AEL,
-    0x278206ABL, 0x23431B1CL, 0x2E003DC5L, 0x2AC12072L,
-    0x128E9DCFL, 0x164F8078L, 0x1B0CA6A1L, 0x1FCDBB16L,
-    0x018AEB13L, 0x054BF6A4L, 0x0808D07DL, 0x0CC9CDCAL,
-    0x7897AB07L, 0x7C56B6B0L, 0x71159069L, 0x75D48DDEL,
-    0x6B93DDDBL, 0x6F52C06CL, 0x6211E6B5L, 0x66D0FB02L,
-    0x5E9F46BFL, 0x5A5E5B08L, 0x571D7DD1L, 0x53DC6066L,
-    0x4D9B3063L, 0x495A2DD4L, 0x44190B0DL, 0x40D816BAL,
-    0xACA5C697L, 0xA864DB20L, 0xA527FDF9L, 0xA1E6E04EL,
-    0xBFA1B04BL, 0xBB60ADFCL, 0xB6238B25L, 0xB2E29692L,
-    0x8AAD2B2FL, 0x8E6C3698L, 0x832F1041L, 0x87EE0DF6L,
-    0x99A95DF3L, 0x9D684044L, 0x902B669DL, 0x94EA7B2AL,
-    0xE0B41DE7L, 0xE4750050L, 0xE9362689L, 0xEDF73B3EL,
-    0xF3B06B3BL, 0xF771768CL, 0xFA325055L, 0xFEF34DE2L,
-    0xC6BCF05FL, 0xC27DEDE8L, 0xCF3ECB31L, 0xCBFFD686L,
-    0xD5B88683L, 0xD1799B34L, 0xDC3ABDEDL, 0xD8FBA05AL,
-    0x690CE0EEL, 0x6DCDFD59L, 0x608EDB80L, 0x644FC637L,
-    0x7A089632L, 0x7EC98B85L, 0x738AAD5CL, 0x774BB0EBL,
-    0x4F040D56L, 0x4BC510E1L, 0x46863638L, 0x42472B8FL,
-    0x5C007B8AL, 0x58C1663DL, 0x558240E4L, 0x51435D53L,
-    0x251D3B9EL, 0x21DC2629L, 0x2C9F00F0L, 0x285E1D47L,
-    0x36194D42L, 0x32D850F5L, 0x3F9B762CL, 0x3B5A6B9BL,
-    0x0315D626L, 0x07D4CB91L, 0x0A97ED48L, 0x0E56F0FFL,
-    0x1011A0FAL, 0x14D0BD4DL, 0x19939B94L, 0x1D528623L,
-    0xF12F560EL, 0xF5EE4BB9L, 0xF8AD6D60L, 0xFC6C70D7L,
-    0xE22B20D2L, 0xE6EA3D65L, 0xEBA91BBCL, 0xEF68060BL,
-    0xD727BBB6L, 0xD3E6A601L, 0xDEA580D8L, 0xDA649D6FL,
-    0xC423CD6AL, 0xC0E2D0DDL, 0xCDA1F604L, 0xC960EBB3L,
-    0xBD3E8D7EL, 0xB9FF90C9L, 0xB4BCB610L, 0xB07DABA7L,
-    0xAE3AFBA2L, 0xAAFBE615L, 0xA7B8C0CCL, 0xA379DD7BL,
-    0x9B3660C6L, 0x9FF77D71L, 0x92B45BA8L, 0x9675461FL,
-    0x8832161AL, 0x8CF30BADL, 0x81B02D74L, 0x857130C3L,
-    0x5D8A9099L, 0x594B8D2EL, 0x5408ABF7L, 0x50C9B640L,
-    0x4E8EE645L, 0x4A4FFBF2L, 0x470CDD2BL, 0x43CDC09CL,
-    0x7B827D21L, 0x7F436096L, 0x7200464FL, 0x76C15BF8L,
-    0x68860BFDL, 0x6C47164AL, 0x61043093L, 0x65C52D24L,
-    0x119B4BE9L, 0x155A565EL, 0x18197087L, 0x1CD86D30L,
-    0x029F3D35L, 0x065E2082L, 0x0B1D065BL, 0x0FDC1BECL,
-    0x3793A651L, 0x3352BBE6L, 0x3E119D3FL, 0x3AD08088L,
-    0x2497D08DL, 0x2056CD3AL, 0x2D15EBE3L, 0x29D4F654L,
-    0xC5A92679L, 0xC1683BCEL, 0xCC2B1D17L, 0xC8EA00A0L,
-    0xD6AD50A5L, 0xD26C4D12L, 0xDF2F6BCBL, 0xDBEE767CL,
-    0xE3A1CBC1L, 0xE760D676L, 0xEA23F0AFL, 0xEEE2ED18L,
-    0xF0A5BD1DL, 0xF464A0AAL, 0xF9278673L, 0xFDE69BC4L,
-    0x89B8FD09L, 0x8D79E0BEL, 0x803AC667L, 0x84FBDBD0L,
-    0x9ABC8BD5L, 0x9E7D9662L, 0x933EB0BBL, 0x97FFAD0CL,
-    0xAFB010B1L, 0xAB710D06L, 0xA6322BDFL, 0xA2F33668L,
-    0xBCB4666DL, 0xB8757BDAL, 0xB5365D03L, 0xB1F740B4L
-};
-#endif
-
-static INLINE uint32_t rflac_crc32_byte(uint32_t crc32, uint8_t data)
-{
-#ifndef RFLAC_NO_CRC
-    return (crc32 << 8) ^ rflac__crc32_table[(uint8_t)((crc32 >> 24) & 0xFF) ^ data];
-#else
-    (void)data;
-    return crc32;
-#endif
-}
-
-static INLINE uint32_t rflac_crc32_buffer(uint32_t crc32, uint8_t* pData, uint32_t dataSize)
-{
-    /* This can be optimized. */
-    uint32_t i;
-    for (i = 0; i < dataSize; ++i) {
-        crc32 = rflac_crc32_byte(crc32, pData[i]);
-    }
-    return crc32;
-}
-
-
-static INLINE uint32_t rflac_ogg__is_capture_pattern(uint8_t pattern[4])
-{
-    return pattern[0] == 'O' && pattern[1] == 'g' && pattern[2] == 'g' && pattern[3] == 'S';
-}
-
-static INLINE uint32_t rflac_ogg__get_page_header_size(rflac_ogg_page_header* pHeader)
-{
-    return 27 + pHeader->segmentCount;
-}
-
-static INLINE uint32_t rflac_ogg__get_page_body_size(rflac_ogg_page_header* pHeader)
-{
-    uint32_t pageBodySize = 0;
-    int i;
-
-    for (i = 0; i < pHeader->segmentCount; ++i) {
-        pageBodySize += pHeader->segmentTable[i];
+        return 0;
     }
 
-    return pageBodySize;
-}
-
-static int32_t rflac_ogg__read_page_header_after_capture_pattern(rflac_read_proc onRead, void* pUserData, rflac_ogg_page_header* pHeader, uint32_t* pBytesRead, uint32_t* pCRC32)
-{
-    uint8_t data[23];
-    uint32_t i;
-
-    if (onRead(pUserData, data, 23) != 23)
-        return RFLAC_AT_END;
-    *pBytesRead += 23;
-
-    /*
-    It's not actually used, but set the capture pattern to 'OggS' for completeness. Not doing this will cause static analysers to complain about
-    us trying to access uninitialized data. We could alternatively just comment out this member of the rflac_ogg_page_header structure, but I
-    like to have it map to the structure of the underlying data.
-    */
-    pHeader->capturePattern[0] = 'O';
-    pHeader->capturePattern[1] = 'g';
-    pHeader->capturePattern[2] = 'g';
-    pHeader->capturePattern[3] = 'S';
-
-    pHeader->structureVersion = data[0];
-    pHeader->headerType       = data[1];
-    memcpy(&pHeader->granulePosition, &data[ 2], 8);
-    memcpy(&pHeader->serialNumber,    &data[10], 4);
-    memcpy(&pHeader->sequenceNumber,  &data[14], 4);
-    memcpy(&pHeader->checksum,        &data[18], 4);
-    pHeader->segmentCount     = data[22];
-
-    /* Calculate the CRC. Note that for the calculation the checksum part of the page needs to be set to 0. */
-    data[18] = 0;
-    data[19] = 0;
-    data[20] = 0;
-    data[21] = 0;
-
-    for (i = 0; i < 23; ++i) {
-        *pCRC32 = rflac_crc32_byte(*pCRC32, data[i]);
+    if (!rflac__read_streaminfo(onRead, pUserData, &streaminfo)) {
+        return 0;
     }
 
+    pInit->sampleRate              = streaminfo.sampleRate;
+    pInit->channels                = streaminfo.channels;
+    pInit->bitsPerSample           = streaminfo.bitsPerSample;
+    pInit->totalPCMFrameCount      = streaminfo.totalPCMFrameCount;
+    pInit->maxBlockSizeInPCMFrames = streaminfo.maxBlockSizeInPCMFrames;    /* Don't care about the min block size - only the max (used for determining the size of the memory allocation). */
+    pInit->hasMetadataBlocks       = !isLastBlock;
 
-    if (onRead(pUserData, pHeader->segmentTable, pHeader->segmentCount) != pHeader->segmentCount) {
-        return RFLAC_AT_END;
-    }
-    *pBytesRead += pHeader->segmentCount;
-
-    for (i = 0; i < pHeader->segmentCount; ++i) {
-        *pCRC32 = rflac_crc32_byte(*pCRC32, pHeader->segmentTable[i]);
-    }
-
-    return RFLAC_SUCCESS;
-}
-
-static int32_t rflac_ogg__read_page_header(rflac_read_proc onRead, void* pUserData, rflac_ogg_page_header* pHeader, uint32_t* pBytesRead, uint32_t* pCRC32)
-{
-    uint8_t id[4];
-
-    *pBytesRead = 0;
-
-    if (onRead(pUserData, id, 4) != 4) {
-        return RFLAC_AT_END;
-    }
-    *pBytesRead += 4;
-
-    /* We need to read byte-by-byte until we find the OggS capture pattern. */
-    for (;;) {
-        if (rflac_ogg__is_capture_pattern(id)) {
-            int32_t result;
-
-            *pCRC32 = RFLAC_OGG_CAPTURE_PATTERN_CRC32;
-
-            result = rflac_ogg__read_page_header_after_capture_pattern(onRead, pUserData, pHeader, pBytesRead, pCRC32);
-            if (result == RFLAC_SUCCESS) {
-                return RFLAC_SUCCESS;
-            } else {
-                if (result == RFLAC_CRC_MISMATCH) {
-                    continue;
-                } else {
-                    return result;
-                }
-            }
-        } else {
-            /* The first 4 bytes did not equal the capture pattern. Read the next byte and try again. */
-            id[0] = id[1];
-            id[1] = id[2];
-            id[2] = id[3];
-            if (onRead(pUserData, &id[3], 1) != 1) {
-                return RFLAC_AT_END;
-            }
-            *pBytesRead += 1;
-        }
-    }
-}
-
-
-/*
-The main part of the Ogg encapsulation is the conversion from the physical Ogg bitstream to the native FLAC bitstream. It works
-in three general stages: Ogg Physical Bitstream -> Ogg/FLAC Logical Bitstream -> FLAC Native Bitstream. rflac is designed
-in such a way that the core sections assume everything is delivered in native format. Therefore, for each encapsulation type
-rflac is supporting there needs to be a layer sitting on top of the onRead and onSeek callbacks that ensures the bits read from
-the physical Ogg bitstream are converted and delivered in native FLAC format.
-*/
-typedef struct
-{
-    rflac_read_proc onRead;                /* The original onRead callback from rflac_open() and family. */
-    rflac_seek_proc onSeek;                /* The original onSeek callback from rflac_open() and family. */
-    void* pUserData;                        /* The user data passed on onRead and onSeek. This is the user data that was passed on rflac_open() and family. */
-    uint64_t currentBytePos;           /* The position of the byte we are sitting on in the physical byte stream. Used for efficient seeking. */
-    uint64_t firstBytePos;             /* The position of the first byte in the physical bitstream. Points to the start of the "OggS" identifier of the FLAC bos page. */
-    uint32_t serialNumber;             /* The serial number of the FLAC audio pages. This is determined by the initial header page that was read during initialization. */
-    rflac_ogg_page_header bosPageHeader;   /* Used for seeking. */
-    rflac_ogg_page_header currentPageHeader;
-    uint32_t bytesRemainingInPage;
-    uint32_t pageDataSize;
-    uint8_t pageData[RFLAC_OGG_MAX_PAGE_SIZE];
-} rflac_oggbs; /* oggbs = Ogg Bitstream */
-
-static size_t rflac_oggbs__read_physical(rflac_oggbs* oggbs, void* bufferOut, size_t bytesToRead)
-{
-    size_t bytesActuallyRead = oggbs->onRead(oggbs->pUserData, bufferOut, bytesToRead);
-    oggbs->currentBytePos += bytesActuallyRead;
-
-    return bytesActuallyRead;
-}
-
-static uint32_t rflac_oggbs__seek_physical(rflac_oggbs* oggbs, uint64_t offset, rflac_seek_origin origin)
-{
-    if (origin == rflac_seek_origin_start) {
-        if (offset <= 0x7FFFFFFF) {
-            if (!oggbs->onSeek(oggbs->pUserData, (int)offset, rflac_seek_origin_start)) {
-                return 0;
-            }
-            oggbs->currentBytePos = offset;
-
-            return 1;
-        } else {
-            if (!oggbs->onSeek(oggbs->pUserData, 0x7FFFFFFF, rflac_seek_origin_start)) {
-                return 0;
-            }
-            oggbs->currentBytePos = offset;
-
-            return rflac_oggbs__seek_physical(oggbs, offset - 0x7FFFFFFF, rflac_seek_origin_current);
-        }
-    } else {
-        while (offset > 0x7FFFFFFF) {
-            if (!oggbs->onSeek(oggbs->pUserData, 0x7FFFFFFF, rflac_seek_origin_current)) {
-                return 0;
-            }
-            oggbs->currentBytePos += 0x7FFFFFFF;
-            offset -= 0x7FFFFFFF;
-        }
-
-        if (!oggbs->onSeek(oggbs->pUserData, (int)offset, rflac_seek_origin_current)) {    /* <-- Safe cast thanks to the loop above. */
-            return 0;
-        }
-        oggbs->currentBytePos += offset;
-
-        return 1;
-    }
-}
-
-static uint32_t rflac_oggbs__goto_next_page(rflac_oggbs* oggbs, rflac_ogg_crc_mismatch_recovery recoveryMethod)
-{
-    rflac_ogg_page_header header;
-    for (;;) {
-        uint32_t crc32 = 0;
-        uint32_t bytesRead;
-        uint32_t pageBodySize;
-#ifndef RFLAC_NO_CRC
-        uint32_t actualCRC32;
-#endif
-
-        if (rflac_ogg__read_page_header(oggbs->onRead, oggbs->pUserData, &header, &bytesRead, &crc32) != RFLAC_SUCCESS) {
-            return 0;
-        }
-        oggbs->currentBytePos += bytesRead;
-
-        pageBodySize = rflac_ogg__get_page_body_size(&header);
-        if (pageBodySize > RFLAC_OGG_MAX_PAGE_SIZE) {
-            continue;   /* Invalid page size. Assume it's corrupted and just move to the next page. */
-        }
-
-        if (header.serialNumber != oggbs->serialNumber) {
-            /* It's not a FLAC page. Skip it. */
-            if (pageBodySize > 0 && !rflac_oggbs__seek_physical(oggbs, pageBodySize, rflac_seek_origin_current)) {
-                return 0;
-            }
-            continue;
-        }
-
-
-        /* We need to read the entire page and then do a CRC check on it. If there's a CRC mismatch we need to skip this page. */
-        if (rflac_oggbs__read_physical(oggbs, oggbs->pageData, pageBodySize) != pageBodySize) {
-            return 0;
-        }
-        oggbs->pageDataSize = pageBodySize;
-
-#ifndef RFLAC_NO_CRC
-        actualCRC32 = rflac_crc32_buffer(crc32, oggbs->pageData, oggbs->pageDataSize);
-        if (actualCRC32 != header.checksum) {
-            if (recoveryMethod == rflac_ogg_recover_on_crc_mismatch) {
-                continue;   /* CRC mismatch. Skip this page. */
-            } else {
-                /*
-                Even though we are failing on a CRC mismatch, we still want our stream to be in a good state. Therefore we
-                go to the next valid page to ensure we're in a good state, but return false to let the caller know that the
-                seek did not fully complete.
-                */
-                rflac_oggbs__goto_next_page(oggbs, rflac_ogg_recover_on_crc_mismatch);
-                return 0;
-            }
-        }
-#else
-        (void)recoveryMethod;   /* <-- Silence a warning. */
-#endif
-
-        oggbs->currentPageHeader = header;
-        oggbs->bytesRemainingInPage = pageBodySize;
-        return 1;
-    }
-}
-
-/* Function below is unused at the moment, but I might be re-adding it later. */
-
-static size_t rflac__on_read_ogg(void* pUserData, void* bufferOut, size_t bytesToRead)
-{
-    rflac_oggbs* oggbs = (rflac_oggbs*)pUserData;
-    uint8_t* pRunningBufferOut = (uint8_t*)bufferOut;
-    size_t bytesRead = 0;
-
-    /* Reading is done page-by-page. If we've run out of bytes in the page we need to move to the next one. */
-    while (bytesRead < bytesToRead) {
-        size_t bytesRemainingToRead = bytesToRead - bytesRead;
-
-        if (oggbs->bytesRemainingInPage >= bytesRemainingToRead) {
-            memcpy(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), bytesRemainingToRead);
-            bytesRead += bytesRemainingToRead;
-            oggbs->bytesRemainingInPage -= (uint32_t)bytesRemainingToRead;
-            break;
-        }
-
-        /* If we get here it means some of the requested data is contained in the next pages. */
-        if (oggbs->bytesRemainingInPage > 0) {
-            memcpy(pRunningBufferOut, oggbs->pageData + (oggbs->pageDataSize - oggbs->bytesRemainingInPage), oggbs->bytesRemainingInPage);
-            bytesRead += oggbs->bytesRemainingInPage;
-            pRunningBufferOut += oggbs->bytesRemainingInPage;
-            oggbs->bytesRemainingInPage = 0;
-        }
-
-        if (!rflac_oggbs__goto_next_page(oggbs, rflac_ogg_recover_on_crc_mismatch)) {
-            break;  /* Failed to go to the next page. Might have simply hit the end of the stream. */
-        }
-    }
-
-    return bytesRead;
-}
-
-static uint32_t rflac__on_seek_ogg(void* pUserData, int offset, rflac_seek_origin origin)
-{
-    rflac_oggbs* oggbs = (rflac_oggbs*)pUserData;
-    int bytesSeeked = 0;
-
-    /* Seeking is always forward which makes things a lot simpler. */
-    if (origin == rflac_seek_origin_start) {
-        if (!rflac_oggbs__seek_physical(oggbs, (int)oggbs->firstBytePos, rflac_seek_origin_start)) {
-            return 0;
-        }
-
-        if (!rflac_oggbs__goto_next_page(oggbs, rflac_ogg_fail_on_crc_mismatch)) {
-            return 0;
-        }
-
-        return rflac__on_seek_ogg(pUserData, offset, rflac_seek_origin_current);
-    }
-
-    while (bytesSeeked < offset) {
-        int bytesRemainingToSeek = offset - bytesSeeked;
-
-        if (oggbs->bytesRemainingInPage >= (size_t)bytesRemainingToSeek) {
-            bytesSeeked += bytesRemainingToSeek;
-            (void)bytesSeeked;  /* <-- Silence a dead store warning emitted by Clang Static Analyzer. */
-            oggbs->bytesRemainingInPage -= bytesRemainingToSeek;
-            break;
-        }
-
-        /* If we get here it means some of the requested data is contained in the next pages. */
-        if (oggbs->bytesRemainingInPage > 0) {
-            bytesSeeked += (int)oggbs->bytesRemainingInPage;
-            oggbs->bytesRemainingInPage = 0;
-        }
-
-        if (!rflac_oggbs__goto_next_page(oggbs, rflac_ogg_fail_on_crc_mismatch)) {
-            /* Failed to go to the next page. We either hit the end of the stream or had a CRC mismatch. */
-            return 0;
-        }
+    if (onMeta) {
+        rflac_metadata metadata;
+        metadata.type = RFLAC_METADATA_BLOCK_TYPE_STREAMINFO;
+        metadata.pRawData = NULL;
+        metadata.rawDataSize = 0;
+        metadata.data.streaminfo = streaminfo;
+        onMeta(pUserDataMD, &metadata);
     }
 
     return 1;
 }
 
 
-static uint32_t rflac_ogg__seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
+static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD)
 {
-    rflac_oggbs* oggbs = (rflac_oggbs*)pFlac->_oggbs;
-    uint64_t originalBytePos;
-    uint64_t runningGranulePosition;
-    uint64_t runningFrameBytePos;
-    uint64_t runningPCMFrameCount;
-
-    originalBytePos = oggbs->currentBytePos;   /* For recovery. Points to the OggS identifier. */
-
-    /* First seek to the first frame. */
-    if (!rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes)) {
-        return 0;
-    }
-    oggbs->bytesRemainingInPage = 0;
-
-    runningGranulePosition = 0;
-    for (;;) {
-        if (!rflac_oggbs__goto_next_page(oggbs, rflac_ogg_recover_on_crc_mismatch)) {
-            rflac_oggbs__seek_physical(oggbs, originalBytePos, rflac_seek_origin_start);
-            return 0;   /* Never did find that sample... */
-        }
-
-        runningFrameBytePos = oggbs->currentBytePos - rflac_ogg__get_page_header_size(&oggbs->currentPageHeader) - oggbs->pageDataSize;
-        if (oggbs->currentPageHeader.granulePosition >= pcmFrameIndex) {
-            break; /* The sample is somewhere in the previous page. */
-        }
-
-        /*
-        At this point we know the sample is not in the previous page. It could possibly be in this page. For simplicity we
-        disregard any pages that do not begin a fresh packet.
-        */
-        if ((oggbs->currentPageHeader.headerType & 0x01) == 0) {    /* <-- Is it a fresh page? */
-            if (oggbs->currentPageHeader.segmentTable[0] >= 2) {
-                uint8_t firstBytesInPage[2];
-                firstBytesInPage[0] = oggbs->pageData[0];
-                firstBytesInPage[1] = oggbs->pageData[1];
-
-                if ((firstBytesInPage[0] == 0xFF) && (firstBytesInPage[1] & 0xFC) == 0xF8) {    /* <-- Does the page begin with a frame's sync code? */
-                    runningGranulePosition = oggbs->currentPageHeader.granulePosition;
-                }
-
-                continue;
-            }
-        }
-    }
-
-    /*
-    We found the page that that is closest to the sample, so now we need to find it. The first thing to do is seek to the
-    start of that page. In the loop above we checked that it was a fresh page which means this page is also the start of
-    a new frame. This property means that after we've seeked to the page we can immediately start looping over frames until
-    we find the one containing the target sample.
-    */
-    if (!rflac_oggbs__seek_physical(oggbs, runningFrameBytePos, rflac_seek_origin_start)) {
-        return 0;
-    }
-    if (!rflac_oggbs__goto_next_page(oggbs, rflac_ogg_recover_on_crc_mismatch)) {
-        return 0;
-    }
-
-    /*
-    At this point we'll be sitting on the first byte of the frame header of the first frame in the page. We just keep
-    looping over these frames until we find the one containing the sample we're after.
-    */
-    runningPCMFrameCount = runningGranulePosition;
-    for (;;) {
-        /*
-        There are two ways to find the sample and seek past irrelevant frames:
-          1) Use the native FLAC decoder.
-          2) Use Ogg's framing system.
-
-        Both of these options have their own pros and cons. Using the native FLAC decoder is slower because it needs to
-        do a full decode of the frame. Using Ogg's framing system is faster, but more complicated and involves some code
-        duplication for the decoding of frame headers.
-
-        Another thing to consider is that using the Ogg framing system will perform direct seeking of the physical Ogg
-        bitstream. This is important to consider because it means we cannot read data from the rflac_bs object using the
-        standard rflac__*() APIs because that will read in extra data for its own internal caching which in turn breaks
-        the positioning of the read pointer of the physical Ogg bitstream. Therefore, anything that would normally be read
-        using the native FLAC decoding APIs, such as rflac__read_next_flac_frame_header(), need to be re-implemented so as to
-        avoid the use of the rflac_bs object.
-
-        Considering these issues, I have decided to use the slower native FLAC decoding method for the following reasons:
-          1) Seeking is already partially accelerated using Ogg's paging system in the code block above.
-          2) Seeking in an Ogg encapsulated FLAC stream is probably quite uncommon.
-          3) Simplicity.
-        */
-        uint64_t firstPCMFrameInFLACFrame = 0;
-        uint64_t lastPCMFrameInFLACFrame = 0;
-        uint64_t pcmFrameCountInThisFrame;
-
-        if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header)) {
-            return 0;
-        }
-
-        rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &firstPCMFrameInFLACFrame, &lastPCMFrameInFLACFrame);
-
-        pcmFrameCountInThisFrame = (lastPCMFrameInFLACFrame - firstPCMFrameInFLACFrame) + 1;
-
-        /* If we are seeking to the end of the file and we've just hit it, we're done. */
-        if (pcmFrameIndex == pFlac->totalPCMFrameCount && (runningPCMFrameCount + pcmFrameCountInThisFrame) == pFlac->totalPCMFrameCount) {
-            int32_t result = rflac__decode_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS) {
-                pFlac->currentPCMFrame = pcmFrameIndex;
-                pFlac->currentFLACFrame.pcmFramesRemaining = 0;
-                return 1;
-            } else {
-                return 0;
-            }
-        }
-
-        if (pcmFrameIndex < (runningPCMFrameCount + pcmFrameCountInThisFrame)) {
-            /*
-            The sample should be in this FLAC frame. We need to fully decode it, however if it's an invalid frame (a CRC mismatch), we need to pretend
-            it never existed and keep iterating.
-            */
-            int32_t result = rflac__decode_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS) {
-                /* The frame is valid. We just need to skip over some samples to ensure it's sample-exact. */
-                uint64_t pcmFramesToDecode = (size_t)(pcmFrameIndex - runningPCMFrameCount);    /* <-- Safe cast because the maximum number of samples in a frame is 65535. */
-                if (pcmFramesToDecode == 0) {
-                    return 1;
-                }
-
-                pFlac->currentPCMFrame = runningPCMFrameCount;
-
-                return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;  /* <-- If this fails, something bad has happened (it should never fail). */
-            } else {
-                if (result == RFLAC_CRC_MISMATCH) {
-                    continue;   /* CRC mismatch. Pretend this frame never existed. */
-                } else {
-                    return 0;
-                }
-            }
-        } else {
-            /*
-            It's not in this frame. We need to seek past the frame, but check if there was a CRC mismatch. If so, we pretend this
-            frame never existed and leave the running sample count untouched.
-            */
-            int32_t result = rflac__seek_to_next_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS) {
-                runningPCMFrameCount += pcmFrameCountInThisFrame;
-            } else {
-                if (result == RFLAC_CRC_MISMATCH) {
-                    continue;   /* CRC mismatch. Pretend this frame never existed. */
-                } else {
-                    return 0;
-                }
-            }
-        }
-    }
-}
-
-
-
-static uint32_t rflac__init_private__ogg(rflac_init_info* pInit, rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD, uint32_t relaxed)
-{
-    rflac_ogg_page_header header;
-    uint32_t crc32 = RFLAC_OGG_CAPTURE_PATTERN_CRC32;
-    uint32_t bytesRead = 0;
-
-    /* Pre Condition: The bit stream should be sitting just past the 4-byte OggS capture pattern. */
-    (void)relaxed;
-
-    pInit->container = rflac_container_ogg;
-    pInit->oggFirstBytePos = 0;
-
-    /*
-    We'll get here if the first 4 bytes of the stream were the OggS capture pattern, however it doesn't necessarily mean the
-    stream includes FLAC encoded audio. To check for this we need to scan the beginning-of-stream page markers and check if
-    any match the FLAC specification. Important to keep in mind that the stream may be multiplexed.
-    */
-    if (rflac_ogg__read_page_header_after_capture_pattern(onRead, pUserData, &header, &bytesRead, &crc32) != RFLAC_SUCCESS) {
-        return 0;
-    }
-    pInit->runningFilePos += bytesRead;
-
-    for (;;) {
-        int pageBodySize;
-
-        /* Break if we're past the beginning of stream page. */
-        if ((header.headerType & 0x02) == 0) {
-            return 0;
-        }
-
-        /* Check if it's a FLAC header. */
-        pageBodySize = rflac_ogg__get_page_body_size(&header);
-        if (pageBodySize == 51) {   /* 51 = the lacing value of the FLAC header packet. */
-            /* It could be a FLAC page... */
-            uint32_t bytesRemainingInPage = pageBodySize;
-            uint8_t packetType;
-
-            if (onRead(pUserData, &packetType, 1) != 1) {
-                return 0;
-            }
-
-            bytesRemainingInPage -= 1;
-            if (packetType == 0x7F) {
-                /* Increasingly more likely to be a FLAC page... */
-                uint8_t sig[4];
-                if (onRead(pUserData, sig, 4) != 4) {
-                    return 0;
-                }
-
-                bytesRemainingInPage -= 4;
-                if (sig[0] == 'F' && sig[1] == 'L' && sig[2] == 'A' && sig[3] == 'C') {
-                    /* Almost certainly a FLAC page... */
-                    uint8_t mappingVersion[2];
-                    if (onRead(pUserData, mappingVersion, 2) != 2) {
-                        return 0;
-                    }
-
-                    if (mappingVersion[0] != 1) {
-                        return 0;   /* Only supporting version 1.x of the Ogg mapping. */
-                    }
-
-                    /*
-                    The next 2 bytes are the non-audio packets, not including this one. We don't care about this because we're going to
-                    be handling it in a generic way based on the serial number and packet types.
-                    */
-                    if (!onSeek(pUserData, 2, rflac_seek_origin_current)) {
-                        return 0;
-                    }
-
-                    /* Expecting the native FLAC signature "fLaC". */
-                    if (onRead(pUserData, sig, 4) != 4) {
-                        return 0;
-                    }
-
-                    if (sig[0] == 'f' && sig[1] == 'L' && sig[2] == 'a' && sig[3] == 'C') {
-                        /* The remaining data in the page should be the STREAMINFO block. */
-                        rflac_streaminfo streaminfo;
-                        uint8_t isLastBlock;
-                        uint8_t blockType;
-                        uint32_t blockSize;
-                        if (!rflac__read_and_decode_block_header(onRead, pUserData, &isLastBlock, &blockType, &blockSize)) {
-                            return 0;
-                        }
-
-                        if (blockType != RFLAC_METADATA_BLOCK_TYPE_STREAMINFO || blockSize != 34) {
-                            return 0;    /* Invalid block type. First block must be the STREAMINFO block. */
-                        }
-
-                        if (rflac__read_streaminfo(onRead, pUserData, &streaminfo)) {
-                            /* Success! */
-                            pInit->hasStreamInfoBlock      = 1;
-                            pInit->sampleRate              = streaminfo.sampleRate;
-                            pInit->channels                = streaminfo.channels;
-                            pInit->bitsPerSample           = streaminfo.bitsPerSample;
-                            pInit->totalPCMFrameCount      = streaminfo.totalPCMFrameCount;
-                            pInit->maxBlockSizeInPCMFrames = streaminfo.maxBlockSizeInPCMFrames;
-                            pInit->hasMetadataBlocks       = !isLastBlock;
-
-                            if (onMeta) {
-                                rflac_metadata metadata;
-                                metadata.type = RFLAC_METADATA_BLOCK_TYPE_STREAMINFO;
-                                metadata.pRawData = NULL;
-                                metadata.rawDataSize = 0;
-                                metadata.data.streaminfo = streaminfo;
-                                onMeta(pUserDataMD, &metadata);
-                            }
-
-                            pInit->runningFilePos  += pageBodySize;
-                            pInit->oggFirstBytePos  = pInit->runningFilePos - 79;   /* Subtracting 79 will place us right on top of the "OggS" identifier of the FLAC bos page. */
-                            pInit->oggSerial        = header.serialNumber;
-                            pInit->oggBosHeader     = header;
-                            break;
-                        } else {
-                            /* Failed to read STREAMINFO block. Aww, so close... */
-                            return 0;
-                        }
-                    } else {
-                        /* Invalid file. */
-                        return 0;
-                    }
-                } else {
-                    /* Not a FLAC header. Skip it. */
-                    if (!onSeek(pUserData, bytesRemainingInPage, rflac_seek_origin_current)) {
-                        return 0;
-                    }
-                }
-            } else {
-                /* Not a FLAC header. Seek past the entire page and move on to the next. */
-                if (!onSeek(pUserData, bytesRemainingInPage, rflac_seek_origin_current)) {
-                    return 0;
-                }
-            }
-        } else {
-            if (!onSeek(pUserData, pageBodySize, rflac_seek_origin_current)) {
-                return 0;
-            }
-        }
-
-        pInit->runningFilePos += pageBodySize;
-
-
-        /* Read the header of the next page. */
-        if (rflac_ogg__read_page_header(onRead, pUserData, &header, &bytesRead, &crc32) != RFLAC_SUCCESS) {
-            return 0;
-        }
-        pInit->runningFilePos += bytesRead;
-    }
-
-    /*
-    If we get here it means we found a FLAC audio stream. We should be sitting on the first byte of the header of the next page. The next
-    packets in the FLAC logical stream contain the metadata. The only thing left to do in the initialization phase for Ogg is to create the
-    Ogg bistream object.
-    */
-    pInit->hasMetadataBlocks = 1;    /* <-- Always have at least VORBIS_COMMENT metadata block. */
-    return 1;
-}
-#endif
-
-static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, rflac_container container, void* pUserData, void* pUserDataMD)
-{
-    uint32_t relaxed;
     uint8_t id[4];
 
     if (pInit == NULL || onRead == NULL || onSeek == NULL) {
@@ -5531,7 +4752,6 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
     pInit->onRead       = onRead;
     pInit->onSeek       = onSeek;
     pInit->onMeta       = onMeta;
-    pInit->container    = container;
     pInit->pUserData    = pUserData;
     pInit->pUserDataMD  = pUserDataMD;
 
@@ -5540,9 +4760,6 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
     pInit->bs.pUserData = pUserData;
     rflac__reset_cache(&pInit->bs);
 
-
-    /* If the container is explicitly defined then we can try opening in relaxed mode. */
-    relaxed = container != rflac_container_unknown;
 
     /* Skip over any ID3 tags. */
     for (;;) {
@@ -5576,24 +4793,7 @@ static uint32_t rflac__init_private(rflac_init_info* pInit, rflac_read_proc onRe
     }
 
     if (id[0] == 'f' && id[1] == 'L' && id[2] == 'a' && id[3] == 'C') {
-        return rflac__init_private__native(pInit, onRead, onSeek, onMeta, pUserData, pUserDataMD, relaxed);
-    }
-#ifndef RFLAC_NO_OGG
-    if (id[0] == 'O' && id[1] == 'g' && id[2] == 'g' && id[3] == 'S') {
-        return rflac__init_private__ogg(pInit, onRead, onSeek, onMeta, pUserData, pUserDataMD, relaxed);
-    }
-#endif
-
-    /* If we get here it means we likely don't have a header. Try opening in relaxed mode, if applicable. */
-    if (relaxed) {
-        if (container == rflac_container_native) {
-            return rflac__init_private__native(pInit, onRead, onSeek, onMeta, pUserData, pUserDataMD, relaxed);
-        }
-#ifndef RFLAC_NO_OGG
-        if (container == rflac_container_ogg) {
-            return rflac__init_private__ogg(pInit, onRead, onSeek, onMeta, pUserData, pUserDataMD, relaxed);
-        }
-#endif
+        return rflac__init_private__native(pInit, onRead, onSeek, onMeta, pUserData, pUserDataMD);
     }
 
     /* Unsupported container. */
@@ -5611,19 +4811,15 @@ static void rflac__init_from_info(rflac* pFlac, const rflac_init_info* pInit)
     pFlac->channels                = (uint8_t)pInit->channels;
     pFlac->bitsPerSample           = (uint8_t)pInit->bitsPerSample;
     pFlac->totalPCMFrameCount      = pInit->totalPCMFrameCount;
-    pFlac->container               = pInit->container;
 }
 
 
-static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, rflac_container container, void* pUserData, void* pUserDataMD)
+static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData, void* pUserDataMD)
 {
     rflac_init_info init;
     uint32_t allocationSize;
     uint32_t wholeSIMDVectorCountPerChannel;
     uint32_t decodedSamplesAllocationSize;
-#ifndef RFLAC_NO_OGG
-    rflac_oggbs* pOggbs = NULL;
-#endif
     uint64_t firstFramePos;
     uint64_t seektablePos;
     uint32_t seekpointCount;
@@ -5632,14 +4828,13 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     /* CPU support first. */
     rflac__init_cpu_caps();
 
-    if (!rflac__init_private(&init, onRead, onSeek, onMeta, container, pUserData, pUserDataMD))
+    if (!rflac__init_private(&init, onRead, onSeek, onMeta, pUserData, pUserDataMD))
         return NULL;
 
     /*
     The size of the allocation for the rflac object needs to be large enough to fit the following:
       1) The main members of the rflac structure
       2) A block of memory large enough to store the decoded samples of the largest frame in the stream
-      3) If the container is Ogg, a rflac_oggbs object
 
     The complicated part of the allocation is making sure there's enough room the decoded samples, taking into consideration
     the different SIMD instruction sets.
@@ -5660,26 +4855,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
     allocationSize += decodedSamplesAllocationSize;
     allocationSize += RFLAC_MAX_SIMD_VECTOR_SIZE;  /* Allocate extra bytes to ensure we have enough for alignment. */
 
-#ifndef RFLAC_NO_OGG
-    /* There's additional data required for Ogg streams. */
-    if (init.container == rflac_container_ogg) {
-        allocationSize += sizeof(rflac_oggbs);
-
-        pOggbs = (rflac_oggbs*)malloc(sizeof(*pOggbs));
-        if (pOggbs == NULL)
-            return NULL; /*RFLAC_OUT_OF_MEMORY;*/
-
-        memset(pOggbs, 0, sizeof(*pOggbs));
-        pOggbs->onRead               = onRead;
-        pOggbs->onSeek               = onSeek;
-        pOggbs->pUserData            = pUserData;
-        pOggbs->currentBytePos       = init.oggFirstBytePos;
-        pOggbs->firstBytePos         = init.oggFirstBytePos;
-        pOggbs->serialNumber         = init.oggSerial;
-        pOggbs->bosPageHeader        = init.oggBosHeader;
-        pOggbs->bytesRemainingInPage = 0;
-    }
-#endif
 
     /*
     This part is a bit awkward. We need to load the seektable so that it can be referenced in-memory, but I want the rflac object to
@@ -5694,18 +4869,8 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
         rflac_seek_proc onSeekOverride = onSeek;
         void* pUserDataOverride = pUserData;
 
-#ifndef RFLAC_NO_OGG
-        if (init.container == rflac_container_ogg) {
-            onReadOverride = rflac__on_read_ogg;
-            onSeekOverride = rflac__on_seek_ogg;
-            pUserDataOverride = (void*)pOggbs;
-        }
-#endif
 
         if (!rflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seekpointCount)) {
-#ifndef RFLAC_NO_OGG
-           free(pOggbs);
-#endif
             return NULL;
         }
 
@@ -5715,43 +4880,16 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
 
     pFlac = (rflac*)malloc(allocationSize);
     if (pFlac == NULL) {
-#ifndef RFLAC_NO_OGG
-        free(pOggbs);
-#endif
         return NULL;
     }
 
     rflac__init_from_info(pFlac, &init);
     pFlac->pDecodedSamples = (int32_t*)RFLAC_ALIGN((size_t)pFlac->pExtraData, RFLAC_MAX_SIMD_VECTOR_SIZE);
 
-#ifndef RFLAC_NO_OGG
-    if (init.container == rflac_container_ogg) {
-        rflac_oggbs* pInternalOggbs = (rflac_oggbs*)((uint8_t*)pFlac->pDecodedSamples + decodedSamplesAllocationSize + (seekpointCount * sizeof(rflac_seekpoint)));
-        memcpy(pInternalOggbs, pOggbs, sizeof(*pOggbs));
-
-        /* At this point the pOggbs object has been handed over to pInternalOggbs and can be freed. */
-        free(pOggbs);
-        pOggbs = NULL;
-
-        /* The Ogg bistream needs to be layered on top of the original bitstream. */
-        pFlac->bs.onRead = rflac__on_read_ogg;
-        pFlac->bs.onSeek = rflac__on_seek_ogg;
-        pFlac->bs.pUserData = (void*)pInternalOggbs;
-        pFlac->_oggbs = (void*)pInternalOggbs;
-    }
-#endif
 
     pFlac->firstFLACFramePosInBytes = firstFramePos;
 
     /* NOTE: Seektables are not currently compatible with Ogg encapsulation (Ogg has its own accelerated seeking system). I may change this later, so I'm leaving this here for now. */
-#ifndef RFLAC_NO_OGG
-    if (init.container == rflac_container_ogg)
-    {
-        pFlac->pSeekpoints = NULL;
-        pFlac->seekpointCount = 0;
-    }
-    else
-#endif
     {
         /* If we have a seektable we need to load it now, making sure we move back to where we were previously. */
         if (seektablePos != 0) {
@@ -5788,36 +4926,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead, rflac_see
                 pFlac->pSeekpoints = NULL;
                 pFlac->seekpointCount = 0;
             }
-        }
-    }
-
-
-    /*
-    If we get here, but don't have a STREAMINFO block, it means we've opened the stream in relaxed mode and need to decode
-    the first frame.
-    */
-    if (!init.hasStreamInfoBlock)
-    {
-        pFlac->currentFLACFrame.header = init.firstFrameHeader;
-        for (;;)
-        {
-           int32_t result = rflac__decode_flac_frame(pFlac);
-           if (result == RFLAC_SUCCESS)
-              break;
-           if (result == RFLAC_CRC_MISMATCH)
-           {
-              if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-              {
-                 free(pFlac);
-                 return NULL;
-              }
-              continue;
-           }
-           else
-           {
-              free(pFlac);
-              return NULL;
-           }
         }
     }
 
@@ -5873,21 +4981,13 @@ rflac* rflac_open_memory(const void* pData, size_t dataSize)
     memoryStream.data = (const uint8_t*)pData;
     memoryStream.dataSize = dataSize;
     memoryStream.currentReadPos = 0;
-    pFlac = rflac_open(rflac__on_read_memory, rflac__on_seek_memory, &memoryStream);
+    pFlac = rflac_open_with_metadata_private(rflac__on_read_memory, rflac__on_seek_memory, NULL, &memoryStream, &memoryStream);
     if (pFlac == NULL)
         return NULL;
 
     pFlac->memoryStream = memoryStream;
 
     /* This is an awful hack... */
-#ifndef RFLAC_NO_OGG
-    if (pFlac->container == rflac_container_ogg)
-    {
-        rflac_oggbs* oggbs = (rflac_oggbs*)pFlac->_oggbs;
-        oggbs->pUserData = &pFlac->memoryStream;
-    }
-    else
-#endif
     {
         pFlac->bs.pUserData = &pFlac->memoryStream;
     }
@@ -5895,14 +4995,9 @@ rflac* rflac_open_memory(const void* pData, size_t dataSize)
     return pFlac;
 }
 
-rflac* rflac_open(rflac_read_proc onRead, rflac_seek_proc onSeek, void* pUserData)
-{
-    return rflac_open_with_metadata_private(onRead, onSeek, NULL, rflac_container_unknown, pUserData, pUserData);
-}
-
 rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData)
 {
-    return rflac_open_with_metadata_private(onRead, onSeek, onMeta, rflac_container_unknown, pUserData, pUserData);
+    return rflac_open_with_metadata_private(onRead, onSeek, onMeta, pUserData, pUserData);
 }
 
 void rflac_close(rflac* pFlac)
@@ -7553,11 +6648,6 @@ uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
         Different techniques depending on encapsulation. Using the native FLAC seektable with Ogg encapsulation is a bit awkward so
         we'll instead use Ogg's natural seeking facility.
         */
-#ifndef RFLAC_NO_OGG
-        if (pFlac->container == rflac_container_ogg)
-            wasSuccessful = rflac_ogg__seek_to_pcm_frame(pFlac, pcmFrameIndex);
-        else
-#endif
         {
             /* First try seeking via the seek table. If this fails, fall back to a brute force seek which is much slower. */
             if (!pFlac->_noSeekTableSeek)
