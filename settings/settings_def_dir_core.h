@@ -66,8 +66,10 @@ S_DIR(directory_menu_content, RGUI_BROWSER_DIRECTORY,
 S_DIR(directory_menu_config, RGUI_CONFIG_DIRECTORY,
       "rgui_config_directory",
       g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
-      "Configuration files",
-      "Default configuration file is stored in this directory.")
+      "Configurations",
+      "This directory stores files managed by menu items located in "
+      "Configuration Files, Overrides, and—for core overrides on "
+      "supported cores—Manage Core Options sub-menus.")
 #endif
 /* config key "libretro_directory" differs from the label string; the
  * configuration.c row stays literal for this setting. */
