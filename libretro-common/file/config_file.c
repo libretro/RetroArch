@@ -828,24 +828,28 @@ config_file_t *config_file_new_from_string(char *from_string,
 
 config_file_t *config_file_new_from_path_to_string(const char *path)
 {
-   if (path_is_valid(path))
+   uint8_t *ret_buf                    = NULL;
+   int64_t length                      = 0;
+
+   /* No path_is_valid() first: filestream_read_file() opens the file
+    * itself and returns 0 when it cannot, so a preceding stat only
+    * repeats the lookup the open already does - and no caller can see
+    * its result, since a missing file and an unreadable one both land
+    * on the same NULL return.  Dropping it also closes the window
+    * between the stat and the open in which the file could change. */
+   if (filestream_read_file(path, (void**)&ret_buf, &length))
    {
-      uint8_t *ret_buf                 = NULL;
-      int64_t length                   = 0;
-      if (filestream_read_file(path, (void**)&ret_buf, &length))
-      {
-         config_file_t *conf           = NULL;
-         /* Note: 'ret_buf' is not used outside this
-          * function - we do not care that it will be
-          * modified by config_file_new_from_string() */
-         if (length >= 0)
-            conf = config_file_new_from_string((char*)ret_buf, path);
+      config_file_t *conf              = NULL;
+      /* Note: 'ret_buf' is not used outside this
+       * function - we do not care that it will be
+       * modified by config_file_new_from_string() */
+      if (length >= 0)
+         conf = config_file_new_from_string((char*)ret_buf, path);
 
-         if ((void*)ret_buf)
-            free((void*)ret_buf);
+      if ((void*)ret_buf)
+         free((void*)ret_buf);
 
-         return conf;
-      }
+      return conf;
    }
 
    return NULL;
