@@ -195,7 +195,12 @@ int memsync(void *start, void *end)
 #elif defined(__arm__) && !defined(__QNX__)
    __clear_cache(start, end);
    return 0;
-#elif defined(HAVE_MMAN)
+#elif defined(HAVE_MMAN) && defined(MS_SYNC) && defined(MS_INVALIDATE)
+   /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
+    * into the HAVE_MMAN branch of memmap.h and ships a <sys/mman.h>
+    * that includes cleanly but declares neither msync nor the MS_
+    * flags. Without this the call compiles to an implicit declaration
+    * and then fails on the undefined constants. */
    size_t _len = (char*)end - (char*)start;
    return msync(start, _len, MS_SYNC | MS_INVALIDATE
 #ifdef __QNX__
@@ -203,6 +208,11 @@ int memsync(void *start, void *end)
 #endif
          );
 #else
+   /* Nothing to do, or no way to do it: the caller treats 0 as
+    * success, and on these targets there is no separate instruction
+    * cache to flush through this path. */
+   (void)start;
+   (void)end;
    return 0;
 #endif
 }

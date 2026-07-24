@@ -383,6 +383,14 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    {
       size_t pg = mempagesize();
 
+      /* page is used to round offsets whether or not a reservation
+       * happened, and several of those roundings divide by it, so it
+       * must be non-zero even on platforms that cannot reserve.
+       * mempagesize() reports 0 there; 4096 is the conventional
+       * stand-in and only affects arithmetic, since without map_len
+       * nothing is committed or decommitted. */
+      dt->page = pg ? pg : 4096;
+
       if (pg)
       {
          size_t rl = ((dt->len + pg - 1) / pg) * pg;
@@ -392,7 +400,6 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
          {
             dt->map     = (uint8_t*)m;
             dt->map_len = rl;
-            dt->page    = pg;
          }
       }
    }
