@@ -236,10 +236,8 @@ ifeq ($(HAVE_RMP3), 1)
    DEFINES += -DHAVE_RMP3
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
 ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
 endif
 endif
 endif
@@ -2035,11 +2033,9 @@ ifeq ($(HAVE_RMODTRACKER), 1)
    DEFINES += -DHAVE_RMODTRACKER
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
 ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
 ifneq ($(HAVE_RMP3),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
 endif
 endif
 endif
@@ -2054,12 +2050,10 @@ ifeq ($(HAVE_ROPUS), 1)
    DEFINES += -DHAVE_ROPUS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
 ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_BUILTINFLAC),1)
 ifneq ($(HAVE_RVORBIS),1)
 ifneq ($(HAVE_RMP3),1)
 ifneq ($(HAVE_RMODTRACKER),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
 endif
 endif
 endif
@@ -2072,39 +2066,7 @@ ifeq ($(HAVE_RFLAC),1)
               $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
 endif
 
-ifeq ($(HAVE_BUILTINFLAC),1)
-   HAVE_FLAC = 1
-   DEFINES += -DHAVE_FLAC -DHAVE_STDINT_H -DHAVE_LROUND -DFLAC__HAS_OGG=0 \
-              -DFLAC_PACKAGE_VERSION="\"retroarch\""
-   INCLUDE_DIRS += -I$(DEPS_DIR) -I$(DEPS_DIR)/libFLAC/include
-ifneq ($(HAVE_RFLAC),1)
-   DEFINES += -DHAVE_RFLAC
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
-          $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
-endif
-   FLACOBJ = $(DEPS_DIR)/libFLAC/bitmath.o \
-             $(DEPS_DIR)/libFLAC/bitreader.o \
-             $(DEPS_DIR)/libFLAC/cpu.o \
-             $(DEPS_DIR)/libFLAC/crc.o \
-             $(DEPS_DIR)/libFLAC/fixed.o \
-             $(DEPS_DIR)/libFLAC/float.o \
-             $(DEPS_DIR)/libFLAC/format.o \
-             $(DEPS_DIR)/libFLAC/lpc.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_avx2.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse2.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse41.o \
-             $(DEPS_DIR)/libFLAC/lpc_intrin_sse.o \
-             $(DEPS_DIR)/libFLAC/md5.o \
-             $(DEPS_DIR)/libFLAC/memory.o \
-             $(DEPS_DIR)/libFLAC/stream_decoder.o
-   ifneq ($(findstring Win32,$(OS)),)
-      DEFINES += -DHAVE_FSEEKO
-      # make sure not to use this on legacy Windows versions that don't have W-functions implemented
-      DEFINES += -DNEED_UTF8_SUPPORT
-      FLACOBJ += $(DEPS_DIR)/libFLAC/windows_unicode_filenames.o
-   endif
-   OBJ += $(FLACOBJ)
-else ifeq ($(HAVE_FLAC),1)
+ifeq ($(HAVE_FLAC),1)
    DEFINES += -DHAVE_FLAC
    LIBS    += $(FLAC_LIBS)
 endif
@@ -2113,9 +2075,7 @@ ifeq ($(HAVE_RVORBIS),1)
    DEFINES += -DHAVE_RVORBIS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
 ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_BUILTINFLAC),1)
    OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
 endif
 endif
 
@@ -2234,11 +2194,9 @@ ifeq ($(HAVE_CHD), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac.o \
              $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_flac_codec.o
       # libchdr decodes CHD FLAC through rflac; add the object only
-      # when neither the RFLAC nor the BUILTINFLAC block already has.
+      # when the RFLAC block has not already.
       ifneq ($(HAVE_RFLAC),1)
-      ifneq ($(HAVE_BUILTINFLAC),1)
          OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
-      endif
       endif
    endif
 
@@ -2862,11 +2820,9 @@ ifneq (,$(filter 1,$(HAVE_SMBCLIENT) $(HAVE_BUILTINSMBCLIENT)))
    # HAVE_STDINT_H (autoconf-style), and every TU that includes
    # them - the bundled library sources and frontend consumers
    # like network/cloud_sync/smb.c alike - needs the define.
-   # Previously it was only ever supplied as a side effect of the
-   # HAVE_BUILTINFLAC block, which silently coupled SMB support
-   # to the FLAC library; builds without builtin FLAC (e.g. webOS
-   # after switching to rflac) broke on hundreds of unknown
-   # uint*_t types. Own the dependency here.
+   # It used to arrive only as a side effect of an unrelated block,
+   # which broke builds that did not enable that block on hundreds
+   # of unknown uint*_t types. Own the dependency here.
    DEFINES += -DHAVE_STDINT_H
 
    ifeq ($(HAVE_SMBCLIENT),1)

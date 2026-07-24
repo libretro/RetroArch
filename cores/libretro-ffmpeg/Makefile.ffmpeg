@@ -1,25 +1,10 @@
 ifeq ($(INTERNAL_LIBAVCODEC),1)
 
-ifeq ($(INTERNAL_ZLIB),0)
-	LIBS += -lz
-	HAVE_ZLIB = 1
-else
-	HAVE_ZLIB = 1
-	DEFINES     += -DWANT_ZLIB
-	INCFLAGS    += -I$(DEPS_DIR)/libz
-	DEPS_SOURCE += $(wildcard $(DEPS_DIR)/libz/*.c)
-endif
+LIBS += -lz
+HAVE_ZLIB = 1
 
-ifeq ($(INTERNAL_LIBFLAC),0)
-	LIBS += -lFLAC
-	HAVE_LIBFLAC = 1
-else
-	LIBFLAC_DIR=$(DEPS_DIR)/libFLAC
-	INCFLAGS += -I$(LIBFLAC_DIR) -I$(LIBFLAC_DIR)/include
-	DEFINES  += -DHAVE_LROUND
-	HAVE_LIBFLAC = 1
-	DEPS_SOURCE += $(wildcard $(LIBFLAC_DIR)/*.c)
-endif
+LIBS += -lFLAC
+HAVE_LIBFLAC = 1
 
 ifeq ($(INTERNAL_LIBOPUS),0)
 	#LIBS += -lopus

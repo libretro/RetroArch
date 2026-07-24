@@ -1476,24 +1476,6 @@ MENU
 /*============================================================
 DEPENDENCIES
 ============================================================ */
-#ifdef HAVE_FLAC
-#include "../deps/libFLAC/bitmath.c"
-#include "../deps/libFLAC/bitreader.c"
-#include "../deps/libFLAC/cpu.c"
-#include "../deps/libFLAC/crc.c"
-#include "../deps/libFLAC/fixed.c"
-#include "../deps/libFLAC/float.c"
-#include "../deps/libFLAC/format.c"
-#include "../deps/libFLAC/lpc.c"
-#include "../deps/libFLAC/lpc_intrin_avx2.c"
-#include "../deps/libFLAC/lpc_intrin_sse2.c"
-#include "../deps/libFLAC/lpc_intrin_sse41.c"
-#include "../deps/libFLAC/lpc_intrin_sse.c"
-#include "../deps/libFLAC/md5.c"
-#include "../deps/libFLAC/memory.c"
-#include "../deps/libFLAC/stream_decoder.c"
-#endif
-
 #ifdef HAVE_CHD
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
