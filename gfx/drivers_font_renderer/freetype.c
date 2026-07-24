@@ -520,8 +520,9 @@ fc_done:
    {
       uint8_t* font_data     = NULL;
       int64_t font_data_size = 0;
-      if (!path_is_valid(font_path))
-         goto error;
+      /* No path_is_valid() first: filestream_read_file() opens the
+       * file itself and returns 0 when it cannot, so the stat only
+       * repeats the open's own lookup. */
       if (!filestream_read_file(font_path,
                (void**)&font_data, &font_data_size))
          goto error;

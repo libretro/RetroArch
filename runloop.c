@@ -1079,8 +1079,11 @@ static void runloop_deinit_core_options(
        *   if config values change)
        * > Otherwise, create a new, empty config_file_t
        *   object */
-      if (path_is_valid(path_core_options))
-         conf_tmp = config_file_new_from_path_to_string(path_core_options);
+      /* config_file_new_from_path_to_string() returns NULL for a
+       * missing or unreadable file, and the empty-config fallback
+       * below already handles NULL, so a path_is_valid() stat first
+       * would only repeat the open's own lookup. */
+      conf_tmp = config_file_new_from_path_to_string(path_core_options);
 
       if (!conf_tmp)
          conf_tmp = config_file_new_alloc();

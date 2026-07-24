@@ -1577,7 +1577,10 @@ static void *font_renderer_stb_init(const char *font_path, float font_size)
 #endif
    {
       int64_t len = 0;
-      if (!path_is_valid(font_path) || !filestream_read_file(font_path, (void**)&self->font_data, &len))
+      /* filestream_read_file() opens the file and returns 0 if it
+       * cannot, so a path_is_valid() stat first only repeats that
+       * lookup. */
+      if (!filestream_read_file(font_path, (void**)&self->font_data, &len))
          goto error;
       if (len <= 0)
          goto error;
