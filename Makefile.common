@@ -2259,12 +2259,11 @@ ifeq ($(HAVE_ZLIB_COMMON), 1)
          endif
       endif
 
-      # CHD always decodes LZMA through r7z_lzma now; there is no
-      # longer an SDK implementation to fall back to.
-      DEFINES += -DHAVE_RLZMA
-      OBJ     += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
+      # CHD decodes LZMA through r7z_lzma. r7z_lzma.o is also part of
+      # the 7z backend's object list, so only add it when that is off.
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_lzma.o
       ifneq ($(HAVE_7ZIP), 1)
-         OBJ  += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
       endif
 
       ifeq ($(HAVE_ZSTD), 1)
