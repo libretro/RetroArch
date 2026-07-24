@@ -1093,7 +1093,7 @@ endif
 
 ifeq ($(HAVE_ZLIB), 1)
    CFLAGS      += -DHAVE_ZLIB
-   CFLAGS      += -I./libretro-common/include/compat/zlib
+   CFLAGS      +=
 endif
 
 ifeq ($(HAVE_RPNG), 1)

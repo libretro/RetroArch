@@ -208,7 +208,6 @@
 				ARCHS = "$(ONLY_ACTIVE_ARCH_PRE_XCODE_3_1)";
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps/rcheevos/include",
@@ -225,7 +224,6 @@
 				ARCHS_STANDARD_32_BIT_PRE_XCODE_3_1 = "ppc i386";
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/../../libretro-common/include",
-					"$(SRCROOT)/../../libretro-common/include/compat/zlib",
 					"$(SRCROOT)/../../deps",
 					"$(SRCROOT)/../../deps/stb",
 					"$(SRCROOT)/../../deps/rcheevos/include",

@@ -27,7 +27,7 @@ ELF_TARGET := retroarch_psl1ght_salamander.elf
 ELF_TARGET_NONSTRIPPED := retroarch_psl1ght_salamander_nonstripped.elf
 EBOOT_PATH		= pkg/psl1ght/pkg/USRDIR/EBOOT.BIN
 
-INCLUDE += -I. -Ideps -Ilibretro-common/include/compat/zlib \
+INCLUDE += -I. -Ideps \
 	   -Ilibretro-common/include $(LIBPSL1GHT_INC) -Iinclude -Idefines
 LIBDIRS += -L.
 

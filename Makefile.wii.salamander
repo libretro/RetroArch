@@ -37,7 +37,7 @@ endif
 DOL_TARGET := retroarch-salamander_wii.dol
 ELF_TARGET := retroarch-salamander_wii.elf
 
-INCLUDE := -I. -Ilibretro-common/include -Ilibretro-common/include/compat/zlib
+INCLUDE := -I. -Ilibretro-common/include
 ifeq ($(EXTERNAL_LIBOGC), 1)
 INCLUDE += -I$(DEVKITPRO)/libogc/include
 LIBDIRS := -L$(DEVKITPRO)/libogc/lib/wii -L.

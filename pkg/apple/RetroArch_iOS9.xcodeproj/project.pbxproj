@@ -498,7 +498,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,
@@ -601,7 +600,6 @@
 				HEADER_SEARCH_PATHS = (
 					../../,
 					"../../libretro-common/include",
-					"../../libretro-common/include/compat/zlib",
 					../../deps/stb,
 					../../deps/rcheevos/include,
 					../../deps,

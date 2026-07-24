@@ -15,7 +15,7 @@ else
    OPTIMIZE_LV	:= -O3
 endif
 
-INCDIR = deps libretro-common/include libretro-common/include/compat/zlib
+INCDIR = deps libretro-common/include
 CFLAGS = $(OPTIMIZE_LV) -fsingle-precision-constant
 ASFLAGS = $(CFLAGS)
 

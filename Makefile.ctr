@@ -74,7 +74,6 @@ ifeq ($(GRIFFIN_BUILD), 1)
 		-Ideps/mbedtls \
 		-Ideps/rcheevos/include \
 		-Ilibretro-common/include \
-		-Ilibretro-common/include/compat/zlib
 else
 	HAVE_CC_RESAMPLER = 1
 	HAVE_MENU_COMMON = 1
