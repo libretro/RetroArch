@@ -91,6 +91,10 @@ typedef struct file_archive_transfer
     * is honoured once the pending decode has drained, not before, or
     * the member would be dropped half-written. */
    bool     pending_stop;
+   /* The scan already counted this member towards progress. A callback
+    * that parks a member and lets the scan continue is counted when it
+    * is found; one that parks and stops is counted when it drains. */
+   bool     pending_counted;
 } file_archive_transfer_t;
 
 typedef struct

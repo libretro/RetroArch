@@ -242,8 +242,9 @@ int file_archive_parse_file_iterate(
 
                if (pret == -1)
                {
-                  state->pending_stop = false;
-                  state->type         = ARCHIVE_TRANSFER_DEINIT_ERROR;
+                  state->pending_stop    = false;
+                  state->pending_counted = false;
+                  state->type            = ARCHIVE_TRANSFER_DEINIT_ERROR;
                   return 0;
                }
 
@@ -251,7 +252,9 @@ int file_archive_parse_file_iterate(
                 * scan asked for while this was parked, or come back
                 * for the next entry on the following tick so that one
                 * call stays one unit of work. */
-               state->step_current++;
+               if (!state->pending_counted)
+                  state->step_current++;
+               state->pending_counted = false;
                if (state->pending_stop)
                {
                   state->pending_stop = false;
@@ -264,7 +267,13 @@ int file_archive_parse_file_iterate(
                   state->context, valid_exts, userdata, file_cb);
 
             if (ret == 1)
+            {
                state->step_current++; /* found another file */
+               /* If that callback parked a decode, the drain branch
+                * must not count it a second time. */
+               if (state->pending_active)
+                  state->pending_counted = true;
+            }
             if (ret != 1)
             {
                /* A callback that stopped the scan may have parked a

@@ -131,9 +131,15 @@ static int file_decompressed_subdir(const char *name,
 
    /* Make directory */
    if (path_mkdir(path_dir))
-      if (file_archive_perform_mode(path, valid_exts,
-               cdata, cmode, csize, size, crc32, userdata))
+   {
+      /* Start the decode rather than driving it to completion here.
+       * Whatever is left is parked in the transfer and finished by
+       * file_archive_parse_file_iterate() on later ticks, one slice
+       * per tick, so a large member no longer holds the frame. */
+      if (file_archive_perform_mode_start(path, valid_exts,
+               cdata, cmode, csize, size, crc32, userdata) != -1)
          return 1;
+   }
 
    userdata->dec->callback_error = (char*)malloc(CALLBACK_ERROR_SIZE);
    /* NULL-check: the strlcpy below NULL-derefs on OOM.  The
@@ -182,8 +188,9 @@ static int file_decompressed(const char *name, const char *valid_exts,
    {
       fill_pathname_join_special(path, dec->target_dir, name, sizeof(path));
 
-      if (file_archive_perform_mode(path, valid_exts,
-               cdata, cmode, csize, size, crc32, userdata))
+      /* Started, not completed; see the twin in file_archived. */
+      if (file_archive_perform_mode_start(path, valid_exts,
+               cdata, cmode, csize, size, crc32, userdata) != -1)
          return 1;
    }
 
