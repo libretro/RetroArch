@@ -307,13 +307,21 @@ static dummy_res_t try_dummy(const rlzma_stream_t *s,
       if (state >= NUM_LIT_STATES)
       {
          /* Matched literal, mirroring decode_real exactly. */
-         uint32_t dist = s->rep0;
-         size_t   mp   = (s->dic_pos >= dist)
+         uint32_t        dist = s->rep0;
+         size_t          mp;
+         uint32_t        match_byte;
+         uint32_t        bit;
+         const uint16_t *pb2;
+
+         /* Same window check as decode_real. try_dummy only probes
+          * whether a symbol is complete, but it still dereferences the
+          * dictionary, so it must not wrap out of bounds either. */
+         if ((size_t)dist > s->dic_size)
+            return DUMMY_INPUT_EOF;
+         mp = (s->dic_pos >= dist)
             ? s->dic_pos - dist
             : s->dic_pos + s->dic_size - dist;
-         uint32_t match_byte = (uint32_t)s->dic[mp];
-         uint32_t bit;
-         const uint16_t *pb2;
+         match_byte = (uint32_t)s->dic[mp];
 
          do
          {
@@ -533,13 +541,21 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
 
          if (state >= NUM_LIT_STATES)
          {
-            uint32_t dist = rep0;
-            size_t   mp   = (dic_pos >= (size_t)dist)
+            uint32_t  dist = rep0;
+            size_t    mp;
+            uint32_t  match_byte;
+            uint32_t  bit;
+            uint16_t *pb2;
+
+            if ((size_t)dist > dic_size)
+            {
+               ret = RLZMA_ERROR_DATA;
+               goto done;
+            }
+            mp = (dic_pos >= (size_t)dist)
                ? dic_pos - dist
                : dic_pos + dic_size - dist;
-            uint32_t match_byte = (uint32_t)dic[mp];
-            uint32_t bit;
-            uint16_t *pb2;
+            match_byte = (uint32_t)dic[mp];
 
             /* Matched literal: the byte one match-distance back steers
              * the context until the first bit disagrees. offs collapses
@@ -599,7 +615,16 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
                RC_UPDATE_0(prob)
                /* Short rep: a single byte at the current distance.
                 * rep0 is the distance itself, so the source is
-                * dic_pos - rep0 (not rep0 - 1). */
+                * dic_pos - rep0 (not rep0 - 1).
+                *
+                * rep0 was validated when it was decoded, but a reused
+                * rep distance is only as good as the window it is
+                * replayed into, so re-check before wrapping. */
+               if ((size_t)rep0 > dic_size)
+               {
+                  ret = RLZMA_ERROR_DATA;
+                  goto done;
+               }
                mp = (dic_pos >= (size_t)rep0)
                   ? dic_pos - rep0
                   : dic_pos + dic_size - rep0;
@@ -750,8 +775,18 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
          /* A distance must not reach back further than the data
           * produced so far, nor beyond the dictionary the stream
           * declared. Checking against dic_size instead would reject
-          * valid distances near the start of a window. */
-         if ((uint64_t)dist >= total_pos || dist >= s->dict_size)
+          * valid distances near the start of a window.
+          *
+          * It must also fit inside the window the caller actually
+          * supplied. That is a separate limit: a stream may declare a
+          * 256 MiB dictionary and still be decoded through a window far
+          * smaller than that, and a distance larger than the window has
+          * no byte to refer to. Without this the wrap arithmetic below
+          * (dic_pos + dic_size - rep0) underflows and reads in front of
+          * the buffer. */
+         if (   (uint64_t)dist >= total_pos
+             || dist >= s->dict_size
+             || (size_t)dist >= dic_size)
          {
             ret = RLZMA_ERROR_DATA;
             goto done;
@@ -770,6 +805,11 @@ static int decode_real(rlzma_stream_t *s, size_t dic_limit,
          if ((size_t)curr > rem)
             curr = (uint32_t)rem;
 
+         if ((size_t)rep0 > dic_size)
+         {
+            ret = RLZMA_ERROR_DATA;
+            goto done;
+         }
          mp = (dic_pos >= (size_t)rep0)
             ? dic_pos - rep0
             : dic_pos + dic_size - rep0;
@@ -901,6 +941,15 @@ static void stream_copy_remain(rlzma_stream_t *s, size_t dic_limit)
 
    if ((size_t)curr > rem)
       curr = (uint32_t)rem;
+
+   if ((size_t)s->rep0 > s->dic_size)
+   {
+      /* Cannot happen for a stream that got this far, since the
+       * distance was checked when the match was decoded; belt and
+       * braces so the wrap below can never underflow. */
+      s->remain_len = 0;
+      return;
+   }
 
    mp = (s->dic_pos >= (size_t)s->rep0)
       ? s->dic_pos - s->rep0
