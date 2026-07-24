@@ -264,6 +264,7 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
       (struct sevenzip_context_t*)context;
    uint8_t *member     = NULL;
    size_t   member_len = 0;
+   int      res;
 
    /* The callers loop while this returns 0, so 0 means "not finished,
     * call again" and never "failed". Returning it on error spins them
@@ -272,9 +273,17 @@ static int sevenzip_stream_decompress_data_to_file_iterate(
    if (!sevenzip_context || !sevenzip_context->archive)
       return -1;
 
-   if (r7z_archive_extract(sevenzip_context->archive,
-            sevenzip_context->decompress_index,
-            &member, &member_len) != R7Z_OK)
+   /* Sliced rather than whole: a solid folder is tens of milliseconds
+    * decoded in one go, and this is the return value the archive layer
+    * turns into a yield. Callers that cannot yield still get the whole
+    * member, they just get it through several calls. */
+   res = r7z_archive_extract_slice(sevenzip_context->archive,
+         sevenzip_context->decompress_index,
+         &member, &member_len);
+
+   if (res == R7Z_PENDING)
+      return 0;
+   if (res != R7Z_OK)
       return -1;
 
    /* The caller reads through handle->data until it calls back in, so
