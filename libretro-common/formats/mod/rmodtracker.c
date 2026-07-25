@@ -19,6 +19,7 @@
  * formats, stereo or compressed sample data, arbitrary seeking
  * (rewind restarts from the top), and MIDI-style external control.
  */
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1979,7 +1980,19 @@ static int replay_calculate_duration( struct replay *replay ) {
 	int count = 0, duration = 0;
 	replay_set_sequence_pos( replay, 0 );
 	while( count < 1 ) {
-		duration += calculate_tick_len( replay->tempo, replay->sample_rate );
+		int tick = calculate_tick_len( replay->tempo, replay->sample_rate );
+		/* An S3M order count is a u16, and order bytes that fall past the
+		 * end of the file read back as 0 - a valid pattern index, so the
+		 * trim in the loader does not shorten the sequence. A long enough
+		 * one overflows this accumulator, which is undefined, and leaves
+		 * rmodtracker_seek comparing frames against a negative duration.
+		 * Saturate and stop: at INT_MAX frames the answer is already
+		 * meaningless, and the walk is what costs. */
+		if( duration > INT_MAX - tick ) {
+			duration = INT_MAX;
+			break;
+		}
+		duration += tick;
 		count = replay_tick( replay );
 	}
 	replay_set_sequence_pos( replay, 0 );
