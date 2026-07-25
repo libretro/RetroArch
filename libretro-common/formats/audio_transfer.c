@@ -958,6 +958,10 @@ bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       default:
          break;
    }
+   /* every arm that reads these is compiled out in this build, the
+    * way set_demuxed_ptr's already are */
+   (void)data;
+   (void)frames;
    return false;
 }
 
