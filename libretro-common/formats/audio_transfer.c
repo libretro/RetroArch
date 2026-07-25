@@ -103,14 +103,18 @@
  *     the STREAMINFO length, seeking and buffer_tell all work on it as
  *     they do on a .flac file - none of what made the Vorbis arm's old
  *     Ogg synthesis wrong applies, that having had to invent framing
- *     and granules this does not.
+ *     and granules this does not.  Nor is the stream reassembled: it
+ *     is served to the decoder through its own read callback, a block
+ *     at a time out of the demuxer, so nothing beyond the frame being
+ *     read is copied.
  *   Does not: Ogg-encapsulated FLAC - rflac takes native fLaC only.  No
  *     demuxed input, so FLAC handed over as loose packets is not
- *     reachable.  The Matroska path above pays for its simplicity with
- *     a second copy of the audio, held for the decoder's life: this is
- *     the one arm here that owns one, every other container path
- *     decoding where the demuxer points.  A packet entry point in
- *     rflac would remove it, and is the larger fix.
+ *     reachable.  Seeking on the Matroska path costs more than on a
+ *     .flac: rflac seeks by byte offset and a demuxer only walks
+ *     forwards, so a backwards seek restarts the block walk and reads
+ *     forward to the target.  The file is resident, so that is a pass
+ *     over block headers rather than any I/O, and only a caller's own
+ *     seek reaches it.
  *     A stream whose STREAMINFO omits the total frame count reports 0.
  *
  * Vorbis (rvorbis)
@@ -355,9 +359,22 @@ struct audio_transfer_flac
    size_t      size;
    rflac      *handle;  /* opened decoder, NULL until start() succeeds      */
 #ifdef HAVE_RWEBM
-   /* A_FLAC in Matroska, rebuilt into the native stream rflac takes.
-    * The one arm here that owns a copy of the audio: see start(). */
-   uint8_t    *rebuilt;
+   /* A_FLAC in Matroska.  rflac wants a native fLaC stream; the
+    * container holds one taken apart - the header in CodecPrivate,
+    * the frames in the blocks - so it is served back to the decoder a
+    * read at a time rather than reassembled into a buffer.  Nothing
+    * is copied but the bytes of whichever frame is being read.
+    *
+    * pos is the byte offset within that notional stream, which is
+    * what rflac seeks against; cur is the block being served. */
+   rwebm_t       *demux;
+   int            track_idx;
+   const uint8_t *hdr;
+   size_t         hdr_size;
+   size_t         pos;
+   const uint8_t *cur;
+   size_t         cur_len;
+   size_t         cur_off;
 #endif
 };
 #endif
@@ -1398,6 +1415,94 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
 }
 #endif
 
+#if defined(HAVE_RFLAC) && defined(HAVE_RWEBM)
+/* Serve the next block of the FLAC track, whatever is left of it. */
+static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
+{
+   rwebm_packet pkt;
+   for (;;)
+   {
+      if (rwebm_read_packet(fl->demux, &pkt) != 1)
+         return 0;
+      if (pkt.track == fl->track_idx)
+         break;
+   }
+   fl->cur     = pkt.data;
+   fl->cur_len = pkt.size;
+   fl->cur_off = 0;
+   return 1;
+}
+
+/* The stream rflac reads: the CodecPrivate header, then every block
+ * of the track end to end.  That is exactly a native fLaC stream, so
+ * the decoder needs to know nothing about the container. */
+static size_t audio_transfer_flac_read(void *ud, void *out, size_t n)
+{
+   struct audio_transfer_flac *fl = (struct audio_transfer_flac*)ud;
+   uint8_t *d    = (uint8_t*)out;
+   size_t   done = 0;
+   while (done < n)
+   {
+      size_t take;
+      if (fl->pos < fl->hdr_size)
+      {
+         take = fl->hdr_size - fl->pos;
+         if (take > n - done)
+            take = n - done;
+         memcpy(d + done, fl->hdr + fl->pos, take);
+      }
+      else
+      {
+         if (fl->cur_off >= fl->cur_len && !audio_transfer_flac_next(fl))
+            break;
+         take = fl->cur_len - fl->cur_off;
+         if (take > n - done)
+            take = n - done;
+         memcpy(d + done, fl->cur + fl->cur_off, take);
+         fl->cur_off += take;
+      }
+      fl->pos += take;
+      done    += take;
+   }
+   return done;
+}
+
+/* rflac seeks by byte offset.  Backwards means starting the block
+ * walk again, because a demuxer only goes forwards; forwards is a
+ * read that throws the bytes away.  Both are only reached by a seek
+ * the caller asked for, and a Matroska is resident here, so the walk
+ * costs a pass over block headers rather than any I/O. */
+static uint32_t audio_transfer_flac_seek(void *ud, int offset,
+      rflac_seek_origin origin)
+{
+   struct audio_transfer_flac *fl = (struct audio_transfer_flac*)ud;
+   size_t  target = (origin == rflac_seek_origin_current)
+                  ? fl->pos + (size_t)offset : (size_t)offset;
+   uint8_t scratch[4096];
+   if (offset < 0)
+      return 0;
+   if (target < fl->pos)
+   {
+      rwebm_rewind(fl->demux);
+      fl->pos     = 0;
+      fl->cur     = NULL;
+      fl->cur_len = 0;
+      fl->cur_off = 0;
+   }
+   while (fl->pos < target)
+   {
+      size_t want = target - fl->pos;
+      size_t got;
+      if (want > sizeof(scratch))
+         want = sizeof(scratch);
+      got = audio_transfer_flac_read(fl, scratch, want);
+      if (!got)
+         return 0;                    /* past the end of the stream */
+   }
+   return 1;
+}
+#endif
+
 bool audio_transfer_start(void *data, enum audio_type_enum type)
 {
    switch (type)
@@ -1428,52 +1533,37 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                && ((const uint8_t*)fl->data)[2] == 0xDF
                && ((const uint8_t*)fl->data)[3] == 0xA3)
          {
-            rwebm_t           *wm = NULL;
             const rwebm_track *at = NULL;
-            rwebm_packet       pkt;
-            size_t             off = 0;
-            int                i, track = -1;
-            if (!(wm = audio_transfer_webm_open((const uint8_t*)fl->data,
-                        fl->size, 0)))
+            int                i;
+            if (!(fl->demux = audio_transfer_webm_open(
+                        (const uint8_t*)fl->data, fl->size, 0)))
                return false;
-            for (i = 0; i < rwebm_num_tracks(wm); i++)
+            fl->track_idx = -1;
+            for (i = 0; i < rwebm_num_tracks(fl->demux); i++)
             {
-               const rwebm_track *t = rwebm_get_track(wm, i);
+               const rwebm_track *t = rwebm_get_track(fl->demux, i);
                if (t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_FLAC
                      && t->codec_private_size >= 4)
                {
-                  at    = t;
-                  track = i;
+                  at            = t;
+                  fl->track_idx = i;
                   break;
                }
             }
             if (!at)
-            {
-               rwebm_close(wm);
                return false;
-            }
-            /* The container bounds the rebuild: its blocks cannot
-             * total more than it holds. */
-            if (!(fl->rebuilt = (uint8_t*)malloc(
-                        fl->size + at->codec_private_size)))
-            {
-               rwebm_close(wm);
-               return false;
-            }
-            memcpy(fl->rebuilt, at->codec_private, at->codec_private_size);
-            off = at->codec_private_size;
-            while (rwebm_read_packet(wm, &pkt) == 1)
-            {
-               if (pkt.track != track)
-                  continue;
-               if (off + pkt.size > fl->size + at->codec_private_size)
-                  break;
-               memcpy(fl->rebuilt + off, pkt.data, pkt.size);
-               off += pkt.size;
-            }
-            rwebm_close(wm);
-            fl->handle = rflac_open_memory(fl->rebuilt, off);
+            fl->hdr      = at->codec_private;
+            fl->hdr_size = at->codec_private_size;
+            fl->pos      = 0;
+            fl->cur      = NULL;
+            fl->cur_len  = 0;
+            fl->cur_off  = 0;
+            /* No metadata handler: the STREAMINFO the decoder needs
+             * is read through the same callbacks as everything else. */
+            fl->handle   = rflac_open_with_metadata(
+                  audio_transfer_flac_read, audio_transfer_flac_seek,
+                  NULL, fl);
             return fl->handle != NULL;
          }
 #endif
@@ -3489,7 +3579,8 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          if (fl->handle)
             rflac_close(fl->handle);
 #ifdef HAVE_RWEBM
-         free(fl->rebuilt);
+         if (fl->demux)
+            rwebm_close(fl->demux);
 #endif
          break;
       }
