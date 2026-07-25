@@ -433,6 +433,7 @@ VIDEO IMAGE
 #include "../cores/libretro-imageviewer/image_core.c"
 #endif
 
+#include "../libretro-common/formats/audio_transfer.c"
 #include "../libretro-common/formats/image_transfer.c"
 #include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
@@ -1037,9 +1038,6 @@ DRIVERS
 #endif
 #ifdef HAVE_RAAC
 #include "../libretro-common/formats/aac/raac.c"
-#endif
-#if defined(HAVE_RFLAC) || defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_ROPUS)
-#include "../libretro-common/formats/audio_transfer.c"
 #endif
 #include "../libretro-common/audio/audio_mixer.c"
 #endif

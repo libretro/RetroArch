@@ -235,11 +235,6 @@ endif
 ifeq ($(HAVE_RMP3), 1)
    DEFINES += -DHAVE_RMP3
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mp3/rmp3.o
-ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_RVORBIS),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
-endif
 endif
 
 OBJ += frontend/frontend_driver.o \
@@ -2030,13 +2025,6 @@ endif
 ifeq ($(HAVE_RMODTRACKER), 1)
    DEFINES += -DHAVE_RMODTRACKER
    OBJ += $(LIBRETRO_COMM_DIR)/formats/mod/rmodtracker.o
-ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_RVORBIS),1)
-ifneq ($(HAVE_RMP3),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
-endif
-endif
 endif
 
 ifeq ($(HAVE_RAAC), 1)
@@ -2047,21 +2035,11 @@ endif
 ifeq ($(HAVE_ROPUS), 1)
    DEFINES += -DHAVE_ROPUS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/opus/ropus.o
-ifneq ($(HAVE_RFLAC),1)
-ifneq ($(HAVE_RVORBIS),1)
-ifneq ($(HAVE_RMP3),1)
-ifneq ($(HAVE_RMODTRACKER),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
-endif
-endif
-endif
 endif
 
 ifeq ($(HAVE_RFLAC),1)
    DEFINES += -DHAVE_RFLAC
-   OBJ     += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o \
-              $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
+   OBJ     += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
 endif
 
 ifeq ($(HAVE_FLAC),1)
@@ -2072,9 +2050,6 @@ endif
 ifeq ($(HAVE_RVORBIS),1)
    DEFINES += -DHAVE_RVORBIS
    OBJ += $(LIBRETRO_COMM_DIR)/formats/vorbis/rvorbis.o
-ifneq ($(HAVE_RFLAC),1)
-   OBJ += $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o
-endif
 endif
 
 # System zlib is optional.  When it is absent every consumer
@@ -2296,6 +2271,7 @@ endif
 OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
+       $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
        $(LIBRETRO_COMM_DIR)/memmap/memmap.o \
        $(LIBRETRO_COMM_DIR)/formats/m3u/m3u_file.o
