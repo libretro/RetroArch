@@ -355,6 +355,7 @@ static enum rwebm_codec codec_from_id(const char *id)
     * muxes; the CodecPrivate AudioSpecificConfig is authoritative
     * either way. */
    if (!strncmp(id, "A_AAC", 5)) return RWEBM_CODEC_AAC;
+   if (!strcmp(id, "A_FLAC"))    return RWEBM_CODEC_FLAC;
    return RWEBM_CODEC_UNKNOWN;
 }
 

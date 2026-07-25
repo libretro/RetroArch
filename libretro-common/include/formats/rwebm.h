@@ -40,7 +40,10 @@ enum rwebm_codec
    RWEBM_CODEC_VORBIS,
    RWEBM_CODEC_OPUS,
    RWEBM_CODEC_H264,  /* V_MPEG4/ISO/AVC: CodecPrivate is the avcC box  */
-   RWEBM_CODEC_AAC    /* A_AAC*: CodecPrivate is the ASC                */
+   RWEBM_CODEC_AAC,   /* A_AAC*: CodecPrivate is the ASC                */
+   RWEBM_CODEC_FLAC   /* A_FLAC: CodecPrivate is a whole fLaC header -
+                       * magic and metadata blocks - and each block is
+                       * one raw FLAC frame                            */
 };
 
 typedef struct

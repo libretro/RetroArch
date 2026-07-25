@@ -53,7 +53,7 @@
 #endif
 #endif
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
- || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
 #include <formats/rwebm.h>
 #endif
 
@@ -95,17 +95,22 @@
  *     length from STREAMINFO; seek to any frame; buffer_tell, hence
  *     windowing (the raw cursor leads the decode position by the
  *     bitstream cache, which is the safe side for a feeder).
+ *     A_FLAC in Matroska (.mka/.mkv, HAVE_RWEBM) plays too, and needs
+ *     no synthesis to do it: the CodecPrivate is a whole fLaC header,
+ *     magic and metadata blocks, and every block is one raw frame, so
+ *     the native stream rflac takes is those laid end to end.  What
+ *     that produces is a real FLAC stream rather than a stand-in, so
+ *     the STREAMINFO length, seeking and buffer_tell all work on it as
+ *     they do on a .flac file - none of what made the Vorbis arm's old
+ *     Ogg synthesis wrong applies, that having had to invent framing
+ *     and granules this does not.
  *   Does not: Ogg-encapsulated FLAC - rflac takes native fLaC only.  No
- *     demuxed input, so FLAC in a container is not reachable from here.
- *     A_FLAC in Matroska is refused for the same reason and one more:
- *     rwebm does not map the codec ID, so such a file arrives as an
- *     unknown track rather than a FLAC one.  Both halves are small on
- *     their own - the CodecPrivate is a whole fLaC header, magic and
- *     STREAMINFO, and the blocks are frames - but joining them means
- *     either a packet entry point in rflac or rebuilding a stream from
- *     the header and the concatenated frames, and the second is the
- *     whole-file-resident synthesis the Vorbis arm was taken off.
- *     Left refused rather than half-wired.
+ *     demuxed input, so FLAC handed over as loose packets is not
+ *     reachable.  The Matroska path above pays for its simplicity with
+ *     a second copy of the audio, held for the decoder's life: this is
+ *     the one arm here that owns one, every other container path
+ *     decoding where the demuxer points.  A packet entry point in
+ *     rflac would remove it, and is the larger fix.
  *     A stream whose STREAMINFO omits the total frame count reports 0.
  *
  * Vorbis (rvorbis)
@@ -349,6 +354,11 @@ struct audio_transfer_flac
    const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
    rflac      *handle;  /* opened decoder, NULL until start() succeeds      */
+#ifdef HAVE_RWEBM
+   /* A_FLAC in Matroska, rebuilt into the native stream rflac takes.
+    * The one arm here that owns a copy of the audio: see start(). */
+   uint8_t    *rebuilt;
+#endif
 };
 #endif
 
@@ -1047,7 +1057,7 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
       size_t avail)
 {
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
- || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
    switch (type)
    {
 #ifdef HAVE_RVORBIS
@@ -1126,7 +1136,7 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
 }
 
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
- || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
 /* Open a WebM container with the header parse bounded by the bytes the
  * caller says are actually there.
  *
@@ -1156,7 +1166,7 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len)
 {
 #if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
- || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC) || defined(HAVE_RFLAC))
    rwebm_t *wm;
    int i;
    enum audio_type_enum found = AUDIO_TYPE_NONE;
@@ -1178,6 +1188,10 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
 #ifdef HAVE_RVORBIS
       if (t->codec == RWEBM_CODEC_VORBIS)
          found = AUDIO_TYPE_VORBIS;
+#endif
+#ifdef HAVE_RFLAC
+      if (t->codec == RWEBM_CODEC_FLAC)
+         found = AUDIO_TYPE_FLAC;
 #endif
 #ifdef HAVE_RAAC
       if (t->codec == RWEBM_CODEC_AAC)
@@ -1394,6 +1408,75 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->data)
             return false;
+#ifdef HAVE_RWEBM
+         /* Matroska carrying A_FLAC.  Unlike the Vorbis and Opus
+          * containers, nothing has to be synthesised here: the
+          * CodecPrivate is a whole fLaC header, magic and metadata
+          * blocks, and every block is one raw frame, so the native
+          * stream rflac wants is those laid end to end.  What comes
+          * out is a real FLAC stream rather than a stand-in - the
+          * STREAMINFO states the exact length, and seeking and
+          * buffer_tell work on it as they do on a .flac file.
+          *
+          * The cost is a second copy of the audio, held for the life
+          * of the decoder; this is the only arm that keeps one.  The
+          * alternative is a packet entry point in rflac, which is the
+          * right fix and a larger one. */
+         if (fl->data && fl->size >= 4
+               && ((const uint8_t*)fl->data)[0] == 0x1A
+               && ((const uint8_t*)fl->data)[1] == 0x45
+               && ((const uint8_t*)fl->data)[2] == 0xDF
+               && ((const uint8_t*)fl->data)[3] == 0xA3)
+         {
+            rwebm_t           *wm = NULL;
+            const rwebm_track *at = NULL;
+            rwebm_packet       pkt;
+            size_t             off = 0;
+            int                i, track = -1;
+            if (!(wm = audio_transfer_webm_open((const uint8_t*)fl->data,
+                        fl->size, 0)))
+               return false;
+            for (i = 0; i < rwebm_num_tracks(wm); i++)
+            {
+               const rwebm_track *t = rwebm_get_track(wm, i);
+               if (t && t->type == RWEBM_TRACK_AUDIO
+                     && t->codec == RWEBM_CODEC_FLAC
+                     && t->codec_private_size >= 4)
+               {
+                  at    = t;
+                  track = i;
+                  break;
+               }
+            }
+            if (!at)
+            {
+               rwebm_close(wm);
+               return false;
+            }
+            /* The container bounds the rebuild: its blocks cannot
+             * total more than it holds. */
+            if (!(fl->rebuilt = (uint8_t*)malloc(
+                        fl->size + at->codec_private_size)))
+            {
+               rwebm_close(wm);
+               return false;
+            }
+            memcpy(fl->rebuilt, at->codec_private, at->codec_private_size);
+            off = at->codec_private_size;
+            while (rwebm_read_packet(wm, &pkt) == 1)
+            {
+               if (pkt.track != track)
+                  continue;
+               if (off + pkt.size > fl->size + at->codec_private_size)
+                  break;
+               memcpy(fl->rebuilt + off, pkt.data, pkt.size);
+               off += pkt.size;
+            }
+            rwebm_close(wm);
+            fl->handle = rflac_open_memory(fl->rebuilt, off);
+            return fl->handle != NULL;
+         }
+#endif
          fl->handle = rflac_open_memory(fl->data, fl->size);
          return fl->handle != NULL;
       }
@@ -3405,6 +3488,9 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (fl->handle)
             rflac_close(fl->handle);
+#ifdef HAVE_RWEBM
+         free(fl->rebuilt);
+#endif
          break;
       }
 #endif
