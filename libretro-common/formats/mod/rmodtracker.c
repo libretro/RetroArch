@@ -2203,15 +2203,25 @@ struct rmodtracker {
 	int    carry_domain;  /* 0 = none, 1 = int, 2 = float               */
 	int    ended;
 	int    duration;      /* one pass, measured once at open            */
+	int    rate;          /* mix rate chosen at open                    */
 };
 
 rmodtracker *rmodtracker_open_memory( const void *data, size_t size )
+{
+	return rmodtracker_open_memory_rate( data, size, RMODTRACKER_RATE );
+}
+
+rmodtracker *rmodtracker_open_memory_rate( const void *data, size_t size,
+		int sample_rate )
 {
 	struct rmodtracker *rmt;
 	struct data d;
 	char msg[ 64 ];
 	int buf_len;
 	if( !data || size < 4 )
+		return NULL;
+	if( sample_rate < RMODTRACKER_RATE_MIN
+		|| sample_rate > RMODTRACKER_RATE_MAX )
 		return NULL;
 	rmt = ( struct rmodtracker * ) calloc( 1, sizeof( struct rmodtracker ) );
 	if( !rmt )
@@ -2224,13 +2234,14 @@ rmodtracker *rmodtracker_open_memory( const void *data, size_t size )
 		free( rmt );
 		return NULL;
 	}
-	rmt->replay = new_replay( rmt->module, RMODTRACKER_RATE, 1 );
+	rmt->rate = sample_rate;
+	rmt->replay = new_replay( rmt->module, sample_rate, 1 );
 	if( !rmt->replay ) {
 		dispose_module( rmt->module );
 		free( rmt );
 		return NULL;
 	}
-	buf_len = calculate_mix_buf_len( RMODTRACKER_RATE );
+	buf_len = calculate_mix_buf_len( sample_rate );
 	rmt->mix_i  = ( int * )   calloc( buf_len, sizeof( int ) );
 	rmt->mix_f  = ( float * ) calloc( buf_len, sizeof( float ) );
 	rmt->ramp_f = ( float * ) calloc( 128, sizeof( float ) );
@@ -2261,8 +2272,7 @@ void rmodtracker_close( rmodtracker *rmt )
 
 int rmodtracker_sample_rate( rmodtracker *rmt )
 {
-	( void ) rmt;
-	return RMODTRACKER_RATE;
+	return rmt ? rmt->rate : 0;
 }
 
 /* Duration of one pass through the sequence, in frames at the mix rate. */

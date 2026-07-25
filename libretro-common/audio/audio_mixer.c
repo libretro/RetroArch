@@ -1086,6 +1086,10 @@ static bool audio_mixer_play_stream(
       audio_transfer_set_end_granule(xfer, type, sound->end_granule);
 #endif
 
+   /* Say what rate we mix at: an arm that can synthesise there will,
+    * and the resampler below then has nothing to do. */
+   audio_transfer_set_output_rate(xfer, type, (unsigned)s_rate);
+
    if (!audio_transfer_start(xfer, type))
       goto error;
 
@@ -1184,6 +1188,10 @@ static bool audio_mixer_play_stream_s16(
    if (sound->end_granule > 0)
       audio_transfer_set_end_granule(xfer, type, sound->end_granule);
 #endif
+   /* Say what rate we mix at: an arm that can synthesise there will,
+    * and the resampler below then has nothing to do. */
+   audio_transfer_set_output_rate(xfer, type, (unsigned)s_rate);
+
    if (!audio_transfer_start(xfer, type))
    {
       audio_transfer_free(xfer, type);

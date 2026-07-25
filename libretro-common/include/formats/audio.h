@@ -133,6 +133,17 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
 bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames);
 
+/* Ask for PCM at a particular sample rate, before audio_transfer_start.
+ * This is a hint, not a conversion: no arm resamples. It reaches the
+ * codecs that synthesise rather than decode - a tracker replayer will
+ * mix at whatever rate it is given - and is ignored by the ones whose
+ * rate the stream itself fixes, which is most of them. Check what was
+ * actually done with audio_transfer_info; a caller passing its own
+ * output rate and getting it back has saved a resampling stage, and one
+ * getting something else resamples as it would have anyway. */
+void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
+      unsigned rate);
+
 /* Windowed Opus only: inject the stream's last-page granule so the
  * decoder's buffer setup does not scan the whole file for it (the tail
  * is not resident under windowing).  No-op for non-Opus types. */

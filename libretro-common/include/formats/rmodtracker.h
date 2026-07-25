@@ -23,8 +23,12 @@
 
 RETRO_BEGIN_DECLS
 
-/* Fixed engine mix rate. The audio mixer resamples to the output rate. */
+/* Default mix rate, used by rmodtracker_open_memory. */
 #define RMODTRACKER_RATE 48000
+
+/* The range rmodtracker_open_memory_rate accepts. */
+#define RMODTRACKER_RATE_MIN 8000
+#define RMODTRACKER_RATE_MAX 192000
 
 typedef struct rmodtracker rmodtracker;
 
@@ -34,9 +38,20 @@ typedef struct rmodtracker rmodtracker;
  * input. */
 rmodtracker *rmodtracker_open_memory(const void *data, size_t size);
 
+/* The same, mixed at sample_rate rather than RMODTRACKER_RATE. A
+ * replayer synthesises at whatever rate it is asked for, so a caller
+ * that knows its output rate should say so and be handed audio it does
+ * not have to resample - which is both a resampling stage saved and the
+ * one that would otherwise sit between the synthesis and the output.
+ * Rates outside RMODTRACKER_RATE_MIN..MAX are refused. Everything the
+ * rest of this header counts in frames - the duration, a seek target -
+ * is at the rate chosen here. */
+rmodtracker *rmodtracker_open_memory_rate(const void *data, size_t size,
+      int sample_rate);
+
 void rmodtracker_close(rmodtracker *rmt);
 
-/* Always RMODTRACKER_RATE; provided for symmetry with the decoders. */
+/* The rate this module is being mixed at. */
 int rmodtracker_sample_rate(rmodtracker *rmt);
 
 /* Length of one pass through the sequence, in frames at the mix rate. */

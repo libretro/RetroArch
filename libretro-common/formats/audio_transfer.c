@@ -126,7 +126,10 @@
  *
  * MOD (rmodtracker)
  *   Does: buffer input, MOD/S3M/XM autodetected; s16 and f32; the
- *     duration of one pass through the sequence; rewind.
+ *     duration of one pass through the sequence; rewind; mixing at a
+ *     rate the caller asks for through set_output_rate, a replayer
+ *     synthesising at whatever rate it is given, so a caller that says
+ *     what its output rate is gets audio it need not resample.
  *     Seeks anywhere, including mid-song: a module has no seek table,
  *     so the replayer restarts and walks the sequence forward with the
  *     mixing skipped, which costs time proportional to the distance and
@@ -310,6 +313,7 @@ struct audio_transfer_mod
    const void  *data;   /* module bytes from set_buffer_ptr (caller-owned)  */
    size_t       size;
    rmodtracker *handle; /* replayer, NULL until start() succeeds            */
+   unsigned     rate;   /* requested mix rate, 0 for the replayer's default */
 };
 #endif
 
@@ -870,6 +874,23 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
    return false;
 }
 
+void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
+      unsigned rate)
+{
+#ifdef HAVE_RMODTRACKER
+   /* A tracker synthesises, so it can be asked to synthesise at the
+    * rate the caller wants and spare everyone a resampler.  The decoders
+    * reproduce a recording made at a rate the stream itself states,
+    * which is not a thing a caller gets to choose. */
+   if (data && type == AUDIO_TYPE_MOD)
+      ((struct audio_transfer_mod*)data)->rate = rate;
+#else
+   (void)data;
+   (void)type;
+   (void)rate;
+#endif
+}
+
 #ifdef HAVE_ROPUS
 /* Windowed Opus: inject the last Ogg page's granule so buffer setup
  * skips the full-file end-granule scan (see audio_transfer_opus's
@@ -1105,6 +1126,16 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_mod *md = (struct audio_transfer_mod*)data;
          if (!md || !md->data)
             return false;
+         if (md->rate)
+         {
+            md->handle = rmodtracker_open_memory_rate(md->data, md->size,
+                  (int)md->rate);
+            /* a rate the replayer will not take is not worth failing
+             * the load over: mix at the default and let the caller
+             * resample, which is what it did before asking */
+            if (md->handle)
+               return true;
+         }
          md->handle = rmodtracker_open_memory(md->data, md->size);
          return md->handle != NULL;
       }
