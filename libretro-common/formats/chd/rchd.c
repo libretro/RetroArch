@@ -1685,6 +1685,7 @@ static int rchd_decompress_cd(rchd_t *chd, uint32_t tag,
    uint32_t lenbits = (chd->info.hunk_bytes >= 65536) ? 3 : 2;
    uint32_t base_len;
    uint32_t base_tag;
+   uint32_t sub_tag;
    uint8_t *sectors;
    uint8_t *subcode;
    uint32_t i;
@@ -1707,6 +1708,18 @@ static int rchd_decompress_cd(rchd_t *chd, uint32_t tag,
       default:                 return RCHD_ERROR_UNSUPPORTED;
    }
 
+   /* The subchannel stream is DEFLATE for every CD codec except the
+    * Zstandard one, which uses Zstandard for both of its streams.
+    *
+    * The exception is easy to miss and was: three of the four codecs
+    * share the DEFLATE rule, so a corpus without a `cdzs` image
+    * confirms it and generalises wrongly. Every `cdzs` hunk then fails
+    * while every other hunk of the same image decodes, which is what a
+    * mixed-codec image makes visible and a single-codec one would
+    * not. */
+   sub_tag = (tag == RCHD_CODEC_CD_ZSTD) ? RCHD_CODEC_ZSTD
+                                         : RCHD_CODEC_ZLIB;
+
    /* The two streams decode whole, into one scratch buffer, and are
     * interleaved into the caller's hunk afterwards. */
    if (!chd->cd_scratch)
@@ -1727,7 +1740,7 @@ static int rchd_decompress_cd(rchd_t *chd, uint32_t tag,
    {
       uint32_t sub_off = bitmap + lenbits + base_len;
 
-      err = rchd_decompress(chd, RCHD_CODEC_ZLIB, src + sub_off,
+      err = rchd_decompress(chd, sub_tag, src + sub_off,
             src_len - sub_off, subcode, frames * RCHD_CD_SUBCODE_SIZE);
       if (err != RCHD_OK)
          return err;
@@ -2085,10 +2098,25 @@ int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len)
 
 int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst)
 {
-   if (!chd || chd->state != RCHD_OPEN_DONE || hunk >= chd->info.hunk_count)
+   if (!chd || !dst || chd->state != RCHD_OPEN_DONE
+         || hunk >= chd->info.hunk_count)
       return RCHD_ERROR_PARAM;
-   return rchd_read_begin(chd, (uint64_t)hunk * chd->info.hunk_bytes,
-         dst, chd->info.hunk_bytes);
+
+   /* A whole hunk, even the last one.
+    *
+    * An image whose size is not a multiple of the hunk size ends in a
+    * hunk that is partly padding, and asking for all of it runs past
+    * the logical end -- which rchd_read_begin is right to refuse for a
+    * byte range but must not refuse here, because a hunk is the unit
+    * this addresses and the padding is part of what the hunk holds.
+    * Half the images in any collection have such a hunk, and it is the
+    * one a reader tries last. */
+   chd->rd_dst    = (uint8_t*)dst;
+   chd->rd_len    = chd->info.hunk_bytes;
+   chd->rd_done   = 0;
+   chd->rd_offset = (uint64_t)hunk * chd->info.hunk_bytes;
+   chd->reading   = 1;
+   return RCHD_OK;
 }
 
 size_t rchd_read_progress(const rchd_t *chd)

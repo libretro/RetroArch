@@ -631,8 +631,18 @@ subchannel — and `hunkbytes / unitbytes` frames per hunk.
 | subchannel stream | whatever remains | `frames * 96` bytes when decoded |
 
 The sector stream uses the codec's base compressor — DEFLATE for `cdzl`,
-LZMA for `cdlz`. **The subchannel stream is always raw DEFLATE**,
-whichever codec the hunk uses.
+LZMA for `cdlz`, FLAC for `cdfl`, Zstandard for `cdzs`.
+
+**The subchannel stream is raw DEFLATE for every CD codec except
+`cdzs`, which uses Zstandard for both of its streams.**
+
+The exception is easy to miss. Three of the four codecs share the
+DEFLATE rule, so a corpus without a `cdzs` image confirms it and
+generalises wrongly — which is exactly what happened here, and it was
+found only when such an image arrived. A mixed-codec image makes it
+visible immediately: every `cdzs` hunk fails while every `cdfl` hunk of
+the same file decodes, so the fault cannot be in the framing they
+share.
 
 The two streams are stored whole and consecutively, not interleaved: all
 sector data, then all subchannel data. They are interleaved only on
