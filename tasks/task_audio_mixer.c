@@ -22,9 +22,6 @@
 
 #include <formats/data_transfer.h>
 #include <formats/audio.h>
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
-#include <formats/rwebm.h>
-#endif
 #include <formats/rwav.h>
 #include <file/file_path.h>
 #include <audio/audio_mixer.h>
@@ -1170,48 +1167,6 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
             goto bail;
       }
 #endif
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
-      if (w->mtype == AUDIO_MIXER_TYPE_WEBA)
-      {
-         /* Parse the container header bounded by the head, the way WAV
-          * parses its chunk list: a file whose Tracks sit past the head
-          * falls back to the classic full load rather than reading into
-          * the reserved space beyond the frontier.  Two things come out
-          * of it - that this is Vorbis and not Opus, whose WebM arm is
-          * not window-verified, and where the media begins.  Everything
-          * below that is header material the demuxer holds borrowed
-          * pointers into for its lifetime, including the CodecPrivate,
-          * so the head has to cover it. */
-         rwebm_t *probe = rwebm_open_memory_avail(base, (size_t)flen,
-               flen < AMIX_WINDOW_KEEP ? (size_t)flen : AMIX_WINDOW_KEEP,
-               NULL);
-         size_t   floor = 0;
-         bool     vorb  = false;
-         if (probe)
-         {
-            int i;
-            for (i = 0; i < rwebm_num_tracks(probe); i++)
-            {
-               const rwebm_track *tr = rwebm_get_track(probe, i);
-               if (tr && tr->type == RWEBM_TRACK_AUDIO
-                     && tr->codec == RWEBM_CODEC_VORBIS
-                     && tr->codec_private_size)
-               {
-                  vorb = true;
-                  break;
-               }
-            }
-            floor = rwebm_media_floor(probe);
-            rwebm_close(probe);
-         }
-         if (!vorb || !floor)
-            goto bail;
-         if (floor + AMIX_WINDOW_MARGIN > AMIX_WINDOW_KEEP
-               && !data_transfer_window_grow_keep(w->dt,
-                     floor + AMIX_WINDOW_MARGIN))
-            goto bail;
-      }
-#endif
 
       params.volume               = 1.0f;
       params.slot_selection_type  = w->user->slot_selection_type;
@@ -1393,20 +1348,6 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * force the tail resident. */
    if (string_is_equal_noncase(ext, "opus"))
       mtype = AUDIO_MIXER_TYPE_OPUS;
-#endif
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
-   /* A .weba holding Vorbis streams: rwebm parses the EBML head,
-    * Segment info and Tracks and stops there (Cues and SeekHead are
-    * skipped, elements are read in file order), the packet walk runs
-    * monotonically forward through the clusters, and a loop seek
-    * rewinds it to the first one.  Its whole-file dependency went when
-    * the arm stopped pre-walking the packets to find the end: the
-    * DiscardPadding that bounds emission arrives on the block it
-    * applies to.  Vorbis rather than Opus is confirmed from the head
-    * below, and the head is grown to cover the header material the
-    * demuxer keeps borrowed pointers into. */
-   if (string_is_equal_noncase(ext, "weba"))
-      mtype = AUDIO_MIXER_TYPE_WEBA;
 #endif
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;
