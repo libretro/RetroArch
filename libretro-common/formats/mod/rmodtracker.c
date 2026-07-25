@@ -991,7 +991,10 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->panning = replay->module->default_panning[ idx ];
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
-	channel->random_seed = ( idx + 1 ) * 0xABCDEF;
+	/* Unsigned: the channel count comes from the file and is not
+	 * clamped, and this overflows a signed int from 191 channels up.
+	 * It is a seed, so wrapping is fine - being undefined is not. */
+	channel->random_seed = ( int ) ( ( ( unsigned int ) idx + 1u ) * 0xABCDEFu );
 }
 
 static void channel_volume_slide( struct channel *channel ) {
@@ -1103,7 +1106,11 @@ static int channel_waveform( struct channel *channel, int phase, int type ) {
 			break;
 		case 3: case 8: /* Random. */
 			amplitude = ( channel->random_seed >> 20 ) - 255;
-			channel->random_seed = ( channel->random_seed * 65 + 17 ) & 0x1FFFFFFF;
+			/* Masked to 0x1FFFFFFF, so the multiply below overflows a
+			 * signed int before the mask ever runs. Wrapping is the
+			 * intent of an LCG; undefined behaviour is not. */
+			channel->random_seed = ( int ) ( ( ( unsigned int )
+					channel->random_seed * 65u + 17u ) & 0x1FFFFFFFu );
 			break;
 	}
 	return amplitude;
@@ -1306,13 +1313,19 @@ static void channel_calculate_freq( struct channel *channel ) {
 		if( per < 28 || per > 7680 ) {
 			per = 7680;
 		}
+		/* FP_ONE is 1 << FP_SHIFT, so this is the same value for a
+		 * non-negative operand and defined for a negative one - and
+		 * 4608 - per is negative for any period above 4608. */
 		channel->freq = ( ( channel->replay->module->c2_rate >> 4 )
-			* exp_2( ( ( 4608 - per ) << FP_SHIFT ) / 768 ) ) >> ( FP_SHIFT - 4 );
+			* exp_2( ( ( 4608 - per ) * FP_ONE ) / 768 ) ) >> ( FP_SHIFT - 4 );
 	} else {
 		if( per > 29021 ) {
 			per = 29021;
 		}
-		per = ( per << FP_SHIFT ) / exp_2( ( channel->arpeggio_add << FP_SHIFT ) / 12 );
+		/* per is only clamped from above here; vibrato can carry it
+		 * below zero, and the "per < 28" guard underneath runs after
+		 * this line rather than before it. */
+		per = ( per * FP_ONE ) / exp_2( ( channel->arpeggio_add * FP_ONE ) / 12 );
 		if( per < 28 ) {
 			per = 29021;
 		}
