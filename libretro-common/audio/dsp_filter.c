@@ -59,6 +59,11 @@ struct retro_dsp_filter
 
    struct retro_dsp_instance *instances;
    unsigned num_instances;
+
+   /* Whether every instance in the chain can process int16, folded once at
+    * creation. audio_driver_mixer_use_s16() asks on every flush and the
+    * answer cannot change until the chain is rebuilt. */
+   bool supports_i16;
 };
 
 static const struct dspfilter_implementation *find_implementation(
@@ -128,6 +133,18 @@ static bool create_filter_graph(retro_dsp_filter_t *dsp, float sample_rate)
             &dspfilter_config, &userdata);
       if (!dsp->instances[i].impl_data)
          return false;
+   }
+
+   /* Fold the chain's int16 capability once, here. */
+   dsp->supports_i16 = (filters > 0);
+   for (i = 0; i < filters; i++)
+   {
+      const struct dspfilter_implementation *impl = dsp->instances[i].impl;
+      if (impl->api_version < 2 || !impl->process_i16)
+      {
+         dsp->supports_i16 = false;
+         break;
+      }
    }
 
    return true;
@@ -338,16 +355,7 @@ void retro_dsp_filter_process(retro_dsp_filter_t *dsp,
 
 bool retro_dsp_filter_supports_int16(retro_dsp_filter_t *dsp)
 {
-   unsigned i;
-   if (!dsp || dsp->num_instances == 0)
-      return false;
-   for (i = 0; i < dsp->num_instances; i++)
-   {
-      const struct dspfilter_implementation *impl = dsp->instances[i].impl;
-      if (impl->api_version < 2 || !impl->process_i16)
-         return false;
-   }
-   return true;
+   return dsp && dsp->supports_i16;
 }
 
 void retro_dsp_filter_process_int16(retro_dsp_filter_t *dsp,
