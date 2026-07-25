@@ -38,17 +38,22 @@ RETRO_BEGIN_DECLS
  * demuxers via rwebm_set_avail/rmp4_set_avail, or any other
  * incremental parser).
  *
- * A thin wrapper over nbio that packages its sharp edges into an
- * unmissable shape rather than a documented one: the buffer pointer is
- * valid and stable from open (nbio sizes or maps it up front); filling
- * happens in caller-budgeted steps; a read that ends short of the file
- * (I/O error, the file shrank) is reported as failure with an honest
- * byte count, never as completion; and free cancels any in-flight
- * operation first, which on the stdio backend would otherwise abort.
+ * The sharp edges are packaged into an unmissable shape rather than a
+ * documented one: the buffer pointer is valid and stable from open
+ * (the length is known there and the whole of it is reserved, or
+ * allocated, up front); filling happens in caller-budgeted steps; and
+ * a read that ends short of the file (I/O error, the file shrank) is
+ * reported as failure with an honest byte count, never as completion.
  *
- * Each of those edges cost a real bug in the thumbnail partial-read
- * work before nbio was fixed to expose them safely; this interface
- * exists so the next consumer cannot re-hit them. */
+ * Each of those cost a real bug in the thumbnail partial-read work;
+ * this interface exists so the next consumer cannot re-hit them.
+ *
+ * Reads are synchronous.  This began as a wrapper over nbio and took
+ * its vocabulary from it, but nothing here is asynchronous: iterate()
+ * blocks for the length of its budget on the calling thread, the
+ * caller does the time-slicing, and free() has nothing in flight to
+ * cancel.  The scope comment at the top of data_transfer.c states what
+ * the module does and does not cover. */
 
 typedef struct data_transfer data_transfer_t;
 
@@ -220,7 +225,7 @@ bool data_transfer_capped(data_transfer_t *dt);
  * first, and the discard contract is a promise not to touch them
  * meanwhile.  A consumer that discards behind its read position as
  * it goes plays a file of any size in a constant residency window.
- * Best-effort: a no-op on the nbio strategy and on the no-reservation
+ * Best-effort: a no-op on a window handle and on the no-reservation
  * fallback (whose bytes simply stay). */
 void data_transfer_discard(data_transfer_t *dt, size_t up_to);
 

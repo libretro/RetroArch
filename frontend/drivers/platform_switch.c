@@ -23,7 +23,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#include <file/nbio.h>
 #include <formats/image.h>
 
 #ifdef HAVE_LIBNX

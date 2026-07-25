@@ -104,7 +104,7 @@ bool nbio_xfer_complete_ok(nbio_handle_t *nbio)
 void nbio_xfer_close(nbio_handle_t *nbio)
 {
    if (nbio->xfer)
-      data_transfer_free(nbio->xfer);   /* cancels an in-flight read */
+      data_transfer_free(nbio->xfer);
    nbio->xfer = NULL;
 }
 
@@ -166,9 +166,7 @@ void task_file_load_handler(retro_task_t *task)
             {
                /* Every path load travels the data_transfer prefix
                 * spine: filestream/VFS routing, 64-bit lengths, the
-                * hardware guard behind avail, honest short reads.
-                * (The nbio backends remain available through the
-                * library's own data_transfer_open/adopt.) */
+                * hardware guard behind avail, honest short reads. */
                if ((nbio->xfer = data_transfer_open_prefix(
                            nbio->path, 0)))
                {

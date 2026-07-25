@@ -71,10 +71,11 @@
  *  - Asynchrony.  Every read is a synchronous filestream_read on the
  *    calling thread: iterate() blocks for the length of its budget,
  *    and there is nothing in flight for free() to cancel.  Pacing is
- *    by byte budget and the caller does the time-slicing.  Wording
- *    here and in the header about cancelling in-flight reads, or
- *    about an "nbio strategy", is residual - no such strategy exists
- *    in this file.
+ *    by byte budget and the caller does the time-slicing.  The module
+ *    began as a wrapper over nbio, which is where its vocabulary came
+ *    from; no nbio strategy exists here, nbio is no longer part of
+ *    the RetroArch build, and the nbio_ names surviving in the task
+ *    layer are historical only.
  *
  *  - Locking.  Nothing is synchronised.  The window contract is
  *    single owner, single thread by construction (see the header);
@@ -173,7 +174,7 @@
 
 struct data_transfer
 {
-   /* strategy 2: internal prefix reader (open_prefix)               */
+   /* file-backed reader (open_prefix, and open_window over it)      */
    RFILE  *f;
    uint8_t *map;     /* reserved (or fallback-allocated) buffer      */
    size_t  map_len;  /* reserved bytes (page-rounded), 0 = fallback  */
@@ -749,7 +750,7 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to)
 {
    size_t lo;
    if (!dt || !dt->f || !dt->map_len || !dt->page)
-      return;                     /* nbio or fallback: bytes stay */
+      return;                     /* source or fallback: bytes stay */
    if (dt->window)
       return;                     /* not this surface - see below */
    if (up_to > dt->avail)

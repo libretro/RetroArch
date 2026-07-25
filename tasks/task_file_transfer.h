@@ -71,9 +71,9 @@ struct data_transfer;
 /* Historical name: the task-transfer state, once built around an
  * nbio handle.  Every load now travels a data_transfer prefix spine
  * (filestream/VFS routing, 64-bit lengths, physical pages only as
- * far as the read reaches, a hardware guard behind avail); the nbio
- * backends remain available through the library's own
- * data_transfer_open/adopt constructors. */
+ * far as the read reaches, a hardware guard behind avail).  The nbio_
+ * prefix on this type and its accessors is vestigial: nbio is no
+ * longer part of the RetroArch build at all. */
 typedef struct nbio_handle
 {
    void *data;
@@ -89,10 +89,10 @@ typedef struct nbio_handle
    bool is_finished;
 } nbio_handle_t;
 
-/* Spine folders for the shared call sites: raw nbio or the video
- * data_transfer, one contract. */
+/* Folders over the transfer for the shared call sites: one contract,
+ * whatever the load path underneath. */
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len);
-/* true while the read is still in flight */
+/* true while the fill has not yet reached a terminal */
 bool nbio_xfer_progress(nbio_handle_t *nbio, size_t *done, size_t *total);
 /* the read is over and delivered the whole file */
 bool nbio_xfer_complete_ok(nbio_handle_t *nbio);
