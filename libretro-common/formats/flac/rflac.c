@@ -30,6 +30,10 @@
 #include <retro_inline.h>
 #include <retro_endianness.h>
 #include <formats/rflac.h>
+#include "rflac_internal.h"
+
+static uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead, int16_t* pBufferOut);
+static uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead, float* pBufferOut);
 #include <features/features_cpu.h>
 
 /* Disable some annoying warnings. */
@@ -1214,41 +1218,6 @@ static INLINE uint32_t rflac__seek_past_next_set_bit(rflac_bs* bs,
    return 1;
 }
 
-static uint32_t rflac__seek_to_byte(rflac_bs* bs, uint64_t offsetFromStart)
-{
-   /* Seeking from the start is not quite as trivial as it sounds because the
-    * onSeek callback takes a signed 32-bit integer (which is intentional
-    * because it simplifies the implementation of the onSeek callbacks), however
-    * offsetFromStart is unsigned 64-bit. To resolve we just need to do an
-    * initial seek from the start, and then a series of offset seeks to make up
-    * the remainder.
-    */
-   if (offsetFromStart > 0x7FFFFFFF) {
-      uint64_t bytesRemaining = offsetFromStart;
-      if (!bs->onSeek(bs->pUserData, 0x7FFFFFFF, rflac_seek_origin_start))
-         return 0;
-      bytesRemaining -= 0x7FFFFFFF;
-
-      while (bytesRemaining > 0x7FFFFFFF) {
-         if (!bs->onSeek(bs->pUserData, 0x7FFFFFFF, rflac_seek_origin_current))
-            return 0;
-         bytesRemaining -= 0x7FFFFFFF;
-      }
-
-      if (bytesRemaining > 0) {
-         if (!bs->onSeek(bs->pUserData, (int)bytesRemaining, rflac_seek_origin_current))
-            return 0;
-      }
-   } else {
-      if (!bs->onSeek(bs->pUserData, (int)offsetFromStart, rflac_seek_origin_start))
-         return 0;
-   }
-
-   /* Reset the cache to force a reload of fresh data from the client. */
-   rflac__reset_cache(bs);
-   return 1;
-}
-
 
 static int32_t rflac__read_utf8_coded_number(rflac_bs* bs, uint64_t* pNumberOut,
       uint8_t* pCRCOut)
@@ -2417,22 +2386,6 @@ static uint32_t rflac__decode_samples_with_residual__rice(rflac_bs* bs,
    }
 }
 
-/* Reads and seeks past a string of residual values as Rice codes. The decoder
- * should be sitting on the first bit of the Rice codes. */
-static uint32_t rflac__read_and_seek_residual__rice(rflac_bs* bs,
-      uint32_t count, uint8_t riceParam)
-{
-   uint32_t i;
-
-   for (i = 0; i < count; ++i)
-   {
-      if (!rflac__seek_rice_parts(bs, riceParam))
-         return 0;
-   }
-
-   return 1;
-}
-
 #if defined(__clang__)
 __attribute__((no_sanitize("signed-integer-overflow")))
 #endif
@@ -2537,79 +2490,6 @@ static uint32_t rflac__decode_samples_with_residual(rflac_bs* bs,
 
       if (partitionOrder != 0)
          samplesInPartition = blockSize / (1 << partitionOrder);
-   }
-
-   return 1;
-}
-
-/* Reads and seeks past the residual for the sub-frame the decoder is currently
- * sitting on. This function should be called when the decoder is sitting at the
- * very start of the RESIDUAL block. The first <order> residuals will be set to
- * 0. The <blockSize> and <order> parameters are used to determine how many
- * residual values need to be decoded.
- */
-static uint32_t rflac__read_and_seek_residual(rflac_bs* bs, uint32_t blockSize,
-      uint32_t order)
-{
-   uint8_t residualMethod;
-   uint8_t partitionOrder;
-   uint32_t samplesInPartition;
-   uint32_t partitionsRemaining;
-
-   if (!rflac__read_uint8(bs, 2, &residualMethod))
-      return 0;
-
-   if (residualMethod != RFLAC_RESIDUAL_CODING_METHOD_PARTITIONED_RICE && residualMethod != RFLAC_RESIDUAL_CODING_METHOD_PARTITIONED_RICE2)
-      return 0;    /* Unknown or unsupported residual coding method. */
-
-   if (!rflac__read_uint8(bs, 4, &partitionOrder))
-      return 0;
-
-   /* From the FLAC spec: The Rice partition order in a Rice-coded residual
-    * section must be less than or equal to 8.
-    */
-   if (partitionOrder > 8)
-      return 0;
-
-   /* Validation check. */
-   if ((blockSize / (1 << partitionOrder)) <= order)
-      return 0;
-
-   samplesInPartition = (blockSize / (1 << partitionOrder)) - order;
-   partitionsRemaining = (1 << partitionOrder);
-   for (;;)
-   {
-      uint8_t riceParam = 0;
-      if (residualMethod == RFLAC_RESIDUAL_CODING_METHOD_PARTITIONED_RICE) {
-         if (!rflac__read_uint8(bs, 4, &riceParam))
-            return 0;
-         if (riceParam == 15)
-            riceParam = 0xFF;
-      } else if (residualMethod == RFLAC_RESIDUAL_CODING_METHOD_PARTITIONED_RICE2) {
-         if (!rflac__read_uint8(bs, 5, &riceParam))
-            return 0;
-         if (riceParam == 31)
-            riceParam = 0xFF;
-      }
-
-      if (riceParam != 0xFF) {
-         if (!rflac__read_and_seek_residual__rice(bs, samplesInPartition, riceParam))
-            return 0;
-      } else {
-         uint8_t unencodedBitsPerSample = 0;
-         if (!rflac__read_uint8(bs, 5, &unencodedBitsPerSample))
-            return 0;
-
-         if (!rflac__seek_bits(bs, unencodedBitsPerSample * samplesInPartition))
-            return 0;
-      }
-
-
-      if (partitionsRemaining == 1)
-         break;
-
-      partitionsRemaining -= 1;
-      samplesInPartition = blockSize / (1 << partitionOrder);
    }
 
    return 1;
@@ -3280,85 +3160,6 @@ static uint32_t rflac__decode_subframe(rflac_bs* bs, rflac_frame* frame,
    return 1;
 }
 
-static uint32_t rflac__seek_subframe(rflac_bs* bs, rflac_frame* frame,
-      int subframeIndex)
-{
-   rflac_subframe* pSubframe;
-   uint32_t subframeBitsPerSample;
-   pSubframe = frame->subframes + subframeIndex;
-   if (!rflac__read_subframe_header(bs, pSubframe))
-      return 0;
-
-   /* Side channels require an extra bit per sample. Took a while to figure that
-    * one out... */
-   subframeBitsPerSample = frame->header.bitsPerSample;
-   if ((frame->header.channelAssignment == RFLAC_CHANNEL_ASSIGNMENT_LEFT_SIDE || frame->header.channelAssignment == RFLAC_CHANNEL_ASSIGNMENT_MID_SIDE) && subframeIndex == 1)
-      subframeBitsPerSample += 1;
-   else if (frame->header.channelAssignment == RFLAC_CHANNEL_ASSIGNMENT_RIGHT_SIDE && subframeIndex == 0)
-      subframeBitsPerSample += 1;
-
-   /* Need to handle wasted bits per sample. */
-   if (pSubframe->wastedBitsPerSample >= subframeBitsPerSample)
-      return 0;
-   subframeBitsPerSample -= pSubframe->wastedBitsPerSample;
-
-   pSubframe->pSamplesS32 = NULL;
-
-   switch (pSubframe->subframeType)
-   {
-      case RFLAC_SUBFRAME_CONSTANT:
-      {
-         if (!rflac__seek_bits(bs, subframeBitsPerSample))
-            return 0;
-      } break;
-
-      case RFLAC_SUBFRAME_VERBATIM:
-      {
-         unsigned int bitsToSeek = frame->header.blockSizeInPCMFrames * subframeBitsPerSample;
-         if (!rflac__seek_bits(bs, bitsToSeek))
-            return 0;
-      } break;
-
-      case RFLAC_SUBFRAME_FIXED:
-      {
-         unsigned int bitsToSeek = pSubframe->lpcOrder * subframeBitsPerSample;
-         if (!rflac__seek_bits(bs, bitsToSeek))
-            return 0;
-
-         if (!rflac__read_and_seek_residual(bs, frame->header.blockSizeInPCMFrames, pSubframe->lpcOrder))
-            return 0;
-      } break;
-
-      case RFLAC_SUBFRAME_LPC:
-      {
-         uint8_t lpcPrecision;
-
-         unsigned int bitsToSeek = pSubframe->lpcOrder * subframeBitsPerSample;
-         if (!rflac__seek_bits(bs, bitsToSeek))
-            return 0;
-
-         if (!rflac__read_uint8(bs, 4, &lpcPrecision))
-            return 0;
-         if (lpcPrecision == 15)
-            return 0;    /* Invalid. */
-         lpcPrecision += 1;
-
-
-         /* +5 for shift. */
-         bitsToSeek = (pSubframe->lpcOrder * lpcPrecision) + 5;
-         if (!rflac__seek_bits(bs, bitsToSeek))
-            return 0;
-
-         if (!rflac__read_and_seek_residual(bs, frame->header.blockSizeInPCMFrames, pSubframe->lpcOrder))
-            return 0;
-      } break;
-
-      default: return 0;
-   }
-
-   return 1;
-}
-
 
 static INLINE uint8_t rflac__get_channel_count_from_channel_assignment(
       int8_t channelAssignment)
@@ -3468,37 +3269,6 @@ static int32_t rflac__decode_flac_frame(rflac* pFlac)
    return result;
 }
 
-/* Should only ever be called while the decoder is sitting on the first
- * byte past the FRAME_HEADER section. */
-static int32_t rflac__seek_flac_frame(rflac* pFlac)
-{
-   int channelCount;
-   int i;
-   uint16_t desiredCRC16;
-   uint16_t actualCRC16;
-
-   channelCount = rflac__get_channel_count_from_channel_assignment(pFlac->currentFLACFrame.header.channelAssignment);
-   for (i = 0; i < channelCount; ++i)
-   {
-      if (!rflac__seek_subframe(&pFlac->bs, &pFlac->currentFLACFrame, i))
-         return RFLAC_ERROR;
-   }
-
-   /* Padding. */
-   if (!rflac__seek_bits(&pFlac->bs, RFLAC_CACHE_L1_BITS_REMAINING(&pFlac->bs) & 7))
-      return RFLAC_ERROR;
-
-   /* CRC. */
-   actualCRC16 = rflac__flush_crc16(&pFlac->bs);
-   if (!rflac__read_uint16(&pFlac->bs, 16, &desiredCRC16))
-      return RFLAC_AT_END;
-
-   if (actualCRC16 != desiredCRC16)
-      return RFLAC_CRC_MISMATCH;    /* CRC mismatch. */
-
-   return RFLAC_SUCCESS;
-}
-
 static uint32_t rflac__read_and_decode_next_flac_frame(rflac* pFlac)
 {
    for (;;)
@@ -3518,33 +3288,6 @@ static uint32_t rflac__read_and_decode_next_flac_frame(rflac* pFlac)
 
       return 1;
    }
-}
-
-static void rflac__get_pcm_frame_range_of_current_flac_frame(rflac* pFlac,
-      uint64_t* pFirstPCMFrame, uint64_t* pLastPCMFrame)
-{
-   uint64_t firstPCMFrame;
-   uint64_t lastPCMFrame;
-   firstPCMFrame = pFlac->currentFLACFrame.header.pcmFrameNumber;
-   if (firstPCMFrame == 0)
-      firstPCMFrame = ((uint64_t)pFlac->currentFLACFrame.header.flacFrameNumber) * pFlac->maxBlockSizeInPCMFrames;
-
-   lastPCMFrame = firstPCMFrame + pFlac->currentFLACFrame.header.blockSizeInPCMFrames;
-   if (lastPCMFrame > 0)
-      lastPCMFrame -= 1; /* Needs to be zero based. */
-
-   if (pFirstPCMFrame)
-      *pFirstPCMFrame = firstPCMFrame;
-   if (pLastPCMFrame)
-      *pLastPCMFrame = lastPCMFrame;
-}
-
-static uint32_t rflac__seek_to_first_frame(rflac* pFlac)
-{
-   uint32_t result = rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes);
-   memset(&pFlac->currentFLACFrame, 0, sizeof(pFlac->currentFLACFrame));
-   pFlac->currentPCMFrame = 0;
-   return result;
 }
 
 
@@ -3579,524 +3322,6 @@ static uint64_t rflac__seek_forward_by_pcm_frames(rflac* pFlac,
 }
 
 
-static uint32_t rflac__seek_to_pcm_frame__brute_force(rflac* pFlac,
-      uint64_t pcmFrameIndex)
-{
-   uint32_t isMidFrame = 0;
-   uint64_t runningPCMFrameCount;
-
-   /* If we are seeking forward we start from the current position. Otherwise we
-    * need to start all the way from the start of the file. */
-   if (pcmFrameIndex >= pFlac->currentPCMFrame)
-   {
-     /* Seeking forward. Need to seek from the current position. */
-     runningPCMFrameCount = pFlac->currentPCMFrame;
-
-     /* The frame header for the first frame may not yet have been read. We need
-      * to do that if necessary. */
-     if (pFlac->currentPCMFrame == 0 && pFlac->currentFLACFrame.pcmFramesRemaining == 0) {
-        if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-          return 0;
-     }
-     else
-        isMidFrame = 1;
-   }
-   else
-   {
-      /* Seeking backwards. Need to seek from the start of the file. */
-      runningPCMFrameCount = 0;
-
-      /* Move back to the start. */
-      if (!rflac__seek_to_first_frame(pFlac))
-         return 0;
-      /* Decode the first frame to prepare for sample-exact seeking below. */
-      if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-         return 0;
-   }
-
-   /* We need to as quickly as possible find the frame that contains the target
-    * sample. To do this, we iterate over each frame and inspect its header. If
-    * based on the header we can determine that the frame contains the sample,
-    * we do a full decode of that frame.
-    */
-   for (;;)
-   {
-     uint64_t pcmFrameCountInThisFLACFrame;
-     uint64_t firstPCMFrameInFLACFrame = 0;
-     uint64_t lastPCMFrameInFLACFrame = 0;
-
-     rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &firstPCMFrameInFLACFrame, &lastPCMFrameInFLACFrame);
-
-     pcmFrameCountInThisFLACFrame = (lastPCMFrameInFLACFrame - firstPCMFrameInFLACFrame) + 1;
-     if (pcmFrameIndex < (runningPCMFrameCount + pcmFrameCountInThisFLACFrame)) {
-        /* The sample should be in this frame. We need to fully decode it,
-         * however if it's an invalid frame (a CRC mismatch), we need to pretend
-         * it never existed and keep iterating.
-         */
-        uint64_t pcmFramesToDecode = pcmFrameIndex - runningPCMFrameCount;
-
-        if (!isMidFrame) {
-          int32_t result = rflac__decode_flac_frame(pFlac);
-          if (result == RFLAC_SUCCESS) {
-            /* The frame is valid. We just need to skip over some samples to
-             * ensure it's sample-exact. */
-            /* <-- If this fails, something bad has happened (it should never
-             * fail). */
-            return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-          } else {
-            if (result == RFLAC_CRC_MISMATCH) {
-              /* CRC mismatch. Pretend this frame never existed. */
-              goto next_iteration;
-            } else {
-              return 0;
-            }
-          }
-        } else {
-          /* We started seeking mid-frame which means we need to skip the frame
-           * decoding part. */
-          return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-        }
-     } else {
-        /* It's not in this frame. We need to seek past the frame, but check if
-         * there was a CRC mismatch. If so, we pretend this frame never existed
-         * and leave the running sample count untouched.
-         */
-        if (!isMidFrame) {
-          int32_t result = rflac__seek_flac_frame(pFlac);
-          if (result == RFLAC_SUCCESS)
-            runningPCMFrameCount += pcmFrameCountInThisFLACFrame;
-          else
-          {
-            if (result == RFLAC_CRC_MISMATCH)
-              /* CRC mismatch. Pretend this frame never existed. */
-              goto next_iteration;
-            return 0;
-          }
-        }
-        else
-        {
-          /* We started seeking mid-frame which means we need to seek by reading
-           * to the end of the frame instead of with rflac__seek_flac_frame()
-           * which only works if the decoder is sitting on the byte just after
-           * the frame header.
-           */
-          runningPCMFrameCount += pFlac->currentFLACFrame.pcmFramesRemaining;
-          pFlac->currentFLACFrame.pcmFramesRemaining = 0;
-          isMidFrame = 0;
-        }
-
-        /* If we are seeking to the end of the file and we've just hit it, we're
-         * done. */
-        if (pcmFrameIndex == pFlac->totalPCMFrameCount && runningPCMFrameCount == pFlac->totalPCMFrameCount)
-          return 1;
-     }
-
-next_iteration:
-     /* Grab the next frame in preparation for the next iteration. */
-     if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-        return 0;
-   }
-}
-
-
-static uint32_t rflac__seek_to_approximate_flac_frame_to_byte(rflac* pFlac,
-      uint64_t targetByte, uint64_t rangeLo, uint64_t rangeHi,
-      uint64_t* pLastSuccessfulSeekOffset)
-{
-   *pLastSuccessfulSeekOffset = pFlac->firstFLACFramePosInBytes;
-
-   for (;;)
-   {
-      /* After rangeLo == rangeHi == targetByte fails, we need to break out. */
-      uint64_t lastTargetByte = targetByte;
-
-      /* When seeking to a byte, failure probably means we've attempted to seek
-       * beyond the end of the stream. To counter this we just halve it each
-       * attempt. */
-      if (!rflac__seek_to_byte(&pFlac->bs, targetByte))
-      {
-         /* If we couldn't even seek to the first byte in the stream we have a
-          * problem. Just abandon the whole thing. */
-         if (targetByte == 0)
-         {
-            rflac__seek_to_first_frame(pFlac); /* Try to recover. */
-            return 0;
-         }
-
-         /* Halve the byte location and continue. */
-         targetByte = rangeLo + ((rangeHi - rangeLo)/2);
-         rangeHi = targetByte;
-      }
-      else
-      {
-         /* Getting here should mean that we have 
-          * seeked to an appropriate byte. */
-
-         /* Clear the details of the FLAC frame 
-          * so we don't misreport data. */
-         memset(&pFlac->currentFLACFrame, 0, sizeof(pFlac->currentFLACFrame));
-
-         /* Now seek to the next FLAC frame. We need to decode the entire frame
-          * (not just the header) because it's possible for the header to
-          * incorrectly pass the CRC check and return bad data. We need to
-          * decode the entire frame to be more certain. Although this seems
-          * unlikely, this has happened to me in testing so it needs to stay
-          * this way for now.
-          */
-         if (!rflac__read_and_decode_next_flac_frame(pFlac))
-         {
-            /* Halve the byte location and continue. */
-            targetByte = rangeLo + ((rangeHi - rangeLo)/2);
-            rangeHi    = targetByte;
-         }
-         else
-            break;
-      }
-
-      /* We already tried this byte and there are no more to try, break out. */
-      if (targetByte == lastTargetByte)
-         return 0;
-   }
-
-   /* The current PCM frame needs to be updated based on the frame we just
-    * seeked to. */
-   rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &pFlac->currentPCMFrame, NULL);
-
-   *pLastSuccessfulSeekOffset = targetByte;
-   return 1;
-}
-
-static uint32_t rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(
-      rflac* pFlac, uint64_t offset)
-{
-   return rflac__seek_forward_by_pcm_frames(pFlac, offset) == offset;
-}
-
-static uint32_t rflac__seek_to_pcm_frame__binary_search_internal(rflac* pFlac,
-      uint64_t pcmFrameIndex, uint64_t byteRangeLo, uint64_t byteRangeHi)
-{
-   /* Assumes pFlac->currentPCMFrame is sitting on byteRangeLo upon entry. */
-   uint64_t pcmRangeLo = pFlac->totalPCMFrameCount;
-   uint64_t pcmRangeHi = 0;
-   uint64_t lastSuccessfulSeekOffset = (uint64_t)-1;
-   uint64_t closestSeekOffsetBeforeTargetPCMFrame = byteRangeLo;
-   uint32_t seekForwardThreshold = (pFlac->maxBlockSizeInPCMFrames != 0) ? pFlac->maxBlockSizeInPCMFrames*2 : 4096;
-   /* Integer estimate: uncompressed byte count scaled by the approximate
-    * compression ratio (3/5, i.e. the former 0.6f), keeping the seek
-    * probe sequence identical across platforms and FPUs. */
-   uint64_t targetByte = byteRangeLo + (((pcmFrameIndex - pFlac->currentPCMFrame) * pFlac->channels * pFlac->bitsPerSample) / 8) * 3 / 5;
-   if (targetByte > byteRangeHi)
-      targetByte = byteRangeHi;
-
-   for (;;)
-   {
-      if (rflac__seek_to_approximate_flac_frame_to_byte(pFlac, targetByte, byteRangeLo, byteRangeHi, &lastSuccessfulSeekOffset)) {
-         /* We found a FLAC frame. We need to check if it contains the sample
-          * we're looking for. */
-         uint64_t newPCMRangeLo;
-         uint64_t newPCMRangeHi;
-         rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &newPCMRangeLo, &newPCMRangeHi);
-
-         /* If we selected the same frame, it means we should be pretty close.
-          * Just decode the rest. */
-         if (pcmRangeLo == newPCMRangeLo)
-         {
-            if (!rflac__seek_to_approximate_flac_frame_to_byte(pFlac, closestSeekOffsetBeforeTargetPCMFrame, closestSeekOffsetBeforeTargetPCMFrame, byteRangeHi, &lastSuccessfulSeekOffset))
-               break;  /* Failed to seek to closest frame. */
-
-            if (rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(pFlac, pcmFrameIndex - pFlac->currentPCMFrame))
-               return 1;
-            break;  /* Failed to seek forward. */
-         }
-
-         pcmRangeLo = newPCMRangeLo;
-         pcmRangeHi = newPCMRangeHi;
-
-         if (pcmRangeLo <= pcmFrameIndex && pcmRangeHi >= pcmFrameIndex) {
-            /* The target PCM frame is in this FLAC frame. */
-            if (rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(pFlac, pcmFrameIndex - pFlac->currentPCMFrame) )
-               return 1;
-            break;  /* Failed to seek to FLAC frame. */
-         }
-         else
-         {
-            /* Observed compression ratio so far, in Q16 fixed point.
-             * (The float version divided by zero when pcmRangeLo was 0;
-             * fall back to a 1:1 ratio in that case.) */
-            uint64_t uncompressedSoFar   = (pcmRangeLo * pFlac->channels * pFlac->bitsPerSample) / 8;
-            uint64_t compressionRatioQ16 = uncompressedSoFar
-               ? (((lastSuccessfulSeekOffset - pFlac->firstFLACFramePosInBytes) << 16) / uncompressedSoFar)
-               : ((uint64_t)1 << 16);
-
-            if (pcmRangeLo > pcmFrameIndex) {
-               /* We seeked too far forward. We need to move our target byte
-                * backward and try again. */
-               byteRangeHi = lastSuccessfulSeekOffset;
-               if (byteRangeLo > byteRangeHi)
-                  byteRangeLo = byteRangeHi;
-
-               targetByte = byteRangeLo + ((byteRangeHi - byteRangeLo) / 2);
-               if (targetByte < byteRangeLo)
-                  targetByte = byteRangeLo;
-            }
-            else
-            {
-               /* We didn't seek far enough. We need to move our target byte
-                * forward and try again. */
-
-               /* If we're close enough we can just seek forward. */
-               if ((pcmFrameIndex - pcmRangeLo) < seekForwardThreshold) {
-                  if (rflac__decode_flac_frame_and_seek_forward_by_pcm_frames(pFlac, pcmFrameIndex - pFlac->currentPCMFrame))
-                     return 1;
-                  break;  /* Failed to seek to FLAC frame. */
-               }
-               else
-               {
-                  byteRangeLo = lastSuccessfulSeekOffset;
-                  if (byteRangeHi < byteRangeLo)
-                     byteRangeHi = byteRangeLo;
-
-                  targetByte = lastSuccessfulSeekOffset + (((((pcmFrameIndex - pcmRangeLo) * pFlac->channels * pFlac->bitsPerSample) / 8) * compressionRatioQ16) >> 16);
-                  if (targetByte > byteRangeHi)
-                     targetByte = byteRangeHi;
-
-                  if (closestSeekOffsetBeforeTargetPCMFrame < lastSuccessfulSeekOffset)
-                     closestSeekOffsetBeforeTargetPCMFrame = lastSuccessfulSeekOffset;
-               }
-            }
-         }
-      }
-      else
-         /* Getting here is really bad. We just recover as best we can, but
-          * moving to the first frame in the stream, and then abort. */
-         break;
-   }
-
-   rflac__seek_to_first_frame(pFlac); /* <-- Try to recover. */
-   return 0;
-}
-
-static uint32_t rflac__seek_to_pcm_frame__binary_search(rflac* pFlac,
-      uint64_t pcmFrameIndex)
-{
-   uint64_t byteRangeLo;
-   uint64_t byteRangeHi;
-   uint32_t seekForwardThreshold = (pFlac->maxBlockSizeInPCMFrames != 0) ? pFlac->maxBlockSizeInPCMFrames*2 : 4096;
-
-   /* Our algorithm currently assumes the FLAC stream is currently sitting at
-    * the start. */
-   if (rflac__seek_to_first_frame(pFlac) == 0)
-      return 0;
-
-   /* If we're close enough to the start, just move to the start and seek
-    * forward. */
-   if (pcmFrameIndex < seekForwardThreshold)
-      return rflac__seek_forward_by_pcm_frames(pFlac, pcmFrameIndex) == pcmFrameIndex;
-
-   /* Our starting byte range is the byte position of the first FLAC frame and
-    * the approximate end of the file as if it were completely uncompressed.
-    * This ensures the entire file is included, even though most of the time
-    * it'll exceed the end of the actual stream. This is OK as the frame
-    * searching logic will handle it.
-    */
-   byteRangeLo = pFlac->firstFLACFramePosInBytes;
-   byteRangeHi = pFlac->firstFLACFramePosInBytes + (pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample) / 8;
-
-   return rflac__seek_to_pcm_frame__binary_search_internal(pFlac, pcmFrameIndex, byteRangeLo, byteRangeHi);
-}
-
-static uint32_t rflac__seek_to_pcm_frame__seek_table(rflac* pFlac,
-      uint64_t pcmFrameIndex)
-{
-   uint32_t iClosestSeekpoint = 0;
-   uint32_t isMidFrame = 0;
-   uint64_t runningPCMFrameCount;
-   uint32_t iSeekpoint;
-
-   if (pFlac->pSeekpoints == NULL || pFlac->seekpointCount == 0)
-      return 0;
-
-   /* Do not use the seektable if pcmFramIndex is not coverd by it. */
-   if (pFlac->pSeekpoints[0].firstPCMFrame > pcmFrameIndex)
-      return 0;
-
-   for (iSeekpoint = 0; iSeekpoint < pFlac->seekpointCount; ++iSeekpoint)
-   {
-      if (pFlac->pSeekpoints[iSeekpoint].firstPCMFrame >= pcmFrameIndex)
-         break;
-
-      iClosestSeekpoint = iSeekpoint;
-   }
-
-   /* There's been cases where the seek table contains only zeros. We need to do
-    * some basic validation on the closest seekpoint. */
-   if (pFlac->pSeekpoints[iClosestSeekpoint].pcmFrameCount == 0 || pFlac->pSeekpoints[iClosestSeekpoint].pcmFrameCount > pFlac->maxBlockSizeInPCMFrames)
-      return 0;
-   if (pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame > pFlac->totalPCMFrameCount && pFlac->totalPCMFrameCount > 0)
-      return 0;
-
-   /* At this point we should know the closest seek point. We can use a binary
-    * search for this. We need to know the total sample count for this. */
-   if (pFlac->totalPCMFrameCount > 0)
-   {
-      uint64_t byteRangeHi = pFlac->firstFLACFramePosInBytes + (pFlac->totalPCMFrameCount * pFlac->channels * pFlac->bitsPerSample) / 8;
-      uint64_t byteRangeLo = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset;
-
-      /* If our closest seek point is not the last one, we only need to search
-       * between it and the next one. The section below calculates an
-       * appropriate starting value for byteRangeHi which will clamp it
-       * appropriately.  Note that the next seekpoint must have an offset
-       * greater than the closest seekpoint because otherwise our binary search
-       * algorithm will break down. There have been cases where a seektable
-       * consists of seek points where every byte offset is set to 0 which
-       * causes problems. If this happens we need to abort.
-       */
-      if (iClosestSeekpoint < pFlac->seekpointCount-1)
-      {
-         uint32_t iNextSeekpoint = iClosestSeekpoint + 1;
-
-         /* Basic validation on the seekpoints to ensure they're usable. */
-         if (pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset >= pFlac->pSeekpoints[iNextSeekpoint].flacFrameOffset || pFlac->pSeekpoints[iNextSeekpoint].pcmFrameCount == 0)
-            /* The next seekpoint doesn't look right. The seek table cannot be
-             * trusted from here. Abort. */
-            return 0;
-
-         /* Make sure it's not a placeholder seekpoint. */
-         if (pFlac->pSeekpoints[iNextSeekpoint].firstPCMFrame != (((uint64_t)0xFFFFFFFF << 32) | 0xFFFFFFFF))
-            /* byteRangeHi must be zero based. */
-            byteRangeHi = pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iNextSeekpoint].flacFrameOffset - 1;
-      }
-
-      if (rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset))
-      {
-         if (rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-         {
-            rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &pFlac->currentPCMFrame, NULL);
-
-            if (rflac__seek_to_pcm_frame__binary_search_internal(pFlac, pcmFrameIndex, byteRangeLo, byteRangeHi))
-               return 1;
-         }
-      }
-   }
-
-   /* Getting here means we need to use a slower algorithm because the binary
-    * search method failed or cannot be used. */
-
-   /* If we are seeking forward and the closest seekpoint is _before_ the
-    * current sample, we just seek forward from where we are. Otherwise we start
-    * seeking from the seekpoint's first sample.
-    */
-   if (pcmFrameIndex >= pFlac->currentPCMFrame && pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame <= pFlac->currentPCMFrame)
-   {
-      /* Optimized case. Just seek forward from where we are. */
-      runningPCMFrameCount = pFlac->currentPCMFrame;
-
-      /* The frame header for the first frame may not yet have been read. We
-       * need to do that if necessary. */
-      if (pFlac->currentPCMFrame == 0 && pFlac->currentFLACFrame.pcmFramesRemaining == 0)
-      {
-         if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-            return 0;
-      }
-      else
-         isMidFrame = 1;
-   }
-   else
-   {
-      /* Slower case. Seek to the start of the seekpoint and then seek forward
-       * from there. */
-      runningPCMFrameCount = pFlac->pSeekpoints[iClosestSeekpoint].firstPCMFrame;
-
-      if (!rflac__seek_to_byte(&pFlac->bs, pFlac->firstFLACFramePosInBytes + pFlac->pSeekpoints[iClosestSeekpoint].flacFrameOffset))
-         return 0;
-
-      /* Grab the frame the seekpoint is sitting on in preparation for the
-       * sample-exact seeking below. */
-      if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-         return 0;
-   }
-
-   for (;;)
-   {
-      uint64_t pcmFrameCountInThisFLACFrame;
-      uint64_t firstPCMFrameInFLACFrame = 0;
-      uint64_t lastPCMFrameInFLACFrame = 0;
-
-      rflac__get_pcm_frame_range_of_current_flac_frame(pFlac, &firstPCMFrameInFLACFrame, &lastPCMFrameInFLACFrame);
-
-      pcmFrameCountInThisFLACFrame = (lastPCMFrameInFLACFrame - firstPCMFrameInFLACFrame) + 1;
-      if (pcmFrameIndex < (runningPCMFrameCount + pcmFrameCountInThisFLACFrame)) {
-         /* The sample should be in this frame. We need to fully decode it, but
-          * if it's an invalid frame (a CRC mismatch) we need to pretend it
-          * never existed and keep iterating.
-          */
-         uint64_t pcmFramesToDecode = pcmFrameIndex - runningPCMFrameCount;
-
-         if (!isMidFrame) {
-            int32_t result = rflac__decode_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS) {
-               /* The frame is valid. We just need to skip over some samples to
-                * ensure it's sample-exact. */
-               /* <-- If this fails, something bad has happened (it should never
-                * fail). */
-               return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-            }
-            else
-            {
-               if (result == RFLAC_CRC_MISMATCH)
-                  /* CRC mismatch. Pretend this frame never existed. */
-                  goto next_iteration;
-               return 0;
-            }
-         }
-         else
-            /* We started seeking mid-frame which means we need to skip the
-             * frame decoding part. */
-            return rflac__seek_forward_by_pcm_frames(pFlac, pcmFramesToDecode) == pcmFramesToDecode;
-      }
-      else
-      {
-         /* It's not in this frame. We need to seek past the frame, but check if
-          * there was a CRC mismatch. If so, we pretend this frame never existed
-          * and leave the running sample count untouched.
-          */
-         if (!isMidFrame)
-         {
-            int32_t result = rflac__seek_flac_frame(pFlac);
-            if (result == RFLAC_SUCCESS)
-               runningPCMFrameCount += pcmFrameCountInThisFLACFrame;
-            else
-            {
-               if (result == RFLAC_CRC_MISMATCH)
-                  /* CRC mismatch. Pretend this frame never existed. */
-                  goto next_iteration;
-               return 0;
-            }
-         }
-         else
-         {
-            /* We started seeking mid-frame which means we need to seek by
-             * reading to the end of the frame instead of with
-             * rflac__seek_flac_frame() which only works if the decoder is
-             * sitting on the byte just after the frame header.
-             */
-            runningPCMFrameCount += pFlac->currentFLACFrame.pcmFramesRemaining;
-            pFlac->currentFLACFrame.pcmFramesRemaining = 0;
-            isMidFrame = 0;
-         }
-
-         /* If we are seeking to the end of the file and we've just hit it,
-          * we're done. */
-         if (pcmFrameIndex == pFlac->totalPCMFrameCount && runningPCMFrameCount == pFlac->totalPCMFrameCount)
-            return 1;
-      }
-
-next_iteration:
-      /* Grab the next frame in preparation for the next iteration. */
-      if (!rflac__read_next_flac_frame_header(&pFlac->bs, pFlac->bitsPerSample, &pFlac->currentFLACFrame.header))
-         return 0;
-   }
-}
 
 typedef struct
 {
@@ -4898,83 +4123,6 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
    }
 
    return pFlac;
-}
-
-static size_t rflac__on_read_memory(void* pUserData, void* bufferOut,
-      size_t bytesToRead)
-{
-   rflac__memory_stream* memoryStream = (rflac__memory_stream*)pUserData;
-   size_t bytesRemaining;
-
-   bytesRemaining = memoryStream->dataSize - memoryStream->currentReadPos;
-   if (bytesToRead > bytesRemaining)
-      bytesToRead = bytesRemaining;
-
-   if (bytesToRead > 0)
-   {
-      memcpy(bufferOut, memoryStream->data + memoryStream->currentReadPos, bytesToRead);
-      memoryStream->currentReadPos += bytesToRead;
-   }
-
-   return bytesToRead;
-}
-
-static uint32_t rflac__on_seek_memory(void* pUserData, int offset,
-      rflac_seek_origin origin)
-{
-   rflac__memory_stream* memoryStream = (rflac__memory_stream*)pUserData;
-
-   if (offset > (int64_t)memoryStream->dataSize)
-      return 0;
-
-   if (origin == rflac_seek_origin_current)
-   {
-     if (memoryStream->currentReadPos + offset > memoryStream->dataSize)
-        return 0;  /* Trying to seek too far forward. */
-     memoryStream->currentReadPos += offset;
-   }
-   else
-   {
-     if ((uint32_t)offset > memoryStream->dataSize)
-        return 0;  /* Trying to seek too far forward. */
-     memoryStream->currentReadPos = offset;
-   }
-
-   return 1;
-}
-
-rflac* rflac_open_memory(const void* pData, size_t dataSize)
-{
-   rflac__memory_stream memoryStream;
-   rflac* pFlac;
-
-   memoryStream.data = (const uint8_t*)pData;
-   memoryStream.dataSize = dataSize;
-   memoryStream.currentReadPos = 0;
-   pFlac = rflac_open_with_metadata_private(rflac__on_read_memory, rflac__on_seek_memory, NULL, &memoryStream, &memoryStream);
-   if (pFlac == NULL)
-      return NULL;
-
-   pFlac->memoryStream = memoryStream;
-
-   /* This is an awful hack... */
-   {
-      pFlac->bs.pUserData = &pFlac->memoryStream;
-   }
-
-   return pFlac;
-}
-
-rflac* rflac_open_with_metadata(rflac_read_proc onRead, rflac_seek_proc onSeek,
-      rflac_meta_proc onMeta, void* pUserData)
-{
-   return rflac_open_with_metadata_private(onRead, onSeek, onMeta, pUserData, pUserData);
-}
-
-void rflac_close(rflac* pFlac)
-{
-   if (pFlac)
-     free(pFlac);
 }
 
 static INLINE void rflac_read_pcm_frames_s16__decode_left_side__scalar(
@@ -5926,7 +5074,7 @@ static void rflac_read_pcm_frames_f32__decode_mid_side__wide(rflac* pFlac,
    }
 }
 
-uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead,
+static uint64_t rflac_read_pcm_frames_s16(rflac* pFlac, uint64_t framesToRead,
       int16_t* pBufferOut)
 {
    uint64_t framesRead;
@@ -6796,7 +5944,7 @@ static INLINE void rflac_read_pcm_frames_f32__decode_independent_stereo(
    }
 }
 
-uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead,
+static uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead,
       float* pBufferOut)
 {
    uint64_t framesRead;
@@ -6887,93 +6035,6 @@ uint64_t rflac_read_pcm_frames_f32(rflac* pFlac, uint64_t framesToRead,
 }
 
 
-uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
-{
-   if (pFlac == NULL)
-      return 0;
-
-   /* Don't do anything if we're already on the seek point. */
-   if (pFlac->currentPCMFrame == pcmFrameIndex)
-      return 1;
-
-   /* If we don't know where the first frame begins then we can't seek. This
-    * will happen when the STREAMINFO block was not present when the decoder was
-    * opened.
-    */
-   if (pFlac->firstFLACFramePosInBytes == 0)
-      return 0;
-
-   if (pcmFrameIndex == 0) {
-      pFlac->currentPCMFrame = 0;
-      return rflac__seek_to_first_frame(pFlac);
-   } else {
-      uint32_t wasSuccessful = 0;
-      uint64_t originalPCMFrame = pFlac->currentPCMFrame;
-
-      /* Clamp the sample to the end, where the end is known.  A
-       * STREAMINFO may state a total of zero for a stream whose
-       * length was not known when it was written - Ogg FLAC always
-       * does, and so does a native stream written to a pipe - and
-       * clamping against that sent every seek to frame zero. */
-      if (   pFlac->totalPCMFrameCount > 0
-          && pcmFrameIndex > pFlac->totalPCMFrameCount)
-         pcmFrameIndex = pFlac->totalPCMFrameCount;
-
-      /* If the target sample and the current sample are in the same frame we
-       * just move the position forward. */
-      if (pcmFrameIndex > pFlac->currentPCMFrame) {
-         /* Forward. */
-         uint32_t offset = (uint32_t)(pcmFrameIndex - pFlac->currentPCMFrame);
-         if (pFlac->currentFLACFrame.pcmFramesRemaining >  offset) {
-            pFlac->currentFLACFrame.pcmFramesRemaining -= offset;
-            pFlac->currentPCMFrame = pcmFrameIndex;
-            return 1;
-         }
-      } else {
-         /* Backward. */
-         uint32_t offsetAbs = (uint32_t)(pFlac->currentPCMFrame - pcmFrameIndex);
-         uint32_t currentFLACFramePCMFrameCount = pFlac->currentFLACFrame.header.blockSizeInPCMFrames;
-         uint32_t currentFLACFramePCMFramesConsumed = currentFLACFramePCMFrameCount - pFlac->currentFLACFrame.pcmFramesRemaining;
-         if (currentFLACFramePCMFramesConsumed > offsetAbs) {
-            pFlac->currentFLACFrame.pcmFramesRemaining += offsetAbs;
-            pFlac->currentPCMFrame = pcmFrameIndex;
-            return 1;
-         }
-      }
-
-      /* Different techniques depending on encapsulation. Using the native FLAC
-       * seektable with Ogg encapsulation is a bit awkward so we'll instead use
-       * Ogg's natural seeking facility.
-       */
-      {
-         /* First try seeking via the seek table. If this fails, fall back to a
-          * brute force seek which is much slower. */
-         wasSuccessful = rflac__seek_to_pcm_frame__seek_table(pFlac, pcmFrameIndex);
-
-         /* Fall back to binary search if seek table seeking fails.
-          * This requires the length of the stream to be known. */
-         if (!wasSuccessful && pFlac->totalPCMFrameCount > 0)
-            wasSuccessful = rflac__seek_to_pcm_frame__binary_search(pFlac, pcmFrameIndex);
-
-         /* Fall back to brute force if all else fails. */
-         if (!wasSuccessful)
-            wasSuccessful = rflac__seek_to_pcm_frame__brute_force(pFlac, pcmFrameIndex);
-      }
-
-      if (wasSuccessful)
-         pFlac->currentPCMFrame = pcmFrameIndex;
-      else
-      {
-         /* Seek failed. Try putting the decoder back to it's original state. */
-         if (rflac_seek_to_pcm_frame(pFlac, originalPCMFrame) == 0)
-            /* Failed to seek back to the original PCM frame. Fall back to 0. */
-            rflac_seek_to_pcm_frame(pFlac, 0);
-      }
-
-      return wasSuccessful;
-   }
-}
-
 
 #if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
    #pragma GCC diagnostic pop
@@ -7029,3 +6090,607 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
+/* ------------------------------------------------------------------
+ * Push-based interface (formats/rflac.h)
+ *
+ * The caller hands over spans of input rather than answering read
+ * callbacks. Internally the callbacks remain, serving from the current
+ * span and flagging when they cannot satisfy a read; the frame pump
+ * checks that flag and rewinds, so a frame that straddles two spans is
+ * simply decoded again once the rest arrives and the decode core never
+ * learns it was interrupted.
+ *
+ * Rewinding is a copy of rflac_bs, which is plain data with no pointers
+ * into anything the caller owns. It carries a 4 KiB cache, so the copy
+ * is only taken when an underrun is actually possible -- that is, when
+ * less than a maximum frame remains -- and the steady state pays
+ * nothing.
+ * ------------------------------------------------------------------ */
+
+/* Input is read as one logical run of carry followed by span. The carry
+ * holds whatever a rolled-back frame had already consumed, so the frame
+ * can be decoded again from its start once the rest of it arrives,
+ * without the caller having to know where frames begin or having to
+ * re-present bytes it already handed over. */
+typedef struct rflac_push_source
+{
+   uint8_t       *carry;
+   size_t         carry_len;
+   size_t         carry_cap;
+   const uint8_t *data;
+   size_t         size;
+   size_t         pos;
+   int            underrun;
+} rflac_push_source;
+
+static int rflac__src_hold(rflac_push_source *s, size_t from);
+
+static size_t rflac__src_total(const rflac_push_source *s)
+{
+   return s->carry_len + s->size;
+}
+
+static const uint8_t *rflac__src_at(const rflac_push_source *s, size_t pos,
+      size_t *contiguous)
+{
+   if (pos < s->carry_len)
+   {
+      *contiguous = s->carry_len - pos;
+      return s->carry + pos;
+   }
+   *contiguous = s->size - (pos - s->carry_len);
+   return s->data + (pos - s->carry_len);
+}
+
+struct rflac_ctx
+{
+   rflac             *dec;
+   rflac_push_source  src;
+   rflac_format_t     fmt;
+   /* A rewind point covers the decoder struct, not just its bitreader:
+    * the current frame and PCM position live alongside it and a
+    * half-decoded frame has already moved them. The sample plane that
+    * trails the struct is not saved, because anything written there
+    * belongs to the frame being abandoned. */
+   rflac             *saved;
+   size_t             saved_pos;
+   int16_t           *out_s16;
+   float             *out_f32;
+   size_t             out_frames;
+   size_t             out_done;
+   int                ended;
+   int                need_header;   /* set until a header is parsed */
+};
+
+static size_t rflac__on_read_push(void *pUserData, void *bufferOut,
+      size_t bytesToRead)
+{
+   rflac_push_source *s     = (rflac_push_source*)pUserData;
+   size_t             avail = rflac__src_total(s) - s->pos;
+   uint8_t           *dst   = (uint8_t*)bufferOut;
+   size_t             done  = 0;
+
+   if (bytesToRead > avail)
+   {
+      /* Short reads are how the decode core discovers the end of a
+       * stream, so this cannot fail outright; it records that input ran
+       * dry and lets the caller above decide whether that was the end
+       * of the stream or merely the end of a span. */
+      s->underrun = 1;
+      bytesToRead = avail;
+   }
+
+   while (done < bytesToRead)
+   {
+      size_t         run;
+      const uint8_t *p    = rflac__src_at(s, s->pos, &run);
+      size_t         take = bytesToRead - done;
+
+      if (take > run)
+         take = run;
+      memcpy(dst + done, p, take);
+      s->pos += take;
+      done   += take;
+   }
+
+   return done;
+}
+
+static uint32_t rflac__on_seek_push(void *pUserData, int offset,
+      rflac_seek_origin origin)
+{
+   rflac_push_source *s = (rflac_push_source*)pUserData;
+   size_t             target;
+
+   if (origin == rflac_seek_origin_current)
+   {
+      if (offset < 0 && (size_t)(-offset) > s->pos)
+         return 0;
+      target = (offset < 0) ? s->pos - (size_t)(-offset)
+                            : s->pos + (size_t)offset;
+   }
+   else
+   {
+      if (offset < 0)
+         return 0;
+      target = (size_t)offset;
+   }
+
+   if (target > rflac__src_total(s))
+   {
+      s->underrun = 1;
+      return 0;
+   }
+
+   s->pos = target;
+   return 1;
+}
+
+/* Builds a decoder for a stream that carries no header, from geometry
+ * the caller supplies. The allocation mirrors the header-parsing path:
+ * the object and the decoded-sample plane are one block, sized by the
+ * widest SIMD vector so the per-channel planes stay aligned. There is
+ * no seek table and no metadata, which is most of why this is short. */
+static rflac *rflac__alloc_raw(const rflac_format_t *fmt,
+      rflac_push_source *src)
+{
+   rflac_init_info init;
+   rflac           *pFlac;
+   uint32_t         vectors;
+   uint32_t         decodedSize;
+   uint32_t         wideSize;
+   uint32_t         allocationSize;
+
+   rflac__init_cpu_caps();
+   rflac__crc16_init_slices();
+
+   memset(&init, 0, sizeof(init));
+   init.sampleRate              = fmt->sample_rate;
+   init.channels                = (uint8_t)fmt->channels;
+   init.bitsPerSample           = (uint8_t)fmt->bits_per_sample;
+   init.totalPCMFrameCount      = 0;
+   init.maxBlockSizeInPCMFrames = (uint16_t)fmt->block_size;
+   init.hasMetadataBlocks       = 0;
+   init.bs.onRead               = rflac__on_read_push;
+   init.bs.onSeek               = rflac__on_seek_push;
+   init.bs.pUserData            = src;
+
+   vectors = init.maxBlockSizeInPCMFrames
+           / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t));
+   if ((init.maxBlockSizeInPCMFrames
+            % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) != 0)
+      vectors++;
+
+   decodedSize = vectors * RFLAC_MAX_SIMD_VECTOR_SIZE * init.channels;
+
+   wideSize = 0;
+   if (init.bitsPerSample == 32 && init.channels == 2)
+      wideSize = init.maxBlockSizeInPCMFrames * (uint32_t)sizeof(int64_t) + 8;
+
+   allocationSize = (uint32_t)sizeof(rflac) + decodedSize + wideSize
+                  + RFLAC_MAX_SIMD_VECTOR_SIZE;
+
+   if (!(pFlac = (rflac*)malloc(allocationSize)))
+      return NULL;
+
+   rflac__init_from_info(pFlac, &init);
+   pFlac->bs.pUserData            = src;
+   pFlac->firstFLACFramePosInBytes = 0;
+   pFlac->pDecodedSamples         = (int32_t*)RFLAC_ALIGN(
+         (size_t)pFlac->pExtraData, RFLAC_MAX_SIMD_VECTOR_SIZE);
+   if (wideSize)
+      pFlac->pWideSamples = (int64_t*)(((uint8_t*)pFlac->pDecodedSamples)
+            + decodedSize);
+
+   return pFlac;
+}
+
+/* A stream that carries its own header does not describe itself until
+ * that header has been read, and the header cannot be read until the
+ * caller has handed some over. So construction records only that one is
+ * expected; the parse happens on the first process() call that has
+ * input, and until it succeeds the decoder has no geometry to report. */
+rflac_t *rflac_new(void)
+{
+   rflac_t *f;
+
+   if (!(f = (rflac_t*)calloc(1, sizeof(*f))))
+      return NULL;
+
+   f->need_header = 1;
+   return f;
+}
+
+/* Runs the header parse against the current span. A header is small and
+ * arrives in one piece from every source this serves, so a span too
+ * short to hold one is treated as "not yet" rather than as an error. */
+static int rflac__open_from_span(rflac_t *f)
+{
+   rflac *dec = rflac_open_with_metadata_private(
+         rflac__on_read_push, rflac__on_seek_push, NULL,
+         &f->src, &f->src);
+
+   if (!dec)
+      return 0;
+
+   dec->bs.pUserData        = &f->src;
+   f->dec                   = dec;
+   f->fmt.sample_rate       = dec->sampleRate;
+   f->fmt.channels          = dec->channels;
+   f->fmt.bits_per_sample   = dec->bitsPerSample;
+   f->fmt.block_size        = dec->maxBlockSizeInPCMFrames;
+   f->need_header           = 0;
+   return 1;
+}
+
+rflac_t *rflac_new_raw(const rflac_format_t *fmt)
+{
+   rflac_t *f;
+
+   if (!fmt || !fmt->channels || fmt->channels > RFLAC_MAX_CHANNELS)
+      return NULL;
+   if (!fmt->bits_per_sample || fmt->bits_per_sample > 32)
+      return NULL;
+   /* A headerless stream states its own block size or nothing can size
+    * the sample plane. */
+   if (!fmt->block_size || fmt->block_size > RFLAC_MAX_BLOCK_SIZE)
+      return NULL;
+
+   if (!(f = (rflac_t*)calloc(1, sizeof(*f))))
+      return NULL;
+
+   f->fmt = *fmt;
+   if (!(f->dec = rflac__alloc_raw(fmt, &f->src)))
+   {
+      free(f);
+      return NULL;
+   }
+
+   return f;
+}
+
+void rflac_free(rflac_t *f)
+{
+   if (!f)
+      return;
+   if (f->dec)
+      free(f->dec);
+   if (f->saved)
+      free(f->saved);
+   if (f->src.carry)
+      free(f->src.carry);
+   free(f);
+}
+
+/* Largest a frame can be: a full block of the widest samples, plus
+ * headroom for the frame header and the per-subframe escape where a
+ * block is stored verbatim. Below this much input remaining, a decode
+ * might run off the end and has to be made undoable. */
+/* Where the stream has actually been consumed to, as opposed to how far
+ * the reader has pulled. The bitstream reader fills a cache ahead of the
+ * decode position, so the raw span offset overshoots by whatever is
+ * still sitting unread in it.
+ *
+ * Callers need the true figure, not the optimistic one: a CHD hunk puts
+ * its subchannel data immediately after the last FLAC frame, and finding
+ * that boundary is only possible if the decoder reports where the frames
+ * really ended. */
+static size_t rflac__consumed(const rflac_t *f)
+{
+   const rflac_bs *bs = &f->dec->bs;
+   size_t          held;
+
+   held  = ((sizeof(bs->cacheL2) / sizeof(bs->cacheL2[0])) - bs->nextL2Line)
+         * sizeof(size_t);
+   held += ((sizeof(bs->cache) * 8) - bs->consumedBits) / 8;
+   held += bs->unalignedByteCount;
+
+   if (held > f->src.pos)
+      return 0;
+   return f->src.pos - held;
+}
+
+static size_t rflac__max_frame_bytes(const rflac_t *f)
+{
+   return (size_t)f->fmt.block_size * f->fmt.channels
+        * ((f->fmt.bits_per_sample + 7) / 8) + 64;
+}
+
+int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
+{
+   size_t   start_pos;
+   size_t   span_len;
+   size_t   want;
+   size_t   produced;
+   int      undoable = 0;
+
+   if (read)
+      *read = 0;
+   if (wrote)
+      *wrote = 0;
+
+   if (!f)
+      return RFLAC_PROCESS_ERROR;
+   if (f->ended)
+      return RFLAC_PROCESS_END;
+
+   span_len = f->src.size;
+
+   if (f->need_header)
+   {
+      size_t held = rflac__src_total(&f->src);
+
+      if (held == 0)
+         return RFLAC_PROCESS_NEXT;
+
+      f->src.pos      = 0;
+      f->src.underrun = 0;
+
+      if (!rflac__open_from_span(f))
+      {
+         /* Ran out part way through means the header is split across
+          * spans; keep what arrived and ask for the rest. Anything
+          * else is a stream that is not FLAC. */
+         if (!f->src.underrun)
+            return RFLAC_PROCESS_ERROR;
+         if (!rflac__src_hold(&f->src, 0))
+            return RFLAC_PROCESS_ERROR;
+         f->src.data = NULL;
+         f->src.size = 0;
+         f->src.pos  = 0;
+         if (read)
+            *read = span_len;
+         return RFLAC_PROCESS_NEXT;
+      }
+   }
+
+   if (!f->dec)
+      return RFLAC_PROCESS_ERROR;
+   if (!f->out_s16 && !f->out_f32)
+      return RFLAC_PROCESS_NEXT;
+   if (f->out_done >= f->out_frames)
+      return RFLAC_PROCESS_NEXT;
+
+   start_pos = rflac__consumed(f);
+
+   /* A call either drains what is already decoded, or attempts exactly
+    * one new frame -- never both.
+    *
+    * The distinction matters because a call that spans the boundary can
+    * emit some frames and then underrun on the next, and the rewind
+    * that undoes the half-read frame would undo the good ones with it.
+    * Splitting the two makes an attempt all or nothing: there is
+    * nothing to lose by rewinding, because nothing was produced.
+    *
+    * It also keeps the promise that work between returns is bounded by
+    * the block size, whatever the caller asked for. */
+   want = f->dec->currentFLACFrame.pcmFramesRemaining;
+   if (want == 0)
+      want = f->fmt.block_size;
+   if (want > f->out_frames - f->out_done)
+      want = f->out_frames - f->out_done;
+
+   if (rflac__src_total(&f->src) - f->src.pos < rflac__max_frame_bytes(f))
+   {
+      if (!f->saved && !(f->saved = (rflac*)malloc(sizeof(rflac))))
+         return RFLAC_PROCESS_ERROR;
+      memcpy(f->saved, f->dec, sizeof(rflac));
+      f->saved_pos = f->src.pos;
+      undoable     = 1;
+   }
+
+   f->src.underrun = 0;
+
+   if (f->out_s16)
+      produced = (size_t)rflac_read_pcm_frames_s16(f->dec, want,
+            f->out_s16 + f->out_done * f->fmt.channels);
+   else
+      produced = (size_t)rflac_read_pcm_frames_f32(f->dec, want,
+            f->out_f32 + f->out_done * f->fmt.channels);
+
+   if (f->src.underrun && produced < want)
+   {
+      /* The span ran out mid-frame. Put everything back so the frame
+       * can be decoded once from the start when the rest arrives; the
+       * decode core is never told this happened. */
+      if (undoable)
+      {
+         memcpy(f->dec, f->saved, sizeof(rflac));
+         if (!rflac__src_hold(&f->src, f->saved_pos))
+            return RFLAC_PROCESS_ERROR;
+         f->src.pos = 0;
+         f->src.data = NULL;
+         f->src.size = 0;
+         /* The whole span was taken over, whether it was consumed or
+          * carried, so the caller is free to reuse or free it. */
+         if (read)
+            *read = span_len;
+         return RFLAC_PROCESS_NEXT;
+      }
+      /* Not undoable means the span was long enough for any legal
+       * frame and still ran dry, so this is the end of the stream
+       * rather than the end of a span. */
+      f->ended = 1;
+   }
+
+   f->out_done += produced;
+
+   if (read)
+   {
+      size_t now = rflac__consumed(f);
+      *read = (now > start_pos) ? now - start_pos : 0;
+   }
+   if (wrote)
+      *wrote = produced;
+
+   /* Producing nothing is not the end of the stream. A span that runs
+    * out between frames looks exactly like one that runs out at the
+    * finish, and only the caller knows which it was -- it is the one
+    * holding the rest, or not. So this asks for more and lets the
+    * caller stop feeding; the end is latched above, where an underrun
+    * on a span long enough to hold any legal frame proves there was
+    * nothing further to read. */
+   return f->ended ? RFLAC_PROCESS_END : RFLAC_PROCESS_NEXT;
+}
+
+int rflac_seek(rflac_t *f, uint64_t frame, uint64_t *byte_offset)
+{
+   uint32_t i;
+   uint32_t best = 0;
+   int      found = 0;
+
+   if (!f || !f->dec || !byte_offset)
+      return RFLAC_PROCESS_ERROR;
+   if (!f->dec->pSeekpoints || !f->dec->seekpointCount)
+      return RFLAC_PROCESS_ERROR;
+
+   /* The last point at or before the target. Points are in order, but
+    * a placeholder point states an all-ones frame index and must not be
+    * treated as the nearest to anything. */
+   for (i = 0; i < f->dec->seekpointCount; i++)
+   {
+      uint64_t at = f->dec->pSeekpoints[i].firstPCMFrame;
+
+      if (at == (uint64_t)-1)
+         continue;
+      if (at > frame)
+         break;
+      best  = i;
+      found = 1;
+   }
+
+   if (!found)
+      return RFLAC_PROCESS_ERROR;
+
+   *byte_offset = f->dec->firstFLACFramePosInBytes
+                + f->dec->pSeekpoints[best].flacFrameOffset;
+
+   return RFLAC_PROCESS_NEXT;
+}
+
+void rflac_seek_resumed(rflac_t *f, uint64_t frame)
+{
+   if (!f || !f->dec)
+      return;
+
+   /* Everything buffered belongs to wherever the stream used to be. */
+   f->src.carry_len = 0;
+   f->src.data      = NULL;
+   f->src.size      = 0;
+   f->src.pos       = 0;
+   f->src.underrun  = 0;
+   f->out_done      = 0;
+   f->ended         = 0;
+
+   memset(&f->dec->bs, 0, sizeof(f->dec->bs));
+   f->dec->bs.onRead    = rflac__on_read_push;
+   f->dec->bs.onSeek    = rflac__on_seek_push;
+   f->dec->bs.pUserData = &f->src;
+   f->dec->currentPCMFrame = frame;
+   memset(&f->dec->currentFLACFrame, 0, sizeof(f->dec->currentFLACFrame));
+}
+
+void rflac_reset(rflac_t *f)
+{
+   if (!f)
+      return;
+   rflac_set_in(f, NULL, 0);
+   f->out_done = 0;
+   f->ended    = 0;
+}
+
+void rflac_set_in(rflac_t *f, const uint8_t *in, size_t in_size)
+{
+   if (!f)
+      return;
+   f->src.data     = in;
+   f->src.size     = in ? in_size : 0;
+   /* Whatever a rolled-back frame left in the carry is still ahead of
+    * this span, so reading resumes at the front of the carry rather
+    * than at the front of the new bytes. */
+   f->src.pos      = 0;
+   f->src.underrun = 0;
+}
+
+/* Moves everything from @from to the end of the input into the carry,
+ * so it survives the span being replaced. */
+static int rflac__src_hold(rflac_push_source *s, size_t from)
+{
+   size_t   total = rflac__src_total(s);
+   size_t   need  = total - from;
+   uint8_t *buf;
+   size_t   done  = 0;
+
+   if (need == 0)
+   {
+      s->carry_len = 0;
+      return 1;
+   }
+
+   if (need > s->carry_cap)
+   {
+      if (!(buf = (uint8_t*)realloc(s->carry, need)))
+         return 0;
+      s->carry     = buf;
+      s->carry_cap = need;
+   }
+
+   /* The source of the copy may overlap the carry itself, so it is
+    * gathered forwards into a position at or below where it started. */
+   while (done < need)
+   {
+      size_t         run;
+      const uint8_t *p    = rflac__src_at(s, from + done, &run);
+      size_t         take = need - done;
+
+      if (take > run)
+         take = run;
+      memmove(s->carry + done, p, take);
+      done += take;
+   }
+
+   s->carry_len = need;
+   return 1;
+}
+
+void rflac_set_out_s16(rflac_t *f, int16_t *out, size_t out_frames)
+{
+   if (!f)
+      return;
+   f->out_s16    = out;
+   f->out_f32    = NULL;
+   f->out_frames = out_frames;
+   f->out_done   = 0;
+}
+
+void rflac_set_out_f32(rflac_t *f, float *out, size_t out_frames)
+{
+   if (!f)
+      return;
+   f->out_f32    = out;
+   f->out_s16    = NULL;
+   f->out_frames = out_frames;
+   f->out_done   = 0;
+}
+
+const rflac_format_t *rflac_format(const rflac_t *f)
+{
+   if (!f || !f->dec || f->need_header)
+      return NULL;
+   return &f->fmt;
+}
+
+uint64_t rflac_total_frames(const rflac_t *f)
+{
+   if (!f || !f->dec)
+      return 0;
+   return f->dec->totalPCMFrameCount;
+}
+
+uint64_t rflac_tell(const rflac_t *f)
+{
+   if (!f || !f->dec)
+      return 0;
+   return f->dec->currentPCMFrame;
+}

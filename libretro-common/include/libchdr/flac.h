@@ -38,7 +38,7 @@ struct _flac_decoder {
 	uint32_t                uncompressed_offset;	/* current position in uncompressed data */
 	uint32_t                uncompressed_length;	/* length of uncompressed data */
 	int                    	uncompressed_swap;		/* swap uncompressed sample data */
-	uint8_t                 custom_header[0x2a];	/* custom header */
+	uint32_t                block_size;				/* frames per block, from the container */
 };
 
 /* ======================> flac_decoder */

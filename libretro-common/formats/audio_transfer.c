@@ -487,7 +487,10 @@ struct audio_transfer_flac
 {
    const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
-   rflac      *handle;  /* opened decoder, NULL until start() succeeds      */
+   rflac_t    *handle;  /* opened decoder, NULL until start() succeeds      */
+   int         fed_hdr; /* setup bytes handed over                          */
+   int         drained; /* feeder reported end of input                     */
+   size_t      cursor;  /* bytes of the logical stream handed to the decoder*/
    /* FLAC inside a container.  rflac wants a native fLaC stream; a
     * container holds one taken apart, so it is served back to the
     * decoder a read at a time rather than reassembled into a buffer.
@@ -1640,86 +1643,177 @@ static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
 /* The stream rflac reads: the CodecPrivate header, then every block
  * of the track end to end.  That is exactly a native fLaC stream, so
  * the decoder needs to know nothing about the container. */
-static size_t audio_transfer_flac_read(void *ud, void *out, size_t n)
+/* Hands the decoder its next span.  The decoder owns no reader of its
+ * own, so this is the only thing that moves the stream forward: the
+ * setup bytes first, then whatever the container yields, and for a
+ * resident buffer the whole thing at once.
+ *
+ * Nothing is reassembled and nothing is copied.  The Matroska arm used
+ * to lay every block end to end into one buffer and keep that second
+ * copy of the audio for the life of the decoder; a block is now handed
+ * over where it already sits.
+ *
+ * Returns 0 when there is nothing further to give. */
+static int audio_transfer_flac_feed(struct audio_transfer_flac *fl)
 {
-   struct audio_transfer_flac *fl = (struct audio_transfer_flac*)ud;
-   uint8_t *d    = (uint8_t*)out;
-   size_t   done = 0;
-   while (done < n)
+   if (!fl->fed_hdr && fl->hdr && fl->hdr_size)
    {
-      size_t take;
-      if (fl->pos < fl->hdr_size)
-      {
-         take = fl->hdr_size - fl->pos;
-         if (take > n - done)
-            take = n - done;
-         memcpy(d + done, fl->hdr + fl->pos, take);
-      }
-      else
-      {
-         const uint8_t *src;
-         if (fl->cur_off >= fl->cur_len)
-         {
-            /* Done with this packet; the blob source advances its
-             * byte offset here, where the length is still known. */
-            if (fl->packets)
-               fl->blob_off += fl->cur_len;
-            if (!audio_transfer_flac_next(fl))
-               break;
-         }
-         src  = fl->packets ? fl->packets + fl->blob_off : fl->cur;
-         take = fl->cur_len - fl->cur_off;
-         if (take > n - done)
-            take = n - done;
-         memcpy(d + done, src + fl->cur_off, take);
-         fl->cur_off += take;
-      }
-      fl->pos += take;
-      done    += take;
+      rflac_set_in(fl->handle, fl->hdr, fl->hdr_size);
+      fl->fed_hdr = 1;
+      return 1;
    }
-   return done;
-}
 
-/* rflac seeks by byte offset.  Backwards means starting the block
- * walk again, because a demuxer only goes forwards; forwards is a
- * read that throws the bytes away.  Both are only reached by a seek
- * the caller asked for, and a Matroska is resident here, so the walk
- * costs a pass over block headers rather than any I/O. */
-static uint32_t audio_transfer_flac_seek(void *ud, int offset,
-      rflac_seek_origin origin)
-{
-   struct audio_transfer_flac *fl = (struct audio_transfer_flac*)ud;
-   size_t  target = (origin == rflac_seek_origin_current)
-                  ? fl->pos + (size_t)offset : (size_t)offset;
-   uint8_t scratch[4096];
-   if (offset < 0)
-      return 0;
-   if (target < fl->pos)
-   {
+   if (!fl->ogg && !fl->packets
 #ifdef HAVE_RWEBM
-      if (fl->demux)
-         rwebm_rewind(fl->demux);
+         && !fl->demux
 #endif
-      fl->pg_off    = 0;
-      fl->pkt_index = 0;
-      fl->blob_off  = 0;
-      fl->pos       = 0;
-      fl->cur     = NULL;
-      fl->cur_len = 0;
-      fl->cur_off = 0;
-   }
-   while (fl->pos < target)
+      )
    {
-      size_t want = target - fl->pos;
-      size_t got;
-      if (want > sizeof(scratch))
-         want = sizeof(scratch);
-      got = audio_transfer_flac_read(fl, scratch, want);
-      if (!got)
-         return 0;                    /* past the end of the stream */
+      /* Buffer mode: one span, handed over once. */
+      if (fl->fed_hdr)
+         return 0;
+      rflac_set_in(fl->handle, (const uint8_t*)fl->data, fl->size);
+      fl->fed_hdr = 1;
+      return 1;
    }
+
+   if (!audio_transfer_flac_next(fl))
+      return 0;
+
+   /* The delimited-packet arm keeps no pointer, because the caller may
+    * move the blob between reads; it is resolved here instead. */
+   if (fl->packets && !fl->cur)
+   {
+      fl->cur      = fl->packets + fl->blob_off;
+      fl->blob_off += fl->cur_len;
+   }
+
+   rflac_set_in(fl->handle, fl->cur + fl->cur_off, fl->cur_len - fl->cur_off);
    return 1;
 }
+
+/* Runs the decoder until the output is full or the input is exhausted. */
+static size_t audio_transfer_flac_pull(struct audio_transfer_flac *fl,
+      void *out, size_t frames, int as_float)
+{
+   size_t produced = 0;
+
+   if (as_float)
+      rflac_set_out_f32(fl->handle, (float*)out, frames);
+   else
+      rflac_set_out_s16(fl->handle, (int16_t*)out, frames);
+
+   while (produced < frames)
+   {
+      size_t rd = 0, wr = 0;
+      int    e  = rflac_process(fl->handle, &rd, &wr);
+
+      fl->cursor += rd;
+      produced   += wr;
+
+      if (e == RFLAC_PROCESS_ERROR || e == RFLAC_PROCESS_END)
+         break;
+      if (wr == 0)
+      {
+         if (fl->drained)
+            break;
+         if (!audio_transfer_flac_feed(fl))
+         {
+            fl->drained = 1;
+            break;
+         }
+      }
+   }
+
+   return produced;
+}
+
+/* Restarts the stream and decodes forward to @frame.  Returns 1 when
+ * positioned. */
+static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
+      uint64_t frame)
+{
+   int16_t scratch[1024 * 2];
+   uint64_t at;
+
+   if (!fl || !fl->handle)
+      return 0;
+
+   /* A byte-addressable source can take the shortcut: the stream's own
+    * seek table names a frame boundary at or before the target, and
+    * decoding resumes from there instead of from zero.  Only buffer
+    * mode qualifies -- a container hands over packets and cannot be
+    * pointed at an arbitrary byte -- and only a stream that carries a
+    * table, which one inside a container never does. */
+   if (!fl->ogg && !fl->packets
+#ifdef HAVE_RWEBM
+         && !fl->demux
+#endif
+         && fl->data)
+   {
+      uint64_t at = 0;
+      if (rflac_seek(fl->handle, frame, &at) == RFLAC_PROCESS_NEXT
+            && at < fl->size)
+      {
+         uint64_t landed;
+         rflac_seek_resumed(fl->handle, 0);
+         rflac_set_in(fl->handle, (const uint8_t*)fl->data + at,
+               fl->size - (size_t)at);
+         fl->fed_hdr = 1;
+         fl->drained = 0;
+         fl->cursor  = (size_t)at;
+         /* The table names the boundary, not the frame; close the
+          * remainder by decoding. */
+         landed = rflac_tell(fl->handle);
+         for (; landed < frame; )
+         {
+            int16_t skip[1024 * 2];
+            size_t  want = (size_t)(frame - landed);
+            size_t  got;
+            if (want > 1024)
+               want = 1024;
+            got = audio_transfer_flac_pull(fl, skip, want, 0);
+            if (!got)
+               break;
+            landed += got;
+         }
+         if (landed >= frame)
+            return 1;
+      }
+   }
+
+   /* Rewind every source this arm can have. */
+   rflac_reset(fl->handle);
+   fl->fed_hdr = 0;
+   fl->drained = 0;
+   fl->cursor  = 0;
+   fl->pg_off  = 0;
+   fl->cur     = NULL;
+   fl->cur_len = 0;
+   fl->cur_off = 0;
+   fl->pkt_index = 0;
+   fl->blob_off  = 0;
+#ifdef HAVE_RWEBM
+   if (fl->demux)
+      rwebm_rewind(fl->demux);
+#endif
+
+   for (at = 0; at < frame; )
+   {
+      size_t want = (size_t)(frame - at);
+      size_t got;
+      if (want > 1024)
+         want = 1024;
+      got = audio_transfer_flac_pull(fl, scratch, want, 0);
+      if (!got)
+         return 0;
+      at += got;
+   }
+
+   return 1;
+}
+
+
 #endif
 
 #ifdef HAVE_RVORBIS
@@ -2031,9 +2125,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             fl->cur       = NULL;
             fl->cur_len   = 0;
             fl->cur_off   = 0;
-            fl->handle    = rflac_open_with_metadata(
-                  audio_transfer_flac_read, audio_transfer_flac_seek,
-                  NULL, fl);
+            fl->handle    = rflac_new();
             return fl->handle != NULL;
          }
          /* Ogg FLAC (RFC 5334).  The first packet opens with the
@@ -2061,9 +2153,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                fl->cur      = NULL;
                fl->cur_len  = 0;
                fl->cur_off  = 0;
-               fl->handle   = rflac_open_with_metadata(
-                     audio_transfer_flac_read,
-                     audio_transfer_flac_seek, NULL, fl);
+               fl->handle   = rflac_new();
                return fl->handle != NULL;
             }
          }
@@ -2115,13 +2205,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             fl->cur_off  = 0;
             /* No metadata handler: the STREAMINFO the decoder needs
              * is read through the same callbacks as everything else. */
-            fl->handle   = rflac_open_with_metadata(
-                  audio_transfer_flac_read, audio_transfer_flac_seek,
-                  NULL, fl);
+            fl->handle   = rflac_new();
             return fl->handle != NULL;
          }
 #endif
-         fl->handle = rflac_open_memory(fl->data, fl->size);
+         fl->handle = rflac_new();
          return fl->handle != NULL;
       }
 #endif
@@ -2871,12 +2959,26 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->handle)
             return false;
-         if (channels)
-            *channels     = (unsigned)fl->handle->channels;
-         if (rate)
-            *rate         = (unsigned)fl->handle->sampleRate;
-         if (total_frames)
-            *total_frames = (uint64_t)fl->handle->totalPCMFrameCount;
+         {
+            const rflac_format_t *ff = rflac_format(fl->handle);
+            if (!ff)
+            {
+               /* The header has not been seen yet.  Hand over the
+                * setup bytes and let the decoder read it, which costs
+                * one span and no audio. */
+               if (!audio_transfer_flac_feed(fl))
+                  return false;
+               rflac_process(fl->handle, NULL, NULL);
+               if (!(ff = rflac_format(fl->handle)))
+                  return false;
+            }
+            if (channels)
+               *channels     = (unsigned)ff->channels;
+            if (rate)
+               *rate         = (unsigned)ff->sample_rate;
+            if (total_frames)
+               *total_frames = rflac_total_frames(fl->handle);
+         }
          return true;
       }
 #endif
@@ -3555,8 +3657,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->handle)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rflac_read_pcm_frames_s16(
-               fl->handle, (uint64_t)frames, out);
+         produced = audio_transfer_flac_pull(fl, out, frames, 0);
          break;
       }
 #endif
@@ -3746,8 +3847,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->handle)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rflac_read_pcm_frames_f32(
-               fl->handle, (uint64_t)frames, out);
+         produced = audio_transfer_flac_pull(fl, out, frames, 1);
          break;
       }
 #endif
@@ -3984,25 +4084,12 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
                (struct audio_transfer_flac*)data;
          if (!fl->handle)
             return 0;
-         /* Demuxed: how far into the caller's packets the decoder has
-          * read.  A feeder needs this and had none - the arm reported
-          * the memory reader's cursor, which is not the live source
-          * on any of the three callback paths and stands at zero
-          * there.  Growing a packet set blind is why a feeder that
-          * grew before every read could still starve. */
-         if (fl->packets)
-            return fl->blob_off + fl->cur_off;
-         if (fl->ogg)
-            return fl->pg_off;
-#ifdef HAVE_RWEBM
-         if (fl->demux)
-            return rwebm_tell(fl->demux);
-#endif
-         /* Buffer mode: the raw read cursor runs slightly ahead of the
-          * decode position through bitstream caching, which is the
-          * safe side for a feeder - bytes behind it are never re-read
-          * (the loop jump lands in the kept head). */
-         return (size_t)fl->handle->memoryStream.currentReadPos;
+         /* One answer for every arm now.  The decoder reads nothing for
+          * itself, so what it has consumed is exactly what this side
+          * handed over, counted as it went.  The three per-arm cursors
+          * this replaced existed only because a pulling decoder cannot
+          * be asked where it is. */
+         return fl->cursor;
       }
 #endif
 #ifdef HAVE_RMP3
@@ -4211,7 +4298,13 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->handle)
             return false;
-         return rflac_seek_to_pcm_frame(fl->handle,
+         /* Seeking restarts the stream and decodes forward.  The
+          * decoder cannot fetch anything itself, and only this side
+          * knows how to rewind a container, so the walk belongs here.
+          * A resident buffer makes it one pass over already-present
+          * bytes; a container arm pays a re-walk of its own index,
+          * which is what it paid before. */
+         return audio_transfer_flac_seek_to(fl,
                (uint64_t)frame) != 0;
       }
 #endif
@@ -4366,7 +4459,7 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (fl->handle)
-            rflac_close(fl->handle);
+            rflac_free(fl->handle);
 #ifdef HAVE_RWEBM
          if (fl->demux)
             rwebm_close(fl->demux);
