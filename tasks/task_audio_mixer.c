@@ -1195,6 +1195,8 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
    tell = audio_driver_mixer_stream_byte_tell((unsigned)w->slot);
    if (tell >= 0)
    {
+      bool fed = true;
+
       if (!w->keep_set)
       {
          /* First sighting of the decoder's start position.  The
@@ -1204,12 +1206,45 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
           * any fixed head.  Grow the head to the decoder's start
           * plus slack once, now that the position is known. */
          if ((size_t)tell + (512 * 1024) > AMIX_WINDOW_KEEP)
-            data_transfer_window_grow_keep(w->dt,
+            fed = data_transfer_window_grow_keep(w->dt,
                   (size_t)tell + (1024 * 1024));
          w->keep_set = true;
       }
-      data_transfer_window_feed(w->dt, (size_t)tell,
-            AMIX_WINDOW_LOOKAHEAD, AMIX_WINDOW_MARGIN);
+      if (fed)
+         fed = data_transfer_window_feed(w->dt, (size_t)tell,
+               AMIX_WINDOW_LOOKAHEAD, AMIX_WINDOW_MARGIN);
+
+      if (!fed)
+      {
+         /* The window cannot be maintained any longer - the file
+          * shrank, or the read errored - and the transfer has
+          * settled, so nothing will extend it again.
+          *
+          * Merely giving up on the feed is not an option here.  The
+          * decoder runs on the audio thread straight out of this
+          * window, and pages ahead of the frontier are reserved but
+          * uncommitted, so a sound left playing against a frozen
+          * window does not glitch, it faults - the same reason the
+          * note above this handler gives for ignoring cancellation.
+          * Destroy the sound instead.  The release callback runs
+          * synchronously inside the removal and sets dead, so the
+          * next tick frees the window and finishes the task by the
+          * ordinary path.
+          *
+          * Note this returns rather than jumping to bail.  Every
+          * goto bail sits above the handover, as the note says, and
+          * bail frees the window - doing that here would pull it out
+          * from under a live sound.  Nor is bail's fall back to the
+          * classic full load right here: that is for failures before
+          * anything is playing, whereas reading this file has just
+          * failed, so a full load would most likely fail the same
+          * way, and restarting the music from the beginning
+          * underneath a listener is not a recovery worth making. */
+         RARCH_ERR("[Audio mixer] Lost the streaming window for "
+               "\"%s\", stopping the stream.\n", w->path);
+         audio_driver_mixer_remove_stream((unsigned)w->slot);
+         return;
+      }
    }
    /* a stopped stream (tell < 0 while not dead) just idles */
    return;
