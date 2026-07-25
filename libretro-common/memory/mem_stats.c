@@ -37,6 +37,7 @@
 #include <stdlib.h>
 
 #include <memory/mem_stats.h>
+#include <string/stdstring.h>
 
 #if defined(_3DS)
 #include <3ds.h>
@@ -86,9 +87,9 @@ typedef struct
 #elif defined(__WINRT__) || defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__) || defined(__unix__)
-#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 #endif
 
 #if defined(__linux__) || defined(__unix__)
@@ -100,61 +101,113 @@ typedef struct
 #define MEM_STATS_TAG_CACHED     "Cached:"
 #define MEM_STATS_TAG_SHMEM      "Shmem:"
 
-/* One pass over /proc/meminfo, since every value wanted is in it and
- * the file is a virtual one that is cheapest read in a single go.
+/* One read of /proc/meminfo, which is the kernel formatting a page and
+ * a half on demand rather than anything touching a disk - but stdio
+ * would still put a heap-allocated buffer and a call per line in front
+ * of it, so take it in one go into stack space and pick through that.
+ * Everything wanted is in the first few hundred bytes, so the scan
+ * stops as soon as it has the lot.
+ *
  * MemAvailable is the kernel's own estimate of what can be had without
- * swapping and is preferred where the kernel is new enough to publish
- * it; the older sum is the fallback. */
+ * swapping, and is preferred wherever the kernel is new enough to
+ * publish it; the older sum is the fallback. */
+/* One read of /proc/meminfo, which is the kernel formatting a page and
+ * a half on demand rather than anything touching a disk - but stdio
+ * would put a heap-allocated buffer and a call per line in front of it,
+ * so take it in one go into stack space.
+ *
+ * Then one pass, not one per field: every line is looked at once, and
+ * the first character rejects almost all of them before any string
+ * comparison happens.  The six values wanted sit in the first few
+ * hundred bytes, so the walk stops as soon as it has them and never
+ * reaches the rest of the file.
+ *
+ * MemAvailable is the kernel's own estimate of what can be had without
+ * swapping, and is preferred wherever the kernel publishes it; the
+ * older sum is the fallback.
+ */
+#define MEM_STATS_MATCH(tag, dst) \
+   if (!strncmp(line, tag, STRLEN_CONST(tag))) \
+   { \
+      dst = strtoul(line + STRLEN_CONST(tag), NULL, 10); \
+      need--; \
+      break; \
+   }
+
 static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 {
-   char line[256];
+   char    buf[2048];
+   char   *line;
+   ssize_t got;
+   int     need = 6;
    unsigned long mem_total = 0, mem_available = 0, mem_free = 0;
    unsigned long buffers = 0, cached = 0, shmem = 0;
-   int have_available = 0;
-   FILE *f = fopen(MEM_STATS_PROC_MEMINFO, "r");
+   int     have_avail = 0;
+   int     fd = open(MEM_STATS_PROC_MEMINFO, O_RDONLY);
 
-   if (!f)
+   if (fd < 0)
       return;
-   while (fgets(line, sizeof(line), f))
+   got = read(fd, buf, sizeof(buf) - 1);
+   close(fd);
+   if (got <= 0)
+      return;
+   buf[got] = '\0';
+
+   line = buf;
+   while (line && need)
    {
-      if (!strncmp(line, MEM_STATS_TAG_TOTAL,
-               sizeof(MEM_STATS_TAG_TOTAL) - 1))
-         mem_total = strtoul(line + sizeof(MEM_STATS_TAG_TOTAL) - 1,
-               NULL, 10);
-      else if (!strncmp(line, MEM_STATS_TAG_AVAILABLE,
-               sizeof(MEM_STATS_TAG_AVAILABLE) - 1))
+      /* one character throws out every line that cannot be a match,
+       * which is most of them */
+      switch (*line)
       {
-         mem_available  = strtoul(line
-               + sizeof(MEM_STATS_TAG_AVAILABLE) - 1, NULL, 10);
-         have_available = 1;
+         case 'M':
+            MEM_STATS_MATCH("MemTotal:",     mem_total)
+            MEM_STATS_MATCH("MemFree:",      mem_free)
+            /* MemAvailable is the one whose absence has to be known
+             * about, the fallback sum existing for exactly that */
+            if (!strncmp(line, "MemAvailable:",
+                     STRLEN_CONST("MemAvailable:")))
+            {
+               mem_available = strtoul(line
+                     + STRLEN_CONST("MemAvailable:"), NULL, 10);
+               have_avail    = 1;
+               need--;
+            }
+            break;
+         case 'B':
+            MEM_STATS_MATCH("Buffers:",      buffers)
+            break;
+         case 'C':
+            /* anchored at the line start, so "SwapCached:" - which
+             * contains this - cannot be picked up by mistake */
+            MEM_STATS_MATCH("Cached:",       cached)
+            break;
+         case 'S':
+            MEM_STATS_MATCH("Shmem:",        shmem)
+            break;
+         default:
+            break;
       }
-      else if (!strncmp(line, MEM_STATS_TAG_FREE,
-               sizeof(MEM_STATS_TAG_FREE) - 1))
-         mem_free = strtoul(line + sizeof(MEM_STATS_TAG_FREE) - 1,
-               NULL, 10);
-      else if (!strncmp(line, MEM_STATS_TAG_BUFFERS,
-               sizeof(MEM_STATS_TAG_BUFFERS) - 1))
-         buffers = strtoul(line + sizeof(MEM_STATS_TAG_BUFFERS) - 1,
-               NULL, 10);
-      else if (!strncmp(line, MEM_STATS_TAG_CACHED,
-               sizeof(MEM_STATS_TAG_CACHED) - 1))
-         cached = strtoul(line + sizeof(MEM_STATS_TAG_CACHED) - 1,
-               NULL, 10);
-      else if (!strncmp(line, MEM_STATS_TAG_SHMEM,
-               sizeof(MEM_STATS_TAG_SHMEM) - 1))
-         shmem = strtoul(line + sizeof(MEM_STATS_TAG_SHMEM) - 1,
-               NULL, 10);
+      if ((line = strchr(line, '\n')))
+         line++;
    }
-   fclose(f);
 
    if (total)
       *total = (uint64_t)mem_total * 1024;
-   if (avail)
+   if (!avail)
+      return;
+   if (have_avail)
    {
-      if (have_available)
-         *avail = (uint64_t)mem_available * 1024;
-      else
-         *avail = (uint64_t)((mem_free + buffers + cached) - shmem) * 1024;
+      *avail = (uint64_t)mem_available * 1024;
+      return;
+   }
+   /* Subtracting shmem from the sum on unsigned longs wraps to an
+    * enormous figure if it ever exceeds it, and an enormous figure here
+    * means every admission test in the program says yes.  It should not
+    * happen; it costs nothing to make sure it cannot. */
+   {
+      unsigned long sum = mem_free + buffers + cached;
+      *avail = (uint64_t)((sum > shmem) ? (sum - shmem) : 0) * 1024;
    }
 }
 #endif
