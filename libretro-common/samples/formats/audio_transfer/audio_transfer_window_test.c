@@ -71,7 +71,20 @@
 #define LOOKAHEAD (2 * 1024 * 1024)
 #define MARGIN    (1 * 1024 * 1024)
 
-#define CHUNK 4096
+/* Frames per read.  The buffers below are sized in samples, so what a
+ * read may ask for is this divided by the channel count - not this
+ * flat, which is a stereo assumption and overflows the moment a file
+ * has more than CHUNK_SAMPLES/CHUNK channels.  rvorbis decodes up to
+ * sixteen, and a .weba can carry them. */
+#define CHUNK         4096
+#define CHUNK_SAMPLES (CHUNK * 16)
+
+/* Frames that fit in a CHUNK_SAMPLES buffer at 'ch' channels. */
+static size_t chunk_frames(unsigned ch)
+{
+   size_t f = ch ? (size_t)CHUNK_SAMPLES / ch : 0;
+   return f > CHUNK ? (size_t)CHUNK : f;
+}
 
 static int bad;
 
@@ -128,7 +141,7 @@ static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
       size_t got = 0;
       if (frames + CHUNK > cap)
       {
-         size_t   ncap = cap ? cap * 2 : (CHUNK * 64);
+         size_t   ncap = cap ? cap * 2 : ((size_t)CHUNK * 64);
          int16_t *np   = (int16_t*)realloc(pcm,
                ncap * ch * sizeof(int16_t));
          if (!np)
@@ -136,7 +149,8 @@ static int16_t *decode_resident(const char *path, enum audio_type_enum ty,
          pcm = np;
          cap = ncap;
       }
-      audio_transfer_read_s16(ctx, ty, pcm + frames * ch, CHUNK, &got);
+      audio_transfer_read_s16(ctx, ty, pcm + frames * ch,
+            chunk_frames(ch), &got);
       if (!got)
          break;
       frames += got;
@@ -159,7 +173,7 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
    size_t           flen = 0, avail, floor_ = 0, frames = 0;
    rwebm_t         *probe;
    void            *ctx;
-   static int16_t   out[CHUNK * 8];
+   static int16_t   out[CHUNK_SAMPLES];
 
    *mismatch = 0;
    if (!(dt = data_transfer_open_window(path, KEEP)))
@@ -201,11 +215,21 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
       data_transfer_free(dt);
       return 0;
    }
+   /* The starvation check is run without a reference and so without a
+    * channel count; take it from the context rather than guessing. */
+   if (!ch)
+      audio_transfer_info(ctx, ty, &ch, NULL, NULL);
+   if (!ch)
+   {
+      audio_transfer_free(ctx, ty);
+      data_transfer_free(dt);
+      return 0;
+   }
 
    for (;;)
    {
       size_t got = 0, tell;
-      audio_transfer_read_s16(ctx, ty, out, CHUNK, &got);
+      audio_transfer_read_s16(ctx, ty, out, chunk_frames(ch), &got);
       if (got)
       {
          if (   ref
@@ -239,7 +263,7 @@ static size_t decode_windowed(const char *path, enum audio_type_enum ty,
       while (looped < CHUNK * 16)
       {
          size_t got = 0, tell;
-         audio_transfer_read_s16(ctx, ty, out, CHUNK, &got);
+         audio_transfer_read_s16(ctx, ty, out, chunk_frames(ch), &got);
          if (!got)
             break;
          looped += got;
