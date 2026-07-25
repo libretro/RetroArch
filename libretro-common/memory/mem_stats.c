@@ -128,8 +128,20 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 }
 #endif
 
+static uint64_t (*mem_stats_total_cb)(void) = NULL;
+static uint64_t (*mem_stats_free_cb)(void)  = NULL;
+
+void mem_stats_set_provider(uint64_t (*total)(void),
+      uint64_t (*free_mem)(void))
+{
+   mem_stats_total_cb = total;
+   mem_stats_free_cb  = free_mem;
+}
+
 uint64_t mem_stats_total(void)
 {
+   if (mem_stats_total_cb)
+      return mem_stats_total_cb();
 #if defined(_3DS)
    return osGetMemRegionSize(MEMREGION_ALL);
 #elif defined(GEKKO)
@@ -200,6 +212,8 @@ uint64_t mem_stats_total(void)
 
 uint64_t mem_stats_free(void)
 {
+   if (mem_stats_free_cb)
+      return mem_stats_free_cb();
 #if defined(_3DS)
    return osGetMemRegionFree(MEMREGION_ALL);
 #elif defined(GEKKO)

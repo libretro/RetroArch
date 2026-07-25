@@ -468,27 +468,7 @@ const void *frontend_driver_get_cpu_architecture_str(char *s, size_t len)
    return frontend;
 }
 
-uint64_t frontend_driver_get_total_memory(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->get_total_mem)
-      return frontend->get_total_mem();
-   return mem_stats_total();
-}
 
-uint64_t frontend_driver_get_free_memory(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   /* The platform's own answer, from libretro-common, unless this
-    * frontend has a reason to override it - which one does: the
-    * emscripten port reads a budget it maintains itself, and no
-    * general query can see that. */
-   if (frontend && frontend->get_free_mem)
-      return frontend->get_free_mem();
-   return mem_stats_free();
-}
 
 void frontend_driver_install_signal_handler(void)
 {

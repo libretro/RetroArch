@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <memory/mem_stats.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -322,7 +323,7 @@ static uint64_t gfx_thumb_anim_mem_need(uint64_t file_len, uint64_t px)
  * memory, keep the static caps when it cannot (they return 0). */
 static bool gfx_thumb_anim_mem_ok(uint64_t file_len, uint64_t px)
 {
-   uint64_t free_mem = frontend_driver_get_free_memory();
+   uint64_t free_mem = mem_stats_free();
    if (free_mem)
       return (file_len <= GFX_THUMB_ANIM_ABS_MAX_FILE)
           && (gfx_thumb_anim_mem_need(file_len, px) <= free_mem / 4);
@@ -345,7 +346,7 @@ static bool gfx_thumb_anim_mem_ok(uint64_t file_len, uint64_t px)
  * fallback would then slurp. */
 static bool gfx_thumb_anim_window_ok(uint64_t px)
 {
-   uint64_t free_mem = frontend_driver_get_free_memory();
+   uint64_t free_mem = mem_stats_free();
    uint64_t win      = (uint64_t)GFX_THUMB_ANIM_WINDOW_KEEP
                      + GFX_THUMB_ANIM_WINDOW_AHEAD
                      + GFX_THUMB_ANIM_WINDOW_BACK;

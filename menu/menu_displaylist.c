@@ -16,6 +16,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory/mem_stats.h>
 #include <stddef.h>
 
 #include <compat/strl.h>
@@ -2240,8 +2241,8 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 
          /* Memory */
          {
-            uint64_t memory_total = frontend_driver_get_total_memory();
-            uint64_t memory_used  = memory_total - frontend_driver_get_free_memory();
+            uint64_t memory_total = mem_stats_total();
+            uint64_t memory_used  = memory_total - mem_stats_free();
             if (memory_used != 0 && memory_total != 0)
             {
                _len = strlcpy(entry,

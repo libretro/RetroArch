@@ -107,11 +107,6 @@ void task_window_progress_cb(retro_task_t *task)
    (void)task;
 }
 
-uint64_t frontend_driver_get_free_memory(void)
-{
-   return 0;
-}
-
 /* dir_list_new_special lives in retroarch.c, which we cannot link
  * without dragging in the world.  manual_content_scan calls this to
  * walk the scan directory; returning NULL causes the scan to bail

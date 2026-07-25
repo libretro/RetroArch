@@ -182,9 +182,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len);
 
 bool frontend_driver_get_salamander_basename(char *s, size_t len);
 
-uint64_t frontend_driver_get_total_memory(void);
 
-uint64_t frontend_driver_get_free_memory(void);
 
 void frontend_driver_install_signal_handler(void);
 

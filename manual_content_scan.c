@@ -20,6 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <memory/mem_stats.h>
 #include <file/file_path.h>
 #include <file/archive_file.h>
 #include <string/stdstring.h>
@@ -270,7 +271,7 @@ enum manual_content_scan_dat_file_path_status
       /* Check if path itself is valid */
       if (logiqx_dat_path_is_valid(scan_dat_file_path, &file_size))
       {
-         uint64_t free_memory = frontend_driver_get_free_memory();
+         uint64_t free_memory = mem_stats_free();
          dat_file_path_status = MANUAL_CONTENT_SCAN_DAT_FILE_OK;
 
          /* DAT files can be *very* large...

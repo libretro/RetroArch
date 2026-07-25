@@ -15,6 +15,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory/mem_stats.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <emscripten/threading.h>
@@ -1039,6 +1040,11 @@ int main(int argc, char *argv[])
    /* this never gets freed - emscripten_platform_data is held
     * for the lifetime of the web-build process */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
+   /* The budget below is this port's own accounting, which no general
+    * platform query can see, so register it as the answer everything
+    * gets from mem_stats. */
+   mem_stats_set_provider(frontend_emscripten_get_total_mem,
+         frontend_emscripten_get_free_mem);
    /* NULL-check: the field writes a few lines down
     * (emscripten_platform_data->browser, ->os, ->...) NULL-deref
     * on OOM.  This is main() at process entry - if we can't even

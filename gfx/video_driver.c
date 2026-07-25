@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory/mem_stats.h>
 #include <stdlib.h>
 #include <math.h>
 
@@ -4870,8 +4871,8 @@ void video_driver_frame(const void *data, unsigned width,
 
          if ((video_st->frame_count % memory_update_interval) == 0)
          {
-            last_total_memory = frontend_driver_get_total_memory();
-            last_used_memory  = last_total_memory - frontend_driver_get_free_memory();
+            last_total_memory = mem_stats_total();
+            last_used_memory  = last_total_memory - mem_stats_free();
          }
 
          if (_len > 0)
