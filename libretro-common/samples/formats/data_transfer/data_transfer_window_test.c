@@ -520,6 +520,91 @@ static int extend_settles_check(void)
 }
 #endif
 
+/* Every entry point must tolerate a NULL handle.
+ *
+ * Most of the surface already did, and window_is_reserved() did, but
+ * its immediate neighbour window_base() dereferenced without looking
+ * - despite having an exact NULL-safe twin in data_transfer_ptr().
+ * A caller cannot infer a rule from a surface that is split like
+ * that, so the rule is now: bool returns false, pointer returns NULL,
+ * void does nothing.
+ *
+ * This runs in a child because the failure is a segfault, not a
+ * wrong answer. */
+#if defined(__unix__) || defined(__APPLE__)
+static int null_handle_check(void)
+{
+   pid_t pid = fork();
+   int   status = 0;
+
+   if (pid < 0)
+   {
+      printf("[skip] NULL handles: fork unavailable\n");
+      return 0;
+   }
+   if (pid == 0)
+   {
+      uint8_t buf[16];
+      size_t  len = 12345;
+      int     bad = 0;
+
+      /* window surface */
+      if (data_transfer_window_is_reserved(NULL))          bad = 1;
+      if (data_transfer_window_base(NULL, &len))           bad = 1;
+      if (len != 0)                                        bad = 1;
+      if (data_transfer_window_base(NULL, NULL))           bad = 1;
+      if (data_transfer_window_extend(NULL, 4096))         bad = 1;
+      if (data_transfer_window_grow_keep(NULL, 4096))      bad = 1;
+      if (data_transfer_window_peek(NULL, 0, buf, 16))     bad = 1;
+      if (data_transfer_window_feed(NULL, 0, 4096, 4096))  bad = 1;
+      data_transfer_window_advance(NULL, 4096);
+      data_transfer_window_rewind(NULL);
+      data_transfer_window_punch(NULL, 0, 4096);
+
+      /* shared surface */
+      if (data_transfer_iterate(NULL, 4096))               bad = 1;
+      len = 12345;
+      if (data_transfer_ptr(NULL, &len))                   bad = 1;
+      if (len != 0)                                        bad = 1;
+      if (data_transfer_avail(NULL))                       bad = 1;
+      if (data_transfer_complete(NULL))                    bad = 1;
+      if (data_transfer_capped(NULL))                      bad = 1;
+      if (data_transfer_failed(NULL))                      bad = 1;
+      if (data_transfer_refill(NULL, 0))                   bad = 1;
+      data_transfer_discard(NULL, 4096);
+      data_transfer_free(NULL);
+
+      _exit(bad ? 61 : 60);
+   }
+   waitpid(pid, &status, 0);
+
+   if (WIFSIGNALED(status))
+   {
+      printf("[FAIL] a NULL handle killed the process (signal %d)\n",
+            WTERMSIG(status));
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 61)
+   {
+      printf("[FAIL] a NULL handle produced a non-empty answer\n");
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 60)
+   {
+      printf("[ok]   every entry point tolerates a NULL handle\n");
+      return 0;
+   }
+   printf("[FAIL] the NULL-handle child ended unexpectedly\n");
+   return 1;
+}
+#else
+static int null_handle_check(void)
+{
+   printf("[skip] NULL handles: needs fork()\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -605,6 +690,7 @@ int main(void)
    bad |= surface_mixing_check();
    bad |= range_bounds_check();
    bad |= extend_settles_check();
+   bad |= null_handle_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

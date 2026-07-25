@@ -141,10 +141,10 @@
  *    clamping it to the length would turn an absurd argument into a
  *    whole-file commit, which is the worse of the two.
  *
- *  - Uniform NULL tolerance.  The shared surface (iterate, ptr,
- *    avail, complete, failed, capped, discard, refill, free) accepts
- *    NULL; the window entry points and window_base() dereference
- *    without checking.
+ *  - A reason to pass NULL.  Every entry point tolerates it - bool
+ *    returns false, pointer returns NULL, void does nothing - so the
+ *    surface is uniform, but nothing here treats a NULL handle as
+ *    meaningful.  It is an accepted mistake, not an idiom.
  *
  *  - A runtime choice of strictness.  DT_WINDOW_STRICT is build-time
  *    and covers window decommits only; discard() always releases
@@ -407,6 +407,12 @@ bool data_transfer_window_is_reserved(data_transfer_t *dt)
 
 const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len)
 {
+   if (!dt)
+   {
+      if (len)
+         *len = 0;
+      return NULL;
+   }
    if (len)
       *len = dt->len;
    return dt->map;
@@ -414,7 +420,7 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len)
 
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
 {
-   if (!dt->window || dt->failed)
+   if (!dt || !dt->window || dt->failed)
       return false;
    if (hi > dt->len)
       hi = dt->len;
@@ -443,7 +449,7 @@ bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
 
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 {
-   if (!dt->window || !dt->map_len || dt->failed)
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
       return;
    if (lo > dt->whi)
       lo = dt->whi;
@@ -455,7 +461,7 @@ void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 
 void data_transfer_window_rewind(data_transfer_t *dt)
 {
-   if (!dt->window || !dt->map_len || dt->failed)
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
       return;
    /* drop the old window entirely (frontier through its end; the
     * partial last page goes with the round-up), then restart the
@@ -469,7 +475,7 @@ void data_transfer_window_rewind(data_transfer_t *dt)
 
 bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
 {
-   if (!dt->window || dt->failed)
+   if (!dt || !dt->window || dt->failed)
       return false;
    if (keep > dt->len)
       keep = dt->len;
@@ -506,7 +512,8 @@ bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
 {
    /* off + n is computed as a subtraction: the sum can wrap, and a
     * wrapped sum reads as comfortably in range. */
-   if (!dt->window || dt->failed || off > dt->len || n > dt->len - off)
+   if (!dt || !dt->window || dt->failed
+         || off > dt->len || n > dt->len - off)
       return false;
    if (!dt->map_len)
    {
@@ -521,7 +528,7 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
       size_t to)
 {
    size_t f, t;
-   if (!dt->window || !dt->map_len || dt->failed)
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
       return;
    /* Bound the range to the reservation before rounding it.  'to' is
     * caller-supplied and unclamped everywhere else here, and a
@@ -548,7 +555,7 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
 bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
       size_t lookahead, size_t margin)
 {
-   if (!dt->window || dt->failed)
+   if (!dt || !dt->window || dt->failed)
       return false;
    if (tell < dt->wtell)
       data_transfer_window_rewind(dt);   /* the consumer looped */
