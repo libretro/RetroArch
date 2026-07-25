@@ -209,9 +209,11 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
- * success.  Every arm seeks except a Vorbis stream opened from demuxed
- * packets, whose synthesised framing carries placeholder granules and
- * which therefore takes frame 0 only - the rewind a loop needs.
+ * success.  Every arm seeks except a packet-fed Vorbis stream (demuxed
+ * input, or a WebM buffer), which takes frame 0 only - the rewind a
+ * loop needs.  There is no Ogg for it to seek in and, unlike Opus, a
+ * Vorbis packet does not carry its own duration, so the packets before
+ * a target cannot be stepped over without being decoded.
  *
  * Seeking is not always cheap, and what it costs is spent on the
  * calling thread: MOD walks the sequence to get where it is going,

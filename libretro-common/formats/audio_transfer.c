@@ -100,19 +100,32 @@
  *
  * Vorbis (rvorbis)
  *   Does: three inputs - Ogg buffer, WebM buffer (.weba, HAVE_RWEBM,
- *     packets lifted out of the container at start()), and demuxed
- *     (CodecPrivate + packets, repackaged into a synthetic Ogg stream);
- *     s16 and f32, freely mixed; channels and rate; length from the last
- *     page granule; seek to any frame and rewind; buffer_tell in
- *     self-framed buffer mode.
- *   Does not: decode raw packets.  That is why the demuxed and WebM
- *     paths synthesise Ogg framing, which costs a second copy of the
- *     packets held for the decoder's lifetime, and leaves those paths
- *     without a windowable cursor (buffer_tell returns 0) and whole-file
- *     resident.  On them the granules are monotone placeholders, so
- *     info()'s length is not the stream's true length and a nonzero seek
- *     resolves against placeholders - only seek to frame 0 is meaningful
- *     there.  Chained or multiplexed Ogg is not handled.
+ *     packets pulled from rwebm on demand), and demuxed (CodecPrivate +
+ *     packets); s16 and f32, freely mixed; channels and rate.  The two
+ *     packet-fed inputs decode raw packets where the container holds
+ *     them (rvorbis_open_packets), so no Ogg is synthesised, nothing is
+ *     copied, and the packets are read as they are played rather than
+ *     held for the decoder's lifetime.  From an Ogg buffer: length from
+ *     the last page granule, seek to any frame, rewind, buffer_tell,
+ *     hence windowing.  From WebM: end trimming, exactly - Vorbis codes
+ *     in overlapping blocks, so the last packet decodes past the end of
+ *     the audio, and the container's DiscardPadding says by how much.
+ *     It is applied when the final packet is decoded, which is when the
+ *     stream's true length is first known; a Duration, which rounds up
+ *     past the overhang, bounds emission until then and is what info()
+ *     reports before a pass has reached the end.
+ *   Does not: seek to a nonzero frame on the packet-fed paths.  There
+ *     is no Ogg to seek in and no per-packet duration to step over with
+ *     (unlike Opus, whose TOC byte carries one), so landing anywhere
+ *     but the start would mean decoding the whole way there; rewind is
+ *     what those paths offer and a nonzero seek fails at the entry
+ *     point.  No buffer_tell on them either - the packets are read in
+ *     place, but the frontier is the demuxer's own walk rather than a
+ *     cursor this arm keeps - so no windowing.  No length and no end
+ *     trim from the demuxed path, whose packet set is the caller's:
+ *     with neither a duration nor a padding stated, its last packet's
+ *     overhang is handed out with the rest.  Chained or multiplexed
+ *     Ogg is not handled.
  *
  * MP3 (rmp3)
  *   Does: buffer input; s16 (quantised by the synthesis filter, no float
@@ -290,21 +303,28 @@ struct audio_transfer_vorbis
    size_t      packets_size;
    const uint32_t *pkt_sizes;
    size_t      num_packets;
-   /* Backing buffer materialised by start() for the decoder to read from,
-    * kept alive for the decoder's lifetime and freed in free().  rvorbis
-    * decodes Ogg-framed input and reads lazily from the buffer it was
-    * opened over, so when fed a demuxed stream start() synthesises an Ogg
-    * stream here; a decoder that consumed raw packets directly would leave
-    * this NULL.  Format-neutral by intent -- it is decoder scratch, not
-    * part of the stream's identity. */
-   uint8_t    *synth;
-   size_t      synth_size;
-   /* WebM buffer mode (.weba): packets extracted from the container at
-    * start() into these owned arrays, then handed through the demuxed
-    * machinery above (rvorbis wants Ogg framing, which that path
-    * synthesises). */
-   uint8_t    *own_pkts;
-   uint32_t   *own_sizes;
+   /* Packet-fed operation (demuxed input, and WebM buffer input): the
+    * decoder is opened on the setup headers alone and then handed one
+    * bare packet at a time out of wherever it lives, which is the
+    * caller's blob or the demuxer's own view of the caller's buffer.
+    * Nothing is copied and nothing is reframed. */
+   int         packet;      /* opened with rvorbis_open_packets         */
+   size_t      pkt_index;   /* next packet in the caller's blob         */
+   size_t      pkt_offset;  /* its byte offset there                    */
+#ifdef HAVE_RWEBM
+   rwebm_t    *demux;       /* buffer is WebM audio (.weba)             */
+   int         track_idx;
+#endif
+   /* Emission bound, in frames, from a duration the container states;
+    * -1 where none does.  Vorbis codes in overlapping blocks, so the
+    * last packet decodes past the end of the audio, and only the
+    * container knows where that is.  'discard' is the tail the
+    * container asks to be dropped (Matroska DiscardPadding), which is
+    * exact where a stated duration is only close: it is applied once
+    * the final packet has been decoded and the true end is known. */
+   int64_t     limit;
+   int64_t     discard;
+   int64_t     emitted;
 };
 #endif
 
@@ -662,86 +682,21 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
 }
 
 #ifdef HAVE_RVORBIS
-/* --- Ogg repackaging for demuxed Vorbis --------------------------------
+/* --- Packet-fed Vorbis -------------------------------------------------
  *
  * WebM (and Matroska generally) carries Vorbis as raw packets: the three
- * setup headers live in CodecPrivate, xiph-laced, and the audio frames are
- * bare packets.  rvorbis only decodes Ogg-framed input.  Rather than adding
- * a raw-packet path to the decoder (and risking its byte-determinism), we
- * wrap the demuxed packets in a synthetic Ogg stream here and hand that to
- * the unchanged rvorbis_open_memory.
+ * setup headers live in CodecPrivate, xiph-laced, and the audio frames
+ * are bare packets.  rvorbis decodes those where they lie
+ * (rvorbis_open_packets, rvorbis_packet_decode), so no Ogg is
+ * synthesised for them and nothing is copied: the decoder is pointed at
+ * the demuxer's view of the caller's buffer, or at the caller's own
+ * packet blob, one packet at a time.
  *
- * rvorbis discards the page serial number and does not verify the page
- * CRC (see start_page_no_capturepattern), so a correct segment table and
- * packet payload suffice; the CRC is written correct anyway, cheaply.
+ * Overlap-add makes a packet worth zero or more frames rather than a
+ * fixed count - the first one only primes the window - so the drain
+ * below decodes another packet whenever the pending frames run out,
+ * instead of assuming one call per buffer.
  */
-
-/* Standard Ogg CRC-32: poly 0x04c11db7, no input/output reflection,
- * init 0. Computed directly (no table) -- it runs once per page at open. */
-static uint32_t audio_ogg_crc_poly(uint32_t crc)
-{
-   int j;
-   for (j = 0; j < 8; j++)
-      crc = (crc & 0x80000000u) ? (crc << 1) ^ 0x04c11db7u : (crc << 1);
-   return crc;
-}
-static uint32_t audio_ogg_crc(const uint8_t *buf, size_t len)
-{
-   uint32_t crc = 0;
-   size_t   i;
-   for (i = 0; i < len; i++)
-   {
-      crc ^= (uint32_t)buf[i] << 24;
-      crc  = audio_ogg_crc_poly(crc);
-   }
-   return crc;
-}
-
-/* Append one Ogg page carrying the given packets. Returns new write offset
- * or 0 on overflow. Each packet must be < 255*255 bytes (true for Vorbis
- * setup and typical audio frames). */
-static size_t audio_ogg_emit_page(uint8_t *out, size_t cap, size_t at,
-      uint32_t serial, uint32_t seqno, int64_t granule,
-      const uint8_t * const *pkts, const uint32_t *plens, int npk,
-      int bos, int eos)
-{
-   uint8_t  segtab[255];
-   int      nseg = 0;
-   int      k, s;
-   size_t   body = 0, hdr, total, i;
-   uint32_t crc;
-   for (k = 0; k < npk; k++)
-   {
-      uint32_t l = plens[k];
-      while (l >= 255) { if (nseg >= 255) return 0; segtab[nseg++] = 255; l -= 255; }
-      if (nseg >= 255) return 0;
-      segtab[nseg++] = (uint8_t)l;
-      body += plens[k];
-   }
-   hdr   = 27 + (size_t)nseg;
-   total = hdr + body;
-   if (at + total > cap)
-      return 0;
-   memcpy(out + at, "OggS", 4);
-   out[at + 4] = 0;                                    /* version           */
-   out[at + 5] = (uint8_t)((bos ? 2 : 0) | (eos ? 4 : 0));
-   for (i = 0; i < 8; i++)
-      out[at + 6 + i]  = (uint8_t)((uint64_t)granule >> (8 * i));
-   for (i = 0; i < 4; i++)
-      out[at + 14 + i] = (uint8_t)(serial >> (8 * i));
-   for (i = 0; i < 4; i++)
-      out[at + 18 + i] = (uint8_t)(seqno  >> (8 * i));
-   out[at + 22] = out[at + 23] = out[at + 24] = out[at + 25] = 0; /* CRC 0  */
-   out[at + 26] = (uint8_t)nseg;
-   memcpy(out + at + 27, segtab, (size_t)nseg);
-   { size_t o = at + hdr;
-     for (k = 0; k < npk; k++) { memcpy(out + o, pkts[k], plens[k]); o += plens[k]; } }
-   crc = audio_ogg_crc(out + at, total);
-   for (i = 0; i < 4; i++)
-      out[at + 22 + i] = (uint8_t)(crc >> (8 * i));
-   (void)s;
-   return at + total;
-}
 
 /* Split the xiph-laced CodecPrivate into its 3 header pointers/lengths.
  * Returns 1 on success. */
@@ -771,59 +726,121 @@ static int audio_vorbis_split_setup(const uint8_t *priv, size_t size,
    return 1;
 }
 
-/* Build a synthetic Ogg stream from demuxed Vorbis setup + packets.
- * Stores the malloc'd buffer in v->synth / v->synth_size. Returns 1 on
- * success. */
-static int audio_vorbis_build_ogg(struct audio_transfer_vorbis *v)
+/* The next coded packet, wherever this context's packets come from.
+ * Returns 1 with the bytes, 0 at end of stream, < 0 on a blob whose
+ * sizes do not agree with its length. */
+static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
+      const uint8_t **pdata, uint32_t *plen)
 {
-   const uint8_t *hdr[3];
-   uint32_t       hlen[3];
-   const uint8_t *pkts[2];
-   uint32_t       plens[2];
-   size_t         cap, at, i, off;
-   uint32_t       seq = 0;
-   uint8_t       *out;
-   const uint32_t serial = 0x0057454Du; /* 'WEM' */
-   if (!audio_vorbis_split_setup((const uint8_t*)v->setup, v->setup_size,
-            hdr, hlen))
-      return 0;
-   /* Worst case: every packet gets its own page (27 + lacing + body).
-    * Lacing is ceil(len/255)+1 bytes; bound generously. */
-   cap = v->setup_size + v->packets_size + 64;
-   cap += (v->num_packets + 4) * 64;
-   cap += (v->packets_size / 255) + (v->setup_size / 255) + 64;
-   out = (uint8_t*)malloc(cap);
-   if (!out)
-      return 0;
-   at = 0;
-   /* Page 0: identification header, BOS, single packet. */
-   pkts[0] = hdr[0]; plens[0] = hlen[0];
-   at = audio_ogg_emit_page(out, cap, at, serial, seq++, 0, pkts, plens, 1, 1, 0);
-   if (!at) { free(out); return 0; }
-   /* Page 1: comment + setup headers. */
-   pkts[0] = hdr[1]; plens[0] = hlen[1];
-   pkts[1] = hdr[2]; plens[1] = hlen[2];
-   at = audio_ogg_emit_page(out, cap, at, serial, seq++, 0, pkts, plens, 2, 0, 0);
-   if (!at) { free(out); return 0; }
-   /* Audio pages: one packet per page. Granule is unknown per-packet here;
-    * rvorbis derives sample counts from the decoded frames, so a monotone
-    * placeholder granule suffices. */
-   off = 0;
-   for (i = 0; i < v->num_packets; i++)
+#ifdef HAVE_RWEBM
+   if (v->demux)
    {
-      uint32_t len = v->pkt_sizes ? v->pkt_sizes[i]
-                   : (uint32_t)v->packets_size; /* single blob if unsplit */
-      const uint8_t *pk = (const uint8_t*)v->packets + off;
-      int eos = (i + 1 == v->num_packets);
-      pkts[0] = pk; plens[0] = len;
-      at = audio_ogg_emit_page(out, cap, at, serial, seq++,
-            (int64_t)(i + 1) * 1024, pkts, plens, 1, 0, eos);
-      if (!at) { free(out); return 0; }
-      off += len;
+      /* .weba: pull the next packet from the demuxer, which hands back
+       * a pointer into the caller's buffer. */
+      rwebm_packet pkt;
+      for (;;)
+      {
+         if (rwebm_read_packet(v->demux, &pkt) != 1)
+            return 0;
+         if (pkt.track == v->track_idx)
+            break;
+      }
+      *pdata = pkt.data;
+      *plen  = (uint32_t)pkt.size;
+      /* Counted the same way the pre-walk at start() counted, so
+       * pkt_index reaching num_packets means this was the last one. */
+      v->pkt_index++;
+      return 1;
    }
-   v->synth      = out;
-   v->synth_size = at;
+#endif
+   if (v->pkt_index >= v->num_packets)
+      return 0;
+   /* An unsplit blob is one packet: the whole of it. */
+   *plen = v->pkt_sizes ? v->pkt_sizes[v->pkt_index]
+                        : (uint32_t)v->packets_size;
+   if (v->pkt_offset + *plen > v->packets_size)
+      return -1;
+   *pdata = (const uint8_t*)v->packets + v->pkt_offset;
+   v->pkt_offset += *plen;
+   v->pkt_index++;
    return 1;
+}
+
+/* Drain 'frames' frames out of the packet stream in one of the two
+ * pipelines (s16 selects it; out16 or outf is the buffer that matches).
+ * Decoded frames left over from the last packet go out first, and a
+ * fresh packet is decoded whenever they run out.  Returns the frames
+ * written, short of the ask at end of stream or at the container's
+ * stated end. */
+static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
+      int s16, int16_t *out16, float *outf, size_t frames)
+{
+   size_t done = 0;
+   int    ch   = v->channels;
+   if (ch <= 0)
+      return 0;
+   for (;;)
+   {
+      const uint8_t *pd = NULL;
+      uint32_t       pl = 0;
+      int            want, got;
+      /* Vorbis codes in overlapping blocks, so the last packet decodes
+       * past the end of the audio.  Where the container says where that
+       * is, stop there rather than handing out the overhang.  Checked
+       * every pass, not once: the bound tightens to its exact value
+       * partway through the buffer that reaches the end. */
+      if (v->limit >= 0)
+      {
+         int64_t left = v->limit - (v->emitted + (int64_t)done);
+         if (left <= 0)
+            break;
+         if ((int64_t)(frames - done) > left)
+            frames = done + (size_t)left;
+      }
+      if (done >= frames)
+         break;
+      if (rvorbis_packet_pending(v->handle) > 0)
+      {
+         want = (int)(frames - done);
+         got  = s16
+            ? rvorbis_packet_read_s16(v->handle, ch,
+                  out16 + done * (size_t)ch, want * ch)
+            : rvorbis_packet_read_float(v->handle, ch,
+                  outf + done * (size_t)ch, want * ch);
+         if (got <= 0)
+            break;
+         done += (size_t)got;
+         continue;
+      }
+      /* Nothing pending: decode another packet.  It may yield nothing
+       * (the first one primes the window, and a packet can carry no
+       * audio at all), which is not the end of anything - pull again. */
+      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+         break;
+      if (rvorbis_packet_decode(v->handle, pd, pl, s16) < 0)
+         break;
+      /* That was the final packet, so the stream's true length is
+       * known for the first time: everything emitted, plus what this
+       * one just yielded.  The container's padding comes off that.
+       * A stated duration is only close - it rounds up past the
+       * overhang - so this supersedes it. */
+      if (v->discard > 0 && v->num_packets
+            && v->pkt_index >= v->num_packets)
+      {
+         int64_t out   = v->emitted + (int64_t)done;
+         int64_t total = out + rvorbis_packet_pending(v->handle)
+                             - v->discard;
+         /* A padding longer than the final packet's yield would ask
+          * for frames already handed out; the bound stops at what has
+          * gone rather than going backwards. */
+         if (total < out)
+            total = out;
+         if (v->limit < 0 || total < v->limit)
+            v->limit = total;
+      }
+   }
+   v->emitted += (int64_t)done;
+   return done;
 }
 #endif
 
@@ -1030,97 +1047,115 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_VORBIS:
       {
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
-         const unsigned char *buf;
-         int   len, err = 0;
+         int64_t duration_ns = 0;
+         int64_t discard_ns  = 0;
+         int     err         = 0;
          if (!v)
             return false;
+         v->limit   = -1;
+         v->emitted = 0;
 #ifdef HAVE_RWEBM
-         /* Buffer mode, WebM audio (.weba): extract the Vorbis track's
-          * setup and packets from the container, then reuse the
-          * demuxed path's Ogg synthesis below (rvorbis wants Ogg
-          * framing). */
+         /* Buffer mode, WebM audio (.weba): the setup headers are the
+          * Vorbis track's CodecPrivate and the audio packets stay in
+          * the container, read out one at a time as they are decoded.
+          * The demuxer is held open for that, and it aliases the
+          * caller's buffer rather than copying out of it. */
          if (!v->setup && v->data && v->size >= 4
                && ((const uint8_t*)v->data)[0] == 0x1A
                && ((const uint8_t*)v->data)[1] == 0x45
                && ((const uint8_t*)v->data)[2] == 0xDF
                && ((const uint8_t*)v->data)[3] == 0xA3)
          {
-            rwebm_t *wm = rwebm_open_memory(v->data, v->size);
             const rwebm_track *at = NULL;
-            int i, track = -1;
-            rwebm_packet pkt;
-            size_t napkts = 0, abytes = 0, off = 0, k = 0;
-            if (!wm)
+            int i;
+            if (!(v->demux = rwebm_open_memory(
+                        (const uint8_t*)v->data, v->size)))
                return false;
-            for (i = 0; i < rwebm_num_tracks(wm); i++)
+            v->track_idx = -1;
+            for (i = 0; i < rwebm_num_tracks(v->demux); i++)
             {
-               const rwebm_track *t = rwebm_get_track(wm, i);
+               const rwebm_track *t = rwebm_get_track(v->demux, i);
                if (t && t->type == RWEBM_TRACK_AUDIO
                      && t->codec == RWEBM_CODEC_VORBIS
                      && t->codec_private_size)
                {
-                  at    = t;
-                  track = i;
+                  at           = t;
+                  v->track_idx = i;
                   break;
                }
             }
             if (!at)
-            {
-               rwebm_close(wm);
                return false;
-            }
-            while (rwebm_read_packet(wm, &pkt) == 1)
-               if (pkt.track == track)
+            v->setup      = at->codec_private;
+            v->setup_size = at->codec_private_size;
+            duration_ns   = rwebm_duration_ns(v->demux);
+            /* Count the track's packets and total its DiscardPadding.
+             * The walk decodes nothing - it reads the block headers -
+             * and the count is what tells the drain which packet is
+             * the last, i.e. when the exact end becomes knowable. */
+            {
+               rwebm_packet pkt;
+               int64_t      pad_ns = 0;
+               while (rwebm_read_packet(v->demux, &pkt) == 1)
                {
-                  napkts++;
-                  abytes += pkt.size;
+                  if (pkt.track != v->track_idx)
+                     continue;
+                  v->num_packets++;
+                  if (pkt.discard_padding > 0)
+                     pad_ns += pkt.discard_padding;
                }
-            rwebm_rewind(wm);
-            v->own_pkts  = (uint8_t*)malloc(abytes ? abytes : 1);
-            v->own_sizes = (uint32_t*)malloc(
-                  (napkts ? napkts : 1) * sizeof(uint32_t));
-            if (!v->own_pkts || !v->own_sizes || !napkts)
-            {
-               rwebm_close(wm);
-               return false;
+               rwebm_rewind(v->demux);
+               discard_ns = pad_ns;
             }
-            while (rwebm_read_packet(wm, &pkt) == 1)
-            {
-               if (pkt.track != track)
-                  continue;
-               memcpy(v->own_pkts + off, pkt.data, pkt.size);
-               v->own_sizes[k++] = (uint32_t)pkt.size;
-               off += pkt.size;
-            }
-            v->setup        = at->codec_private;
-            v->setup_size   = at->codec_private_size;
-            v->packets      = v->own_pkts;
-            v->packets_size = off;
-            v->pkt_sizes    = v->own_sizes;
-            v->num_packets  = k;
-            rwebm_close(wm);
          }
 #endif
          if (v->setup)
          {
-            /* Demuxed path: repackage the container's raw Vorbis setup +
-             * packets into a synthetic Ogg stream, then open that. */
-            if (!audio_vorbis_build_ogg(v))
+            /* Packet-fed: the identification and setup headers come out
+             * of the xiph-laced CodecPrivate and are parsed where they
+             * lie.  The comment header carries no decode state and is
+             * not wanted. */
+            const uint8_t *hdr[3];
+            uint32_t       hlen[3];
+            if (!audio_vorbis_split_setup((const uint8_t*)v->setup,
+                     v->setup_size, hdr, hlen))
                return false;
-            buf = v->synth;
-            len = (int)v->synth_size;
+            v->handle = rvorbis_open_packets(hdr[0], (int)hlen[0],
+                  hdr[2], (int)hlen[2], &err, NULL);
+            if (!v->handle)
+               return false;
+            v->packet     = 1;
+            v->pkt_index  = 0;
+            v->pkt_offset = 0;
          }
          else
          {
             if (!v->data)
                return false;
-            buf = (const unsigned char*)v->data;
-            len = (int)v->size;
+            v->handle = rvorbis_open_memory((const unsigned char*)v->data,
+                  (int)v->size, &err, NULL);
+            if (!v->handle)
+               return false;
          }
-         v->handle = rvorbis_open_memory(buf, len, &err, NULL);
-         if (!v->handle)
-            return false;
          v->channels = rvorbis_get_info(v->handle).channels;
+         /* A WebM Duration is the length of the audio, which the last
+          * packet's overlap-add tail runs past; bound emission by it
+          * for as long as that is the best statement available.  It
+          * rounds up, so where a DiscardPadding is also present the
+          * drain replaces this with the exact end once the final
+          * packet has been decoded.  The demuxed path has neither -
+          * its packet set is the caller's - and stays unbounded. */
+         if (duration_ns > 0 || discard_ns > 0)
+         {
+            int64_t rate = (int64_t)rvorbis_get_info(v->handle).sample_rate;
+            if (rate > 0)
+            {
+               if (duration_ns > 0)
+                  v->limit = (duration_ns * rate + 500000000) / 1000000000;
+               if (discard_ns > 0)
+                  v->discard = (discard_ns * rate + 500000000) / 1000000000;
+            }
+         }
          return true;
       }
 #endif
@@ -1522,7 +1557,17 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
          if (rate)
             *rate         = (unsigned)info.sample_rate;
          if (total_frames)
-            *total_frames = (uint64_t)rvorbis_stream_length_in_samples(v->handle);
+         {
+            /* stream_length_in_samples walks the Ogg pages to the last
+             * granule, which a packet-fed context has none of: its
+             * length is whatever bound the container stated, and 0
+             * where it stated none. */
+            if (v->packet)
+               *total_frames = (v->limit >= 0) ? (uint64_t)v->limit : 0;
+            else
+               *total_frames =
+                  (uint64_t)rvorbis_stream_length_in_samples(v->handle);
+         }
          return true;
       }
 #endif
@@ -2109,8 +2154,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (!v || !v->handle)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rvorbis_get_samples_s16_interleaved(
-               v->handle, v->channels, out, (int)frames * v->channels);
+         if (v->packet)
+            produced = audio_transfer_vorbis_drain(v, 1, out, NULL, frames);
+         else
+            produced = (size_t)rvorbis_get_samples_s16_interleaved(
+                  v->handle, v->channels, out, (int)frames * v->channels);
          break;
       }
 #endif
@@ -2280,6 +2328,11 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          int got;
          if (!v || !v->handle)
             return AUDIO_PROCESS_ERROR;
+         if (v->packet)
+         {
+            produced = audio_transfer_vorbis_drain(v, 0, NULL, out, frames);
+            break;
+         }
          got = rvorbis_get_samples_float_interleaved(v->handle, v->channels,
                out, (int)(frames * (size_t)v->channels));
          produced = (got > 0) ? (size_t)got : 0;
@@ -2429,9 +2482,11 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_vorbis *v =
                (struct audio_transfer_vorbis*)data;
-         /* self-framed buffer mode only: the demuxed/synth paths read
-          * decoder-owned scratch, not the caller's buffer */
-         if (v->handle && !v->setup && !v->synth)
+         /* Self-framed buffer mode only.  A packet-fed context does
+          * read the caller's bytes in place, but its frontier is the
+          * demuxer's or the caller's own packet walk rather than a
+          * cursor this arm keeps, so it exposes none. */
+         if (v->handle && !v->packet)
             return (size_t)rvorbis_buffer_tell(v->handle);
          return 0;
       }
@@ -2498,7 +2553,7 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
           * (MP4/M4A) and set_demuxed_ptr paths read from the demuxer
           * or a concatenated packet blob, not the caller's buffer, so
           * they expose no windowable cursor - return 0, exactly as the
-          * vorbis synth/setup paths do. */
+          * vorbis packet-fed paths do. */
          if (ac->handle && ac->adts)
             return ac->adts_pos;
          return 0;
@@ -2531,6 +2586,26 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (!v || !v->handle)
             return false;
+         if (v->packet)
+         {
+            /* No Ogg to seek in and no per-packet duration to step
+             * over with (unlike Opus, whose TOC byte carries one), so
+             * landing anywhere but the start would mean decoding the
+             * whole way there.  Rewind is what this path offers; a
+             * nonzero seek fails here rather than resolving against
+             * something that is not the position asked for. */
+            if (frame != 0)
+               return false;
+            rvorbis_packet_reset(v->handle);
+#ifdef HAVE_RWEBM
+            if (v->demux)
+               rwebm_rewind(v->demux);
+#endif
+            v->pkt_index  = 0;
+            v->pkt_offset = 0;
+            v->emitted    = 0;
+            return true;
+         }
          if (frame == 0) /* loop-to-start: seek_start always succeeds */
          {
             rvorbis_seek_start(v->handle);
@@ -2657,9 +2732,10 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          if (v->handle)
             rvorbis_close(v->handle);
-         free(v->synth);
-         free(v->own_pkts);
-         free(v->own_sizes);
+#ifdef HAVE_RWEBM
+         if (v->demux)
+            rwebm_close(v->demux);
+#endif
          break;
       }
 #endif
