@@ -1185,6 +1185,12 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (!op)
             return false;
+         /* Unbounded unless a container says otherwise.  The two buffer
+          * modes below work a bound out and overwrite this; the demuxed
+          * path has none, and must not be left holding the zero calloc
+          * gave it - a bound of zero reads as a stream with no frames
+          * in it, which is what refused every seek on that path. */
+         op->limit = -1;
 #ifdef HAVE_RWEBM
          /* buffer mode, WebM audio (.weba): demux with rwebm; packets
           * stream from the demuxer on demand.  The exact decodable
