@@ -56,6 +56,131 @@
 #include <formats/rwebm.h>
 #endif
 
+/* ---- What each codec arm implements, and what it does not ------------
+ *
+ * The dispatch below is uniform but the arms are not: each decoder
+ * supports a different subset of the audio.h contract, and the gaps are
+ * deliberate rather than pending.  Nothing degrades silently - an
+ * unsupported operation fails at its entry point (start() and seek()
+ * return false, info() reports what it knows and 0 for a length it does
+ * not, buffer_tell() returns 0 for an arm with no windowable cursor).
+ *
+ * "buffer" below means set_buffer_ptr, i.e. a whole self-framed file;
+ * "demuxed" means set_demuxed_ptr, i.e. a container's setup blob plus
+ * its delimited packets.  Each codec is separately compile-gated; an arm
+ * whose HAVE_ is off makes new() return NULL for that type.
+ *
+ * WAV (rwav)
+ *   Does: buffer input; s16 and f32 reads; exact length; seek to any
+ *     frame; 8-bit unsigned and 16-bit signed PCM (8-bit widened at
+ *     read).
+ *   Does not: stream.  rwav_load decodes the file whole at start(), so
+ *     the PCM stays resident for the decoder's lifetime and there is no
+ *     compressed frontier to window - buffer_tell has no WAV arm.
+ *     32-bit float WAV parses in rwav but is refused here rather than
+ *     converted.  24-bit, WAVE_FORMAT_EXTENSIBLE, ADPCM/a-law and any
+ *     layout with a chunk between 'fmt ' and 'data' never reach this
+ *     file; rwav rejects them.  No demuxed input.
+ *
+ * FLAC (rflac)
+ *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
+ *     length from STREAMINFO; seek to any frame; buffer_tell, hence
+ *     windowing (the raw cursor leads the decode position by the
+ *     bitstream cache, which is the safe side for a feeder).
+ *   Does not: Ogg-encapsulated FLAC - rflac takes native fLaC only.  No
+ *     demuxed input, so FLAC in a container is not reachable from here.
+ *     A stream whose STREAMINFO omits the total frame count reports 0.
+ *
+ * Vorbis (rvorbis)
+ *   Does: three inputs - Ogg buffer, WebM buffer (.weba, HAVE_RWEBM,
+ *     packets lifted out of the container at start()), and demuxed
+ *     (CodecPrivate + packets, repackaged into a synthetic Ogg stream);
+ *     s16 and f32, freely mixed; channels and rate; length from the last
+ *     page granule; seek to any frame and rewind; buffer_tell in
+ *     self-framed buffer mode.
+ *   Does not: decode raw packets.  That is why the demuxed and WebM
+ *     paths synthesise Ogg framing, which costs a second copy of the
+ *     packets held for the decoder's lifetime, and leaves those paths
+ *     without a windowable cursor (buffer_tell returns 0) and whole-file
+ *     resident.  On them the granules are monotone placeholders, so
+ *     info()'s length is not the stream's true length and a nonzero seek
+ *     resolves against placeholders - only seek to frame 0 is meaningful
+ *     there.  Chained or multiplexed Ogg is not handled.
+ *
+ * MP3 (rmp3)
+ *   Does: buffer input; s16 (quantised by the synthesis filter, no float
+ *     round trip) and f32; channels and rate from the first frame; seek
+ *     to any PCM frame; buffer_tell, hence windowing.
+ *   Does not: report a length - info() gives 0, as neither a Xing/VBRI
+ *     header nor a full frame walk is done.  No gapless trim: the
+ *     encoder delay and padding a Xing/LAME tag carries are not read and
+ *     set_start_trim has no MP3 arm, so the decoder's own priming shows
+ *     up at both ends.  No demuxed input.
+ *
+ * MOD (rmodtracker)
+ *   Does: buffer input, MOD/S3M/XM autodetected; s16 and f32; the
+ *     duration of one pass through the sequence; rewind.
+ *   Does not: seek mid-song - the replayer is sequenced, so any nonzero
+ *     frame returns false.  info() always reports 2 channels at
+ *     RMODTRACKER_RATE because that is what the replayer mixes, not what
+ *     the module declares.  No buffer cursor (no windowing), no demuxed
+ *     input.
+ *
+ * Opus (ropus)
+ *   Does: three inputs - Ogg Opus buffer (.opus, pages walked in place
+ *     per RFC 3533/7845, a packet copied only where it spans pages),
+ *     WebM buffer (.weba, HAVE_RWEBM, packets pulled from rwebm on
+ *     demand), and demuxed (OpusHead + delimited packets); s16 and f32;
+ *     RFC 7845 pre-skip; end trimming, from the last page granule for
+ *     Ogg and from the TOC total less DiscardPadding for WebM; windowed
+ *     operation, via set_end_granule plus buffer_tell (Ogg only);
+ *     rewind.
+ *   Does not: mix output formats on one instance - the first read
+ *     latches fmt and the other entry point then errors, because ropus
+ *     forbids the mix.  No seek but to frame 0.  No length: info()
+ *     reports 0 even where the emission bound is known, that bound being
+ *     enforced internally rather than published.  Chained or
+ *     multiplexed Ogg is not handled - pages are walked in order, the
+ *     serial is ignored and the page CRC is not verified.  A page-
+ *     spanning packet larger than asm_buf is an error, not a
+ *     reallocation.  Channel mapping families other than 0 (mono and
+ *     stereo) are refused by ropus_open, and the rate is always the
+ *     48 kHz Opus decodes at, never the original input rate.
+ *
+ * AAC (raac)
+ *   Does: three inputs - ADTS buffer (.aac, the AudioSpecificConfig
+ *     synthesised from the first header), MP4/M4A buffer (HAVE_RMP4,
+ *     packets from rmp4, start trim from the track's edit list), and
+ *     demuxed (ASC + delimited access units, trim via
+ *     set_start_trim); s16 and f32; the encoder-delay trim; rewind;
+ *     buffer_tell in ADTS mode, hence windowing there.
+ *   Does not: mix output formats after the first read.  raac itself
+ *     permits it - the fmt latch here is the Opus arm's rule applied
+ *     uniformly, and is stricter than the decoder requires.  No seek but
+ *     to frame 0, and no length.  ADTS carries no delay signalling, so
+ *     that path forces the trim to 0 and is not gapless.  A lost ADTS
+ *     sync is reported as end of stream rather than resynchronised.
+ *     Beyond that the scope is raac's: AAC-LC mono/stereo at the
+ *     1024-sample frame length, so no HE-AAC (SBR/PS), no Main/SSR/LTP,
+ *     no 960-sample frames, no multichannel - and the ADTS header parse
+ *     here refuses anything outside that before the decoder is opened.
+ *
+ * Across all arms: no file I/O and no ownership of the encoded bytes -
+ * buffers are borrowed and must outlive the decoder (rwav and
+ * rmodtracker copy what they need at start(), so those two are exempt
+ * afterwards).  No resampling and no channel conversion; PCM comes out
+ * at the stream's own rate and channel count and the mixer deals with
+ * it.  A short read is not end of stream: only a zero-frame read returns
+ * AUDIO_PROCESS_END, and END is not latched, which is what lets a grown
+ * demuxed packet set resume after starvation.  AUDIO_PROCESS_ERROR_END
+ * is never returned from here.  A context is single-threaded; nothing
+ * below locks.  audio_decode_get_type maps extensions for WAV, FLAC,
+ * Ogg Vorbis, MP3 and MOD only - .opus, .aac, .m4a and .weba have no
+ * extension mapping, their types coming from the caller or from the
+ * content sniffers (audio_transfer_ogg_audio_type,
+ * audio_transfer_webm_audio_type), .ogg being ambiguous between Vorbis
+ * and Opus in any case. */
+
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
  * same switch-dispatch pattern formats/image_transfer.c uses. */
