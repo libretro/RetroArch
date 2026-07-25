@@ -407,7 +407,19 @@ static void task_core_updater_get_list_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (list_handle)
       free_core_updater_list_handle(list_handle);
@@ -633,13 +645,17 @@ finish:
    {
       RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
             (transf ? transf->path: "unknown"), err);
-      download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+      /* download_handle is still NULL on the early bail-outs above
+       * (no data, no transfer, no user_data), so it cannot be
+       * dereferenced unconditionally here. */
+      if (download_handle)
+         download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
    }
    if (transf)
       free(transf);
 
    /* if no decompress task was queued, mark it as completed */
-   if (!download_handle->decompress_task)
+   if (download_handle && !download_handle->decompress_task)
       download_handle->decompress_task_complete = true;
 }
 
@@ -984,7 +1000,19 @@ static void task_core_updater_download_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (download_handle)
       free_core_updater_download_handle(download_handle);
@@ -1478,7 +1506,19 @@ static void task_update_installed_cores_handler(retro_task_t *task)
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (update_installed_handle)
       free_update_installed_cores_handle(update_installed_handle);
@@ -1801,7 +1841,19 @@ static void task_play_feature_delivery_core_install_handler(
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_install_handle)
       free_play_feature_delivery_install_handle(pfd_install_handle);
@@ -2185,7 +2237,19 @@ static void task_play_feature_delivery_switch_cores_handler(
 
 task_finished:
    if (task)
+   {
+      /* Clear the state pointer before the handle is freed.  The
+       * worker runs handlers with running_lock released and the task
+       * still linked into tasks_running, so a task that has finished
+       * here stays visible to retro_task_threaded_find() until the
+       * worker retires it.  The finders in this file dereference
+       * task->state, so leaving it pointing at freed memory is a
+       * use-after-free - task_core_updater_download_finder() strcmps
+       * through it, which is a hard crash the moment
+       * task_update_installed_cores_handler() pushes the next core. */
+      task->state = NULL;
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+   }
 
    if (pfd_switch_cores_handle)
       free_play_feature_delivery_switch_cores_handle(pfd_switch_cores_handle);
