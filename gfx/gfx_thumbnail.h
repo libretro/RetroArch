@@ -237,6 +237,12 @@ typedef struct
    void *anim_job2;
    size_t anim_buf_len;    /* size of anim_buf                         */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
+   /* Generation the in-flight request was issued under.  Only
+    * meaningful while status is PENDING: if it no longer matches the
+    * current generation, that request was superseded and nothing will
+    * ever deliver it, so the slot must be re-requested rather than
+    * waited on. */
+   uint64_t list_id;
    int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
    unsigned height;
@@ -284,6 +290,7 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_job2       = NULL;
    t->anim_buf_len    = 0;
    t->anim_next_us    = 0;
+   t->list_id         = 0;
    t->anim_loops_left = 0;
    t->width           = 0;
    t->height          = 0;
@@ -387,6 +394,15 @@ void gfx_thumbnail_anim_worker_deinit(void);
  *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void);
+
+/* True if 'thumbnail' is waiting on a request that has since been
+ * superseded, i.e. it is PENDING with nothing behind it.  Resets the
+ * thumbnail (returning it to UNKNOWN) and returns true in that case, so
+ * the caller's normal "request if UNKNOWN" path picks it up again.
+ * gfx_thumbnail_process_stream()/_streams() call this themselves; menu
+ * drivers that call gfx_thumbnail_request() directly should call it
+ * before testing the status. */
+bool gfx_thumbnail_reset_if_orphaned(gfx_thumbnail_t *thumbnail);
 
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to

@@ -1753,7 +1753,10 @@ void gfx_thumbnail_request(
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
+               {
+                  thumbnail->list_id = thumbnail_tag->list_id;
                   GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+               }
             }
 #ifdef HAVE_NETWORKING
             /* Handle on demand thumbnail downloads */
@@ -1859,7 +1862,31 @@ void gfx_thumbnail_request_file(
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))
+   {
+      thumbnail->list_id = thumbnail_tag->list_id;
       GFX_THUMB_STATUS_STORE(&thumbnail->status, GFX_THUMBNAIL_STATUS_PENDING);
+   }
+}
+
+bool gfx_thumbnail_reset_if_orphaned(gfx_thumbnail_t *thumbnail)
+{
+   gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+
+   if (!thumbnail)
+      return false;
+   if (GFX_THUMB_STATUS_LOAD(&thumbnail->status)
+         != GFX_THUMBNAIL_STATUS_PENDING)
+      return false;
+   if (thumbnail->list_id == p_gfx_thumb->list_id)
+      return false;
+
+   /* PENDING with nothing behind it: the load was superseded, and
+    * gfx_thumbnail_handle_upload deliberately refuses to touch a
+    * thumbnail through a stale tag (the pointer may be dead by then),
+    * so nothing else will ever clear this.  Left alone the entry stays
+    * blank for as long as it remains on screen. */
+   gfx_thumbnail_reset(thumbnail);
+   return true;
 }
 
 /* Resets (and free()s the current texture of) the
@@ -1930,6 +1957,11 @@ void gfx_thumbnail_request_stream(
    if (!thumbnail)
       return;
 
+   /* A request superseded while in flight leaves the slot PENDING with
+    * nothing behind it; recover it before the status test below, or the
+    * entry stays blank for as long as it is on screen. */
+   gfx_thumbnail_reset_if_orphaned(thumbnail);
+
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
    if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) != GFX_THUMBNAIL_STATUS_UNKNOWN)
@@ -1995,6 +2027,11 @@ void gfx_thumbnail_request_streams(
 
    if (!right_thumbnail || !left_thumbnail)
       return;
+
+   /* See gfx_thumbnail_request_stream: recover slots whose in-flight
+    * request was superseded, else they never leave PENDING. */
+   gfx_thumbnail_reset_if_orphaned(right_thumbnail);
+   gfx_thumbnail_reset_if_orphaned(left_thumbnail);
 
    /* Only process request if current status
     * is GFX_THUMBNAIL_STATUS_UNKNOWN */
@@ -2095,6 +2132,8 @@ void gfx_thumbnail_process_stream(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
+      gfx_thumbnail_reset_if_orphaned(thumbnail);
+
       if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN)
       {
          gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
@@ -2169,8 +2208,14 @@ void gfx_thumbnail_process_streams(
       /* Entry is on-screen
        * > Only process if current status is
        *   GFX_THUMBNAIL_STATUS_UNKNOWN */
-      bool process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
-      bool process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      bool process_r;
+      bool process_l;
+
+      gfx_thumbnail_reset_if_orphaned(right_thumbnail);
+      gfx_thumbnail_reset_if_orphaned(left_thumbnail);
+
+      process_r = (GFX_THUMB_STATUS_LOAD(&right_thumbnail->status) == GFX_THUMBNAIL_STATUS_UNKNOWN);
+      process_l = (GFX_THUMB_STATUS_LOAD(&left_thumbnail->status)  == GFX_THUMBNAIL_STATUS_UNKNOWN);
 
       if (process_r || process_l)
       {
