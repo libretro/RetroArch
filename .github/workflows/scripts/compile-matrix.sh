@@ -60,4 +60,53 @@ check "everything" \
   "-DHAVE_RWAV -DHAVE_RVORBIS -DHAVE_RFLAC -DHAVE_RMP3 -DHAVE_RMODTRACKER -DHAVE_RAAC -DHAVE_ROPUS -DHAVE_RMP4 -DHAVE_RWEBM" \
   $AUDIO
 
+
+# mem_stats selects one platform backend out of a dozen, and its includes
+# and its bodies must both follow that one choice.  When they were two
+# separate chains, a platform matching an early arm while still defining
+# __unix__ - Orbis and Emscripten do, and DJGPP does - got its own arm's
+# includes and a different arm's code, and three console jobs failed on
+# symbols the arm had never included a header for.
+#
+# The SDK headers are not here, so an arm whose header is missing cannot
+# be compiled.  What can be checked anywhere is that the only thing it
+# complains about is that header: a diagnostic naming a symbol that
+# belongs to some other arm means the chains have drifted apart again.
+echo
+echo "== mem_stats platform arms =="
+
+# Only symbols that belong to no console arm: each arm's own symbols go
+# undeclared here simply because its SDK header is absent, which is
+# expected.  These six are the /proc and sysconf paths, and their
+# appearing in a console arm's diagnostics is the drift being looked for.
+CONTAMINANT='O_RDONLY|ssize_t|_SC_PHYS_PAGES|_SC_PAGE_SIZE|MemAvailable|implicit declaration of function .(open|read|close).'
+
+arm() {
+   name="$1"; defs="$2"
+   out=$($CC $WARN $INC $defs -fsyntax-only \
+      libretro-common/memory/mem_stats.c 2>&1 || true)
+   bad=$(printf '%s\n' "$out" | grep -Ei "$CONTAMINANT" || true)
+   if [ -n "$bad" ]; then
+      echo "FAIL  $name got another arm's code"
+      printf '%s\n' "$bad" | sed 's/^/      /' | head -6
+      fail=1
+   elif printf '%s\n' "$out" | grep -q "error:"; then
+      echo "ok    $name (SDK header absent, no foreign symbols)"
+   else
+      echo "ok    $name"
+   fi
+}
+
+arm "3ds"        "-D_3DS"
+arm "gamecube"   "-DGEKKO"
+arm "wii"        "-DGEKKO -DHW_RVL"
+arm "vita"       "-DVITA"
+arm "switch"     "-DHAVE_LIBNX"
+arm "orbis"      "-DORBIS"
+arm "ps3"        "-D__PSL1GHT__ -DHAVE_MEMINFO"
+arm "ps2"        "-DPS2"
+arm "emscripten" "-D__EMSCRIPTEN__"
+arm "dos/djgpp"  "-D__DJGPP__ -D__unix__"
+arm "linux"      ""
+
 exit $fail
