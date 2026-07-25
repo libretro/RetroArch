@@ -94,12 +94,15 @@
  *    read outside window_peek(), and deliberately no accessor for the
  *    window's committed frontier.
  *
- *  - Mixing the two surfaces on one handle.  A window keeps a live
- *    RFILE and a reservation, so the prefix calls run against it and
- *    quietly disagree: iterate() finds avail == len and settles done,
- *    and discard() walks its own 'low' frontier, which knows nothing
- *    of keep/wlo/whi/wfreed, straight through the resident head.
- *    Nothing rejects this - use one surface per handle.
+ *  - Meaningful prefix behaviour on a window.  iterate(), discard()
+ *    and refill() are declined on a window handle rather than run
+ *    against it - see the note above iterate() for what they used to
+ *    do - so mixing the surfaces is inert rather than corrupting.
+ *    What is still absent is any use for them there: avail() is the
+ *    full length from open, and complete() reports whole-file
+ *    residency, so it stays false on a reserved window and is true on
+ *    the no-reservation fallback.  Drive a window with feed/extend/
+ *    advance/rewind.
  *
  *  - An honest terminal on the window side.  extend() and grow_keep()
  *    report a short read by returning false only: whi stays where it
@@ -229,6 +232,11 @@ void data_transfer_arena_release(data_transfer_arena_t *a)
 
 static int data_transfer_read_at(data_transfer_t *dt, size_t off,
       uint8_t *dst, size_t n);
+/* The fill proper.  data_transfer_iterate() refuses to run it on a
+ * window; open_window's no-reservation path genuinely needs it and
+ * calls it here directly. */
+static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
+      size_t max_bytes);
 
 /* Release whole pages from the decommit frontier up to (not
  * including) the page containing 'to'.  The frontier survives calls,
@@ -322,8 +330,10 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
    {
       /* no reservation on this platform: the fallback path of
        * open_prefix holds a plain buffer - fill it all; the window
-       * calls become no-ops and the file is simply resident */
-      data_transfer_iterate(dt, 0);
+       * calls become no-ops and the file is simply resident.  The
+       * fill is invoked directly because dt->window is already set
+       * and the public iterate() declines windows. */
+      data_transfer_prefix_iterate(dt, 0);
       if (!data_transfer_complete(dt))
       {
          data_transfer_free(dt);
@@ -661,6 +671,8 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to)
    size_t lo;
    if (!dt || !dt->f || !dt->map_len || !dt->page)
       return;                     /* nbio or fallback: bytes stay */
+   if (dt->window)
+      return;                     /* not this surface - see below */
    if (up_to > dt->avail)
       up_to = dt->avail;
    lo = (up_to / dt->page) * dt->page;
@@ -675,7 +687,7 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    size_t lo, end;
    if (!dt)
       return false;
-   if (!dt->f || !dt->map_len || from >= dt->low)
+   if (!dt->f || !dt->map_len || dt->window || from >= dt->low)
       return !dt->failed;         /* nothing was released there */
    lo  = (from / dt->page) * dt->page;
    end = dt->low;
@@ -698,10 +710,28 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    return true;
 }
 
+/* The prefix surface is inert on a window handle.
+ *
+ * A window keeps a live RFILE and a reservation, so these three would
+ * otherwise pass their own guards on one and then disagree with the
+ * window's bookkeeping.  discard() is the dangerous one: its 'low'
+ * frontier knows nothing of keep/wlo/whi/wfreed, so it releases from
+ * offset 0 through the permanently resident head, non-strictly - the
+ * head comes back as zeros rather than faulting, which is silent
+ * corruption of exactly the bytes a loop lands on.  iterate() merely
+ * finds avail == len and settles done, making complete() answer yes
+ * about a file that was never read.
+ *
+ * Declining is the whole fix.  A window's bytes are managed by
+ * feed/extend/advance/rewind and its length is known from open, so
+ * there is nothing these can usefully do that the window surface does
+ * not already do correctly. */
 size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
 {
    if (!dt)
       return 0;
+   if (dt->window)
+      return dt->avail;           /* not this surface - see above */
    if (dt->f || dt->src_cb)
       return data_transfer_prefix_iterate(dt, max_bytes);
    return dt->avail;

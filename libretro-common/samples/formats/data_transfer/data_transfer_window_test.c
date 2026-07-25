@@ -214,6 +214,105 @@ static int ahead_of_frontier_check(void)
 }
 #endif
 
+/* The prefix surface must be inert on a window handle.
+ *
+ * A window keeps a live RFILE and a reservation, so discard(),
+ * refill() and iterate() all pass their own guards on one.  Left
+ * unguarded they do not merely misbehave, they disagree with the
+ * window's bookkeeping: discard() walks a 'low' frontier that knows
+ * nothing of keep/wlo/whi/wfreed and releases from offset 0 - through
+ * the permanently resident head - and the release is non-strict, so
+ * the head returns as zeros rather than faulting.  That is silent
+ * corruption of exactly the bytes a loop lands on.  iterate() is the
+ * milder sibling: it finds avail == len, settles done, and complete()
+ * starts answering yes about a file that was never read.
+ *
+ * No caller mixes the two surfaces today - gfx_thumbnail keeps its
+ * windowed and read-pending states mutually exclusive by hand, and
+ * the webm core only discards a handle it opened as a prefix - so
+ * both hazards are held off by discipline rather than by the module.
+ * This pins the module's own guard, so the next consumer cannot reach
+ * them by accident. */
+static int surface_mixing_check(void)
+{
+   const char *path = "/tmp/dtwin_mix.bin";
+   size_t n = 4u << 20, i, blen = 0, avail_before;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   data_transfer_t *dt;
+   const uint8_t *base;
+   FILE *f;
+   int rv = 0;
+
+   if (!ref)
+      return 0;
+   for (i = 0; i < n; i++)
+      ref[i] = (uint8_t)(i * 97 + 5);
+   f = fopen(path, "wb"); fwrite(ref, 1, n, f); fclose(f);
+
+   if (!(dt = data_transfer_open_window(path, KEEP)))
+   {
+      printf("[FAIL] open_window for the mixing check\n");
+      free(ref); remove(path);
+      return 1;
+   }
+
+   base         = data_transfer_window_base(dt, &blen);
+   avail_before = data_transfer_avail(dt);
+
+   /* discard() must not release the head it knows nothing about */
+   data_transfer_discard(dt, KEEP + (512u * 1024));
+   if (memcmp(base, ref, KEEP))
+   {
+      printf("[FAIL] discard() on a window released the resident head\n");
+      rv = 1;
+   }
+   else
+      ok("discard() on a window is inert: head still intact");
+
+   /* refill() is a no-op here, but must not report failure */
+   if (!data_transfer_refill(dt, 0))
+   {
+      printf("[FAIL] refill() on a window reported failure\n");
+      rv = 1;
+   }
+   else
+      ok("refill() on a window is inert and reports success");
+
+   /* iterate() must not settle a handle that has no fill to run */
+   data_transfer_iterate(dt, 64u * 1024);
+   if (data_transfer_avail(dt) != avail_before)
+   {
+      printf("[FAIL] iterate() on a window moved avail\n");
+      rv = 1;
+   }
+   else if (   data_transfer_window_is_reserved(dt)
+            && data_transfer_complete(dt))
+   {
+      printf("[FAIL] iterate() on a window settled complete()\n");
+      rv = 1;
+   }
+   else
+      ok("iterate() on a window is inert: nothing settled");
+
+   /* and the window must still work afterwards */
+   if (!data_transfer_window_feed(dt, KEEP, LOOKAHD, MARGIN))
+   {
+      printf("[FAIL] feed after the mixing attempts\n");
+      rv = 1;
+   }
+   else if (memcmp(base + KEEP, ref + KEEP, 65536))
+   {
+      printf("[FAIL] window contents wrong after the mixing attempts\n");
+      rv = 1;
+   }
+   else
+      ok("window still plays correctly after the mixing attempts");
+
+   data_transfer_free(dt);
+   free(ref); remove(path);
+   return rv;
+}
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -296,6 +395,7 @@ int main(void)
 #endif
 
    bad |= ahead_of_frontier_check();
+   bad |= surface_mixing_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;
