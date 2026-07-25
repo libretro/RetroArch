@@ -43,7 +43,7 @@
 #ifdef HAVE_RMODTRACKER
 #include <formats/rmodtracker.h>
 #endif
-#if defined(HAVE_ROPUS) || defined(HAVE_RFLAC)
+#if defined(HAVE_ROPUS) || defined(HAVE_RFLAC) || defined(HAVE_RVORBIS)
 /* Validate the Ogg page at off and return its total size (header plus
  * body), or 0 if there is no valid page there.  On success the body
  * offset and segment count are stored. */
@@ -236,17 +236,31 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     is that total rather than a trimmed one.  It is what comes out,
  *     which is the property the length is meant to have.
  *
- *     Chained or multiplexed Ogg is not handled.  The Ogg buffer path
- *     hands the whole file to rvorbis, which reads one logical
- *     bitstream and ignores serial numbers, so a multiplexed file
- *     decodes whatever pages happen to parse and a chained one stops
- *     at the first chain's end.  Both are reachable from here - the
- *     page walker above could filter by serial and feed the packet
- *     path, which would bring the exact length and seek with it - but
- *     that is rewriting the path every .ogg takes for the sake of
- *     files that are rare in this use, and chaining additionally
- *     admits a rate or channel change mid-stream that a mixer voice
- *     has no way to follow.
+ *     Chained and multiplexed Ogg both play.  A survey of the page
+ *     headers at open says how many logical bitstreams the file
+ *     carries, which of them is Vorbis, and where each ends; a file
+ *     with one goes to rvorbis whole, as every .ogg always has.
+ *
+ *     A multiplexed file cannot: rvorbis has no notion of a serial
+ *     number and would take the other stream's pages for its own, so
+ *     those go to the packet path, where the page walk filters by
+ *     serial and assembles packets across page boundaries.  That
+ *     brings the exact length and sample-accurate seek with it.
+ *
+ *     A chained file rvorbis does decode through, link after link,
+ *     but it reports the first link's length for the whole file and
+ *     hands out the lead of each next link's first block - audio no
+ *     granule accounts for.  The length is the summed final granules
+ *     of the Vorbis bitstreams, and reads are bounded by it, so what
+ *     info() says and what comes out are the same figure again.
+ *   Does not: follow a rate or channel change across a chain
+ *     boundary.  Nothing here would notice one - the values are read
+ *     once, at open - and a mixer voice is built around the first
+ *     link's, so a file whose links disagree plays the later ones at
+ *     the wrong rate.  Rejecting it would need the survey to parse
+ *     each link's identification header, which is worth doing if such
+ *     a file ever turns up; they are vanishingly rare, every encoder
+ *     in ordinary use writing links that agree.
  *
  *     On channels this arm is not the limit: rvorbis decodes one
  *     through sixteen, verified against libvorbis, and reports what
@@ -502,7 +516,19 @@ struct audio_transfer_vorbis
     * Nothing is copied and nothing is reframed. */
    int         packet;      /* opened with rvorbis_open_packets         */
    size_t      pkt_index;   /* next packet in the caller's blob         */
-   size_t      pkt_offset;  /* its byte offset there                    */
+   size_t      pkt_offset;
+   /* Ogg pages feeding the packet path, for a file that carries more
+    * than one logical bitstream.  A plain .ogg does not come this
+    * way - rvorbis reads those itself - but a multiplexed one must,
+    * because rvorbis has no notion of a serial number and would take
+    * the other stream's pages for its own. */
+   int         ogg_pkt;
+   uint32_t    ogg_serial;
+   size_t      pg_off;
+   unsigned    seg_idx;
+   size_t      body_off;
+   uint8_t    *asm_buf;     /* only for packets spanning pages          */
+   size_t      asm_cap;
 #ifdef HAVE_RWEBM
    rwebm_t    *demux;       /* buffer is WebM audio (.weba)             */
    int         track_idx;
@@ -923,10 +949,15 @@ static int audio_vorbis_split_setup(const uint8_t *priv, size_t size,
 /* The next coded packet, wherever this context's packets come from.
  * Returns 1 with the bytes, 0 at end of stream, < 0 on a blob whose
  * sizes do not agree with its length. */
+static int audio_transfer_vorbis_ogg_pkt(struct audio_transfer_vorbis *v,
+      const uint8_t **pdata, uint32_t *plen);
+
 static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
       const uint8_t **pdata, uint32_t *plen, int64_t *ppad)
 {
    *ppad = 0;
+   if (v->ogg_pkt)
+      return audio_transfer_vorbis_ogg_pkt(v, pdata, plen) == 1 ? 1 : 0;
 #ifdef HAVE_RWEBM
    if (v->demux)
    {
@@ -1654,6 +1685,198 @@ static uint32_t audio_transfer_flac_seek(void *ud, int offset,
 }
 #endif
 
+#ifdef HAVE_RVORBIS
+/* The serial of the first logical bitstream whose first packet is a
+ * Vorbis identification header, and how many distinct serials the
+ * file carries.  A single-serial file is an ordinary .ogg and goes to
+ * rvorbis whole; anything else has to be filtered. */
+static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
+      uint32_t *serial, int *nstreams, int *chained, int64_t *total)
+{
+   uint32_t seen[16];
+   uint32_t vser[16];
+   int64_t  vgran[16];
+   int      n = 0, nv = 0, found = 0, bos_after_data = 0, data_seen = 0;
+   size_t   off = 0;
+   for (;;)
+   {
+      size_t   body = 0, psz;
+      unsigned nsegs = 0;
+      uint32_t ser;
+      int      i, known = 0;
+      psz = audio_transfer_ogg_page(b, size, off, &body, &nsegs);
+      if (!psz)
+         break;
+      ser = (uint32_t)b[off + 14]        | ((uint32_t)b[off + 15] << 8)
+          | ((uint32_t)b[off + 16] << 16) | ((uint32_t)b[off + 17] << 24);
+      for (i = 0; i < n; i++)
+         if (seen[i] == ser)
+            known = 1;
+      if (!known && n < (int)(sizeof(seen) / sizeof(seen[0])))
+         seen[n++] = ser;
+      if (b[off + 5] & 0x02)            /* beginning of a stream       */
+      {
+         if (data_seen)
+            bos_after_data = 1;
+         if (body + 7 <= size
+               && b[body] == 1 && !memcmp(b + body + 1, "vorbis", 6))
+         {
+            if (!found)
+            {
+               *serial = ser;
+               found   = 1;
+            }
+            if (nv < (int)(sizeof(vser) / sizeof(vser[0])))
+            {
+               vser[nv]    = ser;
+               vgran[nv++] = 0;
+            }
+         }
+      }
+      else
+         data_seen = 1;
+      /* A page's granule position is where its last finished packet
+       * leaves the stream, so the last one a bitstream carries is its
+       * length.  Summed over the Vorbis bitstreams, that is what the
+       * file plays - one for a multiplexed file, one per link for a
+       * chained one. */
+      {
+         int i;
+         for (i = 0; i < nv; i++)
+            if (vser[i] == ser)
+            {
+               int64_t g = 0;
+               int     k;
+               for (k = 7; k >= 0; k--)
+                  g = (g << 8) | b[off + 6 + k];
+               if (g >= 0)
+                  vgran[i] = g;
+            }
+      }
+      off += psz;
+   }
+   *nstreams = n;
+   *chained  = bos_after_data;
+   if (total)
+   {
+      int i;
+      *total = 0;
+      for (i = 0; i < nv; i++)
+         *total += vgran[i];
+   }
+   return found;
+}
+
+/* Assemble the next packet of the chosen bitstream, skipping pages
+ * belonging to any other.  Shaped like the Opus arm's assembler, with
+ * the serial test added; a packet spanning pages is gathered into
+ * asm_buf, otherwise it aliases the buffer. */
+static int audio_transfer_vorbis_ogg_pkt(struct audio_transfer_vorbis *v,
+      const uint8_t **pdata, uint32_t *plen)
+{
+   const uint8_t *b = (const uint8_t*)v->data;
+   size_t asm_len = 0;
+   int    spans   = 0;
+   for (;;)
+   {
+      size_t   body = 0, start, run = 0;
+      unsigned nsegs = 0;
+      size_t   psz = audio_transfer_ogg_page(b, v->size, v->pg_off,
+            &body, &nsegs);
+      uint32_t ser;
+      int      done = 0;
+      if (!psz)
+         return asm_len ? -1 : 0;
+      ser = (uint32_t)b[v->pg_off + 14]
+          | ((uint32_t)b[v->pg_off + 15] << 8)
+          | ((uint32_t)b[v->pg_off + 16] << 16)
+          | ((uint32_t)b[v->pg_off + 17] << 24);
+      if (ser != v->ogg_serial)
+      {
+         v->pg_off += psz;            /* another stream's page         */
+         v->seg_idx = 0;
+         continue;
+      }
+      if (v->seg_idx == 0)
+         v->body_off = body;
+      if (asm_len && v->seg_idx == 0 && !(b[v->pg_off + 5] & 0x01))
+         return -1;
+      start = v->body_off;
+      while (v->seg_idx < nsegs)
+      {
+         unsigned lace = b[v->pg_off + 27 + v->seg_idx];
+         run += lace;
+         v->seg_idx++;
+         if (lace < 255)
+         {
+            done = 1;
+            break;
+         }
+      }
+      v->body_off = start + run;
+      if (v->seg_idx >= nsegs && !done)
+      {
+         if (run)
+         {
+            if (asm_len + run > v->asm_cap)
+               return -1;
+            memcpy(v->asm_buf + asm_len, b + start, run);
+            asm_len += run;
+         }
+         spans      = 1;
+         v->pg_off += psz;
+         v->seg_idx = 0;
+         continue;
+      }
+      if (v->seg_idx >= nsegs)
+      {
+         v->pg_off += psz;
+         v->seg_idx = 0;
+      }
+      if (!spans)
+      {
+         *pdata = b + start;
+         *plen  = (uint32_t)run;
+      }
+      else
+      {
+         if (asm_len + run > v->asm_cap)
+            return -1;
+         memcpy(v->asm_buf + asm_len, b + start, run);
+         asm_len += run;
+         *pdata   = v->asm_buf;
+         *plen    = (uint32_t)asm_len;
+      }
+      return 1;
+   }
+}
+#endif
+
+#ifdef HAVE_RVORBIS
+/* Cap a whole-file read at the length the Ogg granules state.
+ *
+ * rvorbis decodes a chained file through every link, but reports only
+ * the first link's length, and at each boundary it hands out the lead
+ * of the next link's first block - audio the granules do not account
+ * for.  Bounding by the summed granules makes the length reported and
+ * the audio emitted the same figure, which is the property the length
+ * is meant to have.  For a file with one link the bound is what comes
+ * out anyway, so nothing changes there. */
+static size_t audio_transfer_vorbis_cap(struct audio_transfer_vorbis *v,
+      size_t frames)
+{
+   if (v->limit >= 0)
+   {
+      int64_t left = v->limit - v->emitted;
+      if (left <= 0)
+         return 0;
+      if ((int64_t)frames > left)
+         frames = (size_t)left;
+   }
+   return frames;
+}
+#endif
+
 bool audio_transfer_start(void *data, enum audio_type_enum type)
 {
    switch (type)
@@ -1844,12 +2067,66 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          }
          else
          {
+            uint32_t ser = 0;
+            int      nstreams = 0, chained = 0;
+            int64_t  gtotal = 0;
+            int      isvorbis;
             if (!v->data)
                return false;
-            v->handle = rvorbis_open_memory((const unsigned char*)v->data,
-                  (int)v->size, &err, NULL);
-            if (!v->handle)
-               return false;
+            isvorbis = audio_transfer_ogg_survey((const uint8_t*)v->data,
+                  v->size, &ser, &nstreams, &chained, &gtotal);
+            /* One logical bitstream is an ordinary .ogg and goes to
+             * rvorbis whole, which is the path every such file has
+             * always taken.  More than one and it cannot: rvorbis has
+             * no notion of a serial number, so a multiplexed file
+             * would feed it the other stream's pages.  Those go
+             * through the packet path instead, where the pages can be
+             * filtered. */
+            if (isvorbis && nstreams > 1 && !chained)
+            {
+               const uint8_t *hdr[3];
+               uint32_t       hlen[3];
+               int            i, ok = 1;
+               v->asm_cap = 65536;
+               if (!(v->asm_buf = (uint8_t*)malloc(v->asm_cap)))
+                  return false;
+               v->ogg_pkt    = 1;
+               v->ogg_serial = ser;
+               v->pg_off     = 0;
+               v->seg_idx    = 0;
+               v->body_off   = 0;
+               for (i = 0; i < 3; i++)
+                  if (audio_transfer_vorbis_ogg_pkt(v, &hdr[i], &hlen[i])
+                        != 1)
+                  {
+                     ok = 0;
+                     break;
+                  }
+               if (!ok)
+                  return false;
+               /* Identification and setup; the comment packet in
+                * between is not needed to decode. */
+               v->handle = rvorbis_open_packets(hdr[0], (int)hlen[0],
+                     hdr[2], (int)hlen[2], &err, NULL);
+               if (!v->handle)
+                  return false;
+               v->packet = 1;
+            }
+            else
+            {
+               v->handle = rvorbis_open_memory(
+                     (const unsigned char*)v->data, (int)v->size,
+                     &err, NULL);
+               if (!v->handle)
+                  return false;
+            }
+            /* The granules say what the file plays.  For a chained
+             * file that is the sum over its links, which rvorbis
+             * decodes through but reports only the first of; for a
+             * multiplexed one it is the chosen bitstream's, which
+             * also trims the last packet's overhang. */
+            if (gtotal > 0)
+               v->limit = gtotal;
          }
          v->channels = rvorbis_get_info(v->handle).channels;
          /* A caller's packet blob is resident by definition, so the
@@ -2466,8 +2743,16 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
              * granule, which a packet-fed context has none of: its
              * length is whatever bound the container stated, and 0
              * where it stated none. */
-            if (v->packet)
-               *total_frames = (v->limit >= 0) ? (uint64_t)v->limit : 0;
+            /* Whatever bound was established, on either path: the
+             * container's for a packet-fed context, the summed Ogg
+             * granules for a buffer.  Only where nothing stated one
+             * does this fall back to asking rvorbis, which walks to
+             * the last granule of the first link and so answers for
+             * a chained file with its first link alone. */
+            if (v->limit >= 0)
+               *total_frames = (uint64_t)v->limit;
+            else if (v->packet)
+               *total_frames = 0;
             else
                *total_frames =
                   (uint64_t)rvorbis_stream_length_in_samples(v->handle);
@@ -3129,8 +3414,12 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          if (v->packet)
             produced = audio_transfer_vorbis_drain(v, 1, out, NULL, frames);
          else
+         {
+            frames   = audio_transfer_vorbis_cap(v, frames);
             produced = (size_t)rvorbis_get_samples_s16_interleaved(
                   v->handle, v->channels, out, (int)frames * v->channels);
+            v->emitted += (int64_t)produced;
+         }
          break;
       }
 #endif
@@ -3305,9 +3594,11 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             produced = audio_transfer_vorbis_drain(v, 0, NULL, out, frames);
             break;
          }
+         frames = audio_transfer_vorbis_cap(v, frames);
          got = rvorbis_get_samples_float_interleaved(v->handle, v->channels,
                out, (int)(frames * (size_t)v->channels));
          produced = (got > 0) ? (size_t)got : 0;
+         v->emitted += (int64_t)produced;
          break;
       }
 #endif
@@ -3595,6 +3886,19 @@ static void audio_transfer_vorbis_to_head(struct audio_transfer_vorbis *v)
    if (v->demux)
       rwebm_rewind(v->demux);
 #endif
+   if (v->ogg_pkt)
+   {
+      /* Back to the first page, and past the three headers, which are
+       * not audio and are not decoded again. */
+      const uint8_t *pd = NULL;
+      uint32_t       pl = 0;
+      int            i;
+      v->pg_off   = 0;
+      v->seg_idx  = 0;
+      v->body_off = 0;
+      for (i = 0; i < 3; i++)
+         audio_transfer_vorbis_ogg_pkt(v, &pd, &pl);
+   }
    v->pkt_index  = 0;
    v->pkt_offset = 0;
 }
