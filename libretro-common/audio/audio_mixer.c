@@ -459,8 +459,11 @@ static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
 
    /* Native s16 conversion (no float detour). 16-bit samples are taken
     * verbatim; 8-bit unsigned samples are centered and scaled to s16
-    * ((u8 - 128) << 8, i.e. the same magnitude as wav_to_float's
-    * (u8 - 128) / 128 mapped to full scale); 24-bit is rounded through
+    * ((u8 - 128) * 256, i.e. the same magnitude as wav_to_float's
+    * (u8 - 128) / 128 mapped to full scale - a multiply rather than a
+    * shift because the centered value is negative for half the input
+    * range and shifting a negative left is undefined); 24-bit is
+    * rounded through
     * the shared accessor; mono is duplicated to stereo, matching
     * wav_to_float's channel handling. Only a float source brings float
     * into this path.
@@ -502,7 +505,7 @@ static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
       {
          for (i = wav->numsamples; i != 0; i--, src++)
          {
-            int16_t v = (int16_t)(((int)*src - 128) << 8);
+            int16_t v = (int16_t)(((int)*src - 128) * 256);
             *s++      = v;
             *s++      = v;
          }
@@ -511,8 +514,8 @@ static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
       {
          for (i = wav->numsamples; i != 0; i--, src += 2)
          {
-            *s++ = (int16_t)(((int)src[0] - 128) << 8);
-            *s++ = (int16_t)(((int)src[1] - 128) << 8);
+            *s++ = (int16_t)(((int)src[0] - 128) * 256);
+            *s++ = (int16_t)(((int)src[1] - 128) * 256);
          }
       }
    }
