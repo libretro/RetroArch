@@ -353,6 +353,25 @@ void scaler_ctx_scale(struct scaler_ctx *ctx,
    int input_stride        = ctx->in_stride;
    int output_stride       = ctx->out_stride;
 
+   /* Source and destination are the same size: there is nothing to
+    * filter, only a possible pixel format conversion.
+    * scaler_ctx_gen_filter recognises this, binds direct_pixconv and
+    * returns without generating a filter or setting scaler_horiz /
+    * scaler_vert.  Honour that here: without it the generic path below
+    * finds both function pointers NULL, writes nothing at all, and the
+    * caller gets its output buffer back exactly as it was - which for a
+    * freshly malloc'd buffer means an image of uninitialised memory, or
+    * a fully transparent one where the allocation came from fresh
+    * zeroed pages. */
+   if (ctx->unscaled)
+   {
+      if (ctx->direct_pixconv)
+         ctx->direct_pixconv(output, input,
+               ctx->out_width, ctx->out_height,
+               ctx->out_stride, ctx->in_stride);
+      return;
+   }
+
    if (       ctx->in_fmt != SCALER_FMT_ARGB8888
            && ctx->in_fmt != SCALER_FMT_XRGB2101010)
    {
