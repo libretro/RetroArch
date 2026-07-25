@@ -1493,71 +1493,6 @@ static void gxm_draw_texture_scale_rotate(const vita2d_texture *texture,
          SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
-static inline void draw_texture_part_scale_rotate_generic(const vita2d_texture *texture, float x, float y,
-   float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, float rad)
-{
-   int i;
-   float s;
-   float c;
-   gxm_texture_vertex *vertices = (gxm_texture_vertex *)
-      vita2d_pool_memalign(
-      4 * sizeof(gxm_texture_vertex), /* 4 vertices */
-      sizeof(gxm_texture_vertex));
-
-   const float w_full = sceGxmTextureGetWidth(&texture->gxm_tex);
-   const float h_full = sceGxmTextureGetHeight(&texture->gxm_tex);
-
-   const float w_half = (tex_w * x_scale) / 2.0f;
-   const float h_half = (tex_h * y_scale) / 2.0f;
-
-   const float u0 = tex_x / w_full;
-   const float v0 = tex_y / h_full;
-   const float u1 = (tex_x + tex_w) / w_full;
-   const float v1 = (tex_y + tex_h) / h_full;
-
-   vertices[0].x = -w_half;
-   vertices[0].y = -h_half;
-   vertices[0].z = +0.5f;
-   vertices[0].u = u0;
-   vertices[0].v = v0;
-
-   vertices[1].x = w_half;
-   vertices[1].y = -h_half;
-   vertices[1].z = +0.5f;
-   vertices[1].u = u1;
-   vertices[1].v = v0;
-
-   vertices[2].x = -w_half;
-   vertices[2].y = h_half;
-   vertices[2].z = +0.5f;
-   vertices[2].u = u0;
-   vertices[2].v = v1;
-
-   vertices[3].x = w_half;
-   vertices[3].y = h_half;
-   vertices[3].z = +0.5f;
-   vertices[3].u = u1;
-   vertices[3].v = v1;
-
-   c = cosf(rad);
-   s = sinf(rad);
-   for (i = 0; i < 4; ++i)
-   {
-      /* Rotate and translate */
-      float _x      = vertices[i].x;
-      float _y      = vertices[i].y;
-      vertices[i].x = _x*c - _y*s + x;
-      vertices[i].y = _x*s + _y*c + y;
-   }
-
-   /* Set the texture to the TEXUNIT0 */
-   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
-
-   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP,
-         SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
-}
-
 static void gxm_draw_array_textured_mat(const vita2d_texture *texture,
       const gxm_texture_tint_vertex *vertices, size_t count, float *mat)
 {
@@ -2451,7 +2386,6 @@ static void gxm_free(void *data)
       sceGxmDisplayQueueFinish();
 
       /* clean up display queue */
-      gpu_free(depthBufferUid);
       for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
       {
          /* clear the buffer then deallocate */
