@@ -144,6 +144,96 @@ static int arena_overflow_check(void)
 }
 #endif
 
+/* Under a strict build, discarded bytes must fault rather than read
+ * as zeros.
+ *
+ * This is what makes a streaming consumer's look-back margin testable.
+ * The webm core discards behind playback with a fixed margin and its
+ * whole safety argument is that the decoder never looks further back
+ * than that; without strict discard a violation reads zeros and the
+ * decoder consumes them as content, exactly the silent-corruption
+ * failure the window mode already protects against.  Building the
+ * consumer against -DDT_STRICT turns that into a crash at the moment
+ * of the mistake.
+ *
+ * Only meaningful in a strict build, so the default lane skips. */
+#if defined(__unix__) || defined(__APPLE__)
+static int strict_discard_check(void)
+{
+#if !defined(DT_STRICT)
+   printf("[skip] strict discard: build with -DDT_STRICT\n");
+   return 0;
+#elif defined(__SANITIZE_ADDRESS__)
+   printf("[skip] strict discard: the sanitizer intercepts it\n");
+   return 0;
+#else
+   const char *path = "/tmp/dtprefix_strict.bin";
+   size_t n = 4u << 20;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   pid_t pid;
+   int status = 0;
+
+   if (!ref)
+      return 0;
+   mkfile(path, ref, n);
+   free(ref);
+
+   if (!data_transfer_reserve_supported())
+   {
+      printf("[skip] strict discard: no reservations on this build\n");
+      remove(path);
+      return 0;
+   }
+
+   if ((pid = fork()) == 0)
+   {
+      data_transfer_t *dt = data_transfer_open_prefix(path, 0);
+      const uint8_t *base;
+      size_t len = 0;
+      volatile uint8_t v;
+
+      if (!dt)
+         _exit(3);
+      data_transfer_iterate(dt, 0);
+      if (!data_transfer_complete(dt))
+         _exit(4);
+      base = data_transfer_ptr(dt, &len);
+      data_transfer_discard(dt, 1u << 20);
+      v = base[4096];             /* well below the discard frontier */
+      _exit(42);                  /* reached only if it did not fault */
+      (void)v;
+   }
+   waitpid(pid, &status, 0);
+   remove(path);
+
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 42)
+   {
+      printf("[FAIL] a strict build still reads zeros below the "
+             "discard frontier\n");
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) >= 3
+         && WEXITSTATUS(status) <= 4)
+   {
+      printf("[FAIL] the strict-discard child bailed at setup (%d)\n",
+            WEXITSTATUS(status));
+      return 1;
+   }
+   /* Anything else is the fault: a signal normally, or the sanitizer
+    * ending the process its own way with its own exit code. */
+   printf("[ok]   strict discard: a look-back below the frontier "
+          "faults\n");
+   return 0;
+#endif
+}
+#else
+static int strict_discard_check(void)
+{
+   printf("[skip] strict discard: needs fork()\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
    const char *path = "/tmp/dtprefix.bin";
@@ -223,6 +313,9 @@ int main(void)
 
    /* 6. the arena's growth must not spin on a size it cannot reach */
    bad |= arena_overflow_check();
+
+   /* 7. strict builds must fault on a look-back, not read zeros */
+   bad |= strict_discard_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

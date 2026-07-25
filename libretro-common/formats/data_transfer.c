@@ -108,15 +108,14 @@
  *    the no-reservation fallback.  Drive a window with feed/extend/
  *    advance/rewind.
  *
- *  - Rollback of the commit a failed extension already made.  The
- *    handle settles, but the pages keep whatever they hold.  A
- *    rollback is exact for extend(), whose range sits above the
- *    frontier, and is not exact for grow_keep(), whose range can
- *    overlap both the live window and the span advance() released -
- *    the state kept here cannot tell those apart.  A settled window
- *    is terminal; free it.  Until then a consumer reading past the
- *    frontier finds zeros inside that one range rather than the
- *    fault it would get anywhere else.
+ *  - Restoration of the exact state a failed extension found.  What
+ *    settling does instead is release everything above the frontier,
+ *    which is not the same thing but is the part that matters: it is
+ *    the invariant keep <= wlo <= whi that makes [whi, map_len) out
+ *    of contract, so taking it back is exact for extend() and
+ *    grow_keep() alike and needs no record of what was resident
+ *    before.  Pages below the frontier keep whatever they hold, and
+ *    a settled window is terminal anyway; free it.
  *
  *  - Cancellation and progress reporting.  No cancel token, no
  *    progress callback, no time budget.  A producer can only stop
@@ -146,9 +145,13 @@
  *    surface is uniform, but nothing here treats a NULL handle as
  *    meaningful.  It is an accepted mistake, not an idiom.
  *
- *  - A runtime choice of strictness.  DT_WINDOW_STRICT is build-time
- *    and covers window decommits only; discard() always releases
- *    non-strictly.
+ *  - A runtime choice of strictness.  DT_STRICT (DT_WINDOW_STRICT is
+ *    an alias) is build-time.  It now covers discard() as well as the
+ *    window decommits, so the prefix streaming path gets the same
+ *    fault-instead-of-zeros diagnostic under a strict build, which is
+ *    what makes a consumer's look-back margin testable rather than
+ *    assumed.  The release in the settle path is strict in every
+ *    build and does not depend on it.
  *
  *  - Anything about the bytes themselves: no hashing, no validation,
  *    no decompression (source mode's producer does that), and nothing
@@ -171,6 +174,7 @@
 /* Fallback window when the platform cannot reserve address space and
  * the caller gave no cap. */
 #define DT_FALLBACK_WINDOW  (32 * 1024 * 1024)
+
 
 struct data_transfer
 {
@@ -274,7 +278,7 @@ static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
    if (to <= from || !dt->map_len)
       return;
    dt->wfreed = to;
-#ifdef DT_WINDOW_STRICT
+#ifdef DT_STRICT
    memdecommit(dt->map + from, to - from, true);
 #else
    memdecommit(dt->map + from, to - from, false);
@@ -304,6 +308,28 @@ static void data_transfer_wfail(data_transfer_t *dt)
 {
    dt->done   = 1;
    dt->failed = 1;
+   /* Take back everything above the frontier.  The failed call had
+    * already committed its range, and committed-but-unfilled pages
+    * read as zeros where every other byte past the frontier faults -
+    * a hole in the one guarantee the mode rests on.
+    *
+    * Restoring the exact pre-call state is not expressible from what
+    * is kept here, but that is the wrong target.  The invariant is
+    * simply that nothing above whi is readable: the head is
+    * [0, keep), the window is [wlo, whi), and keep <= wlo <= whi
+    * always, so [whi, map_len) is out of contract by construction.
+    * Releasing it is a no-op on a healthy window and a repair on a
+    * failed one, in both the extend() and grow_keep() cases.
+    *
+    * Strict unconditionally, not just under DT_STRICT: the handle is
+    * terminal, so a fault here is a caller reading what it was told
+    * not to, and that is worth surfacing in any build. */
+   if (dt->map_len)
+   {
+      size_t f = (dt->whi + dt->page - 1) & ~(dt->page - 1);
+      if (f < dt->map_len)
+         memdecommit(dt->map + f, dt->map_len - f, true);
+   }
 }
 
 static int data_transfer_wcommit(data_transfer_t *dt,
@@ -545,7 +571,7 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
    t = (to / dt->page) * dt->page;
    if (t <= f)
       return;
-#ifdef DT_WINDOW_STRICT
+#ifdef DT_STRICT
    memdecommit(dt->map + f, t - f, true);
 #else
    memdecommit(dt->map + f, t - f, false);
@@ -765,7 +791,11 @@ void data_transfer_discard(data_transfer_t *dt, size_t up_to)
    lo = (up_to / dt->page) * dt->page;
    if (lo <= dt->low)
       return;
+#ifdef DT_STRICT
+   memdecommit(dt->map + dt->low, lo - dt->low, true);
+#else
    memdecommit(dt->map + dt->low, lo - dt->low, false);
+#endif
    dt->low = lo;
 }
 
@@ -780,9 +810,11 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
    end = dt->low;
    if (end > dt->avail)
       end = dt->avail;
-   /* Windows needs the range committing again; on POSIX
-    * MADV_DONTNEED left the pages committed and they refault as
-    * zeros, so memcommit() is a cheap no-op there. */
+   /* Windows needs the range committing again, and so does any build
+    * where discard() released strictly, which leaves the pages
+    * unreadable.  Only on POSIX without DT_STRICT is this a cheap
+    * no-op: MADV_DONTNEED alone leaves them committed to refault as
+    * zeros. */
    if (!memcommit(dt->map + lo, end - lo))
       return false;
    if (end > lo && !data_transfer_read_at(dt, lo, dt->map + lo, end - lo))

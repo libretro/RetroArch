@@ -605,6 +605,105 @@ static int null_handle_check(void)
 }
 #endif
 
+#if defined(__unix__) || defined(__APPLE__)
+/* Settling must take back everything above the frontier.
+ *
+ * A failed extend() has already committed the range it was about to
+ * fill, so without the release those pages read as zeros - in the one
+ * place the mode guarantees a fault.  The check forces the failure by
+ * truncating, then reads far above the last good frontier in a child:
+ * the child must die.  Against a module that settles without
+ * releasing, it survives and reads zeros instead.
+ *
+ * The release is strict in every build, so this does not need
+ * DT_STRICT. */
+static int settle_releases_check(void)
+{
+   const char *path = "/tmp/dtwin_release.bin";
+   size_t n = 8u << 20, i;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   FILE *f;
+   pid_t pid;
+   int status = 0;
+
+   if (!ref)
+      return 0;
+   for (i = 0; i < n; i++)
+      ref[i] = (uint8_t)(i * 17 + 3);
+   f = fopen(path, "wb"); fwrite(ref, 1, n, f); fclose(f);
+   free(ref);
+
+   if (!data_transfer_reserve_supported())
+   {
+      printf("[skip] settle releases: no reservations on this build\n");
+      remove(path);
+      return 0;
+   }
+#if defined(__SANITIZE_ADDRESS__)
+   printf("[skip] settle releases: the sanitizer intercepts it\n");
+   remove(path);
+   return 0;
+#elif defined(__has_feature)
+#if __has_feature(address_sanitizer)
+   printf("[skip] settle releases: the sanitizer intercepts it\n");
+   remove(path);
+   return 0;
+#endif
+#endif
+
+   if ((pid = fork()) == 0)
+   {
+      data_transfer_t *dt = data_transfer_open_window(path, KEEP);
+      const uint8_t *base;
+      size_t blen = 0;
+      volatile uint8_t v;
+
+      if (!dt)
+         _exit(3);
+      base = data_transfer_window_base(dt, &blen);
+      if (!data_transfer_window_feed(dt, KEEP, LOOKAHD, MARGIN))
+         _exit(4);
+      /* cut the file just above the frontier, then ask for the rest:
+       * the extend commits far ahead and then reads short */
+      if (truncate(path, (off_t)(KEEP + LOOKAHD)) != 0)
+         _exit(5);
+      if (data_transfer_window_extend(dt, n))
+         _exit(6);                /* it was supposed to fail */
+      if (!data_transfer_failed(dt))
+         _exit(7);
+      v = base[n - 4096];         /* deep inside the failed commit */
+      _exit(42);                  /* reached only if it did not fault */
+      (void)v;
+   }
+   waitpid(pid, &status, 0);
+   remove(path);
+
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 42)
+   {
+      printf("[FAIL] a settled window still reads zeros above the "
+             "frontier instead of faulting\n");
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) >= 3
+         && WEXITSTATUS(status) <= 7)
+   {
+      printf("[FAIL] the settle-release child bailed at setup (%d)\n",
+            WEXITSTATUS(status));
+      return 1;
+   }
+   /* Anything else is the fault: a signal normally, or the sanitizer
+    * ending the process its own way with its own exit code. */
+   printf("[ok]   settling releases above the frontier: it faults\n");
+   return 0;
+}
+#else
+static int settle_releases_check(void)
+{
+   printf("[skip] settle releases: needs fork()\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -691,6 +790,7 @@ int main(void)
    bad |= range_bounds_check();
    bad |= extend_settles_check();
    bad |= null_handle_check();
+   bad |= settle_releases_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

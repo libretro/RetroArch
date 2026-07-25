@@ -31,6 +31,17 @@
 
 RETRO_BEGIN_DECLS
 
+/* Strict decommit: release pages unreadable, so touching a released
+ * byte faults instead of quietly reading zeros.  The switch was
+ * DT_WINDOW_STRICT when only the window decommitted strictly;
+ * discard() honours it now too, so the general spelling is DT_STRICT
+ * and the old name is an alias.  Defined here rather than in the .c
+ * so a consumer built with either spelling agrees with the module
+ * about which one is in force. */
+#if defined(DT_WINDOW_STRICT) && !defined(DT_STRICT)
+#define DT_STRICT
+#endif
+
 /* A growing, stable-pointer view of a file being read: the source-side
  * companion to the image_transfer/audio_transfer decode facades, for
  * consumers that decode against a partially-read buffer (the video
@@ -91,7 +102,7 @@ bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
  * [lo, hi) that the feeder advances behind the consumer and extends
  * ahead of it.  rewind() decommits the old window after the consumer
  * loops; extend() re-reads from the file, so a second lap costs I/O,
- * not memory.  Compile with DT_WINDOW_STRICT to make advanced-past
+ * not memory.  Compile with DT_STRICT to make advanced-past
  * pages fault on touch instead of reading as zeros - the oracle's
  * proof that a consumer honours the sequential contract.  Platforms
  * without reservations fall back to holding the whole file.
@@ -105,7 +116,7 @@ bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling);
  *
  * The reason is page lifetime, which no amount of refcounting fixes.
  * feed() advances the window behind the consumer, and advancing
- * decommits: MADV_DONTNEED, or PROT_NONE under DT_WINDOW_STRICT.  A
+ * decommits: MADV_DONTNEED, or PROT_NONE under DT_STRICT.  A
  * second consumer trailing the first - audio behind video, the normal
  * case - reads pages the feeder is releasing underneath it.  Keeping
  * the struct alive keeps the struct alive; the pages still go.  Under
@@ -181,7 +192,7 @@ bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
 /* Release an inert range inside the head - bytes the consumer will
  * never revisit (a skipped PICTURE block between the stream info
  * and the first frame).  Whole pages strictly inside (from, to)
- * are decommitted; under DT_WINDOW_STRICT they fault on touch. */
+ * are decommitted; under DT_STRICT they fault on touch. */
 void data_transfer_window_punch(data_transfer_t *dt, size_t from,
       size_t to);
 /* One-call feeder policy: keep [tell - margin, tell + lookahead)
@@ -226,7 +237,10 @@ bool data_transfer_capped(data_transfer_t *dt);
  * meanwhile.  A consumer that discards behind its read position as
  * it goes plays a file of any size in a constant residency window.
  * Best-effort: a no-op on a window handle and on the no-reservation
- * fallback (whose bytes simply stay). */
+ * fallback (whose bytes simply stay).  Under DT_STRICT the released
+ * bytes fault on touch rather than reading as zeros, which turns a
+ * consumer's look-back margin from an assumption into something a
+ * test can catch. */
 void data_transfer_discard(data_transfer_t *dt, size_t up_to);
 
 /* Make [from, avail) readable again after discards, re-reading any
