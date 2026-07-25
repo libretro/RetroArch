@@ -889,7 +889,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       return;
    }
 
-   /* Deterministic integer (s16) fast path.
+   /* Deterministic integer (s16) path.
     *
     * When enabled by the 'Resample to Fixed Integer' hint, the core delivered
     * int16, and the selected resampler has an int16 variant (sinc, nearest,
@@ -903,10 +903,19 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * float) no longer forces it either: its samples are converted to s16 and
     * summed into the game audio before the integer DSP/resample, exactly where
     * the float path sums them.  This removes the s16<->float round-trip on the
-    * game signal, uses no FPU for the game resample, and is bit-identical
-    * across platforms for that signal (reproducible output for validation and
-    * regression comparison).  Any condition
-    * failing falls through to the float path below. */
+    * game signal and is bit-identical across platforms for that signal
+    * (reproducible output for validation and regression comparison).  Any
+    * condition failing falls through to the float path below.
+    *
+    * This buys determinism, not speed, and on hosts with a vector FPU it
+    * costs speed.  The float sinc driver is SIMD (SSE/NEON/AltiVec) while
+    * the int16 one is scalar, so on desktop x86 this path measures roughly
+    * twice the cost of the float path for the same output - about 30 us
+    * against 15 us for a 512-frame batch at 32 kHz -> 48 kHz.  It wins where
+    * there is no usable FPU, or with a cheap kernel: the nearest driver
+    * measures ~2.0 us here against ~3.5 us on the float path.  Pick it for
+    * reproducibility (netplay, rewind, regression comparison) or for
+    * soft-float targets, not as a general optimisation. */
    {
       static int audio_i16_path_logged = -1;
       bool use_i16 = audio_driver_mixer_use_s16(is_float);
