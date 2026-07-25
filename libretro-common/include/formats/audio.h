@@ -34,9 +34,16 @@ RETRO_BEGIN_DECLS
 /* Codec-agnostic audio decode interface.
  *
  * This is the audio-side counterpart of formats/image.h: a thin dispatch
- * layer that sits above the concrete decoders (rflac/rvorbis/rmp3/rwav) and
- * lets callers decode any supported format through one API, exactly the way
- * image_transfer_* sits above rpng/rjpeg/etc.
+ * layer that sits above the concrete decoders (rwav/rflac/rvorbis/rmp3/
+ * rmodtracker/ropus/raac) and lets callers decode any supported format
+ * through one API, exactly the way image_transfer_* sits above
+ * rpng/rjpeg/etc.
+ *
+ * The arms implement different subsets of what follows - input modes,
+ * whether s16 and f32 may be mixed, whether a length is reported, seek
+ * and windowing support.  audio_transfer.c opens with the per-codec
+ * matrix; the notes here give only what a caller must know to use the
+ * call at all.
  *
  * The lifecycle mirrors the image layer 1:1 - new -> start -> read (repeat)
  * -> free, no direct file I/O (the caller owns the encoded bytes and passes
@@ -67,12 +74,17 @@ enum audio_type_enum
    AUDIO_TYPE_MP3,
    AUDIO_TYPE_MOD,  /* tracker module: MOD / S3M / XM (rmodtracker) */
    AUDIO_TYPE_OPUS, /* Opus (ropus); demuxed, Ogg (.opus) or WebM (.weba) */
-   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, or a whole MP4/M4A
-                    * buffer when rmp4 is built in (no ADTS parser)     */
+   AUDIO_TYPE_AAC   /* AAC-LC (raac); demuxed path, an ADTS buffer
+                    * (.aac), or a whole MP4/M4A buffer when rmp4 is
+                    * built in                                          */
 };
 
 /* Guess the codec from a file-name/extension (counterpart of
- * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised. */
+ * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised.
+ * Covers WAV, FLAC, Ogg Vorbis, MP3 and the tracker modules only:
+ * .opus, .aac, .m4a and .weba have no extension mapping, and .ogg is
+ * ambiguous between Vorbis and Opus, so those types come from the
+ * caller or from the content sniffers below. */
 enum audio_type_enum audio_decode_get_type(const char *path);
 
 /* ---- shared lifecycle: 1:1 with image_transfer_* ---- */
@@ -121,17 +133,17 @@ bool  audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
 bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
       uint64_t frames);
 
-/* Identify the codec of an Ogg buffer from its first page's
- * identification header: AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose
- * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
- * not Ogg or carries an unsupported codec.  An .ogg extension can
- * legitimately wrap either. */
 /* Windowed Opus only: inject the stream's last-page granule so the
  * decoder's buffer setup does not scan the whole file for it (the tail
  * is not resident under windowing).  No-op for non-Opus types. */
 void audio_transfer_set_end_granule(void *data, enum audio_type_enum type,
       int64_t end_granule);
 
+/* Identify the codec of an Ogg buffer from its first page's
+ * identification header: AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose
+ * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
+ * not Ogg or carries an unsupported codec.  An .ogg extension can
+ * legitimately wrap either. */
 enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
       size_t len);
 
@@ -165,7 +177,11 @@ bool  audio_transfer_info(void *data, enum audio_type_enum type,
  * (may be NULL), and returns AUDIO_PROCESS_NEXT while data remains,
  * AUDIO_PROCESS_END at end of stream (frames produced 0), or
  * AUDIO_PROCESS_ERROR. s16 is exact for integer codecs (FLAC/WAV); f32 is
- * the native path for the float mixer. */
+ * the native path for the float mixer.  Producing fewer frames than asked
+ * is not end of stream, and END is not latched: a demuxed packet set that
+ * has been grown resumes on the next call.  Opus and AAC latch the format
+ * at the first read and error on the other entry point for the life of
+ * the context; the rest may be mixed. */
 int   audio_transfer_read_s16(void *data, enum audio_type_enum type,
       int16_t *out, size_t frames, size_t *frames_out);
 int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
@@ -176,11 +192,15 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
  * has read.  Monotonic during playback, jumps back to the head on a
  * loop seek.  A windowed source's feeder uses it to keep residency
  * around the read position.  Returns 0 if the codec does not track
- * a buffer offset (demuxed arms, MOD). */
+ * a buffer offset: the demuxed arms, MOD, and WAV, which decodes whole
+ * at start and so keeps no compressed frontier. */
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
- * success. */
+ * success.  WAV, FLAC, Vorbis and MP3 seek freely; MOD, Opus and AAC
+ * take frame 0 only - the rewind a loop needs - and fail otherwise, as
+ * does a Vorbis stream opened from demuxed packets, whose synthesised
+ * framing carries placeholder granules. */
 bool  audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame);
 
