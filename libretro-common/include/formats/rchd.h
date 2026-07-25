@@ -146,6 +146,7 @@ RETRO_BEGIN_DECLS
 #define RCHD_META_AV            0x41564156U /* 'AVAV' */
 #define RCHD_META_AV_LD         0x41564C44U /* 'AVLD' */
 #define RCHD_META_HARD_DISK     0x47444444U /* 'GDDD' */
+#define RCHD_META_DVD           0x44564420U /* 'DVD ' */
 
 #define RCHD_SUB_NONE           0
 #define RCHD_SUB_RAW            1
@@ -227,6 +228,10 @@ typedef struct rchd_track
    uint32_t pregap;
    uint32_t postgap;
    uint32_t lba;
+   /* Non-zero when the image described no tracks and this one stands
+    * for the whole of it. A DVD image is the case: it has no tracks,
+    * its sectors are the unit size, and there is one run of them. */
+   uint32_t synthesised;
 } rchd_track_t;
 
 /**

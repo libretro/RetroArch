@@ -51,7 +51,10 @@
  *                        5's flat array and Huffman-plus-RLE bitstream.
  *   Metadata             the chain is walked at open and kept.
  *   Tracks               CD and GD track tables, with each track padded
- *                        to a four-frame boundary.
+ *                        to a four-frame boundary. A DVD image
+ *                        describes no tracks, so one standing for the
+ *                        whole image is made instead, marked
+ *                        synthesised.
  *   Integrity            version 5's map CRC-16 and versions 3 and 4's
  *                        per-hunk CRC-32 are checked.
  *
@@ -2384,8 +2387,47 @@ static int rchd_build_tracks(rchd_t *chd)
          n++;
    }
 
+   /* A DVD image carries no track metadata at all -- one tag saying
+    * what it is, and nothing else -- because it has no tracks to
+    * describe. Its sectors are the unit size and there is exactly one
+    * run of them, so the table that says as much is made here rather
+    * than left absent.
+    *
+    * Without it a caller reading by sector has to notice the shape of
+    * the container and fall back to reading by byte, which is what the
+    * sector entry points exist to spare it. The track is marked
+    * synthesised so a caller that cares can tell it apart from one the
+    * image described. */
    if (!n)
+   {
+      for (i = 0; i < chd->meta_count; i++)
+      {
+         rchd_track_t *t;
+
+         if (chd->meta[i].tag != RCHD_META_DVD)
+            continue;
+
+         chd->tracks = (rchd_track_t*)calloc(1, sizeof(rchd_track_t));
+         if (!chd->tracks)
+            return RCHD_ERROR_MEM;
+
+         t                 = &chd->tracks[0];
+         t->track          = 1;
+         t->type           = RCHD_TRACK_MODE1;
+         t->subtype        = RCHD_SUB_NONE;
+         t->data_size      = chd->info.unit_bytes;
+         t->sub_size       = 0;
+         t->frames         = (uint32_t)(chd->info.logical_bytes
+                              / chd->info.unit_bytes);
+         t->pad_frames     = 0;
+         t->lba            = 0;
+         t->logical_offset = 0;
+         t->synthesised    = 1;
+         chd->track_count  = 1;
+         return RCHD_OK;
+      }
       return RCHD_OK;
+   }
 
    chd->tracks = (rchd_track_t*)calloc(n, sizeof(rchd_track_t));
    if (!chd->tracks)

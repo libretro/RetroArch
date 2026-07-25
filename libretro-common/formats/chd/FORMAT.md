@@ -500,7 +500,27 @@ reserved:
 sector therefore has no fixed stride: crossing from a data track into an
 audio one changes how much each sector yields.
 
-### 3.3 Hunk size ceiling **[V]**
+### 3.3 DVD and UMD images **[V]**
+
+A DVD image describes itself with a single metadata entry tagged `DVD `
+carrying one byte, and no track metadata at all. Its unit size is the
+sector size, 2048, and there is one run of sectors from the start.
+Verified on a UMD image, which uses the same shape.
+
+**A disc image is not necessarily framed as a disc.** A PlayStation 2
+DVD to hand is stored the other way: `CHT2` track metadata, `cdlz` and
+friends, a unit of 2448, and a single `MODE1` track whose sectors are
+2048 bytes inside 2448-byte frames. The container shape follows the
+tool that made the image rather than the medium it came from, so a
+reader cannot infer one from the other. It works out at 2294320 sectors
+either way; only the packing differs.
+
+That image is also the first to hand whose sectors are smaller than a
+frame. Every disc image before it had 2352-byte sectors, so the
+distinction between a track's data size and the frame that holds it was
+carried but never exercised.
+
+### 3.4 Hunk size ceiling **[V]**
 
 The largest hunk the format permits differs either side of version 5:
 
