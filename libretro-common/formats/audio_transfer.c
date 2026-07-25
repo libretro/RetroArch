@@ -52,7 +52,8 @@
 #include <formats/rmp4.h>
 #endif
 #endif
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #include <formats/rwebm.h>
 #endif
 
@@ -234,9 +235,11 @@
  * AAC (raac)
  *   Does: three inputs - ADTS buffer (.aac, the AudioSpecificConfig
  *     synthesised from the first header), MP4/M4A buffer (HAVE_RMP4,
- *     packets from rmp4, start trim from the track's edit list), and
- *     demuxed (ASC + delimited access units, trim via
- *     set_start_trim); s16 and f32, freely mixed at any point (the
+ *     packets from rmp4, start trim from the track's edit list),
+ *     Matroska buffer (.mka/.mkv, HAVE_RWEBM, the ASC being the
+ *     track's CodecPrivate and the access units its blocks, with the
+ *     priming from CodecDelay), and demuxed (ASC + delimited access
+ *     units, trim via set_start_trim); s16 and f32, freely mixed at any point (the
  *     pending frames are held as raac's float output and converted on
  *     the way out of read_s16, which is what raac_decode_s16 does
  *     internally, so the s16 samples are the same either way); the
@@ -252,8 +255,11 @@
  *     encoder used noise substitution - the reset a seek needs reseeds
  *     the noise generator, and substituted noise is noise rather than
  *     coded samples.  Reports a length only from
- *     an MP4, which declares one; an ADTS stream would have to be
- *     walked to be measured, and the demuxed path's packets are the
+ *     an MP4 or a Matroska, which declare one - though a Matroska's
+ *     Duration spans what the stream codes, priming included, where an
+ *     MP4's edit list is already net of it, so the trim comes off the
+ *     one and not the other.  An ADTS stream would have to be walked
+ *     to be measured, and the demuxed path's packets are the
  *     caller's.  ADTS carries no delay signalling, so
  *     that path forces the trim to 0 and is not gapless.  A lost ADTS
  *     sync is reported as end of stream rather than resynchronised.
@@ -575,6 +581,13 @@ struct audio_transfer_aac
 #ifdef HAVE_RMP4
    rmp4_t     *demux;
    int         track_idx;
+#endif
+#ifdef HAVE_RWEBM
+   /* Matroska (.mka/.mkv) carrying A_AAC: the AudioSpecificConfig is
+    * the track's CodecPrivate and the access units are its blocks,
+    * pulled on demand like every other packet-fed path here. */
+   rwebm_t    *wdemux;
+   int         wtrack_idx;
 #endif
    /* Frames the container's edit list trims from the stream start (the
     * encoder delay); set with audio_transfer_set_start_trim before
@@ -1007,7 +1020,8 @@ void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
 void audio_transfer_set_avail(void *data, enum audio_type_enum type,
       size_t avail)
 {
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
    switch (type)
    {
 #ifdef HAVE_RVORBIS
@@ -1085,7 +1099,8 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
    return AUDIO_TYPE_NONE;
 }
 
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 /* Open a WebM container with the header parse bounded by the bytes the
  * caller says are actually there.
  *
@@ -1114,7 +1129,8 @@ static rwebm_t *audio_transfer_webm_open(const uint8_t *data, size_t size,
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len)
 {
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) \
+ || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
    rwebm_t *wm;
    int i;
    enum audio_type_enum found = AUDIO_TYPE_NONE;
@@ -1136,6 +1152,10 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
 #ifdef HAVE_RVORBIS
       if (t->codec == RWEBM_CODEC_VORBIS)
          found = AUDIO_TYPE_VORBIS;
+#endif
+#ifdef HAVE_RAAC
+      if (t->codec == RWEBM_CODEC_AAC)
+         found = AUDIO_TYPE_AAC;
 #endif
    }
    rwebm_close(wm);
@@ -1614,6 +1634,64 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             ac->start_trim = 0;   /* ADTS carries no delay signalling  */
          }
          else
+#ifdef HAVE_RWEBM
+         /* buffer mode, Matroska (.mka/.mkv) carrying A_AAC.  Same
+          * shape as the MP4 path below: the AudioSpecificConfig is the
+          * track's CodecPrivate and the access units are its blocks.
+          * The encoder delay comes from CodecDelay rather than an edit
+          * list, and the length from the container's Duration, which
+          * is net of that delay. */
+         if (!ac->setup && ac->buf && ac->buf_size >= 4
+               && ac->buf[0] == 0x1A && ac->buf[1] == 0x45
+               && ac->buf[2] == 0xDF && ac->buf[3] == 0xA3)
+         {
+            const rwebm_track *at = NULL;
+            int      i;
+            int64_t  dur;
+            if (!(ac->wdemux = audio_transfer_webm_open(ac->buf,
+                        ac->buf_size, 0)))
+               return false;
+            ac->wtrack_idx = -1;
+            for (i = 0; i < rwebm_num_tracks(ac->wdemux); i++)
+            {
+               const rwebm_track *t = rwebm_get_track(ac->wdemux, i);
+               if (t && t->type == RWEBM_TRACK_AUDIO
+                     && t->codec == RWEBM_CODEC_AAC
+                     && t->codec_private_size)
+               {
+                  at             = t;
+                  ac->wtrack_idx = i;
+                  break;
+               }
+            }
+            if (!at)
+               return false;
+            ac->handle = raac_open(at->codec_private,
+                  at->codec_private_size);
+            if (!ac->handle)
+               return false;
+            /* CodecDelay is nanoseconds of decoded output to drop from
+             * the front - the priming an AAC encoder always codes. */
+            if (at->codec_delay_ns && at->sample_rate)
+               ac->start_trim = (uint64_t)
+                  ((at->codec_delay_ns * (int64_t)at->sample_rate
+                    + 500000000) / 1000000000);
+            /* Duration here spans what the stream codes, priming
+             * included - unlike an MP4 edit list, which states the
+             * play length net of it.  The bound is checked against
+             * frames handed out, which are post-trim, so the trim
+             * comes off it. */
+            dur = rwebm_duration_ns(ac->wdemux);
+            if (dur > 0 && at->sample_rate)
+            {
+               ac->limit = (dur * (int64_t)at->sample_rate + 500000000)
+                  / 1000000000 - (int64_t)ac->start_trim;
+               if (ac->limit < 0)
+                  ac->limit = 0;
+            }
+         }
+         else
+#endif
 #ifdef HAVE_RMP4
          /* buffer mode: a whole MP4/M4A; demux it here */
          if (!ac->setup && ac->buf)
@@ -2239,6 +2317,24 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
          ac->adts_pos = pos + flen;
          return 1;
       }
+#ifdef HAVE_RWEBM
+      if (ac->wdemux)
+      {
+         /* buffer mode, Matroska: the next block of the AAC track */
+         rwebm_packet wpkt;
+         for (;;)
+         {
+            int r = rwebm_read_packet(ac->wdemux, &wpkt);
+            if (r != 1)
+               return 0;
+            if (wpkt.track == ac->wtrack_idx)
+               break;
+         }
+         *pdata = wpkt.data;
+         *plen  = (uint32_t)wpkt.size;
+         return 1;
+      }
+#endif
 #ifdef HAVE_RMP4
       if (ac->demux)
       {

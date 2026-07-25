@@ -1107,7 +1107,8 @@ audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size)
 
 audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
 {
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) \
+ || defined(HAVE_RAAC))
    audio_mixer_sound_t* sound;
    enum audio_type_enum ty = audio_transfer_webm_audio_type(buffer,
          (size_t)size);
@@ -1119,6 +1120,10 @@ audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size)
       mt = AUDIO_MIXER_TYPE_OPUS;
    else if (ty == AUDIO_TYPE_VORBIS)
       mt = AUDIO_MIXER_TYPE_OGG;
+#ifdef HAVE_RAAC
+   else if (ty == AUDIO_TYPE_AAC)
+      mt = AUDIO_MIXER_TYPE_M4A;
+#endif
    else
       return NULL;
 

@@ -1578,7 +1578,9 @@ bool task_push_audio_mixer_load_and_play(
       nbio->type      = NBIO_TYPE_OPUS;
       t->callback     = task_audio_mixer_handle_upload_opus_and_play;
    }
-   else if (string_is_equal(ext_lower, "weba"))
+   else if (string_is_equal(ext_lower, "weba")
+         || string_is_equal(ext_lower, "mka")
+         || string_is_equal(ext_lower, "mkv"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WEBA;
       nbio->type      = NBIO_TYPE_WEBM;
@@ -1736,7 +1738,9 @@ bool task_push_audio_mixer_load(
       nbio->type      = NBIO_TYPE_OPUS;
       t->callback     = task_audio_mixer_handle_upload_opus;
    }
-   else if (string_is_equal(ext_lower, "weba"))
+   else if (string_is_equal(ext_lower, "weba")
+         || string_is_equal(ext_lower, "mka")
+         || string_is_equal(ext_lower, "mkv"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_WEBA;
       nbio->type      = NBIO_TYPE_WEBM;
