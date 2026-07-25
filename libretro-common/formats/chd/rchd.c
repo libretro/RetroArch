@@ -64,6 +64,8 @@
  * needs a bound of its own: this admits a 512 GiB image at the smallest
  * plausible hunk size, well past anything real. */
 #define RCHD_MAX_HUNK_COUNT  (32 * 1024 * 1024)
+/* An A/V hunk states its own channel count; this bounds it. */
+#define RCHD_AV_MAX_CHANNELS 16
 
 /* Decoded map entry, one per hunk. Kept unpacked rather than as the
  * twelve bytes the CRC is computed over: that form exists only to be
@@ -215,6 +217,12 @@ struct rchd
     * that never names the codec. */
    uint16_t          *huff_lookup;
 
+   /* Three lookup tables and one channel of samples, for A/V hunks.
+    * Made on first use, so an image that is not audio/video pays
+    * nothing for them. */
+   uint16_t          *av_lookup;
+   int16_t           *av_samples;
+
    /* A zstd context, made once and reused: the hot path should not be
     * allocating one per hunk. */
    void              *zstd;
@@ -223,6 +231,10 @@ struct rchd
     * reads inside one, decode each hunk once. */
    uint8_t           *cache;
    uint32_t           cached;
+
+   /* One hunk's worth of sector and subchannel data, before the two are
+    * interleaved into the caller's buffer. */
+   uint8_t           *cd_scratch;
 
    uint8_t           *rd_dst;
    size_t             rd_len;
@@ -328,6 +340,7 @@ static int rchd_parse_v3v4(rchd_t *chd, const uint8_t *h, uint32_t version)
    chd->info.hunk_count = rchd_rd32(h + 24);
    chd->info.has_parent = (rchd_rd32(h + 16) & 1) != 0;
 
+
    /* Nothing before version 5 records a unit size. It is inferred from
     * metadata that names a sector size, and falls back to the hunk size
     * when no such metadata exists -- which is what both readers of this
@@ -403,6 +416,26 @@ static int rchd_parse_header(rchd_t *chd, const uint8_t *h)
 
    if (err != RCHD_OK)
       return err;
+
+   /* One codec applies to the whole image before version 5, named by an
+    * enum at offset 20 rather than by a tag. Values 1 and 2 are both
+    * DEFLATE -- the second differs only in how the encoder chose its
+    * blocks -- and 3 is audio/video. It is recorded rather than assumed
+    * because an A/V image would otherwise be handed to the wrong
+    * decoder and fail as corrupt data. */
+   if (version < 5)
+   {
+      uint32_t enumv = rchd_rd32(h + 20);
+
+      if (enumv == 3)
+         chd->info.compressors[0] = RCHD_CODEC_AVHUFF;
+      else if (enumv == 1 || enumv == 2)
+         chd->info.compressors[0] = RCHD_CODEC_ZLIB;
+      else if (enumv == 0)
+         chd->info.compressors[0] = RCHD_CODEC_NONE;
+      else
+         return RCHD_ERROR_UNSUPPORTED;
+   }
 
    if (!chd->info.hunk_bytes || chd->info.hunk_bytes > RCHD_MAX_HUNK_BYTES)
       return RCHD_ERROR_DATA;
@@ -806,6 +839,9 @@ void rchd_free(rchd_t *chd)
    free(chd->codecs);
    free(chd->huff_lookup);
    free(chd->cache);
+   free(chd->cd_scratch);
+   free(chd->av_lookup);
+   free(chd->av_samples);
 #ifdef HAVE_RCHD_ZSTD
    if (chd->zstd)
       ZSTD_freeDCtx((ZSTD_DCtx*)chd->zstd);
@@ -1086,6 +1122,639 @@ int rchd_register_codec(rchd_t *chd, uint32_t tag,
    return RCHD_OK;
 }
 
+/* The decoded A/V hunk header: a tag and the geometry restated. Needed
+ * by rchd_av_parse whether or not the codec that produces one is
+ * built. */
+#define RCHD_AV_HEADER 12
+
+#ifdef HAVE_RCHD_FLAC
+/* -------- audio/video hunks --------
+ *
+ * A hunk is one video field and the audio belonging to it. See FORMAT.md
+ * section 9. The video bitstream's framing there is the one part of that
+ * document taken from the reference implementation rather than derived
+ * from measurement, and it is marked as such in place.
+ */
+
+#define RCHD_AV_CODES    (256 + 16)
+#define RCHD_AV_MAX_BITS  16
+
+/* A symbol at or above 0x100 repeats the previous sample rather than
+ * being a delta; this is how many times. */
+static uint32_t rchd_av_runlength(uint32_t code)
+{
+   if (code <= 0x107)
+      return 8 + (code - 0x100);
+   return (uint32_t)16 << (code - 0x108);
+}
+
+/* One plane's state. The three share a bit stream but each keeps its
+ * own running sample and run counter. */
+typedef struct rchd_av_plane
+{
+   rhuff_dec_t dec;
+   uint32_t    prev;
+   uint32_t    run;
+} rchd_av_plane_t;
+
+static uint8_t rchd_av_next(rchd_av_plane_t *p, rhuff_bits_t *b)
+{
+   uint32_t sym;
+
+   if (p->run)
+   {
+      p->run--;
+      return (uint8_t)p->prev;
+   }
+
+   sym = rhuff_dec_decode_one(&p->dec, b);
+
+   if (sym < 0x100)
+   {
+      p->prev = (p->prev + sym) & 0xff;
+      return (uint8_t)p->prev;
+   }
+
+   p->run = rchd_av_runlength(sym) - 1;
+   return (uint8_t)p->prev;
+}
+
+static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
+      uint32_t src_len, uint8_t *dst, uint32_t dst_len)
+{
+   rchd_av_plane_t plane[3];
+   rhuff_bits_t    bits;
+   rflac_format_t  fmt;
+   uint32_t        metasize;
+   uint32_t        channels;
+   uint32_t        samples;
+   uint32_t        width;
+   uint32_t        height;
+   uint32_t        hdr_len;
+   uint32_t        audio_len = 0;
+   const uint8_t  *p;
+   uint8_t        *out;
+   uint32_t        i;
+   uint32_t        row;
+   uint32_t        x;
+
+   if (src_len < 10)
+      return RCHD_ERROR_DATA;
+
+   metasize = src[0];
+   channels = src[1];
+   samples  = rchd_rd16(src + 2);
+   width    = rchd_rd16(src + 4);
+   height   = rchd_rd16(src + 6);
+
+   if (!channels || channels > RCHD_AV_MAX_CHANNELS || (width & 1))
+      return RCHD_ERROR_DATA;
+
+   hdr_len = 10 + channels * 2;
+   if (src_len < hdr_len)
+      return RCHD_ERROR_DATA;
+
+   /* The blob restates geometry the metadata already gave, so the two
+    * are checked against each other rather than one being trusted.
+    *
+    * The fit is an upper bound, not an equality: the sample count
+    * varies between hunks because the audio rate does not divide the
+    * field rate evenly -- 44100 over 59.94 is 735.75, so hunks carry
+    * 736 samples or 735 and the average comes out right -- while the
+    * hunk size is fixed for the larger case. A hunk with fewer samples
+    * simply ends a few bytes short. */
+   if ((uint64_t)RCHD_AV_HEADER + metasize
+         + (uint64_t)samples * channels * 2
+         + (uint64_t)width * height * 2 > (uint64_t)dst_len)
+      return RCHD_ERROR_DATA;
+
+   for (i = 0; i < channels; i++)
+      audio_len += rchd_rd16(src + 10 + i * 2);
+   if ((uint64_t)hdr_len + metasize + audio_len > (uint64_t)src_len)
+      return RCHD_ERROR_DATA;
+
+   /* The decoded hunk names itself, then restates the geometry. */
+   dst[0]  = 'c'; dst[1] = 'h'; dst[2] = 'a'; dst[3] = 'v';
+   dst[4]  = (uint8_t)metasize;
+   dst[5]  = (uint8_t)channels;
+   dst[6]  = (uint8_t)(samples >> 8); dst[7]  = (uint8_t)samples;
+   dst[8]  = (uint8_t)(width >> 8);   dst[9]  = (uint8_t)width;
+   dst[10] = (uint8_t)(height >> 8);  dst[11] = (uint8_t)height;
+
+   /* Whatever the shorter case leaves spare is zeroed, so a hunk
+    * decodes to the same bytes every time. */
+   memset(dst + RCHD_AV_HEADER, 0, dst_len - RCHD_AV_HEADER);
+
+   p   = src + hdr_len;
+   out = dst + RCHD_AV_HEADER;
+
+   if (metasize)
+      memcpy(out, p, metasize);
+   p   += metasize;
+   out += metasize;
+
+   /* Audio is coded one channel at a time, never interleaved, and lands
+    * big-endian as every other multibyte value in a hunk does. How each
+    * channel is coded is chosen per hunk by the field at offset 8,
+    * which is a byte count for a pair of Huffman trees and has two
+    * reserved values:
+    *
+    *   0xffff  the channels are FLAC streams
+    *   0x0000  the channels are raw 16-bit deltas
+    *   other   that many bytes of trees, then Huffman-coded deltas
+    *
+    * Only the first is observed in the image to hand, and only the
+    * first is implemented. The other two are rejected rather than
+    * decoded as FLAC, which is what reading the field for its value
+    * rather than ignoring it buys: a hunk coded either other way would
+    * otherwise decode to noise without complaint. */
+   if (samples)
+   {
+      uint32_t mode = rchd_rd16(src + 8);
+
+      if (mode == 0xffff)
+      {
+      if (!chd->av_samples)
+      {
+         chd->av_samples = (int16_t*)malloc((size_t)samples * sizeof(int16_t));
+         if (!chd->av_samples)
+            return RCHD_ERROR_MEM;
+      }
+
+      fmt.sample_rate     = 44100;
+      fmt.channels        = 1;
+      fmt.bits_per_sample = 16;
+      fmt.block_size      = samples;
+
+      for (i = 0; i < channels; i++)
+      {
+         uint32_t clen = rchd_rd16(src + 10 + i * 2);
+         rflac_t *d;
+         size_t   got = 0;
+         uint32_t k;
+
+         if (!(d = rflac_new_raw(&fmt)))
+            return RCHD_ERROR_MEM;
+         rflac_set_out_s16(d, chd->av_samples, samples);
+         rflac_set_in(d, p, clen);
+         for (;;)
+         {
+            size_t rd = 0, wr = 0;
+            int    e  = rflac_process(d, &rd, &wr);
+            got += wr;
+            if (e != RFLAC_PROCESS_NEXT || wr == 0)
+               break;
+         }
+         rflac_free(d);
+         if (got != (size_t)samples)
+            return RCHD_ERROR_DATA;
+
+         for (k = 0; k < samples; k++)
+         {
+            out[k * 2]     = (uint8_t)((uint16_t)chd->av_samples[k] >> 8);
+            out[k * 2 + 1] = (uint8_t)chd->av_samples[k];
+         }
+            out += samples * 2;
+            p   += clen;
+         }
+      }
+      else
+      {
+         /* The other two modes code each channel as deltas on the
+          * previous sample, starting from zero: raw when the field is
+          * zero, or Huffman-coded behind that many bytes of trees.
+          *
+          * NOT VERIFIED. No image to hand uses either -- every hunk of
+          * the only audio/video image available states 0xffff -- so
+          * this is written from the format description and has never
+          * decoded a real stream. It is here because it is also the
+          * whole of what separates this codec from the one versions 1
+          * to 4 use, whose images are the ones that would exercise it. */
+         uint32_t treesize = mode;
+         rhuff_dec_t hi;
+         rhuff_dec_t lo;
+         rhuff_bits_t tb;
+
+         if (treesize)
+         {
+            if (!chd->av_lookup)
+            {
+               chd->av_lookup = (uint16_t*)malloc(3
+                     * RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)
+                     * sizeof(uint16_t));
+               if (!chd->av_lookup)
+                  return RCHD_ERROR_MEM;
+            }
+            if ((uint64_t)treesize > (uint64_t)(src + src_len - p))
+               return RCHD_ERROR_DATA;
+            rhuff_bits_init(&tb, p, treesize);
+            if (rhuff_dec_init(&hi, 256, RCHD_AV_MAX_BITS, chd->av_lookup,
+                     RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
+                  || rhuff_read_tree_rle(&hi, &tb) != RHUFF_OK)
+               return RCHD_ERROR_DATA;
+            rhuff_bits_flush(&tb);
+            if (rhuff_dec_init(&lo, 256, RCHD_AV_MAX_BITS,
+                     chd->av_lookup
+                        + RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS),
+                     RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK
+                  || rhuff_read_tree_rle(&lo, &tb) != RHUFF_OK)
+               return RCHD_ERROR_DATA;
+            p += treesize;
+         }
+
+         for (i = 0; i < channels; i++)
+         {
+            uint32_t clen = rchd_rd16(src + 10 + i * 2);
+            uint32_t prev = 0;
+            uint32_t k;
+
+            if ((uint64_t)clen > (uint64_t)(src + src_len - p))
+               return RCHD_ERROR_DATA;
+
+            if (!treesize)
+            {
+               /* Raw deltas, two big-endian bytes each. */
+               if ((uint64_t)samples * 2 > (uint64_t)clen)
+                  return RCHD_ERROR_DATA;
+               for (k = 0; k < samples; k++)
+               {
+                  prev = (prev + rchd_rd16(p + k * 2)) & 0xffff;
+                  out[k * 2]     = (uint8_t)(prev >> 8);
+                  out[k * 2 + 1] = (uint8_t)prev;
+               }
+            }
+            else
+            {
+               /* A delta's two halves come from their own trees. */
+               rhuff_bits_t ab;
+
+               rhuff_bits_init(&ab, p, clen);
+               for (k = 0; k < samples; k++)
+               {
+                  uint32_t d = rhuff_dec_decode_one(&hi, &ab) << 8;
+                  d |= rhuff_dec_decode_one(&lo, &ab);
+                  prev = (prev + d) & 0xffff;
+                  out[k * 2]     = (uint8_t)(prev >> 8);
+                  out[k * 2 + 1] = (uint8_t)prev;
+               }
+               if (rhuff_bits_overflow(&ab))
+                  return RCHD_ERROR_DATA;
+            }
+
+            out += samples * 2;
+            p   += clen;
+         }
+      }
+   }
+
+   /* Video: a byte skipped, then three trees each ending on a byte
+    * boundary -- which is why the second and third are not where a
+    * continuous bit stream would put them -- then samples drawn
+    * alternately from the three planes into packed order. */
+   if (!chd->av_lookup)
+   {
+      chd->av_lookup = (uint16_t*)malloc(
+            3 * RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS) * sizeof(uint16_t));
+      if (!chd->av_lookup)
+         return RCHD_ERROR_MEM;
+   }
+
+   rhuff_bits_init(&bits, p, (size_t)(src + src_len - p));
+   rhuff_bits_read(&bits, 8);
+
+   for (i = 0; i < 3; i++)
+   {
+      if (rhuff_dec_init(&plane[i].dec, RCHD_AV_CODES, RCHD_AV_MAX_BITS,
+               chd->av_lookup + i * RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS),
+               RHUFF_LOOKUP_ENTRIES(RCHD_AV_MAX_BITS)) != RHUFF_OK)
+         return RCHD_ERROR_DATA;
+      if (rhuff_read_tree_rle(&plane[i].dec, &bits) != RHUFF_OK)
+         return RCHD_ERROR_DATA;
+      rhuff_bits_flush(&bits);
+      plane[i].prev = 0;
+      plane[i].run  = 0;
+   }
+
+   for (row = 0; row < height; row++)
+   {
+      for (x = 0; x < width / 2; x++)
+      {
+         out[0] = rchd_av_next(&plane[0], &bits);
+         out[1] = rchd_av_next(&plane[1], &bits);
+         out[2] = rchd_av_next(&plane[0], &bits);
+         out[3] = rchd_av_next(&plane[2], &bits);
+         out += 4;
+      }
+      /* A run never spans rows. */
+      plane[0].run = plane[1].run = plane[2].run = 0;
+   }
+
+   /* Not checked for overflow here. The last symbol of a field can
+    * legitimately consume bits from the final byte that the encoder
+    * padded, so a strict count of consumed bits against the stream
+    * length reports an overrun on a stream that decoded correctly.
+    * The output length is the real check: every sample was produced,
+    * and a truncated stream cannot manage that. */
+
+   return RCHD_OK;
+}
+#endif
+
+static int rchd_decompress(rchd_t *chd, uint32_t tag,
+      const uint8_t *src, uint32_t src_len, uint8_t *dst, uint32_t dst_len);
+
+/* -------- CD framing --------
+ *
+ * A CD image stores 2448-byte frames -- a 2352-byte sector and 96 bytes
+ * of subchannel -- and packs a hunk as two whole streams rather than
+ * interleaving them: every frame's sector data, then every frame's
+ * subchannel. They are interleaved only on output. See FORMAT.md
+ * section 7.
+ */
+
+#define RCHD_CD_FRAME_SIZE   2448
+#define RCHD_CD_SECTOR_SIZE  2352
+#define RCHD_CD_SUBCODE_SIZE   96
+#define RCHD_CD_SYNC_SIZE      12
+#define RCHD_CD_ECC_P_OFFSET 0x81c
+#define RCHD_CD_ECC_Q_OFFSET 0x8c8
+
+static const uint8_t rchd_cd_sync[RCHD_CD_SYNC_SIZE] =
+{
+   0x00, 0xff, 0xff, 0xff, 0xff, 0xff,
+   0xff, 0xff, 0xff, 0xff, 0xff, 0x00
+};
+
+/* GF(2^8) with primitive polynomial 0x11d, as ECMA-130 specifies.
+ * Built once rather than carried as two 256-byte tables. */
+static void rchd_ecc_tables(uint8_t *fwd, uint8_t *bwd)
+{
+   uint32_t i;
+
+   for (i = 0; i < 256; i++)
+      fwd[i] = (uint8_t)((i << 1) ^ ((i & 0x80) ? 0x11d : 0));
+   for (i = 0; i < 256; i++)
+      bwd[i ^ fwd[i]] = (uint8_t)i;
+}
+
+/* One layer of the interleaved parity. P and Q differ only in their
+ * shape, so both go through here. */
+static void rchd_ecc_layer(uint8_t *sec, const uint8_t *fwd,
+      const uint8_t *bwd, uint32_t majors, uint32_t minors,
+      uint32_t major_mult, uint32_t minor_inc, uint32_t dest)
+{
+   uint32_t size = majors * minors;
+   uint32_t major;
+
+   for (major = 0; major < majors; major++)
+   {
+      uint32_t idx = (major >> 1) * major_mult + (major & 1);
+      uint8_t  a   = 0;
+      uint8_t  b   = 0;
+      uint32_t minor;
+
+      for (minor = 0; minor < minors; minor++)
+      {
+         uint8_t t = sec[0x0c + idx];
+
+         idx += minor_inc;
+         if (idx >= size)
+            idx -= size;
+         a ^= t;
+         b ^= t;
+         a  = fwd[a];
+      }
+
+      a = bwd[fwd[a] ^ b];
+      sec[dest + major]          = a;
+      sec[dest + major + majors] = (uint8_t)(a ^ b);
+   }
+}
+
+/* Puts back the sync pattern and parity a stripped frame had removed.
+ *
+ * Whether the four header bytes take part depends on the sector's mode:
+ * mode 1 includes them, mode 2 treats them as zero. A decoder with one
+ * rule produces wrong parity for every sector of the other mode, and
+ * nothing in an ordinary read notices -- the field is consulted by
+ * hardware and by verification tools, not by a reader. */
+static void rchd_cd_rebuild(uint8_t *sec)
+{
+   uint8_t fwd[256];
+   uint8_t bwd[256];
+   uint8_t header[4];
+   int     mode2;
+
+   memcpy(sec, rchd_cd_sync, RCHD_CD_SYNC_SIZE);
+
+   rchd_ecc_tables(fwd, bwd);
+
+   mode2 = (sec[15] == 2);
+   memcpy(header, sec + 12, 4);
+   if (mode2)
+      memset(sec + 12, 0, 4);
+
+   /* Q covers the P parity, so P is written first. */
+   rchd_ecc_layer(sec, fwd, bwd, 86, 24,  2, 86, RCHD_CD_ECC_P_OFFSET);
+   rchd_ecc_layer(sec, fwd, bwd, 52, 43, 86, 88, RCHD_CD_ECC_Q_OFFSET);
+
+   if (mode2)
+      memcpy(sec + 12, header, 4);
+}
+
+/* @tag is the CD codec; the sector stream uses its base compressor and
+ * the subchannel stream is always raw DEFLATE whatever the codec. */
+#ifdef HAVE_RCHD_FLAC
+/* cdfl is framed differently from the other CD codecs and simply enough
+ * that it does not share their path: no ECC bitmap, no length field,
+ * FLAC from byte zero, and whatever trails it is the subchannel.
+ *
+ * The bitmap's absence follows from what the codec is chosen for. An
+ * encoder picks it for audio, and audio sectors carry no sync pattern
+ * and no parity, so there is nothing to strip and nothing to rebuild.
+ *
+ * Two channels of sixteen bits, and no header to say so -- the geometry
+ * is the hunk's, so the decoder is told it rather than being handed a
+ * fabricated one. */
+static int rchd_decompress_cdfl(rchd_t *chd, const uint8_t *src,
+      uint32_t src_len, uint8_t *dst, uint32_t dst_len)
+{
+   uint32_t       frames = dst_len / RCHD_CD_FRAME_SIZE;
+   uint32_t       sector_bytes;
+   rflac_format_t fmt;
+   rflac_t       *d;
+   size_t         want;
+   size_t         got = 0;
+   size_t         used = 0;
+   uint8_t       *sectors;
+   uint8_t       *subcode;
+   uint32_t       i;
+   int            err;
+
+   if (!frames || dst_len % RCHD_CD_FRAME_SIZE)
+      return RCHD_ERROR_DATA;
+
+   sector_bytes = frames * RCHD_CD_SECTOR_SIZE;
+
+   if (!chd->cd_scratch)
+   {
+      chd->cd_scratch = (uint8_t*)malloc(chd->info.hunk_bytes);
+      if (!chd->cd_scratch)
+         return RCHD_ERROR_MEM;
+   }
+   sectors = chd->cd_scratch;
+   subcode = sectors + sector_bytes;
+
+   want = sector_bytes / 4;
+
+   /* The encoder sizes its blocks from the whole hunk rather than from
+    * one sector: a quarter of the payload, halved until it is no larger
+    * than a sector's worth of samples. A decoder told anything smaller
+    * rejects the first frame it reads, because the block it declares
+    * will not fit what the decoder allocated. */
+   {
+      uint32_t bs = sector_bytes / 4;
+
+      while (bs > RCHD_CD_SECTOR_SIZE)
+         bs /= 2;
+      fmt.block_size = bs;
+   }
+
+   fmt.sample_rate     = 44100;
+   fmt.channels        = 2;
+   fmt.bits_per_sample = 16;
+
+   if (!(d = rflac_new_raw(&fmt)))
+      return RCHD_ERROR_MEM;
+   rflac_set_out_s16(d, (int16_t*)(void*)sectors, want);
+   rflac_set_in(d, src, src_len);
+   for (;;)
+   {
+      size_t rd = 0, wr = 0;
+      int    e  = rflac_process(d, &rd, &wr);
+      used += rd;
+      got  += wr;
+      if (e != RFLAC_PROCESS_NEXT || wr == 0)
+         break;
+   }
+   rflac_free(d);
+
+   if (got != want)
+      return RCHD_ERROR_DATA;
+
+   /* The samples are stored most significant byte first where a disc
+    * image holds them least significant byte first. The stream decodes
+    * perfectly without this, which is why it has to be measured against
+    * real output rather than reasoned about. */
+   for (i = 0; i < sector_bytes; i += 2)
+   {
+      uint8_t t          = sectors[i];
+      sectors[i]         = sectors[i + 1];
+      sectors[i + 1]     = t;
+   }
+
+   /* Whatever the FLAC data did not consume is the subchannel. */
+   if (used > src_len)
+      return RCHD_ERROR_DATA;
+   err = rchd_decompress(chd, RCHD_CODEC_ZLIB, src + used,
+         src_len - (uint32_t)used, subcode,
+         frames * RCHD_CD_SUBCODE_SIZE);
+   if (err != RCHD_OK)
+      return err;
+
+   for (i = 0; i < frames; i++)
+   {
+      uint8_t *out = dst + (size_t)i * RCHD_CD_FRAME_SIZE;
+
+      memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
+            RCHD_CD_SECTOR_SIZE);
+      memcpy(out + RCHD_CD_SECTOR_SIZE,
+            subcode + (size_t)i * RCHD_CD_SUBCODE_SIZE,
+            RCHD_CD_SUBCODE_SIZE);
+   }
+
+   return RCHD_OK;
+}
+#endif
+
+static int rchd_decompress_cd(rchd_t *chd, uint32_t tag,
+      const uint8_t *src, uint32_t src_len, uint8_t *dst, uint32_t dst_len)
+{
+   uint32_t frames  = dst_len / RCHD_CD_FRAME_SIZE;
+   uint32_t bitmap  = (frames + 7) / 8;
+   uint32_t lenbits = (chd->info.hunk_bytes >= 65536) ? 3 : 2;
+   uint32_t base_len;
+   uint32_t base_tag;
+   uint8_t *sectors;
+   uint8_t *subcode;
+   uint32_t i;
+   int      err;
+
+   if (!frames || dst_len % RCHD_CD_FRAME_SIZE)
+      return RCHD_ERROR_DATA;
+   if ((uint64_t)bitmap + lenbits > (uint64_t)src_len)
+      return RCHD_ERROR_DATA;
+
+   base_len = (uint32_t)rchd_rd_be(src + bitmap, (int)lenbits);
+   if ((uint64_t)bitmap + lenbits + base_len > (uint64_t)src_len)
+      return RCHD_ERROR_DATA;
+
+   switch (tag)
+   {
+      case RCHD_CODEC_CD_ZLIB: base_tag = RCHD_CODEC_ZLIB; break;
+      case RCHD_CODEC_CD_LZMA: base_tag = RCHD_CODEC_LZMA; break;
+      case RCHD_CODEC_CD_ZSTD: base_tag = RCHD_CODEC_ZSTD; break;
+      default:                 return RCHD_ERROR_UNSUPPORTED;
+   }
+
+   /* The two streams decode whole, into one scratch buffer, and are
+    * interleaved into the caller's hunk afterwards. */
+   if (!chd->cd_scratch)
+   {
+      chd->cd_scratch = (uint8_t*)malloc(chd->info.hunk_bytes);
+      if (!chd->cd_scratch)
+         return RCHD_ERROR_MEM;
+   }
+   sectors = chd->cd_scratch;
+   subcode = sectors + (size_t)frames * RCHD_CD_SECTOR_SIZE;
+
+   err = rchd_decompress(chd, base_tag, src + bitmap + lenbits, base_len,
+         sectors, frames * RCHD_CD_SECTOR_SIZE);
+   if (err != RCHD_OK)
+      return err;
+
+   if (frames)
+   {
+      uint32_t sub_off = bitmap + lenbits + base_len;
+
+      err = rchd_decompress(chd, RCHD_CODEC_ZLIB, src + sub_off,
+            src_len - sub_off, subcode, frames * RCHD_CD_SUBCODE_SIZE);
+      if (err != RCHD_OK)
+         return err;
+   }
+
+   for (i = 0; i < frames; i++)
+   {
+      uint8_t *out = dst + (size_t)i * RCHD_CD_FRAME_SIZE;
+
+      memcpy(out, sectors + (size_t)i * RCHD_CD_SECTOR_SIZE,
+            RCHD_CD_SECTOR_SIZE);
+      memcpy(out + RCHD_CD_SECTOR_SIZE,
+            subcode + (size_t)i * RCHD_CD_SUBCODE_SIZE,
+            RCHD_CD_SUBCODE_SIZE);
+
+      /* A set bit means this frame was stored without its sync pattern
+       * and parity. Bit i is the least significant bit of byte i >> 3;
+       * the opposite order is the natural guess and is wrong in a way
+       * that hides, since a bitmap of 0xff decodes the same either
+       * way. */
+      if (src[i >> 3] & (1 << (i & 7)))
+         rchd_cd_rebuild(out);
+   }
+
+   return RCHD_OK;
+}
+
 /* Decompresses one hunk's blob. @src_len is what the map recorded and
  * @dst_len is always the hunk size, so every codec here knows its output
  * length in advance and none has to discover it. */
@@ -1143,6 +1812,11 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
             return RCHD_ERROR_DATA;
          return RCHD_OK;
       }
+#endif
+
+#ifdef HAVE_RCHD_FLAC
+      case RCHD_CODEC_AVHUFF:
+         return rchd_decode_avhuff(chd, src, src_len, dst, dst_len);
 #endif
 
 #ifdef HAVE_RCHD_ZSTD
@@ -1231,6 +1905,16 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
       }
 #endif
 
+#ifdef HAVE_RCHD_FLAC
+      case RCHD_CODEC_CD_FLAC:
+         return rchd_decompress_cdfl(chd, src, src_len, dst, dst_len);
+#endif
+
+      case RCHD_CODEC_CD_ZLIB:
+      case RCHD_CODEC_CD_LZMA:
+      case RCHD_CODEC_CD_ZSTD:
+         return rchd_decompress_cd(chd, tag, src, src_len, dst, dst_len);
+
       case RCHD_CODEC_HUFFMAN:
       {
          rhuff_dec_t  dec;
@@ -1314,10 +1998,8 @@ static int rchd_build_hunk(rchd_t *chd, uint32_t hunk,
       }
 
       case RCHD_V34_COMPRESSED:
-         /* One codec applies to the whole image before version 5, and
-          * every observed value of the enum means zlib. */
-         return rchd_decompress(chd, RCHD_CODEC_ZLIB, blob, blob_len,
-               dst, hb);
+         return rchd_decompress(chd, chd->info.compressors[0], blob,
+               blob_len, dst, hb);
 
       case RCHD_V34_SELF:
       case RCHD_V34_PARENT:
@@ -1530,3 +2212,80 @@ int rchd_parent_sha1_matches(const rchd_t *chd, const uint8_t *sha1)
       return 0;
    return memcmp(chd->info.parent_sha1, sha1, 20) == 0;
 }
+
+/* -------- audio/video hunks, for the caller --------
+ *
+ * Resolving a decoded hunk's layout needs no codec, so this is built
+ * whether or not the A/V codec is. */
+
+int rchd_av_parse(const uint8_t *data, size_t len, rchd_av_frame_t *out)
+{
+   uint32_t metasize;
+   uint32_t channels;
+   uint32_t samples;
+   uint32_t width;
+   uint32_t height;
+   uint32_t i;
+   const uint8_t *p;
+
+   if (!data || !out || len < RCHD_AV_HEADER)
+      return RCHD_ERROR_PARAM;
+
+   if (data[0] != 'c' || data[1] != 'h' || data[2] != 'a' || data[3] != 'v')
+      return RCHD_ERROR_DATA;
+
+   metasize = data[4];
+   channels = data[5];
+   samples  = rchd_rd16(data + 6);
+   width    = rchd_rd16(data + 8);
+   height   = rchd_rd16(data + 10);
+
+   if (channels > RCHD_MAX_AV_CHANNELS)
+      return RCHD_ERROR_DATA;
+   if ((uint64_t)RCHD_AV_HEADER + metasize
+         + (uint64_t)samples * channels * 2
+         + (uint64_t)width * height * 2 > (uint64_t)len)
+      return RCHD_ERROR_DATA;
+
+   memset(out, 0, sizeof(*out));
+   p = data + RCHD_AV_HEADER;
+
+   out->meta      = metasize ? p : NULL;
+   out->meta_size = metasize;
+   p += metasize;
+
+   /* Channels are stored one after another rather than interleaved, so
+    * each is a run the caller can hand straight to a resampler. The
+    * samples are big-endian; a caller on a little-endian host that
+    * wants native order swaps them itself, because doing it here would
+    * mean writing into a buffer the caller owns. */
+   out->channels = channels;
+   out->samples  = samples;
+   for (i = 0; i < channels; i++)
+   {
+      out->audio[i] = (const int16_t*)(const void*)p;
+      p += (size_t)samples * 2;
+   }
+
+   out->video  = p;
+   out->width  = width;
+   out->height = height;
+   out->stride = width * 2;
+
+   return RCHD_OK;
+}
+
+#ifdef HAVE_RCHD_FLAC
+/* Test seam: decode one A/V blob without an open image around it. */
+int rchd_decode_av_for_test(const uint8_t *src, uint32_t src_len,
+      uint8_t *dst, uint32_t dst_len)
+{
+   rchd_t *c = rchd_new();
+   int     e;
+   if (!c)
+      return RCHD_ERROR_MEM;
+   e = rchd_decode_avhuff(c, src, src_len, dst, dst_len);
+   rchd_free(c);
+   return e;
+}
+#endif

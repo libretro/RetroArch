@@ -1,18 +1,5 @@
 /* Reads every hunk of an image through rchd and compares against the
- * original uncompressed source, when one is given.
- *
- *   cc -I libretro-common/include -DHAVE_RCHD_DEFLATE -DHAVE_RCHD_LZMA \
- *      -DHAVE_RCHD_FLAC -o rchd_read_test \
- *      libretro-common/tools/chd/rchd_read_test.c \
- *      libretro-common/formats/chd/rchd.c \
- *      libretro-common/encodings/encoding_huffman.c \
- *      libretro-common/encodings/encoding_deflate.c \
- *      libretro-common/encodings/encoding_crc32.c \
- *      libretro-common/formats/7z/r7z_lzma.c \
- *      libretro-common/formats/flac/rflac.c
- *
- *   rchd_read_test <image.chd> [original.bin]
- */
+ * same hunk decoded by an independent reader. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

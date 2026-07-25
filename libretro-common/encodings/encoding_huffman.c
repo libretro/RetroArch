@@ -282,11 +282,12 @@ uint32_t rhuff_dec_decode_one(rhuff_dec_t *d, rhuff_bits_t *b)
  * bytes rather than recalled, and tools/chd/chd_probe.py regenerates
  * the images the derivation rests on. */
 
-/* Width of one stored length value. Only the eight-bit case occurs in
- * practice -- the sole user of this serialisation is the CHD hunk map,
- * whose tree is always sixteen codes of at most eight bits -- and it is
- * the only one confirmed against real data. The other two branches
- * follow the same scaling and are unverified. */
+/* Width of one stored length value, scaled to how long a code may be.
+ * Both branches that occur in practice are confirmed against real data:
+ * four bits for the CHD hunk map, whose tree is sixteen codes of at most
+ * eight bits, and five for an A/V hunk's video, whose three trees are
+ * 272 codes of at most sixteen. The three-bit branch is unverified; no
+ * format in this tree uses a ceiling below eight. */
 static uint32_t rhuff_rle_value_bits(uint32_t max_bits)
 {
    if (max_bits >= 16)

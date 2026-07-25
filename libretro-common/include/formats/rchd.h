@@ -593,11 +593,13 @@ uint32_t rchd_hunk_for_offset(const rchd_t *chd, uint64_t offset);
  * Layout of one decoded A/V hunk. Populated by rchd_av_parse(); the
  * pointers address the hunk buffer the caller passed in.
  */
+#define RCHD_MAX_AV_CHANNELS 16
+
 typedef struct rchd_av_frame
 {
    const uint8_t *meta;
-   const uint8_t *video;      /* @height rows of @width pixels, YUY2 */
-   const int16_t *audio[16];
+   const uint8_t *video;      /* @height rows of @width pixels, packed */
+   const int16_t *audio[RCHD_MAX_AV_CHANNELS];
    uint32_t       meta_size;
    uint32_t       width;
    uint32_t       height;
@@ -612,10 +614,17 @@ typedef struct rchd_av_frame
  * @len        : length of @data
  * @out        : receives the frame layout
  *
- * Interprets a hunk from an image compressed with RCHD_CODEC_AVHUFF. The
- * hunk is a self-describing container of metadata, interleaved audio
- * channels and a video field; this only resolves the layout, since the
- * decompression already happened during the read.
+ * Interprets a hunk from an image compressed with RCHD_CODEC_AVHUFF.
+ * The hunk names itself, restates its geometry, and holds metadata, one
+ * run of samples per audio channel, and one video field. This only
+ * resolves the layout; the decoding happened during the read.
+ *
+ * A hunk is a *field*, not a frame: an interlaced image alternates
+ * parity between consecutive hunks, and a caller wanting whole pictures
+ * weaves two. Samples and the video are big-endian and packed
+ * respectively, exactly as the hunk holds them -- converting either
+ * would mean writing into a buffer the caller owns, and a consumer that
+ * wants neither should not pay for them.
  *
  * Returns: RCHD_OK, or RCHD_ERROR_DATA if @data is not an A/V hunk.
  */

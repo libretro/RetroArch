@@ -5,11 +5,17 @@ to support `rchd.c`.
 
 ## Provenance
 
-Every field below is derived from **observation of generated files**, not
-from reading an existing implementation. Reference images are produced
+Every field below, with one marked exception, is derived from
+**observation of generated files** rather than from reading an existing
+implementation. Reference images are produced
 with `chdman` from known input, and each claim is stated as a prediction
 that the observed bytes then confirm or refute. `tools/chd/chd_probe.py`
 reproduces the whole set.
+
+One subsection is an exception and says so: §9.4, the framing of the A/V
+video bitstream, was read from the reference implementation after
+measurement fixed the transform but not the layout. It is marked in
+place rather than left to be inferred.
 
 This matters for two reasons. It keeps the implementation clean-room:
 `rchd.c` is written against this document, and every constant in it can
@@ -795,11 +801,16 @@ it confirms the decoded layout without decoding anything:
 |---|---|
 | header | 12 |
 | video, `width * height * 2` | 377280 |
-| audio, `round(rate / fps)` samples per channel, 16-bit | 2944 |
+| audio, up to `ceil(rate / fps)` samples per channel, 16-bit | 2944 |
 | **total** | **380236** |
 
-Video is two bytes per pixel. Audio is a whole number of samples per
-field, taken as the sample rate over the frame rate.
+Video is two bytes per pixel.
+
+**The audio sample count varies between hunks.** 44100 over 59.940058 is
+735.75, so a hunk carries 736 samples or 735 and the average comes out
+right, while the hunk size is fixed for the larger case. A hunk with the
+smaller count simply ends four bytes short of its size, and a reader that
+requires the parts to add up exactly rejects one hunk in four.
 
 ### 9.2 Compressed hunk layout **[V]**
 
@@ -813,7 +824,7 @@ The blob a hunk's map entry points at begins with a header of
 | 2 | 2 | samples per channel |
 | 4 | 2 | width |
 | 6 | 2 | height |
-| 8 | 2 | `0xffff` in every hunk observed |
+| 8 | 2 | how the audio is coded; see below |
 | 10 | 2 each | compressed length, one per channel |
 
 Then the audio streams, one per channel in order, each of the length the
@@ -823,38 +834,115 @@ Note the geometry is restated per hunk rather than taken from the
 metadata, so a decoder can size its buffers from the blob alone -- and
 should check the two agree.
 
-### 9.3 Audio **[V]**
+### 9.3 Audio **[V]** for the FLAC mode, **[?]** for the others
 
-**Each channel is a separate headerless FLAC stream of one channel**,
-not one interleaved stereo stream. There is no marker and no
-STREAMINFO: the sample count comes from the hunk header and the rest of
-the geometry from the metadata.
+The field at offset 8 chooses how the channels are coded, and it is a
+length with two reserved values rather than a flag:
 
-Confirmed by decoding both channels of a hunk, each yielding exactly the
-736 samples the header states.
+| Value | Meaning |
+|---|---|
+| `0xffff` | each channel is a FLAC stream |
+| `0x0000` | each channel is raw 16-bit deltas |
+| anything else | that many bytes of Huffman trees, then coded deltas |
 
-### 9.4 Video **[?]**
+Only `0xffff` appears in the image to hand, and only that is verified.
+The distinction matters to a reader: the three modes share a header and
+differ only in this field, so one that ignores it decodes the other two
+to noise without noticing.
 
-For the hunk examined, 102991 bytes stand for 377280 of output, a ratio
-of 3.66, which is the range a Huffman-coded delta scheme reaches on
-video and well beyond what an entropy coder alone would.
+The other two modes are described here and implemented, but have never
+decoded a real stream. Both code each channel as deltas on the previous
+sample starting from zero -- raw big-endian pairs when the field is
+zero, or, when it is a length, that many bytes holding two trees whose
+symbols are the high and low halves of each delta.
 
-**Ruled out — that the stream opens with the packed tree of §6.** Tried
-at every offset from 0 to 7; the tree is rejected at each, so whatever
-precedes the video's own coding is not a tree in that form starting near
-the front. The stream begins `80 08 46 53 21 2b 0b 0a`.
+**In the FLAC mode each channel is a separate headerless single-channel
+stream**, not one interleaved stereo stream, and the samples are final
+rather than deltas -- the codec does its own prediction. There is no
+marker and no STREAMINFO; the sample count comes from the hunk header
+and the rest of the geometry from the metadata.
 
-The name suggests Huffman, and the §6 serialisation is already in the
-tree and shared with the `huff` codec, so it remains the likely
-mechanism -- but something frames it that has not been identified, and
-guessing at that is what §6 and §8 both show to be a waste of time. The
-approach that worked there applies here: obtain output for a hunk by
-another route, then work backwards from content rather than forwards
-from a guessed header.
+Confirmed by decoding both channels of a hunk against the same audio
+extracted by another implementation, sample for sample.
 
-### 9.5 The earlier A/V codec **[?]**
+### 9.4 Video **[V]**, framing derived from the reference implementation
+
+**Provenance: this subsection is not clean-room.** Everything else in
+this document was derived by observing files. The framing below was read
+from MAME's `avhuff.cpp`, after measurement established the transform
+and then failed to locate the bitstream layout across two passes. The
+distinction is recorded here rather than left to be inferred; §9.1 to
+§9.3 remain observed, as does the transform in this section.
+
+**Established by measurement first.** A field's output, obtained by
+extracting frames with another implementation, entropy-codes to 100971
+bytes under a horizontal delta against an actual 102991 -- within 2%,
+where raw samples give 127974 and a vertical delta 127000. That fixed
+the transform before any source was read.
+
+**Layout.** One byte is skipped, then three code-length trees in the
+serialisation of §2.3.2, over an alphabet of **272** symbols at up to 16
+bits, one tree each for Y, Cb and Cr. **Each tree is followed by a flush
+to the next byte boundary**, which is why sweeping bit offsets for a
+single tree never resolved: the second and third do not begin where a
+continuous bit stream would put them.
+
+**Symbols.** A value below 0x100 is a delta added to that plane's
+running sample, which starts at zero. A value at or above it is a run of
+the previous sample:
+
+| Code | Repeats |
+|---|---|
+| 0x100 to 0x107 | 8 to 15, as `8 + (code - 0x100)` |
+| 0x108 to 0x10f | 16, 32, 64 ... 2048, as `16 << (code - 0x108)` |
+
+**Order.** Samples are emitted straight into packed YUY2 -- for each
+pair of pixels, one Y, one Cb, one Y, one Cr, drawn alternately from the
+three contexts. The planes are separate only in that each keeps its own
+running sample and run state; the output is interleaved, not planar.
+**Every context's run count is cleared at the end of each row**, so a
+run never spans rows.
+
+### 9.5 Verification
+
+Eight consecutive fields of a commercial laserdisc image decode
+byte-for-byte against the same fields extracted by another
+implementation -- audio and video both, the audio through the
+per-channel FLAC path of §9.3 and the video through the above.
+
+### 9.6 The earlier A/V codec **[P]**
 
 Versions 1 to 4 name their A/V codec by the enum value 3 rather than by
-tag, and it is not this one: `avhu` replaced it, and among other changes
-moved the audio to FLAC. Laserdisc images for older emulators use the
-earlier codec, so full coverage needs both. No sample of it is to hand.
+a tag. It is close enough that the difference is much narrower than the
+version gap suggests, and secondary accounts overstate it: descriptions
+of the two as differing in video layout and delta processing do not
+survive a look at the implementations.
+
+**The video coding is the same.** Both skip a byte, import three
+delta-RLE trees for Y, Cb and Cr, and decode with the four contexts
+Y, Cb, Y, Cr into packed order. Both reset each context's run count at
+the end of a row and start each running sample at zero. The alphabet is
+256 plus 16 in both, and the run mapping is the same function -- `8 +
+(code - 0x100)` up to 0x107, then `16 << (code - 0x108)`. The two
+differ only in how each tree's end is found: the earlier form returns a
+byte count and the later flushes to a byte boundary, which come to the
+same thing.
+
+So §9.4 should decode an image of either era unchanged.
+
+**The decoded hunk is the same.** `'chav'`, the same twelve-byte header,
+metadata, one run of samples per channel, then the video field.
+Anything reading a decoded hunk needs no changes.
+
+**The compressed hunk header is the same shape**, and the audio mode
+field at offset 8 is the same field -- the earlier codec simply has no
+`0xffff` case, because FLAC is what version 5 added. Its two other
+modes, raw deltas and Huffman-coded deltas, are the ones described in
+§9.3 and are unimplemented here for both codecs.
+
+**So the audio is the whole of the difference**, and the two modes that
+carry it are implemented, unverified, in §9.3. An image of the earlier
+era would exercise them and settle both codecs at once. This is marked predicted rather than
+verified because no image using it is to hand; a laserdisc set built for
+an emulator of that era would have one, since what decides the codec is
+the age of the image rather than of the emulator reading it.
