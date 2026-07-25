@@ -286,21 +286,36 @@ static bool one_shot_resample(const float* in, size_t samples_in,
     * formula below calculates. Ideally, audio resamplers should have a
     * function to return the number of samples they will output given a
     * count of input samples. */
-   *samples_out                       = (size_t)(samples_in * ratio);
-   *out                               = (float*)memalign_alloc(16,
-         (((*samples_out + 16) + 15) & ~15) * sizeof(float));
+   {
+      size_t alloc_samples;
+      *samples_out                    = (size_t)(samples_in * ratio);
+      alloc_samples                   = ((*samples_out + 16) + 15) & ~15;
+      *out                            = (float*)memalign_alloc(16,
+            alloc_samples * sizeof(float));
 
-   if (*out == NULL)
-      return false;
+      if (*out == NULL)
+         return false;
 
-   info.data_in                       = in;
-   info.data_out                      = *out;
-   info.input_frames                  = samples_in / 2;
-   info.output_frames                 = 0;
-   info.ratio                         = ratio;
+      info.data_in                    = in;
+      info.data_out                   = *out;
+      info.input_frames               = samples_in / 2;
+      info.output_frames              = 0;
+      info.ratio                      = ratio;
 
-   resampler->process(data, &info);
-   resampler->free(data);
+      resampler->process(data, &info);
+      resampler->free(data);
+
+      /* Take the count the resampler reports rather than the estimate
+       * it was sized by.  The estimate truncates, so the last frames
+       * the filter had to give were being left in the buffer and not
+       * counted - a resampled sound ended a fraction early, and did not
+       * match the same audio played through a stream voice, which does
+       * hand them over.  The 16-sample pad above is what the overshoot
+       * the comment describes lands in; clamp to it. */
+      *samples_out                    = info.output_frames * 2;
+      if (*samples_out > alloc_samples)
+         *samples_out                 = alloc_samples;
+   }
    return true;
 }
 #endif
@@ -554,6 +569,12 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
 
    sinc_resampler_int16_process(re, &info);
    sinc_resampler_int16_free(re);
+
+   /* As in one_shot_resample: report what came out, not what was
+    * predicted, so the tail is not dropped. */
+   *samples_out = info.output_frames * 2;
+   if (*samples_out > alloc_samples)
+      *samples_out = alloc_samples;
    return true;
 }
 #endif
