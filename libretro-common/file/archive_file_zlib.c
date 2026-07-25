@@ -182,11 +182,20 @@ static bool zlib_stream_decompress_data_to_file_init(
     * out of bounds later.  The non-mmap path is naturally bounded - a
     * seek past EOF followed by a read simply returns short - so this
     * only needs to hold for the mapped case, but checking it always is
-    * harmless and keeps the two paths consistent. */
+    * harmless and keeps the two paths consistent.
+    *
+    * Only csize describes the member's on-disk extent; size is the
+    * decompressed length and bounds the output heap buffer, not the
+    * archive.  For any compressed mode size is routinely far larger
+    * than the whole archive, so it must not be bounded against
+    * archive_size - doing so rejects every normally-compressed member.
+    * STORED is the one mode that reads usize bytes straight out of the
+    * archive, and there it is bounded below. */
    if (       offsetData < 0
          ||   offsetData          > state->archive_size
-         || (int64_t)size         > state->archive_size - offsetData
-         || (int64_t)csize        > state->archive_size - offsetData)
+         || (int64_t)csize        > state->archive_size - offsetData
+         || (      cmode == ZIP_MODE_STORED
+               && (int64_t)size   > state->archive_size - offsetData))
    {
       zip_context_free_stream(zip_context, false);
       return false;
