@@ -208,7 +208,9 @@
  *     the packets' TOC bytes at open for that bound; a windowed one
  *     cannot - the walk would run at the wall - and totals them as it
  *     plays instead, taking the padding off when the block carrying it
- *     arrives, so its length is a stated Duration until then.  Chained or multiplexed
+ *     arrives, so its length is a stated Duration until then - or
+ *     nothing at all until then, where the file states no Duration
+ *     either, which a live-muxed one does not.  Chained or multiplexed
  *     Ogg is not
  *     handled - pages are walked in order, the serial is ignored and
  *     the page CRC is not verified.  A page-spanning packet larger
@@ -2161,21 +2163,31 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       }
       /* Buffer modes: the end granule (Ogg) or the TOC total less end
        * trimming (WebM) bounds emission; frames now pending will all
-       * be consumed, so credit them here. */
-      if ((op->ogg
+       * be consumed, so credit them here.
+       *
+       * Counted whether or not a bound is known yet, which matters
+       * because one need not be known at open.  A windowed WebM that
+       * states no Duration has none until the block carrying the
+       * padding arrives and says where the end is - and a count that
+       * had not been running until then would be compared against
+       * zero, letting the whole stream through untrimmed. */
+      if (op->ogg
 #ifdef HAVE_RWEBM
-               || op->demux
+            || op->demux
 #endif
-            ) && op->limit >= 0 && op->pend_frames)
+         )
       {
-         int64_t left = op->limit - op->emitted;
-         if (left <= 0)
+         if (op->limit >= 0 && op->pend_frames)
          {
-            op->pend_frames = 0;
-            return 0;
+            int64_t left = op->limit - op->emitted;
+            if (left <= 0)
+            {
+               op->pend_frames = 0;
+               return 0;
+            }
+            if ((int64_t)op->pend_frames > left)
+               op->pend_frames = (size_t)left;
          }
-         if ((int64_t)op->pend_frames > left)
-            op->pend_frames = (size_t)left;
          op->emitted += (int64_t)op->pend_frames;
       }
    }
