@@ -3367,7 +3367,7 @@ static INLINE uint8_t rflac__get_channel_count_from_channel_assignment(
    return lookup[channelAssignment];
 }
 
-static int32_t rflac__decode_flac_frame(rflac* pFlac)
+static int32_t rflac__decode_flac_frame_unchecked(rflac* pFlac)
 {
    int channelCount;
    int i;
@@ -3432,6 +3432,40 @@ static int32_t rflac__decode_flac_frame(rflac* pFlac)
    pFlac->currentFLACFrame.pcmFramesRemaining = pFlac->currentFLACFrame.header.blockSizeInPCMFrames;
 
    return RFLAC_SUCCESS;
+}
+
+/* A frame that did not decode has no samples, and must not look as
+ * though it has.
+ *
+ * Decoding clobbers the subframe sample pointers on its way through -
+ * the wide path sets them NULL by design, the narrow one leaves them
+ * as they were if it rejects a subframe header - but the count of
+ * frames still to hand out is only written at the end, on success.
+ * A failure therefore left the previous frame's count against this
+ * frame's cleared pointers.
+ *
+ * The reader alone would survive that, since it takes the count as
+ * what is left of the frame it last decoded.  Seeking does not: the
+ * fast paths in rflac_seek_to_pcm_frame move within the current frame
+ * by adjusting that count, and the backward one derives it from the
+ * block size, so a count of zero was restored to something positive
+ * and the next read went through a NULL pointer.  Reached by a
+ * corrupt stream - a frame header claiming 32 bits inside a 16-bit
+ * one sends a subframe down the wide path, which fails - and then a
+ * seek backwards.
+ *
+ * Clearing the block size as well as the count is what makes the fast
+ * paths decline: both compute from it, so both fall through to a real
+ * seek, which re-reads a frame header and decodes properly. */
+static int32_t rflac__decode_flac_frame(rflac* pFlac)
+{
+   int32_t result = rflac__decode_flac_frame_unchecked(pFlac);
+   if (result != RFLAC_SUCCESS)
+   {
+      pFlac->currentFLACFrame.pcmFramesRemaining          = 0;
+      pFlac->currentFLACFrame.header.blockSizeInPCMFrames = 0;
+   }
+   return result;
 }
 
 /* Should only ever be called while the decoder is sitting on the first
