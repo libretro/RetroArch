@@ -150,6 +150,12 @@
  *     overhang is handed out with the rest.  Chained or multiplexed
  *     Ogg is not handled.
  *
+ *     On channels this arm is not the limit: rvorbis decodes one
+ *     through sixteen, verified against libvorbis, and reports what
+ *     the stream holds.  A 5.1 file therefore parses here and is
+ *     turned away by the mixer, which takes stream voices at one or
+ *     two channels - the same place a 5.1 WAV or FLAC stops.
+ *
  * MP3 (rmp3)
  *   Does: buffer input; s16 (quantised by the synthesis filter, no float
  *     round trip) and f32; channels and rate from the first frame; seek
