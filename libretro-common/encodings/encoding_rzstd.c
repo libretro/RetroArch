@@ -34,7 +34,7 @@
  * decode a compressed one, which is the only kind that occurs in
  * practice. Nothing should depend on it until that changes.
  *
- * Built and exercised against real frames:
+ * Built and exercised:
  *
  *   Frame header (3.1.1.1)      magic, descriptor byte, window
  *                               descriptor and its base-plus-eighths
@@ -47,16 +47,27 @@
  *   Raw blocks                  copied out.
  *   RLE blocks                  one byte expanded to the stated size.
  *   Frame trailer               the checksum field is stepped over.
+ *   Reverse bitstream (4)       the backwards, MSB-first reader the
+ *                               entropy streams use, and the padding
+ *                               marker in the final byte that fixes
+ *                               where a stream begins.
+ *   FSE (4.1)                   normalised-count parsing and table
+ *                               construction. All three tables the RFC
+ *                               predefines build with the widths it
+ *                               specifies.
+ *   Huffman table (4.2.1)       weights to table, including the last
+ *                               symbol's weight being implied rather
+ *                               than stored, and the direct four-bit
+ *                               weight form.
  *
  * Not built, in the order it has to be:
  *
- *   FSE (4.1)                   the entropy coder. Both the literals'
- *                               Huffman weights and all three sequence
- *                               tables are FSE-coded, so nothing below
- *                               works until this does.
- *   Huffman (4.2)               literal decoding, including the
- *                               four-stream layout and the jump table
- *                               that finds each stream.
+ *   Huffman weights, FSE form   the two-stream weight decode of
+ *                               4.2.1.2. Only the direct form is read,
+ *                               so a table described the compact way is
+ *                               refused.
+ *   Huffman decoding            the four-stream literal layout and the
+ *                               jump table that finds each stream.
  *   Literals section (3.1.1.3.1)  raw, RLE, Huffman and treeless
  *                               modes; the size format that says how
  *                               the two lengths are packed.
@@ -152,6 +163,20 @@ static uint32_t rzstd_rd32(const uint8_t *p)
 {
    return (uint32_t)p[0]        | ((uint32_t)p[1] << 8)
         | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+}
+
+/* Four bytes at @at, zero-filled past the end. The counts description
+ * is read through a sliding window that may legitimately reach past the
+ * final byte on its last field. */
+static uint32_t rzstd_rd32_safe(const uint8_t *p, size_t len, size_t at)
+{
+   uint32_t v = 0;
+   int      i;
+
+   for (i = 0; i < 4; i++)
+      if (at + (size_t)i < len)
+         v |= (uint32_t)p[at + i] << (i * 8);
+   return v;
 }
 
 static uint64_t rzstd_rd64(const uint8_t *p)
@@ -284,6 +309,456 @@ static int rzstd_read_frame_header(const uint8_t *src, size_t len,
 
    out->header_len = at;
    return RZ_OK;
+}
+
+/* -------- the reverse bitstream --------
+ *
+ * Section 4. Zstandard's entropy streams are read backwards: the last
+ * byte is the first one consumed, and within the stream bits come out
+ * most significant first. The last byte also carries a padding marker,
+ * a single set bit above the real data, which fixes where the stream
+ * actually starts.
+ *
+ * This is the opposite of the forward, MSB-first reader the CHD map and
+ * A/V hunks use, so the two do not share code.
+ */
+
+typedef struct rzstd_rbits
+{
+   const uint8_t *base;
+   size_t         pos;
+   uint64_t       bits;
+   uint32_t       count;
+   int            overrun;
+} rzstd_rbits_t;
+
+static void rzstd_rbits_fill(rzstd_rbits_t *b)
+{
+   while (b->count <= 56 && b->pos > 0)
+   {
+      b->pos--;
+      b->bits |= (uint64_t)b->base[b->pos] << (56 - b->count);
+      b->count += 8;
+   }
+}
+
+/* Positions the reader at the last set bit of the final byte, which the
+ * encoder wrote purely to mark where the data ends. A final byte of
+ * zero has no such marker and cannot be a valid stream. */
+static int rzstd_rbits_init(rzstd_rbits_t *b, const uint8_t *src, size_t len)
+{
+   uint32_t last;
+   uint32_t pad;
+
+   memset(b, 0, sizeof(*b));
+   if (!len)
+      return RZ_DATA;
+
+   last = src[len - 1];
+   if (!last)
+      return RZ_DATA;
+
+   b->base = src;
+   b->pos  = len;
+   rzstd_rbits_fill(b);
+
+   pad = 0;
+   while (!((last << pad) & 0x80))
+      pad++;
+   pad++;
+
+   b->bits  <<= pad;
+   b->count  -= pad;
+   return RZ_OK;
+}
+
+static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
+{
+   uint32_t v;
+
+   if (!n)
+      return 0;
+   if (b->count < n)
+   {
+      rzstd_rbits_fill(b);
+      if (b->count < n)
+      {
+         /* Running out is not always an error: a stream may end with
+          * its last symbols implied by zeroes. The shortfall is
+          * supplied as zero and the overrun recorded so a caller that
+          * cares can tell. */
+         v          = (uint32_t)(b->bits >> (64 - n));
+         b->bits    = 0;
+         b->count   = 0;
+         b->overrun = 1;
+         return v;
+      }
+   }
+
+   v         = (uint32_t)(b->bits >> (64 - n));
+   b->bits <<= n;
+   b->count -= n;
+   return v;
+}
+
+/* -------- FSE --------
+ *
+ * Section 4.1. A table is described by an accuracy log and one
+ * normalised count per symbol, and those counts are themselves coded
+ * with a width that narrows as the remaining budget does.
+ */
+
+#define RZSTD_FSE_MAX_ACCURACY_LOG 9
+#define RZSTD_FSE_MAX_SYMBOLS      256
+
+typedef struct rzstd_fse_entry
+{
+   uint16_t next_state;
+   uint8_t  symbol;
+   uint8_t  bits;
+} rzstd_fse_entry_t;
+
+typedef struct rzstd_fse
+{
+   rzstd_fse_entry_t *table;
+   uint32_t           accuracy_log;
+} rzstd_fse_t;
+
+/* Reads a table description (4.1.1) into normalised counts. These are
+ * forward-read and least significant bit first, which is a third bit
+ * order again and the reason this does its own reading. */
+static int rzstd_fse_read_counts(const uint8_t *src, size_t len,
+      int16_t *counts, uint32_t *symbol_count, uint32_t *accuracy_log,
+      uint32_t max_symbols, uint32_t max_log, size_t *used)
+{
+   uint32_t bit_pos = 0;
+   uint32_t symbol  = 0;
+   int32_t  remaining;
+   uint32_t log;
+   int      previous_is_zero = 0;
+
+   if (len < 1)
+      return RZ_TRUNCATED;
+
+#define RZ_PEEK(nbits) \
+   ((uint32_t)((rzstd_rd32_safe(src, len, bit_pos >> 3) >> (bit_pos & 7)) \
+      & (((uint32_t)1 << (nbits)) - 1)))
+
+   log = RZ_PEEK(4) + 5;
+   bit_pos += 4;
+   if (log > max_log || log > RZSTD_FSE_MAX_ACCURACY_LOG)
+      return RZ_DATA;
+
+   remaining = (int32_t)(((uint32_t)1 << log) + 1);
+
+   while (remaining > 1 && symbol < max_symbols)
+   {
+      uint32_t bits_needed;
+      uint32_t low_mask;
+      uint32_t value;
+      int32_t  count;
+
+      if (previous_is_zero)
+      {
+         /* A zero count is followed by a run of further zeroes, two
+          * bits at a time, with three meaning "and more" (4.1.1). */
+         uint32_t repeat = 0;
+
+         for (;;)
+         {
+            uint32_t two = RZ_PEEK(2);
+            bit_pos += 2;
+            repeat  += two;
+            if (two != 3)
+               break;
+            if ((bit_pos >> 3) > len)
+               return RZ_TRUNCATED;
+         }
+         while (repeat-- && symbol < max_symbols)
+            counts[symbol++] = 0;
+         previous_is_zero = 0;
+         continue;
+      }
+
+      /* The width is enough bits to name anything still spendable, with
+       * the low part of the range using one fewer. */
+      bits_needed = 0;
+      while (((uint32_t)1 << (bits_needed + 1)) <= (uint32_t)remaining)
+         bits_needed++;
+      low_mask = ((uint32_t)1 << bits_needed) - 1;
+
+      value = RZ_PEEK(bits_needed + 1);
+      if ((value & low_mask) < (((uint32_t)1 << (bits_needed + 1))
+               - 1 - (uint32_t)remaining))
+      {
+         value   &= low_mask;
+         bit_pos += bits_needed;
+      }
+      else
+      {
+         bit_pos += bits_needed + 1;
+         if (value >= ((uint32_t)1 << bits_needed))
+            value -= ((uint32_t)1 << (bits_needed + 1))
+                   - 1 - (uint32_t)remaining;
+      }
+
+      /* Stored biased by one, so minus one can mean the below-one
+       * probability that gets a single low-frequency slot. */
+      count            = (int32_t)value - 1;
+      counts[symbol++] = (int16_t)count;
+      remaining       -= (count < 0) ? -count : count;
+      previous_is_zero = (count == 0);
+
+      if ((bit_pos >> 3) > len)
+         return RZ_TRUNCATED;
+   }
+
+   if (remaining != 1)
+      return RZ_DATA;
+
+   *symbol_count = symbol;
+   *accuracy_log = log;
+   *used         = (size_t)((bit_pos + 7) >> 3);
+   return RZ_OK;
+#undef RZ_PEEK
+}
+
+/* Builds a decoding table from normalised counts (4.1.1).
+ *
+ * Symbols are spread across the table with a stride the format fixes at
+ * (size/2) + (size/8) + 3, chosen so a symbol's slots scatter rather
+ * than clump. A count of -1 means the symbol is less probable than one
+ * slot's worth; those take slots from the end and the walk skips them.
+ */
+static int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table,
+      const int16_t *counts, uint32_t symbol_count, uint32_t accuracy_log)
+{
+   uint32_t size     = (uint32_t)1 << accuracy_log;
+   uint32_t mask     = size - 1;
+   uint32_t step     = (size >> 1) + (size >> 3) + 3;
+   uint32_t high     = size;
+   uint32_t position = 0;
+   uint32_t sym;
+   uint32_t i;
+   uint16_t next[RZSTD_FSE_MAX_SYMBOLS];
+
+   fse->table        = table;
+   fse->accuracy_log = accuracy_log;
+
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      if (counts[sym] != -1)
+         continue;
+      table[--high].symbol = (uint8_t)sym;
+      next[sym]            = 1;
+   }
+
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      int32_t n = counts[sym];
+
+      if (n <= 0)
+         continue;
+      next[sym] = (uint16_t)n;
+      for (i = 0; i < (uint32_t)n; i++)
+      {
+         table[position].symbol = (uint8_t)sym;
+         do
+         {
+            position = (position + step) & mask;
+         } while (position >= high);
+      }
+   }
+
+   if (position != 0)
+      return RZ_DATA;
+
+   /* A symbol holding 2^k slots reads accuracy_log - k bits, and the
+    * states it can reach lie consecutively. */
+   for (i = 0; i < size; i++)
+   {
+      uint8_t  sy    = table[i].symbol;
+      uint16_t taken = next[sy]++;
+      uint32_t bits  = accuracy_log;
+
+      while (((uint32_t)1 << bits) > (uint32_t)taken && bits)
+         bits--;
+      table[i].bits       = (uint8_t)(accuracy_log - bits);
+      table[i].next_state = (uint16_t)(((uint32_t)taken
+               << (accuracy_log - bits)) - size);
+   }
+
+   return RZ_OK;
+}
+
+static uint32_t rzstd_fse_begin(const rzstd_fse_t *fse, rzstd_rbits_t *b)
+{
+   return rzstd_rbits_read(b, fse->accuracy_log);
+}
+
+static uint8_t rzstd_fse_symbol(const rzstd_fse_t *fse, uint32_t state)
+{
+   return fse->table[state].symbol;
+}
+
+static uint32_t rzstd_fse_next(const rzstd_fse_t *fse, uint32_t state,
+      rzstd_rbits_t *b)
+{
+   const rzstd_fse_entry_t *e = &fse->table[state];
+
+   return (uint32_t)e->next_state + rzstd_rbits_read(b, e->bits);
+}
+
+/* -------- Huffman --------
+ *
+ * Section 4.2, used only for literals. The table is described by one
+ * weight per symbol, and the weights are themselves either FSE-coded or
+ * written directly at four bits each.
+ *
+ * A weight of zero means the symbol is absent. A weight w above zero
+ * means the symbol takes 2^(w-1) of the table's slots, so the widest
+ * codes belong to the smallest weights -- the opposite relation to a
+ * code length, which is what makes this worth stating.
+ */
+
+#define RZSTD_HUF_MAX_BITS    11
+#define RZSTD_HUF_MAX_SYMBOLS 256
+
+typedef struct rzstd_huf
+{
+   uint8_t  symbol[1 << RZSTD_HUF_MAX_BITS];
+   uint8_t  bits[1 << RZSTD_HUF_MAX_BITS];
+   uint32_t max_bits;
+} rzstd_huf_t;
+
+/* Turns weights into a table. The final symbol's weight is not stored:
+ * it is whatever makes the total a power of two, which is why the
+ * weights alone are enough (4.2.1). */
+static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
+      uint32_t count)
+{
+   uint32_t total = 0;
+   uint32_t max_bits;
+   uint32_t next_rank_start[RZSTD_HUF_MAX_BITS + 2];
+   uint32_t rank_count[RZSTD_HUF_MAX_BITS + 2];
+   uint32_t i;
+   uint32_t position = 0;
+   uint8_t  all[RZSTD_HUF_MAX_SYMBOLS + 1];
+
+   if (!count || count > RZSTD_HUF_MAX_SYMBOLS)
+      return RZ_DATA;
+
+   for (i = 0; i < count; i++)
+   {
+      if (weights[i] > RZSTD_HUF_MAX_BITS)
+         return RZ_DATA;
+      all[i] = weights[i];
+      if (weights[i])
+         total += (uint32_t)1 << (weights[i] - 1);
+   }
+   if (!total)
+      return RZ_DATA;
+
+   /* The table is the next power of two at or above the total, and the
+    * shortfall is exactly the last symbol's share. */
+   max_bits = 0;
+   while (((uint32_t)1 << max_bits) < total)
+      max_bits++;
+   if (((uint32_t)1 << max_bits) == total)
+      max_bits++;
+   if (max_bits > RZSTD_HUF_MAX_BITS)
+      return RZ_DATA;
+
+   {
+      uint32_t left = ((uint32_t)1 << max_bits) - total;
+      uint32_t w    = 0;
+
+      /* left has to be a power of two; it names the last weight. */
+      if (left == 0 || (left & (left - 1)))
+         return RZ_DATA;
+      while (((uint32_t)1 << w) < left)
+         w++;
+      all[count] = (uint8_t)(w + 1);
+      count++;
+   }
+
+   huf->max_bits = max_bits;
+
+   memset(rank_count, 0, sizeof(rank_count));
+   for (i = 0; i < count; i++)
+      if (all[i])
+         rank_count[all[i]]++;
+
+   /* Slots are laid out by descending weight, so that the shortest
+    * codes come first and a lookup can be a plain index. */
+   {
+      uint32_t w;
+      next_rank_start[max_bits + 1] = 0;
+      for (w = max_bits; w >= 1; w--)
+      {
+         next_rank_start[w] = position;
+         position += rank_count[w] * ((uint32_t)1 << (w - 1));
+         if (w == 1)
+            break;
+      }
+   }
+
+   if (position != ((uint32_t)1 << max_bits))
+      return RZ_DATA;
+
+   for (i = 0; i < count; i++)
+   {
+      uint32_t w = all[i];
+      uint32_t n;
+      uint32_t at;
+
+      if (!w)
+         continue;
+      n  = (uint32_t)1 << (w - 1);
+      at = next_rank_start[w];
+      next_rank_start[w] += n;
+
+      memset(huf->symbol + at, (int)i, n);
+      memset(huf->bits + at, (int)(max_bits + 1 - w), n);
+   }
+
+   return RZ_OK;
+}
+
+/* Reads a weight description (4.2.1) and builds the table.
+ *
+ * The first byte decides the form: 128 or above means the weights
+ * follow directly at four bits each, and the byte itself carries how
+ * many. Below that it is the byte length of an FSE-coded stream. */
+static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+      size_t *used)
+{
+   uint8_t  weights[RZSTD_HUF_MAX_SYMBOLS + 1];
+   uint32_t count;
+   uint32_t i;
+
+   if (!len)
+      return RZ_TRUNCATED;
+
+   if (src[0] >= 128)
+   {
+      count = (uint32_t)src[0] - 127;
+      if (count > RZSTD_HUF_MAX_SYMBOLS)
+         return RZ_DATA;
+      /* Two weights to a byte, high nibble first. */
+      if (len < 1 + ((count + 1) / 2))
+         return RZ_TRUNCATED;
+      for (i = 0; i < count; i++)
+         weights[i] = (i & 1) ? (src[1 + i / 2] & 0x0f)
+                              : (src[1 + i / 2] >> 4);
+      *used = 1 + (count + 1) / 2;
+      return rzstd_huf_build(huf, weights, count);
+   }
+
+   /* The FSE-coded form is not built yet; it needs the two-stream
+    * weight decode of 4.2.1.2. */
+   (void)weights;
+   return RZ_UNSUPPORTED;
 }
 
 /* -------- blocks --------
@@ -420,5 +895,31 @@ int rzstd_probe_header(const uint8_t *src, size_t len,
    *window   = h.window_size;
    *checksum = h.has_checksum;
    *hlen     = h.header_len;
+   return RZ_OK;
+}
+
+/* Test seam: builds an FSE table from given counts and reports the
+ * widths it assigned, so the spread can be checked against the tables
+ * the RFC predefines. */
+int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
+      uint32_t accuracy_log, uint8_t *bits_out, uint16_t *state_out,
+      uint8_t *sym_out)
+{
+   static rzstd_fse_entry_t table[1 << RZSTD_FSE_MAX_ACCURACY_LOG];
+   rzstd_fse_t fse;
+   uint32_t    size = (uint32_t)1 << accuracy_log;
+   uint32_t    i;
+   int         e;
+
+   memset(table, 0, sizeof(table));
+   e = rzstd_fse_build(&fse, table, counts, symbol_count, accuracy_log);
+   if (e != RZ_OK)
+      return e;
+   for (i = 0; i < size; i++)
+   {
+      bits_out[i]  = table[i].bits;
+      state_out[i] = table[i].next_state;
+      sym_out[i]   = table[i].symbol;
+   }
    return RZ_OK;
 }
