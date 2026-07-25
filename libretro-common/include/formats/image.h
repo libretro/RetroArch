@@ -217,15 +217,20 @@ void *image_transfer_detach_anim_stream(void *data,
 bool image_transfer_is_valid(void *data, enum image_type_enum type);
 
 /* True if the last processed frame was written as packed XRGB2101010
- * (10-bit); only the video decoders can report this, for HDR sources. */
+ * (10-bit) rather than 8-bit RGBA: 10-bit was requested and the source
+ * could supply it.  Only PNG, WEBM and MP4 can report this; false for
+ * every other type. */
 bool image_transfer_is_10bit(void *data, enum image_type_enum type);
 
-/* Ask a video decoder to emit packed XRGB2101010 for 10-bit HDR sources
- * (still-image types ignore it). */
+/* Ask a decoder to emit packed XRGB2101010 instead of 8-bit RGBA.
+ * Honoured by PNG (16-bit-per-channel RGB sources) and by the video
+ * types (10-bit HDR sources); ignored by every other type, and by an
+ * 8-bit source of an honouring type. */
 void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
       int want);
 
-/* Animation (animated images: WEBP, and the video track of WEBM).
+/* Animation.  The whole-buffer form below is animated WEBP only; the
+ * streaming form further down also covers APNG, WEBM and MP4.
  *
  * image_transfer_anim_new returns an opaque animation handle, or NULL
  * for still images / unsupported types, so a caller can try it first and
@@ -289,10 +294,11 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 
 /* For decoding a still from a file whose read is still in progress:
  * declare how many leading bytes of the buffer are valid.  Monotonic.
- * Only the video types (WEBM, MP4) honour it - their process step
- * returns IMAGE_PROCESS_WAIT instead of erroring at the wall - and it
- * is a no-op for every other type, whose transfers must keep seeing
- * fully-resident buffers. */
+ * Honoured by PNG, JPEG, WEBM and MP4, which report the wall two
+ * different ways: the video types return IMAGE_PROCESS_WAIT from their
+ * process step, while PNG and JPEG stop iterating with
+ * image_transfer_need_more() true.  A no-op for BMP, TGA, WEBP and
+ * DDS, whose transfers must keep seeing fully-resident buffers. */
 void image_transfer_set_avail(void *data, enum image_type_enum type,
       size_t avail);
 
@@ -311,8 +317,9 @@ void image_transfer_anim_stream_set_avail(void *stream,
  * where media data begins; consumed is the monotonic high-water byte
  * offset the decoder has read to.  A feeder keeps
  * [media_floor, consumed + lookahead) resident and can free below the
- * floor.  Both return 0 for a type with no byte cursor (animated
- * WEBP), which a caller reads as "not windowable - keep whole". */
+ * floor.  Both return 0 for a type with no byte cursor (APNG and
+ * animated WEBP), which a caller reads as "not windowable - keep
+ * whole". */
 size_t image_transfer_anim_stream_media_floor(void *stream,
       enum image_type_enum type);
 size_t image_transfer_anim_stream_consumed(void *stream,
