@@ -415,9 +415,19 @@ static void rdds_bcdec_bc5_float(const void* compressedBlock, void* decompressed
 }
 #endif /* BCDEC_BC4BC5_PRECISE */
 
-/* http://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend */
+/* Sign-extend the low 'bits' of val.  The usual shift form,
+   (val << (32 - bits)) >> (32 - bits), shifts a positive value into the
+   sign bit, which is undefined behaviour and which UBSan reports; this
+   does the same job in unsigned arithmetic.  'bits' comes from the BC6H
+   endpoint precision tables and is 4..16, so the negated magnitude
+   below stays far from INT_MIN. */
 static int rdds_bcdec__extend_sign(int val, int bits) {
-    return (val << (32 - bits)) >> (32 - bits);
+    unsigned mask = (1u << bits) - 1u;
+    unsigned sign = 1u << (bits - 1);
+    unsigned v    = (unsigned)val & mask;
+    if (v & sign)
+        return -(int)(mask - v + 1u);
+    return (int)v;
 }
 
 static int rdds_bcdec__transform_inverse(int val, int a0, int bits, int isSigned) {
@@ -513,7 +523,10 @@ static float rdds_bcdec__half_to_float_quick(unsigned short half) {
         o.f -= magic.f;                                     /* renormalize */
     }
 
-    o.u |= (half & 0x8000) << 16;                           /* sign bit */
+    /* Unsigned: 'half' promotes to int, so (half & 0x8000) << 16 shifts
+       0x8000 into the sign bit of an int, which is undefined and which
+       UBSan reports.  The value wanted is the unsigned 0x80000000. */
+    o.u |= (unsigned int)(half & 0x8000) << 16;             /* sign bit */
     return o.f;
 }
 
@@ -1578,6 +1591,16 @@ static bool rdds_parse_header(const uint8_t *data, size_t len,
    {
       size_t max_px = (size_t)-1 / sizeof(uint32_t);
       if ((size_t)out->width > max_px / (size_t)out->height)
+         return false;
+      /* Row addressing inside the decoders is 'py * width + px' in
+       * unsigned int, so the texel count has to fit there too or the
+       * index wraps and the surface decodes scrambled (in bounds, but
+       * wrong).  Widening that multiply to size_t at every texel
+       * measured ~9% slower on BC3, and nothing legitimate is affected:
+       * 2^32 texels is a 16 GiB decoded mip.  Refuse it here instead
+       * and keep the inner loops narrow.  On a 32-bit host the guard
+       * above is the binding one and this never fires. */
+      if ((size_t)out->width * (size_t)out->height > (size_t)UINT_MAX)
          return false;
    }
 
