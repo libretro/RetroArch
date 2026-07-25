@@ -632,7 +632,7 @@ void audio_driver_update_drc_threshold(audio_driver_state_t *audio_st)
 }
 
 /* Fast-forward "speedup" pitch tracking, shared by the float and the
- * deterministic s16 fast paths.  Measures the real wall-clock time between
+ * deterministic s16 paths.  Measures the real wall-clock time between
  * flushes, keeps an exponential moving average of it over the last
  * AUDIO_FF_EXP_AVG_SAMPLES flushes, and returns a multiplier for the
  * resampler ratio so the audio time-stretches to track the actual output
@@ -1104,7 +1104,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #ifdef HAVE_AUDIOMIXER
             /* Sum the mixer voices onto the int16 game audio, in the integer
              * domain.  Voices played on the s16 path (the common case here,
-             * since the game itself is on the int16 fast path) are summed
+             * since the game itself is on the int16 path) are summed
              * directly via audio_mixer_mix_s16 with saturating add -- no float
              * scratch, no round-trip.  Any voice that happens to be float (a
              * voice that outlived a pipeline-format change) is folded via
@@ -1143,8 +1143,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    src_data.output_frames            = 0;
    /* We'll assign a proper output to the resampler later in this function */
 
-   /* Reached only when neither integer fast path above returned: the core is
-    * float-native, or an int16 core fell through (fast path disabled, or a
+   /* Reached only when neither integer path above returned: the core is
+    * float-native, or an int16 core fell through (s16 path disabled, or a
     * float-only DSP/condition forced conversion). Either way the pipeline
     * runs in float from here. */
    audio_st->stat_frontend_is_float = true;
@@ -1614,7 +1614,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.synth_buf                      = synth_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
    /* Allocated further down, once it is known whether an int16 resampler
-    * exists; the s16 fast path that uses it cannot run without one. */
+    * exists; the s16 path that uses it cannot run without one. */
    audio_driver_st.input_data_int16               = NULL;
    audio_driver_st.output_samples_int16        = out_conv_buf;
    audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
@@ -1742,7 +1742,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    /* Freshly (re)allocated resampler: ring is clean, not in passthrough. */
    audio_driver_st.resampler_bypassed = false;
 
-   /* Deterministic integer (s16) fast path: allocate an int16 resampler
+   /* Deterministic integer (s16) path: allocate an int16 resampler
     * mirroring the float one when the selected backend has an int16
     * implementation.  It is used by audio_driver_flush() for int16 cores
     * unless a MIDI synth is sounding or a float-only DSP filter is loaded;
@@ -1786,13 +1786,13 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       }
 #endif
       if (audio_driver_st.resampler_int16_process)
-         RARCH_LOG("[Audio] %s resampler: integer s16 fast path %s.\n",
+         RARCH_LOG("[Audio] %s resampler: integer s16 path %s.\n",
                rs_ident,
                audio_driver_st.resampler_data_int16
                      ? "available" : "unavailable");
    }
 
-   /* int16 scratch for the s16 fast path.  Same frame capacity as
+   /* int16 scratch for the s16 path.  Same frame capacity as
     * input_data, in int16.  Only reachable when resampler_data_int16 is
     * non-NULL (audio_driver_mixer_use_s16 gates on it), so allocating it
     * unconditionally at the top of this function burned a full
@@ -1805,7 +1805,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * but both of those are runtime state that can change without an audio
     * reinit - and audio_fastpath_s16 is CMD_EVENT_NONE, so toggling the
     * hint does not reinit either.  Narrowing the gate to any of them would
-    * leave the fast path live against a NULL scratch. */
+    * leave the s16 path live against a NULL scratch. */
    if (audio_driver_st.resampler_data_int16)
    {
       audio_driver_st.input_data_int16 = (int16_t*)memalign_alloc(64,
@@ -1814,7 +1814,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       if (!audio_driver_st.input_data_int16)
       {
          /* Drop the int16 resampler so flush falls back to the float path,
-          * which needs no scratch.  Leaving the fast path enabled against a
+          * which needs no scratch.  Leaving the s16 path enabled against a
           * NULL scratch would not crash - the synth and DSP branches are
           * both guarded - but the DSP branch would then be silently skipped
           * and a loaded filter would stop being applied. */

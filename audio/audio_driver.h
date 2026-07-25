@@ -241,11 +241,11 @@ typedef struct
 
    void *resampler_data;
 
-   /* Optional deterministic integer (s16) resampler, used by the fast path
+   /* Optional deterministic integer (s16) resampler, used by the s16 path
     * in audio_driver_flush() when the selected resampler has an int16
     * implementation ("sinc", "nearest", "CC") and no float-domain stage is
     * active.  NULL otherwise.  The process/free entry points are selected
-    * alongside the handle so the fast path is backend-agnostic. */
+    * alongside the handle so the s16 path is backend-agnostic. */
    void *resampler_data_int16;
    void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
    void (*resampler_int16_free)(void *);
@@ -262,7 +262,7 @@ typedef struct
     */
    float *input_data;
    float *synth_buf;
-   /* int16 scratch for the s16 fast path: running a fully-int16 DSP chain
+   /* int16 scratch for the s16 path: running a fully-int16 DSP chain
     * and/or summing an in-process synth without an int16<->float round-trip.
     * Allocated only when an int16 resampler exists, since that path cannot
     * run without one; NULL otherwise. */
