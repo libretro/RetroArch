@@ -1352,6 +1352,13 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;
    sz = path_get_size(fullpath);
+   /* Below the lower threshold the answer cannot depend on how much
+    * memory there is, so do not go and ask: the query costs a file read
+    * on some platforms and, on one that has no accounting to consult, a
+    * probe that transiently allocates most of RAM.  Menu sounds come
+    * through here, and they are kilobytes. */
+   if (sz < (int64_t)AMIX_WINDOW_THRESHOLD)
+      return false;
    if (sz < task_audio_mixer_threshold(mtype))
       return false;
 
