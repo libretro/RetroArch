@@ -2312,6 +2312,19 @@ int rmodtracker_sample_rate( rmodtracker *rmt )
 	return rmt ? rmt->rate : 0;
 }
 
+/* Voices the module itself has - four in a classic MOD, up to
+ * thirty-two in an XM or S3M.
+ *
+ * Not the channel count a caller mixes at.  The replayer sums these
+ * into interleaved stereo, so two is what comes out however many the
+ * module writes for, and that is what the audio_transfer arm reports;
+ * this is the module's own figure, for a caller that wants to say
+ * something about the file rather than about its output. */
+int rmodtracker_voices( rmodtracker *rmt )
+{
+	return ( rmt && rmt->module ) ? rmt->module->num_channels : 0;
+}
+
 /* Duration of one pass through the sequence, in frames at the mix rate. */
 int rmodtracker_duration_frames( rmodtracker *rmt )
 {

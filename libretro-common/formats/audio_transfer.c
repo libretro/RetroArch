@@ -97,6 +97,15 @@
  *     bitstream cache, which is the safe side for a feeder).
  *   Does not: Ogg-encapsulated FLAC - rflac takes native fLaC only.  No
  *     demuxed input, so FLAC in a container is not reachable from here.
+ *     A_FLAC in Matroska is refused for the same reason and one more:
+ *     rwebm does not map the codec ID, so such a file arrives as an
+ *     unknown track rather than a FLAC one.  Both halves are small on
+ *     their own - the CodecPrivate is a whole fLaC header, magic and
+ *     STREAMINFO, and the blocks are frames - but joining them means
+ *     either a packet entry point in rflac or rebuilding a stream from
+ *     the header and the concatenated frames, and the second is the
+ *     whole-file-resident synthesis the Vorbis arm was taken off.
+ *     Left refused rather than half-wired.
  *     A stream whose STREAMINFO omits the total frame count reports 0.
  *
  * Vorbis (rvorbis)
@@ -161,11 +170,15 @@
  *   Does: buffer input; s16 (quantised by the synthesis filter, no float
  *     round trip) and f32; channels and rate from the first frame; seek
  *     to any PCM frame; buffer_tell, hence windowing.
- *   Does not: report a length - info() gives 0, as neither a Xing/VBRI
- *     header nor a full frame walk is done.  No gapless trim: the
- *     encoder delay and padding a Xing/LAME tag carries are not read and
- *     set_start_trim has no MP3 arm, so the decoder's own priming shows
- *     up at both ends.  No demuxed input.
+ *     Length and gapless trim from the Xing/Info or VBRI header in the
+ *     first frame: that frame carries no audio but is decoded like any
+ *     other, so the priming dropped is its own length plus the encoder
+ *     delay a LAME tag states, and the padding bounds the end.  What
+ *     info() reports is what comes out.  set_start_trim overrides the
+ *     tag's delay, for a caller whose container knows better.
+ *   Does not: report a length for a file carrying no such header -
+ *     info() gives 0 and nothing is trimmed, since measuring it would
+ *     mean walking every frame.  No demuxed input.
  *
  * MOD (rmodtracker)
  *   Does: buffer input, MOD/S3M/XM autodetected; s16 and f32; the
@@ -177,10 +190,13 @@
  *     so the replayer restarts and walks the sequence forward with the
  *     mixing skipped, which costs time proportional to the distance and
  *     spends it on the calling thread.
- *   Does not: report the module's own channel count.  info() says 2
- *     channels because the replayer mixes to interleaved stereo, and
- *     that is what the count in this API means; a module's four or
- *     thirty-two are voices being mixed, not channels being emitted.
+ *   Does not: report the module's own channel count through info(),
+ *     which says 2 because the replayer mixes to interleaved stereo
+ *     and that is what the count in this API means - a module's four
+ *     or thirty-two are voices being mixed, not channels being
+ *     emitted.  The module's figure is not lost, only elsewhere:
+ *     rmodtracker_voices returns it, for a caller wanting to say
+ *     something about the file rather than about its output.
  *     No buffer cursor, and no windowing to use one for: the module is
  *     parsed into the replayer's own structures at open, after which
  *     the caller's bytes are not read again, and sample data is
@@ -388,6 +404,16 @@ struct audio_transfer_mp3
    size_t      size;
    rmp3        handle;   /* dr_mp3 initialises this in place (by value)      */
    int         inited;   /* handle is embedded, so track init state a flag   */
+   /* Gapless, from the Xing/Info or VBRI header in the first frame.
+    * That frame carries no audio but dr_mp3 decodes it like any
+    * other, so the priming to drop is its own length plus the
+    * encoder delay the LAME tag states; the padding comes off the
+    * end.  All zero where the file has no such header, which is the
+    * old behaviour. */
+   uint64_t    start_trim;
+   uint64_t    trim_left;
+   int64_t     limit;    /* frames to emit after the trim, -1 unbounded      */
+   int64_t     emitted;
 };
 #endif
 
@@ -1183,6 +1209,20 @@ bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RMP3
+      case AUDIO_TYPE_MP3:
+      {
+         struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
+         if (!m)
+            return false;
+         /* Overrides the LAME tag's delay, and is taken as covering
+          * the header frame too - a caller stating this knows what
+          * the stream plays, which is what the arm needs. */
+         m->start_trim = frames;
+         m->trim_left  = frames;
+         return true;
+      }
+#endif
       case AUDIO_TYPE_NONE:
       default:
          break;
@@ -1193,6 +1233,156 @@ bool audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
    (void)frames;
    return false;
 }
+
+#ifdef HAVE_RMP3
+/* The frame count and gapless figures an MP3 carries in its first
+ * frame, which is otherwise silent filler.
+ *
+ * A Xing or Info tag states how many frames the stream holds; a LAME
+ * tag after it states the encoder delay and the padding.  VBRI, which
+ * Fraunhofer writes instead, states the count and nothing else.  All
+ * three sit inside the first frame at an offset that depends on the
+ * MPEG version and whether the stream is mono, because that is how
+ * much side information the frame has.
+ *
+ * Returns 1 when a count was found.  *out_frames is the audio the
+ * stream is meant to play, *out_delay the priming to drop from the
+ * front - the filler frame included, since the decoder emits it. */
+static int audio_transfer_mp3_gapless(const uint8_t *b, size_t len,
+      uint64_t *out_frames, uint64_t *out_delay)
+{
+   size_t   off = 0, xo;
+   unsigned ver, sfi, chmode, spf;
+   const uint8_t *h;
+   uint32_t flags, frames = 0;
+
+   if (!b || len < 4)
+      return 0;
+   /* An ID3v2 tag sits before the audio; its size is seven bits a
+    * byte, the high bit of each being reserved. */
+   if (len > 10 && b[0] == 'I' && b[1] == 'D' && b[2] == '3')
+   {
+      size_t tag = ((size_t)(b[6] & 0x7f) << 21)
+                 | ((size_t)(b[7] & 0x7f) << 14)
+                 | ((size_t)(b[8] & 0x7f) << 7)
+                 |  (size_t)(b[9] & 0x7f);
+      off = 10 + tag + ((b[5] & 0x10) ? 10 : 0);
+   }
+   while (off + 4 <= len && !(b[off] == 0xFF && (b[off + 1] & 0xE0) == 0xE0))
+      off++;
+   if (off + 4 > len)
+      return 0;
+   h      = b + off;
+   ver    = (h[1] >> 3) & 3;      /* 3 MPEG1, 2 MPEG2, 0 MPEG2.5       */
+   sfi    = (h[2] >> 2) & 3;
+   chmode = (h[3] >> 6) & 3;      /* 3 = mono                          */
+   if (ver == 1 || sfi == 3)      /* reserved version / sample rate    */
+      return 0;
+   spf    = (ver == 3) ? 1152 : 576;
+   if (ver == 3)
+      xo = (chmode == 3) ? 4 + 17 : 4 + 32;
+   else
+      xo = (chmode == 3) ? 4 +  9 : 4 + 17;
+
+   if (   off + xo + 8 <= len
+       && (   !memcmp(b + off + xo, "Xing", 4)
+           || !memcmp(b + off + xo, "Info", 4)))
+   {
+      const uint8_t *p = b + off + xo + 8;
+      uint64_t delay = 0, pad = 0;
+      flags = ((uint32_t)b[off + xo + 4] << 24)
+            | ((uint32_t)b[off + xo + 5] << 16)
+            | ((uint32_t)b[off + xo + 6] <<  8)
+            |  (uint32_t)b[off + xo + 7];
+      if (flags & 1)
+      {
+         if ((size_t)(p - b) + 4 > len)
+            return 0;
+         frames = ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16)
+                | ((uint32_t)p[2] <<  8) |  (uint32_t)p[3];
+         p += 4;
+      }
+      if (flags & 2)
+         p += 4;
+      if (flags & 4)
+         p += 100;
+      if (flags & 8)
+         p += 4;
+      if (!frames)
+         return 0;
+      /* The LAME tag starts here; its delay and padding are twelve
+       * bits each, packed into three bytes at offset 21. */
+      if ((size_t)(p - b) + 24 <= len)
+      {
+         delay = ((uint64_t)p[21] << 4) | (p[22] >> 4);
+         pad   = ((uint64_t)(p[22] & 0xf) << 8) | p[23];
+      }
+      /* The filler frame is decoded like any other, so it is priming
+       * too.  What is left to play is the stated audio less both
+       * ends. */
+      *out_delay  = (uint64_t)spf + delay;
+      *out_frames = (uint64_t)frames * spf;
+      *out_frames = (*out_frames > delay + pad)
+                  ? *out_frames - delay - pad : 0;
+      return 1;
+   }
+   if (   off + 4 + 32 + 18 <= len
+       && !memcmp(b + off + 4 + 32, "VBRI", 4))
+   {
+      const uint8_t *v = b + off + 4 + 32;
+      frames = ((uint32_t)v[14] << 24) | ((uint32_t)v[15] << 16)
+             | ((uint32_t)v[16] <<  8) |  (uint32_t)v[17];
+      if (!frames)
+         return 0;
+      /* VBRI states no delay, so only the filler frame is dropped. */
+      *out_delay  = (uint64_t)spf;
+      *out_frames = (uint64_t)frames * spf;
+      return 1;
+   }
+   return 0;
+}
+#endif
+
+#ifdef HAVE_RMP3
+/* Read past the priming and stop at the padding.  The trim is dropped
+ * by decoding it and throwing it away - there is nowhere else for it
+ * to go, the frames being coded - and the bound is what the tag says
+ * is left after both ends come off. */
+static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
+      int s16, int16_t *o16, float *of, size_t frames)
+{
+   unsigned ch = m->handle.channels ? m->handle.channels : 1;
+   size_t   got;
+   while (m->trim_left)
+   {
+      static int16_t skip16[2048 * 2];
+      static float   skipf[2048 * 2];
+      size_t cap  = (size_t)(2048 * 2) / ch;
+      size_t want = (m->trim_left < cap) ? (size_t)m->trim_left : cap;
+      size_t n    = s16
+         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip16)
+         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skipf);
+      if (!n)
+      {
+         m->trim_left = 0;         /* stream ended inside the priming */
+         return 0;
+      }
+      m->trim_left -= n;
+   }
+   if (m->limit >= 0)
+   {
+      int64_t left = m->limit - m->emitted;
+      if (left <= 0)
+         return 0;
+      if ((int64_t)frames > left)
+         frames = (size_t)left;
+   }
+   got = s16 ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)frames, o16)
+             : (size_t)rmp3_read_f32(&m->handle, (uint64_t)frames, of);
+   m->emitted += (int64_t)got;
+   return got;
+}
+#endif
 
 bool audio_transfer_start(void *data, enum audio_type_enum type)
 {
@@ -1377,7 +1567,25 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          if (!m || !m->data)
             return false;
          m->inited = (rmp3_init_memory(&m->handle, m->data, m->size) != 0);
-         return m->inited != 0;
+         if (!m->inited)
+            return false;
+         m->limit = -1;
+         {
+            uint64_t fr = 0, delay = 0;
+            if (audio_transfer_mp3_gapless((const uint8_t*)m->data,
+                     m->size, &fr, &delay))
+            {
+               /* set_start_trim, if the caller used it, wins - it is
+                * a statement from a container that knows better than
+                * the stream's own tag. */
+               if (!m->start_trim)
+                  m->start_trim = delay;
+               m->limit = (int64_t)fr;
+            }
+         }
+         m->trim_left = m->start_trim;
+         m->emitted   = 0;
+         return true;
       }
 #endif
 #ifdef HAVE_RMODTRACKER
@@ -1871,8 +2079,11 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
             *channels     = (unsigned)m->handle.channels;
          if (rate)
             *rate         = (unsigned)m->handle.sampleRate;
-         if (total_frames) /* streaming; length not tracked here */
-            *total_frames = 0;
+         /* From the Xing/Info or VBRI count, less the gapless trim
+          * where a LAME tag states one; 0 for a file carrying no
+          * such header, which cannot be measured without a walk. */
+         if (total_frames)
+            *total_frames = (m->limit >= 0) ? (uint64_t)m->limit : 0;
          return true;
       }
 #endif
@@ -2523,7 +2734,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rmp3_read_s16(&m->handle, (uint64_t)frames, out);
+         produced = audio_transfer_mp3_read(m, 1, out, NULL, frames);
          break;
       }
 #endif
@@ -2700,7 +2911,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return AUDIO_PROCESS_ERROR;
-         produced = (size_t)rmp3_read_f32(&m->handle, (uint64_t)frames, out);
+         produced = audio_transfer_mp3_read(m, 0, NULL, out, frames);
          break;
       }
 #endif
@@ -3084,7 +3295,14 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->inited)
             return false;
-         return rmp3_seek_to_frame(&m->handle, (uint64_t)frame) != 0;
+         /* Frame numbers here are of the played audio, so the
+          * priming sits before frame 0. */
+         if (!rmp3_seek_to_frame(&m->handle,
+                  (uint64_t)frame + m->start_trim))
+            return false;
+         m->trim_left = 0;
+         m->emitted   = (int64_t)frame;
+         return true;
       }
 #endif
 #ifdef HAVE_RMODTRACKER

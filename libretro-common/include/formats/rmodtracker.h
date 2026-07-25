@@ -55,6 +55,12 @@ void rmodtracker_close(rmodtracker *rmt);
 int rmodtracker_sample_rate(rmodtracker *rmt);
 
 /* Length of one pass through the sequence, in frames at the mix rate. */
+/* Voices the module itself has - four in a classic MOD, up to
+ * thirty-two in an XM or S3M.  Not the channel count of the audio it
+ * produces: the replayer mixes those voices down to interleaved
+ * stereo, so two is always what comes out. */
+int rmodtracker_voices(rmodtracker *rmt);
+
 int rmodtracker_duration_frames(rmodtracker *rmt);
 
 /* Restart playback from the beginning of the sequence. */
