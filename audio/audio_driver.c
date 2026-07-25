@@ -760,6 +760,42 @@ static void audio_mixer_fold_s16_voices_into_float(float *dst,
       dst[k] += (float)scratch[k] * (1.0f / 0x8000);
 }
 
+/* Saturating, NaN-safe float -> s16 conversion of one sample.
+ *
+ * Mirrors the scalar tail of convert_float_to_s16() exactly - same
+ * round-half-away-from-zero, same NaN handling - so a value converted here
+ * is bit-identical to one converted by the shared routine.
+ *
+ * Casting a non-finite or out-of-int32-range float to an integer is
+ * undefined.  On x86 it yields the "integer indefinite" INT32_MIN, so a NaN
+ * or a large POSITIVE sample emerges as full-scale negative; other targets
+ * saturate, or produce something else again.  convert_float_to_s16() guards
+ * against this, but three sites in this file open-coded the same conversion
+ * without the guard.  They all route through here now.
+ *
+ * The NaN test is on the bit pattern rather than (v != v) because -ffast-math
+ * (implied by -Ofast on HAVE_C_A7A7 builds) is entitled to fold the latter to
+ * false.  Returns a value already clamped to the s16 range, so callers that
+ * sum it onto existing audio only need their own overflow clamp.
+ */
+static INLINE int32_t audio_float_to_s16_sat(float v)
+{
+   uint32_t bits;
+   float    scaled = v * 0x8000;
+
+   memcpy(&bits, &scaled, sizeof(bits));
+   if ((bits & 0x7FFFFFFFu) > 0x7F800000u)
+      return 0;
+
+   scaled += (scaled >= 0.0f ? 0.5f : -0.5f);
+
+   if (scaled >  32767.0f)
+      return  32767;
+   if (scaled < -32768.0f)
+      return -32768;
+   return (int32_t)scaled;
+}
+
 static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
       float *scratch, unsigned frames, float gain, bool override)
 {
@@ -769,9 +805,7 @@ static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
    audio_mixer_mix(scratch, frames, gain, override);
    for (k = 0; k < total; k++)
    {
-      float   fv = scratch[k] * 0x8000;
-      int32_t vv = (int32_t)(fv + (fv >= 0.0f ? 0.5f : -0.5f));
-      int32_t s  = (int32_t)dst[k] + vv;
+      int32_t s  = (int32_t)dst[k] + audio_float_to_s16_sat(scratch[k]);
       if      (s >  32767) s =  32767;
       else if (s < -32768) s = -32768;
       dst[k]     = (int16_t)s;
@@ -916,10 +950,9 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                size_t s;
                for (s = 0; s < samples; s++)
                {
-                  float   fv = audio_st->synth_buf[s] * 0x8000;
                   int32_t v  = (int32_t)audio_st->input_data_int16[s]
-                            + (int32_t)(fv +
-                               (fv >= 0.0f ? 0.5f : -0.5f));
+                            + audio_float_to_s16_sat(
+                                 audio_st->synth_buf[s]);
                   if      (v >  32767) v =  32767;
                   else if (v < -32768) v = -32768;
                   audio_st->input_data_int16[s] = (int16_t)v;
@@ -1984,13 +2017,8 @@ size_t audio_driver_sample_batch_float(const float *data, size_t frames)
           * this same function calls that converter directly, and a
           * truncating variant here would quantise the rewind audio with
           * twice the error and a one-LSB dead band around silence. */
-         {
-            float   v = data[i] * 0x8000;
-            int32_t s = (int32_t)(v + (v >= 0.0f ? 0.5f : -0.5f));
-            if (s >  0x7fff) s =  0x7fff;
-            if (s < -0x8000) s = -0x8000;
-            audio_st->rewind_buf[--audio_st->rewind_ptr] = (int16_t)s;
-         }
+         audio_st->rewind_buf[--audio_st->rewind_ptr] =
+               (int16_t)audio_float_to_s16_sat(data[i]);
       }
       return frames;
    }
