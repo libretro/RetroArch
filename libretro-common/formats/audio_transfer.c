@@ -110,11 +110,15 @@
  *     hence windowing.  From WebM: end trimming, exactly - Vorbis codes
  *     in overlapping blocks, so the last packet decodes past the end of
  *     the audio, and the container's DiscardPadding says by how much.
- *     It arrives on the block it applies to and is applied there,
- *     which is when the stream's true length is first known; a
- *     Duration, which rounds up past the overhang, bounds emission
- *     until then and is what info() reports before a pass has reached
- *     the end.  buffer_tell, hence windowing: the packets are decoded
+ *     It arrives on the block it applies to.  A resident buffer has
+ *     already totalled it in the start() walk, so the bound is exact
+ *     before a frame is decoded; a windowed one applies it when that
+ *     block arrives, and until then is bounded by a Duration, which
+ *     rounds up past the overhang and is what its info() reports.  From a resident WebM the length is exact from the
+ *     first call instead: the packet headers are walked once at
+ *     start(), which decodes nothing, and what they total less the
+ *     padding is the length that comes out.  buffer_tell, hence
+ *     windowing: the packets are decoded
  *     where the demuxer points at them, so its walk position is the
  *     compressed frontier, and start() reads no further than the
  *     header material - it does not walk the packets.  A windowed
@@ -1226,6 +1230,56 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          v->channels = rvorbis_get_info(v->handle).channels;
+#ifdef HAVE_RWEBM
+         /* Resident WebM: walk the packet headers once and learn the
+          * stream's exact length.  rvorbis_packet_frames reads a
+          * packet's contribution off its first two bytes, so the walk
+          * decodes nothing - about 2 ms for a half-hour track, against
+          * a load that has already read it off disk - and what it
+          * totals, less the container's DiscardPadding, is the length
+          * of the audio to the sample.  A Duration cannot be that: it
+          * rounds up past the overhang the last block's overlap-add
+          * runs into.
+          *
+          * A windowed context does not walk - it would run at the wall
+          * - and keeps the Duration bound below, which the drain
+          * tightens when the padding block finally arrives. */
+         if (v->demux && !v->avail && v->channels > 0)
+         {
+            const uint8_t *pd = NULL;
+            uint32_t       pl = 0;
+            int64_t        total = 0;
+            int            n     = 0;
+            int            ok    = 1;
+            while (audio_transfer_vorbis_pull(v, &pd, &pl) == 1)
+            {
+               int fr = rvorbis_packet_frames(v->handle, pd, pl);
+               if (fr < 0)
+               {
+                  ok = 0;
+                  break;
+               }
+               /* A decode's first packet primes the window and yields
+                * nothing, so the length counts from the second. */
+               if (++n > 1)
+                  total += fr;
+            }
+            rwebm_rewind(v->demux);
+            if (ok && total > 0)
+            {
+               /* The pull armed the padding as it passed; this walk
+                * decoded nothing, so disarm it and let the drain arm
+                * it again when it reaches that block for real. */
+               int64_t exact = total - v->discard;
+               v->limit   = (exact > 0) ? exact : 0;
+               v->discard = 0;
+               v->emitted = 0;
+               return true;
+            }
+            v->discard = 0;
+            v->emitted = 0;
+         }
+#endif
          /* A WebM Duration is the length of the audio, which the last
           * packet's overlap-add tail runs past; bound emission by it
           * for as long as that is the best statement available.  It
