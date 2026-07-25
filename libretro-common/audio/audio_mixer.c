@@ -77,7 +77,22 @@ struct audio_mixer_sound
          /* wav */
          const float* pcm;
          const int16_t* pcm_s16;
+         /* Frame counts are kept per pipeline. The float and the
+          * fixed-point resampler each report what they actually
+          * produced, and nothing guarantees the two agree to the
+          * sample; one shared count would let the s16 mixer read past
+          * the end of a shorter buffer. */
          unsigned frames;
+         unsigned frames_s16;
+#ifdef HAVE_RWAV
+         /* The WAV's own sample bytes, owned by the sound. Kept so
+          * that whichever pipeline is asked for can be built from the
+          * source, rather than derived from the other pipeline's
+          * finished output - an s16 voice must never end up playing
+          * audio that was resampled in float and quantised after. */
+         uint8_t* src;
+         rwav_t   hdr;
+#endif
       } wav;
 
 #ifdef AUDIO_MIXER_HAS_STREAM
@@ -584,6 +599,14 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
 }
 #endif
 
+/* Defined below, next to each other so the two pipelines stay
+ * visibly parallel; declared here because load_wav builds whichever
+ * one the caller asked for. */
+static bool wav_build_float(audio_mixer_sound_t* sound,
+      const char *resampler_ident, enum resampler_quality quality);
+static bool wav_build_s16(audio_mixer_sound_t* sound,
+      enum resampler_quality quality);
+
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
       const char *resampler_ident, enum resampler_quality quality,
       bool want_s16)
@@ -591,16 +614,9 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 #ifdef HAVE_RWAV
    /* WAV data */
    rwav_t wav;
-   /* WAV samples converted to float */
-   float* pcm                 = NULL;
-   size_t samples             = 0;
-   /* WAV samples converted natively to s16 (parallel float-free path) */
-   int16_t* pcm16             = NULL;
-   size_t samples16           = 0;
    /* Result */
    audio_mixer_sound_t* sound = NULL;
-
-   const uint8_t* src         = NULL;
+   uint8_t* src               = NULL;
 
    wav.bitspersample          = 0;
    wav.numchannels            = 0;
@@ -610,77 +626,51 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    wav.samples                = NULL;
    wav.dataoffset             = 0;
 
-   /* Header only: the converters below read the samples straight out of
-    * the caller's buffer, so the decoded copy rwav_load would have made
+   /* Header only: the converters read the samples straight out of the
+    * buffer handed here, so the decoded copy rwav_load would have made
     * - as large as the file, and thrown away as soon as it had been
-    * converted - never exists.  Nothing here needs freeing either,
-    * which is what the error paths below used to get wrong. */
+    * converted - never exists. */
    if (rwav_parse(&wav, buffer, size) != RWAV_ITERATE_DONE)
       return NULL;
-   src           = (const uint8_t*)buffer + wav.dataoffset;
 
-   samples       = wav.numsamples * 2;
-   samples16     = samples;
+   if (!wav.subchunk2size)
+      return NULL;
 
-   /* Build exactly the format the mixer will play now - the caller
-    * knows its mode.  The other format, needed only if the mode
-    * flips while the sound stays loaded (a core switch), derives on
-    * demand at play time from the format kept here, so a WAV no
-    * longer holds a second full PCM copy it may never mix. */
-   if (want_s16)
+   /* Keep the source samples. The caller owns the buffer it passed and
+    * frees it as soon as this returns, so the sound cannot borrow
+    * them; and without them the only way to produce the second
+    * pipeline later would be to derive it from the first pipeline's
+    * output, which is exactly what this replaces. Cost is the data
+    * chunk, held for the life of the sound. */
+   if (!(src = (uint8_t*)malloc(wav.subchunk2size)))
+      return NULL;
+
+   memcpy(src, (const uint8_t*)buffer + wav.dataoffset,
+         wav.subchunk2size);
+
+   if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
    {
-      if (!wav_to_s16(&wav, src, &pcm16, samples16))
-         return NULL;
-
-      if (wav.samplerate != s_rate)
-      {
-         int16_t* resampled16 = NULL;
-         if (!one_shot_resample_s16(pcm16, samples16, wav.samplerate,
-               quality, &resampled16, &samples16))
-         {
-            memalign_free((void*)pcm16);
-            return NULL;
-         }
-         memalign_free((void*)pcm16);
-         pcm16   = resampled16;
-      }
-      samples = samples16;
-   }
-   else
-   {
-      if (!wav_to_float(&wav, src, &pcm, samples))
-         return NULL;
-
-      if (wav.samplerate != s_rate)
-      {
-         float* resampled = NULL;
-         if (!one_shot_resample(pcm, samples, wav.samplerate,
-               resampler_ident, quality,
-               &resampled, &samples))
-         {
-            memalign_free((void*)pcm);
-            return NULL;
-         }
-         memalign_free((void*)pcm);
-         pcm = resampled;
-      }
-   }
-
-   sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound));
-
-   if (!sound)
-   {
-      memalign_free((void*)pcm);
-      memalign_free((void*)pcm16);
+      free(src);
       return NULL;
    }
 
-   sound->type              = AUDIO_MIXER_TYPE_WAV;
-   sound->types.wav.frames  = (unsigned)(samples / 2);
-   sound->types.wav.pcm     = pcm;
-   sound->types.wav.pcm_s16 = pcm16;
-   /* exactly one of pcm/pcm_s16 is set; the other derives on the
-    * first mode-mismatched play */
+   sound->type          = AUDIO_MIXER_TYPE_WAV;
+   sound->types.wav.src = src;
+   sound->types.wav.hdr = wav;
+   /* dataoffset addressed the caller's buffer; the copy starts at the
+    * samples, so nothing may use it again */
+   sound->types.wav.hdr.dataoffset = 0;
+   sound->types.wav.hdr.samples    = NULL;
+
+   /* Build the pipeline the caller asked for now, so that triggering
+    * the sound later allocates nothing. The other one is built only
+    * if a mode flip actually asks for it. */
+   if (!(want_s16 ? wav_build_s16(sound, quality)
+                  : wav_build_float(sound, resampler_ident, quality)))
+   {
+      audio_mixer_destroy(sound);
+      return NULL;
+   }
 
    return sound;
 #else
@@ -962,6 +952,11 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
          handle = (void*)sound->types.wav.pcm_s16;
          if (handle)
             memalign_free(handle);
+#ifdef HAVE_RWAV
+         handle = (void*)sound->types.wav.src;
+         if (handle)
+            free(handle);
+#endif
          break;
       case AUDIO_MIXER_TYPE_WAV_STREAM:
 #ifdef HAVE_RWAV
@@ -1020,53 +1015,116 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
    free(sound);
 }
 
-/* Derive the missing PCM format from the retained one.  At the
- * mixer's rate the two are pure format conversions of the same
- * samples (scale by 1/32768 either way), which is exact in both
- * directions for every source at native rate; for resampled WAVs
- * the derived copy quantises the float resampler's output instead
- * of re-running the fixed-point one - inaudibly different, and only
- * reachable on a mode flip with the sound still loaded. */
-static bool wav_ensure_float(audio_mixer_sound_t* sound)
+/* Build one pipeline's PCM from the WAV's own source samples.
+ *
+ * Each pipeline runs its own converter and its own resampler over the
+ * source; neither is ever derived from the other's finished output.
+ * That is the whole point: the previous wav_ensure_* pair produced an
+ * s16 buffer by quantising the float resampler's result, so an s16
+ * voice on a float-free platform could play audio that had been
+ * through a float resampler after all.
+ *
+ * Called at load for the mode the caller asked for, so triggering a
+ * sound allocates nothing. The only path that builds at play time is
+ * a mode flip with the sound still loaded (a core switch), and it now
+ * builds from the source instead of from the other pipeline. */
+#ifdef HAVE_RWAV
+static bool wav_build_float(audio_mixer_sound_t* sound,
+      const char *resampler_ident, enum resampler_quality quality)
 {
-   float *f;
-   size_t i, n;
+   float  *pcm     = NULL;
+   size_t  samples;
+
    if (sound->types.wav.pcm)
       return true;
-   if (!sound->types.wav.pcm_s16)
+   if (!sound->types.wav.src)
       return false;
-   n = (size_t)sound->types.wav.frames * 2;
-   if (!(f = (float*)memalign_alloc(16,
-         ((n + 15) & ~(size_t)15) * sizeof(float))))
+
+   samples = sound->types.wav.hdr.numsamples * 2;
+
+   if (!wav_to_float(&sound->types.wav.hdr, sound->types.wav.src,
+         &pcm, samples))
       return false;
-   for (i = 0; i < n; i++)
-      f[i] = (float)sound->types.wav.pcm_s16[i] / 32768.0f;
-   sound->types.wav.pcm = f;
+
+   if (sound->types.wav.hdr.samplerate != s_rate)
+   {
+      float *resampled = NULL;
+
+      if (!one_shot_resample(pcm, samples,
+            sound->types.wav.hdr.samplerate, resampler_ident, quality,
+            &resampled, &samples))
+      {
+         memalign_free((void*)pcm);
+         return false;
+      }
+
+      memalign_free((void*)pcm);
+      pcm = resampled;
+   }
+
+   sound->types.wav.pcm    = pcm;
+   sound->types.wav.frames = (unsigned)(samples / 2);
    return true;
 }
 
-static bool wav_ensure_s16(audio_mixer_sound_t* sound)
+static bool wav_build_s16(audio_mixer_sound_t* sound,
+      enum resampler_quality quality)
 {
-   int16_t *s;
-   size_t i, n;
+   int16_t *pcm    = NULL;
+   size_t   samples;
+
    if (sound->types.wav.pcm_s16)
       return true;
-   if (!sound->types.wav.pcm)
+   if (!sound->types.wav.src)
       return false;
-   n = (size_t)sound->types.wav.frames * 2;
-   if (!(s = (int16_t*)memalign_alloc(16,
-         ((n + 15) & ~(size_t)15) * sizeof(int16_t))))
+
+   samples = sound->types.wav.hdr.numsamples * 2;
+
+   if (!wav_to_s16(&sound->types.wav.hdr, sound->types.wav.src,
+         &pcm, samples))
       return false;
-   for (i = 0; i < n; i++)
+
+   if (sound->types.wav.hdr.samplerate != s_rate)
    {
-      float v = sound->types.wav.pcm[i] * 32768.0f;
-      if (v >  32767.0f) v =  32767.0f;
-      if (v < -32768.0f) v = -32768.0f;
-      s[i] = (int16_t)v;
+      int16_t *resampled = NULL;
+
+      if (!one_shot_resample_s16(pcm, samples,
+            sound->types.wav.hdr.samplerate, quality,
+            &resampled, &samples))
+      {
+         memalign_free((void*)pcm);
+         return false;
+      }
+
+      memalign_free((void*)pcm);
+      pcm = resampled;
    }
-   sound->types.wav.pcm_s16 = s;
+
+   sound->types.wav.pcm_s16    = pcm;
+   sound->types.wav.frames_s16 = (unsigned)(samples / 2);
    return true;
 }
+#else
+/* Without RWAV a decoded WAV sound can never be created, so these are
+ * unreachable. They exist so the play switch needs no guard of its
+ * own. */
+static bool wav_build_float(audio_mixer_sound_t* sound,
+      const char *resampler_ident, enum resampler_quality quality)
+{
+   (void)sound;
+   (void)resampler_ident;
+   (void)quality;
+   return false;
+}
+
+static bool wav_build_s16(audio_mixer_sound_t* sound,
+      enum resampler_quality quality)
+{
+   (void)sound;
+   (void)quality;
+   return false;
+}
+#endif
 
 static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice, bool repeat, float volume,
@@ -1315,9 +1373,10 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       switch (sound->type)
       {
          case AUDIO_MIXER_TYPE_WAV:
-            /* float voice: make sure the float PCM exists (it may
-             * have been loaded for s16 before a mode flip) */
-            res = wav_ensure_float(sound)
+            /* float voice: build the float pipeline from the source
+             * if it is not there yet (the sound was loaded for s16
+             * before a mode flip) */
+            res = wav_build_float(sound, resampler_ident, quality)
                && audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
          case AUDIO_MIXER_TYPE_WAV_STREAM:
@@ -1464,9 +1523,10 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV:
-            /* s16 voice: derive the s16 PCM if the sound was loaded
-             * for the float mode */
-            res = wav_ensure_s16(sound)
+            /* s16 voice: build the s16 pipeline from the source if it
+             * is not there yet (the sound was loaded for float before
+             * a mode flip) */
+            res = wav_build_s16(sound, quality)
                && audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
          case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
@@ -1621,7 +1681,7 @@ static void audio_mixer_mix_wav_s16(int16_t* buffer, size_t num_frames,
    int i;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    const audio_mixer_sound_t* sound = voice->sound;
-   unsigned pcm_available           = sound->types.wav.frames
+   unsigned pcm_available           = sound->types.wav.frames_s16
       * 2 - voice->types.wav.position;
    const int16_t* pcm               = sound->types.wav.pcm_s16 +
       voice->types.wav.position;
@@ -1642,7 +1702,7 @@ again:
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
          buf_free                  -= pcm_available;
-         pcm_available              = sound->types.wav.frames * 2;
+         pcm_available              = sound->types.wav.frames_s16 * 2;
          pcm                        = sound->types.wav.pcm_s16;
          voice->types.wav.position  = 0;
          goto again;
