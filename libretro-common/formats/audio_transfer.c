@@ -107,25 +107,31 @@
  *     copied, and the packets are read as they are played rather than
  *     held for the decoder's lifetime.  From an Ogg buffer: length from
  *     the last page granule, seek to any frame, rewind, buffer_tell,
- *     hence windowing.  From WebM: end trimming, exactly - Vorbis codes
- *     in overlapping blocks, so the last packet decodes past the end of
- *     the audio, and the container's DiscardPadding says by how much.
- *     It arrives on the block it applies to.  A resident buffer has
- *     already totalled it in the start() walk, so the bound is exact
- *     before a frame is decoded; a windowed one applies it when that
- *     block arrives, and until then is bounded by a Duration, which
- *     rounds up past the overhang and is what its info() reports.  From a resident WebM the length is exact from the
- *     first call instead: the packet headers are walked once at
- *     start(), which decodes nothing, and what they total less the
- *     padding is the length that comes out.  buffer_tell, hence
- *     windowing: the packets are decoded
- *     where the demuxer points at them, so its walk position is the
- *     compressed frontier, and start() reads no further than the
- *     header material - it does not walk the packets.  A windowed
- *     caller must say so with set_avail, and keep saying so as its
- *     window slides: rwebm's header parse walks the segment's
- *     top-level children as far as its wall, which without one is the
- *     end of the file.
+ *     hence windowing.
+ *
+ *     From WebM: end trimming.  Vorbis codes in overlapping blocks, so
+ *     the last packet decodes past the end of the audio, and two
+ *     things say where that end is.  The container's DiscardPadding,
+ *     which arrives on the block it applies to, is exact - a resident
+ *     buffer has already totalled it in the start() walk, so the bound
+ *     holds before a frame is decoded, and a windowed one applies it
+ *     when that block arrives.  A stated Duration is not exact, being
+ *     the muxer's figure rather than the stream's, but it is there
+ *     when a padding is not: a file remuxed from Ogg carries a
+ *     padding, one encoded straight to WebM often does not.  The
+ *     tighter of the two bounds emission, so a padded file is trimmed
+ *     to the sample and an unpadded one to whatever the Duration
+ *     claims, which still overshoots.
+ *
+ *     buffer_tell, hence windowing: the packets are decoded where the
+ *     demuxer points at them, so its walk position is the compressed
+ *     frontier, and start() reads no further than the header material
+ *     unless it is walking for the length above.  A windowed caller
+ *     must say so with set_avail, and keep saying so as its window
+ *     slides: rwebm's header parse walks the segment's top-level
+ *     children as far as its wall, which without one is the end of the
+ *     file - and the length walk is skipped there for the same reason.
+ *
  *     Seeks to any frame, exactly, from a resident WebM buffer: a
  *     Vorbis packet's frame count can be read off its header
  *     (rvorbis_packet_frames), so the walk to a target decodes
@@ -136,8 +142,8 @@
  *     window's wall, into pages that are reserved rather than
  *     populated, and a caller's own packet set is theirs to restart;
  *     rewind is what those offer and a nonzero seek fails at the
- *     entry point.  No buffer_tell from the demuxed path, whose packets are
- *     the caller's own blob rather than the buffer set by
+ *     entry point.  No buffer_tell from the demuxed path, whose
+ *     packets are the caller's own blob rather than the buffer set by
  *     set_buffer_ptr, so no windowing there.  No length and no end
  *     trim from it either, its packet set being the caller's:
  *     with neither a duration nor a padding stated, its last packet's
@@ -1173,6 +1179,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          int64_t duration_ns = 0;
+         int64_t walked      = -1;   /* exact length from the header walk */
          int     err         = 0;
          if (!v)
             return false;
@@ -1282,29 +1289,50 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                   total += fr;
             }
             rwebm_rewind(v->demux);
+            v->emitted = 0;
             if (ok && total > 0)
             {
-               int64_t exact = total - pads;
-               v->limit   = (exact > 0) ? exact : 0;
-               v->emitted = 0;
-               return true;
+               walked = total - pads;
+               if (walked < 0)
+                  walked = 0;
             }
-            v->emitted = 0;
          }
 #endif
-         /* A WebM Duration is the length of the audio, which the last
-          * packet's overlap-add tail runs past; bound emission by it
-          * for as long as that is the best statement available.  It
-          * rounds up, so where a DiscardPadding is also present the
-          * drain replaces this with the exact end once the final
-          * packet has been decoded.  The demuxed path has neither -
-          * its packet set is the caller's - and stays unbounded. */
+         /* Two statements about where the audio ends, and neither is
+          * always the better one.
+          *
+          * The walk totals what the packets decode to and takes the
+          * container's DiscardPadding off, which is exact - but only
+          * where a padding was written.  A file remuxed from Ogg
+          * carries one, because the granule said where the audio
+          * stopped; a file encoded straight to WebM often does not,
+          * and then the walk's total is the whole overlap-add
+          * overhang, trimmed by nothing.
+          *
+          * A Duration is stated by the muxer rather than derived, so
+          * it does not know about the overhang and overshoots the
+          * audio - but by less than an untrimmed walk does, on the
+          * files where no padding was written.
+          *
+          * So take whichever is tighter.  With a padding that is the
+          * walk, which is exact and always below the Duration; with
+          * none it is usually the Duration, and where it is not - a
+          * clip shorter than the Duration claims - the walk still
+          * bounds it.  The demuxed path states neither, its packet
+          * set being the caller's, and stays unbounded. */
          if (duration_ns > 0)
          {
             int64_t rate = (int64_t)rvorbis_get_info(v->handle).sample_rate;
             if (rate > 0)
-               v->limit = (duration_ns * rate + 500000000) / 1000000000;
+            {
+               int64_t stated = (duration_ns * rate + 500000000)
+                              / 1000000000;
+               if (walked < 0 || stated < walked)
+                  walked = stated;
+            }
          }
+         if (walked >= 0)
+            v->limit = walked;
          return true;
       }
 #endif
