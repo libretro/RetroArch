@@ -142,8 +142,31 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     end to end past the nine-byte mapping header on the first
  *     packet are the native stream, served through the same
  *     callbacks.
- *   Does not: take FLAC handed over as loose packets - there is no
- *     demuxed input for it.  Seeking on the Matroska path costs more than on a
+ *     And demuxed input: the fLaC header as setup and the frames as
+ *     delimited packets, which is what the containers above are
+ *     reduced to anyway, so it is the same callbacks again.  The
+ *     packet set may be grown mid-stream - the bases are read fresh
+ *     at every read rather than kept, so a realloc between reads is
+ *     no obstacle.
+ *   Does not: resume the demuxed path after it has run out of
+ *     packets, which is where it falls short of the growth contract
+ *     the other demuxed arms meet.  Growing the set works, and works
+ *     mid-stream; what does not is growing it after a read has
+ *     already found the end.  Those arms decode a packet at a time
+ *     themselves and can simply carry on, while this one hands rflac
+ *     a byte stream and lets it pull - and a short read is an end of
+ *     stream to a decoder that pulls, which it will not take back.
+ *     A feeder that stays ahead of the reader is unaffected; one that
+ *     lets it run dry loses the rest of the stream.  Measured: fed a
+ *     third of the packets and grown before the reader caught up, the
+ *     decode is identical to the whole file; grown after it caught
+ *     up, it stops early.
+ *
+ *     Nor a length where the setup's STREAMINFO does not state one,
+ *     nor from any stream written without it - Ogg FLAC never states
+ *     one, and a native file piped rather than seeked does not
+ *     either.  Seeking still works on those; it is only the total
+ *     that is missing.  Seeking on the Matroska path costs more than on a
  *     .flac: rflac seeks by byte offset and a demuxer only walks
  *     forwards, so a backwards seek restarts the block walk and reads
  *     forward to the target.  The file is resident, so that is a pass
@@ -408,6 +431,19 @@ struct audio_transfer_flac
     * what rflac seeks against; cur is the chunk being served. */
    int            ogg;      /* buffer is Ogg FLAC                       */
    size_t         pg_off;   /* next Ogg page                            */
+   /* Demuxed input (set_demuxed_ptr): the fLaC header as setup, then
+    * the frames as delimited packets.  The base pointers are read
+    * fresh at every use rather than cached, because the growth
+    * contract lets a caller realloc them mid-stream; position is
+    * carried as an index and a byte offset, which survive that. */
+   const void      *setup;
+   size_t           setup_size;
+   const uint8_t   *packets;
+   size_t           packets_size;
+   const uint32_t  *pkt_sizes;
+   size_t           num_packets;
+   size_t           pkt_index;
+   size_t           blob_off;  /* byte offset of the current packet     */
 #ifdef HAVE_RWEBM
    rwebm_t       *demux;
    int            track_idx;
@@ -1020,6 +1056,23 @@ bool audio_transfer_set_demuxed_ptr(void *data, enum audio_type_enum type,
          return true;
       }
 #endif
+#ifdef HAVE_RFLAC
+      case AUDIO_TYPE_FLAC:
+      {
+         struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
+         if (!fl)
+            return false;
+         /* setup is the fLaC header - magic and metadata blocks, as a
+          * container stores it - and the packets are the frames. */
+         fl->setup        = setup;
+         fl->setup_size   = setup_size;
+         fl->packets      = (const uint8_t*)packets;
+         fl->packets_size = packets_size;
+         fl->pkt_sizes    = sizes;
+         fl->num_packets  = num_packets;
+         return true;
+      }
+#endif
 #ifdef HAVE_ROPUS
       case AUDIO_TYPE_OPUS:
       {
@@ -1474,6 +1527,23 @@ static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
       return 1;
    }
 #endif
+   if (fl->packets)
+   {
+      /* No pointer kept: the caller may have moved the blob since the
+       * last read, so only the index and the offset carry over. */
+      uint32_t len;
+      if (fl->pkt_index >= fl->num_packets)
+         return 0;
+      len = fl->pkt_sizes ? fl->pkt_sizes[fl->pkt_index]
+                          : (uint32_t)fl->packets_size;
+      if (fl->blob_off + len > fl->packets_size)
+         return 0;
+      fl->cur     = NULL;
+      fl->cur_len = len;
+      fl->cur_off = 0;
+      fl->pkt_index++;
+      return len > 0;
+   }
    return 0;
 }
 
@@ -1497,12 +1567,21 @@ static size_t audio_transfer_flac_read(void *ud, void *out, size_t n)
       }
       else
       {
-         if (fl->cur_off >= fl->cur_len && !audio_transfer_flac_next(fl))
-            break;
+         const uint8_t *src;
+         if (fl->cur_off >= fl->cur_len)
+         {
+            /* Done with this packet; the blob source advances its
+             * byte offset here, where the length is still known. */
+            if (fl->packets)
+               fl->blob_off += fl->cur_len;
+            if (!audio_transfer_flac_next(fl))
+               break;
+         }
+         src  = fl->packets ? fl->packets + fl->blob_off : fl->cur;
          take = fl->cur_len - fl->cur_off;
          if (take > n - done)
             take = n - done;
-         memcpy(d + done, fl->cur + fl->cur_off, take);
+         memcpy(d + done, src + fl->cur_off, take);
          fl->cur_off += take;
       }
       fl->pos += take;
@@ -1531,8 +1610,10 @@ static uint32_t audio_transfer_flac_seek(void *ud, int offset,
       if (fl->demux)
          rwebm_rewind(fl->demux);
 #endif
-      fl->pg_off  = 0;
-      fl->pos     = 0;
+      fl->pg_off    = 0;
+      fl->pkt_index = 0;
+      fl->blob_off  = 0;
+      fl->pos       = 0;
       fl->cur     = NULL;
       fl->cur_len = 0;
       fl->cur_off = 0;
@@ -1559,8 +1640,30 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_FLAC:
       {
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
-         if (!fl || !fl->data)
+         if (!fl)
             return false;
+         /* A demuxed caller supplies no buffer, so the bytes have to
+          * come from one source or the other. */
+         if (!fl->data && !(fl->setup && fl->packets))
+            return false;
+         /* Demuxed: the caller holds the header and the frames apart,
+          * which is the shape the containers above are reduced to, so
+          * it is served the same way. */
+         if (fl->setup && fl->packets)
+         {
+            fl->hdr       = (const uint8_t*)fl->setup;
+            fl->hdr_size  = fl->setup_size;
+            fl->pos       = 0;
+            fl->pkt_index = 0;
+            fl->blob_off  = 0;
+            fl->cur       = NULL;
+            fl->cur_len   = 0;
+            fl->cur_off   = 0;
+            fl->handle    = rflac_open_with_metadata(
+                  audio_transfer_flac_read, audio_transfer_flac_seek,
+                  NULL, fl);
+            return fl->handle != NULL;
+         }
          /* Ogg FLAC (RFC 5334).  The first packet opens with the
           * mapping header - 0x7F, "FLAC", a version and a packet
           * count - and the native stream follows it, so the page
