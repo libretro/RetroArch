@@ -187,13 +187,25 @@ static void audio_mixer_release(audio_mixer_voice_t* voice);
 #ifdef AUDIO_MIXER_HAS_STREAM
 /* ---- folding a multichannel stream to the stereo a voice mixes ------
  *
- * Vorbis and Opus both decode more than two channels now, and both
- * hand them over in Vorbis's channel order (spec 4.3.9), which Opus
- * mapping family 1 adopts:
+ * Vorbis and Opus both decode more than two channels now, and so do
+ * WAV and FLAC - but they do not agree on what order the channels
+ * arrive in, so there are two tables and the caller says which.
+ *
+ * Vorbis's order (spec 4.3.9), which Opus mapping family 1 adopts:
  *
  *   3  L C R          4  L R RL RR        5  L C R RL RR
  *   6  L C R RL RR LFE                    7  L C R RL RR BC LFE
  *   8  L C R RL RR SL SR LFE
+ *
+ * Microsoft's, which WAV carries and FLAC's spec matches:
+ *
+ *   3  FL FR FC       4  FL FR BL BR      5  FL FR FC BL BR
+ *   6  FL FR FC LFE BL BR                 7  FL FR FC LFE BC SL SR
+ *   8  FL FR FC LFE BL BR SL SR
+ *
+ * Folding one with the other's table is not a subtle error: on 5.1 it
+ * sends front-right to both sides, front-centre to the right alone,
+ * LFE into the mix and back-right nowhere.
  *
  * A stream voice mixes stereo, so anything wider is folded here - the
  * arms deliberately do no channel conversion, leaving it to the
@@ -226,7 +238,7 @@ static int16_t audio_mixer_sat_s16_64(int64_t v)
 }
 
 /* [channels][input channel][0 = left, 1 = right] */
-static const int32_t audio_mixer_downmix_q15[9][8][2] = {
+static const int32_t audio_mixer_downmix_vorbis_q15[9][8][2] = {
    { {0,0} },                                              /* unused    */
    { {0,0} },                                              /* mono      */
    { {0,0} },                                              /* stereo    */
@@ -251,6 +263,48 @@ static const int32_t audio_mixer_downmix_q15[9][8][2] = {
      {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB}, {0,0} }
 };
 
+
+/* Microsoft/FLAC order. */
+static const int32_t audio_mixer_downmix_wav_q15[9][8][2] = {
+   { {0,0} },                                              /* unused    */
+   { {0,0} },                                              /* mono      */
+   { {0,0} },                                              /* stereo    */
+   /* 3: FL FR FC */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY}, {AMIX_DM_M3DB,AMIX_DM_M3DB} },
+   /* 4: FL FR BL BR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} },
+   /* 5: FL FR FC BL BR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY}, {AMIX_DM_M3DB,AMIX_DM_M3DB},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} },
+   /* 6: FL FR FC LFE BL BR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY}, {AMIX_DM_M3DB,AMIX_DM_M3DB},
+     {0,0}, {AMIX_DM_M3DB,0}, {0,AMIX_DM_M3DB} },
+   /* 7: FL FR FC LFE BC SL SR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY}, {AMIX_DM_M3DB,AMIX_DM_M3DB},
+     {0,0}, {AMIX_DM_M6DB,AMIX_DM_M6DB},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} },
+   /* 8: FL FR FC LFE BL BR SL SR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY}, {AMIX_DM_M3DB,AMIX_DM_M3DB},
+     {0,0}, {AMIX_DM_M3DB,0}, {0,AMIX_DM_M3DB},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} }
+};
+
+/* Which order an arm hands its channels over in. */
+static const int32_t (*audio_mixer_downmix_table(
+      enum audio_type_enum type, unsigned ch))[2]
+{
+   switch (type)
+   {
+      case AUDIO_TYPE_VORBIS:
+      case AUDIO_TYPE_OPUS:
+         return audio_mixer_downmix_vorbis_q15[ch];
+      default:
+         break;
+   }
+   return audio_mixer_downmix_wav_q15[ch];
+}
+
 /* Frames a temp buffer of 'samples' holds at 'ch' channels: what a
  * read may ask for, which is not the stereo figure once ch exceeds
  * two. */
@@ -263,9 +317,8 @@ static size_t audio_mixer_frames_for(unsigned ch, size_t samples)
  * in place and ascending: the destination index never overtakes the
  * source while ch is at least two. */
 static void audio_mixer_downmix_s16(int16_t *buf, size_t frames,
-      unsigned ch)
+      unsigned ch, const int32_t (*co)[2])
 {
-   const int32_t (*co)[2] = audio_mixer_downmix_q15[ch];
    size_t i;
    for (i = 0; i < frames; i++)
    {
@@ -290,9 +343,8 @@ static void audio_mixer_downmix_s16(int16_t *buf, size_t frames,
 }
 
 static void audio_mixer_downmix_f32(float *buf, size_t frames,
-      unsigned ch)
+      unsigned ch, const int32_t (*co)[2])
 {
-   const int32_t (*co)[2] = audio_mixer_downmix_q15[ch];
    size_t i;
    for (i = 0; i < frames; i++)
    {
@@ -340,7 +392,7 @@ static float wav_sample_unit(const rwav_t *wav, const uint8_t *src,
 static void wav_fold_to_stereo(const rwav_t *wav, const uint8_t *src,
       float *dst, size_t frames)
 {
-   const int32_t (*co)[2] = audio_mixer_downmix_q15[wav->numchannels];
+   const int32_t (*co)[2] = audio_mixer_downmix_wav_q15[wav->numchannels];
    size_t i;
    for (i = 0; i < frames; i++)
    {
@@ -654,7 +706,7 @@ static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
       size_t   i2;
       unsigned c;
       const int32_t (*co)[2] =
-            audio_mixer_downmix_q15[wav->numchannels];
+            audio_mixer_downmix_wav_q15[wav->numchannels];
       for (i2 = 0; i2 < wav->numsamples; i2++)
       {
          int64_t l = 0, r = 0;
@@ -2086,7 +2138,8 @@ again:
                   temp_buffer,
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
-            audio_mixer_downmix_f32(temp_buffer, got, sch);
+            audio_mixer_downmix_f32(temp_buffer, got, sch,
+                  audio_mixer_downmix_table(type, sch));
          }
          temp_samples = (unsigned)(got * 2);
       }
@@ -2197,7 +2250,8 @@ again:
                   temp_buffer,
                   audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
                   &got);
-            audio_mixer_downmix_s16(temp_buffer, got, sch);
+            audio_mixer_downmix_s16(temp_buffer, got, sch,
+                  audio_mixer_downmix_table(type, sch));
          }
          else
             audio_transfer_read_s16(voice->types.stream.stream, type,
