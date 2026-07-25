@@ -4854,7 +4854,22 @@ skip:;
        * clamps to the actual decoded vector at run time (as upstream
        * stb_vorbis does), which is what makes the temp classification
        * array sizing safe; here only reject inverted ranges and values
-       * beyond the largest vector any mode can decode. */
+       * beyond the largest vector any mode can decode.
+       *
+       * Twice the half-block, not channels times it, and that is
+       * deliberate rather than an oversight in the sentence above.
+       * A stream coupling across more than two channels writes an end
+       * past this and is refused - 5.1 does, with an end of 4020
+       * against a bound of 2048, while 7.1 is arranged differently and
+       * passes.  Widening the bound to channels * half-block lets 5.1
+       * open, and it then decodes to noise: measured against libvorbis
+       * on the same file, the six channels come out at RMS 4325, 400,
+       * 4298, 505, 4151 and 1121 where the reference is 2912 on five
+       * and 151 on a low-passed LFE.  The residue decode is what is
+       * wrong there, and until that is fixed this bound is the only
+       * thing turning silently corrupt 5.1 into a clean refusal at
+       * open.  Do not widen it on the strength of the comment above
+       * without fixing the decode first. */
       if (r->begin > r->end ||
             r->end > 2u * (uint32_t)(f->blocksize_1 >> 1))
          return error(f, RVORBIS_invalid_setup);
