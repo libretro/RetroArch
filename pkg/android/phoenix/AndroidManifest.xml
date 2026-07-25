@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Android 6-12 -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <application
         android:name="com.retroarch.playcore.RetroArchApplication"
         android:allowAudioPlaybackCapture="true"

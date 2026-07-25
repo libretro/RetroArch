@@ -58,6 +58,7 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
+		// The SDK on the user's device >= 30 (Android 11)
 		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
 		{
 			if (!Environment.isExternalStorageManager())
@@ -89,6 +90,7 @@ public final class MainMenuActivity extends PreferenceActivity
 					});
 			}
 		}
+		// The SDK on the user's device >= 23 (Android 6)
 		else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
 			// Android 6.0+ needs runtime permission checks
@@ -213,6 +215,7 @@ public final class MainMenuActivity extends PreferenceActivity
 				break;
 		}
 
+		// The SDK on the user's device < 30 (Android 11)
 		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R)
 		{
 			boolean allGranted = true;
