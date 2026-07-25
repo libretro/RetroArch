@@ -61,81 +61,81 @@ extern void *memcpy_neon(void *dst, const void *src, size_t n);
 /* Defines */
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
-#define ALIGN(x, a)	(((x) + ((a) - 1)) & ~((a) - 1))
-#define DISPLAY_COLOR_FORMAT		SCE_GXM_COLOR_FORMAT_A8B8G8R8
-#define DISPLAY_PIXEL_FORMAT		SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
-#define DISPLAY_BUFFER_COUNT		3
-#define DISPLAY_MAX_PENDING_SWAPS	2
-#define DEFAULT_TEMP_POOL_SIZE		(1 * 1024 * 1024)
+#define ALIGN(x, a)  (((x) + ((a) - 1)) & ~((a) - 1))
+#define DISPLAY_COLOR_FORMAT   SCE_GXM_COLOR_FORMAT_A8B8G8R8
+#define DISPLAY_PIXEL_FORMAT   SCE_DISPLAY_PIXELFORMAT_A8B8G8R8
+#define DISPLAY_BUFFER_COUNT   3
+#define DISPLAY_MAX_PENDING_SWAPS   2
+#define DEFAULT_TEMP_POOL_SIZE     (1 * 1024 * 1024)
 #define GXM_TEX_MAX_SIZE 4096
 
 /* Types */
 
 typedef enum
 {
-	VITA2D_VIDEO_MODE_960x544 = 0,
-	VITA2D_VIDEO_MODE_1280x720
+   VITA2D_VIDEO_MODE_960x544 = 0,
+   VITA2D_VIDEO_MODE_1280x720
 } vita2d_video_mode;
 
 typedef struct vita2d_video_mode_data {
-	int width;
+   int width;
    int height;
    int stride;
 } vita2d_video_mode_data;
 
 typedef struct vita2d_clear_vertex {
-	float x;
-	float y;
+   float x;
+   float y;
 } vita2d_clear_vertex;
 
 typedef struct vita2d_color_vertex
 {
-	float x;
-	float y;
-	float z;
-	unsigned int color;
+   float x;
+   float y;
+   float z;
+   unsigned int color;
 } vita2d_color_vertex;
 
 typedef struct vita2d_texture_vertex
 {
-	float x;
-	float y;
-	float z;
-	float u;
-	float v;
+   float x;
+   float y;
+   float z;
+   float u;
+   float v;
 } vita2d_texture_vertex;
 
 typedef struct vita2d_texture_tint_vertex {
-	float x;
-	float y;
-	float z;
-	float u;
-	float v;
-	float r;
-	float g;
-	float b;
-	float a;
+   float x;
+   float y;
+   float z;
+   float u;
+   float v;
+   float r;
+   float g;
+   float b;
+   float a;
 } vita2d_texture_tint_vertex;
 
 typedef struct vita2d_texture {
-	SceGxmTexture gxm_tex;
-	SceUID data_UID;
-	SceUID palette_UID;
-	SceGxmRenderTarget *gxm_rtgt;
-	SceGxmColorSurface gxm_sfc;
-	SceGxmDepthStencilSurface gxm_sfd;
-	SceUID depth_UID;
+   SceGxmTexture gxm_tex;
+   SceUID data_UID;
+   SceUID palette_UID;
+   SceGxmRenderTarget *gxm_rtgt;
+   SceGxmColorSurface gxm_sfc;
+   SceGxmDepthStencilSurface gxm_sfd;
+   SceUID depth_UID;
 } vita2d_texture;
 
 typedef struct vita2d_display_data {
-	void *address;
+   void *address;
 } vita2d_display_data;
 
 typedef struct vita2d_fragment_programs
 {
-	SceGxmFragmentProgram *color;
-	SceGxmFragmentProgram *texture;
-	SceGxmFragmentProgram *textureTint;
+   SceGxmFragmentProgram *color;
+   SceGxmFragmentProgram *texture;
+   SceGxmFragmentProgram *textureTint;
 } vita2d_fragment_programs;
 
 typedef struct vita_menu_frame
@@ -304,8 +304,8 @@ static const SceGxmProgramParameter *_vita2d_textureTintWvpParam = NULL;
 
 static struct
 {
-	vita2d_fragment_programs blend_mode_normal;
-	vita2d_fragment_programs blend_mode_add;
+   vita2d_fragment_programs blend_mode_normal;
+   vita2d_fragment_programs blend_mode_add;
 } _vita2d_fragmentPrograms;
 
 /* Temporary memory pool */
@@ -350,105 +350,105 @@ static void vita2d_set_projection(vita_video_t *vita,
 
 static void *gpu_alloc(SceKernelMemBlockType type, unsigned int size, unsigned int alignment, unsigned int attribs, SceUID *uid)
 {
-	void *mem;
+   void *mem;
 
-	if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW)
-		size = ALIGN(size, 256*1024);
+   if (type == SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW)
+      size = ALIGN(size, 256*1024);
    else
-		size = ALIGN(size, 4*1024);
+      size = ALIGN(size, 4*1024);
 
-	*uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
+   *uid = sceKernelAllocMemBlock("gpu_mem", type, size, NULL);
 
-	if (*uid < 0)
-		return NULL;
+   if (*uid < 0)
+      return NULL;
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
-		return NULL;
+   if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
+      return NULL;
 
-	if (sceGxmMapMemory(mem, size, attribs) < 0)
-		return NULL;
+   if (sceGxmMapMemory(mem, size, attribs) < 0)
+      return NULL;
 
-	return mem;
+   return mem;
 }
 
 static void gpu_free(SceUID uid)
 {
-	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
-		return;
-	sceGxmUnmapMemory(mem);
-	sceKernelFreeMemBlock(uid);
+   void *mem = NULL;
+   if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+      return;
+   sceGxmUnmapMemory(mem);
+   sceKernelFreeMemBlock(uid);
 }
 
 static void *vertex_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset)
 {
-	void *mem = NULL;
+   void *mem = NULL;
 
-	size = ALIGN(size, 4096);
-	*uid = sceKernelAllocMemBlock("vertex_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
+   size = ALIGN(size, 4096);
+   *uid = sceKernelAllocMemBlock("vertex_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
-		return NULL;
-	if (sceGxmMapVertexUsseMemory(mem, size, usse_offset) < 0)
-		return NULL;
+   if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
+      return NULL;
+   if (sceGxmMapVertexUsseMemory(mem, size, usse_offset) < 0)
+      return NULL;
 
-	return mem;
+   return mem;
 }
 
 static void vertex_usse_free(SceUID uid)
 {
-	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
-		return;
-	sceGxmUnmapVertexUsseMemory(mem);
-	sceKernelFreeMemBlock(uid);
+   void *mem = NULL;
+   if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+      return;
+   sceGxmUnmapVertexUsseMemory(mem);
+   sceKernelFreeMemBlock(uid);
 }
 
 static void *fragment_usse_alloc(unsigned int size, SceUID *uid, unsigned int *usse_offset)
 {
-	void *mem = NULL;
+   void *mem = NULL;
 
-	size = ALIGN(size, 4096);
-	*uid = sceKernelAllocMemBlock("fragment_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
+   size = ALIGN(size, 4096);
+   *uid = sceKernelAllocMemBlock("fragment_usse", SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE, size, NULL);
 
-	if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
-		return NULL;
-	if (sceGxmMapFragmentUsseMemory(mem, size, usse_offset) < 0)
-		return NULL;
+   if (sceKernelGetMemBlockBase(*uid, &mem) < 0)
+      return NULL;
+   if (sceGxmMapFragmentUsseMemory(mem, size, usse_offset) < 0)
+      return NULL;
 
-	return mem;
+   return mem;
 }
 
 static void fragment_usse_free(SceUID uid)
 {
-	void *mem = NULL;
-	if (sceKernelGetMemBlockBase(uid, &mem) < 0)
-		return;
-	sceGxmUnmapFragmentUsseMemory(mem);
-	sceKernelFreeMemBlock(uid);
+   void *mem = NULL;
+   if (sceKernelGetMemBlockBase(uid, &mem) < 0)
+      return;
+   sceGxmUnmapFragmentUsseMemory(mem);
+   sceKernelFreeMemBlock(uid);
 }
 
 static void matrix_init_orthographic(float *m, float left, float right, float bottom, float top, float near, float far)
 {
-	m[0x0] = 2.0f/(right-left);
-	m[0x4] = 0.0f;
-	m[0x8] = 0.0f;
-	m[0xC] = -(right+left)/(right-left);
+   m[0x0] = 2.0f/(right-left);
+   m[0x4] = 0.0f;
+   m[0x8] = 0.0f;
+   m[0xC] = -(right+left)/(right-left);
 
-	m[0x1] = 0.0f;
-	m[0x5] = 2.0f/(top-bottom);
-	m[0x9] = 0.0f;
-	m[0xD] = -(top+bottom)/(top-bottom);
+   m[0x1] = 0.0f;
+   m[0x5] = 2.0f/(top-bottom);
+   m[0x9] = 0.0f;
+   m[0xD] = -(top+bottom)/(top-bottom);
 
-	m[0x2] = 0.0f;
-	m[0x6] = 0.0f;
-	m[0xA] = -2.0f/(far-near);
-	m[0xE] = (far+near)/(far-near);
+   m[0x2] = 0.0f;
+   m[0x6] = 0.0f;
+   m[0xA] = -2.0f/(far-near);
+   m[0xE] = (far+near)/(far-near);
 
-	m[0x3] = 0.0f;
-	m[0x7] = 0.0f;
-	m[0xB] = 0.0f;
-	m[0xF] = 1.0f;
+   m[0x3] = 0.0f;
+   m[0x7] = 0.0f;
+   m[0xB] = 0.0f;
+   m[0xF] = 1.0f;
 }
 
 
@@ -456,677 +456,677 @@ static void matrix_init_orthographic(float *m, float left, float right, float bo
 
 static void *patcher_host_alloc(void *user_data, unsigned int size)
 {
-	return malloc(size);
+   return malloc(size);
 }
 
 static void patcher_host_free(void *user_data, void *mem)
 {
-	free(mem);
+   free(mem);
 }
 
 static int vita2d_switch_video_mode(vita2d_video_mode video_mode)
 {
-	int i, x, y;
+   int i, x, y;
 
-	if(video_mode > video_mode_initial)
-		return -1;
-	switch (video_mode)
-	{
-		case VITA2D_VIDEO_MODE_960x544:
-			video_mode_data.width = 960;
-			video_mode_data.height = 544;
-			video_mode_data.stride = 960;
-			break;
+   if(video_mode > video_mode_initial)
+      return -1;
+   switch (video_mode)
+   {
+      case VITA2D_VIDEO_MODE_960x544:
+         video_mode_data.width = 960;
+         video_mode_data.height = 544;
+         video_mode_data.stride = 960;
+         break;
 
-		case VITA2D_VIDEO_MODE_1280x720:
-			video_mode_data.width = 1280;
-			video_mode_data.height = 720;
-			video_mode_data.stride = 1280;
-			break;
+      case VITA2D_VIDEO_MODE_1280x720:
+         video_mode_data.width = 1280;
+         video_mode_data.height = 720;
+         video_mode_data.stride = 1280;
+         break;
 
-		default:
-			return -1;
-			break;
-	}
+      default:
+         return -1;
+         break;
+   }
 
-	clip_rect_x_max = video_mode_data.width;
-	clip_rect_y_max = video_mode_data.height;
+   clip_rect_x_max = video_mode_data.width;
+   clip_rect_y_max = video_mode_data.height;
 
-	if(renderTarget != NULL){ 
-		sceGxmDestroyRenderTarget(renderTarget);
+   if(renderTarget != NULL){ 
+      sceGxmDestroyRenderTarget(renderTarget);
 
-		for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
+      for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
                 {
-			/* clear the buffer then deallocate */
-			memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
-			gpu_free(displayBufferUid[i]);
-		}
-	}
+         /* clear the buffer then deallocate */
+         memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
+         gpu_free(displayBufferUid[i]);
+      }
+   }
 
-	/* allocate memory and sync objects for display buffers */
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
+   /* allocate memory and sync objects for display buffers */
+   for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
         {
-		/* allocate memory for display */
-		displayBufferData[i] = gpu_alloc(
-				SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
-				4*video_mode_data.stride*video_mode_data.height,
-				SCE_GXM_COLOR_SURFACE_ALIGNMENT,
-				SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-				&displayBufferUid[i]);
+      /* allocate memory for display */
+      displayBufferData[i] = gpu_alloc(
+            SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW,
+            4*video_mode_data.stride*video_mode_data.height,
+            SCE_GXM_COLOR_SURFACE_ALIGNMENT,
+            SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+            &displayBufferUid[i]);
 
-		/* memset the buffer to black */
-		for (y = 0; y < video_mode_data.height; y++)
+      /* memset the buffer to black */
+      for (y = 0; y < video_mode_data.height; y++)
                 {
-			unsigned int *row = (unsigned int *)displayBufferData[i] + y*video_mode_data.stride;
-			for (x = 0; x < video_mode_data.width; x++)
-				row[x] = 0xff000000;
-		}
+         unsigned int *row = (unsigned int *)displayBufferData[i] + y*video_mode_data.stride;
+         for (x = 0; x < video_mode_data.width; x++)
+            row[x] = 0xff000000;
+      }
 
-		/* initialize a color surface for this display buffer */
-		sceGxmColorSurfaceInit(
-				&displaySurface[i],
-				DISPLAY_COLOR_FORMAT,
-				SCE_GXM_COLOR_SURFACE_LINEAR,
-				(current_msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
-				SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-				video_mode_data.width,
-				video_mode_data.height,
-				video_mode_data.stride,
-				displayBufferData[i]);
+      /* initialize a color surface for this display buffer */
+      sceGxmColorSurfaceInit(
+            &displaySurface[i],
+            DISPLAY_COLOR_FORMAT,
+            SCE_GXM_COLOR_SURFACE_LINEAR,
+            (current_msaa == SCE_GXM_MULTISAMPLE_NONE) ? SCE_GXM_COLOR_SURFACE_SCALE_NONE : SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE,
+            SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
+            video_mode_data.width,
+            video_mode_data.height,
+            video_mode_data.stride,
+            displayBufferData[i]);
 
-	}
+   }
 
-	// set up parameters
-	SceGxmRenderTargetParams renderTargetParams;
-	memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-	renderTargetParams.flags			= 0;
-	renderTargetParams.width			= video_mode_data.width;
-	renderTargetParams.height			= video_mode_data.height;
-	renderTargetParams.scenesPerFrame		= 1;
-	renderTargetParams.multisampleMode		= current_msaa;
-	renderTargetParams.multisampleLocations		= 0;
-	renderTargetParams.driverMemBlock		= -1; // Invalid UID
+   /* set up parameters */
+   SceGxmRenderTargetParams renderTargetParams;
+   memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
+   renderTargetParams.flags      = 0;
+   renderTargetParams.width      = video_mode_data.width;
+   renderTargetParams.height      = video_mode_data.height;
+   renderTargetParams.scenesPerFrame     = 1;
+   renderTargetParams.multisampleMode   = current_msaa;
+   renderTargetParams.multisampleLocations     = 0;
+   renderTargetParams.driverMemBlock     = -1; /* Invalid UID */
 
-	/* create the render target */
-	sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
+   /* create the render target */
+   sceGxmCreateRenderTarget(&renderTargetParams, &renderTarget);
 
-	matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
+   matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
 
-	return 0;
+   return 0;
 }
 
 static void gxm_display_callback(const void *callback_data)
 {
-	SceDisplayFrameBuf framebuf;
-	const vita2d_display_data *display_data = (const vita2d_display_data *)callback_data;
+   SceDisplayFrameBuf framebuf;
+   const vita2d_display_data *display_data = (const vita2d_display_data *)callback_data;
 
-	memset(&framebuf, 0x00, sizeof(SceDisplayFrameBuf));
-	framebuf.size        = sizeof(SceDisplayFrameBuf);
-	framebuf.base        = display_data->address;
-	framebuf.pitch       = video_mode_data.stride;
-	framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
-	framebuf.width       = video_mode_data.width;
-	framebuf.height      = video_mode_data.height;
-	if(sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME) == SCE_DISPLAY_ERROR_INVALID_RESOLUTION){
+   memset(&framebuf, 0x00, sizeof(SceDisplayFrameBuf));
+   framebuf.size        = sizeof(SceDisplayFrameBuf);
+   framebuf.base        = display_data->address;
+   framebuf.pitch       = video_mode_data.stride;
+   framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
+   framebuf.width       = video_mode_data.width;
+   framebuf.height      = video_mode_data.height;
+   if(sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME) == SCE_DISPLAY_ERROR_INVALID_RESOLUTION){
       if(video_mode_initial)
          vita2d_switch_video_mode(VITA2D_VIDEO_MODE_960x544);
    }
 
-	if (vblank_wait)
-		sceDisplayWaitVblankStart();
+   if (vblank_wait)
+      sceDisplayWaitVblankStart();
 }
 
 static void _vita2d_free_fragment_programs(vita2d_fragment_programs *out)
 {
-	sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->color);
-	sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->texture);
-	sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->textureTint);
+   sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->color);
+   sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->texture);
+   sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->textureTint);
 }
 
 static void _vita2d_make_fragment_programs(vita2d_fragment_programs *out,
-	const SceGxmBlendInfo *blend_info, SceGxmMultisampleMode msaa)
+   const SceGxmBlendInfo *blend_info, SceGxmMultisampleMode msaa)
 {
-	int err = sceGxmShaderPatcherCreateFragmentProgram(
-		shaderPatcher,
-		colorFragmentProgramId,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
-		blend_info,
-		colorVertexProgramGxp,
-		&out->color);
+   int err = sceGxmShaderPatcherCreateFragmentProgram(
+      shaderPatcher,
+      colorFragmentProgramId,
+      SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+      msaa,
+      blend_info,
+      colorVertexProgramGxp,
+      &out->color);
 
-	err = sceGxmShaderPatcherCreateFragmentProgram(
-		shaderPatcher,
-		textureFragmentProgramId,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
-		blend_info,
-		textureVertexProgramGxp,
-		&out->texture);
+   err = sceGxmShaderPatcherCreateFragmentProgram(
+      shaderPatcher,
+      textureFragmentProgramId,
+      SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+      msaa,
+      blend_info,
+      textureVertexProgramGxp,
+      &out->texture);
 
-	err = sceGxmShaderPatcherCreateFragmentProgram(
-		shaderPatcher,
-		textureTintFragmentProgramId,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		msaa,
-		blend_info,
-		textureTintVertexProgramGxp,
-		&out->textureTint);
+   err = sceGxmShaderPatcherCreateFragmentProgram(
+      shaderPatcher,
+      textureTintFragmentProgramId,
+      SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+      msaa,
+      blend_info,
+      textureTintVertexProgramGxp,
+      &out->textureTint);
 }
 
 static void vita2d_set_blend_mode_add(int enable)
 {
-	vita2d_fragment_programs *in = enable ? &_vita2d_fragmentPrograms.blend_mode_add
-	    : &_vita2d_fragmentPrograms.blend_mode_normal;
+   vita2d_fragment_programs *in = enable ? &_vita2d_fragmentPrograms.blend_mode_add
+       : &_vita2d_fragmentPrograms.blend_mode_normal;
 
-	_vita2d_colorFragmentProgram = in->color;
-	_vita2d_textureFragmentProgram = in->texture;
-	_vita2d_textureTintFragmentProgram = in->textureTint;
+   _vita2d_colorFragmentProgram = in->color;
+   _vita2d_textureFragmentProgram = in->texture;
+   _vita2d_textureTintFragmentProgram = in->textureTint;
 }
 
 
 static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
-	int err;
-	unsigned int i;
+   int err;
+   unsigned int i;
 
-	if (vita2d_initialized)
-		return 1;
+   if (vita2d_initialized)
+      return 1;
 
    video_mode_initial = video_mode;
    current_msaa = msaa;
 
-	SceGxmInitializeParams initializeParams;
-	memset(&initializeParams, 0, sizeof(SceGxmInitializeParams));
-	initializeParams.flags				= 0;
-	initializeParams.displayQueueMaxPendingCount	= DISPLAY_MAX_PENDING_SWAPS;
-	initializeParams.displayQueueCallback		= gxm_display_callback;
-	initializeParams.displayQueueCallbackDataSize	= sizeof(vita2d_display_data);
-	initializeParams.parameterBufferSize		= SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
+   SceGxmInitializeParams initializeParams;
+   memset(&initializeParams, 0, sizeof(SceGxmInitializeParams));
+   initializeParams.flags        = 0;
+   initializeParams.displayQueueMaxPendingCount = DISPLAY_MAX_PENDING_SWAPS;
+   initializeParams.displayQueueCallback   = gxm_display_callback;
+   initializeParams.displayQueueCallbackDataSize   = sizeof(vita2d_display_data);
+   initializeParams.parameterBufferSize     = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
 
-	err = sceGxmInitialize(&initializeParams);
+   err = sceGxmInitialize(&initializeParams);
 
-	// allocate ring buffer memory using default sizes
-	void *vdmRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&vdmRingBufferUid);
+   /* allocate ring buffer memory using default sizes */
+   void *vdmRingBuffer = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE,
+      4,
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &vdmRingBufferUid);
 
-	void *vertexRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&vertexRingBufferUid);
+   void *vertexRingBuffer = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE,
+      4,
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &vertexRingBufferUid);
 
-	void *fragmentRingBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&fragmentRingBufferUid);
+   void *fragmentRingBuffer = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE,
+      4,
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &fragmentRingBufferUid);
 
-	unsigned int fragmentUsseRingBufferOffset;
-	void *fragmentUsseRingBuffer = fragment_usse_alloc(
-		SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
-		&fragmentUsseRingBufferUid,
-		&fragmentUsseRingBufferOffset);
+   unsigned int fragmentUsseRingBufferOffset;
+   void *fragmentUsseRingBuffer = fragment_usse_alloc(
+      SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE,
+      &fragmentUsseRingBufferUid,
+      &fragmentUsseRingBufferOffset);
 
-	memset(&contextParams, 0, sizeof(SceGxmContextParams));
-	contextParams.hostMem				= malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
-	contextParams.hostMemSize			= SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
-	contextParams.vdmRingBufferMem			= vdmRingBuffer;
-	contextParams.vdmRingBufferMemSize		= SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
-	contextParams.vertexRingBufferMem		= vertexRingBuffer;
-	contextParams.vertexRingBufferMemSize		= SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
-	contextParams.fragmentRingBufferMem		= fragmentRingBuffer;
-	contextParams.fragmentRingBufferMemSize		= SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
-	contextParams.fragmentUsseRingBufferMem		= fragmentUsseRingBuffer;
-	contextParams.fragmentUsseRingBufferMemSize	= SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
-	contextParams.fragmentUsseRingBufferOffset	= fragmentUsseRingBufferOffset;
+   memset(&contextParams, 0, sizeof(SceGxmContextParams));
+   contextParams.hostMem         = malloc(SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE);
+   contextParams.hostMemSize      = SCE_GXM_MINIMUM_CONTEXT_HOST_MEM_SIZE;
+   contextParams.vdmRingBufferMem      = vdmRingBuffer;
+   contextParams.vdmRingBufferMemSize   = SCE_GXM_DEFAULT_VDM_RING_BUFFER_SIZE;
+   contextParams.vertexRingBufferMem     = vertexRingBuffer;
+   contextParams.vertexRingBufferMemSize   = SCE_GXM_DEFAULT_VERTEX_RING_BUFFER_SIZE;
+   contextParams.fragmentRingBufferMem    = fragmentRingBuffer;
+   contextParams.fragmentRingBufferMemSize     = SCE_GXM_DEFAULT_FRAGMENT_RING_BUFFER_SIZE;
+   contextParams.fragmentUsseRingBufferMem     = fragmentUsseRingBuffer;
+   contextParams.fragmentUsseRingBufferMemSize  = SCE_GXM_DEFAULT_FRAGMENT_USSE_RING_BUFFER_SIZE;
+   contextParams.fragmentUsseRingBufferOffset   = fragmentUsseRingBufferOffset;
 
-	err = sceGxmCreateContext(&contextParams, &_vita2d_context);
-	err = vita2d_switch_video_mode(video_mode);
+   err = sceGxmCreateContext(&contextParams, &_vita2d_context);
+   err = vita2d_switch_video_mode(video_mode);
    if (err < 0)
       return err;
 
    vita2d_display_data displayData;
-	displayData.address = displayBufferData[0];
+   displayData.address = displayBufferData[0];
    gxm_display_callback(&displayData);
 
-	/* allocate memory and sync objects for display buffers */
+   /* allocate memory and sync objects for display buffers */
    /* create a sync object that we will associate with this buffer */
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
-		err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
+   for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
+      err = sceGxmSyncObjectCreate(&displayBufferSync[i]);
 
-	/* compute the memory footprint of the depth buffer */
-	const unsigned int alignedWidth = ALIGN(video_mode_data.width, SCE_GXM_TILE_SIZEX);
-	const unsigned int alignedHeight = ALIGN(video_mode_data.height, SCE_GXM_TILE_SIZEY);
-	unsigned int sampleCount = alignedWidth*alignedHeight;
-	unsigned int depthStrideInSamples = alignedWidth;
-	if (current_msaa == SCE_GXM_MULTISAMPLE_4X)
+   /* compute the memory footprint of the depth buffer */
+   const unsigned int alignedWidth = ALIGN(video_mode_data.width, SCE_GXM_TILE_SIZEX);
+   const unsigned int alignedHeight = ALIGN(video_mode_data.height, SCE_GXM_TILE_SIZEY);
+   unsigned int sampleCount = alignedWidth*alignedHeight;
+   unsigned int depthStrideInSamples = alignedWidth;
+   if (current_msaa == SCE_GXM_MULTISAMPLE_4X)
    {
-		/* samples increase in X and Y */
-		sampleCount          *= 4;
-		depthStrideInSamples *= 2;
-	}
+      /* samples increase in X and Y */
+      sampleCount          *= 4;
+      depthStrideInSamples *= 2;
+   }
    else if (current_msaa == SCE_GXM_MULTISAMPLE_2X)
-		/* samples increase in Y only */
-		sampleCount *= 2;
+      /* samples increase in Y only */
+      sampleCount *= 2;
 
-	/* allocate the depth buffer */
-	depthBufferData = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		4*sampleCount,
-		SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		&depthBufferUid);
+   /* allocate the depth buffer */
+   depthBufferData = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      4*sampleCount,
+      SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
+      SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+      &depthBufferUid);
 
-	/* allocate the stencil buffer */
-	stencilBufferData = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		4*sampleCount,
-		SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		&stencilBufferUid);
+   /* allocate the stencil buffer */
+   stencilBufferData = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      4*sampleCount,
+      SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
+      SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+      &stencilBufferUid);
 
-	// create the SceGxmDepthStencilSurface structure
-	err = sceGxmDepthStencilSurfaceInit(
-		&depthSurface,
-		SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
-		SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-		depthStrideInSamples,
-		depthBufferData,
-		stencilBufferData);
+   /* create the SceGxmDepthStencilSurface structure */
+   err = sceGxmDepthStencilSurfaceInit(
+      &depthSurface,
+      SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
+      SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
+      depthStrideInSamples,
+      depthBufferData,
+      stencilBufferData);
 
-	// set the stencil test reference (this is currently assumed to always remain 1 after here for region clipping)
-	sceGxmSetFrontStencilRef(_vita2d_context, 1);
-	// set the stencil function (this wouldn't actually be needed, as the set clip rectangle function has to call this at the begginning of every scene)
-	sceGxmSetFrontStencilFunc(
-		_vita2d_context,
-		SCE_GXM_STENCIL_FUNC_ALWAYS,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		SCE_GXM_STENCIL_OP_KEEP,
-		0xFF,
-		0xFF);
+   /* set the stencil test reference (this is currently assumed to always remain 1 after here for region clipping) */
+   sceGxmSetFrontStencilRef(_vita2d_context, 1);
+   /* set the stencil function (this wouldn't actually be needed, as the set clip rectangle function has to call this at the begginning of every scene) */
+   sceGxmSetFrontStencilFunc(
+      _vita2d_context,
+      SCE_GXM_STENCIL_FUNC_ALWAYS,
+      SCE_GXM_STENCIL_OP_KEEP,
+      SCE_GXM_STENCIL_OP_KEEP,
+      SCE_GXM_STENCIL_OP_KEEP,
+      0xFF,
+      0xFF);
 
-	// set buffer sizes for this sample
-	const unsigned int patcherBufferSize		= 64*1024;
-	const unsigned int patcherVertexUsseSize	= 64*1024;
-	const unsigned int patcherFragmentUsseSize	= 64*1024;
+   /* set buffer sizes for this sample */
+   const unsigned int patcherBufferSize     = 64*1024;
+   const unsigned int patcherVertexUsseSize  = 64*1024;
+   const unsigned int patcherFragmentUsseSize   = 64*1024;
 
-	// allocate memory for buffers and USSE code
-	void *patcherBuffer = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		patcherBufferSize,
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		&patcherBufferUid);
+   /* allocate memory for buffers and USSE code */
+   void *patcherBuffer = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      patcherBufferSize,
+      4,
+      SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+      &patcherBufferUid);
 
-	unsigned int patcherVertexUsseOffset;
-	void *patcherVertexUsse = vertex_usse_alloc(
-		patcherVertexUsseSize,
-		&patcherVertexUsseUid,
-		&patcherVertexUsseOffset);
+   unsigned int patcherVertexUsseOffset;
+   void *patcherVertexUsse = vertex_usse_alloc(
+      patcherVertexUsseSize,
+      &patcherVertexUsseUid,
+      &patcherVertexUsseOffset);
 
-	unsigned int patcherFragmentUsseOffset;
-	void *patcherFragmentUsse = fragment_usse_alloc(
-		patcherFragmentUsseSize,
-		&patcherFragmentUsseUid,
-		&patcherFragmentUsseOffset);
+   unsigned int patcherFragmentUsseOffset;
+   void *patcherFragmentUsse = fragment_usse_alloc(
+      patcherFragmentUsseSize,
+      &patcherFragmentUsseUid,
+      &patcherFragmentUsseOffset);
 
-	// create a shader patcher
-	SceGxmShaderPatcherParams patcherParams;
-	memset(&patcherParams, 0, sizeof(SceGxmShaderPatcherParams));
-	patcherParams.userData			= NULL;
-	patcherParams.hostAllocCallback		= &patcher_host_alloc;
-	patcherParams.hostFreeCallback		= &patcher_host_free;
-	patcherParams.bufferAllocCallback	= NULL;
-	patcherParams.bufferFreeCallback	= NULL;
-	patcherParams.bufferMem			= patcherBuffer;
-	patcherParams.bufferMemSize		= patcherBufferSize;
-	patcherParams.vertexUsseAllocCallback	= NULL;
-	patcherParams.vertexUsseFreeCallback	= NULL;
-	patcherParams.vertexUsseMem		= patcherVertexUsse;
-	patcherParams.vertexUsseMemSize		= patcherVertexUsseSize;
-	patcherParams.vertexUsseOffset		= patcherVertexUsseOffset;
-	patcherParams.fragmentUsseAllocCallback	= NULL;
-	patcherParams.fragmentUsseFreeCallback	= NULL;
-	patcherParams.fragmentUsseMem		= patcherFragmentUsse;
-	patcherParams.fragmentUsseMemSize	= patcherFragmentUsseSize;
-	patcherParams.fragmentUsseOffset	= patcherFragmentUsseOffset;
+   /* create a shader patcher */
+   SceGxmShaderPatcherParams patcherParams;
+   memset(&patcherParams, 0, sizeof(SceGxmShaderPatcherParams));
+   patcherParams.userData      = NULL;
+   patcherParams.hostAllocCallback   = &patcher_host_alloc;
+   patcherParams.hostFreeCallback     = &patcher_host_free;
+   patcherParams.bufferAllocCallback   = NULL;
+   patcherParams.bufferFreeCallback = NULL;
+   patcherParams.bufferMem      = patcherBuffer;
+   patcherParams.bufferMemSize     = patcherBufferSize;
+   patcherParams.vertexUsseAllocCallback  = NULL;
+   patcherParams.vertexUsseFreeCallback   = NULL;
+   patcherParams.vertexUsseMem     = patcherVertexUsse;
+   patcherParams.vertexUsseMemSize   = patcherVertexUsseSize;
+   patcherParams.vertexUsseOffset     = patcherVertexUsseOffset;
+   patcherParams.fragmentUsseAllocCallback   = NULL;
+   patcherParams.fragmentUsseFreeCallback = NULL;
+   patcherParams.fragmentUsseMem    = patcherFragmentUsse;
+   patcherParams.fragmentUsseMemSize   = patcherFragmentUsseSize;
+   patcherParams.fragmentUsseOffset = patcherFragmentUsseOffset;
 
-	err = sceGxmShaderPatcherCreate(&patcherParams, &shaderPatcher);
+   err = sceGxmShaderPatcherCreate(&patcherParams, &shaderPatcher);
 
-	// check the shaders
-	err = sceGxmProgramCheck(clearVertexProgramGxp);
-	err = sceGxmProgramCheck(clearFragmentProgramGxp);
-	err = sceGxmProgramCheck(colorVertexProgramGxp);
-	err = sceGxmProgramCheck(colorFragmentProgramGxp);
-	err = sceGxmProgramCheck(textureVertexProgramGxp);
-	err = sceGxmProgramCheck(textureFragmentProgramGxp);
-	err = sceGxmProgramCheck(textureTintVertexProgramGxp);
-	err = sceGxmProgramCheck(textureTintFragmentProgramGxp);
+   /* check the shaders */
+   err = sceGxmProgramCheck(clearVertexProgramGxp);
+   err = sceGxmProgramCheck(clearFragmentProgramGxp);
+   err = sceGxmProgramCheck(colorVertexProgramGxp);
+   err = sceGxmProgramCheck(colorFragmentProgramGxp);
+   err = sceGxmProgramCheck(textureVertexProgramGxp);
+   err = sceGxmProgramCheck(textureFragmentProgramGxp);
+   err = sceGxmProgramCheck(textureTintVertexProgramGxp);
+   err = sceGxmProgramCheck(textureTintFragmentProgramGxp);
 
-	// register programs with the patcher
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearVertexProgramGxp, &clearVertexProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearFragmentProgramGxp, &clearFragmentProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorVertexProgramGxp, &colorVertexProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorFragmentProgramGxp, &colorFragmentProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureVertexProgramGxp, &textureVertexProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureFragmentProgramGxp, &textureFragmentProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintVertexProgramGxp, &textureTintVertexProgramId);
-	err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintFragmentProgramGxp, &textureTintFragmentProgramId);
+   /* register programs with the patcher */
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearVertexProgramGxp, &clearVertexProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearFragmentProgramGxp, &clearFragmentProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorVertexProgramGxp, &colorVertexProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorFragmentProgramGxp, &colorFragmentProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureVertexProgramGxp, &textureVertexProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureFragmentProgramGxp, &textureFragmentProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintVertexProgramGxp, &textureTintVertexProgramId);
+   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintFragmentProgramGxp, &textureTintFragmentProgramId);
 
-	// Fill SceGxmBlendInfo
-	static const SceGxmBlendInfo blend_info = {
-		.colorFunc = SCE_GXM_BLEND_FUNC_ADD,
-		.alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
-		.colorSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
-		.colorDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.alphaSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
-		.alphaDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-		.colorMask = SCE_GXM_COLOR_MASK_ALL
-	};
+   /* Fill SceGxmBlendInfo */
+   static const SceGxmBlendInfo blend_info = {
+      .colorFunc = SCE_GXM_BLEND_FUNC_ADD,
+      .alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
+      .colorSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
+      .colorDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+      .alphaSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
+      .alphaDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+      .colorMask = SCE_GXM_COLOR_MASK_ALL
+   };
 
-	static const SceGxmBlendInfo blend_info_add = {
-		.colorFunc = SCE_GXM_BLEND_FUNC_ADD,
-		.alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
-		.colorSrc  = SCE_GXM_BLEND_FACTOR_ONE,
-		.colorDst  = SCE_GXM_BLEND_FACTOR_ONE,
-		.alphaSrc  = SCE_GXM_BLEND_FACTOR_ONE,
-		.alphaDst  = SCE_GXM_BLEND_FACTOR_ONE,
-		.colorMask = SCE_GXM_COLOR_MASK_ALL
-	};
+   static const SceGxmBlendInfo blend_info_add = {
+      .colorFunc = SCE_GXM_BLEND_FUNC_ADD,
+      .alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
+      .colorSrc  = SCE_GXM_BLEND_FACTOR_ONE,
+      .colorDst  = SCE_GXM_BLEND_FACTOR_ONE,
+      .alphaSrc  = SCE_GXM_BLEND_FACTOR_ONE,
+      .alphaDst  = SCE_GXM_BLEND_FACTOR_ONE,
+      .colorMask = SCE_GXM_COLOR_MASK_ALL
+   };
 
-	// get attributes by name to create vertex format bindings
-	const SceGxmProgramParameter *paramClearPositionAttribute = sceGxmProgramFindParameterByName(clearVertexProgramGxp, "aPosition");
+   /* get attributes by name to create vertex format bindings */
+   const SceGxmProgramParameter *paramClearPositionAttribute = sceGxmProgramFindParameterByName(clearVertexProgramGxp, "aPosition");
 
-	// create clear vertex format
-	SceGxmVertexAttribute clearVertexAttributes[1];
-	SceGxmVertexStream clearVertexStreams[1];
-	clearVertexAttributes[0].streamIndex	= 0;
-	clearVertexAttributes[0].offset		= 0;
-	clearVertexAttributes[0].format		= SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	clearVertexAttributes[0].componentCount	= 2;
-	clearVertexAttributes[0].regIndex	= sceGxmProgramParameterGetResourceIndex(paramClearPositionAttribute);
-	clearVertexStreams[0].stride		= sizeof(vita2d_clear_vertex);
-	clearVertexStreams[0].indexSource	= SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+   /* create clear vertex format */
+   SceGxmVertexAttribute clearVertexAttributes[1];
+   SceGxmVertexStream clearVertexStreams[1];
+   clearVertexAttributes[0].streamIndex   = 0;
+   clearVertexAttributes[0].offset   = 0;
+   clearVertexAttributes[0].format   = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   clearVertexAttributes[0].componentCount   = 2;
+   clearVertexAttributes[0].regIndex   = sceGxmProgramParameterGetResourceIndex(paramClearPositionAttribute);
+   clearVertexStreams[0].stride   = sizeof(vita2d_clear_vertex);
+   clearVertexStreams[0].indexSource   = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
-	// create clear programs
-	err = sceGxmShaderPatcherCreateVertexProgram(
-		shaderPatcher,
-		clearVertexProgramId,
-		clearVertexAttributes,
-		1,
-		clearVertexStreams,
-		1,
-		&clearVertexProgram);
+   /* create clear programs */
+   err = sceGxmShaderPatcherCreateVertexProgram(
+      shaderPatcher,
+      clearVertexProgramId,
+      clearVertexAttributes,
+      1,
+      clearVertexStreams,
+      1,
+      &clearVertexProgram);
 
-	err = sceGxmShaderPatcherCreateFragmentProgram(
-		shaderPatcher,
-		clearFragmentProgramId,
-		SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-		current_msaa,
-		NULL,
-		clearVertexProgramGxp,
-		&clearFragmentProgram);
+   err = sceGxmShaderPatcherCreateFragmentProgram(
+      shaderPatcher,
+      clearFragmentProgramId,
+      SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
+      current_msaa,
+      NULL,
+      clearVertexProgramGxp,
+      &clearFragmentProgram);
 
-	// create the clear triangle vertex/index data
-	clearVertices = (vita2d_clear_vertex *)gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		3*sizeof(vita2d_clear_vertex),
-		4,
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&clearVerticesUid);
+   /* create the clear triangle vertex/index data */
+   clearVertices = (vita2d_clear_vertex *)gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      3*sizeof(vita2d_clear_vertex),
+      4,
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &clearVerticesUid);
 
-	// Allocate a 64k * 2 bytes = 128 KiB buffer and store all possible
-	// 16-bit indices in linear ascending order, so we can use this for
-	// all drawing operations where we don't want to use indexing.
-	linearIndices = (uint16_t *)gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-		UINT16_MAX*sizeof(uint16_t),
-		sizeof(uint16_t),
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&linearIndicesUid);
+   /* Allocate a 64k * 2 bytes = 128 KiB buffer and store all possible */
+   /* 16-bit indices in linear ascending order, so we can use this for */
+   /* all drawing operations where we don't want to use indexing. */
+   linearIndices = (uint16_t *)gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
+      UINT16_MAX*sizeof(uint16_t),
+      sizeof(uint16_t),
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &linearIndicesUid);
 
-        // Range of i must be greater than uint16_t, this doesn't endless-loop
-	for (uint32_t i=0; i<=UINT16_MAX; ++i) {
-		linearIndices[i] = i;
-	}
+        /* Range of i must be greater than uint16_t, this doesn't endless-loop */
+   for (uint32_t i=0; i<=UINT16_MAX; ++i) {
+      linearIndices[i] = i;
+   }
 
-	clearVertices[0].x = -1.0f;
-	clearVertices[0].y = -1.0f;
-	clearVertices[1].x =  3.0f;
-	clearVertices[1].y = -1.0f;
-	clearVertices[2].x = -1.0f;
-	clearVertices[2].y =  3.0f;
+   clearVertices[0].x = -1.0f;
+   clearVertices[0].y = -1.0f;
+   clearVertices[1].x =  3.0f;
+   clearVertices[1].y = -1.0f;
+   clearVertices[2].x = -1.0f;
+   clearVertices[2].y =  3.0f;
 
-	const SceGxmProgramParameter *paramColorPositionAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aPosition");
-	const SceGxmProgramParameter *paramColorColorAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aColor");
+   const SceGxmProgramParameter *paramColorPositionAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aPosition");
+   const SceGxmProgramParameter *paramColorColorAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aColor");
 
-	// create color vertex format
-	SceGxmVertexAttribute colorVertexAttributes[2];
-	SceGxmVertexStream colorVertexStreams[1];
-	/* x,y,z: 3 float 32 bits */
-	colorVertexAttributes[0].streamIndex = 0;
-	colorVertexAttributes[0].offset = 0;
-	colorVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	colorVertexAttributes[0].componentCount = 3; // (x, y, z)
-	colorVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramColorPositionAttribute);
-	/* color: 4 unsigned char  = 32 bits */
-	colorVertexAttributes[1].streamIndex = 0;
-	colorVertexAttributes[1].offset = 12; // (x, y, z) * 4 = 12 bytes
-	colorVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
-	colorVertexAttributes[1].componentCount = 4; // (color)
-	colorVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramColorColorAttribute);
-	// 16 bit (short) indices
-	colorVertexStreams[0].stride = sizeof(vita2d_color_vertex);
-	colorVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+   /* create color vertex format */
+   SceGxmVertexAttribute colorVertexAttributes[2];
+   SceGxmVertexStream colorVertexStreams[1];
+   /* x,y,z: 3 float 32 bits */
+   colorVertexAttributes[0].streamIndex = 0;
+   colorVertexAttributes[0].offset = 0;
+   colorVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   colorVertexAttributes[0].componentCount = 3; /* (x, y, z) */
+   colorVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramColorPositionAttribute);
+   /* color: 4 unsigned char  = 32 bits */
+   colorVertexAttributes[1].streamIndex = 0;
+   colorVertexAttributes[1].offset = 12; /* (x, y, z) * 4 = 12 bytes */
+   colorVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_U8N;
+   colorVertexAttributes[1].componentCount = 4; /* (color) */
+   colorVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramColorColorAttribute);
+   /* 16 bit (short) indices */
+   colorVertexStreams[0].stride = sizeof(vita2d_color_vertex);
+   colorVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
-	// create color shaders
-	err = sceGxmShaderPatcherCreateVertexProgram(
-		shaderPatcher,
-		colorVertexProgramId,
-		colorVertexAttributes,
-		2,
-		colorVertexStreams,
-		1,
-		&_vita2d_colorVertexProgram);
+   /* create color shaders */
+   err = sceGxmShaderPatcherCreateVertexProgram(
+      shaderPatcher,
+      colorVertexProgramId,
+      colorVertexAttributes,
+      2,
+      colorVertexStreams,
+      1,
+      &_vita2d_colorVertexProgram);
 
-	const SceGxmProgramParameter *paramTexturePositionAttribute = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "aPosition");
+   const SceGxmProgramParameter *paramTexturePositionAttribute = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "aPosition");
 
-	const SceGxmProgramParameter *paramTextureTexcoordAttribute = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "aTexcoord");
+   const SceGxmProgramParameter *paramTextureTexcoordAttribute = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "aTexcoord");
 
-	// create texture vertex format
-	SceGxmVertexAttribute textureVertexAttributes[2];
-	SceGxmVertexStream textureVertexStreams[1];
-	/* x,y,z: 3 float 32 bits */
-	textureVertexAttributes[0].streamIndex = 0;
-	textureVertexAttributes[0].offset = 0;
-	textureVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	textureVertexAttributes[0].componentCount = 3; // (x, y, z)
-	textureVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramTexturePositionAttribute);
-	/* u,v: 2 floats 32 bits */
-	textureVertexAttributes[1].streamIndex = 0;
-	textureVertexAttributes[1].offset = 12; // (x, y, z) * 4 = 12 bytes
-	textureVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	textureVertexAttributes[1].componentCount = 2; // (u, v)
-	textureVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTexcoordAttribute);
-	// 16 bit (short) indices
-	textureVertexStreams[0].stride = sizeof(vita2d_texture_vertex);
-	textureVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+   /* create texture vertex format */
+   SceGxmVertexAttribute textureVertexAttributes[2];
+   SceGxmVertexStream textureVertexStreams[1];
+   /* x,y,z: 3 float 32 bits */
+   textureVertexAttributes[0].streamIndex = 0;
+   textureVertexAttributes[0].offset = 0;
+   textureVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   textureVertexAttributes[0].componentCount = 3; /* (x, y, z) */
+   textureVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramTexturePositionAttribute);
+   /* u,v: 2 floats 32 bits */
+   textureVertexAttributes[1].streamIndex = 0;
+   textureVertexAttributes[1].offset = 12; /* (x, y, z) * 4 = 12 bytes */
+   textureVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   textureVertexAttributes[1].componentCount = 2; /* (u, v) */
+   textureVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTexcoordAttribute);
+   /* 16 bit (short) indices */
+   textureVertexStreams[0].stride = sizeof(vita2d_texture_vertex);
+   textureVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
-	// create texture shaders
-	err = sceGxmShaderPatcherCreateVertexProgram(
-		shaderPatcher,
-		textureVertexProgramId,
-		textureVertexAttributes,
-		2,
-		textureVertexStreams,
-		1,
-		&_vita2d_textureVertexProgram);
+   /* create texture shaders */
+   err = sceGxmShaderPatcherCreateVertexProgram(
+      shaderPatcher,
+      textureVertexProgramId,
+      textureVertexAttributes,
+      2,
+      textureVertexStreams,
+      1,
+      &_vita2d_textureVertexProgram);
 
-	const SceGxmProgramParameter *paramTextureTintPositionAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aPosition");
-	const SceGxmProgramParameter *paramTextureTintTexcoordAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aTexcoord");
-	const SceGxmProgramParameter *paramTextureTintColorAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aColor");
+   const SceGxmProgramParameter *paramTextureTintPositionAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aPosition");
+   const SceGxmProgramParameter *paramTextureTintTexcoordAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aTexcoord");
+   const SceGxmProgramParameter *paramTextureTintColorAttribute = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "aColor");
 
-	// create texture vertex format
-	SceGxmVertexAttribute textureTintVertexAttributes[3];
-	SceGxmVertexStream textureTintVertexStreams[1];
-	/* x,y,z: 3 float 32 bits */
-	textureTintVertexAttributes[0].streamIndex = 0;
-	textureTintVertexAttributes[0].offset = 0;
-	textureTintVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	textureTintVertexAttributes[0].componentCount = 3; // (x, y, z)
-	textureTintVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintPositionAttribute);
-	/* u,v: 2 floats 32 bits */
-	textureTintVertexAttributes[1].streamIndex = 0;
-	textureTintVertexAttributes[1].offset = 12; // (x, y, z) * 4 = 12 bytes
-	textureTintVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	textureTintVertexAttributes[1].componentCount = 2; // (u, v)
-	textureTintVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintTexcoordAttribute);
+   /* create texture vertex format */
+   SceGxmVertexAttribute textureTintVertexAttributes[3];
+   SceGxmVertexStream textureTintVertexStreams[1];
+   /* x,y,z: 3 float 32 bits */
+   textureTintVertexAttributes[0].streamIndex = 0;
+   textureTintVertexAttributes[0].offset = 0;
+   textureTintVertexAttributes[0].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   textureTintVertexAttributes[0].componentCount = 3; /* (x, y, z) */
+   textureTintVertexAttributes[0].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintPositionAttribute);
+   /* u,v: 2 floats 32 bits */
+   textureTintVertexAttributes[1].streamIndex = 0;
+   textureTintVertexAttributes[1].offset = 12; /* (x, y, z) * 4 = 12 bytes */
+   textureTintVertexAttributes[1].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   textureTintVertexAttributes[1].componentCount = 2; /* (u, v) */
+   textureTintVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintTexcoordAttribute);
    /* r,g,b,a: 4 floats 32 bits */
-	textureTintVertexAttributes[2].streamIndex = 0;
-	textureTintVertexAttributes[2].offset = 20; // (u, v) * 4 = 8 bytes
-	textureTintVertexAttributes[2].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-	textureTintVertexAttributes[2].componentCount = 4; // (r, g, b, a)
-	textureTintVertexAttributes[2].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintColorAttribute);
-	// 16 bit (short) indices
-	textureTintVertexStreams[0].stride = sizeof(vita2d_texture_tint_vertex);
-	textureTintVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
+   textureTintVertexAttributes[2].streamIndex = 0;
+   textureTintVertexAttributes[2].offset = 20; /* (u, v) * 4 = 8 bytes */
+   textureTintVertexAttributes[2].format = SCE_GXM_ATTRIBUTE_FORMAT_F32;
+   textureTintVertexAttributes[2].componentCount = 4; /* (r, g, b, a) */
+   textureTintVertexAttributes[2].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintColorAttribute);
+   /* 16 bit (short) indices */
+   textureTintVertexStreams[0].stride = sizeof(vita2d_texture_tint_vertex);
+   textureTintVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
-	// create texture shaders
-	err = sceGxmShaderPatcherCreateVertexProgram(
-		shaderPatcher,
-		textureTintVertexProgramId,
-		textureTintVertexAttributes,
-		3,
-		textureTintVertexStreams,
-		1,
-		&_vita2d_textureTintVertexProgram);
+   /* create texture shaders */
+   err = sceGxmShaderPatcherCreateVertexProgram(
+      shaderPatcher,
+      textureTintVertexProgramId,
+      textureTintVertexAttributes,
+      3,
+      textureTintVertexStreams,
+      1,
+      &_vita2d_textureTintVertexProgram);
 
-	// Create variations of the fragment program based on blending mode
-	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal, &blend_info, current_msaa);
-	_vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add, &blend_info_add, current_msaa);
+   /* Create variations of the fragment program based on blending mode */
+   _vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal, &blend_info, current_msaa);
+   _vita2d_make_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add, &blend_info_add, current_msaa);
 
-	// Default to "normal" blending mode (non-additive)
-	vita2d_set_blend_mode_add(0);
+   /* Default to "normal" blending mode (non-additive) */
+   vita2d_set_blend_mode_add(0);
 
-	// find vertex uniforms by name and cache parameter information
-	_vita2d_clearClearColorParam = sceGxmProgramFindParameterByName(clearFragmentProgramGxp, "uClearColor");
+   /* find vertex uniforms by name and cache parameter information */
+   _vita2d_clearClearColorParam = sceGxmProgramFindParameterByName(clearFragmentProgramGxp, "uClearColor");
 
-	_vita2d_colorWvpParam = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "wvp");
+   _vita2d_colorWvpParam = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "wvp");
 
-	_vita2d_textureWvpParam = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "wvp");
+   _vita2d_textureWvpParam = sceGxmProgramFindParameterByName(textureVertexProgramGxp, "wvp");
 
-	_vita2d_textureTintWvpParam = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "wvp");
+   _vita2d_textureTintWvpParam = sceGxmProgramFindParameterByName(textureTintVertexProgramGxp, "wvp");
 
-	// Allocate memory for the memory pool
-	pool_size = temp_pool_size;
-	pool_addr = gpu_alloc(
-		SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
-		pool_size,
-		sizeof(void *),
-		SCE_GXM_MEMORY_ATTRIB_READ,
-		&poolUid);
+   /* Allocate memory for the memory pool */
+   pool_size = temp_pool_size;
+   pool_addr = gpu_alloc(
+      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW,
+      pool_size,
+      sizeof(void *),
+      SCE_GXM_MEMORY_ATTRIB_READ,
+      &poolUid);
 
 
    matrix_init_orthographic(_vita2d_ortho_matrix, 0.0f, video_mode_data.width, video_mode_data.height, 0.0f, 0.0f, 1.0f);
 
-	backBufferIndex = 0;
-	frontBufferIndex = 0;
+   backBufferIndex = 0;
+   frontBufferIndex = 0;
 
-	pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
+   pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
 
-	if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
+   if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
+      sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
 
-	vita2d_initialized = 1;
-	return 1;
+   vita2d_initialized = 1;
+   return 1;
 }
 
 static int vita2d_fini(void)
 {
-	unsigned int i;
+   unsigned int i;
 
-	if (!vita2d_initialized)
-		return 1;
+   if (!vita2d_initialized)
+      return 1;
 
-	/* wait until rendering is done */
-	sceGxmFinish(_vita2d_context);
-	/* clean up allocations */
-	sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, clearFragmentProgram);
-	sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, clearVertexProgram);
-	sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_colorVertexProgram);
-	sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_textureVertexProgram);
+   /* wait until rendering is done */
+   sceGxmFinish(_vita2d_context);
+   /* clean up allocations */
+   sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, clearFragmentProgram);
+   sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, clearVertexProgram);
+   sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_colorVertexProgram);
+   sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_textureVertexProgram);
 
-	_vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal);
-	_vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add);
+   _vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_normal);
+   _vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add);
 
-	gpu_free(linearIndicesUid);
-	gpu_free(clearVerticesUid);
+   gpu_free(linearIndicesUid);
+   gpu_free(clearVerticesUid);
 
-	// wait until display queue is finished before deallocating display buffers
-	sceGxmDisplayQueueFinish();
+   /* wait until display queue is finished before deallocating display buffers */
+   sceGxmDisplayQueueFinish();
 
-	/* clean up display queue */
-	gpu_free(depthBufferUid);
-	for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
+   /* clean up display queue */
+   gpu_free(depthBufferUid);
+   for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
    {
-		/* clear the buffer then deallocate */
-		memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
-		gpu_free(displayBufferUid[i]);
+      /* clear the buffer then deallocate */
+      memset(displayBufferData[i], 0, video_mode_data.height*video_mode_data.stride*4);
+      gpu_free(displayBufferUid[i]);
 
-		/* destroy the sync object */
-		sceGxmSyncObjectDestroy(displayBufferSync[i]);
-	}
+      /* destroy the sync object */
+      sceGxmSyncObjectDestroy(displayBufferSync[i]);
+   }
 
-	/* free the depth and stencil buffer */
-	gpu_free(depthBufferUid);
-	gpu_free(stencilBufferUid);
+   /* free the depth and stencil buffer */
+   gpu_free(depthBufferUid);
+   gpu_free(stencilBufferUid);
 
-	/* unregister programs and destroy shader patcher */
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearFragmentProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearVertexProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorFragmentProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorVertexProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureFragmentProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintFragmentProgramId);
-	sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintVertexProgramId);
+   /* unregister programs and destroy shader patcher */
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearFragmentProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearVertexProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorFragmentProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorVertexProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureFragmentProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintFragmentProgramId);
+   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureTintVertexProgramId);
    sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureVertexProgramId);
 
-	sceGxmShaderPatcherDestroy(shaderPatcher);
-	fragment_usse_free(patcherFragmentUsseUid);
-	vertex_usse_free(patcherVertexUsseUid);
-	gpu_free(patcherBufferUid);
+   sceGxmShaderPatcherDestroy(shaderPatcher);
+   fragment_usse_free(patcherFragmentUsseUid);
+   vertex_usse_free(patcherVertexUsseUid);
+   gpu_free(patcherBufferUid);
 
-	/* destroy the render target */
-	sceGxmDestroyRenderTarget(renderTarget);
+   /* destroy the render target */
+   sceGxmDestroyRenderTarget(renderTarget);
    renderTarget = NULL;
 
-	/* destroy the _vita2d_context */
-	sceGxmDestroyContext(_vita2d_context);
-	fragment_usse_free(fragmentUsseRingBufferUid);
-	gpu_free(fragmentRingBufferUid);
-	gpu_free(vertexRingBufferUid);
-	gpu_free(vdmRingBufferUid);
-	free(contextParams.hostMem);
+   /* destroy the _vita2d_context */
+   sceGxmDestroyContext(_vita2d_context);
+   fragment_usse_free(fragmentUsseRingBufferUid);
+   gpu_free(fragmentRingBufferUid);
+   gpu_free(vertexRingBufferUid);
+   gpu_free(vdmRingBufferUid);
+   free(contextParams.hostMem);
 
-	gpu_free(poolUid);
+   gpu_free(poolUid);
 
-	/* terminate libgxm */
-	sceGxmTerminate();
+   /* terminate libgxm */
+   sceGxmTerminate();
 
-	/* if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-		sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF); */
+   /* if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
+      sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF); */
 
-	vita2d_initialized = 0;
+   vita2d_initialized = 0;
 
-	return 1;
+   return 1;
 }
 
 static void vita2d_set_viewport(int x, int y, int width, int height)
@@ -1143,338 +1143,338 @@ static void vita2d_set_viewport(int x, int y, int width, int height)
 
 static void *vita2d_pool_memalign(unsigned int size, unsigned int alignment)
 {
-	unsigned int new_index = (pool_index + alignment - 1) & ~(alignment - 1);
-	if ((new_index + size) < pool_size)
+   unsigned int new_index = (pool_index + alignment - 1) & ~(alignment - 1);
+   if ((new_index + size) < pool_size)
    {
-		void *addr = (void *)((unsigned int)pool_addr + new_index);
-		pool_index = new_index + size;
-		return addr;
-	}
-	return NULL;
+      void *addr = (void *)((unsigned int)pool_addr + new_index);
+      pool_index = new_index + size;
+      return addr;
+   }
+   return NULL;
 }
 
 static void vita2d_draw_rectangle(float x, float y, float w, float h, unsigned int color)
 {
-	vita2d_color_vertex *vertices = (vita2d_color_vertex *)
+   vita2d_color_vertex *vertices = (vita2d_color_vertex *)
       vita2d_pool_memalign(
-		4 * sizeof(vita2d_color_vertex), // 4 vertices
-		sizeof(vita2d_color_vertex));
+      4 * sizeof(vita2d_color_vertex), /* 4 vertices */
+      sizeof(vita2d_color_vertex));
 
-	uint16_t *indices = (uint16_t *)vita2d_pool_memalign(
-		4 * sizeof(uint16_t), /* 4 indices */
-		sizeof(uint16_t));
+   uint16_t *indices = (uint16_t *)vita2d_pool_memalign(
+      4 * sizeof(uint16_t), /* 4 indices */
+      sizeof(uint16_t));
 
-	vertices[0].x = x;
-	vertices[0].y = y;
-	vertices[0].z = +0.5f;
-	vertices[0].color = color;
+   vertices[0].x = x;
+   vertices[0].y = y;
+   vertices[0].z = +0.5f;
+   vertices[0].color = color;
 
-	vertices[1].x = x + w;
-	vertices[1].y = y;
-	vertices[1].z = +0.5f;
-	vertices[1].color = color;
+   vertices[1].x = x + w;
+   vertices[1].y = y;
+   vertices[1].z = +0.5f;
+   vertices[1].color = color;
 
-	vertices[2].x = x;
-	vertices[2].y = y + h;
-	vertices[2].z = +0.5f;
-	vertices[2].color = color;
+   vertices[2].x = x;
+   vertices[2].y = y + h;
+   vertices[2].z = +0.5f;
+   vertices[2].color = color;
 
-	vertices[3].x = x + w;
-	vertices[3].y = y + h;
-	vertices[3].z = +0.5f;
-	vertices[3].color = color;
+   vertices[3].x = x + w;
+   vertices[3].y = y + h;
+   vertices[3].z = +0.5f;
+   vertices[3].color = color;
 
-	indices[0] = 0;
-	indices[1] = 1;
-	indices[2] = 2;
-	indices[3] = 3;
+   indices[0] = 0;
+   indices[1] = 1;
+   indices[2] = 2;
+   indices[3] = 3;
 
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
+   sceGxmSetVertexProgram(_vita2d_context, _vita2d_colorVertexProgram);
+   sceGxmSetFragmentProgram(_vita2d_context, _vita2d_colorFragmentProgram);
 
-	void *vertexDefaultBuffer;
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertexDefaultBuffer);
-	sceGxmSetUniformDataF(vertexDefaultBuffer, _vita2d_colorWvpParam, 0, 16, _vita2d_ortho_matrix);
+   void *vertexDefaultBuffer;
+   sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertexDefaultBuffer);
+   sceGxmSetUniformDataF(vertexDefaultBuffer, _vita2d_colorWvpParam, 0, 16, _vita2d_ortho_matrix);
 
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, indices, 4);
 }
 
 static void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max)
 {
-	vita2d_set_viewport(0,0,video_mode_data.width,video_mode_data.height);
-	clipping_enabled = 1;
-	clip_rect_x_min = x_min;
-	clip_rect_y_min = y_min;
-	clip_rect_x_max = x_max;
-	clip_rect_y_max = y_max;
-	/* We can only draw during a scene, but we can cache the values 
+   vita2d_set_viewport(0,0,video_mode_data.width,video_mode_data.height);
+   clipping_enabled = 1;
+   clip_rect_x_min = x_min;
+   clip_rect_y_min = y_min;
+   clip_rect_x_max = x_max;
+   clip_rect_y_max = y_max;
+   /* We can only draw during a scene, but we can cache the values 
     * since they're not going to have any visible effect till the 
     * scene starts anyways */
-	if (drawing)
+   if (drawing)
    {
-		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
-			SCE_GXM_DEPTH_WRITE_DISABLED);
-		/* clear the stencil buffer to 0 */
-		sceGxmSetFrontStencilFunc(
-			_vita2d_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_ZERO,
-			SCE_GXM_STENCIL_OP_ZERO,
-			SCE_GXM_STENCIL_OP_ZERO,
-			0xFF,
-			0xFF);
-		vita2d_draw_rectangle(0, 0, video_mode_data.width, video_mode_data.height, 0);
-		/* set the stencil to 1 in the desired region */
-		sceGxmSetFrontStencilFunc(
-			_vita2d_context,
-			SCE_GXM_STENCIL_FUNC_NEVER,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			SCE_GXM_STENCIL_OP_REPLACE,
-			0xFF,
-			0xFF);
-		vita2d_draw_rectangle(x_min, y_min, x_max - x_min, y_max - y_min, 0);
-		sceGxmSetFrontDepthWriteEnable(_vita2d_context,
-			SCE_GXM_DEPTH_WRITE_ENABLED);
-		if(clipping_enabled)
-			/* set the stencil function to only accept pixels 
+      sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+         SCE_GXM_DEPTH_WRITE_DISABLED);
+      /* clear the stencil buffer to 0 */
+      sceGxmSetFrontStencilFunc(
+         _vita2d_context,
+         SCE_GXM_STENCIL_FUNC_NEVER,
+         SCE_GXM_STENCIL_OP_ZERO,
+         SCE_GXM_STENCIL_OP_ZERO,
+         SCE_GXM_STENCIL_OP_ZERO,
+         0xFF,
+         0xFF);
+      vita2d_draw_rectangle(0, 0, video_mode_data.width, video_mode_data.height, 0);
+      /* set the stencil to 1 in the desired region */
+      sceGxmSetFrontStencilFunc(
+         _vita2d_context,
+         SCE_GXM_STENCIL_FUNC_NEVER,
+         SCE_GXM_STENCIL_OP_REPLACE,
+         SCE_GXM_STENCIL_OP_REPLACE,
+         SCE_GXM_STENCIL_OP_REPLACE,
+         0xFF,
+         0xFF);
+      vita2d_draw_rectangle(x_min, y_min, x_max - x_min, y_max - y_min, 0);
+      sceGxmSetFrontDepthWriteEnable(_vita2d_context,
+         SCE_GXM_DEPTH_WRITE_ENABLED);
+      if(clipping_enabled)
+         /* set the stencil function to only accept pixels 
           * where the stencil is 1 */
-			sceGxmSetFrontStencilFunc(
-				_vita2d_context,
-				SCE_GXM_STENCIL_FUNC_EQUAL,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				0xFF,
-				0xFF);
+         sceGxmSetFrontStencilFunc(
+            _vita2d_context,
+            SCE_GXM_STENCIL_FUNC_EQUAL,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            0xFF,
+            0xFF);
       else
-			sceGxmSetFrontStencilFunc(
-				_vita2d_context,
-				SCE_GXM_STENCIL_FUNC_ALWAYS,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				SCE_GXM_STENCIL_OP_KEEP,
-				0xFF,
-				0xFF);
-	}
+         sceGxmSetFrontStencilFunc(
+            _vita2d_context,
+            SCE_GXM_STENCIL_FUNC_ALWAYS,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            SCE_GXM_STENCIL_OP_KEEP,
+            0xFF,
+            0xFF);
+   }
 }
 
 
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
-	switch (format & 0x9f000000U) {
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-		return 1;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-		return 2;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-		return 3;
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-	case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-	default:
-		return 4;
-	}
+   switch (format & 0x9f000000U) {
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+      return 1;
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+      return 2;
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+      return 3;
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+   case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+   default:
+      return 4;
+   }
 }
 
 static void vita2d_free_texture(vita2d_texture *texture)
 {
-	if (texture)
+   if (texture)
    {
-		if (texture->gxm_rtgt)
-			sceGxmDestroyRenderTarget(texture->gxm_rtgt);
-		if (texture->depth_UID)
-			gpu_free(texture->depth_UID);
-		if (texture->palette_UID)
-			gpu_free(texture->palette_UID);
-		gpu_free(texture->data_UID);
-		free(texture);
-	}
+      if (texture->gxm_rtgt)
+         sceGxmDestroyRenderTarget(texture->gxm_rtgt);
+      if (texture->depth_UID)
+         gpu_free(texture->depth_UID);
+      if (texture->palette_UID)
+         gpu_free(texture->palette_UID);
+      gpu_free(texture->data_UID);
+      free(texture);
+   }
 }
 
 
 static vita2d_texture *vita2d_create_empty_texture_format(unsigned int w, unsigned int h, SceGxmTextureFormat format)
 {
-	if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE)
-		return NULL;
+   if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE)
+      return NULL;
 
-	vita2d_texture *texture = malloc(sizeof(*texture));
-	if (!texture)
-		return NULL;
+   vita2d_texture *texture = malloc(sizeof(*texture));
+   if (!texture)
+      return NULL;
 
-	memset(texture, 0, sizeof(vita2d_texture));
+   memset(texture, 0, sizeof(vita2d_texture));
 
-	const int tex_size =  w * h * tex_format_to_bytespp(format);
+   const int tex_size =  w * h * tex_format_to_bytespp(format);
 
-	/* Allocate a GPU buffer for the texture */
-	void *texture_data = gpu_alloc(
-		MemBlockType,
-		tex_size,
-		SCE_GXM_TEXTURE_ALIGNMENT,
-		SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-		&texture->data_UID);
+   /* Allocate a GPU buffer for the texture */
+   void *texture_data = gpu_alloc(
+      MemBlockType,
+      tex_size,
+      SCE_GXM_TEXTURE_ALIGNMENT,
+      SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
+      &texture->data_UID);
 
-	if (!texture_data) {
-		free(texture);
-		return NULL;
-	}
+   if (!texture_data) {
+      free(texture);
+      return NULL;
+   }
 
-	/* Clear the texture */
-	memset(texture_data, 0, tex_size);
+   /* Clear the texture */
+   memset(texture_data, 0, tex_size);
 
-	/* Create the gxm texture */
-	sceGxmTextureInitLinear(
-		&texture->gxm_tex,
-		texture_data,
-		format,
-		w,
-		h,
-		0);
+   /* Create the gxm texture */
+   sceGxmTextureInitLinear(
+      &texture->gxm_tex,
+      texture_data,
+      format,
+      w,
+      h,
+      0);
 
-	if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
+   if ((format & 0x9f000000U) == SCE_GXM_TEXTURE_BASE_FORMAT_P8)
    {
-		const int pal_size = 256 * sizeof(uint32_t);
+      const int pal_size = 256 * sizeof(uint32_t);
 
-		void *texture_palette = gpu_alloc(
-			MemBlockType,
-			pal_size,
-			SCE_GXM_PALETTE_ALIGNMENT,
-			SCE_GXM_MEMORY_ATTRIB_READ,
-			&texture->palette_UID);
+      void *texture_palette = gpu_alloc(
+         MemBlockType,
+         pal_size,
+         SCE_GXM_PALETTE_ALIGNMENT,
+         SCE_GXM_MEMORY_ATTRIB_READ,
+         &texture->palette_UID);
 
-		if (!texture_palette)
+      if (!texture_palette)
       {
-			texture->palette_UID = 0;
-			vita2d_free_texture(texture);
-			return NULL;
-		}
+         texture->palette_UID = 0;
+         vita2d_free_texture(texture);
+         return NULL;
+      }
 
-		memset(texture_palette, 0, pal_size);
+      memset(texture_palette, 0, pal_size);
 
-		sceGxmTextureSetPalette(&texture->gxm_tex, texture_palette);
-	}
+      sceGxmTextureSetPalette(&texture->gxm_tex, texture_palette);
+   }
    else
-		texture->palette_UID = 0;
+      texture->palette_UID = 0;
 
-	return texture;
+   return texture;
 }
 
 static unsigned int vita2d_texture_get_stride(const vita2d_texture *texture)
 {
-	return ((sceGxmTextureGetWidth(&texture->gxm_tex) + 7) & ~7)
-		* tex_format_to_bytespp(sceGxmTextureGetFormat(&texture->gxm_tex));
+   return ((sceGxmTextureGetWidth(&texture->gxm_tex) + 7) & ~7)
+      * tex_format_to_bytespp(sceGxmTextureGetFormat(&texture->gxm_tex));
 }
 
 static void vita2d_texture_set_filters(vita2d_texture *texture, SceGxmTextureFilter min_filter, SceGxmTextureFilter mag_filter)
 {
-	sceGxmTextureSetMinFilter(&texture->gxm_tex, min_filter);
-	sceGxmTextureSetMagFilter(&texture->gxm_tex, mag_filter);
+   sceGxmTextureSetMinFilter(&texture->gxm_tex, min_filter);
+   sceGxmTextureSetMagFilter(&texture->gxm_tex, mag_filter);
 }
 
 static inline void draw_texture_scale_generic(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale)
 {
-	vita2d_texture_vertex *vertices = (vita2d_texture_vertex *)
+   vita2d_texture_vertex *vertices = (vita2d_texture_vertex *)
       vita2d_pool_memalign(
-		4 * sizeof(vita2d_texture_vertex), // 4 vertices
-		sizeof(vita2d_texture_vertex));
+      4 * sizeof(vita2d_texture_vertex), /* 4 vertices */
+      sizeof(vita2d_texture_vertex));
 
-	const float w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
-	const float h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
+   const float w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
+   const float h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
 
-	vertices[0].x = x;
-	vertices[0].y = y;
-	vertices[0].z = +0.5f;
-	vertices[0].u = 0.0f;
-	vertices[0].v = 0.0f;
+   vertices[0].x = x;
+   vertices[0].y = y;
+   vertices[0].z = +0.5f;
+   vertices[0].u = 0.0f;
+   vertices[0].v = 0.0f;
 
-	vertices[1].x = x + w;
-	vertices[1].y = y;
-	vertices[1].z = +0.5f;
-	vertices[1].u = 1.0f;
-	vertices[1].v = 0.0f;
+   vertices[1].x = x + w;
+   vertices[1].y = y;
+   vertices[1].z = +0.5f;
+   vertices[1].u = 1.0f;
+   vertices[1].v = 0.0f;
 
-	vertices[2].x = x;
-	vertices[2].y = y + h;
-	vertices[2].z = +0.5f;
-	vertices[2].u = 0.0f;
-	vertices[2].v = 1.0f;
+   vertices[2].x = x;
+   vertices[2].y = y + h;
+   vertices[2].z = +0.5f;
+   vertices[2].u = 0.0f;
+   vertices[2].v = 1.0f;
 
-	vertices[3].x = x + w;
-	vertices[3].y = y + h;
-	vertices[3].z = +0.5f;
-	vertices[3].u = 1.0f;
-	vertices[3].v = 1.0f;
+   vertices[3].x = x + w;
+   vertices[3].y = y + h;
+   vertices[3].z = +0.5f;
+   vertices[3].u = 1.0f;
+   vertices[3].v = 1.0f;
 
-	// Set the texture to the TEXUNIT0
-	sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+   /* Set the texture to the TEXUNIT0 */
+   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
 
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
 static void vita2d_draw_texture_scale(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale)
 {
-	void *vertex_wvp_buffer;
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
-	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
-	draw_texture_scale_generic(texture, x, y, x_scale, y_scale);
+   void *vertex_wvp_buffer;
+   sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
+   sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+   sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+   sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
+   draw_texture_scale_generic(texture, x, y, x_scale, y_scale);
 }
 
 static inline void draw_texture_tint_part_scale_generic(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, unsigned int color)
 {
-	vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)
+   vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)
       vita2d_pool_memalign(
-		4 * sizeof(vita2d_texture_tint_vertex), // 4 vertices
-		sizeof(vita2d_texture_tint_vertex));
+      4 * sizeof(vita2d_texture_tint_vertex), /* 4 vertices */
+      sizeof(vita2d_texture_tint_vertex));
 
-	const float w = sceGxmTextureGetWidth(&texture->gxm_tex);
-	const float h = sceGxmTextureGetHeight(&texture->gxm_tex);
+   const float w = sceGxmTextureGetWidth(&texture->gxm_tex);
+   const float h = sceGxmTextureGetHeight(&texture->gxm_tex);
 
-	const float u0 = tex_x/w;
-	const float v0 = tex_y/h;
-	const float u1 = (tex_x+tex_w)/w;
-	const float v1 = (tex_y+tex_h)/h;
+   const float u0 = tex_x/w;
+   const float v0 = tex_y/h;
+   const float u1 = (tex_x+tex_w)/w;
+   const float v1 = (tex_y+tex_h)/h;
 
-	tex_w *= x_scale;
-	tex_h *= y_scale;
+   tex_w *= x_scale;
+   tex_h *= y_scale;
 
-	vertices[0].x = x;
-	vertices[0].y = y;
-	vertices[0].z = +0.5f;
-	vertices[0].u = u0;
-	vertices[0].v = v0;
+   vertices[0].x = x;
+   vertices[0].y = y;
+   vertices[0].z = +0.5f;
+   vertices[0].u = u0;
+   vertices[0].v = v0;
 
-	vertices[1].x = x + tex_w;
-	vertices[1].y = y;
-	vertices[1].z = +0.5f;
-	vertices[1].u = u1;
-	vertices[1].v = v0;
+   vertices[1].x = x + tex_w;
+   vertices[1].y = y;
+   vertices[1].z = +0.5f;
+   vertices[1].u = u1;
+   vertices[1].v = v0;
 
-	vertices[2].x = x;
-	vertices[2].y = y + tex_h;
-	vertices[2].z = +0.5f;
-	vertices[2].u = u0;
-	vertices[2].v = v1;
+   vertices[2].x = x;
+   vertices[2].y = y + tex_h;
+   vertices[2].z = +0.5f;
+   vertices[2].u = u0;
+   vertices[2].v = v1;
 
-	vertices[3].x = x + tex_w;
-	vertices[3].y = y + tex_h;
-	vertices[3].z = +0.5f;
-	vertices[3].u = u1;
-	vertices[3].v = v1;
+   vertices[3].x = x + tex_w;
+   vertices[3].y = y + tex_h;
+   vertices[3].z = +0.5f;
+   vertices[3].u = u1;
+   vertices[3].v = v1;
 
    for(int n = 0; n < 4; n++){
       vertices[n].r = ((color >> 8*0) & 0xFF)/255.0f;
@@ -1483,156 +1483,156 @@ static inline void draw_texture_tint_part_scale_generic(const vita2d_texture *te
       vertices[n].a = ((color >> 8*3) & 0xFF)/255.0f;
    }
 
-	// Set the texture to the TEXUNIT0
-	sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+   /* Set the texture to the TEXUNIT0 */
+   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
 
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
 static void vita2d_draw_texture_tint_part_scale(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, unsigned int color)
 {
-	void *vertex_wvp_buffer;
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureTintVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureTintFragmentProgram);
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
-	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
-	draw_texture_tint_part_scale_generic(texture, x, y, tex_x, tex_y, tex_w, tex_h, x_scale, y_scale, color);
+   void *vertex_wvp_buffer;
+   sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureTintVertexProgram);
+   sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureTintFragmentProgram);
+   sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+   sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
+   draw_texture_tint_part_scale_generic(texture, x, y, tex_x, tex_y, tex_w, tex_h, x_scale, y_scale, color);
 }
 
 static void vita2d_draw_texture_scale_rotate(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad)
 {
-	const float center_x = sceGxmTextureGetWidth(&texture->gxm_tex)  / 2.0f;
-	const float center_y = sceGxmTextureGetHeight(&texture->gxm_tex) / 2.0f;
-	void *vertex_wvp_buffer;
-	vita2d_texture_vertex *vertices;
+   const float center_x = sceGxmTextureGetWidth(&texture->gxm_tex)  / 2.0f;
+   const float center_y = sceGxmTextureGetHeight(&texture->gxm_tex) / 2.0f;
+   void *vertex_wvp_buffer;
+   vita2d_texture_vertex *vertices;
 
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
-	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
+   sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
+   sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+   sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+   sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
 
-	vertices = (vita2d_texture_vertex *)
+   vertices = (vita2d_texture_vertex *)
       vita2d_pool_memalign(
-		4 * sizeof(vita2d_texture_vertex), // 4 vertices
-		sizeof(vita2d_texture_vertex));
+      4 * sizeof(vita2d_texture_vertex), /* 4 vertices */
+      sizeof(vita2d_texture_vertex));
 
-	const float w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
-	const float h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
-	const float center_x_scaled = x_scale * center_x;
-	const float center_y_scaled = y_scale * center_y;
+   const float w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
+   const float h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
+   const float center_x_scaled = x_scale * center_x;
+   const float center_y_scaled = y_scale * center_y;
 
-	vertices[0].x = -center_x_scaled;
-	vertices[0].y = -center_y_scaled;
-	vertices[0].z = +0.5f;
-	vertices[0].u = 0.0f;
-	vertices[0].v = 0.0f;
+   vertices[0].x = -center_x_scaled;
+   vertices[0].y = -center_y_scaled;
+   vertices[0].z = +0.5f;
+   vertices[0].u = 0.0f;
+   vertices[0].v = 0.0f;
 
-	vertices[1].x = -center_x_scaled + w;
-	vertices[1].y = -center_y_scaled;
-	vertices[1].z = +0.5f;
-	vertices[1].u = 1.0f;
-	vertices[1].v = 0.0f;
+   vertices[1].x = -center_x_scaled + w;
+   vertices[1].y = -center_y_scaled;
+   vertices[1].z = +0.5f;
+   vertices[1].u = 1.0f;
+   vertices[1].v = 0.0f;
 
-	vertices[2].x = -center_x_scaled;
-	vertices[2].y = -center_y_scaled + h;
-	vertices[2].z = +0.5f;
-	vertices[2].u = 0.0f;
-	vertices[2].v = 1.0f;
+   vertices[2].x = -center_x_scaled;
+   vertices[2].y = -center_y_scaled + h;
+   vertices[2].z = +0.5f;
+   vertices[2].u = 0.0f;
+   vertices[2].v = 1.0f;
 
-	vertices[3].x = -center_x_scaled + w;
-	vertices[3].y = -center_y_scaled + h;
-	vertices[3].z = +0.5f;
-	vertices[3].u = 1.0f;
-	vertices[3].v = 1.0f;
+   vertices[3].x = -center_x_scaled + w;
+   vertices[3].y = -center_y_scaled + h;
+   vertices[3].z = +0.5f;
+   vertices[3].u = 1.0f;
+   vertices[3].v = 1.0f;
 
-	float c = cosf(rad);
-	float s = sinf(rad);
-	int i;
-	for (i = 0; i < 4; ++i) { // Rotate and translate
-		float _x = vertices[i].x;
-		float _y = vertices[i].y;
-		vertices[i].x = _x*c - _y*s + x + center_x_scaled;
-		vertices[i].y = _x*s + _y*c + y + center_y_scaled;
-	}
+   float c = cosf(rad);
+   float s = sinf(rad);
+   int i;
+   for (i = 0; i < 4; ++i) { /* Rotate and translate */
+      float _x = vertices[i].x;
+      float _y = vertices[i].y;
+      vertices[i].x = _x*c - _y*s + x + center_x_scaled;
+      vertices[i].y = _x*s + _y*c + y + center_y_scaled;
+   }
 
-	// Set the texture to the TEXUNIT0
-	sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+   /* Set the texture to the TEXUNIT0 */
+   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
 
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
 static inline void draw_texture_part_scale_rotate_generic(const vita2d_texture *texture, float x, float y,
-	float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, float rad)
+   float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, float rad)
 {
-	vita2d_texture_vertex *vertices = (vita2d_texture_vertex *)
+   vita2d_texture_vertex *vertices = (vita2d_texture_vertex *)
       vita2d_pool_memalign(
-		4 * sizeof(vita2d_texture_vertex), // 4 vertices
-		sizeof(vita2d_texture_vertex));
+      4 * sizeof(vita2d_texture_vertex), /* 4 vertices */
+      sizeof(vita2d_texture_vertex));
 
-	const float w_full = sceGxmTextureGetWidth(&texture->gxm_tex);
-	const float h_full = sceGxmTextureGetHeight(&texture->gxm_tex);
+   const float w_full = sceGxmTextureGetWidth(&texture->gxm_tex);
+   const float h_full = sceGxmTextureGetHeight(&texture->gxm_tex);
 
-	const float w_half = (tex_w * x_scale) / 2.0f;
-	const float h_half = (tex_h * y_scale) / 2.0f;
+   const float w_half = (tex_w * x_scale) / 2.0f;
+   const float h_half = (tex_h * y_scale) / 2.0f;
 
-	const float u0 = tex_x / w_full;
-	const float v0 = tex_y / h_full;
-	const float u1 = (tex_x + tex_w) / w_full;
-	const float v1 = (tex_y + tex_h) / h_full;
+   const float u0 = tex_x / w_full;
+   const float v0 = tex_y / h_full;
+   const float u1 = (tex_x + tex_w) / w_full;
+   const float v1 = (tex_y + tex_h) / h_full;
 
-	vertices[0].x = -w_half;
-	vertices[0].y = -h_half;
-	vertices[0].z = +0.5f;
-	vertices[0].u = u0;
-	vertices[0].v = v0;
+   vertices[0].x = -w_half;
+   vertices[0].y = -h_half;
+   vertices[0].z = +0.5f;
+   vertices[0].u = u0;
+   vertices[0].v = v0;
 
-	vertices[1].x = w_half;
-	vertices[1].y = -h_half;
-	vertices[1].z = +0.5f;
-	vertices[1].u = u1;
-	vertices[1].v = v0;
+   vertices[1].x = w_half;
+   vertices[1].y = -h_half;
+   vertices[1].z = +0.5f;
+   vertices[1].u = u1;
+   vertices[1].v = v0;
 
-	vertices[2].x = -w_half;
-	vertices[2].y = h_half;
-	vertices[2].z = +0.5f;
-	vertices[2].u = u0;
-	vertices[2].v = v1;
+   vertices[2].x = -w_half;
+   vertices[2].y = h_half;
+   vertices[2].z = +0.5f;
+   vertices[2].u = u0;
+   vertices[2].v = v1;
 
-	vertices[3].x = w_half;
-	vertices[3].y = h_half;
-	vertices[3].z = +0.5f;
-	vertices[3].u = u1;
-	vertices[3].v = v1;
+   vertices[3].x = w_half;
+   vertices[3].y = h_half;
+   vertices[3].z = +0.5f;
+   vertices[3].u = u1;
+   vertices[3].v = v1;
 
-	const float c = cosf(rad);
-	const float s = sinf(rad);
-	int i;
-	for (i = 0; i < 4; ++i) { // Rotate and translate
-		float _x = vertices[i].x;
-		float _y = vertices[i].y;
-		vertices[i].x = _x*c - _y*s + x;
-		vertices[i].y = _x*s + _y*c + y;
-	}
+   const float c = cosf(rad);
+   const float s = sinf(rad);
+   int i;
+   for (i = 0; i < 4; ++i) { /* Rotate and translate */
+      float _x = vertices[i].x;
+      float _y = vertices[i].y;
+      vertices[i].x = _x*c - _y*s + x;
+      vertices[i].y = _x*s + _y*c + y;
+   }
 
-	// Set the texture to the TEXUNIT0
-	sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
+   /* Set the texture to the TEXUNIT0 */
+   sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
 
-	sceGxmSetVertexStream(_vita2d_context, 0, vertices);
-	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
+   sceGxmSetVertexStream(_vita2d_context, 0, vertices);
+   sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
 static void vita2d_draw_array_textured_mat(const vita2d_texture *texture, const vita2d_texture_tint_vertex *vertices, size_t count, float *mat)
 {
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureTintVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureTintFragmentProgram);
+   sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureTintVertexProgram);
+   sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureTintFragmentProgram);
 
    void *vertex_wvp_buffer;
    sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
    sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, mat);
 
-   // Set the texture to the TEXUNIT0
+   /* Set the texture to the TEXUNIT0 */
    sceGxmSetFragmentTexture(_vita2d_context, 0, &texture->gxm_tex);
 
    sceGxmSetVertexStream(_vita2d_context, 0, vertices);
@@ -1734,15 +1734,15 @@ static void gfx_display_vita2d_scissor_end(
 {
    sceGxmSetRegionClip(_vita2d_context, SCE_GXM_REGION_CLIP_NONE, 0, 0,
          video_width, video_height);
-	clipping_enabled = 0;
-	sceGxmSetFrontStencilFunc(
-			_vita2d_context,
-			SCE_GXM_STENCIL_FUNC_ALWAYS,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			SCE_GXM_STENCIL_OP_KEEP,
-			0xFF,
-			0xFF);
+   clipping_enabled = 0;
+   sceGxmSetFrontStencilFunc(
+         _vita2d_context,
+         SCE_GXM_STENCIL_FUNC_ALWAYS,
+         SCE_GXM_STENCIL_OP_KEEP,
+         SCE_GXM_STENCIL_OP_KEEP,
+         SCE_GXM_STENCIL_OP_KEEP,
+         0xFF,
+         0xFF);
 }
 
 gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
@@ -1831,7 +1831,7 @@ static void vita2d_font_free(void *data, bool is_threaded)
       font->font_driver->free(font->font_data);
 
    if (vita2d_initialized)
-   	sceGxmFinish(_vita2d_context);
+      sceGxmFinish(_vita2d_context);
    vita2d_free_texture(font->texture);
 
    free(font);
@@ -2064,11 +2064,11 @@ static void vita2d_font_render_msg(
       drop_y                  = params->drop_y;
       drop_mod                = params->drop_mod;
       drop_alpha              = params->drop_alpha;
-      r    		      = FONT_COLOR_GET_RED(params->color);
-      g    		      = FONT_COLOR_GET_GREEN(params->color);
-      b    		      = FONT_COLOR_GET_BLUE(params->color);
-      alpha    		      = FONT_COLOR_GET_ALPHA(params->color);
-      color    		      = RGBA8(r,g,b,alpha);
+      r              = FONT_COLOR_GET_RED(params->color);
+      g              = FONT_COLOR_GET_GREEN(params->color);
+      b              = FONT_COLOR_GET_BLUE(params->color);
+      alpha               = FONT_COLOR_GET_ALPHA(params->color);
+      color               = RGBA8(r,g,b,alpha);
    }
    else
    {
@@ -2087,8 +2087,8 @@ static void vita2d_font_render_msg(
       r                       = (video_msg_color_r * 255);
       g                       = (video_msg_color_g * 255);
       b                       = (video_msg_color_b * 255);
-      alpha		      = 255;
-      color 		      = RGBA8(r,g,b,alpha);
+      alpha          = 255;
+      color            = RGBA8(r,g,b,alpha);
 
       drop_x                  = -2;
       drop_y                  = -2;
@@ -2159,7 +2159,7 @@ static void *vita2d_gfx_init(const video_info_t *video,
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
    vita_video_t *vita                     = (vita_video_t *)
-	   calloc(1, sizeof(vita_video_t));
+      calloc(1, sizeof(vita_video_t));
 
    if (!vita)
       return NULL;
@@ -2172,12 +2172,12 @@ static void *vita2d_gfx_init(const video_info_t *video,
    ? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
    /* TODO/FIXME - is this color just black? */
    color = RGBA8(0x00, 0x00, 0x00, 0xFF);
-	clear_color[0] = ((color >> 8*0) & 0xFF)/255.0f;
-	clear_color[1] = ((color >> 8*1) & 0xFF)/255.0f;
-	clear_color[2] = ((color >> 8*2) & 0xFF)/255.0f;
-	clear_color[3] = ((color >> 8*3) & 0xFF)/255.0f;
-	clear_color_u  = color;
-	vblank_wait    = video->vsync;
+   clear_color[0] = ((color >> 8*0) & 0xFF)/255.0f;
+   clear_color[1] = ((color >> 8*1) & 0xFF)/255.0f;
+   clear_color[2] = ((color >> 8*2) & 0xFF)/255.0f;
+   clear_color[3] = ((color >> 8*3) & 0xFF)/255.0f;
+   clear_color_u  = color;
+   vblank_wait    = video->vsync;
 
    if (video->rgb32)
       vita->format    = SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB;
@@ -2236,7 +2236,7 @@ static void vita2d_free_overlay(vita_video_t *vita)
    unsigned i;
 
    if (vita2d_initialized)
-   	sceGxmFinish(_vita2d_context);
+      sceGxmFinish(_vita2d_context);
 
    for (i = 0; i < vita->overlays; i++)
       vita2d_free_texture(vita->overlay[i].tex);
@@ -2288,7 +2288,7 @@ static bool vita2d_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    void *tex_p;
-	vita2d_display_data displayData;
+   vita2d_display_data displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
@@ -2355,7 +2355,7 @@ static bool vita2d_frame(void *data, const void *frame,
    temp_width      = video_mode_data.width;
    temp_height     = video_mode_data.height;
 
-	pool_index = 0;
+   pool_index = 0;
    sceGxmBeginScene(
          _vita2d_context,
          0,
@@ -2445,20 +2445,20 @@ static bool vita2d_frame(void *data, const void *frame,
    if (msg && *msg)
       font_driver_render_msg(vita, msg, strlen(msg), NULL, NULL);
 
-	sceGxmEndScene(_vita2d_context, NULL, NULL);
-	drawing = 0;
+   sceGxmEndScene(_vita2d_context, NULL, NULL);
+   drawing = 0;
 
-	sceGxmPadHeartbeat(&displaySurface[backBufferIndex], displayBufferSync[backBufferIndex]);
-	/* queue the display swap for this frame */
-	displayData.address = displayBufferData[backBufferIndex];
-	sceGxmDisplayQueueAddEntry(
-		displayBufferSync[frontBufferIndex],	// OLD fb
-		displayBufferSync[backBufferIndex],	// NEW fb
-		&displayData);
+   sceGxmPadHeartbeat(&displaySurface[backBufferIndex], displayBufferSync[backBufferIndex]);
+   /* queue the display swap for this frame */
+   displayData.address = displayBufferData[backBufferIndex];
+   sceGxmDisplayQueueAddEntry(
+      displayBufferSync[frontBufferIndex],   /* OLD fb */
+      displayBufferSync[backBufferIndex], /* NEW fb */
+      &displayData);
 
-	/* update buffer indices */
-	frontBufferIndex = backBufferIndex;
-	backBufferIndex = (backBufferIndex + 1) % DISPLAY_BUFFER_COUNT;
+   /* update buffer indices */
+   frontBufferIndex = backBufferIndex;
+   backBufferIndex = (backBufferIndex + 1) % DISPLAY_BUFFER_COUNT;
 
    return true;
 }
