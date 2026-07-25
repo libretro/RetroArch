@@ -22,8 +22,6 @@
 #include <psp2/types.h>
 #include <psp2/kernel/sysmem.h>
 #include <psp2/display.h>
-#include <psp2/message_dialog.h>
-#include <psp2/sysmodule.h>
 
 #include <retro_inline.h>
 #include <encodings/utf.h>
@@ -216,8 +214,6 @@ extern const SceGxmProgram texture_tint_f_gxp;
 static vita2d_video_mode_data video_mode_data;
 static vita2d_video_mode video_mode_initial;
 static SceGxmMultisampleMode current_msaa = SCE_GXM_MULTISAMPLE_4X;
-
-static int pgf_module_was_loaded = 0;
 
 static const SceGxmProgram *const colorVertexProgramGxp         = &color_v_gxp;
 static const SceGxmProgram *const colorFragmentProgramGxp       = &color_f_gxp;
@@ -992,11 +988,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    backBufferIndex = 0;
    frontBufferIndex = 0;
 
-   pgf_module_was_loaded = sceSysmoduleIsLoaded(SCE_SYSMODULE_PGF);
-
-   if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-      sceSysmoduleLoadModule(SCE_SYSMODULE_PGF);
-
    vita2d_initialized = 1;
    return 1;
 }
@@ -1067,9 +1058,6 @@ static int vita2d_fini(void)
 
    /* terminate libgxm */
    sceGxmTerminate();
-
-   /* if (pgf_module_was_loaded != SCE_SYSMODULE_LOADED)
-      sceSysmoduleUnloadModule(SCE_SYSMODULE_PGF); */
 
    vita2d_initialized = 0;
 
