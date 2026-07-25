@@ -1045,7 +1045,11 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
    if (w->num_tracks == 0)
    {
       /* No Tracks within the available prefix: either the header is
-       * still arriving (retry with more) or the file is malformed. */
+       * still arriving (retry with more) or the file is malformed.
+       * A Cues element ahead of the missing Tracks will have already
+       * allocated the index, so release that too - rwebm_close is not
+       * going to run for a handle that was never returned. */
+      free(w->cues);
       free(w);
       goto more_or_fail;
    }
