@@ -1254,7 +1254,11 @@ static bool audio_mixer_play_stream(
    {
       unsigned ch = 0;
       audio_transfer_info(xfer, type, &ch, &rate, NULL);
-      if (ch < 1 || ch > 2)
+      /* Wider than stereo is folded at fill time rather than refused:
+       * the decoders reach eight channels (Opus) and sixteen
+       * (Vorbis), and a voice mixes stereo.  Past the table's reach
+       * there is no sensible fold, so those are still turned away. */
+      if (ch < 1 || ch > 8)
          goto error;
       voice->types.stream.channels = ch;
    }
@@ -1374,9 +1378,15 @@ static bool audio_mixer_play_stream_s16(
    }
    audio_transfer_info(xfer, type, &channels, &rate, NULL);
 
-   /* Stereo-only, matching the float path's stack-buffer sizing. */
-   if (channels != 2)
+   /* Mono is expanded and anything above stereo folded at fill time,
+    * as on the float path; past the downmix table's reach there is no
+    * sensible fold. */
+   if (channels < 1 || channels > 8)
       goto error;
+   /* The fill reads this to size its read and pick its fold.  Only the
+    * float path used to set it, which was harmless while this one was
+    * stereo-only and its fill assumed as much. */
+   voice->types.stream.channels = channels;
 
    if (rate != s_rate)
    {
@@ -1807,6 +1817,132 @@ again:
 }
 
 #ifdef AUDIO_MIXER_HAS_STREAM
+
+/* ---- folding a multichannel stream to the stereo a voice mixes ------
+ *
+ * Vorbis and Opus both decode more than two channels now, and both
+ * hand them over in Vorbis's channel order (spec 4.3.9), which Opus
+ * mapping family 1 adopts:
+ *
+ *   3  L C R          4  L R RL RR        5  L C R RL RR
+ *   6  L C R RL RR LFE                    7  L C R RL RR BC LFE
+ *   8  L C R RL RR SL SR LFE
+ *
+ * A stream voice mixes stereo, so anything wider is folded here - the
+ * arms deliberately do no channel conversion, leaving it to the
+ * mixer.  Coefficients are the usual ITU-R BS.775 ones: centre and
+ * surrounds enter both sides at -3 dB, a lone back centre at -6 dB
+ * into each, and LFE is dropped, which is what it is for.
+ *
+ * Not normalised.  Scaling by the coefficient sum would put 5.1
+ * content 7.7 dB below the same material in a stereo file, which is a
+ * surprising thing for a file's channel count to do to its volume;
+ * the sum only reaches full scale when the channels are correlated,
+ * and the mixer already clamps at its s16 and float boundaries.  The
+ * trade is level for the possibility of clipping on correlated
+ * material, and it is the trade most players make.
+ *
+  * Q15 in int32 - unity is 32768, which does not fit the int16 the
+ * coefficients would otherwise want, and wrapping it would invert a
+ * channel rather than pass it.  The s16 fold stays clear of float. */
+#define AMIX_DM_UNITY 32768
+#define AMIX_DM_M3DB  23170
+#define AMIX_DM_M6DB  16384
+
+static int16_t audio_mixer_sat_s16_64(int64_t v)
+{
+   if (v >  32767)
+      return  32767;
+   if (v < -32768)
+      return -32768;
+   return (int16_t)v;
+}
+
+/* [channels][input channel][0 = left, 1 = right] */
+static const int32_t audio_mixer_downmix_q15[9][8][2] = {
+   { {0,0} },                                              /* unused    */
+   { {0,0} },                                              /* mono      */
+   { {0,0} },                                              /* stereo    */
+   /* 3: L C R */
+   { {AMIX_DM_UNITY,0}, {AMIX_DM_M3DB,AMIX_DM_M3DB}, {0,AMIX_DM_UNITY} },
+   /* 4: L R RL RR */
+   { {AMIX_DM_UNITY,0}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} },
+   /* 5: L C R RL RR */
+   { {AMIX_DM_UNITY,0}, {AMIX_DM_M3DB,AMIX_DM_M3DB}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB} },
+   /* 6: L C R RL RR LFE */
+   { {AMIX_DM_UNITY,0}, {AMIX_DM_M3DB,AMIX_DM_M3DB}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB}, {0,0} },
+   /* 7: L C R RL RR BC LFE */
+   { {AMIX_DM_UNITY,0}, {AMIX_DM_M3DB,AMIX_DM_M3DB}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB},
+     {AMIX_DM_M6DB,AMIX_DM_M6DB}, {0,0} },
+   /* 8: L C R RL RR SL SR LFE */
+   { {AMIX_DM_UNITY,0}, {AMIX_DM_M3DB,AMIX_DM_M3DB}, {0,AMIX_DM_UNITY},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB},
+     {AMIX_DM_M3DB,0},  {0,AMIX_DM_M3DB}, {0,0} }
+};
+
+/* Frames a temp buffer of 'samples' holds at 'ch' channels: what a
+ * read may ask for, which is not the stereo figure once ch exceeds
+ * two. */
+static size_t audio_mixer_frames_for(unsigned ch, size_t samples)
+{
+   return ch ? samples / ch : 0;
+}
+
+/* Fold 'frames' interleaved frames of 'ch' channels down to stereo,
+ * in place and ascending: the destination index never overtakes the
+ * source while ch is at least two. */
+static void audio_mixer_downmix_s16(int16_t *buf, size_t frames,
+      unsigned ch)
+{
+   const int32_t (*co)[2] = audio_mixer_downmix_q15[ch];
+   size_t i;
+   for (i = 0; i < frames; i++)
+   {
+      /* 64-bit: a full-scale sample times unity is already 2^30, and
+       * eight channels of it summed reaches 5.9e9 - an int32 would
+       * wrap on loud surround rather than clamp. */
+      int64_t  l = 0, r = 0;
+      unsigned c;
+      for (c = 0; c < ch; c++)
+      {
+         int32_t v = buf[i * ch + c];
+         l += (int64_t)v * co[c][0];
+         r += (int64_t)v * co[c][1];
+      }
+      /* Round half away from zero rather than truncating, which the
+       * shift alone would do and which costs half an LSB of bias. */
+      buf[2 * i]     = audio_mixer_sat_s16_64(
+            (l >= 0 ? l + 16384 : l - 16384) >> 15);
+      buf[2 * i + 1] = audio_mixer_sat_s16_64(
+            (r >= 0 ? r + 16384 : r - 16384) >> 15);
+   }
+}
+
+static void audio_mixer_downmix_f32(float *buf, size_t frames,
+      unsigned ch)
+{
+   const int32_t (*co)[2] = audio_mixer_downmix_q15[ch];
+   size_t i;
+   for (i = 0; i < frames; i++)
+   {
+      float    l = 0.0f, r = 0.0f;
+      unsigned c;
+      for (c = 0; c < ch; c++)
+      {
+         float v = buf[i * ch + c];
+         l += v * (float)co[c][0] * (1.0f / 32768.0f);
+         r += v * (float)co[c][1] * (1.0f / 32768.0f);
+      }
+      buf[2 * i]     = l;
+      buf[2 * i + 1] = r;
+   }
+}
+
+
 static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume,
@@ -1842,9 +1978,21 @@ again:
                temp_buffer[2*n-1] = s;
             }
          }
-         else
+         else if (voice->types.stream.channels == 2)
             audio_transfer_read_f32(voice->types.stream.stream, type,
                   temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         else
+         {
+            /* Wider than stereo: the frames a read may ask for follow
+             * the channel count, not the stereo figure, or the buffer
+             * overruns.  Folded in place afterwards. */
+            unsigned sch = voice->types.stream.channels;
+            audio_transfer_read_f32(voice->types.stream.stream, type,
+                  temp_buffer,
+                  audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
+                  &got);
+            audio_mixer_downmix_f32(temp_buffer, got, sch);
+         }
          temp_samples = (unsigned)(got * 2);
       }
 
@@ -1927,8 +2075,38 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
 again:
       {
          size_t got = 0;
-         audio_transfer_read_s16(voice->types.stream.stream, type,
-               temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+         unsigned sch = voice->types.stream.channels;
+         if (sch == 1)
+         {
+            /* Mono: the resampler downstream reads input_frames as
+             * stereo pairs, so a mono read leaves the upper half of
+             * every frame stale.  Expand in place, descending, so a
+             * sample is read before anything at or above it is
+             * written - the f32 path has always done this and this
+             * one never did. */
+            unsigned n;
+            audio_transfer_read_s16(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
+            for (n = (unsigned)got; n > 0; n--)
+            {
+               int16_t v          = temp_buffer[n - 1];
+               temp_buffer[2*n-2] = v;
+               temp_buffer[2*n-1] = v;
+            }
+         }
+         else if (sch > 2)
+         {
+            /* See the f32 path: read what the buffer holds at this
+             * channel count, then fold to stereo in place. */
+            audio_transfer_read_s16(voice->types.stream.stream, type,
+                  temp_buffer,
+                  audio_mixer_frames_for(sch, AUDIO_MIXER_TEMP_BUFFER),
+                  &got);
+            audio_mixer_downmix_s16(temp_buffer, got, sch);
+         }
+         else
+            audio_transfer_read_s16(voice->types.stream.stream, type,
+                  temp_buffer, AUDIO_MIXER_TEMP_BUFFER / 2, &got);
          temp_samples = (unsigned)(got * 2);
       }
       if (temp_samples == 0)
