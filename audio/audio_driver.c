@@ -3774,6 +3774,13 @@ static size_t microphone_driver_flush(
    if (bytes_read <= 0)
       return 0;
 
+   /* A driver must not report more than it was asked for.  Nothing else
+    * validates this, and every buffer below is sized from the request, so
+    * an over-report would run the dual-mono up-channel and the resampler
+    * off the end of their allocations. */
+   if ((size_t)bytes_read > bytes_to_read)
+      bytes_read = (int)bytes_to_read;
+
    resampler_data.input_frames = bytes_read / sample_size;
    /* This is in frames, not samples or bytes;
     * we're up-channeling the audio to stereo,
@@ -3832,7 +3839,14 @@ static size_t microphone_driver_flush(
       s16.data_out      = mic_st->resampled_frames_int16;
       s16.input_frames  = resampler_data.input_frames;
       s16.output_frames = 0;
-      s16.ratio         = resampler_data.ratio;
+      /* Same unbounded-output contract as the game path: the driver emits
+       * until its input runs out, with no reference to the destination
+       * size. */
+      s16.ratio         = audio_driver_bound_ratio(resampler_data.ratio,
+            resampler_data.input_frames,
+            MIN(mic_st->resampled_frames_int16_length
+                     / (2 * sizeof(int16_t)),
+                mic_st->final_frames_length / sizeof(int16_t)));
       microphone->resampler_int16_process(
             microphone->resampler_data_int16, &s16);
 
@@ -3861,7 +3875,15 @@ static size_t microphone_driver_flush(
       convert_to_dual_mono_float(mic_st->dual_mono_frames, mic_st->converted_input_frames, resampler_data.input_frames);
    }
 
-   /* Now we resample the mic data. */
+   /* Now we resample the mic data.  Bound the ratio first: the output is
+    * narrowed to mono and then to int16 through three separate buffers, so
+    * take the smallest capacity of the three. */
+   resampler_data.ratio = audio_driver_bound_ratio(resampler_data.ratio,
+         resampler_data.input_frames,
+         MIN(MIN(mic_st->resampled_frames_length / (2 * sizeof(float)),
+                 mic_st->resampled_mono_frames_length / sizeof(float)),
+             mic_st->final_frames_length / sizeof(int16_t)));
+
    microphone->resampler->process(microphone->resampler_data, &resampler_data);
 
    /* Next, we convert the resampled data back to mono... */
