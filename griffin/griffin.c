@@ -33,11 +33,6 @@
 
 #define CINTERFACE
 
-#define HAVE_RMODTRACKER 1
-
-#define HAVE_ROPUS 1
-#define HAVE_RAAC 1
-
 /* The ZIP archive backend and the DEFLATE trans_stream backend both fall
  * back to the built-in inflate/deflate codec, so compression support is
  * always available regardless of whether zlib or 7zip is compiled in. */
@@ -435,17 +430,25 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/audio_transfer.c"
+
 /* The arms in audio_transfer.c are enabled by their own HAVE_, not by
  * the mixer's, so the decoders behind them have to be built on the same
  * condition.  They used to sit inside HAVE_AUDIOMIXER, which left a
  * build with a codec enabled and the mixer disabled compiling calls to
  * decoders nothing had compiled. */
+
 #ifdef HAVE_ROPUS
 #include "../libretro-common/formats/opus/ropus.c"
 #endif
+
 #ifdef HAVE_RAAC
 #include "../libretro-common/formats/aac/raac.c"
 #endif
+
+#ifdef HAVE_RMODTRACKER
+#include "../libretro-common/formats/mod/rmodtracker.c"
+#endif
+
 #include "../libretro-common/formats/image_transfer.c"
 #include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
@@ -465,11 +468,13 @@ VIDEO IMAGE
 #if defined(HAVE_RWEBP) || defined(HAVE_RWEBM) || defined(HAVE_RMP4)
 #include "../libretro-common/formats/vp8/rvp8.c"
 #endif
+
 #ifdef HAVE_RWEBM
 #include "../libretro-common/formats/webm/rwebm.c"
 #include "../libretro-common/formats/webm/rwebm_video.c"
 #include "../libretro-common/formats/webm/rwebm_audio.c"
 #endif
+
 #ifdef HAVE_RMP4
 #include "../libretro-common/formats/h264/rh264.c"
 #include "../libretro-common/formats/mp4/rmp4.c"
@@ -486,6 +491,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/bmp/rbmp_encode.c"
+
 #ifdef HAVE_RWAV
 #include "../libretro-common/formats/wav/rwav.c"
 #endif
@@ -631,8 +637,6 @@ VIDEO DRIVER
 #include "../gfx/drivers/gdi_gfx.c"
 #endif
 #endif
-
-#include "../libretro-common/formats/mod/rmodtracker.c"
 
 /*============================================================
 FONTS
@@ -1032,20 +1036,24 @@ DRIVERS
 #include "../gfx/gfx_animation.c"
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_thumbnail.c"
+
 /* rflac is used by the audio mixer (HAVE_RFLAC) and by the CHD FLAC
  * decoder in libchdr (HAVE_CHD). Include its implementation once, ahead
  * of both consumers, whenever either of them is present. */
 #if defined(HAVE_RFLAC) || defined(HAVE_CHD)
 #include "../libretro-common/formats/flac/rflac.c"
 #endif
+
 #ifdef HAVE_AUDIOMIXER
+#include "../libretro-common/audio/audio_mixer.c"
+#endif
+
 #if defined(HAVE_RVORBIS)
 #include "../libretro-common/formats/vorbis/rvorbis.c"
 #endif
+
 #if defined(HAVE_RMP3)
 #include "../libretro-common/formats/mp3/rmp3.c"
-#endif
-#include "../libretro-common/audio/audio_mixer.c"
 #endif
 
 /*============================================================
