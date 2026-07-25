@@ -871,7 +871,8 @@ bool task_audio_mixer_load_handler(retro_task_t *task)
    return true;
 }
 
-#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) || defined(HAVE_RFLAC))
+#if defined(HAVE_AUDIOMIXER) && (defined(HAVE_RVORBIS) || defined(HAVE_RMP3) \
+      || defined(HAVE_RFLAC) || defined(HAVE_RWAV))
 /* ---- windowed streaming for large background music ----
  * Files past the threshold, in codecs whose buffer-mode access
  * pattern is head-bounded-open + monotonic reads + loop-to-head

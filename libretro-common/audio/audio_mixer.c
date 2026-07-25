@@ -38,31 +38,16 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef HAVE_RVORBIS
-#include <formats/audio.h>
-#endif
-
-#ifdef HAVE_RAAC
-#include <formats/audio.h>
-#endif
-
-#ifdef HAVE_ROPUS
-#include <formats/audio.h>
-#endif
-
-#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
-#include <formats/audio.h>
-#endif
-
-#ifdef HAVE_RFLAC
-#include <formats/audio.h>
-#endif
-
-#ifdef HAVE_RMP3
-#include <formats/audio.h>
-#endif
-
-#ifdef HAVE_RMODTRACKER
+/* Which builds have stream voices - the shared play/mix/release path
+ * over audio_transfer - asked in one place rather than spelled out at
+ * each of the six sites that need it.  WAV joined the set when it
+ * gained a streaming sound type, and a console build carrying WAV and
+ * no compressed codec is exactly the configuration that finds a site
+ * left behind. */
+#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) \
+ || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) \
+ || defined(HAVE_ROPUS)
+#define AUDIO_MIXER_HAS_STREAM 1
 #include <formats/audio.h>
 #endif
 
@@ -95,7 +80,7 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS) || defined(HAVE_RWAV)
+#ifdef AUDIO_MIXER_HAS_STREAM
       struct
       {
          /* shared streaming source (WAV / OGG / FLAC / MP3 / ...) */
@@ -127,8 +112,8 @@ struct audio_mixer_voice
          unsigned position;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
-      /* Shared streaming-codec voice state (OGG / FLAC / MP3). The codec is
+#ifdef AUDIO_MIXER_HAS_STREAM
+      /* Shared streaming voice state (WAV / OGG / FLAC / MP3). The codec is
        * identified by voice->type and passed to audio_transfer as an
        * enum audio_type_enum; the bookkeeping is identical across them. */
       struct
@@ -370,7 +355,7 @@ static int32_t audio_mixer_gain_s16(int16_t s, int32_t gain_q16)
          : -(((-p + 0x8000) >> 16)));
 }
 
-#if defined(HAVE_RWAV) || defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
+#ifdef AUDIO_MIXER_HAS_STREAM
 /* Only the WAV and streaming s16 resample paths consult this; a MOD-only or
  * no-codec build would otherwise flag it as unused. */
 static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
@@ -838,7 +823,7 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
    size_t r = 0;
    if (!voice)
       return 0;
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS) || defined(HAVE_RWAV)
+#ifdef AUDIO_MIXER_HAS_STREAM
    AUDIO_MIXER_LOCK(voice);
    switch (voice->type)
    {
@@ -1014,10 +999,10 @@ static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
    return true;
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
-/* Shared streaming-codec path (OGG / FLAC / MP3). audio_transfer already
- * abstracts the codec, so one set of play/mix/release functions serves all
- * three; the caller passes the matching enum audio_type_enum. */
+#ifdef AUDIO_MIXER_HAS_STREAM
+/* Shared streaming path (WAV / OGG / FLAC / MP3). audio_transfer already
+ * abstracts the codec, so one set of play/mix/release functions serves
+ * them all; the caller passes the matching enum audio_type_enum. */
 static bool audio_mixer_play_stream(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
@@ -1585,7 +1570,7 @@ again:
    }
 }
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
+#ifdef AUDIO_MIXER_HAS_STREAM
 static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       audio_mixer_voice_t* voice,
       float volume,
