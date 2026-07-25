@@ -73,6 +73,7 @@
  *   start                           Y   Y   s   s   s   s   s   s
  *   is_valid                        Y   Y   s   s   s   s   s   s
  *   process                         Y   Y   Y   Y   Y   Y   Y   Y
+ *   process slices (returns NEXT)   Y   Y   .   .   Y   Y   Y   Y
  *   iterate                         Y   Y   .   .   .   .   .   .
  *   need_more                       Y   Y   .   .   .   .   .   .
  *   set_avail                       Y   Y   .   .   .   .   Y   Y
@@ -98,11 +99,21 @@
  *   is behind its format's HAVE_ guard like every other case, so a
  *   type compiled out answers false here as well.
  *
- * - iterate / need_more are the incremental decode loop, PNG and JPEG
- *   only.  Every other type decodes in a single process() call, so
- *   iterate() reports "nothing left to do" (false) on the first ask.
- *   Callers must consult need_more() to tell that apart from a
- *   PNG/JPEG that stopped at the resident-byte wall.
+ * - there are two independent slicing mechanisms here, and the matrix
+ *   rows for them do not line up.  iterate() is the incremental
+ *   *parse* loop - walking chunk or marker structure before any pixels
+ *   exist - and only PNG and JPEG have one; need_more() tells an
+ *   iterate() that stalled at the resident-byte wall apart from one
+ *   that finished.  Decode-phase slicing is the separate business of
+ *   process() returning IMAGE_PROCESS_NEXT until the surface is
+ *   complete, and every type except BMP and TGA does that.  So a false
+ *   from iterate() does NOT mean the type decodes in one go: WEBP, DDS
+ *   and the video types all answer false there while still producing
+ *   their pixels over many process() calls.
+ *
+ * - which means BMP and TGA are the only types that hand back a whole
+ *   surface from a single process() call.  Both are cheap enough per
+ *   texel that it has not been worth slicing them.
  *
  * - set_avail (the still-image byte wall) is honoured by PNG and JPEG,
  *   where it surfaces as need_more(), and by WEBM and MP4, where it
