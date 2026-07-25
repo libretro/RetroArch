@@ -81,8 +81,13 @@
  *     windows like the compressed arms, and its residency is a window
  *     rather than the file.  rwav walks the chunk list, so LIST, fact,
  *     cue and the rest before the samples are no obstacle.
- *   Does not: take 24-bit, WAVE_FORMAT_EXTENSIBLE or ADPCM/a-law -
- *     none of those reach here, rwav rejects them.  No demuxed input.
+ *   Does not: take 24-bit or ADPCM/a-law - neither reaches here, rwav
+ *     rejects them, including where a WAVE_FORMAT_EXTENSIBLE SubFormat
+ *     names one (rwav resolves that header, so a file extensible only
+ *     for its channel count or width arrives as the PCM or float it
+ *     holds).  No demuxed input.  Note the mixer takes stream voices
+ *     at one or two channels, so a 5.1 WAV parses here and is turned
+ *     away there, as a 5.1 FLAC already is.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and

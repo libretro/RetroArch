@@ -41,9 +41,13 @@
  * hold only part of the file, since parsing touches chunk headers and
  * never the payload.
  *
- * What it does not implement: extensible (WAVE_FORMAT_EXTENSIBLE)
- * headers, 24-bit samples, compressed codecs (ADPCM, a-law, mu-law),
- * and writing.  A declared data size larger than the buffer is taken
+ * WAVE_FORMAT_EXTENSIBLE headers are resolved through their SubFormat
+ * GUID, so a file that is only extensible because it has more than two
+ * channels reads as the plain PCM or float it actually holds.
+ *
+ * What it does not implement: 24-bit samples, compressed codecs
+ * (ADPCM, a-law, mu-law) - including as an extensible SubFormat - and
+ * writing.  A declared data size larger than the buffer is taken
  * as the buffer's worth rather than an error, which covers both a
  * truncated file and a writer that stamped a placeholder length it
  * never went back to fix; a trailing partial frame is dropped.
@@ -143,6 +147,44 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
    channels = rwav_u16(data + fmt_off + 2);
    rate     = (unsigned)rwav_u32(data + fmt_off + 4);
    bits     = rwav_u16(data + fmt_off + 14);
+
+   /* WAVE_FORMAT_EXTENSIBLE names the real format in a GUID instead of
+    * the tag, and is what writers emit once a file has more than two
+    * channels or more than 16 bits - so a plain 5.1 PCM file arrives
+    * this way.  Past the standard 16 bytes it carries cbSize, the
+    * valid bit count, the channel mask, and a 16-byte SubFormat whose
+    * first four bytes are the tag the file would otherwise have
+    * carried, followed by the fixed KSDATAFORMAT suffix.  Resolve it
+    * to that tag and let the checks below judge it; a suffix that is
+    * not KSDATAFORMAT's belongs to a codec this reader has no business
+    * guessing at. */
+   if (tag == 0xFFFE)
+   {
+      static const uint8_t ksdataformat[12] =
+      {
+         0x00, 0x00, 0x10, 0x00, 0x80, 0x00,
+         0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71
+      };
+      unsigned valid;
+
+      /* 16 standard bytes, cbSize, and the 22 the extension needs */
+      if (fmt_size < 40)
+         return RWAV_ITERATE_ERROR;
+      if (rwav_u16(data + fmt_off + 16) < 22)            /* cbSize    */
+         return RWAV_ITERATE_ERROR;
+      if (memcmp(data + fmt_off + 28, ksdataformat, sizeof(ksdataformat)))
+         return RWAV_ITERATE_ERROR;
+      /* samples fill the container width with the unused low bits
+       * zeroed, so a smaller valid count needs nothing done about it
+       * here; a larger one is a malformed header */
+      valid = rwav_u16(data + fmt_off + 18);
+      if (valid > bits)
+         return RWAV_ITERATE_ERROR;
+      /* the channel mask at 20 assigns speakers to the channels and
+       * does not change how they are interleaved, so it is the
+       * caller's business rather than this reader's */
+      tag = (unsigned)rwav_u32(data + fmt_off + 24);
+   }
 
    /* format tag 1 is integer PCM, 3 is IEEE float; anything past the
     * standard 16 bytes of either is ignored rather than refused */
