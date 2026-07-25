@@ -8,7 +8,31 @@
  *
  * What it does not implement: ID3/APE tag parsing, Xing/Info/LAME
  * header interpretation (VBR duration estimates and gapless
- * delay/padding trimming are the caller's concern), and encoding. */
+ * delay/padding trimming are the caller's concern), and encoding.
+ *
+ * Known, and left alone deliberately: the fixed-point kernels rely on
+ * signed integers wrapping, which the standard leaves undefined.  A
+ * valid stream never reaches it - the format bounds the values so the
+ * sums fit - but a corrupt one is bounded by nothing, and then
+ * UndefinedBehaviorSanitizer reports the overflow.  Measured over 300
+ * bitflip seeds it is 73 expressions in three places: the IMDCT and
+ * antialias around 1233-1303, the DCT-II around 1495-1538, and the
+ * synthesis around 1808-1814.
+ *
+ * Not rewritten, because the compiler is not exploiting it and the
+ * rewrite is riskier than the bug: -O0, -O2 and -O2 -fwrapv agree
+ * frame for frame on corrupt input, so what is emitted today is the
+ * wrap the code expects.  Doing it properly means carrying every one
+ * of those expressions through unsigned - the accumulation is defined
+ * there, and the result identical on two's complement - and a single
+ * mistyped temporary in a hot DSP kernel is a silent wrong sample on
+ * a path only malformed input reaches.  Whoever takes it on should
+ * check old against new on both valid and corrupt corpora, where a
+ * faithful translation has to be bit-identical on each.
+ *
+ * rflac's LPC path had the same fault in one contained function and
+ * was converted; this is the same fault at seventy-three times the
+ * surface. */
 #include <formats/rmp3.h>
 
 #include <stdlib.h>
