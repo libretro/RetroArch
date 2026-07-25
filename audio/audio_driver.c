@@ -741,25 +741,6 @@ static bool audio_driver_mixer_use_s16(bool is_float)
           ;
 }
 
-#ifdef HAVE_AUDIOMIXER
-/* Cross-format voice folds.  A voice's format is fixed at play() time but the
- * game pipeline picks int16-vs-float per flush, so a voice can occasionally
- * land on the other path (e.g. a float-only DSP loaded while an s16 voice was
- * sounding).  These sum the "foreign" voices via their native mixer into a
- * scratch, then fold onto the active buffer so nothing is ever dropped.  They
- * are gated by audio_mixer_has_{float,s16}_voices() so the common single-
- * format case skips them entirely. */
-static void audio_mixer_fold_s16_voices_into_float(float *dst,
-      int16_t *scratch, unsigned frames, float gain, bool override)
-{
-   unsigned k;
-   unsigned total = frames * 2;
-   memset(scratch, 0, total * sizeof(int16_t));
-   audio_mixer_mix_s16(scratch, frames, gain, override);
-   for (k = 0; k < total; k++)
-      dst[k] += (float)scratch[k] * (1.0f / 0x8000);
-}
-
 /* Saturating, NaN-safe float -> s16 conversion of one sample.
  *
  * Mirrors the scalar tail of convert_float_to_s16() exactly - same
@@ -794,6 +775,25 @@ static INLINE int32_t audio_float_to_s16_sat(float v)
    if (scaled < -32768.0f)
       return -32768;
    return (int32_t)scaled;
+}
+
+#ifdef HAVE_AUDIOMIXER
+/* Cross-format voice folds.  A voice's format is fixed at play() time but the
+ * game pipeline picks int16-vs-float per flush, so a voice can occasionally
+ * land on the other path (e.g. a float-only DSP loaded while an s16 voice was
+ * sounding).  These sum the "foreign" voices via their native mixer into a
+ * scratch, then fold onto the active buffer so nothing is ever dropped.  They
+ * are gated by audio_mixer_has_{float,s16}_voices() so the common single-
+ * format case skips them entirely. */
+static void audio_mixer_fold_s16_voices_into_float(float *dst,
+      int16_t *scratch, unsigned frames, float gain, bool override)
+{
+   unsigned k;
+   unsigned total = frames * 2;
+   memset(scratch, 0, total * sizeof(int16_t));
+   audio_mixer_mix_s16(scratch, frames, gain, override);
+   for (k = 0; k < total; k++)
+      dst[k] += (float)scratch[k] * (1.0f / 0x8000);
 }
 
 static void audio_mixer_fold_float_voices_into_s16(int16_t *dst,
