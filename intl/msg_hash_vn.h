@@ -1131,6 +1131,7 @@ static const struct
    char s_d05c8ee3[29];
    char s_13bce77f[32];
    char s_1b2ee6c4[42];
+   char s_81589fd5[32];
    char s_26e9cde7[41];
    char s_b539ec6c[19];
    char s_f89e1cbc[63];
@@ -2967,6 +2968,7 @@ static const struct
    char s_87ac0bd1[91];
    char s_236ddb2d[120];
    char s_d27e63b2[233];
+   char s_2297ba83[319];
    char s_32728f95[117];
    char s_c4eae01a[139];
    char s_bb0852aa[193];
@@ -6010,6 +6012,7 @@ static const struct
    "\304\220\341\273\225i Ch\341\273\227 \341\272\242nh Thu Nh\341\273\217",
    "Chuy\341\273\203n \304\221\341\273\225i bi\341\273\203u t\306\260\341\273\243ng",
    "\304\220\341\273\231 tr\341\273\205 h\303\254nh thu nh\341\273\217 (mlili gi\303\242y)",
+   "Ph\341\273\221i m\303\240u cho \341\272\243nh thu nh\341\273\217",
    "Ph\306\260\306\241ng ph\303\241p thu nh\341\273\217 h\303\254nh thu nh\341\273\217",
    "\304\220\341\273\231 trong su\341\273\221t",
    "Ti\341\272\277p t\341\273\245c tr\303\262 ch\306\241i sau khi s\341\273\255 d\341\273\245ng tr"
@@ -9044,6 +9047,14 @@ static const struct
    "\267t gi\303\241 tr\341\273\213 \303\255t nh\341\272\245t 256 ms s\341\272\275 gi\303\272p cu"
    "\341\273\231n nhanh v\303\240 m\306\260\341\273\243t ngay c\341\272\243 tr\303\252n thi\341\272"
    "\277t b\341\273\213 ch\341\272\255m.",
+   "Gi\341\272\243m hi\341\273\207n t\306\260\341\273\243ng d\341\272\243i m\303\240u tr\303\252n "
+   "\341\272\243nh thu nh\341\273\217 v\303\240 h\303\254nh n\341\273\201n b\341\272\261ng c\303\241"
+   "ch ph\341\273\221i m\303\240u theo b\341\272\243ng m\303\240u gi\341\273\233i h\341\272\241n c"
+   "\341\273\247a menu. Khi t\304\203ng 'T\341\273\267 l\341\273\207 menu', h\341\273\215a ti\341"
+   "\272\277t ph\341\273\221i m\303\240u c\305\251ng \304\221\306\260\341\273\243c ph\303\263ng to t"
+   "heo v\303\240 c\303\263 th\341\273\203 nh\303\254n th\341\272\245y r\303\265; h\303\243y t\341"
+   "\272\257t t\303\271y ch\341\273\215n n\303\240y n\341\272\277u \304\221i\341\273\201u \304\221"
+   "\303\263 g\303\242y kh\303\263 ch\341\273\213u.",
    "Ph\306\260\306\241ng ph\303\241p n\341\273\231i suy \304\221\306\260\341\273\243c s\341\273\255 "
    "d\341\273\245ng khi thu nh\341\273\217 c\303\241c h\303\254nh thu nh\341\273\217 l\341\273\233n "
    "\304\221\341\273\203 v\341\273\253a v\341\273\233i m\303\240n h\303\254nh.",
@@ -11766,7 +11777,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (218590u
+      (sizeof(msg_hash_vn_blob) == (218941u
 #ifdef ANDROID
        + 422u
 #endif
@@ -13292,6 +13303,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -15124,6 +15136,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,

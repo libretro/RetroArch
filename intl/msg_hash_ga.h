@@ -1131,6 +1131,7 @@ static const struct
    char s_d05c8ee3[25];
    char s_13bce77f[21];
    char s_1b2ee6c4[23];
+   char s_81589fd5[28];
    char s_26e9cde7[28];
    char s_b539ec6c[15];
    char s_f89e1cbc[79];
@@ -2960,6 +2961,7 @@ static const struct
    char s_87ac0bd1[83];
    char s_236ddb2d[121];
    char s_d27e63b2[247];
+   char s_2297ba83[316];
    char s_32728f95[110];
    char s_c4eae01a[158];
    char s_bb0852aa[212];
@@ -5622,6 +5624,7 @@ static const struct
    "Malartaigh Mionsamhlacha",
    "Deilbh\303\255n\303\255 Athraigh",
    "Moill Mionsamhail (ms)",
+   "Mionsamhlacha D\303\255threoracha",
    "Modh Laghdaithe Mionsamhail",
    "Tr\303\251dhearcacht",
    "Lean ar aghaidh leis an \303\241bhar tar \303\251is \303\272s\303\241id a bhaint as St\303\241it"
@@ -7943,6 +7946,11 @@ static const struct
    "mionsamhlacha gaolmhara a lucht\303\272. M\303\241 shocra\303\255tear \303\251 seo go luach 256 "
    "ms ar a laghad, is f\303\251idir scroll\303\272 tapa gan mhoill a dh\303\251anamh fi\303\272 ar "
    "na gl\303\251asanna is moille.",
+   "R\303\251idh le banda\303\255 datha i mionsamhlacha agus i bp\303\241ip\303\251ar balla tr\303"
+   "\255 iad a dh\303\255thri\303\272 go pail\303\251ad teoranta an roghchl\303\241ir. Formh\303\251"
+   "ada\303\255tear an patr\303\272n d\303\255thri\303\272 mar aon le gach rud eile ag facht\303\263"
+   "ir\303\255 arda 'Sc\303\241la Roghchl\303\241ir', agus f\303\251adfaidh s\303\251 a bheith le fe"
+   "ice\303\241il mar uigeacht; d\303\255chumasaigh \303\251 m\303\241s amhlaidh.",
    "Modh athshampl\303\241la a \303\272s\303\241idtear agus mionsamhlacha m\303\263ra \303\241 gcrap"
    "adh chun go n-oirfidh siad don taispe\303\241int.",
    "Cumasaigh taispe\303\241int \303\241bhair sa ch\303\272lra agus an Roghchl\303\241r Tapa gn\303"
@@ -9804,7 +9812,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (202536u
+      (sizeof(msg_hash_ga_blob) == (202880u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11329,6 +11337,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -13155,6 +13164,7 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
