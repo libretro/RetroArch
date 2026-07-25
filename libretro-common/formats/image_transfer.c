@@ -54,6 +54,103 @@
 
 #include <formats/image.h>
 
+/* Per-type dispatch for the still/animation decode front end.  Every
+ * entry point below is a switch over enum image_type_enum that forwards
+ * to one of the r<fmt> backends, so a caller can drive any supported
+ * format through one API and read an unsupported combination off the
+ * return value instead of testing the type itself.
+ *
+ * Each backend sits behind its own HAVE_R<FMT> build guard.  With the
+ * guard off, image_transfer_new() returns NULL for that type and the
+ * rest of the entry points degrade to the unsupported answer (NULL /
+ * false / 0 / no-op), so no caller needs a compile-time type list.
+ *
+ * Y = forwarded to the backend, . = returns the unsupported answer,
+ * s = constant stub (see the notes below):
+ *
+ *                                   PNG JPG BMP TGA WBP DDS WBM MP4
+ *   new / free / set_buf_ptr        Y   Y   Y   Y   Y   Y   Y   Y
+ *   start                           Y   Y   s   s   s   s   s   s
+ *   is_valid                        Y   Y   s   s   s   s   s   s
+ *   process                         Y   Y   Y   Y   Y   Y   Y   Y
+ *   iterate                         Y   Y   .   .   .   .   .   .
+ *   need_more                       Y   Y   .   .   .   .   .   .
+ *   set_avail                       Y   Y   .   .   .   .   Y   Y
+ *   get_gpu_layout                  .   .   .   .   .   Y   .   .
+ *   set_want_10bit / is_10bit       Y   .   .   .   .   .   Y   Y
+ *   detach_anim_stream              .   .   .   .   .   .   Y   Y
+ *   anim_* (whole buffer)           .   .   .   .   Y   .   .   .
+ *   anim_stream_new                 Y   .   .   .   Y   .   Y   Y
+ *   anim_stream_new_avail           Y   .   .   .   .   .   Y   Y
+ *   anim_stream_free / _get_info /
+ *     _next / _rewind / _set_argb   Y   .   .   .   Y   .   Y   Y
+ *   anim_stream_set_avail           Y   .   .   .   .   .   Y   Y
+ *   anim_stream_media_floor /
+ *     _consumed                     .   .   .   .   .   .   Y   Y
+ *   anim_stream_complete_scan       .   .   .   .   .   .   Y   .
+ *
+ * The gaps, in the order a caller runs into them:
+ *
+ * - start / is_valid are header probes.  Only PNG and JPEG parse a
+ *   header incrementally and can therefore fail before decoding; the
+ *   other backends validate inside their one-shot process step, so the
+ *   stubs answer true and let process() report the failure.  They
+ *   answer true even with the format's HAVE_ guard off, which is
+ *   harmless: new() already returned NULL, and process() is then a
+ *   no-op returning 0.
+ *
+ * - iterate / need_more are the incremental decode loop, PNG and JPEG
+ *   only.  Every other type decodes in a single process() call, so
+ *   iterate() reports "nothing left to do" (false) on the first ask.
+ *   Callers must consult need_more() to tell that apart from a
+ *   PNG/JPEG that stopped at the resident-byte wall.
+ *
+ * - set_avail (the still-image byte wall) is honoured by PNG and JPEG,
+ *   where it surfaces as need_more(), and by WEBM and MP4, where it
+ *   surfaces as IMAGE_PROCESS_WAIT out of process().  BMP, TGA, WEBP
+ *   and DDS have no partial-buffer decode and must be handed fully
+ *   resident data.
+ *
+ * - 10-bit output is a property of the source, not of this layer: PNG
+ *   (from 16-bit-per-channel RGB) and the two video types (from 10-bit
+ *   HDR) can pack XRGB2101010.  JPEG is 8-bit by construction; BMP,
+ *   TGA, WEBP and DDS are not wired for it.
+ *
+ * - get_gpu_layout is DDS only, and only for part of it - see
+ *   rdds_get_gpu_layout() for the payloads it declines and hands back
+ *   to the CPU decode path.
+ *
+ * - animation splits two ways.  Animated WEBP is the only type with
+ *   the whole-buffer anim_* handle (decode everything, then index
+ *   frames); APNG, animated WEBP, WEBM and MP4 all have the streaming
+ *   form.  Of those, only WEBM and MP4 carry a byte cursor, so only
+ *   they can be windowed (media_floor / consumed) or adopted from a
+ *   still whose read is still in flight (detach_anim_stream).
+ *   Animated WEBP additionally has no partial open, so
+ *   anim_stream_new_avail() returns NULL for it and the caller keeps
+ *   the whole-buffer path.  complete_scan() is WEBM only because only
+ *   its timestamp pre-scan can be truncated by the wall.
+ *
+ * Deliberately not dispatched here:
+ *
+ * - Encoding.  rpng_save_image_*() and rbmp_save_image() are called
+ *   directly by their users; there is no image_transfer_save().
+ *
+ * - Type sniffing.  image_texture_get_type() derives the enum from the
+ *   path extension; nothing here inspects magic bytes.
+ *
+ * - The pre-decode readiness probes (rpng_header_ready,
+ *   rjpeg_header_ready, rwebp_still_ready, rpng_is_apng).  They take a
+ *   raw buffer rather than a handle, so tasks/task_image.c calls them
+ *   before there is anything to dispatch on.
+ *
+ * - Format-specific side channels with no cross-type meaning, such as
+ *   rpng_get_hdr_metadata() and the player-grade MP4 controls
+ *   (rmp4_video_stream_seek_ms / _skip / _render / _span_ms), which
+ *   exist for the WEBM core - it holds the concrete stream type and
+ *   does not need this layer.
+ */
+
 void image_transfer_free(void *data, enum image_type_enum type)
 {
    switch (type)
@@ -483,11 +580,10 @@ bool image_transfer_get_gpu_layout(
    return false;
 }
 
-/* Report whether the last processed frame was written as packed XRGB2101010
- * (10-bit) rather than 8-bit RGBA. Only the video decoders can produce this,
- * and only for 10-bit HDR sources. */
-/* Ask a video decoder to emit packed XRGB2101010 for 10-bit HDR sources.
- * Only the video types honour it; still images ignore it. */
+/* Ask a decoder to emit packed XRGB2101010 instead of 8-bit RGBA.
+ * Honoured by PNG (16-bit-per-channel RGB sources) and by the two video
+ * types (10-bit HDR sources); a no-op for every other type, and for an
+ * 8-bit source of an honouring type. */
 void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
       int want)
 {
@@ -513,6 +609,10 @@ void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
    }
 }
 
+/* Report whether the last processed frame was actually written as
+ * packed XRGB2101010 rather than 8-bit RGBA, i.e. 10-bit was requested
+ * and the source could supply it.  False for every type that cannot
+ * produce it - see image_transfer_set_want_10bit above. */
 bool image_transfer_is_10bit(void *data, enum image_type_enum type)
 {
    switch (type)
@@ -789,10 +889,11 @@ void *image_transfer_detach_anim_stream(void *data,
 }
 
 /* ===== Animation ===== *
- * WEBP (animated) and WEBM (video track) support animation. These
- * helpers return NULL / false for every other image type, so callers
- * may attempt animation unconditionally and fall back to the
- * still-image path. */
+ * Animated WEBP is the only type with the whole-buffer form directly
+ * below; APNG, animated WEBP, WEBM and MP4 all have the streaming form
+ * further down.  Both sets return NULL / false / 0 for every other
+ * image type, so callers may attempt animation unconditionally and
+ * fall back to the still-image path. */
 
 void *image_transfer_anim_new(void *buf, size_t len,
       enum image_type_enum type)
