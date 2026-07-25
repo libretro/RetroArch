@@ -23,37 +23,56 @@
 /* rwav -- minimal RIFF WAVE reader.
  *
  * What it implements: WAV files holding integer PCM at 8, 16 or 24
- * bits or IEEE float at 32 bits, any channel count and sample rate.  The RIFF
- * chunk list is walked, so 'fmt ' and 'data' are found wherever they
- * sit and the chunks writers put between them - LIST, fact, cue, JUNK
- * and the rest - are stepped over; a fmt chunk longer than 16 bytes
- * (the 18-byte form carrying cbSize, say) is accepted for its standard
- * first 16.
+ * bits, IEEE float at 32, G.711 a-law or mu-law at 8, or MS or IMA/DVI
+ * ADPCM at 4 - any channel count and sample rate.  The RIFF chunk list
+ * is walked, so 'fmt ' and 'data' are found wherever they sit and the
+ * chunks writers put between them - LIST, fact, cue, JUNK and the rest
+ * - are stepped over; a fmt chunk longer than 16 bytes is accepted for
+ * its standard first 16, and read further where the format states more
+ * (a block size and a frame count for the ADPCM pair, and predictor
+ * coefficients for the MS one).
  *
- * Two ways in.  rwav_load and the resumable iterator behind it decode
- * the file whole into a buffer this file owns, delivering samples in
- * native memory order: unsigned bytes for 8-bit, host-endian int16 for
+ * Three ways in.
+ *
+ * rwav_parse reads the header alone and reports where the payload is,
+ * allocating and copying nothing, for a caller that would rather take
+ * frames out of its own buffer as it needs them - which also lets that
+ * buffer hold only part of the file, since parsing touches chunk
+ * headers and never the payload.
+ *
+ * rwav_decode_s16 turns any of those payloads into interleaved s16,
+ * from a frame index the caller chooses, so it need not know which
+ * format it has.  It is the only way to read the ADPCM pair, whose
+ * samples continue from predictor state a block establishes and which
+ * therefore cannot be read a frame at a time from the buffer; the
+ * companded pair need it for their curve.  A block restates its own
+ * predictor, so a read starting anywhere decodes only the block it
+ * lands in.
+ *
+ * rwav_load and the resumable iterator behind it copy the payload
+ * whole into a buffer this file owns, in native memory order where
+ * that means anything: unsigned bytes for 8-bit, host-endian int16 for
  * 16-bit, host-endian float words for 32-bit, byte order fixed up from
- * the file's little-endian layout on big-endian hosts.  24-bit is the
- * exception and is handed over packed as the file stores it, three
- * little-endian bytes a sample, since no host type is that wide;
- * rwav.h carries the accessors for reading it.  rwav_parse
- * reads the header alone and reports where the samples are, allocating
- * and copying nothing, for a caller that would rather convert frames
- * out of its own buffer as it needs them - which also lets that buffer
- * hold only part of the file, since parsing touches chunk headers and
- * never the payload.
+ * the file's little-endian layout on big-endian hosts.  24-bit is
+ * handed over packed as the file stores it, three little-endian bytes
+ * a sample, since no host type is that wide; rwav.h carries the
+ * accessors.  The companded and coded payloads are copied verbatim and
+ * stay coded - there is no host order for a curve or a nibble - and
+ * rwav_decode_s16 reads them from there as it would from the file.
  *
  * WAVE_FORMAT_EXTENSIBLE headers are resolved through their SubFormat
  * GUID, so a file that is only extensible because it has more than two
- * channels reads as the plain PCM or float it actually holds.
+ * channels reads as the plain PCM or float it actually holds, and one
+ * naming a compressed format reads as that.
  *
- * What it does not implement: compressed codecs (ADPCM, a-law, mu-law)
- * - including as an extensible SubFormat - and writing.  A declared
+ * What it does not implement: writing, and any format not listed above
+ * - which now means the rarer codecs a WAV can nominally carry, GSM
+ * and the like, rather than the common compressed ones.  A declared
  * data size larger than the buffer is taken as the buffer's worth
  * rather than an error, which covers both a truncated file and a
  * writer that stamped a placeholder length it never went back to fix;
- * a trailing partial frame is dropped.
+ * a trailing partial unit - a frame, or a block where a block is the
+ * unit - is dropped.
  */
 
 #include <stdio.h>

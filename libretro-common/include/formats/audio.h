@@ -82,8 +82,9 @@ enum audio_type_enum
 /* Guess the codec from a file-name/extension (counterpart of
  * image_texture_get_type). Returns AUDIO_TYPE_NONE if unrecognised.
  * Covers WAV, FLAC, Ogg Vorbis, MP3 and the tracker modules only:
- * .opus, .aac, .m4a and .weba have no extension mapping, and .ogg is
- * ambiguous between Vorbis and Opus, so those types come from the
+ * .opus, .aac, .m4a, .weba, .mka, .mkv and .oga have no extension
+ * mapping, and .ogg names a container rather than a codec - Vorbis,
+ * Opus and FLAC all travel in one - so those types come from the
  * caller or from the content sniffers below. */
 enum audio_type_enum audio_decode_get_type(const char *path);
 
@@ -162,17 +163,18 @@ void audio_transfer_set_end_granule(void *data, enum audio_type_enum type,
       int64_t end_granule);
 
 /* Identify the codec of an Ogg buffer from its first page's
- * identification header: AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose
- * buffer modes both accept the whole file; AUDIO_TYPE_NONE if it is
- * not Ogg or carries an unsupported codec.  An .ogg extension can
- * legitimately wrap either. */
+ * identification header: AUDIO_TYPE_OPUS, AUDIO_TYPE_VORBIS or
+ * AUDIO_TYPE_FLAC, whose buffer modes all accept the whole file;
+ * AUDIO_TYPE_NONE if it is not Ogg or carries an unsupported codec.
+ * An .ogg or .oga extension can legitimately wrap any of the three. */
 enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
       size_t len);
 
-/* Identify the first supported audio codec of a WebM buffer (.weba):
- * AUDIO_TYPE_OPUS or AUDIO_TYPE_VORBIS, whose buffer modes both accept
- * the whole WebM file; AUDIO_TYPE_NONE if it is not WebM or carries no
- * supported track. */
+/* Identify the first supported audio codec of a WebM or Matroska
+ * buffer (.weba, .mka, .mkv): AUDIO_TYPE_OPUS, AUDIO_TYPE_VORBIS,
+ * AUDIO_TYPE_AAC or AUDIO_TYPE_FLAC, whose buffer modes all accept the
+ * whole file; AUDIO_TYPE_NONE if it is not one of those containers or
+ * carries no supported track. */
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len);
 

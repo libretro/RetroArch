@@ -124,7 +124,7 @@ typedef struct
    /* number of *bytes* in the pointer below, i.e. numsamples * numchannels * bitspersample/8 */
    size_t subchunk2size;
 
-   /* PCM data, owned by rwav and freed by rwav_free. 24-bit data is
+   /* Sample data, owned by rwav and freed by rwav_free. 24-bit data is
     * handed over exactly as the file stores it - packed little-endian
     * three-byte samples, for rwav_s24 and friends above - there being
     * no host type to convert it to. NULL after
@@ -161,7 +161,13 @@ void rwav_init(rwav_iterator_t *iter, rwav_t *out, const void* buf, size_t len);
 enum rwav_state rwav_iterate(rwav_iterator_t *iter);
 
 /**
- * Loads the entire data in one go.
+ * Loads the entire payload in one go, into a buffer rwav owns and
+ * rwav_free releases.  Words are put in host order where the format
+ * has any - 16-bit PCM and 32-bit float; 24-bit stays packed as the
+ * file stores it, and the companded and block-coded payloads stay
+ * coded, there being no host order for a curve or a nibble.  Read
+ * those back with rwav_decode_s16, which takes the loaded buffer as
+ * readily as the file it came from.
  */
 enum rwav_state rwav_load(rwav_t *out, const void *buf, size_t len);
 
@@ -194,7 +200,8 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
  *
  * len describes the whole span buf addresses, and bounds the payload:
  * subchunk2size comes back as the declared data size clamped to it and
- * rounded down to whole frames. Reads, though, stop at the end of the
+ * rounded down to whole units - frames, or blocks where a block is the
+ * unit. Reads, though, stop at the end of the
  * 'data' chunk header - the payload itself is never touched - so a
  * caller streaming a file may pass its full length while keeping only
  * the head resident, and page the rest in behind the read cursor.

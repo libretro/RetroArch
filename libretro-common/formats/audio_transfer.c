@@ -103,29 +103,33 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *
  * WAV (rwav)
  *   Does: buffer input; s16 and f32 reads; exact length; seek to any
- *     frame; 8-bit unsigned PCM, 16- and 24-bit signed PCM and 32-bit
- *     IEEE float (8-bit widened, 24-bit and float rounded at read, all
- *     assembled from the file's little-endian words).
- *     start() parses the header alone and the frames are converted out
- *     of the caller's buffer as they are asked for, so the arm holds no
+ *     frame; buffer_tell, hence windowing.  Every format rwav reads:
+ *     8-bit unsigned PCM, 16- and 24-bit signed, 32-bit IEEE float,
+ *     G.711 a-law and mu-law at eight bits carrying a logarithmic
+ *     sixteen, and the MS and IMA/DVI ADPCM layouts at four bits in
+ *     blocks that each restate their predictor.  A
+ *     WAVE_FORMAT_EXTENSIBLE header naming any of them resolves to it,
+ *     and rwav walks the chunk list, so LIST, fact, cue and the rest
+ *     before the samples are no obstacle.
+ *
+ *     start() parses the header alone and frames are converted out of
+ *     the caller's buffer as they are asked for, so the arm holds no
  *     decoded copy and buffer_tell reports the read frontier: WAV
- *     windows like the compressed arms, and its residency is a window
- *     rather than the file.  rwav walks the chunk list, so LIST, fact,
- *     cue and the rest before the samples are no obstacle.
- *     And the four formats rwav used to refuse: G.711 a-law and mu-law,
- *     eight bits carrying a logarithmic sixteen, and the MS and
- *     IMA/DVI ADPCM layouts, four bits a sample in blocks that each
- *     restate their predictor.  All decode through rwav_decode_s16,
- *     which the companded pair need for their curve and the block
- *     ones because their payload is not addressable a frame at a
- *     time.  A block being self-contained, a read starting anywhere
+ *     windows like the compressed arms, its residency a window rather
+ *     than the file.  The uncompressed formats are read a sample at a
+ *     time from the buffer; the companded and coded ones go through
+ *     rwav_decode_s16, which the first pair need for their curve and
+ *     the second because their payload is not addressable a frame at
+ *     a time.  A block being self-contained, a read starting anywhere
  *     decodes only the block it lands in, so seeking costs no more
- *     than on PCM.  A WAVE_FORMAT_EXTENSIBLE header naming any of
- *     these resolves to it.
- *   Does not: take demuxed input.
+ *     than on PCM.
+ *
  *     Multichannel parses here and plays: the mixer folds anything up
  *     to eight channels to stereo, so a 5.1 WAV is heard rather than
  *     refused, as a 5.1 FLAC is.
+ *   Does not: take demuxed input.  Nor the rarer codecs a WAV can
+ *     nominally carry - GSM and the like - which rwav refuses at the
+ *     header rather than decoding as though their bytes were PCM.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
@@ -174,17 +178,17 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     arm having read the memory reader's position, which is not the
  *     live source on any of them.
  *
- *     Nor a length where the setup's STREAMINFO does not state one,
- *     nor from any stream written without it - Ogg FLAC never states
- *     one, and a native file piped rather than seeked does not
- *     either.  Seeking still works on those; it is only the total
- *     that is missing.  Seeking on the Matroska path costs more than on a
- *     .flac: rflac seeks by byte offset and a demuxer only walks
- *     forwards, so a backwards seek restarts the block walk and reads
- *     forward to the target.  The file is resident, so that is a pass
- *     over block headers rather than any I/O, and only a caller's own
- *     seek reaches it.
- *     A stream whose STREAMINFO omits the total frame count reports 0.
+ *     Nor report a length where the STREAMINFO does not state one:
+ *     Ogg FLAC never states one, and neither does a native file piped
+ *     rather than seeked.  Seeking still works on those - it is only
+ *     the total that is missing, and info() answers 0.
+ *
+ *     Seeking on the Matroska path costs more than on a .flac: rflac
+ *     seeks by byte offset while a demuxer only walks forwards, so a
+ *     backwards seek restarts the block walk and reads forward to the
+ *     target.  The file is resident, so that is a pass over block
+ *     headers rather than any I/O, and only a caller's own seek
+ *     reaches it.
  *
  * Vorbis (rvorbis)
  *   Does: three inputs - Ogg buffer, WebM buffer (.weba, HAVE_RWEBM,
@@ -471,7 +475,10 @@ struct audio_transfer_wav
    rwav_t      wav;     /* format + payload location; samples stays NULL    */
    int         opened;  /* rwav_parse succeeded                             */
    size_t      cursor;  /* next frame to hand out                           */
-   size_t      framesz; /* bytes per frame: channels * bits/8               */
+   /* bytes per frame: channels * bits/8, and 0 for a block-coded
+    * payload, which has no per-frame size.  Every reader tests the
+    * format and takes the decoder before reaching it. */
+   size_t      framesz;
 };
 #endif
 
