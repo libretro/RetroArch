@@ -92,6 +92,10 @@ typedef struct audio_mixer_stream_params
     * not scan the whole file for it.  0 means not supplied - the
     * decoder does its normal full end-granule scan. */
    int64_t end_granule;
+   /* Windowed sources: bytes resident from the start of buf when the
+    * stream is added, bounding the decoder's container header parse.
+    * 0 means the whole buffer is there. */
+   size_t avail;
 } audio_mixer_stream_params_t;
 #endif
 
@@ -392,6 +396,10 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
  * holds no live stream.  The windowed-source feeder's polling
  * input. */
 int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
+
+/* Raise a windowed stream's resident prefix as its feeder slides the
+ * window forward.  The mirror of audio_driver_mixer_stream_byte_tell. */
+void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail);
 
 void audio_driver_mixer_play_stream(unsigned i);
 

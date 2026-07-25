@@ -116,6 +116,9 @@ struct audio_mixer_sound
     * injected into the decoder at play so it skips the full-file end
     * scan.  0 = not supplied (normal full scan). */
    int64_t end_granule;
+   /* Windowed sources: bytes resident from the start of the buffer at
+    * play time, bounding the decoder's header parse.  0 = all of it. */
+   size_t avail;
 };
 
 struct audio_mixer_voice
@@ -873,6 +876,12 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
 }
 
 #ifdef HAVE_ROPUS
+void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail)
+{
+   if (sound)
+      sound->avail = avail;
+}
+
 void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
       int64_t end_granule)
 {
@@ -885,6 +894,42 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
  * its source buffer - the windowed-source feeder's input.  Returns
  * 0 for anything that is not a live buffer-mode stream voice.  Takes
  * the voice lock: safe against the mixing thread. */
+/* Raise a live stream voice's resident prefix - the windowed feeder's
+ * output, the mirror of audio_mixer_voice_buffer_tell's input.  Only
+ * the WebM container arms act on it; a no-op for every other type and
+ * for anything that is not a live buffer-mode stream voice.  Takes the
+ * voice lock: safe against the mixing thread. */
+void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail)
+{
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   if (!voice)
+      return;
+#ifdef AUDIO_MIXER_HAS_STREAM
+   AUDIO_MIXER_LOCK(voice);
+   switch (voice->type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_MIXER_TYPE_OGG:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_VORBIS, avail);
+         break;
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_MIXER_TYPE_OPUS:
+         audio_transfer_set_avail(voice->types.stream.stream,
+               AUDIO_TYPE_OPUS, avail);
+         break;
+#endif
+      default:
+         break;
+   }
+   AUDIO_MIXER_UNLOCK(voice);
+#endif
+#else
+   (void)voice; (void)avail;
+#endif
+}
+
 size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
 {
    size_t r = 0;
@@ -1161,6 +1206,13 @@ static bool audio_mixer_play_stream(
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
 
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   /* Windowed WebM: bound the container header parse to the resident
+    * head, so opening does not walk the segment to the end of a file
+    * whose middle is reserved rather than populated. */
+   if (sound->avail)
+      audio_transfer_set_avail(xfer, type, sound->avail);
+#endif
 #ifdef HAVE_ROPUS
    /* Windowed Ogg-Opus: hand the decoder the last-page granule the
     * feeder found, so its buffer setup skips the full-file end scan
@@ -1277,6 +1329,12 @@ static bool audio_mixer_play_stream_s16(
       return false;
    audio_transfer_set_buffer_ptr(xfer, type,
          (void*)sound->types.stream.data, sound->types.stream.size);
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   /* Windowed WebM: bound the header parse to the head (see the f32
+    * path). */
+   if (sound->avail)
+      audio_transfer_set_avail(xfer, type, sound->avail);
+#endif
 #ifdef HAVE_ROPUS
    /* Windowed Ogg-Opus: skip the decoder's full-file end scan by
     * handing it the feeder's last-page granule (see the f32 path). */

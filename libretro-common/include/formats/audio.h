@@ -144,6 +144,17 @@ bool  audio_transfer_set_start_trim(void *data, enum audio_type_enum type,
 void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
       unsigned rate);
 
+/* Tell a decoder how many bytes from the start of the buffer set by
+ * set_buffer_ptr are actually resident.  A windowed feeder calls this
+ * before audio_transfer_start, so a container header parse is bounded
+ * by the permanently-resident head instead of running to the end of
+ * the file, and again as the window slides.  Monotonic; 0 means the
+ * whole buffer is there, which is the default and what every
+ * non-windowed caller wants.  Only the WebM container arms use it;
+ * a no-op elsewhere. */
+void audio_transfer_set_avail(void *data, enum audio_type_enum type,
+      size_t avail);
+
 /* Windowed Opus only: inject the stream's last-page granule so the
  * decoder's buffer setup does not scan the whole file for it (the tail
  * is not resident under windowing).  No-op for non-Opus types. */

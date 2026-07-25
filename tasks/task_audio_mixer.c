@@ -22,6 +22,9 @@
 
 #include <formats/data_transfer.h>
 #include <formats/audio.h>
+#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+#include <formats/rwebm.h>
+#endif
 #include <formats/rwav.h>
 #include <file/file_path.h>
 #include <audio/audio_mixer.h>
@@ -921,6 +924,7 @@ struct audio_mixer_wfeed
    size_t punch_lo;      /* inert metadata span released from the  */
    size_t punch_hi;      /*  head after the decoder skips it       */
    int64_t end_granule;  /* windowed Opus: last-page granule, or 0 */
+   size_t  avail;        /* windowed WebM: resident prefix, or 0    */
    volatile bool dead;   /* set by the sound's release: wrap up    */
 };
 
@@ -1168,6 +1172,57 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       }
 #endif
 
+#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+      if (w->mtype == AUDIO_MIXER_TYPE_WEBA)
+      {
+         /* Parse the container header bounded by the head, the way the
+          * WAV arm parses its chunk list: a file whose Tracks sit past
+          * the head falls back to the classic full load rather than
+          * reading into the reserved space beyond it.  rwebm walks the
+          * segment's top-level children as far as its wall, so the
+          * wall is what keeps this off unpopulated pages - the bounded
+          * opener is not an optimisation here, it is the correctness
+          * condition.  Out of it come the codec and the media floor,
+          * everything below which is header material the demuxer keeps
+          * borrowed pointers into for its lifetime. */
+         size_t   keep  = flen < AMIX_WINDOW_KEEP
+                        ? (size_t)flen : AMIX_WINDOW_KEEP;
+         rwebm_t *probe = rwebm_open_memory_avail(base, (size_t)flen,
+               keep, NULL);
+         size_t   floor = 0;
+         bool     vorb  = false;
+         if (probe)
+         {
+            int i;
+            for (i = 0; i < rwebm_num_tracks(probe); i++)
+            {
+               const rwebm_track *tr = rwebm_get_track(probe, i);
+               if (tr && tr->type == RWEBM_TRACK_AUDIO
+                     && tr->codec == RWEBM_CODEC_VORBIS
+                     && tr->codec_private_size)
+               {
+                  vorb = true;
+                  break;
+               }
+            }
+            floor = rwebm_media_floor(probe);
+            rwebm_close(probe);
+         }
+         if (!vorb || !floor)
+            goto bail;
+         if (floor + AMIX_WINDOW_MARGIN > AMIX_WINDOW_KEEP
+               && !data_transfer_window_grow_keep(w->dt,
+                     floor + AMIX_WINDOW_MARGIN))
+            goto bail;
+         /* What the decoder's own open may read.  The head covers the
+          * floor after the grow above, so this is the head. */
+         w->avail = floor + AMIX_WINDOW_MARGIN > AMIX_WINDOW_KEEP
+                  ? floor + AMIX_WINDOW_MARGIN : AMIX_WINDOW_KEEP;
+         if (w->avail > (size_t)flen)
+            w->avail = (size_t)flen;
+      }
+#endif
+
       params.volume               = 1.0f;
       params.slot_selection_type  = w->user->slot_selection_type;
       params.slot_selection_idx   = w->user->slot_selection_idx;
@@ -1184,6 +1239,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       params.buf_owner_free       = task_audio_mixer_wfeed_release;
       params.out_slot             = &w->slot;
       params.end_granule          = w->end_granule;
+      params.avail                = w->avail;
 
       w->added = true;   /* ownership transfers on the call in every
                           * outcome: from here the release runs */
@@ -1222,6 +1278,19 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       if (fed)
          fed = data_transfer_window_feed(w->dt, (size_t)tell,
                AMIX_WINDOW_LOOKAHEAD, AMIX_WINDOW_MARGIN);
+      if (fed && w->avail)
+      {
+         /* Follow the window forward.  A demuxer that reads only at
+          * its own cursor needs a wall ahead of that cursor, not a
+          * promise about every byte below it, so the lookahead the
+          * feed just committed is the right figure.  Monotonic: the
+          * decoder clamps a value below the one it holds. */
+         size_t hi = (size_t)tell + AMIX_WINDOW_LOOKAHEAD;
+         if (hi < w->avail)
+            hi = w->avail;
+         w->avail = hi;
+         audio_driver_mixer_stream_set_avail((unsigned)w->slot, hi);
+      }
 
       if (!fed)
       {
@@ -1348,6 +1417,16 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * force the tail resident. */
    if (string_is_equal_noncase(ext, "opus"))
       mtype = AUDIO_MIXER_TYPE_OPUS;
+#endif
+#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+   /* A .weba holding Vorbis streams.  rwebm's header parse is bounded
+    * by whatever prefix it is told is resident, the packet walk runs
+    * monotonically forward through the clusters, and a loop seek
+    * rewinds it to the first one.  The arm's own whole-file dependency
+    * went when it stopped pre-walking the packets to find the end.
+    * Vorbis rather than Opus is confirmed from the head below. */
+   if (string_is_equal_noncase(ext, "weba"))
+      mtype = AUDIO_MIXER_TYPE_WEBA;
 #endif
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;

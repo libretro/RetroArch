@@ -2543,6 +2543,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
     * skips its full-file end scan when it opens at play time. */
    if (params->end_granule > 0)
       audio_mixer_sound_set_end_granule(handle, params->end_granule);
+   if (params->avail)
+      audio_mixer_sound_set_avail(handle, params->avail);
 #endif
 
    switch (params->state)
@@ -2604,6 +2606,18 @@ int64_t audio_driver_mixer_stream_byte_tell(unsigned i)
    if (!(voice = audio_driver_st.mixer_streams[i].voice))
       return -1;
    return (int64_t)audio_mixer_voice_buffer_tell(voice);
+}
+
+void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail)
+{
+   audio_mixer_voice_t *voice;
+   if (i >= AUDIO_MIXER_MAX_SYSTEM_STREAMS)
+      return;
+   if (audio_driver_st.mixer_streams[i].state == AUDIO_STREAM_STATE_NONE)
+      return;
+   if (!(voice = audio_driver_st.mixer_streams[i].voice))
+      return;
+   audio_mixer_voice_set_avail(voice, avail);
 }
 
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i)

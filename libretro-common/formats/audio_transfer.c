@@ -117,7 +117,11 @@
  *     the end.  buffer_tell, hence windowing: the packets are decoded
  *     where the demuxer points at them, so its walk position is the
  *     compressed frontier, and start() reads no further than the
- *     header material - it does not walk the packets.
+ *     header material - it does not walk the packets.  A windowed
+ *     caller must say so with set_avail, and keep saying so as its
+ *     window slides: rwebm's header parse walks the segment's
+ *     top-level children as far as its wall, which without one is the
+ *     end of the file.
  *   Does not: seek to a nonzero frame on the packet-fed paths.  There
  *     is no Ogg to seek in and no per-packet duration to step over with
  *     (unlike Opus, whose TOC byte carries one), so landing anywhere
@@ -318,6 +322,10 @@ struct audio_transfer_vorbis
 #ifdef HAVE_RWEBM
    rwebm_t    *demux;       /* buffer is WebM audio (.weba)             */
    int         track_idx;
+   /* Resident prefix of the caller's buffer, 0 when all of it is.  A
+    * windowed feeder sets this before start() so the header parse
+    * stays inside the head, and raises it as the window slides. */
+   size_t      avail;
 #endif
    /* Emission bound, in frames, from a duration the container states;
     * -1 where none does.  Vorbis codes in overlapping blocks, so the
@@ -413,6 +421,7 @@ struct audio_transfer_opus
 #ifdef HAVE_RWEBM
    rwebm_t    *demux;        /* buffer is WebM audio (.weba)             */
    int         track_idx;
+   size_t      avail;        /* resident prefix, 0 = all of it           */
 #endif
    size_t      pg_off;       /* byte offset of the current page          */
    size_t      body_off;     /* byte offset of the current segment       */
@@ -744,7 +753,14 @@ static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
       rwebm_packet pkt;
       for (;;)
       {
-         if (rwebm_read_packet(v->demux, &pkt) != 1)
+         int r = rwebm_read_packet(v->demux, &pkt);
+         /* The walk reached the resident wall rather than the end of
+          * the stream: the feeder has not got here yet.  Report it
+          * apart from end of stream, so the drain returns short and
+          * the next call resumes instead of the sound ending. */
+         if (r == RWEBM_READ_AGAIN)
+            return -2;
+         if (r != 1)
             return 0;
          if (pkt.track == v->track_idx)
             break;
@@ -936,6 +952,52 @@ void audio_transfer_set_output_rate(void *data, enum audio_type_enum type,
 #endif
 }
 
+/* Raise the resident prefix of the caller's buffer.  A windowed feeder
+ * calls this before start(), so the container header parse is bounded
+ * by the head, and again as the window slides.  The value is a prefix
+ * even though a window is not one: the demuxer only ever reads forward
+ * at its own cursor, which the feeder keeps inside the window, so the
+ * wall is what stops a parse running off to the end of the file rather
+ * than a claim about every byte below it.  Monotonic - the demuxer
+ * clamps a value below the one it already has.  No-op for a type with
+ * no windowed container path. */
+void audio_transfer_set_avail(void *data, enum audio_type_enum type,
+      size_t avail)
+{
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+   switch (type)
+   {
+#ifdef HAVE_RVORBIS
+      case AUDIO_TYPE_VORBIS:
+      {
+         struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
+         if (!v)
+            return;
+         v->avail = avail;
+         if (v->demux)
+            rwebm_set_avail(v->demux, avail);
+         return;
+      }
+#endif
+#ifdef HAVE_ROPUS
+      case AUDIO_TYPE_OPUS:
+      {
+         struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         if (!op)
+            return;
+         op->avail = avail;
+         if (op->demux)
+            rwebm_set_avail(op->demux, avail);
+         return;
+      }
+#endif
+      default:
+         break;
+   }
+#endif
+   (void)data; (void)type; (void)avail;
+}
+
 #ifdef HAVE_ROPUS
 /* Windowed Opus: inject the last Ogg page's granule so buffer setup
  * skips the full-file end-granule scan (see audio_transfer_opus's
@@ -980,6 +1042,32 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
    return AUDIO_TYPE_NONE;
 }
 
+#if defined(HAVE_RWEBM) && (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS))
+/* Open a WebM container with the header parse bounded by the bytes the
+ * caller says are actually there.
+ *
+ * rwebm_open_memory walks the segment's top-level children as far as
+ * its wall, which at avail == size is segment_end: an element header
+ * read at every cluster boundary in the file.  Whole-file callers can
+ * afford that; a windowed one holds a head and a sliding window with
+ * reserved, unpopulated pages between, and the walk would read them.
+ * 'avail' is that caller's resident prefix, and 0 means the whole
+ * buffer is there.
+ *
+ * A windowed caller's wall then stays where it put it, to be raised by
+ * audio_transfer_set_avail as the window slides.  A whole-file caller's
+ * goes straight to the end, which is the old behaviour exactly. */
+static rwebm_t *audio_transfer_webm_open(const uint8_t *data, size_t size,
+      size_t avail)
+{
+   rwebm_t *m = rwebm_open_memory_avail(data, size,
+         (avail && avail < size) ? avail : size, NULL);
+   if (m && !avail)
+      rwebm_set_avail(m, size);
+   return m;
+}
+#endif
+
 enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
       size_t len)
 {
@@ -991,7 +1079,7 @@ enum audio_type_enum audio_transfer_webm_audio_type(const void *buf,
    if (!b || len < 4
          || b[0] != 0x1A || b[1] != 0x45 || b[2] != 0xDF || b[3] != 0xA3)
       return AUDIO_TYPE_NONE;
-   if (!(wm = rwebm_open_memory(buf, len)))
+   if (!(wm = audio_transfer_webm_open(b, len, 0)))
       return AUDIO_TYPE_NONE;
    for (i = 0; i < rwebm_num_tracks(wm) && found == AUDIO_TYPE_NONE; i++)
    {
@@ -1081,8 +1169,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          {
             const rwebm_track *at = NULL;
             int i;
-            if (!(v->demux = rwebm_open_memory(
-                        (const uint8_t*)v->data, v->size)))
+            if (!(v->demux = audio_transfer_webm_open(
+                        (const uint8_t*)v->data, v->size, v->avail)))
                return false;
             v->track_idx = -1;
             for (i = 0; i < rwebm_num_tracks(v->demux); i++)
@@ -1229,7 +1317,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             int i;
             rwebm_packet pkt;
             int64_t toc = 0, discard_ns = 0, preskip = 0;
-            if (!(op->demux = rwebm_open_memory(op->buf, op->buf_size)))
+            if (!(op->demux = audio_transfer_webm_open(op->buf,
+                     op->buf_size, op->avail)))
                return false;
             op->track_idx = -1;
             for (i = 0; i < rwebm_num_tracks(op->demux); i++)
@@ -1759,7 +1848,11 @@ static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
       rwebm_packet pkt;
       for (;;)
       {
-         if (rwebm_read_packet(op->demux, &pkt) != 1)
+         int r = rwebm_read_packet(op->demux, &pkt);
+         /* Resident wall, not end of stream: see the Vorbis pull. */
+         if (r == RWEBM_READ_AGAIN)
+            return -2;
+         if (r != 1)
             return 0;
          if (pkt.track == op->track_idx)
             break;

@@ -113,6 +113,14 @@ void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
 void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
       int64_t end_granule);
 
+/* Resident prefix of a windowed sound's source buffer: bounds the
+ * decoder's container header parse at open.  0 = fully resident. */
+void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);
+
+/* Raise a live stream voice's resident prefix as the window slides.
+ * Takes the voice lock, like audio_mixer_voice_buffer_tell. */
+void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail);
+
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       bool repeat, float volume,
       const char *resampler_ident,
