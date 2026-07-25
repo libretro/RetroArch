@@ -308,16 +308,19 @@ static bool one_shot_resample(const float* in, size_t samples_in,
          resampler_ident, quality, ratio))
       return false;
 
-   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes. We
-    * add 16 more samples in the formula below just as safeguard, because
-    * resampler->process sometimes reports more output samples than the
-    * formula below calculates. Ideally, audio resamplers should have a
-    * function to return the number of samples they will output given a
-    * count of input samples. */
+   /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes.
+    * The pad has to scale with the ratio: resampler->process reports
+    * more output than the estimate below, and the excess grows with
+    * upsampling, so a fixed pad is enough at 44.1->48 and not enough
+    * at 8->96, where the clamp underneath silently took the tail back
+    * off again. Ideally, audio resamplers should have a function to
+    * return the number of samples they will output given a count of
+    * input samples. */
    {
       size_t alloc_samples;
+      size_t pad                      = 2 * (size_t)(ratio + 1.0) + 32;
       *samples_out                    = (size_t)(samples_in * ratio);
-      alloc_samples                   = ((*samples_out + 16) + 15) & ~15;
+      alloc_samples                   = ((*samples_out + pad) + 15) & ~15;
       *out                            = (float*)memalign_alloc(16,
             alloc_samples * sizeof(float));
 
@@ -563,6 +566,7 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
 {
    struct resampler_data_int16 info;
    size_t alloc_samples;
+   size_t pad;
    void  *re    = NULL;
    double ratio = (double)s_rate / (double)rate;
 
@@ -572,12 +576,16 @@ static bool one_shot_resample_s16(const int16_t* in, size_t samples_in,
    if (!re)
       return false;
 
-   /* Size by the predicted output count plus a 16-sample safeguard, exactly
-    * like one_shot_resample, so the s16 buffer carries the same frame count
-    * as the float buffer and audio_mixer_sound.wav.frames stays valid for
-    * both. The buffer is zeroed so any undershoot tail reads as silence. */
+   /* Size by the predicted output count plus a ratio-scaled safeguard,
+    * exactly like one_shot_resample, so the s16 buffer carries the same
+    * frame count as the float buffer. The excess the resampler reports
+    * over the estimate grows with upsampling, so the pad has to grow
+    * with it too; a fixed pad let the clamp below truncate the tail at
+    * large ratios. The buffer is zeroed so any undershoot tail reads as
+    * silence. */
+   pad           = 2 * (size_t)(ratio + 1.0) + 32;
    *samples_out  = (size_t)(samples_in * ratio);
-   alloc_samples = ((*samples_out + 16) + 15) & ~15;
+   alloc_samples = ((*samples_out + pad) + 15) & ~15;
    *out          = (int16_t*)memalign_alloc(16,
          alloc_samples * sizeof(int16_t));
 
