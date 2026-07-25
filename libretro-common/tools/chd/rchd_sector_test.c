@@ -30,7 +30,7 @@ int main(int argc,char**argv)
   if(rchd_read_begin(c,(uint64_t)lba0*i->unit_bytes,raw,16*i->unit_bytes)!=RCHD_OK)return 1;
   while((e=rchd_read_step(c,&rq))==RCHD_PENDING) if(!pull(c,&rq))break;
   if(e!=RCHD_OK){printf("  byte read failed\n");return 1;}
-  { const rchd_track_t*t=rchd_track_for_frame(c,lba0);
+  { const rchd_track_t*t=rchd_track_for_lba(c,lba0);
     size_t off=0;
     for(n=0;n<16;n++)
     { if(memcmp(sec+off, raw+(size_t)n*i->unit_bytes, t->data_size)) bad++;

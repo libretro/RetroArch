@@ -188,6 +188,11 @@ struct rchd
     * has arrived. One buffer serves every step because the steps are
     * strictly sequential. */
    uint8_t           *pending;
+   /* What the decoder allocated, kept apart from @pending because a
+    * borrowed supply points @pending at the caller's memory and this
+    * still has to be freed. */
+   uint8_t           *pending_owned;
+   int                pending_borrowed;
    size_t             pending_size;
    size_t             pending_have;
    uint64_t           pending_off;
@@ -274,8 +279,10 @@ static int rchd_want(rchd_t *chd, uint64_t offset, size_t len, int source,
          return 1;
       if (!(buf = (uint8_t*)malloc(len)))
          return -1;
-      free(chd->pending);
-      chd->pending      = buf;
+      free(chd->pending_owned);
+      chd->pending          = buf;
+      chd->pending_owned    = buf;
+      chd->pending_borrowed = 0;
       chd->pending_size = len;
       chd->pending_have = 0;
       chd->pending_off  = offset;
@@ -289,6 +296,98 @@ static int rchd_want(rchd_t *chd, uint64_t offset, size_t len, int source,
    req->length = (uint32_t)(len - chd->pending_have);
    req->source = source;
    return 0;
+}
+
+/* -------- supplying bytes --------
+ *
+ * A request is identified by where it reads from, not by when it was
+ * issued, so a caller may hold several fetches and satisfy them as they
+ * land. Only one request is outstanding at a time today, which makes
+ * that identification trivial rather than unnecessary: a caller written
+ * against it keeps working when more become possible.
+ */
+
+/* Reports what the decoder is waiting for. */
+uint32_t rchd_read_pending(rchd_t *chd, rchd_request_t *out, uint32_t max)
+{
+   if (!chd || !out || !max)
+      return 0;
+   if (!chd->pending || chd->pending_have >= chd->pending_size)
+      return 0;
+
+   out[0].offset = chd->pending_off + chd->pending_have;
+   out[0].length = (uint32_t)(chd->pending_size - chd->pending_have);
+   out[0].source = chd->pending_src;
+   return 1;
+}
+
+/* Whether a supply names the range the decoder is actually waiting on.
+ * Offered bytes that start anywhere else are refused rather than
+ * quietly written at the position that happens to be current. */
+static int rchd_supply_matches(const rchd_t *chd, uint64_t offset,
+      int source)
+{
+   if (!chd->pending || chd->pending_have >= chd->pending_size)
+      return 0;
+   if (source != chd->pending_src)
+      return 0;
+   return offset == chd->pending_off + chd->pending_have;
+}
+
+int rchd_feed_at(rchd_t *chd, uint64_t offset, int source,
+      const void *data, size_t len)
+{
+   if (!chd || !data)
+      return RCHD_ERROR_PARAM;
+   if (!rchd_supply_matches(chd, offset, source))
+      return RCHD_ERROR_STATE;
+
+   if (len > chd->pending_size - chd->pending_have)
+      len = chd->pending_size - chd->pending_have;
+
+   memcpy(chd->pending + chd->pending_have, data, len);
+   chd->pending_have += len;
+   chd->pending_borrowed = 0;
+   return RCHD_OK;
+}
+
+int rchd_feed_borrow(rchd_t *chd, uint64_t offset, int source,
+      const uint8_t *data, size_t len)
+{
+   if (!chd || !data)
+      return RCHD_ERROR_PARAM;
+   if (!rchd_supply_matches(chd, offset, source))
+      return RCHD_ERROR_STATE;
+
+   /* Borrowing only helps when the whole request is covered: a partial
+    * borrow would have to be stitched to a copy of the rest, which
+    * costs the copy this exists to avoid. Anything short falls back. */
+   if (chd->pending_have != 0
+         || len < chd->pending_size)
+      return rchd_feed_at(chd, offset, source, data, len);
+
+   free(chd->pending_owned);
+   chd->pending_owned    = NULL;
+   chd->pending          = (uint8_t*)data;
+   chd->pending_have     = chd->pending_size;
+   chd->pending_borrowed = 1;
+   return RCHD_OK;
+}
+
+int rchd_set_pipeline_depth(rchd_t *chd, uint32_t depth)
+{
+   if (!chd || !depth)
+      return RCHD_ERROR_PARAM;
+
+   /* One request is outstanding at a time, so depth one is what this
+    * does and anything above it would be a promise the staging ring
+    * does not yet exist to keep. Refused rather than accepted and
+    * ignored: a caller sizing a fetch queue from this needs to know it
+    * did not take. */
+   if (depth > 1)
+      return RCHD_ERROR_UNSUPPORTED;
+
+   return RCHD_OK;
 }
 
 int rchd_feed(rchd_t *chd, const void *data, size_t len)
@@ -847,7 +946,7 @@ void rchd_free(rchd_t *chd)
    if (!chd)
       return;
    free(chd->map);
-   free(chd->pending);
+   free(chd->pending_owned);
    free(chd->metadata);
    free(chd->meta);
    free(chd->codecs);
@@ -995,8 +1094,9 @@ int rchd_open_step(rchd_t *chd, rchd_request_t *req)
          rchd_infer_unit_bytes(chd);
          if ((err = rchd_build_tracks(chd)) != RCHD_OK)
             return err;
-         free(chd->pending);
-         chd->pending      = NULL;
+         free(chd->pending_owned);
+         chd->pending       = NULL;
+         chd->pending_owned = NULL;
          chd->pending_size = 0;
          chd->pending_have = 0;
          chd->state        = RCHD_OPEN_DONE;
@@ -2254,6 +2354,19 @@ uint32_t rchd_track_count(const rchd_t *chd)
    return chd ? chd->track_count : 0;
 }
 
+/* The disc's length, which is where the last track ends including the
+ * padding after it -- the frames the image actually holds, not the sum
+ * of what the tracks declare. */
+uint32_t rchd_total_frames(const rchd_t *chd)
+{
+   const rchd_track_t *last;
+
+   if (!chd || !chd->track_count)
+      return 0;
+   last = &chd->tracks[chd->track_count - 1];
+   return last->lba + last->frames + last->pad_frames;
+}
+
 const rchd_track_t *rchd_track(const rchd_t *chd, uint32_t index)
 {
    if (!chd || index >= chd->track_count)
@@ -2261,22 +2374,22 @@ const rchd_track_t *rchd_track(const rchd_t *chd, uint32_t index)
    return &chd->tracks[index];
 }
 
-/* Which track holds a frame. The padding after a track belongs to it:
+/* Which track holds a sector. The padding after a track belongs to it:
  * those frames are inside the image and read as whatever was stored, so
  * one landing there is not an error. */
-const rchd_track_t *rchd_track_for_frame(const rchd_t *chd, uint64_t frame)
+const rchd_track_t *rchd_track_for_lba(const rchd_t *chd, uint32_t lba)
 {
    uint32_t i;
 
    if (!chd || !chd->track_count)
       return NULL;
-   if (frame >= (uint64_t)chd->tracks[chd->track_count - 1].lba
+   if ((uint64_t)lba >= (uint64_t)chd->tracks[chd->track_count - 1].lba
          + chd->tracks[chd->track_count - 1].frames
          + chd->tracks[chd->track_count - 1].pad_frames)
       return NULL;
 
    for (i = chd->track_count; i > 0; i--)
-      if (frame >= chd->tracks[i - 1].lba)
+      if (lba >= chd->tracks[i - 1].lba)
          return &chd->tracks[i - 1];
 
    return NULL;
@@ -2295,7 +2408,7 @@ int rchd_read_extent(const rchd_t *chd, uint32_t lba, uint32_t count,
 
    for (i = 0; i < count; i++)
    {
-      const rchd_track_t *t = rchd_track_for_frame(chd,
+      const rchd_track_t *t = rchd_track_for_lba(chd,
             (uint64_t)lba + i);
 
       if (!t)
@@ -2341,7 +2454,7 @@ static int rchd_read_step_sectors(rchd_t *chd, rchd_request_t *req)
    while (chd->sec_done < chd->sec_count)
    {
       uint64_t            frame = chd->sec_lba + chd->sec_done;
-      const rchd_track_t *t     = rchd_track_for_frame(chd, frame);
+      const rchd_track_t *t     = rchd_track_for_lba(chd, (uint32_t)frame);
       int                 err;
 
       if (!t)

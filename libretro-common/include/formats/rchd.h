@@ -412,21 +412,6 @@ uint32_t rchd_total_frames(const rchd_t *chd);
 int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len);
 
 /**
- * rchd_track_for_frame:
- * @chd        : opened decoder
- * @frame      : frame index within the image
- *
- * The track a frame belongs to, or NULL past the last one. The padding
- * that follows a track counts as part of it: those frames are inside
- * the image and read as whatever was stored, so one landing there is
- * not an error.
- *
- * Returns NULL when the image has no track table, which is every image
- * that is not a disc.
- */
-const rchd_track_t *rchd_track_for_frame(const rchd_t *chd, uint64_t frame);
-
-/**
  * rchd_read_sectors_begin:
  * @chd        : opened decoder
  * @lba        : first absolute sector on the virtual disc
@@ -510,8 +495,13 @@ int rchd_read_hunk_begin(rchd_t *chd, uint32_t hunk, void *dst);
  * so this is the dial between memory and how much of the storage
  * latency gets hidden.
  *
- * Returns: RCHD_OK, RCHD_ERROR_PARAM if @depth is zero, or
- * RCHD_ERROR_MEM.
+ * The staging ring is not built yet, so one request is outstanding at a
+ * time and depth one is the only depth this accepts. Anything above it
+ * is refused rather than accepted and ignored, because a caller sizing
+ * a fetch queue from the return value needs to know it did not take.
+ *
+ * Returns: RCHD_OK for a depth of one, RCHD_ERROR_PARAM if @depth is
+ * zero, RCHD_ERROR_UNSUPPORTED above one.
  */
 int rchd_set_pipeline_depth(rchd_t *chd, uint32_t depth);
 
