@@ -445,7 +445,6 @@ struct audio_transfer_opus
     * both stay 0 on every other input, where the length is known by
     * other means. */
    int64_t     toc_total;
-   int64_t     discard;      /* padding owed, in frames; 0 when none     */
    size_t      pg_off;       /* byte offset of the current page          */
    size_t      body_off;     /* byte offset of the current segment       */
    unsigned    seg_idx;      /* next segment in the current page         */
@@ -766,8 +765,9 @@ static int audio_vorbis_split_setup(const uint8_t *priv, size_t size,
  * Returns 1 with the bytes, 0 at end of stream, < 0 on a blob whose
  * sizes do not agree with its length. */
 static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
-      const uint8_t **pdata, uint32_t *plen)
+      const uint8_t **pdata, uint32_t *plen, int64_t *ppad)
 {
+   *ppad = 0;
 #ifdef HAVE_RWEBM
    if (v->demux)
    {
@@ -792,15 +792,16 @@ static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
       *plen  = (uint32_t)pkt.size;
       /* DiscardPadding is attached to the block it applies to, so it
        * arrives with the packet rather than having to be found by
-       * walking to the end first.  Converted here, where the rate is
-       * known, and consumed by the drain once this packet has been
-       * decoded and its yield is countable. */
+       * walking to the end first.  It is handed back with the packet
+       * rather than left in the context: a caller that only reads
+       * headers - a seek walk, a length walk - would otherwise have to
+       * remember to clear it, and one that forgot would have it come
+       * off whichever packet the next decode touched. */
       if (pkt.discard_padding > 0)
       {
          int64_t rate = (int64_t)rvorbis_get_info(v->handle).sample_rate;
          if (rate > 0)
-            v->discard = (pkt.discard_padding * rate + 500000000)
-               / 1000000000;
+            *ppad = (pkt.discard_padding * rate + 500000000) / 1000000000;
       }
       return 1;
    }
@@ -833,8 +834,9 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
       return 0;
    for (;;)
    {
-      const uint8_t *pd = NULL;
-      uint32_t       pl = 0;
+      const uint8_t *pd  = NULL;
+      uint32_t       pl  = 0;
+      int64_t        pad = 0;
       int            want, got;
       /* Vorbis codes in overlapping blocks, so the last packet decodes
        * past the end of the audio.  Where the container says where that
@@ -867,7 +869,7 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
       /* Nothing pending: decode another packet.  It may yield nothing
        * (the first one primes the window, and a packet can carry no
        * audio at all), which is not the end of anything - pull again. */
-      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+      if (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) != 1)
          break;
       if (rvorbis_packet_decode(v->handle, pd, pl, s16) < 0)
          break;
@@ -875,13 +877,12 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
        * run past the end of the audio by that much.  Its yield is
        * countable now, which is what makes the exact end knowable; a
        * stated duration only rounds up past the overhang, so this
-       * supersedes it.  Consumed here, and set again by the pull if
-       * the stream is rewound and replayed. */
-      if (v->discard > 0)
+       * supersedes it. */
+      if (pad > 0)
       {
          int64_t out   = v->emitted + (int64_t)done;
          int64_t total = out + rvorbis_packet_pending(v->handle)
-                             - v->discard;
+                             - pad;
          /* A padding longer than the packet's yield would ask for
           * frames already handed out; the bound stops at what has
           * gone rather than going backwards. */
@@ -889,7 +890,6 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
             total = out;
          if (v->limit < 0 || total < v->limit)
             v->limit = total;
-         v->discard = 0;
       }
    }
    v->emitted += (int64_t)done;
@@ -1263,11 +1263,14 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             const uint8_t *pd = NULL;
             uint32_t       pl = 0;
             int64_t        total = 0;
+            int64_t        pad   = 0;
+            int64_t        pads  = 0;
             int            n     = 0;
             int            ok    = 1;
-            while (audio_transfer_vorbis_pull(v, &pd, &pl) == 1)
+            while (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) == 1)
             {
                int fr = rvorbis_packet_frames(v->handle, pd, pl);
+               pads  += pad;
                if (fr < 0)
                {
                   ok = 0;
@@ -1281,16 +1284,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             rwebm_rewind(v->demux);
             if (ok && total > 0)
             {
-               /* The pull armed the padding as it passed; this walk
-                * decoded nothing, so disarm it and let the drain arm
-                * it again when it reaches that block for real. */
-               int64_t exact = total - v->discard;
+               int64_t exact = total - pads;
                v->limit   = (exact > 0) ? exact : 0;
-               v->discard = 0;
                v->emitted = 0;
                return true;
             }
-            v->discard = 0;
             v->emitted = 0;
          }
 #endif
@@ -1451,7 +1449,6 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             }
             op->emitted   = 0;
             op->toc_total = 0;
-            op->discard   = 0;
          }
          else
 #endif
@@ -1933,8 +1930,9 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
  * Returns 1 with the bytes, 0 at end of stream, < 0 on a malformed
  * stream. */
 static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
-      const uint8_t **pdata, uint32_t *plen)
+      const uint8_t **pdata, uint32_t *plen, int64_t *ppad)
 {
+   *ppad = 0;
 #ifdef HAVE_RWEBM
    if (op->demux)
    {
@@ -1950,8 +1948,10 @@ static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
             return 0;
          if (pkt.track == op->track_idx)
          {
+            /* Handed back with the packet rather than left in the
+             * context: see the Vorbis pull. */
             if (pkt.discard_padding > 0)
-               op->discard = (pkt.discard_padding * 48000 + 500000000)
+               *ppad = (pkt.discard_padding * 48000 + 500000000)
                   / 1000000000;
             break;
          }
@@ -2006,7 +2006,6 @@ static void audio_transfer_opus_to_head(struct audio_transfer_opus *op)
    op->pend_frames  = 0;
    op->pend_pos     = 0;
    op->toc_total    = 0;
-   op->discard      = 0;
    op->preskip_left = ropus_preskip(op->handle);
 }
 
@@ -2026,7 +2025,8 @@ static int64_t audio_transfer_opus_seek_to(struct audio_transfer_opus *op,
       const uint8_t *pdata;
       uint32_t plen;
       int64_t d;
-      int r = audio_transfer_opus_pull(op, &pdata, &plen);
+      int64_t pad = 0;
+      int r = audio_transfer_opus_pull(op, &pdata, &plen, &pad);
       if (r < 0)
          return -1;
       if (r == 0)
@@ -2080,9 +2080,10 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
    {
       const uint8_t *pdata;
       uint32_t plen;
+      int64_t  pad = 0;
       int r;
       unsigned skip;
-      r = audio_transfer_opus_pull(op, &pdata, &plen);
+      r = audio_transfer_opus_pull(op, &pdata, &plen, &pad);
       /* The resident wall is not the end of the stream and not an
        * error: report no frames for now, so the read comes up short
        * and the next call resumes once the feeder has caught up. */
@@ -2105,16 +2106,15 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
        * padding dropped at the back.  A pre-walk at open works this
        * out in advance and arrives at the same number; where one
        * could not run, this is where it comes from. */
-      if (op->discard > 0)
+      if (pad > 0)
       {
          int64_t exact = op->toc_total
                        - (int64_t)ropus_preskip(op->handle)
-                       - op->discard;
+                       - pad;
          if (exact < 0)
             exact = 0;
          if (op->limit < 0 || exact < op->limit)
             op->limit = exact;
-         op->discard = 0;
       }
       skip = op->preskip_left;
       if (skip)
@@ -2818,8 +2818,9 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
 static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
       int64_t target)
 {
-   const uint8_t *pd = NULL;
-   uint32_t       pl = 0;
+   const uint8_t *pd  = NULL;
+   uint32_t       pl  = 0;
+   int64_t        pad = 0;
    int64_t        pos = 0;
    int            n, m = 1, i;
 
@@ -2829,7 +2830,7 @@ static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
    for (;;)
    {
       int fr;
-      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+      if (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) != 1)
          break;
       n++;
       fr = rvorbis_packet_frames(v->handle, pd, pl);
@@ -2849,18 +2850,11 @@ static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
    rvorbis_packet_reset(v->handle);
    rwebm_rewind(v->demux);
    for (i = 0; i < m; i++)
-      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+      if (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) != 1)
          return false;
    if (rvorbis_packet_decode(v->handle, pd, pl, 1) < 0)
       return false;
    v->emitted = pos;
-   /* Both passes above are header walks, and the pull arms the
-    * container's DiscardPadding as it goes.  Nothing decoded those
-    * packets, so nothing consumed it: left armed, it would come off
-    * whichever packet the next drain happens to decode and clamp the
-    * stream's end to wherever playback had got to.  The walk that
-    * matters will arm it again when it reaches that block for real. */
-   v->discard = 0;
 
    /* Drop the remainder through the ordinary drain, so the frames
     * counted here are the frames a playthrough emits. */
@@ -2926,7 +2920,6 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             v->pkt_index  = 0;
             v->pkt_offset = 0;
             v->emitted    = 0;
-            v->discard    = 0;   /* re-armed when the block comes round */
             return true;
          }
          if (frame == 0) /* loop-to-start: seek_start always succeeds */
