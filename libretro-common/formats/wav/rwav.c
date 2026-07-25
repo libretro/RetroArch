@@ -22,8 +22,8 @@
 
 /* rwav -- minimal RIFF WAVE reader.
  *
- * What it implements: WAV files holding integer PCM at 8 or 16 bits or
- * IEEE float at 32 bits, any channel count and sample rate.  The RIFF
+ * What it implements: WAV files holding integer PCM at 8, 16 or 24
+ * bits or IEEE float at 32 bits, any channel count and sample rate.  The RIFF
  * chunk list is walked, so 'fmt ' and 'data' are found wherever they
  * sit and the chunks writers put between them - LIST, fact, cue, JUNK
  * and the rest - are stepped over; a fmt chunk longer than 16 bytes
@@ -34,7 +34,10 @@
  * the file whole into a buffer this file owns, delivering samples in
  * native memory order: unsigned bytes for 8-bit, host-endian int16 for
  * 16-bit, host-endian float words for 32-bit, byte order fixed up from
- * the file's little-endian layout on big-endian hosts.  rwav_parse
+ * the file's little-endian layout on big-endian hosts.  24-bit is the
+ * exception and is handed over packed as the file stores it, three
+ * little-endian bytes a sample, since no host type is that wide;
+ * rwav.h carries the accessors for reading it.  rwav_parse
  * reads the header alone and reports where the samples are, allocating
  * and copying nothing, for a caller that would rather convert frames
  * out of its own buffer as it needs them - which also lets that buffer
@@ -45,12 +48,12 @@
  * GUID, so a file that is only extensible because it has more than two
  * channels reads as the plain PCM or float it actually holds.
  *
- * What it does not implement: 24-bit samples, compressed codecs
- * (ADPCM, a-law, mu-law) - including as an extensible SubFormat - and
- * writing.  A declared data size larger than the buffer is taken
- * as the buffer's worth rather than an error, which covers both a
- * truncated file and a writer that stamped a placeholder length it
- * never went back to fix; a trailing partial frame is dropped.
+ * What it does not implement: compressed codecs (ADPCM, a-law, mu-law)
+ * - including as an extensible SubFormat - and writing.  A declared
+ * data size larger than the buffer is taken as the buffer's worth
+ * rather than an error, which covers both a truncated file and a
+ * writer that stamped a placeholder length it never went back to fix;
+ * a trailing partial frame is dropped.
  */
 
 #include <stdio.h>
@@ -190,7 +193,7 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
     * standard 16 bytes of either is ignored rather than refused */
    if (tag != 1 && tag != 3)
       return RWAV_ITERATE_ERROR;
-   if (tag == 1 ? (bits != 8 && bits != 16) : (bits != 32))
+   if (tag == 1 ? (bits != 8 && bits != 16 && bits != 24) : (bits != 32))
       return RWAV_ITERATE_ERROR;
    /* a zero channel count divides by zero working out the frame count,
     * and a zero rate is unplayable: refuse both here rather than hand
@@ -267,7 +270,9 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
       case ITER_COPY_SAMPLES:
          iter->i = 0;
 
-         if (rwav->bitspersample == 8)
+         /* 8-bit needs no conversion, and 24-bit is handed over as
+          * stored, so both are the same plain copy */
+         if (rwav->bitspersample == 8 || rwav->bitspersample == 24)
          {
             iter->step = ITER_COPY_SAMPLES_8;
 

@@ -24,13 +24,43 @@
 #define __LIBRETRO_SDK_FORMAT_RWAV_H__
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 #include <stdint.h>
 
 RETRO_BEGIN_DECLS
 
+/* One 24-bit sample as the file stores it: three little-endian bytes,
+ * sign-extended. There is no host type of that width, so 24-bit data
+ * is handed over packed and read through these instead. */
+static INLINE int32_t rwav_s24(const uint8_t *p)
+{
+   uint32_t u = (uint32_t)p[0] | ((uint32_t)p[1] << 8)
+              | ((uint32_t)p[2] << 16);
+   return (u & 0x800000u) ? (int32_t)u - 0x1000000 : (int32_t)u;
+}
+
+/* Rounded to 16 bits, saturating. Biased to unsigned first so that
+ * neither the rounding nor the shift is applied to a negative value,
+ * both being implementation-defined there. */
+static INLINE int16_t rwav_s24_to_s16(const uint8_t *p)
+{
+   uint32_t u = ((uint32_t)p[0] | ((uint32_t)p[1] << 8)
+              | ((uint32_t)p[2] << 16)) ^ 0x800000u;
+   uint32_t r = (u + 128u) >> 8;
+   if (r > 65535u)
+      r = 65535u;
+   return (int16_t)((int32_t)r - 32768);
+}
+
+/* At the same unit scale the 16-bit and float paths use. */
+static INLINE float rwav_s24_to_float(const uint8_t *p)
+{
+   return (float)rwav_s24(p) * (1.0f / 8388608.0f);
+}
+
 typedef struct
 {
-   /* bits per sample: 8 and 16 are integer PCM, 32 is IEEE float
+   /* bits per sample: 8, 16 and 24 are integer PCM, 32 is IEEE float
     * (the parser only admits 32 with the float format tag, so the
     * width alone identifies the sample type) */
    unsigned int bitspersample;
@@ -47,7 +77,10 @@ typedef struct
    /* number of *bytes* in the pointer below, i.e. numsamples * numchannels * bitspersample/8 */
    size_t subchunk2size;
 
-   /* PCM data, owned by rwav and freed by rwav_free. NULL after
+   /* PCM data, owned by rwav and freed by rwav_free. 24-bit data is
+    * handed over exactly as the file stores it - packed little-endian
+    * three-byte samples, for rwav_s24 and friends above - there being
+    * no host type to convert it to. NULL after
     * rwav_parse, which allocates nothing: read the samples out of your
     * own buffer at dataoffset instead. */
    const void* samples;

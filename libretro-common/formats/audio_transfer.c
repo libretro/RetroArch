@@ -72,22 +72,22 @@
  *
  * WAV (rwav)
  *   Does: buffer input; s16 and f32 reads; exact length; seek to any
- *     frame; 8-bit unsigned PCM, 16-bit signed PCM and 32-bit IEEE
- *     float (8-bit widened and float rounded at read, all assembled
- *     from the file's little-endian words).
+ *     frame; 8-bit unsigned PCM, 16- and 24-bit signed PCM and 32-bit
+ *     IEEE float (8-bit widened, 24-bit and float rounded at read, all
+ *     assembled from the file's little-endian words).
  *     start() parses the header alone and the frames are converted out
  *     of the caller's buffer as they are asked for, so the arm holds no
  *     decoded copy and buffer_tell reports the read frontier: WAV
  *     windows like the compressed arms, and its residency is a window
  *     rather than the file.  rwav walks the chunk list, so LIST, fact,
  *     cue and the rest before the samples are no obstacle.
- *   Does not: take 24-bit or ADPCM/a-law - neither reaches here, rwav
- *     rejects them, including where a WAVE_FORMAT_EXTENSIBLE SubFormat
- *     names one (rwav resolves that header, so a file extensible only
- *     for its channel count or width arrives as the PCM or float it
- *     holds).  No demuxed input.  Note the mixer takes stream voices
- *     at one or two channels, so a 5.1 WAV parses here and is turned
- *     away there, as a 5.1 FLAC already is.
+ *   Does not: take ADPCM/a-law - rwav rejects those, including where a
+ *     WAVE_FORMAT_EXTENSIBLE SubFormat names one (rwav resolves that
+ *     header, so a file extensible only for its channel count or
+ *     width arrives as the PCM or float it holds).  No demuxed input.
+ *     Note the mixer takes stream voices at one or two channels, so a
+ *     5.1 WAV parses here and is turned away there, as a 5.1 FLAC
+ *     already is.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
@@ -1113,10 +1113,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
           * resident at open */
          if (rwav_parse(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
             return false;
-         /* rwav admits 8- and 16-bit integer PCM and 32-bit IEEE
-          * float, and all three convert on the way out below */
+         /* rwav admits 8-, 16- and 24-bit integer PCM and 32-bit
+          * IEEE float, and all four convert on the way out below */
          if (     w->wav.bitspersample != 16
                && w->wav.bitspersample != 8
+               && w->wav.bitspersample != 24
                && w->wav.bitspersample != 32)
             return false;
          w->framesz = (size_t)w->wav.numchannels
@@ -1928,6 +1929,14 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
                                               : (int)v - 0x10000);
             }
          }
+         else if (w->wav.bitspersample == 24)
+         {
+            /* packed three-byte samples, quantised by the shared
+             * accessor so every reader of a 24-bit file rounds it
+             * the same way */
+            for (i = 0; i < n; i++)
+               out[i] = rwav_s24_to_s16(src + i * 3);
+         }
          else if (w->wav.bitspersample == 32) /* IEEE float -> s16 */
          {
             for (i = 0; i < n; i++)
@@ -2028,6 +2037,11 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
                out[i] = (float)(v < 0x8000u ? (int)v : (int)v - 0x10000)
                   * (1.0f / 32768.0f);
             }
+         }
+         else if (w->wav.bitspersample == 24)
+         {
+            for (i = 0; i < n; i++)
+               out[i] = rwav_s24_to_float(src + i * 3);
          }
          else if (w->wav.bitspersample == 32)
          {

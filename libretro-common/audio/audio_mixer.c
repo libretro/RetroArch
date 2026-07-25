@@ -216,6 +216,29 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
          }
       }
    }
+   else if (wav->bitspersample == 24)
+   {
+      float sample      = 0.0f;
+      const uint8_t *u8 = (const uint8_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--, u8 += 3)
+         {
+            sample = rwav_s24_to_float(u8);
+            *f++   = sample;
+            *f++   = sample;
+         }
+      }
+      else if (wav->numchannels == 2)
+      {
+         for (i = wav->numsamples; i != 0; i--, u8 += 6)
+         {
+            *f++ = rwav_s24_to_float(u8);
+            *f++ = rwav_s24_to_float(u8 + 3);
+         }
+      }
+   }
    else
    {
       float sample       = 0.0f;
@@ -441,6 +464,28 @@ static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
          {
             *s++ = (int16_t)(((int)*u8++ - 128) << 8);
             *s++ = (int16_t)(((int)*u8++ - 128) << 8);
+         }
+      }
+   }
+   else if (wav->bitspersample == 24)
+   {
+      const uint8_t *u8 = (const uint8_t*)wav->samples;
+
+      if (wav->numchannels == 1)
+      {
+         for (i = wav->numsamples; i != 0; i--, u8 += 3)
+         {
+            int16_t v = rwav_s24_to_s16(u8);
+            *s++      = v;
+            *s++      = v;
+         }
+      }
+      else if (wav->numchannels == 2)
+      {
+         for (i = wav->numsamples; i != 0; i--, u8 += 6)
+         {
+            *s++ = rwav_s24_to_s16(u8);
+            *s++ = rwav_s24_to_s16(u8 + 3);
          }
       }
    }
