@@ -21,6 +21,7 @@
 
 #include <formats/data_transfer.h>
 #include <formats/audio.h>
+#include <formats/rwav.h>
 #include <file/file_path.h>
 #include <audio/audio_mixer.h>
 #include <compat/strl.h>
@@ -1119,6 +1120,24 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
             goto bail;
       }
 #endif
+#ifdef HAVE_RWAV
+      if (w->mtype == AUDIO_MIXER_TYPE_WAV_STREAM)
+      {
+         /* The head must carry the whole chunk list: the decoder
+          * walks it at open and again on every loop seek, and both
+          * happen on the audio thread with nothing extending the
+          * window ahead of them.  Parse bounded by the head - a file
+          * whose 'data' chunk sits past it (a huge LIST, cover art)
+          * simply falls back to the classic full load rather than
+          * walking into the reserved space beyond the frontier.
+          * This also confirms the format is one the arm streams. */
+         rwav_t hdr;
+         if (rwav_parse(&hdr, base,
+               flen < AMIX_WINDOW_KEEP ? flen : AMIX_WINDOW_KEEP)
+               != RWAV_ITERATE_DONE)
+            goto bail;
+      }
+#endif
 #ifdef HAVE_RFLAC
       if (w->mtype == AUDIO_MIXER_TYPE_FLAC)
       {
@@ -1248,6 +1267,15 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
     * confirms Vorbis rather than Opus. */
    if (string_is_equal_noncase(ext, "aac"))
       mtype = AUDIO_MIXER_TYPE_M4A;
+#endif
+#ifdef HAVE_RWAV
+   /* A .wav streams once its arm stopped decoding whole: the open
+    * reads the chunk list only, reads run monotonically forward with
+    * the frame cursor, and the loop seek returns to the first frame,
+    * which the head holds.  Confirmed against the head below, the way
+    * OGG confirms Vorbis rather than Opus. */
+   if (string_is_equal_noncase(ext, "wav"))
+      mtype = AUDIO_MIXER_TYPE_WAV_STREAM;
 #endif
 #ifdef HAVE_ROPUS
    /* An .opus is Ogg-Opus: pages read monotonically forward (pg_off)

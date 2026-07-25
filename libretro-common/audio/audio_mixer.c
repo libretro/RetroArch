@@ -95,10 +95,10 @@ struct audio_mixer_sound
          unsigned frames;
       } wav;
 
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS) || defined(HAVE_RWAV)
       struct
       {
-         /* shared streaming-codec source (OGG / FLAC / MP3) */
+         /* shared streaming source (WAV / OGG / FLAC / MP3 / ...) */
          const void* data;
          unsigned size;
       } stream;
@@ -626,6 +626,31 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
 #endif
 }
 
+audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, int32_t size)
+{
+#ifdef HAVE_RWAV
+   audio_mixer_sound_t* sound;
+
+   if (!buffer || size <= 0)
+      return NULL;
+
+   if (!(sound = (audio_mixer_sound_t*)calloc(1, sizeof(*sound))))
+      return NULL;
+
+   /* nothing is decoded here: the voice reads frames out of these
+    * bytes as it mixes them */
+   sound->type              = AUDIO_MIXER_TYPE_WAV_STREAM;
+   sound->types.stream.size = size;
+   sound->types.stream.data = buffer;
+
+   return sound;
+#else
+   (void)buffer;
+   (void)size;
+   return NULL;
+#endif
+}
+
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
 #if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS)
@@ -813,10 +838,16 @@ size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice)
    size_t r = 0;
    if (!voice)
       return 0;
-#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS)
+#if defined(HAVE_RVORBIS) || defined(HAVE_RFLAC) || defined(HAVE_RMP3) || defined(HAVE_RMODTRACKER) || defined(HAVE_RAAC) || defined(HAVE_ROPUS) || defined(HAVE_RWAV)
    AUDIO_MIXER_LOCK(voice);
    switch (voice->type)
    {
+#ifdef HAVE_RWAV
+      case AUDIO_MIXER_TYPE_WAV_STREAM:
+         r = audio_transfer_buffer_tell(voice->types.stream.stream,
+               AUDIO_TYPE_WAV);
+         break;
+#endif
 #ifdef HAVE_RVORBIS
       case AUDIO_MIXER_TYPE_OGG:
          r = audio_transfer_buffer_tell(voice->types.stream.stream,
@@ -869,6 +900,13 @@ void audio_mixer_destroy(audio_mixer_sound_t* sound)
          handle = (void*)sound->types.wav.pcm_s16;
          if (handle)
             memalign_free(handle);
+         break;
+      case AUDIO_MIXER_TYPE_WAV_STREAM:
+#ifdef HAVE_RWAV
+         handle = (void*)sound->types.stream.data;
+         if (handle && !sound->data_owner)
+            free(handle);
+#endif
          break;
       case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
@@ -1201,6 +1239,12 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
             res = wav_ensure_float(sound)
                && audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
             break;
+         case AUDIO_MIXER_TYPE_WAV_STREAM:
+#ifdef HAVE_RWAV
+            res = audio_mixer_play_stream(sound, voice, repeat, volume,
+                  resampler_ident, quality, stop_cb, AUDIO_TYPE_WAV);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
             res = audio_mixer_play_stream(sound, voice, repeat, volume,
@@ -1302,6 +1346,12 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
                   quality, stop_cb, AUDIO_TYPE_FLAC);
 #endif
             break;
+         case AUDIO_MIXER_TYPE_WAV_STREAM:
+#ifdef HAVE_RWAV
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+                  quality, stop_cb, AUDIO_TYPE_WAV);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
             res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
@@ -1375,6 +1425,11 @@ static void audio_mixer_release(audio_mixer_voice_t* voice)
 
    switch (voice->type)
    {
+#ifdef HAVE_RWAV
+      case AUDIO_MIXER_TYPE_WAV_STREAM:
+         audio_mixer_release_stream(voice, AUDIO_TYPE_WAV);
+         break;
+#endif
 #ifdef HAVE_RVORBIS
       case AUDIO_MIXER_TYPE_OGG:
          audio_mixer_release_stream(voice, AUDIO_TYPE_VORBIS);
@@ -1753,6 +1808,11 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_WAV:
             audio_mixer_mix_wav(buffer, num_frames, voice, volume);
             break;
+         case AUDIO_MIXER_TYPE_WAV_STREAM:
+#ifdef HAVE_RWAV
+            audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_WAV);
+#endif
+            break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
             audio_mixer_mix_stream(buffer, num_frames, voice, volume, AUDIO_TYPE_VORBIS);
@@ -1827,6 +1887,11 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_RFLAC
             audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_FLAC);
+#endif
+            break;
+         case AUDIO_MIXER_TYPE_WAV_STREAM:
+#ifdef HAVE_RWAV
+            audio_mixer_mix_stream_s16(buffer, num_frames, voice, gain_q16, AUDIO_TYPE_WAV);
 #endif
             break;
          case AUDIO_MIXER_TYPE_OGG:

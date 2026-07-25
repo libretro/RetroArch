@@ -48,7 +48,14 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_MP3,
    AUDIO_MIXER_TYPE_M4A,
    AUDIO_MIXER_TYPE_OPUS,
-   AUDIO_MIXER_TYPE_WEBA  /* resolves to OPUS or OGG at load */
+   AUDIO_MIXER_TYPE_WEBA, /* resolves to OPUS or OGG at load */
+   /* A WAV played as a stream: decoded a chunk at a time out of the
+    * source buffer rather than converted whole at load, so its cost
+    * is the source and not the source plus a decoded copy, and its
+    * source may be a window rather than the file.  AUDIO_MIXER_TYPE_WAV
+    * remains the right choice for the short sounds - menu clicks and
+    * the like - that want their PCM ready before the first mix. */
+   AUDIO_MIXER_TYPE_WAV_STREAM
 };
 
 typedef struct audio_mixer_sound audio_mixer_sound_t;
@@ -72,6 +79,8 @@ void audio_mixer_done(void);
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
       const char *resampler_ident, enum resampler_quality quality,
       bool want_s16);
+audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer,
+      int32_t size);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);

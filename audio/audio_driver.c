@@ -2482,6 +2482,14 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
             free(buf);
          buf = NULL;
          break;
+      case AUDIO_MIXER_TYPE_WAV_STREAM:
+         /* unlike AUDIO_MIXER_TYPE_WAV above, nothing is decoded at
+          * load: the sound keeps these bytes and reads frames from
+          * them as it mixes, so the source stays owned by the sound
+          * (or by its lender) exactly as the compressed types' does */
+         handle = audio_mixer_load_wav_stream(buf,
+               (int32_t)params->bufsize);
+         break;
       case AUDIO_MIXER_TYPE_OGG:
          handle = audio_mixer_load_ogg(buf, (int32_t)params->bufsize);
          break;
