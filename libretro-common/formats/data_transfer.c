@@ -20,6 +20,123 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* What this file implements, and what it deliberately does not.
+ *
+ * IMPLEMENTED
+ *
+ * One handle (data_transfer_t) with three ways to fill it, sharing
+ * one tick-sliced surface: iterate() with a byte budget, ptr() and
+ * avail() for the buffer and how much of it is real, and the
+ * complete()/failed()/capped() terminals.
+ *
+ *  - prefix (data_transfer_open_prefix): a file whose length is known
+ *    at open.  Address space for the whole length is reserved up
+ *    front so the base never moves, and physical pages are committed
+ *    DT_COMMIT_STEP at a time as the fill advances, in DT_READ_CHUNK
+ *    reads.  commit_cap bounds the committed bytes and turns overrun
+ *    into the capped() terminal, distinct from complete and failed.
+ *    discard()/refill() trade residency for a re-read, so a
+ *    sequential consumer holds a constant window over a file of any
+ *    size.
+ *
+ *  - window (data_transfer_open_window): the same reservation used
+ *    cyclically, for sequential consumers that loop.  A permanent
+ *    head of 'keep' bytes plus a moving [wlo, whi) that feed()
+ *    advances behind the consumer and extends ahead of it;
+ *    rewind() on a backwards tell, grow_keep() to raise the head once
+ *    the loop landing is known, peek() for positioned metadata reads
+ *    that commit nothing, punch() to release inert ranges inside the
+ *    head.
+ *
+ *  - source (data_transfer_open_source): bytes from a producer
+ *    callback instead of a file, into one exact malloc that
+ *    source_detach() hands to the caller to free().
+ *
+ * Plus data_transfer_arena_*, an independent realloc-doubling
+ * growable buffer that shares this file and header but touches no
+ * data_transfer_t and no page machinery.
+ *
+ * File access goes through filestream/VFS throughout, so 64-bit
+ * offsets and VFS-only paths work.  Where the platform cannot reserve
+ * address space, every mode degrades to a plain allocation of
+ * min(len, commit_cap) - or DT_FALLBACK_WINDOW when there is no cap -
+ * and a window simply holds the whole file; reserve_supported() and
+ * window_is_reserved() say which happened.
+ *
+ * NOT IMPLEMENTED
+ *
+ *  - Asynchrony.  Every read is a synchronous filestream_read on the
+ *    calling thread: iterate() blocks for the length of its budget,
+ *    and there is nothing in flight for free() to cancel.  Pacing is
+ *    by byte budget and the caller does the time-slicing.  Wording
+ *    here and in the header about cancelling in-flight reads, or
+ *    about an "nbio strategy", is residual - no such strategy exists
+ *    in this file.
+ *
+ *  - Locking.  Nothing is synchronised.  The window contract is
+ *    single owner, single thread by construction (see the header);
+ *    prefix and source handles are merely unguarded, so one owner
+ *    iterates and any other reader of ptr() is ordered by the caller.
+ *
+ *  - Writing, in any form: no create, no append, no truncate.
+ *
+ *  - Length changes.  len is fixed at open.  A file that grows is
+ *    never noticed; a file that shrinks under the fill freezes the
+ *    transfer into failed() with an honest avail(), and complete()
+ *    never becomes true.
+ *
+ *  - Empty inputs.  open_prefix rejects a zero or unknown size and
+ *    open_source rejects len == 0, both returning NULL rather than a
+ *    handle that is complete on arrival.
+ *
+ *  - Random access.  avail() is monotonic and the consumer reads the
+ *    front of the buffer: no seek, no consumer-visible positioned
+ *    read outside window_peek(), and deliberately no accessor for the
+ *    window's committed frontier.
+ *
+ *  - Mixing the two surfaces on one handle.  A window keeps a live
+ *    RFILE and a reservation, so the prefix calls run against it and
+ *    quietly disagree: iterate() finds avail == len and settles done,
+ *    and discard() walks its own 'low' frontier, which knows nothing
+ *    of keep/wlo/whi/wfreed, straight through the resident head.
+ *    Nothing rejects this - use one surface per handle.
+ *
+ *  - An honest terminal on the window side.  extend() and grow_keep()
+ *    report a short read by returning false only: whi stays where it
+ *    was and the handle is not marked failed, unlike the fill, which
+ *    settles.
+ *
+ *  - Cancellation and progress reporting.  No cancel token, no
+ *    progress callback, no time budget.  A producer can only stop
+ *    itself by returning negative, an abandoned handle is freed
+ *    rather than aborted, and a source transfer that stopped short
+ *    cannot be adopted at all: detach() returns NULL unless the fill
+ *    completed.
+ *
+ *  - A promise from reserve_supported().  It answers a build
+ *    question - whether this build can reserve at all - not an
+ *    allocation one.  memreserve() can still fail for a particular
+ *    length, and only window_is_reserved() on an open handle reports
+ *    that it did.
+ *
+ *  - Arithmetic hardening.  Sizes are trusted: window_peek()'s
+ *    off + n can wrap, the arena's size doubling has no overflow
+ *    guard, and every rounding here assumes a power-of-two page.
+ *
+ *  - Uniform NULL tolerance.  The shared surface (iterate, ptr,
+ *    avail, complete, failed, capped, discard, refill, free) accepts
+ *    NULL; the window entry points and window_base() dereference
+ *    without checking.
+ *
+ *  - A runtime choice of strictness.  DT_WINDOW_STRICT is build-time
+ *    and covers window decommits only; discard() always releases
+ *    non-strictly.
+ *
+ *  - Anything about the bytes themselves: no hashing, no validation,
+ *    no decompression (source mode's producer does that), and nothing
+ *    to do with a network, the name notwithstanding.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
