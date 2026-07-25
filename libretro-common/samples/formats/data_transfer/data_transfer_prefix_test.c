@@ -54,6 +54,18 @@ static int bad = 0;
 static void ok(const char *what) { printf("[ok]   %s\n", what); }
 static void fail(const char *what) { printf("[FAIL] %s\n", what); bad = 1; }
 
+/* allows 'ud' more reads, then refuses */
+static bool hook_stop_after(void *ud, size_t avail, size_t len)
+{
+   int *left = (int*)ud;
+   (void)avail;
+   (void)len;
+   if (*left <= 0)
+      return false;
+   (*left)--;
+   return true;
+}
+
 static void mkfile(const char *path, uint8_t *ref, size_t n)
 {
    FILE *f = fopen(path, "wb"); size_t i;
@@ -234,6 +246,92 @@ static int strict_discard_check(void)
 }
 #endif
 
+/* The continue hook: a stop is a pause, and it is fine-grained.
+ *
+ * Two properties matter to the callers that use it as a frame guard.
+ * It has to be consulted between the fill's internal reads rather
+ * than once per call, or a deadline is no better than the byte budget
+ * it replaced - so a hook that stops after N calls must leave about
+ * N chunks of data, not the whole file.  And stopping must settle
+ * nothing: the transfer has to resume exactly where it stopped, or a
+ * consumer that runs out of frame time would lose the file. */
+static int continue_hook_check(void)
+{
+   const char *path = "/tmp/dtprefix_hook.bin";
+   size_t n = 4u << 20;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   data_transfer_t *dt;
+   int calls = 0, rv = 0;
+   size_t after_stop;
+
+   if (!ref)
+      return 0;
+   mkfile(path, ref, n);
+
+   /* stop immediately: no work at all, and nothing settled */
+   if (!(dt = data_transfer_open_prefix(path, 0)))
+   {
+      printf("[FAIL] open for the hook check\n");
+      free(ref); remove(path);
+      return 1;
+   }
+   calls = 0;
+   data_transfer_iterate_while(dt, 0, hook_stop_after, &calls);
+   if (data_transfer_avail(dt) != 0)
+   {
+      printf("[FAIL] a hook refusing at once still read %u bytes\n",
+            (unsigned)data_transfer_avail(dt));
+      rv = 1;
+   }
+   else if (data_transfer_failed(dt) || data_transfer_complete(dt))
+   {
+      printf("[FAIL] refusing at once settled the transfer\n");
+      rv = 1;
+   }
+   else
+      ok("a hook refusing at once reads nothing and settles nothing");
+
+   /* let it through a few reads: the stop must land near a chunk
+    * boundary, not at the end of the file */
+   calls = 4;
+   data_transfer_iterate_while(dt, 0, hook_stop_after, &calls);
+   after_stop = data_transfer_avail(dt);
+   if (after_stop == 0 || after_stop >= n)
+   {
+      printf("[FAIL] the hook was not consulted between reads "
+             "(%u of %u bytes)\n", (unsigned)after_stop, (unsigned)n);
+      rv = 1;
+   }
+   else
+      printf("[ok]   the hook lands between reads: %u KiB in, "
+             "not %u KiB\n", (unsigned)(after_stop >> 10),
+            (unsigned)(n >> 10));
+
+   /* and the fill resumes from exactly there */
+   data_transfer_iterate(dt, 0);
+   if (!data_transfer_complete(dt))
+   {
+      printf("[FAIL] the transfer did not resume after a hook stop\n");
+      rv = 1;
+   }
+   else
+   {
+      size_t len = 0;
+      const uint8_t *base = data_transfer_ptr(dt, &len);
+      if (len != n || memcmp(base, ref, n))
+      {
+         printf("[FAIL] resumed contents do not match the file\n");
+         rv = 1;
+      }
+      else
+         ok("a stopped fill resumes and delivers the whole file");
+   }
+
+   data_transfer_free(dt);
+   free(ref); remove(path);
+   return rv;
+}
+
 int main(void)
 {
    const char *path = "/tmp/dtprefix.bin";
@@ -316,6 +414,9 @@ int main(void)
 
    /* 7. strict builds must fault on a look-back, not read zeros */
    bad |= strict_discard_check();
+
+   /* 8. the continue hook pauses finely and resumes cleanly */
+   bad |= continue_hook_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

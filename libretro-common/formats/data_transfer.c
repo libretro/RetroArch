@@ -266,7 +266,7 @@ static int data_transfer_read_at(data_transfer_t *dt, size_t off,
  * window; open_window's no-reservation path genuinely needs it and
  * calls it here directly. */
 static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
-      size_t max_bytes);
+      size_t max_bytes, data_transfer_continue_t cb, void *ud);
 
 /* Release whole pages from the decommit frontier up to (not
  * including) the page containing 'to'.  The frontier survives calls,
@@ -410,7 +410,7 @@ data_transfer_t *data_transfer_open_window(const char *path, size_t keep)
        * calls become no-ops and the file is simply resident.  The
        * fill is invoked directly because dt->window is already set
        * and the public iterate() declines windows. */
-      data_transfer_prefix_iterate(dt, 0);
+      data_transfer_prefix_iterate(dt, 0, NULL, NULL);
       if (!data_transfer_complete(dt))
       {
          data_transfer_free(dt);
@@ -683,7 +683,7 @@ static int data_transfer_commit(data_transfer_t *dt, size_t need)
 }
 
 static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
-      size_t max_bytes)
+      size_t max_bytes, data_transfer_continue_t cb, void *ud)
 {
    size_t start = dt->avail;
    while (!dt->done && !dt->capped)
@@ -699,6 +699,12 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
          dt->capped = 1;
          break;
       }
+      /* Asked before each read, the first one included: a caller
+       * already out of budget does no work at all.  A stop here
+       * settles nothing - the fill simply pauses and the next
+       * iterate carries on from the same place. */
+      if (cb && !cb(ud, dt->avail, dt->len))
+         break;
       if (chunk > dt->len - dt->avail)
          chunk = dt->len - dt->avail;
       if (dt->cap && chunk > dt->cap - dt->avail)
@@ -845,15 +851,22 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from)
  * feed/extend/advance/rewind and its length is known from open, so
  * there is nothing these can usefully do that the window surface does
  * not already do correctly. */
-size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
+size_t data_transfer_iterate_while(data_transfer_t *dt, size_t max_bytes,
+      data_transfer_continue_t should_continue, void *ud)
 {
    if (!dt)
       return 0;
    if (dt->window)
       return dt->avail;           /* not this surface - see above */
    if (dt->f || dt->src_cb)
-      return data_transfer_prefix_iterate(dt, max_bytes);
+      return data_transfer_prefix_iterate(dt, max_bytes,
+            should_continue, ud);
    return dt->avail;
+}
+
+size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes)
+{
+   return data_transfer_iterate_while(dt, max_bytes, NULL, NULL);
 }
 
 const uint8_t *data_transfer_ptr(data_transfer_t *dt, size_t *len)

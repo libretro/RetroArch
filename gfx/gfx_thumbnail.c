@@ -1061,6 +1061,15 @@ static void gfx_thumbnail_anim_schedule(gfx_thumbnail_t *thumbnail,
  * immediately after a single flag test - non-animated thumbnails, and
  * every image type without an animation decoder, pay nothing beyond
  * that. */
+/* 2 ms of this vsync and no more: the frame guard for the adopted
+ * read inside gfx_thumbnail_animate. */
+static bool gfx_thumb_frame_budget(void *ud, size_t avail, size_t len)
+{
+   (void)avail;
+   (void)len;
+   return cpu_features_get_time_usec() - *(int64_t*)ud < 2000;
+}
+
 void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
@@ -1122,26 +1131,24 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
        * Animation jobs and the audio decode only start on a complete
        * buffer, so the decoders never see the partial-read wall.
        *
-       * The 2 ms wall-clock cap is the frame-time guard; the chunk is
-       * only the granularity at which that cap is checked.  Filling
-       * the buffer is disk-read-bound (a warm 66 MB file iterates in
-       * ~44 ms of pure I/O), so a 256 KB granularity spread the read
-       * over dozens of vsyncs even though the cap was rarely reached
-       * - the prefix reader delivered the still frame in a few MB,
-       * then the animation waited seconds for this dribble to finish.
-       * A 2 MB chunk lets each vsync's 2 ms window move far more than
-       * the old 256 KB, so the read completes in a handful of frames
-       * instead of dozens and the animation starts promptly after the
-       * still.  The cap is only re-checked between iterates, so the
-       * chunk is also bounded by frame safety: a single 2 MB iterate
-       * measures ~1.2 ms on a warm file, comfortably inside one 60 Hz
-       * frame, whereas 4 MB approached a whole 2 ms in one go. */
-      do
-      {
-         data_transfer_iterate(thumbnail->anim_dt, 2 * 1024 * 1024);
-      } while (!data_transfer_complete(thumbnail->anim_dt)
-            && !data_transfer_failed(thumbnail->anim_dt)
-            && cpu_features_get_time_usec() - now < 2000);
+       * The 2 ms wall-clock cap is the frame guard, and it is handed
+       * to the fill so it lands between the fill's own reads.
+       *
+       * This was a do/while around iterate() with a byte budget, and
+       * that budget had to serve two masters pulling opposite ways.
+       * Filling is disk-read-bound (a warm 66 MB file iterates in
+       * ~44 ms of pure I/O), so a small chunk dribbled the read over
+       * dozens of vsyncs and the animation waited seconds behind the
+       * still; a large one moved far more per tick but coarsened the
+       * guard, since the cap was only re-checked between iterates and
+       * a whole chunk had to finish first.  2 MB was where the two
+       * met on warm storage - and only on warm storage, the balance
+       * being really about read latency.
+       *
+       * With the deadline inside the fill there is nothing to trade:
+       * no byte budget at all, and the cap is seen between reads. */
+      data_transfer_iterate_while(thumbnail->anim_dt, 0,
+            gfx_thumb_frame_budget, &now);
       if (data_transfer_failed(thumbnail->anim_dt))
       {
          /* A read that ended short of the file (I/O error, the file

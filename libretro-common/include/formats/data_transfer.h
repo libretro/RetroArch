@@ -257,6 +257,35 @@ bool data_transfer_refill(data_transfer_t *dt, size_t from);
  * over. */
 size_t data_transfer_iterate(data_transfer_t *dt, size_t max_bytes);
 
+/* Consulted between the fill's internal reads, which is a far finer
+ * grain than a byte budget can express: returning false stops the
+ * fill where it stands.  'avail' and 'len' are the position and the
+ * total, so a caller has what it needs to report progress without
+ * holding the handle.
+ *
+ * Stopping this way is a pause, not a failure - nothing settles, and
+ * the next iterate resumes where this one stopped. */
+typedef bool (*data_transfer_continue_t)(void *ud, size_t avail,
+      size_t len);
+
+/* iterate() with that hook.  One mechanism covers three things a
+ * caller would otherwise build itself: a time budget (return false
+ * once the clock says so), cancellation (return false on a flag), and
+ * progress (report from inside, then return true).
+ *
+ * The hook is where the clock belongs.  Callers previously wrapped
+ * iterate() in a do/while that checked elapsed time between calls,
+ * which made the byte budget a stand-in for a time slice and left the
+ * check no finer than the chunk they passed - a frame budget could
+ * overshoot by however long one chunk took to read from cold storage.
+ * Consulted here it lands between the fill's own reads instead, and
+ * no timing dependency enters this module.
+ *
+ * Both budgets apply; whichever comes first stops the fill.  Pass 0
+ * for max_bytes to let the hook govern alone. */
+size_t data_transfer_iterate_while(data_transfer_t *dt, size_t max_bytes,
+      data_transfer_continue_t should_continue, void *ud);
+
 /* The buffer.  Valid and stable from open; its leading
  * data_transfer_avail() bytes are file content, the rest not yet.
  * *len receives the full file length. */

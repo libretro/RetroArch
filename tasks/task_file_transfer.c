@@ -74,7 +74,21 @@ void task_window_progress_cb(retro_task_t *task)
  * keep the byte budget: their stills complete on a small prefix and
  * a racing fill would just read past the point of use. */
 #define NBIO_XFER_TICK_USEC        4000
-#define NBIO_XFER_TIME_CHUNK       (256 * 1024)
+
+/* The budget is handed to the fill rather than checked around it, so
+ * it is consulted between the fill's own reads.  This used to be a
+ * do/while around iterate() with a 256 KiB byte budget standing in
+ * for the time slice, which meant the deadline could only be noticed
+ * every 256 KiB - once per whole chunk, however long that chunk took
+ * to arrive. */
+static bool task_file_transfer_within_budget(void *ud, size_t avail,
+      size_t len)
+{
+   (void)avail;
+   (void)len;
+   return cpu_features_get_time_usec() - *(retro_time_t*)ud
+         < NBIO_XFER_TICK_USEC;
+}
 
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
 {
@@ -120,15 +134,8 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    else
    {
       retro_time_t t0 = cpu_features_get_time_usec();
-      do
-      {
-         data_transfer_iterate(nbio->xfer, NBIO_XFER_TIME_CHUNK);
-         if (data_transfer_complete(nbio->xfer)
-               || data_transfer_failed(nbio->xfer)
-               || data_transfer_capped(nbio->xfer))
-            break;
-      } while (cpu_features_get_time_usec() - t0
-            < NBIO_XFER_TICK_USEC);
+      data_transfer_iterate_while(nbio->xfer, 0,
+            task_file_transfer_within_budget, &t0);
    }
    if (data_transfer_complete(nbio->xfer)
          || data_transfer_failed(nbio->xfer)
