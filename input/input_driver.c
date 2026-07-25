@@ -5623,6 +5623,71 @@ unsigned *input_config_get_device_ptr(unsigned port)
    return NULL;
 }
 
+/* The player -> pad mapping is required to be a permutation of
+ * [0, MAX_USERS):
+ *
+ * - Two players sharing a pad index makes a single physical device
+ *   drive two libretro ports at once, so one controller presses
+ *   Start for both players.
+ * - reallocate_port_if_needed() in tasks/task_autodetect.c reassigns
+ *   ports by transposing entries of this array. A transposition
+ *   preserves the permutation property but cannot restore it, so a
+ *   mapping that is already non-injective stays non-injective for
+ *   every subsequent hotplug.
+ * - That same function inverts the mapping through an array indexed
+ *   by pad index, so an out of range entry is an out of bounds write.
+ *
+ * Nothing validates the mapping when it is read back from a
+ * configuration file, and the menu's device index selector happily
+ * lets two players point at the same pad, so the invariant has to be
+ * asserted rather than assumed. */
+bool input_config_sanitize_joypad_indices(void)
+{
+   unsigned i;
+   bool taken[MAX_USERS];
+   unsigned next_free   = 0;
+   bool corrected       = false;
+   settings_t *settings = config_get_ptr();
+
+   if (!settings)
+      return false;
+
+   for (i = 0; i < MAX_USERS; i++)
+      taken[i] = false;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned joy_idx = settings->uints.input_joypad_index[i];
+
+      if (joy_idx < MAX_USERS && !taken[joy_idx])
+      {
+         taken[joy_idx] = true;
+         continue;
+      }
+
+      while (next_free < MAX_USERS && taken[next_free])
+         next_free++;
+
+      /* MAX_USERS players cannot claim more than MAX_USERS distinct
+       * indices, so this is unreachable; bail out rather than write
+       * past the end of the array if it ever is reached. */
+      if (next_free >= MAX_USERS)
+         break;
+
+      RARCH_WARN("[Input] Player %u had %s pad index %u, "
+            "reassigning to %u.\n",
+            i + 1,
+            (joy_idx < MAX_USERS) ? "duplicate" : "out of range",
+            joy_idx, next_free);
+
+      settings->uints.input_joypad_index[i] = next_free;
+      taken[next_free]                      = true;
+      corrected                             = true;
+   }
+
+   return corrected;
+}
+
 /* Adds an index to devices with the same name,
  * so they can be uniquely identified in the
  * frontend */

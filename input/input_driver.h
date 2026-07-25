@@ -940,6 +940,21 @@ void input_config_clear_device_joypad_driver(unsigned port);
 
 unsigned input_config_get_device_count(void);
 
+/**
+ * input_config_sanitize_joypad_indices:
+ *
+ * Restores the invariant that settings->uints.input_joypad_index[]
+ * is a permutation of [0, MAX_USERS): every player maps to a distinct
+ * pad index, and every entry is in range.
+ *
+ * Entries are examined in ascending player order and the first
+ * claimant of an index keeps it, so repairing a duplicate never takes
+ * a pad away from a lower numbered player.
+ *
+ * Returns true if the mapping had to be corrected.
+ **/
+bool input_config_sanitize_joypad_indices(void);
+
 unsigned *input_config_get_device_ptr(unsigned port);
 
 unsigned input_config_get_device(unsigned port);
