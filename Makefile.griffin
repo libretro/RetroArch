@@ -327,6 +327,7 @@ else ifeq ($(platform), vita)
       gfx/drivers/vita_shaders/color_f_gxp.o \
       gfx/drivers/vita_shaders/texture_v_gxp.o \
       gfx/drivers/vita_shaders/texture_f_gxp.o \
+      gfx/drivers/vita_shaders/texture_tint_v_gxp.o \
       gfx/drivers/vita_shaders/texture_tint_f_gxp.o
 
    PLATOBJS += \
