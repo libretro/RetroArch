@@ -293,7 +293,7 @@ static bool font_init_first(
          break;
 #endif
 #ifdef HAVE_VITA2D
-      case FONT_DRIVER_RENDER_VITA2D:
+      case FONT_DRIVER_RENDER_GXM:
          {
             void *data = gxm_font.init(
                   video_data, font_path, font_size, is_threaded);

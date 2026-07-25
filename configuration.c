@@ -114,7 +114,7 @@ enum video_driver_enum
    VIDEO_WIIU,
    VIDEO_XENON360,
    VIDEO_PSP1,
-   VIDEO_VITA2D,
+   VIDEO_GXM,
    VIDEO_PS2,
    VIDEO_CTR,
    VIDEO_SWITCH,
@@ -449,7 +449,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 /* Default to D3D11 in UWP, even when its compiled with ANGLE, since ANGLE is just calling D3D anyway.*/
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
 #elif defined(HAVE_VITA2D)
-static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VITA2D;
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GXM;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;
 #elif defined(HAVE_OPENGL_CORE) && !defined(__HAIKU__)
@@ -1131,7 +1131,7 @@ const char *config_get_default_video(void)
          return "psp1";
       case VIDEO_PS2:
          return "ps2";
-      case VIDEO_VITA2D:
+      case VIDEO_GXM:
          return "vita2d";
       case VIDEO_CTR:
          return "ctr";
