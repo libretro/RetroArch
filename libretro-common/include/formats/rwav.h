@@ -29,9 +29,29 @@
 
 RETRO_BEGIN_DECLS
 
-/* One 24-bit sample as the file stores it: three little-endian bytes,
- * sign-extended. There is no host type of that width, so 24-bit data
- * is handed over packed and read through these instead. */
+/* Samples as the file stores them: little-endian words, read a byte at
+ * a time so that a reader working straight out of the file's bytes -
+ * rather than out of rwav_load's native-order copy - stays correct on a
+ * big-endian host and safe where an unaligned load would fault. A data
+ * chunk is only guaranteed even-aligned, so a float sample in one is
+ * not necessarily four-aligned. */
+static INLINE int16_t rwav_s16(const uint8_t *p)
+{
+   unsigned v = (unsigned)p[0] | ((unsigned)p[1] << 8);
+   return (int16_t)(v < 0x8000u ? (int)v : (int)v - 0x10000);
+}
+
+static INLINE float rwav_f32(const uint8_t *p)
+{
+   union { uint32_t u; float f; } bits;
+   bits.u =  (uint32_t)p[0]        | ((uint32_t)p[1] << 8)
+          | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+   return bits.f;
+}
+
+/* One 24-bit sample: three little-endian bytes, sign-extended. There is
+ * no host type of that width, so rwav_load hands 24-bit data over
+ * packed and it is read through these in either case. */
 static INLINE int32_t rwav_s24(const uint8_t *p)
 {
    uint32_t u = (uint32_t)p[0] | ((uint32_t)p[1] << 8)

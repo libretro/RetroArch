@@ -216,19 +216,6 @@ static int16_t audio_transfer_unit_to_s16(float unit)
 }
 #endif
 
-#ifdef HAVE_RWAV
-/* A float sample off the wire: little-endian IEEE word, assembled a
- * byte at a time like the 16-bit path and reinterpreted through a
- * union, which avoids both an unaligned load and an aliasing cast. */
-static float audio_transfer_wav_f32(const uint8_t *p)
-{
-   union { uint32_t u; float f; } bits;
-   bits.u =  (uint32_t)p[0]        | ((uint32_t)p[1] << 8)
-          | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-   return bits.f;
-}
-#endif
-
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
  * same switch-dispatch pattern formats/image_transfer.c uses. */
@@ -1918,16 +1905,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
-            /* the file's samples are little-endian: assemble them a
-             * byte at a time, which is right on either endianness and
-             * safe where an unaligned load would fault */
+            /* rwav.h's accessors read the file's little-endian words a
+             * byte at a time: right on either endianness, and safe
+             * where an unaligned load would fault */
             for (i = 0; i < n; i++)
-            {
-               unsigned v = (unsigned)src[i * 2]
-                          | ((unsigned)src[i * 2 + 1] << 8);
-               out[i] = (int16_t)(v < 0x8000u ? (int)v
-                                              : (int)v - 0x10000);
-            }
+               out[i] = rwav_s16(src + i * 2);
          }
          else if (w->wav.bitspersample == 24)
          {
@@ -1941,7 +1923,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          {
             for (i = 0; i < n; i++)
                out[i] = audio_transfer_unit_to_s16(
-                     audio_transfer_wav_f32(src + i * 4));
+                     rwav_f32(src + i * 4));
          }
          else /* 8-bit unsigned PCM -> signed 16-bit */
          {
@@ -2031,12 +2013,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          if (w->wav.bitspersample == 16)
          {
             for (i = 0; i < n; i++)
-            {
-               unsigned v = (unsigned)src[i * 2]
-                          | ((unsigned)src[i * 2 + 1] << 8);
-               out[i] = (float)(v < 0x8000u ? (int)v : (int)v - 0x10000)
-                  * (1.0f / 32768.0f);
-            }
+               out[i] = (float)rwav_s16(src + i * 2) * (1.0f / 32768.0f);
          }
          else if (w->wav.bitspersample == 24)
          {
@@ -2048,7 +2025,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             /* already unit-scale float: hand the file's samples
              * through unaltered, unclamped as the f32 paths are */
             for (i = 0; i < n; i++)
-               out[i] = audio_transfer_wav_f32(src + i * 4);
+               out[i] = rwav_f32(src + i * 4);
          }
          else /* 8-bit unsigned PCM */
          {

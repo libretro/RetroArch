@@ -153,7 +153,8 @@ static unsigned s_rate = 0;
 static void audio_mixer_release(audio_mixer_voice_t* voice);
 
 #ifdef HAVE_RWAV
-static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
+static bool wav_to_float(const rwav_t* wav, const uint8_t* src,
+      float** pcm, size_t len)
 {
    size_t i;
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
@@ -173,92 +174,92 @@ static bool wav_to_float(const rwav_t* wav, float** pcm, size_t len)
     * representation consistent (and the result deterministic) across the
     * s16/float boundaries the voices are mixed and clamped at. The mono
     * channel-duplication below is why the audio/conversion helpers can't
-    * be called verbatim here. */
+    * be called verbatim here.
+    *
+    * src points into the caller's file bytes, so every read goes
+    * through rwav.h's accessors rather than a typed pointer: the data
+    * is little-endian whatever the host is, and a data chunk is only
+    * guaranteed even-aligned. */
    if (wav->bitspersample == 32)
    {
       /* IEEE-float samples are already in the mixer's own unit scale:
-       * copy (duplicating mono), converting nothing - this is the
-       * quantisation-free path float producers target. */
-      const float *src = (const float*)wav->samples;
-
+       * pass them through (duplicating mono), converting nothing -
+       * this is the quantisation-free path float producers target. */
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 4)
          {
-            float sample = *src++;
+            float sample = rwav_f32(src);
             *f++ = sample;
             *f++ = sample;
          }
       }
       else if (wav->numchannels == 2)
-         memcpy(f, src, wav->numsamples * 2 * sizeof(float));
+      {
+         for (i = wav->numsamples; i != 0; i--, src += 8)
+         {
+            *f++ = rwav_f32(src);
+            *f++ = rwav_f32(src + 4);
+         }
+      }
    }
    else if (wav->bitspersample == 8)
    {
-      float sample      = 0.0f;
-      const uint8_t *u8 = (const uint8_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src++)
          {
-            sample = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
-            *f++   = sample;
-            *f++   = sample;
+            float sample = ((float)*src - 128.0f) * (1.0f / 128.0f);
+            *f++         = sample;
+            *f++         = sample;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 2)
          {
-            *f++ = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
-            *f++ = ((float)*u8++ - 128.0f) * (1.0f / 128.0f);
+            *f++ = ((float)src[0] - 128.0f) * (1.0f / 128.0f);
+            *f++ = ((float)src[1] - 128.0f) * (1.0f / 128.0f);
          }
       }
    }
    else if (wav->bitspersample == 24)
    {
-      float sample      = 0.0f;
-      const uint8_t *u8 = (const uint8_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--, u8 += 3)
+         for (i = wav->numsamples; i != 0; i--, src += 3)
          {
-            sample = rwav_s24_to_float(u8);
-            *f++   = sample;
-            *f++   = sample;
+            float sample = rwav_s24_to_float(src);
+            *f++         = sample;
+            *f++         = sample;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--, u8 += 6)
+         for (i = wav->numsamples; i != 0; i--, src += 6)
          {
-            *f++ = rwav_s24_to_float(u8);
-            *f++ = rwav_s24_to_float(u8 + 3);
+            *f++ = rwav_s24_to_float(src);
+            *f++ = rwav_s24_to_float(src + 3);
          }
       }
    }
    else
    {
-      float sample       = 0.0f;
-      const int16_t *s16 = (const int16_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 2)
          {
-            sample = (float)*s16++ * (1.0f / 0x8000);
-            *f++   = sample;
-            *f++   = sample;
+            float sample = (float)rwav_s16(src) * (1.0f / 0x8000);
+            *f++         = sample;
+            *f++         = sample;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 4)
          {
-            *f++ = (float)*s16++ * (1.0f / 0x8000);
-            *f++ = (float)*s16++ * (1.0f / 0x8000);
+            *f++ = (float)rwav_s16(src)     * (1.0f / 0x8000);
+            *f++ = (float)rwav_s16(src + 2) * (1.0f / 0x8000);
          }
       }
    }
@@ -397,7 +398,8 @@ static enum sinc_int16_quality audio_mixer_i16_quality(enum resampler_quality q)
 #endif
 
 #ifdef HAVE_RWAV
-static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
+static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
+      int16_t** pcm, size_t len)
 {
    size_t i;
    /* Allocate on a 16-byte boundary, and pad to a multiple of 16 bytes */
@@ -409,26 +411,29 @@ static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
 
    *pcm = s;
 
-   /* Native s16 conversion (no float detour). 16-bit samples are copied
+   /* Native s16 conversion (no float detour). 16-bit samples are taken
     * verbatim; 8-bit unsigned samples are centered and scaled to s16
     * ((u8 - 128) << 8, i.e. the same magnitude as wav_to_float's
-    * (u8 - 128) / 128 mapped to full scale); mono is duplicated to
-    * stereo, matching wav_to_float's channel handling. For the common
-    * 16-bit stereo case this is a straight copy, so the s16 voice path
-    * never touches float. */
+    * (u8 - 128) / 128 mapped to full scale); 24-bit is rounded through
+    * the shared accessor; mono is duplicated to stereo, matching
+    * wav_to_float's channel handling. Only a float source brings float
+    * into this path.
+    *
+    * src points into the caller's file bytes, so the reads go through
+    * rwav.h's accessors: little-endian whatever the host is, and a data
+    * chunk is only guaranteed even-aligned. */
    if (wav->bitspersample == 32)
    {
       /* float source on the float-free voice path: the one place a
        * float wav is quantised, rounded and saturated in the float
        * domain (casting out-of-range or non-finite values is
        * undefined; non-finite pins to zero). */
-      const float *src = (const float*)wav->samples;
       size_t n = wav->numsamples * ((wav->numchannels == 2) ? 2 : 1);
       int16_t *d = s;
 
       for (i = 0; i < n; i++)
       {
-         float v = src[i] * 32768.0f;
+         float v = rwav_f32(src + i * 4) * 32768.0f;
          int16_t q;
          if (!(v > -1e9f && v < 1e9f))
             v = 0.0f;
@@ -447,67 +452,61 @@ static bool wav_to_s16(const rwav_t* wav, int16_t** pcm, size_t len)
    }
    else if (wav->bitspersample == 8)
    {
-      const uint8_t *u8 = (const uint8_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src++)
          {
-            int16_t v = (int16_t)(((int)*u8++ - 128) << 8);
+            int16_t v = (int16_t)(((int)*src - 128) << 8);
             *s++      = v;
             *s++      = v;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 2)
          {
-            *s++ = (int16_t)(((int)*u8++ - 128) << 8);
-            *s++ = (int16_t)(((int)*u8++ - 128) << 8);
+            *s++ = (int16_t)(((int)src[0] - 128) << 8);
+            *s++ = (int16_t)(((int)src[1] - 128) << 8);
          }
       }
    }
    else if (wav->bitspersample == 24)
    {
-      const uint8_t *u8 = (const uint8_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--, u8 += 3)
+         for (i = wav->numsamples; i != 0; i--, src += 3)
          {
-            int16_t v = rwav_s24_to_s16(u8);
+            int16_t v = rwav_s24_to_s16(src);
             *s++      = v;
             *s++      = v;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--, u8 += 6)
+         for (i = wav->numsamples; i != 0; i--, src += 6)
          {
-            *s++ = rwav_s24_to_s16(u8);
-            *s++ = rwav_s24_to_s16(u8 + 3);
+            *s++ = rwav_s24_to_s16(src);
+            *s++ = rwav_s24_to_s16(src + 3);
          }
       }
    }
    else
    {
-      const int16_t *s16 = (const int16_t*)wav->samples;
-
       if (wav->numchannels == 1)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 2)
          {
-            int16_t v = *s16++;
+            int16_t v = rwav_s16(src);
             *s++      = v;
             *s++      = v;
          }
       }
       else if (wav->numchannels == 2)
       {
-         for (i = wav->numsamples; i != 0; i--)
+         for (i = wav->numsamples; i != 0; i--, src += 4)
          {
-            *s++ = *s16++;
-            *s++ = *s16++;
+            *s++ = rwav_s16(src);
+            *s++ = rwav_s16(src + 2);
          }
       }
    }
@@ -575,15 +574,24 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    /* Result */
    audio_mixer_sound_t* sound = NULL;
 
+   const uint8_t* src         = NULL;
+
    wav.bitspersample          = 0;
    wav.numchannels            = 0;
    wav.samplerate             = 0;
    wav.numsamples             = 0;
    wav.subchunk2size          = 0;
    wav.samples                = NULL;
+   wav.dataoffset             = 0;
 
-   if ((rwav_load(&wav, buffer, size)) != RWAV_ITERATE_DONE)
+   /* Header only: the converters below read the samples straight out of
+    * the caller's buffer, so the decoded copy rwav_load would have made
+    * - as large as the file, and thrown away as soon as it had been
+    * converted - never exists.  Nothing here needs freeing either,
+    * which is what the error paths below used to get wrong. */
+   if (rwav_parse(&wav, buffer, size) != RWAV_ITERATE_DONE)
       return NULL;
+   src           = (const uint8_t*)buffer + wav.dataoffset;
 
    samples       = wav.numsamples * 2;
    samples16     = samples;
@@ -595,7 +603,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
     * longer holds a second full PCM copy it may never mix. */
    if (want_s16)
    {
-      if (!wav_to_s16(&wav, &pcm16, samples16))
+      if (!wav_to_s16(&wav, src, &pcm16, samples16))
          return NULL;
 
       if (wav.samplerate != s_rate)
@@ -614,7 +622,7 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    }
    else
    {
-      if (!wav_to_float(&wav, &pcm, samples))
+      if (!wav_to_float(&wav, src, &pcm, samples))
          return NULL;
 
       if (wav.samplerate != s_rate)
@@ -647,8 +655,6 @@ audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
    sound->types.wav.pcm_s16 = pcm16;
    /* exactly one of pcm/pcm_s16 is set; the other derives on the
     * first mode-mismatched play */
-
-   rwav_free(&wav);
 
    return sound;
 #else
