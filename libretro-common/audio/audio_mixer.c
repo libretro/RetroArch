@@ -122,6 +122,11 @@ struct audio_mixer_voice
          void       *resampler_data;
          const retro_resampler_t *resampler;
          float      *buffer;
+         /* Decode scratch for the float mix path.  Owned by the voice
+          * because the mix runs on the audio thread, where a malloc is
+          * a stall waiting to happen; the s16 path below never needed
+          * one because it reads into stack space. */
+         float      *decode_buf;
          unsigned    position;
          unsigned    samples;
          unsigned    buf_samples;
@@ -1141,9 +1146,18 @@ static bool audio_mixer_play_stream(
    samples                         = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    sbuf                            = (float*)memalign_alloc(16,
          (((samples + 16) + 15) & ~15) * sizeof(float));
+   voice->types.stream.decode_buf  = (float*)memalign_alloc(16,
+         AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
 
-   if (!sbuf)
+   if (!sbuf || !voice->types.stream.decode_buf)
    {
+      /* error: only frees the transfer, and neither buffer is on the
+       * voice yet in the sbuf case, so release them here.  One of the
+       * two having succeeded is newly possible now that there are two
+       * of them. */
+      memalign_free(sbuf);
+      memalign_free(voice->types.stream.decode_buf);
+      voice->types.stream.decode_buf = NULL;
       if (resamp && resampler_data)
          resamp->free(resampler_data);
       goto error;
@@ -1174,6 +1188,8 @@ static void audio_mixer_release_stream(audio_mixer_voice_t* voice,
       voice->types.stream.resampler->free(voice->types.stream.resampler_data);
    if (voice->types.stream.buffer)
       memalign_free(voice->types.stream.buffer);
+   if (voice->types.stream.decode_buf)
+      memalign_free(voice->types.stream.decode_buf);
    if (voice->types.stream.buffer_s16)
       memalign_free(voice->types.stream.buffer_s16);
    if (voice->types.stream.resampler_int16)
@@ -1657,7 +1673,7 @@ static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
       enum audio_type_enum type)
 {
    int i;
-   float* temp_buffer = NULL;
+   float* temp_buffer               = voice->types.stream.decode_buf;
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
@@ -1668,9 +1684,6 @@ static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
    if (voice->types.stream.samples == 0)
    {
 again:
-      if (temp_buffer == NULL)
-         temp_buffer = (float*)malloc(AUDIO_MIXER_TEMP_BUFFER * sizeof(float));
-
       {
          size_t got = 0;
          if (voice->types.stream.channels == 1)
@@ -1754,8 +1767,6 @@ again:
    voice->types.stream.samples  -= buf_free;
 
 cleanup:
-   if (temp_buffer != NULL)
-      free(temp_buffer);
 }
 
 static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
