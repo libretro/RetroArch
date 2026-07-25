@@ -10539,6 +10539,11 @@ unsigned menu_displaylist_build_list(
                      count++;
 
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_HDR_MAX_NITS,
+                           PARSE_ONLY_FLOAT, false) == 0)
+                     count++;
+
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            MENU_ENUM_LABEL_VIDEO_HDR_EXPAND_GAMUT,
                            PARSE_ONLY_UINT, false) == 0)
                      count++;

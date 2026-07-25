@@ -559,6 +559,11 @@
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
 
+/* Peak luminance of the display, in nits. 1000 is the HDR10 reference peak and
+ * roughly what mid-range HDR panels reach, so it is a safe default for a value
+ * the frontend cannot query - no platform exposes it portably. */
+#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
 

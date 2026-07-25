@@ -3718,6 +3718,18 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 
+      case RETRO_ENVIRONMENT_GET_HDR_MAX_NITS:
+         /* How bright the display can go.  Together with paper white this
+          * gives a core the headroom it has for highlights; without it a core
+          * has to guess, and the guess is too dark on a bright panel and clips
+          * on a dim one.  Not queryable from any platform portably, so this is
+          * the user's setting rather than a measurement. */
+         {
+            settings_t *settings = config_get_ptr();
+            *(float*)data = settings->floats.video_hdr_max_nits;
+         }
+         break;
+
       case RETRO_ENVIRONMENT_GET_SCREEN_10BPC_CAPABLE:
          /* True only when the active video driver presents a 10-bit source
           * surface natively; when false, XRGB2101010 frames are narrowed to
