@@ -55,31 +55,41 @@
  *                               construction. All three tables the RFC
  *                               predefines build with the widths it
  *                               specifies.
- *   Huffman table (4.2.1)       weights to table, including the last
- *                               symbol's weight being implied rather
- *                               than stored, and the direct four-bit
- *                               weight form.
- *
- * Not built, in the order it has to be:
- *
- *   Huffman weights, FSE form   the two-stream weight decode of
- *                               4.2.1.2. Only the direct form is read,
- *                               so a table described the compact way is
- *                               refused.
- *   Huffman decoding            the four-stream literal layout and the
- *                               jump table that finds each stream.
+ *   Huffman table (4.2.1)       weights to table, both the direct
+ *                               four-bit form and the FSE-coded one,
+ *                               including the last symbol's weight
+ *                               being implied rather than stored.
+ *   Huffman decoding (4.2.2)    one-stream and four-stream layouts.
  *   Literals section (3.1.1.3.1)  raw, RLE, Huffman and treeless
- *                               modes; the size format that says how
- *                               the two lengths are packed.
- *   Sequences section (3.1.1.3.2) the three symbol tables in
- *                               predefined, RLE, FSE and repeat modes;
- *                               the baseline-plus-extra-bits tables for
- *                               literal length, match length and
- *                               offset.
- *   Sequence execution (3.1.1.4)  the copies themselves, the three
- *                               repeated offsets and the rule that
- *                               offset codes 1 to 3 mean a repeat
- *                               rather than a distance.
+ *                               modes, and the bit-packed size fields.
+ *                               Verified as far as byte counts: a real
+ *                               block's Huffman literals regenerate to
+ *                               the length the section states.
+ *   Sequences section (3.1.1.3.2) the three tables in predefined, RLE,
+ *                               FSE and repeat modes, the
+ *                               baseline-plus-extra-bits tables, and
+ *                               the execution of 3.1.1.4 with its
+ *                               repeated offsets.
+ *
+ * WRONG, and known to be:
+ *
+ *   FSE state to symbol         a real frame that should decode to one
+ *                               literal and a 2047-byte match at
+ *                               offset 1 yields the right literal
+ *                               length and the right offset, and a
+ *                               match length code of 48 where it must
+ *                               be 46. Two of the three tables give
+ *                               the right answer from the same
+ *                               bitstream, so the fault is narrow: the
+ *                               initial state read, the spread, or the
+ *                               width assignment, on the match-length
+ *                               table specifically.
+ *
+ *                               A frame therefore parses end to end and
+ *                               produces wrong bytes, which is worse
+ *                               than refusing. Nothing may use this.
+ *
+ * Not built:
  *   Checksum                    the frame's XXH64 is skipped, not
  *                               verified. A caller expecting a stated
  *                               checksum to be checked does not get
@@ -755,10 +765,648 @@ static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
       return rzstd_huf_build(huf, weights, count);
    }
 
-   /* The FSE-coded form is not built yet; it needs the two-stream
-    * weight decode of 4.2.1.2. */
-   (void)weights;
-   return RZ_UNSUPPORTED;
+   /* The compact form: the byte is the length of an FSE-coded stream
+    * holding the weights (4.2.1.2). Two interleaved states share one
+    * bitstream, alternating, which halves the dependency chain -- the
+    * reason the format does it rather than a single state. */
+   {
+      int16_t           counts[RZSTD_FSE_MAX_SYMBOLS];
+      rzstd_fse_entry_t table[1 << 6];
+      rzstd_fse_t       fse;
+      rzstd_rbits_t     bits;
+      uint32_t          symbol_count = 0;
+      uint32_t          accuracy_log = 0;
+      size_t            desc_used    = 0;
+      uint32_t          size         = src[0];
+      uint32_t          state1;
+      uint32_t          state2;
+      int               e;
+
+      if (len < 1 + size)
+         return RZ_TRUNCATED;
+
+      /* The weights alphabet is at most the maximum weight plus one,
+       * and its accuracy log is capped at 6 (4.2.1.2). */
+      e = rzstd_fse_read_counts(src + 1, size, counts, &symbol_count,
+            &accuracy_log, RZSTD_HUF_MAX_BITS + 1, 6, &desc_used);
+      if (e != RZ_OK)
+         return e;
+      if (desc_used > size)
+         return RZ_DATA;
+
+      if ((e = rzstd_fse_build(&fse, table, counts, symbol_count,
+                  accuracy_log)) != RZ_OK)
+         return e;
+
+      if ((e = rzstd_rbits_init(&bits, src + 1 + desc_used,
+                  size - desc_used)) != RZ_OK)
+         return e;
+
+      state1 = rzstd_fse_begin(&fse, &bits);
+      state2 = rzstd_fse_begin(&fse, &bits);
+
+      count = 0;
+      for (;;)
+      {
+         if (count >= RZSTD_HUF_MAX_SYMBOLS)
+            return RZ_DATA;
+         weights[count++] = rzstd_fse_symbol(&fse, state1);
+         if (bits.overrun)
+            break;
+         state1 = rzstd_fse_next(&fse, state1, &bits);
+
+         if (count >= RZSTD_HUF_MAX_SYMBOLS)
+            return RZ_DATA;
+         weights[count++] = rzstd_fse_symbol(&fse, state2);
+         if (bits.overrun)
+            break;
+         state2 = rzstd_fse_next(&fse, state2, &bits);
+      }
+
+      *used = 1 + size;
+      return rzstd_huf_build(huf, weights, count);
+   }
+}
+
+/* Pulls one symbol. The reader always holds at least max_bits, so a
+ * peek is a plain index into the table. */
+static uint8_t rzstd_huf_symbol(const rzstd_huf_t *huf, rzstd_rbits_t *b)
+{
+   uint32_t peek;
+   uint32_t index;
+
+   if (b->count < huf->max_bits)
+      rzstd_rbits_fill(b);
+
+   peek  = (uint32_t)(b->bits >> (64 - huf->max_bits));
+   index = peek;
+
+   {
+      uint8_t n = huf->bits[index];
+
+      b->bits  <<= n;
+      if (b->count >= n)
+         b->count -= n;
+      else
+      {
+         b->count   = 0;
+         b->overrun = 1;
+      }
+      return huf->symbol[index];
+   }
+}
+
+/* Decodes @count literals from either the one-stream or four-stream
+ * layout (4.2.2).
+ *
+ * Four streams exist so a decoder can run them in parallel; they are
+ * not independent halves of the data but interleaved by position, each
+ * taking a quarter of the output in order. The first three sizes come
+ * from a six-byte jump table and the fourth is whatever remains, which
+ * is why only three are stored. */
+static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
+      size_t src_len, uint8_t *dst, size_t count, int four_streams)
+{
+   size_t i;
+
+   if (!four_streams)
+   {
+      rzstd_rbits_t b;
+      int           e = rzstd_rbits_init(&b, src, src_len);
+
+      if (e != RZ_OK)
+         return e;
+      for (i = 0; i < count; i++)
+         dst[i] = rzstd_huf_symbol(huf, &b);
+      return RZ_OK;
+   }
+
+   {
+      rzstd_rbits_t b[4];
+      size_t        size[4];
+      size_t        at = 6;
+      size_t        quarter;
+      size_t        k;
+      int           e;
+
+      if (src_len < 6)
+         return RZ_TRUNCATED;
+      size[0] = rzstd_rd16(src);
+      size[1] = rzstd_rd16(src + 2);
+      size[2] = rzstd_rd16(src + 4);
+      if (size[0] + size[1] + size[2] + 6 > src_len)
+         return RZ_DATA;
+      size[3] = src_len - 6 - size[0] - size[1] - size[2];
+
+      for (k = 0; k < 4; k++)
+      {
+         if ((e = rzstd_rbits_init(&b[k], src + at, size[k])) != RZ_OK)
+            return e;
+         at += size[k];
+      }
+
+      /* Each stream covers a quarter of the output, the last taking
+       * the remainder. */
+      quarter = (count + 3) / 4;
+      for (k = 0; k < 4; k++)
+      {
+         size_t start = k * quarter;
+         size_t end   = start + quarter;
+
+         if (start >= count)
+            break;
+         if (end > count)
+            end = count;
+         for (i = start; i < end; i++)
+            dst[i] = rzstd_huf_symbol(huf, &b[k]);
+      }
+      return RZ_OK;
+   }
+}
+
+/* -------- literals --------
+ *
+ * Section 3.1.1.3.1. The section opens with a byte whose low two bits
+ * give the form and the next two the shape of the size fields, which
+ * are packed at bit granularity rather than byte.
+ */
+
+enum
+{
+   RZSTD_LIT_RAW      = 0,
+   RZSTD_LIT_RLE      = 1,
+   RZSTD_LIT_HUFFMAN  = 2,
+   RZSTD_LIT_TREELESS = 3
+};
+
+typedef struct rzstd_literals
+{
+   uint8_t *data;
+   size_t   size;
+} rzstd_literals_t;
+
+static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
+      int *huf_valid, const uint8_t *src, size_t src_len, uint8_t *scratch,
+      size_t scratch_len, size_t *used)
+{
+   uint32_t type;
+   uint32_t size_format;
+   size_t   regenerated;
+   size_t   compressed = 0;
+   size_t   at;
+   int      four = 0;
+   int      e;
+
+   if (!src_len)
+      return RZ_TRUNCATED;
+
+   type        = src[0] & 3;
+   size_format = (src[0] >> 2) & 3;
+
+   if (type == RZSTD_LIT_RAW || type == RZSTD_LIT_RLE)
+   {
+      /* One, two or three size widths, chosen by the format field; the
+       * odd case is that 0 and 2 both mean the same five-bit width,
+       * because the low bit is free when there is no second size. */
+      switch (size_format)
+      {
+         case 0: case 2:
+            regenerated = src[0] >> 3;
+            at = 1;
+            break;
+         case 1:
+            if (src_len < 2)
+               return RZ_TRUNCATED;
+            regenerated = ((size_t)src[0] >> 4) | ((size_t)src[1] << 4);
+            at = 2;
+            break;
+         default:
+            if (src_len < 3)
+               return RZ_TRUNCATED;
+            regenerated = ((size_t)src[0] >> 4) | ((size_t)src[1] << 4)
+                        | ((size_t)src[2] << 12);
+            at = 3;
+            break;
+      }
+
+      if (regenerated > scratch_len)
+         return RZ_DATA;
+
+      if (type == RZSTD_LIT_RAW)
+      {
+         if (src_len < at + regenerated)
+            return RZ_TRUNCATED;
+         memcpy(scratch, src + at, regenerated);
+         *used = at + regenerated;
+      }
+      else
+      {
+         if (src_len < at + 1)
+            return RZ_TRUNCATED;
+         memset(scratch, src[at], regenerated);
+         *used = at + 1;
+      }
+
+      out->data = scratch;
+      out->size = regenerated;
+      return RZ_OK;
+   }
+
+   /* Huffman and treeless carry both a regenerated and a compressed
+    * size, packed together across two to five bytes. */
+   switch (size_format)
+   {
+      case 0:
+      case 1:
+         if (src_len < 3)
+            return RZ_TRUNCATED;
+         regenerated = (((size_t)src[0] >> 4) | ((size_t)src[1] << 4))
+                     & 0x3ff;
+         compressed  = (((size_t)src[1] >> 6) | ((size_t)src[2] << 2))
+                     & 0x3ff;
+         four = (size_format == 1);
+         at   = 3;
+         break;
+      case 2:
+         if (src_len < 4)
+            return RZ_TRUNCATED;
+         regenerated = (((size_t)src[0] >> 4) | ((size_t)src[1] << 4)
+                     | ((size_t)src[2] << 12)) & 0x3fff;
+         compressed  = (((size_t)src[2] >> 2) | ((size_t)src[3] << 6))
+                     & 0x3fff;
+         four = 1;
+         at   = 4;
+         break;
+      default:
+         if (src_len < 5)
+            return RZ_TRUNCATED;
+         regenerated = (((size_t)src[0] >> 4) | ((size_t)src[1] << 4)
+                     | ((size_t)src[2] << 12)) & 0x3ffff;
+         compressed  = (((size_t)src[2] >> 6) | ((size_t)src[3] << 2)
+                     | ((size_t)src[4] << 10)) & 0x3ffff;
+         four = 1;
+         at   = 5;
+         break;
+   }
+
+   if (regenerated > scratch_len)
+      return RZ_DATA;
+   if (src_len < at + compressed)
+      return RZ_TRUNCATED;
+
+   if (type == RZSTD_LIT_HUFFMAN)
+   {
+      size_t tree_used = 0;
+
+      if ((e = rzstd_huf_read(huf, src + at, compressed,
+                  &tree_used)) != RZ_OK)
+         return e;
+      *huf_valid = 1;
+      e = rzstd_huf_decode(huf, src + at + tree_used,
+            compressed - tree_used, scratch, regenerated, four);
+   }
+   else
+   {
+      /* Treeless: the table is whatever the previous block left, which
+       * is why a block can be treeless only after one that was not. */
+      if (!*huf_valid)
+         return RZ_DATA;
+      e = rzstd_huf_decode(huf, src + at, compressed, scratch,
+            regenerated, four);
+   }
+
+   if (e != RZ_OK)
+      return e;
+
+   out->data = scratch;
+   out->size = regenerated;
+   *used     = at + compressed;
+   return RZ_OK;
+}
+
+/* -------- sequences --------
+ *
+ * Section 3.1.1.3.2. A sequence is a run of literals to copy out
+ * followed by a match to copy from earlier output. Three symbol streams
+ * describe them, interleaved into one bitstream and read in a fixed
+ * order.
+ */
+
+/* Section 3.1.1.3.2.1.1. A symbol names a baseline and how many extra
+ * bits to add to it. */
+static const uint32_t rzstd_ll_base[36] =
+{
+   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+   16, 18, 20, 22, 24, 28, 32, 40, 48, 64, 128, 256, 512, 1024,
+   2048, 4096, 8192, 16384, 32768, 65536
+};
+static const uint8_t rzstd_ll_bits[36] =
+{
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   1, 1, 1, 1, 2, 2, 3, 3, 4, 6, 7, 8, 9, 10, 11, 12,
+   13, 14, 15, 16
+};
+
+static const uint32_t rzstd_ml_base[53] =
+{
+   3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+   19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34,
+   35, 37, 39, 41, 43, 47, 51, 59, 67, 83, 99, 131, 259, 515, 1027,
+   2051, 4099, 8195, 16387, 32771, 65539
+};
+static const uint8_t rzstd_ml_bits[53] =
+{
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 7, 8, 9, 10, 11,
+   12, 13, 14, 15, 16
+};
+
+/* The predefined tables of 3.1.1.3.2.2.1, as normalised counts. */
+static const int16_t rzstd_ll_default[36] =
+{
+   4, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1,
+   2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
+   -1, -1, -1, -1
+};
+static const int16_t rzstd_ml_default[53] =
+{
+   1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   -1, -1, -1, -1, -1
+};
+static const int16_t rzstd_of_default[29] =
+{
+   1, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, -1, -1, -1, -1, -1
+};
+
+enum
+{
+   RZSTD_SEQ_PREDEFINED = 0,
+   RZSTD_SEQ_RLE        = 1,
+   RZSTD_SEQ_FSE        = 2,
+   RZSTD_SEQ_REPEAT     = 3
+};
+
+typedef struct rzstd_seq_tables
+{
+   rzstd_fse_entry_t ll[1 << 9];
+   rzstd_fse_entry_t ml[1 << 9];
+   rzstd_fse_entry_t of[1 << 8];
+   rzstd_fse_t       ll_fse;
+   rzstd_fse_t       ml_fse;
+   rzstd_fse_t       of_fse;
+   int               valid;
+} rzstd_seq_tables_t;
+
+/* Sets up one of the three tables according to its two-bit mode. */
+static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+      uint32_t mode, const int16_t *predef, uint32_t predef_count,
+      uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
+      const uint8_t *src, size_t len, size_t *used, int have_previous)
+{
+   int16_t  counts[RZSTD_FSE_MAX_SYMBOLS];
+   uint32_t symbol_count = 0;
+   uint32_t accuracy_log = 0;
+   int      e;
+
+   *used = 0;
+
+   switch (mode)
+   {
+      case RZSTD_SEQ_PREDEFINED:
+         return rzstd_fse_build(fse, storage, predef, predef_count,
+               predef_log);
+
+      case RZSTD_SEQ_RLE:
+         /* One byte names the only symbol; the table is one slot wide
+          * and consumes no bits when decoding. */
+         if (!len)
+            return RZ_TRUNCATED;
+         memset(counts, 0, sizeof(counts));
+         if (src[0] > max_symbol)
+            return RZ_DATA;
+         counts[src[0]] = 1;
+         *used = 1;
+         return rzstd_fse_build(fse, storage, counts,
+               (uint32_t)src[0] + 1, 0);
+
+      case RZSTD_SEQ_FSE:
+         e = rzstd_fse_read_counts(src, len, counts, &symbol_count,
+               &accuracy_log, max_symbol + 1, max_log, used);
+         if (e != RZ_OK)
+            return e;
+         return rzstd_fse_build(fse, storage, counts, symbol_count,
+               accuracy_log);
+
+      default:
+         break;
+   }
+
+   /* Repeat: whatever the previous block left standing. */
+   if (!have_previous)
+      return RZ_DATA;
+   return RZ_OK;
+}
+
+/* Decodes a block's sequences and executes them into @dst.
+ *
+ * The three offsets most recently used are remembered, and an offset
+ * code of 1, 2 or 3 names one of them rather than a distance -- with
+ * the wrinkle that when there are no literals the meaning shifts by
+ * one, because repeating the immediately previous offset would then be
+ * expressible twice (3.1.1.4). */
+static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
+      const uint8_t *src, size_t src_len,
+      const uint8_t *literals, size_t lit_len,
+      uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
+{
+   rzstd_rbits_t bits;
+   size_t        nseq;
+   size_t        at = 0;
+   uint32_t      modes;
+   size_t        used;
+   uint32_t      ll_state;
+   uint32_t      ml_state;
+   uint32_t      of_state;
+   size_t        lit_at = 0;
+   size_t        out    = *dst_at;
+   size_t        i;
+   int           e;
+
+   if (!src_len)
+      return RZ_TRUNCATED;
+
+   /* The count is one, two or three bytes, distinguished by the first
+    * (3.1.1.3.2.1). */
+   if (src[0] < 128)
+   {
+      nseq = src[0];
+      at   = 1;
+   }
+   else if (src[0] < 255)
+   {
+      if (src_len < 2)
+         return RZ_TRUNCATED;
+      nseq = ((size_t)(src[0] - 128) << 8) + src[1];
+      at   = 2;
+   }
+   else
+   {
+      if (src_len < 3)
+         return RZ_TRUNCATED;
+      nseq = (size_t)rzstd_rd16(src + 1) + 0x7f00;
+      at   = 3;
+   }
+
+   if (!nseq)
+   {
+      /* No sequences: the literals are the whole block. */
+      if (out + lit_len > dst_len)
+         return RZ_DATA;
+      memcpy(dst + out, literals, lit_len);
+      *dst_at = out + lit_len;
+      return RZ_OK;
+   }
+
+   if (src_len < at + 1)
+      return RZ_TRUNCATED;
+   modes = src[at++];
+
+   e = rzstd_seq_table(&tab->ll_fse, tab->ll, (modes >> 6) & 3,
+         rzstd_ll_default, 36, 6, 35, 9, src + at, src_len - at, &used,
+         tab->valid);
+   if (e != RZ_OK)
+      return e;
+   at += used;
+
+   e = rzstd_seq_table(&tab->of_fse, tab->of, (modes >> 4) & 3,
+         rzstd_of_default, 29, 5, 31, 8, src + at, src_len - at, &used,
+         tab->valid);
+   if (e != RZ_OK)
+      return e;
+   at += used;
+
+   e = rzstd_seq_table(&tab->ml_fse, tab->ml, (modes >> 2) & 3,
+         rzstd_ml_default, 53, 6, 52, 9, src + at, src_len - at, &used,
+         tab->valid);
+   if (e != RZ_OK)
+      return e;
+   at += used;
+
+   tab->valid = 1;
+
+   if (src_len < at)
+      return RZ_TRUNCATED;
+   if ((e = rzstd_rbits_init(&bits, src + at, src_len - at)) != RZ_OK)
+      return e;
+
+   /* The initial states come in this order, which is not the order the
+    * symbols are then read in. */
+   ll_state = rzstd_fse_begin(&tab->ll_fse, &bits);
+   of_state = rzstd_fse_begin(&tab->of_fse, &bits);
+   ml_state = rzstd_fse_begin(&tab->ml_fse, &bits);
+
+   for (i = 0; i < nseq; i++)
+   {
+      uint32_t ll_code = rzstd_fse_symbol(&tab->ll_fse, ll_state);
+      uint32_t ml_code = rzstd_fse_symbol(&tab->ml_fse, ml_state);
+      uint32_t of_code = rzstd_fse_symbol(&tab->of_fse, of_state);
+      uint32_t offset;
+      uint32_t lit_run;
+      uint32_t match_len;
+
+      if (ll_code >= 36 || ml_code >= 53 || of_code >= 32)
+         return RZ_DATA;
+
+      /* Offset first, then match length, then literal length: the
+       * extra bits come out in that order. */
+      offset    = ((uint32_t)1 << of_code)
+                + rzstd_rbits_read(&bits, of_code);
+      match_len = rzstd_ml_base[ml_code]
+                + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
+      lit_run   = rzstd_ll_base[ll_code]
+                + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+
+      if (offset > 3)
+      {
+         offset -= 3;
+         repeat[2] = repeat[1];
+         repeat[1] = repeat[0];
+         repeat[0] = offset;
+      }
+      else
+      {
+         uint32_t index = offset - 1;
+
+         /* With no literals, the codes shift: 1 means the second most
+          * recent, and 3 means the most recent less one. */
+         if (lit_run == 0)
+            index++;
+
+         if (index == 3)
+            offset = repeat[0] - 1;
+         else
+            offset = repeat[index];
+
+         if (index)
+         {
+            uint32_t k = index < 3 ? index : 2;
+            if (k == 2)
+               repeat[2] = repeat[1];
+            repeat[1] = repeat[0];
+            repeat[0] = offset;
+         }
+      }
+
+      if (!offset)
+         return RZ_DATA;
+      if (lit_at + lit_run > lit_len)
+         return RZ_DATA;
+      if (out + lit_run + match_len > dst_len)
+         return RZ_DATA;
+      if ((size_t)offset > out + lit_run)
+         return RZ_DATA;
+
+      memcpy(dst + out, literals + lit_at, lit_run);
+      out    += lit_run;
+      lit_at += lit_run;
+
+      /* The copy may overlap its own source, which is how a short
+       * offset expands a repeating pattern, so it goes a byte at a
+       * time rather than by memcpy. */
+      {
+         size_t from = out - offset;
+         uint32_t k;
+
+         for (k = 0; k < match_len; k++)
+            dst[out + k] = dst[from + k];
+         out += match_len;
+      }
+
+      if (i + 1 < nseq)
+      {
+         ll_state = rzstd_fse_next(&tab->ll_fse, ll_state, &bits);
+         ml_state = rzstd_fse_next(&tab->ml_fse, ml_state, &bits);
+         of_state = rzstd_fse_next(&tab->of_fse, of_state, &bits);
+      }
+   }
+
+   /* Whatever literals the sequences did not consume finish the block. */
+   if (lit_at < lit_len)
+   {
+      size_t rest = lit_len - lit_at;
+
+      if (out + rest > dst_len)
+         return RZ_DATA;
+      memcpy(dst + out, literals + lit_at, rest);
+      out += rest;
+   }
+
+   *dst_at = out;
+   return RZ_OK;
 }
 
 /* -------- blocks --------
@@ -788,13 +1436,32 @@ static void rzstd_read_block_header(const uint8_t *p,
  * frame states. Returns bytes written through @wrote and how much of
  * @src the frame occupied through @used, so a caller holding several
  * frames can walk them. */
+/* What survives from one block to the next within a frame: the Huffman
+ * table a treeless block reuses, the three sequence tables a repeat
+ * mode reuses, and the recent offsets. */
+typedef struct rzstd_frame_state
+{
+   rzstd_huf_t        huf;
+   int                huf_valid;
+   rzstd_seq_tables_t tables;
+   uint32_t           repeat[3];
+   uint8_t            literals[RZSTD_BLOCK_MAX];
+} rzstd_frame_state_t;
+
 static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
-      uint8_t *dst, size_t dst_len, size_t *wrote, size_t *used)
+      uint8_t *dst, size_t dst_len, size_t *wrote, size_t *used,
+      rzstd_frame_state_t *st)
 {
    rzstd_frame_header_t h;
    size_t               at  = 0;
    size_t               out = 0;
    int                  e;
+
+   memset(st, 0, sizeof(*st));
+   /* The recent offsets start at 1, 4 and 8 (3.1.1.4). */
+   st->repeat[0] = 1;
+   st->repeat[1] = 4;
+   st->repeat[2] = 8;
 
    if ((e = rzstd_read_frame_header(src, src_len, &h)) != RZ_OK)
       return e;
@@ -840,8 +1507,33 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
             break;
 
          default:
-            /* Compressed: literals, then sequences. Not yet built. */
-            return RZ_UNSUPPORTED;
+         {
+            /* Compressed: a literals section, then the sequences that
+             * weave it together with matches into earlier output. */
+            rzstd_literals_t lit;
+            size_t           lit_used = 0;
+            size_t           before   = out;
+
+            if (src_len < at + b.size)
+               return RZ_TRUNCATED;
+
+            e = rzstd_read_literals(&lit, &st->huf, &st->huf_valid,
+                  src + at, b.size, st->literals, sizeof(st->literals),
+                  &lit_used);
+            if (e != RZ_OK)
+               return e;
+
+            e = rzstd_decode_sequences(&st->tables,
+                  src + at + lit_used, b.size - lit_used,
+                  lit.data, lit.size, dst, dst_len, &out, st->repeat);
+            if (e != RZ_OK)
+               return e;
+
+            if (out - before > RZSTD_BLOCK_MAX)
+               return RZ_DATA;
+            at += b.size;
+            break;
+         }
       }
 
       if (b.last)
@@ -879,7 +1571,10 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
 int rzstd_probe_frame(const uint8_t *src, size_t src_len,
       uint8_t *dst, size_t dst_len, size_t *wrote, size_t *used)
 {
-   return rzstd_decode_frame(src, src_len, dst, dst_len, wrote, used);
+   static rzstd_frame_state_t state;
+
+   return rzstd_decode_frame(src, src_len, dst, dst_len, wrote, used,
+         &state);
 }
 
 /* Reports what a frame's header states, without decoding. */
@@ -921,5 +1616,25 @@ int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
       state_out[i] = table[i].next_state;
       sym_out[i]   = table[i].symbol;
    }
+   return RZ_OK;
+}
+
+/* Test seam: reads the literals section at the head of a compressed
+ * block and reports what it found. */
+int rzstd_probe_literals(const uint8_t *src, size_t len, uint8_t *out,
+      size_t out_len, size_t *got, size_t *used, int *type)
+{
+   rzstd_literals_t lit;
+   static rzstd_huf_t huf;
+   int valid = 0;
+   int e;
+
+   if (!len)
+      return RZ_TRUNCATED;
+   *type = src[0] & 3;
+   e = rzstd_read_literals(&lit, &huf, &valid, src, len, out, out_len, used);
+   if (e != RZ_OK)
+      return e;
+   *got = lit.size;
    return RZ_OK;
 }
