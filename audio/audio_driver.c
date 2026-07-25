@@ -113,6 +113,10 @@
 
  /* Converts decibels to voltage gain. Returns voltage gain value. */
 #define DB_TO_GAIN(db) (powf(10.0f, (db) / 20.0f))
+/* The s16 mixer pipeline takes Q16.16 gains so that it needs no float
+ * of its own. The frontend still keeps its gains as floats, so the
+ * conversion happens here, at the boundary. */
+#define GAIN_TO_Q16(g) ((int32_t)((g) * 65536.0f + 0.5f))
 
 #if (defined(__ARM_NEON__) || defined(HAVE_NEON))
 static bool clamp_float_neon_enabled = false;
@@ -791,7 +795,7 @@ static void audio_mixer_fold_s16_voices_into_float(float *dst,
    unsigned k;
    unsigned total = frames * 2;
    memset(scratch, 0, total * sizeof(int16_t));
-   audio_mixer_mix_s16(scratch, frames, gain, override);
+   audio_mixer_mix_s16(scratch, frames, GAIN_TO_Q16(gain), override);
    for (k = 0; k < total; k++)
       dst[k] += (float)scratch[k] * (1.0f / 0x8000);
 }
@@ -1124,7 +1128,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   mixer_gain                       = audio_st->mixer_volume_gain;
                }
 
-               audio_mixer_mix_s16(ob, out_frames, mixer_gain, override);
+               audio_mixer_mix_s16(ob, out_frames,
+                     GAIN_TO_Q16(mixer_gain), override);
                if (audio_mixer_has_float_voices())
                   audio_mixer_fold_float_voices_into_s16(ob,
                         audio_st->output_samples_buf, out_frames,
@@ -2555,7 +2560,8 @@ bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params)
       case AUDIO_STREAM_STATE_PLAYING_LOOPED:
       case AUDIO_STREAM_STATE_PLAYING:
          if (audio_driver_mixer_use_s16(audio_driver_st.stat_core_is_float))
-            voice = audio_mixer_play_s16(handle, looped, params->volume,
+            voice = audio_mixer_play_s16(handle, looped,
+                  GAIN_TO_Q16(params->volume),
                   audio_driver_st.resampler_quality, stop_cb);
          else
             voice = audio_mixer_play(handle, looped, params->volume,
@@ -2641,7 +2647,8 @@ static void audio_driver_mixer_play_stream_internal(
             audio_driver_st.mixer_streams[i].voice =
                audio_mixer_play_s16(audio_driver_st.mixer_streams[i].handle,
                   (type == AUDIO_STREAM_STATE_PLAYING_LOOPED) ? true : false,
-                  1.0f, audio_driver_st.resampler_quality,
+                  AUDIO_MIXER_GAIN_UNITY,
+                  audio_driver_st.resampler_quality,
                   audio_driver_st.mixer_streams[i].stop_cb);
          else
             audio_driver_st.mixer_streams[i].voice =

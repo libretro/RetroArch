@@ -166,7 +166,11 @@ struct audio_mixer_voice
    audio_mixer_sound_t *sound;
    audio_mixer_stop_cb_t stop_cb;
    unsigned type;
+   /* volume drives the float pipeline, gain the s16 one. They are held
+    * separately rather than converted on demand so that an s16 voice
+    * never needs a float operation on the audio thread. */
    float    volume;
+   int32_t  gain;
    bool     repeat;
    bool     is_s16;
 #ifdef HAVE_THREADS
@@ -1187,8 +1191,10 @@ static bool wav_build_s16(audio_mixer_sound_t* sound,
 }
 #endif
 
+/* No volume parameter: it was never read, and taking a float here put
+ * one in the s16 play path for nothing. */
 static bool audio_mixer_play_wav(audio_mixer_sound_t* sound,
-      audio_mixer_voice_t* voice, bool repeat, float volume,
+      audio_mixer_voice_t* voice, bool repeat,
       audio_mixer_stop_cb_t stop_cb)
 {
    voice->types.wav.position = 0;
@@ -1325,7 +1331,7 @@ static void audio_mixer_release_stream(audio_mixer_voice_t* voice,
 static bool audio_mixer_play_stream_s16(
       audio_mixer_sound_t* sound,
       audio_mixer_voice_t* voice,
-      bool repeat, float volume,
+      bool repeat, int32_t gain,
       enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb,
       enum audio_type_enum type)
@@ -1338,7 +1344,7 @@ static bool audio_mixer_play_stream_s16(
    void    *resamp_i16  = NULL;
    void    *xfer        = audio_transfer_new(type);
    (void)repeat;
-   (void)volume;
+   (void)gain;
    (void)stop_cb;
 
    if (!xfer)
@@ -1451,7 +1457,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
              * if it is not there yet (the sound was loaded for s16
              * before a mode flip) */
             res = wav_build_float(sound, resampler_ident, quality)
-               && audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+               && audio_mixer_play_wav(sound, voice, repeat, stop_cb);
             break;
          case AUDIO_MIXER_TYPE_WAV_STREAM:
 #ifdef HAVE_RWAV
@@ -1525,7 +1531,7 @@ audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
 }
 
 audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
-      bool repeat, float volume,
+      bool repeat, int32_t gain,
       enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb)
 {
@@ -1556,43 +1562,43 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
       {
          case AUDIO_MIXER_TYPE_FLAC:
 #ifdef HAVE_RFLAC
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_FLAC);
 #endif
             break;
          case AUDIO_MIXER_TYPE_WAV_STREAM:
 #ifdef HAVE_RWAV
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_WAV);
 #endif
             break;
          case AUDIO_MIXER_TYPE_OGG:
 #ifdef HAVE_RVORBIS
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_VORBIS);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MP3:
 #ifdef HAVE_RMP3
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_MP3);
 #endif
             break;
          case AUDIO_MIXER_TYPE_M4A:
 #ifdef HAVE_RAAC
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_AAC);
 #endif
             break;
          case AUDIO_MIXER_TYPE_OPUS:
 #ifdef HAVE_ROPUS
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_OPUS);
 #endif
             break;
          case AUDIO_MIXER_TYPE_MOD:
 #ifdef HAVE_RMODTRACKER
-            res = audio_mixer_play_stream_s16(sound, voice, repeat, volume,
+            res = audio_mixer_play_stream_s16(sound, voice, repeat, gain,
                   quality, stop_cb, AUDIO_TYPE_MOD);
 #endif
             break;
@@ -1601,7 +1607,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
              * is not there yet (the sound was loaded for float before
              * a mode flip) */
             res = wav_build_s16(sound, quality)
-               && audio_mixer_play_wav(sound, voice, repeat, volume, stop_cb);
+               && audio_mixer_play_wav(sound, voice, repeat, stop_cb);
             break;
          case AUDIO_MIXER_TYPE_WEBA: /* resolved at load; never stored */
          case AUDIO_MIXER_TYPE_NONE:
@@ -1614,7 +1620,7 @@ audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
    if (res)
    {
       voice->repeat   = repeat;
-      voice->volume   = volume;
+      voice->gain     = gain;
       voice->sound    = sound;
       voice->stop_cb  = stop_cb;
       AUDIO_MIXER_UNLOCK(voice);
@@ -2069,14 +2075,13 @@ void audio_mixer_mix(float* buffer, size_t num_frames,
 }
 
 void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
-      float volume_override, bool override)
+      int32_t gain_override, bool override)
 {
    unsigned i;
    audio_mixer_voice_t* voice = s_voices;
 
    for (i = 0; i < AUDIO_MIXER_MAX_VOICES; i++, voice++)
    {
-      float   volume;
       int32_t gain_q16;
 
       AUDIO_MIXER_LOCK(voice);
@@ -2087,8 +2092,10 @@ void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
          continue;
       }
 
-      volume   = (override) ? volume_override : voice->volume;
-      gain_q16 = (int32_t)(volume * 65536.0f + 0.5f);
+      /* Already Q16 on both sides, so nothing is computed here. This
+       * used to convert a float per voice per mix call, on the audio
+       * thread, in the pipeline that exists to avoid float. */
+      gain_q16 = (override) ? gain_override : voice->gain;
 
       switch (voice->type)
       {
@@ -2172,6 +2179,24 @@ bool audio_mixer_has_s16_voices(void)
    return false;
 }
 
+int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice)
+{
+   if (!voice)
+      return 0;
+
+   return voice->gain;
+}
+
+void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain)
+{
+   if (!voice)
+      return;
+
+   AUDIO_MIXER_LOCK(voice);
+   voice->gain = gain;
+   AUDIO_MIXER_UNLOCK(voice);
+}
+
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
 {
    if (!voice)
@@ -2179,5 +2204,9 @@ void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val)
 
    AUDIO_MIXER_LOCK(voice);
    voice->volume = val;
+   /* Keep the s16 gain in step, so a caller that only knows the float
+    * form still drives an s16 voice. The conversion happens here, on
+    * the control path, and not on the audio thread. */
+   voice->gain   = (int32_t)(val * 65536.0f + 0.5f);
    AUDIO_MIXER_UNLOCK(voice);
 }

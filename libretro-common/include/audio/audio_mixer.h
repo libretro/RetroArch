@@ -133,19 +133,36 @@ float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice);
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val);
 
+/* Q16.16 fixed-point gain: AUDIO_MIXER_GAIN_UNITY is 1.0. This is the
+ * form the s16 pipeline uses throughout, so a build with no hardware
+ * float never has to produce one to drive it. */
+#define AUDIO_MIXER_GAIN_UNITY 0x10000
+
+int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice);
+
+/* s16 form of set_volume. set_volume still works on an s16 voice - it
+ * converts once, off the audio thread - but a float-free caller can
+ * use this and never touch a float at all. */
+void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain);
+
 void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bool override);
 
 /* s16 (fixed-point) mixer pipeline: parallel to the float API above,
  * no int16<->float round-trip. Voices played via audio_mixer_play_s16
- * are mixed only by audio_mixer_mix_s16, and vice versa. */
-void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames, float volume_override, bool override);
+ * are mixed only by audio_mixer_mix_s16, and vice versa.
+ *
+ * Gains are Q16.16, not float: this path exists for builds without
+ * hardware float, and taking a float here meant one was converted on
+ * every mix call, on the audio thread. */
+void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
+      int32_t gain_override, bool override);
 
 bool audio_mixer_has_float_voices(void);
 
 bool audio_mixer_has_s16_voices(void);
 
 audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
-      bool repeat, float volume, enum resampler_quality quality,
+      bool repeat, int32_t gain, enum resampler_quality quality,
       audio_mixer_stop_cb_t stop_cb);
 
 RETRO_END_DECLS
