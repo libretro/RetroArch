@@ -2195,9 +2195,14 @@ static void rmt_clamp_s16( int16_t * RMT_RESTRICT dst,
 struct rmodtracker {
 	struct module *module;
 	struct replay *replay;
+	/* One tick of mixing, per domain. Allocated on first use rather
+	 * than at open: a caller reaches for one getter and keeps using it,
+	 * so the other domain's buffer was being paid for and never
+	 * touched - about 60 KB at 48 kHz, for the life of every voice. */
 	int   *mix_i;         /* one tick, integer pipeline                 */
 	float *mix_f;         /* one tick, float pipeline                   */
 	float *ramp_f;        /* float twin of replay->ramp_buf             */
+	int    buf_len;       /* entries in mix_i / mix_f when allocated     */
 	int    carry_len;     /* frames left over from the last tick        */
 	int    carry_pos;
 	int    carry_domain;  /* 0 = none, 1 = int, 2 = float               */
@@ -2242,13 +2247,11 @@ rmodtracker *rmodtracker_open_memory_rate( const void *data, size_t size,
 		return NULL;
 	}
 	buf_len = calculate_mix_buf_len( sample_rate );
-	rmt->mix_i  = ( int * )   calloc( buf_len, sizeof( int ) );
-	rmt->mix_f  = ( float * ) calloc( buf_len, sizeof( float ) );
-	rmt->ramp_f = ( float * ) calloc( 128, sizeof( float ) );
-	if( !rmt->mix_i || !rmt->mix_f || !rmt->ramp_f ) {
+	if( buf_len <= 0 ) {
 		rmodtracker_close( rmt );
 		return NULL;
 	}
+	rmt->buf_len = buf_len;
 	/* Measured here rather than on demand: the walk that measures it
 	 * rewinds the sequencer, which would be a surprising thing for a
 	 * query to do to a module that is already playing. */
@@ -2284,7 +2287,8 @@ int rmodtracker_duration_frames( rmodtracker *rmt )
 void rmodtracker_rewind( rmodtracker *rmt )
 {
 	replay_set_sequence_pos( rmt->replay, 0 );
-	memset( rmt->ramp_f, 0, 128 * sizeof( float ) );
+	if( rmt->ramp_f )
+		memset( rmt->ramp_f, 0, 128 * sizeof( float ) );
 	rmt->carry_len = rmt->carry_pos = rmt->carry_domain = 0;
 	rmt->ended = 0;
 }
@@ -2324,12 +2328,40 @@ int rmodtracker_seek( rmodtracker *rmt, int frame )
 	return reached;
 }
 
+/* Make the buffers a domain needs, the first time that domain is asked
+ * for. Returns 0 if the allocation fails, in which case the caller ends
+ * the stream rather than spinning on a getter that can never produce
+ * anything. */
+static int rmt_need_i( struct rmodtracker *rmt )
+{
+	if( !rmt->mix_i )
+		rmt->mix_i = ( int * ) calloc( ( size_t ) rmt->buf_len,
+				sizeof( int ) );
+	return rmt->mix_i != NULL;
+}
+
+static int rmt_need_f( struct rmodtracker *rmt )
+{
+	if( !rmt->mix_f )
+		rmt->mix_f = ( float * ) calloc( ( size_t ) rmt->buf_len,
+				sizeof( float ) );
+	if( !rmt->ramp_f )
+		rmt->ramp_f = ( float * ) calloc( 128, sizeof( float ) );
+	return rmt->mix_f != NULL && rmt->ramp_f != NULL;
+}
+
 /* Switching getters mid-carry converts the few carried frames once;
  * steady-state use of either getter performs no conversions at all. */
 static void rmt_carry_to_domain( struct rmodtracker *rmt, int domain )
 {
 	int i;
-	if( rmt->carry_domain && rmt->carry_domain != domain && rmt->carry_pos < rmt->carry_len ) {
+	/* Both buffers have to exist for a conversion to mean anything. With
+	 * lazy allocation the source one may never have been made - which is
+	 * the normal case, a caller that only ever uses one getter, and then
+	 * there is nothing carried in the other domain to convert. */
+	if( rmt->carry_domain && rmt->carry_domain != domain
+			&& rmt->carry_pos < rmt->carry_len
+			&& rmt->mix_i && rmt->mix_f ) {
 		int n   = ( rmt->carry_len - rmt->carry_pos ) * 2;
 		int off = rmt->carry_pos * 2;
 		if( domain == 2 ) {
@@ -2349,6 +2381,11 @@ size_t rmodtracker_get_samples_s16_interleaved( rmodtracker *rmt,
 	size_t done = 0;
 	if( !rmt || rmt->ended )
 		return 0;
+	/* Before carry_to_domain, which converts *into* this buffer. */
+	if( !rmt_need_i( rmt ) ) {
+		rmt->ended = 1;
+		return 0;
+	}
 	rmt_carry_to_domain( rmt, 1 );
 	{
 		int *mix = rmt->mix_i;
@@ -2385,6 +2422,10 @@ size_t rmodtracker_get_samples_float_interleaved( rmodtracker *rmt,
 	size_t done = 0;
 	if( !rmt || rmt->ended )
 		return 0;
+	if( !rmt_need_f( rmt ) ) {
+		rmt->ended = 1;
+		return 0;
+	}
 	rmt_carry_to_domain( rmt, 2 );
 	{
 		float *mix = rmt->mix_f;
