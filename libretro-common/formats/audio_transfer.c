@@ -329,8 +329,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     the context, because ropus decodes s16 and f32 through separate
  *     pipelines and forbids the mix.  AAC, whose decoder is one float
  *     pipeline with two output edges, has no such restriction.  No
- *     No length from the demuxed path, whose
- *     packet set is the caller's; the buffer modes do report one, being
+ *     length from the demuxed path, whose packet set is the caller's;
+ *     the buffer modes do report one, being
  *     the bound they already hold emission to.  A resident WebM walks
  *     the packets' TOC bytes at open for that bound; a windowed one
  *     cannot - the walk would run at the wall - and totals them as it
@@ -338,9 +338,9 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     arrives, so its length is a stated Duration until then - or
  *     nothing at all until then, where the file states no Duration
  *     either, which a live-muxed one does not.  Chained or multiplexed
- *     Ogg is not
- *     handled - pages are walked in order, the serial is ignored and
- *     the page CRC is not verified.  A page-spanning packet larger
+ *     Ogg is not handled - pages are walked in order, the serial is
+ *     ignored and the page CRC is not verified.  A page-spanning packet
+ *     larger
  *     than asm_buf is an error, not a reallocation.  Channel mapping
  *     family 1 - a surround stream is several substreams scattered to
  *     the output channels by the head's mapping table - and refuses
@@ -372,8 +372,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *   Does not: reproduce a playthrough exactly across a seek where the
  *     encoder used noise substitution - the reset a seek needs reseeds
  *     the noise generator, and substituted noise is noise rather than
- *     coded samples.  Reports a length only from
- *     an MP4 or a Matroska, which declare one - though a Matroska's
+ *     coded samples.  Reports a length only from an MP4 or a Matroska,
+ *     which declare one - though a Matroska's
  *     Duration spans what the stream codes, priming included, where an
  *     MP4's edit list is already net of it, so the trim comes off the
  *     one and not the other.  An ADTS stream would have to be walked
@@ -390,8 +390,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  * buffers are borrowed and must outlive the decoder (rmodtracker copies
  * the module at start(), so MOD alone is exempt afterwards).  No
  * resampling and no channel conversion; PCM comes out at the stream's
- * own rate and channel count and the mixer deals with
- * it.  A short read is not end of stream: only a zero-frame read returns
+ * own rate and channel count and the mixer deals with it.  A short read
+ * is not end of stream: only a zero-frame read returns
  * AUDIO_PROCESS_END, and END is not latched, which is what lets a grown
  * demuxed packet set resume after starvation.  AUDIO_PROCESS_ERROR_END
  * is never returned from here.  A context is single-threaded; nothing
