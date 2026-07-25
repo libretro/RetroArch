@@ -179,9 +179,10 @@ bool  audio_transfer_info(void *data, enum audio_type_enum type,
  * AUDIO_PROCESS_ERROR. s16 is exact for integer codecs (FLAC/WAV); f32 is
  * the native path for the float mixer.  Producing fewer frames than asked
  * is not end of stream, and END is not latched: a demuxed packet set that
- * has been grown resumes on the next call.  Opus and AAC latch the format
- * at the first read and error on the other entry point for the life of
- * the context; the rest may be mixed. */
+ * has been grown resumes on the next call.  Opus latches the format at
+ * the first read and errors on the other entry point for the life of the
+ * context, its two pipelines being separate decoders rather than two
+ * edges of one; every other arm may be mixed freely. */
 int   audio_transfer_read_s16(void *data, enum audio_type_enum type,
       int16_t *out, size_t frames, size_t *frames_out);
 int   audio_transfer_read_f32(void *data, enum audio_type_enum type,

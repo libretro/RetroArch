@@ -136,28 +136,33 @@
  *     operation, via set_end_granule plus buffer_tell (Ogg only);
  *     rewind.
  *   Does not: mix output formats on one instance - the first read
- *     latches fmt and the other entry point then errors, because ropus
- *     forbids the mix.  No seek but to frame 0.  No length: info()
- *     reports 0 even where the emission bound is known, that bound being
- *     enforced internally rather than published.  Chained or
- *     multiplexed Ogg is not handled - pages are walked in order, the
- *     serial is ignored and the page CRC is not verified.  A page-
- *     spanning packet larger than asm_buf is an error, not a
- *     reallocation.  Channel mapping families other than 0 (mono and
- *     stereo) are refused by ropus_open, and the rate is always the
- *     48 kHz Opus decodes at, never the original input rate.
+ *     latches fmt and the other entry point then errors for the life of
+ *     the context, because ropus decodes s16 and f32 through separate
+ *     pipelines and forbids the mix.  AAC, whose decoder is one float
+ *     pipeline with two output edges, has no such restriction.  No
+ *     seek but to frame 0.  No length: info() reports 0 even where the
+ *     emission bound is known, that bound being enforced internally
+ *     rather than published.  Chained or multiplexed Ogg is not
+ *     handled - pages are walked in order, the serial is ignored and
+ *     the page CRC is not verified.  A page-spanning packet larger
+ *     than asm_buf is an error, not a reallocation.  Channel mapping
+ *     families other than 0 (mono and stereo) are refused by
+ *     ropus_open, and the rate is always the 48 kHz Opus decodes at,
+ *     never the original input rate.
  *
  * AAC (raac)
  *   Does: three inputs - ADTS buffer (.aac, the AudioSpecificConfig
  *     synthesised from the first header), MP4/M4A buffer (HAVE_RMP4,
  *     packets from rmp4, start trim from the track's edit list), and
  *     demuxed (ASC + delimited access units, trim via
- *     set_start_trim); s16 and f32; the encoder-delay trim; rewind;
- *     buffer_tell in ADTS mode, hence windowing there.
- *   Does not: mix output formats after the first read.  raac itself
- *     permits it - the fmt latch here is the Opus arm's rule applied
- *     uniformly, and is stricter than the decoder requires.  No seek but
- *     to frame 0, and no length.  ADTS carries no delay signalling, so
+ *     set_start_trim); s16 and f32, freely mixed at any point (the
+ *     pending frames are held as raac's float output and converted on
+ *     the way out of read_s16, which is what raac_decode_s16 does
+ *     internally, so the s16 samples are the same either way); the
+ *     encoder-delay trim; rewind; buffer_tell in ADTS mode, hence
+ *     windowing there.
+ *   Does not: seek anywhere but frame 0, or report a length.  ADTS
+ *     carries no delay signalling, so
  *     that path forces the trim to 0 and is not gapless.  A lost ADTS
  *     sync is reported as end of stream rather than resynchronised.
  *     Beyond that the scope is raac's: AAC-LC mono/stereo at the
@@ -436,11 +441,17 @@ struct audio_transfer_aac
     * audio_transfer_start. */
    uint64_t    start_trim;
    uint64_t    trim_left;
-   int         fmt;         /* 0 none, 1 s16, 2 f32 (pending buf type)   */
-   /* Decoded-but-unconsumed frames from the last packet. */
+   /* Decoded-but-unconsumed frames from the last packet, always held
+    * as raac's float output.  raac synthesises in float and converts
+    * at its edge, so decoding f32 and converting on the way out of
+    * read_s16 gives the same samples raac_decode_s16 would have (see
+    * audio_transfer_aac_to_s16), and the two entry points can be
+    * mixed at any point in the stream, including mid-packet, without
+    * a pending buffer of the wrong type to strand.  Opus cannot do
+    * this: ropus's s16 and f32 are separate pipelines rather than one
+    * pipeline with two edges, so that arm keeps its format latch. */
    size_t      pend_frames;
    size_t      pend_pos;
-   int16_t     pend_s16[1024 * 2];
    float       pend_f32[1024 * 2];
 };
 #endif
@@ -1287,7 +1298,6 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          ac->pkt_offset  = 0;
          ac->pend_frames = 0;
          ac->pend_pos    = 0;
-         ac->fmt         = 0;
          return true;
       }
 #endif
@@ -1647,11 +1657,29 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 #endif
 
 #ifdef HAVE_RAAC
-/* Decode the next AAC access unit into the pending buffer in the
- * requested format (1 = s16, 2 = f32), honouring the edit list's start
- * trim.  Returns frames now pending, 0 at end of stream, < 0 on
- * error. */
-static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
+/* raac's edge conversion, applied to a sample its f32 entry point has
+ * already scaled by 1/32768.  The scale is a power of two, so undoing
+ * it is exact and this rounds the same value raac_decode_s16 would
+ * have rounded. */
+static int16_t audio_transfer_aac_to_s16(float unit)
+{
+   float v = unit * 32768.0f;
+   /* saturate before the cast: casting a non-finite or out-of-range
+    * float to int is undefined, and TNS can push synthesis high */
+   if (!(v > -1e9f && v < 1e9f))
+      v = 0.0f;
+   v += (v >= 0.0f) ? 0.5f : -0.5f;
+   if (v >  32767.0f)
+      v =  32767.0f;
+   if (v < -32768.0f)
+      v = -32768.0f;
+   return (int16_t)(int)v;
+}
+
+/* Decode the next AAC access unit into the pending buffer, honouring
+ * the edit list's start trim.  Returns frames now pending, 0 at end of
+ * stream, < 0 on error. */
+static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
 {
    while (ac->pend_frames == 0)
    {
@@ -1707,10 +1735,7 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
          ac->pkt_offset += plen;
          ac->pkt_index++;
       }
-      if (fmt == 1)
-         r = raac_decode_s16(ac->handle, pdata, plen, ac->pend_s16);
-      else
-         r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
+      r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
       if (r < 0)
          return -1;
       ac->pend_frames = (size_t)r;
@@ -1731,7 +1756,6 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac, int fmt)
          }
       }
    }
-   ac->fmt = fmt;
    return (int)ac->pend_frames;
 }
 #endif
@@ -1817,12 +1841,14 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
-         if (!ac || !ac->handle || ac->fmt == 2)
+         if (!ac || !ac->handle)
             return AUDIO_PROCESS_ERROR;
          while (produced < frames)
          {
-            size_t take;
-            int r = audio_transfer_aac_fill(ac, 1);
+            size_t take, i, n;
+            const float *src;
+            int16_t     *dst;
+            int r = audio_transfer_aac_fill(ac);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
             if (r == 0)
@@ -1830,9 +1856,11 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             take = frames - produced;
             if (take > ac->pend_frames)
                take = ac->pend_frames;
-            memcpy(out + produced * ac->channels,
-                  ac->pend_s16 + ac->pend_pos * ac->channels,
-                  take * ac->channels * sizeof(int16_t));
+            src = ac->pend_f32 + ac->pend_pos * ac->channels;
+            dst = out + produced * ac->channels;
+            n   = take * ac->channels;
+            for (i = 0; i < n; i++)
+               dst[i] = audio_transfer_aac_to_s16(src[i]);
             ac->pend_pos    += take;
             ac->pend_frames -= take;
             produced        += take;
@@ -1986,12 +2014,12 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
-         if (!ac || !ac->handle || ac->fmt == 1)
+         if (!ac || !ac->handle)
             return AUDIO_PROCESS_ERROR;
          while (produced < frames)
          {
             size_t take;
-            int r = audio_transfer_aac_fill(ac, 2);
+            int r = audio_transfer_aac_fill(ac);
             if (r < 0)
                return AUDIO_PROCESS_ERROR;
             if (r == 0)
@@ -2202,7 +2230,6 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          ac->pend_frames = 0;
          ac->pend_pos    = 0;
          ac->trim_left   = ac->start_trim;
-         ac->fmt         = 0;
          return true;
       }
 #endif
