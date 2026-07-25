@@ -1226,7 +1226,7 @@ static void vita2d_free_texture(vita2d_texture *texture)
 }
 
 
-static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int w, unsigned int h, SceGxmTextureFormat format, unsigned int isRenderTarget)
+static vita2d_texture *vita2d_create_empty_texture_format(unsigned int w, unsigned int h, SceGxmTextureFormat format)
 {
 	if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE)
 		return NULL;
@@ -1289,96 +1289,13 @@ static vita2d_texture *_vita2d_create_empty_texture_format_advanced(unsigned int
    else
 		texture->palette_UID = 0;
 
-	if (isRenderTarget)
-   {
-      int err = sceGxmColorSurfaceInit(
-            &texture->gxm_sfc,
-            SCE_GXM_COLOR_FORMAT_A8B8G8R8,
-            SCE_GXM_COLOR_SURFACE_LINEAR,
-            SCE_GXM_COLOR_SURFACE_SCALE_NONE,
-            SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT,
-            w,
-            h,
-            w,
-            texture_data
-            );
-
-      if (err < 0) {
-         vita2d_free_texture(texture);
-         return NULL;
-      }
-
-      // create the depth/stencil surface
-      const uint32_t alignedWidth = ALIGN(w, SCE_GXM_TILE_SIZEX);
-      const uint32_t alignedHeight = ALIGN(h, SCE_GXM_TILE_SIZEY);
-      uint32_t sampleCount = alignedWidth*alignedHeight;
-      uint32_t depthStrideInSamples = alignedWidth;
-
-      // allocate it
-      void *depthBufferData = gpu_alloc(
-            SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-            4*sampleCount,
-            SCE_GXM_DEPTHSTENCIL_SURFACE_ALIGNMENT,
-            SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
-            &texture->depth_UID);
-
-      // create the SceGxmDepthStencilSurface structure
-      err = sceGxmDepthStencilSurfaceInit(
-            &texture->gxm_sfd,
-            SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24,
-            SCE_GXM_DEPTH_STENCIL_SURFACE_TILED,
-            depthStrideInSamples,
-            depthBufferData,
-            NULL);
-
-      if (err < 0) {
-         vita2d_free_texture(texture);
-         return NULL;
-      }
-
-      SceGxmRenderTarget *tgt = NULL;
-
-      // set up parameters
-      SceGxmRenderTargetParams renderTargetParams;
-      memset(&renderTargetParams, 0, sizeof(SceGxmRenderTargetParams));
-      renderTargetParams.flags = 0;
-      renderTargetParams.width = w;
-      renderTargetParams.height = h;
-      renderTargetParams.scenesPerFrame = 1;
-      renderTargetParams.multisampleMode = SCE_GXM_MULTISAMPLE_NONE;
-      renderTargetParams.multisampleLocations = 0;
-      renderTargetParams.driverMemBlock = -1;
-
-      /* create the render target */
-      err = sceGxmCreateRenderTarget(&renderTargetParams, &tgt);
-
-      texture->gxm_rtgt = tgt;
-
-      if (err < 0)
-      {
-         vita2d_free_texture(texture);
-         return NULL;
-      }
-
-   }
-
 	return texture;
-}
-
-static vita2d_texture * vita2d_create_empty_texture_format(unsigned int w, unsigned int h, SceGxmTextureFormat format)
-{
-	return _vita2d_create_empty_texture_format_advanced(w, h, format, 0);
 }
 
 static unsigned int vita2d_texture_get_stride(const vita2d_texture *texture)
 {
 	return ((sceGxmTextureGetWidth(&texture->gxm_tex) + 7) & ~7)
 		* tex_format_to_bytespp(sceGxmTextureGetFormat(&texture->gxm_tex));
-}
-
-static void *vita2d_texture_get_datap(const vita2d_texture *texture)
-{
-	return sceGxmTextureGetData(&texture->gxm_tex);
 }
 
 static void vita2d_texture_set_filters(vita2d_texture *texture, SceGxmTextureFilter min_filter, SceGxmTextureFilter mag_filter)
@@ -1504,9 +1421,19 @@ static void vita2d_draw_texture_tint_part_scale(const vita2d_texture *texture, f
 	draw_texture_tint_part_scale_generic(texture, x, y, tex_x, tex_y, tex_w, tex_h, x_scale, y_scale, color);
 }
 
-static inline void draw_texture_scale_rotate_hotspot_generic(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad, float center_x, float center_y)
+static void vita2d_draw_texture_scale_rotate(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad)
 {
-	vita2d_texture_vertex *vertices = (vita2d_texture_vertex *)
+	const float center_x = sceGxmTextureGetWidth(&texture->gxm_tex)  / 2.0f;
+	const float center_y = sceGxmTextureGetHeight(&texture->gxm_tex) / 2.0f;
+	void *vertex_wvp_buffer;
+	vita2d_texture_vertex *vertices;
+
+	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
+	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
+	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
+	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
+
+	vertices = (vita2d_texture_vertex *)
       vita2d_pool_memalign(
 		4 * sizeof(vita2d_texture_vertex), // 4 vertices
 		sizeof(vita2d_texture_vertex));
@@ -1557,23 +1484,6 @@ static inline void draw_texture_scale_rotate_hotspot_generic(const vita2d_textur
 	sceGxmDraw(_vita2d_context, SCE_GXM_PRIMITIVE_TRIANGLE_STRIP, SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
-static void vita2d_draw_texture_scale_rotate_hotspot(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad, float center_x, float center_y)
-{
-	void *vertex_wvp_buffer;
-	sceGxmSetVertexProgram(_vita2d_context, _vita2d_textureVertexProgram);
-	sceGxmSetFragmentProgram(_vita2d_context, _vita2d_textureFragmentProgram);
-	sceGxmReserveVertexDefaultUniformBuffer(_vita2d_context, &vertex_wvp_buffer);
-	sceGxmSetUniformDataF(vertex_wvp_buffer, _vita2d_textureWvpParam, 0, 16, _vita2d_ortho_matrix);
-	draw_texture_scale_rotate_hotspot_generic(texture, x, y, x_scale, y_scale,
-		rad, center_x, center_y);
-}
-
-static void vita2d_draw_texture_scale_rotate(const vita2d_texture *texture, float x, float y, float x_scale, float y_scale, float rad)
-{
-	vita2d_draw_texture_scale_rotate_hotspot(texture, x, y, x_scale, y_scale,
-		rad, sceGxmTextureGetWidth(&texture->gxm_tex) / 2.0f,
-		sceGxmTextureGetHeight(&texture->gxm_tex)/2.0f);
-}
 static inline void draw_texture_part_scale_rotate_generic(const vita2d_texture *texture, float x, float y,
 	float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, float rad)
 {
@@ -1905,7 +1815,7 @@ static void *vita2d_font_init(void *data,
          SCE_GXM_TEXTURE_FILTER_LINEAR);
 
    stride  = vita2d_texture_get_stride(font->texture);
-   tex32   = vita2d_texture_get_datap(font->texture);
+   tex32   = sceGxmTextureGetData(&font->texture->gxm_tex);
    frame32 = atlas->buffer;
    pitch   = atlas->width;
 
@@ -2049,7 +1959,7 @@ static void vita2d_font_render_line(
       if (font->atlas->dirty)
       {
         unsigned int stride    = vita2d_texture_get_stride(font->texture);
-        uint8_t *tex32         = vita2d_texture_get_datap(font->texture);
+        uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex);
         const uint8_t *frame32 = font->atlas->buffer;
         unsigned int pitch     = font->atlas->width;
         /* Copy only the dirty rectangle tracked by the font
@@ -2409,7 +2319,7 @@ static bool vita2d_frame(void *data, const void *frame,
 
    if (frame)
    {
-      if (!(vita->texture && vita2d_texture_get_datap(vita->texture)==frame))
+      if (!(vita->texture && sceGxmTextureGetData(&vita->texture->gxm_tex)==frame))
       {
          unsigned i;
          unsigned int stride;
@@ -2429,7 +2339,7 @@ static bool vita2d_frame(void *data, const void *frame,
             vita->texture = vita2d_create_empty_texture_format(width, height, vita->format);
             vita2d_texture_set_filters(vita->texture,vita->tex_filter,vita->tex_filter);
          }
-         tex_p = vita2d_texture_get_datap(vita->texture);
+         tex_p = sceGxmTextureGetData(&vita->texture->gxm_tex);
          stride = vita2d_texture_get_stride(vita->texture);
 
          if (vita->format == SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1RGB)
@@ -2738,7 +2648,7 @@ static void vita2d_set_texture_frame(void *data, const void *frame, bool rgb32,
          SCE_GXM_TEXTURE_FILTER_LINEAR,
          SCE_GXM_TEXTURE_FILTER_LINEAR);
 
-   tex_p  = vita2d_texture_get_datap(vita->menu.texture);
+   tex_p  = sceGxmTextureGetData(&vita->menu.texture->gxm_tex);
    stride = vita2d_texture_get_stride(vita->menu.texture);
 
    /* Copy row-by-row via memcpy rather than pixel-by-pixel.  The
@@ -2797,7 +2707,7 @@ static uintptr_t vita2d_load_texture(void *video_data, void *data,
    stride                      = vita2d_texture_get_stride(texture);
    stride                     /= 4;
 
-   tex32                       = vita2d_texture_get_datap(texture);
+   tex32                       = sceGxmTextureGetData(&texture->gxm_tex);
    frame32                     = image->pixels;
    pitch                       = image->width;
 
@@ -2853,7 +2763,7 @@ static bool vita2d_get_current_sw_framebuffer(void *data,
             vita->tex_filter,vita->tex_filter);
    }
 
-   framebuffer->data         = vita2d_texture_get_datap(vita->texture);
+   framebuffer->data         = sceGxmTextureGetData(&vita->texture->gxm_tex);
    framebuffer->pitch        = vita2d_texture_get_stride(vita->texture);
    framebuffer->format       = vita->rgb32
       ? RETRO_PIXEL_FORMAT_XRGB8888
@@ -3056,7 +2966,7 @@ static bool vita2d_overlay_load(void *data, const void *image_data, unsigned num
       vita2d_texture_set_filters(o->tex,SCE_GXM_TEXTURE_FILTER_LINEAR,SCE_GXM_TEXTURE_FILTER_LINEAR);
       stride     = vita2d_texture_get_stride(o->tex);
       stride    /= 4;
-      tex32      = vita2d_texture_get_datap(o->tex);
+      tex32      = sceGxmTextureGetData(&o->tex->gxm_tex);
       frame32    = images[i].pixels;
       pitch      = o->width;
       for (j = 0; j < o->height; j++)
