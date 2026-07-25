@@ -47,8 +47,14 @@ typedef struct
    /* number of *bytes* in the pointer below, i.e. numsamples * numchannels * bitspersample/8 */
    size_t subchunk2size;
 
-   /* PCM data */
+   /* PCM data, owned by rwav and freed by rwav_free. NULL after
+    * rwav_parse, which allocates nothing: read the samples out of your
+    * own buffer at dataoffset instead. */
    const void* samples;
+
+   /* byte offset of the sample data within the buffer it was parsed
+    * from. Set by both entry points; only useful with rwav_parse. */
+   size_t dataoffset;
 } rwav_t;
 
 enum rwav_state
@@ -80,7 +86,26 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter);
 enum rwav_state rwav_load(rwav_t *out, const void *buf, size_t len);
 
 /**
- * Frees parsed wave data.
+ * Parses the header alone: walks the RIFF chunk list, fills the format
+ * fields, and reports the sample data's size and its byte offset within
+ * buf. Allocates nothing and copies nothing - samples is left NULL and
+ * there is nothing to free - so the caller converts frames out of its
+ * own buffer as it wants them, in whatever output format it wants,
+ * rather than taking rwav's native-order copy of the lot.
+ *
+ * len describes the whole span buf addresses, and bounds the payload:
+ * subchunk2size comes back as the declared data size clamped to it and
+ * rounded down to whole frames. Reads, though, stop at the end of the
+ * 'data' chunk header - the payload itself is never touched - so a
+ * caller streaming a file may pass its full length while keeping only
+ * the head resident, and page the rest in behind the read cursor.
+ *
+ * Returns RWAV_ITERATE_DONE on success.
+ */
+enum rwav_state rwav_parse(rwav_t *out, const void *buf, size_t len);
+
+/**
+ * Frees parsed wave data. Safe, and unnecessary, after rwav_parse.
  */
 void rwav_free(rwav_t *rwav);
 
