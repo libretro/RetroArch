@@ -29,6 +29,7 @@
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <encodings/crc32.h>
+#include <string/stdstring.h>
 
 /* The ZIP DEFLATE backend can be built against zlib or against the
  * clean-room inflate implementation in encodings/deflate.h.  Define
@@ -539,7 +540,7 @@ static int zip_file_decompressed(
    if (last_char == '/' || last_char == '\\')
       return 1;
 
-   if (strstr(name, decomp_state->needle))
+   if (string_is_equal(name, decomp_state->needle))
    {
       file_archive_file_handle_t handle = {0};
 
@@ -597,12 +598,10 @@ static int64_t zip_file_read(
    if (optional_outfile)
       decomp.opt_file        = strdup(optional_outfile);
 
-   /* NULL-check strdups: zip_file_decompressed (line ~396)
-    * calls strstr(name, decomp_state->needle) which NULL-derefs
-    * if needle was requested but strdup failed.  Bail out of
-    * the extraction; caller treats -1 as 'not found / failed'.
-    * Free whatever strdup succeeded to avoid a leak on
-    * partial-success OOM. */
+   /* NULL-check strdups so allocation failure cannot be mistaken for
+    * an omitted member or output path.  Bail out of the extraction;
+    * caller treats -1 as 'not found / failed'.  Free whatever strdup
+    * succeeded to avoid a leak on partial-success OOM. */
    if ((needle && !decomp.needle) ||
        (optional_outfile && !decomp.opt_file))
    {
@@ -852,7 +851,7 @@ static int file_archive_entry_source_capture(
       return 1;
    if (name[name_len - 1] == '/' || name[name_len - 1] == '\\')
       return 1;
-   if (!strstr(name, s->needle))
+   if (!string_is_equal(name, s->needle))
       return 1;
    /* the local-header hop, both arms, mirroring the extract init */
    {
