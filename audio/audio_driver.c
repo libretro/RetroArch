@@ -1111,42 +1111,77 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * operate on. For a float-native core this is just a gain-scaled copy
     * (or a plain copy at unity gain) - no int16<->float conversion - which
     * is the whole point of float audio negotiation. */
-   if (is_float)
+   /* Decide whether anything downstream actually needs to write to the
+    * pre-resample buffer.  Only four things ever produce into input_data:
+    * the s16 -> float conversion, a non-unity gain scale, the in-process
+    * synth sum, and the DSP chain (which processes in place because the
+    * core's buffer is const).  When none of them applies - a float-native
+    * core at unity gain with no synth sounding and no DSP filter loaded -
+    * the copy produces a byte-for-byte duplicate that the resampler only
+    * ever reads, since struct resampler_data::data_in is const.  Point the
+    * resampler at the core's buffer instead and skip a full pass over the
+    * batch.  The resampler sees identical bytes either way, so output is
+    * bit-exact.
+    *
+    * The pointer must still be suitably aligned: the CC resampler's ARM
+    * NEON assembly loads its input with an explicit alignment hint
+    * (`vld1.f32 d16, [r1, :64]!` in cc_resampler_neon.S), which faults on
+    * an under-aligned address.  input_data is memalign_alloc(64); a
+    * core-owned buffer carries no such guarantee, so fall back to the copy
+    * unless the pointer is at least 16-byte aligned. */
    {
-      const float *fin = (const float*)data;
-      if (audio_volume_gain == 1.0f)
-         memcpy(audio_st->input_data, fin, samples * sizeof(float));
+      bool synth_on   = midi_driver_synth_active() && audio_st->synth_buf;
+      bool copy_input = !is_float
+            || (audio_volume_gain != 1.0f)
+            || synth_on
+            || (((uintptr_t)data & 0xf) != 0)
+#ifdef HAVE_DSP_FILTER
+            || (audio_st->dsp != NULL)
+#endif
+            ;
+
+      if (!copy_input)
+         src_data.data_in            = (const float*)data;
       else
       {
-         size_t s;
-         for (s = 0; s < samples; s++)
-            audio_st->input_data[s] = fin[s] * audio_volume_gain;
+         if (is_float)
+         {
+            const float *fin = (const float*)data;
+            if (audio_volume_gain == 1.0f)
+               memcpy(audio_st->input_data, fin, samples * sizeof(float));
+            else
+            {
+               size_t s;
+               for (s = 0; s < samples; s++)
+                  audio_st->input_data[s] = fin[s] * audio_volume_gain;
+            }
+         }
+         else
+            convert_s16_to_float(audio_st->input_data,
+                  (const int16_t*)data, samples, audio_volume_gain);
+
+         /* Mix in-process MIDI synth output (e.g. fmsynth) into the float
+          * input before resampling, so it shares the core's resampler, gain
+          * and output path. No-op unless a render-capable MIDI driver is
+          * active and sounding.  audio_st->synth_buf is allocated to the
+          * same size as input_data. */
+         if (synth_on)
+         {
+            size_t frames = samples >> 1;
+            if (midi_driver_render_audio(audio_st->synth_buf, frames,
+                     (unsigned)audio_st->input))
+            {
+               size_t s;
+               for (s = 0; s < samples; s++)
+                  audio_st->input_data[s] +=
+                        audio_st->synth_buf[s] * audio_volume_gain;
+            }
+         }
+
+         src_data.data_in            = audio_st->input_data;
       }
    }
-   else
-      convert_s16_to_float(audio_st->input_data, (const int16_t*)data, samples,
-            audio_volume_gain);
 
-   /* Mix in-process MIDI synth output (e.g. fmsynth) into the float input
-    * before resampling, so it shares the core's resampler, gain and output
-    * path. No-op unless a render-capable MIDI driver is active and sounding.
-    * audio_st->synth_buf is allocated to the same size as input_data. */
-   if (midi_driver_synth_active() && audio_st->synth_buf)
-   {
-      size_t frames = samples >> 1;
-      if (midi_driver_render_audio(audio_st->synth_buf, frames,
-               (unsigned)audio_st->input))
-      {
-         size_t s;
-         for (s = 0; s < samples; s++)
-            audio_st->input_data[s] +=
-                  audio_st->synth_buf[s] * audio_volume_gain;
-      }
-   }
-
-   /* The resampler operates on floating-point frames,
-    * so we have to convert the input first */
-   src_data.data_in                  = audio_st->input_data;
    src_data.input_frames             = samples >> 1;
 
    /* Remember, we allocated buffers that are twice as big as needed.
