@@ -189,23 +189,99 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
       tag = (unsigned)rwav_u32(data + fmt_off + 24);
    }
 
-   /* format tag 1 is integer PCM, 3 is IEEE float; anything past the
-    * standard 16 bytes of either is ignored rather than refused */
-   if (tag != 1 && tag != 3)
-      return RWAV_ITERATE_ERROR;
-   if (tag == 1 ? (bits != 8 && bits != 16 && bits != 24) : (bits != 32))
-      return RWAV_ITERATE_ERROR;
+   /* 1 is integer PCM and 3 IEEE float; 6 and 7 are the G.711
+    * companded pair, eight bits carrying a logarithmic sixteen; 2 and
+    * 17 are the two ADPCM layouts, four bits a sample in blocks that
+    * each restate their predictor.  Anything past the standard 16
+    * bytes of a format is ignored rather than refused. */
+   switch (tag)
+   {
+      case 1:
+         out->format = RWAV_FORMAT_PCM;
+         if (bits != 8 && bits != 16 && bits != 24)
+            return RWAV_ITERATE_ERROR;
+         break;
+      case 3:
+         out->format = RWAV_FORMAT_FLOAT;
+         if (bits != 32)
+            return RWAV_ITERATE_ERROR;
+         break;
+      case 6:
+      case 7:
+         out->format = (tag == 6) ? RWAV_FORMAT_ALAW : RWAV_FORMAT_MULAW;
+         if (bits != 8)
+            return RWAV_ITERATE_ERROR;
+         break;
+      case 2:
+      case 17:
+         out->format = (tag == 2) ? RWAV_FORMAT_MS_ADPCM
+                                  : RWAV_FORMAT_IMA_ADPCM;
+         if (bits != 4)
+            return RWAV_ITERATE_ERROR;
+         break;
+      default:
+         return RWAV_ITERATE_ERROR;
+   }
    /* a zero channel count divides by zero working out the frame count,
     * and a zero rate is unplayable: refuse both here rather than hand
     * them on */
    if (!channels || !rate)
       return RWAV_ITERATE_ERROR;
 
-   blockalign = (size_t)channels * (size_t)(bits / 8);
+   out->numcoef          = 0;
+   out->samplesperblock  = 1;
+
+   if (   out->format == RWAV_FORMAT_MS_ADPCM
+       || out->format == RWAV_FORMAT_IMA_ADPCM)
+   {
+      /* A coded block is the unit here, and its size and the frames
+       * it holds come from the header rather than the sample width.
+       * Both are stated; neither is inferable, an MS block's nibble
+       * count depending on how many bytes of preamble each channel
+       * spends. */
+      /* fmt_off is the chunk body: nBlockAlign at 12, and the
+       * extension past cbSize at 18, where both layouts state the
+       * frames a block holds. */
+      unsigned spb;
+      blockalign = (size_t)rwav_u16(data + fmt_off + 12);
+      spb        = (fmt_size >= 20)
+                 ? (unsigned)rwav_u16(data + fmt_off + 18) : 0;
+      if (blockalign < (size_t)channels * 8 || blockalign > 65535)
+         return RWAV_ITERATE_ERROR;
+      if (out->format == RWAV_FORMAT_MS_ADPCM)
+      {
+         /* wNumCoef at 20, the pairs from 22. */
+         unsigned i, n;
+         if (fmt_size < 22)
+            return RWAV_ITERATE_ERROR;
+         n = (unsigned)rwav_u16(data + fmt_off + 20);
+         if (n > 16 || fmt_size < 22 + n * 4)
+            return RWAV_ITERATE_ERROR;
+         for (i = 0; i < n; i++)
+         {
+            out->coef[i][0] =
+                  (short)rwav_u16(data + fmt_off + 22 + i * 4);
+            out->coef[i][1] =
+                  (short)rwav_u16(data + fmt_off + 24 + i * 4);
+         }
+         out->numcoef = n;
+         if (!spb)
+            spb = (unsigned)((blockalign - 7 * channels) * 2 / channels
+                  + 2);
+      }
+      else if (!spb)
+         spb = (unsigned)((blockalign - 4 * channels) * 2 / channels + 1);
+      if (!spb)
+         return RWAV_ITERATE_ERROR;
+      out->samplesperblock = spb;
+   }
+   else
+      blockalign = (size_t)channels * (size_t)(bits / 8);
+
    avail      = len - data_off;
    if (data_size > avail)
       data_size = avail;
-   /* whole frames only - the readers step a frame at a time, and a
+   /* whole units only - the readers step one at a time, and a
     * trailing partial one would run them past the payload */
    data_size -= data_size % blockalign;
    if (!data_size)
@@ -215,7 +291,9 @@ static enum rwav_state rwav_walk(rwav_t *out, const uint8_t *data,
    out->numchannels   = channels;
    out->samplerate    = rate;
    out->subchunk2size = data_size;
-   out->numsamples    = data_size / blockalign;
+   out->blockalign    = (unsigned)blockalign;
+   out->numsamples    = (data_size / blockalign)
+                      * (size_t)out->samplesperblock;
    out->dataoffset    = data_off;
    out->samples       = NULL;
    return RWAV_ITERATE_DONE;
@@ -369,4 +447,288 @@ enum rwav_state rwav_load(rwav_t* out, const void *s, size_t len)
 void rwav_free(rwav_t *rwav)
 {
    free((void*)rwav->samples);
+}
+
+/* ---- decoding -------------------------------------------------------
+ *
+ * One entry point for every payload rwav accepts, so a caller need
+ * not know which it has.  The uncompressed and companded formats are
+ * a per-sample conversion; the two ADPCM layouts are block coded and
+ * are the reason this exists at all, their samples continuing from
+ * predictor state that only a block's own preamble establishes.
+ */
+
+static short rwav_alaw_to_s16(unsigned char a)
+{
+   int t, seg;
+   a  ^= 0x55;
+   t   = (a & 0x0f) << 4;
+   seg = (a & 0x70) >> 4;
+   if (seg == 0)
+      t += 8;
+   else
+   {
+      t += 0x108;
+      t <<= seg - 1;
+   }
+   return (short)((a & 0x80) ? t : -t);
+}
+
+static short rwav_mulaw_to_s16(unsigned char u)
+{
+   int t;
+   u = (unsigned char)~u;
+   t = (((u & 0x0f) << 3) + 0x84) << ((u & 0x70) >> 4);
+   t -= 0x84;
+   return (short)((u & 0x80) ? (0x84 - (t + 0x84)) : t);
+}
+
+static short rwav_clamp16(int v)
+{
+   if (v >  32767)
+      return  32767;
+   if (v < -32768)
+      return -32768;
+   return (short)v;
+}
+
+/* IMA step and index tables (IMA ADPCM, ANSI/IEEE). */
+static const short rwav_ima_step[89] = {
+   7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,
+   73,80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,
+   408,449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,
+   1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,6484,
+   7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,20350,
+   22385,24623,27086,29794,32767
+};
+static const signed char rwav_ima_index[16] = {
+   -1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8
+};
+/* MS ADPCM adaptation table, and the coefficients a file may omit. */
+static const short rwav_ms_adapt[16] = {
+   230,230,230,230,307,409,512,614,768,614,512,409,307,230,230,230
+};
+
+/* Decode one block into 'out', which must hold samplesperblock frames.
+ * Returns frames produced, 0 on a malformed block. */
+static unsigned rwav_decode_block(const rwav_t *wav, const unsigned char *b,
+      size_t blen, short *out)
+{
+   unsigned ch  = wav->numchannels;
+   unsigned spb = wav->samplesperblock;
+   unsigned c, i;
+
+   if (wav->format == RWAV_FORMAT_IMA_ADPCM)
+   {
+      int pred[16], idx[16];
+      unsigned need = 4 * ch;
+      if (ch > 16 || blen < need)
+         return 0;
+      for (c = 0; c < ch; c++)
+      {
+         pred[c] = (short)rwav_u16(b + c * 4);
+         idx[c]  = b[c * 4 + 2];
+         if (idx[c] > 88)
+            idx[c] = 88;
+         out[c]  = (short)pred[c];
+      }
+      /* After the preamble the nibbles come in eight-sample runs per
+       * channel: four bytes of one channel, then four of the next. */
+      i = 1;
+      {
+         size_t off = need;
+         while (i < spb && off + 4 * ch <= blen)
+         {
+            for (c = 0; c < ch; c++)
+            {
+               unsigned k;
+               for (k = 0; k < 8; k++)
+               {
+                  unsigned nib = (k & 1)
+                        ? (b[off + c * 4 + (k >> 1)] >> 4)
+                        : (b[off + c * 4 + (k >> 1)] & 0x0f);
+                  /* ((2*delta + 1) * step) >> 3, not the
+                   * shift-and-accumulate form.  The two disagree
+                   * once the step is small enough for the shifts to
+                   * truncate - step 7 gives 1 against 2 - and this
+                   * is the one every reference decoder uses. */
+                  int step  = rwav_ima_step[idx[c]];
+                  int delta = (int)(nib & 7);
+                  int diff  = ((2 * delta + 1) * step) >> 3;
+                  if (nib & 8)
+                     diff = -diff;
+                  pred[c] = rwav_clamp16(pred[c] + diff);
+                  idx[c] += rwav_ima_index[nib];
+                  if (idx[c] < 0)  idx[c] = 0;
+                  if (idx[c] > 88) idx[c] = 88;
+                  if (i + k < spb)
+                     out[(i + k) * ch + c] = (short)pred[c];
+               }
+            }
+            off += 4 * ch;
+            i   += 8;
+         }
+      }
+      return spb;
+   }
+
+   /* MS ADPCM: each channel states a coefficient index, a delta and
+    * two priming samples, and the nibbles follow interleaved. */
+   {
+      int co1[16], co2[16], delta[16], s1[16], s2[16];
+      unsigned need = 7 * ch;
+      size_t   off;
+      if (ch > 16 || blen < need || spb < 2)
+         return 0;
+      for (c = 0; c < ch; c++)
+      {
+         unsigned pi = b[c];
+         if (pi >= wav->numcoef)
+            return 0;
+         co1[c] = wav->coef[pi][0];
+         co2[c] = wav->coef[pi][1];
+      }
+      for (c = 0; c < ch; c++)
+         delta[c] = (short)rwav_u16(b + ch + c * 2);
+      for (c = 0; c < ch; c++)
+         s1[c] = (short)rwav_u16(b + ch * 3 + c * 2);
+      for (c = 0; c < ch; c++)
+         s2[c] = (short)rwav_u16(b + ch * 5 + c * 2);
+      for (c = 0; c < ch; c++)
+      {
+         out[c]      = (short)s2[c];
+         out[ch + c] = (short)s1[c];
+      }
+      off = need;
+      i   = 2;
+      while (i < spb && off < blen)
+      {
+         for (c = 0; c < ch && i < spb; c++)
+         {
+            unsigned byte = b[off];
+            int      nib  = (c & 1) ? (byte & 0x0f) : (byte >> 4);
+            int      sn   = (nib & 8) ? nib - 16 : nib;
+            int      p    = (s1[c] * co1[c] + s2[c] * co2[c]) / 256
+                          + sn * delta[c];
+            p        = rwav_clamp16(p);
+            s2[c]    = s1[c];
+            s1[c]    = p;
+            delta[c] = (rwav_ms_adapt[nib] * delta[c]) / 256;
+            if (delta[c] < 16)
+               delta[c] = 16;
+            out[i * ch + c] = (short)p;
+            if (c & 1)
+               off++;
+            if (c == ch - 1)
+               i++;
+         }
+         if (ch == 1)
+         {
+            /* one channel packs two samples per byte */
+            if (i < spb)
+            {
+               unsigned byte = b[off];
+               int nib = byte & 0x0f;
+               int sn  = (nib & 8) ? nib - 16 : nib;
+               int p   = (s1[0] * co1[0] + s2[0] * co2[0]) / 256
+                       + sn * delta[0];
+               p        = rwav_clamp16(p);
+               s2[0]    = s1[0];
+               s1[0]    = p;
+               delta[0] = (rwav_ms_adapt[nib] * delta[0]) / 256;
+               if (delta[0] < 16)
+                  delta[0] = 16;
+               out[i * ch] = (short)p;
+               i++;
+            }
+            off++;
+         }
+      }
+      return spb;
+   }
+}
+
+size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
+      size_t frames, short *out)
+{
+   const unsigned char *d;
+   unsigned ch;
+   size_t   done = 0;
+
+   if (!wav || !base || !out)
+      return 0;
+   ch = wav->numchannels;
+   d  = (const unsigned char*)base + wav->dataoffset;
+
+   if (frame >= wav->numsamples)
+      return 0;
+   if (frames > wav->numsamples - frame)
+      frames = wav->numsamples - frame;
+
+   if (   wav->format == RWAV_FORMAT_MS_ADPCM
+       || wav->format == RWAV_FORMAT_IMA_ADPCM)
+   {
+      /* Start at the block holding 'frame' and step forward within
+       * it: a block restates its own predictor, so nothing before it
+       * has to be decoded. */
+      static short blk[8192 * 16];
+      unsigned spb = wav->samplesperblock;
+      while (done < frames)
+      {
+         size_t   f      = frame + done;
+         size_t   bidx   = f / spb;
+         unsigned within = (unsigned)(f % spb);
+         size_t   boff   = bidx * wav->blockalign;
+         unsigned got, take;
+         if (boff + wav->blockalign > wav->subchunk2size)
+            break;
+         if ((size_t)spb * ch > sizeof(blk) / sizeof(blk[0]))
+            break;
+         got = rwav_decode_block(wav, d + boff, wav->blockalign, blk);
+         if (!got || within >= got)
+            break;
+         take = got - within;
+         if ((size_t)take > frames - done)
+            take = (unsigned)(frames - done);
+         memcpy(out + done * ch, blk + (size_t)within * ch,
+               (size_t)take * ch * sizeof(short));
+         done += take;
+      }
+      return done;
+   }
+
+   for (done = 0; done < frames; done++)
+   {
+      const unsigned char *p = d + (frame + done) * wav->blockalign;
+      unsigned c;
+      for (c = 0; c < ch; c++)
+      {
+         switch (wav->format)
+         {
+            case RWAV_FORMAT_ALAW:
+               out[done * ch + c] = rwav_alaw_to_s16(p[c]);
+               break;
+            case RWAV_FORMAT_MULAW:
+               out[done * ch + c] = rwav_mulaw_to_s16(p[c]);
+               break;
+            case RWAV_FORMAT_FLOAT:
+            {
+               float v = rwav_f32(p + c * 4) * 32768.0f;
+               out[done * ch + c] = rwav_clamp16(
+                     (int)(v >= 0.0f ? v + 0.5f : v - 0.5f));
+               break;
+            }
+            default:
+               if (wav->bitspersample == 8)
+                  out[done * ch + c] =
+                        (short)(((int)p[c] - 128) << 8);
+               else if (wav->bitspersample == 24)
+                  out[done * ch + c] = rwav_s24_to_s16(p + c * 3);
+               else
+                  out[done * ch + c] = rwav_s16(p + c * 2);
+               break;
+         }
+      }
+   }
+   return done;
 }

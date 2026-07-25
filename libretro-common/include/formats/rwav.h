@@ -78,12 +78,39 @@ static INLINE float rwav_s24_to_float(const uint8_t *p)
    return (float)rwav_s24(p) * (1.0f / 8388608.0f);
 }
 
+/* What the samples are, which the width alone no longer says: a-law
+ * and mu-law are eight bits like PCM, and ADPCM is four. */
+enum rwav_format
+{
+   RWAV_FORMAT_PCM = 0,     /* 8, 16 or 24-bit integer                 */
+   RWAV_FORMAT_FLOAT,       /* 32-bit IEEE                             */
+   RWAV_FORMAT_ALAW,        /* G.711 A-law, eight bits in, 16 out      */
+   RWAV_FORMAT_MULAW,       /* G.711 mu-law                            */
+   RWAV_FORMAT_MS_ADPCM,    /* Microsoft ADPCM, four bits, block coded */
+   RWAV_FORMAT_IMA_ADPCM    /* IMA/DVI ADPCM, four bits, block coded   */
+};
+
 typedef struct
 {
-   /* bits per sample: 8, 16 and 24 are integer PCM, 32 is IEEE float
-    * (the parser only admits 32 with the float format tag, so the
-    * width alone identifies the sample type) */
+   /* bits per sample: 8, 16 and 24 are integer PCM, 32 is IEEE float,
+    * eight for the companded formats and four for ADPCM.  Read
+    * 'format' to tell those apart. */
    unsigned int bitspersample;
+
+   /* which of the above the payload holds */
+   unsigned int format;
+
+   /* bytes per block: a frame for the uncompressed and companded
+    * formats, a coded block of samplesperblock frames for the ADPCM
+    * ones, whose payload is not addressable frame by frame */
+   unsigned int blockalign;
+
+   /* frames a coded block decodes to; 1 for everything else */
+   unsigned int samplesperblock;
+
+   /* MS ADPCM predictor coefficient pairs, from the fmt chunk */
+   unsigned int numcoef;
+   short        coef[16][2];
 
    /* number of channels */
    unsigned int numchannels;
@@ -137,6 +164,25 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter);
  * Loads the entire data in one go.
  */
 enum rwav_state rwav_load(rwav_t *out, const void *buf, size_t len);
+
+/* Decode frames to interleaved s16, whatever the payload holds.
+ *
+ * 'base' is the buffer the header was parsed from, so dataoffset
+ * applies; 'frame' is the first frame wanted and 'frames' how many.
+ * Returns how many were produced, short only at the end.
+ *
+ * This is the only way to read the block-coded formats, whose payload
+ * is not addressable a frame at a time - a block carries the
+ * predictor state its samples continue from, so the decode starts at
+ * the block containing 'frame' and steps forward inside it.  Blocks
+ * being self-contained, that costs at most one block however far in
+ * the caller asks, and no state is carried between calls.
+ *
+ * The uncompressed formats go through it too, so a caller need not
+ * branch on the format at all.
+ */
+size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
+      size_t frames, short *out);
 
 /**
  * Parses the header alone: walks the RIFF chunk list, fills the format

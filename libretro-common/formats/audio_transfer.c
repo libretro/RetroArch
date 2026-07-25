@@ -112,14 +112,17 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     windows like the compressed arms, and its residency is a window
  *     rather than the file.  rwav walks the chunk list, so LIST, fact,
  *     cue and the rest before the samples are no obstacle.
- *   Does not: take ADPCM/a-law - rwav rejects those, including where a
- *     WAVE_FORMAT_EXTENSIBLE SubFormat names one (rwav resolves that
- *     header, so a file extensible only for its channel count or
- *     width arrives as the PCM or float it holds).  Checked rather
- *     than assumed: MS and IMA ADPCM, a-law and mu-law are all
- *     refused at start rather than decoded as though their bytes were
- *     PCM, and extensible files holding 24-bit stereo and 16-bit 5.1
- *     decode to the samples they hold.  No demuxed input.
+ *     And the four formats rwav used to refuse: G.711 a-law and mu-law,
+ *     eight bits carrying a logarithmic sixteen, and the MS and
+ *     IMA/DVI ADPCM layouts, four bits a sample in blocks that each
+ *     restate their predictor.  All decode through rwav_decode_s16,
+ *     which the companded pair need for their curve and the block
+ *     ones because their payload is not addressable a frame at a
+ *     time.  A block being self-contained, a read starting anywhere
+ *     decodes only the block it lands in, so seeking costs no more
+ *     than on PCM.  A WAVE_FORMAT_EXTENSIBLE header naming any of
+ *     these resolves to it.
+ *   Does not: take demuxed input.
  *     Multichannel parses here and plays: the mixer folds anything up
  *     to eight channels to stereo, so a 5.1 WAV is heard rather than
  *     refused, as a 5.1 FLAC is.
@@ -2439,15 +2442,23 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
           * resident at open */
          if (rwav_parse(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
             return false;
-         /* rwav admits 8-, 16- and 24-bit integer PCM and 32-bit
-          * IEEE float, and all four convert on the way out below */
+         /* rwav admits 8-, 16- and 24-bit integer PCM, 32-bit IEEE
+          * float, the two companded eight-bit formats and the two
+          * four-bit ADPCM layouts; all of them convert on the way out
+          * below, the last four through rwav's own decoder. */
          if (     w->wav.bitspersample != 16
                && w->wav.bitspersample != 8
                && w->wav.bitspersample != 24
-               && w->wav.bitspersample != 32)
+               && w->wav.bitspersample != 32
+               && w->wav.bitspersample != 4)
             return false;
-         w->framesz = (size_t)w->wav.numchannels
-                    * (size_t)(w->wav.bitspersample / 8);
+         /* Meaningless for a block-coded payload, which is not
+          * addressable a frame at a time; the decoder is given the
+          * frame index instead. */
+         w->framesz = (w->wav.bitspersample >= 8)
+                    ? (size_t)w->wav.numchannels
+                      * (size_t)(w->wav.bitspersample / 8)
+                    : 0;
          w->opened  = 1;
          w->cursor  = 0;
          return true;
@@ -3658,6 +3669,20 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          avail = w->wav.numsamples - w->cursor;
          want  = (frames < avail) ? frames : avail;
          n     = want * ch;
+         /* The companded and block-coded payloads are not readable a
+          * sample at a time from the buffer - a-law is a curve and
+          * ADPCM continues predictor state a block establishes - so
+          * those go through rwav's decoder, which yields s16 natively
+          * and steps into whichever block holds the cursor. */
+         if (w->wav.format != RWAV_FORMAT_PCM
+               && w->wav.format != RWAV_FORMAT_FLOAT)
+         {
+            want       = rwav_decode_s16(&w->wav, w->data, w->cursor,
+                  want, out);
+            w->cursor += want;
+            produced   = want;
+            break;
+         }
          src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
@@ -3772,6 +3797,22 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          avail = w->wav.numsamples - w->cursor;
          want  = (frames < avail) ? frames : avail;
          n     = want * ch;
+         /* See the s16 path: these decode through rwav.  Their native
+          * result is s16, so scaling it here loses nothing. */
+         if (w->wav.format != RWAV_FORMAT_PCM
+               && w->wav.format != RWAV_FORMAT_FLOAT)
+         {
+            static int16_t tmp[2048 * 16];
+            size_t cap = sizeof(tmp) / sizeof(tmp[0]) / (ch ? ch : 1);
+            if (want > cap)
+               want = cap;
+            want = rwav_decode_s16(&w->wav, w->data, w->cursor, want, tmp);
+            for (i = 0; i < want * ch; i++)
+               out[i] = (float)tmp[i] * (1.0f / 32768.0f);
+            w->cursor += want;
+            produced   = want;
+            break;
+         }
          src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
@@ -3917,9 +3958,16 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
                (struct audio_transfer_wav*)data;
          /* the payload is read in place, so the frame cursor is a byte
           * offset into the caller's buffer like any other arm's */
-         if (w->opened)
-            return w->wav.dataoffset + w->cursor * w->framesz;
-         return 0;
+         if (!w->opened)
+            return 0;
+         /* A block-coded payload has no per-frame byte position; the
+          * frontier is the block the cursor sits in. */
+         if (w->wav.format == RWAV_FORMAT_MS_ADPCM
+               || w->wav.format == RWAV_FORMAT_IMA_ADPCM)
+            return w->wav.dataoffset
+                 + (w->cursor / w->wav.samplesperblock + 1)
+                 * (size_t)w->wav.blockalign;
+         return w->wav.dataoffset + w->cursor * w->framesz;
       }
 #endif
 #ifdef HAVE_RFLAC

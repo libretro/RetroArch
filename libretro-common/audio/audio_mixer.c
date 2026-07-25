@@ -422,6 +422,56 @@ static bool wav_to_float(const rwav_t* wav, const uint8_t* src,
 
    *pcm = f;
 
+   /* The companded and block-coded payloads are not readable a sample
+    * at a time - rwav decodes those, natively to s16, and the fold or
+    * the scale below works from that.  Everything else is read in
+    * place as it always was. */
+   if (wav->format != RWAV_FORMAT_PCM && wav->format != RWAV_FORMAT_FLOAT)
+   {
+      rwav_t   h   = *wav;
+      int16_t *tmp = (int16_t*)malloc(wav->numsamples
+            * wav->numchannels * sizeof(int16_t));
+      size_t   i, got;
+      h.dataoffset = 0;
+      if (!tmp)
+      {
+         memalign_free(f);
+         *pcm = NULL;
+         return false;
+      }
+      got = rwav_decode_s16(&h, src, 0, wav->numsamples, tmp);
+      if (wav->numchannels == 1)
+         for (i = 0; i < got; i++)
+         {
+            f[2 * i]     = (float)tmp[i] * (1.0f / 32768.0f);
+            f[2 * i + 1] = f[2 * i];
+         }
+      else if (wav->numchannels == 2)
+         for (i = 0; i < got * 2; i++)
+            f[i] = (float)tmp[i] * (1.0f / 32768.0f);
+      else
+      {
+         const int32_t (*co)[2] =
+               audio_mixer_downmix_wav_q15[wav->numchannels];
+         unsigned c;
+         for (i = 0; i < got; i++)
+         {
+            float l = 0.0f, r = 0.0f;
+            for (c = 0; c < wav->numchannels; c++)
+            {
+               float v = (float)tmp[i * wav->numchannels + c]
+                       * (1.0f / 32768.0f);
+               l += v * (float)co[c][0] * (1.0f / 32768.0f);
+               r += v * (float)co[c][1] * (1.0f / 32768.0f);
+            }
+            f[2 * i]     = l;
+            f[2 * i + 1] = r;
+         }
+      }
+      free(tmp);
+      return true;
+   }
+
    /* More channels than the specialised paths below know: fold. */
    if (wav->numchannels > 2 && wav->numchannels <= 8)
    {
@@ -697,6 +747,56 @@ static bool wav_to_s16(const rwav_t* wav, const uint8_t* src,
       return false;
 
    *pcm = s;
+
+   /* The companded and block-coded payloads are not readable a sample
+    * at a time - rwav decodes those, natively to s16.  The header is
+    * copied with its data offset zeroed because the caller hands over
+    * the payload alone, not the file it came from. */
+   if (wav->format != RWAV_FORMAT_PCM && wav->format != RWAV_FORMAT_FLOAT)
+   {
+      rwav_t   h   = *wav;
+      int16_t *tmp = (int16_t*)malloc(wav->numsamples
+            * wav->numchannels * sizeof(int16_t));
+      size_t   i, got;
+      h.dataoffset = 0;
+      if (!tmp)
+      {
+         memalign_free(s);
+         *pcm = NULL;
+         return false;
+      }
+      got = rwav_decode_s16(&h, src, 0, wav->numsamples, tmp);
+      if (wav->numchannels == 1)
+         for (i = 0; i < got; i++)
+         {
+            s[2 * i]     = tmp[i];
+            s[2 * i + 1] = tmp[i];
+         }
+      else if (wav->numchannels == 2)
+         memcpy(s, tmp, got * 2 * sizeof(int16_t));
+      else
+      {
+         const int32_t (*co)[2] =
+               audio_mixer_downmix_wav_q15[wav->numchannels];
+         unsigned c;
+         for (i = 0; i < got; i++)
+         {
+            int64_t l = 0, r = 0;
+            for (c = 0; c < wav->numchannels; c++)
+            {
+               int32_t v = tmp[i * wav->numchannels + c];
+               l += (int64_t)v * co[c][0];
+               r += (int64_t)v * co[c][1];
+            }
+            s[2 * i]     = audio_mixer_sat_s16_64(
+                  (l >= 0 ? l + 16384 : l - 16384) >> 15);
+            s[2 * i + 1] = audio_mixer_sat_s16_64(
+                  (r >= 0 ? r + 16384 : r - 16384) >> 15);
+         }
+      }
+      free(tmp);
+      return true;
+   }
 
    /* See wav_to_float: more channels than the paths below know about
     * get folded, and a count no fold covers fails rather than leaving
