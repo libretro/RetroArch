@@ -209,10 +209,14 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
- * success.  WAV, FLAC, Vorbis and MP3 seek freely; MOD, Opus and AAC
- * take frame 0 only - the rewind a loop needs - and fail otherwise, as
- * does a Vorbis stream opened from demuxed packets, whose synthesised
- * framing carries placeholder granules. */
+ * success.  WAV, FLAC, Vorbis, MP3, MOD and Opus all seek; AAC takes
+ * frame 0 only - the rewind a loop needs - and fails otherwise, as does
+ * a Vorbis stream opened from demuxed packets, whose synthesised
+ * framing carries placeholder granules.  Seeking is not always cheap:
+ * MOD walks the sequence to get there, and Opus steps over packets and
+ * decodes a pre-roll, both on the calling thread.  An Opus seek is
+ * carried out at the following read rather than here, since decoding
+ * the pre-roll settles the output format. */
 bool  audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame);
 

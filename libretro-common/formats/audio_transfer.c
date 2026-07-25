@@ -153,13 +153,18 @@
  *     RFC 7845 pre-skip; end trimming, from the last page granule for
  *     Ogg and from the TOC total less DiscardPadding for WebM; windowed
  *     operation, via set_end_granule plus buffer_tell (Ogg only);
- *     rewind.
+ *     rewind, and seek: a packet carries its duration in its first
+ *     byte, so the packets before the target are stepped over without
+ *     being decoded and only a pre-roll before it is decoded and
+ *     dropped.  A seek made before the first read is carried out at
+ *     that read, the decoding it does being what fixes the output
+ *     format for the context.
  *   Does not: mix output formats on one instance - the first read
  *     latches fmt and the other entry point then errors for the life of
  *     the context, because ropus decodes s16 and f32 through separate
  *     pipelines and forbids the mix.  AAC, whose decoder is one float
  *     pipeline with two output edges, has no such restriction.  No
- *     seek but to frame 0.  No length from the demuxed path, whose
+ *     No length from the demuxed path, whose
  *     packet set is the caller's; the buffer modes do report one, being
  *     the bound they already hold emission to.  Chained or multiplexed
  *     Ogg is not
@@ -397,6 +402,11 @@ struct audio_transfer_opus
    size_t      pkt_offset;  /* byte offset of that packet                */
    unsigned    preskip_left;
    int         fmt;         /* 0 none, 1 s16, 2 f32 (pending buf type)   */
+   /* A seek asked for but not yet carried out.  Repositioning decodes
+    * a pre-roll, and decoding picks the output pipeline for good, so a
+    * seek made before the first read waits here until the read says
+    * which pipeline that should be.  -1 when there is none pending. */
+   int64_t     seek_to;
    /* Decoded-but-unconsumed frames from the last packet. */
    size_t      pend_frames;
    size_t      pend_pos;
@@ -404,7 +414,6 @@ struct audio_transfer_opus
    float       pend_f32[5760 * 2];
 };
 
-#ifdef HAVE_RWEBM
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
 static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
 {
@@ -426,7 +435,6 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
    }
    return (int64_t)fs[d[0] >> 3] * count;
 }
-#endif
 
 /* Validate the Ogg page at off and return its total size (header plus
  * body), or 0 if there is no valid page there.  On success the body
@@ -1307,6 +1315,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          op->channels     = ropus_channels(op->handle);
+         op->seek_to      = -1;
          op->preskip_left = ropus_preskip(op->handle);
          op->pkt_index    = 0;
          op->pkt_offset   = 0;
@@ -1690,6 +1699,140 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
 /* Decode the next Opus packet into the pending buffer in the requested
  * format (1 = s16, 2 = f32), honouring pre-skip.  Returns frames now
  * pending, 0 at end of stream, < 0 on error. */
+/* The next coded packet, wherever this context's packets come from.
+ * Returns 1 with the bytes, 0 at end of stream, < 0 on a malformed
+ * stream. */
+static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
+      const uint8_t **pdata, uint32_t *plen)
+{
+#ifdef HAVE_RWEBM
+   if (op->demux)
+   {
+      /* .weba: pull the next packet from the demuxer */
+      rwebm_packet pkt;
+      for (;;)
+      {
+         if (rwebm_read_packet(op->demux, &pkt) != 1)
+            return 0;
+         if (pkt.track == op->track_idx)
+            break;
+      }
+      *pdata = pkt.data;
+      *plen  = (uint32_t)pkt.size;
+      return 1;
+   }
+#endif
+   if (op->ogg)
+      return audio_transfer_opus_next_pkt(op, pdata, plen);
+   if (op->pkt_index >= op->num_packets)
+      return 0;
+   *plen = op->pkt_sizes[op->pkt_index];
+   if (op->pkt_offset + *plen > op->packets_size)
+      return -1;
+   *pdata = op->packets + op->pkt_offset;
+   op->pkt_offset += *plen;
+   op->pkt_index++;
+   return 1;
+}
+
+static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt);
+
+/* Frames decoded before the target and thrown away, so the decoder has
+ * converged by the time the caller sees anything.  RFC 7845 s4.2 asks
+ * for 80 ms of that; the rest is headroom for the walk below, which
+ * stops on a packet boundary and so can overshoot where it meant to
+ * stop by as much as one packet - 120 ms, the longest Opus codes.
+ * Together they guarantee the walk lands before the target with at
+ * least the 80 ms still to decode. */
+#define AUDIO_OPUS_PREROLL (3840 + 5760)
+
+/* Rewind and walk forward to 'frame'.  The walk itself decodes nothing:
+ * a packet's duration is in its TOC byte, so the packets before the
+ * target can be stepped over by reading one byte of each.  Only the
+ * pre-roll is decoded, and thrown away.  Returns the frame reached,
+ * or < 0 if the stream ends first. */
+static void audio_transfer_opus_to_head(struct audio_transfer_opus *op)
+{
+   ropus_reset(op->handle);
+#ifdef HAVE_RWEBM
+   if (op->demux)
+      rwebm_rewind(op->demux);
+#endif
+   op->pkt_index    = 0;
+   op->pkt_offset   = 0;
+   op->pg_off       = op->audio_off;
+   op->seg_idx      = 0;
+   op->body_off     = 0;
+   op->emitted      = 0;
+   op->pend_frames  = 0;
+   op->pend_pos     = 0;
+   op->preskip_left = ropus_preskip(op->handle);
+}
+
+static int64_t audio_transfer_opus_seek_to(struct audio_transfer_opus *op,
+      int64_t frame, int fmt)
+{
+   int64_t  pos  = 0;      /* frames emitted, i.e. after the pre-skip  */
+   unsigned skip;
+   int64_t  stop = frame - AUDIO_OPUS_PREROLL;
+
+   audio_transfer_opus_to_head(op);
+   skip = ropus_preskip(op->handle);
+   if (stop < 0)
+      stop = 0;
+   while (pos < stop)
+   {
+      const uint8_t *pdata;
+      uint32_t plen;
+      int64_t d;
+      int r = audio_transfer_opus_pull(op, &pdata, &plen);
+      if (r < 0)
+         return -1;
+      if (r == 0)
+         return -1;        /* asked past the end of the stream         */
+      d = audio_transfer_opus_pkt_frames(pdata, plen);
+      if (d <= 0)
+         return -1;
+      /* the head of the stream is pre-skip, which is discarded rather
+       * than emitted, so it does not count towards the position */
+      if (skip)
+      {
+         unsigned taken = (d < (int64_t)skip) ? (unsigned)d : skip;
+         skip -= taken;
+         d    -= (int64_t)taken;
+      }
+      /* The packet has been consumed, so it counts whether or not it
+       * takes the walk past where it meant to stop; the pre-roll is
+       * sized so that overshooting by one packet still leaves the
+       * target ahead. */
+      pos += d;
+   }
+   /* Whatever pre-skip is left belongs to the frames the decode below
+    * is about to produce. */
+   op->preskip_left = skip;
+   op->emitted      = pos;
+   op->pend_frames  = 0;
+   op->pend_pos     = 0;
+   /* Decode from here, discarding, so the decoder is converged and the
+    * position is exact rather than packet-aligned. */
+   while (pos < frame)
+   {
+      int64_t take;
+      int r = audio_transfer_opus_fill(op, fmt);
+      if (r < 0)
+         return -1;
+      if (r == 0)
+         return -1;
+      take = frame - pos;
+      if (take > (int64_t)op->pend_frames)
+         take = (int64_t)op->pend_frames;
+      op->pend_pos    += (size_t)take;
+      op->pend_frames -= (size_t)take;
+      pos             += take;
+   }
+   return pos;
+}
+
 static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 {
    while (op->pend_frames == 0)
@@ -1698,40 +1841,9 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       uint32_t plen;
       int r;
       unsigned skip;
-#ifdef HAVE_RWEBM
-      if (op->demux)
-      {
-         /* .weba: pull the next packet from the demuxer */
-         rwebm_packet pkt;
-         for (;;)
-         {
-            if (rwebm_read_packet(op->demux, &pkt) != 1)
-               return 0;
-            if (pkt.track == op->track_idx)
-               break;
-         }
-         pdata = pkt.data;
-         plen  = (uint32_t)pkt.size;
-      }
-      else
-#endif
-      if (op->ogg)
-      {
-         r = audio_transfer_opus_next_pkt(op, &pdata, &plen);
-         if (r <= 0)
-            return r;
-      }
-      else
-      {
-         if (op->pkt_index >= op->num_packets)
-            return 0;
-         plen = op->pkt_sizes[op->pkt_index];
-         if (op->pkt_offset + plen > op->packets_size)
-            return -1;
-         pdata = op->packets + op->pkt_offset;
-         op->pkt_offset += plen;
-         op->pkt_index++;
-      }
+      r = audio_transfer_opus_pull(op, &pdata, &plen);
+      if (r <= 0)
+         return r;
       if (fmt == 1)
          r = ropus_decode_s16(op->handle, pdata, plen, op->pend_s16);
       else
@@ -1937,6 +2049,13 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (!op || !op->handle || op->fmt == 2)
             return AUDIO_PROCESS_ERROR;
+         if (op->seek_to >= 0)
+         {
+            int64_t at = audio_transfer_opus_seek_to(op, op->seek_to, 1);
+            op->seek_to = -1;
+            if (at < 0)
+               return AUDIO_PROCESS_ERROR;
+         }
          while (produced < frames)
          {
             size_t take;
@@ -2142,6 +2261,13 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
          if (!op || !op->handle || op->fmt == 1)
             return AUDIO_PROCESS_ERROR;
+         if (op->seek_to >= 0)
+         {
+            int64_t at = audio_transfer_opus_seek_to(op, op->seek_to, 2);
+            op->seek_to = -1;
+            if (at < 0)
+               return AUDIO_PROCESS_ERROR;
+         }
          while (produced < frames)
          {
             size_t take;
@@ -2362,23 +2488,21 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_OPUS:
       {
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
-         if (!op || !op->handle || frame != 0)
-            return false;        /* rewind-only (used by looping)       */
-         ropus_reset(op->handle);
-#ifdef HAVE_RWEBM
-         if (op->demux)
-            rwebm_rewind(op->demux);
-#endif
-         op->pkt_index    = 0;
-         op->pkt_offset   = 0;
-         op->pg_off       = op->audio_off;
-         op->seg_idx      = 0;
-         op->body_off     = 0;
-         op->emitted      = 0;
-         op->pend_frames  = 0;
-         op->pend_pos     = 0;
-         op->preskip_left = ropus_preskip(op->handle);
-         op->fmt          = 0;
+         if (!op || !op->handle)
+            return false;
+         if (frame == 0)
+         {
+            audio_transfer_opus_to_head(op);
+            op->seek_to = -1;
+            op->fmt     = 0;
+            return true;
+         }
+         /* Where the length is known, refuse to be sent past it rather
+          * than walk to the end and report failure from there. */
+         if (op->limit >= 0 && (int64_t)frame > op->limit)
+            return false;
+         /* Recorded, not done: see seek_to. */
+         op->seek_to = (int64_t)frame;
          return true;
       }
 #endif
