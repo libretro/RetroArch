@@ -5965,3 +5965,67 @@ int rvorbis_packet_read_s16(rvorbis *f, int channels, int16_t *buffer,
    rvorbis_set_output_mode(f, 1);
    return rvorbis_drain_s16(f, channels, &buffer, num_shorts / channels);
 }
+
+/* --- PACKET FRAME COUNT (no decode) -----------------------------------
+ *
+ * How many frames a packet contributes, read off its header rather than
+ * decoded.  This is the Vorbis analogue of the duration an Opus packet
+ * carries in its TOC byte, and it exists for the same reason: a caller
+ * that wants to know where the audio in a container sits - to seek, or
+ * to measure the stream - should not have to decode it to find out.
+ *
+ * Everything needed is in the first two bytes.  The packet type bit
+ * must be 0 for audio; the mode number selects a blocksize; and a long
+ * block then carries the two flags saying whether its neighbours are
+ * long, which is what decides the window shape.  Because those flags
+ * are in this packet, the count does not depend on the previous one -
+ * the read is stateless, and touches no decoder state at all.
+ *
+ * The count is what vorbis_finish_frame returns: right_start minus
+ * left_start, computed here exactly as vorbis_decode_initial computes
+ * it.  The one thing the packet cannot say is that a decoder just
+ * reset has no left half to fold into, so the first packet after a
+ * reset yields nothing whatever this reports; a caller summing a
+ * stream starts from the second.
+ */
+int rvorbis_packet_frames(rvorbis *f, const void *packet, size_t len)
+{
+   const uint8_t *p = (const uint8_t *)packet;
+   uint32_t       acc;
+   int            nbits, mode, n, left_start, right_start, bitpos;
+   Mode          *m;
+   if (!f || !p || !len || !f->packet_mode)
+      return -1;
+   /* Vorbis packs LSB-first, so the header bits are the low bits of
+    * the first bytes.  Nine of them at most: type (1), mode (up to 6),
+    * and the two block flags. */
+   acc = p[0];
+   if (len > 1)
+      acc |= (uint32_t)p[1] << 8;
+   if (len > 2)
+      acc |= (uint32_t)p[2] << 16;
+   if (acc & 1)
+      return 0;              /* not an audio packet */
+   bitpos = 1;
+   nbits  = ilog(f->mode_count - 1);
+   mode   = (int)((acc >> bitpos) & (uint32_t)((1 << nbits) - 1));
+   bitpos += nbits;
+   if (mode >= f->mode_count)
+      return -1;
+   m = f->mode_config + mode;
+   if (m->blockflag)
+   {
+      int prev = (int)((acc >> bitpos) & 1);
+      int next = (int)((acc >> (bitpos + 1)) & 1);
+      n           = f->blocksize_1;
+      left_start  = prev ? 0 : ((n - f->blocksize_0) >> 2);
+      right_start = next ? (n >> 1) : ((n * 3 - f->blocksize_0) >> 2);
+   }
+   else
+   {
+      n           = f->blocksize_0;
+      left_start  = 0;
+      right_start = n >> 1;
+   }
+   return right_start - left_start;
+}

@@ -125,6 +125,21 @@ extern int rvorbis_packet_read_s16(rvorbis *f, int channels,
  * Returns the frames copied; short of the ask means the packet is
  * spent, not that the stream is. */
 
+extern int rvorbis_packet_frames(rvorbis *f, const void *packet,
+      size_t len);
+/* how many frames the packet contributes, read off its header without
+ * decoding it - the analogue of the duration an Opus packet carries in
+ * its TOC byte.  Lets a caller locate or measure the audio in a
+ * container it cannot otherwise place: a Matroska timestamp is
+ * millisecond-quantised and cannot say where a frame is, and Matroska
+ * has no granule position to ask instead.  0 for a packet carrying no
+ * audio, < 0 for a malformed one or a context not opened with
+ * rvorbis_open_packets.  Touches no decoder state, so it can be used
+ * on a context that is mid-stream.  Note the first packet after an
+ * open or a reset yields nothing whatever this reports - overlap-add
+ * has no left half to fold it into - so a caller summing a stream
+ * counts from the second.  */
+
 extern void rvorbis_packet_reset(rvorbis *f);
 /* discard the overlap history and the pending frames, leaving the
  * context as it was before its first packet.  This is what a rewind is
