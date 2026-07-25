@@ -6486,6 +6486,13 @@ static bool config_load_file(global_t *global,
          strlcpy(prefix + _len, "_device_reservation_type", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_device_reservation_type[i], prefix);
       }
+
+      /* Nothing constrains 'input_playerN_joypad_index' in the file,
+       * and overrides are applied per key, so the mapping read back
+       * here can point two players at one pad or point a player past
+       * the end of the device array. Neither is recoverable later:
+       * autoconfiguration only ever transposes this array. */
+      input_config_sanitize_joypad_indices();
    }
 
    /* LED map for use by the led driver */
