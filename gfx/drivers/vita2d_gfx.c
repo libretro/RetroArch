@@ -54,8 +54,6 @@
    TODO/FIXME - check if this custom memcpy is genuinely more efficient */
 extern void *memcpy_neon(void *dst, const void *src, size_t n);
 
-/* ===== folded-in GXM backend (was deps/libvita2d) ===== */
-
 /* Defines */
 
 #define RGBA8(r,g,b,a) ((((a)&0xFF)<<24) | (((b)&0xFF)<<16) | (((g)&0xFF)<<8) | (((r)&0xFF)<<0))
@@ -1513,8 +1511,6 @@ static void gxm_draw_array_textured_mat(const gxm_texture_t *texture,
          SCE_GXM_INDEX_FORMAT_U16, linearIndices, count);
 }
 
-/* ===== end folded GXM backend ===== */
-
 /*
  * DISPLAY DRIVER
  */
@@ -1531,12 +1527,10 @@ static const float *gfx_display_gxm_get_default_tex_coords(void)
 
 static void *gfx_display_gxm_get_default_mvp(void *data)
 {
-   vita_video_t *vita2d = (vita_video_t*)data;
-
-   if (!vita2d)
+   vita_video_t *vita = (vita_video_t*)data;
+   if (!vita)
       return NULL;
-
-   return &vita2d->mvp_no_rot;
+   return &vita->mvp_no_rot;
 }
 
 static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
@@ -1548,9 +1542,9 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    const float *vertex              = NULL;
    const float *tex_coord           = NULL;
    const float *color               = NULL;
-   vita_video_t             *vita2d = (vita_video_t*)data;
+   vita_video_t             *vita   = (vita_video_t*)data;
 
-   if (!vita2d || !draw)
+   if (!vita || !draw)
       return;
 
    texture            = (struct gxm_texture_t*)draw->texture;
@@ -1589,7 +1583,7 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    }
 
    gxm_draw_array_textured_mat(texture, vertices, draw->coords->vertices,
-         vita2d->mvp_no_rot.data);
+         vita->mvp_no_rot.data);
 }
 
 static void gfx_display_gxm_scissor_begin(void *data,
