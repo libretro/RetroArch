@@ -627,6 +627,28 @@ static void vita2d_set_blend_mode_add(int enable)
 
 static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
+   /* Blend modes. Fields are in SceGxmBlendInfo declaration order:
+    * colorMask, colorFunc, alphaFunc, colorSrc, colorDst, alphaSrc,
+    * alphaDst.
+    */
+   static const SceGxmBlendInfo blend_info = {
+      SCE_GXM_COLOR_MASK_ALL,
+      SCE_GXM_BLEND_FUNC_ADD,
+      SCE_GXM_BLEND_FUNC_ADD,
+      SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
+      SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+      SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
+      SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+   };
+   static const SceGxmBlendInfo blend_info_add = {
+      SCE_GXM_COLOR_MASK_ALL,
+      SCE_GXM_BLEND_FUNC_ADD,
+      SCE_GXM_BLEND_FUNC_ADD,
+      SCE_GXM_BLEND_FACTOR_ONE,
+      SCE_GXM_BLEND_FACTOR_ONE,
+      SCE_GXM_BLEND_FACTOR_ONE,
+      SCE_GXM_BLEND_FACTOR_ONE
+   };
    int err;
    unsigned int i;
 
@@ -820,27 +842,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureFragmentProgramGxp, &textureFragmentProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintVertexProgramGxp, &textureTintVertexProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintFragmentProgramGxp, &textureTintFragmentProgramId);
-
-   /* Fill SceGxmBlendInfo */
-   static const SceGxmBlendInfo blend_info = {
-      .colorFunc = SCE_GXM_BLEND_FUNC_ADD,
-      .alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
-      .colorSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
-      .colorDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-      .alphaSrc  = SCE_GXM_BLEND_FACTOR_SRC_ALPHA,
-      .alphaDst  = SCE_GXM_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-      .colorMask = SCE_GXM_COLOR_MASK_ALL
-   };
-
-   static const SceGxmBlendInfo blend_info_add = {
-      .colorFunc = SCE_GXM_BLEND_FUNC_ADD,
-      .alphaFunc = SCE_GXM_BLEND_FUNC_ADD,
-      .colorSrc  = SCE_GXM_BLEND_FACTOR_ONE,
-      .colorDst  = SCE_GXM_BLEND_FACTOR_ONE,
-      .alphaSrc  = SCE_GXM_BLEND_FACTOR_ONE,
-      .alphaDst  = SCE_GXM_BLEND_FACTOR_ONE,
-      .colorMask = SCE_GXM_COLOR_MASK_ALL
-   };
 
    /* get attributes by name to create vertex format bindings */
    const SceGxmProgramParameter *paramClearPositionAttribute = sceGxmProgramFindParameterByName(clearVertexProgramGxp, "aPosition");
