@@ -182,6 +182,7 @@ ENCODINGS
 PERFORMANCE
 ============================================================ */
 #include "../libretro-common/features/features_cpu.c"
+#include "../libretro-common/memory/mem_stats.c"
 
 /*============================================================
 CONFIG FILE

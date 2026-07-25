@@ -404,6 +404,7 @@ OBJ += \
        $(LIBRETRO_COMM_DIR)/utils/md5.o \
        playlist.o \
        $(LIBRETRO_COMM_DIR)/features/features_cpu.o \
+       $(LIBRETRO_COMM_DIR)/memory/mem_stats.o \
        verbosity.o \
        $(LIBRETRO_COMM_DIR)/playlists/label_sanitization.o \
        $(LIBRETRO_COMM_DIR)/time/rtime.o \
