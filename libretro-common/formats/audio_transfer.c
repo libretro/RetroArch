@@ -150,17 +150,22 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     no obstacle.
  *   Does not: resume the demuxed path after it has run out of
  *     packets, which is where it falls short of the growth contract
- *     the other demuxed arms meet.  Growing the set works, and works
- *     mid-stream; what does not is growing it after a read has
- *     already found the end.  Those arms decode a packet at a time
- *     themselves and can simply carry on, while this one hands rflac
- *     a byte stream and lets it pull - and a short read is an end of
- *     stream to a decoder that pulls, which it will not take back.
- *     A feeder that stays ahead of the reader is unaffected; one that
- *     lets it run dry loses the rest of the stream.  Measured: fed a
- *     third of the packets and grown before the reader caught up, the
- *     decode is identical to the whole file; grown after it caught
- *     up, it stops early.
+ *     the other demuxed arms meet.  Those decode a packet at a time
+ *     and can carry on; this one hands rflac a byte stream and lets
+ *     it pull, and a short read is an end of stream to a decoder that
+ *     pulls, which it will not take back.
+ *
+ *     Staying ahead is not simply a matter of growing before each
+ *     read.  rflac reads ahead of what it has decoded, by an amount
+ *     that is its own business, so a feeder adding one packet a read
+ *     still starves - measured, stopping at 9216 frames of 88200 -
+ *     while five a read completes.  Driving it from buffer_tell,
+ *     three packets of headroom past the cursor was enough on the
+ *     same file and two was not.  A feeder should keep a margin and
+ *     measure it, which the cursor now permits: it reported nothing
+ *     for any of the callback paths until this was looked into, the
+ *     arm having read the memory reader's position, which is not the
+ *     live source on any of them.
  *
  *     Nor a length where the setup's STREAMINFO does not state one,
  *     nor from any stream written without it - Ogg FLAC never states
@@ -279,9 +284,16 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     delay a LAME tag states, and the padding bounds the end.  What
  *     info() reports is what comes out.  set_start_trim overrides the
  *     tag's delay, for a caller whose container knows better.
- *   Does not: report a length for a file carrying no such header -
- *     info() gives 0 and nothing is trimmed, since measuring it would
- *     mean walking every frame.  No demuxed input.
+ *     A file carrying no such header is measured by walking its frame
+ *     headers instead - each states its own bitrate and so its own
+ *     size, which works on a variable-bitrate stream as well as a
+ *     constant one.  It is a step per frame over four bytes, not a
+ *     decode: 1.1 ms for a ten-minute file, measured, which is why
+ *     the length is worth having rather than reporting nothing.  What
+ *     it counts is what the decoder emits, priming included, there
+ *     being no tag to say which of that was padding - so info() and
+ *     the output agree here as they do everywhere else.
+ *   Does not: take demuxed input.
  *
  * MOD (rmodtracker)
  *   Does: buffer input, MOD/S3M/XM autodetected; s16 and f32; the
@@ -1902,6 +1914,72 @@ static size_t audio_transfer_vorbis_cap(struct audio_transfer_vorbis *v,
 }
 #endif
 
+#ifdef HAVE_RMP3
+/* Count what every frame in the file contributes.
+ *
+ * The fallback for a stream carrying no Xing, Info or VBRI header,
+ * which states nothing about its own length.  Each frame header gives
+ * its own bitrate and so its own size, which makes this work on a
+ * variable-bitrate stream as well as a constant one - the file size
+ * and a nominal rate would not.
+ *
+ * It is a step per frame over four header bytes, not a decode: 1.1 ms
+ * for a ten-minute file, measured, which is why the length is worth
+ * having rather than reporting nothing.  What it counts is what the
+ * decoder emits, priming and all, there being no tag to say which of
+ * that was padding. */
+static uint64_t audio_transfer_mp3_walk(const uint8_t *b, size_t len)
+{
+   static const unsigned rates[4] = { 44100, 48000, 32000, 0 };
+   static const unsigned br1[16]  = { 0,32,40,48,56,64,80,96,112,128,
+                                      160,192,224,256,320,0 };
+   static const unsigned br2[16]  = { 0,8,16,24,32,40,48,56,64,80,96,
+                                      112,128,144,160,0 };
+   size_t   off   = 0;
+   uint64_t total = 0;
+   if (!b || len < 4)
+      return 0;
+   if (len > 10 && b[0] == 'I' && b[1] == 'D' && b[2] == '3')
+      off = 10 + (((size_t)(b[6] & 0x7f) << 21)
+                | ((size_t)(b[7] & 0x7f) << 14)
+                | ((size_t)(b[8] & 0x7f) <<  7)
+                |  (size_t)(b[9] & 0x7f));
+   for (;;)
+   {
+      unsigned ver, sfi, br, pad, rate, spf, blen;
+      while (off + 4 <= len
+            && !(b[off] == 0xFF && (b[off + 1] & 0xE0) == 0xE0))
+         off++;
+      if (off + 4 > len)
+         break;
+      ver = (b[off + 1] >> 3) & 3;
+      sfi = (b[off + 2] >> 2) & 3;
+      br  = (b[off + 2] >> 4) & 15;
+      pad = (b[off + 2] >> 1) & 1;
+      if (ver == 1 || sfi == 3 || br == 0 || br == 15)
+      {
+         off++;                      /* not a frame header after all   */
+         continue;
+      }
+      rate = rates[sfi];
+      if (ver == 2)
+         rate /= 2;
+      else if (ver == 0)
+         rate /= 4;
+      if (!rate)
+         break;
+      spf  = (ver == 3) ? 1152 : 576;
+      blen = (ver == 3) ? (144000 * br1[br]) / rate + pad
+                        : ( 72000 * br2[br]) / rate + pad;
+      if (!blen || off + blen > len)
+         break;
+      total += spf;
+      off   += blen;
+   }
+   return total;
+}
+#endif
+
 bool audio_transfer_start(void *data, enum audio_type_enum type)
 {
    switch (type)
@@ -2292,8 +2370,16 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          m->limit = -1;
          {
             uint64_t fr = 0, delay = 0;
-            if (audio_transfer_mp3_gapless((const uint8_t*)m->data,
+            if (!audio_transfer_mp3_gapless((const uint8_t*)m->data,
                      m->size, &fr, &delay))
+            {
+               /* No header to state a length; count the frames. */
+               uint64_t walked = audio_transfer_mp3_walk(
+                     (const uint8_t*)m->data, m->size);
+               if (walked)
+                  m->limit = (int64_t)walked;
+            }
+            else
             {
                /* set_start_trim, if the caller used it, wins - it is
                 * a statement from a container that knows better than
@@ -3827,13 +3913,27 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_flac *fl =
                (struct audio_transfer_flac*)data;
-         /* the raw read cursor runs slightly ahead of the decode
-          * position through bitstream caching, which is the safe
-          * side for a feeder: bytes behind it are never re-read
-          * (the loop jump lands in the kept head) */
-         if (fl->handle)
-            return (size_t)fl->handle->memoryStream.currentReadPos;
-         return 0;
+         if (!fl->handle)
+            return 0;
+         /* Demuxed: how far into the caller's packets the decoder has
+          * read.  A feeder needs this and had none - the arm reported
+          * the memory reader's cursor, which is not the live source
+          * on any of the three callback paths and stands at zero
+          * there.  Growing a packet set blind is why a feeder that
+          * grew before every read could still starve. */
+         if (fl->packets)
+            return fl->blob_off + fl->cur_off;
+         if (fl->ogg)
+            return fl->pg_off;
+#ifdef HAVE_RWEBM
+         if (fl->demux)
+            return rwebm_tell(fl->demux);
+#endif
+         /* Buffer mode: the raw read cursor runs slightly ahead of the
+          * decode position through bitstream caching, which is the
+          * safe side for a feeder - bytes behind it are never re-read
+          * (the loop jump lands in the kept head). */
+         return (size_t)fl->handle->memoryStream.currentReadPos;
       }
 #endif
 #ifdef HAVE_RMP3
