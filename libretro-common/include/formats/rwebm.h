@@ -140,6 +140,21 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
  * RWEBM_READ_AGAIN instead of end-of-stream at the wall. */
 void rwebm_set_avail(rwebm_t *webm, size_t avail);
 
+/* Cues, the container's seek index: the number of usable points, 0
+ * when the file carries none or the parse did not reach them (they
+ * are usually written after the clusters, so a partial read whose
+ * wall stopped the header walk short has none).  Seeking needs them:
+ * without an index a target can only be reached by walking. */
+int rwebm_num_cues(const rwebm_t *webm);
+
+/* Reposition the packet walk to the indexed cluster at or before
+ * 'ns'.  Returns the timestamp actually landed on, in nanoseconds,
+ * which is at or before the one asked for - a caller wanting an exact
+ * position decodes forward from here and discards.  Returns < 0 when
+ * the file has no Cues, or when the target cluster lies past a
+ * partial read's wall.  The next rwebm_read_packet resumes there. */
+int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns);
+
 /* Restart packet reading from the first cluster. */
 void rwebm_rewind(rwebm_t *webm);
 

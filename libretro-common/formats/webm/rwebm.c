@@ -13,9 +13,14 @@
  * The whole input is supplied up front and borrowed, not copied; returned
  * packet pointers alias into it.
  *
- * What it does not implement: seeking (packets are delivered in file
- * order only; Cues/SeekHead are skipped), chapters, tags, attachments,
- * subtitle tracks, and encrypted streams.  Codecs other than
+ * Seeking is by the container's own Cues index, when it carries one:
+ * rwebm_seek_time_ns repositions the walk to the indexed cluster at or
+ * before a timestamp.  A file muxed without Cues, or one whose index
+ * lies past a partial read's wall, delivers packets in file order only.
+ *
+ * What it does not implement: SeekHead (Cues are found by the header
+ * walk reaching them, not by following a pointer to them), chapters,
+ * tags, attachments, subtitle tracks, and encrypted streams.  Codecs other than
  * VP8/VP9/Vorbis/Opus are reported as unknown and their packets can be
  * skipped by the caller.
  *
@@ -61,6 +66,11 @@
 #define ID_BLOCKGROUP      0xA0u
 #define ID_BLOCK           0xA1u
 #define ID_DISCARDPADDING  0x75A2u
+#define ID_CUES            0x1C53BB6Bu
+#define ID_CUEPOINT        0xBBu
+#define ID_CUETIME         0xB3u
+#define ID_CUETRACKPOS     0xB7u
+#define ID_CUECLUSTERPOS   0xF1u
 
 #define TRACKTYPE_VIDEO    1
 #define TRACKTYPE_AUDIO    2
@@ -195,6 +205,12 @@ static double be_double_clamp(double v, double lo, double hi)
 
 /* ===== Demuxer state ===== */
 
+struct rwebm_cue
+{
+   int64_t  time_ticks;    /* CueTime, in timestamp_scale ticks         */
+   uint64_t cluster_pos;   /* CueClusterPosition, from seg_body         */
+};
+
 struct rwebm
 {
    const uint8_t *data;
@@ -204,7 +220,16 @@ struct rwebm
    int64_t        timestamp_scale;  /* ns per tick; default 1000000        */
    double         duration_ticks;   /* raw Duration element (scaled later) */
    const uint8_t *clusters_begin;   /* first byte after Tracks (first data)*/
+   const uint8_t *seg_body;         /* Segment data start: CuePositions'
+                                     * origin, per the Matroska spec      */
    const uint8_t *segment_end;
+   /* Cues, when the file carries them and the parse reached them.  A
+    * seek index: timestamp -> the cluster holding it.  Sorted by time
+    * as Matroska requires, and used by bisection.  NULL when absent -
+    * a file muxed without Cues, or a partial read whose wall stopped
+    * the header walk before them (they are usually written last). */
+   struct rwebm_cue *cues;
+   int            num_cues;
    /* End of the bytes that have actually been read into the buffer.
     * Equal to segment_end for a fully-resident file; a partial reader
     * raises it with rwebm_set_avail as bytes arrive.  The packet walk
@@ -228,6 +253,96 @@ struct rwebm
    int64_t        lace_ts;
    int            lace_keyframe;
 };
+
+/* Parse a Cues element into the seek index.  Each CuePoint carries a
+ * CueTime and one CueTrackPositions per indexed track; for the
+ * audio-only files this demuxer is asked to seek in there is one, and
+ * where there are more the first serves - every track's positions name
+ * the same cluster.  Points that parse short are dropped rather than
+ * failing the open: Cues are an optimisation, and a file whose index
+ * is damaged is still perfectly playable in file order. */
+static void parse_cues(rwebm_t *w, const uint8_t *p, const uint8_t *end)
+{
+   ebml_reader r;
+   int         cap = 0;
+   r.p = p; r.end = end;
+   while (r.p < r.end)
+   {
+      int      ok;
+      uint32_t id   = ebml_read_id(&r);
+      uint64_t sz   = ebml_read_vint(&r, 1, &ok);
+      const uint8_t *body = r.p;
+      if (!id || !ok || body + sz > r.end)
+         break;
+      if (id == ID_CUEPOINT)
+      {
+         ebml_reader c;
+         int64_t     t     = -1;
+         uint64_t    pos   = 0;
+         int         havep = 0;
+         c.p = body; c.end = body + sz;
+         while (c.p < c.end)
+         {
+            int      cok;
+            uint32_t cid  = ebml_read_id(&c);
+            uint64_t csz  = ebml_read_vint(&c, 1, &cok);
+            const uint8_t *cbody = c.p;
+            if (!cid || !cok || cbody + csz > c.end)
+               break;
+            if (cid == ID_CUETIME)
+               t = (int64_t)be_uint(cbody, (size_t)csz);
+            else if (cid == ID_CUETRACKPOS && !havep)
+            {
+               ebml_reader q;
+               q.p = cbody; q.end = cbody + csz;
+               while (q.p < q.end)
+               {
+                  int      qok;
+                  uint32_t qid  = ebml_read_id(&q);
+                  uint64_t qsz  = ebml_read_vint(&q, 1, &qok);
+                  const uint8_t *qbody = q.p;
+                  if (!qid || !qok || qbody + qsz > q.end)
+                     break;
+                  if (qid == ID_CUECLUSTERPOS)
+                  {
+                     pos   = be_uint(qbody, (size_t)qsz);
+                     havep = 1;
+                  }
+                  q.p = qbody + qsz;
+               }
+            }
+            c.p = cbody + csz;
+         }
+         /* A point is only useful with both halves, and the cluster it
+          * names has to be inside the segment. */
+         if (t >= 0 && havep && w->seg_body + pos < w->segment_end)
+         {
+            if (w->num_cues >= cap)
+            {
+               int   ncap = cap ? cap * 2 : 64;
+               void *nb   = realloc(w->cues,
+                     (size_t)ncap * sizeof(*w->cues));
+               if (!nb)
+                  return;
+               w->cues = (struct rwebm_cue*)nb;
+               cap     = ncap;
+            }
+            /* Matroska requires CuePoints in ascending CueTime; keep
+             * only what is actually ascending, so the bisection below
+             * cannot be misled by a muxer that did not. */
+            if (!w->num_cues
+                  || t > w->cues[w->num_cues - 1].time_ticks)
+            {
+               w->cues[w->num_cues].time_ticks  = t;
+               w->cues[w->num_cues].cluster_pos = pos;
+               w->num_cues++;
+            }
+         }
+      }
+      r.p = body + sz;
+   }
+}
+
 
 static enum rwebm_codec codec_from_id(const char *id)
 {
@@ -426,7 +541,59 @@ const rwebm_track *rwebm_get_track(const rwebm_t *webm, int index)
 
 void rwebm_close(rwebm_t *webm)
 {
+   if (webm)
+      free(webm->cues);
    free(webm);
+}
+
+int rwebm_num_cues(const rwebm_t *webm)
+{
+   return webm ? webm->num_cues : 0;
+}
+
+int64_t rwebm_seek_time_ns(rwebm_t *webm, int64_t ns)
+{
+   int64_t ticks;
+   int     lo, hi, best;
+   if (!webm || webm->num_cues <= 0 || !webm->timestamp_scale)
+      return -1;
+   if (ns < 0)
+      ns = 0;
+   ticks = ns / webm->timestamp_scale;
+   /* The cue at or before the target: a seek must land on or ahead of
+    * a cluster boundary that precedes what was asked for, never past
+    * it, or the frames between would be lost.  Bisect - a long file
+    * indexes a cue per cluster and a linear walk would be no cheaper
+    * than the packet walk this exists to avoid. */
+   lo   = 0;
+   hi   = webm->num_cues - 1;
+   best = 0;
+   while (lo <= hi)
+   {
+      int mid = lo + (hi - lo) / 2;
+      if (webm->cues[mid].time_ticks <= ticks)
+      {
+         best = mid;
+         lo   = mid + 1;
+      }
+      else
+         hi = mid - 1;
+   }
+   {
+      const uint8_t *at = webm->seg_body + webm->cues[best].cluster_pos;
+      /* Under a partial read the target may be past the wall; say so
+       * rather than pointing the walk at bytes that are not there. */
+      if (at >= webm->avail_end)
+         return -1;
+      webm->cur        = at;
+   }
+   /* The cluster's own Timestamp element re-establishes this as the
+    * walk descends, exactly as it does after a rewind. */
+   webm->cluster_ts      = 0;
+   webm->lace_count      = 0;
+   webm->lace_index      = 0;
+   webm->pending_discard = 0;
+   return webm->cues[best].time_ticks * webm->timestamp_scale;
 }
 
 void rwebm_rewind(rwebm_t *webm)
@@ -804,6 +971,7 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
    w->data            = data;
    w->size            = size;
    w->timestamp_scale = 1000000;   /* Matroska default: 1 ms per tick      */
+   w->seg_body        = seg_body;
    w->segment_end     = seg_body + sz;
    w->avail_end       = avail_end < w->segment_end
                       ? avail_end : w->segment_end;
@@ -868,6 +1036,8 @@ rwebm_t *rwebm_open_memory_avail(const uint8_t *data, size_t size,
             /* First cluster/data starts right after Tracks. */
             w->clusters_begin = ebody + esz;
          }
+         else if (eid == ID_CUES)
+            parse_cues(w, ebody, ebody + esz);
          s.p = ebody + esz;
       }
    }
