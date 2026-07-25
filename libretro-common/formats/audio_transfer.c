@@ -122,12 +122,17 @@
  *     window slides: rwebm's header parse walks the segment's
  *     top-level children as far as its wall, which without one is the
  *     end of the file.
- *   Does not: seek to a nonzero frame on the packet-fed paths.  There
- *     is no Ogg to seek in and no per-packet duration to step over with
- *     (unlike Opus, whose TOC byte carries one), so landing anywhere
- *     but the start would mean decoding the whole way there; rewind is
- *     what those paths offer and a nonzero seek fails at the entry
- *     point.  No buffer_tell from the demuxed path, whose packets are
+ *     Seeks to any frame, exactly, from a resident WebM buffer: a
+ *     Vorbis packet's frame count can be read off its header
+ *     (rvorbis_packet_frames), so the walk to a target decodes
+ *     nothing, and priming on the packet before it resumes output
+ *     identical to the playthrough's rather than converging on it.
+ *   Does not: seek to a nonzero frame on a windowed WebM buffer or
+ *     from demuxed packets.  The walk a seek needs would run at a
+ *     window's wall, into pages that are reserved rather than
+ *     populated, and a caller's own packet set is theirs to restart;
+ *     rewind is what those offer and a nonzero seek fails at the
+ *     entry point.  No buffer_tell from the demuxed path, whose packets are
  *     the caller's own blob rather than the buffer set by
  *     set_buffer_ptr, so no windowing there.  No length and no end
  *     trim from it either, its packet set being the caller's:
@@ -2660,6 +2665,94 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
    return 0;
 }
 
+#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+/* Sample-accurate seek on a packet-fed WebM stream.
+ *
+ * A Vorbis packet says how many frames it contributes
+ * (rvorbis_packet_frames) without being decoded, so the walk to a
+ * target costs two bytes a packet and no decoding at all.  The count
+ * cannot come from the container: Matroska timestamps a block to the
+ * millisecond, which at 44.1 kHz is 44 frames of slack, and it carries
+ * no granule position to ask instead.  Counting the packets is the
+ * only way to land on the right sample.
+ *
+ * Priming with packet m - resetting, then decoding m first - makes m
+ * yield nothing and the audio resume at the position a linear decode
+ * would have reached after m.  So the walk looks for the last m whose
+ * position is still at or before the target, and the frames between
+ * that and the target are decoded and dropped.  One packet of priming
+ * is all Vorbis needs: it carries no prediction across frames, only
+ * the overlap window, so the output after it is not converging on the
+ * playthrough's, it is identical to it.
+ *
+ * Two passes rather than one, so that no packet pointer is held across
+ * a read - rwebm documents a packet as valid only until the next call.
+ * Both are header walks and the second stops at m. */
+static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
+      int64_t target)
+{
+   const uint8_t *pd = NULL;
+   uint32_t       pl = 0;
+   int64_t        pos = 0;
+   int            n, m = 1, i;
+
+   /* Pass 1: where does each packet leave the stream? */
+   rwebm_rewind(v->demux);
+   n = 0;
+   for (;;)
+   {
+      int fr;
+      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+         break;
+      n++;
+      fr = rvorbis_packet_frames(v->handle, pd, pl);
+      if (fr < 0)
+         return false;
+      /* A decode's first packet yields nothing, so the position only
+       * starts moving with the second. */
+      if (n < 2)
+         continue;
+      if (pos + fr > target)
+         break;
+      pos += fr;
+      m    = n;
+   }
+
+   /* Pass 2: walk to m without decoding, then prime with it. */
+   rvorbis_packet_reset(v->handle);
+   rwebm_rewind(v->demux);
+   for (i = 0; i < m; i++)
+      if (audio_transfer_vorbis_pull(v, &pd, &pl) != 1)
+         return false;
+   if (rvorbis_packet_decode(v->handle, pd, pl, 1) < 0)
+      return false;
+   v->emitted = pos;
+   /* Both passes above are header walks, and the pull arms the
+    * container's DiscardPadding as it goes.  Nothing decoded those
+    * packets, so nothing consumed it: left armed, it would come off
+    * whichever packet the next drain happens to decode and clamp the
+    * stream's end to wherever playback had got to.  The walk that
+    * matters will arm it again when it reaches that block for real. */
+   v->discard = 0;
+
+   /* Drop the remainder through the ordinary drain, so the frames
+    * counted here are the frames a playthrough emits. */
+   while (v->emitted < target)
+   {
+      static int16_t skip[4096];
+      size_t cap  = sizeof(skip) / sizeof(skip[0]) / (size_t)v->channels;
+      size_t want = (size_t)(target - v->emitted);
+      if (!cap)
+         return false;
+      if (want > cap)
+         want = cap;
+      if (!audio_transfer_vorbis_drain(v, 1, skip, NULL, want))
+         return false;   /* the stream ended before the target */
+   }
+   return true;
+}
+#endif
+
 bool audio_transfer_seek(void *data, enum audio_type_enum type,
       uint64_t frame)
 {
@@ -2683,12 +2776,19 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             return false;
          if (v->packet)
          {
-            /* No Ogg to seek in and no per-packet duration to step
-             * over with (unlike Opus, whose TOC byte carries one), so
-             * landing anywhere but the start would mean decoding the
-             * whole way there.  Rewind is what this path offers; a
-             * nonzero seek fails here rather than resolving against
-             * something that is not the position asked for. */
+#ifdef HAVE_RWEBM
+            /* WebM, fully resident: count the packets to the target.
+             * A windowed context cannot - the walk would run at the
+             * wall, and the bytes past it are reserved rather than
+             * populated - so windowing keeps rewind only. */
+            if (frame != 0 && v->demux && !v->avail && v->channels > 0)
+               return audio_transfer_vorbis_seek_webm(v, (int64_t)frame);
+#endif
+            /* A caller's own packet blob is theirs to restart, and a
+             * windowed WebM cannot be walked, so for those the only
+             * reachable position is the start - the rewind a loop
+             * needs.  Anything else fails here rather than resolving
+             * against a position that is not the one asked for. */
             if (frame != 0)
                return false;
             rvorbis_packet_reset(v->handle);
@@ -2699,6 +2799,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             v->pkt_index  = 0;
             v->pkt_offset = 0;
             v->emitted    = 0;
+            v->discard    = 0;   /* re-armed when the block comes round */
             return true;
          }
          if (frame == 0) /* loop-to-start: seek_start always succeeds */
