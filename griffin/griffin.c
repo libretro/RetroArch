@@ -435,6 +435,17 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/audio_transfer.c"
+/* The arms in audio_transfer.c are enabled by their own HAVE_, not by
+ * the mixer's, so the decoders behind them have to be built on the same
+ * condition.  They used to sit inside HAVE_AUDIOMIXER, which left a
+ * build with a codec enabled and the mixer disabled compiling calls to
+ * decoders nothing had compiled. */
+#ifdef HAVE_ROPUS
+#include "../libretro-common/formats/opus/ropus.c"
+#endif
+#ifdef HAVE_RAAC
+#include "../libretro-common/formats/aac/raac.c"
+#endif
 #include "../libretro-common/formats/image_transfer.c"
 #include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
@@ -1033,12 +1044,6 @@ DRIVERS
 #endif
 #if defined(HAVE_RMP3)
 #include "../libretro-common/formats/mp3/rmp3.c"
-#endif
-#ifdef HAVE_ROPUS
-#include "../libretro-common/formats/opus/ropus.c"
-#endif
-#ifdef HAVE_RAAC
-#include "../libretro-common/formats/aac/raac.c"
 #endif
 #include "../libretro-common/audio/audio_mixer.c"
 #endif

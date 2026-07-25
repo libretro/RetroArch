@@ -40,33 +40,43 @@
 #include <string/stdstring.h>
 
 /* Pick exactly one backend, once, and key the includes and the bodies
- * below off the same choice.  They used to be two separate chains, and
- * a platform that matched an earlier arm here while still defining
- * __unix__ - Orbis and Emscripten both do - took its own arm's includes
- * and the /proc reader's code, which needs headers it had not pulled
- * in.  One selector cannot drift from itself. */
+ * below off that same choice.  They were once two separate chains, and
+ * a platform matching an early arm while still defining __unix__ -
+ * Orbis and Emscripten do, DJGPP does - took its own arm's includes and
+ * a different arm's code. */
 #if defined(_3DS)
 #define MEM_STATS_CTR         1
-#elif defined(MEM_STATS_GX)
+#elif defined(GEKKO)
 #define MEM_STATS_GX          1
-#elif defined(MEM_STATS_VITA)
+#elif defined(VITA)
 #define MEM_STATS_VITA        1
-#elif defined(MEM_STATS_LIBNX)
+#elif defined(HAVE_LIBNX)
 #define MEM_STATS_LIBNX       1
-#elif defined(MEM_STATS_SWITCH)
+#elif defined(SWITCH)
 #define MEM_STATS_SWITCH      1
-#elif defined(MEM_STATS_ORBIS)
+#elif defined(ORBIS)
 #define MEM_STATS_ORBIS       1
-#elif defined(MEM_STATS_PS3)
+#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
 #define MEM_STATS_PS3         1
-#elif defined(MEM_STATS_PS2)
+#elif defined(PS2)
 #define MEM_STATS_PS2         1
-#elif defined(MEM_STATS_EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #define MEM_STATS_EMSCRIPTEN  1
-#elif defined(MEM_STATS_APPLE)
+#elif defined(__APPLE__)
 #define MEM_STATS_APPLE       1
+#elif defined(__WINRT__) || defined(_WIN32)
+#define MEM_STATS_WIN32       1
+/* DJGPP defines __unix__ and has neither /proc nor the sysconf names */
+#elif (defined(__linux__) || defined(__unix__)) && !defined(__DJGPP__)
+#define MEM_STATS_PROC        1
+#endif
+
+#if defined(MEM_STATS_CTR)
+#include <3ds.h>
+/* osGetMemRegionSize/Free and MEMREGION_ALL are declared here */
+#include <3ds/os.h>
 #elif defined(MEM_STATS_GX)
-/* SYSMEM1_SIZE and SYS_GetArena1Size come from here, not ogcsys.h */
+/* SYSMEM1_SIZE and SYS_GetArena1Size come from gccore, not ogcsys */
 #include <gccore.h>
 #include <ogcsys.h>
 #include <memory/mem2_manager.h>
