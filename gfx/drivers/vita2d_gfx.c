@@ -2118,6 +2118,10 @@ static void vita2d_font_render_message(
    }
 }
 
+/* Forward declaration */
+static void vita2d_set_projection(vita_video_t *vita,
+      struct video_ortho *ortho, bool allow_rotate);
+
 static void vita2d_set_viewport_wrapper(void *data, unsigned vp_width,
       unsigned vp_height, bool force_full, bool allow_rotate)
 {
