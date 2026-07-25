@@ -785,34 +785,33 @@ const char *hw_render_context_name(
 
 static enum retro_hw_context_type hw_render_context_type(const char *s)
 {
-   size_t len = strlen(s) + 1;
-
+   size_t _len = strlen(s) + 1;
 #ifdef HAVE_OPENGL_CORE
-   if (len >= 7 && memcmp(s, "glcore", 7) == 0)
+   if (_len >= 7 && memcmp(s, "glcore", 7) == 0)
       return RETRO_HW_CONTEXT_OPENGL_CORE;
 #endif
 #ifdef HAVE_OPENGL
-   if (len >= 3 && memcmp(s, "gl", 3) == 0)
+   if (_len >= 3 && memcmp(s, "gl", 3) == 0)
       return RETRO_HW_CONTEXT_OPENGL;
 #endif
 #ifdef HAVE_VULKAN
-   if (len >= 7 && memcmp(s, "vulkan", 7) == 0)
+   if (_len >= 7 && memcmp(s, "vulkan", 7) == 0)
       return RETRO_HW_CONTEXT_VULKAN;
 #endif
 #if defined(HAVE_D3D9) && defined(HAVE_HLSL)
-   if (len >= 10 && memcmp(s, "d3d9_hlsl", 10) == 0)
+   if (_len >= 10 && memcmp(s, "d3d9_hlsl", 10) == 0)
       return RETRO_HW_CONTEXT_D3D9;
 #endif
 #ifdef HAVE_D3D10
-   if (len >= 6 && memcmp(s, "d3d10", 6) == 0)
+   if (_len >= 6 && memcmp(s, "d3d10", 6) == 0)
       return RETRO_HW_CONTEXT_D3D10;
 #endif
 #ifdef HAVE_D3D11
-   if (len >= 6 && memcmp(s, "d3d11", 6) == 0)
+   if (_len >= 6 && memcmp(s, "d3d11", 6) == 0)
       return RETRO_HW_CONTEXT_D3D11;
 #endif
 #ifdef HAVE_D3D12
-   if (len >= 6 && memcmp(s, "d3d12", 6) == 0)
+   if (_len >= 6 && memcmp(s, "d3d12", 6) == 0)
       return RETRO_HW_CONTEXT_D3D12;
 #endif
    return RETRO_HW_CONTEXT_NONE;

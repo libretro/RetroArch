@@ -7426,7 +7426,6 @@ static bool retroarch_parse_input_and_config(
    bool               cli_core_set = false;
    bool            cli_content_set = false;
    recording_state_t *rec_st       = recording_state_get_ptr();
-   video_driver_state_t *video_st  = video_state_get_ptr();
    runloop_state_t     *runloop_st = runloop_state_get_ptr();
    settings_t          *settings   = config_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
@@ -7831,21 +7830,24 @@ static bool retroarch_parse_input_and_config(
 
             case RA_OPT_SET_SHADER:
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-               /* disable auto-shaders */
+               /* Disable auto-shaders */
                if (!optarg || !*optarg)
                {
                   video_driver_modify_disp_flags(VIDEO_FLAG_CLI_SHADER_DISABLE, 0);
                   break;
                }
 
-               /* rebase on shader directory */
-               if (path_is_absolute(optarg))
-                  strlcpy(video_st->cli_shader_path, optarg,
-                        sizeof(video_st->cli_shader_path));
-               else
-                  fill_pathname_join_special(video_st->cli_shader_path,
-                        settings->paths.directory_video_shader,
-                        optarg, sizeof(video_st->cli_shader_path));
+               {
+                  video_driver_state_t *video_st  = video_state_get_ptr();
+                  /* Rebase on shader directory */
+                  if (path_is_absolute(optarg))
+                     strlcpy(video_st->cli_shader_path, optarg,
+                           sizeof(video_st->cli_shader_path));
+                  else
+                     fill_pathname_join_special(video_st->cli_shader_path,
+                           settings->paths.directory_video_shader,
+                           optarg, sizeof(video_st->cli_shader_path));
+               }
 #endif
                break;
 
