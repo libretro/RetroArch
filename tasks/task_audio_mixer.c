@@ -13,6 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory/mem_stats.h>
 #include "tasks_internal.h"
 
 #include <stdint.h>
@@ -31,6 +32,7 @@
 
 #include "../file_path_special.h"
 #include "../audio/audio_driver.h"
+#include "../frontend/frontend_driver.h"
 #include "../verbosity.h"
 
 #include "task_file_transfer.h"
@@ -894,7 +896,14 @@ bool task_push_audio_mixer_load_and_play(const char *fullpath,
       enum audio_mixer_slot_selection_type slot_selection_type,
       int slot_selection_idx);
 
-#define AMIX_WINDOW_THRESHOLD (8 * 1024 * 1024)
+/* Files past the threshold are windowed rather than read whole.  Where
+ * the platform reports free memory and there is plenty, the threshold
+ * doubles: reading a mid-sized file whole is simpler than feeding a
+ * window for it, and on a machine with room to spare there is no reason
+ * not to.  A platform that cannot report free memory returns 0 and
+ * keeps the lower figure, as does one that can and has not got it. */
+#define AMIX_WINDOW_THRESHOLD    (8 * 1024 * 1024)
+#define AMIX_WINDOW_THRESHOLD_HI (16 * 1024 * 1024)
 #define AMIX_WINDOW_KEEP      (2 * 1024 * 1024)
 #define AMIX_WINDOW_LOOKAHEAD (2 * 1024 * 1024)
 #define AMIX_WINDOW_MARGIN    (1 * 1024 * 1024)
@@ -1267,6 +1276,24 @@ bail:
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
+/* What reading a file of the doubled threshold whole would cost, judged
+ * against the same quarter-of-free-memory admission the thumbnail
+ * loader uses.  For the compressed types that cost is the file itself,
+ * which the sound holds and decodes from as it plays.  A WAV is also
+ * converted at load, to float or s16 PCM, which for the common 16-bit
+ * stereo case is two more times the file on top of it. */
+static int64_t task_audio_mixer_threshold(enum audio_mixer_type mtype)
+{
+   uint64_t free_mem = mem_stats_free();
+   uint64_t charge   = (uint64_t)AMIX_WINDOW_THRESHOLD_HI;
+
+   if (mtype == AUDIO_MIXER_TYPE_WAV_STREAM)
+      charge *= 3;
+   if (free_mem && charge <= free_mem / 4)
+      return (int64_t)AMIX_WINDOW_THRESHOLD_HI;
+   return (int64_t)AMIX_WINDOW_THRESHOLD;
+}
+
 /* Returns true when the load was taken over by the windowed path. */
 static bool task_audio_mixer_try_windowed(const char *fullpath,
       bool system, bool play,
@@ -1325,7 +1352,7 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
    if (mtype == AUDIO_MIXER_TYPE_NONE)
       return false;
    sz = path_get_size(fullpath);
-   if (sz < (int64_t)AMIX_WINDOW_THRESHOLD)
+   if (sz < task_audio_mixer_threshold(mtype))
       return false;
 
    if (!(t = task_init()))
