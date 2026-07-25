@@ -156,9 +156,10 @@
  *     the context, because ropus decodes s16 and f32 through separate
  *     pipelines and forbids the mix.  AAC, whose decoder is one float
  *     pipeline with two output edges, has no such restriction.  No
- *     seek but to frame 0.  No length: info() reports 0 even where the
- *     emission bound is known, that bound being enforced internally
- *     rather than published.  Chained or multiplexed Ogg is not
+ *     seek but to frame 0.  No length from the demuxed path, whose
+ *     packet set is the caller's; the buffer modes do report one, being
+ *     the bound they already hold emission to.  Chained or multiplexed
+ *     Ogg is not
  *     handled - pages are walked in order, the serial is ignored and
  *     the page CRC is not verified.  A page-spanning packet larger
  *     than asm_buf is an error, not a reallocation.  Channel mapping
@@ -175,10 +176,15 @@
  *     pending frames are held as raac's float output and converted on
  *     the way out of read_s16, which is what raac_decode_s16 does
  *     internally, so the s16 samples are the same either way); the
- *     encoder-delay trim; rewind; buffer_tell in ADTS mode, hence
- *     windowing there.
- *   Does not: seek anywhere but frame 0, or report a length.  ADTS
- *     carries no delay signalling, so
+ *     encoder-delay trim, and, from an MP4, the end trim too - the
+ *     declared duration bounds emission, so the tail padding coded into
+ *     the last access unit is not handed out and the length info()
+ *     reports is the length that comes out; rewind; buffer_tell in ADTS
+ *     mode, hence windowing there.
+ *   Does not: seek anywhere but frame 0.  Reports a length only from
+ *     an MP4, which declares one; an ADTS stream would have to be
+ *     walked to be measured, and the demuxed path's packets are the
+ *     caller's.  ADTS carries no delay signalling, so
  *     that path forces the trim to 0 and is not gapless.  A lost ADTS
  *     sync is reported as end of stream rather than resynchronised.
  *     Beyond that the scope is raac's: AAC-LC mono/stereo at the
@@ -482,6 +488,11 @@ struct audio_transfer_aac
     * audio_transfer_start. */
    uint64_t    start_trim;
    uint64_t    trim_left;
+   /* Emission bound from the container's declared duration, which is
+    * net of the edit list: the encoder's tail padding is coded and
+    * would otherwise be handed out.  -1 where nothing declares one. */
+   int64_t     limit;
+   int64_t     emitted;
    /* Decoded-but-unconsumed frames from the last packet, always held
     * as raac's float output.  raac synthesises in float and converts
     * at its edge, so decoding f32 and converting on the way out of
@@ -1280,6 +1291,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
          if (!ac)
             return false;
+         ac->limit = -1;   /* unbounded unless a container says otherwise */
          /* buffer mode, ADTS stream: the header carries the setup,
           * so synthesise the AudioSpecificConfig from it (LC only,
           * matching the decoder's scope) and walk frames in place */
@@ -1332,6 +1344,12 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
             /* the track's edit list carries the encoder delay */
             ac->start_trim = at->media_skip;
+            {
+               int64_t ns = rmp4_duration_ns(ac->demux);
+               unsigned sr = raac_sample_rate(ac->handle);
+               if (ns > 0 && sr)
+                  ac->limit = (ns * (int64_t)sr + 500000000) / 1000000000;
+            }
          }
          else
 #endif
@@ -1344,6 +1362,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          }
          ac->channels    = raac_channels(ac->handle);
          ac->trim_left   = ac->start_trim;
+         ac->emitted     = 0;
          ac->pkt_index   = 0;
          ac->pkt_offset  = 0;
          ac->pend_frames = 0;
@@ -1504,14 +1523,28 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_OPUS:
       {
          struct audio_transfer_opus *op = (struct audio_transfer_opus*)data;
+         int bounded;
          if (!op || !op->handle)
             return false;
          if (channels)
             *channels = op->channels;
          if (rate)
             *rate = 48000;
+         bounded = op->ogg;
+#ifdef HAVE_RWEBM
+         if (op->demux)
+            bounded = 1;
+#endif
+         /* The buffer modes work the exact decodable length out at open
+          * - the last page's granule for Ogg, the packets' TOC total
+          * less the container's end trimming for WebM - and hold
+          * emission to it as they go, so a caller that wants a length
+          * need not scan for one itself.  The demuxed path has no such
+          * bound: the packet set belongs to the caller and may still be
+          * growing under it. */
          if (total_frames)
-            *total_frames = 0;   /* unknown without scanning            */
+            *total_frames = (bounded && op->limit >= 0)
+               ? (uint64_t)op->limit : 0;
          return true;
       }
 #endif
@@ -1519,14 +1552,24 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         unsigned srate;
          if (!ac || !ac->handle)
             return false;
+         srate = raac_sample_rate(ac->handle);
          if (channels)
             *channels = ac->channels;
          if (rate)
-            *rate = raac_sample_rate(ac->handle);
+            *rate = srate;
          if (total_frames)
-            *total_frames = 0;   /* the caller knows the packet count   */
+         {
+            /* An MP4 declares its duration, already net of the edit
+             * list, so the count is what the caller will actually be
+             * handed.  An ADTS stream declares nothing and would have
+             * to be walked frame by frame to be measured, which is the
+             * whole file and, under windowing, most of it not resident;
+             * the demuxed path's packets are the caller's own. */
+            *total_frames = (ac->limit >= 0) ? (uint64_t)ac->limit : 0;
+         }
          return true;
       }
 #endif
@@ -1785,6 +1828,22 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
             ac->pend_frames -= (size_t)skip;
             ac->trim_left    = 0;
          }
+      }
+      /* Stop at the duration the container declares: the last access
+       * unit is a whole 1024 frames of which only part is the
+       * recording, and handing the rest out is both wrong and longer
+       * than the length info() reports. */
+      if (ac->limit >= 0 && ac->pend_frames)
+      {
+         int64_t left = ac->limit - ac->emitted;
+         if (left <= 0)
+         {
+            ac->pend_frames = 0;
+            return 0;
+         }
+         if ((int64_t)ac->pend_frames > left)
+            ac->pend_frames = (size_t)left;
+         ac->emitted += (int64_t)ac->pend_frames;
       }
    }
    return (int)ac->pend_frames;
@@ -2309,6 +2368,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
          ac->pend_frames = 0;
          ac->pend_pos    = 0;
          ac->trim_left   = ac->start_trim;
+         ac->emitted     = 0;
          return true;
       }
 #endif
