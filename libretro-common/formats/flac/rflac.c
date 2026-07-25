@@ -1354,7 +1354,18 @@ __attribute__((no_sanitize("signed-integer-overflow")))
 RFLAC_HOT_INLINE int32_t rflac__calculate_prediction_32(uint32_t order,
       int32_t shift, const int32_t* coefficients, int32_t* pDecodedSamples)
 {
-   int32_t prediction = 0;
+   /* Unsigned, because this deliberately wraps.
+    *
+    * A valid stream cannot overflow here - the format bounds the
+    * coefficient precision and the sample width so that the sum fits -
+    * which is why this fast path exists at all.  A corrupt one is not
+    * bounded by anything, and signed overflow is undefined rather than
+    * merely wrong, so the accumulation is done unsigned, where the
+    * wrap is defined, and reinterpreted at the end.  Same bits either
+    * way on every two's-complement target; the difference is that this
+    * one is not undefined behaviour.  The 64-bit variant below casts
+    * an operand before multiplying and so never had the problem. */
+   uint32_t prediction = 0;
 
    /* 32-bit version. */
 
@@ -1362,41 +1373,41 @@ RFLAC_HOT_INLINE int32_t rflac__calculate_prediction_32(uint32_t order,
     * compilers. */
    switch (order)
    {
-   case 32: prediction += coefficients[31] * pDecodedSamples[-32];
-   case 31: prediction += coefficients[30] * pDecodedSamples[-31];
-   case 30: prediction += coefficients[29] * pDecodedSamples[-30];
-   case 29: prediction += coefficients[28] * pDecodedSamples[-29];
-   case 28: prediction += coefficients[27] * pDecodedSamples[-28];
-   case 27: prediction += coefficients[26] * pDecodedSamples[-27];
-   case 26: prediction += coefficients[25] * pDecodedSamples[-26];
-   case 25: prediction += coefficients[24] * pDecodedSamples[-25];
-   case 24: prediction += coefficients[23] * pDecodedSamples[-24];
-   case 23: prediction += coefficients[22] * pDecodedSamples[-23];
-   case 22: prediction += coefficients[21] * pDecodedSamples[-22];
-   case 21: prediction += coefficients[20] * pDecodedSamples[-21];
-   case 20: prediction += coefficients[19] * pDecodedSamples[-20];
-   case 19: prediction += coefficients[18] * pDecodedSamples[-19];
-   case 18: prediction += coefficients[17] * pDecodedSamples[-18];
-   case 17: prediction += coefficients[16] * pDecodedSamples[-17];
-   case 16: prediction += coefficients[15] * pDecodedSamples[-16];
-   case 15: prediction += coefficients[14] * pDecodedSamples[-15];
-   case 14: prediction += coefficients[13] * pDecodedSamples[-14];
-   case 13: prediction += coefficients[12] * pDecodedSamples[-13];
-   case 12: prediction += coefficients[11] * pDecodedSamples[-12];
-   case 11: prediction += coefficients[10] * pDecodedSamples[-11];
-   case 10: prediction += coefficients[ 9] * pDecodedSamples[-10];
-   case  9: prediction += coefficients[ 8] * pDecodedSamples[- 9];
-   case  8: prediction += coefficients[ 7] * pDecodedSamples[- 8];
-   case  7: prediction += coefficients[ 6] * pDecodedSamples[- 7];
-   case  6: prediction += coefficients[ 5] * pDecodedSamples[- 6];
-   case  5: prediction += coefficients[ 4] * pDecodedSamples[- 5];
-   case  4: prediction += coefficients[ 3] * pDecodedSamples[- 4];
-   case  3: prediction += coefficients[ 2] * pDecodedSamples[- 3];
-   case  2: prediction += coefficients[ 1] * pDecodedSamples[- 2];
-   case  1: prediction += coefficients[ 0] * pDecodedSamples[- 1];
+   case 32: prediction += (uint32_t)coefficients[31] * (uint32_t)pDecodedSamples[-32];
+   case 31: prediction += (uint32_t)coefficients[30] * (uint32_t)pDecodedSamples[-31];
+   case 30: prediction += (uint32_t)coefficients[29] * (uint32_t)pDecodedSamples[-30];
+   case 29: prediction += (uint32_t)coefficients[28] * (uint32_t)pDecodedSamples[-29];
+   case 28: prediction += (uint32_t)coefficients[27] * (uint32_t)pDecodedSamples[-28];
+   case 27: prediction += (uint32_t)coefficients[26] * (uint32_t)pDecodedSamples[-27];
+   case 26: prediction += (uint32_t)coefficients[25] * (uint32_t)pDecodedSamples[-26];
+   case 25: prediction += (uint32_t)coefficients[24] * (uint32_t)pDecodedSamples[-25];
+   case 24: prediction += (uint32_t)coefficients[23] * (uint32_t)pDecodedSamples[-24];
+   case 23: prediction += (uint32_t)coefficients[22] * (uint32_t)pDecodedSamples[-23];
+   case 22: prediction += (uint32_t)coefficients[21] * (uint32_t)pDecodedSamples[-22];
+   case 21: prediction += (uint32_t)coefficients[20] * (uint32_t)pDecodedSamples[-21];
+   case 20: prediction += (uint32_t)coefficients[19] * (uint32_t)pDecodedSamples[-20];
+   case 19: prediction += (uint32_t)coefficients[18] * (uint32_t)pDecodedSamples[-19];
+   case 18: prediction += (uint32_t)coefficients[17] * (uint32_t)pDecodedSamples[-18];
+   case 17: prediction += (uint32_t)coefficients[16] * (uint32_t)pDecodedSamples[-17];
+   case 16: prediction += (uint32_t)coefficients[15] * (uint32_t)pDecodedSamples[-16];
+   case 15: prediction += (uint32_t)coefficients[14] * (uint32_t)pDecodedSamples[-15];
+   case 14: prediction += (uint32_t)coefficients[13] * (uint32_t)pDecodedSamples[-14];
+   case 13: prediction += (uint32_t)coefficients[12] * (uint32_t)pDecodedSamples[-13];
+   case 12: prediction += (uint32_t)coefficients[11] * (uint32_t)pDecodedSamples[-12];
+   case 11: prediction += (uint32_t)coefficients[10] * (uint32_t)pDecodedSamples[-11];
+   case 10: prediction += (uint32_t)coefficients[9] * (uint32_t)pDecodedSamples[-10];
+   case  9: prediction += (uint32_t)coefficients[8] * (uint32_t)pDecodedSamples[-9];
+   case  8: prediction += (uint32_t)coefficients[7] * (uint32_t)pDecodedSamples[-8];
+   case  7: prediction += (uint32_t)coefficients[6] * (uint32_t)pDecodedSamples[-7];
+   case  6: prediction += (uint32_t)coefficients[5] * (uint32_t)pDecodedSamples[-6];
+   case  5: prediction += (uint32_t)coefficients[4] * (uint32_t)pDecodedSamples[-5];
+   case  4: prediction += (uint32_t)coefficients[3] * (uint32_t)pDecodedSamples[-4];
+   case  3: prediction += (uint32_t)coefficients[2] * (uint32_t)pDecodedSamples[-3];
+   case  2: prediction += (uint32_t)coefficients[1] * (uint32_t)pDecodedSamples[-2];
+   case  1: prediction += (uint32_t)coefficients[0] * (uint32_t)pDecodedSamples[-1];
    }
 
-   return (int32_t)(prediction >> shift);
+   return (int32_t)prediction >> shift;
 }
 
 RFLAC_HOT_INLINE int32_t rflac__calculate_prediction_64(uint32_t order,
