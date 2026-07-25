@@ -443,6 +443,16 @@ static void matrix_init_orthographic(float *m, float left, float right,
 
 /* Static functions */
 
+static void *patcher_host_alloc(void *user_data, unsigned int size)
+{
+   return malloc(size);
+}
+
+static void patcher_host_free(void *user_data, void *mem)
+{
+   free(mem);
+}
+
 static int vita2d_switch_video_mode(vita2d_video_mode video_mode)
 {
    SceGxmRenderTargetParams renderTargetParams;
