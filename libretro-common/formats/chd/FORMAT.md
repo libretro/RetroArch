@@ -450,6 +450,35 @@ the `BPS` value is what supplies the unit size described above.
 
 ---
 
+### 3.2 CD track layout **[V]**
+
+A disc image's tracks come from metadata, not from any header field.
+Each `CHTR` or `CHT2` entry describes one, as text:
+
+    TRACK:1 TYPE:MODE2_RAW SUBTYPE:NONE FRAMES:15784 PREGAP:0 PGTYPE:MODE1 PGSUB:NONE POSTGAP:0
+
+**Each track occupies its frame count padded up to a multiple of four,
+and tracks sit one after another in that padded form.** Measured across
+eleven images with between one and twenty-nine tracks, the padded total
+equals the image's frame count exactly, every time — the unpadded total
+never does except when every track happens to be a multiple of four
+already.
+
+**A frame is 2448 bytes whatever the track holds.** The sector data a
+track actually carries depends on its type, and the rest of the frame is
+reserved:
+
+| Type | Sector bytes |
+|---|---|
+| `MODE1`, `MODE2_FORM1` | 2048 |
+| `MODE2_FORM2` | 2324 |
+| `MODE2`, `MODE2_FORM_MIX` | 2336 |
+| `MODE1_RAW`, `MODE2_RAW`, `AUDIO` | 2352 |
+
+`SUBTYPE` adds 96 bytes when it is not `NONE`. A read addressed by
+sector therefore has no fixed stride: crossing from a data track into an
+audio one changes how much each sector yields.
+
 ## 4. Pending
 
 In the order they block work:

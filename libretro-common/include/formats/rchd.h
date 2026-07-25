@@ -137,6 +137,16 @@ RETRO_BEGIN_DECLS
 #define RCHD_TRACK_AUDIO        7
 
 /* Subchannel types. */
+/* Metadata tags a CD image carries. The two track spellings differ in
+ * their payload's wording, not in the fields this reads. */
+#define RCHD_META_CDROM_TRACK   0x43485452U /* 'CHTR' */
+#define RCHD_META_CDROM_TRACK2  0x43485432U /* 'CHT2' */
+#define RCHD_META_CDROM_OLD     0x43484344U /* 'CHCD' */
+#define RCHD_META_GDROM_TRACK   0x43484744U /* 'CHGD' */
+#define RCHD_META_AV            0x41564156U /* 'AVAV' */
+#define RCHD_META_AV_LD         0x41564C44U /* 'AVLD' */
+#define RCHD_META_HARD_DISK     0x47444444U /* 'GDDD' */
+
 #define RCHD_SUB_NONE           0
 #define RCHD_SUB_RAW            1
 #define RCHD_SUB_COOKED         2
@@ -400,6 +410,21 @@ uint32_t rchd_total_frames(const rchd_t *chd);
  * Returns: RCHD_OK, or RCHD_ERROR_PARAM if the range leaves the image.
  */
 int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len);
+
+/**
+ * rchd_track_for_frame:
+ * @chd        : opened decoder
+ * @frame      : frame index within the image
+ *
+ * The track a frame belongs to, or NULL past the last one. The padding
+ * that follows a track counts as part of it: those frames are inside
+ * the image and read as whatever was stored, so one landing there is
+ * not an error.
+ *
+ * Returns NULL when the image has no track table, which is every image
+ * that is not a disc.
+ */
+const rchd_track_t *rchd_track_for_frame(const rchd_t *chd, uint64_t frame);
 
 /**
  * rchd_read_sectors_begin:

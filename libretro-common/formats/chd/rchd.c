@@ -112,6 +112,9 @@ static const char rchd_end_of_list[16] =
    'E','n','d','O','f','L','i','s','t','C','o','o','k','i','e','\0'
 };
 
+static int rchd_build_tracks(rchd_t *chd);
+static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req);
+
 /* -------- byte access --------
  *
  * Every field is read a byte at a time. Nothing casts the buffer to a
@@ -235,6 +238,17 @@ struct rchd
    /* One hunk's worth of sector and subchannel data, before the two are
     * interleaved into the caller's buffer. */
    uint8_t           *cd_scratch;
+
+   rchd_track_t      *tracks;
+   uint32_t           track_count;
+
+   /* A sector-addressed read in progress. */
+   uint8_t           *sec_frame;
+   uint8_t           *sec_dst;
+   uint64_t           sec_lba;
+   uint32_t           sec_count;
+   uint32_t           sec_done;
+   int                sec_active;
 
    uint8_t           *rd_dst;
    size_t             rd_len;
@@ -840,6 +854,8 @@ void rchd_free(rchd_t *chd)
    free(chd->huff_lookup);
    free(chd->cache);
    free(chd->cd_scratch);
+   free(chd->tracks);
+   free(chd->sec_frame);
    free(chd->av_lookup);
    free(chd->av_samples);
 #ifdef HAVE_RCHD_ZSTD
@@ -977,6 +993,8 @@ int rchd_open_step(rchd_t *chd, rchd_request_t *req)
 
          rchd_meta_resolve(chd);
          rchd_infer_unit_bytes(chd);
+         if ((err = rchd_build_tracks(chd)) != RCHD_OK)
+            return err;
          free(chd->pending);
          chd->pending      = NULL;
          chd->pending_size = 0;
@@ -2080,6 +2098,289 @@ static int rchd_resolve_self(const rchd_t *chd, uint32_t hunk, uint32_t *out)
    return RCHD_OK;
 }
 
+/* -------- CD track table --------
+ *
+ * A CD image's tracks come from metadata rather than any header field.
+ * Each occupies its stated frame count padded up to a multiple of four,
+ * and they sit one after another in that padded form: measured across
+ * eleven images, from one track to twenty-nine, the padded total is
+ * exactly the image's frame count.
+ */
+
+#define RCHD_TRACK_PADDING 4
+
+static uint32_t rchd_track_type_id(const char *s)
+{
+   if (!strcmp(s, "MODE1"))          return RCHD_TRACK_MODE1;
+   if (!strcmp(s, "MODE1_RAW"))      return RCHD_TRACK_MODE1_RAW;
+   if (!strcmp(s, "MODE2"))          return RCHD_TRACK_MODE2;
+   if (!strcmp(s, "MODE2_FORM1"))    return RCHD_TRACK_MODE2_FORM1;
+   if (!strcmp(s, "MODE2_FORM2"))    return RCHD_TRACK_MODE2_FORM2;
+   if (!strcmp(s, "MODE2_FORM_MIX")) return RCHD_TRACK_MODE2_FORM_MIX;
+   if (!strcmp(s, "MODE2_RAW"))      return RCHD_TRACK_MODE2_RAW;
+   return RCHD_TRACK_AUDIO;
+}
+
+/* Sector data a track's type carries, which is not the 2352 a frame
+ * reserves for it unless the track is raw. A read addressed by sector
+ * emits each at its own track's size, so crossing a boundary gives what
+ * that track holds rather than a fixed stride. */
+static uint32_t rchd_track_data_size(uint32_t type)
+{
+   switch (type)
+   {
+      case RCHD_TRACK_MODE1:
+      case RCHD_TRACK_MODE2_FORM1:    return 2048;
+      case RCHD_TRACK_MODE2_FORM2:    return 2324;
+      case RCHD_TRACK_MODE2:
+      case RCHD_TRACK_MODE2_FORM_MIX: return 2336;
+      default:                        break;
+   }
+   return 2352;
+}
+
+static uint32_t rchd_sub_type_id(const char *s)
+{
+   if (!strcmp(s, "RW"))     return RCHD_SUB_COOKED;
+   if (!strcmp(s, "RW_RAW")) return RCHD_SUB_RAW;
+   return RCHD_SUB_NONE;
+}
+
+/* Pulls "KEY:value" out of a payload that is not necessarily
+ * NUL-terminated, so this works to a length throughout. */
+static int rchd_meta_field(const uint8_t *p, uint32_t len, const char *key,
+      char *out, size_t out_size)
+{
+   size_t   klen = strlen(key);
+   uint32_t i;
+
+   if (!p || len < klen)
+      return 0;
+
+   for (i = 0; i + klen <= len; i++)
+   {
+      size_t j;
+
+      if (memcmp(p + i, key, klen))
+         continue;
+      i += (uint32_t)klen;
+      for (j = 0; j + 1 < out_size && i < len
+            && p[i] != ' ' && p[i] != '\0'; j++, i++)
+         out[j] = (char)p[i];
+      out[j] = '\0';
+      return 1;
+   }
+   return 0;
+}
+
+static uint32_t rchd_meta_uint(const uint8_t *p, uint32_t len,
+      const char *key)
+{
+   char buf[24];
+
+   if (!rchd_meta_field(p, len, key, buf, sizeof(buf)))
+      return 0;
+   return (uint32_t)strtoul(buf, NULL, 10);
+}
+
+static int rchd_build_tracks(rchd_t *chd)
+{
+   uint32_t i;
+   uint32_t n     = 0;
+   uint64_t frame = 0;
+
+   for (i = 0; i < chd->meta_count; i++)
+   {
+      uint32_t tag = chd->meta[i].tag;
+      if (tag == RCHD_META_CDROM_TRACK || tag == RCHD_META_CDROM_TRACK2
+            || tag == RCHD_META_GDROM_TRACK)
+         n++;
+   }
+
+   if (!n)
+      return RCHD_OK;
+
+   chd->tracks = (rchd_track_t*)calloc(n, sizeof(rchd_track_t));
+   if (!chd->tracks)
+      return RCHD_ERROR_MEM;
+
+   for (i = 0; i < chd->meta_count; i++)
+   {
+      const rchd_metadata_t *m = &chd->meta[i];
+      rchd_track_t          *t;
+      char                   buf[32];
+      uint32_t               tag = m->tag;
+
+      if (tag != RCHD_META_CDROM_TRACK && tag != RCHD_META_CDROM_TRACK2
+            && tag != RCHD_META_GDROM_TRACK)
+         continue;
+
+      t = &chd->tracks[chd->track_count];
+
+      if (!rchd_meta_field(m->data, m->length, "TYPE:", buf, sizeof(buf)))
+         return RCHD_ERROR_DATA;
+      t->type      = rchd_track_type_id(buf);
+      t->data_size = rchd_track_data_size(t->type);
+
+      if (rchd_meta_field(m->data, m->length, "SUBTYPE:", buf, sizeof(buf)))
+         t->subtype = rchd_sub_type_id(buf);
+      t->sub_size = t->subtype == RCHD_SUB_NONE ? 0 : 96;
+
+      t->track   = rchd_meta_uint(m->data, m->length, "TRACK:");
+      t->frames  = rchd_meta_uint(m->data, m->length, "FRAMES:");
+      t->pregap  = rchd_meta_uint(m->data, m->length, "PREGAP:");
+      t->postgap = rchd_meta_uint(m->data, m->length, "POSTGAP:");
+
+      if (!t->frames)
+         return RCHD_ERROR_DATA;
+
+      t->pad_frames = (RCHD_TRACK_PADDING
+            - (t->frames % RCHD_TRACK_PADDING)) % RCHD_TRACK_PADDING;
+      t->lba            = (uint32_t)frame;
+      t->logical_offset = frame * chd->info.unit_bytes;
+
+      frame += t->frames + t->pad_frames;
+      if (frame * chd->info.unit_bytes > chd->info.logical_bytes)
+         return RCHD_ERROR_DATA;
+
+      chd->track_count++;
+   }
+
+   return RCHD_OK;
+}
+
+uint32_t rchd_track_count(const rchd_t *chd)
+{
+   return chd ? chd->track_count : 0;
+}
+
+const rchd_track_t *rchd_track(const rchd_t *chd, uint32_t index)
+{
+   if (!chd || index >= chd->track_count)
+      return NULL;
+   return &chd->tracks[index];
+}
+
+/* Which track holds a frame. The padding after a track belongs to it:
+ * those frames are inside the image and read as whatever was stored, so
+ * one landing there is not an error. */
+const rchd_track_t *rchd_track_for_frame(const rchd_t *chd, uint64_t frame)
+{
+   uint32_t i;
+
+   if (!chd || !chd->track_count)
+      return NULL;
+   if (frame >= (uint64_t)chd->tracks[chd->track_count - 1].lba
+         + chd->tracks[chd->track_count - 1].frames
+         + chd->tracks[chd->track_count - 1].pad_frames)
+      return NULL;
+
+   for (i = chd->track_count; i > 0; i--)
+      if (frame >= chd->tracks[i - 1].lba)
+         return &chd->tracks[i - 1];
+
+   return NULL;
+}
+
+int rchd_read_extent(const rchd_t *chd, uint32_t lba, uint32_t count,
+      size_t *out)
+{
+   uint64_t total = 0;
+   uint32_t i;
+
+   if (!chd || !out)
+      return RCHD_ERROR_PARAM;
+   if (!chd->track_count)
+      return RCHD_ERROR_STATE;
+
+   for (i = 0; i < count; i++)
+   {
+      const rchd_track_t *t = rchd_track_for_frame(chd,
+            (uint64_t)lba + i);
+
+      if (!t)
+         return RCHD_ERROR_PARAM;
+      total += t->data_size + t->sub_size;
+   }
+
+   *out = (size_t)total;
+   return RCHD_OK;
+}
+
+int rchd_read_sectors_begin(rchd_t *chd, uint32_t lba, uint32_t count,
+      void *dst, size_t len, uint32_t flags)
+{
+   size_t need;
+   int    err;
+
+   (void)flags;
+
+   if (!chd || !dst || chd->state != RCHD_OPEN_DONE)
+      return RCHD_ERROR_PARAM;
+   if (!chd->track_count)
+      return RCHD_ERROR_STATE;
+
+   if ((err = rchd_read_extent(chd, lba, count, &need)) != RCHD_OK)
+      return err;
+   if (need > len)
+      return RCHD_ERROR_PARAM;
+
+   chd->sec_lba    = (uint64_t)lba;
+   chd->sec_count  = count;
+   chd->sec_done   = 0;
+   chd->sec_dst    = (uint8_t*)dst;
+   chd->reading    = 0;
+   chd->sec_active = 1;
+   return RCHD_OK;
+}
+
+/* Serves a sector read by pulling whole frames and copying out the part
+ * each track carries. */
+static int rchd_read_step_sectors(rchd_t *chd, rchd_request_t *req)
+{
+   while (chd->sec_done < chd->sec_count)
+   {
+      uint64_t            frame = chd->sec_lba + chd->sec_done;
+      const rchd_track_t *t     = rchd_track_for_frame(chd, frame);
+      int                 err;
+
+      if (!t)
+         return RCHD_ERROR_DATA;
+
+      if (!chd->reading)
+      {
+         if (!chd->sec_frame)
+         {
+            chd->sec_frame = (uint8_t*)malloc(chd->info.unit_bytes);
+            if (!chd->sec_frame)
+               return RCHD_ERROR_MEM;
+         }
+         err = rchd_read_begin(chd, frame * chd->info.unit_bytes,
+               chd->sec_frame, chd->info.unit_bytes);
+         if (err != RCHD_OK)
+            return err;
+      }
+
+      err = rchd_read_step_bytes(chd, req);
+      if (err != RCHD_OK)
+         return err;
+
+      memcpy(chd->sec_dst, chd->sec_frame, t->data_size);
+      chd->sec_dst += t->data_size;
+
+      if (t->sub_size)
+      {
+         memcpy(chd->sec_dst, chd->sec_frame + 2352, t->sub_size);
+         chd->sec_dst += t->sub_size;
+      }
+
+      chd->sec_done++;
+   }
+
+   chd->sec_active = 0;
+   return RCHD_OK;
+}
+
 int rchd_read_begin(rchd_t *chd, uint64_t offset, void *dst, size_t len)
 {
    if (!chd || chd->state != RCHD_OPEN_DONE || (!dst && len))
@@ -2124,10 +2425,11 @@ size_t rchd_read_progress(const rchd_t *chd)
    return chd ? chd->rd_done : 0;
 }
 
-int rchd_read_step(rchd_t *chd, rchd_request_t *req)
+/* The byte-range worker. A sector-addressed read drives this directly
+ * rather than going back through rchd_read_step, which would dispatch
+ * straight back to the sector path. */
+static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
 {
-   if (!chd || !req)
-      return RCHD_ERROR_PARAM;
    if (!chd->reading)
       return RCHD_ERROR_STATE;
 
@@ -2220,6 +2522,15 @@ int rchd_read_step(rchd_t *chd, rchd_request_t *req)
 
    chd->reading = 0;
    return RCHD_OK;
+}
+
+int rchd_read_step(rchd_t *chd, rchd_request_t *req)
+{
+   if (!chd || !req)
+      return RCHD_ERROR_PARAM;
+   if (chd->sec_active)
+      return rchd_read_step_sectors(chd, req);
+   return rchd_read_step_bytes(chd, req);
 }
 
 int rchd_set_parent(rchd_t *chd, rchd_t *parent)
