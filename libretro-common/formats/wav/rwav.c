@@ -82,7 +82,6 @@ static uint32_t rwav_u32(const uint8_t *p)
 enum
 {
    ITER_BEGIN,
-   ITER_COPY_SAMPLES,
    ITER_COPY_SAMPLES_8,
    ITER_COPY_SAMPLES_16,
    ITER_COPY_SAMPLES_32
@@ -317,6 +316,27 @@ void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void *s, size_t len)
    out->samples = NULL;
 }
 
+/* Copy the payload a bounded chunk at a time, resuming where the last
+ * call stopped.
+ *
+ * This used to put the case labels inside the if-blocks that choose
+ * the copy, so that the switch re-entered mid-block and skipped the
+ * choice on every call after the first.  It is legal C and it is what
+ * the two "what is going on here" notes were about; it is also not
+ * buying anything, the choice being three comparisons made once.  The
+ * labels are at the top of the switch now and the choice happens when
+ * the payload is allocated, which reads as what it is.
+ *
+ * Which copy an payload gets follows its format, not its sample
+ * width.  Sixteen-bit PCM and 32-bit float are little-endian words
+ * that need assembling into host order; everything else is bytes -
+ * eight- and 24-bit PCM the host reads as stored, and the companded
+ * and block-coded payloads, which stay coded here and are decoded by
+ * rwav_decode_s16 when a caller asks for samples.  Choosing by width
+ * sent four-bit ADPCM down the float path, which assembled its coded
+ * bytes into words on a big-endian host and stepped four at a time
+ * through a length that need not be a multiple of four.
+ */
 enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 {
    size_t s;
@@ -333,93 +353,72 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
             return RWAV_ITERATE_ERROR;
 
          /* the walk clamped the payload to what the buffer holds and
-          * rounded it to whole frames, so the copy below stays inside
+          * rounded it to whole units, so the copy below stays inside
           * both this allocation and the source */
-         samples = malloc(rwav->subchunk2size);
-
-         if (!samples)
+         if (!(samples = malloc(rwav->subchunk2size)))
             return RWAV_ITERATE_ERROR;
 
          rwav->samples = samples;
+         iter->i       = 0;
+         iter->j       = 0;
 
-         iter->step = ITER_COPY_SAMPLES;
+         if (rwav->format == RWAV_FORMAT_PCM
+               && rwav->bitspersample == 16)
+            iter->step = ITER_COPY_SAMPLES_16;
+         else if (rwav->format == RWAV_FORMAT_FLOAT)
+            iter->step = ITER_COPY_SAMPLES_32;
+         else
+            iter->step = ITER_COPY_SAMPLES_8;
          return RWAV_ITERATE_MORE;
 
-      case ITER_COPY_SAMPLES:
-         iter->i = 0;
+      case ITER_COPY_SAMPLES_8:
+         s = rwav->subchunk2size - iter->i;
+         if (s > RWAV_ITERATE_BUF_SIZE)
+            s = RWAV_ITERATE_BUF_SIZE;
+         memcpy((uint8_t*)rwav->samples + iter->i,
+               iter->data + rwav->dataoffset + iter->i, s);
+         iter->i += s;
+         break;
 
-         /* 8-bit needs no conversion, and 24-bit is handed over as
-          * stored, so both are the same plain copy */
-         if (rwav->bitspersample == 8 || rwav->bitspersample == 24)
+      case ITER_COPY_SAMPLES_16:
+         s = rwav->subchunk2size - iter->i;
+         if (s > RWAV_ITERATE_BUF_SIZE)
+            s = RWAV_ITERATE_BUF_SIZE;
+         u16 = (uint16_t*)rwav->samples;
+         while (s >= 2)
          {
-            iter->step = ITER_COPY_SAMPLES_8;
-
-            /* TODO/FIXME - what is going on here? */
-            case ITER_COPY_SAMPLES_8:
-            s = rwav->subchunk2size - iter->i;
-
-            if (s > RWAV_ITERATE_BUF_SIZE)
-               s = RWAV_ITERATE_BUF_SIZE;
-
-            memcpy((void*)((uint8_t*)rwav->samples + iter->i),
-                  (void*)(iter->data + rwav->dataoffset + iter->i), s);
-            iter->i += s;
+            u16[iter->j++] =
+                 (uint16_t)iter->data[rwav->dataoffset + iter->i]
+               | (uint16_t)iter->data[rwav->dataoffset + iter->i + 1] << 8;
+            iter->i += 2;
+            s       -= 2;
          }
-         else if (rwav->bitspersample == 16)
+         break;
+
+      case ITER_COPY_SAMPLES_32:
+         s = rwav->subchunk2size - iter->i;
+         if (s > RWAV_ITERATE_BUF_SIZE)
+            s = RWAV_ITERATE_BUF_SIZE;
+         u32 = (uint32_t*)rwav->samples;
+         while (s >= 4)
          {
-            iter->step = ITER_COPY_SAMPLES_16;
-            iter->j    = 0;
-
-            /* TODO/FIXME - what is going on here? */
-            case ITER_COPY_SAMPLES_16:
-            s = rwav->subchunk2size - iter->i;
-
-            if (s > RWAV_ITERATE_BUF_SIZE)
-               s = RWAV_ITERATE_BUF_SIZE;
-
-            u16 = (uint16_t *)rwav->samples;
-
-            while (s != 0)
-            {
-               u16[iter->j++] = iter->data[rwav->dataoffset + iter->i]
-                  | iter->data[rwav->dataoffset + iter->i + 1] << 8;
-               iter->i += 2;
-               s -= 2;
-            }
+            u32[iter->j++] =
+                 (uint32_t)iter->data[rwav->dataoffset + iter->i]
+               | (uint32_t)iter->data[rwav->dataoffset + iter->i + 1] << 8
+               | (uint32_t)iter->data[rwav->dataoffset + iter->i + 2] << 16
+               | (uint32_t)iter->data[rwav->dataoffset + iter->i + 3] << 24;
+            iter->i += 4;
+            s       -= 4;
          }
-         else
-         {
-            iter->step = ITER_COPY_SAMPLES_32;
-            iter->j    = 0;
+         break;
 
-            /* the samples are IEEE-float little-endian words; assemble
-             * them to host order the same way the 16-bit path does */
-            case ITER_COPY_SAMPLES_32:
-            s = rwav->subchunk2size - iter->i;
-
-            if (s > RWAV_ITERATE_BUF_SIZE)
-               s = RWAV_ITERATE_BUF_SIZE;
-
-            u32 = (uint32_t *)rwav->samples;
-
-            while (s != 0)
-            {
-               u32[iter->j++] =
-                    (uint32_t)iter->data[rwav->dataoffset + iter->i]
-                  | (uint32_t)iter->data[rwav->dataoffset + iter->i + 1] << 8
-                  | (uint32_t)iter->data[rwav->dataoffset + iter->i + 2] << 16
-                  | (uint32_t)iter->data[rwav->dataoffset + iter->i + 3] << 24;
-               iter->i += 4;
-               s -= 4;
-            }
-         }
-
-         if (iter->i < rwav->subchunk2size)
-            return RWAV_ITERATE_MORE;
-         return RWAV_ITERATE_DONE;
+      default:
+         return RWAV_ITERATE_ERROR;
    }
 
-   return RWAV_ITERATE_ERROR;
+   if (iter->i < rwav->subchunk2size)
+      return RWAV_ITERATE_MORE;
+   return RWAV_ITERATE_DONE;
 }
 
 enum rwav_state rwav_load(rwav_t* out, const void *s, size_t len)
