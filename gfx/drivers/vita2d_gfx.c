@@ -73,14 +73,14 @@ typedef enum
    GXM_VIDEO_MODE_1280x720
 } gxm_video_mode_t;
 
-typedef struct gxm_video_mode_data_t
+typedef struct gxm_video_mode_data
 {
    int width;
    int height;
    int stride;
 } gxm_video_mode_data_t;
 
-typedef struct gxm_color_vertex_t
+typedef struct gxm_color_vertex
 {
    float x;
    float y;
@@ -88,7 +88,7 @@ typedef struct gxm_color_vertex_t
    unsigned int color;
 } gxm_color_vertex_t;
 
-typedef struct gxm_texture_vertex_t
+typedef struct gxm_texture_vertex
 {
    float x;
    float y;
@@ -97,7 +97,7 @@ typedef struct gxm_texture_vertex_t
    float v;
 } gxm_texture_vertex_t;
 
-typedef struct gxm_texture_tint_vertex_t
+typedef struct gxm_texture_tint_vertex
 {
    float x;
    float y;
@@ -110,7 +110,7 @@ typedef struct gxm_texture_tint_vertex_t
    float a;
 } gxm_texture_tint_vertex_t;
 
-typedef struct gxm_texture_t
+typedef struct gxm_texture
 {
    SceGxmTexture gxm_tex;
    SceUID data_UID;
@@ -121,12 +121,12 @@ typedef struct gxm_texture_t
    SceUID depth_UID;
 } gxm_texture_t;
 
-typedef struct gxm_display_data_t
+typedef struct gxm_display_data
 {
    void *address;
 } gxm_display_data_t;
 
-typedef struct gxm_fragment_programs_t
+typedef struct gxm_fragment_programs
 {
    SceGxmFragmentProgram *color;
    SceGxmFragmentProgram *texture;
@@ -1538,7 +1538,7 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
 {
    gxm_texture_tint_vertex_t *vertices;
    unsigned i;
-   struct gxm_texture_t *texture   = NULL;
+   gxm_texture_t *texture   = NULL;
    const float *vertex              = NULL;
    const float *tex_coord           = NULL;
    const float *color               = NULL;
@@ -1547,7 +1547,7 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    if (!vita || !draw)
       return;
 
-   texture            = (struct gxm_texture_t*)draw->texture;
+   texture            = (gxm_texture_t*)draw->texture;
    vertex             = draw->coords->vertex;
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
@@ -2620,7 +2620,7 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
    uint32_t             *tex32    = NULL;
    const uint32_t *frame32        = NULL;
    struct texture_image *image    = (struct texture_image*)data;
-   struct gxm_texture_t *texture = gxm_create_empty_texture_format(
+   gxm_texture_t *texture = gxm_create_empty_texture_format(
          image->width, image->height,
          SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
 
@@ -2652,7 +2652,7 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
 static void gxm_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   struct gxm_texture_t *texture = (struct gxm_texture_t*)handle;
+   gxm_texture_t *texture = (gxm_texture_t*)handle;
    if (!texture)
       return;
 
