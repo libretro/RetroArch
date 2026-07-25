@@ -22,7 +22,7 @@
 
 #include <formats/data_transfer.h>
 #include <formats/audio.h>
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+#if defined(HAVE_RWEBM) && (defined(HAVE_RVORBIS) || defined(HAVE_ROPUS))
 #include <formats/rwebm.h>
 #endif
 #include <formats/rwav.h>
@@ -1172,7 +1172,7 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
       }
 #endif
 
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
+#if defined(HAVE_RWEBM) && (defined(HAVE_RVORBIS) || defined(HAVE_ROPUS))
       if (w->mtype == AUDIO_MIXER_TYPE_WEBA)
       {
          /* Parse the container header bounded by the head, the way the
@@ -1190,25 +1190,31 @@ static void task_audio_mixer_handle_wfeed(retro_task_t *task)
          rwebm_t *probe = rwebm_open_memory_avail(base, (size_t)flen,
                keep, NULL);
          size_t   floor = 0;
-         bool     vorb  = false;
+         bool     ok    = false;   /* a codec this arm can window */
          if (probe)
          {
             int i;
             for (i = 0; i < rwebm_num_tracks(probe); i++)
             {
                const rwebm_track *tr = rwebm_get_track(probe, i);
-               if (tr && tr->type == RWEBM_TRACK_AUDIO
-                     && tr->codec == RWEBM_CODEC_VORBIS
-                     && tr->codec_private_size)
-               {
-                  vorb = true;
+               if (!tr || tr->type != RWEBM_TRACK_AUDIO
+                     || !tr->codec_private_size)
+                  continue;
+#ifdef HAVE_RVORBIS
+               if (tr->codec == RWEBM_CODEC_VORBIS)
+                  ok = true;
+#endif
+#ifdef HAVE_ROPUS
+               if (tr->codec == RWEBM_CODEC_OPUS)
+                  ok = true;
+#endif
+               if (ok)
                   break;
-               }
             }
             floor = rwebm_media_floor(probe);
             rwebm_close(probe);
          }
-         if (!vorb || !floor)
+         if (!ok || !floor)
             goto bail;
          if (floor + AMIX_WINDOW_MARGIN > AMIX_WINDOW_KEEP
                && !data_transfer_window_grow_keep(w->dt,
@@ -1418,13 +1424,14 @@ static bool task_audio_mixer_try_windowed(const char *fullpath,
    if (string_is_equal_noncase(ext, "opus"))
       mtype = AUDIO_MIXER_TYPE_OPUS;
 #endif
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
-   /* A .weba holding Vorbis streams.  rwebm's header parse is bounded
+#if defined(HAVE_RWEBM) && (defined(HAVE_RVORBIS) || defined(HAVE_ROPUS))
+   /* A .weba holding Vorbis or Opus streams.  rwebm's header parse is bounded
     * by whatever prefix it is told is resident, the packet walk runs
     * monotonically forward through the clusters, and a loop seek
     * rewinds it to the first one.  The arm's own whole-file dependency
     * went when it stopped pre-walking the packets to find the end.
-    * Vorbis rather than Opus is confirmed from the head below. */
+    * The codec is confirmed from the head below - both are windowable
+    * now, but a track in neither is not. */
    if (string_is_equal_noncase(ext, "weba"))
       mtype = AUDIO_MIXER_TYPE_WEBA;
 #endif

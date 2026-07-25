@@ -182,7 +182,9 @@
  *     demand), and demuxed (OpusHead + delimited packets); s16 and f32;
  *     RFC 7845 pre-skip; end trimming, from the last page granule for
  *     Ogg and from the TOC total less DiscardPadding for WebM; windowed
- *     operation, via set_end_granule plus buffer_tell (Ogg only);
+ *     operation, via set_end_granule plus buffer_tell for Ogg, and
+ *     via set_avail plus buffer_tell for WebM, whose packets are read
+ *     where the demuxer points at them;
  *     rewind, and seek: a packet carries its duration in its first
  *     byte, so the packets before the target are stepped over without
  *     being decoded and only a pre-roll before it is decoded and
@@ -196,7 +198,11 @@
  *     pipeline with two output edges, has no such restriction.  No
  *     No length from the demuxed path, whose
  *     packet set is the caller's; the buffer modes do report one, being
- *     the bound they already hold emission to.  Chained or multiplexed
+ *     the bound they already hold emission to.  A resident WebM walks
+ *     the packets' TOC bytes at open for that bound; a windowed one
+ *     cannot - the walk would run at the wall - and totals them as it
+ *     plays instead, taking the padding off when the block carrying it
+ *     arrives, so its length is a stated Duration until then.  Chained or multiplexed
  *     Ogg is not
  *     handled - pages are walked in order, the serial is ignored and
  *     the page CRC is not verified.  A page-spanning packet larger
@@ -432,6 +438,14 @@ struct audio_transfer_opus
    int         track_idx;
    size_t      avail;        /* resident prefix, 0 = all of it           */
 #endif
+   /* A windowed WebM cannot pre-walk the packets for the stream's
+    * length, so it accumulates their TOC durations as they play and
+    * takes the container's padding off when the block carrying it
+    * arrives.  toc_total counts raw decoded frames, before pre-skip;
+    * both stay 0 on every other input, where the length is known by
+    * other means. */
+   int64_t     toc_total;
+   int64_t     discard;      /* padding owed, in frames; 0 when none     */
    size_t      pg_off;       /* byte offset of the current page          */
    size_t      body_off;     /* byte offset of the current segment       */
    unsigned    seg_idx;      /* next segment in the current page         */
@@ -1398,25 +1412,46 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                   at->codec_private_size);
             if (!op->handle)
                return false;
-            while (rwebm_read_packet(op->demux, &pkt) == 1)
-            {
-               if (pkt.track != op->track_idx)
-                  continue;
-               toc += audio_transfer_opus_pkt_frames(pkt.data, pkt.size);
-               if (pkt.discard_padding > 0)
-                  discard_ns += pkt.discard_padding;
-            }
-            rwebm_rewind(op->demux);
-            preskip   = (int64_t)ropus_preskip(op->handle);
             op->limit = -1;
-            if (toc > 0)
+            if (!op->avail)
             {
-               op->limit = toc - preskip
-                  - (discard_ns * 48000 + 500000000) / 1000000000;
-               if (op->limit < 0)
-                  op->limit = 0;
+               /* Resident: walk the packets' TOC bytes once, which
+                * decodes nothing, and the total less the pre-skip and
+                * the container's padding is the exact length. */
+               while (rwebm_read_packet(op->demux, &pkt) == 1)
+               {
+                  if (pkt.track != op->track_idx)
+                     continue;
+                  toc += audio_transfer_opus_pkt_frames(pkt.data,
+                        pkt.size);
+                  if (pkt.discard_padding > 0)
+                     discard_ns += pkt.discard_padding;
+               }
+               rwebm_rewind(op->demux);
+               preskip = (int64_t)ropus_preskip(op->handle);
+               if (toc > 0)
+               {
+                  op->limit = toc - preskip
+                     - (discard_ns * 48000 + 500000000) / 1000000000;
+                  if (op->limit < 0)
+                     op->limit = 0;
+               }
             }
-            op->emitted = 0;
+            else
+            {
+               /* Windowed: the walk would run at the wall, into pages
+                * that are reserved rather than populated.  A stated
+                * Duration bounds emission for now - it overshoots the
+                * audio, by 384 frames on the files measured - and the
+                * fill replaces it with the exact end when the block
+                * carrying the padding arrives. */
+               int64_t dur = rwebm_duration_ns(op->demux);
+               if (dur > 0)
+                  op->limit = (dur * 48000 + 500000000) / 1000000000;
+            }
+            op->emitted   = 0;
+            op->toc_total = 0;
+            op->discard   = 0;
          }
          else
 #endif
@@ -1914,7 +1949,12 @@ static int audio_transfer_opus_pull(struct audio_transfer_opus *op,
          if (r != 1)
             return 0;
          if (pkt.track == op->track_idx)
+         {
+            if (pkt.discard_padding > 0)
+               op->discard = (pkt.discard_padding * 48000 + 500000000)
+                  / 1000000000;
             break;
+         }
       }
       *pdata = pkt.data;
       *plen  = (uint32_t)pkt.size;
@@ -1965,6 +2005,8 @@ static void audio_transfer_opus_to_head(struct audio_transfer_opus *op)
    op->emitted      = 0;
    op->pend_frames  = 0;
    op->pend_pos     = 0;
+   op->toc_total    = 0;
+   op->discard      = 0;
    op->preskip_left = ropus_preskip(op->handle);
 }
 
@@ -2041,6 +2083,11 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       int r;
       unsigned skip;
       r = audio_transfer_opus_pull(op, &pdata, &plen);
+      /* The resident wall is not the end of the stream and not an
+       * error: report no frames for now, so the read comes up short
+       * and the next call resumes once the feeder has caught up. */
+      if (r == -2)
+         return 0;
       if (r <= 0)
          return r;
       if (fmt == 1)
@@ -2051,6 +2098,24 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
          return -1;
       op->pend_frames = (size_t)r;
       op->pend_pos    = 0;
+      op->toc_total  += (int64_t)r;
+      /* That block carried the container's end trimming, so the
+       * stream's true length is known now: everything its packets
+       * decode to, less the pre-skip dropped at the front and the
+       * padding dropped at the back.  A pre-walk at open works this
+       * out in advance and arrives at the same number; where one
+       * could not run, this is where it comes from. */
+      if (op->discard > 0)
+      {
+         int64_t exact = op->toc_total
+                       - (int64_t)ropus_preskip(op->handle)
+                       - op->discard;
+         if (exact < 0)
+            exact = 0;
+         if (op->limit < 0 || exact < op->limit)
+            op->limit = exact;
+         op->discard = 0;
+      }
       skip = op->preskip_left;
       if (skip)
       {
@@ -2688,11 +2753,19 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
                (struct audio_transfer_opus*)data;
          /* Ogg buffer mode walks pages forward from the caller's
           * buffer; pg_off is the current page's byte offset, the
-          * compressed frontier the feeder needs.  The demuxed (WebM)
-          * and set_demuxed_ptr paths read a packet blob, not the
-          * caller's buffer, so they expose no windowable cursor. */
+          * compressed frontier the feeder needs. */
          if (op->handle && op->ogg)
             return op->pg_off;
+#ifdef HAVE_RWEBM
+         /* WebM likewise: the packets are decoded where the demuxer
+          * points at them in the caller's buffer, so its walk position
+          * is that frontier. */
+         if (op->handle && op->demux)
+            return rwebm_tell(op->demux);
+#endif
+         /* set_demuxed_ptr reads the caller's own packet blob rather
+          * than the buffer set by set_buffer_ptr, so it has no offset
+          * in that buffer to report. */
          return 0;
       }
 #endif
