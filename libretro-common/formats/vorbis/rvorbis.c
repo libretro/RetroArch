@@ -1493,7 +1493,13 @@ static int codebook_decode_deinterleave_repeat(vorb *f, Codebook *c, float **out
        * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
        * and the length we'll be using (effective) */
       if (c_inter + p_inter*ch + effective > len * ch) {
-         effective = len*ch - (p_inter*ch - c_inter);
+         /* The offset is p_inter*ch + c_inter, as the note above says;
+          * subtracting c_inter instead of adding it overstates what is
+          * left by twice it, and writes that far past the end of the
+          * virtual vector.  Harmless at two channels, where c_inter is
+          * 0 or 1 and this path is not the one taken anyway, and not
+          * harmless beyond that. */
+         effective = len*ch - (p_inter*ch + c_inter);
       }
 
       z *= c->dimensions;
@@ -1766,8 +1772,15 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
     * interleaved ch*n vector); the spec behaviour, and upstream
     * stb_vorbis's, is to clamp to the actual vector size at decode
     * time, never to reject.  This also bounds part_read, keeping the
-    * temp classification array allocation below safe. */
-   unsigned int actual_size = rtype == 2 ? (unsigned int)n * 2 : (unsigned int)n;
+    * temp classification array allocation below safe.
+    *
+    * ch*n, not 2*n: a type-2 residue is one vector with every
+    * channel interleaved into it, so its length follows the channel
+    * count.  Two is only right for stereo, and clamping a wider
+    * stream to it drops the partitions past the clamp - they are
+    * never decoded, and what comes out is noise. */
+   unsigned int actual_size = rtype == 2
+      ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
    unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
    unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
    int n_read = (int)(limit_r_end - limit_r_begin);
@@ -3429,7 +3442,13 @@ static int codebook_decode_deinterleave_repeat_q(vorb *f, Codebook *c, int32_t *
        * buffer (len*ch), our current offset within it (p_inter*ch)+(c_inter),
        * and the length we'll be using (effective) */
       if (c_inter + p_inter*ch + effective > len * ch) {
-         effective = len*ch - (p_inter*ch - c_inter);
+         /* The offset is p_inter*ch + c_inter, as the note above says;
+          * subtracting c_inter instead of adding it overstates what is
+          * left by twice it, and writes that far past the end of the
+          * virtual vector.  Harmless at two channels, where c_inter is
+          * 0 or 1 and this path is not the one taken anyway, and not
+          * harmless beyond that. */
+         effective = len*ch - (p_inter*ch + c_inter);
       }
 
       z *= c->dimensions;
@@ -3567,8 +3586,15 @@ static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n,
     * interleaved ch*n vector); the spec behaviour, and upstream
     * stb_vorbis's, is to clamp to the actual vector size at decode
     * time, never to reject.  This also bounds part_read, keeping the
-    * temp classification array allocation below safe. */
-   unsigned int actual_size = rtype == 2 ? (unsigned int)n * 2 : (unsigned int)n;
+    * temp classification array allocation below safe.
+    *
+    * ch*n, not 2*n: a type-2 residue is one vector with every
+    * channel interleaved into it, so its length follows the channel
+    * count.  Two is only right for stereo, and clamping a wider
+    * stream to it drops the partitions past the clamp - they are
+    * never decoded, and what comes out is noise. */
+   unsigned int actual_size = rtype == 2
+      ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
    unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
    unsigned int limit_r_end   = r->end   < actual_size ? r->end   : actual_size;
    int n_read = (int)(limit_r_end - limit_r_begin);
@@ -4856,22 +4882,15 @@ skip:;
        * array sizing safe; here only reject inverted ranges and values
        * beyond the largest vector any mode can decode.
        *
-       * Twice the half-block, not channels times it, and that is
-       * deliberate rather than an oversight in the sentence above.
-       * A stream coupling across more than two channels writes an end
-       * past this and is refused - 5.1 does, with an end of 4020
-       * against a bound of 2048, while 7.1 is arranged differently and
-       * passes.  Widening the bound to channels * half-block lets 5.1
-       * open, and it then decodes to noise: measured against libvorbis
-       * on the same file, the six channels come out at RMS 4325, 400,
-       * 4298, 505, 4151 and 1121 where the reference is 2912 on five
-       * and 151 on a low-passed LFE.  The residue decode is what is
-       * wrong there, and until that is fixed this bound is the only
-       * thing turning silently corrupt 5.1 into a clean refusal at
-       * open.  Do not widen it on the strength of the comment above
-       * without fixing the decode first. */
+       * Channels times the half-block, which is what the interleaved
+       * vector holds.  It read two, and refused 5.1 for it: libvorbis
+       * couples 5.1 across the vector and writes an end of 4020
+       * against a ceiling of 2048.  That refusal was hiding the same
+       * omission in decode_residue's own clamp, so widening this
+       * alone let the file open and decode to noise.  Both say ch
+       * now, and neither should go back to two. */
       if (r->begin > r->end ||
-            r->end > 2u * (uint32_t)(f->blocksize_1 >> 1))
+            r->end > (uint32_t)f->channels * (uint32_t)(f->blocksize_1 >> 1))
          return error(f, RVORBIS_invalid_setup);
       r->classifications = get_bits(f,6)+1;
       r->classbook = get_bits(f,8);
