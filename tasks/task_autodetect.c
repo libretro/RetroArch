@@ -597,13 +597,30 @@ static void reallocate_port_if_needed(
    int player;
    char settings_value[NAME_MAX_LENGTH];
    char settings_value_device_name[NAME_MAX_LENGTH];
-   unsigned prev_assigned_player_slots[MAX_USERS] = {0};
+   unsigned prev_assigned_player_slots[MAX_USERS];
    unsigned int settings_value_vendor_id  = 0;
    unsigned int settings_value_product_id = 0;
    unsigned first_free_player_slot        = MAX_USERS + 1;
    bool device_has_reserved_slot          = false;
    bool no_reservation_at_all             = true;
    settings_t *settings                   = config_get_ptr();
+
+   if (detected_port >= MAX_USERS)
+      return;
+
+   /* The swaps below are transpositions of input_joypad_index[]: they
+    * preserve a one player <-> one pad mapping but cannot restore one,
+    * so a mapping that arrives with two players on the same pad keeps
+    * both of them there on every subsequent hotplug, and a single
+    * controller drives two libretro ports. Assert the invariant before
+    * relying on it. */
+   input_config_sanitize_joypad_indices();
+
+   /* MAX_USERS marks a pad index that no player is mapped to. Zero
+    * initialising this would instead claim such pads for player 1,
+    * making the reassignment below write to an unrelated slot. */
+   for (player = 0; player < MAX_USERS; player++)
+      prev_assigned_player_slots[player] = MAX_USERS;
 
    for (player = 0; player < MAX_USERS; player++)
    {
@@ -628,10 +645,18 @@ static void reallocate_port_if_needed(
             device_name, detected_port,
             settings->uints.input_max_users,
             first_free_player_slot+1);
-      RARCH_WARN("[Autoconf] Leaving detected player slot in place: %d.\n",
-            prev_assigned_player_slots[detected_port]);
+      if (prev_assigned_player_slots[detected_port] < MAX_USERS)
+         RARCH_WARN("[Autoconf] Leaving detected player slot in place: %d.\n",
+               prev_assigned_player_slots[detected_port]);
       return;
    }
+
+   /* Both reassignment branches below write through
+    * prev_assigned_player_slots[detected_port]. The sanitisation above
+    * makes the mapping total, so this cannot trigger; it keeps the
+    * writes in bounds if that ever stops holding. */
+   if (prev_assigned_player_slots[detected_port] >= MAX_USERS)
+      return;
 
    for (player = 0; player < MAX_USERS; player++)
    {
