@@ -176,7 +176,8 @@ bool  audio_transfer_info(void *data, enum audio_type_enum type,
  * into 'out', stores the number of frames actually produced in *frames_out
  * (may be NULL), and returns AUDIO_PROCESS_NEXT while data remains,
  * AUDIO_PROCESS_END at end of stream (frames produced 0), or
- * AUDIO_PROCESS_ERROR. s16 is exact for integer codecs (FLAC/WAV); f32 is
+ * AUDIO_PROCESS_ERROR. s16 is exact for the integer codecs (FLAC, and
+ * WAV other than its float form); f32 is
  * the native path for the float mixer.  Producing fewer frames than asked
  * is not end of stream, and END is not latched: a demuxed packet set that
  * has been grown resumes on the next call.  Opus latches the format at

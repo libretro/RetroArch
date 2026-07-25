@@ -72,18 +72,17 @@
  *
  * WAV (rwav)
  *   Does: buffer input; s16 and f32 reads; exact length; seek to any
- *     frame; 8-bit unsigned and 16-bit signed PCM (8-bit widened at
- *     read, both assembled from the file's little-endian words).
+ *     frame; 8-bit unsigned PCM, 16-bit signed PCM and 32-bit IEEE
+ *     float (8-bit widened and float rounded at read, all assembled
+ *     from the file's little-endian words).
  *     start() parses the header alone and the frames are converted out
  *     of the caller's buffer as they are asked for, so the arm holds no
  *     decoded copy and buffer_tell reports the read frontier: WAV
  *     windows like the compressed arms, and its residency is a window
  *     rather than the file.  rwav walks the chunk list, so LIST, fact,
  *     cue and the rest before the samples are no obstacle.
- *   Does not: take 32-bit float, which rwav parses but this arm refuses
- *     rather than converts.  24-bit, WAVE_FORMAT_EXTENSIBLE and
- *     ADPCM/a-law never reach here; rwav rejects them.  No demuxed
- *     input.
+ *   Does not: take 24-bit, WAVE_FORMAT_EXTENSIBLE or ADPCM/a-law -
+ *     none of those reach here, rwav rejects them.  No demuxed input.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
@@ -188,6 +187,42 @@
  * content sniffers (audio_transfer_ogg_audio_type,
  * audio_transfer_webm_audio_type), .ogg being ambiguous between Vorbis
  * and Opus in any case. */
+
+#if defined(HAVE_RAAC) || defined(HAVE_RWAV)
+/* Unit-scale float (full scale +-1.0) to s16, the conversion raac
+ * applies at its own edge.  Kept in one place because two arms need
+ * exactly it: the AAC arm holds raac's f32 output and converts on the
+ * way out of read_s16, where the result must be the sample
+ * raac_decode_s16 would have produced, and float WAV arrives at unit
+ * scale already.  A float source can carry anything, including
+ * non-finite values, and casting one of those to int is undefined, so
+ * pin and saturate before the cast. */
+static int16_t audio_transfer_unit_to_s16(float unit)
+{
+   float v = unit * 32768.0f;
+   if (!(v > -1e9f && v < 1e9f))
+      v = 0.0f;
+   v += (v >= 0.0f) ? 0.5f : -0.5f;
+   if (v >  32767.0f)
+      v =  32767.0f;
+   if (v < -32768.0f)
+      v = -32768.0f;
+   return (int16_t)(int)v;
+}
+#endif
+
+#ifdef HAVE_RWAV
+/* A float sample off the wire: little-endian IEEE word, assembled a
+ * byte at a time like the 16-bit path and reinterpreted through a
+ * union, which avoids both an unaligned load and an aliasing cast. */
+static float audio_transfer_wav_f32(const uint8_t *p)
+{
+   union { uint32_t u; float f; } bits;
+   bits.u =  (uint32_t)p[0]        | ((uint32_t)p[1] << 8)
+          | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+   return bits.f;
+}
+#endif
 
 /* One transfer context per codec. Each backend keeps only what it needs;
  * the enum 'type' handed to every entry point selects which arm runs, the
@@ -1069,7 +1104,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
           * resident at open */
          if (rwav_parse(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
             return false;
-         if (w->wav.bitspersample != 16 && w->wav.bitspersample != 8)
+         /* rwav admits 8- and 16-bit integer PCM and 32-bit IEEE
+          * float, and all three convert on the way out below */
+         if (     w->wav.bitspersample != 16
+               && w->wav.bitspersample != 8
+               && w->wav.bitspersample != 32)
             return false;
          w->framesz = (size_t)w->wav.numchannels
                     * (size_t)(w->wav.bitspersample / 8);
@@ -1662,25 +1701,6 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 #endif
 
 #ifdef HAVE_RAAC
-/* raac's edge conversion, applied to a sample its f32 entry point has
- * already scaled by 1/32768.  The scale is a power of two, so undoing
- * it is exact and this rounds the same value raac_decode_s16 would
- * have rounded. */
-static int16_t audio_transfer_aac_to_s16(float unit)
-{
-   float v = unit * 32768.0f;
-   /* saturate before the cast: casting a non-finite or out-of-range
-    * float to int is undefined, and TNS can push synthesis high */
-   if (!(v > -1e9f && v < 1e9f))
-      v = 0.0f;
-   v += (v >= 0.0f) ? 0.5f : -0.5f;
-   if (v >  32767.0f)
-      v =  32767.0f;
-   if (v < -32768.0f)
-      v = -32768.0f;
-   return (int16_t)(int)v;
-}
-
 /* Decode the next AAC access unit into the pending buffer, honouring
  * the edit list's start trim.  Returns frames now pending, 0 at end of
  * stream, < 0 on error. */
@@ -1865,7 +1885,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             dst = out + produced * ac->channels;
             n   = take * ac->channels;
             for (i = 0; i < n; i++)
-               dst[i] = audio_transfer_aac_to_s16(src[i]);
+               dst[i] = audio_transfer_unit_to_s16(src[i]);
             ac->pend_pos    += take;
             ac->pend_frames -= take;
             produced        += take;
@@ -1898,6 +1918,12 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
                out[i] = (int16_t)(v < 0x8000u ? (int)v
                                               : (int)v - 0x10000);
             }
+         }
+         else if (w->wav.bitspersample == 32) /* IEEE float -> s16 */
+         {
+            for (i = 0; i < n; i++)
+               out[i] = audio_transfer_unit_to_s16(
+                     audio_transfer_wav_f32(src + i * 4));
          }
          else /* 8-bit unsigned PCM -> signed 16-bit */
          {
@@ -1993,6 +2019,13 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
                out[i] = (float)(v < 0x8000u ? (int)v : (int)v - 0x10000)
                   * (1.0f / 32768.0f);
             }
+         }
+         else if (w->wav.bitspersample == 32)
+         {
+            /* already unit-scale float: hand the file's samples
+             * through unaltered, unclamped as the f32 paths are */
+            for (i = 0; i < n; i++)
+               out[i] = audio_transfer_wav_f32(src + i * 4);
          }
          else /* 8-bit unsigned PCM */
          {
