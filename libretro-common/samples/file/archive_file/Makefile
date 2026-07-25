@@ -25,12 +25,18 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
+override CPPFLAGS += -DHAVE_COMPRESSION -I$(LIBRETRO_COMM_DIR)/include
+CFLAGS            += -Wall -pedantic -std=gnu99 -g
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
 
 all: $(TARGET)
 
-%.o: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+%.o: %.c Makefile
+	$(CC) -c -o $@ $< $(CPPFLAGS) $(CFLAGS)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
