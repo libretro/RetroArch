@@ -73,14 +73,17 @@
  * WAV (rwav)
  *   Does: buffer input; s16 and f32 reads; exact length; seek to any
  *     frame; 8-bit unsigned and 16-bit signed PCM (8-bit widened at
- *     read).
- *   Does not: stream.  rwav_load decodes the file whole at start(), so
- *     the PCM stays resident for the decoder's lifetime and there is no
- *     compressed frontier to window - buffer_tell has no WAV arm.
- *     32-bit float WAV parses in rwav but is refused here rather than
- *     converted.  24-bit, WAVE_FORMAT_EXTENSIBLE, ADPCM/a-law and any
- *     layout with a chunk between 'fmt ' and 'data' never reach this
- *     file; rwav rejects them.  No demuxed input.
+ *     read, both assembled from the file's little-endian words).
+ *     start() parses the header alone and the frames are converted out
+ *     of the caller's buffer as they are asked for, so the arm holds no
+ *     decoded copy and buffer_tell reports the read frontier: WAV
+ *     windows like the compressed arms, and its residency is a window
+ *     rather than the file.  rwav walks the chunk list, so LIST, fact,
+ *     cue and the rest before the samples are no obstacle.
+ *   Does not: take 32-bit float, which rwav parses but this arm refuses
+ *     rather than converts.  24-bit, WAVE_FORMAT_EXTENSIBLE and
+ *     ADPCM/a-law never reach here; rwav rejects them.  No demuxed
+ *     input.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
@@ -171,10 +174,10 @@
  *     here refuses anything outside that before the decoder is opened.
  *
  * Across all arms: no file I/O and no ownership of the encoded bytes -
- * buffers are borrowed and must outlive the decoder (rwav and
- * rmodtracker copy what they need at start(), so those two are exempt
- * afterwards).  No resampling and no channel conversion; PCM comes out
- * at the stream's own rate and channel count and the mixer deals with
+ * buffers are borrowed and must outlive the decoder (rmodtracker copies
+ * the module at start(), so MOD alone is exempt afterwards).  No
+ * resampling and no channel conversion; PCM comes out at the stream's
+ * own rate and channel count and the mixer deals with
  * it.  A short read is not end of stream: only a zero-frame read returns
  * AUDIO_PROCESS_END, and END is not latched, which is what lets a grown
  * demuxed packet set resume after starvation.  AUDIO_PROCESS_ERROR_END
@@ -190,17 +193,19 @@
  * the enum 'type' handed to every entry point selects which arm runs, the
  * same switch-dispatch pattern formats/image_transfer.c uses. */
 
-/* WAV is decoded whole by rwav_load() at start(); the context then holds the
- * decoded interleaved 16-bit PCM and a per-frame read cursor so read_s16 /
- * read_f32 can pull it out in bounded chunks like the other codecs. */
+/* WAV holds no decoded copy: start() parses the header alone and the
+ * reads convert frames straight out of the caller's buffer, so the arm
+ * costs the header and a cursor however long the file is, and exposes a
+ * read frontier the way the compressed arms do. */
 #ifdef HAVE_RWAV
 struct audio_transfer_wav
 {
-   const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
+   const uint8_t *data; /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
-   rwav_t      wav;     /* decoded PCM + format, valid after start()         */
-   int         opened;  /* rwav_load succeeded                               */
-   size_t      cursor;  /* next frame to hand out                            */
+   rwav_t      wav;     /* format + payload location; samples stays NULL    */
+   int         opened;  /* rwav_parse succeeded                             */
+   size_t      cursor;  /* next frame to hand out                           */
+   size_t      framesz; /* bytes per frame: channels * bits/8               */
 };
 #endif
 
@@ -579,7 +584,7 @@ void audio_transfer_set_buffer_ptr(void *data, enum audio_type_enum type,
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (w)
          {
-            w->data = ptr;
+            w->data = (const uint8_t*)ptr;
             w->size = len;
          }
          break;
@@ -1059,17 +1064,17 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
          if (!w || !w->data)
             return false;
-         /* rwav only handles 8- and 16-bit PCM; decode the whole buffer up
-          * front (WAV has no incremental decode - it is raw PCM already). */
-         if (rwav_load(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
+         /* header only: no allocation, and the payload is not read
+          * here, so a caller streaming the file needs just the head
+          * resident at open */
+         if (rwav_parse(&w->wav, w->data, w->size) != RWAV_ITERATE_DONE)
             return false;
          if (w->wav.bitspersample != 16 && w->wav.bitspersample != 8)
-         {
-            rwav_free(&w->wav);
             return false;
-         }
-         w->opened = 1;
-         w->cursor = 0;
+         w->framesz = (size_t)w->wav.numchannels
+                    * (size_t)(w->wav.bitspersample / 8);
+         w->opened  = 1;
+         w->cursor  = 0;
          return true;
       }
 #endif
@@ -1872,22 +1877,32 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
 #ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
-         size_t avail, want, ch, i;
+         const uint8_t *src;
+         size_t avail, want, ch, i, n;
          if (!w || !w->opened)
             return AUDIO_PROCESS_ERROR;
          ch    = (size_t)w->wav.numchannels;
          avail = w->wav.numsamples - w->cursor;
          want  = (frames < avail) ? frames : avail;
+         n     = want * ch;
+         src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
-            const int16_t *src = (const int16_t*)w->wav.samples;
-            memcpy(out, src + w->cursor * ch, want * ch * sizeof(int16_t));
+            /* the file's samples are little-endian: assemble them a
+             * byte at a time, which is right on either endianness and
+             * safe where an unaligned load would fault */
+            for (i = 0; i < n; i++)
+            {
+               unsigned v = (unsigned)src[i * 2]
+                          | ((unsigned)src[i * 2 + 1] << 8);
+               out[i] = (int16_t)(v < 0x8000u ? (int)v
+                                              : (int)v - 0x10000);
+            }
          }
          else /* 8-bit unsigned PCM -> signed 16-bit */
          {
-            const uint8_t *src = (const uint8_t*)w->wav.samples;
-            for (i = 0; i < want * ch; i++)
-               out[i] = (int16_t)(((int)src[w->cursor * ch + i] - 128) << 8);
+            for (i = 0; i < n; i++)
+               out[i] = (int16_t)(((int)src[i] - 128) << 8);
          }
          w->cursor += want;
          produced   = want;
@@ -1960,22 +1975,28 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
 #ifdef HAVE_RWAV
       {
          struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
-         size_t avail, want, ch, i;
+         const uint8_t *src;
+         size_t avail, want, ch, i, n;
          if (!w || !w->opened)
             return AUDIO_PROCESS_ERROR;
          ch    = (size_t)w->wav.numchannels;
          avail = w->wav.numsamples - w->cursor;
          want  = (frames < avail) ? frames : avail;
+         n     = want * ch;
+         src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
-            const int16_t *src = (const int16_t*)w->wav.samples + w->cursor * ch;
-            for (i = 0; i < want * ch; i++)
-               out[i] = (float)src[i] * (1.0f / 32768.0f);
+            for (i = 0; i < n; i++)
+            {
+               unsigned v = (unsigned)src[i * 2]
+                          | ((unsigned)src[i * 2 + 1] << 8);
+               out[i] = (float)(v < 0x8000u ? (int)v : (int)v - 0x10000)
+                  * (1.0f / 32768.0f);
+            }
          }
          else /* 8-bit unsigned PCM */
          {
-            const uint8_t *src = (const uint8_t*)w->wav.samples + w->cursor * ch;
-            for (i = 0; i < want * ch; i++)
+            for (i = 0; i < n; i++)
                out[i] = ((float)src[i] - 128.0f) * (1.0f / 128.0f);
          }
          w->cursor += want;
@@ -2062,6 +2083,18 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
           * decoder-owned scratch, not the caller's buffer */
          if (v->handle && !v->setup && !v->synth)
             return (size_t)rvorbis_buffer_tell(v->handle);
+         return 0;
+      }
+#endif
+#ifdef HAVE_RWAV
+      case AUDIO_TYPE_WAV:
+      {
+         struct audio_transfer_wav *w =
+               (struct audio_transfer_wav*)data;
+         /* the payload is read in place, so the frame cursor is a byte
+          * offset into the caller's buffer like any other arm's */
+         if (w->opened)
+            return w->wav.dataoffset + w->cursor * w->framesz;
          return 0;
       }
 #endif
@@ -2288,12 +2321,9 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
 #endif
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
-      {
-         struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
-         if (w && w->opened)
-            rwav_free(&w->wav);
+         /* rwav_parse allocates nothing and the samples were read in
+          * place, so there is nothing here to release */
          break;
-      }
 #endif
 #ifdef HAVE_ROPUS
       case AUDIO_TYPE_OPUS:
