@@ -189,7 +189,13 @@
  *     the last access unit is not handed out and the length info()
  *     reports is the length that comes out; rewind; buffer_tell in ADTS
  *     mode, hence windowing there.
- *   Does not: seek anywhere but frame 0.  Reports a length only from
+ *     Seeks: every access unit this decoder takes is 1024 frames, so
+ *     the units before the target are counted rather than decoded and
+ *     only a pre-roll before it is decoded and dropped.
+ *   Does not: reproduce a playthrough exactly across a seek where the
+ *     encoder used noise substitution - the reset a seek needs reseeds
+ *     the noise generator, and substituted noise is noise rather than
+ *     coded samples.  Reports a length only from
  *     an MP4, which declares one; an ADTS stream would have to be
  *     walked to be measured, and the demuxed path's packets are the
  *     caller's.  ADTS carries no delay signalling, so
@@ -1896,14 +1902,12 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 /* Decode the next AAC access unit into the pending buffer, honouring
  * the edit list's start trim.  Returns frames now pending, 0 at end of
  * stream, < 0 on error. */
-static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
+/* The next access unit, wherever this context's come from.  Returns 1
+ * with the bytes, 0 at end of stream, < 0 on a malformed one. */
+static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
+      const uint8_t **pdata, uint32_t *plen)
 {
-   while (ac->pend_frames == 0)
    {
-      const uint8_t *pdata;
-      uint32_t plen;
-      int r;
-      uint64_t skip;
       if (ac->adts)
       {
          /* walk the next ADTS frame: 12-bit sync, CRC flag choosing a
@@ -1920,11 +1924,11 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
               | ((unsigned)ac->buf[pos + 5] >> 5);
          if (flen <= hdr || pos + flen > ac->buf_size)
             return 0;
-         pdata        = ac->buf + pos + hdr;
-         plen         = flen - hdr;
+         *pdata       = ac->buf + pos + hdr;
+         *plen        = flen - hdr;
          ac->adts_pos = pos + flen;
+         return 1;
       }
-      else
 #ifdef HAVE_RMP4
       if (ac->demux)
       {
@@ -1937,21 +1941,103 @@ static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
             if (pkt.track == ac->track_idx)
                break;
          }
-         pdata = pkt.data;
-         plen  = (uint32_t)pkt.size;
+         *pdata = pkt.data;
+         *plen  = (uint32_t)pkt.size;
+         return 1;
       }
-      else
 #endif
       {
          if (ac->pkt_index >= ac->num_packets)
             return 0;
-         plen = ac->pkt_sizes[ac->pkt_index];
-         if (ac->pkt_offset + plen > ac->packets_size)
+         *plen = ac->pkt_sizes[ac->pkt_index];
+         if (ac->pkt_offset + *plen > ac->packets_size)
             return -1;
-         pdata = ac->packets + ac->pkt_offset;
-         ac->pkt_offset += plen;
+         *pdata = ac->packets + ac->pkt_offset;
+         ac->pkt_offset += *plen;
          ac->pkt_index++;
+         return 1;
       }
+   }
+}
+
+/* Frames decoded before the target and dropped so the decoder has its
+ * overlap-add history back.  One access unit is the overlap itself and
+ * the walk stops on a unit boundary, so three covers both. */
+#define AUDIO_AAC_PREROLL (1024 * 3)
+
+/* Every access unit this decoder takes is 1024 frames, so the walk to a
+ * target needs no decoding at all - only the pre-roll does.  Returns
+ * the frame reached, or < 0 if the stream ends first. */
+static int audio_transfer_aac_fill(struct audio_transfer_aac *ac);
+
+static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
+      int64_t frame)
+{
+   int64_t  pos  = 0;
+   uint64_t skip = ac->start_trim;
+   int64_t  stop = frame - AUDIO_AAC_PREROLL;
+
+   raac_reset(ac->handle);
+   ac->adts_pos = 0;
+#ifdef HAVE_RMP4
+   if (ac->demux)
+      rmp4_rewind(ac->demux);
+#endif
+   ac->pkt_index   = 0;
+   ac->pkt_offset  = 0;
+   ac->pend_frames = 0;
+   ac->pend_pos    = 0;
+   if (stop < 0)
+      stop = 0;
+   while (pos < stop)
+   {
+      const uint8_t *pdata;
+      uint32_t plen;
+      int64_t d = 1024;
+      int r = audio_transfer_aac_pull(ac, &pdata, &plen);
+      if (r <= 0)
+         return -1;              /* asked past the end of the stream   */
+      /* the encoder delay is dropped rather than emitted, so it does
+       * not count towards the position */
+      if (skip)
+      {
+         uint64_t taken = ((uint64_t)d < skip) ? (uint64_t)d : skip;
+         skip -= taken;
+         d    -= (int64_t)taken;
+      }
+      pos += d;
+   }
+   ac->trim_left = skip;
+   ac->emitted   = pos;
+   while (pos < frame)
+   {
+      int64_t take;
+      int r = audio_transfer_aac_fill(ac);
+      if (r < 0)
+         return -1;
+      if (r == 0)
+         return -1;
+      take = frame - pos;
+      if (take > (int64_t)ac->pend_frames)
+         take = (int64_t)ac->pend_frames;
+      ac->pend_pos    += (size_t)take;
+      ac->pend_frames -= (size_t)take;
+      pos             += take;
+   }
+   return pos;
+}
+
+static int audio_transfer_aac_fill(struct audio_transfer_aac *ac)
+{
+   while (ac->pend_frames == 0)
+   {
+      const uint8_t *pdata;
+      uint32_t plen;
+      int r;
+      uint64_t skip;
+      r = audio_transfer_aac_pull(ac, &pdata, &plen);
+      if (r <= 0)
+         return r;
       r = raac_decode_f32(ac->handle, pdata, plen, ac->pend_f32);
       if (r < 0)
          return -1;
@@ -2510,21 +2596,30 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
-         if (!ac || !ac->handle || frame != 0)
-            return false;        /* rewind-only (used by looping)       */
-         raac_reset(ac->handle);
-         ac->adts_pos = 0;
+         if (!ac || !ac->handle)
+            return false;
+         if (frame == 0)
+         {
+            raac_reset(ac->handle);
+            ac->adts_pos = 0;
 #ifdef HAVE_RMP4
-         if (ac->demux)
-            rmp4_rewind(ac->demux);
+            if (ac->demux)
+               rmp4_rewind(ac->demux);
 #endif
-         ac->pkt_index   = 0;
-         ac->pkt_offset  = 0;
-         ac->pend_frames = 0;
-         ac->pend_pos    = 0;
-         ac->trim_left   = ac->start_trim;
-         ac->emitted     = 0;
-         return true;
+            ac->pkt_index   = 0;
+            ac->pkt_offset  = 0;
+            ac->pend_frames = 0;
+            ac->pend_pos    = 0;
+            ac->trim_left   = ac->start_trim;
+            ac->emitted     = 0;
+            return true;
+         }
+         /* Where the length is known, refuse to be sent past it rather
+          * than walk to the end and report failure from there. */
+         if (ac->limit >= 0 && (int64_t)frame > ac->limit)
+            return false;
+         return audio_transfer_aac_seek_to(ac, (int64_t)frame)
+               == (int64_t)frame;
       }
 #endif
       case AUDIO_TYPE_NONE:
