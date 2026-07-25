@@ -1950,6 +1950,31 @@ static int calculate_mix_buf_len( int sample_rate ) {
 }
 
 /* Returns the song duration in samples at the current sampling rate. */
+/* Advance the sequencer to sample_pos without mixing, returning the
+ * position actually reached - the last tick boundary at or before it.
+ * A tracker has no seek table and no keyframes: where it is at a given
+ * moment is the result of every row that came before, so the only way
+ * to arrive somewhere is to go through the song.  What can be skipped
+ * is the mixing, which is nearly all of the cost; the sequencer walk is
+ * the same one replay_calculate_duration makes, and each channel's
+ * sample position is carried forward by the same helper the mixer uses
+ * for a channel it is not rendering. */
+static int replay_seek( struct replay *replay, int sample_pos ) {
+	int idx, tick_len, current_pos = 0;
+	replay_set_sequence_pos( replay, 0 );
+	tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
+	while( ( sample_pos - current_pos ) >= tick_len ) {
+		for( idx = 0; idx < replay->module->num_channels; idx++ ) {
+			channel_update_sample_idx( &replay->channels[ idx ],
+				tick_len * 2, replay->sample_rate * 2 );
+		}
+		current_pos += tick_len;
+		replay_tick( replay );
+		tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
+	}
+	return current_pos;
+}
+
 static int replay_calculate_duration( struct replay *replay ) {
 	int count = 0, duration = 0;
 	replay_set_sequence_pos( replay, 0 );
@@ -2177,6 +2202,7 @@ struct rmodtracker {
 	int    carry_pos;
 	int    carry_domain;  /* 0 = none, 1 = int, 2 = float               */
 	int    ended;
+	int    duration;      /* one pass, measured once at open            */
 };
 
 rmodtracker *rmodtracker_open_memory( const void *data, size_t size )
@@ -2212,6 +2238,10 @@ rmodtracker *rmodtracker_open_memory( const void *data, size_t size )
 		rmodtracker_close( rmt );
 		return NULL;
 	}
+	/* Measured here rather than on demand: the walk that measures it
+	 * rewinds the sequencer, which would be a surprising thing for a
+	 * query to do to a module that is already playing. */
+	rmt->duration = replay_calculate_duration( rmt->replay );
 	return rmt;
 }
 
@@ -2238,7 +2268,7 @@ int rmodtracker_sample_rate( rmodtracker *rmt )
 /* Duration of one pass through the sequence, in frames at the mix rate. */
 int rmodtracker_duration_frames( rmodtracker *rmt )
 {
-	return replay_calculate_duration( rmt->replay );
+	return rmt ? rmt->duration : 0;
 }
 
 void rmodtracker_rewind( rmodtracker *rmt )
@@ -2247,6 +2277,41 @@ void rmodtracker_rewind( rmodtracker *rmt )
 	memset( rmt->ramp_f, 0, 128 * sizeof( float ) );
 	rmt->carry_len = rmt->carry_pos = rmt->carry_domain = 0;
 	rmt->ended = 0;
+}
+
+int rmodtracker_seek( rmodtracker *rmt, int frame )
+{
+	int16_t scratch[ 256 * 2 ];
+	int reached;
+	if( !rmt || frame < 0 )
+		return 0;
+	/* A module loops, so any frame at all is a position somewhere in the
+	 * stream and the walk below would dutifully grind its way there.
+	 * Stop at one pass: past that the caller has almost certainly asked
+	 * for something it did not mean, and the alternative is a walk whose
+	 * length it chose by accident, on this thread. */
+	if( frame > rmt->duration )
+		frame = rmt->duration;
+	rmodtracker_rewind( rmt );
+	if( frame == 0 )
+		return 0;
+	reached = replay_seek( rmt->replay, frame );
+	/* The walk lands on a tick boundary, so render the rest of the way
+	 * and throw it away - under one tick, some twenty milliseconds, and
+	 * it puts the caller exactly where it asked to be rather than
+	 * somewhere nearby. */
+	while( reached < frame ) {
+		int want = frame - reached;
+		int got;
+		if( want > 256 )
+			want = 256;
+		got = ( int ) rmodtracker_get_samples_s16_interleaved( rmt,
+				scratch, ( size_t ) want );
+		if( got <= 0 )
+			break;          /* ran off the end of the song */
+		reached += got;
+	}
+	return reached;
 }
 
 /* Switching getters mid-carry converts the few carried frames once;

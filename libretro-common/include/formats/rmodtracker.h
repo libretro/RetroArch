@@ -45,6 +45,24 @@ int rmodtracker_duration_frames(rmodtracker *rmt);
 /* Restart playback from the beginning of the sequence. */
 void rmodtracker_rewind(rmodtracker *rmt);
 
+/* Move playback to 'frame', counted from the start of the sequence at
+ * the mix rate. Returns the frame actually reached, which is short of
+ * the one asked for only when the song ends first.
+ *
+ * A module has no seek table: its state at any moment is the result of
+ * every row played before it, so this restarts and works forward. The
+ * mixing is skipped, which is nearly all of the cost, but the walk is
+ * still proportional to the distance - seeking to the end of a long
+ * module is not free, and it is done on the calling thread. Seeking to
+ * 0 is rewinding and costs nothing.
+ *
+ * A module loops, so every frame number names a position in the stream
+ * and an accidental one would be walked to just as faithfully as a
+ * deliberate one. The target is therefore capped at a single pass,
+ * which bounds the work; ask for more and the return value says where
+ * it stopped. */
+int rmodtracker_seek(rmodtracker *rmt, int frame);
+
 /* Render interleaved stereo. Both return the number of frames written,
  * which is less than 'frames' only at the end of the module. */
 size_t rmodtracker_get_samples_s16_interleaved(rmodtracker *rmt,

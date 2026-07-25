@@ -127,11 +127,20 @@
  * MOD (rmodtracker)
  *   Does: buffer input, MOD/S3M/XM autodetected; s16 and f32; the
  *     duration of one pass through the sequence; rewind.
- *   Does not: seek mid-song - the replayer is sequenced, so any nonzero
- *     frame returns false.  info() always reports 2 channels at
- *     RMODTRACKER_RATE because that is what the replayer mixes, not what
- *     the module declares.  No buffer cursor (no windowing), no demuxed
- *     input.
+ *     Seeks anywhere, including mid-song: a module has no seek table,
+ *     so the replayer restarts and walks the sequence forward with the
+ *     mixing skipped, which costs time proportional to the distance and
+ *     spends it on the calling thread.
+ *   Does not: report the module's own channel count.  info() says 2
+ *     channels because the replayer mixes to interleaved stereo, and
+ *     that is what the count in this API means; a module's four or
+ *     thirty-two are voices being mixed, not channels being emitted.
+ *     No buffer cursor, and no windowing to use one for: the module is
+ *     parsed into the replayer's own structures at open, after which
+ *     the caller's bytes are not read again, and sample data is
+ *     revisited at random for as long as the song plays - neither the
+ *     monotonic read nor the bounded head that windowing needs.  No
+ *     demuxed input.
  *
  * Opus (ropus)
  *   Does: three inputs - Ogg Opus buffer (.opus, pages walked in place
@@ -2242,7 +2251,11 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             rmodtracker_rewind(md->handle);
             return true;
          }
-         return false;   /* trackers are sequenced; mid-song seek unsupported */
+         /* Sequenced, so the replayer restarts and works forward with
+          * the mixing skipped.  That is proportional to the distance
+          * and runs here, on the calling thread; it lands exactly, and
+          * fails only if the song ends before the target does. */
+         return rmodtracker_seek(md->handle, (int)frame) == (int)frame;
       }
 #endif
       case AUDIO_TYPE_WAV:
