@@ -55,7 +55,13 @@
 /* Container limits. A hunk is bounded by the format; the map and
  * metadata bounds are ours, sized well above anything a real image
  * carries, so a corrupt header cannot ask for an unbounded allocation. */
-#define RCHD_MAX_HUNK_BYTES  (1024 * 1024)
+/* What a hunk may measure, which the format sets differently either
+ * side of version 5: half a megabyte from version 5, and sixteen
+ * megabytes before it. A single ceiling is wrong both ways -- too
+ * generous for version 5 and too mean for the versions that allow more,
+ * where it would refuse an image another reader accepts. */
+#define RCHD_MAX_HUNK_BYTES_V5  (512 * 1024)
+#define RCHD_MAX_HUNK_BYTES_OLD (16 * 1024 * 1024)
 #define RCHD_MAX_MAP_BYTES   (64 * 1024 * 1024)
 #define RCHD_MAX_METADATA    (16 * 1024 * 1024)
 #define RCHD_MAX_META_ENTRIES 4096
@@ -550,7 +556,9 @@ static int rchd_parse_header(rchd_t *chd, const uint8_t *h)
          return RCHD_ERROR_UNSUPPORTED;
    }
 
-   if (!chd->info.hunk_bytes || chd->info.hunk_bytes > RCHD_MAX_HUNK_BYTES)
+   if (!chd->info.hunk_bytes
+         || chd->info.hunk_bytes > (version >= 5 ? RCHD_MAX_HUNK_BYTES_V5
+                                                 : RCHD_MAX_HUNK_BYTES_OLD))
       return RCHD_ERROR_DATA;
    if (!chd->info.hunk_count || chd->info.hunk_count > RCHD_MAX_HUNK_COUNT)
       return RCHD_ERROR_DATA;

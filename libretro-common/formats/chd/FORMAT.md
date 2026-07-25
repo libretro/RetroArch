@@ -479,6 +479,19 @@ reserved:
 sector therefore has no fixed stride: crossing from a data track into an
 audio one changes how much each sector yields.
 
+### 3.3 Hunk size ceiling **[V]**
+
+The largest hunk the format permits differs either side of version 5:
+
+| Versions | Ceiling |
+|---|---|
+| 1 to 4 | 16 MiB |
+| 5 | 512 KiB |
+
+A reader with one ceiling for both is wrong in one direction or the
+other -- too generous for version 5, or strict enough to refuse an
+earlier image that another reader accepts.
+
 ## 4. Pending
 
 In the order they block work:
