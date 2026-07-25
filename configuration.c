@@ -448,7 +448,7 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_METAL;
 #elif defined(HAVE_D3D11) || defined(__WINRT__) || (defined(WINAPI_FAMILY) && WINAPI_FAMILY == WINAPI_FAMILY_PHONE_APP)
 /* Default to D3D11 in UWP, even when its compiled with ANGLE, since ANGLE is just calling D3D anyway.*/
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_D3D11;
-#elif defined(HAVE_VITA2D)
+#elif defined(HAVE_GXM)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GXM;
 #elif defined(HAVE_OPENGL) || defined(HAVE_OPENGLES) || defined(HAVE_PSGL)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_GL;

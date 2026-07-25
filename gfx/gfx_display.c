@@ -94,7 +94,7 @@ static gfx_display_ctx_driver_t *gfx_display_ctx_drivers[] = {
 #ifdef HAVE_METAL
    &gfx_display_ctx_metal,
 #endif
-#ifdef HAVE_VITA2D
+#ifdef HAVE_GXM
    &gfx_display_ctx_gxm,
 #endif
 #ifdef _3DS

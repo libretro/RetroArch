@@ -59,7 +59,7 @@ else
 	HAVE_RTGA		:= 1
 	HAVE_7ZIP		:= 1
    ifeq ($(HAVE_VITAGLES), 1)
-	HAVE_VITA2D		:= 0
+	HAVE_GXM		:= 0
 	HAVE_VITAGL		:= 0
 	HAVE_VITAGLES 		:= 1
 	HAVE_OPENGL 		:= 1
@@ -69,7 +69,7 @@ else
 	HAVE_GLSL 		:= 1
 	HAVE_SHADERPIPELINE 	:= 1
    else
-	HAVE_VITA2D		:= 1
+	HAVE_GXM		:= 1
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1

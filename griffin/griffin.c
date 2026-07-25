@@ -603,8 +603,8 @@ VIDEO DRIVER
 #include "../gfx/drivers/psp1_gfx.c"
 #elif defined(PS2)
 #include "../gfx/drivers/ps2_gfx.c"
-#elif defined(HAVE_VITA2D)
-#include "../gfx/drivers/vita2d_gfx.c"
+#elif defined(HAVE_GXM)
+#include "../gfx/drivers/gxm_gfx.c"
 #elif defined(_3DS)
 #include "../gfx/drivers/ctr_gfx.c"
 #elif defined(XENON)

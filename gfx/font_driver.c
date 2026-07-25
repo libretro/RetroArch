@@ -292,7 +292,7 @@ static bool font_init_first(
          }
          break;
 #endif
-#ifdef HAVE_VITA2D
+#ifdef HAVE_GXM
       case FONT_DRIVER_RENDER_GXM:
          {
             void *data = gxm_font.init(

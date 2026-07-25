@@ -349,7 +349,7 @@ else ifeq ($(platform), vita)
    HAVE_RBMP                := 1
    HAVE_RTGA                := 1
    HAVE_7ZIP                := 1
-   HAVE_VITA2D              := 1
+   HAVE_GXM              := 1
    HAVE_NETWORKING          := 1
    HAVE_IFINFO              := 1
    HAVE_NETPLAYDISCOVERY    := 1
@@ -1055,8 +1055,8 @@ ifeq ($(HAVE_WIIUSB_HID), 1)
    CFLAGS      += -DHAVE_WIIUSB_HID -DHAVE_HID
 endif
 
-ifeq ($(HAVE_VITA2D), 1)
-   CFLAGS      += -DHAVE_VITA2D
+ifeq ($(HAVE_GXM), 1)
+   CFLAGS      += -DHAVE_GXM
 endif
 
 ifeq ($(HAVE_LIBRETRODB), 1)

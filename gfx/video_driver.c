@@ -366,7 +366,7 @@ const video_driver_t *video_drivers[] = {
 #ifdef HAVE_GCM
    &video_gcm,
 #endif
-#ifdef HAVE_VITA2D
+#ifdef HAVE_GXM
    &video_gxm,
 #endif
 #ifdef HAVE_VULKAN
