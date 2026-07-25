@@ -73,33 +73,33 @@ typedef enum
 {
    GXM_VIDEO_MODE_960x544 = 0,
    GXM_VIDEO_MODE_1280x720
-} gxm_video_mode;
+} gxm_video_mode_t;
 
-typedef struct gxm_video_mode_data
+typedef struct gxm_video_mode_data_t
 {
    int width;
    int height;
    int stride;
-} gxm_video_mode_data;
+} gxm_video_mode_data_t;
 
-typedef struct gxm_color_vertex
+typedef struct gxm_color_vertex_t
 {
    float x;
    float y;
    float z;
    unsigned int color;
-} gxm_color_vertex;
+} gxm_color_vertex_t;
 
-typedef struct gxm_texture_vertex
+typedef struct gxm_texture_vertex_t
 {
    float x;
    float y;
    float z;
    float u;
    float v;
-} gxm_texture_vertex;
+} gxm_texture_vertex_t;
 
-typedef struct gxm_texture_tint_vertex
+typedef struct gxm_texture_tint_vertex_t
 {
    float x;
    float y;
@@ -110,9 +110,9 @@ typedef struct gxm_texture_tint_vertex
    float g;
    float b;
    float a;
-} gxm_texture_tint_vertex;
+} gxm_texture_tint_vertex_t;
 
-typedef struct gxm_texture
+typedef struct gxm_texture_t
 {
    SceGxmTexture gxm_tex;
    SceUID data_UID;
@@ -121,23 +121,23 @@ typedef struct gxm_texture
    SceGxmColorSurface gxm_sfc;
    SceGxmDepthStencilSurface gxm_sfd;
    SceUID depth_UID;
-} gxm_texture;
+} gxm_texture_t;
 
-typedef struct gxm_display_data
+typedef struct gxm_display_data_t
 {
    void *address;
-} gxm_display_data;
+} gxm_display_data_t;
 
-typedef struct gxm_fragment_programs
+typedef struct gxm_fragment_programs_t
 {
    SceGxmFragmentProgram *color;
    SceGxmFragmentProgram *texture;
    SceGxmFragmentProgram *textureTint;
-} gxm_fragment_programs;
+} gxm_fragment_programs_t;
 
 typedef struct vita_menu_frame
 {
-   gxm_texture *texture;
+   gxm_texture_t *texture;
    int width;
    int height;
    bool active;
@@ -146,7 +146,7 @@ typedef struct vita_menu_frame
 #ifdef HAVE_OVERLAY
 struct vita_overlay_data
 {
-   gxm_texture *tex;
+   gxm_texture_t *tex;
    float x;
    float y;
    float w;
@@ -163,7 +163,7 @@ struct vita_overlay_data
 
 typedef struct vita_video
 {
-   gxm_texture *texture;
+   gxm_texture_t *texture;
    SceGxmTextureFormat format;
    int width;
    int height;
@@ -198,7 +198,7 @@ typedef struct vita_video
 typedef struct
 {
    vita_video_t *vita;
-   gxm_texture *texture;
+   gxm_texture_t *texture;
    const font_renderer_driver_t *font_driver;
    void *font_data;
    struct font_atlas *atlas;
@@ -215,8 +215,8 @@ extern const SceGxmProgram texture_tint_f_gxp;
 
 /* File-scope state */
 
-static gxm_video_mode_data video_mode_data;
-static gxm_video_mode video_mode_initial;
+static gxm_video_mode_data_t video_mode_data;
+static gxm_video_mode_t video_mode_initial;
 static SceGxmMultisampleMode current_msaa = SCE_GXM_MULTISAMPLE_4X;
 
 static const SceGxmProgram *const colorVertexProgramGxp         = &color_v_gxp;
@@ -287,8 +287,8 @@ static const SceGxmProgramParameter *gxm_textureTintWvpParam = NULL;
 
 static struct
 {
-   gxm_fragment_programs blend_mode_normal;
-   gxm_fragment_programs blend_mode_add;
+   gxm_fragment_programs_t blend_mode_normal;
+   gxm_fragment_programs_t blend_mode_add;
 } gxm_fragmentPrograms;
 
 /* Temporary memory pool */
@@ -453,7 +453,7 @@ static void patcher_host_free(void *user_data, void *mem)
    free(mem);
 }
 
-static int gxm_switch_video_mode(gxm_video_mode video_mode)
+static int gxm_switch_video_mode(gxm_video_mode_t video_mode)
 {
    SceGxmRenderTargetParams renderTargetParams;
    int i, x, y;
@@ -550,7 +550,7 @@ static int gxm_switch_video_mode(gxm_video_mode video_mode)
 static void gxm_display_callback(const void *callback_data)
 {
    SceDisplayFrameBuf framebuf;
-   const gxm_display_data *display_data = (const gxm_display_data *)callback_data;
+   const gxm_display_data_t *display_data = (const gxm_display_data_t *)callback_data;
 
    memset(&framebuf, 0x00, sizeof(SceDisplayFrameBuf));
    framebuf.size        = sizeof(SceDisplayFrameBuf);
@@ -570,14 +570,14 @@ static void gxm_display_callback(const void *callback_data)
       sceDisplayWaitVblankStart();
 }
 
-static void gxm_free_fragment_programs(gxm_fragment_programs *out)
+static void gxm_free_fragment_programs(gxm_fragment_programs_t *out)
 {
    sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->color);
    sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->texture);
    sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, out->textureTint);
 }
 
-static void gxm_make_fragment_programs(gxm_fragment_programs *out,
+static void gxm_make_fragment_programs(gxm_fragment_programs_t *out,
    const SceGxmBlendInfo *blend_info, SceGxmMultisampleMode msaa)
 {
    int err = sceGxmShaderPatcherCreateFragmentProgram(
@@ -610,7 +610,7 @@ static void gxm_make_fragment_programs(gxm_fragment_programs *out,
 
 static void gxm_set_blend_mode_add(int enable)
 {
-   gxm_fragment_programs *in = enable ? &gxm_fragmentPrograms.blend_mode_add
+   gxm_fragment_programs_t *in = enable ? &gxm_fragmentPrograms.blend_mode_add
        : &gxm_fragmentPrograms.blend_mode_normal;
 
    gxm_colorFragmentProgram = in->color;
@@ -619,7 +619,7 @@ static void gxm_set_blend_mode_add(int enable)
 }
 
 static int gxm_init_internal(unsigned int temp_pool_size,
-      SceGxmMultisampleMode msaa, gxm_video_mode video_mode)
+      SceGxmMultisampleMode msaa, gxm_video_mode_t video_mode)
 {
    uint32_t idx;
    SceGxmInitializeParams initializeParams;
@@ -628,7 +628,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
    void *fragmentRingBuffer;
    void *vertexRingBuffer;
    void *vdmRingBuffer;
-   gxm_display_data displayData;
+   gxm_display_data_t displayData;
    unsigned int depthStrideInSamples;
    unsigned int sampleCount;
    unsigned int alignedHeight;
@@ -690,7 +690,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
    initializeParams.flags        = 0;
    initializeParams.displayQueueMaxPendingCount = DISPLAY_MAX_PENDING_SWAPS;
    initializeParams.displayQueueCallback   = gxm_display_callback;
-   initializeParams.displayQueueCallbackDataSize   = sizeof(gxm_display_data);
+   initializeParams.displayQueueCallbackDataSize   = sizeof(gxm_display_data_t);
    initializeParams.parameterBufferSize     = SCE_GXM_DEFAULT_PARAMETER_BUFFER_SIZE;
 
    err = sceGxmInitialize(&initializeParams);
@@ -902,7 +902,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
    colorVertexAttributes[1].componentCount = 4; /* (color) */
    colorVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramColorColorAttribute);
    /* 16 bit (short) indices */
-   colorVertexStreams[0].stride = sizeof(gxm_color_vertex);
+   colorVertexStreams[0].stride = sizeof(gxm_color_vertex_t);
    colorVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
    /* create color shaders */
@@ -933,7 +933,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
    textureVertexAttributes[1].componentCount = 2; /* (u, v) */
    textureVertexAttributes[1].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTexcoordAttribute);
    /* 16 bit (short) indices */
-   textureVertexStreams[0].stride = sizeof(gxm_texture_vertex);
+   textureVertexStreams[0].stride = sizeof(gxm_texture_vertex_t);
    textureVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
    /* create texture shaders */
@@ -970,7 +970,7 @@ static int gxm_init_internal(unsigned int temp_pool_size,
    textureTintVertexAttributes[2].componentCount = 4; /* (r, g, b, a) */
    textureTintVertexAttributes[2].regIndex = sceGxmProgramParameterGetResourceIndex(paramTextureTintColorAttribute);
    /* 16 bit (short) indices */
-   textureTintVertexStreams[0].stride = sizeof(gxm_texture_tint_vertex);
+   textureTintVertexStreams[0].stride = sizeof(gxm_texture_tint_vertex_t);
    textureTintVertexStreams[0].indexSource = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
 
    /* create texture shaders */
@@ -1049,10 +1049,10 @@ static void gxm_draw_rectangle(float x, float y, float w, float h,
       unsigned int color)
 {
    void *vertexDefaultBuffer;
-   gxm_color_vertex *vertices = (gxm_color_vertex *)
+   gxm_color_vertex_t *vertices = (gxm_color_vertex_t *)
       gxm_pool_memalign(
-      4 * sizeof(gxm_color_vertex), /* 4 vertices */
-      sizeof(gxm_color_vertex));
+      4 * sizeof(gxm_color_vertex_t), /* 4 vertices */
+      sizeof(gxm_color_vertex_t));
 
    uint16_t *indices = (uint16_t *)gxm_pool_memalign(
       4 * sizeof(uint16_t), /* 4 indices */
@@ -1187,7 +1187,7 @@ static int tex_format_to_bytespp(SceGxmTextureFormat format)
    }
 }
 
-static void gxm_free_texture(gxm_texture *texture)
+static void gxm_free_texture(gxm_texture_t *texture)
 {
    if (texture)
    {
@@ -1202,10 +1202,10 @@ static void gxm_free_texture(gxm_texture *texture)
    }
 }
 
-static gxm_texture *gxm_create_empty_texture_format(unsigned int w,
+static gxm_texture_t *gxm_create_empty_texture_format(unsigned int w,
       unsigned int h, SceGxmTextureFormat format)
 {
-   gxm_texture *texture;
+   gxm_texture_t *texture;
    void *texture_data;
    int tex_size;
    if (w > GXM_TEX_MAX_SIZE || h > GXM_TEX_MAX_SIZE)
@@ -1215,7 +1215,7 @@ static gxm_texture *gxm_create_empty_texture_format(unsigned int w,
    if (!texture)
       return NULL;
 
-   memset(texture, 0, sizeof(gxm_texture));
+   memset(texture, 0, sizeof(gxm_texture_t));
 
    tex_size =  w * h * tex_format_to_bytespp(format);
 
@@ -1273,26 +1273,26 @@ static gxm_texture *gxm_create_empty_texture_format(unsigned int w,
    return texture;
 }
 
-static unsigned int gxm_texture_get_stride(const gxm_texture *texture)
+static unsigned int gxm_texture_get_stride(const gxm_texture_t *texture)
 {
    return ((sceGxmTextureGetWidth(&texture->gxm_tex) + 7) & ~7)
       * tex_format_to_bytespp(sceGxmTextureGetFormat(&texture->gxm_tex));
 }
 
-static void gxm_texture_set_filters(gxm_texture *texture,
+static void gxm_texture_set_filters(gxm_texture_t *texture,
       SceGxmTextureFilter min_filter, SceGxmTextureFilter mag_filter)
 {
    sceGxmTextureSetMinFilter(&texture->gxm_tex, min_filter);
    sceGxmTextureSetMagFilter(&texture->gxm_tex, mag_filter);
 }
 
-static inline void draw_texture_scale_generic(const gxm_texture *texture,
+static inline void draw_texture_scale_generic(const gxm_texture_t *texture,
       float x, float y, float x_scale, float y_scale)
 {
-   gxm_texture_vertex *vertices = (gxm_texture_vertex *)
+   gxm_texture_vertex_t *vertices = (gxm_texture_vertex_t *)
       gxm_pool_memalign(
-      4 * sizeof(gxm_texture_vertex), /* 4 vertices */
-      sizeof(gxm_texture_vertex));
+      4 * sizeof(gxm_texture_vertex_t), /* 4 vertices */
+      sizeof(gxm_texture_vertex_t));
 
    const float w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
    const float h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
@@ -1329,7 +1329,7 @@ static inline void draw_texture_scale_generic(const gxm_texture *texture,
          SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
-static void gxm_draw_texture_scale(const gxm_texture *texture,
+static void gxm_draw_texture_scale(const gxm_texture_t *texture,
       float x, float y, float x_scale, float y_scale)
 {
    void *vertex_wvp_buffer;
@@ -1342,15 +1342,15 @@ static void gxm_draw_texture_scale(const gxm_texture *texture,
 }
 
 static inline void draw_texture_tint_part_scale_generic(
-      const gxm_texture *texture, float x, float y,
+      const gxm_texture_t *texture, float x, float y,
       float tex_x, float tex_y, float tex_w, float tex_h,
       float x_scale, float y_scale, unsigned int color)
 {
    int n;
-   gxm_texture_tint_vertex *vertices = (gxm_texture_tint_vertex *)
+   gxm_texture_tint_vertex_t *vertices = (gxm_texture_tint_vertex_t *)
       gxm_pool_memalign(
-      4 * sizeof(gxm_texture_tint_vertex), /* 4 vertices */
-      sizeof(gxm_texture_tint_vertex));
+      4 * sizeof(gxm_texture_tint_vertex_t), /* 4 vertices */
+      sizeof(gxm_texture_tint_vertex_t));
 
    const float w = sceGxmTextureGetWidth(&texture->gxm_tex);
    const float h = sceGxmTextureGetHeight(&texture->gxm_tex);
@@ -1404,7 +1404,7 @@ static inline void draw_texture_tint_part_scale_generic(
 }
 
 static void gxm_draw_texture_tint_part_scale(
-      const gxm_texture *texture, float x, float y,
+      const gxm_texture_t *texture, float x, float y,
       float tex_x, float tex_y, float tex_w, float tex_h,
       float x_scale, float y_scale, unsigned int color)
 {
@@ -1419,7 +1419,7 @@ static void gxm_draw_texture_tint_part_scale(
          tex_h, x_scale, y_scale, color);
 }
 
-static void gxm_draw_texture_scale_rotate(const gxm_texture *texture,
+static void gxm_draw_texture_scale_rotate(const gxm_texture_t *texture,
       float x, float y, float x_scale, float y_scale, float rad)
 {
    float center_y_scaled;
@@ -1432,7 +1432,7 @@ static void gxm_draw_texture_scale_rotate(const gxm_texture *texture,
    const float center_x = sceGxmTextureGetWidth(&texture->gxm_tex)  / 2.0f;
    const float center_y = sceGxmTextureGetHeight(&texture->gxm_tex) / 2.0f;
    void *vertex_wvp_buffer;
-   gxm_texture_vertex *vertices;
+   gxm_texture_vertex_t *vertices;
 
    sceGxmSetVertexProgram(gxm_context, gxm_textureVertexProgram);
    sceGxmSetFragmentProgram(gxm_context, gxm_textureFragmentProgram);
@@ -1440,10 +1440,10 @@ static void gxm_draw_texture_scale_rotate(const gxm_texture *texture,
    sceGxmSetUniformDataF(vertex_wvp_buffer, gxm_textureWvpParam, 0, 16,
          gxm_ortho_matrix);
 
-   vertices = (gxm_texture_vertex *)
+   vertices = (gxm_texture_vertex_t *)
       gxm_pool_memalign(
-      4 * sizeof(gxm_texture_vertex), /* 4 vertices */
-      sizeof(gxm_texture_vertex));
+      4 * sizeof(gxm_texture_vertex_t), /* 4 vertices */
+      sizeof(gxm_texture_vertex_t));
 
    w = x_scale * sceGxmTextureGetWidth(&texture->gxm_tex);
    h = y_scale * sceGxmTextureGetHeight(&texture->gxm_tex);
@@ -1493,8 +1493,8 @@ static void gxm_draw_texture_scale_rotate(const gxm_texture *texture,
          SCE_GXM_INDEX_FORMAT_U16, linearIndices, 4);
 }
 
-static void gxm_draw_array_textured_mat(const gxm_texture *texture,
-      const gxm_texture_tint_vertex *vertices, size_t count, float *mat)
+static void gxm_draw_array_textured_mat(const gxm_texture_t *texture,
+      const gxm_texture_tint_vertex_t *vertices, size_t count, float *mat)
 {
    void *vertex_wvp_buffer;
    sceGxmSetVertexProgram(gxm_context, gxm_textureTintVertexProgram);
@@ -1542,9 +1542,9 @@ static void *gfx_display_vita2d_get_default_mvp(void *data)
 static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
-   gxm_texture_tint_vertex *vertices;
+   gxm_texture_tint_vertex_t *vertices;
    unsigned i;
-   struct gxm_texture *texture   = NULL;
+   struct gxm_texture_t *texture   = NULL;
    const float *vertex              = NULL;
    const float *tex_coord           = NULL;
    const float *color               = NULL;
@@ -1553,7 +1553,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
    if (!vita2d || !draw)
       return;
 
-   texture            = (struct gxm_texture*)draw->texture;
+   texture            = (struct gxm_texture_t*)draw->texture;
    vertex             = draw->coords->vertex;
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
@@ -1570,10 +1570,10 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
       color           = &gxm_colors[0];
 
    gxm_set_viewport(draw->x, draw->y, draw->width, draw->height);
-   vertices = (gxm_texture_tint_vertex *)
+   vertices = (gxm_texture_tint_vertex_t *)
       gxm_pool_memalign(
-         draw->coords->vertices * sizeof(gxm_texture_tint_vertex),
-         sizeof(gxm_texture_tint_vertex));
+         draw->coords->vertices * sizeof(gxm_texture_tint_vertex_t),
+         sizeof(gxm_texture_tint_vertex_t));
 
    for (i = 0; i < draw->coords->vertices; i++)
    {
@@ -2158,7 +2158,7 @@ static bool gxm_frame(void *data, const void *frame,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
    void *tex_p;
-   gxm_display_data displayData;
+   gxm_display_data_t displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
    unsigned temp_width                    = PSP_FB_WIDTH;
    unsigned temp_height                   = PSP_FB_HEIGHT;
@@ -2626,7 +2626,7 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
    uint32_t             *tex32    = NULL;
    const uint32_t *frame32        = NULL;
    struct texture_image *image    = (struct texture_image*)data;
-   struct gxm_texture *texture = gxm_create_empty_texture_format(
+   struct gxm_texture_t *texture = gxm_create_empty_texture_format(
          image->width, image->height,
          SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB);
 
@@ -2658,7 +2658,7 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
 static void gxm_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
-   struct gxm_texture *texture = (struct gxm_texture*)handle;
+   struct gxm_texture_t *texture = (struct gxm_texture_t*)handle;
    if (!texture)
       return;
 
@@ -2757,7 +2757,7 @@ static uintptr_t gxm_load_texture_compressed(void *video_data,
       enum texture_filter_type filter_type)
 {
    unsigned i;
-   gxm_texture      *texture;
+   gxm_texture_t      *texture;
    void                *tex_data;
    SceGxmTextureFormat  gxm_fmt   = 0;
    unsigned             block_bytes = 16;
