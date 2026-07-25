@@ -938,46 +938,6 @@ static uint8_t *content_file_prefetch_take(content_state_t *p_content,
    return NULL;
 }
 
-/* Deposit callback for task_push_content_prefetch.  ud carries the
- * deferred-load continuation for the done callback, not the content
- * state - the state is a singleton and is fetched here, never cast
- * from ud. */
-static void content_file_prefetch_deposit(void *ud, const char *path,
-      uint8_t *data, size_t size)
-{
-   content_state_t *p_content = content_state_get_ptr();
-   if (p_content->prefetch_count
-         >= ARRAY_SIZE(p_content->prefetch))
-   {
-      free(data);
-      return;
-   }
-   if (!(p_content->prefetch[p_content->prefetch_count].path
-         = strdup(path)))
-   {
-      free(data);
-      return;
-   }
-   p_content->prefetch[p_content->prefetch_count].data = data;
-   p_content->prefetch[p_content->prefetch_count].size = size;
-   p_content->prefetch_count++;
-}
-
-/* Drop whatever the load did not consume. */
-static void content_file_prefetch_free(content_state_t *p_content)
-{
-   size_t i;
-   for (i = 0; i < p_content->prefetch_count; i++)
-   {
-      free(p_content->prefetch[i].path);
-      free(p_content->prefetch[i].data);
-      p_content->prefetch[i].path = NULL;
-      p_content->prefetch[i].data = NULL;
-      p_content->prefetch[i].size = 0;
-   }
-   p_content->prefetch_count = 0;
-}
-
 /**
  * content_file_load_into_memory:
  * @content_path : path of the content file.
@@ -2666,6 +2626,22 @@ static void task_content_deferred_menu_load_done(void *ud, bool all_ok)
    deferred_menu_load_ready = (struct content_deferred_menu_load*)ud;
 }
 
+/* Drop whatever the load did not consume. */
+static void content_file_prefetch_free(content_state_t *p_content)
+{
+   size_t i;
+   for (i = 0; i < p_content->prefetch_count; i++)
+   {
+      free(p_content->prefetch[i].path);
+      free(p_content->prefetch[i].data);
+      p_content->prefetch[i].path = NULL;
+      p_content->prefetch[i].data = NULL;
+      p_content->prefetch[i].size = 0;
+   }
+   p_content->prefetch_count = 0;
+}
+
+
 /* Called once per frame from runloop_iterate(): performs the
  * remainder of task_push_load_content_with_new_core_from_menu for a
  * completed prefetch, byte-for-byte the sequence the synchronous
@@ -2698,6 +2674,32 @@ void task_content_deferred_load_check(void)
    free(d->fullpath);
    free(d);
 }
+
+/* Deposit callback for task_push_content_prefetch.  ud carries the
+ * deferred-load continuation for the done callback, not the content
+ * state - the state is a singleton and is fetched here, never cast
+ * from ud. */
+static void content_file_prefetch_deposit(void *ud, const char *path,
+      uint8_t *data, size_t size)
+{
+   content_state_t *p_content = content_state_get_ptr();
+   if (p_content->prefetch_count
+         >= ARRAY_SIZE(p_content->prefetch))
+   {
+      free(data);
+      return;
+   }
+   if (!(p_content->prefetch[p_content->prefetch_count].path
+         = strdup(path)))
+   {
+      free(data);
+      return;
+   }
+   p_content->prefetch[p_content->prefetch_count].data = data;
+   p_content->prefetch[p_content->prefetch_count].size = size;
+   p_content->prefetch_count++;
+}
+
 
 /* Returns true when the load was taken over by the deferred path. */
 static bool task_content_defer_menu_load(content_state_t *p_content,
