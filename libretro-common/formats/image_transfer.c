@@ -73,7 +73,7 @@
  *   start                           Y   Y   s   s   s   s   s   s
  *   is_valid                        Y   Y   s   s   s   s   s   s
  *   process                         Y   Y   Y   Y   Y   Y   Y   Y
- *   process slices (returns NEXT)   Y   Y   .   .   Y   Y   Y   Y
+ *   process slices (returns NEXT)   Y   Y   Y   Y   Y   Y   Y   Y
  *   iterate                         Y   Y   .   .   .   .   .   .
  *   need_more                       Y   Y   .   .   .   .   .   .
  *   set_avail                       Y   Y   .   .   .   .   Y   Y
@@ -106,14 +106,11 @@
  *   iterate() that stalled at the resident-byte wall apart from one
  *   that finished.  Decode-phase slicing is the separate business of
  *   process() returning IMAGE_PROCESS_NEXT until the surface is
- *   complete, and every type except BMP and TGA does that.  So a false
- *   from iterate() does NOT mean the type decodes in one go: WEBP, DDS
- *   and the video types all answer false there while still producing
- *   their pixels over many process() calls.
- *
- * - which means BMP and TGA are the only types that hand back a whole
- *   surface from a single process() call.  Both are cheap enough per
- *   texel that it has not been worth slicing them.
+ *   complete, and every type does that.  So a false from iterate() does
+ *   NOT mean the type decodes in one go - no type produces a whole
+ *   surface from a single process() call any more, and the ones that
+ *   answer false to iterate() are simply the ones with nothing to parse
+ *   incrementally before the pixels start.
  *
  * - set_avail (the still-image byte wall) is honoured by PNG and JPEG,
  *   where it surfaces as need_more(), and by WEBM and MP4, where it
