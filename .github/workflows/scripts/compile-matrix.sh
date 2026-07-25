@@ -75,38 +75,49 @@ check "everything" \
 echo
 echo "== mem_stats platform arms =="
 
-# Only symbols that belong to no console arm: each arm's own symbols go
-# undeclared here simply because its SDK header is absent, which is
-# expected.  These six are the /proc and sysconf paths, and their
-# appearing in a console arm's diagnostics is the drift being looked for.
-CONTAMINANT='O_RDONLY|ssize_t|_SC_PHYS_PAGES|_SC_PAGE_SIZE|MemAvailable|implicit declaration of function .(open|read|close).'
+# The SDKs are not on a runner, so each arm is compiled against a stub
+# header supplying only the handful of symbols that arm names. That does
+# not prove the real SDK matches the stub - it proves the arm's own code
+# is well formed and that every symbol it uses is one it has arranged to
+# have. Three console failures reached CI as missing or wrong headers -
+# 3ds.h absent, gccore.h guessed, SYSMEM1_SIZE taken from the SDK when
+# it is RetroArch's own - and each would have shown up here.
+STUBS="$(dirname "$0")/stubs"
+# host headers are the real ones and deprecate things the target's do not
+ARMWARN="$WARN -Wno-deprecated-declarations"
 
 arm() {
-   name="$1"; defs="$2"
-   out=$($CC $WARN $INC $defs -fsyntax-only \
-      libretro-common/memory/mem_stats.c 2>&1 || true)
-   bad=$(printf '%s\n' "$out" | grep -Ei "$CONTAMINANT" || true)
-   if [ -n "$bad" ]; then
-      echo "FAIL  $name got another arm's code"
-      printf '%s\n' "$bad" | sed 's/^/      /' | head -6
+   name="$1"; stub="$2"; defs="$3"
+   inc="$INC"
+   [ -n "$stub" ] && inc="-I$STUBS/$stub $INC"
+   if ! out=$($CC $ARMWARN $inc $defs -fsyntax-only \
+         libretro-common/memory/mem_stats.c 2>&1); then
+      echo "FAIL  $name"
+      printf '%s\n' "$out" | sed 's/^/      /' | head -8
       fail=1
-   elif printf '%s\n' "$out" | grep -q "error:"; then
-      echo "ok    $name (SDK header absent, no foreign symbols)"
+   elif [ -n "$out" ]; then
+      echo "FAIL  $name (warnings)"
+      printf '%s\n' "$out" | sed 's/^/      /' | head -6
+      fail=1
    else
       echo "ok    $name"
    fi
 }
 
-arm "3ds"        "-D_3DS"
-arm "gamecube"   "-DGEKKO"
-arm "wii"        "-DGEKKO -DHW_RVL"
-arm "vita"       "-DVITA"
-arm "switch"     "-DHAVE_LIBNX"
-arm "orbis"      "-DORBIS"
-arm "ps3"        "-D__PSL1GHT__ -DHAVE_MEMINFO"
-arm "ps2"        "-DPS2"
-arm "emscripten" "-D__EMSCRIPTEN__"
-arm "dos/djgpp"  "-D__DJGPP__ -D__unix__"
-arm "linux"      ""
+arm "3ds"        ctr        "-D_3DS"
+arm "gamecube"   gx         "-DGEKKO"
+arm "wii"        gx         "-DGEKKO -DHW_RVL"
+arm "vita"       ""         "-DVITA"
+arm "switch"     libnx      "-DHAVE_LIBNX"
+arm "orbis"      orbis      "-DORBIS"
+arm "ps3"        ps3        "-D__PSL1GHT__ -DHAVE_MEMINFO"
+arm "ps2"        ""         "-DPS2"
+arm "emscripten" emscripten "-D__EMSCRIPTEN__"
+arm "win32"      win32      "-D_WIN32 -D_WIN32_WINNT=0x0600"
+arm "win32-old"  win32      "-D_WIN32 -D_WIN32_WINNT=0x0400"
+arm "macos"      apple      "-D__APPLE__"
+arm "ios"        apple      "-D__APPLE__ -DTARGET_OS_IPHONE=1"
+arm "dos/djgpp"  ""         "-D__DJGPP__ -D__unix__"
+arm "linux"      ""         ""
 
 exit $fail

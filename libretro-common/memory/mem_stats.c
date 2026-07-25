@@ -295,7 +295,7 @@ uint64_t mem_stats_total(void)
 #elif defined(MEM_STATS_PS3)
    {
       sys_memory_info_t mem_info;
-      sys_memory_get_user_memory_size((u64)&mem_info);
+      sys_memory_get_user_memory_size((uint64_t)(uintptr_t)&mem_info);
       return (uint64_t)mem_info.total;
    }
 #elif defined(MEM_STATS_EMSCRIPTEN)
@@ -419,7 +419,7 @@ uint64_t mem_stats_free(void)
    /* named get_mem_used in the frontend, but what it read was avail */
    {
       sys_memory_info_t mem_info;
-      sys_memory_get_user_memory_size((u64)&mem_info);
+      sys_memory_get_user_memory_size((uint64_t)(uintptr_t)&mem_info);
       return (uint64_t)mem_info.avail;
    }
 #elif defined(MEM_STATS_EMSCRIPTEN)
