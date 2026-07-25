@@ -83,11 +83,6 @@ typedef struct vita2d_video_mode_data {
    int stride;
 } vita2d_video_mode_data;
 
-typedef struct vita2d_clear_vertex {
-   float x;
-   float y;
-} vita2d_clear_vertex;
-
 typedef struct vita2d_color_vertex
 {
    float x;
@@ -209,8 +204,6 @@ typedef struct
 
 /* Shader program blobs */
 
-extern const SceGxmProgram clear_v_gxp;
-extern const SceGxmProgram clear_f_gxp;
 extern const SceGxmProgram color_v_gxp;
 extern const SceGxmProgram color_f_gxp;
 extern const SceGxmProgram texture_v_gxp;
@@ -226,8 +219,6 @@ static SceGxmMultisampleMode current_msaa = SCE_GXM_MULTISAMPLE_4X;
 
 static int pgf_module_was_loaded = 0;
 
-static const SceGxmProgram *const clearVertexProgramGxp         = &clear_v_gxp;
-static const SceGxmProgram *const clearFragmentProgramGxp       = &clear_f_gxp;
 static const SceGxmProgram *const colorVertexProgramGxp         = &color_v_gxp;
 static const SceGxmProgram *const colorFragmentProgramGxp       = &color_f_gxp;
 static const SceGxmProgram *const textureVertexProgramGxp       = &texture_v_gxp;
@@ -236,7 +227,6 @@ static const SceGxmProgram *const textureTintVertexProgramGxp   = &texture_tint_
 static const SceGxmProgram *const textureTintFragmentProgramGxp = &texture_tint_f_gxp;
 
 static int vita2d_initialized = 0;
-static float clear_color[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 static unsigned int clear_color_u = 0xFF000000;
 static int clip_rect_x_min = 0;
 static int clip_rect_y_min = 0;
@@ -267,11 +257,7 @@ static unsigned int backBufferIndex = 0;
 static unsigned int frontBufferIndex = 0;
 
 static SceGxmShaderPatcher *shaderPatcher = NULL;
-static SceGxmVertexProgram *clearVertexProgram = NULL;
-static SceGxmFragmentProgram *clearFragmentProgram = NULL;
 
-static SceGxmShaderPatcherId clearVertexProgramId;
-static SceGxmShaderPatcherId clearFragmentProgramId;
 static SceGxmShaderPatcherId colorVertexProgramId;
 static SceGxmShaderPatcherId colorFragmentProgramId;
 static SceGxmShaderPatcherId textureVertexProgramId;
@@ -283,9 +269,7 @@ static SceUID patcherBufferUid;
 static SceUID patcherVertexUsseUid;
 static SceUID patcherFragmentUsseUid;
 
-static SceUID clearVerticesUid;
 static SceUID linearIndicesUid;
-static vita2d_clear_vertex *clearVertices = NULL;
 static uint16_t *linearIndices = NULL;
 
 static float _vita2d_ortho_matrix[4*4];
@@ -296,7 +280,6 @@ static SceGxmVertexProgram *_vita2d_textureVertexProgram = NULL;
 static SceGxmFragmentProgram *_vita2d_textureFragmentProgram = NULL;
 static SceGxmVertexProgram *_vita2d_textureTintVertexProgram = NULL;
 static SceGxmFragmentProgram *_vita2d_textureTintFragmentProgram = NULL;
-static const SceGxmProgramParameter *_vita2d_clearClearColorParam = NULL;
 static const SceGxmProgramParameter *_vita2d_colorWvpParam = NULL;
 static const SceGxmProgramParameter *_vita2d_textureWvpParam = NULL;
 static const SceGxmProgramParameter *_vita2d_textureTintWvpParam = NULL;
@@ -647,9 +630,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    unsigned int patcherFragmentUsseSize;
    unsigned int patcherVertexUsseSize;
    unsigned int patcherBufferSize;
-   SceGxmVertexStream clearVertexStreams[1];
-   SceGxmVertexAttribute clearVertexAttributes[1];
-   const SceGxmProgramParameter *paramClearPositionAttribute;
    SceGxmVertexStream colorVertexStreams[1];
    SceGxmVertexAttribute colorVertexAttributes[2];
    const SceGxmProgramParameter *paramColorColorAttribute;
@@ -854,8 +834,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    err = sceGxmShaderPatcherCreate(&patcherParams, &shaderPatcher);
 
    /* check the shaders */
-   err = sceGxmProgramCheck(clearVertexProgramGxp);
-   err = sceGxmProgramCheck(clearFragmentProgramGxp);
    err = sceGxmProgramCheck(colorVertexProgramGxp);
    err = sceGxmProgramCheck(colorFragmentProgramGxp);
    err = sceGxmProgramCheck(textureVertexProgramGxp);
@@ -864,53 +842,12 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    err = sceGxmProgramCheck(textureTintFragmentProgramGxp);
 
    /* register programs with the patcher */
-   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearVertexProgramGxp, &clearVertexProgramId);
-   err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, clearFragmentProgramGxp, &clearFragmentProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorVertexProgramGxp, &colorVertexProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, colorFragmentProgramGxp, &colorFragmentProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureVertexProgramGxp, &textureVertexProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureFragmentProgramGxp, &textureFragmentProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintVertexProgramGxp, &textureTintVertexProgramId);
    err = sceGxmShaderPatcherRegisterProgram(shaderPatcher, textureTintFragmentProgramGxp, &textureTintFragmentProgramId);
-
-   /* get attributes by name to create vertex format bindings */
-   paramClearPositionAttribute = sceGxmProgramFindParameterByName(clearVertexProgramGxp, "aPosition");
-
-   /* create clear vertex format */
-   clearVertexAttributes[0].streamIndex   = 0;
-   clearVertexAttributes[0].offset   = 0;
-   clearVertexAttributes[0].format   = SCE_GXM_ATTRIBUTE_FORMAT_F32;
-   clearVertexAttributes[0].componentCount   = 2;
-   clearVertexAttributes[0].regIndex   = sceGxmProgramParameterGetResourceIndex(paramClearPositionAttribute);
-   clearVertexStreams[0].stride   = sizeof(vita2d_clear_vertex);
-   clearVertexStreams[0].indexSource   = SCE_GXM_INDEX_SOURCE_INDEX_16BIT;
-
-   /* create clear programs */
-   err = sceGxmShaderPatcherCreateVertexProgram(
-      shaderPatcher,
-      clearVertexProgramId,
-      clearVertexAttributes,
-      1,
-      clearVertexStreams,
-      1,
-      &clearVertexProgram);
-
-   err = sceGxmShaderPatcherCreateFragmentProgram(
-      shaderPatcher,
-      clearFragmentProgramId,
-      SCE_GXM_OUTPUT_REGISTER_FORMAT_UCHAR4,
-      current_msaa,
-      NULL,
-      clearVertexProgramGxp,
-      &clearFragmentProgram);
-
-   /* create the clear triangle vertex/index data */
-   clearVertices = (vita2d_clear_vertex *)gpu_alloc(
-      SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE,
-      3*sizeof(vita2d_clear_vertex),
-      4,
-      SCE_GXM_MEMORY_ATTRIB_READ,
-      &clearVerticesUid);
 
    /* Allocate a 64k * 2 bytes = 128 KiB buffer and store all possible */
    /* 16-bit indices in linear ascending order, so we can use this for */
@@ -926,13 +863,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    for (uint32_t i=0; i<=UINT16_MAX; ++i) {
       linearIndices[i] = i;
    }
-
-   clearVertices[0].x = -1.0f;
-   clearVertices[0].y = -1.0f;
-   clearVertices[1].x =  3.0f;
-   clearVertices[1].y = -1.0f;
-   clearVertices[2].x = -1.0f;
-   clearVertices[2].y =  3.0f;
 
    paramColorPositionAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aPosition");
    paramColorColorAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aColor");
@@ -1040,7 +970,6 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
    vita2d_set_blend_mode_add(0);
 
    /* find vertex uniforms by name and cache parameter information */
-   _vita2d_clearClearColorParam = sceGxmProgramFindParameterByName(clearFragmentProgramGxp, "uClearColor");
 
    _vita2d_colorWvpParam = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "wvp");
 
@@ -1082,8 +1011,6 @@ static int vita2d_fini(void)
    /* wait until rendering is done */
    sceGxmFinish(_vita2d_context);
    /* clean up allocations */
-   sceGxmShaderPatcherReleaseFragmentProgram(shaderPatcher, clearFragmentProgram);
-   sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, clearVertexProgram);
    sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_colorVertexProgram);
    sceGxmShaderPatcherReleaseVertexProgram(shaderPatcher, _vita2d_textureVertexProgram);
 
@@ -1091,7 +1018,6 @@ static int vita2d_fini(void)
    _vita2d_free_fragment_programs(&_vita2d_fragmentPrograms.blend_mode_add);
 
    gpu_free(linearIndicesUid);
-   gpu_free(clearVerticesUid);
 
    /* wait until display queue is finished before deallocating display buffers */
    sceGxmDisplayQueueFinish();
@@ -1113,8 +1039,6 @@ static int vita2d_fini(void)
    gpu_free(stencilBufferUid);
 
    /* unregister programs and destroy shader patcher */
-   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearFragmentProgramId);
-   sceGxmShaderPatcherUnregisterProgram(shaderPatcher, clearVertexProgramId);
    sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorFragmentProgramId);
    sceGxmShaderPatcherUnregisterProgram(shaderPatcher, colorVertexProgramId);
    sceGxmShaderPatcherUnregisterProgram(shaderPatcher, textureFragmentProgramId);
@@ -2207,10 +2131,6 @@ static void *vita2d_gfx_init(const video_info_t *video,
    ? VITA2D_VIDEO_MODE_1280x720 : VITA2D_VIDEO_MODE_960x544 );
    /* TODO/FIXME - is this color just black? */
    color = RGBA8(0x00, 0x00, 0x00, 0xFF);
-   clear_color[0] = ((color >> 8*0) & 0xFF)/255.0f;
-   clear_color[1] = ((color >> 8*1) & 0xFF)/255.0f;
-   clear_color[2] = ((color >> 8*2) & 0xFF)/255.0f;
-   clear_color[3] = ((color >> 8*3) & 0xFF)/255.0f;
    clear_color_u  = color;
    vblank_wait    = video->vsync;
 
