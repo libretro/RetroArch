@@ -20,16 +20,90 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* Reader for MAME's CHD container. See FORMAT.md beside this file for the
- * format description this is written against; every constant here traces
- * to a measurement recorded there rather than to a reading of another
- * implementation.
+/* Reader for MAME's CHD container. See FORMAT.md beside this file for
+ * the format description this is written against; every constant here
+ * traces to a measurement recorded there rather than to a reading of
+ * another implementation. The one exception is the framing of an A/V
+ * hunk's video bitstream, which FORMAT.md marks in place.
  *
  * No file I/O happens here. The decoder describes the byte ranges it
  * needs and the caller supplies them, which is what lets one image be
  * read from a task a few kilobytes at a time, from several fetches in
  * flight, or from a plain blocking read, without the reader knowing
  * which.
+ *
+ * ---------------------------------------------------------------------
+ * STATE OF THIS FILE
+ *
+ * Reading is complete for every image to hand. Fourteen commercial
+ * images spanning all five container versions decode hunk-for-hunk
+ * against an independent reader, including each image's final hunk.
+ * Nothing here writes.
+ *
+ * CONTAINER
+ *   Header               versions 1 to 5, including the geometry that
+ *                        versions 1 and 2 derive their size from rather
+ *                        than storing, and the unit size that nothing
+ *                        before version 5 records.
+ *   Maps                 all four forms: the packed 64-bit words of
+ *                        versions 1 and 2, the 16-byte entries of 3 and
+ *                        4 with their end-of-list cookie, and version
+ *                        5's flat array and Huffman-plus-RLE bitstream.
+ *   Metadata             the chain is walked at open and kept.
+ *   Tracks               CD and GD track tables, with each track padded
+ *                        to a four-frame boundary.
+ *   Integrity            version 5's map CRC-16 and versions 3 and 4's
+ *                        per-hunk CRC-32 are checked.
+ *
+ * CODECS  (each behind its own HAVE_RCHD_*, and absent means a hunk
+ *          using it is refused rather than mis-read)
+ *   none, zlib, lzma, huff, flac, zstd
+ *   cdzl, cdlz, cdfl, cdzs   with the CD framing, ECC rebuild and
+ *                            subchannel interleave
+ *   avhu                     audio/video, FLAC audio mode only
+ *
+ * ENTRY TYPES
+ *   compressed, uncompressed, mini, self-reference, parent-reference,
+ *   and version 5's hole-of-zeros, which is not an offset of zero.
+ *
+ * READING
+ *   By byte range, by hunk including a final hunk that is partly
+ *   padding, and by sector, where each sector is emitted at its own
+ *   track's size. Parent references chain through a bound parent.
+ *   One decoded hunk is cached.
+ *
+ * SUPPLYING BYTES
+ *   Requests are named by where they read from, so bytes can be
+ *   supplied out of order in principle. Borrowing avoids the copy
+ *   entirely for a caller that already holds the range.
+ *
+ * ---------------------------------------------------------------------
+ * NOT BUILT
+ *
+ *   Pipelined fetch      one request is outstanding at a time. The
+ *                        staging ring rchd_set_pipeline_depth() sizes
+ *                        does not exist, so a depth above one is
+ *                        refused rather than accepted and ignored.
+ *   avhu audio modes     the raw-delta and Huffman-delta modes are
+ *                        written but have never decoded a real stream:
+ *                        every hunk of the only A/V image to hand
+ *                        states FLAC. They are the whole of what
+ *                        separates this codec from the pre-version-5
+ *                        one, so an image of that era would settle
+ *                        both.
+ *   Pre-v5 A/V video     believed to work unchanged -- the two codecs
+ *                        agree in every particular compared -- but no
+ *                        image using it is to hand, so it is untested.
+ *   SHA-1 verification   the header's digests are parsed and exposed,
+ *                        never checked against the data. A caller that
+ *                        wants to know an image is intact has to do it.
+ *   Writing              nothing. No encoder, no repair, no conversion.
+ *   GD-ROM               its track metadata is read as CD metadata,
+ *                        which is right for the fields this uses and
+ *                        may not be for whatever else that format
+ *                        carries. No GD image is to hand either.
+ *
+ * ---------------------------------------------------------------------
  */
 
 #include <stdlib.h>
