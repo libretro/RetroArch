@@ -617,9 +617,6 @@ static void frontend_ps3_process_args(int *argc, char *argv[])
 #endif
 }
 
-
-#endif
-
 frontend_ctx_driver_t frontend_ctx_ps3 = {
    frontend_ps3_get_env,
    frontend_ps3_init,

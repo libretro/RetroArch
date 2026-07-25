@@ -39,23 +39,50 @@
 #include <memory/mem_stats.h>
 #include <string/stdstring.h>
 
+/* Pick exactly one backend, once, and key the includes and the bodies
+ * below off the same choice.  They used to be two separate chains, and
+ * a platform that matched an earlier arm here while still defining
+ * __unix__ - Orbis and Emscripten both do - took its own arm's includes
+ * and the /proc reader's code, which needs headers it had not pulled
+ * in.  One selector cannot drift from itself. */
 #if defined(_3DS)
-#include <3ds.h>
-#elif defined(GEKKO)
+#define MEM_STATS_CTR         1
+#elif defined(MEM_STATS_GX)
+#define MEM_STATS_GX          1
+#elif defined(MEM_STATS_VITA)
+#define MEM_STATS_VITA        1
+#elif defined(MEM_STATS_LIBNX)
+#define MEM_STATS_LIBNX       1
+#elif defined(MEM_STATS_SWITCH)
+#define MEM_STATS_SWITCH      1
+#elif defined(MEM_STATS_ORBIS)
+#define MEM_STATS_ORBIS       1
+#elif defined(MEM_STATS_PS3)
+#define MEM_STATS_PS3         1
+#elif defined(MEM_STATS_PS2)
+#define MEM_STATS_PS2         1
+#elif defined(MEM_STATS_EMSCRIPTEN)
+#define MEM_STATS_EMSCRIPTEN  1
+#elif defined(MEM_STATS_APPLE)
+#define MEM_STATS_APPLE       1
+#elif defined(MEM_STATS_GX)
+/* SYSMEM1_SIZE and SYS_GetArena1Size come from here, not ogcsys.h */
+#include <gccore.h>
 #include <ogcsys.h>
 #include <memory/mem2_manager.h>
-#elif defined(VITA)
+#elif defined(MEM_STATS_VITA)
 /* the bootstrap's sbrk defines the heap window this platform gets */
 extern char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
-#elif defined(SWITCH) || defined(HAVE_LIBNX)
-#ifdef HAVE_LIBNX
+#elif defined(MEM_STATS_LIBNX)
 #include <switch.h>
-#else
+#elif defined(MEM_STATS_SWITCH)
 #include <malloc.h>
-#endif
-#elif defined(ORBIS)
+#elif defined(MEM_STATS_ORBIS)
 #include <orbis/libkernel.h>
-#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+#elif defined(MEM_STATS_PS3)
+#ifdef __PSL1GHT__
+#include <ppu-lv2.h>
+#endif
 /* Neither SDK declares this: the syscall is reached by number, and the
  * shape it fills in is spelled out here, as the frontend used to. */
 typedef struct
@@ -68,31 +95,23 @@ typedef struct
 #else
 #define sys_memory_get_user_memory_size(x) system_call_1(352, x)
 #endif
-#elif defined(__EMSCRIPTEN__)
+#elif defined(MEM_STATS_EMSCRIPTEN)
 #include <emscripten/heap.h>
 #include <malloc.h>
-#elif defined(PS2)
-/* nothing to include: the estimate below is made with malloc */
-#elif defined(__APPLE__)
+#elif defined(MEM_STATS_APPLE)
 #include <TargetConditionals.h>
 #include <sys/sysctl.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
-/* Apple's own TargetConditionals answers this, so no define of ours is
- * needed: TARGET_OS_IPHONE covers the iOS family, and an SDK old enough
- * not to define it at all - the 10.5-era ones the HW_PHYSMEM fallback
- * below exists for - leaves it evaluating to 0, which is the macOS arm
- * and correct for those.  TARGET_OS_OSX would read better but only
- * arrived with the 10.12 SDK. */
-#elif defined(__WINRT__) || defined(_WIN32)
+#elif defined(MEM_STATS_WIN32)
 #include <windows.h>
-#elif defined(__linux__) || defined(__unix__)
+#elif defined(MEM_STATS_PROC)
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #endif
 
-#if defined(__linux__) || defined(__unix__)
+#if defined(MEM_STATS_PROC)
 #define MEM_STATS_PROC_MEMINFO   "/proc/meminfo"
 #define MEM_STATS_TAG_TOTAL      "MemTotal:"
 #define MEM_STATS_TAG_AVAILABLE  "MemAvailable:"
@@ -214,17 +233,17 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 
 uint64_t mem_stats_total(void)
 {
-#if defined(_3DS)
+#if defined(MEM_STATS_CTR)
    return osGetMemRegionSize(MEMREGION_ALL);
-#elif defined(GEKKO)
+#elif defined(MEM_STATS_GX)
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    return SYSMEM1_SIZE + gx_mem2_total();
 #else
    return SYSMEM1_SIZE;
 #endif
-#elif defined(VITA)
+#elif defined(MEM_STATS_VITA)
    return (uint64_t)(_newlib_heap_end - _newlib_heap_base);
-#elif defined(HAVE_LIBNX)
+#elif defined(MEM_STATS_LIBNX)
    {
       uint64_t total = 0;
       if (R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize,
@@ -232,19 +251,12 @@ uint64_t mem_stats_total(void)
          return total;
       return 0;
    }
-#elif defined(SWITCH)
+#elif defined(MEM_STATS_SWITCH)
    {
       struct mallinfo mem_info = mallinfo();
       return mem_info.usmblks;
    }
-#elif defined(__WINRT__)
-   {
-      MEMORYSTATUSEX mem_info;
-      mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-      GlobalMemoryStatusEx(&mem_info);
-      return mem_info.ullTotalPhys;
-   }
-#elif defined(_WIN32)
+#elif defined(MEM_STATS_WIN32)
    /* the Ex form arrived with 2000, and the one before it cannot
     * describe more than 4GB */
 #if _WIN32_WINNT >= 0x0500
@@ -262,25 +274,25 @@ uint64_t mem_stats_total(void)
       return mem_info.dwTotalPhys;
    }
 #endif
-#elif defined(ORBIS)
+#elif defined(MEM_STATS_ORBIS)
    {
       size_t max_mem = 0, cur_mem = 0;
       get_user_mem_size(&max_mem, &cur_mem);
       return (uint64_t)max_mem;
    }
-#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+#elif defined(MEM_STATS_PS3)
    {
       sys_memory_info_t mem_info;
       sys_memory_get_user_memory_size((u64)&mem_info);
       return (uint64_t)mem_info.total;
    }
-#elif defined(__EMSCRIPTEN__)
+#elif defined(MEM_STATS_EMSCRIPTEN)
    /* The ceiling the module may grow its heap to, which is the only
     * "total" that means anything in a wasm process. */
    return (uint64_t)emscripten_get_heap_max();
-#elif defined(PS2)
+#elif defined(MEM_STATS_PS2)
    return 32 * 1024 * 1024;
-#elif defined(__APPLE__)
+#elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    {
       uint64_t size = 0;
@@ -315,7 +327,7 @@ uint64_t mem_stats_total(void)
       return 0;
    }
 #endif
-#elif defined(__linux__) || defined(__unix__)
+#elif defined(MEM_STATS_PROC)
 #if defined(DINGUX)
    /* sysconf is not to be trusted here, so ask the file */
    {
@@ -337,9 +349,9 @@ uint64_t mem_stats_total(void)
 
 uint64_t mem_stats_free(void)
 {
-#if defined(_3DS)
+#if defined(MEM_STATS_CTR)
    return osGetMemRegionFree(MEMREGION_ALL);
-#elif defined(GEKKO)
+#elif defined(MEM_STATS_GX)
    {
       /* SYS_GetArena1Size() reports remaining MEM1 directly. */
       uint64_t total = SYS_GetArena1Size();
@@ -348,9 +360,9 @@ uint64_t mem_stats_free(void)
 #endif
       return total;
    }
-#elif defined(VITA)
+#elif defined(MEM_STATS_VITA)
    return (uint64_t)(_newlib_heap_end - _newlib_heap_cur);
-#elif defined(HAVE_LIBNX)
+#elif defined(MEM_STATS_LIBNX)
    {
       uint64_t total = 0, used = 0;
       if (     R_SUCCEEDED(svcGetInfo(&total, InfoType_TotalMemorySize,
@@ -360,19 +372,12 @@ uint64_t mem_stats_free(void)
          return total - used;
       return 0;
    }
-#elif defined(SWITCH)
+#elif defined(MEM_STATS_SWITCH)
    {
       struct mallinfo mem_info = mallinfo();
       return mem_info.fordblks;
    }
-#elif defined(__WINRT__)
-   {
-      MEMORYSTATUSEX mem_info;
-      mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-      GlobalMemoryStatusEx(&mem_info);
-      return mem_info.ullAvailPhys;
-   }
-#elif defined(_WIN32)
+#elif defined(MEM_STATS_WIN32)
 #if _WIN32_WINNT >= 0x0500
    {
       MEMORYSTATUSEX mem_info;
@@ -388,7 +393,7 @@ uint64_t mem_stats_free(void)
       return mem_info.dwAvailPhys;
    }
 #endif
-#elif defined(ORBIS)
+#elif defined(MEM_STATS_ORBIS)
    /* get_user_mem_size reports the ceiling and what is taken, so free
     * is the difference.  The frontend wired the taken figure straight
     * into the free slot, which had this platform reporting the opposite
@@ -398,14 +403,14 @@ uint64_t mem_stats_free(void)
       get_user_mem_size(&max_mem, &cur_mem);
       return (max_mem > cur_mem) ? (uint64_t)(max_mem - cur_mem) : 0;
    }
-#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+#elif defined(MEM_STATS_PS3)
    /* named get_mem_used in the frontend, but what it read was avail */
    {
       sys_memory_info_t mem_info;
       sys_memory_get_user_memory_size((u64)&mem_info);
       return (uint64_t)mem_info.avail;
    }
-#elif defined(__EMSCRIPTEN__)
+#elif defined(MEM_STATS_EMSCRIPTEN)
    /* What is left before that ceiling: the allocator's tally of what it
     * holds, taken off the maximum the heap may reach.  Growing into the
     * space between the current heap and that maximum is the runtime's
@@ -416,7 +421,7 @@ uint64_t mem_stats_free(void)
       uint64_t used  = (uint64_t)mallinfo().uordblks;
       return (limit > used) ? (limit - used) : 0;
    }
-#elif defined(PS2)
+#elif defined(MEM_STATS_PS2)
    /* No accounting to ask, so find out by trying: take the largest
     * block that can be had, three times over, and hand back what was
     * managed.  The probe transiently holds most of RAM, so the answer
@@ -451,7 +456,7 @@ uint64_t mem_stats_free(void)
       cached = free_mem;
       return cached;
    }
-#elif defined(__APPLE__)
+#elif defined(MEM_STATS_APPLE)
 #if !TARGET_OS_IPHONE
    /* Free plus reclaimable (inactive) pages, through the 32-bit
     * host_statistics interface: it exists back to 10.0 and runs on 10.5
@@ -480,7 +485,7 @@ uint64_t mem_stats_free(void)
       return 0;
    }
 #endif
-#elif defined(__linux__) || defined(__unix__)
+#elif defined(MEM_STATS_PROC)
    {
       uint64_t avail = 0;
       mem_stats_proc_meminfo(NULL, &avail);
