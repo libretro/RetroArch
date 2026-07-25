@@ -518,9 +518,30 @@ static void rtga_fast_rows(rtga_t *tga, int nrows)
    }
 
    /* The body's only early exit is the truncation check, so stopping
-    * short of 'last' means the file ran out: finish here, exactly as
-    * the unsliced loop did by falling out of its for. */
-   tga->row              = (row < last) ? tga_height : row;
+    * short of 'last' means the file ran out.  The rows it could not
+    * supply have never been written, and the surface came from malloc,
+    * so leaving it here hands the caller uninitialised heap - decoding
+    * the same short file twice returns different pixels.  Fill them
+    * with what the loop itself would have produced from zero bytes,
+    * which is also what the generic path yields on a short file, since
+    * rtga_get8 reads zero past the end: transparent for 32-bit,
+    * opaque black for 24-bit.  Under inversion the unwritten rows are
+    * the low ones rather than the high ones, but either way they are
+    * contiguous. */
+   if (row < last)
+   {
+      size_t   n    = (size_t)(tga_height - row) * (size_t)tga_width;
+      uint32_t fill = (tga_comp == 4) ? 0u : 0xFF000000u;
+      uint32_t *p   = tga_inverted
+                    ? output
+                    : output + (size_t)row * (size_t)tga_width;
+      size_t   k;
+      for (k = 0; k < n; k++)
+         p[k] = fill;
+      row = tga_height;
+   }
+
+   tga->row              = row;
    tga->s.img_buffer     = ctx.img_buffer;
 }
 
