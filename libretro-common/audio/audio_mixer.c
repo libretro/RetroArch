@@ -149,7 +149,12 @@ struct audio_mixer_voice
          unsigned    samples;
          unsigned    buf_samples;
          unsigned    channels;    /* source channels; mono is duplicated */
-         float       ratio;
+         /* Both resampler APIs take the ratio as a double, and the s16
+          * path computes it as one. Holding it as a float here meant
+          * that value was narrowed on the way in and widened again on
+          * the way out, losing precision for nothing. The float path
+          * computes a float and widens exactly, so it is unaffected. */
+         double      ratio;
          /* s16 pipeline (parallel; used when voice->is_s16) */
          int16_t    *buffer_s16;
          void       *resampler_int16;
@@ -1383,7 +1388,7 @@ static bool audio_mixer_play_stream_s16(
    voice->types.stream.resampler_int16 = resamp_i16;
    voice->types.stream.buffer_s16      = (int16_t*)sbuf;
    voice->types.stream.buf_samples     = samples;
-   voice->types.stream.ratio           = (float)ratio;
+   voice->types.stream.ratio           = ratio;
    voice->types.stream.stream          = xfer;
    voice->types.stream.position        = 0;
    voice->types.stream.samples         = 0;
