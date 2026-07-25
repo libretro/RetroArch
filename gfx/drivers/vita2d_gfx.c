@@ -1519,17 +1519,17 @@ static void gxm_draw_array_textured_mat(const gxm_texture_t *texture,
  * DISPLAY DRIVER
  */
 
-static const float *gfx_display_vita2d_get_default_vertices(void)
+static const float *gfx_display_gxm_get_default_vertices(void)
 {
    return &gxm_vertexes[0];
 }
 
-static const float *gfx_display_vita2d_get_default_tex_coords(void)
+static const float *gfx_display_gxm_get_default_tex_coords(void)
 {
    return &gxm_tex_coords[0];
 }
 
-static void *gfx_display_vita2d_get_default_mvp(void *data)
+static void *gfx_display_gxm_get_default_mvp(void *data)
 {
    vita_video_t *vita2d = (vita_video_t*)data;
 
@@ -1539,7 +1539,7 @@ static void *gfx_display_vita2d_get_default_mvp(void *data)
    return &vita2d->mvp_no_rot;
 }
 
-static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
+static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
    gxm_texture_tint_vertex_t *vertices;
@@ -1592,7 +1592,7 @@ static void gfx_display_vita2d_draw(gfx_display_ctx_draw_t *draw,
          vita2d->mvp_no_rot.data);
 }
 
-static void gfx_display_vita2d_scissor_begin(void *data,
+static void gfx_display_gxm_scissor_begin(void *data,
       unsigned video_width,
       unsigned video_height,
       int x, int y,
@@ -1603,7 +1603,7 @@ static void gfx_display_vita2d_scissor_begin(void *data,
          x + width, y + height);
 }
 
-static void gfx_display_vita2d_scissor_end(
+static void gfx_display_gxm_scissor_end(
       void *data,
       unsigned video_width,
       unsigned video_height)
@@ -1621,20 +1621,20 @@ static void gfx_display_vita2d_scissor_end(
          0xFF);
 }
 
-gfx_display_ctx_driver_t gfx_display_ctx_vita2d = {
-   gfx_display_vita2d_draw,
+gfx_display_ctx_driver_t gfx_display_ctx_gxm = {
+   gfx_display_gxm_draw,
    NULL,                                        /* draw_pipeline */
    NULL,                                        /* blend_begin   */
    NULL,                                        /* blend_end     */
-   gfx_display_vita2d_get_default_mvp,
-   gfx_display_vita2d_get_default_vertices,
-   gfx_display_vita2d_get_default_tex_coords,
+   gfx_display_gxm_get_default_mvp,
+   gfx_display_gxm_get_default_vertices,
+   gfx_display_gxm_get_default_tex_coords,
    FONT_DRIVER_RENDER_VITA2D,
    GFX_VIDEO_DRIVER_VITA2D,
    "vita2d",
    true,
-   gfx_display_vita2d_scissor_begin,
-   gfx_display_vita2d_scissor_end
+   gfx_display_gxm_scissor_begin,
+   gfx_display_gxm_scissor_end
 };
 
 /*
@@ -2011,7 +2011,7 @@ static bool gxm_font_get_line_metrics(void* data,
    return false;
 }
 
-font_renderer_t vita2d_vita_font = {
+font_renderer_t gxm_font = {
    gxm_font_init,
    gxm_font_free,
    gxm_font_render_msg,
@@ -3018,7 +3018,7 @@ static void gxm_get_overlay_interface(void *data, const video_overlay_interface_
 }
 #endif
 
-video_driver_t video_vita2d = {
+video_driver_t video_gxm = {
    gxm_gfx_init,
    gxm_frame,
    gxm_set_nonblock_state,

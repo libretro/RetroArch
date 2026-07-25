@@ -158,7 +158,7 @@ extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
 extern font_renderer_t ps2_font;
-extern font_renderer_t vita2d_vita_font;
+extern font_renderer_t gxm_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
