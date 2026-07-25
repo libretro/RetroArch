@@ -85,9 +85,9 @@
  *     WAVE_FORMAT_EXTENSIBLE SubFormat names one (rwav resolves that
  *     header, so a file extensible only for its channel count or
  *     width arrives as the PCM or float it holds).  No demuxed input.
- *     Note the mixer takes stream voices at one or two channels, so a
- *     5.1 WAV parses here and is turned away there, as a 5.1 FLAC
- *     already is.
+ *     Multichannel parses here and plays: the mixer folds anything up
+ *     to eight channels to stereo, so a 5.1 WAV is heard rather than
+ *     refused, as a 5.1 FLAC is.
  *
  * FLAC (rflac)
  *   Does: buffer input; s16 and f32, freely mixed; channels, rate and
@@ -152,9 +152,9 @@
  *
  *     On channels this arm is not the limit: rvorbis decodes one
  *     through sixteen, verified against libvorbis, and reports what
- *     the stream holds.  A 5.1 file therefore parses here and is
- *     turned away by the mixer, which takes stream voices at one or
- *     two channels - the same place a 5.1 WAV or FLAC stops.
+ *     the stream holds.  A 5.1 file therefore parses here and plays:
+ *     the mixer folds up to eight channels to stereo, and refuses
+ *     only what is wider than that.
  *
  * MP3 (rmp3)
  *   Does: buffer input; s16 (quantised by the synthesis filter, no float
@@ -226,7 +226,8 @@
  *     family 1 - a surround stream is several substreams scattered to
  *     the output channels by the head's mapping table - and refuses
  *     families 2, 3 and 255.  As with Vorbis the arm is not where a
- *     multichannel file stops; the mixer is, at one or two channels.
+ *     multichannel file stops; the mixer folds up to eight channels
+ *     to stereo and refuses only what is wider.
  *     The rate is always the 48 kHz Opus decodes at, never the
  *     original input rate.
  *
