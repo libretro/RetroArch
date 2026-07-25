@@ -94,10 +94,9 @@
  * - start / is_valid are header probes.  Only PNG and JPEG parse a
  *   header incrementally and can therefore fail before decoding; the
  *   other backends validate inside their one-shot process step, so the
- *   stubs answer true and let process() report the failure.  They
- *   answer true even with the format's HAVE_ guard off, which is
- *   harmless: new() already returned NULL, and process() is then a
- *   no-op returning 0.
+ *   stubs answer true and let process() report the failure.  Each stub
+ *   is behind its format's HAVE_ guard like every other case, so a
+ *   type compiled out answers false here as well.
  *
  * - iterate / need_more are the incremental decode loop, PNG and JPEG
  *   only.  Every other type decodes in a single process() call, so
@@ -291,13 +290,29 @@ bool image_transfer_start(void *data, enum image_type_enum type)
          break;
 #endif
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_DDS:
 #ifdef HAVE_RDDS
          return true;
@@ -336,13 +351,29 @@ bool image_transfer_is_valid(
          break;
 #endif
       case IMAGE_TYPE_BMP:
+#ifdef HAVE_RBMP
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBP:
+#ifdef HAVE_RWEBP
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_WEBM:
+#ifdef HAVE_RWEBM
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_MP4:
+#ifdef HAVE_RMP4
          return true;
+#else
+         break;
+#endif
       case IMAGE_TYPE_DDS:
 #ifdef HAVE_RDDS
          return true;
@@ -665,40 +696,32 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
       case IMAGE_TYPE_PNG:
 #ifdef HAVE_RPNG
          if (!rpng_iterate_image((rpng_t*)data))
-            return false;
-#endif
+            break;
+         return true;
+#else
          break;
+#endif
       case IMAGE_TYPE_JPEG:
 #ifdef HAVE_RJPEG
          if (!rjpeg_iterate_image((rjpeg_t*)data))
-            return false;
-#endif
+            break;
+         return true;
+#else
          break;
+#endif
+      /* One-shot decoders: nothing to iterate, the whole image is
+       * produced by image_transfer_process(). */
       case IMAGE_TYPE_TGA:
-#ifdef HAVE_RTGA
-         return false;
-#else
-         break;
-#endif
       case IMAGE_TYPE_BMP:
-         return false;
       case IMAGE_TYPE_WEBP:
-         return false;
-      case IMAGE_TYPE_WEBM:
-         return false;
-      case IMAGE_TYPE_MP4:
-         return false;
       case IMAGE_TYPE_DDS:
-#ifdef HAVE_RDDS
-         return false;
-#else
-         break;
-#endif
+      case IMAGE_TYPE_WEBM:
+      case IMAGE_TYPE_MP4:
       case IMAGE_TYPE_NONE:
-         return false;
+         break;
    }
 
-   return true;
+   return false;
 }
 
 void image_transfer_set_avail(void *data, enum image_type_enum type,
