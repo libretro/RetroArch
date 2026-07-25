@@ -317,6 +317,15 @@ struct rvorbis
 
    uint8_t  push_mode;
 
+   /* Raw-packet mode (rvorbis_open_packets): the input is one bare
+    * Vorbis packet at a time rather than an Ogg stream.  next_segment
+    * synthesises the lacing over the packet where it lies, so the bit
+    * reader, the setup parser and the frame decoder are the same code
+    * in both modes and no framing is ever materialised. */
+   uint8_t  packet_mode;
+   uint8_t  packet_ready;  /* a fed packet the decoder has not taken yet */
+   uint32_t packet_left;   /* bytes of it not yet handed to a segment    */
+
    uint32_t first_audio_page_offset;
 
    ProbedPage p_first, p_last;
@@ -1033,6 +1042,17 @@ static int start_packet(vorb *f)
 
 static int maybe_start_packet(vorb *f)
 {
+   if (f->packet_mode)
+   {
+      /* The bounds were set when the packet was fed; there is no page
+       * to open.  Consuming the flag here is what stops the retry loop
+       * in vorbis_decode_initial from re-reading a drained packet when
+       * the one fed was not an audio packet. */
+      if (!f->packet_ready)
+         return 0;
+      f->packet_ready = 0;
+      return 1;
+   }
    if (f->next_seg == -1)
    {
       int x = get8(f);
@@ -1065,6 +1085,24 @@ static int next_segment(vorb *f)
    int len;
    if (f->last_seg)
       return 0;
+   if (f->packet_mode)
+   {
+      /* One packet, laced as Ogg would have laced it, but computed
+       * rather than read: 255-byte segments until fewer than 255
+       * bytes remain, then the short (possibly zero-length) segment
+       * that terminates the packet.  A length that is a multiple of
+       * 255 therefore ends on a returned 0, which the callers already
+       * read as end of packet. */
+      len            = (f->packet_left >= 255) ? 255 : (int)f->packet_left;
+      f->packet_left -= (uint32_t)len;
+      if (len < 255)
+      {
+         f->last_seg       = 1;
+         f->last_seg_which = 0;
+      }
+      f->bytes_in_seg = (uint8_t)len;
+      return len;
+   }
    if (f->next_seg == -1)
    {
       f->last_seg_which = f->segment_count-1; /* in case start_page fails */
@@ -4320,29 +4358,14 @@ static void rvorbis_materialize_first_frame(rvorbis *f)
    }
 }
 
-static int start_decoder(vorb *f)
+/* The identification header: 30 fixed bytes read straight out of the
+ * stream where it sits, the packet layer buying nothing for a packet
+ * whose length is already known.  Shared by the Ogg opener, which has
+ * just checked that the first page carries exactly this packet, and by
+ * the raw-packet opener, which is handed the packet by its container. */
+static int parse_id_header(vorb *f)
 {
-   uint8_t header[6], x,y;
-   int len,i,j,k, max_submaps = 0;
-   int longest_floorlist=0;
-
-   /* first page, first packet */
-
-   if (!start_page(f))
-      return 0;
-
-   /* validate page flag */
-   if (!(f->page_flag & PAGEFLAG_first_page))
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_last_page)
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->page_flag & PAGEFLAG_continued_packet)
-      return error(f, RVORBIS_invalid_first_page);
-   /* check for expected packet length */
-   if (f->segment_count != 1)
-      return error(f, RVORBIS_invalid_first_page);
-   if (f->segments[0] != 30)
-      return error(f, RVORBIS_invalid_first_page);
+   uint8_t header[6], x;
    /* read packet
     * check packet header */
    if (get8(f) != RVORBIS_packet_id)
@@ -4383,6 +4406,37 @@ static int start_decoder(vorb *f)
    x = get8(f);
    if (!(x & 1))
       return error(f, RVORBIS_invalid_first_page);
+   return 1;
+}
+
+/* From the setup header on: the setup parse, and the allocation and
+ * precomputation that it sizes.  Entered with the bit reader positioned
+ * at the first byte of the setup packet, under either framing. */
+static int start_decoder_setup(vorb *f);
+
+static int start_decoder(vorb *f)
+{
+   int len;
+
+   /* first page, first packet */
+
+   if (!start_page(f))
+      return 0;
+
+   /* validate page flag */
+   if (!(f->page_flag & PAGEFLAG_first_page))
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->page_flag & PAGEFLAG_last_page)
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->page_flag & PAGEFLAG_continued_packet)
+      return error(f, RVORBIS_invalid_first_page);
+   /* check for expected packet length */
+   if (f->segment_count != 1)
+      return error(f, RVORBIS_invalid_first_page);
+   if (f->segments[0] != 30)
+      return error(f, RVORBIS_invalid_first_page);
+   if (!parse_id_header(f))
+      return 0;
 
    /* second packet! */
    if (!start_page(f))
@@ -4401,6 +4455,15 @@ static int start_decoder(vorb *f)
    /* third packet! */
    if (!start_packet(f))
       return 0;
+
+   return start_decoder_setup(f);
+}
+
+static int start_decoder_setup(vorb *f)
+{
+   uint8_t header[6], x,y;
+   int i,j,k, max_submaps = 0;
+   int longest_floorlist=0;
 
    crc32_init(); /* always init it, to avoid multithread race conditions */
 
@@ -4942,7 +5005,11 @@ skip:;
          return error(f, RVORBIS_outofmem);
    }
 
-   f->first_audio_page_offset = (unsigned int)(f->stream - f->stream_start);
+   /* Ogg only: the byte the audio starts at, which rewind returns
+    * to.  Raw-packet mode is positioned by its feeder, not by an
+    * offset into a stream it does not have. */
+   if (!f->packet_mode)
+      f->first_audio_page_offset = (unsigned int)(f->stream - f->stream_start);
 
    return 1;
 }
@@ -5626,33 +5693,89 @@ rvorbis * rvorbis_open_memory(const unsigned char *data, int len, int *error, rv
    return NULL;
 }
 
+
+/* The interleave copy, shared by the streaming getters and the
+ * raw-packet reads: frames the decoder has produced and not yet handed
+ * out, taken from the per-channel buffers into the caller's.  Advances
+ * channel_buffer_start by what it copies, advances the caller's write
+ * pointer with it, and returns the count in frames.  The output mode is
+ * the caller's to select first; these read the buffers as the latch
+ * says they are laid out. */
+static int rvorbis_drain_float(rvorbis *f, int channels, float **pbuffer,
+      int frames)
+{
+   float *buffer = *pbuffer;
+   int    i, j;
+   int    z = f->channels;
+   int    k = f->channel_buffer_end - f->channel_buffer_start;
+   if (z > channels)
+      z = channels;
+   if (k > frames)
+      k = frames;
+   if (k <= 0)
+      return 0;
+   for (j=0; j < k; ++j)
+   {
+      for (i=0; i < z; ++i)
+         *buffer++ = f->channel_buffers[i][f->channel_buffer_start+j];
+      for (   ; i < channels; ++i)
+         *buffer++ = 0;
+   }
+   f->channel_buffer_start += k;
+   *pbuffer = buffer;
+   return k;
+}
+
+/* As above, quantised during the copy: Q28 buffers, so
+ * s16 = round(x * 32768) = round(v / 2^13), rounded half away from zero
+ * and clamped.  This is the only place the quantiser exists. */
+static int rvorbis_drain_s16(rvorbis *f, int channels, int16_t **pbuffer,
+      int frames)
+{
+   int16_t *buffer = *pbuffer;
+   int      i, j;
+   int      z = f->channels;
+   int      k = f->channel_buffer_end - f->channel_buffer_start;
+   if (z > channels)
+      z = channels;
+   if (k > frames)
+      k = frames;
+   if (k <= 0)
+      return 0;
+   for (j=0; j < k; ++j)
+   {
+      for (i=0; i < z; ++i)
+      {
+         int32_t v = ((int32_t *) f->channel_buffers[i])[f->channel_buffer_start+j];
+         int32_t q = (v >= 0) ? ((v + (1 << 12)) >> 13)
+                              : -((-v + (1 << 12)) >> 13);
+         if (q >  32767)
+            q =  32767;
+         if (q < -32768)
+            q = -32768;
+         *buffer++ = (int16_t)q;
+      }
+      for (   ; i < channels; ++i)
+         *buffer++ = 0;
+   }
+   f->channel_buffer_start += k;
+   *pbuffer = buffer;
+   return k;
+}
+
 int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
       float *buffer, int num_floats)
 {
    float **outputs;
    int len = num_floats / channels;
-   int n=0;
-   int z = f->channels;
+   int n   = 0;
 
    rvorbis_set_output_mode(f, 0);
    rvorbis_materialize_first_frame(f);
-   if (z > channels)
-      z = channels;
-   while (n < len)
+   for (;;)
    {
-      int i,j;
-      int k = f->channel_buffer_end - f->channel_buffer_start;
-      if (n+k >= len) k = len - n;
-      for (j=0; j < k; ++j)
-      {
-         for (i=0; i < z; ++i)
-            *buffer++ = f->channel_buffers[i][f->channel_buffer_start+j];
-         for (   ; i < channels; ++i)
-            *buffer++ = 0;
-      }
-      n += k;
-      f->channel_buffer_start += k;
-      if (n == len)
+      n += rvorbis_drain_float(f, channels, &buffer, len - n);
+      if (n >= len)
          break;
       if (!rvorbis_get_frame_float(f, NULL, &outputs))
          break;
@@ -5661,54 +5784,184 @@ int rvorbis_get_samples_float_interleaved(rvorbis *f, int channels,
 }
 
 /* Native signed 16-bit output: identical to the float read except that
- * quantisation (round half away from zero, clamped) happens during the
- * interleave copy, so the samples go from the per-channel decode
- * buffers to the caller's buffer in a single pass with no intermediate
- * float staging.  Vorbis is a float-internal codec, so one
- * quantisation at the output boundary is the minimum possible. */
+ * quantisation happens during the interleave copy, so the samples go
+ * from the per-channel decode buffers to the caller's buffer in a
+ * single pass with no intermediate float staging.  Vorbis is a
+ * float-internal codec, so one quantisation at the output boundary is
+ * the minimum possible. */
 int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels,
       int16_t *buffer, int num_shorts)
 {
    float **outputs;
    int len = num_shorts / channels;
-   int n=0;
-   int z = f->channels;
+   int n   = 0;
 
    rvorbis_set_output_mode(f, 1);
    rvorbis_materialize_first_frame(f);
-   if (z > channels)
-      z = channels;
-   while (n < len)
+   for (;;)
    {
-      int i,j;
-      int k = f->channel_buffer_end - f->channel_buffer_start;
-      if (n+k >= len) k = len - n;
-      for (j=0; j < k; ++j)
-      {
-         /* Q28 buffers: s16 = round(x * 32768) = round(v / 2^13),
-          * rounded half away from zero and clamped as the float
-          * quantiser below. */
-         for (i=0; i < z; ++i)
-         {
-            int32_t v = ((int32_t *) f->channel_buffers[i])[f->channel_buffer_start+j];
-            int32_t q = (v >= 0) ? ((v + (1 << 12)) >> 13)
-                                 : -((-v + (1 << 12)) >> 13);
-            if (q >  32767)
-               q =  32767;
-            if (q < -32768)
-               q = -32768;
-            *buffer++ = (int16_t)q;
-         }
-
-         for (   ; i < channels; ++i)
-            *buffer++ = 0;
-      }
-      n += k;
-      f->channel_buffer_start += k;
-      if (n == len)
+      n += rvorbis_drain_s16(f, channels, &buffer, len - n);
+      if (n >= len)
          break;
       if (!rvorbis_get_frame_float(f, NULL, &outputs))
          break;
    }
    return n;
+}
+
+/* --- RAW PACKET API ---------------------------------------------------
+ *
+ * A container that delimits Vorbis packets itself (Matroska/WebM, and
+ * anything else that carries the three setup headers out of band) has
+ * no Ogg for this decoder to walk.  Nothing is synthesised for it:
+ * rvorbis_open_packets parses the identification and setup headers
+ * where the container put them, and rvorbis_packet_decode reads each
+ * audio packet where the container put that, next_segment laying Ogg's
+ * lacing over the bytes arithmetically rather than the caller writing
+ * it out.  The comment header is not wanted - it carries no decode
+ * state, and the Ogg opener skips over it too.
+ *
+ * Overlap-add makes this one packet in, zero or more frames out: the
+ * first audio packet primes the window and yields nothing, and each
+ * one after that yields the frames its predecessor's right half
+ * overlapped.  So decode returns a count and the reads drain it,
+ * instead of a packet call filling a caller buffer end to end.
+ */
+
+/* Point the reader at one packet.  Everything the segment layer would
+ * have taken from a page header is set here instead. */
+static void rvorbis_feed_packet(vorb *f, const void *packet, uint32_t len)
+{
+   f->stream         = (uint8_t *)packet;
+   f->stream_start   = (uint8_t *)packet;
+   f->stream_end     = (uint8_t *)packet + len;
+   f->stream_len     = len;
+   f->packet_left    = len;
+   f->packet_ready   = 1;
+   f->eof            = 0;
+   f->last_seg       = 0;
+   f->last_seg_which = 0;
+   f->next_seg       = 0;
+   f->bytes_in_seg   = 0;
+   f->valid_bits     = 0;
+   f->packet_bytes   = 0;
+   f->acc            = 0;
+   f->page_flag      = 0;
+   /* No granule ever arrives here, so the branch in
+    * vorbis_decode_packet_rest that trusts one must never match: -2 is
+    * the "no known location" value a page header without one leaves. */
+   f->end_seg_with_known_loc = -2;
+}
+
+rvorbis * rvorbis_open_packets(const unsigned char *id_header, int id_len,
+      const unsigned char *setup_header, int setup_len,
+      int *error, rvorbis_alloc *alloc)
+{
+   rvorbis *f, p;
+   if (   !id_header    || id_len != 30
+       || !setup_header || setup_len <= 0)
+   {
+      if (error)
+         *error = RVORBIS_invalid_first_page;
+      return NULL;
+   }
+   vorbis_init(&p, alloc);
+   p.packet_mode  = 1;
+   /* The identification header is a flat 30 bytes; read it where it
+    * lies, exactly as the Ogg opener reads it out of its one-segment
+    * first page. */
+   p.stream       = (uint8_t *)id_header;
+   p.stream_start = (uint8_t *)id_header;
+   p.stream_end   = (uint8_t *)id_header + id_len;
+   p.stream_len   = (uint32_t)id_len;
+   if (parse_id_header(&p))
+   {
+      rvorbis_feed_packet(&p, setup_header, (uint32_t)setup_len);
+      if (start_decoder_setup(&p))
+      {
+         f = vorbis_alloc(&p);
+         if (f)
+         {
+            *f = p;
+            /* Nothing to pump: there is no stream to read the first
+             * frame out of ahead of the caller feeding it. */
+            f->first_frame_pending = 0;
+            return f;
+         }
+      }
+   }
+   if (error)
+      *error = p.error;
+   vorbis_deinit(&p);
+   return NULL;
+}
+
+void rvorbis_packet_reset(rvorbis *f)
+{
+   if (!f)
+      return;
+   f->previous_length          = 0;
+   f->first_decode             = 1;
+   f->current_loc              = 0;
+   f->current_loc_valid        = 0;
+   f->discard_samples_deferred = 0;
+   f->samples_output           = 0;
+   f->channel_buffer_start     = 0;
+   f->channel_buffer_end       = 0;
+   f->packet_ready             = 0;
+   f->packet_left              = 0;
+   f->last_seg                 = 0;
+   f->eof                      = 0;
+   f->error                    = RVORBIS__no_error;
+}
+
+int rvorbis_packet_decode(rvorbis *f, const void *packet, size_t len,
+      int s16)
+{
+   int frames, left, right;
+   if (!f || !f->packet_mode)
+      return -1;
+   /* A packet with no bytes carries no audio.  Saying so here keeps it
+    * out of the bit reader, which would otherwise read the mode number
+    * off the end and decode whatever fell out. */
+   if (!packet || !len)
+      return 0;
+   if (len > (size_t)0x7FFFFFFF)
+      return -1;
+   rvorbis_set_output_mode(f, s16 ? 1 : 0);
+   rvorbis_feed_packet(f, packet, (uint32_t)len);
+   if (!vorbis_decode_packet(f, &frames, &left, &right))
+   {
+      f->channel_buffer_start = f->channel_buffer_end = 0;
+      return 0;
+   }
+   frames = vorbis_finish_frame(f, frames, left, right);
+   f->channel_buffer_start = left;
+   f->channel_buffer_end   = left + frames;
+   return frames;
+}
+
+int rvorbis_packet_pending(rvorbis *f)
+{
+   if (!f)
+      return 0;
+   return f->channel_buffer_end - f->channel_buffer_start;
+}
+
+int rvorbis_packet_read_float(rvorbis *f, int channels, float *buffer,
+      int num_floats)
+{
+   if (!f || !buffer || channels <= 0)
+      return 0;
+   rvorbis_set_output_mode(f, 0);
+   return rvorbis_drain_float(f, channels, &buffer, num_floats / channels);
+}
+
+int rvorbis_packet_read_s16(rvorbis *f, int channels, int16_t *buffer,
+      int num_shorts)
+{
+   if (!f || !buffer || channels <= 0)
+      return 0;
+   rvorbis_set_output_mode(f, 1);
+   return rvorbis_drain_s16(f, channels, &buffer, num_shorts / channels);
 }

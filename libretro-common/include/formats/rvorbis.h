@@ -81,6 +81,55 @@ extern int rvorbis_get_samples_s16_interleaved(rvorbis *f, int channels, int16_t
  * the fixed-point pipeline: Q28 inverse MDCT and windowing, quantised
  * to s16 (round half away from zero, clamped) at the interleave copy. */
 
+/*   RAW PACKET API */
+
+/* For containers that delimit Vorbis packets themselves (Matroska/WebM
+ * and the rest), which carry the setup headers out of band and hand the
+ * audio over one bare packet at a time.  No Ogg is involved and none is
+ * synthesised: the packets are decoded where the caller's container
+ * holds them.
+ *
+ * A context opened this way takes packets and nothing else.  The
+ * pulling API above - seek, buffer_tell, stream_length_in_samples,
+ * get_samples_* - reads an Ogg stream this context does not have, and
+ * must not be used on it.  rvorbis_get_info, rvorbis_get_error and
+ * rvorbis_close apply to both. */
+
+extern rvorbis * rvorbis_open_packets(const unsigned char *id_header,
+      int id_len, const unsigned char *setup_header, int setup_len,
+      int *error, rvorbis_alloc *alloc);
+/* create a decoder from the identification header (30 bytes) and the
+ * setup header, both as the container stores them - packet type byte
+ * and "vorbis" signature included.  The comment header is not needed.
+ * On failure, returns NULL and sets *error. */
+
+extern int rvorbis_packet_decode(rvorbis *f, const void *packet,
+      size_t len, int s16);
+/* decode one audio packet.  s16 selects the pipeline the frames are
+ * produced through, matching the read that will drain them (the two
+ * may still be mixed freely: a read in the other format converts what
+ * is pending).  Returns the number of frames now available, which is 0
+ * for the first audio packet - overlap-add has no left half to fold it
+ * into yet - and 0 for a packet that holds no audio.  Returns < 0 if
+ * the context was not opened with rvorbis_open_packets. */
+
+extern int rvorbis_packet_pending(rvorbis *f);
+/* frames decoded and not yet read. */
+
+extern int rvorbis_packet_read_float(rvorbis *f, int channels,
+      float *buffer, int num_floats);
+extern int rvorbis_packet_read_s16(rvorbis *f, int channels,
+      int16_t *buffer, int num_shorts);
+/* drain up to num_floats/num_shorts divided by channels frames of what
+ * the last packet produced, interleaved to the caller's channel count.
+ * Returns the frames copied; short of the ask means the packet is
+ * spent, not that the stream is. */
+
+extern void rvorbis_packet_reset(rvorbis *f);
+/* discard the overlap history and the pending frames, leaving the
+ * context as it was before its first packet.  This is what a rewind is
+ * on a packet-fed stream: the caller restarts its own packet walk. */
+
 #ifdef __cplusplus
 }
 #endif
