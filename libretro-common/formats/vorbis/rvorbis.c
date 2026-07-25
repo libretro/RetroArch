@@ -1778,7 +1778,12 @@ static void decode_residue(vorb *f, float *residue_buffers[], int ch, int n, int
     * channel interleaved into it, so its length follows the channel
     * count.  Two is only right for stereo, and clamping a wider
     * stream to it drops the partitions past the clamp - they are
-    * never decoded, and what comes out is noise. */
+    * never decoded, and what comes out is noise.
+    *
+    * Inherited from upstream stb_vorbis, which has the same 2*n here
+    * and the same missing channel count in the setup bound; the two
+    * together are why multichannel Vorbis does not decode there
+    * either. */
    unsigned int actual_size = rtype == 2
       ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
    unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;
@@ -3592,7 +3597,12 @@ static void decode_residue_q(vorb *f, int32_t *residue_buffers[], int ch, int n,
     * channel interleaved into it, so its length follows the channel
     * count.  Two is only right for stereo, and clamping a wider
     * stream to it drops the partitions past the clamp - they are
-    * never decoded, and what comes out is noise. */
+    * never decoded, and what comes out is noise.
+    *
+    * Inherited from upstream stb_vorbis, which has the same 2*n here
+    * and the same missing channel count in the setup bound; the two
+    * together are why multichannel Vorbis does not decode there
+    * either. */
    unsigned int actual_size = rtype == 2
       ? (unsigned int)n * (unsigned int)ch : (unsigned int)n;
    unsigned int limit_r_begin = r->begin < actual_size ? r->begin : actual_size;

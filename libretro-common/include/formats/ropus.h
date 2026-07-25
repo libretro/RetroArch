@@ -41,6 +41,19 @@ typedef struct ropus ropus_t;
 /* Parse an OpusHead (RFC 7845 5.1, e.g. a container's CodecPrivate) and
  * create a decoder.  Only channel mapping family 0 (mono/stereo) is
  * supported.  Returns NULL on malformed or unsupported input. */
+/* Create a decoder from an OpusHead (RFC 7845 s5.1).
+ *
+ * Mapping family 0 (mono or stereo) and family 1 (up to eight
+ * channels) are both taken.  A family 1 stream is several substreams,
+ * the first nb_coupled of them stereo and the rest mono, each decoded
+ * independently and scattered to the output channels by the mapping
+ * table in the head; a table entry of 255 leaves that output channel
+ * silent.  The channels come out in the stream's own order, which for
+ * six is Vorbis's L, C, R, SL, SR, LFE and not the order most players
+ * write to a file.  Families 2, 3 and 255 are refused, as is a head
+ * whose table names a channel no substream decodes.
+ *
+ * NULL on anything unparseable or unsupported. */
 ropus_t *ropus_open(const void *opus_head, size_t head_size);
 
 void ropus_close(ropus_t *o);

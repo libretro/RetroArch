@@ -188,7 +188,9 @@
  *     demuxed input.
  *
  * Opus (ropus)
- *   Does: three inputs - Ogg Opus buffer (.opus, pages walked in place
+ *   Does: mono through eight channels, mapping families 0 and 1, the
+ *     channels emitted in the stream's own order rather than any
+ *     player's layout; three inputs - Ogg Opus buffer (.opus, pages walked in place
  *     per RFC 3533/7845, a packet copied only where it spans pages),
  *     WebM buffer (.weba, HAVE_RWEBM, packets pulled from rwebm on
  *     demand), and demuxed (OpusHead + delimited packets); s16 and f32;
@@ -221,9 +223,12 @@
  *     handled - pages are walked in order, the serial is ignored and
  *     the page CRC is not verified.  A page-spanning packet larger
  *     than asm_buf is an error, not a reallocation.  Channel mapping
- *     families other than 0 (mono and stereo) are refused by
- *     ropus_open, and the rate is always the 48 kHz Opus decodes at,
- *     never the original input rate.
+ *     family 1 - a surround stream is several substreams scattered to
+ *     the output channels by the head's mapping table - and refuses
+ *     families 2, 3 and 255.  As with Vorbis the arm is not where a
+ *     multichannel file stops; the mixer is, at one or two channels.
+ *     The rate is always the 48 kHz Opus decodes at, never the
+ *     original input rate.
  *
  * AAC (raac)
  *   Does: three inputs - ADTS buffer (.aac, the AudioSpecificConfig

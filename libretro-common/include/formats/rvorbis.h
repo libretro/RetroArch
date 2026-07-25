@@ -32,7 +32,12 @@ typedef struct
    int max_frame_size;
 } rvorbis_info;
 
-/* get general information about the file */
+/* get general information about the file.
+ *
+ * channels is what the stream carries, one through sixteen; the
+ * decoder does not fold anything down, and multichannel output comes
+ * out in Vorbis's own channel order (for six: L, C, R, SL, SR, LFE),
+ * which is not the order most players write to a file. */
 extern rvorbis_info rvorbis_get_info(rvorbis *f);
 
 /* get the last error detected (clears it, too) */
