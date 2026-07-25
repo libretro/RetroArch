@@ -98,10 +98,15 @@
  *                        never checked against the data. A caller that
  *                        wants to know an image is intact has to do it.
  *   Writing              nothing. No encoder, no repair, no conversion.
- *   GD-ROM               its track metadata is read as CD metadata,
- *                        which is right for the fields this uses and
- *                        may not be for whatever else that format
- *                        carries. No GD image is to hand either.
+ *   GD-ROM PAD field     a GD track carries a PAD the CD form does
+ *                        not. It describes the disc, not the file --
+ *                        placing tracks by it puts every track after
+ *                        the first at the wrong offset -- so it is
+ *                        read past. Whatever it is for, nothing here
+ *                        needs it. Decoding and track placement are
+ *                        verified on a GD image; anything that wants
+ *                        the disc geometry rather than the storage
+ *                        layout does not get it from here.
  *
  * ---------------------------------------------------------------------
  */

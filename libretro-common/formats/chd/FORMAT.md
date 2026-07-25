@@ -464,6 +464,27 @@ equals the image's frame count exactly, every time — the unpadded total
 never does except when every track happens to be a multiple of four
 already.
 
+**A GD-ROM image describes its tracks the same way, under the tag
+`CHGD`, with one field more.** A GD track carries `PAD:`, which a CD
+track does not:
+
+    TRACK:2 TYPE:AUDIO SUBTYPE:NONE FRAMES:44164 PAD:43335 PREGAP:0 ...
+
+**`PAD` is not the storage padding.** The four-frame rounding above is
+what places a GD track in the image, exactly as it places a CD one:
+measured on a five-track image, the frame counts rounded up to four sum
+to 549152, which is the frame count the header implies, while adding
+`PAD` instead gives 592935 and adding nothing gives 549150. `PAD`
+describes the disc rather than the file -- track 2's 43335 is the gap
+between the single-density and high-density areas -- and a reader
+placing tracks by it reads every track after the first from the wrong
+offset.
+
+The two happen to agree on where the high-density area starts: 836 plus
+44164 is 45000, so a reader accumulating stored frames arrives at the
+same LBA the disc uses. That is a property of how the image was built
+and not something to rely on.
+
 **A frame is 2448 bytes whatever the track holds.** The sector data a
 track actually carries depends on its type, and the rest of the frame is
 reserved:
