@@ -451,53 +451,6 @@ enum frontend_architecture frontend_ps2_get_arch(void)
    return FRONTEND_ARCH_MIPS;
 }
 
-static uint64_t frontend_ps2_get_total_mem(void) { return 32*1024*1024; }
-
-/* Crude try-and-fail approach, in lack of a better solution. */
-static uint64_t frontend_ps2_get_free_mem(void)
-{
-  /* The probe below transiently allocates most of RAM to estimate what
-   * is free. That is fine as a one-off, but callers such as the memory
-   * stats overlay poll repeatedly - so compute it once and memoize. */
-  static uint64_t cached = 0;
-  uint64_t free_mem;
-  size_t s0 = 32*1024*1024;
-  void* p1;
-  void* p2;
-  void* p3;
-
-  if (cached)
-    return cached;
-
-  while (s0 && (p1 = malloc(s0)) == NULL)
-    s0 >>= 1;
-
-  free_mem = s0;
-
-  s0 = 32*1024*1024;
-
-  while (s0 && (p2 = malloc(s0)) == NULL)
-    s0 >>= 1;
-
-  free_mem += s0;
-
-  s0 = 32*1024*1024;
-
-  while (s0 && (p3 = malloc(s0)) == NULL)
-    s0 >>= 1;
-
-  free_mem += s0;
-
-  if (p1)
-    free(p1);
-  if (p2)
-    free(p2);
-  if (p3)
-    free(p3);
-
-  cached = free_mem;
-  return cached;
-}
 
 static int frontend_ps2_parse_drive_list(void *data, bool load_content)
 {
@@ -587,8 +540,6 @@ frontend_ctx_driver_t frontend_ctx_ps2 = {
    frontend_ps2_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    frontend_ps2_parse_drive_list,/* parse_drive_list */
-   frontend_ps2_get_total_mem,   /* get_total_mem */
-   frontend_ps2_get_free_mem,    /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

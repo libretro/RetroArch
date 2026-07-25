@@ -94,8 +94,6 @@ typedef struct frontend_ctx_driver
    enum frontend_architecture (*get_architecture)(void);
    enum frontend_powerstate (*get_powerstate)(int *seconds, int *percent);
    int  (*parse_drive_list)(void*, bool);
-   uint64_t (*get_total_mem)(void);
-   uint64_t (*get_free_mem)(void);
    void (*install_signal_handler)(void);
    int (*get_signal_handler_state)(void);
    void (*set_signal_handler_state)(int value);

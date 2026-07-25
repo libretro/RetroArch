@@ -52,6 +52,24 @@ extern char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 #else
 #include <malloc.h>
 #endif
+#elif defined(ORBIS)
+#include <orbis/libkernel.h>
+#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+/* Neither SDK declares this: the syscall is reached by number, and the
+ * shape it fills in is spelled out here, as the frontend used to. */
+typedef struct
+{
+   uint32_t total;
+   uint32_t avail;
+} sys_memory_info_t;
+#ifdef __PSL1GHT__
+#define sys_memory_get_user_memory_size(x) lv2syscall1(352, x)
+#else
+#define sys_memory_get_user_memory_size(x) system_call_1(352, x)
+#endif
+#elif defined(__EMSCRIPTEN__)
+#include <emscripten/heap.h>
+#include <malloc.h>
 #elif defined(PS2)
 /* nothing to include: the estimate below is made with malloc */
 #elif defined(__APPLE__)
@@ -141,20 +159,8 @@ static void mem_stats_proc_meminfo(uint64_t *total, uint64_t *avail)
 }
 #endif
 
-static uint64_t (*mem_stats_total_cb)(void) = NULL;
-static uint64_t (*mem_stats_free_cb)(void)  = NULL;
-
-void mem_stats_set_provider(uint64_t (*total)(void),
-      uint64_t (*free_mem)(void))
-{
-   mem_stats_total_cb = total;
-   mem_stats_free_cb  = free_mem;
-}
-
 uint64_t mem_stats_total(void)
 {
-   if (mem_stats_total_cb)
-      return mem_stats_total_cb();
 #if defined(_3DS)
    return osGetMemRegionSize(MEMREGION_ALL);
 #elif defined(GEKKO)
@@ -203,6 +209,22 @@ uint64_t mem_stats_total(void)
       return mem_info.dwTotalPhys;
    }
 #endif
+#elif defined(ORBIS)
+   {
+      size_t max_mem = 0, cur_mem = 0;
+      get_user_mem_size(&max_mem, &cur_mem);
+      return (uint64_t)max_mem;
+   }
+#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+   {
+      sys_memory_info_t mem_info;
+      sys_memory_get_user_memory_size((u64)&mem_info);
+      return (uint64_t)mem_info.total;
+   }
+#elif defined(__EMSCRIPTEN__)
+   /* The ceiling the module may grow its heap to, which is the only
+    * "total" that means anything in a wasm process. */
+   return (uint64_t)emscripten_get_heap_max();
 #elif defined(PS2)
    return 32 * 1024 * 1024;
 #elif defined(__APPLE__)
@@ -262,8 +284,6 @@ uint64_t mem_stats_total(void)
 
 uint64_t mem_stats_free(void)
 {
-   if (mem_stats_free_cb)
-      return mem_stats_free_cb();
 #if defined(_3DS)
    return osGetMemRegionFree(MEMREGION_ALL);
 #elif defined(GEKKO)
@@ -315,6 +335,34 @@ uint64_t mem_stats_free(void)
       return mem_info.dwAvailPhys;
    }
 #endif
+#elif defined(ORBIS)
+   /* get_user_mem_size reports the ceiling and what is taken, so free
+    * is the difference.  The frontend wired the taken figure straight
+    * into the free slot, which had this platform reporting the opposite
+    * of what every caller asked for. */
+   {
+      size_t max_mem = 0, cur_mem = 0;
+      get_user_mem_size(&max_mem, &cur_mem);
+      return (max_mem > cur_mem) ? (uint64_t)(max_mem - cur_mem) : 0;
+   }
+#elif (defined(__CELLOS_LV2__) || defined(__PSL1GHT__)) && defined(HAVE_MEMINFO)
+   /* named get_mem_used in the frontend, but what it read was avail */
+   {
+      sys_memory_info_t mem_info;
+      sys_memory_get_user_memory_size((u64)&mem_info);
+      return (uint64_t)mem_info.avail;
+   }
+#elif defined(__EMSCRIPTEN__)
+   /* What is left before that ceiling: the allocator's tally of what it
+    * holds, taken off the maximum the heap may reach.  Growing into the
+    * space between the current heap and that maximum is the runtime's
+    * business, so counting from the maximum is what a caller asking
+    * whether it can afford something wants to know. */
+   {
+      uint64_t limit = (uint64_t)emscripten_get_heap_max();
+      uint64_t used  = (uint64_t)mallinfo().uordblks;
+      return (limit > used) ? (limit - used) : 0;
+   }
 #elif defined(PS2)
    /* No accounting to ask, so find out by trying: take the largest
     * block that can be had, three times over, and hand back what was

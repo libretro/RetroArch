@@ -15,7 +15,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <memory/mem_stats.h>
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 #include <emscripten/threading.h>
@@ -733,24 +732,7 @@ static enum frontend_powerstate frontend_emscripten_get_powerstate(int *seconds,
    return ret;
 }
 
-static uint64_t frontend_emscripten_get_total_mem(void)
-{
-   if (!emscripten_platform_data)
-      return 0;
-   return PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit);
-}
 
-static uint64_t frontend_emscripten_get_free_mem(void)
-{
-   if (!emscripten_platform_data)
-      return 0;
-#ifndef PROXY_TO_PTHREAD
-   uint64_t used = PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_used);
-#else
-   uint64_t used = mallinfo().uordblks;
-#endif
-   return (PLATFORM_GETVAL(u64, &emscripten_platform_data->memory_limit) - used);
-}
 
 #ifdef HAVE_AUDIOWORKLET
 void audioworklet_close(void);
@@ -1040,11 +1022,6 @@ int main(int argc, char *argv[])
    /* this never gets freed - emscripten_platform_data is held
     * for the lifetime of the web-build process */
    emscripten_platform_data = (emscripten_platform_data_t *)calloc(1, sizeof(emscripten_platform_data_t));
-   /* The budget below is this port's own accounting, which no general
-    * platform query can see, so register it as the answer everything
-    * gets from mem_stats. */
-   mem_stats_set_provider(frontend_emscripten_get_total_mem,
-         frontend_emscripten_get_free_mem);
    /* NULL-check: the field writes a few lines down
     * (emscripten_platform_data->browser, ->os, ->...) NULL-deref
     * on OOM.  This is main() at process entry - if we can't even
@@ -1140,8 +1117,6 @@ frontend_ctx_driver_t frontend_ctx_emscripten = {
    NULL,                                /* get_architecture */
    frontend_emscripten_get_powerstate,  /* get_powerstate */
    NULL,                                /* parse_drive_list */
-   frontend_emscripten_get_total_mem,   /* get_total_mem */
-   frontend_emscripten_get_free_mem,    /* get_free_mem  */
    NULL,                                /* install_sighandlers */
    NULL,                                /* get_signal_handler_state */
    NULL,                                /* set_signal_handler_state */

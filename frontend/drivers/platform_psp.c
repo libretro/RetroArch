@@ -581,15 +581,6 @@ enum retro_language frontend_psp_get_user_language(void)
    return psp_get_retro_lang_from_langid(langid);
 }
 
-static uint64_t frontend_psp_get_total_mem(void)
-{
-   return _newlib_heap_end - _newlib_heap_base;
-}
-
-static uint64_t frontend_psp_get_free_mem(void)
-{
-   return _newlib_heap_end - _newlib_heap_cur;
-}
 #endif
 
 frontend_ctx_driver_t frontend_ctx_psp = {
@@ -611,13 +602,6 @@ frontend_ctx_driver_t frontend_ctx_psp = {
    frontend_psp_get_arch,        /* get_architecture */
    frontend_psp_get_powerstate,
    frontend_psp_parse_drive_list,
-#ifdef VITA
-   frontend_psp_get_total_mem,
-   frontend_psp_get_free_mem,
-#else
-   NULL,                         /* get_total_mem    */
-   NULL,                         /* get_free_mem     */
-#endif
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

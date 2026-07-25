@@ -178,8 +178,6 @@ frontend_ctx_driver_t frontend_ctx_qnx = {
    frontend_qnx_get_arch,        /* get_architecture */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_total_mem */
-   NULL,                         /* get_free_mem */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

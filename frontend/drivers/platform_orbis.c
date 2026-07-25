@@ -305,19 +305,7 @@ static int frontend_orbis_parse_drive_list(void *data, bool load_content)
    return 0;
 }
 
-static size_t frontend_orbis_get_mem_total(void)
-{
-  size_t max_mem = 0, cur_mem = 0;
-  get_user_mem_size(&max_mem, &cur_mem);
-  return max_mem;
-}
 
-static size_t frontend_orbis_get_mem_used(void)
-{
-  size_t max_mem = 0, cur_mem = 0;
-  get_user_mem_size(&max_mem, &cur_mem);
-  return cur_mem;
-}
 
 frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_get_env,
@@ -338,8 +326,6 @@ frontend_ctx_driver_t frontend_ctx_orbis = {
    frontend_orbis_get_arch,
    NULL,
    frontend_orbis_parse_drive_list,
-   frontend_orbis_get_mem_total,
-   frontend_orbis_get_mem_used,
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */

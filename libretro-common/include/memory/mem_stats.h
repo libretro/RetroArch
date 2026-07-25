@@ -51,17 +51,6 @@ RETRO_BEGIN_DECLS
 uint64_t mem_stats_total(void);
 uint64_t mem_stats_free(void);
 
-/* Answer from these instead, for the platform whose real figure is not
- * something a general query can reach - a host that hands the process a
- * budget and accounts against it itself, say. Either may be NULL to
- * leave that half alone, and passing NULL for both restores the
- * platform's own answers.
- *
- * Set it once, during startup, before anything asks: there is no
- * locking here, and a provider swapped under a caller mid-query is the
- * caller's problem. */
-void mem_stats_set_provider(uint64_t (*total)(void),
-      uint64_t (*free_mem)(void));
 
 RETRO_END_DECLS
 

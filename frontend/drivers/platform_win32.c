@@ -880,40 +880,6 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 #endif
 }
 
-static uint64_t frontend_win32_get_total_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullTotalPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwTotalPhys;
-#endif
-}
-
-static uint64_t frontend_win32_get_free_mem(void)
-{
-   /* OSes below 2000 don't have the Ex version,
-    * and non-Ex cannot work with >4GB RAM */
-#if _WIN32_WINNT >= 0x0500
-   MEMORYSTATUSEX mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUSEX);
-   GlobalMemoryStatusEx(&mem_info);
-   return mem_info.ullAvailPhys;
-#else
-   MEMORYSTATUS mem_info;
-   mem_info.dwLength = sizeof(MEMORYSTATUS);
-   GlobalMemoryStatus(&mem_info);
-   return mem_info.dwAvailPhys;
-#endif
-}
-
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
@@ -1339,8 +1305,6 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_get_arch,        /* get_architecture          */
    frontend_win32_get_powerstate,
    frontend_win32_parse_drive_list,
-   frontend_win32_get_total_mem,
-   frontend_win32_get_free_mem,
    NULL,                            /* install_signal_handler   */
    NULL,                            /* get_sighandler_state     */
    NULL,                            /* set_sighandler_state     */
