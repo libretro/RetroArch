@@ -213,18 +213,40 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     (rvorbis_packet_frames), so the walk to a target decodes
  *     nothing, and priming on the packet before it resumes output
  *     identical to the playthrough's rather than converging on it.
- *   Does not: seek to a nonzero frame on a windowed WebM buffer or
- *     from demuxed packets.  The walk a seek needs would run at a
- *     window's wall, into pages that are reserved rather than
- *     populated, and a caller's own packet set is theirs to restart;
- *     rewind is what those offer and a nonzero seek fails at the
- *     entry point.  No buffer_tell from the demuxed path, whose
- *     packets are the caller's own blob rather than the buffer set by
- *     set_buffer_ptr, so no windowing there.  No length and no end
- *     trim from it either, its packet set being the caller's:
- *     with neither a duration nor a padding stated, its last packet's
- *     overhang is handed out with the rest.  Chained or multiplexed
- *     Ogg is not handled.
+ *     Demuxed packets get the same treatment as a resident WebM,
+ *     being resident by definition: the header walk at start gives
+ *     the exact length, a seek counts packets to the target and lands
+ *     on the sample, and buffer_tell reports how far into the blob
+ *     the decoder has read.  That last is a byte offset into the
+ *     caller's packets rather than into a buffer set by
+ *     set_buffer_ptr, there being none - the same quantity for the
+ *     same purpose, and what a feeder growing the set wants.  The
+ *     Opus and AAC demuxed arms still report nothing there.
+ *   Does not: seek to a nonzero frame on a windowed WebM buffer.  The
+ *     walk would run at the wall, into pages that are reserved rather
+ *     than populated, so windowing keeps rewind only and anything
+ *     else fails at the entry point.  Nothing short of an index from
+ *     frames to bytes would change that, and Matroska carries none -
+ *     its Cues are timestamps, and a millisecond is 44 frames of
+ *     slack at 44.1 kHz.
+ *
+ *     No end trim on the demuxed path, its packet set being the
+ *     caller's: with no padding stated, the last packet's overlap-add
+ *     overhang is handed out with the rest, and the length reported
+ *     is that total rather than a trimmed one.  It is what comes out,
+ *     which is the property the length is meant to have.
+ *
+ *     Chained or multiplexed Ogg is not handled.  The Ogg buffer path
+ *     hands the whole file to rvorbis, which reads one logical
+ *     bitstream and ignores serial numbers, so a multiplexed file
+ *     decodes whatever pages happen to parse and a chained one stops
+ *     at the first chain's end.  Both are reachable from here - the
+ *     page walker above could filter by serial and feed the packet
+ *     path, which would bring the exact length and seek with it - but
+ *     that is rewriting the path every .ogg takes for the sake of
+ *     files that are rare in this use, and chaining additionally
+ *     admits a rate or channel change mid-stream that a mixer voice
+ *     has no way to follow.
  *
  *     On channels this arm is not the limit: rvorbis decodes one
  *     through sixteen, verified against libvorbis, and reports what
@@ -1830,6 +1852,35 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          v->channels = rvorbis_get_info(v->handle).channels;
+         /* A caller's packet blob is resident by definition, so the
+          * same header walk gives its exact length.  No padding is
+          * stated for it - the set is the caller's - so the last
+          * packet's overlap-add overhang is part of what plays, and
+          * the total is what comes out. */
+         if (v->packets && v->channels > 0)
+         {
+            const uint8_t *pd = NULL;
+            uint32_t       pl = 0;
+            int64_t        total = 0, pad = 0;
+            int            n = 0, ok = 1;
+            while (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) == 1)
+            {
+               int fr = rvorbis_packet_frames(v->handle, pd, pl);
+               if (fr < 0)
+               {
+                  ok = 0;
+                  break;
+               }
+               if (++n > 1)
+                  total += fr;
+            }
+            v->pkt_index  = 0;
+            v->pkt_offset = 0;
+            v->emitted    = 0;
+            if (ok && total > 0)
+               v->limit = total;
+            return true;
+         }
 #ifdef HAVE_RWEBM
          /* Resident WebM: walk the packet headers once and learn the
           * stream's exact length.  rvorbis_packet_frames reads a
@@ -3415,9 +3466,16 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
             if (v->demux)
                return rwebm_tell(v->demux);
 #endif
-            /* Self-framed Ogg buffer.  The demuxed arm's packets are
-             * the caller's own blob rather than the buffer set by
-             * set_buffer_ptr, so it has no offset to report. */
+            /* Demuxed: the frontier is a byte offset into the
+             * caller's packet blob rather than into a buffer set by
+             * set_buffer_ptr, there being none.  It is the same
+             * quantity for the same purpose - how far the decoder has
+             * read - and a feeder growing the set is the caller that
+             * wants it.  The Opus and AAC demuxed arms still report
+             * nothing here; this one has a packet cursor to report. */
+            if (v->packets)
+               return v->pkt_offset;
+            /* Self-framed Ogg buffer. */
             if (!v->packet)
                return (size_t)rvorbis_buffer_tell(v->handle);
          }
@@ -3506,8 +3564,8 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
    return 0;
 }
 
-#if defined(HAVE_RWEBM) && defined(HAVE_RVORBIS)
-/* Sample-accurate seek on a packet-fed WebM stream.
+#ifdef HAVE_RVORBIS
+/* Sample-accurate seek on a packet-fed stream.
  *
  * A Vorbis packet says how many frames it contributes
  * (rvorbis_packet_frames) without being decoded, so the walk to a
@@ -3529,7 +3587,19 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
  * Two passes rather than one, so that no packet pointer is held across
  * a read - rwebm documents a packet as valid only until the next call.
  * Both are header walks and the second stops at m. */
-static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
+/* Put the packet walk back at the first packet, whichever source it
+ * comes from. */
+static void audio_transfer_vorbis_to_head(struct audio_transfer_vorbis *v)
+{
+#ifdef HAVE_RWEBM
+   if (v->demux)
+      rwebm_rewind(v->demux);
+#endif
+   v->pkt_index  = 0;
+   v->pkt_offset = 0;
+}
+
+static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
       int64_t target)
 {
    const uint8_t *pd  = NULL;
@@ -3539,7 +3609,7 @@ static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
    int            n, m = 1, i;
 
    /* Pass 1: where does each packet leave the stream? */
-   rwebm_rewind(v->demux);
+   audio_transfer_vorbis_to_head(v);
    n = 0;
    for (;;)
    {
@@ -3562,7 +3632,7 @@ static bool audio_transfer_vorbis_seek_webm(struct audio_transfer_vorbis *v,
 
    /* Pass 2: walk to m without decoding, then prime with it. */
    rvorbis_packet_reset(v->handle);
-   rwebm_rewind(v->demux);
+   audio_transfer_vorbis_to_head(v);
    for (i = 0; i < m; i++)
       if (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) != 1)
          return false;
@@ -3611,19 +3681,19 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             return false;
          if (v->packet)
          {
+            /* Count the packets to the target.  Every packet-fed
+             * source can be walked except a windowed one, where the
+             * walk would run at the wall into pages that are reserved
+             * rather than populated. */
+            if (frame != 0 && v->channels > 0
 #ifdef HAVE_RWEBM
-            /* WebM, fully resident: count the packets to the target.
-             * A windowed context cannot - the walk would run at the
-             * wall, and the bytes past it are reserved rather than
-             * populated - so windowing keeps rewind only. */
-            if (frame != 0 && v->demux && !v->avail && v->channels > 0)
-               return audio_transfer_vorbis_seek_webm(v, (int64_t)frame);
+                  && !v->avail
 #endif
-            /* A caller's own packet blob is theirs to restart, and a
-             * windowed WebM cannot be walked, so for those the only
-             * reachable position is the start - the rewind a loop
-             * needs.  Anything else fails here rather than resolving
-             * against a position that is not the one asked for. */
+               )
+               return audio_transfer_vorbis_seek_walk(v, (int64_t)frame);
+            /* A windowed WebM keeps rewind only; anything else fails
+             * here rather than resolving against a position that is
+             * not the one asked for. */
             if (frame != 0)
                return false;
             rvorbis_packet_reset(v->handle);
