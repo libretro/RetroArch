@@ -30,6 +30,7 @@
 #include <lists/file_list.h>
 #include <streams/file_stream.h>
 #include <formats/image.h>
+#include <queues/task_queue.h>
 
 #include "gfx_display.h"
 #include "gfx_animation.h"
@@ -1543,11 +1544,56 @@ end:
  *    objects passed to gfx_thumbnail_request() or
  *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
+/* Predicate for the sweep below.  Always returns false so that
+ * task_queue_find visits every task rather than stopping at the first
+ * match - the cancellation is the side effect.  Only sets a flag, so it
+ * is safe to call while the queue holds its own lock: task_set_flags
+ * takes the property lock and nothing else. */
+static bool gfx_thumbnail_cancel_finder(retro_task_t *task, void *userdata)
+{
+   uint64_t             *current_id = (uint64_t*)userdata;
+   gfx_thumbnail_tag_t  *tag;
+
+   /* Thumbnail loads are the ones that come back through our own
+    * upload handler; other image loads (menu icons, savestate shots
+    * pushed elsewhere) are not ours to cancel. */
+   if (!task || task->callback != gfx_thumbnail_handle_upload)
+      return false;
+   if (!(tag = (gfx_thumbnail_tag_t*)task->user_data))
+      return false;
+   /* Belongs to the selection we just moved to - leave it alone. */
+   if (tag->list_id == *current_id)
+      return false;
+
+   task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+   return false;
+}
+
+/* When called, prevents the handling of any pending
+ * thumbnail load requests */
 void gfx_thumbnail_cancel_pending_requests(void)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
+   task_finder_data_t     find_data;
 
    p_gfx_thumb->list_id++;
+
+   /* Bumping the generation only makes the *results* unwanted; the
+    * decodes themselves kept running to completion and were then thrown
+    * away.  That is affordable for menu icons and ruinous for a
+    * directory of large images: scrolling through one issues a load per
+    * entry, none of them stop, and they pile up holding both a file
+    * buffer and a full-resolution surface each while sharing the CPU,
+    * so the one thumbnail the user is actually looking at arrives tens
+    * of seconds late or not at all.
+    *
+    * Cancel them here instead.  task_file_load_handler already checks
+    * RETRO_TASK_FLG_CANCELLED every tick and finishes the task when it
+    * is set, so the queue runs cleanup and releases both buffers on the
+    * next pass; nothing else is needed to make this take effect. */
+   find_data.func     = gfx_thumbnail_cancel_finder;
+   find_data.userdata = &p_gfx_thumb->list_id;
+   task_queue_find(&find_data);
 }
 
 /* Fetches the current thumbnail file path of the
