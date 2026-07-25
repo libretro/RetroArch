@@ -161,10 +161,18 @@ static int log_2( int x ) {
 	return y;
 }
 
+/* Every accessor below clamps the offset at both ends.
+ *
+ * The upper bound was always checked; the lower was not, and a negative
+ * offset sailed straight through "offset < data->length" into a read
+ * before the buffer. Offsets are computed from the file: the XM loader
+ * advances by a self-declared header size, so a module declaring
+ * 0x7FFFFFFF overflows the int and lands somewhere negative. Reject it
+ * here rather than at each of the places one can be produced. */
 static char* data_ascii( struct data *data, int offset, int length, char *dest ) {
 	int idx, chr;
 	memset( dest, 32, length );
-	if( offset > data->length ) {
+	if( offset < 0 || offset > data->length ) {
 		offset = data->length;
 	}
 	if( ( unsigned int ) offset + length > ( unsigned int ) data->length ) {
@@ -181,7 +189,7 @@ static char* data_ascii( struct data *data, int offset, int length, char *dest )
 
 static int data_s8( struct data *data, int offset ) {
 	int value = 0;
-	if( offset < data->length ) {
+	if( offset >= 0 && offset < data->length ) {
 		value = data->buffer[ offset ];
 		value = ( value & 0x7F ) - ( value & 0x80 );
 	}
@@ -190,7 +198,7 @@ static int data_s8( struct data *data, int offset ) {
 
 static int data_u8( struct data *data, int offset ) {
 	int value = 0;
-	if( offset < data->length ) {
+	if( offset >= 0 && offset < data->length ) {
 		value = data->buffer[ offset ] & 0xFF;
 	}
 	return value;
@@ -198,7 +206,7 @@ static int data_u8( struct data *data, int offset ) {
 
 static int data_u16be( struct data *data, int offset ) {
 	int value = 0;
-	if( offset + 1 < data->length ) {
+	if( offset >= 0 && offset + 1 < data->length ) {
 		value = ( ( data->buffer[ offset ] & 0xFF ) << 8 )
 			| ( data->buffer[ offset + 1 ] & 0xFF );
 	}
@@ -207,7 +215,7 @@ static int data_u16be( struct data *data, int offset ) {
 
 static int data_u16le( struct data *data, int offset ) {
 	int value = 0;
-	if( offset + 1 < data->length ) {
+	if( offset >= 0 && offset + 1 < data->length ) {
 		value = ( data->buffer[ offset ] & 0xFF )
 			| ( ( data->buffer[ offset + 1 ] & 0xFF ) << 8 );
 	}
@@ -216,7 +224,7 @@ static int data_u16le( struct data *data, int offset ) {
 
 static unsigned int data_u32le( struct data *data, int offset ) {
 	unsigned int value = 0;
-	if( offset + 3 < data->length ) {
+	if( offset >= 0 && offset + 3 < data->length ) {
 		value = ( data->buffer[ offset ] & 0xFF )
 			| ( ( data->buffer[ offset + 1 ] & 0xFF ) << 8 )
 			| ( ( data->buffer[ offset + 2 ] & 0xFF ) << 16 )
@@ -228,7 +236,7 @@ static unsigned int data_u32le( struct data *data, int offset ) {
 static void data_sam_s8( struct data *data, int offset, int count, short *dest ) {
 	int idx, amp, length = data->length;
 	char *buffer = data->buffer;
-	if( offset > length ) {
+	if( offset < 0 || offset > length ) {
 		offset = length;
 	}
 	if( offset + count > length ) {
@@ -243,7 +251,7 @@ static void data_sam_s8( struct data *data, int offset, int count, short *dest )
 static void data_sam_s16le( struct data *data, int offset, int count, short *dest ) {
 	int idx, amp, length = data->length;
 	char *buffer = data->buffer;
-	if( offset > length ) {
+	if( offset < 0 || offset > length ) {
 		offset = length;
 	}
 	if( offset + count * 2 > length ) {
