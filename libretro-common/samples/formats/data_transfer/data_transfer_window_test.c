@@ -408,6 +408,118 @@ static int range_bounds_check(void)
    return rv;
 }
 
+#if defined(__unix__) || defined(__APPLE__)
+#include <unistd.h>
+
+/* A short read while extending must settle the handle.
+ *
+ * extend() and grow_keep() used to report an I/O failure by returning
+ * false and nothing else: the handle still looked healthy, and whi
+ * stayed put while the pages the call had already committed sat there
+ * unfilled.  Two live call sites discard the return - the audio mixer
+ * raises the head to cover the decoder's loop landing, and feeds the
+ * window each tick, without looking at either answer - so the value
+ * alone was never going to be noticed.  The loop landing is read on
+ * the audio thread before any feeder tick, which makes a silent
+ * failure there audible and untraceable.
+ *
+ * Truncating the file underneath an open window produces the short
+ * read: len was fixed at open, so extending into what is now past the
+ * end reads fewer bytes than asked for. */
+static int extend_settles_check(void)
+{
+   const char *path = "/tmp/dtwin_settle.bin";
+   size_t n = 4u << 20, i, blen = 0;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   data_transfer_t *dt;
+   FILE *f;
+   int rv = 0;
+
+   if (!ref)
+      return 0;
+   for (i = 0; i < n; i++)
+      ref[i] = (uint8_t)(i * 53 + 11);
+   f = fopen(path, "wb"); fwrite(ref, 1, n, f); fclose(f);
+
+   if (!(dt = data_transfer_open_window(path, KEEP)))
+   {
+      printf("[FAIL] open_window for the settle check\n");
+      free(ref); remove(path);
+      return 1;
+   }
+   data_transfer_window_base(dt, &blen);
+
+   if (!data_transfer_reserve_supported())
+   {
+      /* the fallback holds the whole file and extend never reads */
+      printf("[skip] extend settles: no reservations on this build\n");
+      data_transfer_free(dt); free(ref); remove(path);
+      return 0;
+   }
+
+   if (!data_transfer_window_feed(dt, KEEP, LOOKAHD, MARGIN))
+      { printf("[FAIL] feed before the truncation\n"); rv = 1; }
+   else if (data_transfer_failed(dt))
+   { printf("[FAIL] handle already failed before the truncation\n"); rv = 1; }
+
+   /* the file shrinks under the open transfer */
+   if (!rv && truncate(path, (off_t)(KEEP + LOOKAHD)) != 0)
+   {
+      printf("[skip] extend settles: truncate unavailable\n");
+      data_transfer_free(dt); free(ref); remove(path);
+      return 0;
+   }
+
+   if (!rv)
+   {
+      if (data_transfer_window_extend(dt, n))
+      {
+         printf("[FAIL] extend past a truncation reported success\n");
+         rv = 1;
+      }
+      else if (!data_transfer_failed(dt))
+      {
+         printf("[FAIL] a short read in extend did not settle the "
+                "handle\n");
+         rv = 1;
+      }
+      else if (data_transfer_complete(dt))
+      {
+         printf("[FAIL] a settled window reports complete()\n");
+         rv = 1;
+      }
+      else
+         ok("a short read in extend settles the handle");
+   }
+
+   /* and the surface is frozen: a caller that ignores the return must
+    * not be able to drive it further */
+   if (!rv)
+   {
+      if (   data_transfer_window_extend(dt, n)
+          || data_transfer_window_grow_keep(dt, KEEP * 4)
+          || data_transfer_window_feed(dt, 0, LOOKAHD, MARGIN)
+          || data_transfer_window_peek(dt, 0, ref, 16))
+      {
+         printf("[FAIL] a settled window still accepts work\n");
+         rv = 1;
+      }
+      else
+         ok("a settled window refuses every further call");
+   }
+
+   data_transfer_free(dt);
+   free(ref); remove(path);
+   return rv;
+}
+#else
+static int extend_settles_check(void)
+{
+   printf("[skip] extend settles: needs truncate()\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -492,6 +604,7 @@ int main(void)
    bad |= ahead_of_frontier_check();
    bad |= surface_mixing_check();
    bad |= range_bounds_check();
+   bad |= extend_settles_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;

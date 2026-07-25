@@ -46,7 +46,10 @@
  *    rewind() on a backwards tell, grow_keep() to raise the head once
  *    the loop landing is known, peek() for positioned metadata reads
  *    that commit nothing, punch() to release inert ranges inside the
- *    head.
+ *    head.  A short read while extending settles the handle into the
+ *    same terminal the fill uses - failed() true, complete() never -
+ *    and freezes the whole window surface, because two of the live
+ *    call sites discard the return value.
  *
  *  - source (data_transfer_open_source): bytes from a producer
  *    callback instead of a file, into one exact malloc that
@@ -104,10 +107,15 @@
  *    the no-reservation fallback.  Drive a window with feed/extend/
  *    advance/rewind.
  *
- *  - An honest terminal on the window side.  extend() and grow_keep()
- *    report a short read by returning false only: whi stays where it
- *    was and the handle is not marked failed, unlike the fill, which
- *    settles.
+ *  - Rollback of the commit a failed extension already made.  The
+ *    handle settles, but the pages keep whatever they hold.  A
+ *    rollback is exact for extend(), whose range sits above the
+ *    frontier, and is not exact for grow_keep(), whose range can
+ *    overlap both the live window and the span advance() released -
+ *    the state kept here cannot tell those apart.  A settled window
+ *    is terminal; free it.  Until then a consumer reading past the
+ *    frontier finds zeros inside that one range rather than the
+ *    fault it would get anywhere else.
  *
  *  - Cancellation and progress reporting.  No cancel token, no
  *    progress callback, no time budget.  A producer can only stop
@@ -272,6 +280,31 @@ static void data_transfer_wdecommit_to(data_transfer_t *dt, size_t to)
 #endif
 }
 
+/* Settle a window into the same terminal the fill uses: failed() true,
+ * complete() never, and every window mutator inert from here.
+ *
+ * The freeze is the point.  Two of the live call sites discard the
+ * return - the audio mixer raises the head to cover the decoder's loop
+ * landing and feeds the window each tick without looking - so the
+ * value alone was never going to be noticed.  A settled handle stops
+ * committing pages it cannot fill, stops moving wlo/whi/wfreed away
+ * from what is actually resident, and answers failed() to anyone who
+ * asks later.
+ *
+ * What it does not do is undo the commit that just failed.  Rolling
+ * one back is exact for extend(), whose range is always above the
+ * frontier, but not for grow_keep(), whose range can overlap both the
+ * live window and the span advance() already released - the state
+ * kept here cannot say which pages were resident before the call.  A
+ * rollback that is right in one case and wrong in the other is worse
+ * than none, so the pages keep whatever they hold and the handle is
+ * terminal: free it. */
+static void data_transfer_wfail(data_transfer_t *dt)
+{
+   dt->done   = 1;
+   dt->failed = 1;
+}
+
 static int data_transfer_wcommit(data_transfer_t *dt,
       size_t from, size_t to)
 {
@@ -380,7 +413,7 @@ const uint8_t *data_transfer_window_base(data_transfer_t *dt, size_t *len)
 
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
 {
-   if (!dt->window)
+   if (!dt->window || dt->failed)
       return false;
    if (hi > dt->len)
       hi = dt->len;
@@ -388,18 +421,28 @@ bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
       return true;
    if (!dt->map_len)
       return true;               /* fallback: already whole */
+   /* A refused commit settles too.  The fill has a capped() terminal
+    * for it because a prefix has a ceiling to reach; a window has
+    * none, so running out of pages to commit is simply the window
+    * failing. */
    if (!data_transfer_wcommit(dt, dt->whi, hi))
+   {
+      data_transfer_wfail(dt);
       return false;
+   }
    if (!data_transfer_read_at(dt, dt->whi, dt->map + dt->whi,
          hi - dt->whi))
+   {
+      data_transfer_wfail(dt);
       return false;
+   }
    dt->whi = hi;
    return true;
 }
 
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 {
-   if (!dt->window || !dt->map_len)
+   if (!dt->window || !dt->map_len || dt->failed)
       return;
    if (lo > dt->whi)
       lo = dt->whi;
@@ -411,7 +454,7 @@ void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 
 void data_transfer_window_rewind(data_transfer_t *dt)
 {
-   if (!dt->window || !dt->map_len)
+   if (!dt->window || !dt->map_len || dt->failed)
       return;
    /* drop the old window entirely (frontier through its end; the
     * partial last page goes with the round-up), then restart the
@@ -425,7 +468,7 @@ void data_transfer_window_rewind(data_transfer_t *dt)
 
 bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
 {
-   if (!dt->window)
+   if (!dt->window || dt->failed)
       return false;
    if (keep > dt->len)
       keep = dt->len;
@@ -436,10 +479,16 @@ bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
       /* commit and read the extension; pages already inside the
        * window are re-read harmlessly */
       if (!data_transfer_wcommit(dt, dt->keep, keep))
+      {
+         data_transfer_wfail(dt);
          return false;
+      }
       if (!data_transfer_read_at(dt, dt->keep, dt->map + dt->keep,
             keep - dt->keep))
+      {
+         data_transfer_wfail(dt);
          return false;
+      }
    }
    dt->keep = keep;
    if (dt->wlo < keep)
@@ -456,7 +505,7 @@ bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
 {
    /* off + n is computed as a subtraction: the sum can wrap, and a
     * wrapped sum reads as comfortably in range. */
-   if (!dt->window || off > dt->len || n > dt->len - off)
+   if (!dt->window || dt->failed || off > dt->len || n > dt->len - off)
       return false;
    if (!dt->map_len)
    {
@@ -471,7 +520,7 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
       size_t to)
 {
    size_t f, t;
-   if (!dt->window || !dt->map_len)
+   if (!dt->window || !dt->map_len || dt->failed)
       return;
    /* Bound the range to the reservation before rounding it.  'to' is
     * caller-supplied and unclamped everywhere else here, and a
@@ -498,7 +547,7 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
 bool data_transfer_window_feed(data_transfer_t *dt, size_t tell,
       size_t lookahead, size_t margin)
 {
-   if (!dt->window)
+   if (!dt->window || dt->failed)
       return false;
    if (tell < dt->wtell)
       data_transfer_window_rewind(dt);   /* the consumer looped */
