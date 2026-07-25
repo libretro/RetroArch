@@ -1723,7 +1723,7 @@ again:
             voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_FINISHED);
 
          audio_mixer_release(voice);
-         goto cleanup;
+         return;
       }
 
       if (voice->types.stream.resampler)
@@ -1765,8 +1765,6 @@ again:
 
    voice->types.stream.position += buf_free;
    voice->types.stream.samples  -= buf_free;
-
-cleanup:
 }
 
 static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
