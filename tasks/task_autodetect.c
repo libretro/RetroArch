@@ -638,7 +638,10 @@ static void reallocate_port_if_needed(
       if (settings->uints.input_device_reservation_type[player] != INPUT_DEVICE_RESERVATION_NONE)
          no_reservation_at_all = false;
    }
-   if (first_free_player_slot > settings->uints.input_max_users)
+   /* 'input_max_users' is a count, so a slot index equal to it is
+    * already out of range; assigning a pad there leaves the device
+    * mapped to a disabled player and silently unusable. */
+   if (first_free_player_slot >= settings->uints.input_max_users)
    {
       RARCH_ERR("[Autoconf] No free and unreserved player slots found for adding new device"
             " \"%s\"! Detected port %d, max_users: %d, first free slot %d.\n",
