@@ -115,7 +115,11 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *   Does not: take ADPCM/a-law - rwav rejects those, including where a
  *     WAVE_FORMAT_EXTENSIBLE SubFormat names one (rwav resolves that
  *     header, so a file extensible only for its channel count or
- *     width arrives as the PCM or float it holds).  No demuxed input.
+ *     width arrives as the PCM or float it holds).  Checked rather
+ *     than assumed: MS and IMA ADPCM, a-law and mu-law are all
+ *     refused at start rather than decoded as though their bytes were
+ *     PCM, and extensible files holding 24-bit stereo and 16-bit 5.1
+ *     decode to the samples they hold.  No demuxed input.
  *     Multichannel parses here and plays: the mixer folds anything up
  *     to eight channels to stereo, so a 5.1 WAV is heard rather than
  *     refused, as a 5.1 FLAC is.
@@ -385,8 +389,18 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *   Does not: reproduce a playthrough exactly across a seek where the
  *     encoder used noise substitution - the reset a seek needs reseeds
  *     the noise generator, and substituted noise is noise rather than
- *     coded samples.  Reports a length only from an MP4 or a Matroska,
- *     which declare one - though a Matroska's
+ *     coded samples.  Measured, because how far off it lands matters
+ *     and the size of it depends entirely on the material: encoded
+ *     with substitution off, a seek reproduces the playthrough
+ *     bit for bit, on a tone and on noise alike; with it on, a tone
+ *     comes back within a third of an LSB and pink noise about 700
+ *     against a signal of 2270, which is ten dB down and plainly
+ *     audible.  The bands the encoder chose
+ *     to substitute are the ones that differ, so tonal material
+ *     barely moves and noise-like material moves a lot.
+ *
+ *     Reports a length only from an MP4 or a Matroska, which declare
+ *     one - though a Matroska's
  *     Duration spans what the stream codes, priming included, where an
  *     MP4's edit list is already net of it, so the trim comes off the
  *     one and not the other.  An ADTS stream would have to be walked
