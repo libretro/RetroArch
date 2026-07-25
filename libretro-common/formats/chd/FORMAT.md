@@ -17,8 +17,9 @@ be traced to a measurement rather than to someone's recollection. And it
 is falsifiable — two entries below were wrong on the first pass and the
 probe caught them.
 
-Reference writer: `chdman` 0.264. Codecs postdating that build (`zstd`,
-`cdzs`) are unverified here and marked as such.
+Reference writer: `chdman` 0.264. That build predates the Zstandard
+codecs, so `zstd` and `cdzs` were read off archived images written by a
+later one rather than generated here.
 
 Generated images cannot cover everything: they are all version 5, all
 written by one tool version, and small. Claims are therefore also checked
@@ -395,7 +396,7 @@ Read back verbatim from the `compressors` array of generated images.
 | `huff` | static-tree Huffman |
 | `flac` | FLAC, headerless |
 | `cdzl` `cdlz` `cdfl` | the above with CD framing |
-| `zstd` `cdzs` | Zstandard, and CD-framed **[P]**, postdates the reference writer |
+| `zstd` `cdzs` | Zstandard, and CD-framed |
 | `avhu` | audio/video, version 5 |
 
 Versions 1 to 4 use a small enum in the header rather than four tags, so
@@ -407,6 +408,13 @@ one codec applies to the whole image:
 | 1 | zlib |
 | 2 | zlib, a variant; both decode as zlib **[V]** |
 | 3 | audio/video — a *different* codec from version 5's `avhu` **[P]** |
+
+**The `flac` codec carries a byte of `L` or `B`** ahead of a bare run of
+FLAC frames, stating the order the decoded samples are to be written
+back in. There is no header: the geometry one would carry is the hunk
+size, and a hunk is read as interleaved 16-bit stereo whatever it
+actually holds -- a hard-disk image uses this codec too, so nothing
+about it implies audio. **[V]**
 
 **The zlib codec is raw DEFLATE**, with no zlib header and no adler32
 trailer. **[V]** An image built with zlib-wrapped hunks is rejected with a
@@ -653,8 +661,24 @@ primitive polynomial `0x11d`:
   increment 88, read from the same base, written to `0x8c8`. Q covers the
   P parity just written, so the order matters.
 
-The four header bytes at offset 12 are treated as zero while computing
-and restored afterwards.
+**Whether the four header bytes at offset 12 take part depends on the
+sector's mode**, which is the byte at offset 15:
+
+| Mode | Header during ECC |
+|---|---|
+| 1 | included |
+| 2 | treated as zero, restored afterwards |
+
+Getting this backwards produces ECC that is wrong for every sector of
+the affected mode, and nothing in an ordinary read notices: the field is
+only consulted by hardware and by verification tools, so an image reads
+back plausibly and fails much later, somewhere else.
+
+It is easy to arrive at one rule and stop, because a corpus of
+PlayStation discs is entirely Mode 2 and a corpus of PC discs entirely
+Mode 1. Confirmed both ways: on a Mode 2 disc the zeroed form
+reproduces all eight frames of a hunk and the included form none, and on
+two Mode 1 discs it is exactly reversed.
 
 **The EDC at offset 2072 is stored, not regenerated.** It falls outside
 the rebuilt range, which is 2076 to 2351 — the 276 ECC bytes of a 2352
@@ -662,9 +686,26 @@ byte sector, after 12 sync, 4 header, 8 subheader, 2048 data and 4 EDC.
 
 ### 7.4 Verification
 
-160 hunks across four commercial CD images, reconstructed and compared
+Hunks across seven commercial CD images, reconstructed and compared
 byte-for-byte against an independent reader's decode of the same hunk.
-All 160 match.
+All match. Between them they cover Mode 1 and Mode 2 data tracks, pure
+audio discs, mixed-mode discs, and both hunk geometries -- one frame per
+hunk and eight.
+
+**The subchannel half is verified separately, and against a built
+image.** Every commercial disc to hand reports `SUBTYPE:NONE` and
+carries nothing but zeros there, so the half of each frame it occupies
+would otherwise be untested: a decoder that dropped it, or put it in the
+wrong half, would agree with every one of them. `tools/chd/make_subchannel_cd.py`
+builds an image that does carry it; 50 of 50 hunks of that image
+reconstruct byte-for-byte, with 38142 non-zero subchannel bytes among
+them.
+
+Two things about that image are deliberate. Its sectors are structured
+rather than lifted from a real disc, because real game data is already
+compressed -- an image made from it stores every hunk whole and the
+codec under test never runs. And its subchannel is distinctive per
+sector but compressible, for the same reason.
 
 ---
 
@@ -729,3 +770,91 @@ happened to precede the first self reference.
 
 The harness now asserts that decoded hunk offsets partition the data
 region exactly, which is the check that would have caught it immediately.
+
+---
+
+## 9. Audio/video hunks — `avhu`
+
+A laserdisc image stores one video field and its audio per hunk, with
+`hunkbytes` equal to `unitbytes`. Verified against a commercial title
+of 79484 hunks of 380236 bytes.
+
+### 9.1 Geometry, from metadata **[V]**
+
+An `AVAV` metadata entry states it as ASCII:
+
+    FPS:59.940058 WIDTH:720 HEIGHT:262 INTERLACED:1 CHANNELS:2 SAMPLERATE:44100
+
+An `AVLD` entry alongside it carries binary per-frame laserdisc data.
+Its layout is **[?]** and it is not needed to decode audio or video.
+
+The hunk size follows from the geometry, which is worth checking because
+it confirms the decoded layout without decoding anything:
+
+| Part | Size |
+|---|---|
+| header | 12 |
+| video, `width * height * 2` | 377280 |
+| audio, `round(rate / fps)` samples per channel, 16-bit | 2944 |
+| **total** | **380236** |
+
+Video is two bytes per pixel. Audio is a whole number of samples per
+field, taken as the sample rate over the frame rate.
+
+### 9.2 Compressed hunk layout **[V]**
+
+The blob a hunk's map entry points at begins with a header of
+`10 + 2 * channels` bytes:
+
+| Offset | Size | Field |
+|---|---|---|
+| 0 | 1 | metadata length |
+| 1 | 1 | channel count |
+| 2 | 2 | samples per channel |
+| 4 | 2 | width |
+| 6 | 2 | height |
+| 8 | 2 | `0xffff` in every hunk observed |
+| 10 | 2 each | compressed length, one per channel |
+
+Then the audio streams, one per channel in order, each of the length the
+header gave; then the video for the rest of the blob.
+
+Note the geometry is restated per hunk rather than taken from the
+metadata, so a decoder can size its buffers from the blob alone -- and
+should check the two agree.
+
+### 9.3 Audio **[V]**
+
+**Each channel is a separate headerless FLAC stream of one channel**,
+not one interleaved stereo stream. There is no marker and no
+STREAMINFO: the sample count comes from the hunk header and the rest of
+the geometry from the metadata.
+
+Confirmed by decoding both channels of a hunk, each yielding exactly the
+736 samples the header states.
+
+### 9.4 Video **[?]**
+
+For the hunk examined, 102991 bytes stand for 377280 of output, a ratio
+of 3.66, which is the range a Huffman-coded delta scheme reaches on
+video and well beyond what an entropy coder alone would.
+
+**Ruled out — that the stream opens with the packed tree of §6.** Tried
+at every offset from 0 to 7; the tree is rejected at each, so whatever
+precedes the video's own coding is not a tree in that form starting near
+the front. The stream begins `80 08 46 53 21 2b 0b 0a`.
+
+The name suggests Huffman, and the §6 serialisation is already in the
+tree and shared with the `huff` codec, so it remains the likely
+mechanism -- but something frames it that has not been identified, and
+guessing at that is what §6 and §8 both show to be a waste of time. The
+approach that worked there applies here: obtain output for a hunk by
+another route, then work backwards from content rather than forwards
+from a guessed header.
+
+### 9.5 The earlier A/V codec **[?]**
+
+Versions 1 to 4 name their A/V codec by the enum value 3 rather than by
+tag, and it is not this one: `avhu` replaced it, and among other changes
+moved the audio to FLAC. Laserdisc images for older emulators use the
+earlier codec, so full coverage needs both. No sample of it is to hand.

@@ -19,6 +19,9 @@ script, compiled or run by hand against the sources it names.
 | `chd_map_test.c` | Decodes the hunk map of real images and checks it against the CRC-16 the file carries, then feeds corrupted maps through the same path. |
 | `chd_cd_test.py` | Reconstructs CD hunks — sector and subchannel framing, ECC rebuild — and compares them byte for byte against another reader's decode. |
 | `rchd_open_test.c` | Opens images through `rchd` and reports the geometry, map and metadata it finds. |
+| `rchd_read_test.c` | Reads every hunk of an image through `rchd` and compares against the original uncompressed source. |
+| `chd_slice.py` | Extracts the header, map, metadata and a few hunks of an image into a small self-contained file, so a format question can be settled without moving the whole thing — a laserdisc image runs to tens of gigabytes. |
+| `make_subchannel_cd.py` | Builds a CD image that carries subchannel data, which no commercial image to hand does — every one reports `SUBTYPE:NONE`, leaving half of each frame untested. |
 
 ## flac
 

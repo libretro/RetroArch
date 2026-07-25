@@ -1,5 +1,14 @@
-/* Opens real CHD images through rchd and checks the geometry, map and
- * metadata against what an independent reader reports. */
+/* Opens real CHD images through rchd and reports the geometry, map and
+ * metadata it finds.
+ *
+ *   cc -I libretro-common/include -o rchd_open_test \
+ *      libretro-common/tools/chd/rchd_open_test.c \
+ *      libretro-common/formats/chd/rchd.c \
+ *      libretro-common/encodings/encoding_huffman.c \
+ *      libretro-common/encodings/encoding_crc32.c
+ *
+ * Codecs are optional: without HAVE_RCHD_* an image opens but its hunks
+ * do not decode, which is all this exercises. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
