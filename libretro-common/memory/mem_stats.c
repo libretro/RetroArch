@@ -52,6 +52,19 @@ extern char *_newlib_heap_base, *_newlib_heap_end, *_newlib_heap_cur;
 #else
 #include <malloc.h>
 #endif
+#elif defined(PS2)
+/* nothing to include: the estimate below is made with malloc */
+#elif defined(__APPLE__)
+#include <TargetConditionals.h>
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#include <mach/mach_host.h>
+/* Apple's own TargetConditionals answers this, so no define of ours is
+ * needed: TARGET_OS_IPHONE covers the iOS family, and an SDK old enough
+ * not to define it at all - the 10.5-era ones the HW_PHYSMEM fallback
+ * below exists for - leaves it evaluating to 0, which is the macOS arm
+ * and correct for those.  TARGET_OS_OSX would read better but only
+ * arrived with the 10.12 SDK. */
 #elif defined(__WINRT__) || defined(_WIN32)
 #include <windows.h>
 #elif defined(__linux__) || defined(__unix__)
@@ -190,6 +203,43 @@ uint64_t mem_stats_total(void)
       return mem_info.dwTotalPhys;
    }
 #endif
+#elif defined(PS2)
+   return 32 * 1024 * 1024;
+#elif defined(__APPLE__)
+#if !TARGET_OS_IPHONE
+   {
+      uint64_t size = 0;
+#ifdef HW_MEMSIZE
+      {
+         /* 64-bit total; HW_MEMSIZE exists from 10.6 onward. */
+         int    mib[2]  = { CTL_HW, HW_MEMSIZE };
+         size_t len     = sizeof(size);
+         if (sysctl(mib, 2, &size, &len, NULL, 0) >= 0 && size)
+            return size;
+      }
+#endif
+      {
+         /* 10.5 fallback: HW_PHYSMEM is 32-bit and saturates near 2-4
+          * GB, but it is all early kernels expose (and a 10.5 SDK may
+          * not even define HW_MEMSIZE). */
+         unsigned int psize = 0;
+         int    mib[2]      = { CTL_HW, HW_PHYSMEM };
+         size_t len         = sizeof(psize);
+         if (sysctl(mib, 2, &psize, &len, NULL, 0) >= 0)
+            return (uint64_t)psize;
+      }
+      return 0;
+   }
+#else /* the iOS family */
+   {
+      task_vm_info_data_t vm_info;
+      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+      if (task_info(mach_task_self(), TASK_VM_INFO,
+               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
+         return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
+      return 0;
+   }
+#endif
 #elif defined(__linux__) || defined(__unix__)
 #if defined(DINGUX)
    /* sysconf is not to be trusted here, so ask the file */
@@ -263,6 +313,70 @@ uint64_t mem_stats_free(void)
       mem_info.dwLength = sizeof(MEMORYSTATUS);
       GlobalMemoryStatus(&mem_info);
       return mem_info.dwAvailPhys;
+   }
+#endif
+#elif defined(PS2)
+   /* No accounting to ask, so find out by trying: take the largest
+    * block that can be had, three times over, and hand back what was
+    * managed.  The probe transiently holds most of RAM, so the answer
+    * is worked out once and kept - callers such as the memory overlay
+    * poll it. */
+   {
+      static uint64_t cached = 0;
+      uint64_t free_mem;
+      size_t s0;
+      void *p1 = NULL, *p2 = NULL, *p3 = NULL;
+
+      if (cached)
+         return cached;
+      s0 = 32 * 1024 * 1024;
+      while (s0 && (p1 = malloc(s0)) == NULL)
+         s0 >>= 1;
+      free_mem = s0;
+      s0 = 32 * 1024 * 1024;
+      while (s0 && (p2 = malloc(s0)) == NULL)
+         s0 >>= 1;
+      free_mem += s0;
+      s0 = 32 * 1024 * 1024;
+      while (s0 && (p3 = malloc(s0)) == NULL)
+         s0 >>= 1;
+      free_mem += s0;
+      if (p1)
+         free(p1);
+      if (p2)
+         free(p2);
+      if (p3)
+         free(p3);
+      cached = free_mem;
+      return cached;
+   }
+#elif defined(__APPLE__)
+#if !TARGET_OS_IPHONE
+   /* Free plus reclaimable (inactive) pages, through the 32-bit
+    * host_statistics interface: it exists back to 10.0 and runs on 10.5
+    * kernels, unlike host_statistics64 (10.6+) or a task_vm_info
+    * footprint path (10.12+).  Reporting total minus this process's own
+    * footprint would ignore every other process and the OS with it. */
+   {
+      vm_size_t              page_size = 0;
+      vm_statistics_data_t   vm_stat;
+      mach_msg_type_number_t count     = HOST_VM_INFO_COUNT;
+      mach_port_t            host      = mach_host_self();
+      if (     host_page_size(host, &page_size) == KERN_SUCCESS
+            && host_statistics(host, HOST_VM_INFO, (host_info_t)&vm_stat,
+                  &count) == KERN_SUCCESS)
+         return ((uint64_t)vm_stat.free_count
+               + (uint64_t)vm_stat.inactive_count) * (uint64_t)page_size;
+      return 0;
+   }
+#else /* the iOS family */
+   {
+      task_vm_info_data_t vm_info;
+      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+      if (task_info(mach_task_self(), TASK_VM_INFO,
+               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
+         return vm_info.limit_bytes_remaining;
+      return 0;
    }
 #endif
 #elif defined(__linux__) || defined(__unix__)
