@@ -122,9 +122,15 @@
  *    length, and only window_is_reserved() on an open handle reports
  *    that it did.
  *
- *  - Arithmetic hardening.  Sizes are trusted: window_peek()'s
- *    off + n can wrap, the arena's size doubling has no overflow
- *    guard, and every rounding here assumes a power-of-two page.
+ *  - Arithmetic hardening beyond the caller-supplied ranges.  The two
+ *    entry points that take a range from the caller - window_peek()
+ *    and window_punch() - bound it, and the arena's doubling no
+ *    longer wraps, but the rest still trusts its inputs: every
+ *    rounding here assumes a power-of-two page, and window_feed()'s
+ *    tell + lookahead can still wrap.  That last one is left alone
+ *    deliberately - a wrapped lookahead loses read-ahead, whereas
+ *    clamping it to the length would turn an absurd argument into a
+ *    whole-file commit, which is the worse of the two.
  *
  *  - Uniform NULL tolerance.  The shared surface (iterate, ptr,
  *    avail, complete, failed, capped, discard, refill, free) accepts
@@ -210,7 +216,18 @@ bool data_transfer_arena_ensure(data_transfer_arena_t *a, size_t need)
 
    nc = a->cap ? a->cap : (256 * 1024);
    while (nc < need)
-      nc *= 2;
+   {
+      size_t nx = nc * 2;
+      /* No power of two at or above 'need' fits in a size_t: ask for
+       * exactly what was wanted and let realloc refuse it.  Left
+       * unchecked the doubling reaches 0 and the loop never ends. */
+      if (nx <= nc)
+      {
+         nc = need;
+         break;
+      }
+      nc = nx;
+   }
    if (!(nb = (uint8_t*)realloc(a->base, nc)))
       return false;
    a->base      = nb;
@@ -437,7 +454,9 @@ bool data_transfer_window_grow_keep(data_transfer_t *dt, size_t keep)
 bool data_transfer_window_peek(data_transfer_t *dt, size_t off,
       void *dst, size_t n)
 {
-   if (!dt->window || off + n > dt->len)
+   /* off + n is computed as a subtraction: the sum can wrap, and a
+    * wrapped sum reads as comfortably in range. */
+   if (!dt->window || off > dt->len || n > dt->len - off)
       return false;
    if (!dt->map_len)
    {
@@ -454,6 +473,17 @@ void data_transfer_window_punch(data_transfer_t *dt, size_t from,
    size_t f, t;
    if (!dt->window || !dt->map_len)
       return;
+   /* Bound the range to the reservation before rounding it.  'to' is
+    * caller-supplied and unclamped everywhere else here, and a
+    * non-strict decommit is madvise(MADV_DONTNEED): it does not fail
+    * politely on a range running off the end of the mapping, it
+    * zeroes whatever anonymous pages it does cover, which past this
+    * reservation is somebody else's heap.  The round-up of 'from' is
+    * only safe once from is bounded too. */
+   if (from > dt->map_len)
+      return;
+   if (to > dt->map_len)
+      to = dt->map_len;
    f = (from + dt->page - 1) & ~(dt->page - 1);
    t = (to / dt->page) * dt->page;
    if (t <= f)

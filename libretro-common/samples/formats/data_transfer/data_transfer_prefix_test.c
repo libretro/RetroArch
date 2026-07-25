@@ -62,6 +62,88 @@ static void mkfile(const char *path, uint8_t *ref, size_t n)
    fclose(f);
 }
 
+#if defined(__unix__) || defined(__APPLE__)
+#include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
+
+/* The arena rides along in this file because it has no home of its
+ * own: it shares data_transfer.c and the header, but touches no
+ * transfer, so neither of the other two suites is a better fit.
+ *
+ * Its growth is doubling from the current capacity until it covers
+ * the request.  A request with no power of two at or above it - which
+ * is any request above half the address space - used to send that
+ * loop through 0 and then spin on it forever, because 0 * 2 is 0 and
+ * the exit test is 'nc < need'.  realloc never gets asked, so there
+ * is no failure to report: the caller simply never returns.  The
+ * sizes come from container-declared lengths in the webm core, which
+ * is the sort of place an absurd one arrives from.
+ *
+ * A regression here hangs rather than fails, so the call runs in a
+ * child under an alarm and the hang is read off the signal.  The
+ * property under test is only that the loop terminates: a sanitizer
+ * build ends the process on the oversized realloc rather than
+ * returning NULL from it, which still means the allocator was
+ * reached, so the child reports the two outcomes it can distinguish
+ * by exit code and anything else counts as having got that far. */
+static int arena_overflow_check(void)
+{
+   pid_t pid = fork();
+   int   status = 0;
+
+   if (pid < 0)
+   {
+      printf("[skip] arena overflow: fork unavailable\n");
+      return 0;
+   }
+   if (pid == 0)
+   {
+      data_transfer_arena_t a;
+      alarm(5);
+      data_transfer_arena_init(&a, 1024);
+      /* 70 and 71 are picked to not collide with the exit code a
+       * sanitizer uses when it ends the process itself */
+      if (data_transfer_arena_ensure(&a, (size_t)-2))
+      {
+         data_transfer_arena_release(&a);
+         _exit(71);            /* claimed to have allocated it */
+      }
+      _exit(70);               /* refused by returning false */
+   }
+   waitpid(pid, &status, 0);
+
+   if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM)
+   {
+      printf("[FAIL] arena_ensure spun on an unrepresentable size\n");
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 71)
+   {
+      printf("[FAIL] arena_ensure claimed to allocate an "
+             "unrepresentable size\n");
+      return 1;
+   }
+   if (WIFEXITED(status) && WEXITSTATUS(status) == 70)
+   {
+      printf("[ok]   arena_ensure refuses an unrepresentable size\n");
+      return 0;
+   }
+   /* The allocator was reached and ended the process rather than
+    * returning - a sanitizer build's answer to a request this size.
+    * The loop terminated, which is the whole point. */
+   printf("[ok]   arena_ensure reached the allocator, which refused "
+          "it outright\n");
+   return 0;
+}
+#else
+static int arena_overflow_check(void)
+{
+   printf("[skip] arena overflow: needs fork()\n");
+   return 0;
+}
+#endif
+
 int main(void)
 {
    const char *path = "/tmp/dtprefix.bin";
@@ -138,6 +220,10 @@ int main(void)
    }
 
    free(ref); remove(path);
+
+   /* 6. the arena's growth must not spin on a size it cannot reach */
+   bad |= arena_overflow_check();
+
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;
 }

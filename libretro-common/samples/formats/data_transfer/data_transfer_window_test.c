@@ -313,6 +313,101 @@ static int surface_mixing_check(void)
    return rv;
 }
 
+/* Ranges that arrive from the caller must be bounded before use.
+ *
+ * The two differ sharply in how badly, and it is worth saying which
+ * is which.
+ *
+ * window_punch() was the dangerous one.  It rounds (from, to) and
+ * hands memdecommit map + f for t - f bytes, unclamped, and a
+ * non-strict decommit is madvise(MADV_DONTNEED) - which does not fail
+ * politely on a range that runs off the end of the reservation.  It
+ * zeroes whatever anonymous pages it does cover, and past a 4 MiB
+ * reservation a 64 MiB overrun reliably covers live heap.  Against
+ * the unfixed module the first punch below takes the process down
+ * with SIGSEGV inside the call, before it can return.
+ *
+ * window_peek() is the mild one: it tested off + n against the
+ * length, which a wrapping sum passes, but the oversized read then
+ * fails at the I/O layer and peek returns false anyway.  That check
+ * pins the contract rather than catching a fault. */
+static int range_bounds_check(void)
+{
+   const char *path = "/tmp/dtwin_bounds.bin";
+   size_t n = 4u << 20, i, blen = 0;
+   uint8_t *ref = (uint8_t*)malloc(n);
+   uint8_t tmp[64];
+   data_transfer_t *dt;
+   const uint8_t *base;
+   FILE *f;
+   int rv = 0;
+
+   if (!ref)
+      return 0;
+   for (i = 0; i < n; i++)
+      ref[i] = (uint8_t)(i * 31 + 7);
+   f = fopen(path, "wb"); fwrite(ref, 1, n, f); fclose(f);
+
+   if (!(dt = data_transfer_open_window(path, KEEP)))
+   {
+      printf("[FAIL] open_window for the bounds check\n");
+      free(ref); remove(path);
+      return 1;
+   }
+   base = data_transfer_window_base(dt, &blen);
+
+   /* an (off, n) whose sum wraps to zero must not read as in range */
+   if (data_transfer_window_peek(dt, n - 16, tmp,
+            (size_t)0 - (n - 16)))
+   {
+      printf("[FAIL] peek accepted a wrapping (off, n)\n");
+      rv = 1;
+   }
+   else if (data_transfer_window_peek(dt, n - 16, tmp, 64))
+   {
+      printf("[FAIL] peek accepted a range past the end\n");
+      rv = 1;
+   }
+   else if (!data_transfer_window_peek(dt, n - 64, tmp, 64))
+   {
+      printf("[FAIL] peek refused the last 64 bytes of the file\n");
+      rv = 1;
+   }
+   else if (memcmp(tmp, ref + n - 64, 64))
+   {
+      printf("[FAIL] peek returned the wrong bytes at the end\n");
+      rv = 1;
+   }
+   else
+      ok("peek bounds its range and still reads the last bytes");
+
+   /* a punch running far past the mapping must not be taken at its
+    * word, and must leave the head alone either way */
+   data_transfer_window_punch(dt, n - 4096, n + (64u << 20));
+   data_transfer_window_punch(dt, n + (64u << 20), n + (128u << 20));
+   if (memcmp(base, ref, KEEP))
+   {
+      printf("[FAIL] an out-of-range punch damaged the head\n");
+      rv = 1;
+   }
+   else if (!data_transfer_window_feed(dt, KEEP, LOOKAHD, MARGIN))
+   {
+      printf("[FAIL] feed after an out-of-range punch\n");
+      rv = 1;
+   }
+   else if (memcmp(base + KEEP, ref + KEEP, 65536))
+   {
+      printf("[FAIL] window contents wrong after an out-of-range punch\n");
+      rv = 1;
+   }
+   else
+      ok("out-of-range punch is bounded, window unaffected");
+
+   data_transfer_free(dt);
+   free(ref); remove(path);
+   return rv;
+}
+
 int main(void)
 {
    const char *path = "/tmp/dtwin.bin";
@@ -396,6 +491,7 @@ int main(void)
 
    bad |= ahead_of_frontier_check();
    bad |= surface_mixing_check();
+   bad |= range_bounds_check();
 
    printf("%s\n", bad ? "FAILED" : "PASS");
    return bad;
