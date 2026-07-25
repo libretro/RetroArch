@@ -1553,7 +1553,8 @@ bool task_push_audio_mixer_load_and_play(
    }
    else
 #endif
-      if (string_is_equal(ext_lower, "ogg"))
+      if (string_is_equal(ext_lower, "ogg")
+         || string_is_equal(ext_lower, "oga"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;
@@ -1713,7 +1714,8 @@ bool task_push_audio_mixer_load(
    }
    else
 #endif
-      if (string_is_equal(ext_lower, "ogg"))
+      if (string_is_equal(ext_lower, "ogg")
+         || string_is_equal(ext_lower, "oga"))
    {
       mixer->type     = AUDIO_MIXER_TYPE_OGG;
       nbio->type      = NBIO_TYPE_OGG;

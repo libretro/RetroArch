@@ -43,6 +43,36 @@
 #ifdef HAVE_RMODTRACKER
 #include <formats/rmodtracker.h>
 #endif
+#if defined(HAVE_ROPUS) || defined(HAVE_RFLAC)
+/* Validate the Ogg page at off and return its total size (header plus
+ * body), or 0 if there is no valid page there.  On success the body
+ * offset and segment count are stored. */
+static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
+      size_t off, size_t *body, unsigned *nsegs)
+{
+   size_t hdr, total;
+   unsigned i, n;
+   if (off + 27 > size)
+      return 0;
+   if (memcmp(buf + off, "OggS", 4) != 0 || buf[off + 4] != 0)
+      return 0;
+   n   = buf[off + 26];
+   hdr = 27 + n;
+   if (off + hdr > size)
+      return 0;
+   total = hdr;
+   for (i = 0; i < n; i++)
+      total += buf[off + 27 + i];
+   if (off + total > size)
+      return 0;
+   if (body)
+      *body = off + hdr;
+   if (nsegs)
+      *nsegs = n;
+   return total;
+}
+#endif
+
 #ifdef HAVE_ROPUS
 #include <formats/ropus.h>
 #endif
@@ -107,9 +137,13 @@
  *     is served to the decoder through its own read callback, a block
  *     at a time out of the demuxer, so nothing beyond the frame being
  *     read is copied.
- *   Does not: Ogg-encapsulated FLAC - rflac takes native fLaC only.  No
- *     demuxed input, so FLAC handed over as loose packets is not
- *     reachable.  Seeking on the Matroska path costs more than on a
+ *     Ogg FLAC (RFC 5334) as well, and by the same means: an Ogg page
+ *     body is packet bytes with no framing of its own, so the bodies
+ *     end to end past the nine-byte mapping header on the first
+ *     packet are the native stream, served through the same
+ *     callbacks.
+ *   Does not: take FLAC handed over as loose packets - there is no
+ *     demuxed input for it.  Seeking on the Matroska path costs more than on a
  *     .flac: rflac seeks by byte offset and a demuxer only walks
  *     forwards, so a backwards seek restarts the block walk and reads
  *     forward to the target.  The file is resident, so that is a pass
@@ -358,24 +392,32 @@ struct audio_transfer_flac
    const void *data;    /* encoded bytes from set_buffer_ptr (caller-owned) */
    size_t      size;
    rflac      *handle;  /* opened decoder, NULL until start() succeeds      */
-#ifdef HAVE_RWEBM
-   /* A_FLAC in Matroska.  rflac wants a native fLaC stream; the
-    * container holds one taken apart - the header in CodecPrivate,
-    * the frames in the blocks - so it is served back to the decoder a
-    * read at a time rather than reassembled into a buffer.  Nothing
-    * is copied but the bytes of whichever frame is being read.
+   /* FLAC inside a container.  rflac wants a native fLaC stream; a
+    * container holds one taken apart, so it is served back to the
+    * decoder a read at a time rather than reassembled into a buffer.
+    * Nothing is copied but the bytes being read.
+    *
+    * Two containers, one shape.  Matroska keeps the header in
+    * CodecPrivate and a frame per block.  Ogg (RFC 5334) needs even
+    * less: a page body is packet bytes with no framing of its own, so
+    * the bodies laid end to end are the native stream already, once
+    * the nine-byte mapping header on the first packet is stepped
+    * over.
     *
     * pos is the byte offset within that notional stream, which is
-    * what rflac seeks against; cur is the block being served. */
+    * what rflac seeks against; cur is the chunk being served. */
+   int            ogg;      /* buffer is Ogg FLAC                       */
+   size_t         pg_off;   /* next Ogg page                            */
+#ifdef HAVE_RWEBM
    rwebm_t       *demux;
    int            track_idx;
+#endif
    const uint8_t *hdr;
    size_t         hdr_size;
    size_t         pos;
    const uint8_t *cur;
    size_t         cur_len;
    size_t         cur_off;
-#endif
 };
 #endif
 
@@ -576,33 +618,6 @@ static int64_t audio_transfer_opus_pkt_frames(const uint8_t *d, size_t n)
    return (int64_t)fs[d[0] >> 3] * count;
 }
 
-/* Validate the Ogg page at off and return its total size (header plus
- * body), or 0 if there is no valid page there.  On success the body
- * offset and segment count are stored. */
-static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
-      size_t off, size_t *body, unsigned *nsegs)
-{
-   size_t hdr, total;
-   unsigned i, n;
-   if (off + 27 > size)
-      return 0;
-   if (memcmp(buf + off, "OggS", 4) != 0 || buf[off + 4] != 0)
-      return 0;
-   n   = buf[off + 26];
-   hdr = 27 + n;
-   if (off + hdr > size)
-      return 0;
-   total = hdr;
-   for (i = 0; i < n; i++)
-      total += buf[off + 27 + i];
-   if (off + total > size)
-      return 0;
-   if (body)
-      *body = off + hdr;
-   if (nsegs)
-      *nsegs = n;
-   return total;
-}
 #endif
 
 #ifdef HAVE_RAAC
@@ -1149,6 +1164,11 @@ enum audio_type_enum audio_transfer_ogg_audio_type(const void *buf,
    if (!memcmp(b + first, "\x01vorbis", 7))
       return AUDIO_TYPE_VORBIS;
 #endif
+#ifdef HAVE_RFLAC
+   /* RFC 5334: 0x7F, "FLAC", then the mapping version. */
+   if (b[first] == 0x7F && !memcmp(b + first + 1, "FLAC", 4))
+      return AUDIO_TYPE_FLAC;
+#endif
    return AUDIO_TYPE_NONE;
 }
 
@@ -1415,22 +1435,46 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
 }
 #endif
 
-#if defined(HAVE_RFLAC) && defined(HAVE_RWEBM)
-/* Serve the next block of the FLAC track, whatever is left of it. */
+#ifdef HAVE_RFLAC
+/* The next chunk of the stream, from whichever container holds it. */
 static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
 {
-   rwebm_packet pkt;
-   for (;;)
+   if (fl->ogg)
    {
-      if (rwebm_read_packet(fl->demux, &pkt) != 1)
+      const uint8_t *b = (const uint8_t*)fl->data;
+      size_t   body = 0, total;
+      unsigned nsegs = 0;
+      total = audio_transfer_ogg_page(b, fl->size, fl->pg_off, &body,
+            &nsegs);
+      if (!total)
          return 0;
-      if (pkt.track == fl->track_idx)
-         break;
+      fl->cur     = b + body;
+      fl->cur_len = total - (body - fl->pg_off);
+      /* The first packet opens with the mapping header - 0x7F, "FLAC",
+       * a version and a packet count - and the native stream starts
+       * after it. */
+      fl->cur_off = (fl->pg_off == 0) ? 9 : 0;
+      fl->pg_off += total;
+      return fl->cur_len > fl->cur_off;
    }
-   fl->cur     = pkt.data;
-   fl->cur_len = pkt.size;
-   fl->cur_off = 0;
-   return 1;
+#ifdef HAVE_RWEBM
+   if (fl->demux)
+   {
+      rwebm_packet pkt;
+      for (;;)
+      {
+         if (rwebm_read_packet(fl->demux, &pkt) != 1)
+            return 0;
+         if (pkt.track == fl->track_idx)
+            break;
+      }
+      fl->cur     = pkt.data;
+      fl->cur_len = pkt.size;
+      fl->cur_off = 0;
+      return 1;
+   }
+#endif
+   return 0;
 }
 
 /* The stream rflac reads: the CodecPrivate header, then every block
@@ -1483,7 +1527,11 @@ static uint32_t audio_transfer_flac_seek(void *ud, int offset,
       return 0;
    if (target < fl->pos)
    {
-      rwebm_rewind(fl->demux);
+#ifdef HAVE_RWEBM
+      if (fl->demux)
+         rwebm_rewind(fl->demux);
+#endif
+      fl->pg_off  = 0;
       fl->pos     = 0;
       fl->cur     = NULL;
       fl->cur_len = 0;
@@ -1513,6 +1561,37 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl || !fl->data)
             return false;
+         /* Ogg FLAC (RFC 5334).  The first packet opens with the
+          * mapping header - 0x7F, "FLAC", a version and a packet
+          * count - and the native stream follows it, so the page
+          * bodies laid end to end past those nine bytes are what
+          * rflac reads.  Served through the same callbacks as the
+          * Matroska path, and nothing is reassembled. */
+         if (fl->data && fl->size >= 28
+               && !memcmp(fl->data, "OggS", 4))
+         {
+            const uint8_t *b = (const uint8_t*)fl->data;
+            size_t   body = 0;
+            unsigned nsegs = 0;
+            if (   audio_transfer_ogg_page(b, fl->size, 0, &body, &nsegs)
+                && body + 5 <= fl->size
+                && b[body] == 0x7F
+                && !memcmp(b + body + 1, "FLAC", 4))
+            {
+               fl->ogg      = 1;
+               fl->pg_off   = 0;
+               fl->hdr      = NULL;
+               fl->hdr_size = 0;
+               fl->pos      = 0;
+               fl->cur      = NULL;
+               fl->cur_len  = 0;
+               fl->cur_off  = 0;
+               fl->handle   = rflac_open_with_metadata(
+                     audio_transfer_flac_read,
+                     audio_transfer_flac_seek, NULL, fl);
+               return fl->handle != NULL;
+            }
+         }
 #ifdef HAVE_RWEBM
          /* Matroska carrying A_FLAC.  Unlike the Vorbis and Opus
           * containers, nothing has to be synthesised here: the

@@ -6910,8 +6910,13 @@ uint32_t rflac_seek_to_pcm_frame(rflac* pFlac, uint64_t pcmFrameIndex)
       uint32_t wasSuccessful = 0;
       uint64_t originalPCMFrame = pFlac->currentPCMFrame;
 
-      /* Clamp the sample to the end. */
-      if (pcmFrameIndex > pFlac->totalPCMFrameCount)
+      /* Clamp the sample to the end, where the end is known.  A
+       * STREAMINFO may state a total of zero for a stream whose
+       * length was not known when it was written - Ogg FLAC always
+       * does, and so does a native stream written to a pipe - and
+       * clamping against that sent every seek to frame zero. */
+      if (   pFlac->totalPCMFrameCount > 0
+          && pcmFrameIndex > pFlac->totalPCMFrameCount)
          pcmFrameIndex = pFlac->totalPCMFrameCount;
 
       /* If the target sample and the current sample are in the same frame we

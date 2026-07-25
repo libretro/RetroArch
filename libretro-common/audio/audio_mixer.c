@@ -998,13 +998,19 @@ audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer, int32_t size)
 
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size)
 {
-#if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS)
+#if defined(HAVE_RVORBIS) || defined(HAVE_ROPUS) || defined(HAVE_RFLAC)
    audio_mixer_sound_t* sound;
    enum audio_mixer_type mt = AUDIO_MIXER_TYPE_OGG;
 
    if (!buffer || size <= 0)
       return NULL;
 
+#ifdef HAVE_RFLAC
+   /* And FLAC (RFC 5334), which .oga usually carries and .ogg may. */
+   if (audio_transfer_ogg_audio_type(buffer, (size_t)size)
+         == AUDIO_TYPE_FLAC)
+      mt = AUDIO_MIXER_TYPE_FLAC;
+#endif
 #ifdef HAVE_ROPUS
    /* An .ogg file legitimately wraps Opus as well as Vorbis; route by
     * the identification header, not the extension.  The Opus arm's
