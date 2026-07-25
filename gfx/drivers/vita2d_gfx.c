@@ -75,7 +75,8 @@ typedef enum
    VITA2D_VIDEO_MODE_1280x720
 } vita2d_video_mode;
 
-typedef struct vita2d_video_mode_data {
+typedef struct vita2d_video_mode_data
+{
    int width;
    int height;
    int stride;
@@ -98,7 +99,8 @@ typedef struct vita2d_texture_vertex
    float v;
 } vita2d_texture_vertex;
 
-typedef struct vita2d_texture_tint_vertex {
+typedef struct vita2d_texture_tint_vertex
+{
    float x;
    float y;
    float z;
@@ -110,7 +112,8 @@ typedef struct vita2d_texture_tint_vertex {
    float a;
 } vita2d_texture_tint_vertex;
 
-typedef struct vita2d_texture {
+typedef struct vita2d_texture
+{
    SceGxmTexture gxm_tex;
    SceUID data_UID;
    SceUID palette_UID;
@@ -120,7 +123,8 @@ typedef struct vita2d_texture {
    SceUID depth_UID;
 } vita2d_texture;
 
-typedef struct vita2d_display_data {
+typedef struct vita2d_display_data
+{
    void *address;
 } vita2d_display_data;
 
@@ -472,7 +476,8 @@ static int vita2d_switch_video_mode(vita2d_video_mode video_mode)
    clip_rect_x_max = video_mode_data.width;
    clip_rect_y_max = video_mode_data.height;
 
-   if(renderTarget != NULL){ 
+   if (renderTarget != NULL)
+   {
       sceGxmDestroyRenderTarget(renderTarget);
 
       for (i = 0; i < DISPLAY_BUFFER_COUNT; i++)
@@ -546,8 +551,10 @@ static void gxm_display_callback(const void *callback_data)
    framebuf.pixelformat = DISPLAY_PIXEL_FORMAT;
    framebuf.width       = video_mode_data.width;
    framebuf.height      = video_mode_data.height;
-   if(sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME) == SCE_DISPLAY_ERROR_INVALID_RESOLUTION){
-      if(video_mode_initial)
+   if (sceDisplaySetFrameBuf(&framebuf, SCE_DISPLAY_SETBUF_NEXTFRAME)
+         == SCE_DISPLAY_ERROR_INVALID_RESOLUTION)
+   {
+      if (video_mode_initial)
          vita2d_switch_video_mode(VITA2D_VIDEO_MODE_960x544);
    }
 
@@ -606,6 +613,7 @@ static void vita2d_set_blend_mode_add(int enable)
 
 static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMode msaa, vita2d_video_mode video_mode)
 {
+   uint32_t idx;
    SceGxmInitializeParams initializeParams;
    void *fragmentUsseRingBuffer;
    unsigned int fragmentUsseRingBufferOffset;
@@ -856,9 +864,8 @@ static int vita2d_init_internal(unsigned int temp_pool_size, SceGxmMultisampleMo
       &linearIndicesUid);
 
         /* Range of i must be greater than uint16_t, this doesn't endless-loop */
-   for (uint32_t i=0; i<=UINT16_MAX; ++i) {
-      linearIndices[i] = i;
-   }
+   for (idx = 0; idx <= UINT16_MAX; ++idx)
+      linearIndices[idx] = idx;
 
    paramColorPositionAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aPosition");
    paramColorColorAttribute = sceGxmProgramFindParameterByName(colorVertexProgramGxp, "aColor");
@@ -1198,7 +1205,8 @@ static void vita2d_set_clip_rectangle(int x_min, int y_min, int x_max, int y_max
 
 static int tex_format_to_bytespp(SceGxmTextureFormat format)
 {
-   switch (format & 0x9f000000U) {
+   switch (format & 0x9f000000U)
+   {
    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
@@ -1264,7 +1272,8 @@ static vita2d_texture *vita2d_create_empty_texture_format(unsigned int w, unsign
       SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE,
       &texture->data_UID);
 
-   if (!texture_data) {
+   if (!texture_data)
+   {
       free(texture);
       return NULL;
    }
@@ -1374,6 +1383,7 @@ static void vita2d_draw_texture_scale(const vita2d_texture *texture, float x, fl
 
 static inline void draw_texture_tint_part_scale_generic(const vita2d_texture *texture, float x, float y, float tex_x, float tex_y, float tex_w, float tex_h, float x_scale, float y_scale, unsigned int color)
 {
+   int n;
    vita2d_texture_tint_vertex *vertices = (vita2d_texture_tint_vertex *)
       vita2d_pool_memalign(
       4 * sizeof(vita2d_texture_tint_vertex), /* 4 vertices */
@@ -1414,7 +1424,8 @@ static inline void draw_texture_tint_part_scale_generic(const vita2d_texture *te
    vertices[3].u = u1;
    vertices[3].v = v1;
 
-   for(int n = 0; n < 4; n++){
+   for (n = 0; n < 4; n++)
+   {
       vertices[n].r = ((color >> 8*0) & 0xFF)/255.0f;
       vertices[n].g = ((color >> 8*1) & 0xFF)/255.0f;
       vertices[n].b = ((color >> 8*2) & 0xFF)/255.0f;
