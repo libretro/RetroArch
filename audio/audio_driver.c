@@ -1552,11 +1552,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.input_data                     = audio_buf;
    audio_driver_st.synth_buf                      = synth_buf;
    audio_driver_st.input_data_length              = audio_buf_length;
-   /* Same frame capacity as input_data, in int16. Used by the s16 fast path
-    * to run an int16-capable DSP chain and/or sum an in-process synth without
-    * an int16<->float round-trip. */
-   audio_driver_st.input_data_int16               =
-         (int16_t*)memalign_alloc(64, max_buffer_samples * sizeof(int16_t));
+   /* Allocated further down, once it is known whether an int16 resampler
+    * exists; the s16 fast path that uses it cannot run without one. */
+   audio_driver_st.input_data_int16               = NULL;
    audio_driver_st.output_samples_int16        = out_conv_buf;
    audio_driver_st.output_samples_int16_length = outsamples_max * sizeof(int16_t);
    audio_driver_st.chunk_block_size               = AUDIO_CHUNK_SIZE_BLOCKING;
@@ -1731,6 +1729,41 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
                rs_ident,
                audio_driver_st.resampler_data_int16
                      ? "available" : "unavailable");
+   }
+
+   /* int16 scratch for the s16 fast path.  Same frame capacity as
+    * input_data, in int16.  Only reachable when resampler_data_int16 is
+    * non-NULL (audio_driver_mixer_use_s16 gates on it), so allocating it
+    * unconditionally at the top of this function burned a full
+    * max_buffer_samples * sizeof(int16_t) block on every configuration
+    * whose resampler has no integer implementation, or whose int16 init
+    * failed.
+    *
+    * The gate is deliberately the resampler and nothing else.  The scratch
+    * is only *touched* when a synth is sounding or a DSP filter is loaded,
+    * but both of those are runtime state that can change without an audio
+    * reinit - and audio_fastpath_s16 is CMD_EVENT_NONE, so toggling the
+    * hint does not reinit either.  Narrowing the gate to any of them would
+    * leave the fast path live against a NULL scratch. */
+   if (audio_driver_st.resampler_data_int16)
+   {
+      audio_driver_st.input_data_int16 = (int16_t*)memalign_alloc(64,
+            max_buffer_samples * sizeof(int16_t));
+
+      if (!audio_driver_st.input_data_int16)
+      {
+         /* Drop the int16 resampler so flush falls back to the float path,
+          * which needs no scratch.  Leaving the fast path enabled against a
+          * NULL scratch would not crash - the synth and DSP branches are
+          * both guarded - but the DSP branch would then be silently skipped
+          * and a loaded filter would stop being applied. */
+         if (audio_driver_st.resampler_int16_free)
+            audio_driver_st.resampler_int16_free(
+                  audio_driver_st.resampler_data_int16);
+         audio_driver_st.resampler_data_int16    = NULL;
+         audio_driver_st.resampler_int16_process = NULL;
+         audio_driver_st.resampler_int16_free    = NULL;
+      }
    }
 
    audio_driver_st.data_ptr = 0;

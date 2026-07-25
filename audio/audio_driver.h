@@ -263,7 +263,9 @@ typedef struct
    float *input_data;
    float *synth_buf;
    /* int16 scratch for the s16 fast path: running a fully-int16 DSP chain
-    * and/or summing an in-process synth without an int16<->float round-trip. */
+    * and/or summing an in-process synth without an int16<->float round-trip.
+    * Allocated only when an int16 resampler exists, since that path cannot
+    * run without one; NULL otherwise. */
    int16_t *input_data_int16;
    size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
