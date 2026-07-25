@@ -110,19 +110,23 @@
  *     hence windowing.  From WebM: end trimming, exactly - Vorbis codes
  *     in overlapping blocks, so the last packet decodes past the end of
  *     the audio, and the container's DiscardPadding says by how much.
- *     It is applied when the final packet is decoded, which is when the
- *     stream's true length is first known; a Duration, which rounds up
- *     past the overhang, bounds emission until then and is what info()
- *     reports before a pass has reached the end.
+ *     It arrives on the block it applies to and is applied there,
+ *     which is when the stream's true length is first known; a
+ *     Duration, which rounds up past the overhang, bounds emission
+ *     until then and is what info() reports before a pass has reached
+ *     the end.  buffer_tell, hence windowing: the packets are decoded
+ *     where the demuxer points at them, so its walk position is the
+ *     compressed frontier, and start() reads no further than the
+ *     header material - it does not walk the packets.
  *   Does not: seek to a nonzero frame on the packet-fed paths.  There
  *     is no Ogg to seek in and no per-packet duration to step over with
  *     (unlike Opus, whose TOC byte carries one), so landing anywhere
  *     but the start would mean decoding the whole way there; rewind is
  *     what those paths offer and a nonzero seek fails at the entry
- *     point.  No buffer_tell on them either - the packets are read in
- *     place, but the frontier is the demuxer's own walk rather than a
- *     cursor this arm keeps - so no windowing.  No length and no end
- *     trim from the demuxed path, whose packet set is the caller's:
+ *     point.  No buffer_tell from the demuxed path, whose packets are
+ *     the caller's own blob rather than the buffer set by
+ *     set_buffer_ptr, so no windowing there.  No length and no end
+ *     trim from it either, its packet set being the caller's:
  *     with neither a duration nor a padding stated, its last packet's
  *     overhang is handed out with the rest.  Chained or multiplexed
  *     Ogg is not handled.
@@ -747,9 +751,18 @@ static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
       }
       *pdata = pkt.data;
       *plen  = (uint32_t)pkt.size;
-      /* Counted the same way the pre-walk at start() counted, so
-       * pkt_index reaching num_packets means this was the last one. */
-      v->pkt_index++;
+      /* DiscardPadding is attached to the block it applies to, so it
+       * arrives with the packet rather than having to be found by
+       * walking to the end first.  Converted here, where the rate is
+       * known, and consumed by the drain once this packet has been
+       * decoded and its yield is countable. */
+      if (pkt.discard_padding > 0)
+      {
+         int64_t rate = (int64_t)rvorbis_get_info(v->handle).sample_rate;
+         if (rate > 0)
+            v->discard = (pkt.discard_padding * rate + 500000000)
+               / 1000000000;
+      }
       return 1;
    }
 #endif
@@ -819,24 +832,25 @@ static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
          break;
       if (rvorbis_packet_decode(v->handle, pd, pl, s16) < 0)
          break;
-      /* That was the final packet, so the stream's true length is
-       * known for the first time: everything emitted, plus what this
-       * one just yielded.  The container's padding comes off that.
-       * A stated duration is only close - it rounds up past the
-       * overhang - so this supersedes it. */
-      if (v->discard > 0 && v->num_packets
-            && v->pkt_index >= v->num_packets)
+      /* This packet carried a padding, so the frames it just yielded
+       * run past the end of the audio by that much.  Its yield is
+       * countable now, which is what makes the exact end knowable; a
+       * stated duration only rounds up past the overhang, so this
+       * supersedes it.  Consumed here, and set again by the pull if
+       * the stream is rewound and replayed. */
+      if (v->discard > 0)
       {
          int64_t out   = v->emitted + (int64_t)done;
          int64_t total = out + rvorbis_packet_pending(v->handle)
                              - v->discard;
-         /* A padding longer than the final packet's yield would ask
-          * for frames already handed out; the bound stops at what has
+         /* A padding longer than the packet's yield would ask for
+          * frames already handed out; the bound stops at what has
           * gone rather than going backwards. */
          if (total < out)
             total = out;
          if (v->limit < 0 || total < v->limit)
             v->limit = total;
+         v->discard = 0;
       }
    }
    v->emitted += (int64_t)done;
@@ -1048,7 +1062,6 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
          int64_t duration_ns = 0;
-         int64_t discard_ns  = 0;
          int     err         = 0;
          if (!v)
             return false;
@@ -1089,24 +1102,6 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             v->setup      = at->codec_private;
             v->setup_size = at->codec_private_size;
             duration_ns   = rwebm_duration_ns(v->demux);
-            /* Count the track's packets and total its DiscardPadding.
-             * The walk decodes nothing - it reads the block headers -
-             * and the count is what tells the drain which packet is
-             * the last, i.e. when the exact end becomes knowable. */
-            {
-               rwebm_packet pkt;
-               int64_t      pad_ns = 0;
-               while (rwebm_read_packet(v->demux, &pkt) == 1)
-               {
-                  if (pkt.track != v->track_idx)
-                     continue;
-                  v->num_packets++;
-                  if (pkt.discard_padding > 0)
-                     pad_ns += pkt.discard_padding;
-               }
-               rwebm_rewind(v->demux);
-               discard_ns = pad_ns;
-            }
          }
 #endif
          if (v->setup)
@@ -1145,16 +1140,11 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
           * drain replaces this with the exact end once the final
           * packet has been decoded.  The demuxed path has neither -
           * its packet set is the caller's - and stays unbounded. */
-         if (duration_ns > 0 || discard_ns > 0)
+         if (duration_ns > 0)
          {
             int64_t rate = (int64_t)rvorbis_get_info(v->handle).sample_rate;
             if (rate > 0)
-            {
-               if (duration_ns > 0)
-                  v->limit = (duration_ns * rate + 500000000) / 1000000000;
-               if (discard_ns > 0)
-                  v->discard = (discard_ns * rate + 500000000) / 1000000000;
-            }
+               v->limit = (duration_ns * rate + 500000000) / 1000000000;
          }
          return true;
       }
@@ -2482,12 +2472,24 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_vorbis *v =
                (struct audio_transfer_vorbis*)data;
-         /* Self-framed buffer mode only.  A packet-fed context does
-          * read the caller's bytes in place, but its frontier is the
-          * demuxer's or the caller's own packet walk rather than a
-          * cursor this arm keeps, so it exposes none. */
-         if (v->handle && !v->packet)
-            return (size_t)rvorbis_buffer_tell(v->handle);
+         if (v->handle)
+         {
+#ifdef HAVE_RWEBM
+            /* WebM: the packets are decoded where the demuxer points
+             * at them in the caller's buffer, so its walk position is
+             * the compressed frontier a feeder needs.  Monotonic
+             * through playback, and back to the first cluster on a
+             * rewind - never below the header material the demuxer
+             * keeps borrowed pointers into. */
+            if (v->demux)
+               return rwebm_tell(v->demux);
+#endif
+            /* Self-framed Ogg buffer.  The demuxed arm's packets are
+             * the caller's own blob rather than the buffer set by
+             * set_buffer_ptr, so it has no offset to report. */
+            if (!v->packet)
+               return (size_t)rvorbis_buffer_tell(v->handle);
+         }
          return 0;
       }
 #endif

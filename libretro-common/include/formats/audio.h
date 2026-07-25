@@ -205,7 +205,9 @@ int   audio_transfer_read_f32(void *data, enum audio_type_enum type,
  * has read.  Monotonic during playback, jumps back to the head on a
  * loop seek.  A windowed source's feeder uses it to keep residency
  * around the read position.  Returns 0 if the codec does not track
- * a buffer offset: the demuxed arms and MOD. */
+ * a buffer offset: the demuxed arms and MOD.  A WebM buffer reports
+ * the demuxer's walk position, which never falls below the header
+ * material the demuxer keeps borrowed pointers into. */
 size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type);
 
 /* Seek to an absolute interleaved PCM frame (used to loop). true on
