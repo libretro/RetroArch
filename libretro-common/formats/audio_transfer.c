@@ -222,13 +222,13 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     set_buffer_ptr, there being none - the same quantity for the
  *     same purpose, and what a feeder growing the set wants.  The
  *     Opus and AAC demuxed arms still report nothing there.
- *   Does not: seek to a nonzero frame on a windowed WebM buffer.  The
- *     walk would run at the wall, into pages that are reserved rather
- *     than populated, so windowing keeps rewind only and anything
- *     else fails at the entry point.  Nothing short of an index from
- *     frames to bytes would change that, and Matroska carries none -
- *     its Cues are timestamps, and a millisecond is 44 frames of
- *     slack at 44.1 kHz.
+ *     A windowed context seeks too, within what has arrived.  What
+ *     set_avail bounds is a prefix that only grows, not a window that
+ *     slides, so every byte below it stays readable and the walk
+ *     reaches any target inside it exactly.  A target past the wall
+ *     is refused rather than approximated, and succeeds once the
+ *     feeder has raised the bound past it, so a caller may simply
+ *     retry.  A refused seek leaves the stream rewound.
  *
  *     No end trim on the demuxed path, its packet set being the
  *     caller's: with no padding stated, the last packet's overlap-add
@@ -253,14 +253,15 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     granule accounts for.  The length is the summed final granules
  *     of the Vorbis bitstreams, and reads are bounded by it, so what
  *     info() says and what comes out are the same figure again.
- *   Does not: follow a rate or channel change across a chain
- *     boundary.  Nothing here would notice one - the values are read
- *     once, at open - and a mixer voice is built around the first
- *     link's, so a file whose links disagree plays the later ones at
- *     the wrong rate.  Rejecting it would need the survey to parse
- *     each link's identification header, which is worth doing if such
- *     a file ever turns up; they are vanishingly rare, every encoder
- *     in ordinary use writing links that agree.
+ *     Links that disagree on rate or channels are noticed: the survey
+ *     reads each one's identification header, and where they differ
+ *     the stream is bounded to the first link.  A voice is built
+ *     around the values read at open, so the alternative is playing
+ *     the later links at the wrong speed.  What info() reports is
+ *     again what comes out - the first link's length.
+ *   Does not: play the later links of such a file at all.  Following
+ *     them would mean rebuilding the voice mid-stream, which is the
+ *     mixer's business rather than this arm's.
  *
  *     On channels this arm is not the limit: rvorbis decodes one
  *     through sixteen, verified against libvorbis, and reports what
@@ -1691,12 +1692,15 @@ static uint32_t audio_transfer_flac_seek(void *ud, int offset,
  * file carries.  A single-serial file is an ordinary .ogg and goes to
  * rvorbis whole; anything else has to be filtered. */
 static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
-      uint32_t *serial, int *nstreams, int *chained, int64_t *total)
+      uint32_t *serial, int *nstreams, int *chained, int64_t *total,
+      int *mismatch)
 {
    uint32_t seen[16];
    uint32_t vser[16];
    int64_t  vgran[16];
    int      n = 0, nv = 0, found = 0, bos_after_data = 0, data_seen = 0;
+   int      first_ch = 0, differs = 0;
+   uint32_t first_rate = 0;
    size_t   off = 0;
    for (;;)
    {
@@ -1731,6 +1735,25 @@ static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
                vser[nv]    = ser;
                vgran[nv++] = 0;
             }
+            /* An identification header states the channels at byte 11
+             * and the rate at 12.  Links that disagree cannot all be
+             * played by one voice, so note it here rather than let
+             * the later ones come out at the first one's rate. */
+            if (body + 16 <= size)
+            {
+               int      lch = b[body + 11];
+               uint32_t lr  = (uint32_t)b[body + 12]
+                            | ((uint32_t)b[body + 13] << 8)
+                            | ((uint32_t)b[body + 14] << 16)
+                            | ((uint32_t)b[body + 15] << 24);
+               if (!first_ch)
+               {
+                  first_ch   = lch;
+                  first_rate = lr;
+               }
+               else if (lch != first_ch || lr != first_rate)
+                  differs = 1;
+            }
          }
       }
       else
@@ -1757,6 +1780,8 @@ static int audio_transfer_ogg_survey(const uint8_t *b, size_t size,
    }
    *nstreams = n;
    *chained  = bos_after_data;
+   if (mismatch)
+      *mismatch = differs;
    if (total)
    {
       int i;
@@ -2070,11 +2095,12 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             uint32_t ser = 0;
             int      nstreams = 0, chained = 0;
             int64_t  gtotal = 0;
-            int      isvorbis;
+            int      isvorbis, mismatch = 0;
             if (!v->data)
                return false;
             isvorbis = audio_transfer_ogg_survey((const uint8_t*)v->data,
-                  v->size, &ser, &nstreams, &chained, &gtotal);
+                  v->size, &ser, &nstreams, &chained, &gtotal,
+                  &mismatch);
             /* One logical bitstream is an ordinary .ogg and goes to
              * rvorbis whole, which is the path every such file has
              * always taken.  More than one and it cannot: rvorbis has
@@ -2127,6 +2153,17 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
              * also trims the last packet's overhang. */
             if (gtotal > 0)
                v->limit = gtotal;
+            /* Links that disagree on rate or channels: the voice is
+             * built around the first one's, so play that link and
+             * stop rather than run the rest at the wrong speed.  The
+             * length becomes the first link's granule, which is what
+             * comes out. */
+            if (mismatch)
+            {
+               int64_t first = rvorbis_stream_length_in_samples(v->handle);
+               if (first > 0)
+                  v->limit = first;
+            }
          }
          v->channels = rvorbis_get_info(v->handle).channels;
          /* A caller's packet blob is resident by definition, so the
@@ -3826,9 +3863,14 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
          if (op->handle && op->demux)
             return rwebm_tell(op->demux);
 #endif
-         /* set_demuxed_ptr reads the caller's own packet blob rather
-          * than the buffer set by set_buffer_ptr, so it has no offset
-          * in that buffer to report. */
+         /* Demuxed: a byte offset into the caller's packet blob,
+          * there being no set_buffer_ptr buffer to hold one.  The
+          * same quantity for the same purpose as the two above - how
+          * far the decoder has read - and what a feeder growing the
+          * set wants.  The Vorbis arm reports it for its blob; this
+          * one was left behind when that was added. */
+         if (op->handle && op->packets)
+            return op->pkt_offset;
          return 0;
       }
 #endif
@@ -3837,15 +3879,18 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_aac *ac =
                (struct audio_transfer_aac*)data;
-         /* Only the ADTS buffer path walks the caller's buffer
-          * linearly; adts_pos is the next frame's byte offset, i.e.
-          * the compressed frontier the feeder needs.  The demuxed
-          * (MP4/M4A) and set_demuxed_ptr paths read from the demuxer
-          * or a concatenated packet blob, not the caller's buffer, so
-          * they expose no windowable cursor - return 0, exactly as the
-          * vorbis packet-fed paths do. */
+         /* The ADTS buffer path walks the caller's buffer linearly;
+          * adts_pos is the next frame's byte offset, the compressed
+          * frontier a feeder needs. */
          if (ac->handle && ac->adts)
             return ac->adts_pos;
+         /* Demuxed: see the Opus arm - a byte offset into the
+          * caller's packets rather than into a buffer it did not
+          * set. */
+         if (ac->handle && ac->packets)
+            return ac->pkt_offset;
+         /* The MP4 and Matroska paths read where their demuxer points
+          * and expose no cursor of their own. */
          return 0;
       }
 #endif
@@ -3910,7 +3955,8 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
    uint32_t       pl  = 0;
    int64_t        pad = 0;
    int64_t        pos = 0;
-   int            n, m = 1, i;
+   int            n, m = 1, i, r;
+   int            reached = 0;
 
    /* Pass 1: where does each packet leave the stream? */
    audio_transfer_vorbis_to_head(v);
@@ -3918,7 +3964,18 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
    for (;;)
    {
       int fr;
-      if (audio_transfer_vorbis_pull(v, &pd, &pl, &pad) != 1)
+      r = audio_transfer_vorbis_pull(v, &pd, &pl, &pad);
+      if (r == -2)
+      {
+         /* The walk met the resident wall before the target.  Not a
+          * malformed stream - the bytes have not arrived yet - so the
+          * seek fails and can be tried again once they have. */
+         audio_transfer_vorbis_to_head(v);
+         rvorbis_packet_reset(v->handle);
+         v->emitted = 0;
+         return false;
+      }
+      if (r != 1)
          break;
       n++;
       fr = rvorbis_packet_frames(v->handle, pd, pl);
@@ -3929,9 +3986,21 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
       if (n < 2)
          continue;
       if (pos + fr > target)
+      {
+         reached = 1;
          break;
+      }
       pos += fr;
       m    = n;
+   }
+   /* Running out of packets short of the target is a seek past the
+    * end, not a position. */
+   if (!reached && pos < target)
+   {
+      audio_transfer_vorbis_to_head(v);
+      rvorbis_packet_reset(v->handle);
+      v->emitted = 0;
+      return false;
    }
 
    /* Pass 2: walk to m without decoding, then prime with it. */
@@ -3985,19 +4054,14 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
             return false;
          if (v->packet)
          {
-            /* Count the packets to the target.  Every packet-fed
-             * source can be walked except a windowed one, where the
-             * walk would run at the wall into pages that are reserved
-             * rather than populated. */
-            if (frame != 0 && v->channels > 0
-#ifdef HAVE_RWEBM
-                  && !v->avail
-#endif
-               )
+            /* Count the packets to the target.  A windowed context
+             * can be walked too: what set_avail bounds is a prefix
+             * that only grows, not a window that slides, so every
+             * byte below it stays readable and a target within it is
+             * as reachable as on a resident file.  Only a target past
+             * the wall is not, and the walk says so by meeting it. */
+            if (frame != 0 && v->channels > 0)
                return audio_transfer_vorbis_seek_walk(v, (int64_t)frame);
-            /* A windowed WebM keeps rewind only; anything else fails
-             * here rather than resolving against a position that is
-             * not the one asked for. */
             if (frame != 0)
                return false;
             rvorbis_packet_reset(v->handle);
