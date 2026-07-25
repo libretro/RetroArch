@@ -76,7 +76,9 @@
 /* osGetMemRegionSize/Free and MEMREGION_ALL are declared here */
 #include <3ds/os.h>
 #elif defined(MEM_STATS_GX)
-/* SYSMEM1_SIZE and SYS_GetArena1Size come from gccore, not ogcsys */
+/* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx.c and
+ * gx_gfx.c both take it from here.  SYS_GetArena1Size is gccore's. */
+#include <defines/gx_defines.h>
 #include <gccore.h>
 #include <ogcsys.h>
 #include <memory/mem2_manager.h>
