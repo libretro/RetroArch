@@ -109,7 +109,7 @@
  *                   1.8x the reference on many short matches
  *                   1.5x on long runs
  *                   0.8x on stored blocks, which is memcpy either way
- *                   0.52x on sequence-heavy input with raw literals
+ *                   0.51x on sequence-heavy input with raw literals
  *   encode        0.18 to 0.49 times
  *   encoded size  1.0x the reference on file data,
  *                 1.4x on synthetic mixed data,
@@ -160,11 +160,28 @@
  *   separately from the length to say so. Without that the change made
  *   things worse, not better.
  *
+ *   The sequence loop tested seven things per sequence -- four bounds
+ *   checks and three questions about whether a copy had room to
+ *   overrun. The reference asks one composite question and then copies
+ *   without testing anything, keeping a separate careful path for the
+ *   end of a block. Splitting the two apart the same way, with the
+ *   limits hoisted out of the loop, is worth more than any instruction
+ *   choice inside it.
+ *
+ *   Falling off that fast path must not mean copying narrowly, which
+ *   was the first attempt: one long match near the end of a block fails
+ *   the combined test while having ample room of its own, and forcing
+ *   it byte-wise took long-match decoding from twice the reference's
+ *   speed to half of it. The careful path asks each copy about its own
+ *   room.
+ *
  * What is left is the sequence loop itself and, on frames that transmit
  * their own tables rather than using the predefined ones, building
  * those. Both are now spread thin: no single part of either dominates,
  * which is a different problem from the ones above and will not yield
- * to the same kind of fix.
+ * to the same kind of fix. The remaining gap on sequence-heavy input is
+ * a serial dependency -- each sequence's state comes from the last --
+ * which no width of vector shortens.
  * ---------------------------------------------------------------------
  */
 
@@ -1256,7 +1273,7 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
 
       out->data     = scratch;
       out->size     = regenerated;
-      out->readable = regenerated + 64;
+      out->readable = regenerated + 128;
       return RZ_OK;
    }
 
@@ -1328,7 +1345,7 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
 
    out->data     = scratch;
    out->size     = regenerated;
-   out->readable = regenerated + 64;
+   out->readable = regenerated + 128;
    *used         = at + compressed;
    return RZ_OK;
 }
@@ -1354,12 +1371,15 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
 #include <emmintrin.h>
 #define RZSTD_VEC_SSE2 1
 #define RZSTD_VEC_WIDTH 16
+#define RZSTD_COPY_SLACK 64
 #elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__)
 #include <arm_neon.h>
 #define RZSTD_VEC_NEON 1
 #define RZSTD_VEC_WIDTH 16
+#define RZSTD_COPY_SLACK 64
 #else
 #define RZSTD_VEC_WIDTH 8
+#define RZSTD_COPY_SLACK 32
 #endif
 
 /* Copies @n bytes forward, overrunning by up to one vector. Callers
@@ -1370,20 +1390,44 @@ static void rzstd_wild_copy(uint8_t *dst, const uint8_t *src, size_t n)
    size_t i = 0;
 
 #if defined(RZSTD_VEC_SSE2)
+   /* Short copies are the common case -- a literal run is a handful of
+    * bytes -- so the loop is arranged to finish in one pass for those
+    * and only widen for the long ones. Unrolling to 64 for every copy
+    * makes the short ones slower, which is most of them. */
+   if (n <= 32)
+   {
+      _mm_storeu_si128((__m128i*)(void*)dst,
+            _mm_loadu_si128((const __m128i*)(const void*)src));
+      _mm_storeu_si128((__m128i*)(void*)(dst + 16),
+            _mm_loadu_si128((const __m128i*)(const void*)(src + 16)));
+      return;
+   }
    do
    {
       _mm_storeu_si128((__m128i*)(void*)(dst + i),
             _mm_loadu_si128((const __m128i*)(const void*)(src + i)));
       _mm_storeu_si128((__m128i*)(void*)(dst + i + 16),
             _mm_loadu_si128((const __m128i*)(const void*)(src + i + 16)));
-      i += 32;
+      _mm_storeu_si128((__m128i*)(void*)(dst + i + 32),
+            _mm_loadu_si128((const __m128i*)(const void*)(src + i + 32)));
+      _mm_storeu_si128((__m128i*)(void*)(dst + i + 48),
+            _mm_loadu_si128((const __m128i*)(const void*)(src + i + 48)));
+      i += 64;
    } while (i < n);
 #elif defined(RZSTD_VEC_NEON)
+   if (n <= 32)
+   {
+      vst1q_u8(dst,      vld1q_u8(src));
+      vst1q_u8(dst + 16, vld1q_u8(src + 16));
+      return;
+   }
    do
    {
       vst1q_u8(dst + i,      vld1q_u8(src + i));
       vst1q_u8(dst + i + 16, vld1q_u8(src + i + 16));
-      i += 32;
+      vst1q_u8(dst + i + 32, vld1q_u8(src + i + 32));
+      vst1q_u8(dst + i + 48, vld1q_u8(src + i + 48));
+      i += 64;
    } while (i < n);
 #else
    /* Eight bytes at a time through a union, so no alignment is assumed
@@ -1633,6 +1677,13 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
    uint32_t      of_state;
    size_t        lit_at = 0;
    size_t        out    = *dst_at;
+   /* Where the fast path stops being safe. Subtracting the slack once
+    * here rather than adding it per sequence keeps the test in
+    * registers, and guards the underflow once instead of every time. */
+   size_t        out_limit = dst_len > RZSTD_COPY_SLACK
+                           ? dst_len - RZSTD_COPY_SLACK : 0;
+   size_t        lit_limit = lit_readable > RZSTD_COPY_SLACK
+                           ? lit_readable - RZSTD_COPY_SLACK : 0;
    size_t        i;
    int           e;
 
@@ -1796,39 +1847,62 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
          }
       }
 
-      if (!offset)
-         return RZ_DATA;
-      if (lit_at + lit_run > lit_len)
-         return RZ_DATA;
-      if (out + lit_run + match_len > dst_len)
-         return RZ_DATA;
-      if ((size_t)offset > out + lit_run)
-         return RZ_DATA;
-
-      /* Literal runs are short and frequent -- a handful of bytes,
-       * once per sequence -- so this is mostly the cost of the call
-       * rather than of the copy. Where the output has slack it goes
-       * wide and overruns instead, which the match copy below then
-       * writes over. */
-      /* Widening this needs slack at both ends: room to overrun the
-       * output, and room to read past the literals. The second is why
-       * the readable extent is carried separately from the length --
-       * literals read in place have the sequences section behind them,
-       * which is slack until the block runs out. */
-      if (out + lit_run + RZSTD_VEC_WIDTH * 2 <= dst_len
-            && lit_at + lit_run + RZSTD_VEC_WIDTH * 2 <= lit_readable)
+      /* One test decides whether this sequence needs any further ones.
+       *
+       * Everything the two copies require is checked together: room to
+       * overrun the output, room to read past the literals, enough
+       * literals left, and a match reaching no further back than the
+       * output goes. The limits are loop-invariant and hoisted, so this
+       * is three compares against registers and the copies that follow
+       * test nothing at all.
+       *
+       * The careful path repeats the checks singly and copies narrowly.
+       * It runs at the end of a block and on anything malformed, which
+       * is where that cost belongs. Doing it per sequence instead --
+       * seven tests where three do -- is what the reference avoids by
+       * splitting the two apart, and it costs more than any instruction
+       * choice inside the loop. */
+      if (out + lit_run + match_len <= out_limit
+            && lit_at + lit_run <= lit_limit
+            && offset
+            && (size_t)offset <= out + lit_run)
+      {
          rzstd_wild_copy(dst + out, literals + lit_at, lit_run);
+         out    += lit_run;
+         lit_at += lit_run;
+         rzstd_match_copy(dst + out, dst + out - offset, match_len,
+               offset, 1);
+         out += match_len;
+      }
       else
-         memcpy(dst + out, literals + lit_at, lit_run);
-      out    += lit_run;
-      lit_at += lit_run;
+      {
+         if (!offset)
+            return RZ_DATA;
+         if (lit_at + lit_run > lit_len)
+            return RZ_DATA;
+         if (out + lit_run + match_len > dst_len)
+            return RZ_DATA;
+         if ((size_t)offset > out + lit_run)
+            return RZ_DATA;
 
-      /* Wide copies overrun by up to a vector, so they are used only
-       * where the output has room to spare; the last stretch of a block
-       * falls back to bytes rather than growing the caller's buffer. */
-      rzstd_match_copy(dst + out, dst + out - offset, match_len, offset,
-            out + match_len + RZSTD_VEC_WIDTH * 2 <= dst_len);
-      out += match_len;
+         /* Falling off the fast path does not mean copying narrowly.
+          * A single long match near the end of a block fails the
+          * combined test while still having room of its own, and
+          * forcing it byte-wise cost more than the combined test
+          * saved -- it took long-match decoding from twice the
+          * reference's speed to half of it. Each copy is asked about
+          * its own room here. */
+         if (lit_at + lit_run + RZSTD_COPY_SLACK <= lit_readable
+               && out + lit_run + RZSTD_COPY_SLACK <= dst_len)
+            rzstd_wild_copy(dst + out, literals + lit_at, lit_run);
+         else
+            memcpy(dst + out, literals + lit_at, lit_run);
+         out    += lit_run;
+         lit_at += lit_run;
+         rzstd_match_copy(dst + out, dst + out - offset, match_len,
+               offset, out + match_len + RZSTD_COPY_SLACK <= dst_len);
+         out += match_len;
+      }
 
       if (i + 1 < nseq)
       {
@@ -1906,7 +1980,7 @@ typedef struct rzstd_frame_state
    uint32_t           repeat[3];
    /* The literal buffer carries slack past the block maximum so a wide
     * copy out of it may overrun without leaving the allocation. */
-   uint8_t            literals[RZSTD_BLOCK_MAX + 64];
+   uint8_t            literals[RZSTD_BLOCK_MAX + 128];
 } rzstd_frame_state_t;
 
 static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
