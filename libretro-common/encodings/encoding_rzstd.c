@@ -109,7 +109,7 @@
  *                   1.8x the reference on many short matches
  *                   1.5x on long runs
  *                   0.8x on stored blocks, which is memcpy either way
- *                   0.46x on sequence-heavy input with raw literals
+ *                   0.50x on sequence-heavy input with raw literals
  *   encode        0.18 to 0.49 times
  *   encoded size  1.0x the reference on file data,
  *                 1.4x on synthetic mixed data,
@@ -148,9 +148,16 @@
  *   them, five symbols each per pass, is what the reference's assembly
  *   does and it is expressible in plain C.
  *
- * What is left is the sequence loop itself, which is now everything:
- * three table lookups, a literal copy and a match copy per sequence,
- * with no single part dominating.
+ *   Each sequence read its three table entries three times over -- once
+ *   for the symbol, once for the width that decides whether the buffer
+ *   is deep enough, once for the transition. Nine loads where three do.
+ *
+ * What is left is the sequence loop itself and, on frames that transmit
+ * their own tables rather than using the predefined ones, building
+ * those: a spread and a width assignment over up to five hundred and
+ * twelve states, three times a block. That is a tenth of decode time on
+ * such input and it is real work rather than waste, so shortening it
+ * means a cheaper construction and not a cache.
  * ---------------------------------------------------------------------
  */
 
@@ -725,15 +732,6 @@ static uint32_t rzstd_fse_next(const rzstd_fse_t *fse, uint32_t state,
    const rzstd_fse_entry_t *e = &fse->table[state];
 
    return (uint32_t)e->next_state + rzstd_rbits_read(b, e->bits);
-}
-
-/* The same, with the bits assumed present. */
-static uint32_t rzstd_fse_next_fast(const rzstd_fse_t *fse, uint32_t state,
-      rzstd_rbits_t *b)
-{
-   const rzstd_fse_entry_t *e = &fse->table[state];
-
-   return (uint32_t)e->next_state + rzstd_rbits_take(b, e->bits);
 }
 
 /* -------- Huffman --------
@@ -1496,11 +1494,38 @@ typedef struct rzstd_seq_tables
    int               valid;
 } rzstd_seq_tables_t;
 
+/* The predefined tables never change, so they are built once and shared
+ * rather than rebuilt for every block. Rebuilding them was an eighth of
+ * decode time on sequence-heavy input, which is what a spread and a
+ * width assignment over sixty-four states costs when it happens per
+ * block instead of per program.
+ *
+ * The build is deterministic, so two threads racing to do it write the
+ * same bytes and no lock is needed; the flag is only an optimisation
+ * and being seen late costs a rebuild, not correctness. */
+static rzstd_fse_entry_t rzstd_ll_predef[1 << 6];
+static rzstd_fse_entry_t rzstd_ml_predef[1 << 6];
+static rzstd_fse_entry_t rzstd_of_predef[1 << 5];
+static int               rzstd_predef_ready;
+
+static void rzstd_build_predefined(void)
+{
+   rzstd_fse_t t;
+
+   if (rzstd_predef_ready)
+      return;
+   rzstd_fse_build(&t, rzstd_ll_predef, rzstd_ll_default, 36, 6);
+   rzstd_fse_build(&t, rzstd_ml_predef, rzstd_ml_default, 53, 6);
+   rzstd_fse_build(&t, rzstd_of_predef, rzstd_of_default, 29, 5);
+   rzstd_predef_ready = 1;
+}
+
 /* Sets up one of the three tables according to its two-bit mode. */
 static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
-      const uint8_t *src, size_t len, size_t *used, int have_previous)
+      const uint8_t *src, size_t len, size_t *used, int have_previous,
+      rzstd_fse_entry_t *shared)
 {
    int16_t  counts[RZSTD_FSE_MAX_SYMBOLS];
    uint32_t symbol_count = 0;
@@ -1512,8 +1537,15 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
    switch (mode)
    {
       case RZSTD_SEQ_PREDEFINED:
-         return rzstd_fse_build(fse, storage, predef, predef_count,
-               predef_log);
+         /* Point at the shared table rather than filling this block's
+          * copy of it. */
+         rzstd_build_predefined();
+         fse->table        = shared;
+         fse->accuracy_log = predef_log;
+         (void)predef;
+         (void)predef_count;
+         (void)storage;
+         return RZ_OK;
 
       case RZSTD_SEQ_RLE:
          /* One byte names the only symbol; the table is one slot wide
@@ -1613,21 +1645,21 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
 
    e = rzstd_seq_table(&tab->ll_fse, tab->ll, (modes >> 6) & 3,
          rzstd_ll_default, 36, 6, 35, 9, src + at, src_len - at, &used,
-         tab->valid);
+         tab->valid, rzstd_ll_predef);
    if (e != RZ_OK)
       return e;
    at += used;
 
    e = rzstd_seq_table(&tab->of_fse, tab->of, (modes >> 4) & 3,
          rzstd_of_default, 29, 5, 31, 8, src + at, src_len - at, &used,
-         tab->valid);
+         tab->valid, rzstd_of_predef);
    if (e != RZ_OK)
       return e;
    at += used;
 
    e = rzstd_seq_table(&tab->ml_fse, tab->ml, (modes >> 2) & 3,
          rzstd_ml_default, 53, 6, 52, 9, src + at, src_len - at, &used,
-         tab->valid);
+         tab->valid, rzstd_ml_predef);
    if (e != RZ_OK)
       return e;
    at += used;
@@ -1647,9 +1679,17 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
 
    for (i = 0; i < nseq; i++)
    {
-      uint32_t ll_code = rzstd_fse_symbol(&tab->ll_fse, ll_state);
-      uint32_t ml_code = rzstd_fse_symbol(&tab->ml_fse, ml_state);
-      uint32_t of_code = rzstd_fse_symbol(&tab->of_fse, of_state);
+      /* Each table entry is read once and its three fields all used:
+       * the symbol now, the width to decide whether the buffer holds
+       * enough, and the transition at the end. Asking the table three
+       * separate times for the same entry is three loads where one
+       * does, and the loop did that for each of three tables. */
+      const rzstd_fse_entry_t *lle = &tab->ll_fse.table[ll_state];
+      const rzstd_fse_entry_t *mle = &tab->ml_fse.table[ml_state];
+      const rzstd_fse_entry_t *ofe = &tab->of_fse.table[of_state];
+      uint32_t ll_code = lle->symbol;
+      uint32_t ml_code = mle->symbol;
+      uint32_t of_code = ofe->symbol;
       uint32_t offset;
       uint32_t lit_run;
       uint32_t match_len;
@@ -1755,26 +1795,23 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
 
       if (i + 1 < nseq)
       {
-         /* Likewise for the three updates: what they need is known
-          * from the tables, so the test is against that and not
-          * against three times the largest accuracy log. */
-         uint32_t need = tab->ll_fse.table[ll_state].bits
-                       + tab->ml_fse.table[ml_state].bits
-                       + tab->of_fse.table[of_state].bits;
+         /* Likewise for the three updates: what they need is already
+          * in the entries fetched at the top of the loop. */
+         uint32_t need = (uint32_t)lle->bits + mle->bits + ofe->bits;
 
          if (bits.count < need)
             rzstd_rbits_fill(&bits);
          if (bits.count >= need)
          {
-            ll_state = rzstd_fse_next_fast(&tab->ll_fse, ll_state, &bits);
-            ml_state = rzstd_fse_next_fast(&tab->ml_fse, ml_state, &bits);
-            of_state = rzstd_fse_next_fast(&tab->of_fse, of_state, &bits);
+            ll_state = lle->next_state + rzstd_rbits_take(&bits, lle->bits);
+            ml_state = mle->next_state + rzstd_rbits_take(&bits, mle->bits);
+            of_state = ofe->next_state + rzstd_rbits_take(&bits, ofe->bits);
          }
          else
          {
-            ll_state = rzstd_fse_next(&tab->ll_fse, ll_state, &bits);
-            ml_state = rzstd_fse_next(&tab->ml_fse, ml_state, &bits);
-            of_state = rzstd_fse_next(&tab->of_fse, of_state, &bits);
+            ll_state = lle->next_state + rzstd_rbits_read(&bits, lle->bits);
+            ml_state = mle->next_state + rzstd_rbits_read(&bits, mle->bits);
+            of_state = ofe->next_state + rzstd_rbits_read(&bits, ofe->bits);
          }
       }
    }
