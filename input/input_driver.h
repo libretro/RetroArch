@@ -571,11 +571,6 @@ struct input_keyboard_ctx_wait
 
 typedef struct
 {
-   /**
-    * Array of timers, one for each entry in enum input_combo_type.
-    */
-   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
-
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
    input_remote_state_t remote_st_ptr;        /* uint64_t alignment */
 #endif
@@ -610,6 +605,14 @@ typedef struct
    int old_touch_index_lut[OVERLAY_MAX_TOUCH];
 #endif
    uint16_t flags;
+   /* Read and written every poll; kept beside flags so the per-poll
+    * bookkeeping shares a cacheline with the hot pointer block above,
+    * rather than sitting past the input_device_info string tables
+    * (~17 KB of cold data) as it used to. */
+   unsigned input_hotkey_block_counter;
+#ifdef HAVE_ACCESSIBILITY
+   unsigned gamepad_input_override;
+#endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
@@ -628,12 +631,19 @@ typedef struct
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
+
+   /**
+    * Array of timers, one for each entry in enum input_combo_type.
+    * One indexed entry is read per frame, and only while a button
+    * combo is bound; cold enough that it has no business occupying
+    * the first six cachelines of this struct, which it used to.
+    * (rarch_timer_t is int64-aligned; the compiler pads as needed
+    * here, which costs at most 4 bytes.)
+    */
+   rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
-   unsigned input_hotkey_block_counter;
-#ifdef HAVE_ACCESSIBILITY
-   unsigned gamepad_input_override;
-#endif
 
    enum osk_type osk_idx;
 
