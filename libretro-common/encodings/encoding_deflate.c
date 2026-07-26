@@ -1331,14 +1331,23 @@ static uint32_t rd_hash(const uint8_t *p)
 }
 #endif
 
-/* insert position `pos` into the hash chain; return previous head */
+/* Insert position `pos` into its hash chain; return the previous head
+ * as a position, or -1 if the chain was empty.
+ *
+ * head[] and prev[] hold pos+1, so that 0 - what calloc already put
+ * there - means "empty".  The tables are 128 KB together; filling
+ * them with a -1 sentinel at construction cost more than compressing
+ * a small payload does, and made stream setup 7x slower than zlib's.
+ * With a zero sentinel the fill disappears and the pages are faulted
+ * in on demand, so a short input only ever touches the buckets it
+ * uses. */
 static int32_t rd_insert(struct rdeflate *s, uint32_t pos)
 {
-   uint32_t h = rd_hash(s->win + pos);
+   uint32_t h    = rd_hash(s->win + pos);
    int32_t  prev = s->head[h];
    s->prev[pos & RD_WMASK] = prev;
-   s->head[h] = (int32_t)pos;
-   return prev;
+   s->head[h] = (int32_t)pos + 1;
+   return prev - 1;
 }
 
 /* __builtin_clzll / __builtin_ctzll need GCC >= 3.4 (where the
@@ -1367,9 +1376,11 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
    uint32_t best_len   = best_start;   /* only a longer match is interesting */
    uint32_t best_dist  = 0;
    /* The caller has already inserted `pos`; begin at the previous
-    * occurrence recorded in prev[].  Empty chain -> no match. */
+    * occurrence recorded in prev[].  Chain links are stored as
+    * position+1 with 0 for "empty" (see rd_insert), so `cur` is
+    * one-based throughout this walk and `cpos` is the position. */
    int32_t cur         = s->prev[pos & RD_WMASK];
-   if (cur < 0)
+   if (cur == 0)
       return 0;
 
    {
@@ -1387,9 +1398,10 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
        * equality of the same two bytes on both sides. */
       memcpy(&scan_end, scan + best_len - 1, 2);
 
-      while (cur >= 0 && (uint32_t)cur >= limit && chain-- > 0)
+      while (cur != 0 && (uint32_t)(cur - 1) >= limit && chain-- > 0)
       {
-         const uint8_t *m = win + cur;
+         uint32_t cpos    = (uint32_t)(cur - 1);
+         const uint8_t *m = win + cpos;
          uint16_t m_end;
          /* Quick reject: a candidate can only beat best_len if the two bytes
           * bracketing the current best both match.  Compared as one 16-bit
@@ -1397,7 +1409,7 @@ static INLINE uint32_t rd_longest_match(struct rdeflate *s, uint32_t pos,
          memcpy(&m_end, m + best_len - 1, 2);
          if (m_end != scan_end)
          {
-            cur = prev[cur & RD_WMASK];
+            cur = prev[cpos & RD_WMASK];
             continue;
          }
          {
@@ -1460,13 +1472,13 @@ have_len:
             if (l > best_len)
             {
                best_len  = l;
-               best_dist = pos - (uint32_t)cur;
+               best_dist = pos - cpos;
                if (l >= max_len || l >= (uint32_t)s->nice)
                   break;
                memcpy(&scan_end, scan + best_len - 1, 2);
             }
          }
-         cur = prev[cur & RD_WMASK];
+         cur = prev[cpos & RD_WMASK];
       }
    }
    /* best_dist stays 0 until an actual candidate beats best_len; when the
@@ -2252,11 +2264,8 @@ void *rdeflate_new(int level, int window_bits)
    s->adler   = 1;
    rd_init_code_tables();
    rd_set_level(s);
-   {
-      int i;
-      for (i = 0; i < RD_HASH_SIZE; i++)
-         s->head[i] = -1;
-   }
+   /* head[]/prev[] need no initialisation: calloc's zeroes already
+    * mean "empty chain" (see rd_insert). */
    return s;
 }
 
@@ -2372,12 +2381,14 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
             s->pos         -= slide;
             s->block_start -= slide;
             /* rebase hash chains: drop entries that fall below the window */
+            /* one-based links: an entry survives when its position
+             * (value-1) is at or above the slide, i.e. value > slide */
             for (i = 0; i < RD_HASH_SIZE; i++)
-               s->head[i] = (s->head[i] >= (int32_t)slide)
-                  ? s->head[i] - (int32_t)slide : -1;
+               s->head[i] = (s->head[i] > (int32_t)slide)
+                  ? s->head[i] - (int32_t)slide : 0;
             for (i = 0; i < RD_WINDOW; i++)
-               s->prev[i] = (s->prev[i] >= (int32_t)slide)
-                  ? s->prev[i] - (int32_t)slide : -1;
+               s->prev[i] = (s->prev[i] > (int32_t)slide)
+                  ? s->prev[i] - (int32_t)slide : 0;
          }
          /* top the window back up from any remaining caller input so a
           * single process() call can consume an arbitrarily large input
