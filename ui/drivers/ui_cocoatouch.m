@@ -38,6 +38,9 @@
 
 #include "../ui_companion_driver.h"
 #include "../../audio/audio_driver.h"
+#ifdef HAVE_MICROPHONE
+#include "../../audio/microphone_driver.h"
+#endif
 #include "../../gfx/video_display_server.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
@@ -695,11 +698,19 @@ enum
    {
       RARCH_DBG("[Cocoa] AudioSession Interruption Began.\n");
       audio_driver_stop();
+#ifdef HAVE_MICROPHONE
+      /* The system has already stopped our audio units; without this the
+       * microphone stays silent for the rest of the session. */
+      microphone_driver_stop();
+#endif
    }
    else if ([type unsignedIntegerValue] == AVAudioSessionInterruptionTypeEnded)
    {
       RARCH_DBG("[Cocoa] AudioSession Interruption Ended.\n");
       audio_driver_start(false);
+#ifdef HAVE_MICROPHONE
+      microphone_driver_start();
+#endif
    }
 }
 
