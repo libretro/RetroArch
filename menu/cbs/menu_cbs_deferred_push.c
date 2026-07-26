@@ -337,10 +337,10 @@ static int general_push(menu_displaylist_info_t *info,
             menu->scratch_buf, sizeof(tmp_str));
 #endif
 
-      if (*info->path)
+      if (info->path)
          free(info->path);
       info->path      = strdup(tmp_str);
-      if (*info->label)
+      if (info->label)
          free(info->label);
       info->label     = strdup(tmp_str);
    }
