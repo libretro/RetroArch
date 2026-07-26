@@ -5204,7 +5204,45 @@ static void ropus_deemphasis(float *in[], float *pcm, int N, int C,
 /* celt_decode_with_ec, decode-only, float pipeline, 48 kHz.            */
 /* pcm receives N interleaved float frames (CC channels, [-1,1]).       */
 /* ==================================================================== */
-static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
+/* Frame-decode scratch, one per decoder context (embedded in ropus_t
+ * below).  These lived on the decode-frame and CELT-decode stacks:
+ * pcm_silk alone is 11.5 KB, the float CELT norm buffers another
+ * 19.2 KB, stacking to a worst-case decode depth near 50 KB on the
+ * audio/task thread.  Per context and not static for the same reason
+ * as sub_q/sub_f: the mixer runs several voices at once.  One scratch
+ * per context serves every substream and every (sequential) CELT
+ * call, main and redundancy alike. */
+typedef struct
+{
+   int16_t pcm_silk[2880 * 2];
+   int16_t bl[960];
+   int16_t br[960];
+   union
+   {
+      float   f[240 * 2];
+      int16_t q[240 * 2];
+   } redundant;
+   /* CELT band coefficients (C*N plus last-band lowband scratch) and
+    * the quant_all_bands norm scratch; the q view is int16_t spelled
+    * out because the ropus_norm (Q14) typedef appears later in the
+    * file than this struct must. */
+   union
+   {
+      struct
+      {
+         float X[2 * 960 + 960];
+         float norm[2 * 960];
+      } f;
+      struct
+      {
+         int16_t X[2 * 960 + 960];
+         int16_t norm[2 * 960];
+      } q;
+   } celt;
+} ropus_frame_scratch;
+
+static int ropus_celt_decode(ropus_celt *st,
+      ropus_frame_scratch *scr, const uint8_t *data, int len,
       float *pcm, int frame_size, ropus_ec *dec)
 {
    int c, i, N, CC = st->channels, C = st->stream_channels;
@@ -5216,8 +5254,8 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
    float *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    uint8_t collapse_masks[2 * ROPUS_NBANDS];
    int anti_collapse_on = 0;
-   float X[2 * 960 + 960];  /* C*N plus last-band lowband scratch      */
-   float normbuf[2 * 960];
+   float *X       = scr->celt.f.X;
+   float *normbuf = scr->celt.f.norm;
    float max_background_increase;
 
    (void)data;
@@ -5242,7 +5280,7 @@ static int ropus_celt_decode(ropus_celt *st, const uint8_t *data, int len,
          * sizeof(float));
    } while (++c < CC);
 
-   memset(X, 0, sizeof X);
+   memset(X, 0, sizeof scr->celt.f.X);
    ropus_quant_all_bands(start, end, X, C == 2 ? X + N : NULL,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
@@ -7254,7 +7292,8 @@ static int ropus_celt_front_q(ropus_celt_q *st, ropus_ec *dec, int len,
 }
 
 /* Master fixed-point decode: s16 PCM out.                              */
-static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
+static int ropus_celt_decode_q(ropus_celt_q *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int len, int16_t *pcm, int frame_size, ropus_ec *dec, int accum)
 {
    int c, i, N, CC = st->channels, C = st->stream_channels;
@@ -7267,8 +7306,8 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
    int16_t *oldBandE, *oldLogE, *oldLogE2, *backgroundLogE;
    uint8_t collapse_masks[2 * ROPUS_NBANDS];
    int anti_collapse_on = 0;
-   ropus_norm X[2 * 960 + 960];
-   ropus_norm normbuf[2 * 960];
+   ropus_norm *X       = scr->celt.q.X;
+   ropus_norm *normbuf = scr->celt.q.norm;
    int16_t max_background_increase;
 
    (void)data;
@@ -7292,7 +7331,7 @@ static int ropus_celt_decode_q(ropus_celt_q *st, const uint8_t *data,
          * sizeof(ropus_sig));
    } while (++c < CC);
 
-   memset(X, 0, sizeof X);
+   memset(X, 0, sizeof scr->celt.q.X);
    ropus_quant_all_bands_q(start, end, X, C == 2 ? X + N : NULL,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
@@ -10056,26 +10095,6 @@ static void ropus_smooth_fade_q(const int16_t *in1, const int16_t *in2,
 /* Decode one frame of an Opus packet.  data/len cover the frame's
  * bytes; toc_* give the packet TOC properties.  pcm receives
  * frame_size48 interleaved s16 samples at 48 kHz.                      */
-/* Frame-decode scratch, one per decoder context (embedded in ropus_t
- * below).  These lived on the decode-frame stacks: pcm_silk alone is
- * 11.5 KB, and with bl/br and the redundancy buffer the float frame
- * measured 15,680 bytes by -fstack-usage -- nested above
- * ropus_celt_decode's own (still larger) frame on the audio thread.
- * Per context and not static for the same reason as sub_q/sub_f:
- * the mixer runs several voices at once.  The substream loop is
- * sequential, so one scratch per context serves every substream. */
-typedef struct
-{
-   int16_t pcm_silk[2880 * 2];
-   int16_t bl[960];
-   int16_t br[960];
-   union
-   {
-      float   f[240 * 2];
-      int16_t q[240 * 2];
-   } redundant;
-} ropus_frame_scratch;
-
 static int ropus_decode_frame_q(ropus_dec_q *st,
       ropus_frame_scratch *scr, const uint8_t *data,
       int32_t len, int16_t *pcm, int frame_size48, int mode,
@@ -10179,7 +10198,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st,
       ropus_ec rdec;
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode_q(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode_q(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec, 0);
    }
 
@@ -10195,7 +10214,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st,
       st->celt.end = mode == ROPUS_MODE_CELT
          ? st->celt.end : st->celt.end;
       st->celt.stream_channels = st->stream_channels;
-      celt_ret = ropus_celt_decode_q(&st->celt, data, len, pcm,
+      celt_ret = ropus_celt_decode_q(&st->celt, scr, data, len, pcm,
          celt_frame_size, &dec, celt_accum);
    }
    else
@@ -10209,7 +10228,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st,
          ropus_ec sdec;
          st->celt.start = 0;
          ropus_ec_dec_init(&sdec, silence, 2);
-         ropus_celt_decode_q(&st->celt, silence, 2, pcm, F2_5, &sdec,
+         ropus_celt_decode_q(&st->celt, scr, silence, 2, pcm, F2_5, &sdec,
             celt_accum);
       }
    }
@@ -10224,7 +10243,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st,
       ropus_celt_reset_q(&st->celt);
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode_q(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode_q(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec, 0);
 #ifdef ROPUS_DEBUG_REDAUD
       { int z; for (z = 0; z < F5 * st->channels; z++) g_redaud[z] = redundant_audio[z]; g_redaud_n = F5 * st->channels; }
@@ -10391,7 +10410,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st,
       ropus_ec rdec;
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec);
    }
 
@@ -10403,7 +10422,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st,
       if (mode != st->prev_mode && st->prev_mode >= 0
             && !st->prev_redundancy)
          ropus_celt_reset(&st->celt);
-      celt_ret = ropus_celt_decode(&st->celt, data, len, pcm,
+      celt_ret = ropus_celt_decode(&st->celt, scr, data, len, pcm,
          celt_frame_size, &dec);
    }
    else
@@ -10417,7 +10436,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st,
          ropus_ec sdec;
          st->celt.start = 0;
          ropus_ec_dec_init(&sdec, silence, 2);
-         ropus_celt_decode(&st->celt, silence, 2, pcm, F2_5, &sdec);
+         ropus_celt_decode(&st->celt, scr, silence, 2, pcm, F2_5, &sdec);
       }
    }
 
@@ -10431,7 +10450,7 @@ static int ropus_decode_frame_f(ropus_dec_f *st,
       ropus_celt_reset(&st->celt);
       st->celt.start = 0;
       ropus_ec_dec_init(&rdec, data + len, redundancy_bytes);
-      ropus_celt_decode(&st->celt, data + len, redundancy_bytes,
+      ropus_celt_decode(&st->celt, scr, data + len, redundancy_bytes,
          redundant_audio, F5, &rdec);
       ropus_smooth_fade(pcm + st->channels * (audiosize - F2_5),
          redundant_audio + st->channels * F2_5,
