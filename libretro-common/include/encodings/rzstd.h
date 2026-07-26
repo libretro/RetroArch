@@ -62,15 +62,11 @@
  *                             recognise one.
  *   formats/chd/rchd.c        decompresses a hunk, output size known
  *                             in advance.
- *   formats/libchdr/          decompresses a hunk through the streaming
- *     libchdr_zstd.c          interface, re-initialising per hunk. This
- *                             is the one caller that streams, and it
- *                             goes away with libchdr.
- *
- * So the streaming form has exactly one user today and a one-shot
- * decode satisfies the rest. That is worth stating precisely rather
- * than as "nobody streams", which is what a glance at the callers
- * suggests and what enumerating their symbols disproves.
+ *   formats/libchdr/          decompresses a hunk through a streaming
+ *     libchdr_zstd.c          interface, re-initialising per hunk. It
+ *                             is the only caller that streams and it
+ *                             goes away with libchdr, which is why no
+ *                             streaming interface is offered here.
  *
  * None of them uses a dictionary.
  */
@@ -117,6 +113,19 @@ enum
 int64_t rzstd_frame_content_size(const uint8_t *src, size_t src_len);
 
 /**
+ * rzstd_frame_header_size:
+ * @src        : start of a frame
+ * @src_len    : bytes readable at @src
+ *
+ * Reports how many bytes the frame header occupies, so a caller can
+ * find the first block without decoding anything.
+ *
+ * Returns: the header size, or RZSTD_PROCESS_ERROR when @src_len is
+ * too short to tell or the header is malformed.
+ */
+int rzstd_frame_header_size(const uint8_t *src, size_t src_len);
+
+/**
  * rzstd_decode:
  * @dst        : output buffer
  * @dst_len    : capacity of @dst
@@ -161,49 +170,21 @@ size_t rzstd_compress_bound(size_t src_len);
 int rzstd_encode(uint8_t *dst, size_t dst_len,
       const uint8_t *src, size_t src_len, int level, size_t *wrote);
 
-/* -------- streaming -------- */
-
 /* Window size the decoder is willing to allocate for a frame. Frames
  * declaring a larger window are rejected; this is well above what any
- * encoder in this tree produces and above the reference implementation's
- * default. */
+ * encoder in this tree produces and above the reference
+ * implementation's default. */
 #define RZSTD_WINDOW_LOG_MAX 27
 
-void *rzstd_decode_new(void);
-void  rzstd_decode_free(void *stream);
-void  rzstd_decode_set_in(void *stream, const uint8_t *in, size_t in_size);
-void  rzstd_decode_set_out(void *stream, uint8_t *out, size_t out_size);
-
-/**
- * rzstd_decode_process:
- * @stream     : decoder
- * @read       : receives input bytes consumed (may be NULL)
- * @wrote      : receives output bytes produced (may be NULL)
+/* No streaming interface is offered.
  *
- * Consumes as much input and produces as much output as it can, then
- * returns. Frame boundaries are handled internally, so a buffer holding
- * several concatenated frames decodes as one stream.
- *
- * Returns: RZSTD_PROCESS_NEXT when suspended, RZSTD_PROCESS_END at the
- * end of a frame with no further input, or RZSTD_PROCESS_ERROR.
+ * One was declared here, both directions, for a caller that cannot
+ * hold a whole frame. The only such caller in this tree is
+ * formats/libchdr, which formats/chd/rchd.c replaces and which holds
+ * a hunk entire. Eleven entry points were declared and none was ever
+ * implemented: nothing would have noticed them breaking, because
+ * nothing called them. Absent is honest where declared was not.
  */
-int rzstd_decode_process(void *stream, size_t *read, size_t *wrote);
-
-void *rzstd_encode_new(int level);
-void  rzstd_encode_free(void *stream);
-void  rzstd_encode_set_in(void *stream, const uint8_t *in, size_t in_size);
-void  rzstd_encode_set_out(void *stream, uint8_t *out, size_t out_size);
-
-/**
- * rzstd_encode_finish:
- *
- * Signals that no input follows the current buffer, so the last block
- * can be marked final and the frame closed. Without this the stream
- * never reports RZSTD_PROCESS_END.
- */
-void  rzstd_encode_finish(void *stream);
-
-int   rzstd_encode_process(void *stream, size_t *read, size_t *wrote);
 
 /**
  * rzstd_error_name:

@@ -84,9 +84,7 @@
  *                               tried; no lazy matching; no optimal
  *                               parse; no repeated offsets. Each would
  *                               narrow the gap to the reference.
- *   Streaming                   the resumable interface the header
- *                               describes. Every frame is decoded in
- *                               one call today.
+
  *
  * Deliberately excluded rather than pending:
  *
@@ -2313,6 +2311,38 @@ int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
    if (wrote)
       *wrote = out;
    return RZSTD_PROCESS_END;
+}
+
+int rzstd_frame_header_size(const uint8_t *src, size_t src_len)
+{
+   rzstd_frame_header_t h;
+
+   if (!src)
+      return RZSTD_PROCESS_ERROR;
+   if (rzstd_read_frame_header(src, src_len, &h) != RZ_OK)
+      return RZSTD_PROCESS_ERROR;
+   return (int)h.header_len;
+}
+
+const char *rzstd_error_name(int code)
+{
+   switch (code)
+   {
+      case RZSTD_PROCESS_END:
+         return "no error";
+      case RZSTD_PROCESS_NEXT:
+         return "more input or output needed";
+      case RZSTD_PROCESS_ERROR:
+         break;
+   }
+   /* One name for every failure, deliberately.
+    *
+    * The decoder distinguishes truncated input from corrupt input from
+    * an unsupported feature internally, and a caller can do nothing
+    * different about any of them: the frame does not decode. Reporting
+    * which would invite handling that cannot be tested, since a caller
+    * cannot produce one kind on purpose. */
+   return "frame does not decode";
 }
 
 int64_t rzstd_frame_content_size(const uint8_t *src, size_t src_len)
