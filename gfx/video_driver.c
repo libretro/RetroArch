@@ -3698,35 +3698,41 @@ void video_driver_build_info(video_frame_info_t *video_info)
 
 #ifdef HAVE_MENU
    video_info->menu_st_flags               = menu_st->flags;
-   video_info->menu_footer_opacity         = settings->floats.menu_footer_opacity;
-   video_info->menu_header_opacity         = settings->floats.menu_header_opacity;
-   video_info->materialui_color_theme      = settings->uints.menu_materialui_color_theme;
-   video_info->ozone_color_theme           = settings->uints.menu_ozone_color_theme;
-   video_info->menu_shader_pipeline        = settings->uints.menu_xmb_shader_pipeline;
-   video_info->xmb_theme                   = settings->uints.menu_xmb_theme;
-   video_info->xmb_color_theme             = settings->uints.menu_xmb_color_theme;
-   video_info->timedate_enable             = settings->bools.menu_timedate_enable;
-   video_info->battery_level_enable        = settings->bools.menu_battery_level_enable;
-   video_info->xmb_shadows_enable          = settings->bools.menu_xmb_shadows_enable;
-   video_info->xmb_alpha_factor            = settings->uints.menu_xmb_alpha_factor;
-   video_info->menu_wallpaper_opacity      = settings->floats.menu_wallpaper_opacity;
-   video_info->menu_framebuffer_opacity    = settings->floats.menu_framebuffer_opacity;
    video_info->overlay_behind_menu         = settings->bools.input_overlay_behind_menu;
    video_info->libretro_running            = (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) ? true : false;
-#else
+   if (menu_st->flags & MENU_ST_FLAG_ALIVE)
+   {
+      /* Menu theming: the only readers are the menu drivers' frame()
+       * callbacks, which menu_driver_frame() invokes solely under this
+       * same flag -- so with the menu closed these copies were seven
+       * scattered settings cachelines loaded per frame for values
+       * nothing would look at.  Zeroed below when the menu is closed
+       * so the struct stays deterministic. */
+      video_info->materialui_color_theme   = settings->uints.menu_materialui_color_theme;
+      video_info->menu_shader_pipeline     = settings->uints.menu_xmb_shader_pipeline;
+      video_info->xmb_color_theme          = settings->uints.menu_xmb_color_theme;
+      video_info->timedate_enable          = settings->bools.menu_timedate_enable;
+      video_info->battery_level_enable     = settings->bools.menu_battery_level_enable;
+      video_info->xmb_shadows_enable       = settings->bools.menu_xmb_shadows_enable;
+      video_info->xmb_alpha_factor         = settings->uints.menu_xmb_alpha_factor;
+      video_info->menu_wallpaper_opacity   = settings->floats.menu_wallpaper_opacity;
+      video_info->menu_framebuffer_opacity = settings->floats.menu_framebuffer_opacity;
+   }
+   else
+#endif
+   {
+      video_info->materialui_color_theme   = 0;
+      video_info->menu_shader_pipeline     = 0;
+      video_info->xmb_color_theme          = 0;
+      video_info->timedate_enable          = false;
+      video_info->battery_level_enable     = false;
+      video_info->xmb_shadows_enable       = false;
+      video_info->xmb_alpha_factor         = 0.0f;
+      video_info->menu_framebuffer_opacity = 0.0f;
+      video_info->menu_wallpaper_opacity   = 0.0f;
+   }
+#ifndef HAVE_MENU
    video_info->menu_st_flags               = 0;
-   video_info->menu_footer_opacity         = 0.0f;
-   video_info->menu_header_opacity         = 0.0f;
-   video_info->materialui_color_theme      = 0;
-   video_info->menu_shader_pipeline        = 0;
-   video_info->xmb_color_theme             = 0;
-   video_info->xmb_theme                   = 0;
-   video_info->timedate_enable             = false;
-   video_info->battery_level_enable        = false;
-   video_info->xmb_shadows_enable          = false;
-   video_info->xmb_alpha_factor            = 0.0f;
-   video_info->menu_framebuffer_opacity    = 0.0f;
-   video_info->menu_wallpaper_opacity      = 0.0f;
    video_info->overlay_behind_menu         = false;
 #endif
 

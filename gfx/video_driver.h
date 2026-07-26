@@ -394,11 +394,9 @@ typedef struct video_frame_info
    unsigned height;
    unsigned scale_width;
    unsigned scale_height;
-   unsigned xmb_theme;
    unsigned xmb_color_theme;
    unsigned menu_shader_pipeline;
    unsigned materialui_color_theme;
-   unsigned ozone_color_theme;
    unsigned custom_vp_width;
    unsigned custom_vp_height;
    unsigned custom_vp_full_width;
@@ -414,8 +412,6 @@ typedef struct video_frame_info
 
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;
-   float menu_header_opacity;
-   float menu_footer_opacity;
    float refresh_rate;
    float font_size;
    float font_msg_pos_x;
