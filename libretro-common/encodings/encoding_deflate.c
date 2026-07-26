@@ -153,10 +153,42 @@ static uint32_t rinf_adler32_update(uint32_t adler,
    {
       /* process in chunks so the sums never overflow before the modulo */
       size_t n = len > 5552 ? 5552 : len;
+      size_t k = n;
       len -= n;
-      do {
-         a += *buf++; b += a;
-      } while (--n);
+   {
+      /* Thirty-two bytes at a time.  The textbook loop carries a
+       * serial dependency - b += a after every byte - that no
+       * compiler can vectorise.  Over a group of N the same result is
+       *    a' = a + SUM(buf[j])
+       *    b' = b + N*a + SUM((N-j)*buf[j])
+       * two independent reductions with constant weights.  N is 32
+       * rather than 16 because that is what GCC's vectoriser
+       * actually takes: at 16 it declines and unrolls scalar, at 32
+       * it emits punpck/paddd (and the NEON equivalent on ARM).
+       * Verified in the object file, not assumed - and correct
+       * either way, since a compiler that declines still computes
+       * the same sums.  The chunk bound is untouched, so the
+       * overflow argument is unchanged with it. */
+      while (k >= 32)
+      {
+         uint32_t sum = 0, wsum = 0;
+         unsigned j;
+         for (j = 0; j < 32; j++)
+         {
+            sum  += buf[j];
+            wsum += (uint32_t)(32 - j) * buf[j];
+         }
+         b   += 32 * a + wsum;
+         a   += sum;
+         buf += 32;
+         k   -= 32;
+      }
+      while (k--)
+      {
+         a += *buf++;
+         b += a;
+      }
+   }
       a %= ADLER_MOD;
       b %= ADLER_MOD;
    }
@@ -1034,8 +1066,42 @@ static uint32_t rd_adler32(uint32_t adler, const uint8_t *buf, size_t len)
    while (len)
    {
       size_t n = len > 5552 ? 5552 : len;
+      size_t k = n;
       len -= n;
-      do { a += *buf++; b += a; } while (--n);
+   {
+      /* Thirty-two bytes at a time.  The textbook loop carries a
+       * serial dependency - b += a after every byte - that no
+       * compiler can vectorise.  Over a group of N the same result is
+       *    a' = a + SUM(buf[j])
+       *    b' = b + N*a + SUM((N-j)*buf[j])
+       * two independent reductions with constant weights.  N is 32
+       * rather than 16 because that is what GCC's vectoriser
+       * actually takes: at 16 it declines and unrolls scalar, at 32
+       * it emits punpck/paddd (and the NEON equivalent on ARM).
+       * Verified in the object file, not assumed - and correct
+       * either way, since a compiler that declines still computes
+       * the same sums.  The chunk bound is untouched, so the
+       * overflow argument is unchanged with it. */
+      while (k >= 32)
+      {
+         uint32_t sum = 0, wsum = 0;
+         unsigned j;
+         for (j = 0; j < 32; j++)
+         {
+            sum  += buf[j];
+            wsum += (uint32_t)(32 - j) * buf[j];
+         }
+         b   += 32 * a + wsum;
+         a   += sum;
+         buf += 32;
+         k   -= 32;
+      }
+      while (k--)
+      {
+         a += *buf++;
+         b += a;
+      }
+   }
       a %= RD_ADLER_MOD;
       b %= RD_ADLER_MOD;
    }
