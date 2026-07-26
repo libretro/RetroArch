@@ -109,7 +109,7 @@
  *                   1.8x the reference on many short matches
  *                   1.5x on long runs
  *                   0.8x on stored blocks, which is memcpy either way
- *                   0.50x on sequence-heavy input with raw literals
+ *                   0.52x on sequence-heavy input with raw literals
  *   encode        0.18 to 0.49 times
  *   encoded size  1.0x the reference on file data,
  *                 1.4x on synthetic mixed data,
@@ -152,12 +152,19 @@
  *   for the symbol, once for the width that decides whether the buffer
  *   is deep enough, once for the transition. Nine loads where three do.
  *
+ *   Raw literals were copied into a buffer and then copied out of it.
+ *   They are contiguous in the block already, so the sequence loop
+ *   reads them where they lie. Reading in place is only a gain if the
+ *   copy out stays wide, which needs slack past the literals -- the
+ *   sequences section provides it, and the readable extent is carried
+ *   separately from the length to say so. Without that the change made
+ *   things worse, not better.
+ *
  * What is left is the sequence loop itself and, on frames that transmit
  * their own tables rather than using the predefined ones, building
- * those: a spread and a width assignment over up to five hundred and
- * twelve states, three times a block. That is a tenth of decode time on
- * such input and it is real work rather than waste, so shortening it
- * means a cheaper construction and not a cache.
+ * those. Both are now spread thin: no single part of either dominates,
+ * which is a different problem from the ones above and will not yield
+ * to the same kind of fix.
  * ---------------------------------------------------------------------
  */
 
@@ -533,6 +540,21 @@ static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
  * with a width that narrows as the remaining budget does.
  */
 
+/* floor(log2(v)) for v >= 1, by halving rather than by counting down.
+ * The counting version ran up to accuracy_log times for every one of a
+ * table's states, and a table is built three times a block on any frame
+ * that transmits its own. */
+static uint32_t rzstd_highbit(uint32_t v)
+{
+   uint32_t r = 0;
+
+   if (v >= 0x100) { v >>= 8; r += 8; }
+   if (v >= 0x10)  { v >>= 4; r += 4; }
+   if (v >= 0x04)  { v >>= 2; r += 2; }
+   if (v >= 0x02)  { r += 1; }
+   return r;
+}
+
 #define RZSTD_FSE_MAX_ACCURACY_LOG 9
 #define RZSTD_FSE_MAX_SYMBOLS      256
 
@@ -704,13 +726,10 @@ static int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table,
    {
       uint8_t  sy    = table[i].symbol;
       uint16_t taken = next[sy]++;
-      uint32_t bits  = accuracy_log;
+      uint32_t bits  = accuracy_log - rzstd_highbit(taken);
 
-      while (((uint32_t)1 << bits) > (uint32_t)taken && bits)
-         bits--;
-      table[i].bits       = (uint8_t)(accuracy_log - bits);
-      table[i].next_state = (uint16_t)(((uint32_t)taken
-               << (accuracy_log - bits)) - size);
+      table[i].bits       = (uint8_t)bits;
+      table[i].next_state = (uint16_t)(((uint32_t)taken << bits) - size);
    }
 
    return RZ_OK;
@@ -1157,8 +1176,12 @@ enum
 
 typedef struct rzstd_literals
 {
-   uint8_t *data;
-   size_t   size;
+   const uint8_t *data;
+   size_t         size;
+   /* Bytes readable from @data, which exceeds @size when the literals
+    * lie inside the block: what follows them is the sequences section,
+    * so a wide copy may overrun into it harmlessly. */
+   size_t         readable;
 } rzstd_literals_t;
 
 static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
@@ -1210,10 +1233,18 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
 
       if (type == RZSTD_LIT_RAW)
       {
+         /* Raw literals are already contiguous in the block, so the
+          * sequence loop reads them where they lie. Copying them into
+          * scratch first would be a whole pass over the literal data
+          * for nothing, and on literal-heavy input that is most of the
+          * data in the frame. */
          if (src_len < at + regenerated)
             return RZ_TRUNCATED;
-         memcpy(scratch, src + at, regenerated);
-         *used = at + regenerated;
+         out->data     = src + at;
+         out->size     = regenerated;
+         out->readable = src_len - at;
+         *used         = at + regenerated;
+         return RZ_OK;
       }
       else
       {
@@ -1223,8 +1254,9 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
          *used = at + 1;
       }
 
-      out->data = scratch;
-      out->size = regenerated;
+      out->data     = scratch;
+      out->size     = regenerated;
+      out->readable = regenerated + 64;
       return RZ_OK;
    }
 
@@ -1294,9 +1326,10 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
    if (e != RZ_OK)
       return e;
 
-   out->data = scratch;
-   out->size = regenerated;
-   *used     = at + compressed;
+   out->data     = scratch;
+   out->size     = regenerated;
+   out->readable = regenerated + 64;
+   *used         = at + compressed;
    return RZ_OK;
 }
 
@@ -1587,10 +1620,9 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
  * expressible twice (3.1.1.4). */
 static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
       const uint8_t *src, size_t src_len,
-      const uint8_t *literals, size_t lit_len,
+      const uint8_t *literals, size_t lit_len, size_t lit_readable,
       uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
 {
-   const size_t  lit_len_cap = lit_len;
    rzstd_rbits_t bits;
    size_t        nseq;
    size_t        at = 0;
@@ -1778,8 +1810,13 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
        * rather than of the copy. Where the output has slack it goes
        * wide and overruns instead, which the match copy below then
        * writes over. */
+      /* Widening this needs slack at both ends: room to overrun the
+       * output, and room to read past the literals. The second is why
+       * the readable extent is carried separately from the length --
+       * literals read in place have the sequences section behind them,
+       * which is slack until the block runs out. */
       if (out + lit_run + RZSTD_VEC_WIDTH * 2 <= dst_len
-            && lit_at + lit_run + RZSTD_VEC_WIDTH * 2 <= lit_len_cap)
+            && lit_at + lit_run + RZSTD_VEC_WIDTH * 2 <= lit_readable)
          rzstd_wild_copy(dst + out, literals + lit_at, lit_run);
       else
          memcpy(dst + out, literals + lit_at, lit_run);
@@ -1949,7 +1986,8 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
 
             e = rzstd_decode_sequences(&st->tables,
                   src + at + lit_used, b.size - lit_used,
-                  lit.data, lit.size, dst, dst_len, &out, st->repeat);
+                  lit.data, lit.size, lit.readable,
+                  dst, dst_len, &out, st->repeat);
             if (e != RZ_OK)
                return e;
 
