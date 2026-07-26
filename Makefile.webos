@@ -406,14 +406,15 @@ ifeq ($(SET_ELF_INTERPRETER), 1)
 	patchelf --set-interpreter $(ELF_INTERPRETER) $(TARGET)
 endif
 	echo "$$APPINFO" > webos/dist/appinfo.json
-	cp -t webos/dist -vf $(TARGET) webos/icon160.png
-	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libstdc++.so.6
+	# BSD cp (macOS) has no -t; put the destination last.
+	cp -vf $(TARGET) webos/icon160.png webos/dist/
+	cp -vf $(WEBOS_USR_LIB_DIR)/libstdc++.so.6 webos/dist/lib/
 ifeq ($(HAVE_XKBCOMMON), 1)
-	cp -t webos/dist/lib -vf $(WEBOS_USR_LIB_DIR)/libxkbcommon.so.0
+	cp -vf $(WEBOS_USR_LIB_DIR)/libxkbcommon.so.0 webos/dist/lib/
 endif
-	cp -t webos/dist/lib -vf $(WEBOS_LIB_DIR)/libatomic.so.1
+	cp -vf $(WEBOS_LIB_DIR)/libatomic.so.1 webos/dist/lib/
 ifeq ($(ADD_SDL2_LIB), 1)
-	cp -t webos/dist/lib -vf SDL/lib/libSDL2-2.0.so.0
+	cp -vf SDL/lib/libSDL2-2.0.so.0 webos/dist/lib/
 endif
 ifneq ($(DEBUG), 1)
 	$(STRIP) webos/dist/$(TARGET)
