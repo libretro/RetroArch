@@ -183,6 +183,25 @@ struct runloop
    retro_time_t frame_limit_last_time;
    retro_usec_t frame_time_last;                /* int64_t alignment */
 
+   /* Per-frame scalar state. Kept adjacent to the timing block above so the
+    * whole set the frame loop evaluates every iteration lands in the first
+    * cache lines of the struct, rather than ~348 lines further in behind the
+    * content/system/subsystem blocks. Declaration order only; every access is
+    * by member name. */
+   fastmotion_overrides_t fastmotion_override;  /* float alignment */
+
+   enum rarch_core_type current_core_type;
+   enum rarch_core_type explicit_current_core_type;
+   enum poll_type_override_t core_poll_type_override;
+#if defined(HAVE_RUNAHEAD)
+   enum rarch_core_type last_core_type;
+#endif
+
+   uint32_t flags;
+   int16_t entry_state_slot;
+   uint8_t pending_disk_control_insert;
+   int8_t run_frames_and_pause;
+
    struct retro_core_t        current_core;     /* uint64_t alignment */
 #if defined(HAVE_RUNAHEAD)
    uint64_t runahead_last_frame_count;          /* uint64_t alignment */
@@ -269,22 +288,7 @@ struct runloop
    unsigned perf_ptr_libretro;
    unsigned subsystem_current_count;
    unsigned video_swap_interval_auto;
-   int16_t entry_state_slot;
-
-   fastmotion_overrides_t fastmotion_override; /* float alignment */
-
    retro_bits_t has_set_libretro_device;        /* uint32_t alignment */
-
-   enum rarch_core_type current_core_type;
-   enum rarch_core_type explicit_current_core_type;
-   enum poll_type_override_t core_poll_type_override;
-#if defined(HAVE_RUNAHEAD)
-   enum rarch_core_type last_core_type;
-#endif
-
-   uint32_t flags;
-   uint8_t pending_disk_control_insert;
-   int8_t run_frames_and_pause;
 
    char runtime_content_path_basename[PATH_MAX_LENGTH];
 #ifdef HAVE_SCREENSHOTS
