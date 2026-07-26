@@ -106,8 +106,8 @@
  * Decoding, on whole Zstandard-compressed disc images read through
  * formats/chd/rchd.c, which is what this exists for:
  *
- *   544 MB/s against 179, on an image of 2048-byte hunks
- *   108 MB/s against  79, on a CD image of one frame per hunk
+ *   539 MB/s against 179, on an image of 2048-byte hunks
+ *   111 MB/s against  79, on a CD image of one frame per hunk
  *    71 MB/s against  59, on another
  *
  * and 2.7 to 3.1 times its throughput on those frames alone.
@@ -1524,6 +1524,26 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
 /* Copies @n bytes forward, overrunning by up to one vector. Callers
  * guarantee the slack, which is what lets the loop run without a tail
  * and without a per-iteration bound test. */
+/* A literal run is a handful of bytes and there is one per sequence, so
+ * these are called about as often as sequences are decoded -- tens of
+ * millions of times for a few megabytes of output. At that rate the
+ * call costs more than the copy, so the short case is handled at the
+ * call site and only the rest arrives here.
+ *
+ * Thirty-two bytes covers nearly every literal run and most short
+ * matches, and being a constant it becomes two vector moves with no
+ * loop and no branch. The slack that lets it overrun is already
+ * required by the wide copy, so nothing further is needed. */
+#define RZSTD_COPY_SMALL 32
+
+#define RZSTD_COPY(d, s2, n2)                    \
+   do {                                          \
+      if ((n2) <= RZSTD_COPY_SMALL)              \
+         memcpy((d), (s2), RZSTD_COPY_SMALL);    \
+      else                                       \
+         rzstd_wild_copy((d), (s2), (n2));       \
+   } while (0)
+
 static void rzstd_wild_copy(uint8_t *dst, const uint8_t *src, size_t n)
 {
    size_t i = 0;
@@ -1604,7 +1624,7 @@ static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
 
    if (offset >= RZSTD_VEC_WIDTH * 2)
    {
-      rzstd_wild_copy(to, from, n);
+      RZSTD_COPY(to, from, n);
       return;
    }
 
@@ -2006,7 +2026,7 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
             && offset
             && (size_t)offset <= out + lit_run)
       {
-         rzstd_wild_copy(dst + out, literals + lit_at, lit_run);
+         RZSTD_COPY(dst + out, literals + lit_at, lit_run);
          out    += lit_run;
          lit_at += lit_run;
          rzstd_match_copy(dst + out, dst + out - offset, match_len,
