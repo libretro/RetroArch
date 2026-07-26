@@ -135,11 +135,12 @@
  * the reference asks one and keeps a separate careful path for the end
  * of a block.
  *
- * Encoding is slower and compresses worse: 0.18 to 0.49 times the
- * reference's throughput, and output 1.0x its size on file data, 1.4x
- * on synthetic mixed data, 6.7x on data shaped like an input replay.
- * That last figure decides where the encoder may be used, a replay
- * payload being what the only caller that compresses compresses.
+ * Encoding is slower and compresses worse: about a quarter of the
+ * reference's throughput, and output 1.1x its size on file data, 3.7x
+ * on synthetic structured data, 4.4x on data shaped like an input
+ * replay. That last figure decides where the encoder may be used, a
+ * replay payload being what the only caller that compresses
+ * compresses, and 4.4x is still too much to replace it.
  *
  * So this is the right decoder for rchd on both counts -- it needs
  * C89, which <zstd.h> denies it, and it is faster at the frame sizes a
@@ -2375,12 +2376,12 @@ int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
  * ratio. What it must do is produce frames any conforming decoder
  * reads.
  *
- * Matches are found with a single hash of four bytes and no chain, so
- * only the most recent candidate at each position is considered. There
- * is no lazy matching and no optimal parse. Literals go out raw rather
- * than Huffman coded, and the sequence tables are the predefined ones,
- * which between them cost some ratio and remove the need to build and
- * transmit tables at all.
+ * Matches are found by hashing four bytes and walking a chain of
+ * candidates for the longest, which is where most of the ratio comes
+ * from. There is no lazy matching and no optimal parse. Literals go out
+ * raw rather than Huffman coded, and the sequence tables are the
+ * predefined ones, which between them cost some ratio and remove the
+ * need to build and transmit tables at all.
  */
 
 /* -------- writing bits --------
@@ -2593,6 +2594,8 @@ static void rzstd_fse_ct_flush(rzstd_wbits_t *w, uint32_t state,
 
 #define RZSTD_ENC_BLOCK    (64 * 1024)
 #define RZSTD_ENC_HASH_LOG 15
+#define RZSTD_ENC_CHAIN_LOG 15
+#define RZSTD_ENC_CHAIN_DEPTH 8
 #define RZSTD_ENC_MIN_MATCH 4
 
 size_t rzstd_compress_bound(size_t src_len)
@@ -2668,12 +2671,14 @@ static uint32_t rzstd_code_for(const uint32_t *base, uint32_t count,
 /* An offset is stored three higher than its distance, because 1 to 3
  * are reserved for the recent-offset codes (3.1.1.4). This encoder
  * never emits those, so every offset it writes is a literal distance. */
-static uint32_t rzstd_of_code(uint32_t offset)
+/* The code for a stored offset value. The value already carries the
+ * bias, since a sequence may name a repeated offset instead of a
+ * distance and those occupy the low three. */
+static uint32_t rzstd_of_code(uint32_t value)
 {
-   uint32_t v = offset + 3;
    uint32_t n = 0;
 
-   while ((uint32_t)1 << (n + 1) <= v)
+   while ((uint32_t)1 << (n + 1) <= value)
       n++;
    return n;
 }
@@ -2783,7 +2788,7 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
             rzstd_ll_bits[ll]);
       rzstd_wbits_add(&w, s2->match - rzstd_ml_base[ml],
             rzstd_ml_bits[ml]);
-      rzstd_wbits_add(&w, s2->offset + 3 - ((uint32_t)1 << of), of);
+      rzstd_wbits_add(&w, s2->offset - ((uint32_t)1 << of), of);
    }
 
    for (i = nseq - 1; i-- > 0; )
@@ -2804,7 +2809,7 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
             rzstd_ll_bits[ll]);
       rzstd_wbits_add(&w, s2->match - rzstd_ml_base[ml],
             rzstd_ml_bits[ml]);
-      rzstd_wbits_add(&w, s2->offset + 3 - ((uint32_t)1 << of), of);
+      rzstd_wbits_add(&w, s2->offset - ((uint32_t)1 << of), of);
    }
 
    rzstd_fse_ct_flush(&w, ml_state, &ml_ct);
@@ -2887,14 +2892,30 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
          uint8_t     *lits     = (uint8_t*)malloc(take);
          uint32_t    *hash     = (uint32_t*)calloc(
                (size_t)1 << RZSTD_ENC_HASH_LOG, sizeof(uint32_t));
+         /* Previous position sharing each position's hash, so a bucket
+          * can be walked rather than only its newest entry read. */
+         uint32_t    *chain    = (uint32_t*)calloc(
+               (size_t)1 << RZSTD_ENC_CHAIN_LOG, sizeof(uint32_t));
          size_t       nseq     = 0;
          size_t       lit_len  = 0;
          int          ok       = 0;
 
-         if (seq && lits && hash)
+         if (seq && lits && hash && chain)
          {
-            size_t pos     = 0;
-            size_t lit_from = 0;
+            size_t   pos      = 0;
+            size_t   lit_from = 0;
+            /* The three offsets the decoder remembers, tracked here so
+             * a match that repeats one can say so.
+             *
+             * Naming the most recent offset costs a single code where
+             * spelling it out costs that plus its extra bits, and on
+             * periodic data every match repeats the period. The decoder
+             * only leaves the recent offsets untouched for the first of
+             * the three, so that is the only one used here: the others
+             * rotate the list and would have to be mirrored exactly. */
+            uint32_t rep[3];
+
+            rep[0] = 1; rep[1] = 4; rep[2] = 8;
 
             while (pos + RZSTD_ENC_MIN_MATCH <= take)
             {
@@ -2908,29 +2929,128 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24))
                      * 2654435761u;
                h >>= 32 - RZSTD_ENC_HASH_LOG;
+
+               /* Walk the bucket for the longest match rather than
+                * taking its newest entry.
+                *
+                * The newest is the wrong one surprisingly often: on
+                * data that is mostly one byte value, the nearest
+                * position sharing four bytes is a few bytes back and
+                * the match ends as soon as the data stops repeating,
+                * where an older candidate a whole period back would
+                * have run for hundreds. Taking the first candidate
+                * measured six times the reference's output; this is
+                * what closes most of that. */
                cand = hash[h];
-               hash[h] = (uint32_t)(pos + 1);   /* biased, 0 means none */
+               hash[h]  = (uint32_t)(pos + 1);   /* biased, 0 = none */
+               chain[pos & (((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1)] =
+                  cand;
 
-               if (cand && cand - 1 < pos)
                {
-                  size_t         from = cand - 1;
-                  const uint8_t *q    = src + in + from;
-                  size_t         n    = 0;
+                  size_t best_len  = 0;
+                  size_t best_from = 0;
+                  int    depth     = RZSTD_ENC_CHAIN_DEPTH;
 
-                  while (pos + n < take && p[n] == q[n])
-                     n++;
-
-                  if (n >= RZSTD_ENC_MIN_MATCH)
+                  while (cand && depth--)
                   {
+                     size_t         from = cand - 1;
+                     const uint8_t *q;
+                     size_t         n = 0;
+
+                     if (from >= pos)
+                        break;
+                     q = src + in + from;
+                     while (pos + n < take && p[n] == q[n])
+                        n++;
+                     if (n > best_len)
+                     {
+                        best_len  = n;
+                        best_from = from;
+                     }
+                     /* A match this long will not be beaten by
+                      * enough to pay for finding out. Walking on costs
+                      * time and, on data that is one value repeated,
+                      * finds equally long matches at larger offsets
+                      * that cost more to encode. */
+                     if (best_len >= 64)
+                        break;
+
+                     cand = chain[from
+                        & (((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1)];
+                     if (cand && cand - 1 >= from)
+                        break;   /* not strictly older: stop */
+                  }
+
+                  if (best_len >= RZSTD_ENC_MIN_MATCH)
+                  {
+                     size_t from = best_from;
+                     size_t n    = best_len;
+
                      rzstd_seq_t *sq = &seq[nseq++];
 
                      sq->literals = (uint32_t)(pos - lit_from);
                      sq->match    = (uint32_t)n;
-                     sq->offset   = (uint32_t)(pos - from);
+                     {
+                        uint32_t off = (uint32_t)(pos - from);
+
+                        if (sq->literals && off == rep[0])
+                        {
+                           /* Code 1 with literals present means the
+                            * most recent offset and leaves the list
+                            * alone, which is what makes it safe to use
+                            * without mirroring a rotation. */
+                           sq->offset = 1;
+                        }
+                        else
+                        {
+                           sq->offset = off + 3;
+                           rep[2] = rep[1];
+                           rep[1] = rep[0];
+                           rep[0] = off;
+                        }
+                     }
 
                      memcpy(lits + lit_len, src + in + lit_from,
                            sq->literals);
                      lit_len += sq->literals;
+
+                     /* Every position inside the match joins the
+                      * table and the chain, so later lookups can find
+                      * any of them rather than only what preceded the
+                      * match. */
+                     {
+                        size_t q2  = pos + 1;
+                        size_t end = pos + n;
+                        size_t cm  =
+                           ((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1;
+
+                        if (end + RZSTD_ENC_MIN_MATCH > take)
+                           end = take > RZSTD_ENC_MIN_MATCH
+                               ? take - RZSTD_ENC_MIN_MATCH : 0;
+                        /* Only the first few positions of a match go
+                         * in. Inserting all of them is what a thorough
+                         * matcher does, and here it made the output
+                         * larger: on a run of one repeated value every
+                         * position hashes alike, so the bucket fills
+                         * with neighbours a byte or two apart and the
+                         * walk finds those instead of the useful older
+                         * entry. */
+                        if (end > q2 + 4)
+                           end = q2 + 4;
+                        for (; q2 < end; q2++)
+                        {
+                           const uint8_t *r = src + in + q2;
+                           uint32_t hh = ((uint32_t)r[0]
+                                 | ((uint32_t)r[1] << 8)
+                                 | ((uint32_t)r[2] << 16)
+                                 | ((uint32_t)r[3] << 24))
+                                 * 2654435761u;
+
+                           hh >>= 32 - RZSTD_ENC_HASH_LOG;
+                           chain[q2 & cm] = hash[hh];
+                           hash[hh]       = (uint32_t)(q2 + 1);
+                        }
+                     }
 
                      pos      += n;
                      lit_from  = pos;
@@ -2965,6 +3085,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
          free(seq);
          free(lits);
          free(hash);
+         free(chain);
 
          if (ok)
          {
