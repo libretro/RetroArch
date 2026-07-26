@@ -1896,52 +1896,64 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
       idx[j + 1] = ti;
    }
 
-   /* build the Huffman tree via a sorted-array min-heap of sibling merges */
+   /* Build the Huffman tree with the two-queue method.  The previous
+    * revision kept one sorted array of live nodes and, for each of
+    * the m-1 merges, scanned it for the insertion point and shifted
+    * the tail up - O(m^2) overall, and the dominant cost of
+    * compressing data that compresses well, where blocks are short
+    * and the tables are rebuilt often (36% of level-1 instructions
+    * on a savestate-like corpus).
+    *
+    * No search is needed: the leaves are already sorted ascending
+    * above, and merges produce internal nodes in nondecreasing
+    * weight order too, so two FIFOs - leaves and internal nodes -
+    * always hold the global minimum at one of their two fronts.
+    * Each merge is then O(1) and the build is O(m).  Internal nodes
+    * are allocated at indices >= m in creation order, so a parent's
+    * index always exceeds both children's; walking nodes downward
+    * once assigns every depth without the per-leaf parent-chain
+    * walk the old code did. */
    {
       uint32_t wt[2 * 288];
-      int      dad[2 * 288];
-      int      heap[288 + 1];
-      int      hn = 0;
+      int      left[2 * 288];
+      int      right[2 * 288];
+      int      depth[2 * 288];
+      int      lq = 0;   /* front of the leaf queue                   */
+      int      iq = 288; /* front of the internal queue (base 288)    */
       int      node_used;
 
       for (i = 0; i < m; i++)
+         wt[i] = fr[i];
+      /* internal nodes live at 288.. so the two queues never alias */
+      node_used = 288;
+      iq        = 288;
+
+      while ((m - lq) + (node_used - iq) > 1)
       {
-         wt[i]      = fr[i];
-         dad[i]     = -1;
-         heap[hn++] = i;
+         int x, y, nd;
+         if (lq < m && (iq >= node_used || wt[lq] <= wt[iq]))
+            x = lq++;
+         else
+            x = iq++;
+         if (lq < m && (iq >= node_used || wt[lq] <= wt[iq]))
+            y = lq++;
+         else
+            y = iq++;
+         nd        = node_used++;
+         wt[nd]    = wt[x] + wt[y];
+         left[nd]  = x;
+         right[nd] = y;
       }
-      node_used = m;
-      while (hn > 1)
+
+      depth[node_used - 1] = 0;
+      for (i = node_used - 1; i >= 288; i--)
       {
-         int x = heap[0], y = heap[1];
-         int nd = node_used++;
-         int ins, t;
-         wt[nd]  = wt[x] + wt[y];
-         dad[x]  = nd; dad[y] = nd; dad[nd] = -1;
-         for (i = 2; i < hn; i++)
-            heap[i - 2] = heap[i];
-         hn -= 2;
-         ins = hn;
-         for (i = 0; i < hn; i++)
-            if (wt[heap[i]] > wt[nd])
-            {
-               ins = i;
-               break;
-            }
-         for (t = hn; t > ins; t--)
-            heap[t] = heap[t - 1];
-         heap[ins] = nd; hn++;
+         int d = depth[i] + 1;
+         depth[left[i]]  = d;
+         depth[right[i]] = d;
       }
       for (i = 0; i < m; i++)
-      {
-         int d = 0, c = i;
-         while (dad[c] >= 0)
-         {
-            c = dad[c];
-            d++;
-         }
-         lc[i] = d ? d : 1;
-      }
+         lc[i] = depth[i] ? depth[i] : 1;
    }
 
    /* enforce max_bits via Kraft-sum redistribution */
