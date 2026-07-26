@@ -522,173 +522,11 @@ typedef struct settings
 #endif
    } floats;
 
-   struct
-   {
-      char placeholder;
-
-      char video_driver[32];
-      char record_driver[32];
-      char camera_driver[32];
-      char bluetooth_driver[32];
-      char wifi_driver[32];
-      char led_driver[32];
-      char location_driver[32];
-      char cloud_sync_driver[32];
-      char menu_driver[32];
-      char cheevos_username[32];
-      char cheevos_token[32];
-      char cheevos_leaderboards_enable[32];
-      char video_context_driver[32];
-      char audio_driver[32];
-      char audio_resampler[32];
-      char input_driver[32];
-      char input_joypad_driver[32];
-      char midi_driver[32];
-      char midi_input[32];
-      char midi_output[32];
-      char ai_service_backend[32];
-#ifdef HAVE_LAKKA
-      char cpu_main_gov[32];
-      char cpu_menu_gov[32];
-#endif
-#ifdef HAVE_MICROPHONE
-      char microphone_driver[32];
-      char microphone_resampler[32];
-#endif
-      char input_keyboard_layout[64];
-      char cheevos_custom_host[64];
-
-#ifdef HAVE_LAKKA
-      char timezone[TIMEZONE_LENGTH];
-#endif
-
-      char cheevos_password[NAME_MAX_LENGTH];
-#ifdef HAVE_MICROPHONE
-      char microphone_device[NAME_MAX_LENGTH];
-#endif
-#ifdef ANDROID
-      char input_android_physical_keyboard[NAME_MAX_LENGTH];
-#endif
-      char audio_device[NAME_MAX_LENGTH];
-      char camera_device[NAME_MAX_LENGTH];
-      char netplay_mitm_server[NAME_MAX_LENGTH];
-#ifdef HAVE_NETWORKING
-#ifdef HAVE_CLOUDSYNC
-      char webdav_url[NAME_MAX_LENGTH];
-      char webdav_username[NAME_MAX_LENGTH];
-      char webdav_password[NAME_MAX_LENGTH];
-      char google_drive_refresh_token[2048];
-#ifdef HAVE_S3
-      char s3_url[NAME_MAX_LENGTH];
-      char access_key_id[128];
-      char secret_access_key[186]; /* TODO/RESEARCH - check size, ex https://github.com/winscp/winscp/pull/15/files */
-#endif
-#endif
-#endif
-
-      char crt_switch_timings[NAME_MAX_LENGTH];
-      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
-
-      char youtube_stream_key[PATH_MAX_LENGTH];
-      char twitch_stream_key[PATH_MAX_LENGTH];
-      char facebook_stream_key[PATH_MAX_LENGTH];
-      char kick_stream_key[PATH_MAX_LENGTH];
-      char discord_app_id[PATH_MAX_LENGTH];
-      char ai_service_url[PATH_MAX_LENGTH];
-
-      char translation_service_url[2048]; /* TODO/FIXME - check size */
-#ifdef HAVE_SMBCLIENT
-      char smb_client_server_address[256];
-      char smb_client_share[256];
-      char smb_client_subdir[PATH_MAX_LENGTH];
-      char smb_client_username[128];
-      char smb_client_password[128];
-      char smb_client_workgroup[64];
-#endif
-} arrays;
-
-   struct
-   {
-      char placeholder;
-
-      char username[32];
-
-      char netplay_password[128];
-      char netplay_spectate_password[128];
-
-      char streaming_title[512]; /* TODO/FIXME - check size */
-
-      char netplay_server[NAME_MAX_LENGTH];
-      char netplay_custom_mitm_server[NAME_MAX_LENGTH];
-      char network_buildbot_url[NAME_MAX_LENGTH];
-      char network_buildbot_assets_url[NAME_MAX_LENGTH];
-      char menu_content_show_settings_password[NAME_MAX_LENGTH];
-      char kiosk_mode_password[NAME_MAX_LENGTH];
-
-      char bundle_assets_dst_subdir[DIR_MAX_LENGTH];
-      char directory_audio_filter[DIR_MAX_LENGTH];
-      char directory_autoconfig[DIR_MAX_LENGTH];
-      char directory_video_filter[DIR_MAX_LENGTH];
-      char directory_video_shader[DIR_MAX_LENGTH];
-      char directory_libretro[DIR_MAX_LENGTH];
-      char directory_input_remapping[DIR_MAX_LENGTH];
-      char directory_overlay[DIR_MAX_LENGTH];
-      char directory_osk_overlay[DIR_MAX_LENGTH];
-      char directory_screenshot[DIR_MAX_LENGTH];
-      char directory_system[DIR_MAX_LENGTH];
-      char directory_cache[DIR_MAX_LENGTH];
-      char directory_playlist[DIR_MAX_LENGTH];
-      char directory_content_favorites[DIR_MAX_LENGTH];
-      char directory_content_history[DIR_MAX_LENGTH];
-      char directory_content_image_history[DIR_MAX_LENGTH];
-      char directory_content_music_history[DIR_MAX_LENGTH];
-      char directory_content_video_history[DIR_MAX_LENGTH];
-      char directory_runtime_log[DIR_MAX_LENGTH];
-      char directory_core_assets[DIR_MAX_LENGTH];
-      char directory_assets[DIR_MAX_LENGTH];
-      char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
-      char directory_thumbnails[DIR_MAX_LENGTH];
-      char directory_menu_config[DIR_MAX_LENGTH];
-      char directory_menu_content[DIR_MAX_LENGTH];
-#ifdef _3DS
-      char directory_bottom_assets[DIR_MAX_LENGTH];
-#endif
-      char log_dir[DIR_MAX_LENGTH];
-
-#ifdef HAVE_TEST_DRIVERS
-      char test_input_file_joypad[PATH_MAX_LENGTH];
-      char test_input_file_general[PATH_MAX_LENGTH];
-#endif
-      char bundle_assets_src[PATH_MAX_LENGTH];
-      char bundle_assets_dst[PATH_MAX_LENGTH];
-      char path_menu_xmb_font[PATH_MAX_LENGTH];
-      char path_menu_ozone_font[PATH_MAX_LENGTH];
-      char path_cheat_database[PATH_MAX_LENGTH];
-      char path_content_database[PATH_MAX_LENGTH];
-      char path_overlay[PATH_MAX_LENGTH];
-      char path_osk_overlay[PATH_MAX_LENGTH];
-      char path_record_config[PATH_MAX_LENGTH];
-      char path_stream_config[PATH_MAX_LENGTH];
-      char path_menu_wallpaper[PATH_MAX_LENGTH];
-      char path_audio_dsp_plugin[PATH_MAX_LENGTH];
-      char path_softfilter_plugin[PATH_MAX_LENGTH];
-      char path_core_options[PATH_MAX_LENGTH];
-      char path_content_favorites[PATH_MAX_LENGTH];
-      char path_content_history[PATH_MAX_LENGTH];
-      char path_content_image_history[PATH_MAX_LENGTH];
-      char path_content_music_history[PATH_MAX_LENGTH];
-      char path_content_video_history[PATH_MAX_LENGTH];
-      char path_libretro_info[PATH_MAX_LENGTH];
-      char path_cheat_settings[PATH_MAX_LENGTH];
-      char path_font[PATH_MAX_LENGTH];
-      char path_rgui_theme_preset[PATH_MAX_LENGTH];
-      char app_icon[PATH_MAX_LENGTH];
-
-      char browse_url[4096];      /* TODO/FIXME - check size */
-      char path_stream_url[8192]; /* TODO/FIXME - check size */
-   } paths;
-
-
+   /* Kept adjacent to floats: these two groups hold nearly every
+    * per-frame read (video_driver_build_info alone takes 26 bools and
+    * 11 floats every frame), and previously sat ~111KB apart with the
+    * cold path and array string storage in between. Declaration order
+    * only -- every access is by member name. */
    struct
    {
       bool placeholder;
@@ -1230,6 +1068,174 @@ typedef struct settings
       bool smb_client_enable;
 #endif
    } bools;
+
+   struct
+   {
+      char placeholder;
+
+      char video_driver[32];
+      char record_driver[32];
+      char camera_driver[32];
+      char bluetooth_driver[32];
+      char wifi_driver[32];
+      char led_driver[32];
+      char location_driver[32];
+      char cloud_sync_driver[32];
+      char menu_driver[32];
+      char cheevos_username[32];
+      char cheevos_token[32];
+      char cheevos_leaderboards_enable[32];
+      char video_context_driver[32];
+      char audio_driver[32];
+      char audio_resampler[32];
+      char input_driver[32];
+      char input_joypad_driver[32];
+      char midi_driver[32];
+      char midi_input[32];
+      char midi_output[32];
+      char ai_service_backend[32];
+#ifdef HAVE_LAKKA
+      char cpu_main_gov[32];
+      char cpu_menu_gov[32];
+#endif
+#ifdef HAVE_MICROPHONE
+      char microphone_driver[32];
+      char microphone_resampler[32];
+#endif
+      char input_keyboard_layout[64];
+      char cheevos_custom_host[64];
+
+#ifdef HAVE_LAKKA
+      char timezone[TIMEZONE_LENGTH];
+#endif
+
+      char cheevos_password[NAME_MAX_LENGTH];
+#ifdef HAVE_MICROPHONE
+      char microphone_device[NAME_MAX_LENGTH];
+#endif
+#ifdef ANDROID
+      char input_android_physical_keyboard[NAME_MAX_LENGTH];
+#endif
+      char audio_device[NAME_MAX_LENGTH];
+      char camera_device[NAME_MAX_LENGTH];
+      char netplay_mitm_server[NAME_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+#ifdef HAVE_CLOUDSYNC
+      char webdav_url[NAME_MAX_LENGTH];
+      char webdav_username[NAME_MAX_LENGTH];
+      char webdav_password[NAME_MAX_LENGTH];
+      char google_drive_refresh_token[2048];
+#ifdef HAVE_S3
+      char s3_url[NAME_MAX_LENGTH];
+      char access_key_id[128];
+      char secret_access_key[186]; /* TODO/RESEARCH - check size, ex https://github.com/winscp/winscp/pull/15/files */
+#endif
+#endif
+#endif
+
+      char crt_switch_timings[NAME_MAX_LENGTH];
+      char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
+
+      char youtube_stream_key[PATH_MAX_LENGTH];
+      char twitch_stream_key[PATH_MAX_LENGTH];
+      char facebook_stream_key[PATH_MAX_LENGTH];
+      char kick_stream_key[PATH_MAX_LENGTH];
+      char discord_app_id[PATH_MAX_LENGTH];
+      char ai_service_url[PATH_MAX_LENGTH];
+
+      char translation_service_url[2048]; /* TODO/FIXME - check size */
+#ifdef HAVE_SMBCLIENT
+      char smb_client_server_address[256];
+      char smb_client_share[256];
+      char smb_client_subdir[PATH_MAX_LENGTH];
+      char smb_client_username[128];
+      char smb_client_password[128];
+      char smb_client_workgroup[64];
+#endif
+} arrays;
+
+   struct
+   {
+      char placeholder;
+
+      char username[32];
+
+      char netplay_password[128];
+      char netplay_spectate_password[128];
+
+      char streaming_title[512]; /* TODO/FIXME - check size */
+
+      char netplay_server[NAME_MAX_LENGTH];
+      char netplay_custom_mitm_server[NAME_MAX_LENGTH];
+      char network_buildbot_url[NAME_MAX_LENGTH];
+      char network_buildbot_assets_url[NAME_MAX_LENGTH];
+      char menu_content_show_settings_password[NAME_MAX_LENGTH];
+      char kiosk_mode_password[NAME_MAX_LENGTH];
+
+      char bundle_assets_dst_subdir[DIR_MAX_LENGTH];
+      char directory_audio_filter[DIR_MAX_LENGTH];
+      char directory_autoconfig[DIR_MAX_LENGTH];
+      char directory_video_filter[DIR_MAX_LENGTH];
+      char directory_video_shader[DIR_MAX_LENGTH];
+      char directory_libretro[DIR_MAX_LENGTH];
+      char directory_input_remapping[DIR_MAX_LENGTH];
+      char directory_overlay[DIR_MAX_LENGTH];
+      char directory_osk_overlay[DIR_MAX_LENGTH];
+      char directory_screenshot[DIR_MAX_LENGTH];
+      char directory_system[DIR_MAX_LENGTH];
+      char directory_cache[DIR_MAX_LENGTH];
+      char directory_playlist[DIR_MAX_LENGTH];
+      char directory_content_favorites[DIR_MAX_LENGTH];
+      char directory_content_history[DIR_MAX_LENGTH];
+      char directory_content_image_history[DIR_MAX_LENGTH];
+      char directory_content_music_history[DIR_MAX_LENGTH];
+      char directory_content_video_history[DIR_MAX_LENGTH];
+      char directory_runtime_log[DIR_MAX_LENGTH];
+      char directory_core_assets[DIR_MAX_LENGTH];
+      char directory_assets[DIR_MAX_LENGTH];
+      char directory_dynamic_wallpapers[DIR_MAX_LENGTH];
+      char directory_thumbnails[DIR_MAX_LENGTH];
+      char directory_menu_config[DIR_MAX_LENGTH];
+      char directory_menu_content[DIR_MAX_LENGTH];
+#ifdef _3DS
+      char directory_bottom_assets[DIR_MAX_LENGTH];
+#endif
+      char log_dir[DIR_MAX_LENGTH];
+
+#ifdef HAVE_TEST_DRIVERS
+      char test_input_file_joypad[PATH_MAX_LENGTH];
+      char test_input_file_general[PATH_MAX_LENGTH];
+#endif
+      char bundle_assets_src[PATH_MAX_LENGTH];
+      char bundle_assets_dst[PATH_MAX_LENGTH];
+      char path_menu_xmb_font[PATH_MAX_LENGTH];
+      char path_menu_ozone_font[PATH_MAX_LENGTH];
+      char path_cheat_database[PATH_MAX_LENGTH];
+      char path_content_database[PATH_MAX_LENGTH];
+      char path_overlay[PATH_MAX_LENGTH];
+      char path_osk_overlay[PATH_MAX_LENGTH];
+      char path_record_config[PATH_MAX_LENGTH];
+      char path_stream_config[PATH_MAX_LENGTH];
+      char path_menu_wallpaper[PATH_MAX_LENGTH];
+      char path_audio_dsp_plugin[PATH_MAX_LENGTH];
+      char path_softfilter_plugin[PATH_MAX_LENGTH];
+      char path_core_options[PATH_MAX_LENGTH];
+      char path_content_favorites[PATH_MAX_LENGTH];
+      char path_content_history[PATH_MAX_LENGTH];
+      char path_content_image_history[PATH_MAX_LENGTH];
+      char path_content_music_history[PATH_MAX_LENGTH];
+      char path_content_video_history[PATH_MAX_LENGTH];
+      char path_libretro_info[PATH_MAX_LENGTH];
+      char path_cheat_settings[PATH_MAX_LENGTH];
+      char path_font[PATH_MAX_LENGTH];
+      char path_rgui_theme_preset[PATH_MAX_LENGTH];
+      char app_icon[PATH_MAX_LENGTH];
+
+      char browse_url[4096];      /* TODO/FIXME - check size */
+      char path_stream_url[8192]; /* TODO/FIXME - check size */
+   } paths;
+
+
 
    uint8_t flags;
 
