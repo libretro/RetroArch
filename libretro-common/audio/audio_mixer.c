@@ -142,8 +142,7 @@ struct audio_mixer_voice
          float      *buffer;
          /* Decode scratch for the float mix path.  Owned by the voice
           * because the mix runs on the audio thread, where a malloc is
-          * a stall waiting to happen; the s16 path below never needed
-          * one because it reads into stack space. */
+          * a stall waiting to happen. */
          float      *decode_buf;
          unsigned    position;
          unsigned    samples;
@@ -157,6 +156,12 @@ struct audio_mixer_voice
          double      ratio;
          /* s16 pipeline (parallel; used when voice->is_s16) */
          int16_t    *buffer_s16;
+         /* Decode scratch, mirroring decode_buf above.  This lived on
+          * the mix function's stack as int16_t[AUDIO_MIXER_TEMP_BUFFER]
+          * (16 KB): a third of a 48 KB L1d evicted per voice per flush,
+          * and past the stack-probe threshold on Windows, so every call
+          * paid a chkstk page walk before doing any work. */
+         int16_t    *decode_buf_s16;
          void       *resampler_int16;
       } stream;
 #endif
@@ -1713,6 +1718,8 @@ static void audio_mixer_release_stream(audio_mixer_voice_t* voice,
       memalign_free(voice->types.stream.decode_buf);
    if (voice->types.stream.buffer_s16)
       memalign_free(voice->types.stream.buffer_s16);
+   if (voice->types.stream.decode_buf_s16)
+      memalign_free(voice->types.stream.decode_buf_s16);
    if (voice->types.stream.resampler_int16)
       sinc_resampler_int16_free(voice->types.stream.resampler_int16);
 }
@@ -1786,9 +1793,16 @@ static bool audio_mixer_play_stream_s16(
    samples     = (unsigned)(AUDIO_MIXER_TEMP_BUFFER * ratio);
    sbuf        = memalign_alloc(16,
          (((samples + 16) + 15) & ~15) * sizeof(int16_t));
+   voice->types.stream.decode_buf_s16 = (int16_t*)memalign_alloc(16,
+         AUDIO_MIXER_TEMP_BUFFER * sizeof(int16_t));
 
-   if (!sbuf)
+   if (!sbuf || !voice->types.stream.decode_buf_s16)
    {
+      /* Neither buffer is on the voice yet in the sbuf case, and either
+       * one of the two may have succeeded; release both here. */
+      memalign_free(sbuf);
+      memalign_free(voice->types.stream.decode_buf_s16);
+      voice->types.stream.decode_buf_s16 = NULL;
       if (resamp_i16)
          sinc_resampler_int16_free(resamp_i16);
       goto error;
@@ -2325,7 +2339,7 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
 {
    int i;
    struct resampler_data_int16 info;
-   int16_t  temp_buffer[AUDIO_MIXER_TEMP_BUFFER];
+   int16_t *temp_buffer  = voice->types.stream.decode_buf_s16;
    unsigned buf_free     = (unsigned)(num_frames * 2);
    unsigned temp_samples = 0;
    int16_t *pcm          = NULL;
