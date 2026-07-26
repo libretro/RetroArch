@@ -2173,7 +2173,24 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
    size_t               out = 0;
    int                  e;
 
-   memset(st, 0, sizeof(*st));
+   /* Only the three flags need clearing.
+    *
+    * Zeroing the whole state costs about a hundred and forty kilobytes
+    * -- the literal buffer, the Huffman table, the three sequence
+    * tables -- and a hunk is two. Measured with cachegrind that was
+    * seventy-one write references for every byte of output and
+    * ninety-four per cent of all memory traffic in the decoder.
+    *
+    * None of it is read before it is written. A literal buffer is
+    * filled before the sequences that consume it; a Huffman table is
+    * built before a block that uses it, and a treeless block without
+    * one is refused by huf_valid; a sequence table is built before its
+    * block, and a repeat mode without one is refused by tables.valid.
+    * The flags are what enforce that, so the flags are what must be
+    * cleared. */
+   st->huf_valid    = 0;
+   st->tables.valid = 0;
+
    /* The recent offsets start at 1, 4 and 8 (3.1.1.4). */
    st->repeat[0] = 1;
    st->repeat[1] = 4;
