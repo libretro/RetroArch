@@ -171,6 +171,11 @@ typedef struct
     } syn;
 } rmp3dec_scratch;
 
+/* The public rmp3dec carries this as opaque sized storage; refuse to
+ * build if the layout ever outgrows it. */
+typedef char rmp3_scratch_storage_fits[
+   (sizeof(((rmp3dec*)0)->scratch) >= sizeof(rmp3dec_scratch)) ? 1 : -1];
+
 static void rmp3_bs_init(rmp3_bs *bs, const uint8_t *data, int bytes)
 {
     bs->buf   = data;
@@ -2452,7 +2457,7 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
    int i = 0, igr, frame_size = 0, success = 1;
    const uint8_t *hdr;
    rmp3_bs bs_frame[1];
-   rmp3dec_scratch scratch;
+   rmp3dec_scratch *scratch = (rmp3dec_scratch*)dec->scratch.bytes;
 
    if (mp3_bytes > 4 && dec->header[0] == 0xff && rmp3_hdr_compare(dec->header, mp3))
    {
@@ -2493,13 +2498,13 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
 
    if (info->layer == 3)
    {
-      int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch.gr_info, hdr);
+      int main_data_begin = rmp3_L3_read_side_info(bs_frame, scratch->gr_info, hdr);
       if (main_data_begin < 0 || bs_frame->pos > bs_frame->limit)
       {
          dec->header[0] = 0;
          return 0;
       }
-      success = rmp3_L3_restore_reservoir(dec, bs_frame, &scratch, main_data_begin);
+      success = rmp3_L3_restore_reservoir(dec, bs_frame, scratch, main_data_begin);
       if (success)
       {
          size_t granule_bytes = (size_t)576*info->channels
@@ -2507,38 +2512,38 @@ static int rmp3dec_decode_frame(rmp3dec *dec, const unsigned char *mp3, int mp3_
          for (igr = 0; igr < (RMP3_HDR_TEST_MPEG1(hdr) ? 2 : 1);
                igr++, pcm = (uint8_t *)pcm + granule_bytes)
          {
-            memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
-            rmp3_L3_decode(dec, &scratch, scratch.gr_info + igr*info->channels, info->channels, f32);
+            memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
+            rmp3_L3_decode(dec, scratch, scratch->gr_info + igr*info->channels, info->channels, f32);
             if (f32)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 18, info->channels, pcm, scratch.syn.f[0], 1);
+               rmp3d_synth_granule(dec->qmf_state.f, scratch->grbuf.f[0], 18, info->channels, pcm, scratch->syn.f[0], 1);
             else
-               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 18, info->channels, (short *)pcm, scratch.syn.q[0]);
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch->grbuf.q[0], 18, info->channels, (short *)pcm, scratch->syn.q[0]);
          }
       }
-      rmp3_L3_save_reservoir(dec, &scratch);
+      rmp3_L3_save_reservoir(dec, scratch);
    } else
    {
       rmp3_L12_scale_info sci[1];
       rmp3_L12_read_scale_info(hdr, bs_frame, sci);
 
-      memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
+      memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
       for (i = 0, igr = 0; igr < 3; igr++)
       {
-         if (12 == (i += rmp3_L12_dequantize_granule(scratch.grbuf.f[0] + i, bs_frame, sci, info->layer | 1)))
+         if (12 == (i += rmp3_L12_dequantize_granule(scratch->grbuf.f[0] + i, bs_frame, sci, info->layer | 1)))
          {
             i = 0;
-            rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch.grbuf.f[0]);
+            rmp3_L12_apply_scf_384(sci, sci->scf + igr, scratch->grbuf.f[0]);
             if (f32)
-               rmp3d_synth_granule(dec->qmf_state.f, scratch.grbuf.f[0], 12, info->channels, pcm, scratch.syn.f[0], 1);
+               rmp3d_synth_granule(dec->qmf_state.f, scratch->grbuf.f[0], 12, info->channels, pcm, scratch->syn.f[0], 1);
             else
             {
                /* Layer I/II scalefactor application is float; convert
                 * the granule at the same boundary as Layer III. */
-               rmp3d_float_to_q_n(&scratch.grbuf.q[0][0],
-                     &scratch.grbuf.f[0][0], 576*2);
-               rmp3d_synth_granule_q(dec->qmf_state.q, scratch.grbuf.q[0], 12, info->channels, (short *)pcm, scratch.syn.q[0]);
+               rmp3d_float_to_q_n(&scratch->grbuf.q[0][0],
+                     &scratch->grbuf.f[0][0], 576*2);
+               rmp3d_synth_granule_q(dec->qmf_state.q, scratch->grbuf.q[0], 12, info->channels, (short *)pcm, scratch->syn.q[0]);
             }
-            memset(scratch.grbuf.f[0], 0, 576*2*sizeof(float));
+            memset(scratch->grbuf.f[0], 0, 576*2*sizeof(float));
             pcm = (uint8_t *)pcm + (size_t)384*info->channels
                   * (f32 ? sizeof(float) : sizeof(short));
          }

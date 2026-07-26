@@ -46,6 +46,26 @@ typedef struct
     int free_format_bytes;
     unsigned char header[4];
     unsigned char reserv_buf[511];
+    /* Per-instance decode scratch (bitstream state, main-data buffer,
+     * granule/synthesis working sets).  This lived on
+     * rmp3dec_decode_frame's stack as a ~17 KB local: over a quarter
+     * of a 64 KB task-thread stack per call, and ~275 cachelines of
+     * L1 evicted per decoded audio frame for data that is dead at
+     * return.  It is opaque sized storage here so the internal layout
+     * stays private to rmp3.c, which asserts at compile time that it
+     * fits; the pointer/float members guarantee sufficient alignment
+     * for everything the layout contains.
+     *
+     * Consequence: rmp3dec (and rmp3, which embeds it) are large
+     * objects and should be heap-allocated, as the in-tree consumer
+     * already does. */
+    union
+    {
+        void         *align_ptr;
+        float         align_f;
+        int32_t       align_q;
+        unsigned char bytes[18432];
+    } scratch;
 } rmp3dec;
 
 /* Main API (Pull API)
