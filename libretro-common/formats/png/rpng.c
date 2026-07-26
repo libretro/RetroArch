@@ -168,7 +168,16 @@ struct rpng_process
     * Windows as STATUS_HEAP_CORRUPTION (c0000374) at a later free in
     * task_image_load_free.  The caller's pointer now never moves. */
    uint32_t *out_cursor;
-   size_t inflate_buf_size;
+   size_t inflate_buf_size;   /* expected total inflated bytes (geometry) */
+   size_t ring_size;          /* allocation size of inflate_base.  Equal to
+                               * inflate_buf_size for interlaced images and
+                               * images at or below the ring floor; smaller
+                               * for regular images, where the window
+                               * recycles: writes land at
+                               * inflated_total % ring_size and the read
+                               * cursor wraps at the ring end.  Sized as a
+                               * whole number of scanlines so a line never
+                               * straddles the wrap.                       */
    size_t avail_in;
    size_t avail_out;
    size_t span_idx;          /* current IDAT span being fed             */
@@ -1397,6 +1406,13 @@ static int rpng_reverse_filter_regular_iterate(
    pngp->inflate_buf           += pngp->pitch;
    pngp->restore_buf_size      += pngp->pitch;
 
+   /* Recycling window: the ring is a whole number of scanlines, so
+    * the cursor lands exactly on the ring end between lines and
+    * never mid-line. */
+   if (    pngp->ring_size < pngp->inflate_buf_size
+       &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
+      pngp->inflate_buf = pngp->inflate_base;
+
    pngp->out_cursor            += ihdr->width;
 
    return IMAGE_PROCESS_NEXT;
@@ -1404,7 +1420,10 @@ static int rpng_reverse_filter_regular_iterate(
 end:
    rpng_reverse_filter_deinit(pngp);
 
-   pngp->inflate_buf -= pngp->restore_buf_size;
+   if (pngp->ring_size < pngp->inflate_buf_size)
+      pngp->inflate_buf = pngp->inflate_base;
+   else
+      pngp->inflate_buf -= pngp->restore_buf_size;
    return ret;
 }
 
@@ -1545,10 +1564,30 @@ static int rpng_load_image_argb_process_inflate_init(
             sp->len - process->span_pos);
    }
 
-   slice = (process->avail_out > RPNG_INFLATE_SLICE)
-         ? RPNG_INFLATE_SLICE : (uint32_t)process->avail_out;
-   process->stream_backend->set_out(process->stream,
-         process->inflate_base + process->inflated_total, slice);
+   {
+      size_t wpos    = process->inflated_total % process->ring_size;
+      size_t contig  = process->ring_size - wpos;
+      /* Free ring space: what has been produced but not yet consumed
+       * by the filters stays untouchable.  restore_buf_size counts
+       * consumed bytes exactly on the regular path; on the interlaced
+       * path the ring equals the full buffer, where this bound is
+       * provably never the minimum, whatever the pass-local counter
+       * holds. */
+      size_t free_sp = process->ring_size
+            - (process->inflated_total - process->restore_buf_size);
+      size_t bound   = process->avail_out;
+      if (bound > RPNG_INFLATE_SLICE)
+         bound = RPNG_INFLATE_SLICE;
+      if (bound > contig)
+         bound = contig;
+      if (bound > free_sp)
+         bound = free_sp;
+      slice = (uint32_t)bound;
+      if (!slice)  /* ring momentarily full; filters must drain first */
+         return 0;
+      process->stream_backend->set_out(process->stream,
+            process->inflate_base + wpos, slice);
+   }
 
    zstatus = process->stream_backend->trans(
       process->stream, false, &rd, &wn, &err);
@@ -1706,6 +1745,33 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
    if (rpng->ihdr.interlace == 1) /* To be sure. */
       process->inflate_buf_size *= 2;
 
+   /* Interleaved decode lets the inflate window recycle: filtering
+    * consumes scanlines as slices arrive, so for regular images the
+    * buffer only needs to cover the in-flight region, not the whole
+    * image.  A whole number of scanlines at least two lines and at
+    * least two inflate slices deep keeps lines contiguous across the
+    * wrap and guarantees progress (if no whole line is available, at
+    * least a line's worth of ring is free).  Adam7 consumes whole
+    * passes and rewinds across them, so interlaced images keep the
+    * full-size buffer, which makes every ring expression below an
+    * identity. */
+   if (rpng->ihdr.interlace == 1)
+      process->ring_size = process->inflate_buf_size;
+   else
+   {
+      unsigned pitch_l = 0;
+      size_t   line, k;
+      rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+            rpng->ihdr.height, NULL, &pitch_l, NULL);
+      line = (size_t)pitch_l + 1;
+      k    = ((size_t)(2 * RPNG_INFLATE_SLICE) + line - 1) / line;
+      if (k < 2)
+         k = 2;
+      process->ring_size = k * line;
+      if (process->ring_size > process->inflate_buf_size)
+         process->ring_size = process->inflate_buf_size;
+   }
+
    process->stream = process->stream_backend->stream_new();
 
    if (!process->stream)
@@ -1714,7 +1780,7 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
       return NULL;
    }
 
-   inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
+   inflate_buf = (uint8_t*)malloc(process->ring_size);
    if (!inflate_buf)
       goto error;
 
@@ -2181,6 +2247,9 @@ int rpng_process_image(rpng_t *rpng,
 error:
    if (rpng->process)
    {
+      /* An externally abandoned decode (cancelled task) can be torn
+       * down at any machine state: the per-pass output, the scanline
+       * pair and the inflate window may all still be live here. */
       if (rpng->process->data)
          free(rpng->process->data);
       if (rpng->process->prev_scanline)
