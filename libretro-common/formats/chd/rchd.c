@@ -59,7 +59,8 @@
  *                        per-hunk CRC-32 are checked.
  *   ECC                  the Galois field tables a CD sector's parity
  *                        needs are built once for the program, not per
- *                        sector.
+ *                        sector, as is the CRC-16 table the map check
+ *                        uses.
  *
  * CODECS  (each behind its own HAVE_RCHD_*, and absent means a hunk
  *          using it is refused rather than mis-read)
@@ -236,19 +237,45 @@ static uint64_t rchd_rd_be(const uint8_t *p, int n)
 }
 
 /* CRC-16/CCITT-FALSE: polynomial 0x1021, initial 0xffff, no reflection
- * and no final xor. Validates a decoded v5 map (FORMAT.md 2.3.6). */
+ * and no final xor. Validates a decoded v5 map (FORMAT.md 2.3.6).
+ *
+ * A byte at a time through a table, not a bit at a time through a
+ * branch. The map of a large image runs to megabytes and every byte of
+ * it goes through here: bitwise, that was half of everything an open
+ * spends, and the table costs five hundred and twelve bytes built once.
+ *
+ * The construction is deterministic, so two threads racing to do it
+ * write the same bytes and the flag needs no lock. */
+static uint16_t rchd_crc16_table[256];
+static int      rchd_crc16_ready;
+
+static void rchd_crc16_build(void)
+{
+   uint32_t i;
+
+   if (rchd_crc16_ready)
+      return;
+   for (i = 0; i < 256; i++)
+   {
+      uint16_t c = (uint16_t)(i << 8);
+      int      bit;
+
+      for (bit = 0; bit < 8; bit++)
+         c = (uint16_t)((c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1));
+      rchd_crc16_table[i] = c;
+   }
+   rchd_crc16_ready = 1;
+}
+
 static uint16_t rchd_crc16(const uint8_t *data, size_t len)
 {
    uint16_t crc = 0xffff;
    size_t   i;
-   int      bit;
 
+   rchd_crc16_build();
    for (i = 0; i < len; i++)
-   {
-      crc ^= (uint16_t)((uint16_t)data[i] << 8);
-      for (bit = 0; bit < 8; bit++)
-         crc = (uint16_t)((crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1));
-   }
+      crc = (uint16_t)((crc << 8)
+          ^ rchd_crc16_table[(uint8_t)((crc >> 8) ^ data[i])]);
    return crc;
 }
 
