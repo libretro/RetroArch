@@ -106,12 +106,10 @@
  * Slower both ways, and on one input much worse at compressing:
  *
  *   decode        depends entirely on what the frame holds:
- *                   1.75x the reference on many short matches
- *                   1.50x on long runs
- *                   0.75x on stored blocks, which is memcpy either way
- *                   0.38x on literal-heavy input, where the reference
- *                         has an assembly Huffman decoder and this has
- *                         a C loop
+ *                   1.8x the reference on many short matches
+ *                   1.5x on long runs
+ *                   0.8x on stored blocks, which is memcpy either way
+ *                   0.46x on sequence-heavy input with raw literals
  *   encode        0.18 to 0.49 times
  *   encoded size  1.0x the reference on file data,
  *                 1.4x on synthetic mixed data,
@@ -131,13 +129,28 @@
  * reference implementation anywhere else. Nothing should be migrated
  * to it on the strength of it working.
  *
- * Where the decode time goes, measured rather than guessed: the match
- * copy was six times slower than the reference until it stopped
- * copying a byte at a time, and the bit reader was forty-five per cent
- * of the remainder until its callers stopped asking it to check for
- * bits they had already established were there. What is left is the
- * literal path, and closing that means matching an assembly Huffman
- * decoder from C.
+ * Where the decode time goes, measured rather than guessed:
+ *
+ *   The match copy went a byte at a time and was six times slower than
+ *   the reference. Widening it made it faster than the reference.
+ *
+ *   The bit reader was then forty-five per cent of the remainder, in
+ *   checks for bits the caller had already established were there.
+ *   Batching the checks helped only once they tested what a sequence
+ *   actually needs rather than the worst case any sequence could need:
+ *   the worst case is 63 bits, a refill lands anywhere in 57 to 64, so
+ *   the first version of the fast path was skipped most of the time.
+ *   Calls fell from fifty-eight million to under six thousand.
+ *
+ *   The four literal streams were decoded one after another. They exist
+ *   to be decoded together -- each has its own bit buffer, so the four
+ *   chains are independent and a processor overlaps them. Interleaving
+ *   them, five symbols each per pass, is what the reference's assembly
+ *   does and it is expressible in plain C.
+ *
+ * What is left is the sequence loop itself, which is now everything:
+ * three table lookups, a literal copy and a match copy per sequence,
+ * with no single part dominating.
  * ---------------------------------------------------------------------
  */
 
@@ -1062,33 +1075,68 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
          at += size[k];
       }
 
-      /* Each stream covers a quarter of the output, the last taking
-       * the remainder. */
+      /* Each stream covers a quarter of the output, the last taking the
+       * remainder.
+       *
+       * The four are decoded together rather than one after another,
+       * which is the whole reason the format has four. Each carries its
+       * own bit buffer, so the four chains of load, shift and store are
+       * independent and a processor can overlap them; taking them in
+       * turn serialises what was split apart on purpose.
+       *
+       * Five symbols per stream per pass, which is what fits: a code is
+       * at most eleven bits and the buffer holds sixty-four, so five
+       * come out between refills and the bound test is paid once for
+       * twenty symbols.
+       */
       quarter = (count + 3) / 4;
-      for (k = 0; k < 4; k++)
       {
-         size_t start = k * quarter;
-         size_t end   = start + quarter;
+         size_t fin[4];
+         size_t pos[4];
+         size_t together;
 
-         if (start >= count)
-            break;
-         if (end > count)
-            end = count;
-         i = start;
-         while (i + 4 <= end)
+         for (k = 0; k < 4; k++)
          {
-            if (b[k].count < huf->max_bits * 4)
-               rzstd_rbits_fill(&b[k]);
-            if (b[k].count < huf->max_bits * 4)
-               break;
-            dst[i]     = rzstd_huf_symbol_fast(huf, &b[k]);
-            dst[i + 1] = rzstd_huf_symbol_fast(huf, &b[k]);
-            dst[i + 2] = rzstd_huf_symbol_fast(huf, &b[k]);
-            dst[i + 3] = rzstd_huf_symbol_fast(huf, &b[k]);
-            i += 4;
+            pos[k] = k * quarter;
+            fin[k] = pos[k] + quarter;
+            if (pos[k] > count)
+               pos[k] = count;
+            if (fin[k] > count)
+               fin[k] = count;
          }
-         for (; i < end; i++)
-            dst[i] = rzstd_huf_symbol(huf, &b[k]);
+
+         /* How many rounds every stream can take without checking. */
+         together = quarter >= 5 ? (quarter - 4) / 5 : 0;
+
+         while (together--)
+         {
+            uint32_t w = huf->max_bits * 5;
+
+            if (b[0].count < w || b[1].count < w
+                  || b[2].count < w || b[3].count < w)
+            {
+               rzstd_rbits_fill(&b[0]);
+               rzstd_rbits_fill(&b[1]);
+               rzstd_rbits_fill(&b[2]);
+               rzstd_rbits_fill(&b[3]);
+               if (b[0].count < w || b[1].count < w
+                     || b[2].count < w || b[3].count < w)
+                  break;
+            }
+
+            for (i = 0; i < 5; i++)
+            {
+               dst[pos[0] + i] = rzstd_huf_symbol_fast(huf, &b[0]);
+               dst[pos[1] + i] = rzstd_huf_symbol_fast(huf, &b[1]);
+               dst[pos[2] + i] = rzstd_huf_symbol_fast(huf, &b[2]);
+               dst[pos[3] + i] = rzstd_huf_symbol_fast(huf, &b[3]);
+            }
+            pos[0] += 5; pos[1] += 5; pos[2] += 5; pos[3] += 5;
+         }
+
+         for (k = 0; k < 4; k++)
+            for (i = pos[k]; i < fin[k]; i++)
+               dst[i] = rzstd_huf_symbol(huf, &b[k]);
       }
       return RZ_OK;
    }
@@ -1510,6 +1558,7 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
       const uint8_t *literals, size_t lit_len,
       uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
 {
+   const size_t  lit_len_cap = lit_len;
    rzstd_rbits_t bits;
    size_t        nseq;
    size_t        at = 0;
@@ -1611,12 +1660,20 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
       /* Offset first, then match length, then literal length: the
        * extra bits come out in that order.
        *
-       * Their widths sum to at most 31 + 16 + 16, which is 63 and so
-       * fits one buffer. Filling once and taking three times replaces
-       * three refill tests with one. */
-      if (bits.count < 63)
-         rzstd_rbits_fill(&bits);
-      if (bits.count >= 63)
+       * The three are taken without checking when the buffer holds
+       * enough for all of them, which is decided against what this
+       * sequence actually needs rather than against the worst case any
+       * sequence could need. The worst case is 63 bits and a refill
+       * tops out anywhere between 57 and 64, so testing against it
+       * misses most of the time -- which is how a fast path ends up
+       * never being taken. */
+      {
+         uint32_t need = of_code + rzstd_ml_bits[ml_code]
+                       + rzstd_ll_bits[ll_code];
+
+         if (bits.count < need)
+            rzstd_rbits_fill(&bits);
+         if (bits.count >= need)
       {
          offset    = ((uint32_t)1 << of_code)
                    + rzstd_rbits_take(&bits, of_code);
@@ -1624,15 +1681,16 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
                    + rzstd_rbits_take(&bits, rzstd_ml_bits[ml_code]);
          lit_run   = rzstd_ll_base[ll_code]
                    + rzstd_rbits_take(&bits, rzstd_ll_bits[ll_code]);
-      }
-      else
-      {
-         offset    = ((uint32_t)1 << of_code)
-                   + rzstd_rbits_read(&bits, of_code);
-         match_len = rzstd_ml_base[ml_code]
-                   + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
-         lit_run   = rzstd_ll_base[ll_code]
-                   + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+         }
+         else
+         {
+            offset    = ((uint32_t)1 << of_code)
+                      + rzstd_rbits_read(&bits, of_code);
+            match_len = rzstd_ml_base[ml_code]
+                      + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
+            lit_run   = rzstd_ll_base[ll_code]
+                      + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+         }
       }
 
       if (offset > 3)
@@ -1675,7 +1733,16 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
       if ((size_t)offset > out + lit_run)
          return RZ_DATA;
 
-      memcpy(dst + out, literals + lit_at, lit_run);
+      /* Literal runs are short and frequent -- a handful of bytes,
+       * once per sequence -- so this is mostly the cost of the call
+       * rather than of the copy. Where the output has slack it goes
+       * wide and overruns instead, which the match copy below then
+       * writes over. */
+      if (out + lit_run + RZSTD_VEC_WIDTH * 2 <= dst_len
+            && lit_at + lit_run + RZSTD_VEC_WIDTH * 2 <= lit_len_cap)
+         rzstd_wild_copy(dst + out, literals + lit_at, lit_run);
+      else
+         memcpy(dst + out, literals + lit_at, lit_run);
       out    += lit_run;
       lit_at += lit_run;
 
@@ -1688,11 +1755,16 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
 
       if (i + 1 < nseq)
       {
-         /* Three accuracy logs, at most nine bits each: one fill
-          * covers all three updates. */
-         if (bits.count < 27)
+         /* Likewise for the three updates: what they need is known
+          * from the tables, so the test is against that and not
+          * against three times the largest accuracy log. */
+         uint32_t need = tab->ll_fse.table[ll_state].bits
+                       + tab->ml_fse.table[ml_state].bits
+                       + tab->of_fse.table[of_state].bits;
+
+         if (bits.count < need)
             rzstd_rbits_fill(&bits);
-         if (bits.count >= 27)
+         if (bits.count >= need)
          {
             ll_state = rzstd_fse_next_fast(&tab->ll_fse, ll_state, &bits);
             ml_state = rzstd_fse_next_fast(&tab->ml_fse, ml_state, &bits);
@@ -1758,7 +1830,9 @@ typedef struct rzstd_frame_state
    int                huf_valid;
    rzstd_seq_tables_t tables;
    uint32_t           repeat[3];
-   uint8_t            literals[RZSTD_BLOCK_MAX];
+   /* The literal buffer carries slack past the block maximum so a wide
+    * copy out of it may overrun without leaving the allocation. */
+   uint8_t            literals[RZSTD_BLOCK_MAX + 64];
 } rzstd_frame_state_t;
 
 static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
