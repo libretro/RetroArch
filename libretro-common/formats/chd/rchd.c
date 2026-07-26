@@ -57,6 +57,9 @@
  *                        synthesised.
  *   Integrity            version 5's map CRC-16 and versions 3 and 4's
  *                        per-hunk CRC-32 are checked.
+ *   ECC                  the Galois field tables a CD sector's parity
+ *                        needs are built once for the program, not per
+ *                        sector.
  *
  * CODECS  (each behind its own HAVE_RCHD_*, and absent means a hunk
  *          using it is refused rather than mis-read)
@@ -1688,15 +1691,32 @@ static const uint8_t rchd_cd_sync[RCHD_CD_SYNC_SIZE] =
 };
 
 /* GF(2^8) with primitive polynomial 0x11d, as ECMA-130 specifies.
- * Built once rather than carried as two 256-byte tables. */
-static void rchd_ecc_tables(uint8_t *fwd, uint8_t *bwd)
+ *
+ * Built once for the program, not once per sector. The comment that
+ * stood here said "built once rather than carried as two 256-byte
+ * tables", which was the intent and not what the code did: the builder
+ * took the tables as arguments and every sector that needed its parity
+ * rebuilt filled them again. Five hundred and twelve iterations and
+ * five hundred and twelve bytes written, eight times a hunk.
+ *
+ * The construction is deterministic, so two threads racing to do it
+ * write the same bytes; the flag is an optimisation and being seen late
+ * costs a rebuild rather than correctness. */
+static uint8_t rchd_ecc_fwd[256];
+static uint8_t rchd_ecc_bwd[256];
+static int     rchd_ecc_ready;
+
+static void rchd_ecc_tables(void)
 {
    uint32_t i;
 
+   if (rchd_ecc_ready)
+      return;
    for (i = 0; i < 256; i++)
-      fwd[i] = (uint8_t)((i << 1) ^ ((i & 0x80) ? 0x11d : 0));
+      rchd_ecc_fwd[i] = (uint8_t)((i << 1) ^ ((i & 0x80) ? 0x11d : 0));
    for (i = 0; i < 256; i++)
-      bwd[i ^ fwd[i]] = (uint8_t)i;
+      rchd_ecc_bwd[i ^ rchd_ecc_fwd[i]] = (uint8_t)i;
+   rchd_ecc_ready = 1;
 }
 
 /* One layer of the interleaved parity. P and Q differ only in their
@@ -1742,14 +1762,12 @@ static void rchd_ecc_layer(uint8_t *sec, const uint8_t *fwd,
  * hardware and by verification tools, not by a reader. */
 static void rchd_cd_rebuild(uint8_t *sec)
 {
-   uint8_t fwd[256];
-   uint8_t bwd[256];
    uint8_t header[4];
    int     mode2;
 
    memcpy(sec, rchd_cd_sync, RCHD_CD_SYNC_SIZE);
 
-   rchd_ecc_tables(fwd, bwd);
+   rchd_ecc_tables();
 
    mode2 = (sec[15] == 2);
    memcpy(header, sec + 12, 4);
@@ -1757,8 +1775,8 @@ static void rchd_cd_rebuild(uint8_t *sec)
       memset(sec + 12, 0, 4);
 
    /* Q covers the P parity, so P is written first. */
-   rchd_ecc_layer(sec, fwd, bwd, 86, 24,  2, 86, RCHD_CD_ECC_P_OFFSET);
-   rchd_ecc_layer(sec, fwd, bwd, 52, 43, 86, 88, RCHD_CD_ECC_Q_OFFSET);
+   rchd_ecc_layer(sec, rchd_ecc_fwd, rchd_ecc_bwd, 86, 24,  2, 86, RCHD_CD_ECC_P_OFFSET);
+   rchd_ecc_layer(sec, rchd_ecc_fwd, rchd_ecc_bwd, 52, 43, 86, 88, RCHD_CD_ECC_Q_OFFSET);
 
    if (mode2)
       memcpy(sec + 12, header, 4);
