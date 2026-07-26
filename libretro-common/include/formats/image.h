@@ -302,6 +302,12 @@ bool image_transfer_anim_stream_set_argb(void *stream,
 void image_transfer_set_avail(void *data, enum image_type_enum type,
       size_t avail);
 
+/* Declare the output byte order before the transfer starts, so
+ * decoders that emit final pixels during transfer (JPEG's fused
+ * iterate+resample) can use the caller's order directly. */
+void image_transfer_set_rgba(void *data, enum image_type_enum type,
+      bool rgba);
+
 /* The stream-level counterpart, for an animation stream adopted from
  * a still whose file read was still in flight: the demuxer's byte
  * wall was captured at open, and nothing else raises it once the

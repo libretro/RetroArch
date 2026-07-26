@@ -732,6 +732,24 @@ bool image_transfer_iterate(void *data, enum image_type_enum type)
    return false;
 }
 
+void image_transfer_set_rgba(void *data, enum image_type_enum type,
+      bool rgba)
+{
+   switch (type)
+   {
+      case IMAGE_TYPE_JPEG:
+#ifdef HAVE_RJPEG
+         rjpeg_set_out_rgba((rjpeg_t*)data, rgba);
+#endif
+         break;
+      default:
+         /* Only the JPEG decoder emits final pixels during the
+          * transfer phase; the others take the order at process
+          * time. */
+         break;
+   }
+}
+
 void image_transfer_set_avail(void *data, enum image_type_enum type,
       size_t avail)
 {

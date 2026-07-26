@@ -46,6 +46,12 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf,
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data, size_t len);
 
+/* Optional: declare the output byte order (supports_rgba) before
+ * iteration, so the fused iterate+resample can emit final pixels in
+ * the caller's order.  Without it the fusion emits BGRA and
+ * rjpeg_process_image repairs the order afterwards if needed. */
+void rjpeg_set_out_rgba(rjpeg_t *rjpeg, bool rgba);
+
 /* Prefix decoding support (mirrors rpng): rjpeg_set_avail declares how
  * many bytes from the buffer start are resident (monotonic, clamped to
  * the full length).  While the frontier is below the full length the

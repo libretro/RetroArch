@@ -294,6 +294,13 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
    image->ti.supports_rgba = (video_driver_get_disp_flags()
          & VIDEO_FLAG_USE_RGBA) ? true : false;
 
+   /* Hand the byte order to the transfer layer now: the JPEG fused
+    * iterate+resample emits final pixels during transfer, before any
+    * image_transfer_process call could latch it. */
+   image_transfer_set_rgba(image->handle, image->type,
+         image->ti.supports_rgba);
+
+
    /* Set task iteration duration */
    if (settings)
       refresh_rate = settings->floats.video_refresh_rate;

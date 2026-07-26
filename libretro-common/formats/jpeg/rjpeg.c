@@ -168,6 +168,14 @@ struct rjpeg
    uint8_t                *iter_output;       /* RGBA8888 output buffer        */
    unsigned                iter_out_row;      /* next output row to resample   */
    int                     iter_resample_ready; /* 1 = resample state inited   */
+   bool                    iter_rgba_used;    /* byte order the fused resample
+                                               * emitted with: supports_rgba is
+                                               * latched by rjpeg_process_image,
+                                               * which the task pipeline only
+                                               * calls after iteration, so the
+                                               * fusion runs with the default
+                                               * (BGRA) and the flag's real
+                                               * value arrives later          */
 
    /* Output byte order selector. Latched from the rjpeg_process_image
     * parameter and consulted by the resample+colorconvert callsites.
@@ -4359,7 +4367,17 @@ static int rjpeg_iterate_init_resample(rjpeg_t *rjpeg)
       return 0;
 
    rjpeg->iter_out_row = 0;
-   rjpeg->iter_resample_ready = 0; /* TODO: fix ystep state bug */
+   /* The fusion originally emitted right up to the boundary of the
+    * just-decoded MCU row.  The vertical resampler's in_far pointer
+    * (line1) crosses that boundary for the last output rows of the
+    * span - for 4:2:0, output row 16m+15 interpolates chroma from
+    * plane row 8m+8, the first row of the NEXT, not-yet-decoded MCU
+    * row - producing wrong pixels on every interior MCU-row seam
+    * (the "ystep state bug" this flag was parked over).  Emission now
+    * lags one MCU row behind decode, so every plane row the
+    * resampler can touch is already written; the final row is
+    * flushed when the last MCU row commits. */
+   rjpeg->iter_resample_ready = 1;
    return 1;
 }
 
@@ -4491,8 +4509,12 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          rjpeg->iter_state = RJPEG_ITER_ENTROPY_ROWS;
 
          /* Initialize fused resample so we can process output rows
-          * as MCU-rows complete, overlapping entropy+resample. */
-         if (!rjpeg->iter_resample_ready)
+          * as MCU-rows complete, overlapping entropy+resample.
+          * Progressive never enters ENTROPY_ROWS (scans go through
+          * PROG_SCAN / FINISH_PROG and need full coefficient planes),
+          * so arming it there would only allocate the output buffer
+          * early for nothing. */
+         if (!rjpeg->iter_resample_ready && !j->progressive)
             rjpeg_iterate_init_resample(rjpeg);
 
          return true; /* more work to do */
@@ -4651,13 +4673,25 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          rjpeg->stall_at    = 0;   /* row committed: no pending stall */
          rjpeg->iter_mcu_row++;
 
-         /* Fused resample: the MCU-row we just decoded produced up to
-          * v_max*8 rows of component data.  Resample them now while
-          * the data is hot in cache, overlapping with the next
-          * entropy decode on the next iterate call. */
+         /* Fused resample, one MCU row behind decode: the vertical
+          * resampler's in_far row for the tail of a span is the first
+          * plane row of the FOLLOWING MCU row, so a span is only
+          * emitted once the row after it has been decoded.  The data
+          * read is then at worst one MCU row old - still
+          * cache-resident - and every plane row touched is valid.
+          * When the LAST MCU row commits there is no following row to
+          * wait for and the remainder is flushed to img_y (in_far's
+          * advance is bounded by comp.y at the image edge). */
          if (rjpeg->iter_resample_ready && rjpeg->iter_output)
          {
-            unsigned max_row = rjpeg->iter_mcu_row * j->img_v_max * 8;
+            unsigned max_row;
+            rjpeg->iter_rgba_used = rjpeg->supports_rgba;
+            if (rjpeg->iter_mcu_row >= j->img_mcu_y)
+               max_row = j->img_y;
+            else if (rjpeg->iter_mcu_row > 0)
+               max_row = (rjpeg->iter_mcu_row - 1) * j->img_v_max * 8;
+            else
+               max_row = 0;
             if (max_row > j->img_y)
                max_row = j->img_y;
             rjpeg_output_rows(rjpeg->iter_j, rjpeg->iter_res, rjpeg->iter_output,
@@ -4892,6 +4926,21 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          if (rjpeg->iter_resample_ready && rjpeg->iter_output
                && rjpeg->iter_out_row >= j->img_y)
          {
+            /* The fusion ran before this call latched supports_rgba,
+             * so it emitted with the default order.  If the caller
+             * wants the other one, swap R and B in place - one warm
+             * pass, and only on the mismatching configuration. */
+            if (rjpeg->iter_rgba_used != supports_rgba)
+            {
+               uint8_t *p   = rjpeg->iter_output;
+               uint8_t *end = p + (size_t)4 * j->img_x * j->img_y;
+               for (; p < end; p += 4)
+               {
+                  uint8_t t = p[0];
+                  p[0]      = p[2];
+                  p[2]      = t;
+               }
+            }
             *buf_data = rjpeg->iter_output;
             *width  = j->img_x;
             *height = j->img_y;
@@ -5031,6 +5080,19 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
    }
 
    return IMAGE_PROCESS_ERROR;
+}
+
+/* Declare the output byte order before iteration starts.  The fused
+ * iterate+resample emits final pixels during rjpeg_iterate_image,
+ * long before rjpeg_process_image latches supports_rgba from its
+ * caller; without this the fusion emits the default (BGRA) and a
+ * caller wanting RGBA pays a full cold repair pass over the output.
+ * The task pipeline knows the video driver's preference at setup, so
+ * it can hand it over here. */
+void rjpeg_set_out_rgba(rjpeg_t *rjpeg, bool rgba)
+{
+   if (rjpeg)
+      rjpeg->supports_rgba = rgba;
 }
 
 bool rjpeg_set_buf_ptr(rjpeg_t *rjpeg, void *data, size_t len)
