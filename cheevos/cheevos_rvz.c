@@ -28,7 +28,7 @@
 #include <boolean.h>
 
 #ifdef HAVE_ZSTD
-#include <zstd.h>
+#include <encodings/rzstd.h>
 #endif
 
 #include "../verbosity.h"
@@ -401,6 +401,7 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
    if (compression_type == RVZ_COMPRESSION_ZSTD)
    {
       size_t result;
+      int    zerr;
       decompressed_data = (uint8_t*)malloc(decompressed_size);
       if (!decompressed_data)
       {
@@ -408,14 +409,14 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
          return NULL;
       }
 
-      result = ZSTD_decompress(decompressed_data, decompressed_size,
-                               compressed_data, compressed_size);
+      zerr = rzstd_decode(decompressed_data, decompressed_size,
+                          compressed_data, compressed_size, &result);
 
       free(compressed_data);
 
-      if (ZSTD_isError(result))
+      if (zerr != RZSTD_PROCESS_END)
       {
-         CHEEVOS_ERR("[RVZ] Failed to decompress metadata: %s\n", ZSTD_getErrorName(result));
+         CHEEVOS_ERR("[RVZ] Failed to decompress metadata: %s\n", rzstd_error_name(zerr));
          free(decompressed_data);
          return NULL;
       }
@@ -1020,12 +1021,13 @@ static bool rvz_decompress_zstd_rvzpack(rcheevos_rvz_file_t* rvz,
    rvz_pack_state_t* pack_state;
    uint32_t bytes_written;
    size_t result;
+   int    zerr;
 
    /* Stage 1: Zstd decompress to intermediate buffer
     * Query Zstd for the actual decompressed size */
    {
-      unsigned long long frame_size = ZSTD_getFrameContentSize(compressed_data, compressed_size);
-      if (frame_size == ZSTD_CONTENTSIZE_ERROR || frame_size == ZSTD_CONTENTSIZE_UNKNOWN)
+      int64_t frame_size = rzstd_frame_content_size(compressed_data, compressed_size);
+      if (frame_size == RZSTD_CONTENT_SIZE_ERROR || frame_size == RZSTD_CONTENT_SIZE_UNKNOWN)
       {
          /* Fall back to rvz_packed_size if frame size unknown */
          zstd_output_size = group->rvz_packed_size;
@@ -1040,12 +1042,12 @@ static bool rvz_decompress_zstd_rvzpack(rcheevos_rvz_file_t* rvz,
    if (!zstd_output)
       return false;
 
-   result = ZSTD_decompress(zstd_output, zstd_output_size,
-                            compressed_data, compressed_size);
+   zerr = rzstd_decode(zstd_output, zstd_output_size,
+                       compressed_data, compressed_size, &result);
 
-   if (ZSTD_isError(result))
+   if (zerr != RZSTD_PROCESS_END)
    {
-      CHEEVOS_ERR("[RVZ] Zstd decompression (stage 1) failed: %s\n", ZSTD_getErrorName(result));
+      CHEEVOS_ERR("[RVZ] Zstd decompression (stage 1) failed: %s\n", rzstd_error_name(zerr));
       free(zstd_output);
       return false;
    }
@@ -1163,6 +1165,7 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
    uint8_t* decompressed_data;
    uint32_t buffer_size;
    size_t result;
+   int    zerr;
 
    /* For partition data, the compressed data includes exception lists which can make
     * the decompressed size larger than chunk_size. Query ZSTD for actual size.
@@ -1171,8 +1174,8 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
 
    if (rvz_group_is_partition_data(rvz, group_index))
    {
-      unsigned long long frame_size = ZSTD_getFrameContentSize(compressed_data, compressed_size);
-      if (frame_size != ZSTD_CONTENTSIZE_ERROR && frame_size != ZSTD_CONTENTSIZE_UNKNOWN)
+      int64_t frame_size = rzstd_frame_content_size(compressed_data, compressed_size);
+      if (frame_size != RZSTD_CONTENT_SIZE_ERROR && frame_size != RZSTD_CONTENT_SIZE_UNKNOWN)
       {
          buffer_size = (uint32_t)frame_size;
       }
@@ -1189,12 +1192,12 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
 
    /* Use buffer_size (full buffer) instead of actual_decompressed_size
     * to avoid "buffer too small" errors when frame size > rvz_packed_size */
-   result = ZSTD_decompress(decompressed_data, buffer_size,
-                            compressed_data, compressed_size);
+   zerr = rzstd_decode(decompressed_data, buffer_size,
+                       compressed_data, compressed_size, &result);
 
-   if (ZSTD_isError(result))
+   if (zerr != RZSTD_PROCESS_END)
    {
-      CHEEVOS_ERR("[RVZ] Zstd decompression failed: %s\n", ZSTD_getErrorName(result));
+      CHEEVOS_ERR("[RVZ] Zstd decompression failed: %s\n", rzstd_error_name(zerr));
       free(decompressed_data);
       return false;
    }
