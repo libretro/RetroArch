@@ -5042,13 +5042,54 @@ static void ropus_mdct_backward(const float *in, float *out,
    }
 }
 
+/* Frame-decode scratch, one per decoder context (embedded in ropus_t
+ * below).  These lived on the decode-frame and CELT-decode stacks:
+ * pcm_silk alone is 11.5 KB, the float CELT norm buffers another
+ * 19.2 KB, stacking to a worst-case decode depth near 50 KB on the
+ * audio/task thread.  Per context and not static for the same reason
+ * as sub_q/sub_f: the mixer runs several voices at once.  One scratch
+ * per context serves every substream and every (sequential) CELT
+ * call, main and redundancy alike. */
+typedef struct
+{
+   int16_t pcm_silk[2880 * 2];
+   int16_t bl[960];
+   int16_t br[960];
+   union
+   {
+      float   f[240 * 2];
+      int16_t q[240 * 2];
+   } redundant;
+   /* CELT band coefficients (C*N plus last-band lowband scratch) and
+    * the quant_all_bands norm scratch; the q view is int16_t spelled
+    * out because the ropus_norm (Q14) typedef appears later in the
+    * file than this struct must. */
+   union
+   {
+      struct
+      {
+         float X[2 * 960 + 960];
+         float norm[2 * 960];
+         float freq[2 * 960];      /* IMDCT staging in celt_synthesis */
+      } f;
+      struct
+      {
+         int16_t X[2 * 960 + 960];
+         int16_t norm[2 * 960];
+         int32_t freq[2 * 960];    /* ropus_sig (Q12), typedef'd later
+                                    * in the file than this struct     */
+      } q;
+   } celt;
+} ropus_frame_scratch;
+
 static void ropus_celt_synthesis(const float *X, float *out_syn[],
+      ropus_frame_scratch *scr,
       const float *oldBandE, int start, int effEnd, int C, int CC,
       int isTransient, int LM, int silence)
 {
    int c, i, b;
    int M, B, N, NB, shift;
-   float freq[1920];
+   float *freq = scr->celt.f.freq;
    N = ROPUS_SHORT_MDCT << LM;
    M = 1 << LM;
    if (isTransient)
@@ -5204,43 +5245,6 @@ static void ropus_deemphasis(float *in[], float *pcm, int N, int C,
 /* celt_decode_with_ec, decode-only, float pipeline, 48 kHz.            */
 /* pcm receives N interleaved float frames (CC channels, [-1,1]).       */
 /* ==================================================================== */
-/* Frame-decode scratch, one per decoder context (embedded in ropus_t
- * below).  These lived on the decode-frame and CELT-decode stacks:
- * pcm_silk alone is 11.5 KB, the float CELT norm buffers another
- * 19.2 KB, stacking to a worst-case decode depth near 50 KB on the
- * audio/task thread.  Per context and not static for the same reason
- * as sub_q/sub_f: the mixer runs several voices at once.  One scratch
- * per context serves every substream and every (sequential) CELT
- * call, main and redundancy alike. */
-typedef struct
-{
-   int16_t pcm_silk[2880 * 2];
-   int16_t bl[960];
-   int16_t br[960];
-   union
-   {
-      float   f[240 * 2];
-      int16_t q[240 * 2];
-   } redundant;
-   /* CELT band coefficients (C*N plus last-band lowband scratch) and
-    * the quant_all_bands norm scratch; the q view is int16_t spelled
-    * out because the ropus_norm (Q14) typedef appears later in the
-    * file than this struct must. */
-   union
-   {
-      struct
-      {
-         float X[2 * 960 + 960];
-         float norm[2 * 960];
-      } f;
-      struct
-      {
-         int16_t X[2 * 960 + 960];
-         int16_t norm[2 * 960];
-      } q;
-   } celt;
-} ropus_frame_scratch;
-
 static int ropus_celt_decode(ropus_celt *st,
       ropus_frame_scratch *scr, const uint8_t *data, int len,
       float *pcm, int frame_size, ropus_ec *dec)
@@ -5301,7 +5305,7 @@ static int ropus_celt_decode(ropus_celt *st,
       for (i = 0; i < C * ROPUS_NBANDS; i++)
          oldBandE[i] = -28.f;
 
-   ropus_celt_synthesis(X, out_syn, oldBandE, start, f.effEnd, C, CC,
+   ropus_celt_synthesis(X, out_syn, scr, oldBandE, start, f.effEnd, C, CC,
       f.isTransient, f.LM, f.silence);
 
    c = 0;
@@ -6935,12 +6939,13 @@ static void ropus_mdct_backward_q(const ropus_sig *in, ropus_sig *out,
 }
 
 static void ropus_celt_synthesis_q(const ropus_norm *X, ropus_sig *out_syn[],
+      ropus_frame_scratch *scr,
       const int16_t *oldBandE, int start, int effEnd, int C, int CC,
       int isTransient, int LM, int silence)
 {
    int c, b;
    int M, B, N, NB, shift;
-   ropus_sig freq[1920];
+   ropus_sig *freq = scr->celt.q.freq;
    int i;
    N = ROPUS_SHORT_MDCT << LM;
    M = 1 << LM;
@@ -7352,7 +7357,7 @@ static int ropus_celt_decode_q(ropus_celt_q *st,
       for (i = 0; i < C * ROPUS_NBANDS; i++)
          oldBandE[i] = -(28 << ROPUS_DB_SHIFT);
 
-   ropus_celt_synthesis_q(X, out_syn, oldBandE, start, f.effEnd, C, CC,
+   ropus_celt_synthesis_q(X, out_syn, scr, oldBandE, start, f.effEnd, C, CC,
       f.isTransient, f.LM, f.silence);
 
    c = 0;
