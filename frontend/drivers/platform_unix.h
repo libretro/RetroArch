@@ -392,6 +392,8 @@ extern struct android_app *g_android;
 
 void frontend_android_get_name(char *s, size_t len);
 
+void frontend_android_get_version(int32_t *major, int32_t *minor, int32_t *rel);
+
 void frontend_android_get_version_sdk(int32_t *sdk);
 
 bool is_screen_reader_enabled(void);

@@ -574,12 +574,12 @@ void frontend_android_get_name(char *s, size_t len)
    system_property_get("getprop", "ro.product.model", s, len);
 }
 
-static void frontend_android_get_version(int32_t *major,
+void frontend_android_get_version(int32_t *major,
       int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.release",
-         os_version_str, sizeof(os_version_str));
+   __system_property_get("ro.build.version.release",
+         os_version_str);
    *major  = 0;
    *minor  = 0;
    *rel    = 0;
