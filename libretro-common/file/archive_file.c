@@ -160,10 +160,16 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    state->archive_size = filestream_get_size(state->archive_file);
 
 #ifdef HAVE_MMAP
-   if (state->archive_size <= (256*1024*1024))
+   /* mmap needs a real host fd. Skip VFS URL schemes (smb://, cdrom://,
+    * saf://, ...) where POSIX open() cannot work, and require fd >= 0 —
+    * open() returns -1 on failure, which is truthy and previously slipped
+    * into mmap(). */
+   if (     state->archive_size > 0
+         && state->archive_size <= (256 * 1024 * 1024)
+         && !strstr(path, "://"))
    {
       state->archive_mmap_fd = open(path, O_RDONLY);
-      if (state->archive_mmap_fd)
+      if (state->archive_mmap_fd >= 0)
       {
          state->archive_mmap_data = (uint8_t*)mmap(NULL,
                (size_t)state->archive_size,
