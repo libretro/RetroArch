@@ -2943,6 +2943,13 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
    size_t    at   = 0;
    size_t    in   = 0;
    uint32_t  enc_log;
+   /* The three offsets a decoder remembers. They belong to the frame,
+    * not the block: a decoder carries them across block boundaries
+    * (3.1.1.5), so an encoder that starts each block from the defaults
+    * disagrees with it from the first repeat code that resolves
+    * differently. Measured, the output stayed correct for two blocks
+    * and went wrong at the first byte of the third. */
+   uint32_t  rep[3];
    uint32_t *hash  = NULL;
    uint32_t *chain = NULL;
 
@@ -2973,6 +2980,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
          want++;
       enc_log = want;
    }
+
+   rep[0] = 1;
+   rep[1] = 4;
+   rep[2] = 8;
 
    at = rzstd_write_frame_header(dst, (uint64_t)src_len);
 
@@ -3052,10 +3063,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * only leaves the recent offsets untouched for the first of
              * the three, so that is the only one used here: the others
              * rotate the list and would have to be mirrored exactly. */
-            uint32_t rep[3];
             size_t   rep_len;
-
-            rep[0] = 1; rep[1] = 4; rep[2] = 8;
 
             while (pos + RZSTD_ENC_MIN_MATCH <= take)
             {

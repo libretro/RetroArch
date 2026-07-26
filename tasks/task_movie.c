@@ -144,7 +144,7 @@ static bool bsv_movie_init_record(
 #endif
    handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
    if (settings->bools.savestate_file_compression)
-#if defined(HAVE_ZSTD)
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
       handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZSTD;
 #elif defined(HAVE_ZLIB)
       handle->checkpoint_compression = REPLAY_CHECKPOINT2_COMPRESSION_ZLIB;

@@ -41,6 +41,9 @@
 #ifdef HAVE_ZSTD
 #include <zstd.h>
 #endif
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#endif
 
 #define BSV_IFRAME_START_TOKEN 0x00
 /* after START:
@@ -600,7 +603,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
             break;
          }
 #endif
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
          {
             size_t uncompressed_size_big;
@@ -611,6 +614,15 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                calling the function that takes the compressed frames as
                an input?  */
             encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+#ifdef HAVE_RZSTD
+            if (rzstd_decode(encoded_data, encoded_size,
+                     compressed_data, compressed_encoded_size,
+                     &uncompressed_size_big) != RZSTD_PROCESS_END)
+               {
+                  ret = false;
+                  goto exit;
+               }
+#else
             uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size,
                   compressed_data, compressed_encoded_size);
             if (ZSTD_isError(uncompressed_size_big))
@@ -618,6 +630,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                   ret = false;
                   goto exit;
                }
+#endif
             break;
          }
 #endif
@@ -732,9 +745,21 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
          break;
       }
 #endif
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
       case REPLAY_CHECKPOINT2_COMPRESSION_ZSTD:
       {
+#ifdef HAVE_RZSTD
+         size_t compressed_encoded_size_zstd = rzstd_compress_bound(encoded_size);
+         compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_zstd, sizeof(uint8_t));
+         owns_compressed_encoded = true;
+         if (rzstd_encode(compressed_encoded_data, compressed_encoded_size_zstd,
+                  encoded_data, encoded_size, 3,
+                  &compressed_encoded_size_zstd) != RZSTD_PROCESS_END)
+         {
+            ret = -1;
+            goto exit;
+         }
+#else
          size_t compressed_encoded_size_zstd = ZSTD_compressBound(encoded_size);
          compressed_encoded_data = (uint8_t*)calloc(compressed_encoded_size_zstd, sizeof(uint8_t));
          owns_compressed_encoded = true;
@@ -744,6 +769,7 @@ int64_t bsv_movie_write_checkpoint(bsv_movie_t *handle, uint8_t compression, uin
             ret = -1;
             goto exit;
          }
+#endif
          /* Have to cast after checking the error flags, not before */
          compressed_encoded_size = (uint32_t)compressed_encoded_size_zstd;
          break;
