@@ -8652,7 +8652,11 @@ void core_run(void)
    else if (late_polling)
       current_core->flags &= ~RETRO_CORE_FLAG_INPUT_POLLED;
 
-   current_core->retro_run();
+   /* Content can be marked CORE_RUNNING after a failed/partial load
+    * (e.g. archive member opened with no core).  Never call through
+    * a NULL retro_run — that is an immediate SIGSEGV. */
+   if (current_core->retro_run)
+      current_core->retro_run();
 
 #ifdef HAVE_GAME_AI
    {

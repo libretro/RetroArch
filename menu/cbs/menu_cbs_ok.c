@@ -8231,6 +8231,9 @@ static int action_ok_state_slot_run(const char *path,
    return 0;
 }
 
+static int action_ok_load_archive_detect_core(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx);
+
 static int action_ok_load_archive(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -8241,6 +8244,13 @@ static int action_ok_load_archive(const char *path,
 
    if (!menu)
       return -1;
+
+   /* Load Content opens archives via ARCHIVE_ACTION (not DETECT_CORE).
+    * With no core loaded, loading "with current core" leaves a broken
+    * runloop state (or appears to hang).  Fall through to detect-core. */
+   if (path_is_empty(RARCH_PATH_CORE))
+      return action_ok_load_archive_detect_core(
+            path, label, type, idx, entry_idx);
 
    menu_path    = menu->scratch2_buf;
    content_path = menu->scratch_buf;
@@ -10180,6 +10190,22 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                         BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                      }
                      break;
+                  case MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN:
+                     /* Browse Archive (non-detect) still needs detect-core
+                      * when nothing is loaded — otherwise
+                      * action_ok_file_load pushes content with a dummy
+                      * core and core_run() jumps through a NULL
+                      * retro_run (SIGSEGV). */
+#ifdef HAVE_COMPRESSION
+                     if (type == FILE_TYPE_IN_CARCHIVE
+                           && path_is_empty(RARCH_PATH_CORE))
+                     {
+                        BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+                        break;
+                     }
+#endif
+                     BIND_ACTION_OK(cbs, action_ok_file_load);
+                     break;
                   case MENU_ENUM_LABEL_DISK_IMAGE_APPEND:
                      BIND_ACTION_OK(cbs, action_ok_disk_image_append);
                      break;
@@ -10208,6 +10234,20 @@ static int menu_cbs_init_bind_ok_compare_type(menu_file_list_cbs_t *cbs,
                   {
                      BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core);
                   }
+               }
+               else if (string_is_equal(menu_label,
+                        MENU_ENUM_LABEL_DEFERRED_ARCHIVE_OPEN_STR)
+#ifdef HAVE_COMPRESSION
+                     && type == FILE_TYPE_IN_CARCHIVE
+                     && path_is_empty(RARCH_PATH_CORE)
+#endif
+                     )
+               {
+#ifdef HAVE_COMPRESSION
+                  BIND_ACTION_OK(cbs, action_ok_file_load_with_detect_core_carchive);
+#else
+                  BIND_ACTION_OK(cbs, action_ok_file_load);
+#endif
                }
                else if (string_is_equal(menu_label, MENU_ENUM_LABEL_DISK_IMAGE_APPEND_STR))
                {

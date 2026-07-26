@@ -321,21 +321,30 @@ static int general_push(menu_displaylist_info_t *info,
    {
       /* Need to use the scratch buffer here */
       char tmp_str[PATH_MAX_LENGTH];
-#if IOS
+      /* scratch_buf may already be a full VFS URL (smb://...); do not
+       * join that onto the parent directory. */
       if (path_is_absolute(menu->scratch_buf))
+      {
+#if IOS
+         fill_pathname_expand_special(tmp_str, menu->scratch_buf,
+               sizeof(tmp_str));
+#else
          strlcpy(tmp_str, menu->scratch_buf, sizeof(tmp_str));
+#endif
+      }
       else
       {
+#if IOS
          char tmp_path[PATH_MAX_LENGTH];
          fill_pathname_expand_special(tmp_path,
                menu->scratch2_buf, sizeof(tmp_path));
          fill_pathname_join_special(tmp_str, tmp_path,
                menu->scratch_buf, sizeof(tmp_str));
-      }
 #else
-      fill_pathname_join_special(tmp_str, menu->scratch2_buf,
-            menu->scratch_buf, sizeof(tmp_str));
+         fill_pathname_join_special(tmp_str, menu->scratch2_buf,
+               menu->scratch_buf, sizeof(tmp_str));
 #endif
+      }
 
       if (info->path)
          free(info->path);
@@ -354,16 +363,23 @@ static int general_push(menu_displaylist_info_t *info,
    switch (id)
    {
       case PUSH_ARCHIVE_OPEN:
+         /* Overlay picker still wants only .cfg inside the archive. */
          if (filebrowser_get_type() == FILEBROWSER_SELECT_OVERLAY)
             string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), "cfg");
          else
          {
-            struct retro_system_info *sysinfo =
-               &runloop_state_get_ptr()->system.info;
-            if (    sysinfo 
-                &&  sysinfo->valid_extensions 
-                && *sysinfo->valid_extensions)
-               string_ext_list_merge_dedup(ext_filter, &_len, sizeof(ext_filter), sysinfo->valid_extensions);
+            /* Browse Archive from Load Content uses this push (not
+             * DETECT_CORE).  Seeding only the current core's extensions
+             * — or worse, leaving the list empty so the multimedia
+             * blocks below fill it with image/audio types — hides ROM
+             * members (e.g. .smc in a zip under a nes/ folder) and
+             * presents an empty list.  List every member; core choice
+             * still happens when the user selects a file. */
+            if (info->exts)
+            {
+               free(info->exts);
+               info->exts = NULL;
+            }
          }
          break;
       case PUSH_DEFAULT:
@@ -444,8 +460,10 @@ static int general_push(menu_displaylist_info_t *info,
          break;
    }
 
+   /* Do not invent a media-only filter for Browse Archive — see
+    * PUSH_ARCHIVE_OPEN above. */
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-   if (multimedia_builtin_mediaplayer_enable)
+   if (multimedia_builtin_mediaplayer_enable && id != PUSH_ARCHIVE_OPEN)
    {
       struct retro_system_info sysinfo = {0};
 #if defined(HAVE_FFMPEG)
@@ -461,7 +479,7 @@ static int general_push(menu_displaylist_info_t *info,
 #endif
 
 #ifdef HAVE_IMAGEVIEWER
-   if (multimedia_builtin_imageviewer_enable)
+   if (multimedia_builtin_imageviewer_enable && id != PUSH_ARCHIVE_OPEN)
    {
       struct retro_system_info sysinfo = {0};
       libretro_imageviewer_retro_get_system_info(&sysinfo);
