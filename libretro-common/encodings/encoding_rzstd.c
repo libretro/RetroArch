@@ -134,7 +134,8 @@
  * of a block.
  *
  * Encoding is slower and compresses worse: about a third of the
- * reference's throughput, and output 1.1x its size on file data, 3.1x
+ * reference's throughput on large input and rather better than that on
+ * small, where the match tables are sized to what the input can use, and output 1.1x its size on file data, 3.1x
  * on synthetic structured data, 3.6x on data shaped like an input
  * replay, and 0.8x on long runs of one value, where it wins. That
  * replay figure decides where the encoder may be used, a replay payload
@@ -2883,8 +2884,11 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
 int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       size_t src_len, int level, size_t *wrote)
 {
-   size_t at = 0;
-   size_t in = 0;
+   size_t    at   = 0;
+   size_t    in   = 0;
+   uint32_t  enc_log;
+   uint32_t *hash  = NULL;
+   uint32_t *chain = NULL;
 
    (void)level;
 
@@ -2892,6 +2896,27 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       return RZSTD_PROCESS_ERROR;
    if (dst_len < rzstd_compress_bound(src_len))
       return RZSTD_PROCESS_ERROR;
+
+   /* The match tables are sized to the input and cleared once.
+    *
+    * They were a fixed 128 KB each, cleared for every block. A caller
+    * compressing a replay payload hands over a few kilobytes, so nearly
+    * all of that was zeroing entries no position could ever occupy: at
+    * 512 bytes in, clearing 256 KB was almost the whole cost of the
+    * call.
+    *
+    * Positions are stored absolute rather than block-relative, so a
+    * block does not have to clear what the previous one left. An entry
+    * from an earlier block simply fails the range test below, which
+    * a block-relative entry could not be told apart from a valid one. */
+   {
+      uint32_t want = 8;
+
+      while (want < RZSTD_ENC_HASH_LOG
+            && ((size_t)1 << want) < src_len)
+         want++;
+      enc_log = want;
+   }
 
    at = rzstd_write_frame_header(dst, (uint64_t)src_len);
 
@@ -2942,15 +2967,21 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
          rzstd_seq_t *seq      = (rzstd_seq_t*)malloc(
                (take / RZSTD_ENC_MIN_MATCH + 1) * sizeof(rzstd_seq_t));
          uint8_t     *lits     = (uint8_t*)malloc(take);
-         uint32_t    *hash     = (uint32_t*)calloc(
-               (size_t)1 << RZSTD_ENC_HASH_LOG, sizeof(uint32_t));
-         /* Previous position sharing each position's hash, so a bucket
-          * can be walked rather than only its newest entry read. */
-         uint32_t    *chain    = (uint32_t*)calloc(
-               (size_t)1 << RZSTD_ENC_CHAIN_LOG, sizeof(uint32_t));
          size_t       nseq     = 0;
          size_t       lit_len  = 0;
          int          ok       = 0;
+
+         if (!hash)
+         {
+            /* Cleared once for the whole input, not once a block. */
+            hash  = (uint32_t*)calloc((size_t)1 << enc_log,
+                  sizeof(uint32_t));
+            /* Previous position sharing each position's hash, so a
+             * bucket can be walked rather than only its newest entry
+             * read. */
+            chain = (uint32_t*)calloc((size_t)1 << enc_log,
+                  sizeof(uint32_t));
+         }
 
          if (seq && lits && hash && chain)
          {
@@ -2980,7 +3011,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                h = ((uint32_t)p[0] | ((uint32_t)p[1] << 8)
                      | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24))
                      * 2654435761u;
-               h >>= 32 - RZSTD_ENC_HASH_LOG;
+               h >>= 32 - enc_log;
 
                /* Walk the bucket for the longest match rather than
                 * taking its newest entry.
@@ -2993,10 +3024,13 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                 * have run for hundreds. Taking the first candidate
                 * measured six times the reference's output; this is
                 * what closes most of that. */
+               /* Positions are absolute in the input and biased by
+                * one, so zero still means "no candidate" and an entry
+                * left by an earlier block is told apart by the range
+                * test rather than by having been cleared. */
                cand = hash[h];
-               hash[h]  = (uint32_t)(pos + 1);   /* biased, 0 = none */
-               chain[pos & (((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1)] =
-                  cand;
+               hash[h] = (uint32_t)(in + pos + 1);
+               chain[(in + pos) & (((size_t)1 << enc_log) - 1)] = cand;
 
                {
                   size_t best_len  = 0;
@@ -3005,13 +3039,17 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                   while (cand && depth--)
                   {
-                     size_t         from = cand - 1;
+                     size_t         abs_from = (size_t)cand - 1;
+                     size_t         from;
                      const uint8_t *q;
                      size_t         n = 0;
 
-                     if (from >= pos)
+                     /* Outside this block, so it belongs to an earlier
+                      * one: a match may not cross a block boundary. */
+                     if (abs_from < in || abs_from >= in + pos)
                         break;
-                     q = src + in + from;
+                     from = abs_from - in;
+                     q    = src + abs_from;
                      while (pos + n < take && p[n] == q[n])
                         n++;
                      if (n > best_len)
@@ -3027,9 +3065,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      if (best_len >= 64)
                         break;
 
-                     cand = chain[from
-                        & (((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1)];
-                     if (cand && cand - 1 >= from)
+                     cand = chain[abs_from
+                        & (((size_t)1 << enc_log) - 1)];
+                     if (cand && (size_t)cand - 1 >= abs_from)
                         break;   /* not strictly older: stop */
                   }
 
@@ -3073,8 +3111,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      {
                         size_t q2  = pos + 1;
                         size_t end = pos + n;
-                        size_t cm  =
-                           ((size_t)1 << RZSTD_ENC_CHAIN_LOG) - 1;
+                        size_t cm  = ((size_t)1 << enc_log) - 1;
 
                         if (end + RZSTD_ENC_MIN_MATCH > take)
                            end = take > RZSTD_ENC_MIN_MATCH
@@ -3098,9 +3135,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                                  | ((uint32_t)r[3] << 24))
                                  * 2654435761u;
 
-                           hh >>= 32 - RZSTD_ENC_HASH_LOG;
-                           chain[q2 & cm] = hash[hh];
-                           hash[hh]       = (uint32_t)(q2 + 1);
+                           hh >>= 32 - enc_log;
+                           chain[(in + q2) & cm] = hash[hh];
+                           hash[hh] = (uint32_t)(in + q2 + 1);
                         }
                      }
 
@@ -3136,8 +3173,6 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
          free(seq);
          free(lits);
-         free(hash);
-         free(chain);
 
          if (ok)
          {
@@ -3153,6 +3188,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       at += take;
       in += take;
    }
+
+   free(hash);
+   free(chain);
 
    if (wrote)
       *wrote = at;
