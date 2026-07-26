@@ -290,7 +290,7 @@
 #define SUPPORTS_7ZIP false
 #endif
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #define SUPPORTS_ZSTD true
 #else
 #define SUPPORTS_ZSTD false

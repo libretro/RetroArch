@@ -27,7 +27,7 @@
 #include <retro_endianness.h>
 #include <boolean.h>
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 /* Either decoder will do; rzstd is preferred where a build has it, and
  * the reference remains available until every platform has moved. */
 #ifdef HAVE_RZSTD
@@ -435,7 +435,7 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
       return compressed_data;
    }
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
    if (compression_type == RVZ_COMPRESSION_ZSTD)
    {
       size_t result;
@@ -1039,7 +1039,7 @@ static bool rvz_decompress_rvzpack_only(rcheevos_rvz_file_t* rvz,
    return true;
 }
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 /* Two-stage decompression: Zstd → RVZPack
  * Used for:
  * - GameCube with RVZPack
@@ -1396,7 +1396,7 @@ static bool rvz_decompress_chunk(rcheevos_rvz_file_t* rvz, uint32_t group_index,
 
       switch (compression_type)
       {
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
          case RVZ_COMPRESSION_ZSTD:
             if (group->rvz_packed_size != 0)
                return rvz_decompress_zstd_rvzpack(rvz, group_index, compressed_data,
