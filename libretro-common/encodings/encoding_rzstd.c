@@ -1836,6 +1836,9 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
    uint32_t      of_state;
    size_t        lit_at = 0;
    size_t        out    = *dst_at;
+   const rzstd_fse_entry_t *lle_next;
+   const rzstd_fse_entry_t *mle_next;
+   const rzstd_fse_entry_t *ofe_next;
    /* Where the fast path stops being safe. Subtracting the slack once
     * here rather than adding it per sequence keeps the test in
     * registers, and guards the underflow once instead of every time. */
@@ -1919,6 +1922,10 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
    of_state = rzstd_fse_begin(&tab->of_fse, &bits);
    ml_state = rzstd_fse_begin(&tab->ml_fse, &bits);
 
+   lle_next = &tab->ll_fse.table[ll_state];
+   mle_next = &tab->ml_fse.table[ml_state];
+   ofe_next = &tab->of_fse.table[of_state];
+
    for (i = 0; i < nseq; i++)
    {
       /* Each table entry is read once and its three fields all used:
@@ -1926,9 +1933,18 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
        * enough, and the transition at the end. Asking the table three
        * separate times for the same entry is three loads where one
        * does, and the loop did that for each of three tables. */
-      const rzstd_fse_entry_t *lle = &tab->ll_fse.table[ll_state];
-      const rzstd_fse_entry_t *mle = &tab->ml_fse.table[ml_state];
-      const rzstd_fse_entry_t *ofe = &tab->of_fse.table[of_state];
+      /* The three entries were fetched at the end of the previous
+       * round, before its copies ran.
+       *
+       * A table load is four or five cycles and nothing about the
+       * copies feeds it, so issuing it first lets the two overlap. The
+       * copies are where a sequence spends most of its time, and the
+       * entropy chain -- state to load to next state -- is what the
+       * next sequence waits on, so the one that must not wait goes
+       * first. */
+      const rzstd_fse_entry_t *lle = lle_next;
+      const rzstd_fse_entry_t *mle = mle_next;
+      const rzstd_fse_entry_t *ofe = ofe_next;
       uint32_t ll_code = lle->symbol;
       uint32_t ml_code = mle->symbol;
       uint32_t of_code = ofe->symbol;
@@ -2083,6 +2099,12 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
             ml_state = mle->next_state + rzstd_rbits_read(&bits, mle->bits);
             of_state = ofe->next_state + rzstd_rbits_read(&bits, ofe->bits);
          }
+
+         /* Issue the next round's loads now, ahead of this round's
+          * copies. */
+         lle_next = &tab->ll_fse.table[ll_state];
+         mle_next = &tab->ml_fse.table[ml_state];
+         ofe_next = &tab->of_fse.table[of_state];
       }
    }
 
