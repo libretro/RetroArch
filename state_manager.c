@@ -204,11 +204,36 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
       const uint32_t *a_big = (const uint32_t*)a;
       const uint32_t *b_big = (const uint32_t*)b;
 
+#if __SSE2__
+      /* Four words per iteration. The granularity stays 32-bit -- the lane
+       * mask is per word, so this stops at exactly the word the scalar loop
+       * would, which the compressed output depends on. */
+      for (;;)
+      {
+         __m128i v0 = _mm_loadu_si128((const __m128i*)a_big);
+         __m128i v1 = _mm_loadu_si128((const __m128i*)b_big);
+         int mask   = _mm_movemask_ps(_mm_castsi128_ps(
+                  _mm_cmpeq_epi32(v0, v1)));
+
+         if (mask)
+         {
+            unsigned lane = (unsigned)compat_ctz((unsigned)mask);
+
+            a_big += lane;
+            b_big += lane;
+            break;
+         }
+
+         a_big += 4;
+         b_big += 4;
+      }
+#else
       while (*a_big != *b_big)
       {
          a_big++;
          b_big++;
       }
+#endif
       a = (const uint16_t*)a_big;
       b = (const uint16_t*)b_big;
 
