@@ -142,6 +142,7 @@ HAVE_SSE=no                # x86 SSE optimizations (SSE, SSE2)
 HAVE_FLOATHARD=no          # Force hard float ABI (for ARM)
 HAVE_FLOATSOFTFP=no        # Force soft float ABI (for ARM)
 HAVE_CHD=yes               # Compile in chd support
+HAVE_RCHD=no               # Read CHD images with the built-in reader instead of libchdr
 CXX_CHD=no
 HAVE_7ZIP=yes              # Compile in 7z support
 HAVE_ZSTD=no               # Compile in Zstandard support (reference library)

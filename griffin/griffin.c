@@ -1519,6 +1519,10 @@ DEPENDENCIES
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
 
+#ifdef HAVE_RCHD
+#include "../libretro-common/formats/chd/rchd.c"
+#endif
+
 #include "../libretro-common/streams/chd_stream.c"
 #endif
 

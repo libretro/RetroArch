@@ -2077,7 +2077,30 @@ ifeq ($(HAVE_ZLIB),1)
    LIBS    += $(ZLIB_LIBS)
 endif
 
+# Which CHD reader streams/chd_stream.c is built against. HAVE_RCHD
+# selects formats/chd/rchd.c and none of libchdr is compiled; without it,
+# libchdr, exactly as before. Nested rather than testing the two flags
+# concatenated, because an explicit HAVE_RCHD=0 is not the same string as
+# an unset one and would fall through both arms.
 ifeq ($(HAVE_CHD), 1)
+ifeq ($(HAVE_RCHD), 1)
+   DEFINES += -DHAVE_CHD -DHAVE_RCHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
+   OBJ     += $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
+              $(LIBRETRO_COMM_DIR)/formats/chd/rchd.o
+   DEFINES += -DHAVE_RCHD_DEFLATE -DHAVE_RCHD_LZMA
+   ifneq ($(filter 1,$(HAVE_FLAC) $(HAVE_RFLAC)),)
+      DEFINES += -DHAVE_RCHD_FLAC
+      ifneq ($(HAVE_RFLAC),1)
+         OBJ += $(LIBRETRO_COMM_DIR)/formats/flac/rflac.o
+      endif
+   endif
+   ifeq ($(HAVE_RZSTD), 1)
+      DEFINES += -DHAVE_RCHD_ZSTD
+   endif
+   ifneq ($(HAVE_7ZIP), 1)
+      OBJ += $(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma.o
+   endif
+else
    INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/formats/libchdr
    DEFINES += -DHAVE_CHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    ifeq ($(HAVE_STATIC_CORES), 1)
@@ -2198,6 +2221,7 @@ ifeq ($(HAVE_CHD), 1)
    ifeq ($(HAVE_ZSTD), 1)
       OBJ += $(LIBRETRO_COMM_DIR)/formats/libchdr/libchdr_zstd.o
    endif
+endif
 endif
 
 ifeq ($(HAVE_CDROM), 1)
