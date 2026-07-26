@@ -98,8 +98,32 @@
  * Why this exists at all, given that a vendored Zstandard already
  * works: including <zstd.h> costs C89 conformance -- it declares
  * long long -- so formats/chd/rchd.c cannot both read a Zstandard
- * image and stay within the standard this tree targets. Replacing the
- * dependency also removes 2 MB and 24 source files.
+ * image and stay within the standard this tree targets. That is a
+ * reason for rchd to use this and not a reason for anything else to.
+ *
+ * MEASURED AGAINST THE REFERENCE IMPLEMENTATION
+ *
+ * Slower both ways, and on one input much worse at compressing:
+ *
+ *   decode        0.21 to 0.41 times the reference's throughput
+ *   encode        0.18 to 0.49 times, and
+ *   encoded size  1.0x the reference on file data,
+ *                 1.4x on synthetic mixed data,
+ *                 6.7x on data shaped like an input replay
+ *
+ * The last figure matters more than the others, because a replay
+ * payload is what the one caller that compresses actually compresses.
+ * Six times the file size is not a trade worth making to remove a
+ * dependency, and the cause is in the design rather than in tuning:
+ * one hash with no chain takes the first candidate it finds rather than
+ * the longest, and highly repetitive input is exactly where that costs
+ * most. Repeated offsets, a match chain and lazy matching would each
+ * close some of it.
+ *
+ * So this is the right decoder for rchd, which needs C89 and reads
+ * hunks of a few kilobytes, and it is not yet a replacement for the
+ * reference implementation anywhere else. Nothing should be migrated
+ * to it on the strength of it working.
  * ---------------------------------------------------------------------
  */
 
