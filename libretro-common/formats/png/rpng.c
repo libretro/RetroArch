@@ -1438,18 +1438,37 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
    return ret;
 }
 
+/* Output slice fed to the inflate backend per call.  Inflating with the
+ * whole image as avail_out makes zlib verify the stream's Adler-32 in
+ * one cold pass over the entire decompressed buffer at stream end -- on
+ * a 256 KB last-level cache that is a guaranteed full re-read from DRAM
+ * (measured: 16K line fills for a 1 MB image, ~17% of the decode's
+ * total LL misses).  Bounded slices keep the checksum running over
+ * output that the same inflate call just wrote, so it stays cache-warm;
+ * the slice must comfortably exceed the 32 KB deflate window and small
+ * enough to sit in L1/L2 alongside the window.  64 KB does both.  This
+ * also restores the incremental pacing the nbio callers were written
+ * for: one bounded step per rpng_process_image call instead of one
+ * unbounded one. */
+#define RPNG_INFLATE_SLICE 65536
+
 static int rpng_load_image_argb_process_inflate_init(
       rpng_t *rpng, uint32_t **data)
 {
    bool zstatus;
    enum trans_stream_error err;
-   uint32_t rd, wn;
+   uint32_t rd, wn, slice;
    struct rpng_process *process = (struct rpng_process*)rpng->process;
    bool to_continue             = (process->avail_in  > 0
                                 && process->avail_out > 0);
 
    if (!to_continue)
       goto end;
+
+   slice = (process->avail_out > RPNG_INFLATE_SLICE)
+         ? RPNG_INFLATE_SLICE : (uint32_t)process->avail_out;
+   process->stream_backend->set_out(process->stream,
+         process->inflate_buf + process->total_out, slice);
 
    zstatus = process->stream_backend->trans(
       process->stream, false, &rd, &wn, &err);
