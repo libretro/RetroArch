@@ -61,6 +61,11 @@ HAVE_CC = 1
 HAVE_CC_RESAMPLER = 1
 HAVE_NEAREST_RESAMPLER = 1
 HAVE_CHD = 1
+# Read CHD images with the built-in reader rather than libchdr. Keep
+# this on its own line: make keeps the whitespace before a trailing
+# comment, and Makefile.common tests this with ifeq, which compares the
+# string -- "1   " is not "1" and the flag silently does nothing.
+HAVE_RCHD = 1
 HAVE_COMMAND = 1
 HAVE_CXX = 1
 HAVE_RMP3 = 1
