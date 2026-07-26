@@ -67,12 +67,64 @@ static const char *sdl_joypad_name(unsigned pad)
 #endif
 }
 
+#ifdef HAVE_SDL2
+/* Build a hat bitmask from GameController DPAD buttons. */
+static uint8_t sdl_pad_dpad_hat_from_buttons(sdl_joypad_t *pad)
+{
+   uint8_t dir = 0;
+
+   if (SDL_GameControllerGetButton(pad->controller, SDL_CONTROLLER_BUTTON_DPAD_UP))
+      dir |= SDL_HAT_UP;
+   if (SDL_GameControllerGetButton(pad->controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN))
+      dir |= SDL_HAT_DOWN;
+   if (SDL_GameControllerGetButton(pad->controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT))
+      dir |= SDL_HAT_LEFT;
+   if (SDL_GameControllerGetButton(pad->controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT))
+      dir |= SDL_HAT_RIGHT;
+
+   return dir;
+}
+#endif
+
 static uint8_t sdl_pad_get_button(sdl_joypad_t *pad, unsigned button)
 {
 #ifdef HAVE_SDL2
    /* TODO: see if a LUT like xinput_joypad.c's button_index_to_bitmap_code is needed. */
    if (pad->controller)
-      return SDL_GameControllerGetButton(pad->controller, (SDL_GameControllerButton)button);
+   {
+      uint8_t pressed = SDL_GameControllerGetButton(
+            pad->controller, (SDL_GameControllerButton)button);
+
+      if (pressed)
+         return pressed;
+
+      /* Some mappings (common with Nintendo pads on webOS SDL) leave the
+       * DPAD buttons unbound while the physical pad still reports a hat.
+       * Fall back so default binds for buttons 11-14 keep working. */
+      if (     button >= SDL_CONTROLLER_BUTTON_DPAD_UP
+            && button <= SDL_CONTROLLER_BUTTON_DPAD_RIGHT
+            && pad->joypad
+            && SDL_JoystickNumHats(pad->joypad) > 0)
+      {
+         uint8_t hat = SDL_JoystickGetHat(pad->joypad, 0);
+
+         switch (button)
+         {
+            case SDL_CONTROLLER_BUTTON_DPAD_UP:
+               return (hat & SDL_HAT_UP)    ? 1 : 0;
+            case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+               return (hat & SDL_HAT_DOWN)  ? 1 : 0;
+            case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+               return (hat & SDL_HAT_LEFT)  ? 1 : 0;
+            case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+               return (hat & SDL_HAT_RIGHT) ? 1 : 0;
+            default:
+               break;
+         }
+      }
+
+      return 0;
+   }
 #endif
    return SDL_JoystickGetButton(pad->joypad, button);
 }
@@ -81,7 +133,19 @@ static uint8_t sdl_pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 {
 #ifdef HAVE_SDL2
    if (pad->controller)
-      return sdl_pad_get_button(pad, hat);
+   {
+      /* GameController has no real hats; expose hat 0 from DPAD buttons
+       * (and joystick hat fallback) so autoconfigs that bind h0up/... work. */
+      uint8_t dir;
+
+      if (hat != 0)
+         return 0;
+
+      dir = sdl_pad_dpad_hat_from_buttons(pad);
+      if (!dir && pad->joypad && SDL_JoystickNumHats(pad->joypad) > 0)
+         dir = SDL_JoystickGetHat(pad->joypad, 0);
+      return dir;
+   }
 #endif
    return SDL_JoystickGetHat(pad->joypad, hat);
 }
@@ -187,7 +251,7 @@ static void sdl_pad_connect(unsigned id)
        */
       pad->num_axes    = SDL_CONTROLLER_AXIS_MAX;
       pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
-      pad->num_hats    = 0;
+      pad->num_hats    = 1;
       pad->num_balls   = 0;
 
       /* SDL Device supports Game Controller API. */
