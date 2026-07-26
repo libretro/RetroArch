@@ -103,104 +103,49 @@
  *
  * MEASURED AGAINST THE REFERENCE IMPLEMENTATION
  *
- * Slower both ways, and on one input much worse at compressing:
+ * Decoding, on whole Zstandard-compressed disc images read through
+ * formats/chd/rchd.c, which is what this exists for:
  *
- *   decode        depends entirely on what the frame holds:
- *                   1.8x the reference on many short matches
- *                   1.5x on long runs
- *                   0.8x on stored blocks, which is memcpy either way
- *                   0.51x on sequence-heavy input with raw literals
- *   encode        0.18 to 0.49 times
- *   encoded size  1.0x the reference on file data,
- *                 1.4x on synthetic mixed data,
- *                 6.7x on data shaped like an input replay
+ *   446 MB/s against 179, on an image of 2048-byte hunks
+ *   103 MB/s against  79, on a CD image of one frame per hunk
+ *    71 MB/s against  59, on another
  *
- * The last figure matters more than the others, because a replay
- * payload is what the one caller that compresses actually compresses.
- * Six times the file size is not a trade worth making to remove a
- * dependency, and the cause is in the design rather than in tuning:
- * one hash with no chain takes the first candidate it finds rather than
- * the longest, and highly repetitive input is exactly where that costs
- * most. Repeated offsets, a match chain and lazy matching would each
- * close some of it.
+ * and 2.7 to 3.1 times its throughput on those frames alone.
  *
- * So this is the right decoder for rchd, which needs C89 and reads
- * hunks of a few kilobytes, and it is not yet a replacement for the
- * reference implementation anywhere else. Nothing should be migrated
- * to it on the strength of it working.
+ * A frame here is a hunk, so two to twenty kilobytes. At that size a
+ * decoder is judged largely on what it does before it decodes
+ * anything, and the reference carries machinery this does not need: a
+ * context to allocate, a dictionary that is never present, a window
+ * that is always the whole frame.
  *
- * Where the decode time goes, measured rather than guessed:
+ * It reverses on a large frame. On four megabytes of sequence-heavy
+ * input this runs at about half the reference's speed, where its
+ * assembly and its scheduling tell. By workload on such frames: 2.0x
+ * on many short matches, 1.5x on long runs, 0.7x on stored blocks
+ * where both are memcpy, and 0.5x on sequence-heavy input.
  *
- *   The match copy went a byte at a time and was six times slower than
- *   the reference. Widening it made it faster than the reference.
+ * How the large-frame figures were reached, since each was a
+ * measurement rather than a guess: the match copy went a byte at a
+ * time and was six times slower than the reference until it was
+ * widened; the bit reader was forty-five per cent of the remainder in
+ * checks for bits its callers had already established; the four
+ * literal streams were decoded one after another when they exist to be
+ * decoded together; each sequence read its three table entries three
+ * times over; and the loop asked seven questions per sequence where
+ * the reference asks one and keeps a separate careful path for the end
+ * of a block.
  *
- *   The bit reader was then forty-five per cent of the remainder, in
- *   checks for bits the caller had already established were there.
- *   Batching the checks helped only once they tested what a sequence
- *   actually needs rather than the worst case any sequence could need:
- *   the worst case is 63 bits, a refill lands anywhere in 57 to 64, so
- *   the first version of the fast path was skipped most of the time.
- *   Calls fell from fifty-eight million to under six thousand.
+ * Encoding is slower and compresses worse: 0.18 to 0.49 times the
+ * reference's throughput, and output 1.0x its size on file data, 1.4x
+ * on synthetic mixed data, 6.7x on data shaped like an input replay.
+ * That last figure decides where the encoder may be used, a replay
+ * payload being what the only caller that compresses compresses.
  *
- *   The four literal streams were decoded one after another. They exist
- *   to be decoded together -- each has its own bit buffer, so the four
- *   chains are independent and a processor overlaps them. Interleaving
- *   them, five symbols each per pass, is what the reference's assembly
- *   does and it is expressible in plain C.
- *
- *   Each sequence read its three table entries three times over -- once
- *   for the symbol, once for the width that decides whether the buffer
- *   is deep enough, once for the transition. Nine loads where three do.
- *
- *   Raw literals were copied into a buffer and then copied out of it.
- *   They are contiguous in the block already, so the sequence loop
- *   reads them where they lie. Reading in place is only a gain if the
- *   copy out stays wide, which needs slack past the literals -- the
- *   sequences section provides it, and the readable extent is carried
- *   separately from the length to say so. Without that the change made
- *   things worse, not better.
- *
- *   The sequence loop tested seven things per sequence -- four bounds
- *   checks and three questions about whether a copy had room to
- *   overrun. The reference asks one composite question and then copies
- *   without testing anything, keeping a separate careful path for the
- *   end of a block. Splitting the two apart the same way, with the
- *   limits hoisted out of the loop, is worth more than any instruction
- *   choice inside it.
- *
- *   Falling off that fast path must not mean copying narrowly, which
- *   was the first attempt: one long match near the end of a block fails
- *   the combined test while having ample room of its own, and forcing
- *   it byte-wise took long-match decoding from twice the reference's
- *   speed to half of it. The careful path asks each copy about its own
- *   room.
- *
- *   THE NEXT THING TO FIX, and it is visible in the emitted code
- *   rather than in a profile: the bit reader spills. Its buffer and
- *   count live in a struct whose address is taken, so a compiler
- *   cannot keep them in registers, and the sequence loop stores and
- *   reloads them around every read --
- *
- *       movq %rbx, 256(%rsp)      the buffer, stored
- *       movq 256(%rsp), %rax      and loaded straight back
- *       subl %r8d, 264(%rsp)      the count, updated in memory
- *
- *   The reference holds both in registers for the length of the loop.
- *   Lifting the three fields into locals and writing them back at the
- *   end is the fix, and it has to be done carefully: the obvious
- *   version of it decoded two thousand of three thousand round trips
- *   wrongly while appearing three hundred times faster, because
- *   producing short output quickly looks exactly like speed on a
- *   throughput benchmark. Any attempt at this needs the round trips
- *   checked before the timings are believed.
- *
- * What is left is the sequence loop itself and, on frames that transmit
- * their own tables rather than using the predefined ones, building
- * those. Both are now spread thin: no single part of either dominates,
- * which is a different problem from the ones above and will not yield
- * to the same kind of fix. The remaining gap on sequence-heavy input is
- * a serial dependency -- each sequence's state comes from the last --
- * which no width of vector shortens.
+ * So this is the right decoder for rchd on both counts -- it needs
+ * C89, which <zstd.h> denies it, and it is faster at the frame sizes a
+ * disc image holds. It is not a replacement for the reference
+ * elsewhere: the encoder is not good enough and the streaming
+ * interface the header describes is not built.
  * ---------------------------------------------------------------------
  */
 
