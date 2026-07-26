@@ -382,6 +382,17 @@ static int rzstd_rbits_init(rzstd_rbits_t *b, const uint8_t *src, size_t len)
    return RZ_OK;
 }
 
+/* Whether @n more bits can be taken without running past the end. The
+ * weight stream ends by exhaustion rather than by a count, so this is
+ * how its length is discovered. */
+static int rzstd_rbits_have(rzstd_rbits_t *b, uint32_t n)
+{
+   if (b->count >= n)
+      return 1;
+   rzstd_rbits_fill(b);
+   return b->count >= n;
+}
+
 static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
 {
    uint32_t v;
@@ -805,21 +816,31 @@ static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
       state1 = rzstd_fse_begin(&fse, &bits);
       state2 = rzstd_fse_begin(&fse, &bits);
 
+      /* The stream does not say how many weights it holds. It ends when
+       * updating a state would need more bits than remain, at which
+       * point both states still hold one symbol each and both are
+       * emitted (4.2.1.2). So the check is on the update, not on the
+       * symbol, and two symbols follow the loop rather than one. */
       count = 0;
       for (;;)
       {
-         if (count >= RZSTD_HUF_MAX_SYMBOLS)
+         if (count + 2 > RZSTD_HUF_MAX_SYMBOLS)
             return RZ_DATA;
+
          weights[count++] = rzstd_fse_symbol(&fse, state1);
-         if (bits.overrun)
+         if (!rzstd_rbits_have(&bits, fse.table[state1].bits))
+         {
+            weights[count++] = rzstd_fse_symbol(&fse, state2);
             break;
+         }
          state1 = rzstd_fse_next(&fse, state1, &bits);
 
-         if (count >= RZSTD_HUF_MAX_SYMBOLS)
-            return RZ_DATA;
          weights[count++] = rzstd_fse_symbol(&fse, state2);
-         if (bits.overrun)
+         if (!rzstd_rbits_have(&bits, fse.table[state2].bits))
+         {
+            weights[count++] = rzstd_fse_symbol(&fse, state1);
             break;
+         }
          state2 = rzstd_fse_next(&fse, state2, &bits);
       }
 
@@ -1129,11 +1150,16 @@ static const int16_t rzstd_ll_default[36] =
    2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2, 1, 1, 1, 1, 1,
    -1, -1, -1, -1
 };
+/* Seven minus-ones, from 46 to 52. Getting the count of them wrong is
+ * not caught by anything: the table still sums to 64 and still builds,
+ * and the only visible effect is which symbols sit at the top of the
+ * table -- which is precisely where a maximal initial state lands, so a
+ * frame decodes to the wrong match length and nothing complains. */
 static const int16_t rzstd_ml_default[53] =
 {
    1, 4, 3, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -1, -1,
    -1, -1, -1, -1, -1
 };
 static const int16_t rzstd_of_default[29] =
