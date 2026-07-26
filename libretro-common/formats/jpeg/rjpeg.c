@@ -5109,6 +5109,15 @@ int rjpeg_process_image(rjpeg_t *rjpeg, void **buf_data,
          j->img_buffer          = (uint8_t*)rjpeg->buff_data;
          j->img_buffer_original = (uint8_t*)rjpeg->buff_data;
          j->img_buffer_end      = (uint8_t*)rjpeg->buff_data + size;
+         /* The prefix-decoding fields were only ever initialised on
+          * the iterative path; this malloc-init list predates them.
+          * Uninitialised hit_wall read in every entropy block decode
+          * (flagged by valgrind on the pre-change code too) - benign
+          * or fatal purely by heap-layout luck.  The monolithic path
+          * runs over a fully resident buffer, so the frontier is the
+          * end and no wall is ever hit. */
+         j->img_buffer_true_end = j->img_buffer_end;
+         j->hit_wall            = 0;
 
          rjpeg_setup_jpeg(j);
 
