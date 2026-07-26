@@ -49,6 +49,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <zlib.h>
+
 #include <formats/rpng.h>
 
 #define SUITE_NAME "rpng"
@@ -142,6 +144,226 @@ static bool try_iterate(uint32_t w, uint32_t h, uint8_t depth, uint8_t ctype)
    return ret;
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Abandoned-decode teardown sweep.
+ *
+ * A decode can be torn down from outside at ANY machine state: the
+ * everyday case is a cancelled thumbnail task calling rpng_free while
+ * iterate or process is mid-flight.  This class of defect does not
+ * show up in completion-path tests at all: the caller-pointer walk
+ * fixed in "rpng: never walk the caller's output pointer" survived
+ * every byte-exactness harness and corrupted the heap only on
+ * abandonment (Windows STATUS_HEAP_CORRUPTION out of
+ * task_image_load_free).
+ *
+ * So: decode a small image once to completion for a reference
+ * checksum, then abandon a fresh decode after every possible number
+ * of iterate calls and after every possible number of process calls,
+ * running a full fresh decode after each abandonment and asserting
+ * the reference checksum still comes out.  The runtime assertion
+ * catches state leakage; the memory assertions belong to the
+ * sanitizer this suite is expected to also run under (ASan or
+ * valgrind), which turns any interior free, double free, leak or
+ * overflow in the teardown paths into a hard failure. */
+
+static const uint8_t rpng_sweep_adam7[7][4] = {
+   { 0, 0, 8, 8 }, { 4, 0, 8, 8 }, { 0, 4, 4, 8 }, { 2, 0, 4, 4 },
+   { 0, 2, 2, 4 }, { 1, 0, 2, 2 }, { 0, 1, 1, 2 }
+};
+
+static size_t rpng_sweep_emit_chunk(uint8_t *out, const char *type,
+      const uint8_t *payload, size_t plen)
+{
+   size_t len = 0;
+   out[len++] = (uint8_t)(plen >> 24);
+   out[len++] = (uint8_t)(plen >> 16);
+   out[len++] = (uint8_t)(plen >>  8);
+   out[len++] = (uint8_t)(plen >>  0);
+   memcpy(out + len, type, 4);
+   len += 4;
+   if (plen)
+      memcpy(out + len, payload, plen);
+   len += plen;
+   /* CRC unvalidated by the iterate path; zero. */
+   out[len++] = 0; out[len++] = 0; out[len++] = 0; out[len++] = 0;
+   return len;
+}
+
+/* 24x17 RGBA8, filter 0 on every row, deterministic pixels. */
+#define RPNG_SWEEP_W 24
+#define RPNG_SWEEP_H 17
+
+static size_t rpng_sweep_build_png(uint8_t *out, size_t out_size,
+      int interlace)
+{
+   uint8_t  raw[8 * 1024];
+   uint8_t  ihdr[13];
+   size_t   rlen = 0;
+   size_t   len  = 0;
+   uLongf   zlen;
+   uint8_t  zbuf[16 * 1024];
+   unsigned x, y;
+
+   if (!interlace)
+   {
+      for (y = 0; y < RPNG_SWEEP_H; y++)
+      {
+         raw[rlen++] = 0;
+         for (x = 0; x < RPNG_SWEEP_W; x++)
+         {
+            raw[rlen++] = (uint8_t)(x * 7 + y);
+            raw[rlen++] = (uint8_t)(y * 5 + x);
+            raw[rlen++] = (uint8_t)(x ^ y);
+            raw[rlen++] = 255;
+         }
+      }
+   }
+   else
+   {
+      unsigned p;
+      for (p = 0; p < 7; p++)
+      {
+         unsigned ox = rpng_sweep_adam7[p][0], oy = rpng_sweep_adam7[p][1];
+         unsigned sx = rpng_sweep_adam7[p][2], sy = rpng_sweep_adam7[p][3];
+         for (y = oy; y < RPNG_SWEEP_H; y += sy)
+         {
+            raw[rlen++] = 0;
+            for (x = ox; x < RPNG_SWEEP_W; x += sx)
+            {
+               raw[rlen++] = (uint8_t)(x * 7 + y);
+               raw[rlen++] = (uint8_t)(y * 5 + x);
+               raw[rlen++] = (uint8_t)(x ^ y);
+               raw[rlen++] = 255;
+            }
+         }
+      }
+   }
+
+   zlen = (uLongf)sizeof(zbuf);
+   if (compress2(zbuf, &zlen, raw, (uLong)rlen, 6) != Z_OK)
+      return 0;
+   if (out_size < 8 + 25 + (12 + zlen) + 12)
+      return 0;
+
+   memcpy(out + len, png_magic, 8);
+   len += 8;
+
+   ihdr[0]  = 0; ihdr[1]  = 0; ihdr[2]  = 0; ihdr[3]  = RPNG_SWEEP_W;
+   ihdr[4]  = 0; ihdr[5]  = 0; ihdr[6]  = 0; ihdr[7]  = RPNG_SWEEP_H;
+   ihdr[8]  = 8;                    /* depth       */
+   ihdr[9]  = 6;                    /* RGBA        */
+   ihdr[10] = 0; ihdr[11] = 0;
+   ihdr[12] = (uint8_t)interlace;
+   len += rpng_sweep_emit_chunk(out + len, "IHDR", ihdr, 13);
+   len += rpng_sweep_emit_chunk(out + len, "IDAT", zbuf, (size_t)zlen);
+   len += rpng_sweep_emit_chunk(out + len, "IEND", NULL, 0);
+   return len;
+}
+
+/* Full decode; returns process_image's final code and the FNV-1a of
+ * the ARGB output.  iterate_calls/process_calls report how many steps
+ * each phase took (for sizing the sweep); either may be NULL. */
+static int rpng_sweep_full_decode(uint8_t *buf, size_t len,
+      uint64_t *fnv_out, int *iterate_calls, int *process_calls)
+{
+   rpng_t   *r    = rpng_alloc();
+   uint32_t *data = NULL;
+   unsigned  w = 0, h = 0;
+   int       ret  = 0, ic = 0, pc = 0;
+   uint64_t  fnv  = 1469598103934665603ULL;
+
+   ck_assert(r != NULL);
+   ck_assert(rpng_set_buf_ptr(r, buf, len));
+   ck_assert(rpng_start(r));
+   while (rpng_iterate_image(r))
+      ic++;
+   ic++;
+   do
+   {
+      ret = rpng_process_image(r, (void**)&data, len, &w, &h, true);
+      pc++;
+   } while (ret == 0);
+
+   if (ret == 1 && data)
+   {
+      size_t i;
+      for (i = 0; i < (size_t)w * h * 4; i++)
+         fnv = (fnv ^ ((uint8_t*)data)[i]) * 1099511628211ULL;
+   }
+   free(data);
+   rpng_free(r);
+   if (fnv_out)       *fnv_out       = fnv;
+   if (iterate_calls) *iterate_calls = ic;
+   if (process_calls) *process_calls = pc;
+   return ret;
+}
+
+static void rpng_sweep_run(int interlace)
+{
+   uint8_t  png[24 * 1024];
+   size_t   len;
+   uint64_t ref_fnv = 0, fnv;
+   int      ic = 0, pc = 0, k;
+
+   len = rpng_sweep_build_png(png, sizeof(png), interlace);
+   ck_assert(len > 0);
+
+   ck_assert_int_eq(rpng_sweep_full_decode(png, len, &ref_fnv, &ic, &pc), 1);
+
+   /* Abandon during the chunk walk, after every possible number of
+    * iterate calls. */
+   for (k = 1; k <= ic; k++)
+   {
+      rpng_t *r = rpng_alloc();
+      int     j;
+      ck_assert(r != NULL);
+      ck_assert(rpng_set_buf_ptr(r, png, len));
+      ck_assert(rpng_start(r));
+      for (j = 0; j < k && rpng_iterate_image(r); j++) { }
+      rpng_free(r);
+
+      ck_assert_int_eq(rpng_sweep_full_decode(png, len, &fnv, NULL, NULL), 1);
+      ck_assert(fnv == ref_fnv);
+   }
+
+   /* Abandon during processing, after every possible number of
+    * process calls.  The output buffer belongs to the caller and is
+    * freed here after every abandonment - exactly the
+    * task_image_load_free pattern that detected the caller-pointer
+    * walk as heap corruption. */
+   for (k = 1; k <= pc; k++)
+   {
+      rpng_t   *r    = rpng_alloc();
+      uint32_t *data = NULL;
+      unsigned  w = 0, h = 0;
+      int       j, ret = 0;
+      ck_assert(r != NULL);
+      ck_assert(rpng_set_buf_ptr(r, png, len));
+      ck_assert(rpng_start(r));
+      while (rpng_iterate_image(r)) { }
+      for (j = 0; j < k && ret == 0; j++)
+         ret = rpng_process_image(r, (void**)&data, len, &w, &h, true);
+      free(data);
+      rpng_free(r);
+
+      ck_assert_int_eq(rpng_sweep_full_decode(png, len, &fnv, NULL, NULL), 1);
+      ck_assert(fnv == ref_fnv);
+   }
+}
+
+START_TEST (test_rpng_abandoned_decode_teardown_regular)
+{
+   rpng_sweep_run(0);
+}
+END_TEST
+
+START_TEST (test_rpng_abandoned_decode_teardown_adam7)
+{
+   rpng_sweep_run(1);
+}
+END_TEST
+
 START_TEST (test_rpng_ihdr_dimension_cap_accept_at_limit)
 {
    /* 0x4000 == 16384.  Inclusive accept on every platform: on
@@ -226,6 +448,8 @@ Suite *create_suite(void)
 #endif
    tcase_add_test(tc_core, test_rpng_ihdr_size_cap_reject_uint32_max);
    tcase_add_test(tc_core, test_rpng_ihdr_dimension_cap_accept_small);
+   tcase_add_test(tc_core, test_rpng_abandoned_decode_teardown_regular);
+   tcase_add_test(tc_core, test_rpng_abandoned_decode_teardown_adam7);
    tcase_add_test(tc_core, test_rpng_ihdr_zero_dimensions_rejected);
    suite_add_tcase(s, tc_core);
 
