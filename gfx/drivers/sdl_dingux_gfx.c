@@ -24,6 +24,7 @@
 
 #include <gfx/video_frame.h>
 #include <string/stdstring.h>
+#include <memcpy_nt.h>
 #include <encodings/utf.h>
 #include <features/features_cpu.h>
 
@@ -692,9 +693,14 @@ static void sdl_dingux_blit_frame16(sdl_dingux_video_t *vid,
          (vid->frame_padding_y * dst_pitch));
 
    /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
+    * same pitch, perform fast copy of raw pixel data.
+    * Streaming stores: the surface is written once here and next
+    * touched by the display engine, and on these SoCs (256 KB L2 or
+    * less) letting the copy allocate ~150 KB of lines evicts the
+    * core's working set every frame.  memcpy_nt also skips the
+    * read-for-ownership DRAM read of every destination line. */
    if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
+      memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
       /* Otherwise copy pixel data line-by-line */
@@ -727,9 +733,10 @@ static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
          (vid->frame_padding_y * dst_pitch));
 
    /* If source and destination buffers have the
-    * same pitch, perform fast copy of raw pixel data */
+    * same pitch, perform fast copy of raw pixel data.
+    * Streaming stores; see the 16-bit path above. */
    if (src_pitch == dst_pitch)
-      memcpy(out_ptr, in_ptr, src_pitch * height);
+      memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
       /* Otherwise copy pixel data line-by-line */
