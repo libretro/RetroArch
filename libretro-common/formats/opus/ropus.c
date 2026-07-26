@@ -10056,7 +10056,28 @@ static void ropus_smooth_fade_q(const int16_t *in1, const int16_t *in2,
 /* Decode one frame of an Opus packet.  data/len cover the frame's
  * bytes; toc_* give the packet TOC properties.  pcm receives
  * frame_size48 interleaved s16 samples at 48 kHz.                      */
-static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
+/* Frame-decode scratch, one per decoder context (embedded in ropus_t
+ * below).  These lived on the decode-frame stacks: pcm_silk alone is
+ * 11.5 KB, and with bl/br and the redundancy buffer the float frame
+ * measured 15,680 bytes by -fstack-usage -- nested above
+ * ropus_celt_decode's own (still larger) frame on the audio thread.
+ * Per context and not static for the same reason as sub_q/sub_f:
+ * the mixer runs several voices at once.  The substream loop is
+ * sequential, so one scratch per context serves every substream. */
+typedef struct
+{
+   int16_t pcm_silk[2880 * 2];
+   int16_t bl[960];
+   int16_t br[960];
+   union
+   {
+      float   f[240 * 2];
+      int16_t q[240 * 2];
+   } redundant;
+} ropus_frame_scratch;
+
+static int ropus_decode_frame_q(ropus_dec_q *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int32_t len, int16_t *pcm, int frame_size48, int mode,
       int bandwidth, int stream_channels, int nfp, int newPacket)
 {
@@ -10066,7 +10087,7 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
    int start_band = 0;
    int F2_5 = 120, F5 = 240, F20 = 960;
    int celt_accum;
-   int16_t redundant_audio[240 * 2];
+   int16_t *redundant_audio = scr->redundant.q;
    int celt_ret = 0;
 
    st->stream_channels = stream_channels;
@@ -10090,7 +10111,8 @@ static int ropus_decode_frame_q(ropus_dec_q *st, const uint8_t *data,
                                          /* unsupported (never emitted)*/
       memset(pcm, 0, audiosize * st->channels * sizeof(int16_t));
       {
-         int16_t bl[960], br[960];
+         int16_t *bl = scr->bl;
+         int16_t *br = scr->br;
          int fr, done = 0;
          for (fr = 0; fr < nfp; fr++)
          {
@@ -10275,7 +10297,8 @@ static void ropus_smooth_fade(const float *in1, const float *in2,
       }
 }
 
-static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
+static int ropus_decode_frame_f(ropus_dec_f *st,
+      ropus_frame_scratch *scr, const uint8_t *data,
       int32_t len, float *pcm, int frame_size48, int mode,
       int bandwidth, int stream_channels, int nfp, int newPacket)
 {
@@ -10284,8 +10307,8 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
    int redundancy = 0, redundancy_bytes = 0, celt_to_silk = 0;
    int start_band = 0;
    int F2_5 = 120, F5 = 240, F20 = 960;
-   float redundant_audio[240 * 2];
-   int16_t pcm_silk[2880 * 2];
+   float *redundant_audio = scr->redundant.f;
+   int16_t *pcm_silk = scr->pcm_silk;
    int have_silk = 0, silk_n = 0;
    int celt_ret = 0;
 
@@ -10295,7 +10318,8 @@ static int ropus_decode_frame_f(ropus_dec_f *st, const uint8_t *data,
    if (mode != ROPUS_MODE_CELT)
    {
       int fs_khz, nb_subfr;
-      int16_t bl[960], br[960];
+      int16_t *bl = scr->bl;
+      int16_t *br = scr->br;
       int fr;
       if (st->prev_mode == ROPUS_MODE_CELT)
          ropus_silk2_init(&st->silk);
@@ -10470,6 +10494,7 @@ struct ropus
     * caller's buffer, as it always did. */
    int16_t *sub_q;          /* 5760 * 2, or NULL                        */
    float   *sub_f;
+   ropus_frame_scratch fscr;
 };
 
 /* Where a substream's channels land in the decoded (pre-mapping)
@@ -10671,7 +10696,7 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
       ropus_toc_props(d[0], &mode, &bw, &nfp);
       for (fr = 0; fr < pk.nframes; fr++)
       {
-         int r = ropus_decode_frame_q(&o->q[s], pk.frames[fr],
+         int r = ropus_decode_frame_q(&o->q[s], &o->fscr, pk.frames[fr],
             pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
             (d[0] & 4) ? 2 : 1, nfp, 1);
          if (r <= 0)
@@ -10751,7 +10776,7 @@ int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
       ropus_toc_props(d[0], &mode, &bw, &nfp);
       for (fr = 0; fr < pk.nframes; fr++)
       {
-         int r = ropus_decode_frame_f(&o->f[s], pk.frames[fr],
+         int r = ropus_decode_frame_f(&o->f[s], &o->fscr, pk.frames[fr],
             pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
             (d[0] & 4) ? 2 : 1, nfp, 1);
          if (r <= 0)
