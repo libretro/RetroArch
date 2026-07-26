@@ -538,9 +538,13 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
          break;
    }
 
-   /* Pregap counts only when it is stored rather than implied, which
-    * rchd reports as the track carrying frames for it. */
-   pregap                  = t->pregap;
+   /* A pregap is skipped only when the file actually holds those
+    * frames. A virtual one is on the disc but not in the image, so the
+    * track's data begins where the track begins and skipping would
+    * return silence and then read everything after it from the wrong
+    * place. */
+   if (t->pregap_stored)
+      pregap               = t->pregap;
 
    stream->chd             = chd;
    stream->file            = file;
@@ -826,6 +830,10 @@ uint32_t chdstream_get_track_start(chdstream_t *stream)
    {
       const rchd_track_t *t = rchd_track(stream->chd, i);
 
+      /* What the disc has, not what the file stores: this is reported
+       * to a caller asking where the track's audio starts on the disc,
+       * and the libchdr path returned the pregap unconditionally here
+       * even when it did not skip it. */
       if (t && (uint32_t)(t->logical_offset / stream->unit_bytes)
             == stream->track_frame)
          return t->pregap * stream->frame_size;

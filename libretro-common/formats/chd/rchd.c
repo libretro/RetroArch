@@ -2508,6 +2508,19 @@ static int rchd_build_tracks(rchd_t *chd)
       t->pregap  = rchd_meta_uint(m->data, m->length, "PREGAP:");
       t->postgap = rchd_meta_uint(m->data, m->length, "POSTGAP:");
 
+      /* PGTYPE says whether those pregap frames are in the file. A type
+       * beginning with V is virtual: the disc has the pregap, the image
+       * does not store it. Absent, treat it as stored, which is what a
+       * track carrying a pregap without saying otherwise means. */
+      {
+         char pg[32];
+
+         if (rchd_meta_field(m->data, m->length, "PGTYPE:", pg, sizeof(pg)))
+            t->pregap_stored = (pg[0] != 'V');
+         else
+            t->pregap_stored = 1;
+      }
+
       if (!t->frames)
          return RCHD_ERROR_DATA;
 

@@ -226,6 +226,14 @@ typedef struct rchd_track
    uint32_t frames;         /* frames of real content               */
    uint32_t pad_frames;     /* padding to the 4-frame boundary      */
    uint32_t pregap;
+   /* Non-zero when the pregap occupies frames in the file rather than
+    * being implied. The metadata states this as a PGTYPE, and a type
+    * beginning with V means the pregap is virtual: the disc has it but
+    * the image does not store it, so the track's data begins where the
+    * track begins. A reader that skips a pregap it was never given
+    * returns silence for that many frames and reads everything after
+    * it from the wrong place. */
+   uint32_t pregap_stored;
    uint32_t postgap;
    uint32_t lba;
    /* Non-zero when the image described no tracks and this one stands
