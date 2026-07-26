@@ -2736,6 +2736,62 @@ static uint32_t rzstd_of_code(uint32_t value)
    return n;
 }
 
+/* Turns a distance into the value a sequence stores, naming one of the
+ * three remembered offsets when it can, and rotating the encoder's copy
+ * of that list exactly as the decoder will.
+ *
+ * A named offset costs a symbol and no extra bits; a distance costs the
+ * symbol plus its width, which is eleven bits at the distances this
+ * encoder was producing. Every sequence the reference emits on replay
+ * data names one, and none of mine did.
+ *
+ * The three codes mean different things depending on whether the
+ * sequence carries literals, and the list rotates for some of them and
+ * not others (3.1.1.4). Both are mirrored here rather than approximated,
+ * because an encoder whose idea of the list drifts from the decoder's
+ * produces a frame that decodes to something else entirely. */
+static uint32_t rzstd_enc_offset(uint32_t *rep, uint32_t off,
+      uint32_t literals)
+{
+   uint32_t index;
+
+   if (literals)
+   {
+      /* Code n names rep[n-1]; only code 1 leaves the list alone. */
+      if      (off == rep[0]) return 1;
+      else if (off == rep[1]) index = 1;
+      else if (off == rep[2]) index = 2;
+      else                    index = 4;   /* no match */
+   }
+   else
+   {
+      /* The codes shift by one: 1 is rep[1], 2 is rep[2], and 3 is the
+       * most recent less one. rep[0] itself cannot be named. */
+      if      (off == rep[1])     index = 1;
+      else if (off == rep[2])     index = 2;
+      else if (off == rep[0] - 1) index = 3;
+      else                        index = 4;
+   }
+
+   if (index == 4)
+   {
+      rep[2] = rep[1];
+      rep[1] = rep[0];
+      rep[0] = off;
+      return off + 3;
+   }
+
+   {
+      uint32_t k = index < 3 ? index : 2;
+
+      if (k == 2)
+         rep[2] = rep[1];
+      rep[1] = rep[0];
+      rep[0] = off;
+   }
+   return literals ? index + 1 : index;
+}
+
 typedef struct rzstd_seq
 {
    uint32_t literals;
@@ -2997,6 +3053,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * the three, so that is the only one used here: the others
              * rotate the list and would have to be mirrored exactly. */
             uint32_t rep[3];
+            size_t   rep_len;
 
             rep[0] = 1; rep[1] = 4; rep[2] = 8;
 
@@ -3012,6 +3069,36 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                      | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24))
                      * 2654435761u;
                h >>= 32 - enc_log;
+
+               /* Measure the most recent offset, but do not take it
+                * on sight.
+                *
+                * Continuing at an offset the decoder already remembers
+                * costs a symbol and no extra bits; naming a fresh
+                * distance costs the symbol plus its width, eleven bits
+                * at the distances this data produces. So a repeat is
+                * worth having even when the search finds something a
+                * little longer -- but only a little. Taking every
+                * repeat that matched four bytes made the output half
+                * again larger, because it broke long matches into
+                * short ones.
+                *
+                * It is measured one byte in so the sequence carries a
+                * literal: the code naming the most recent offset means
+                * that only when literals are present. */
+               rep_len = 0;
+               if (rep[0] && pos + 1 + RZSTD_ENC_MIN_MATCH <= take
+                     && (size_t)rep[0] <= pos + 1)
+               {
+                  const uint8_t *r  = src + in + pos + 1;
+                  const uint8_t *rq = r - rep[0];
+
+                  while (pos + 1 + rep_len < take
+                        && r[rep_len] == rq[rep_len])
+                     rep_len++;
+                  if (rep_len < RZSTD_ENC_MIN_MATCH)
+                     rep_len = 0;
+               }
 
                /* Walk the bucket for the longest match rather than
                 * taking its newest entry.
@@ -3071,6 +3158,27 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                         break;   /* not strictly older: stop */
                   }
 
+                  /* The repeat wins unless the search found something
+                   * clearly better, since it encodes for eleven bits
+                   * less. */
+                  if (rep_len && rep_len + 1 >= best_len)
+                  {
+                     rzstd_seq_t *sq = &seq[nseq++];
+
+                     sq->literals = (uint32_t)(pos + 1 - lit_from);
+                     sq->match    = (uint32_t)rep_len;
+                     sq->offset   = rzstd_enc_offset(rep, rep[0],
+                           sq->literals);
+
+                     memcpy(lits + lit_len, src + in + lit_from,
+                           sq->literals);
+                     lit_len += sq->literals;
+
+                     pos      += 1 + rep_len;
+                     lit_from  = pos;
+                     continue;
+                  }
+
                   if (best_len >= RZSTD_ENC_MIN_MATCH)
                   {
                      size_t from = best_from;
@@ -3080,25 +3188,8 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
                      sq->literals = (uint32_t)(pos - lit_from);
                      sq->match    = (uint32_t)n;
-                     {
-                        uint32_t off = (uint32_t)(pos - from);
-
-                        if (sq->literals && off == rep[0])
-                        {
-                           /* Code 1 with literals present means the
-                            * most recent offset and leaves the list
-                            * alone, which is what makes it safe to use
-                            * without mirroring a rotation. */
-                           sq->offset = 1;
-                        }
-                        else
-                        {
-                           sq->offset = off + 3;
-                           rep[2] = rep[1];
-                           rep[1] = rep[0];
-                           rep[0] = off;
-                        }
-                     }
+                     sq->offset = rzstd_enc_offset(rep,
+                           (uint32_t)(pos - from), sq->literals);
 
                      memcpy(lits + lit_len, src + in + lit_from,
                            sq->literals);
