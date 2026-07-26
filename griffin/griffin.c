@@ -103,6 +103,7 @@ COMPATIBILITY
 #include "../libretro-common/compat/compat_strldup.c"
 #include "../libretro-common/compat/fopen_utf8.c"
 #include "../libretro-common/memmap/memalign.c"
+#include "../libretro-common/memmap/memcpy_nt.c"
 /* data_transfer's streaming window reserves address space through
  * memreserve()/memcommit(); those live here. */
 #include "../libretro-common/memmap/memmap.c"

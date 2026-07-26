@@ -298,7 +298,8 @@ endif
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/string_list.o \
        $(LIBRETRO_COMM_DIR)/string/stdstring.o \
-       $(LIBRETRO_COMM_DIR)/memmap/memalign.o
+       $(LIBRETRO_COMM_DIR)/memmap/memalign.o \
+       $(LIBRETRO_COMM_DIR)/memmap/memcpy_nt.o
 
 OBJ += \
        $(LIBRETRO_COMM_DIR)/lists/linked_list.o \
