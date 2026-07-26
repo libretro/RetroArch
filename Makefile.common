@@ -2087,6 +2087,11 @@ ifeq ($(HAVE_RCHD), 1)
    DEFINES += -DHAVE_CHD -DHAVE_RCHD -DWANT_SUBCODE -DWANT_RAW_DATA_SECTOR
    OBJ     += $(LIBRETRO_COMM_DIR)/streams/chd_stream.o \
               $(LIBRETRO_COMM_DIR)/formats/chd/rchd.o
+   # rchd calls these directly where the libchdr path reached them
+   # through libchdr's own wrappers. encoding_huffman is not optional:
+   # a version 5 map is Huffman-coded, so it is needed to open an image
+   # at all, whatever codecs the hunks use.
+   OBJ     += $(LIBRETRO_COMM_DIR)/encodings/encoding_huffman.o
    DEFINES += -DHAVE_RCHD_DEFLATE -DHAVE_RCHD_LZMA
    ifneq ($(filter 1,$(HAVE_FLAC) $(HAVE_RFLAC)),)
       DEFINES += -DHAVE_RCHD_FLAC
