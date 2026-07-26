@@ -1341,7 +1341,12 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
       input_config_get_bind_auto(index_offset, keybind->id);
-   return input_config_get_bind_string(settings, s, keybind, auto_bind, len);
+   if (keybind->id >= RARCH_BIND_LIST_END)
+      return input_config_get_bind_string(settings, s, keybind, auto_bind,
+            NULL, NULL, len);
+   return input_config_get_bind_string(settings, s, keybind, auto_bind,
+         &input_config_bind_labels[index_offset][keybind->id],
+         &input_autoconf_bind_labels[index_offset][keybind->id], len);
 }
 
 static int setting_action_action_ok(

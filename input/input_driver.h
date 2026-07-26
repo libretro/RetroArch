@@ -1097,17 +1097,21 @@ void input_game_focus_free(void);
  */
 size_t input_config_get_bind_string(void *settings_data,
       char *s, const struct retro_keybind *bind,
-      const struct retro_keybind *auto_bind, size_t len);
+      const struct retro_keybind *auto_bind,
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label, size_t len);
 
 size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *s, const char *prefix,
-      const struct retro_keybind *bind, size_t len);
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
 
 size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
       char *s, const char *prefix,
-      const struct retro_keybind *bind, size_t len);
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len);
 
 bool input_key_pressed(int key, bool keyboard_pressed);
 
@@ -1294,6 +1298,8 @@ extern hid_driver_t wiiu_hid;
 
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+extern input_bind_label_set input_config_bind_labels[MAX_USERS];
+extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
 RETRO_END_DECLS
 

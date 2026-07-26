@@ -164,6 +164,8 @@ const unsigned input_config_bind_order[24] = {
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
+input_bind_label_set input_config_bind_labels[MAX_USERS];
+input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 uint64_t lifecycle_state                                        = 0;
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
@@ -4481,6 +4483,8 @@ size_t input_config_get_bind_string(
       char *s,
       const struct retro_keybind *bind,
       const struct retro_keybind *auto_bind,
+      const struct input_bind_label *label,
+      const struct input_bind_label *auto_label,
       size_t len)
 {
    settings_t *settings                 = (settings_t*)settings_data;
@@ -4494,19 +4498,19 @@ size_t input_config_get_bind_string(
    if      (bind      && bind->joykey  != NO_BTN)
       _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            s, "", bind, len);
+            s, "", bind, label, len);
    else if (bind      && bind->joyaxis != AXIS_NONE)
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            s, "", bind, len);
+            s, "", bind, label, len);
    else if (auto_bind && auto_bind->joykey != NO_BTN)
       _len = input_config_get_bind_string_joykey(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, len);
+            s, "(Auto)", auto_bind, auto_label, len);
    else if (auto_bind && auto_bind->joyaxis != AXIS_NONE)
       _len = input_config_get_bind_string_joyaxis(
             input_descriptor_label_show,
-            s, "(Auto)", auto_bind, len);
+            s, "(Auto)", auto_bind, auto_label, len);
 
    if (*s)
       delim = 1;
@@ -4586,16 +4590,18 @@ size_t input_config_get_bind_string(
 size_t input_config_get_bind_string_joykey(
       bool input_descriptor_label_show,
       char *s, const char *suffix,
-      const struct retro_keybind *bind, size_t len)
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
+   const char *joykey_label = label ? label->joykey : NULL;
    size_t _len = 0;
    if (GET_HAT_DIR(bind->joykey))
    {
-      if (      bind->joykey_label
-            && (bind->joykey_label && *bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
-               bind->joykey_label, suffix, ' ', len);
+               joykey_label, suffix, ' ', len);
       /* TODO/FIXME - localize */
       _len  = snprintf(s, len,
             "Hat #%u ", (unsigned)GET_HAT(bind->joykey));
@@ -4620,11 +4626,11 @@ size_t input_config_get_bind_string_joykey(
    }
    else
    {
-      if (      bind->joykey_label
-            && (bind->joykey_label && *bind->joykey_label)
+      if (      joykey_label
+            && (joykey_label && *joykey_label)
             && input_descriptor_label_show)
          return fill_pathname_join_delim(s,
-               bind->joykey_label, suffix, ' ', len);
+               joykey_label, suffix, ' ', len);
 
       /* TODO/FIXME - localize */
       _len  = strlcpy(s, "Button ", len);
@@ -4641,14 +4647,16 @@ size_t input_config_get_bind_string_joykey(
 size_t input_config_get_bind_string_joyaxis(
       bool input_descriptor_label_show,
       char *s, const char *suffix,
-      const struct retro_keybind *bind, size_t len)
+      const struct retro_keybind *bind,
+      const struct input_bind_label *label, size_t len)
 {
+   const char *joyaxis_label = label ? label->joyaxis : NULL;
    size_t _len = 0;
-   if (      bind->joyaxis_label
-         && (bind->joyaxis_label && *bind->joyaxis_label)
+   if (      joyaxis_label
+         && (joyaxis_label && *joyaxis_label)
          && input_descriptor_label_show)
       return fill_pathname_join_delim(s,
-            bind->joyaxis_label, suffix, ' ', len);
+            joyaxis_label, suffix, ' ', len);
 
    /* TODO/FIXME - localize */
    _len = strlcpy(s, "Axis ", len);
@@ -5997,8 +6005,10 @@ void config_read_keybinds_conf(void *data)
          input_keyboard_mapping_bits(1, bind->key);
          key_store[bind->key]       = true;
 
-         input_config_parse_joy_button  (str, conf, prefix, btn, bind);
-         input_config_parse_joy_axis    (str, conf, prefix, btn, bind);
+         input_config_parse_joy_button  (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
+         input_config_parse_joy_axis    (str, conf, prefix, btn, bind,
+               &input_config_bind_labels[i][j]);
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }

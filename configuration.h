@@ -1467,12 +1467,14 @@ bool input_config_bind_map_get_valid(unsigned bind_index);
 void input_config_parse_joy_button(
       char *s,
       void *data, const char *prefix,
-      const char *btn, void *bind_data);
+      const char *btn, void *bind_data,
+      void *label_data);
 
 void input_config_parse_joy_axis(
       char *s,
       void *conf_data, const char *prefix,
-      const char *axis, void *bind_data);
+      const char *axis, void *bind_data,
+      void *label_data);
 
 void input_config_parse_mouse_button(
       char *s,

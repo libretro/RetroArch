@@ -70,12 +70,20 @@ struct hold_buttons
    bool frame_enable[MAX_USERS];     /* Hold modifier pressed this frame */
 };
 
+/* Human-readable names for a bind's joypad button and analog axis, supplied
+ * by an autoconfig profile or a config file. Display-only: nothing in the
+ * input poll path ever reads them, so they are held in arrays parallel to the
+ * bind sets rather than inside struct retro_keybind, which is swept in full
+ * several times per frame. Keeping the two pointers out of the bind takes it
+ * from 48 to 28 bytes. */
+struct input_bind_label
+{
+   char     *joykey;
+   char     *joyaxis;
+};
+
 struct retro_keybind
 {
-   /* Human-readable label for the control. */
-   char     *joykey_label;
-   /* Human-readable label for an analog axis. */
-   char     *joyaxis_label;
    /*
     * Joypad axis. Negative and positive axes are both 
     * represented by this variable.
@@ -100,6 +108,7 @@ struct retro_keybind
 };
 
 typedef struct retro_keybind retro_keybind_set[RARCH_BIND_LIST_END];
+typedef struct input_bind_label input_bind_label_set[RARCH_BIND_LIST_END];
 
 typedef struct
 {

@@ -4922,8 +4922,10 @@ static bool menu_input_key_bind_iterate(
             new_binds.timer_hold.current        = current_time;
             new_binds.timer_hold.timeout_us     = new_binds.timer_hold.timeout_end - current_time;
 
+            /* Transient bind under capture: it lives on the stack and has
+             * no entry in the label arrays, so it carries no labels. */
             input_config_get_bind_string(settings, hold_label,
-                  &new_binds.buffer, NULL, sizeof(hold_label));
+                  &new_binds.buffer, NULL, NULL, NULL, sizeof(hold_label));
 
             snprintf(bind->s, bind->len,
                   "%s..\n(%s %1.1f %s)\n \n%s\n   %s",

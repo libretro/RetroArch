@@ -7679,16 +7679,16 @@ static void save_keybind_joykey(config_file_t *conf,
 static void save_keybind_joykey_label(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind)
+      const struct input_bind_label *label)
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix,
          base, '_', sizeof(key));
    _len += strlcpy(key + _len, "_btn", sizeof(key) - _len);
-   if (bind->joykey_label && *bind->joykey_label)
+   if (label->joykey && *label->joykey)
    {
       strlcpy(key + _len, "_label", sizeof(key) - _len);
-      config_set_string(conf, key, bind->joykey_label);
+      config_set_string(conf, key, label->joykey);
    }
 }
 
@@ -7726,15 +7726,15 @@ static void save_keybind_axis(config_file_t *conf,
 static void save_keybind_axis_label(config_file_t *conf,
       const char *prefix,
       const char *base,
-      const struct retro_keybind *bind)
+      const struct input_bind_label *label)
 {
    char key[64];
    size_t _len = fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
    _len += strlcpy(key + _len, "_axis", sizeof(key) - _len);
-   if (bind->joyaxis_label && *bind->joyaxis_label)
+   if (label->joyaxis && *label->joyaxis)
    {
       strlcpy(key + _len, "_label", sizeof(key) - _len);
-      config_set_string(conf, key, bind->joyaxis_label);
+      config_set_string(conf, key, label->joyaxis);
    }
 }
 
@@ -8053,19 +8053,21 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    {
       struct retro_keybind *bind      = &input_config_binds[user][i];
       struct retro_keybind *auto_bind = &input_autoconf_binds[user][i];
+      struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
+      struct input_bind_label *albl   = &input_autoconf_bind_labels[user][i];
 
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
          bind->joykey = auto_bind->joykey;
-         if (auto_bind->joykey_label && *auto_bind->joykey_label)
-            bind->joykey_label = strdup(auto_bind->joykey_label);
+         if (albl->joykey && *albl->joykey)
+            lbl->joykey = strdup(albl->joykey);
       }
 
       if (bind->joyaxis == AXIS_NONE && auto_bind->joyaxis != AXIS_NONE)
       {
          bind->joyaxis = auto_bind->joyaxis;
-         if (auto_bind->joyaxis_label && *auto_bind->joyaxis_label)
-            bind->joyaxis_label = strdup(auto_bind->joyaxis_label);
+         if (albl->joyaxis && *albl->joyaxis)
+            lbl->joyaxis = strdup(albl->joyaxis);
       }
    }
 
@@ -8135,19 +8137,20 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    {
       unsigned id                      = input_config_bind_order[i];
       const struct retro_keybind *bind = &input_config_binds[user][id];
+      struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
 
       if (bind->valid)
       {
-         if (bind->joykey_label && *bind->joykey_label)
+         if (lbl->joykey && *lbl->joykey)
          {
-            save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), bind);
-            free(bind->joykey_label);
+            save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), lbl);
+            free(lbl->joykey);
          }
 
-         if (bind->joyaxis_label && *bind->joyaxis_label)
+         if (lbl->joyaxis && *lbl->joyaxis)
          {
-            save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), bind);
-            free(bind->joyaxis_label);
+            save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), lbl);
+            free(lbl->joyaxis);
          }
       }
    }
@@ -8294,6 +8297,8 @@ bool config_save_file(const char *path)
             input_driver_state_t *input_st = input_state_get_ptr();
             input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
             retro_keybind_set *saved_autoconf_binds;
+            input_bind_label_set *saved_autoconf_labels;
+            input_bind_label_set *saved_config_labels;
             /* Heap-allocated: MAX_USERS * sizeof(retro_keybind_set) is
              * ~51KB, too large for the stack on small-stack platforms.
              * Matches defaults_binds / saved_autoconf_binds above. */
@@ -8308,9 +8313,19 @@ bool config_save_file(const char *path)
                memcpy(saved_binds, input_config_binds,
                      MAX_USERS * sizeof(retro_keybind_set));
 
+            /* Config-bind labels are saved and restored by value, exactly as
+             * they were when they lived inside the bind struct. */
+            saved_config_labels = (input_bind_label_set*)calloc(MAX_USERS,
+                  sizeof(input_bind_label_set));
+            if (saved_config_labels)
+               memcpy(saved_config_labels, input_config_bind_labels,
+                     MAX_USERS * sizeof(input_bind_label_set));
+
             /* Save current input_autoconf_binds (deep copy with string duplication) */
-            saved_autoconf_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
-            if (saved_autoconf_binds)
+            saved_autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+            saved_autoconf_labels = (input_bind_label_set*)calloc(MAX_USERS,
+                  sizeof(input_bind_label_set));
+            if (saved_autoconf_binds && saved_autoconf_labels)
             {
                for (i = 0; i < MAX_USERS; i++)
                {
@@ -8320,17 +8335,17 @@ bool config_save_file(const char *path)
                      memcpy(&saved_autoconf_binds[i][j], &input_autoconf_binds[i][j],
                             sizeof(struct retro_keybind));
                      /* Duplicate allocated strings (don't share pointers!) */
-                     if (input_autoconf_binds[i][j].joykey_label)
-                        saved_autoconf_binds[i][j].joykey_label =
-                           strdup(input_autoconf_binds[i][j].joykey_label);
+                     if (input_autoconf_bind_labels[i][j].joykey)
+                        saved_autoconf_labels[i][j].joykey =
+                           strdup(input_autoconf_bind_labels[i][j].joykey);
                      else
-                        saved_autoconf_binds[i][j].joykey_label = NULL;
+                        saved_autoconf_labels[i][j].joykey = NULL;
 
-                     if (input_autoconf_binds[i][j].joyaxis_label)
-                        saved_autoconf_binds[i][j].joyaxis_label =
-                           strdup(input_autoconf_binds[i][j].joyaxis_label);
+                     if (input_autoconf_bind_labels[i][j].joyaxis)
+                        saved_autoconf_labels[i][j].joyaxis =
+                           strdup(input_autoconf_bind_labels[i][j].joyaxis);
                      else
-                        saved_autoconf_binds[i][j].joyaxis_label = NULL;
+                        saved_autoconf_labels[i][j].joyaxis = NULL;
                   }
                }
             }
@@ -8357,6 +8372,13 @@ bool config_save_file(const char *path)
                free(saved_binds);
             }
 
+            if (saved_config_labels)
+            {
+               memcpy(input_config_bind_labels, saved_config_labels,
+                     MAX_USERS * sizeof(input_bind_label_set));
+               free(saved_config_labels);
+            }
+
             /* Restore input_device_info */
             memcpy(input_st->input_device_info, saved_device_info,
                    sizeof(saved_device_info));
@@ -8367,26 +8389,34 @@ bool config_save_file(const char *path)
 #endif
 
             /* Restore input_autoconf_binds (free strings allocated by input_config_reset, then restore) */
-            if (saved_autoconf_binds)
+            if (saved_autoconf_binds && saved_autoconf_labels)
             {
                for (i = 0; i < MAX_USERS; i++)
                {
                   for (j = 0; j < RARCH_BIND_LIST_END; j++)
                   {
                      /* Free strings allocated by input_config_reset() */
-                     if (input_autoconf_binds[i][j].joykey_label)
-                        free(input_autoconf_binds[i][j].joykey_label);
-                     if (input_autoconf_binds[i][j].joyaxis_label)
-                        free(input_autoconf_binds[i][j].joyaxis_label);
+                     if (input_autoconf_bind_labels[i][j].joykey)
+                        free(input_autoconf_bind_labels[i][j].joykey);
+                     if (input_autoconf_bind_labels[i][j].joyaxis)
+                        free(input_autoconf_bind_labels[i][j].joyaxis);
 
                      /* Restore saved bind (with our duplicated strings) */
                      memcpy(&input_autoconf_binds[i][j], &saved_autoconf_binds[i][j],
                             sizeof(struct retro_keybind));
+                     input_autoconf_bind_labels[i][j] = saved_autoconf_labels[i][j];
                   }
                }
 
-               /* Free the temporary backup array (strings are now owned by input_autoconf_binds) */
+               /* Free the temporary backup arrays (strings are now owned by
+                * input_autoconf_bind_labels) */
                free(saved_autoconf_binds);
+               free(saved_autoconf_labels);
+            }
+            else
+            {
+               free(saved_autoconf_binds);
+               free(saved_autoconf_labels);
             }
          }
 
@@ -9972,16 +10002,16 @@ void input_config_reset_autoconfig_binds(unsigned port)
       input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
       input_autoconf_binds[port][i].valid   = false;
 
-      if (input_autoconf_binds[port][i].joykey_label)
+      if (input_autoconf_bind_labels[port][i].joykey)
       {
-         free(input_autoconf_binds[port][i].joykey_label);
-         input_autoconf_binds[port][i].joykey_label = NULL;
+         free(input_autoconf_bind_labels[port][i].joykey);
+         input_autoconf_bind_labels[port][i].joykey = NULL;
       }
 
-      if (input_autoconf_binds[port][i].joyaxis_label)
+      if (input_autoconf_bind_labels[port][i].joyaxis)
       {
-         free(input_autoconf_binds[port][i].joyaxis_label);
-         input_autoconf_binds[port][i].joyaxis_label = NULL;
+         free(input_autoconf_bind_labels[port][i].joyaxis);
+         input_autoconf_bind_labels[port][i].joyaxis = NULL;
       }
    }
 
@@ -10011,14 +10041,16 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    };
    size_t i;
    config_file_t *config       = (config_file_t*)data;
-   struct retro_keybind *binds = NULL;
+   struct retro_keybind *binds     = NULL;
+   struct input_bind_label *labels = NULL;
    input_driver_state_t *input_st;
    input_sensor_map_t *map;
 
    if ((port >= MAX_USERS) || !config)
       return;
 
-   binds = input_autoconf_binds[port];
+   binds  = input_autoconf_binds[port];
+   labels = input_autoconf_bind_labels[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -10030,8 +10062,10 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
          const char *base = keybind->base;
          fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
 
-         input_config_parse_joy_button(str, config, "input", base, &binds[i]);
-         input_config_parse_joy_axis  (str, config, "input", base, &binds[i]);
+         input_config_parse_joy_button(str, config, "input", base, &binds[i],
+               &labels[i]);
+         input_config_parse_joy_axis  (str, config, "input", base, &binds[i],
+               &labels[i]);
       }
    }
 
@@ -10124,8 +10158,9 @@ void input_config_parse_mouse_button(char *s,
 
 void input_config_parse_joy_axis(char *s,
       void *conf_data, const char *prefix,
-      const char *axis, void *bind_data)
+      const char *axis, void *bind_data, void *label_data)
 {
+   struct input_bind_label *label = (struct input_bind_label*)label_data;
    char tmp[64];
    char key[64];
    config_file_t *conf             = (config_file_t*)conf_data;
@@ -10167,9 +10202,9 @@ void input_config_parse_joy_axis(char *s,
 
    if (tmp_a && tmp_a->value && *tmp_a->value)
    {
-      if (bind->joyaxis_label && *bind->joyaxis_label)
-         free(bind->joyaxis_label);
-      bind->joyaxis_label = strdup(tmp_a->value);
+      if (label->joyaxis && *label->joyaxis)
+         free(label->joyaxis);
+      label->joyaxis = strdup(tmp_a->value);
    }
 }
 
@@ -10212,8 +10247,9 @@ static uint16_t input_config_parse_hat(const char *dir)
 void input_config_parse_joy_button(
       char *s,
       void *data, const char *prefix,
-      const char *btn, void *bind_data)
+      const char *btn, void *bind_data, void *label_data)
 {
+   struct input_bind_label *label = (struct input_bind_label*)label_data;
    char tmp[64], key[64];
    config_file_t *conf             = (config_file_t*)data;
    struct retro_keybind *bind      = (struct retro_keybind*)bind_data;
@@ -10254,9 +10290,9 @@ void input_config_parse_joy_button(
    tmp_a = config_get_entry(conf, key);
    if (tmp_a && tmp_a->value && *tmp_a->value)
    {
-      if (bind->joykey_label && *bind->joykey_label)
-         free(bind->joykey_label);
-      bind->joykey_label = strdup(tmp_a->value);
+      if (label->joykey && *label->joykey)
+         free(label->joykey);
+      label->joykey = strdup(tmp_a->value);
    }
 }
 
