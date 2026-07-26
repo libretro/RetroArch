@@ -161,6 +161,7 @@ public class CoreSideloadActivity extends Activity
                 Log.d("sideload", "Running RetroArch with core " + destination.getAbsolutePath());
 
                 MainMenuActivity.startRetroActivity(
+                    ctx,
                     retro,
                     content,
                     destination.getAbsolutePath(),
