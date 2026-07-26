@@ -105,11 +105,26 @@ struct adam7_pass
    unsigned stride_y;
 };
 
-struct idat_buffer
+/* One IDAT payload's position in the caller's buffer.  The compressed
+ * stream is no longer copied out of that buffer: the pointer handed to
+ * rpng_set_buf_ptr is stable for the life of the decode (task_image
+ * documents this - every nbio backend sizes or maps it up front, and
+ * only the resident frontier moves), and the APNG path synthesises
+ * each frame's PNG into a buffer that is only ever reallocated between
+ * frames.  Offsets are kept relative to buff_start rather than as raw
+ * pointers because buff_data advances as chunks are consumed. */
+struct idat_span
 {
-   uint8_t *data;
-   size_t size;
-   size_t capacity;
+   size_t   off;             /* payload start, relative to buff_start   */
+   uint32_t len;
+};
+
+struct idat_spans
+{
+   struct idat_span *v;
+   size_t n;
+   size_t cap;               /* elements allocated                      */
+   size_t total;             /* summed payload bytes across all spans   */
 };
 
 enum rpng_process_flags
@@ -134,6 +149,8 @@ struct rpng_process
    size_t inflate_buf_size;
    size_t avail_in;
    size_t avail_out;
+   size_t span_idx;          /* current IDAT span being fed             */
+   uint32_t span_pos;        /* bytes of it already consumed            */
    size_t total_out;
    size_t pass_size;
    struct png_ihdr ihdr; /* uint32_t alignment */
@@ -175,7 +192,7 @@ struct rpng
     * resident) when never set. */
    uint8_t *avail_end;
    bool     need_more;   /* last iterate stopped at the resident wall */
-   struct idat_buffer idat_buf; /* ptr alignment */
+   struct idat_spans idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
    /* Populated from cICP / cLLI / mDCV when present (RPNG_FLAG_HAS_HDR). */
@@ -1465,6 +1482,28 @@ static int rpng_load_image_argb_process_inflate_init(
    if (!to_continue)
       goto end;
 
+   /* Feed the compressed stream straight from the caller's buffer,
+    * one IDAT span at a time (the accumulated idat_buf copy this
+    * replaces was ~20% of a decode's DRAM traffic on a small cache,
+    * and its allocation the decode's largest after the inflate
+    * buffer).  Skip any spans already fully consumed, then hand the
+    * backend the remainder of the current one; set_in only
+    * resets the backend's input window, so re-declaring the remainder each
+    * call is the normal streaming usage. */
+   while (   process->span_idx < rpng->idat_buf.n
+          && process->span_pos >= rpng->idat_buf.v[process->span_idx].len)
+   {
+      process->span_idx++;
+      process->span_pos = 0;
+   }
+   if (process->span_idx < rpng->idat_buf.n)
+   {
+      const struct idat_span *sp = &rpng->idat_buf.v[process->span_idx];
+      process->stream_backend->set_in(process->stream,
+            rpng->buff_start + sp->off + process->span_pos,
+            sp->len - process->span_pos);
+   }
+
    slice = (process->avail_out > RPNG_INFLATE_SLICE)
          ? RPNG_INFLATE_SLICE : (uint32_t)process->avail_out;
    process->stream_backend->set_out(process->stream,
@@ -1477,6 +1516,7 @@ static int rpng_load_image_argb_process_inflate_init(
       goto error;
 
    process->avail_in -= rd;
+   process->span_pos += rd;
    process->avail_out -= wn;
    process->total_out += wn;
 
@@ -1542,71 +1582,35 @@ false_end:
  * capacity overshoot held across the decode.  A walk that runs off
  * the end (a truncated or genuinely streaming buffer) returns 0 and
  * the doubling below stays the fallback. */
-static size_t rpng_idat_presize(const uint8_t *at, const uint8_t *end)
+/* Record one IDAT payload.  Both caps mirror the copying path this
+ * replaces: total payload bytes stay bounded by RPNG_IDAT_MAX exactly
+ * as before (the overflow-guarded accumulation was the subject of a
+ * past hardening fix), and the span array itself is held to the same
+ * byte bound so a malicious stream of millions of tiny IDAT chunks
+ * cannot make the bookkeeping allocation exceed what the old payload
+ * copy could ever have reached. */
+static bool rpng_idat_append_span(struct idat_spans *sp,
+      size_t off, uint32_t chunk_size)
 {
-   size_t total = 0;
-   /* 'at' points at the length field of the first IDAT chunk;
-    * 'end' at the last byte of the input. */
-   while (at + 8 <= end + 1)
-   {
-      uint32_t len =   ((uint32_t)at[0] << 24) | ((uint32_t)at[1] << 16)
-                     | ((uint32_t)at[2] <<  8) |  (uint32_t)at[3];
-      if (len > RPNG_IDAT_MAX - total)
-         return 0;
-      if (!memcmp(at + 4, "IDAT", 4))
-         total += len;
-      else if (!memcmp(at + 4, "IEND", 4))
-         return total;
-      /* length + type + payload + CRC */
-      if ((size_t)(end + 1 - at) < (size_t)len + 12)
-         return 0;             /* truncated: fall back to doubling */
-      at += (size_t)len + 12;
-   }
-   return 0;
-}
-
-static bool rpng_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
-{
-   size_t required;
-
-   /* Pre-patch: buf->size + chunk_size was size_t + uint32_t.  On
-    * 32-bit size_t the sum could wrap (accumulated IDAT plus a
-    * near-UINT32_MAX chunk_size), making "required > capacity"
-    * false, the realloc skipped, and the subsequent memcpy writing
-    * past the existing buffer.  Detect overflow explicitly and
-    * cap total growth. */
-   if (chunk_size > RPNG_IDAT_MAX - buf->size)
+   if (chunk_size > RPNG_IDAT_MAX - sp->total)
       return false;
-   required = buf->size + chunk_size;
-
-   if (required > buf->capacity)
+   if (sp->n >= sp->cap)
    {
-      uint8_t *new_buffer = NULL;
-      size_t new_cap      = buf->capacity ? buf->capacity : 4096;
-
-      /* Cap the doubling too so a malicious chunk at the edge of
-       * RPNG_IDAT_MAX cannot drive new_cap past SIZE_MAX / 2. */
-      while (new_cap < required)
-      {
-         if (new_cap > RPNG_IDAT_MAX / 2)
-         {
-            new_cap = RPNG_IDAT_MAX;
-            break;
-         }
-         new_cap *= 2;
-      }
-      if (new_cap < required)
+      struct idat_span *nv;
+      size_t ncap = sp->cap ? sp->cap * 2 : 64;
+      if (sp->n >= RPNG_IDAT_MAX / sizeof(*sp->v))
          return false;
-
-      new_buffer = (uint8_t*)realloc(buf->data, new_cap);
-
-      if (!new_buffer)
+      if (ncap > RPNG_IDAT_MAX / sizeof(*sp->v))
+         ncap = RPNG_IDAT_MAX / sizeof(*sp->v);
+      if (!(nv = (struct idat_span*)realloc(sp->v, ncap * sizeof(*nv))))
          return false;
-
-      buf->data     = new_buffer;
-      buf->capacity = new_cap;
+      sp->v   = nv;
+      sp->cap = ncap;
    }
-
+   sp->v[sp->n].off = off;
+   sp->v[sp->n].len = chunk_size;
+   sp->n++;
+   sp->total += chunk_size;
    return true;
 }
 
@@ -1650,17 +1654,14 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
       goto error;
 
    process->inflate_buf = inflate_buf;
-   process->avail_in    = rpng->idat_buf.size;
+   process->avail_in    = rpng->idat_buf.total;
    process->avail_out   = process->inflate_buf_size;
+   process->span_idx    = 0;
+   process->span_pos    = 0;
 
-   process->stream_backend->set_in(
-         process->stream,
-         rpng->idat_buf.data,
-         (uint32_t)rpng->idat_buf.size);
-   process->stream_backend->set_out(
-         process->stream,
-         process->inflate_buf,
-         (uint32_t)process->inflate_buf_size);
+   /* Input is fed span by span from the caller's buffer in
+    * rpng_load_image_argb_process_inflate_init; output likewise in
+    * bounded slices there.  Nothing to hand the backend yet. */
 
    return process;
 
@@ -1984,21 +1985,6 @@ bool rpng_iterate_image(rpng_t *rpng)
          break;
 
       case PNG_CHUNK_IDAT:
-         if (!rpng->idat_buf.data && !rpng->idat_buf.capacity)
-         {
-            /* Scan only resident bytes: on a partial buffer the IDAT
-             * run past avail_end has not arrived, and presize reads
-             * chunk headers forward.  It already returns 0 (fall back
-             * to realloc doubling) on truncation, so a prefix simply
-             * gets the incremental path until the buffer completes. */
-            size_t exact = rpng_idat_presize(buf, rpng->avail_end);
-            if (exact)
-            {
-               if (!(rpng->idat_buf.data = (uint8_t*)malloc(exact)))
-                  return false;
-               rpng->idat_buf.capacity = exact;
-            }
-         }
          if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR)
                ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
                ||  (rpng->ihdr.color_type == PNG_IHDR_COLOR_PLT
@@ -2006,14 +1992,17 @@ bool rpng_iterate_image(rpng_t *rpng)
                   !(rpng->flags & RPNG_FLAG_HAS_PLTE)))
             return false;
 
-         if (!rpng_realloc_idat(&rpng->idat_buf, chunk_size))
-            return false;
-
          buf += 8;
 
-         memcpy(rpng->idat_buf.data + rpng->idat_buf.size, buf, chunk_size);
-
-         rpng->idat_buf.size += chunk_size;
+         /* Zero-length IDAT chunks are legal; they contribute no
+          * payload, so no span - the HAS_IDAT flag alone records
+          * them. */
+         if (chunk_size)
+         {
+            if (!rpng_idat_append_span(&rpng->idat_buf,
+                  (size_t)(buf - rpng->buff_start), chunk_size))
+               return false;
+         }
 
          rpng->flags         |= RPNG_FLAG_HAS_IDAT;
          break;
@@ -2113,8 +2102,8 @@ void rpng_free(rpng_t *rpng)
    if (!rpng)
       return;
 
-   if (rpng->idat_buf.data)
-      free(rpng->idat_buf.data);
+   if (rpng->idat_buf.v)
+      free(rpng->idat_buf.v);
    if (rpng->process)
    {
       if (rpng->process->inflate_buf)
