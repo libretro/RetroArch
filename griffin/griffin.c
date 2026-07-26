@@ -228,7 +228,9 @@ ACHIEVEMENTS
 #include "../cheevos/cheevos_menu.c"
 
 #if defined(HAVE_CHEEVOS_RVZ)
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include "../cheevos/cheevos_rvz.c"
+#endif
 #endif
 
 #include "../deps/rcheevos/src/rc_client.c"
