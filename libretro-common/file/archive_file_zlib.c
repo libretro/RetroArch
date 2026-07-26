@@ -319,7 +319,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
          filestream_seek(state->archive_file, zip_context->fdoffset, RETRO_VFS_SEEK_POSITION_START);
          if (filestream_read(state->archive_file,
                              zip_context->decompressed_data,
-                             zip_context->usize) < 0)
+                             zip_context->usize) != (int64_t)zip_context->usize)
             return -1;
       }
 
@@ -350,6 +350,11 @@ static int zlib_stream_decompress_data_to_file_iterate(
                RETRO_VFS_SEEK_POSITION_START);
          rd = filestream_read(state->archive_file, zip_context->tmpbuf, to_read);
          if (rd < 0)
+            return -1;
+         /* Unexpected EOF before csize: returning 0 would spin forever
+          * in file_archive_walk's tight iterate loop (seen with short
+          * or stalled VFS backends such as SMB). */
+         if (rd == 0)
             return -1;
          dptr = zip_context->tmpbuf;
       }
