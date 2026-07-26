@@ -50,8 +50,16 @@
 #include <encodings/deflate.h>
 #endif
 
-#ifdef HAVE_ZSTD
+/* Either decoder will do for a member stored with Zstandard; rzstd is
+ * preferred where a build has it, and the reference remains available
+ * until every platform has moved. */
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#define ZIP_HAVE_ZSTD 1
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#else
 #include <zstd.h>
+#endif
 #endif
 
 #ifndef CENTRAL_FILE_HEADER_SIGNATURE
@@ -272,7 +280,7 @@ static bool zlib_stream_decompress_data_to_file_init(
       }
 #endif
    }
-#ifdef HAVE_ZSTD
+#ifdef ZIP_HAVE_ZSTD
    else if (cmode == ZIP_MODE_ZSTD)
    {
       /* Allocate a buffer to read compressed data into;
@@ -399,18 +407,27 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
       return 0;   /* still more data to process */
    }
-#ifdef HAVE_ZSTD
+#ifdef ZIP_HAVE_ZSTD
    else if (zip_context->cmode == ZIP_MODE_ZSTD)
    {
       size_t result;
+      int    zerr;
 
 #ifdef HAVE_MMAP
       if (state->archive_mmap_data)
       {
+#ifdef HAVE_RZSTD
+         zerr = (rzstd_decode(
+               zip_context->decompressed_data, zip_context->usize,
+               state->archive_mmap_data + (size_t)zip_context->fdoffset,
+               zip_context->csize, &result) != RZSTD_PROCESS_END);
+#else
          result = ZSTD_decompress(
                zip_context->decompressed_data, zip_context->usize,
                state->archive_mmap_data + (size_t)zip_context->fdoffset,
                zip_context->csize);
+         zerr   = ZSTD_isError(result);
+#endif
       }
       else
 #endif
@@ -423,12 +440,20 @@ static int zlib_stream_decompress_data_to_file_iterate(
                   zip_context->tmpbuf, zip_context->csize) < 0)
             return -1;
 
+#ifdef HAVE_RZSTD
+         zerr = (rzstd_decode(
+               zip_context->decompressed_data, zip_context->usize,
+               zip_context->tmpbuf, zip_context->csize, &result)
+               != RZSTD_PROCESS_END);
+#else
          result = ZSTD_decompress(
                zip_context->decompressed_data, zip_context->usize,
                zip_context->tmpbuf, zip_context->csize);
+         zerr   = ZSTD_isError(result);
+#endif
       }
 
-      if (ZSTD_isError(result))
+      if (zerr)
          return -1;
 
       free(zip_context->tmpbuf);
