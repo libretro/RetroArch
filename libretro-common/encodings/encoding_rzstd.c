@@ -105,8 +105,14 @@
  *
  * Slower both ways, and on one input much worse at compressing:
  *
- *   decode        0.21 to 0.41 times the reference's throughput
- *   encode        0.18 to 0.49 times, and
+ *   decode        depends entirely on what the frame holds:
+ *                   1.75x the reference on many short matches
+ *                   1.50x on long runs
+ *                   0.75x on stored blocks, which is memcpy either way
+ *                   0.38x on literal-heavy input, where the reference
+ *                         has an assembly Huffman decoder and this has
+ *                         a C loop
+ *   encode        0.18 to 0.49 times
  *   encoded size  1.0x the reference on file data,
  *                 1.4x on synthetic mixed data,
  *                 6.7x on data shaped like an input replay
@@ -124,6 +130,14 @@
  * hunks of a few kilobytes, and it is not yet a replacement for the
  * reference implementation anywhere else. Nothing should be migrated
  * to it on the strength of it working.
+ *
+ * Where the decode time goes, measured rather than guessed: the match
+ * copy was six times slower than the reference until it stopped
+ * copying a byte at a time, and the bit reader was forty-five per cent
+ * of the remainder until its callers stopped asking it to check for
+ * bits they had already established were there. What is left is the
+ * literal path, and closing that means matching an assembly Huffman
+ * decoder from C.
  * ---------------------------------------------------------------------
  */
 
@@ -357,6 +371,46 @@ typedef struct rzstd_rbits
 
 static void rzstd_rbits_fill(rzstd_rbits_t *b)
 {
+   /* Nothing to do when the buffer is already deep enough. Worth its
+    * own test at the top: the callers that fill before a run of reads
+    * call this far more often than it has anything to do. */
+   if (b->count > 56)
+      return;
+
+   /* Eight bytes at once where they are there to take. The stream runs
+    * backwards, so a whole word is read from below the cursor and its
+    * bytes reversed into place; that is one load and a few shifts
+    * against eight loads and eight shifts. */
+   if (b->count <= 56 && b->pos >= 8)
+   {
+      uint64_t v;
+      uint32_t take = (64 - b->count) >> 3;
+
+      b->pos -= take;
+      v = 0;
+      switch (take)
+      {
+         case 8: v |= (uint64_t)b->base[b->pos + 7];
+         /* falls through */
+         case 7: v = (v << 8) | (uint64_t)b->base[b->pos + 6];
+         /* falls through */
+         case 6: v = (v << 8) | (uint64_t)b->base[b->pos + 5];
+         /* falls through */
+         case 5: v = (v << 8) | (uint64_t)b->base[b->pos + 4];
+         /* falls through */
+         case 4: v = (v << 8) | (uint64_t)b->base[b->pos + 3];
+         /* falls through */
+         case 3: v = (v << 8) | (uint64_t)b->base[b->pos + 2];
+         /* falls through */
+         case 2: v = (v << 8) | (uint64_t)b->base[b->pos + 1];
+         /* falls through */
+         default: v = (v << 8) | (uint64_t)b->base[b->pos];
+      }
+      b->bits  |= v << (64 - b->count - take * 8);
+      b->count += take * 8;
+      return;
+   }
+
    while (b->count <= 56 && b->pos > 0)
    {
       b->pos--;
@@ -404,6 +458,23 @@ static int rzstd_rbits_have(rzstd_rbits_t *b, uint32_t n)
       return 1;
    rzstd_rbits_fill(b);
    return b->count >= n;
+}
+
+/* Takes @n bits with no refill and no bound test. The caller has
+ * established that they are there, which is what makes it worth having
+ * separately: the checked form was forty-five per cent of decode time,
+ * almost all of it in checks that a caller could have made once for
+ * several reads. */
+static uint32_t rzstd_rbits_take(rzstd_rbits_t *b, uint32_t n)
+{
+   uint32_t v;
+
+   if (!n)
+      return 0;
+   v         = (uint32_t)(b->bits >> (64 - n));
+   b->bits <<= n;
+   b->count -= n;
+   return v;
 }
 
 static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
@@ -643,6 +714,15 @@ static uint32_t rzstd_fse_next(const rzstd_fse_t *fse, uint32_t state,
    return (uint32_t)e->next_state + rzstd_rbits_read(b, e->bits);
 }
 
+/* The same, with the bits assumed present. */
+static uint32_t rzstd_fse_next_fast(const rzstd_fse_t *fse, uint32_t state,
+      rzstd_rbits_t *b)
+{
+   const rzstd_fse_entry_t *e = &fse->table[state];
+
+   return (uint32_t)e->next_state + rzstd_rbits_take(b, e->bits);
+}
+
 /* -------- Huffman --------
  *
  * Section 4.2, used only for literals. The table is described by one
@@ -658,10 +738,13 @@ static uint32_t rzstd_fse_next(const rzstd_fse_t *fse, uint32_t state,
 #define RZSTD_HUF_MAX_BITS    11
 #define RZSTD_HUF_MAX_SYMBOLS 256
 
+/* Symbol and width in one entry rather than two arrays. They are always
+ * wanted together, so splitting them costs a second cache line per
+ * lookup for no gain -- the access is random, so nothing is gained by
+ * keeping either contiguous on its own. */
 typedef struct rzstd_huf
 {
-   uint8_t  symbol[1 << RZSTD_HUF_MAX_BITS];
-   uint8_t  bits[1 << RZSTD_HUF_MAX_BITS];
+   uint16_t entry[1 << RZSTD_HUF_MAX_BITS];   /* symbol << 8 | width */
    uint32_t max_bits;
 } rzstd_huf_t;
 
@@ -757,8 +840,14 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       at = next_rank_start[w];
       next_rank_start[w] += n;
 
-      memset(huf->symbol + at, (int)i, n);
-      memset(huf->bits + at, (int)(max_bits + 1 - w), n);
+      {
+         uint16_t packed = (uint16_t)(((uint32_t)i << 8)
+               | (max_bits + 1 - w));
+         uint32_t k;
+
+         for (k = 0; k < n; k++)
+            huf->entry[at + k] = packed;
+      }
    }
 
    return RZ_OK;
@@ -869,30 +958,43 @@ static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
 
 /* Pulls one symbol. The reader always holds at least max_bits, so a
  * peek is a plain index into the table. */
+/* One symbol, assuming the reader already holds max_bits. The caller
+ * refills, which is what lets several symbols come out per refill: at
+ * eleven bits a code, a full buffer holds five. */
+static uint8_t rzstd_huf_symbol_fast(const rzstd_huf_t *huf,
+      rzstd_rbits_t *b)
+{
+   uint32_t index = (uint32_t)(b->bits >> (64 - huf->max_bits));
+   uint16_t e     = huf->entry[index];
+   uint32_t n     = e & 0xff;
+
+   b->bits <<= n;
+   b->count -= n;
+   return (uint8_t)(e >> 8);
+}
+
 static uint8_t rzstd_huf_symbol(const rzstd_huf_t *huf, rzstd_rbits_t *b)
 {
-   uint32_t peek;
    uint32_t index;
+   uint16_t e;
+   uint32_t n;
 
    if (b->count < huf->max_bits)
       rzstd_rbits_fill(b);
 
-   peek  = (uint32_t)(b->bits >> (64 - huf->max_bits));
-   index = peek;
+   index = (uint32_t)(b->bits >> (64 - huf->max_bits));
+   e     = huf->entry[index];
+   n     = e & 0xff;
 
+   b->bits <<= n;
+   if (b->count >= n)
+      b->count -= n;
+   else
    {
-      uint8_t n = huf->bits[index];
-
-      b->bits  <<= n;
-      if (b->count >= n)
-         b->count -= n;
-      else
-      {
-         b->count   = 0;
-         b->overrun = 1;
-      }
-      return huf->symbol[index];
+      b->count   = 0;
+      b->overrun = 1;
    }
+   return (uint8_t)(e >> 8);
 }
 
 /* Decodes @count literals from either the one-stream or four-stream
@@ -915,7 +1017,23 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
 
       if (e != RZ_OK)
          return e;
-      for (i = 0; i < count; i++)
+      i = 0;
+      /* Four symbols between tests: a code is at most eleven bits and
+       * the buffer holds sixty-four, so four never exhausts it and the
+       * bound test happens a quarter as often. */
+      while (i + 4 <= count)
+      {
+         if (b.count < huf->max_bits * 4)
+            rzstd_rbits_fill(&b);
+         if (b.count < huf->max_bits * 4)
+            break;
+         dst[i]     = rzstd_huf_symbol_fast(huf, &b);
+         dst[i + 1] = rzstd_huf_symbol_fast(huf, &b);
+         dst[i + 2] = rzstd_huf_symbol_fast(huf, &b);
+         dst[i + 3] = rzstd_huf_symbol_fast(huf, &b);
+         i += 4;
+      }
+      for (; i < count; i++)
          dst[i] = rzstd_huf_symbol(huf, &b);
       return RZ_OK;
    }
@@ -956,7 +1074,20 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
             break;
          if (end > count)
             end = count;
-         for (i = start; i < end; i++)
+         i = start;
+         while (i + 4 <= end)
+         {
+            if (b[k].count < huf->max_bits * 4)
+               rzstd_rbits_fill(&b[k]);
+            if (b[k].count < huf->max_bits * 4)
+               break;
+            dst[i]     = rzstd_huf_symbol_fast(huf, &b[k]);
+            dst[i + 1] = rzstd_huf_symbol_fast(huf, &b[k]);
+            dst[i + 2] = rzstd_huf_symbol_fast(huf, &b[k]);
+            dst[i + 3] = rzstd_huf_symbol_fast(huf, &b[k]);
+            i += 4;
+         }
+         for (; i < end; i++)
             dst[i] = rzstd_huf_symbol(huf, &b[k]);
       }
       return RZ_OK;
@@ -1122,6 +1253,118 @@ static int rzstd_read_literals(rzstd_literals_t *out, rzstd_huf_t *huf,
    *used     = at + compressed;
    return RZ_OK;
 }
+
+
+/* -------- wide copies --------
+ *
+ * A match copies from earlier output, and the source may overlap the
+ * destination: that overlap is how a short offset expands a repeating
+ * pattern, and it is why the obvious memcpy is wrong. What it is not is
+ * a reason to copy a byte at a time, which is what the first version
+ * here did and what made long matches six times slower than the
+ * reference.
+ *
+ * The rule is only that a byte must be written before it is read. An
+ * offset of at least the copy width satisfies that for any width, so
+ * wide copies are safe above a threshold and the narrow case is handled
+ * by expanding the pattern once and then going wide anyway.
+ */
+
+#if defined(__SSE2__) || (defined(_M_X64)) \
+ || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#include <emmintrin.h>
+#define RZSTD_VEC_SSE2 1
+#define RZSTD_VEC_WIDTH 16
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__)
+#include <arm_neon.h>
+#define RZSTD_VEC_NEON 1
+#define RZSTD_VEC_WIDTH 16
+#else
+#define RZSTD_VEC_WIDTH 8
+#endif
+
+/* Copies @n bytes forward, overrunning by up to one vector. Callers
+ * guarantee the slack, which is what lets the loop run without a tail
+ * and without a per-iteration bound test. */
+static void rzstd_wild_copy(uint8_t *dst, const uint8_t *src, size_t n)
+{
+   size_t i = 0;
+
+#if defined(RZSTD_VEC_SSE2)
+   do
+   {
+      _mm_storeu_si128((__m128i*)(void*)(dst + i),
+            _mm_loadu_si128((const __m128i*)(const void*)(src + i)));
+      _mm_storeu_si128((__m128i*)(void*)(dst + i + 16),
+            _mm_loadu_si128((const __m128i*)(const void*)(src + i + 16)));
+      i += 32;
+   } while (i < n);
+#elif defined(RZSTD_VEC_NEON)
+   do
+   {
+      vst1q_u8(dst + i,      vld1q_u8(src + i));
+      vst1q_u8(dst + i + 16, vld1q_u8(src + i + 16));
+      i += 32;
+   } while (i < n);
+#else
+   /* Eight bytes at a time through a union, so no alignment is assumed
+    * and no strict-aliasing rule is bent. */
+   do
+   {
+      memcpy(dst + i, src + i, 8);
+      memcpy(dst + i + 8, src + i + 8, 8);
+      i += 16;
+   } while (i < n);
+#endif
+}
+
+/* Copies a match of @n bytes from @offset back, where the source may
+ * overlap. @slack says whether there is room to overrun by a vector.
+ *
+ * A small offset is handled by doubling rather than by copying bytes:
+ * the seed is laid down once, then repeatedly copied onto itself, so
+ * the period grows past the vector width in a few steps. After that the
+ * remaining bytes are a plain wide copy from a distance that is now
+ * large enough to be safe. */
+static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
+      size_t offset, int slack)
+{
+   size_t have;
+
+   if (!slack)
+   {
+      size_t k;
+
+      for (k = 0; k < n; k++)
+         to[k] = from[k];
+      return;
+   }
+
+   if (offset >= RZSTD_VEC_WIDTH * 2)
+   {
+      rzstd_wild_copy(to, from, n);
+      return;
+   }
+
+   memmove(to, from, offset);
+   have = offset;
+
+   /* Doubling keeps the run a whole number of periods, which is what
+    * lets the wide copy below read from exactly @have back. */
+   while (have < RZSTD_VEC_WIDTH * 2 && have < n)
+   {
+      size_t take = have;
+
+      if (take > n - have)
+         take = n - have;
+      memcpy(to + have, to, take);
+      have += take;
+   }
+
+   if (have < n)
+      rzstd_wild_copy(to + have, to, n - have);
+}
+
 
 /* -------- sequences --------
  *
@@ -1366,13 +1609,31 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
          return RZ_DATA;
 
       /* Offset first, then match length, then literal length: the
-       * extra bits come out in that order. */
-      offset    = ((uint32_t)1 << of_code)
-                + rzstd_rbits_read(&bits, of_code);
-      match_len = rzstd_ml_base[ml_code]
-                + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
-      lit_run   = rzstd_ll_base[ll_code]
-                + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+       * extra bits come out in that order.
+       *
+       * Their widths sum to at most 31 + 16 + 16, which is 63 and so
+       * fits one buffer. Filling once and taking three times replaces
+       * three refill tests with one. */
+      if (bits.count < 63)
+         rzstd_rbits_fill(&bits);
+      if (bits.count >= 63)
+      {
+         offset    = ((uint32_t)1 << of_code)
+                   + rzstd_rbits_take(&bits, of_code);
+         match_len = rzstd_ml_base[ml_code]
+                   + rzstd_rbits_take(&bits, rzstd_ml_bits[ml_code]);
+         lit_run   = rzstd_ll_base[ll_code]
+                   + rzstd_rbits_take(&bits, rzstd_ll_bits[ll_code]);
+      }
+      else
+      {
+         offset    = ((uint32_t)1 << of_code)
+                   + rzstd_rbits_read(&bits, of_code);
+         match_len = rzstd_ml_base[ml_code]
+                   + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
+         lit_run   = rzstd_ll_base[ll_code]
+                   + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+      }
 
       if (offset > 3)
       {
@@ -1418,23 +1679,31 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
       out    += lit_run;
       lit_at += lit_run;
 
-      /* The copy may overlap its own source, which is how a short
-       * offset expands a repeating pattern, so it goes a byte at a
-       * time rather than by memcpy. */
-      {
-         size_t from = out - offset;
-         uint32_t k;
-
-         for (k = 0; k < match_len; k++)
-            dst[out + k] = dst[from + k];
-         out += match_len;
-      }
+      /* Wide copies overrun by up to a vector, so they are used only
+       * where the output has room to spare; the last stretch of a block
+       * falls back to bytes rather than growing the caller's buffer. */
+      rzstd_match_copy(dst + out, dst + out - offset, match_len, offset,
+            out + match_len + RZSTD_VEC_WIDTH * 2 <= dst_len);
+      out += match_len;
 
       if (i + 1 < nseq)
       {
-         ll_state = rzstd_fse_next(&tab->ll_fse, ll_state, &bits);
-         ml_state = rzstd_fse_next(&tab->ml_fse, ml_state, &bits);
-         of_state = rzstd_fse_next(&tab->of_fse, of_state, &bits);
+         /* Three accuracy logs, at most nine bits each: one fill
+          * covers all three updates. */
+         if (bits.count < 27)
+            rzstd_rbits_fill(&bits);
+         if (bits.count >= 27)
+         {
+            ll_state = rzstd_fse_next_fast(&tab->ll_fse, ll_state, &bits);
+            ml_state = rzstd_fse_next_fast(&tab->ml_fse, ml_state, &bits);
+            of_state = rzstd_fse_next_fast(&tab->of_fse, of_state, &bits);
+         }
+         else
+         {
+            ll_state = rzstd_fse_next(&tab->ll_fse, ll_state, &bits);
+            ml_state = rzstd_fse_next(&tab->ml_fse, ml_state, &bits);
+            of_state = rzstd_fse_next(&tab->of_fse, of_state, &bits);
+         }
       }
    }
 
