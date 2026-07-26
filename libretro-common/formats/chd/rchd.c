@@ -133,6 +133,26 @@
 #include <encodings/huffman.h>
 #include <encodings/crc32.h>
 
+/* Which codecs are built in.
+ *
+ * A build system that selects this reader states these; one that only
+ * defines HAVE_RCHD gets a reader that opens an image and refuses every
+ * compressed hunk in it, which is a confusing way to fail. Griffin
+ * builds reach here from a platform makefile rather than from
+ * Makefile.common, so the defaults are here rather than there. */
+#if !defined(HAVE_RCHD_DEFLATE) && !defined(HAVE_RCHD_LZMA) \
+ && !defined(HAVE_RCHD_FLAC) && !defined(HAVE_RCHD_ZSTD) \
+ && !defined(RCHD_NO_DEFAULT_CODECS)
+#define HAVE_RCHD_DEFLATE 1
+#define HAVE_RCHD_LZMA    1
+#if defined(HAVE_FLAC) || defined(HAVE_RFLAC)
+#define HAVE_RCHD_FLAC    1
+#endif
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+#define HAVE_RCHD_ZSTD    1
+#endif
+#endif
+
 #ifdef HAVE_RCHD_DEFLATE
 #include <encodings/deflate.h>
 #endif

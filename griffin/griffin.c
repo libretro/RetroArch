@@ -1498,6 +1498,14 @@ MENU
 DEPENDENCIES
 ============================================================ */
 #ifdef HAVE_CHD
+#ifdef HAVE_RCHD
+/* The built-in reader, and the codecs it calls directly. Huffman is not
+ * optional: a version 5 map is Huffman-coded, so it is needed to open
+ * an image at all. libchdr's own huffman is a different interface and
+ * does not serve -- it exports huffman_*, this wants rhuff_*. */
+#include "../libretro-common/encodings/encoding_huffman.c"
+#include "../libretro-common/formats/chd/rchd.c"
+#else
 #include "../libretro-common/formats/libchdr/libchdr_zlib.c"
 #include "../libretro-common/formats/libchdr/libchdr_bitstream.c"
 #include "../libretro-common/formats/libchdr/libchdr_cdrom.c"
@@ -1518,10 +1526,7 @@ DEPENDENCIES
 #ifdef HAVE_ZSTD
 #include "../libretro-common/formats/libchdr/libchdr_zstd.c"
 #endif
-
-#ifdef HAVE_RCHD
-#include "../libretro-common/formats/chd/rchd.c"
-#endif
+#endif  /* !HAVE_RCHD */
 
 #include "../libretro-common/streams/chd_stream.c"
 #endif
