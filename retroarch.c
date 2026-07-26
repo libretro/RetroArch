@@ -101,6 +101,7 @@
 #endif
 
 #if defined(ANDROID)
+#include <android/api-level.h>
 #include "play_feature_delivery/play_feature_delivery.h"
 #endif
 
@@ -8367,30 +8368,6 @@ bool retroarch_main_init(int argc, char *argv[])
                "=== Build =======================================\n",
                sizeof(str_output));
 
-#ifdef WEBOS
-         {
-            char osbuf[128];
-            int major = 0, minor = 0;
-            frontend_state_t *frontend_st = frontend_state_get_ptr();
-            if (frontend_st)
-            {
-               frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-               if (frontend && frontend->get_os)
-               {
-                  frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
-#ifdef __aarch64__
-                  const char *arch = " (64-bit)";
-#else
-                  const char *arch = " (32-bit)";
-#endif
-                  _len += snprintf(str_output + _len, sizeof(str_output) - _len,
-                     FILE_PATH_LOG_INFO " Running on: %s%s\n",
-                     osbuf, arch);
-               }
-            }
-         }
-#endif
-
          if (cpu_model && *cpu_model)
          {
             /* TODO/FIXME - localize */
@@ -8410,28 +8387,79 @@ bool retroarch_main_init(int argc, char *argv[])
       {
          char str_output[256];
          char str[128];
+         int len;
          retroarch_get_capabilities(RARCH_CAPABILITIES_CPU, str, sizeof(str));
 
+         len = snprintf(str_output, sizeof(str_output),
+            "%s: %s\n"
+            FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n",
+            msg_hash_to_str(MSG_CAPABILITIES),
+            str);
 #ifdef HAVE_GIT_VERSION
-         snprintf(str_output, sizeof(str_output),
-               "%s: %s" "\n"
-               FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n"
-               FILE_PATH_LOG_INFO " Git: %s" "\n"
-               FILE_PATH_LOG_INFO " Built: " __DATE__ "\n"
-               FILE_PATH_LOG_INFO " =================================================\n",
-               msg_hash_to_str(MSG_CAPABILITIES),
-               str,
-               retroarch_git_version
-               );
-#else
-         snprintf(str_output, sizeof(str_output),
-               "%s: %s" "\n"
-               FILE_PATH_LOG_INFO " Version: " PACKAGE_VERSION "\n"
-               FILE_PATH_LOG_INFO " Built: " __DATE__ "\n"
-               FILE_PATH_LOG_INFO " =================================================\n",
-               msg_hash_to_str(MSG_CAPABILITIES),
-               str);
+         len += snprintf(str_output + len, sizeof(str_output) - len,
+            FILE_PATH_LOG_INFO " Git: %s\n",
+            retroarch_git_version);
 #endif
+         snprintf(str_output + len, sizeof(str_output) - len,
+               FILE_PATH_LOG_INFO " Built: " __DATE__ "\n");
+         RARCH_LOG_OUTPUT("%s", str_output);
+      }
+
+#if defined(ANDROID)
+      {
+         char str_output[128];
+         int32_t major = 0;
+         int32_t minor = 0;
+         int32_t rel   = 0;
+
+         const char *build_type =
+            !g_android ? "Unknown" :
+            g_android->is_play_store_build ? "Play Store" :
+            "Sideload";
+
+         frontend_android_get_version(&major, &minor, &rel);
+
+         snprintf(str_output, sizeof(str_output),
+            FILE_PATH_LOG_INFO " Running on: Android v%d.%d.%d (API %d) (%s)\n",
+            major,
+            minor,
+            rel,
+            android_get_device_api_level(),
+            build_type);
+
+         RARCH_LOG_OUTPUT("%s", str_output);
+      }
+#elif defined(WEBOS)
+      {
+         char str_output[128];
+         char osbuf[128];
+         int major = 0, minor = 0;
+         frontend_state_t *frontend_st = frontend_state_get_ptr();
+
+         if (frontend_st)
+         {
+            frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
+            if (frontend && frontend->get_os)
+            {
+               frontend->get_os(osbuf, sizeof(osbuf), &major, &minor);
+
+#ifdef __aarch64__
+               const char *arch = " (64-bit)";
+#else
+               const char *arch = " (32-bit)";
+#endif
+               snprintf(str_output, sizeof(str_output),
+                  "Running on: %s%s\n",
+                  osbuf, arch);
+               RARCH_LOG_OUTPUT("%s", str_output);
+            }
+         }
+      }
+#endif
+      {
+         char str_output[64];
+         snprintf(str_output, sizeof(str_output),
+            "=================================================\n");
          RARCH_LOG_OUTPUT("%s", str_output);
       }
    }
