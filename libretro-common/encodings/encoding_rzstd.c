@@ -175,6 +175,25 @@
  *   speed to half of it. The careful path asks each copy about its own
  *   room.
  *
+ *   THE NEXT THING TO FIX, and it is visible in the emitted code
+ *   rather than in a profile: the bit reader spills. Its buffer and
+ *   count live in a struct whose address is taken, so a compiler
+ *   cannot keep them in registers, and the sequence loop stores and
+ *   reloads them around every read --
+ *
+ *       movq %rbx, 256(%rsp)      the buffer, stored
+ *       movq 256(%rsp), %rax      and loaded straight back
+ *       subl %r8d, 264(%rsp)      the count, updated in memory
+ *
+ *   The reference holds both in registers for the length of the loop.
+ *   Lifting the three fields into locals and writing them back at the
+ *   end is the fix, and it has to be done carefully: the obvious
+ *   version of it decoded two thousand of three thousand round trips
+ *   wrongly while appearing three hundred times faster, because
+ *   producing short output quickly looks exactly like speed on a
+ *   throughput benchmark. Any attempt at this needs the round trips
+ *   checked before the timings are believed.
+ *
  * What is left is the sequence loop itself and, on frames that transmit
  * their own tables rather than using the predefined ones, building
  * those. Both are now spread thin: no single part of either dominates,
