@@ -159,7 +159,15 @@ struct rpng_process
                                * total_out consumption accounting        */
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
-   size_t data_restore_buf_size;
+   /* Where the next unfiltered scanline's pixels land.  This is the
+    * walking cursor that used to live in the CALLER'S pointer
+    * (*data += width per line, subtracted back at the end): any
+    * externally abandoned decode - a cancelled thumbnail task being
+    * the everyday case - left the caller holding an interior
+    * pointer, and freeing it corrupts the heap.  Manifested on
+    * Windows as STATUS_HEAP_CORRUPTION (c0000374) at a later free in
+    * task_image_load_free.  The caller's pointer now never moves. */
+   uint32_t *out_cursor;
    size_t inflate_buf_size;
    size_t avail_in;
    size_t avail_out;
@@ -1239,7 +1247,6 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
       return -1;
 
    pngp->restore_buf_size      = 0;
-   pngp->data_restore_buf_size = 0;
    pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
    pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
 
@@ -1370,7 +1377,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
 }
 
 static int rpng_reverse_filter_regular_iterate(
-      uint32_t **data, const struct png_ihdr *ihdr,
+      const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
@@ -1378,7 +1385,7 @@ static int rpng_reverse_filter_regular_iterate(
    {
       unsigned filter         = *pngp->inflate_buf++;
       pngp->restore_buf_size += 1;
-      ret                     = rpng_reverse_filter_copy_line(*data,
+      ret                     = rpng_reverse_filter_copy_line(pngp->out_cursor,
             ihdr, pngp, filter);
       if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
          goto end;
@@ -1390,8 +1397,7 @@ static int rpng_reverse_filter_regular_iterate(
    pngp->inflate_buf           += pngp->pitch;
    pngp->restore_buf_size      += pngp->pitch;
 
-   *data                       += ihdr->width;
-   pngp->data_restore_buf_size += ihdr->width;
+   pngp->out_cursor            += ihdr->width;
 
    return IMAGE_PROCESS_NEXT;
 
@@ -1399,8 +1405,6 @@ end:
    rpng_reverse_filter_deinit(pngp);
 
    pngp->inflate_buf -= pngp->restore_buf_size;
-   *data             -= pngp->data_restore_buf_size;
-   pngp->data_restore_buf_size = 0;
    return ret;
 }
 
@@ -1425,10 +1429,11 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
    if (rpng_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       return IMAGE_PROCESS_ERROR;
 
+   pngp->out_cursor = pngp->data;
+
    do
    {
-      ret = rpng_reverse_filter_regular_iterate(&pngp->data,
-            &pngp->ihdr, pngp);
+      ret = rpng_reverse_filter_regular_iterate(&pngp->ihdr, pngp);
    } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
@@ -1609,6 +1614,8 @@ static int rpng_load_image_argb_process_output_init(
    if (rpng->ihdr.interlace != 1)
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
          return -1;
+
+   process->out_cursor = *data;
 
    process->flags |= RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED;
    return 0;
@@ -2169,12 +2176,17 @@ int rpng_process_image(rpng_t *rpng,
          return IMAGE_PROCESS_NEXT;
    }
 
-   return rpng_reverse_filter_regular_iterate(data,
-      &rpng->ihdr, rpng->process);
+   return rpng_reverse_filter_regular_iterate(&rpng->ihdr, rpng->process);
 
 error:
    if (rpng->process)
    {
+      if (rpng->process->data)
+         free(rpng->process->data);
+      if (rpng->process->prev_scanline)
+         free(rpng->process->prev_scanline);
+      if (rpng->process->decoded_scanline)
+         free(rpng->process->decoded_scanline);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
@@ -2194,6 +2206,16 @@ void rpng_free(rpng_t *rpng)
       free(rpng->idat_buf.v);
    if (rpng->process)
    {
+      /* An externally abandoned decode (cancelled task) is torn down
+       * here at an arbitrary machine state: the per-pass output and
+       * the scanline pair may still be live alongside the inflate
+       * window. */
+      if (rpng->process->data)
+         free(rpng->process->data);
+      if (rpng->process->prev_scanline)
+         free(rpng->process->prev_scanline);
+      if (rpng->process->decoded_scanline)
+         free(rpng->process->decoded_scanline);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
