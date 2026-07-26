@@ -149,7 +149,7 @@ ARCHIVE FILE
 #include "../libretro-common/file/archive_file_7z.c"
 #endif
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 #include "../libretro-common/file/archive_file_zstd.c"
 #endif
 
@@ -160,6 +160,9 @@ COMPRESSION
 #include "../libretro-common/streams/trans_stream.c"
 #include "../libretro-common/streams/trans_stream_pipe.c"
 #include "../libretro-common/encodings/encoding_deflate.c"
+#ifdef HAVE_RZSTD
+#include "../libretro-common/encodings/encoding_rzstd.c"
+#endif
 #include "../libretro-common/streams/trans_stream_deflate.c"
 #include "../libretro-common/streams/rzip_stream.c"
 

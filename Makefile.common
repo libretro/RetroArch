@@ -1995,6 +1995,14 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
+# The built-in Zstandard codec. Independent of HAVE_ZSTD: a build may
+# have either, both while platforms are moving over, or eventually only
+# this one, at which point HAVE_ZSTD and deps/zstd can go.
+ifeq ($(HAVE_RZSTD),1)
+   DEFINES += -DHAVE_RZSTD
+   OBJ += $(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.o
+endif
+
 ifeq ($(HAVE_ZSTD),1)
    INCLUDE_DIRS += -I$(DEPS_DIR)/zstd/lib
    DEFINES += -DHAVE_ZSTD -DZSTD_DISABLE_ASM
@@ -2020,8 +2028,13 @@ ifeq ($(HAVE_ZSTD),1)
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress.o \
            $(DEPS_DIR)/zstd/lib/decompress/zstd_decompress_block.o
 
-   OBJ +=  $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o \
-           $(ZSOBJ)
+   OBJ += $(ZSOBJ)
+endif
+
+# The archive backend needs one decoder, not a particular one. Testing
+# the two concatenated would be wrong: "00" is not empty.
+ifneq ($(filter 1,$(HAVE_ZSTD) $(HAVE_RZSTD)),)
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_zstd.o
 endif
 
 ifeq ($(HAVE_RMODTRACKER), 1)

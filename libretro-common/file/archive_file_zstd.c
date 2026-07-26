@@ -33,7 +33,24 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+/* Either decoder will do; rzstd is preferred where a build has it, and
+ * the reference remains available until every platform has moved. */
+#ifdef HAVE_RZSTD
 #include <encodings/rzstd.h>
+#else
+#include <zstd.h>
+#endif
+
+/* One spelling for whichever decoder is compiled in. */
+#ifdef HAVE_RZSTD
+#define ZSTD_FRAME_HEADER_MAX RZSTD_FRAME_HEADER_MAX
+#define ZSTD_SIZE_UNKNOWN     RZSTD_CONTENT_SIZE_UNKNOWN
+#define ZSTD_SIZE_ERROR       RZSTD_CONTENT_SIZE_ERROR
+#else
+#define ZSTD_FRAME_HEADER_MAX 18
+#define ZSTD_SIZE_UNKNOWN     ((int64_t)ZSTD_CONTENTSIZE_UNKNOWN)
+#define ZSTD_SIZE_ERROR       ((int64_t)ZSTD_CONTENTSIZE_ERROR)
+#endif
 
 #define ZSTD_MAGIC         "\x28\xB5\x2F\xFD"
 #define ZSTD_MAGIC_LEN     4
@@ -118,26 +135,36 @@ static int zstd_parse_file_iterate_step(void *context,
 #ifdef HAVE_MMAP
    if (state->archive_mmap_data)
    {
+#ifdef HAVE_RZSTD
       content_size = rzstd_frame_content_size(
             state->archive_mmap_data, (size_t)state->archive_size);
+#else
+      content_size = (int64_t)ZSTD_getFrameContentSize(
+            state->archive_mmap_data, (size_t)state->archive_size);
+#endif
    }
    else
 #endif
    {
       /* Only the header is needed, and it is at most
-       * RZSTD_FRAME_HEADER_MAX bytes. */
-      uint8_t header_buf[RZSTD_FRAME_HEADER_MAX];
-      int64_t to_read = state->archive_size < RZSTD_FRAME_HEADER_MAX
-                       ? state->archive_size : RZSTD_FRAME_HEADER_MAX;
+       * ZSTD_FRAME_HEADER_MAX bytes. */
+      uint8_t header_buf[ZSTD_FRAME_HEADER_MAX];
+      int64_t to_read = state->archive_size < ZSTD_FRAME_HEADER_MAX
+                       ? state->archive_size : ZSTD_FRAME_HEADER_MAX;
       if (filestream_read(state->archive_file, header_buf, to_read) != to_read)
          return -1;
+#ifdef HAVE_RZSTD
       content_size = rzstd_frame_content_size(header_buf, (size_t)to_read);
+#else
+      content_size = (int64_t)ZSTD_getFrameContentSize(header_buf,
+            (size_t)to_read);
+#endif
    }
 
    /* A frame that does not state its size is no use here: the whole
     * member has to be allocated before it is decoded. */
-   if (  content_size == RZSTD_CONTENT_SIZE_UNKNOWN
-      || content_size == RZSTD_CONTENT_SIZE_ERROR)
+   if (  content_size == ZSTD_SIZE_UNKNOWN
+      || content_size == ZSTD_SIZE_ERROR)
       return -1;
 
    /* decompressed_size is a uint32_t and feeds a later malloc; reject
@@ -231,11 +258,18 @@ static int zstd_stream_decompress_data_to_file_iterate(
       return -1;
    }
 
-   e = rzstd_decode(ctx->decompressed_data, ctx->decompressed_size,
-         compressed_data, (size_t)ctx->archive_size, &result);
+#ifdef HAVE_RZSTD
+   e = (rzstd_decode(ctx->decompressed_data, ctx->decompressed_size,
+         compressed_data, (size_t)ctx->archive_size, &result)
+         != RZSTD_PROCESS_END);
+#else
+   result = ZSTD_decompress(ctx->decompressed_data, ctx->decompressed_size,
+         compressed_data, (size_t)ctx->archive_size);
+   e      = ZSTD_isError(result);
+#endif
    free(compressed_data);
 
-   if (e != RZSTD_PROCESS_END)
+   if (e)
    {
       free(ctx->decompressed_data);
       ctx->decompressed_data = NULL;
@@ -297,10 +331,15 @@ static int64_t zstd_file_read(
 
    filestream_close(file);
 
+#ifdef HAVE_RZSTD
    content_size = rzstd_frame_content_size(compressed_data,
          (size_t)file_size);
-   if (  content_size == RZSTD_CONTENT_SIZE_UNKNOWN
-      || content_size == RZSTD_CONTENT_SIZE_ERROR)
+#else
+   content_size = (int64_t)ZSTD_getFrameContentSize(compressed_data,
+         (size_t)file_size);
+#endif
+   if (  content_size == ZSTD_SIZE_UNKNOWN
+      || content_size == ZSTD_SIZE_ERROR)
    {
       free(compressed_data);
       return -1;
@@ -324,11 +363,18 @@ static int64_t zstd_file_read(
       return -1;
    }
 
-   e = rzstd_decode(decompressed, (size_t)content_size,
-         compressed_data, (size_t)file_size, &result);
+#ifdef HAVE_RZSTD
+   e = (rzstd_decode(decompressed, (size_t)content_size,
+         compressed_data, (size_t)file_size, &result)
+         != RZSTD_PROCESS_END);
+#else
+   result = ZSTD_decompress(decompressed, (size_t)content_size,
+         compressed_data, (size_t)file_size);
+   e      = ZSTD_isError(result);
+#endif
    free(compressed_data);
 
-   if (e != RZSTD_PROCESS_END)
+   if (e)
    {
       free(decompressed);
       return -1;
