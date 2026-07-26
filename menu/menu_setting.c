@@ -1327,6 +1327,14 @@ static size_t setting_get_string_representation_st_path(rarch_setting_t *setting
    return 0;
 }
 
+static size_t setting_get_string_representation_st_string(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   if (setting && setting->value.target.string)
+      return strlcpy(s, setting->value.target.string, len);
+   return 0;
+}
+
 static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting,
       char *s, size_t len)
 {
@@ -1910,7 +1918,11 @@ static rarch_setting_t setting_string_setting(enum setting_type type,
       _t.right = NULL;
       _t.change = change_handler;
       _t.read = read_handler;
-      _t.repr = &setting_get_string_representation_st_path;
+      /* ST_STRING must show the raw value. Path-style basename/extension
+       * stripping turns "192.168.1.76" into "192.168.1". */
+      _t.repr = (type == ST_PATH || type == ST_DIR)
+            ? &setting_get_string_representation_st_path
+            : &setting_get_string_representation_st_string;
       result.actions = settings_actions_intern(&_t);
    }
    return result;
