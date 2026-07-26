@@ -131,8 +131,18 @@ enum rpng_process_flags
 {
    RPNG_PROCESS_FLAG_INFLATE_INITIALIZED    = (1 << 0),
    RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED = (1 << 1),
-   RPNG_PROCESS_FLAG_PASS_INITIALIZED       = (1 << 2)
+   RPNG_PROCESS_FLAG_PASS_INITIALIZED       = (1 << 2),
+   RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED     = (1 << 3),
+   RPNG_PROCESS_FLAG_FILTER_STARVED         = (1 << 4)
 };
+
+/* Internal signal from the reverse-filter layer: not enough of the
+ * stream has been inflated yet for the next unit of work (a scanline,
+ * or a whole Adam7 pass) - come back after another inflate slice.
+ * Deliberately -3: it travels the same int returns as
+ * enum image_process_code, where -2 is already IMAGE_PROCESS_ERROR
+ * and -1 IMAGE_PROCESS_ERROR_END. */
+#define RPNG_FILTER_WAIT (-3)
 
 struct rpng_process
 {
@@ -142,7 +152,11 @@ struct rpng_process
    const struct trans_stream_backend *stream_backend;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
-   uint8_t *inflate_buf;
+   uint8_t *inflate_buf;      /* walking read cursor for the filters     */
+   uint8_t *inflate_base;     /* fixed allocation base: inflate writes at
+                               * inflate_base + inflated_total, immune to
+                               * the cursor walk and to Adam7's per-pass
+                               * total_out consumption accounting        */
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
    size_t data_restore_buf_size;
@@ -151,6 +165,7 @@ struct rpng_process
    size_t avail_out;
    size_t span_idx;          /* current IDAT span being fed             */
    uint32_t span_pos;        /* bytes of it already consumed            */
+   size_t inflated_total;    /* monotone bytes produced by the stream   */
    size_t total_out;
    size_t pass_size;
    struct png_ihdr ihdr; /* uint32_t alignment */
@@ -1192,8 +1207,15 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
 
       if (pngp->pass_size > pngp->total_out)
       {
+         /* Pass not fully inflated yet.  While the stream is still
+          * being fed this is a wait, not an error; once the stream
+          * has ended it is a truncation (and the inflate end path
+          * has already refused an under-produced stream, so this
+          * arm is belt and braces). */
          free(pngp->data);
          pngp->data = NULL;
+         if (!(pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+            return RPNG_FILTER_WAIT;
          return -1;
       }
 
@@ -1207,7 +1229,13 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
 
    rpng_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pass_size);
 
-   if (pngp->total_out < pass_size)
+   /* Interleaved decode: this init now runs after the first inflate
+    * slice rather than after the whole stream, so the whole-image
+    * sufficiency check only applies once the stream has ended (the
+    * inflate end path enforces full production; this arm keeps the
+    * old failure for a completed-but-short stream). */
+   if (      pngp->total_out < pass_size
+         && (pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
       return -1;
 
    pngp->restore_buf_size      = 0;
@@ -1389,6 +1417,8 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
 
    if ((ret = rpng_reverse_filter_init(ihdr, pngp)) == 1)
       return IMAGE_PROCESS_NEXT;
+   else if (ret == RPNG_FILTER_WAIT)
+      return RPNG_FILTER_WAIT;
    else if (ret == -1)
       return IMAGE_PROCESS_ERROR_END;
 
@@ -1436,6 +1466,12 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
       case IMAGE_PROCESS_ERROR_END:
       case IMAGE_PROCESS_END:
          break;
+      case RPNG_FILTER_WAIT:
+         /* More inflate needed before this pass can start; do not
+          * advance pass_pos and do not disturb the restore
+          * bookkeeping.  Tell the driver to pull a slice. */
+         pngp->flags |= RPNG_PROCESS_FLAG_FILTER_STARVED;
+         return 0;
       case IMAGE_PROCESS_NEXT:
          pngp->pass_pos++;
          return 0;
@@ -1467,7 +1503,7 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
  * also restores the incremental pacing the nbio callers were written
  * for: one bounded step per rpng_process_image call instead of one
  * unbounded one. */
-#define RPNG_INFLATE_SLICE 65536
+#define RPNG_INFLATE_SLICE 32768
 
 static int rpng_load_image_argb_process_inflate_init(
       rpng_t *rpng, uint32_t **data)
@@ -1507,7 +1543,7 @@ static int rpng_load_image_argb_process_inflate_init(
    slice = (process->avail_out > RPNG_INFLATE_SLICE)
          ? RPNG_INFLATE_SLICE : (uint32_t)process->avail_out;
    process->stream_backend->set_out(process->stream,
-         process->inflate_buf + process->total_out, slice);
+         process->inflate_base + process->inflated_total, slice);
 
    zstatus = process->stream_backend->trans(
       process->stream, false, &rd, &wn, &err);
@@ -1515,17 +1551,44 @@ static int rpng_load_image_argb_process_inflate_init(
    if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
       goto error;
 
-   process->avail_in -= rd;
-   process->span_pos += rd;
-   process->avail_out -= wn;
-   process->total_out += wn;
+   process->avail_in      -= rd;
+   process->span_pos      += rd;
+   process->avail_out     -= wn;
+   process->total_out     += wn;
+   process->inflated_total += wn;
 
    if (err)
       return 0;
 
 end:
+   /* Stream complete.  An under-produced stream (declared geometry
+    * not fully covered) was previously caught by the reverse-filter
+    * init's whole-image check, which now runs before the stream ends;
+    * enforce it here instead, in the one place that knows the stream
+    * is finished. */
+   if (process->avail_out > 0 && rpng->ihdr.interlace != 1)
+      goto error;
    process->stream_backend->stream_free(process->stream);
    process->stream = NULL;
+
+   process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   return 1;
+
+error:
+   process->flags &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   return -1;
+}
+
+/* One-time output-side setup, run before the first reverse-filter
+ * step rather than after the whole stream has inflated (the decode is
+ * interleaved: unfiltering consumes scanlines while later slices are
+ * still being inflated, so each slice is unfiltered while it is still
+ * cache-warm instead of being re-read cold after a full-image inflate
+ * pass). */
+static int rpng_load_image_argb_process_output_init(
+      rpng_t *rpng, uint32_t **data)
+{
+   struct rpng_process *process = (struct rpng_process*)rpng->process;
 
 #ifdef GEKKO
    /* We often use these in textures, make sure 
@@ -1537,7 +1600,7 @@ end:
          (size_t)rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
-      goto false_end;
+      return -1;
 
    process->adam7_restore_buf_size = 0;
    process->restore_buf_size       = 0;
@@ -1545,15 +1608,10 @@ end:
 
    if (rpng->ihdr.interlace != 1)
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
-         goto false_end;
+         return -1;
 
-   process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
-   return 1;
-
-error:
-false_end:
-   process->flags &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
-   return -1;
+   process->flags |= RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED;
+   return 0;
 }
 
 /* Ceiling on the accumulated IDAT stream.  The PNG specification sets
@@ -1653,8 +1711,9 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
    if (!inflate_buf)
       goto error;
 
-   process->inflate_buf = inflate_buf;
-   process->avail_in    = rpng->idat_buf.total;
+   process->inflate_buf  = inflate_buf;
+   process->inflate_base = inflate_buf;
+   process->avail_in     = rpng->idat_buf.total;
    process->avail_out   = process->inflate_buf_size;
    process->span_idx    = 0;
    process->span_pos    = 0;
@@ -2069,26 +2128,55 @@ int rpng_process_image(rpng_t *rpng,
       return IMAGE_PROCESS_NEXT;
    }
 
-   if (!(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+   /* Interleaved decode: inflate is demand-driven.  A slice is only
+    * pulled when the next unit of filtering work (a scanline, or an
+    * Adam7 pass) has not fully arrived, so consumption tracks
+    * production and each slice is unfiltered while still cache-warm
+    * rather than re-read cold after a whole-image inflate pass. */
+   if (!(rpng->process->flags & RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED))
    {
-      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+      if (rpng_load_image_argb_process_output_init(rpng, data) == -1)
          goto error;
-      return IMAGE_PROCESS_NEXT;
    }
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
 
    if (rpng->ihdr.interlace && rpng->process)
-      return rpng_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
+   {
+      int ret;
+      rpng->process->flags &= ~RPNG_PROCESS_FLAG_FILTER_STARVED;
+      ret = rpng_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
+      if (   (rpng->process->flags & RPNG_PROCESS_FLAG_FILTER_STARVED)
+          && !(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+      {
+         if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+            goto error;
+      }
+      return ret;
+   }
+
+   /* A scanline is one filter byte plus pitch bytes; pull one inflate
+    * slice when the next one has not fully arrived. */
+   if (   !(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED)
+       &&   rpng->process->total_out - rpng->process->restore_buf_size
+          < (size_t)rpng->process->pitch + 1)
+   {
+      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+         goto error;
+      if (   rpng->process->total_out - rpng->process->restore_buf_size
+           < (size_t)rpng->process->pitch + 1)
+         return IMAGE_PROCESS_NEXT;
+   }
+
    return rpng_reverse_filter_regular_iterate(data,
       &rpng->ihdr, rpng->process);
 
 error:
    if (rpng->process)
    {
-      if (rpng->process->inflate_buf)
-         free(rpng->process->inflate_buf);
+      if (rpng->process->inflate_base)
+         free(rpng->process->inflate_base);
       if (rpng->process->stream)
          rpng->process->stream_backend->stream_free(rpng->process->stream);
       free(rpng->process);
@@ -2106,8 +2194,8 @@ void rpng_free(rpng_t *rpng)
       free(rpng->idat_buf.v);
    if (rpng->process)
    {
-      if (rpng->process->inflate_buf)
-         free(rpng->process->inflate_buf);
+      if (rpng->process->inflate_base)
+         free(rpng->process->inflate_base);
       if (rpng->process->stream)
       {
          if (   rpng->process->stream_backend 
