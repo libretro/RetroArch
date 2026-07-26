@@ -738,6 +738,20 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
          unsigned got, take;
          if (boff + wav->blockalign > wav->subchunk2size)
             break;
+         if (within == 0 && frames - done >= (size_t)spb)
+         {
+            /* The window covers this whole block: decode straight
+             * into the caller's buffer.  The whole-file decode the
+             * mixer does lands here for every block, so the static
+             * scratch below - and with it the reentrancy caveat -
+             * only serves windows that start or end mid-block. */
+            got = rwav_decode_block(wav, d + boff, wav->blockalign,
+                  out + done * ch);
+            if (!got)
+               break;
+            done += got;
+            continue;
+         }
          if ((size_t)spb * ch > sizeof(blk) / sizeof(blk[0]))
             break;
          got = rwav_decode_block(wav, d + boff, wav->blockalign, blk);

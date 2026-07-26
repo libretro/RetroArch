@@ -26,6 +26,8 @@
 #include <retro_common_api.h>
 #include <retro_inline.h>
 #include <stdint.h>
+#include <string.h>
+#include <retro_endianness.h>
 
 RETRO_BEGIN_DECLS
 
@@ -37,16 +39,30 @@ RETRO_BEGIN_DECLS
  * not necessarily four-aligned. */
 static INLINE int16_t rwav_s16(const uint8_t *p)
 {
+#ifndef MSB_FIRST
+   /* file order is host order: a two-byte load, which the memcpy
+    * idiom becomes at any optimisation level */
+   int16_t v;
+   memcpy(&v, p, sizeof(v));
+   return v;
+#else
    unsigned v = (unsigned)p[0] | ((unsigned)p[1] << 8);
    return (int16_t)(v < 0x8000u ? (int)v : (int)v - 0x10000);
+#endif
 }
 
 static INLINE float rwav_f32(const uint8_t *p)
 {
+#ifndef MSB_FIRST
+   float f;
+   memcpy(&f, p, sizeof(f));
+   return f;
+#else
    union { uint32_t u; float f; } bits;
    bits.u =  (uint32_t)p[0]        | ((uint32_t)p[1] << 8)
           | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
    return bits.f;
+#endif
 }
 
 /* One 24-bit sample: three little-endian bytes, sign-extended. There is
