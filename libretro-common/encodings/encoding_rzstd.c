@@ -37,9 +37,18 @@
  * CD-framed hunk holds on both its halves. Corrupted frames decode
  * without an ASan or UBSan fault.
  *
- * Nothing encodes. The header describes a minimal encoder because one
- * caller needs one -- input replay payloads, at level 3 -- and none of
- * it is written.
+ * Encoding produces valid frames and does not yet compress. Every
+ * output is accepted by both this decoder and the reference
+ * implementation, but only a block of one repeated byte is stored as
+ * anything other than itself: there is no match finding and no
+ * sequence emission, so anything else comes out at its input size plus
+ * three bytes a block.
+ *
+ * That is not good enough for the caller it exists for. Input replay
+ * payloads are highly repetitive without being uniform, which is the
+ * shape raw blocks handle worst -- measured at 100% of input on data
+ * built to resemble one. Until sequences are emitted, this encoder is
+ * a correct placeholder rather than a replacement for anything.
  *
  * Built and verified:
  *
@@ -73,7 +82,13 @@
  *                               verified. A caller expecting a stated
  *                               checksum to be checked does not get
  *                               that.
- *   Encoding                    nothing at all.
+ *   Sequence emission           the match finding and FSE encoding
+ *                               that would make the encoder compress.
+ *                               This is what stands between it and
+ *                               replacing the reference library for
+ *                               the one caller that compresses.
+ *   Huffman literal encoding    literals are emitted raw. Legal, and
+ *                               costs ratio.
  *   Streaming                   the resumable interface the header
  *                               describes. Every frame is decoded in
  *                               one call today.
@@ -1659,4 +1674,146 @@ int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
       sym_out[i]   = table[i].symbol;
    }
    return RZ_OK;
+}
+
+/* -------- encoding --------
+ *
+ * One caller compresses -- input replay payloads -- so this is sized
+ * for that and not for competing with the reference implementation's
+ * ratio. What it must do is produce frames any conforming decoder
+ * reads.
+ *
+ * Matches are found with a single hash of four bytes and no chain, so
+ * only the most recent candidate at each position is considered. There
+ * is no lazy matching and no optimal parse. Literals go out raw rather
+ * than Huffman coded, and the sequence tables are the predefined ones,
+ * which between them cost some ratio and remove the need to build and
+ * transmit tables at all.
+ */
+
+#define RZSTD_ENC_BLOCK    (64 * 1024)
+#define RZSTD_ENC_HASH_LOG 15
+#define RZSTD_ENC_MIN_MATCH 4
+
+size_t rzstd_compress_bound(size_t src_len)
+{
+   /* A frame that stores its input outright: a header, then a block
+    * header every RZSTD_ENC_BLOCK bytes, then the bytes. */
+   size_t blocks = (src_len / RZSTD_ENC_BLOCK) + 1;
+
+   return src_len + blocks * 3 + RZSTD_FRAME_HEADER_MAX + 4;
+}
+
+/* Writes a frame header stating the content size, so a decoder can size
+ * its output before decoding (3.1.1.1). Single-segment, no checksum, no
+ * dictionary. */
+static size_t rzstd_write_frame_header(uint8_t *dst, uint64_t size)
+{
+   size_t at = 0;
+
+   dst[at++] = (uint8_t)(RZSTD_MAGIC);
+   dst[at++] = (uint8_t)(RZSTD_MAGIC >> 8);
+   dst[at++] = (uint8_t)(RZSTD_MAGIC >> 16);
+   dst[at++] = (uint8_t)(RZSTD_MAGIC >> 24);
+
+   /* Single segment means no window descriptor: the content size is the
+    * window, which is what lets a decoder allocate exactly once. */
+   if (size < 256)
+   {
+      dst[at++] = 0x20;                       /* fcs 1 byte    */
+      dst[at++] = (uint8_t)size;
+   }
+   else if (size < 65536 + 256)
+   {
+      uint32_t v = (uint32_t)(size - 256);    /* stored biased */
+      dst[at++] = 0x60;                       /* fcs 2 bytes   */
+      dst[at++] = (uint8_t)v;
+      dst[at++] = (uint8_t)(v >> 8);
+   }
+   else
+   {
+      dst[at++] = 0xa0;                       /* fcs 4 bytes   */
+      dst[at++] = (uint8_t)size;
+      dst[at++] = (uint8_t)(size >> 8);
+      dst[at++] = (uint8_t)(size >> 16);
+      dst[at++] = (uint8_t)(size >> 24);
+   }
+
+   return at;
+}
+
+static void rzstd_write_block_header(uint8_t *dst, uint32_t size,
+      uint32_t type, int last)
+{
+   uint32_t v = ((uint32_t)(last ? 1 : 0)) | (type << 1) | (size << 3);
+
+   dst[0] = (uint8_t)v;
+   dst[1] = (uint8_t)(v >> 8);
+   dst[2] = (uint8_t)(v >> 16);
+}
+
+int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
+      size_t src_len, int level, size_t *wrote)
+{
+   size_t at = 0;
+   size_t in = 0;
+
+   (void)level;
+
+   if (!dst || (!src && src_len))
+      return RZSTD_PROCESS_ERROR;
+   if (dst_len < rzstd_compress_bound(src_len))
+      return RZSTD_PROCESS_ERROR;
+
+   at = rzstd_write_frame_header(dst, (uint64_t)src_len);
+
+   /* An empty input still needs a block, because a frame with none is
+    * not a frame. */
+   if (!src_len)
+   {
+      rzstd_write_block_header(dst + at, 0, RZSTD_BLOCK_RAW, 1);
+      at += 3;
+      if (wrote)
+         *wrote = at;
+      return RZSTD_PROCESS_END;
+   }
+
+   while (in < src_len)
+   {
+      size_t take = src_len - in;
+      int    last;
+
+      if (take > RZSTD_ENC_BLOCK)
+         take = RZSTD_ENC_BLOCK;
+      last = (in + take >= src_len);
+
+      /* A block of one repeated byte costs one byte to store, so it is
+       * worth the scan: replay payloads are full of them. */
+      {
+         size_t k = 1;
+
+         while (k < take && src[in + k] == src[in])
+            k++;
+         if (k == take)
+         {
+            rzstd_write_block_header(dst + at, (uint32_t)take,
+                  RZSTD_BLOCK_RLE, last);
+            at += 3;
+            dst[at++] = src[in];
+            in += take;
+            continue;
+         }
+      }
+
+      rzstd_write_block_header(dst + at, (uint32_t)take,
+            RZSTD_BLOCK_RAW, last);
+      at += 3;
+      memcpy(dst + at, src + in, take);
+      at += take;
+      in += take;
+   }
+
+   if (wrote)
+      *wrote = at;
+   return RZSTD_PROCESS_END;
 }

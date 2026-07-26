@@ -49,6 +49,7 @@ Matroska one found a real defect on first use.
 
 | | |
 |---|---|
-| `rzstd_frame_test.c` | Decodes a Zstandard frame through `rzstd` and compares against a reference decode. |
+' `rzstd_encode_test.c` ' Round-trips through rzstd's encoder and decodes with both rzstd and the reference implementation. '
+' `rzstd_frame_test.c` ' Decodes a Zstandard frame through `rzstd` and compares against a reference decode. |
 | `rzstd_fse_test.c` | Builds the FSE tables RFC 8878 predefines and checks the spread closes. |
 | `huff_test.c` | Decodes every `huff` hunk of an image and compares against the original uncompressed source. |
