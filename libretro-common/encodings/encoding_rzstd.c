@@ -133,12 +133,13 @@
  * the reference asks one and keeps a separate careful path for the end
  * of a block.
  *
- * Encoding is slower and compresses worse: about a quarter of the
- * reference's throughput, and output 1.1x its size on file data, 3.7x
- * on synthetic structured data, 4.4x on data shaped like an input
- * replay. That last figure decides where the encoder may be used, a
- * replay payload being what the only caller that compresses
- * compresses, and 4.4x is still too much to replace it.
+ * Encoding is slower and compresses worse: about a third of the
+ * reference's throughput, and output 1.1x its size on file data, 3.1x
+ * on synthetic structured data, 3.6x on data shaped like an input
+ * replay, and 0.8x on long runs of one value, where it wins. That
+ * replay figure decides where the encoder may be used, a replay payload
+ * being what the only caller that compresses compresses, and 3.6x is
+ * still too much to replace it.
  *
  * So this is the right decoder for rchd on both counts -- it needs
  * C89, which <zstd.h> denies it, and it is faster at the frame sizes a
@@ -2622,7 +2623,11 @@ static void rzstd_fse_ct_flush(rzstd_wbits_t *w, uint32_t state,
    rzstd_wbits_add(w, state, ct->accuracy_log);
 }
 
-#define RZSTD_ENC_BLOCK    (64 * 1024)
+/* The largest a block may be, which is what the decoder accepts and
+ * twice what this used to emit. A match cannot cross a block boundary,
+ * so a smaller block simply forgets everything it has seen every time
+ * it starts one. */
+#define RZSTD_ENC_BLOCK    RZSTD_BLOCK_MAX
 #define RZSTD_ENC_HASH_LOG 15
 #define RZSTD_ENC_CHAIN_LOG 15
 #define RZSTD_ENC_CHAIN_DEPTH 8
