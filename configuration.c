@@ -151,6 +151,7 @@ enum audio_driver_enum
    AUDIO_JACK,
    AUDIO_SDL,
    AUDIO_SDL2,
+   AUDIO_SDL3,
    AUDIO_XAUDIO,
    AUDIO_PULSE,
    AUDIO_EXT,
@@ -177,6 +178,7 @@ enum microphone_driver_enum
    MICROPHONE_ALSA = AUDIO_NULL + 1,
    MICROPHONE_ALSATHREAD,
    MICROPHONE_SDL2,
+   MICROPHONE_SDL3,
    MICROPHONE_WASAPI,
    MICROPHONE_PIPEWIRE,
    MICROPHONE_COREAUDIO,
@@ -573,6 +575,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RWEBAUDIO;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL2;
+#elif defined(HAVE_SDL3)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_SDL3;
 #elif defined(HAVE_RSOUND)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
 #elif defined(HAVE_ROAR)
@@ -599,6 +603,8 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 #elif defined(HAVE_SDL2)
 /* The default fallback driver is SDL2, if available. */
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL2;
+#elif defined(HAVE_SDL3)
+static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_SDL3;
 #else
 static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_NULL;
 #endif
@@ -960,6 +966,8 @@ const char *config_get_default_audio(void)
          return "sdl";
       case AUDIO_SDL2:
          return "sdl2";
+      case AUDIO_SDL3:
+         return "sdl3";
       case AUDIO_DSOUND:
          return "dsound";
       case AUDIO_WASAPI:
@@ -1035,6 +1043,8 @@ const char *config_get_default_microphone(void)
          return "wasapi";
       case MICROPHONE_SDL2:
          return "sdl2";
+      case MICROPHONE_SDL3:
+         return "sdl3";
       case MICROPHONE_COREAUDIO:
          return "coreaudio";
       case MICROPHONE_NULL:

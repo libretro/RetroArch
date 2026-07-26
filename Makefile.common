@@ -1671,7 +1671,8 @@ ifeq ($(HAVE_SDL3), 1)
    OBJ += input/drivers_joypad/sdl3_joypad.o \
           input/drivers/sdl3_input.o \
           gfx/drivers/sdl3_gfx.o \
-          gfx/common/sdl3_common.o
+          gfx/common/sdl3_common.o \
+          audio/drivers/sdl3_audio.o
 
    ifneq ($(filter 1,$(HAVE_OPENGL) $(HAVE_OPENGL1) $(HAVE_OPENGL_CORE) $(HAVE_OPENGLES)),)
       OBJ += gfx/drivers_context/sdl3_gl_ctx.o

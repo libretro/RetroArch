@@ -9,6 +9,7 @@
 - ANDROID: Enable network commands
 - ANDROID: Fix dual-motor rumble for USB-connected DS4 and DualSense controllers
 - AUDIO: ASIO driver for Windows platforms
+- AUDIO: SDL3 audio and microphone drivers
 - AUDIO/MICROPHONE: Fix resampling, apple drivers
 - APPLE: Use coreaudio3 resampling
 - APPLE: Add coreaudio3 driver to iOS/TVOS

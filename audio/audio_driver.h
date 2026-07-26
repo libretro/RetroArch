@@ -529,6 +529,7 @@ extern audio_driver_t audio_openal;
 extern audio_driver_t audio_opensl;
 extern audio_driver_t audio_jack;
 extern audio_driver_t audio_sdl;
+extern audio_driver_t audio_sdl3;
 extern audio_driver_t audio_xa;
 extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_pipewire;
