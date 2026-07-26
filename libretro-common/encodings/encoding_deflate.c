@@ -494,6 +494,31 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                s->have_pending_lit = 0;
                s->stored_len--;
             }
+            /* Bulk copy: a stored block is byte-aligned by
+             * construction, and the LEN/NLEN read that precedes this
+             * phase consumes whole bytes from an aligned start, so
+             * the bit buffer is empty on arrival and the payload can
+             * go straight from input to output.  The bitcnt test is
+             * an invariant check rather than a live branch - if a
+             * future change leaves bits buffered, the byte-at-a-time
+             * loop below still produces correct output, just slowly. */
+            if (s->stored_len > 0 && s->bitcnt == 0)
+            {
+               size_t avail_in  = s->in_size  - s->in_pos;
+               size_t avail_out = s->out_size - s->out_pos;
+               size_t n         = s->stored_len;
+               if (n > avail_in)  n = avail_in;
+               if (n > avail_out) n = avail_out;
+               if (n)
+               {
+                  memcpy(s->out + s->out_pos, s->in + s->in_pos, n);
+                  s->in_pos     += n;
+                  s->out_pos    += n;
+                  s->stored_len -= (uint32_t)n;
+               }
+               if (s->stored_len > 0)
+                  goto suspend;   /* input or output exhausted */
+            }
             while (s->stored_len > 0)
             {
                uint8_t b;
