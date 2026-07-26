@@ -16,6 +16,7 @@ script, compiled or run by hand against the sources it names.
 | | |
 |---|---|
 | `chd_probe.py` | Regenerates the reference images `formats/chd/FORMAT.md` is derived from and re-checks every claim marked verified in it. Requires `chdman` on PATH. |
+| `cdfs_sector_compare.c` | Compares CHD readers over the sector-seek path RetroAchievements hashes through. |
 | `cdfs_backend_compare.c` | Digests a disc image through cdfs, for comparing CHD readers above chd_stream. |
 | `rchd_crc16_test.c` | Checks the table-driven CRC-16 against the bitwise definition. |
 | `chd_map_test.c` | Decodes the hunk map of real images and checks it against the CRC-16 the file carries, then feeds corrupted maps through the same path. |
