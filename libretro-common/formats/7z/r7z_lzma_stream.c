@@ -515,7 +515,6 @@ static dummy_res_t try_dummy(const rlzma_stream_t *s,
             }
             {
                uint32_t i = 1;
-               uint32_t m = 1;
                if (pos_slot >= END_POS_MODEL_INDEX)
                   prob = probs + ALIGN_OFFS;
                else
@@ -527,7 +526,6 @@ static dummy_res_t try_dummy(const rlzma_stream_t *s,
                do
                {
                   RC_GET_BIT_2_CHECK(prob + i, i, ; , ;)
-                  m <<= 1;
                } while (--num_direct);
             }
          }
