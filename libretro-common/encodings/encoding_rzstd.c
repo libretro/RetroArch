@@ -106,8 +106,8 @@
  * Decoding, on whole Zstandard-compressed disc images read through
  * formats/chd/rchd.c, which is what this exists for:
  *
- *   446 MB/s against 179, on an image of 2048-byte hunks
- *   103 MB/s against  79, on a CD image of one frame per hunk
+ *   544 MB/s against 179, on an image of 2048-byte hunks
+ *   108 MB/s against  79, on a CD image of one frame per hunk
  *    71 MB/s against  59, on another
  *
  * and 2.7 to 3.1 times its throughput on those frames alone.
@@ -1008,6 +1008,125 @@ static uint8_t rzstd_huf_symbol(const rzstd_huf_t *huf, rzstd_rbits_t *b)
    return (uint8_t)(e >> 8);
 }
 
+/* -------- the counting-free reader --------
+ *
+ * The four-stream literal decode is limited by how much it must hold
+ * live: a buffer, a count and a cursor for each of four streams, plus
+ * four output positions. That is more than the register file has, and
+ * the emitted code spills.
+ *
+ * The count is what can be dropped. A load sets bit zero as a marker
+ * and consuming shifts left, so the marker's position is the number of
+ * bits consumed and trailing zeros recover it. Four counts disappear.
+ *
+ * Two invariants make it safe. Reads take the top eleven bits only, so
+ * nothing below bit fifty-three is ever read and the marker cannot be
+ * mistaken for data. And at most five symbols pass between reloads --
+ * fifty-five bits at the widest code -- so the marker stays inside the
+ * word.
+ */
+
+static uint32_t rzstd_ctz64(uint64_t v)
+{
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+   return (uint32_t)__builtin_ctzll(v);
+#else
+   uint32_t n = 0;
+
+   if (!(v & 0xffffffffu)) { v >>= 32; n += 32; }
+   if (!(v & 0xffff))      { v >>= 16; n += 16; }
+   if (!(v & 0xff))        { v >>= 8;  n += 8;  }
+   if (!(v & 0xf))         { v >>= 4;  n += 4;  }
+   if (!(v & 0x3))         { v >>= 2;  n += 2;  }
+   if (!(v & 0x1))         { n += 1; }
+   return n;
+#endif
+}
+
+/* Eight bytes, least significant first, a byte at a time so neither
+ * alignment nor the host's order matters. */
+static uint64_t rzstd_rd64le(const uint8_t *p)
+{
+   return  (uint64_t)p[0]        | ((uint64_t)p[1] << 8)
+        | ((uint64_t)p[2] << 16) | ((uint64_t)p[3] << 24)
+        | ((uint64_t)p[4] << 32) | ((uint64_t)p[5] << 40)
+        | ((uint64_t)p[6] << 48) | ((uint64_t)p[7] << 56);
+}
+
+typedef struct rzstd_fast_bits
+{
+   uint64_t       bits;
+   const uint8_t *ptr;
+   const uint8_t *base;
+} rzstd_fast_t;
+
+static int rzstd_fast_init(rzstd_fast_t *f, const uint8_t *src, size_t len)
+{
+   uint32_t last;
+   uint32_t pad;
+
+   if (len < 8)
+      return 0;
+   last = src[len - 1];
+   if (!last)
+      return 0;
+
+   f->base = src;
+   f->ptr  = src + len - 8;
+   f->bits = rzstd_rd64le(f->ptr) | 1;
+
+   /* Skip the encoder's padding, which counts as consumption like any
+    * other: the marker moves with it and the reload accounts for it. */
+   pad = 8 - rzstd_highbit(last);
+   f->bits <<= pad;
+   return 1;
+}
+
+/* True while the cursor can still back up a whole word. */
+static int rzstd_fast_ok(const rzstd_fast_t *f)
+{
+   return f->ptr >= f->base + 8;
+}
+
+static void rzstd_fast_reload(rzstd_fast_t *f)
+{
+   uint32_t used = rzstd_ctz64(f->bits);
+
+   f->ptr  -= used >> 3;
+   f->bits  = rzstd_rd64le(f->ptr) | 1;
+   f->bits <<= used & 7;
+}
+
+/* Where a stream has reached, so the general reader can carry on from
+ * it once the fast loop stops. */
+static void rzstd_fast_handoff(const rzstd_fast_t *f, rzstd_rbits_t *b,
+      const uint8_t *src, size_t len)
+{
+   uint32_t used  = rzstd_ctz64(f->bits);
+   size_t   bytes = (size_t)(f->ptr - src) + 8;
+
+   memset(b, 0, sizeof(*b));
+   b->base  = src;
+   b->pos   = bytes;
+   b->bits  = 0;
+   b->count = 0;
+   rzstd_rbits_fill(b);
+   /* Drop what the fast loop already took. */
+   while (used >= 8 && b->count >= 8)
+   {
+      b->bits <<= 8;
+      b->count -= 8;
+      used     -= 8;
+      rzstd_rbits_fill(b);
+   }
+   if (used)
+   {
+      b->bits <<= used;
+      b->count -= used;
+   }
+   (void)len;
+}
+
 /* Decodes @count literals from either the one-stream or four-stream
  * layout (4.2.2).
  *
@@ -1052,6 +1171,7 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
    {
       rzstd_rbits_t b[4];
       size_t        size[4];
+      const uint8_t *begin[4];
       size_t        at = 6;
       size_t        quarter;
       size_t        k;
@@ -1068,6 +1188,7 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
 
       for (k = 0; k < 4; k++)
       {
+         begin[k] = src + at;
          if ((e = rzstd_rbits_init(&b[k], src + at, size[k])) != RZ_OK)
             return e;
          at += size[k];
@@ -1105,6 +1226,60 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
 
          /* How many rounds every stream can take without checking. */
          together = quarter >= 5 ? (quarter - 4) / 5 : 0;
+
+         /* The counting-free reader first, while every stream has a
+          * whole word left below its cursor. It holds a buffer and a
+          * cursor per stream and no count, which is four fewer live
+          * values than the general reader needs and the difference
+          * between fitting in registers and not. */
+         {
+            rzstd_fast_t    f[4];
+            const uint16_t *ent = huf->entry;
+            /* The table is indexed by the top max_bits, so the shift is
+             * fixed for the whole loop, as it is in the assembly this
+             * follows. */
+            const uint32_t  sh  = 64 - huf->max_bits;
+            int             all = 1;
+
+            for (k = 0; k < 4; k++)
+               if (!rzstd_fast_init(&f[k], begin[k], size[k]))
+                  all = 0;
+
+            if (all)
+            {
+               while (together
+                     && rzstd_fast_ok(&f[0]) && rzstd_fast_ok(&f[1])
+                     && rzstd_fast_ok(&f[2]) && rzstd_fast_ok(&f[3]))
+               {
+                  for (i = 0; i < 5; i++)
+                  {
+                     uint32_t e0 = ent[f[0].bits >> sh];
+                     uint32_t e1 = ent[f[1].bits >> sh];
+                     uint32_t e2 = ent[f[2].bits >> sh];
+                     uint32_t e3 = ent[f[3].bits >> sh];
+
+                     dst[pos[0] + i] = (uint8_t)(e0 >> 8);
+                     dst[pos[1] + i] = (uint8_t)(e1 >> 8);
+                     dst[pos[2] + i] = (uint8_t)(e2 >> 8);
+                     dst[pos[3] + i] = (uint8_t)(e3 >> 8);
+
+                     f[0].bits <<= (e0 & 63);
+                     f[1].bits <<= (e1 & 63);
+                     f[2].bits <<= (e2 & 63);
+                     f[3].bits <<= (e3 & 63);
+                  }
+                  pos[0] += 5; pos[1] += 5; pos[2] += 5; pos[3] += 5;
+                  rzstd_fast_reload(&f[0]);
+                  rzstd_fast_reload(&f[1]);
+                  rzstd_fast_reload(&f[2]);
+                  rzstd_fast_reload(&f[3]);
+                  together--;
+               }
+
+               for (k = 0; k < 4; k++)
+                  rzstd_fast_handoff(&f[k], &b[k], begin[k], size[k]);
+            }
+         }
 
          while (together--)
          {
