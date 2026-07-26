@@ -124,62 +124,12 @@ enum audio_format_negotiation_enum
 
 typedef struct settings
 {
-   struct
-   {
-      size_t placeholder;
-      size_t rewind_buffer_size;
-   } sizes;
-
-   video_viewport_t video_vp_custom; /* int alignment */
-
-   struct
-   {
-      int placeholder;
-      int netplay_check_frames;
-      int location_update_interval_ms;
-      int location_update_interval_distance;
-      int state_slot;
-      int replay_slot;
-      int crt_switch_center_adjust;
-      int crt_switch_porch_adjust;
-      int crt_switch_vertical_adjust;
-      int video_max_frame_latency;
-#ifdef HAVE_VULKAN
-      int vulkan_gpu_index;
-#endif
-#ifdef HAVE_D3D10
-      int d3d10_gpu_index;
-#endif
-#ifdef HAVE_D3D11
-      int d3d11_gpu_index;
-#endif
-#ifdef HAVE_D3D12
-      int d3d12_gpu_index;
-#endif
-#ifdef HAVE_METAL
-      int metal_gpu_index;
-#endif
-#ifdef HAVE_WINDOW_OFFSET
-      int video_window_offset_x;
-      int video_window_offset_y;
-#endif
-      int content_favorites_size;
-#ifdef _3DS
-      int bottom_font_color_red;
-      int bottom_font_color_green;
-      int bottom_font_color_blue;
-      int bottom_font_color_opacity;
-#endif
-#ifdef HAVE_XMB
-      int menu_xmb_title_margin;
-      int menu_xmb_title_margin_horizontal_offset;
-#endif
-#ifdef HAVE_OVERLAY
-      int input_overlay_lightgun_port;
-#endif
-      int input_turbo_bind;
-   } ints;
-
+   /* sizes, video_vp_custom and the ints group live below, after
+    * uints: video_vp_custom and the crt_switch adjust ints are read
+    * every frame by video_driver_build_info, and at the head of the
+    * struct they sat ~7.2 KB (a page boundary) away from the other
+    * per-frame reads at the tail of uints and in floats/bools.
+    * Declaration order only -- every access is by member name. */
    struct
    {
       unsigned placeholder;
@@ -437,6 +387,62 @@ typedef struct settings
 #endif
       unsigned input_sensor_orientation;
    } uints;
+
+   struct
+   {
+      size_t placeholder;
+      size_t rewind_buffer_size;
+   } sizes;
+
+   video_viewport_t video_vp_custom; /* int alignment */
+
+   struct
+   {
+      int placeholder;
+      int netplay_check_frames;
+      int location_update_interval_ms;
+      int location_update_interval_distance;
+      int state_slot;
+      int replay_slot;
+      int crt_switch_center_adjust;
+      int crt_switch_porch_adjust;
+      int crt_switch_vertical_adjust;
+      int video_max_frame_latency;
+#ifdef HAVE_VULKAN
+      int vulkan_gpu_index;
+#endif
+#ifdef HAVE_D3D10
+      int d3d10_gpu_index;
+#endif
+#ifdef HAVE_D3D11
+      int d3d11_gpu_index;
+#endif
+#ifdef HAVE_D3D12
+      int d3d12_gpu_index;
+#endif
+#ifdef HAVE_METAL
+      int metal_gpu_index;
+#endif
+#ifdef HAVE_WINDOW_OFFSET
+      int video_window_offset_x;
+      int video_window_offset_y;
+#endif
+      int content_favorites_size;
+#ifdef _3DS
+      int bottom_font_color_red;
+      int bottom_font_color_green;
+      int bottom_font_color_blue;
+      int bottom_font_color_opacity;
+#endif
+#ifdef HAVE_XMB
+      int menu_xmb_title_margin;
+      int menu_xmb_title_margin_horizontal_offset;
+#endif
+#ifdef HAVE_OVERLAY
+      int input_overlay_lightgun_port;
+#endif
+      int input_turbo_bind;
+   } ints;
 
    struct
    {
