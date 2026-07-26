@@ -5380,6 +5380,9 @@ static void *vulkan_init(const video_info_t *video,
 #endif
 
    vulkan_init_readback(vk, settings->bools.video_gpu_record);
+
+   /* Driver resources now match the context's current swapchain. */
+   vk->context->flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
    return vk;
 
 error:
@@ -5512,6 +5515,25 @@ static void vulkan_check_swapchain(vk_t *vk)
           &filter_info)
       )
       RARCH_ERR("[Vulkan] Failed to update filter chain info.\n");
+}
+
+static bool vulkan_recreate_context_swapchain(vk_t *vk)
+{
+   unsigned width  = vk->context->swapchain_width;
+   unsigned height = vk->context->swapchain_height;
+
+   if (!vk->ctx_driver->set_resize)
+      return false;
+
+   /* set_resize is the context-owned recreation path. It replaces the
+    * swapchain before returning, releasing any acquired image that cannot be
+    * submitted safely by this frame. */
+   vk->context->flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   if (!vk->ctx_driver->set_resize(vk->ctx_data, width, height))
+      return false;
+
+   vulkan_check_swapchain(vk);
+   return true;
 }
 
 static void vulkan_set_nonblock_state(void *data, bool state,
@@ -6608,11 +6630,26 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_active                           = video_info->widgets_active;
 #endif
-   unsigned frame_index                          =
-      vk->context->current_frame_index;
-   unsigned swapchain_index                      =
-      vk->context->current_swapchain_index;
+   unsigned frame_index;
+   unsigned swapchain_index;
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
+
+   /* The context may recreate its swapchain while acquiring the next
+    * image. Rebuild driver-owned framebuffers before recording commands
+    * against images from the new swapchain. */
+   if (vk->context->flags & VK_CTX_FLAG_INVALID_SWAPCHAIN)
+      vulkan_check_swapchain(vk);
+
+   frame_index     = vk->context->current_frame_index;
+   swapchain_index = vk->context->current_swapchain_index;
+
+   if (     frame_index     >= vk->num_swapchain_images
+         || swapchain_index >= vk->num_swapchain_images)
+   {
+      RARCH_ERR("[Vulkan] Invalid swapchain indices (frame %u, image %u, count %u).\n",
+            frame_index, swapchain_index, vk->num_swapchain_images);
+      return vulkan_recreate_context_swapchain(vk);
+   }
 
    /* Fast toggle shader filter chain logic */
    filter_chain = vk->filter_chain;
@@ -6996,8 +7033,17 @@ static bool vulkan_frame(void *data, const void *frame,
       backbuffer = &vk->offscreen_buffer;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+   if (     (backbuffer->image != VK_NULL_HANDLE)
+         && (backbuffer->framebuffer == VK_NULL_HANDLE))
+   {
+      RARCH_ERR("[Vulkan] Swapchain image %u has no framebuffer.\n",
+            swapchain_index);
+      return vulkan_recreate_context_swapchain(vk);
+   }
+
    /* Render to backbuffer. */
    if (     (backbuffer->image != VK_NULL_HANDLE)
+         && (backbuffer->framebuffer != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
    {
       rp_info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

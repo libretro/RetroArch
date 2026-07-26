@@ -39,6 +39,7 @@ typedef struct
    unsigned width;
    unsigned height;
    int swap_interval;
+   bool surface_lost;
 } android_ctx_data_vk_t;
 
 /* FORWARD DECLARATION */
@@ -168,8 +169,57 @@ static bool android_gfx_ctx_vk_set_video_mode(void *data,
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
       return false;
    }
+   and->surface_lost = false;
    RARCH_LOG("[Vulkan] Native window size: %ux%u.\n",
          and->width, and->height);
+   return true;
+}
+
+static bool android_gfx_ctx_vk_create_surface(void *data)
+{
+   struct android_app *android_app = (struct android_app*)g_android;
+   android_ctx_data_vk_t *and      = (android_ctx_data_vk_t*)data;
+
+   /* APP_CMD_INIT_WINDOW can remain pending after startup even though the
+    * Vulkan surface is already active. */
+   if (and && !and->surface_lost
+         && and->vk.vk_surface != VK_NULL_HANDLE)
+   {
+      RARCH_LOG("[Vulkan] Ignoring duplicate Android window initialization.\n");
+      return true;
+   }
+
+   if (!android_app || !android_app->window || !and)
+      return false;
+
+   and->width  = ANativeWindow_getWidth(android_app->window);
+   and->height = ANativeWindow_getHeight(android_app->window);
+
+   if (!vulkan_surface_create(&and->vk, VULKAN_WSI_ANDROID,
+            NULL, android_app->window,
+            and->width, and->height, and->swap_interval))
+   {
+      RARCH_ERR("[Vulkan] Failed to recreate Android surface.\n");
+      return false;
+   }
+
+   and->surface_lost = false;
+   RARCH_LOG("[Vulkan] Recreated Android surface: %ux%u.\n",
+         and->width, and->height);
+   return true;
+}
+
+static bool android_gfx_ctx_vk_destroy_surface(void *data)
+{
+   android_ctx_data_vk_t *and = (android_ctx_data_vk_t*)data;
+
+   if (!and)
+      return false;
+
+   and->surface_lost = true;
+   if (!vulkan_surface_destroy(&and->vk))
+      return false;
+
    return true;
 }
 
@@ -200,6 +250,10 @@ static bool android_gfx_ctx_vk_suppress_screensaver(void *data, bool enable) { r
 static void android_gfx_ctx_vk_swap_buffers(void *data)
 {
    android_ctx_data_vk_t *and  = (android_ctx_data_vk_t*)data;
+
+   if (!and || and->surface_lost
+         || and->vk.vk_surface == VK_NULL_HANDLE)
+      return;
 
    if (and->vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
    {
@@ -281,6 +335,6 @@ const gfx_ctx_driver_t gfx_ctx_vk_android = {
    android_gfx_ctx_vk_bind_hw_render,
    android_gfx_ctx_vk_get_context_data,
    NULL,                                     /* make_current */
-   NULL,                                     /* create_surface */
-   NULL                                      /* destroy_surface */
+   android_gfx_ctx_vk_create_surface,
+   android_gfx_ctx_vk_destroy_surface
 };

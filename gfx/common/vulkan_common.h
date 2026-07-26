@@ -360,6 +360,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       unsigned width, unsigned height,
       int8_t swap_interval);
 
+bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk);
+
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index);
 
 void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk);
