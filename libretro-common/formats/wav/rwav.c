@@ -81,6 +81,7 @@
 #include <stddef.h> /* ptrdiff_t on osx */
 #include <stdlib.h>
 #include <string.h>
+#include <retro_endianness.h>
 
 #include <formats/rwav.h>
 
@@ -359,8 +360,10 @@ void rwav_init(rwav_iterator_t* iter, rwav_t* out, const void *s, size_t len)
 enum rwav_state rwav_iterate(rwav_iterator_t *iter)
 {
    size_t s;
+#ifdef MSB_FIRST
    uint16_t *u16       = NULL;
    uint32_t *u32       = NULL;
+#endif
    void *samples       = NULL;
    rwav_t *rwav        = iter->out;
    const uint8_t *data = iter->data;
@@ -403,6 +406,14 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
          s = rwav->subchunk2size - iter->i;
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
+#ifndef MSB_FIRST
+         /* File order is host order here; the byte assembly below is
+          * only the big-endian host's swab. */
+         memcpy((uint8_t*)rwav->samples + iter->i,
+               iter->data + rwav->dataoffset + iter->i, s & ~(size_t)1);
+         iter->i += s & ~(size_t)1;
+         break;
+#else
          u16 = (uint16_t*)rwav->samples;
          while (s >= 2)
          {
@@ -413,11 +424,18 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
             s       -= 2;
          }
          break;
+#endif
 
       case ITER_COPY_SAMPLES_32:
          s = rwav->subchunk2size - iter->i;
          if (s > RWAV_ITERATE_BUF_SIZE)
             s = RWAV_ITERATE_BUF_SIZE;
+#ifndef MSB_FIRST
+         memcpy((uint8_t*)rwav->samples + iter->i,
+               iter->data + rwav->dataoffset + iter->i, s & ~(size_t)3);
+         iter->i += s & ~(size_t)3;
+         break;
+#else
          u32 = (uint32_t*)rwav->samples;
          while (s >= 4)
          {
@@ -430,6 +448,7 @@ enum rwav_state rwav_iterate(rwav_iterator_t *iter)
             s       -= 4;
          }
          break;
+#endif
 
       default:
          return RWAV_ITERATE_ERROR;
@@ -682,6 +701,25 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
       return 0;
    if (frames > wav->numsamples - frame)
       frames = wav->numsamples - frame;
+
+#ifndef MSB_FIRST
+   /* On little-endian hosts interleaved PCM16 is already in output
+    * order: the general loop below spends ~13 instructions a sample
+    * reassembling each one from bytes, which is a memcpy spelled
+    * slowly.  Only when the stride is the payload width, though -
+    * the loop semantics for an unusual blockalign are "read ch*2
+    * bytes at each blockalign step", which a flat copy would not
+    * reproduce.  Big-endian keeps the loop, whose byte assembly is
+    * the swab it needs anyway. */
+   if (       wav->format == RWAV_FORMAT_PCM
+       &&     wav->bitspersample == 16
+       &&     wav->blockalign == 2u * ch)
+   {
+      memcpy(out, d + frame * (size_t)wav->blockalign,
+            frames * (size_t)wav->blockalign);
+      return frames;
+   }
+#endif
 
    if (   wav->format == RWAV_FORMAT_MS_ADPCM
        || wav->format == RWAV_FORMAT_IMA_ADPCM)
