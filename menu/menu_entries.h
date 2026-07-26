@@ -192,6 +192,8 @@ bool menu_entries_clear(file_list_t *list);
 
 bool menu_entries_search_pop(void);
 
+bool menu_entries_search_set_term(const char *search_term);
+
 menu_search_terms_t *menu_entries_search_get_terms(void);
 
 /* Convenience function: Appends list of current
