@@ -352,51 +352,91 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
 int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
    void *s, uint64_t len)
 {
-   int ret;
+   uint8_t *ptr               = (uint8_t*)s;
+   uint64_t total             = 0;
    struct smb2_context *ctx;
+   struct smb2fh *fh;
 
-   if (!smb_initialized || !stream || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
       return -1;
+
+   if (len == 0)
+      return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
    if (!ctx)
-       return -1;
+      return -1;
 
-   /* smb2_read takes uint32_t count; passing a uint64_t len that
-    * exceeds UINT32_MAX was silently truncated pre-patch.  Cap at
-    * UINT32_MAX so the caller gets back the (partial) byte count
-    * and knows to loop for more.  This matches fread-style
-    * short-read semantics already observed by VFS consumers. */
-   if (len > (uint64_t)UINT32_MAX)
-      len = UINT32_MAX;
+   fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
+   if (!fh)
+      return -1;
 
-   ret = smb2_read(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, s, (uint32_t)len);
+   /* libsmb2 silently caps each smb2_read() to max_read_size / credits
+    * (often 64 KiB–1 MiB).  Archive parsers (ZIP EOCD / central directory)
+    * and other VFS callers compare against the exact requested length, so
+    * a single short read looks like I/O failure and yields an empty
+    * "Browse Archive" list.  Loop like fread() on a regular file. */
+   while (total < len)
+   {
+      uint64_t want = len - total;
+      int ret;
 
-   return ret;
+      if (want > (uint64_t)UINT32_MAX)
+         want = UINT32_MAX;
+
+      ret = smb2_read(ctx, fh, ptr + total, (uint32_t)want);
+      if (ret < 0)
+         return (total > 0) ? (int64_t)total : -1;
+      if (ret == 0)
+         break; /* EOF */
+
+      total += (uint64_t)ret;
+   }
+
+   return (int64_t)total;
 }
 
 int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
    const void *s, uint64_t len)
 {
-   int ret;
+   const uint8_t *ptr         = (const uint8_t*)s;
+   uint64_t total             = 0;
    struct smb2_context *ctx;
+   struct smb2fh *fh;
 
-   if (!smb_initialized || !stream || stream->smb_fh < 0)
+   if (!smb_initialized || !stream || !s || stream->smb_fh < 0)
       return -1;
+
+   if (len == 0)
+      return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
    if (!ctx)
-       return -1;
+      return -1;
 
-   /* smb2_write takes uint32_t count; see retro_vfs_file_read_smb
-    * for the rationale.  Cap at UINT32_MAX and let the caller
-    * re-issue for remaining bytes. */
-   if (len > (uint64_t)UINT32_MAX)
-      len = UINT32_MAX;
+   fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
+   if (!fh)
+      return -1;
 
-   ret = smb2_write(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh, (void*)s, (uint32_t)len);
+   /* Same max_write_size / credits cap as reads — accumulate. */
+   while (total < len)
+   {
+      uint64_t want = len - total;
+      int ret;
 
-   return ret;
+      if (want > (uint64_t)UINT32_MAX)
+         want = UINT32_MAX;
+
+      ret = smb2_write(ctx, fh, ptr + total, (uint32_t)want);
+      if (ret < 0)
+         return (total > 0) ? (int64_t)total : -1;
+      if (ret == 0)
+         break;
+
+      total += (uint64_t)ret;
+   }
+
+   return (int64_t)total;
 }
 
 int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
