@@ -1671,7 +1671,10 @@ ifeq ($(HAVE_SDL3), 1)
    # Filter it out.
    LIBS += $(filter-out -lSDL3main -lSDLmain -lSDL_main,$(SDL3_LIBS))
 	DEFINES += -DHAVE_SDL3
-   OBJ += input/drivers_joypad/sdl3_joypad.o
+   OBJ += input/drivers_joypad/sdl3_joypad.o \
+          input/drivers/sdl3_input.o \
+          gfx/drivers/sdl3_gfx.o \
+          gfx/common/sdl3_common.o
 else ifeq ($(HAVE_SDL2), 1)
    HAVE_SDL_COMMON = 1
    OBJ += gfx/drivers/sdl2_gfx.o \

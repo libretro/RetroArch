@@ -106,6 +106,7 @@ enum video_driver_enum
    VIDEO_XVIDEO,
    VIDEO_SDL,
    VIDEO_SDL2,
+   VIDEO_SDL3,
    VIDEO_SDL_DINGUX,
    VIDEO_SDL_RS90,
    VIDEO_EXT,
@@ -195,6 +196,7 @@ enum input_driver_enum
    INPUT_ANDROID            = AUDIO_RESAMPLER_NULL + 1,
    INPUT_SDL,
    INPUT_SDL2,
+   INPUT_SDL3,
    INPUT_SDL_DINGUX,
    INPUT_X,
    INPUT_WAYLAND,
@@ -491,6 +493,8 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_XVIDEO;
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL;
 #elif defined(HAVE_SDL2)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL2;
+#elif defined(HAVE_SDL3)
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL3;
 #elif defined(HAVE_SDL_DINGUX)
 #if defined(RS90) || defined(MIYOO)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_SDL_RS90;
@@ -676,6 +680,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_COCOA;
 #elif defined(__QNX__)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_QNX;
+#elif defined(HAVE_SDL3)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL3;
 #elif defined(HAVE_SDL)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL;
 #elif defined(HAVE_SDL2)
@@ -1146,6 +1152,8 @@ const char *config_get_default_video(void)
          return "sdl";
       case VIDEO_SDL2:
          return "sdl2";
+      case VIDEO_SDL3:
+         return "sdl3";
       case VIDEO_EXT:
          return "ext";
       case VIDEO_VG:
@@ -1210,6 +1218,8 @@ const char *config_get_default_input(void)
          return "sdl";
       case INPUT_SDL2:
          return "sdl2";
+      case INPUT_SDL3:
+         return "sdl3";
       case INPUT_SDL_DINGUX:
          return "sdl_dingux";
       case INPUT_DINPUT:
@@ -5948,14 +5958,17 @@ static bool check_menu_driver_compatibility(settings_t *settings)
       case 'r':
          return (memcmp(video_driver, "rsx",    3) == 0 && video_driver[3] == '\0');
       case 's':
-         /* sdl2 supports the full menu set (XMB/Ozone/MaterialUI/RGUI)
-          * via gfx_display_ctx_sdl2 + sdl2_raster_font, gated on
-          * SDL_RenderGeometry (>= 2.0.18). On older SDL builds the
-          * driver self-disables the gfx_display backend, and only
-          * RGUI's bitmap path is functional - which already returned
-          * true via the rgui early-out above, so allowing sdl2 here
-          * is safe regardless of the runtime SDL version. */
-         return (memcmp(video_driver, "sdl2",   4) == 0 && video_driver[4] == '\0');
+         /* sdl2/sdl3 support the full menu set (XMB/Ozone/MaterialUI/
+          * RGUI) via their gfx_display + raster-font backends, built
+          * on SDL_RenderGeometry. For sdl2 that entry point needs
+          * SDL >= 2.0.18; on older SDL builds the driver self-disables
+          * the gfx_display backend and only RGUI's bitmap path is
+          * functional - which already returned true via the rgui
+          * early-out above, so allowing sdl2 here is safe regardless
+          * of the runtime SDL version. sdl3 always has
+          * SDL_RenderGeometry. */
+         return (memcmp(video_driver, "sdl2",   4) == 0 && video_driver[4] == '\0')
+             || (memcmp(video_driver, "sdl3",   4) == 0 && video_driver[4] == '\0');
       case 'c':
          return (memcmp(video_driver, "ctr",    3) == 0 && video_driver[3] == '\0');
       default:

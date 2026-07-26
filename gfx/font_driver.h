@@ -176,6 +176,7 @@ extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
 extern font_renderer_t rsx_font;
 extern font_renderer_t sdl2_raster_font;
+extern font_renderer_t sdl3_raster_font;
 
 extern font_renderer_driver_t stb_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;

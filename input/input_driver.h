@@ -1249,6 +1249,7 @@ extern hid_driver_t *hid_drivers[];
 
 extern input_driver_t input_android;
 extern input_driver_t input_sdl;
+extern input_driver_t input_sdl3;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
 extern input_driver_t input_x;
@@ -1278,8 +1279,9 @@ extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;
 extern input_device_driver_t xinput_joypad;
-extern input_device_driver_t sdl_joypad; /* SDL2 or SDL3. @see sdl_joypad.c, sdl3_joypad.c. */
+extern input_device_driver_t sdl_joypad; /** SDL1 or SDL2. @see sdl_joypad.c. */
 extern input_device_driver_t sdl_dingux_joypad;
+extern input_device_driver_t sdl3_joypad; /** SDL3. @see sdl3_joypad.c */
 extern input_device_driver_t ps4_joypad;
 extern input_device_driver_t ps3_joypad;
 extern input_device_driver_t psp_joypad;
