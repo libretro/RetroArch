@@ -30,7 +30,7 @@
 #ifdef __linux__
 #include <linux/version.h>
 #if __STDC_VERSION__ >= 199901L && !defined(ANDROID)
-#include "feralgamemode/gamemode_client.h"
+#include "../../deps/feralgamemode/gamemode_client.h"
 #define FERAL_GAMEMODE
 #endif
 /* inotify API was added in 2.6.13 */
