@@ -999,32 +999,42 @@ static size_t task_audio_mixer_ogg_page(const uint8_t *b, size_t n,
 static int64_t task_audio_mixer_opus_end_granule(struct data_transfer *dt,
       size_t flen)
 {
-   /* one max Ogg page (~65 KB) plus slack */
-   uint8_t buf[65536 + 8192];
-   size_t  win  = sizeof(buf);
-   size_t  base = flen > win ? flen - win : 0;
-   size_t  n    = flen - base;
-   size_t  i;
-   long    last = -1;
+   /* one max Ogg page (~65 KB) plus slack.  Heap, not stack: a 73 KB
+    * frame overflows the default task-thread stack on 3DS/Vita and
+    * Emscripten's 64 KB default.  This runs once per stream load, and
+    * a failed scan already falls back to the classic full load, so a
+    * failed allocation simply takes that path too. */
+   size_t   win  = 65536 + 8192;
+   size_t   base = flen > win ? flen - win : 0;
+   size_t   n    = flen - base;
+   size_t   i;
+   long     last = -1;
+   int64_t  ret  = -1;
+   uint8_t *buf;
    if (n < 27)
       return -1;
-   if (!data_transfer_window_peek(dt, base, buf, n))
+   if (!(buf = (uint8_t*)malloc(win)))
       return -1;
+   if (!data_transfer_window_peek(dt, base, buf, n))
+      goto done;
    for (i = 0; i + 27 <= n; i++)
       if (buf[i] == 'O' && buf[i + 1] == 'g' && buf[i + 2] == 'g'
             && buf[i + 3] == 'S' && buf[i + 4] == 0
             && task_audio_mixer_ogg_page(buf, n, i))
          last = (long)i;
-   if (last < 0)
-      return -1;
+   if (last >= 0)
    {
       uint64_t g = 0;
       unsigned k;
       for (k = 0; k < 8; k++)
          g |= (uint64_t)buf[(size_t)last + 6 + k] << (8 * k);
       /* -1 granule (continued page) is not a valid end bound */
-      return g == (uint64_t)-1 ? -1 : (int64_t)g;
+      if (g != (uint64_t)-1)
+         ret = (int64_t)g;
    }
+done:
+   free(buf);
+   return ret;
 }
 #endif
 
