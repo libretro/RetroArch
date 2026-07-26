@@ -219,7 +219,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          sdl3_joypad_name(slot),
          NULL,
          SDL_GetJoystickPath(joypad),
-         sdl_joypad.ident,
+         sdl3_joypad.ident,
          slot,
          vendor,
          product,
@@ -268,7 +268,7 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
       else if (sdl3_joypads[i].joypad)
          SDL_CloseJoystick(sdl3_joypads[i].joypad);
 
-      input_autoconfigure_disconnect(i, sdl_joypad.ident);
+      input_autoconfigure_disconnect(i, sdl3_joypad.ident);
 
       memset(&sdl3_joypads[i], 0, sizeof(sdl3_joypads[i]));
       return;
@@ -645,7 +645,7 @@ static bool sdl3_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && sdl3_joypads[pad].joypad != NULL;
 }
 
-input_device_driver_t sdl_joypad = {
+input_device_driver_t sdl3_joypad = {
    sdl3_joypad_init,
    sdl3_joypad_query_pad,
    sdl3_joypad_destroy,

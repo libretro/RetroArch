@@ -967,6 +967,9 @@ AUDIO
 
 #if defined(HAVE_SDL3)
 #include "../input/drivers_joypad/sdl3_joypad.c"
+#include "../input/drivers/sdl3_input.c"
+#include "../gfx/drivers/sdl3_gfx.c"
+#include "../gfx/common/sdl3_common.c"
 #elif defined(HAVE_SDL2)
 #include "../audio/drivers/sdl_audio.c"
 #include "../input/drivers/sdl_input.c"

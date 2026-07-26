@@ -491,6 +491,9 @@ const video_driver_t *video_drivers[] = {
 #if defined(HAVE_SDL2) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
    &video_sdl2,
 #endif
+#if defined(HAVE_SDL3) && !(defined(HAVE_COCOA) || defined(HAVE_COCOA_METAL))
+   &video_sdl3,
+#endif
 #ifdef HAVE_SDL_DINGUX
 #if defined(RS90) || defined(MIYOO)
    &video_sdl_rs90,

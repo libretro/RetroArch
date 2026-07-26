@@ -198,6 +198,20 @@ static bool font_init_first(
          break;
 #endif
 #endif
+#ifdef HAVE_SDL3
+      case FONT_DRIVER_RENDER_SDL3:
+         {
+            void *data = sdl3_raster_font.init(video_data,
+                  font_path, font_size, is_threaded);
+            if (data)
+            {
+               *font_driver = &sdl3_raster_font;
+               *font_handle = data;
+               return true;
+            }
+         }
+         break;
+#endif
 #ifdef HAVE_D3D8
       case FONT_DRIVER_RENDER_D3D8_API:
       {

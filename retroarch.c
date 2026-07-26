@@ -6829,7 +6829,7 @@ static void retroarch_print_features(void)
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL2,            "SDL2",            "SDL2 input/audio/video drivers");
 #endif
 #ifdef HAVE_SDL3
-   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 joypad driver");
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_SDL3,            "SDL3",            "SDL3 input/video drivers");
 #endif
 #ifdef HAVE_X11
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_X11,             "X11",             "X11 input/video drivers");
