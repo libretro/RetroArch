@@ -1571,13 +1571,61 @@ static int rzstd_decode_frame(const uint8_t *src, size_t src_len,
    return RZ_OK;
 }
 
-/* Test seams. These exist because the file has no public entry point
- * yet: the one it will have cannot be written until a compressed block
- * decodes, and until then the only way to exercise what is built is to
- * call into it directly. They go when the real interface arrives. */
+/* -------- the public interface -------- */
 
-/* Decodes a frame, which today means one whose blocks are all raw or
- * RLE. */
+int rzstd_decode(uint8_t *dst, size_t dst_len, const uint8_t *src,
+      size_t src_len, size_t *wrote)
+{
+   rzstd_frame_state_t *st;
+   size_t               out  = 0;
+   size_t               used = 0;
+   int                  e;
+
+   if (!dst || !src)
+      return RZSTD_PROCESS_ERROR;
+
+   /* The per-frame state carries a literal buffer of the maximum block
+    * size, which is too large to put on the stack. */
+   if (!(st = (rzstd_frame_state_t*)malloc(sizeof(*st))))
+      return RZSTD_PROCESS_ERROR;
+
+   e = rzstd_decode_frame(src, src_len, dst, dst_len, &out, &used, st);
+   free(st);
+
+   if (e != RZ_OK)
+      return RZSTD_PROCESS_ERROR;
+
+   /* Trailing bytes are refused rather than ignored: a caller splitting
+    * a buffer into frames has to pass exact lengths, and silently
+    * accepting a short one would hide the mistake until the next frame
+    * came out wrong. */
+   if (used != src_len)
+      return RZSTD_PROCESS_ERROR;
+
+   if (wrote)
+      *wrote = out;
+   return RZSTD_PROCESS_END;
+}
+
+int64_t rzstd_frame_content_size(const uint8_t *src, size_t src_len)
+{
+   rzstd_frame_header_t h;
+
+   if (!src)
+      return RZSTD_CONTENT_SIZE_ERROR;
+   if (rzstd_read_frame_header(src, src_len, &h) != RZ_OK)
+      return RZSTD_CONTENT_SIZE_ERROR;
+   if (!h.has_content_size)
+      return RZSTD_CONTENT_SIZE_UNKNOWN;
+   return (int64_t)h.content_size;
+}
+
+/* -------- test seams --------
+ *
+ * These reach parts the public interface does not expose, so that a
+ * layer can be checked before the layers above it exist.
+ */
+
 int rzstd_probe_frame(const uint8_t *src, size_t src_len,
       uint8_t *dst, size_t dst_len, size_t *wrote, size_t *used)
 {
@@ -1587,25 +1635,9 @@ int rzstd_probe_frame(const uint8_t *src, size_t src_len,
          &state);
 }
 
-/* Reports what a frame's header states, without decoding. */
-int rzstd_probe_header(const uint8_t *src, size_t len,
-      uint64_t *content, uint32_t *window, int *checksum, uint32_t *hlen)
-{
-   rzstd_frame_header_t h;
-   int                  e = rzstd_read_frame_header(src, len, &h);
-
-   if (e != RZ_OK)
-      return e;
-   *content  = h.content_size;
-   *window   = h.window_size;
-   *checksum = h.has_checksum;
-   *hlen     = h.header_len;
-   return RZ_OK;
-}
-
-/* Test seam: builds an FSE table from given counts and reports the
- * widths it assigned, so the spread can be checked against the tables
- * the RFC predefines. */
+/* Builds an FSE table from given counts and reports the widths it
+ * assigned, so the spread can be checked against the tables the RFC
+ * predefines. */
 int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
       uint32_t accuracy_log, uint8_t *bits_out, uint16_t *state_out,
       uint8_t *sym_out)
@@ -1626,25 +1658,5 @@ int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
       state_out[i] = table[i].next_state;
       sym_out[i]   = table[i].symbol;
    }
-   return RZ_OK;
-}
-
-/* Test seam: reads the literals section at the head of a compressed
- * block and reports what it found. */
-int rzstd_probe_literals(const uint8_t *src, size_t len, uint8_t *out,
-      size_t out_len, size_t *got, size_t *used, int *type)
-{
-   rzstd_literals_t lit;
-   static rzstd_huf_t huf;
-   int valid = 0;
-   int e;
-
-   if (!len)
-      return RZ_TRUNCATED;
-   *type = src[0] & 3;
-   e = rzstd_read_literals(&lit, &huf, &valid, src, len, out, out_len, used);
-   if (e != RZ_OK)
-      return e;
-   *got = lit.size;
    return RZ_OK;
 }

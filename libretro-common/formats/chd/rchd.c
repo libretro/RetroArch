@@ -60,7 +60,9 @@
  *
  * CODECS  (each behind its own HAVE_RCHD_*, and absent means a hunk
  *          using it is refused rather than mis-read)
- *   none, zlib, lzma, huff, flac, zstd
+ *   none, zlib, lzma, huff, flac, zstd -- the last through rzstd
+ *   rather than the reference library, so that reading a Zstandard
+ *   image does not cost this file its C89 conformance
  *   cdzl, cdlz, cdfl, cdzs   with the CD framing, ECC rebuild and
  *                            subchannel interleave
  *   avhu                     audio/video, FLAC audio mode only
@@ -131,7 +133,7 @@
 #include <formats/rflac.h>
 #endif
 #ifdef HAVE_RCHD_ZSTD
-#include <zstd.h>
+#include <encodings/rzstd.h>
 #endif
 
 /* Container limits. A hunk is bounded by the format; the map and
@@ -318,10 +320,6 @@ struct rchd
     * nothing for them. */
    uint16_t          *av_lookup;
    int16_t           *av_samples;
-
-   /* A zstd context, made once and reused: the hot path should not be
-    * allocating one per hunk. */
-   void              *zstd;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
     * reads inside one, decode each hunk once. */
@@ -1047,10 +1045,6 @@ void rchd_free(rchd_t *chd)
    free(chd->sec_frame);
    free(chd->av_lookup);
    free(chd->av_samples);
-#ifdef HAVE_RCHD_ZSTD
-   if (chd->zstd)
-      ZSTD_freeDCtx((ZSTD_DCtx*)chd->zstd);
-#endif
    free(chd);
 }
 
@@ -2043,20 +2037,23 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
 #ifdef HAVE_RCHD_ZSTD
       case RCHD_CODEC_ZSTD:
       {
-         /* The blob is one whole frame and the output length is already
-          * known, so this decodes in a single call. A streaming decode
-          * would have to be re-initialised per hunk and loop to find an
-          * end this side was told in advance. */
-         size_t got;
+         /* The blob is one whole frame and the output length is known
+          * in advance, so this decodes in a single call. A streaming
+          * decode would have to be re-initialised per hunk and loop to
+          * find an end this side was already told.
+          *
+          * This goes through rzstd rather than the reference library
+          * for a reason beyond removing a dependency: <zstd.h> declares
+          * long long, so including it costs this file the C89
+          * conformance the tree targets, and a reader that could not
+          * open a Zstandard image without leaving the standard would be
+          * a poor trade. */
+         size_t got = 0;
 
-         if (!chd->zstd)
-         {
-            if (!(chd->zstd = ZSTD_createDCtx()))
-               return RCHD_ERROR_MEM;
-         }
-         got = ZSTD_decompressDCtx((ZSTD_DCtx*)chd->zstd, dst, dst_len,
-               src, src_len);
-         if (ZSTD_isError(got) || got != dst_len)
+         if (rzstd_decode(dst, dst_len, src, src_len, &got)
+               != RZSTD_PROCESS_END)
+            return RCHD_ERROR_DATA;
+         if (got != dst_len)
             return RCHD_ERROR_DATA;
          return RCHD_OK;
       }
