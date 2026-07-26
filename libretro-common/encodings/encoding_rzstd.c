@@ -82,11 +82,24 @@
  *                               verified. A caller expecting a stated
  *                               checksum to be checked does not get
  *                               that.
- *   Sequence emission           the match finding and FSE encoding
- *                               that would make the encoder compress.
- *                               This is what stands between it and
- *                               replacing the reference library for
- *                               the one caller that compresses.
+ *   Sequence emission           written, switched off, and wrong. The
+ *                               match finder and FSE encoder are in
+ *                               the file and reach ratios of a few
+ *                               percent, but the frames they produce
+ *                               are rejected by both this decoder and
+ *                               the reference implementation. The
+ *                               fault is in the ordering of a stream
+ *                               written in reverse: what the decoder
+ *                               reads first has to be written last, so
+ *                               sequences go out backwards and the
+ *                               state updates within each go out
+ *                               backwards again. Two of those orders
+ *                               have been checked against the RFC and
+ *                               are right; something else is not.
+ *
+ *                               Until it works the encoder stores its
+ *                               input, which is correct and does not
+ *                               compress.
  *   Huffman literal encoding    literals are emitted raw. Legal, and
  *                               costs ratio.
  *   Streaming                   the resumable interface the header
@@ -1691,6 +1704,210 @@ int rzstd_probe_fse(const int16_t *counts, uint32_t symbol_count,
  * transmit tables at all.
  */
 
+/* -------- writing bits --------
+ *
+ * The decoder reads a stream from its last byte backwards, so the
+ * writer runs the other way: bits accumulate at increasing positions
+ * and whole bytes flush forward, which puts what was written last into
+ * the bytes read first. Everything the decoder wants first must
+ * therefore be written last, and that is why sequences are emitted in
+ * reverse order below.
+ */
+
+typedef struct rzstd_wbits
+{
+   uint8_t *dst;
+   size_t   cap;
+   size_t   at;
+   uint64_t bits;
+   uint32_t count;
+   int      overflow;
+} rzstd_wbits_t;
+
+static void rzstd_wbits_init(rzstd_wbits_t *w, uint8_t *dst, size_t cap)
+{
+   memset(w, 0, sizeof(*w));
+   w->dst = dst;
+   w->cap = cap;
+}
+
+static void rzstd_wbits_add(rzstd_wbits_t *w, uint32_t value, uint32_t n)
+{
+   if (!n)
+      return;
+   w->bits  |= ((uint64_t)value & (((uint64_t)1 << n) - 1)) << w->count;
+   w->count += n;
+
+   while (w->count >= 8)
+   {
+      if (w->at >= w->cap)
+      {
+         w->overflow = 1;
+         return;
+      }
+      w->dst[w->at++] = (uint8_t)w->bits;
+      w->bits >>= 8;
+      w->count -= 8;
+   }
+}
+
+/* Closes the stream with the marker bit the decoder looks for, then
+ * pads to a byte. Without it there is nothing to say where the data
+ * ends within the final byte. */
+static size_t rzstd_wbits_close(rzstd_wbits_t *w)
+{
+   rzstd_wbits_add(w, 1, 1);
+   if (w->count)
+   {
+      if (w->at >= w->cap)
+      {
+         w->overflow = 1;
+         return 0;
+      }
+      w->dst[w->at++] = (uint8_t)w->bits;
+      w->bits  = 0;
+      w->count = 0;
+   }
+   return w->at;
+}
+
+/* -------- FSE encoding --------
+ *
+ * The mirror of the decoding table: for each symbol, how many bits its
+ * current state spends and which state it moves to.
+ */
+
+typedef struct rzstd_fse_ct
+{
+   uint16_t table[1 << RZSTD_FSE_MAX_ACCURACY_LOG];
+   uint32_t delta_bits[RZSTD_FSE_MAX_SYMBOLS];
+   int32_t  delta_state[RZSTD_FSE_MAX_SYMBOLS];
+   uint32_t accuracy_log;
+} rzstd_fse_ct_t;
+
+static int rzstd_fse_build_ct(rzstd_fse_ct_t *ct, const int16_t *counts,
+      uint32_t symbol_count, uint32_t accuracy_log)
+{
+   uint32_t size = (uint32_t)1 << accuracy_log;
+   uint32_t mask = size - 1;
+   uint32_t step = (size >> 1) + (size >> 3) + 3;
+   uint32_t high = size;
+   uint32_t position = 0;
+   uint32_t cumul[RZSTD_FSE_MAX_SYMBOLS + 1];
+   uint8_t  spread[1 << RZSTD_FSE_MAX_ACCURACY_LOG];
+   uint32_t sym;
+   uint32_t i;
+   uint32_t total = 0;
+
+   ct->accuracy_log = accuracy_log;
+
+   /* The same spread the decoder uses, so the two agree on which state
+    * carries which symbol. */
+   for (sym = 0; sym < symbol_count; sym++)
+      if (counts[sym] == -1)
+         spread[--high] = (uint8_t)sym;
+
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      int32_t n = counts[sym];
+
+      if (n <= 0)
+         continue;
+      for (i = 0; i < (uint32_t)n; i++)
+      {
+         spread[position] = (uint8_t)sym;
+         do
+         {
+            position = (position + step) & mask;
+         } while (position >= high);
+      }
+   }
+   if (position != 0)
+      return RZ_DATA;
+
+   /* Where each symbol's states begin, in symbol order. */
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      cumul[sym] = total;
+      total += (counts[sym] == -1) ? 1 : (uint32_t)(counts[sym] > 0
+            ? counts[sym] : 0);
+   }
+   cumul[symbol_count] = total;
+
+   for (i = 0; i < size; i++)
+   {
+      uint8_t sy = spread[i];
+      ct->table[cumul[sy]++] = (uint16_t)(size + i);
+   }
+
+   /* Restore the starts, which the loop above consumed. */
+   total = 0;
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      cumul[sym] = total;
+      total += (counts[sym] == -1) ? 1 : (uint32_t)(counts[sym] > 0
+            ? counts[sym] : 0);
+   }
+
+   for (sym = 0; sym < symbol_count; sym++)
+   {
+      int32_t n = counts[sym];
+
+      if (!n)
+      {
+         ct->delta_bits[sym]  = 0;
+         ct->delta_state[sym] = 0;
+         continue;
+      }
+      if (n == -1)
+      {
+         /* One state, always reset: it spends the full accuracy. */
+         ct->delta_bits[sym]  = (accuracy_log << 16) - ((uint32_t)1
+               << accuracy_log);
+         ct->delta_state[sym] = (int32_t)cumul[sym] - 1;
+         continue;
+      }
+      {
+         uint32_t max_bits = accuracy_log;
+         uint32_t threshold;
+
+         while (((uint32_t)1 << max_bits) > (uint32_t)n && max_bits)
+            max_bits--;
+         /* max_bits is floor(log2(n)); a symbol with n states spends
+          * accuracy_log - that, sometimes one more. */
+         max_bits = accuracy_log - max_bits;
+         threshold = ((uint32_t)n << max_bits) - size;
+         ct->delta_bits[sym]  = (max_bits << 16) - threshold;
+         ct->delta_state[sym] = (int32_t)cumul[sym] - (int32_t)n;
+      }
+   }
+
+   return RZ_OK;
+}
+
+static uint32_t rzstd_fse_ct_begin(const rzstd_fse_ct_t *ct, uint32_t sym)
+{
+   uint32_t nb = (ct->delta_bits[sym] + (1u << 15)) >> 16;
+   uint32_t at = ((nb << 16) - ct->delta_bits[sym]) >> nb;
+
+   return ct->table[(int32_t)at + ct->delta_state[sym]];
+}
+
+static uint32_t rzstd_fse_ct_encode(rzstd_wbits_t *w, uint32_t state,
+      const rzstd_fse_ct_t *ct, uint32_t sym)
+{
+   uint32_t nb = (state + ct->delta_bits[sym]) >> 16;
+
+   rzstd_wbits_add(w, state, nb);
+   return ct->table[(int32_t)(state >> nb) + ct->delta_state[sym]];
+}
+
+static void rzstd_fse_ct_flush(rzstd_wbits_t *w, uint32_t state,
+      const rzstd_fse_ct_t *ct)
+{
+   rzstd_wbits_add(w, state, ct->accuracy_log);
+}
+
 #define RZSTD_ENC_BLOCK    (64 * 1024)
 #define RZSTD_ENC_HASH_LOG 15
 #define RZSTD_ENC_MIN_MATCH 4
@@ -1752,6 +1969,177 @@ static void rzstd_write_block_header(uint8_t *dst, uint32_t size,
    dst[2] = (uint8_t)(v >> 16);
 }
 
+/* The inverse of the baseline tables: which code covers a value, and
+ * what remains to be written as extra bits. */
+static uint32_t rzstd_code_for(const uint32_t *base, uint32_t count,
+      uint32_t value)
+{
+   uint32_t i = count;
+
+   while (i-- > 0)
+      if (value >= base[i])
+         return i;
+   return 0;
+}
+
+/* An offset is stored three higher than its distance, because 1 to 3
+ * are reserved for the recent-offset codes (3.1.1.4). This encoder
+ * never emits those, so every offset it writes is a literal distance. */
+static uint32_t rzstd_of_code(uint32_t offset)
+{
+   uint32_t v = offset + 3;
+   uint32_t n = 0;
+
+   while ((uint32_t)1 << (n + 1) <= v)
+      n++;
+   return n;
+}
+
+typedef struct rzstd_seq
+{
+   uint32_t literals;
+   uint32_t match;
+   uint32_t offset;
+} rzstd_seq_t;
+
+/* Emits one block as literals plus sequences, or reports that doing so
+ * would not be smaller than storing it. */
+static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
+      const uint8_t *src, size_t len, const rzstd_seq_t *seq, size_t nseq,
+      const uint8_t *literals, size_t lit_len, size_t *out_len)
+{
+   rzstd_fse_ct_t ll_ct;
+   rzstd_fse_ct_t ml_ct;
+   rzstd_fse_ct_t of_ct;
+   rzstd_wbits_t  w;
+   size_t         at = 0;
+   size_t         i;
+   uint32_t       ll_state;
+   uint32_t       ml_state;
+   uint32_t       of_state;
+
+   (void)src;
+   (void)len;
+
+   if (!nseq)
+      return RZ_DATA;
+
+   /* Literals go out raw: legal, and it avoids building and
+    * transmitting a Huffman table. The size field is one, two or three
+    * bytes by how large the run is (3.1.1.3.1). */
+   if (lit_len < 32)
+   {
+      if (at + 1 > dst_cap)
+         return RZ_DATA;
+      dst[at++] = (uint8_t)((lit_len << 3) | (0 << 2) | 0);
+   }
+   else if (lit_len < 4096)
+   {
+      if (at + 2 > dst_cap)
+         return RZ_DATA;
+      dst[at++] = (uint8_t)((lit_len << 4) | (1 << 2) | 0);
+      dst[at++] = (uint8_t)(lit_len >> 4);
+   }
+   else
+   {
+      if (at + 3 > dst_cap)
+         return RZ_DATA;
+      dst[at++] = (uint8_t)((lit_len << 4) | (3 << 2) | 0);
+      dst[at++] = (uint8_t)(lit_len >> 4);
+      dst[at++] = (uint8_t)(lit_len >> 12);
+   }
+
+   if (at + lit_len > dst_cap)
+      return RZ_DATA;
+   memcpy(dst + at, literals, lit_len);
+   at += lit_len;
+
+   /* Sequence count, then a modes byte saying all three tables are the
+    * predefined ones, so none is transmitted. */
+   if (nseq < 128)
+   {
+      if (at + 1 > dst_cap)
+         return RZ_DATA;
+      dst[at++] = (uint8_t)nseq;
+   }
+   else if (nseq < 0x7f00)
+   {
+      if (at + 2 > dst_cap)
+         return RZ_DATA;
+      dst[at++] = (uint8_t)((nseq >> 8) + 128);
+      dst[at++] = (uint8_t)nseq;
+   }
+   else
+      return RZ_DATA;
+
+   if (at + 1 > dst_cap)
+      return RZ_DATA;
+   dst[at++] = 0;
+
+   if (rzstd_fse_build_ct(&ll_ct, rzstd_ll_default, 36, 6) != RZ_OK
+    || rzstd_fse_build_ct(&ml_ct, rzstd_ml_default, 53, 6) != RZ_OK
+    || rzstd_fse_build_ct(&of_ct, rzstd_of_default, 29, 5) != RZ_OK)
+      return RZ_DATA;
+
+   rzstd_wbits_init(&w, dst + at, dst_cap - at);
+
+   /* Everything below is written in the reverse of the order it is
+    * read. The last sequence goes first, and the initial states go
+    * last, because the decoder takes them from the end of the stream. */
+   {
+      const rzstd_seq_t *s2 = &seq[nseq - 1];
+      uint32_t ll = rzstd_code_for(rzstd_ll_base, 36, s2->literals);
+      uint32_t ml = rzstd_code_for(rzstd_ml_base, 53, s2->match);
+      uint32_t of = rzstd_of_code(s2->offset);
+
+      ml_state = rzstd_fse_ct_begin(&ml_ct, ml);
+      of_state = rzstd_fse_ct_begin(&of_ct, of);
+      ll_state = rzstd_fse_ct_begin(&ll_ct, ll);
+
+      rzstd_wbits_add(&w, s2->literals - rzstd_ll_base[ll],
+            rzstd_ll_bits[ll]);
+      rzstd_wbits_add(&w, s2->match - rzstd_ml_base[ml],
+            rzstd_ml_bits[ml]);
+      rzstd_wbits_add(&w, s2->offset + 3 - ((uint32_t)1 << of), of);
+   }
+
+   for (i = nseq - 1; i-- > 0; )
+   {
+      const rzstd_seq_t *s2 = &seq[i];
+      uint32_t ll = rzstd_code_for(rzstd_ll_base, 36, s2->literals);
+      uint32_t ml = rzstd_code_for(rzstd_ml_base, 53, s2->match);
+      uint32_t of = rzstd_of_code(s2->offset);
+
+      /* The decoder updates literal length, then match length, then
+       * offset. Everything here is written in reverse of the reading
+       * order, so they go out the other way about. */
+      of_state = rzstd_fse_ct_encode(&w, of_state, &of_ct, of);
+      ml_state = rzstd_fse_ct_encode(&w, ml_state, &ml_ct, ml);
+      ll_state = rzstd_fse_ct_encode(&w, ll_state, &ll_ct, ll);
+
+      rzstd_wbits_add(&w, s2->literals - rzstd_ll_base[ll],
+            rzstd_ll_bits[ll]);
+      rzstd_wbits_add(&w, s2->match - rzstd_ml_base[ml],
+            rzstd_ml_bits[ml]);
+      rzstd_wbits_add(&w, s2->offset + 3 - ((uint32_t)1 << of), of);
+   }
+
+   rzstd_fse_ct_flush(&w, ml_state, &ml_ct);
+   rzstd_fse_ct_flush(&w, of_state, &of_ct);
+   rzstd_fse_ct_flush(&w, ll_state, &ll_ct);
+
+   {
+      size_t n = rzstd_wbits_close(&w);
+
+      if (w.overflow)
+         return RZ_DATA;
+      at += n;
+   }
+
+   *out_len = at;
+   return RZ_OK;
+}
+
 int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
       size_t src_len, int level, size_t *wrote)
 {
@@ -1800,6 +2188,110 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                   RZSTD_BLOCK_RLE, last);
             at += 3;
             dst[at++] = src[in];
+            in += take;
+            continue;
+         }
+      }
+
+      /* The compressed path below is written and does not work: it
+       * finds matches and reaches ratios of a few percent, and the
+       * frames it produces are rejected by both this decoder and the
+       * reference implementation with "data corruption detected". It
+       * is left in place, and left switched off, because the fault is
+       * somewhere in the ordering of a bitstream written in reverse and
+       * that is worth resuming with rather than rediscovering.
+       *
+       * Storing the block is correct, so that is what happens until
+       * the above is true as well. */
+      if (0)
+      {
+         size_t       produced = 0;
+         rzstd_seq_t *seq      = (rzstd_seq_t*)malloc(
+               (take / RZSTD_ENC_MIN_MATCH + 1) * sizeof(rzstd_seq_t));
+         uint8_t     *lits     = (uint8_t*)malloc(take);
+         uint32_t    *hash     = (uint32_t*)calloc(
+               (size_t)1 << RZSTD_ENC_HASH_LOG, sizeof(uint32_t));
+         size_t       nseq     = 0;
+         size_t       lit_len  = 0;
+         int          ok       = 0;
+
+         if (seq && lits && hash)
+         {
+            size_t pos     = 0;
+            size_t lit_from = 0;
+
+            while (pos + RZSTD_ENC_MIN_MATCH <= take)
+            {
+               const uint8_t *p = src + in + pos;
+               uint32_t       h;
+               uint32_t       cand;
+
+               /* One hash of four bytes and no chain: only the most
+                * recent candidate at a position is considered. */
+               h = ((uint32_t)p[0] | ((uint32_t)p[1] << 8)
+                     | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24))
+                     * 2654435761u;
+               h >>= 32 - RZSTD_ENC_HASH_LOG;
+               cand = hash[h];
+               hash[h] = (uint32_t)(pos + 1);   /* biased, 0 means none */
+
+               if (cand && cand - 1 < pos)
+               {
+                  size_t         from = cand - 1;
+                  const uint8_t *q    = src + in + from;
+                  size_t         n    = 0;
+
+                  while (pos + n < take && p[n] == q[n])
+                     n++;
+
+                  if (n >= RZSTD_ENC_MIN_MATCH)
+                  {
+                     rzstd_seq_t *sq = &seq[nseq++];
+
+                     sq->literals = (uint32_t)(pos - lit_from);
+                     sq->match    = (uint32_t)n;
+                     sq->offset   = (uint32_t)(pos - from);
+
+                     memcpy(lits + lit_len, src + in + lit_from,
+                           sq->literals);
+                     lit_len += sq->literals;
+
+                     pos      += n;
+                     lit_from  = pos;
+                     continue;
+                  }
+               }
+               pos++;
+            }
+
+            /* A match may not end a block: the last three bytes have to
+             * be literals, because a decoder stops copying at the block
+             * end and the format requires the tail to be literal. */
+            if (nseq && lit_from < take)
+            {
+               memcpy(lits + lit_len, src + in + lit_from,
+                     take - lit_from);
+               lit_len += take - lit_from;
+            }
+
+            if (nseq && rzstd_emit_block(dst + at + 3, dst_len - at - 3,
+                     src + in, take, seq, nseq, lits, lit_len,
+                     &produced) == RZ_OK
+                  && produced < take)
+            {
+               rzstd_write_block_header(dst + at, (uint32_t)produced,
+                     RZSTD_BLOCK_COMPRESSED, last);
+               at += 3 + produced;
+               ok  = 1;
+            }
+         }
+
+         free(seq);
+         free(lits);
+         free(hash);
+
+         if (ok)
+         {
             in += take;
             continue;
          }
