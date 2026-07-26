@@ -93,7 +93,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_VULKAN
 OTHER_CFLAGS = $(inherited) -DHAVE_XDELTA
 OTHER_CFLAGS = $(inherited) -DHAVE_XMB
 OTHER_CFLAGS = $(inherited)
-OTHER_CFLAGS = $(inherited) -DHAVE_ZSTD
+OTHER_CFLAGS = $(inherited) -DHAVE_RZSTD
 OTHER_CFLAGS = $(inherited) -DINLINE=inline
 OTHER_CFLAGS = $(inherited) -DRARCH_INTERNAL
 OTHER_CFLAGS = $(inherited) -DRC_DISABLE_LUA
