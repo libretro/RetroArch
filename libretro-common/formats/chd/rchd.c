@@ -69,7 +69,12 @@
  *   image does not cost this file its C89 conformance
  *   cdzl, cdlz, cdfl, cdzs   with the CD framing, ECC rebuild and
  *                            subchannel interleave
- *   avhu                     audio/video, FLAC audio mode only
+ *   avhu                     audio/video, and the same decoder serves
+ *                            compression enum 3 of versions below 5,
+ *                            which is the same codec under its earlier
+ *                            name. FLAC audio mode verified; the two
+ *                            older audio modes are written but have
+ *                            never run.
  *
  * ENTRY TYPES
  *   compressed, uncompressed, mini, self-reference, parent-reference,
@@ -96,13 +101,14 @@
  *   avhu audio modes     the raw-delta and Huffman-delta modes are
  *                        written but have never decoded a real stream:
  *                        every hunk of the only A/V image to hand
- *                        states FLAC. They are the whole of what
- *                        separates this codec from the pre-version-5
- *                        one, so an image of that era would settle
- *                        both.
- *   Pre-v5 A/V video     believed to work unchanged -- the two codecs
- *                        agree in every particular compared -- but no
- *                        image using it is to hand, so it is untested.
+ *                        states FLAC. They are the audio the codec used
+ *                        before version 5 added FLAC, so an image from
+ *                        that era, or one converted from it, would
+ *                        settle both.
+ *   Pre-v5 A/V           compression enum 3 is accepted and decoded as
+ *                        avhu, on the argument that version 5 renamed
+ *                        the codec rather than replacing it. Untested:
+ *                        no image with that enum is to hand.
  *   SHA-1 verification   the header's digests are parsed and exposed,
  *                        never checked against the data. A caller that
  *                        wants to know an image is intact has to do it.

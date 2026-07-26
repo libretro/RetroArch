@@ -403,7 +403,7 @@ Read back verbatim from the `compressors` array of generated images.
 | `flac` | FLAC, headerless |
 | `cdzl` `cdlz` `cdfl` | the above with CD framing |
 | `zstd` `cdzs` | Zstandard, and CD-framed |
-| `avhu` | audio/video, version 5 |
+| `avhu` | audio/video; see §9 |
 
 Versions 1 to 4 use a small enum in the header rather than four tags, so
 one codec applies to the whole image:
@@ -413,7 +413,7 @@ one codec applies to the whole image:
 | 0 | none |
 | 1 | zlib |
 | 2 | zlib, a variant; both decode as zlib **[V]** |
-| 3 | audio/video, version 4 only — a *different* codec from version 5's `avhu` **[P]** |
+| 3 | audio/video — the same codec version 5 tags `avhu`; see §9 **[P]** |
 
 **The `flac` codec carries a byte of `L` or `B`** ahead of a bare run of
 FLAC frames, stating the order the decoded samples are to be written
@@ -539,17 +539,20 @@ In the order they block work:
 
 1. **Packed tree serialisation** — the form used by `huff` and `avhu`,
    distinct from §2.3.2. See §6 for what has been ruled out.
-2. **The version 4 A/V codec.** Compression enum 3 is not version 5's
-   `avhu`; it is the earlier codec that `avhu` replaced, and it exists
-   only in version 4 — versions 1 to 3 predate any A/V support, so the
-   enum has no value 3 there. Laserdisc images for older emulators use
-   it, so full coverage needs both.
+2. **An image whose A/V audio is not FLAC.** §9.3 describes three audio
+   modes and all three are implemented; only the FLAC one has decoded a
+   real stream. The other two are what the codec used before version 5
+   added FLAC, so any pre-version-5 A/V image exercises them, as would a
+   version 5 image converted from one. Nothing else is blocked on this:
+   there is no second codec to write, only two written paths that have
+   never run.
 
-   Not measured. The two pre-version-5 images to hand are both version 3
-   and both compression enum 2, so nothing here has ever seen enum 3;
-   what is written above about it is inference from the version it
-   appears in, not a reading.
-3. **CD framing** — sector and subchannel interleave, the ECC bitmap, and
+3. **Which container versions permit compression enum 3.** Unknown. The
+   two pre-version-5 images to hand are both version 3 and both enum 2,
+   so nothing here has seen enum 3 at all. This reader accepts it in any
+   version below 5 and decodes it as `avhu`, which §9 argues is right;
+   an image would settle it.
+4. **CD framing** — sector and subchannel interleave, the ECC bitmap, and
    the per-codec header shape. `cdfl` is the odd one and needs its own
    check.
 5. **`flac` framing** — the endianness byte and the synthesised stream
@@ -879,7 +882,19 @@ region exactly, which is the check that would have caught it immediately.
 
 ---
 
-## 9. Audio/video hunks — `avhu`
+## 9. Audio/video hunks — `avhu`, and `avcomp` before it
+
+**One codec under two names.** Version 5 tags it `avhu`; versions below
+5 select it with compression enum 3, where the sources of the day called
+it `avcomp`. MAME's own notes for the release that defined version 5
+say it renamed `avcomp` to `avhuff`, added FLAC as an audio mode, and
+kept the older audio "for decode only" -- so the later name is the
+earlier codec plus one audio mode, not a replacement for it.
+
+That is why this reader accepts enum 3 and hands it to the same decoder
+as `avhu`. It has never been tried on such an image; the argument is
+from the rename, and §9.3 marks which of the three audio modes have
+actually run.
 
 A laserdisc image stores one video field and its audio per hunk, with
 `hunkbytes` equal to `unitbytes`. Verified against a commercial title
@@ -950,11 +965,14 @@ The distinction matters to a reader: the three modes share a header and
 differ only in this field, so one that ignores it decodes the other two
 to noise without noticing.
 
-The other two modes are described here and implemented, but have never
-decoded a real stream. Both code each channel as deltas on the previous
-sample starting from zero -- raw big-endian pairs when the field is
-zero, or, when it is a length, that many bytes holding two trees whose
-symbols are the high and low halves of each delta.
+**The FLAC mode is the one version 5 added.** The other two are what the
+codec used before that and what it still accepts for decode, so an image
+from before version 5 -- or one converted from such an image -- is what
+would exercise them. They are described here and implemented, but have
+never decoded a real stream. Both code each channel as deltas on the
+previous sample starting from zero -- raw big-endian pairs when the
+field is zero, or, when it is a length, that many bytes holding two
+trees whose symbols are the high and low halves of each delta.
 
 **In the FLAC mode each channel is a separate headerless single-channel
 stream**, not one interleaved stereo stream, and the samples are final
@@ -1038,11 +1056,13 @@ Anything reading a decoded hunk needs no changes.
 field at offset 8 is the same field -- the earlier codec simply has no
 `0xffff` case, because FLAC is what version 5 added. Its two other
 modes, raw deltas and Huffman-coded deltas, are the ones described in
-§9.3 and are unimplemented here for both codecs.
+§9.3, and both are implemented -- one decoder serves either name.
 
 **So the audio is the whole of the difference**, and the two modes that
-carry it are implemented, unverified, in §9.3. An image of the earlier
-era would exercise them and settle both codecs at once. This is marked predicted rather than
-verified because no image using it is to hand; a laserdisc set built for
-an emulator of that era would have one, since what decides the codec is
-the age of the image rather than of the emulator reading it.
+carry it are implemented but unverified. An image of the earlier era
+would exercise them and settle the whole question at once.
+
+Marked predicted rather than verified because no image using it is to
+hand. A laserdisc set built for an emulator of that era would have one,
+since what decides the codec is the age of the image rather than of the
+emulator reading it.
