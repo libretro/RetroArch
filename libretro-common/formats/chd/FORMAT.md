@@ -413,7 +413,7 @@ one codec applies to the whole image:
 | 0 | none |
 | 1 | zlib |
 | 2 | zlib, a variant; both decode as zlib **[V]** |
-| 3 | audio/video — a *different* codec from version 5's `avhu` **[P]** |
+| 3 | audio/video, version 4 only — a *different* codec from version 5's `avhu` **[P]** |
 
 **The `flac` codec carries a byte of `L` or `B`** ahead of a bare run of
 FLAC frames, stating the order the decoded samples are to be written
@@ -539,9 +539,16 @@ In the order they block work:
 
 1. **Packed tree serialisation** — the form used by `huff` and `avhu`,
    distinct from §2.3.2. See §6 for what has been ruled out.
-2. **The version 1 to 4 A/V codec.** Compression enum 3 is not version
-   5's `avhu`; it is the earlier codec that `avhu` replaced. Laserdisc
-   images for older emulators use it, so full coverage needs both.
+2. **The version 4 A/V codec.** Compression enum 3 is not version 5's
+   `avhu`; it is the earlier codec that `avhu` replaced, and it exists
+   only in version 4 — versions 1 to 3 predate any A/V support, so the
+   enum has no value 3 there. Laserdisc images for older emulators use
+   it, so full coverage needs both.
+
+   Not measured. The two pre-version-5 images to hand are both version 3
+   and both compression enum 2, so nothing here has ever seen enum 3;
+   what is written above about it is inference from the version it
+   appears in, not a reading.
 3. **CD framing** — sector and subchannel interleave, the ECC bitmap, and
    the per-codec header shape. `cdfl` is the odd one and needs its own
    check.
