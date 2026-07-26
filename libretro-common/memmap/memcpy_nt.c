@@ -122,7 +122,16 @@ void *memcpy_nt(void *dst, const void *src, size_t len)
             "ldp q2, q3, [%1, #32]\n\t"
             "stnp q0, q1, [%0]\n\t"
             "stnp q2, q3, [%0, #32]\n\t"
-            : : "r"(d), "r"(s) : "q0", "q1", "q2", "q3", "memory");
+            /* The clobbers name v0-v3, not q0-q3.
+             *
+             * AArch64 has one set of SIMD registers, v0 to v31, and the
+             * q form is a width view of them used in instruction
+             * operands: "ldp q0, q1" is correct there. A clobber list
+             * is not an operand, and clang accepts only the register
+             * name, so "q0" is rejected outright. GCC accepts both,
+             * which is why this built everywhere it was tested and
+             * broke on Android, iOS and Windows on ARM at once. */
+            : : "r"(d), "r"(s) : "v0", "v1", "v2", "v3", "memory");
       d   += 64;
       s   += 64;
       len -= 64;
