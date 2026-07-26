@@ -1046,12 +1046,8 @@ void font_driver_free(font_data_t *font)
 #ifdef HAVE_THREADS
       /* Ask for the real threaded state, not the video_threaded
        * setting. The two differ when a hw-render core is loaded,
-       * since that forces the video driver to run non-threaded.
-       * If we wrongly report "threaded" here, the GL font free
-       * path releases the GL context, and every font created
-       * after that gets a broken texture - all menu and OSD text
-       * turns invisible. */
-      is_threaded             = video_driver_is_threaded();
+       * since that forces the video driver to run non-threaded. */
+      is_threaded = video_driver_is_threaded();
 #endif
 
       font_driver_release_renderer_state(font->renderer,
