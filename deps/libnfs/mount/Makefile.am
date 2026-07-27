@@ -22,4 +22,4 @@ compile_rpc:
 	cat mount.x | head -29 >libnfs-raw-mount.h
 	rpcgen -h mount.x | sed -e "s/#include <rpc\/rpc.h>/#include <nfsc\/libnfs-zdr.h>/" | sed -e "s/xdr/zdr/g" -e "s/XDR/ZDR/g" -e "s/ CLIENT / void /g" -e "s/SVCXPRT /void /g" -e "s/bool_t/uint32_t/g" -e "s/u_int /uint32_t /g" >> libnfs-raw-mount.h
 	cat mount.x | head -29 >libnfs-raw-mount.c
-	rpcgen -c mount.x | sed -e "s/#include \".*mount.h\"/#include \"libnfs-xdr.h\"\n#include \"libnfs-raw-mount.h\"/" -e "s/xdr/zdr/g" -e "s/XDR/ZDR/g" -e "s/register int32_t \*buf;/register int32_t *buf;\n	buf = NULL;/" -e "s/bool_t/uint32_t/g" -e "s/u_int /uint32_t /g" >> libnfs-raw-mount.c
+	rpcgen -c mount.x | sed -e "s/#include \".*mount.h\"/#include \"libnfs-xdr.h\"\n#include \"libnfs-raw-mount.h\"/" -e "s/xdr/zdr/g" -e "s/XDR/ZDR/g" -e "s/register int32_t \*buf;//" -e "s/bool_t/uint32_t/g" -e "s/u_int /uint32_t /g" >> libnfs-raw-mount.c
