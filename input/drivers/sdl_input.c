@@ -582,8 +582,11 @@ static void sdl_input_poll(void *data)
          if (event.key.keysym.mod & 0x8000 /*KMOD_SCROLL*/)
             mod |= RETROKMOD_SCROLLOCK;
 
-         input_keyboard_event(event.type == SDL_KEYDOWN, code, code, mod,
-               RETRO_DEVICE_KEYBOARD);
+         /* Use key+mod ASCII so Shift does not leak as '?' and capitals work. */
+         input_keyboard_event(event.type == SDL_KEYDOWN, code,
+               input_keymaps_translate_rk_to_ascii(
+                     (enum retro_key)code, (enum retro_mod)mod),
+               mod, RETRO_DEVICE_KEYBOARD);
       }
 #ifdef HAVE_SDL2
       else if (event.type == SDL_MOUSEWHEEL)
