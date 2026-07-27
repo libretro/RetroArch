@@ -4213,9 +4213,18 @@ bool menu_entries_append(
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
+   /* size = 0 is the whole initialisation.  terms[] is never read
+    * past size: every consumer bounds its loop on it
+    * (menu_entries_search_push, menu_entries_search_get_terms_string
+    * and the five filter loops in menu_displaylist.c), and push writes
+    * terms[size] before incrementing.  Clearing all eight slots here
+    * touched eight separate cachelines -- the rows are 64 bytes apart
+    * -- in a freshly malloc()ed 656-byte block whose other 144 bytes
+    * are all this function needs.  That is eight cold write misses per
+    * appended entry, and this runs once per entry of every list,
+    * including tens of thousands of them for a MAME or FBNeo
+    * playlist. */
    cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
 
    list->list[idx].actiondata      = cbs;
 
@@ -4307,9 +4316,10 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
+   /* See menu_entries_append(): size = 0 is the whole
+    * initialisation, and clearing terms[] costs eight cold
+    * cachelines per entry for nothing. */
    cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
 
    list->list[idx].actiondata      = cbs;
 
