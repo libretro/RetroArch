@@ -772,6 +772,10 @@ bool path_is_absolute(const char *path)
 char *path_resolve_realpath(char *s, size_t len, bool resolve_symlinks)
 {
 #if !defined(RARCH_CONSOLE) && defined(RARCH_INTERNAL)
+   /* Leave VFS URL schemes alone — collapsing nfs:// to nfs:/ (etc.)
+    * breaks network path dispatch. */
+   if (s && strstr(s, "://"))
+      return s;
 #ifdef _WIN32
    char *ret         = NULL;
    wchar_t *rel_path = utf8_to_utf16_string_alloc(s);

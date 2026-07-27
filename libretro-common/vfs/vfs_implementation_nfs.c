@@ -220,11 +220,26 @@ static bool nfs_build_path(char *dest, size_t dest_size, const char *relative_pa
        * matching settings export — fall back to rest of URL after server). */
       if (*p == '/')
       {
+         char export_norm[PATH_MAX_LENGTH];
          const char *export_cfg = (nfs_cfg && nfs_cfg->export_path)
             ? nfs_cfg->export_path : NULL;
-         size_t export_len = export_cfg ? strlen(export_cfg) : 0;
+         size_t export_len;
 
-         if (export_len > 0 && string_starts_with(p, export_cfg))
+         /* Match mount-time normalization (leading '/'). */
+         export_norm[0] = '\0';
+         if (export_cfg && *export_cfg)
+         {
+            if (export_cfg[0] == '/')
+               strlcpy(export_norm, export_cfg, sizeof(export_norm));
+            else
+            {
+               export_norm[0] = '/';
+               strlcpy(export_norm + 1, export_cfg, sizeof(export_norm) - 1);
+            }
+         }
+         export_len = strlen(export_norm);
+
+         if (export_len > 0 && string_starts_with(p, export_norm))
          {
             p += export_len;
             if (*p == '/')
@@ -305,7 +320,14 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
 
    ret = nfs_open(nfs, full_path, flags, &fh);
    if (ret != 0 || !fh)
+   {
+      const char *err = nfs_get_error(nfs);
+      char msg[256];
+      snprintf(msg, sizeof(msg), "nfs_open(\"%.180s\"): %.40s",
+            full_path, (err && *err) ? err : "failed");
+      nfs_set_last_error(msg);
       return false;
+   }
 
    stream->nfs_fh  = (intptr_t)(uintptr_t)fh;
    stream->nfs_ctx = (intptr_t)(uintptr_t)nfs;
