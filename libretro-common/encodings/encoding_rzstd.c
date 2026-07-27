@@ -799,6 +799,12 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
     * as many as two hundred and fifty-six symbols were a third of the
     * time spent decoding a two-kilobyte frame, where the table is
     * rebuilt for barely more output than it has entries. */
+   /* Count the ranks and nothing else.
+    *
+    * The sum of every symbol's share is a function of the rank counts,
+    * so accumulating it per symbol repeats a shift and an add up to two
+    * hundred and fifty-six times to learn what eleven ranks already
+    * say. */
    memset(rank_count, 0, sizeof(rank_count));
    for (i = 0; i < count; i++)
    {
@@ -807,12 +813,11 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       if (w > RZSTD_HUF_MAX_BITS)
          return RZ_DATA;
       all[i] = (uint8_t)w;
-      if (w)
-      {
-         total += (uint32_t)1 << (w - 1);
-         rank_count[w]++;
-      }
+      rank_count[w]++;
    }
+
+   for (i = 1; i <= RZSTD_HUF_MAX_BITS; i++)
+      total += rank_count[i] << (i - 1);
    if (!total)
       return RZ_DATA;
 
