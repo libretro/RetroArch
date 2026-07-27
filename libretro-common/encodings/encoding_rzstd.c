@@ -1339,22 +1339,40 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
                      && rzstd_fast_ok(&f[0]) && rzstd_fast_ok(&f[1])
                      && rzstd_fast_ok(&f[2]) && rzstd_fast_ok(&f[3]))
                {
-                  for (i = 0; i < 5; i++)
+                  /* Each stream's five symbols land next to each other,
+                   * so they are gathered into a word and written once
+                   * rather than a byte at a time to a computed index.
+                   * The stores were a quarter of this loop. */
                   {
-                     uint32_t e0 = ent[f[0].bits >> sh];
-                     uint32_t e1 = ent[f[1].bits >> sh];
-                     uint32_t e2 = ent[f[2].bits >> sh];
-                     uint32_t e3 = ent[f[3].bits >> sh];
+                     uint64_t w0 = 0, w1 = 0, w2 = 0, w3 = 0;
 
-                     dst[pos[0] + i] = (uint8_t)(e0 >> 8);
-                     dst[pos[1] + i] = (uint8_t)(e1 >> 8);
-                     dst[pos[2] + i] = (uint8_t)(e2 >> 8);
-                     dst[pos[3] + i] = (uint8_t)(e3 >> 8);
+                     for (i = 0; i < 5; i++)
+                     {
+                        uint32_t e0 = ent[f[0].bits >> sh];
+                        uint32_t e1 = ent[f[1].bits >> sh];
+                        uint32_t e2 = ent[f[2].bits >> sh];
+                        uint32_t e3 = ent[f[3].bits >> sh];
 
-                     f[0].bits <<= (e0 & 63);
-                     f[1].bits <<= (e1 & 63);
-                     f[2].bits <<= (e2 & 63);
-                     f[3].bits <<= (e3 & 63);
+                        w0 |= (uint64_t)(uint8_t)(e0 >> 8) << (i * 8);
+                        w1 |= (uint64_t)(uint8_t)(e1 >> 8) << (i * 8);
+                        w2 |= (uint64_t)(uint8_t)(e2 >> 8) << (i * 8);
+                        w3 |= (uint64_t)(uint8_t)(e3 >> 8) << (i * 8);
+
+                        f[0].bits <<= (e0 & 63);
+                        f[1].bits <<= (e1 & 63);
+                        f[2].bits <<= (e2 & 63);
+                        f[3].bits <<= (e3 & 63);
+                     }
+
+                     /* Five bytes wanted, eight written: the loop stops
+                      * four short of each stream's end, so the three
+                      * extra land inside the next round's five and are
+                      * overwritten by it. The last round writes into the
+                      * tail the counting reader below fills in. */
+                     memcpy(dst + pos[0], &w0, 8);
+                     memcpy(dst + pos[1], &w1, 8);
+                     memcpy(dst + pos[2], &w2, 8);
+                     memcpy(dst + pos[3], &w3, 8);
                   }
                   pos[0] += 5; pos[1] += 5; pos[2] += 5; pos[3] += 5;
                   rzstd_fast_reload(&f[0]);
