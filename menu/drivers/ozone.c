@@ -401,9 +401,10 @@ typedef struct ozone_theme
    const char *name;
 } ozone_theme_t;
 
-/* If you change this struct, also
-   change ozone_alloc_node and
-   ozone_copy_node */
+/* If you change this struct, also change ozone_alloc_node.
+   ozone_snapshot_visible() additionally takes a bitwise copy of one
+   and clears the two heap-owned string members, so anything
+   heap-owned added here needs the same treatment there. */
 typedef struct ozone_node
 {
    char *fullpath;            /* Entry fullpath */
@@ -415,6 +416,29 @@ typedef struct ozone_node
    uint8_t sublabel_lines;    /* Entry sublabel lines */
    bool wrap;                 /* Wrap entry? */
 } ozone_node_t;
+
+/* One visible entry of the outgoing list, captured when the list is
+ * cached rather than re-derived every frame of the transition.
+ *
+ * This replaces the file_list_t + deep copy that used to stand in for
+ * the old list.  That copy had to carry a shallow memcpy of the
+ * entry's menu_file_list_cbs_t so that menu_entry_get() could keep
+ * running action_label/action_get_value/action_sublabel against it
+ * while the animation played -- against a cbs whose ->setting pointer
+ * had by then been freed with the real list, and whose value handlers
+ * index global state (playlist_get_cached() and friends) that has
+ * already moved on to the new list.  Resolving the strings once, at
+ * the moment the list is still live, is both correct and cheaper. */
+typedef struct
+{
+   menu_entry_t entry;
+   ozone_node_t node;
+   size_t       entry_idx;
+   /* The source entry may have had no node at all, which the draw
+    * path distinguishes from a zeroed one: a NULL node makes it skip
+    * the entry, a zero-height node would draw it. */
+   bool         has_node;
+} ozone_old_entry_t;
 
 
 enum ozone_handle_flags
@@ -479,7 +503,8 @@ struct ozone_handle
    ozone_theme_t *theme;
    ozone_theme_t *default_theme;
    char *pending_message;
-   file_list_t selection_buf_old;                  /* ptr alignment */
+   ozone_old_entry_t *entries_old;                 /* ptr alignment */
+   size_t entries_old_size;
    file_list_t horizontal_list; /* console tabs */ /* ptr alignment */
    /* Maps console tabs to playlist database names */
    ozone_node_t **playlist_db_node_map;
@@ -4687,96 +4712,72 @@ static void ozone_free_list_nodes(file_list_t *list, bool actiondata)
    }
 }
 
-static ozone_node_t *ozone_copy_node(const ozone_node_t *old_node)
+/* Capture the visible range of the outgoing list.
+ *
+ * This used to be ozone_list_deep_copy(): a second file_list_t with
+ * strdup()ed path/label/alt, a heap-copied ozone_node_t and a shallow
+ * memcpy of each entry's menu_file_list_cbs_t, kept alive so that
+ * ozone_draw_entries() could call menu_entry_get() against it on every
+ * frame of the transition.
+ *
+ * Nothing about that held up.  The copied cbs carries a ->setting
+ * pointer into a settings list that is freed with the real menu list,
+ * and its action_get_value/action_sublabel handlers resolve against
+ * global state -- playlist_get_cached() and friends -- that has
+ * already moved on to the incoming list by the time the animation
+ * runs.  So the "old" list was being re-derived every frame from a
+ * mixture of dangling and current state to produce strings that, by
+ * definition, should have been frozen when the list changed.
+ *
+ * Resolve them once here instead, while the source list is still
+ * live.  The snapshot is then pure data: no callbacks, no borrowed
+ * pointers, nothing to keep in sync and nothing to alias. */
+static void ozone_snapshot_visible(ozone_handle_t *ozone,
+      const file_list_t *src, size_t first, size_t last)
 {
-   ozone_node_t *new_node = (ozone_node_t*)malloc(sizeof(*new_node));
+   size_t i, j     = 0;
+   size_t count    = (last + 1) - first;
 
-   /* NULL-check the malloc: '*new_node = *old_node' on the next
-    * line NULL-derefs on OOM.  Caller in ozone_list_deep_copy
-    * handles a NULL return - it just leaves
-    * dst->list[j].userdata = NULL, which matches the 'no
-    * src_udata' branch. */
-   if (!new_node)
-      return NULL;
+   if (ozone->entries_old)
+      free(ozone->entries_old);
+   ozone->entries_old      = NULL;
+   ozone->entries_old_size = 0;
 
-   *new_node              = *old_node;
-   /* Deep-copy heap-owned strings.  Bitwise copy above aliased
-    * the source pointers, so without a strdup here both the
-    * source and the copy free() the same buffers in their
-    * respective ozone_free_node() — double free.
-    *
-    * console_name is currently only populated on horizontal_list
-    * entries (sidebar playlist tabs) which never reach
-    * ozone_copy_node today (it's called from ozone_list_deep_copy
-    * on the vertical selection_buf), so the bug is latent.  The
-    * struct comment above ozone_node already warned that any
-    * change to ozone_node must update this function. */
-   new_node->fullpath     = old_node->fullpath
-         ? strdup(old_node->fullpath)
-         : NULL;
-   new_node->console_name = old_node->console_name
-         ? strdup(old_node->console_name)
-         : NULL;
+   if (!src || !count)
+      return;
 
-   return new_node;
-}
+   if (!(ozone->entries_old = (ozone_old_entry_t*)
+         calloc(count, sizeof(*ozone->entries_old))))
+      return;
 
-static void ozone_list_deep_copy(const file_list_t *src,
-      file_list_t *dst, size_t first, size_t last)
-{
-   size_t i, j   = 0;
-   uintptr_t tag = (uintptr_t)dst;
-
-   gfx_animation_kill_by_tag(&tag);
-
-   ozone_free_list_nodes(dst, true);
-
-   file_list_clear(dst);
-   file_list_reserve(dst, (last + 1) - first);
-
-   for (i = first; i <= last; ++i)
+   for (i = first; i <= last; ++i, ++j)
    {
-      struct item_file *d = &dst->list[j];
-      struct item_file *s = &src->list[i];
-      void     *src_udata = s->userdata;
-      void     *src_adata = s->actiondata;
+      ozone_old_entry_t *e     = &ozone->entries_old[j];
+      const ozone_node_t *node = (const ozone_node_t*)src->list[i].userdata;
 
-      *d       = *s;
-      d->alt   = (!d->alt   || !*d->alt)   ? NULL : strdup(d->alt);
-      d->path  = (!d->path  || !*d->path)  ? NULL : strdup(d->path);
-      d->label = (!d->label || !*d->label) ? NULL : strdup(d->label);
+      e->entry_idx             = src->list[i].entry_idx;
 
-      if (src_udata)
-         dst->list[j].userdata = (void*)ozone_copy_node((const ozone_node_t*)src_udata);
-
-      if (src_adata)
+      if ((e->has_node = (node != NULL)))
       {
-         void *data = malloc(sizeof(menu_file_list_cbs_t));
-         /* NULL-check the malloc before the memcpy on the next
-          * line NULL-derefs.  On OOM leave actiondata NULL -
-          * matches the 'no src_adata' branch above; file_list
-          * consumers already handle NULL actiondata entries. */
-         if (data)
-         {
-            memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
-            /* This is a shallow copy, and menu_file_list_cbs_t::search
-             * is a pointer the source still owns.  Clear it rather
-             * than duplicate it: selection_buf_old is a display-only
-             * snapshot for the list-transition animation, nothing
-             * reads search terms from it, and leaving the pointer
-             * aliased would double-free.  Held by value this member
-             * was copied as a dead 520-byte blob. */
-            ((menu_file_list_cbs_t*)data)->search = NULL;
-            dst->list[j].actiondata = data;
-         }
-         else
-            dst->list[j].actiondata = NULL;
+         e->node               = *node;
+         /* Bitwise copy; these two are owned by the source node and
+          * dangle the moment the real list is freed.  The draw path
+          * only ever reads height, icon, content_icon, wrap and
+          * sublabel_lines from a node, so drop them rather than
+          * strdup() a pair of strings nothing will look at. */
+         e->node.fullpath      = NULL;
+         e->node.console_name  = NULL;
       }
 
-      ++j;
+      MENU_ENTRY_INITIALIZE(e->entry);
+      e->entry.flags |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_LABEL_ENABLED
+                      | MENU_ENTRY_FLAG_VALUE_ENABLED
+                      | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
+      menu_entry_get(&e->entry, 0, i, (void*)src, true);
    }
 
-   dst->size = j;
+   ozone->entries_old_size = j;
 }
 
 static void ozone_list_cache(void *data,
@@ -4848,8 +4849,7 @@ text_iterate:
    first_node               = (ozone_node_t*)selection_buf->list[first].userdata;
    ozone->old_list_offset_y = (first_node) ? first_node->position_y : 0;
 
-   ozone_list_deep_copy(selection_buf,
-         &ozone->selection_buf_old, first, last);
+   ozone_snapshot_visible(ozone, selection_buf, first, last);
 }
 
 static void ozone_change_tab(ozone_handle_t *ozone,
@@ -5902,6 +5902,7 @@ static void ozone_draw_entries(
       float alpha,
       float scroll_y,
       bool is_playlist,
+      bool old_list,
       math_matrix_4x4 *mymat)
 {
    size_t i;
@@ -5916,7 +5917,6 @@ static void ozone_draw_entries(
    enum gfx_animation_ticker_type
          menu_ticker_type            =
          (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-   bool old_list                     = selection_buf == &ozone->selection_buf_old;
    int x_offset                      = 0;
    size_t selection_y                = 0; /* 0 means no selection (we assume that no entry has y = 0) */
    size_t old_selection_y            = 0;
@@ -5926,7 +5926,9 @@ static void ozone_draw_entries(
    int sublabel_max_width            = 0;
    float scale_factor                = ozone->last_scale_factor;
    gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
-   size_t entries_end                = selection_buf ? selection_buf->size : 0;
+   size_t entries_end                = old_list
+         ? ozone->entries_old_size
+         : (selection_buf ? selection_buf->size : 0);
    size_t y                          = ozone->dimensions.header_height
          + ozone->dimensions.spacer_1px
          + ozone->dimensions.entry_padding_vertical;
@@ -5980,7 +5982,10 @@ static void ozone_draw_entries(
       if (entry_old_selected && old_selection_y == 0)
          old_selection_y = y;
 
-      node                    = (ozone_node_t*)selection_buf->list[i].userdata;
+      node                    = old_list
+            ? (ozone->entries_old[i].has_node
+                  ? &ozone->entries_old[i].node : NULL)
+            : (ozone_node_t*)selection_buf->list[i].userdata;
 
       if (!node || (ozone->flags & OZONE_FLAG_EMPTY_PLAYLIST))
          goto border_iterate;
@@ -6081,6 +6086,7 @@ border_iterate:
       char wrapped_sublabel_str[MENU_LABEL_MAX_LENGTH];
       uintptr_t texture;
       menu_entry_t entry;
+      const menu_entry_t *e;
       gfx_animation_ctx_ticker_t ticker;
       gfx_animation_ctx_ticker_smooth_t ticker_smooth;
       unsigned ticker_x_offset     = 0;
@@ -6112,7 +6118,10 @@ border_iterate:
          ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
       }
 
-      node                           = (ozone_node_t*)selection_buf->list[i].userdata;
+      node                           = old_list
+            ? (ozone->entries_old[i].has_node
+                  ? &ozone->entries_old[i].node : NULL)
+            : (ozone_node_t*)selection_buf->list[i].userdata;
 
       if (!node)
          continue;
@@ -6130,23 +6139,32 @@ border_iterate:
 
       entry_selected                 = selection == i;
 
-      MENU_ENTRY_INITIALIZE(entry);
-      entry.flags    |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
+      /* The outgoing list's strings were resolved by
+       * ozone_snapshot_visible() while its list was still live; the
+       * live list resolves here as usual. */
+      if (old_list)
+         e = &ozone->entries_old[i].entry;
+      else
+      {
+         MENU_ENTRY_INITIALIZE(entry);
+         entry.flags |= MENU_ENTRY_FLAG_RICH_LABEL_ENABLED
                       | MENU_ENTRY_FLAG_LABEL_ENABLED
                       | MENU_ENTRY_FLAG_VALUE_ENABLED
                       | MENU_ENTRY_FLAG_SUBLABEL_ENABLED;
-      menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
+         menu_entry_get(&entry, 0, (unsigned)i, selection_buf, true);
+         e = &entry;
+      }
 
-      if (entry.enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
-         entry_value         = entry.password_value;
+      if (e->enum_idx == MENU_ENUM_LABEL_CHEEVOS_PASSWORD)
+         entry_value         = e->password_value;
       else
-         entry_value         = entry.value;
+         entry_value         = e->value;
 
       /* Prepare text */
-      if (*entry.rich_label)
-         entry_rich_label  = entry.rich_label;
+      if (*e->rich_label)
+         entry_rich_label  = e->rich_label;
       else
-         entry_rich_label  = entry.path;
+         entry_rich_label  = e->path;
 
       if (use_smooth_ticker)
       {
@@ -6177,7 +6195,7 @@ border_iterate:
          y                   = (video_info_height / 2) - (60 * scale_factor);
       }
 
-      sublabel_str = entry.sublabel;
+      sublabel_str = e->sublabel;
 
       if (menu_show_sublabels)
       {
@@ -6199,12 +6217,12 @@ border_iterate:
 
       /* Icon */
       texture = ozone_entries_icon_get_texture(ozone, icons_tex,
-            entry.enum_idx, entry.path, entry.label, entry.type, entry_selected);
+            e->enum_idx, e->path, e->label, e->type, entry_selected);
 
       if (texture)
       {
          /* Console specific icons */
-         if (     entry.type == FILE_TYPE_RPL_ENTRY
+         if (     e->type == FILE_TYPE_RPL_ENTRY
                && ozone->categories_selection_ptr > ozone->system_tab_end)
          {
             ozone_node_t *sidebar_node = (ozone_node_t*)
@@ -6215,23 +6233,23 @@ border_iterate:
                texture = sidebar_node->content_icon;
          }
          /* Playlist manager icons */
-         else if (ozone->depth == 3 && entry.enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
+         else if (ozone->depth == 3 && e->enum_idx == MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS)
          {
-            if (string_is_equal(entry.rich_label,
+            if (string_is_equal(e->rich_label,
                 msg_hash_to_str(MENU_ENUM_LABEL_VALUE_HISTORY_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_HISTORY];
-            else if (string_is_equal(entry.rich_label,
+            else if (string_is_equal(e->rich_label,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
                texture = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITES];
 #ifdef HAVE_IMAGEVIEWER
-            else if (string_is_equal(entry.rich_label,
+            else if (string_is_equal(e->rich_label,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_IMAGES_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_IMAGE];
 #endif
-            else if (string_is_equal(entry.rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
+            else if (string_is_equal(e->rich_label, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_MUSIC_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_MUSIC];
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
-            else if (string_is_equal(entry.rich_label,
+            else if (string_is_equal(e->rich_label,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_TAB)))
                texture = icons_tex[OZONE_TAB_TEXTURE_VIDEO];
 #endif
@@ -6247,7 +6265,7 @@ border_iterate:
                   fill_pathname(playlist_file_noext,
                   ozone->horizontal_list.list[offset].path, "",
                   sizeof(playlist_file_noext));
-                  if (string_is_equal(playlist_file_noext, entry.rich_label))
+                  if (string_is_equal(playlist_file_noext, e->rich_label))
                      break;
                }
 
@@ -6265,7 +6283,7 @@ border_iterate:
                ozone_node_t *db_node                 = NULL;
 
                playlist_get_index(playlist_get_cached(),
-                     entry.entry_idx, &pl_entry);
+                     e->entry_idx, &pl_entry);
 
                if (pl_entry
                      && (pl_entry->db_name && *pl_entry->db_name)
@@ -6290,12 +6308,12 @@ border_iterate:
                      texture = db_node->content_icon;
                }
             }
-            else if (ozone->depth == 2 && entry.type == FILE_TYPE_PLAYLIST_COLLECTION)
+            else if (ozone->depth == 2 && e->type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
                ozone_node_t *sidebar_node = (ozone_node_t*)
                      (ozone->horizontal_list.size)
                         ? (ozone_node_t*)file_list_get_userdata_at_offset(
-                              &ozone->horizontal_list, selection_buf->list[i].entry_idx)
+                              &ozone->horizontal_list, old_list ? ozone->entries_old[i].entry_idx : selection_buf->list[i].entry_idx)
                         : NULL;
 
                if (sidebar_node && sidebar_node->icon)
@@ -6303,7 +6321,7 @@ border_iterate:
             }
          }
          /* History/Favorite console specific content icons */
-         else if (   entry.type == FILE_TYPE_RPL_ENTRY
+         else if (   e->type == FILE_TYPE_RPL_ENTRY
                   && show_history_icons != PLAYLIST_SHOW_HISTORY_ICONS_DEFAULT)
          {
             switch (ozone->tabs[ozone->categories_selection_ptr])
@@ -6316,7 +6334,7 @@ border_iterate:
                      ozone_node_t *db_node                 = NULL;
 
                      playlist_get_index(playlist_get_cached(),
-                           entry.entry_idx, &pl_entry);
+                           e->entry_idx, &pl_entry);
 
                      if (pl_entry
                            && (pl_entry->db_name && *pl_entry->db_name)
@@ -6342,7 +6360,7 @@ border_iterate:
          }
 
          /* Cheevos badges should not be recolored */
-         if (!((entry.type >= MENU_SETTINGS_CHEEVOS_START) && (entry.type < MENU_SETTINGS_NETPLAY_ROOMS_START)))
+         if (!((e->type >= MENU_SETTINGS_CHEEVOS_START) && (e->type < MENU_SETTINGS_NETPLAY_ROOMS_START)))
             icon_color = ozone->theme_dynamic.entries_icon;
          else
             icon_color = ozone->pure_white;
@@ -9604,9 +9622,8 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
          settings, width, height, false, false);
    ozone->last_thumbnail_scale_factor           = settings->floats.ozone_thumbnail_scale_factor;
 
-   ozone->selection_buf_old.list                = NULL;
-   ozone->selection_buf_old.capacity            = 0;
-   ozone->selection_buf_old.size                = 0;
+   ozone->entries_old                           = NULL;
+   ozone->entries_old_size                      = 0;
 
    ozone->flags                                |= OZONE_FLAG_DRAW_SIDEBAR;
    ozone->sidebar_offset                        = 0;
@@ -9750,9 +9767,11 @@ error:
        * db_node_map before the nodes its values point into. */
       RHMAP_FREE(ozone->playlist_db_node_map);
       ozone_free_list_nodes(&ozone->horizontal_list, false);
-      ozone_free_list_nodes(&ozone->selection_buf_old, false);
       file_list_deinitialize(&ozone->horizontal_list);
-      file_list_deinitialize(&ozone->selection_buf_old);
+      if (ozone->entries_old)
+         free(ozone->entries_old);
+      ozone->entries_old      = NULL;
+      ozone->entries_old_size = 0;
    }
 
    if (menu)
@@ -9782,10 +9801,12 @@ static void ozone_free(void *data)
       /* See comment in ozone_refresh_horizontal_list: free
        * db_node_map before the nodes its values point into. */
       RHMAP_FREE(ozone->playlist_db_node_map);
-      ozone_free_list_nodes(&ozone->selection_buf_old, false);
       ozone_free_list_nodes(&ozone->horizontal_list, false);
-      file_list_deinitialize(&ozone->selection_buf_old);
       file_list_deinitialize(&ozone->horizontal_list);
+      if (ozone->entries_old)
+         free(ozone->entries_old);
+      ozone->entries_old      = NULL;
+      ozone->entries_old_size = 0;
 
       if (ozone->pending_message && *ozone->pending_message)
          free(ozone->pending_message);
@@ -12531,6 +12552,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
          ozone->animations.list_alpha,
          ozone->animations.scroll_y,
          (ozone->flags & OZONE_FLAG_IS_PLAYLIST) ? true : false,
+         false,
          &mymat
          );
 
@@ -12545,10 +12567,11 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
             video_height,
             (unsigned)ozone->selection_old_list,
             (unsigned)ozone->selection_old_list,
-            &ozone->selection_buf_old,
+            NULL,
             ozone->animations.list_alpha,
             ozone->scroll_old,
             (ozone->flags & OZONE_FLAG_IS_PLAYLIST_OLD) ? true : false,
+            true,
             &mymat
       );
 
