@@ -2774,12 +2774,18 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
       if ((err = rchd_cache_alloc(chd)) != RCHD_OK)
          return err;
 
-      if (chd->cached != hunk)
+      /* Resolve before consulting the cache, and key the cache on what
+       * was decoded rather than on what was asked for.
+       *
+       * A self-reference is a hunk saying "the same bytes as hunk N".
+       * Keyed on the request, two hunks referring to the same N both
+       * miss and N is decoded twice. Keyed on N, the second one hits. */
+      if ((err = rchd_resolve_self(chd, hunk, &src_hunk)) != RCHD_OK)
+         return err;
+
+      if (chd->cached != src_hunk)
       {
          const rchd_map_entry_t *e;
-
-         if ((err = rchd_resolve_self(chd, hunk, &src_hunk)) != RCHD_OK)
-            return err;
          e = &chd->map[src_hunk];
 
          /* A parent reference is the parent's data at a unit position,
@@ -2806,7 +2812,7 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
                   return err;
                break;
             }
-            chd->cached = hunk;
+            chd->cached = src_hunk;
          }
          else
          {
@@ -2835,7 +2841,7 @@ static int rchd_read_step_bytes(rchd_t *chd, rchd_request_t *req)
                      != e->crc)
                return RCHD_ERROR_CRC;
 
-            chd->cached = hunk;
+            chd->cached = src_hunk;
          }
       }
 
