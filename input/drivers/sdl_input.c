@@ -69,10 +69,26 @@ enum sdl_webos_special_key
 {
    sdl_webos_spkey_back,
    sdl_webos_spkey_return,
+   sdl_webos_spkey_up,
+   sdl_webos_spkey_down,
+   sdl_webos_spkey_left,
+   sdl_webos_spkey_right,
    sdl_webos_spkey_size,
 };
 
 static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
+
+/* One-shot sticky keys: webOS often delivers KEYDOWN+KEYUP in the same
+ * poll, so SDL_GetKeyboardState is already clear when the menu reads input. */
+static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
+{
+   if (sdl_webos_special_keymap[slot])
+   {
+      sdl_webos_special_keymap[slot] = 0;
+      return true;
+   }
+   return false;
+}
 #endif
 
 static void *sdl_input_init(const char *joypad_driver)
@@ -101,20 +117,26 @@ static bool sdl_key_pressed(int key)
       return false;
 
 #ifdef WEBOS
-   if ((key == RETROK_BACKSPACE)
-      && sdl_webos_special_keymap[sdl_webos_spkey_back])
-   {
-      /* Reset to unpressed state */
-      sdl_webos_special_keymap[sdl_webos_spkey_back] = 0;
+   if (key == RETROK_BACKSPACE
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_back))
       return true;
-   }
-   if ((key == RETROK_LCTRL)
-      && sdl_webos_special_keymap[sdl_webos_spkey_return])
-   {
-      /* Reset to unpressed state */
-      sdl_webos_special_keymap[sdl_webos_spkey_return] = 0;
+   /* Return must stay RETROK_RETURN so display_kb can map it to menu OK
+    * (OSK character select). Mapping it to LCTRL selected nothing. */
+   if (key == RETROK_RETURN
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_return))
       return true;
-   }
+   if (key == RETROK_UP
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_up))
+      return true;
+   if (key == RETROK_DOWN
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_down))
+      return true;
+   if (key == RETROK_LEFT
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_left))
+      return true;
+   if (key == RETROK_RIGHT
+         && sdl_webos_sticky_pressed(sdl_webos_spkey_right))
+      return true;
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
       return true;
    if (key == RETROK_x && keymap[SDL_WEBOS_SCANCODE_RED])
@@ -500,16 +522,30 @@ static void sdl_input_poll(void *data)
             case SDL_WEBOS_SCANCODE_EXIT:
                code = RETROK_F1;
                break;
-            case SDL_SCANCODE_RIGHT:
-            case SDL_SCANCODE_LEFT:
-            case SDL_SCANCODE_DOWN:
             case SDL_SCANCODE_UP:
-               /* navigation only, skip text insertion */
+            case SDL_SCANCODE_DOWN:
+            case SDL_SCANCODE_LEFT:
+            case SDL_SCANCODE_RIGHT:
+               /* OSK: navigate the grid, do not move the text cursor. */
                if (osk_active)
+               {
+                  if (event.type == SDL_KEYDOWN)
+                  {
+                     if (event.key.keysym.scancode == SDL_SCANCODE_UP)
+                        sdl_webos_special_keymap[sdl_webos_spkey_up] = 1;
+                     else if (event.key.keysym.scancode == SDL_SCANCODE_DOWN)
+                        sdl_webos_special_keymap[sdl_webos_spkey_down] = 1;
+                     else if (event.key.keysym.scancode == SDL_SCANCODE_LEFT)
+                        sdl_webos_special_keymap[sdl_webos_spkey_left] = 1;
+                     else
+                        sdl_webos_special_keymap[sdl_webos_spkey_right] = 1;
+                  }
                   continue;
+               }
                break;
             case SDL_SCANCODE_RETURN:
-               // remap wheel click to confirm selection in virtual keyboard
+               /* OSK: remote OK selects the highlighted character (via
+                * RETROK_RETURN → menu OK), do not submit the line as '\n'. */
                if (osk_active)
                {
                   if (event.type == SDL_KEYDOWN)

@@ -8196,20 +8196,29 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       }
       else if (display_kb && input && input->input_state)
       {
-         /* Allow character map switches, 
-          * and set RetroPad Select bit when pressing Escape
-          * in order to clear the input window and close it. */
+         /* OSK grid navigation from keyboard / TV remote D-pad, plus
+          * page switches and Escape to clear/close. Return confirms the
+          * highlighted OSK character (same as menu OK). */
          unsigned i;
+         bool swap_ok_cancel_buttons = settings->bools.input_menu_swap_ok_cancel_buttons;
          unsigned ids[][2] =
          {
+            {RETROK_RETURN,    RETRO_DEVICE_ID_JOYPAD_A      },
+            {RETROK_UP,        RETRO_DEVICE_ID_JOYPAD_UP     },
+            {RETROK_DOWN,      RETRO_DEVICE_ID_JOYPAD_DOWN   },
+            {RETROK_LEFT,      RETRO_DEVICE_ID_JOYPAD_LEFT   },
+            {RETROK_RIGHT,     RETRO_DEVICE_ID_JOYPAD_RIGHT  },
             {RETROK_PAGEUP,    RETRO_DEVICE_ID_JOYPAD_L      },
             {RETROK_PAGEDOWN,  RETRO_DEVICE_ID_JOYPAD_R      },
             {RETROK_ESCAPE,    RETRO_DEVICE_ID_JOYPAD_SELECT },
          };
 
+         if (swap_ok_cancel_buttons)
+            ids[0][1] = RETRO_DEVICE_ID_JOYPAD_B;
+
          for (i = 0; i < ARRAY_SIZE(ids); i++)
          {
-            if (input->input_state(
+            if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
                      sec_joypad,
