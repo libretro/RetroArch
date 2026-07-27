@@ -60,6 +60,26 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * ozone_frame() is already factored into named phases, but at -O3 the
+ * ones called exactly once are inlined straight back into it, so
+ * branches that are not taken on a given frame still occupy the
+ * fall-through path in L1i.  Under -Os the compiler already optimises
+ * for size and the forced outlining only adds call overhead, so it is
+ * disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define OZONE_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define OZONE_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define OZONE_NOINLINE __declspec(noinline)
+#else
+#define OZONE_NOINLINE
+#endif
+
 #define ANIMATION_PUSH_ENTRY_DURATION (166.66667f)
 #define ANIMATION_CURSOR_DURATION     (ANIMATION_PUSH_ENTRY_DURATION)
 #define ANIMATION_CURSOR_PULSE        (ANIMATION_PUSH_ENTRY_DURATION * 3)
@@ -3407,7 +3427,7 @@ static INLINE void ozone_text_color_hp(uint32_t rgba, float alpha,
    out[3] = alpha < 0.0f ? 0.0f : (alpha > 1.0f ? 1.0f : alpha);
 }
 
-static void ozone_draw_sidebar(
+OZONE_NOINLINE static void ozone_draw_sidebar(
       ozone_handle_t *ozone,
       const uintptr_t *icons_tex,
       const uintptr_t *tab_tex,
@@ -11020,7 +11040,7 @@ static void ozone_render(void *data,
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
-static void ozone_draw_header(
+OZONE_NOINLINE static void ozone_draw_header(
       ozone_handle_t *ozone,
       const uintptr_t *icons_tex,
       const uintptr_t *ozone_tex,
