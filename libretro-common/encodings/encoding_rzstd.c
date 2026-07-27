@@ -379,6 +379,22 @@ typedef struct rzstd_rbits
    int            overrun;
 } rzstd_rbits_t;
 
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) \
+ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define RZSTD_BIG_ENDIAN 1
+static INLINE uint64_t rzstd_bswap64(uint64_t v)
+{
+   return  ((v & 0x00000000000000ffULL) << 56)
+         | ((v & 0x000000000000ff00ULL) << 40)
+         | ((v & 0x0000000000ff0000ULL) << 24)
+         | ((v & 0x00000000ff000000ULL) <<  8)
+         | ((v & 0x000000ff00000000ULL) >>  8)
+         | ((v & 0x0000ff0000000000ULL) >> 24)
+         | ((v & 0x00ff000000000000ULL) >> 40)
+         | ((v & 0xff00000000000000ULL) >> 56);
+}
+#endif
+
 static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
 {
    /* Nothing to do when the buffer is already deep enough. Worth its
@@ -387,36 +403,27 @@ static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
    if (b->count > 56)
       return;
 
-   /* Eight bytes at once where they are there to take. The stream runs
-    * backwards, so a whole word is read from below the cursor and its
-    * bytes reversed into place; that is one load and a few shifts
-    * against eight loads and eight shifts. */
-   if (b->count <= 56 && b->pos >= 8)
+   /* One load, not eight.
+    *
+    * The stream runs backwards, so the bytes wanted are the ones just
+    * below the cursor. Reading the eight that end at the cursor puts
+    * them in the high end of a word, and a shift brings them down --
+    * where reading them one at a time through a switch was eight loads,
+    * eight shifts, and a function too large for the compiler to inline.
+    * The reference implementation's equivalent does not appear in a
+    * profile at all, because it is inline in the loops that call it. */
+   if (b->pos >= 8)
    {
-      uint64_t v;
       uint32_t take = (64 - b->count) >> 3;
+      uint64_t v;
 
-      b->pos -= take;
-      v = 0;
-      switch (take)
-      {
-         case 8: v |= (uint64_t)b->base[b->pos + 7];
-         /* falls through */
-         case 7: v = (v << 8) | (uint64_t)b->base[b->pos + 6];
-         /* falls through */
-         case 6: v = (v << 8) | (uint64_t)b->base[b->pos + 5];
-         /* falls through */
-         case 5: v = (v << 8) | (uint64_t)b->base[b->pos + 4];
-         /* falls through */
-         case 4: v = (v << 8) | (uint64_t)b->base[b->pos + 3];
-         /* falls through */
-         case 3: v = (v << 8) | (uint64_t)b->base[b->pos + 2];
-         /* falls through */
-         case 2: v = (v << 8) | (uint64_t)b->base[b->pos + 1];
-         /* falls through */
-         default: v = (v << 8) | (uint64_t)b->base[b->pos];
-      }
-      b->bits  |= v << (64 - b->count - take * 8);
+      memcpy(&v, b->base + b->pos - 8, 8);
+#ifdef RZSTD_BIG_ENDIAN
+      v = rzstd_bswap64(v);
+#endif
+      v      >>= (8 - take) * 8;
+      b->pos  -= take;
+      b->bits |= v << (64 - b->count - take * 8);
       b->count += take * 8;
       return;
    }
