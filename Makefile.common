@@ -2953,6 +2953,12 @@ ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_BUILTINNFSCLIENT)))
       INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/nsm
       INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/portmap
       INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/rquota
+ifneq ($(findstring Win32,$(OS)),)
+      # MinGW / MXE: use libnfs win32 shims (do not force Unix feature macros).
+      CFLAGS += '-D_U_=/**/' -DHAVE_STDINT_H -DHAVE_STDLIB_H -DHAVE_STRING_H
+      CFLAGS += -DSTDC_HEADERS -DHAVE_SOCKADDR_STORAGE
+      OBJ += deps/libnfs/win32/win32_compat.o
+else
       CFLAGS += "-D_U_=__attribute__((unused))"
       # Avoid -DHAVE_CONFIG_H: RetroArch's own config.h would be picked
       # up by libnfs "#include \"config.h\"". Pass feature macros instead.
@@ -2966,9 +2972,7 @@ ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_BUILTINNFSCLIENT)))
       CFLAGS += -DHAVE_SYS_UIO_H -DHAVE_UNISTD_H -DHAVE_UTIME_H
       CFLAGS += -DHAVE_SIGNAL_H -DHAVE_SYS_UTSNAME_H -DSTDC_HEADERS
 ifeq ($(findstring Darwin,$(OS)),)
-ifeq ($(findstring Win32,$(OS)),)
       CFLAGS += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
-endif
 endif
 ifneq ($(findstring Darwin,$(OS)),)
       CFLAGS += -DHAVE_SOCKADDR_LEN -DHAVE_SYS_FILIO_H
@@ -2976,6 +2980,7 @@ endif
 ifneq ($(findstring Linux,$(OS)),)
       CFLAGS += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
       CFLAGS += -DHAVE_SYS_VFS_H -DHAVE_SYS_SYSMACROS_H -DHAVE_SO_BINDTODEVICE
+endif
 endif
       OBJ += \
          deps/libnfs/lib/init.o \
