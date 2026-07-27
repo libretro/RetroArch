@@ -288,19 +288,38 @@ typedef struct
 } xmb_icons_t;
 
 /* NOTE: If you change this you HAVE to update
- * xmb_alloc_node() */
+ * xmb_alloc_node().
+ *
+ * Layout rule: everything xmb_draw_item() reads for a visible entry
+ * lives at the front, so a node's entire per-frame working set is one
+ * 64-byte cacheline.  One node is allocated per list entry, so a MAME
+ * or FBNeo playlist means tens of thousands of them; the draw path
+ * walks the visible window every frame and nothing else, so any cold
+ * member placed ahead of the hot ones costs a line fetch (and, once
+ * the node grows past a page, a dTLB entry) per entry per frame.
+ *
+ * thumbnail_icon is therefore a pointer, not a value.  xmb_icons_t is
+ * ~15 KB (it embeds a whole gfx_thumbnail_path_data_t), which made the
+ * by-value node 15560 bytes -- 324x ozone_node_t and 65x
+ * materialui_node_t for the same job -- and put the hot floats in
+ * cachelines 242/243 of 244.  It is now allocated on demand, only for
+ * entries the icon-thumbnail resolver in xmb_render() actually reaches
+ * (the visible window of a playlist), and released again by
+ * xmb_unload_icon_thumbnail_textures(). */
 typedef struct
 {
-   char *fullpath;
-   char *console_name;
-   uintptr_t icon;
-   uintptr_t content_icon;
-   xmb_icons_t thumbnail_icon;
+   /* --- hot: xmb_draw_item(), every visible entry, every frame --- */
    float alpha;
    float label_alpha;
    float zoom;
    float x;
    float y;
+   uintptr_t icon;
+   uintptr_t content_icon;
+   /* --- cold --- */
+   char *fullpath;
+   char *console_name;
+   xmb_icons_t *thumbnail_icon; /* lazily allocated, may be NULL */
 } xmb_node_t;
 
 enum xmb_drag_mode
@@ -652,23 +671,14 @@ const char* xmb_theme_ident(void)
 /* NOTE: This exists because calloc()ing xmb_node_t is expensive
  * when you can have big lists like MAME and fba playlists.
  *
- * Per-field init only — DO NOT add a wholesale memset of the
- * thumbnail_path_data substruct here, that's the multi-KB block
- * we're explicitly avoiding zeroing on the hot path.  Only the
- * small `gfx_thumbnail_t icon` substruct and the icon_path's
- * first byte must be zero, because:
- *   - xmb_free_node -> gfx_thumbnail_reset reads `texture` and
- *     `flags` before initializing them; uninit `texture != 0`
- *     would feed garbage to video_driver_texture_unload, and
- *     uninit `flags & FADE_ACTIVE` would call
- *     gfx_animation_kill_by_tag on stale state.
- *   - The lazy thumbnail path resolution in xmb_render reads
- *     `icon_path[0]` to decide whether resolution is needed.
+ * Per-field init only.  The node itself is now small (one cacheline),
+ * but it is still allocated once per list entry, so this stays on the
+ * populate hot path and stays a malloc + explicit field init rather
+ * than a calloc.
  *
- * gfx_thumbnail_init_blank() (rather than memset) is needed
- * because gfx_thumbnail_t.status is now atomically-typed; a
- * memset of a struct containing std::atomic<int> warns under
- * CXX_BUILD's C++ compile of this file. */
+ * The multi-KB xmb_icons_t block that used to be inlined here is no
+ * longer allocated at all until something asks for it; see
+ * xmb_node_icons_get(). */
 static xmb_node_t *xmb_alloc_node(void)
 {
    xmb_node_t *node = (xmb_node_t*)malloc(sizeof(*node));
@@ -676,15 +686,60 @@ static xmb_node_t *xmb_alloc_node(void)
    if (!node)
       return NULL;
 
-   node->alpha        = node->label_alpha  = 0;
-   node->zoom         = node->x = node->y  = 0;
-   node->icon         = node->content_icon = 0;
-   gfx_thumbnail_init_blank(&node->thumbnail_icon.icon);
-   node->thumbnail_icon.thumbnail_path_data.icon_path[0] = '\0';
-   node->fullpath     = NULL;
-   node->console_name = NULL;
+   node->alpha          = node->label_alpha  = 0;
+   node->zoom           = node->x = node->y  = 0;
+   node->icon           = node->content_icon = 0;
+   node->fullpath       = NULL;
+   node->console_name   = NULL;
+   node->thumbnail_icon = NULL;
 
    return node;
+}
+
+/* Lazily allocate a node's icon-thumbnail block.
+ *
+ * calloc() (not malloc + per-field init) is deliberate here: unlike
+ * xmb_alloc_node() this runs at most once per *visible* entry rather
+ * than once per list entry, so zeroing ~15 KB is not on any hot path,
+ * and it is the only way to guarantee the fields nothing in xmb.c
+ * writes are well-defined.  The by-value layout this replaces left
+ * playlist_icon_mode, system[] and content_img[] uninitialised, which
+ * gfx_thumbnail_is_enabled() and the network-on-demand branch of
+ * gfx_thumbnail_request() both read.
+ *
+ * gfx_thumbnail_init_blank() is still required on top of the calloc:
+ * gfx_thumbnail_t.status is atomically-typed and must be initialised
+ * through retro_atomic_int_init() for the first write to be
+ * well-defined under C11 stdatomic and C++11 std::atomic. */
+static xmb_icons_t *xmb_node_icons_get(xmb_node_t *node)
+{
+   xmb_icons_t *icons;
+
+   if (!node)
+      return NULL;
+   if (node->thumbnail_icon)
+      return node->thumbnail_icon;
+
+   if (!(icons = (xmb_icons_t*)calloc(1, sizeof(*icons))))
+      return NULL;
+
+   gfx_thumbnail_init_blank(&icons->icon);
+   node->thumbnail_icon = icons;
+
+   return icons;
+}
+
+/* Release a node's icon-thumbnail block, resetting the thumbnail
+ * first so any live texture/animation is torn down.  Safe to call on
+ * a node that never had one. */
+static void xmb_node_icons_free(xmb_node_t *node)
+{
+   if (!node || !node->thumbnail_icon)
+      return;
+
+   gfx_thumbnail_reset(&node->thumbnail_icon->icon);
+   free(node->thumbnail_icon);
+   node->thumbnail_icon = NULL;
 }
 
 static void xmb_free_node(xmb_node_t *node)
@@ -696,7 +751,7 @@ static void xmb_free_node(xmb_node_t *node)
       free(node->fullpath);
 
    node->fullpath = NULL;
-   gfx_thumbnail_reset(&node->thumbnail_icon.icon);
+   xmb_node_icons_free(node);
 
    free(node);
 }
@@ -1891,13 +1946,15 @@ static void xmb_unload_icon_thumbnail_textures(void *xmb_handle_ptr)
       xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
       if (node)
       {
-         gfx_thumbnail_reset(&node->thumbnail_icon.icon);
-         /* Clear resolved path so the lazy resolver in xmb_render sees
-          * "needs path resolution" on the next pending_icons pass. The
-          * upshot: we don't eagerly re-resolve paths for every visible
-          * entry here, we just mark them invalid and let the render
-          * dispatcher resolve one at a time under the per-frame cap. */
-         node->thumbnail_icon.thumbnail_path_data.icon_path[0] = '\0';
+         /* Resets the thumbnail and drops the whole ~15 KB icon block.
+          * The lazy resolver in xmb_render sees a NULL thumbnail_icon
+          * as "needs path resolution" and reallocates on the next
+          * pending_icons pass, so this is equivalent to the old
+          * "reset + clear icon_path[0]" invalidation -- we still don't
+          * eagerly re-resolve paths for every visible entry here -- and
+          * it additionally returns the memory for every entry that has
+          * scrolled out of relevance. */
+         xmb_node_icons_free(node);
       }
    }
 }
@@ -6087,10 +6144,17 @@ static int xmb_draw_item(
       gfx_icon_y      = icon_y;
       gfx_icon_height = gfx_icon_width = xmb->icon_size;
 
+      /* node->thumbnail_icon is tested first and deliberately: it is in
+       * the node's hot cacheline, whereas everything behind it is a
+       * separate ~15 KB allocation. Entries that never had an icon
+       * resolved -- every entry outside a playlist, and every entry
+       * when icon thumbnails are off -- now cost no second line fetch
+       * here at all. */
       show_icon_thumbnail =
                xmb->is_playlist
-            && gfx_thumbnail_is_enabled(&node->thumbnail_icon.thumbnail_path_data, GFX_THUMBNAIL_ICON)
-            && node->thumbnail_icon.icon.status == GFX_THUMBNAIL_STATUS_AVAILABLE;
+            && node->thumbnail_icon
+            && gfx_thumbnail_is_enabled(&node->thumbnail_icon->thumbnail_path_data, GFX_THUMBNAIL_ICON)
+            && node->thumbnail_icon->icon.status == GFX_THUMBNAIL_STATUS_AVAILABLE;
 
       if (show_icon_thumbnail)
       {
@@ -6099,7 +6163,7 @@ static int xmb_draw_item(
          float zoom_mp        = (xmb->use_ps3_layout) ? 2.0f : 1.0f;
          bool zoom            = (i == current);
 
-         texture = node->thumbnail_icon.icon.texture;
+         texture = node->thumbnail_icon->icon.texture;
 
          /* Show selected item as "current menu" icon instead */
          if (zoom)
@@ -6114,7 +6178,7 @@ static int xmb_draw_item(
          gfx_icon_aspect = (gfx_icon_width / gfx_icon_height);
 
          gfx_thumbnail_get_draw_dimensions(
-               &node->thumbnail_icon.icon,
+               &node->thumbnail_icon->icon,
                gfx_icon_width, gfx_icon_height, 1.0f,
                &gfx_icon_width_draw, &gfx_icon_height_draw);
 
@@ -7912,7 +7976,11 @@ static void xmb_render(void *data,
          if (!node)
             continue;
 
-         thumbnail_icon = &node->thumbnail_icon;
+         /* Allocates the ~15 KB icon block on first use. Only entries
+          * that reach this loop -- the visible window of a playlist,
+          * with icon thumbnails enabled -- ever pay for one. */
+         if (!(thumbnail_icon = xmb_node_icons_get(node)))
+            continue;
 
          /* Already resolved and dispatched — nothing to do. */
          if (thumbnail_icon->icon.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
@@ -7959,19 +8027,22 @@ static void xmb_render(void *data,
 
       if (node)
       {
-         xmb_icons_t *thumbnail_icon = &node->thumbnail_icon;
+         xmb_icons_t *thumbnail_icon = xmb_node_icons_get(node);
 
-         gfx_thumbnail_request_stream(
-               &thumbnail_icon->thumbnail_path_data,
-               p_anim,
-               GFX_THUMBNAIL_ICON,
-               playlist, selection,
-               &xmb->thumbnails.icon,
-               gfx_thumbnail_upscale_threshold,
-               network_on_demand_thumbnails);
+         if (thumbnail_icon)
+         {
+            gfx_thumbnail_request_stream(
+                  &thumbnail_icon->thumbnail_path_data,
+                  p_anim,
+                  GFX_THUMBNAIL_ICON,
+                  playlist, selection,
+                  &xmb->thumbnails.icon,
+                  gfx_thumbnail_upscale_threshold,
+                  network_on_demand_thumbnails);
 
-         if (xmb->thumbnails.icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
-            xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_ICONS;
+            if (xmb->thumbnails.icon.status == GFX_THUMBNAIL_STATUS_UNKNOWN)
+               xmb->thumbnails.pending = XMB_PENDING_THUMBNAIL_ICONS;
+         }
       }
    }
 
