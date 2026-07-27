@@ -183,11 +183,37 @@ struct rjpeg
    bool                    supports_rgba;
 };
 
-/* 32-bit rotate-left, recognised as a single ROL instruction by GCC,
- * Clang and MSVC.  Every caller guards the bit count so that y >= 1
- * (a zero-length receive is skipped upstream), keeping the (32 - y)
- * shift in range. */
-#define RJPEG_LROT(x,y)  (((x) << (y)) | ((x) >> (32 - (y))))
+/* Entropy bit-buffer width.
+ *
+ * The buffer holds bits left-justified, and a refill tops it up to
+ * within one byte of full.  A 32-bit accumulator therefore admits only
+ * one or two bytes per refill, so grow_buffer is re-entered roughly
+ * once per coefficient.  Widening it to a register-sized word lets a
+ * single refill carry ~7 bytes instead, cutting the refill rate by
+ * about 3x on a 64-bit host.
+ *
+ * The width follows the natural register size: 32-bit targets (PSP,
+ * Vita, 3DS, Wii, PS2, 32-bit ARM) keep the original accumulator
+ * rather than pay for emulated 64-bit shifts on every symbol. */
+#if defined(_WIN64) || defined(__LP64__) || defined(_LP64) \
+ || defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) \
+ || defined(__powerpc64__) || defined(__ppc64__) || defined(__mips64)
+typedef uint64_t rjpeg_bitbuf;
+#define RJPEG_BITBUF_BITS 64
+#else
+typedef uint32_t rjpeg_bitbuf;
+#define RJPEG_BITBUF_BITS 32
+#endif
+
+/* Refill target: top up while at least one more byte still fits. */
+#define RJPEG_BITBUF_FILL (RJPEG_BITBUF_BITS - 8)
+
+/* Rotate-left over the bit buffer, recognised as a single ROL
+ * instruction by GCC, Clang and MSVC.  Every caller guards the bit
+ * count so that y >= 1 (a zero-length receive is skipped upstream),
+ * keeping the (RJPEG_BITBUF_BITS - y) shift in range. */
+#define RJPEG_LROT(x,y) \
+   (((x) << (y)) | ((x) >> (RJPEG_BITBUF_BITS - (y))))
 
 /* x86/x64 detection */
 #if defined(__SSE2__)
@@ -327,7 +353,7 @@ struct rjpeg_jpeg_s
    int            eob_run;
    int scan_n, order[4];
    int restart_interval, todo;
-   uint32_t       code_buffer;   /* jpeg entropy-coded buffer */
+   rjpeg_bitbuf   code_buffer;   /* jpeg entropy-coded buffer */
    rjpeg_huffman huff_dc[4];     /* unsigned int alignment */
    rjpeg_huffman huff_ac[4];     /* unsigned int alignment */
    int16_t fast_ac[4][1 << FAST_BITS];
@@ -488,18 +514,34 @@ static void rjpeg_build_fast_ac(int16_t *fast_ac, rjpeg_huffman *h)
  * When fewer than 4 bytes remain or a marker is encountered, we fall
  * back to the safe byte-at-a-time path.
  *
- * Invariant: on entry, code_bits ≤ 24 (room for at least 1 byte).
- *            on exit,  code_bits > 24  OR nomore == 1.
+ * Invariant: on entry, code_bits ≤ RJPEG_BITBUF_FILL (room for at
+ *            least 1 byte).
+ *            on exit,  code_bits > RJPEG_BITBUF_FILL  OR nomore == 1.
  * ----------------------------------------------------------------------- */
 
 static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 {
    rjpeg_jpeg *s = j;
 
+   /* Read-ahead depth for this call.  Normally fill the whole word.
+    * When a resident frontier is in play (prefix decoding) keep the
+    * original 24-bit target instead: the byte-at-a-time fallback probes
+    * the byte after a 0xFF to tell a marker from a stuffed literal, and
+    * a deeper target pushes that probe past the frontier, consuming
+    * bytes that have not arrived and committing a row from them.
+    * Correctness outranks refill rate there, and a prefix decode is
+    * bounded by byte arrival rather than by refill cost anyway.
+    *
+    * Note this caps the loop only.  Bits are still deposited at
+    * RJPEG_BITBUF_FILL - code_bits so the buffer stays left-justified
+    * whatever the target. */
+   int fill = (j->img_buffer_end == j->img_buffer_true_end)
+      ? RJPEG_BITBUF_FILL : 24;
+
    if (j->nomore)
    {
       /* Already hit a marker — pad with zeros */
-      while (j->code_bits <= 24)
+      while (j->code_bits <= fill)
          j->code_bits += 8;
       return;
    }
@@ -528,7 +570,7 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
    /* Fast path: bulk-read when ≥4 bytes remain in the buffer.
     * This avoids per-byte function call overhead and lets us
     * scan for 0xFF with simple comparisons on loaded bytes. */
-   while (j->code_bits <= 24)
+   while (j->code_bits <= fill)
    {
       ptrdiff_t remaining = s->img_buffer_end - s->img_buffer;
 
@@ -548,9 +590,9 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
           * these as not-taken since 0xFF is rare in entropy data. */
          if (b0 == 0xFF)
             goto handle_ff_at_0;
-         j->code_buffer |= (uint32_t)b0 << (24 - j->code_bits);
+         j->code_buffer |= (rjpeg_bitbuf)b0 << (RJPEG_BITBUF_FILL - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24)
+         if (j->code_bits > fill)
          {
             s->img_buffer += 1;
             return;
@@ -558,9 +600,9 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 
          if (b1 == 0xFF)
             goto handle_ff_at_1;
-         j->code_buffer |= (uint32_t)b1 << (24 - j->code_bits);
+         j->code_buffer |= (rjpeg_bitbuf)b1 << (RJPEG_BITBUF_FILL - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24)
+         if (j->code_bits > fill)
          {
             s->img_buffer += 2;
             return;
@@ -568,9 +610,9 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 
          if (b2 == 0xFF)
             goto handle_ff_at_2;
-         j->code_buffer |= (uint32_t)b2 << (24 - j->code_bits);
+         j->code_buffer |= (rjpeg_bitbuf)b2 << (RJPEG_BITBUF_FILL - j->code_bits);
          j->code_bits   += 8;
-         if (j->code_bits > 24)
+         if (j->code_bits > fill)
          {
             s->img_buffer += 3;
             return;
@@ -578,11 +620,13 @@ static void rjpeg_grow_buffer_unsafe(rjpeg_jpeg *j)
 
          if (b3 == 0xFF)
             goto handle_ff_at_3;
-         j->code_buffer |= (uint32_t)b3 << (24 - j->code_bits);
+         j->code_buffer |= (rjpeg_bitbuf)b3 << (RJPEG_BITBUF_FILL - j->code_bits);
          j->code_bits   += 8;
          s->img_buffer  += 4;
 
-         return;
+         /* Four bytes may not have reached the fill target on a wide
+          * buffer; let the loop condition decide whether to go again. */
+         continue;
 
          /* 0xFF handling: consume the bytes before the 0xFF, then
           * check the byte after 0xFF.  If it's 0x00, that's a
@@ -613,14 +657,14 @@ handle_ff:
                   j->marker = c;
                   j->nomore = 1;
                   /* Pad remaining bits with zeros */
-                  while (j->code_bits <= 24)
+                  while (j->code_bits <= fill)
                      j->code_bits += 8;
                   return;
                }
                /* Byte-stuff: 0xFF00 means literal 0xFF data byte */
-               j->code_buffer |= (uint32_t)0xFF << (24 - j->code_bits);
+               j->code_buffer |= (rjpeg_bitbuf)0xFF << (RJPEG_BITBUF_FILL - j->code_bits);
                j->code_bits   += 8;
-               if (j->code_bits > 24)
+               if (j->code_bits > fill)
                   return;
                /* Need more bytes — loop back to top */
                continue;
@@ -629,7 +673,7 @@ handle_ff:
             {
                /* EOF right after 0xFF — treat as end */
                j->nomore = 1;
-               while (j->code_bits <= 24)
+               while (j->code_bits <= fill)
                   j->code_bits += 8;
                return;
             }
@@ -649,7 +693,7 @@ handle_ff:
                && s->img_buffer_end <  s->img_buffer_true_end)
          {
             j->hit_wall = 1;
-            while (j->code_bits <= 24)
+            while (j->code_bits <= fill)
                j->code_bits += 8;
             return;
          }
@@ -666,7 +710,7 @@ handle_ff:
                return;
             }
          }
-         j->code_buffer |= (uint32_t)b << (24 - j->code_bits);
+         j->code_buffer |= (rjpeg_bitbuf)b << (RJPEG_BITBUF_FILL - j->code_bits);
          j->code_bits   += 8;
       }
    }
@@ -691,7 +735,7 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
    if (j->hit_wall)
       return -1;
 
-   c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+   c = (j->code_buffer >> (RJPEG_BITBUF_BITS - FAST_BITS)) & ((1 << FAST_BITS)-1);
    k = h->fast[c];
 
    if (k < 255)
@@ -704,7 +748,7 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
       return h->values[k];
    }
 
-   temp = j->code_buffer >> 16;
+   temp = (unsigned int)(j->code_buffer >> (RJPEG_BITBUF_BITS - 16));
    for (k=FAST_BITS+1 ; ; ++k)
       if (temp < h->maxcode[k])
          break;
@@ -718,7 +762,8 @@ static INLINE int rjpeg_jpeg_huff_decode(rjpeg_jpeg *j, rjpeg_huffman *h)
    if (k > j->code_bits)
       return -1;
 
-   c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
+   c = (int)((j->code_buffer >> (RJPEG_BITBUF_BITS - k)) & rjpeg_bmask[k])
+         + h->delta[k];
 
    j->code_bits -= k;
    j->code_buffer <<= k;
@@ -731,7 +776,7 @@ static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j,
       rjpeg_huffman *h)
 {
    unsigned int temp;
-   int c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+   int c = (j->code_buffer >> (RJPEG_BITBUF_BITS - FAST_BITS)) & ((1 << FAST_BITS)-1);
    int k = h->fast[c];
 
    if (k < 255)
@@ -744,7 +789,7 @@ static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j,
       return h->values[k];
    }
 
-   temp = j->code_buffer >> 16;
+   temp = (unsigned int)(j->code_buffer >> (RJPEG_BITBUF_BITS - 16));
    for (k=FAST_BITS+1 ; ; ++k)
       if (temp < h->maxcode[k])
          break;
@@ -758,7 +803,8 @@ static INLINE int rjpeg_jpeg_huff_decode_nocheck(rjpeg_jpeg *j,
    if (k > j->code_bits)
       return -1;
 
-   c = ((j->code_buffer >> (32 - k)) & rjpeg_bmask[k]) + h->delta[k];
+   c = (int)((j->code_buffer >> (RJPEG_BITBUF_BITS - k)) & rjpeg_bmask[k])
+         + h->delta[k];
 
    j->code_bits -= k;
    j->code_buffer <<= k;
@@ -772,42 +818,46 @@ static int const rjpeg_jbias[16] = {0,-1,-3,-7,-15,-31,-63,-127,-255,-511,-1023,
  * always extends everything it receives. */
 static INLINE int rjpeg_extend_receive(rjpeg_jpeg *j, int n)
 {
-   unsigned int k;
+   rjpeg_bitbuf k;
    int sgn;
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
 
-   sgn             = (int32_t)j->code_buffer >> 31;
+   /* 0 or -1 taken from the top bit, without depending on the
+    * implementation-defined result of right-shifting a signed value. */
+   sgn             = -(int)(j->code_buffer >> (RJPEG_BITBUF_BITS - 1));
    k               = RJPEG_LROT(j->code_buffer, n);
-   j->code_buffer  = k & ~rjpeg_bmask[n];
+   j->code_buffer  = k & ~(rjpeg_bitbuf)rjpeg_bmask[n];
    k              &= rjpeg_bmask[n];
    j->code_bits   -= n;
-   return k + (rjpeg_jbias[n] & ~sgn);
+   return (int)k + (rjpeg_jbias[n] & ~sgn);
 }
 
 /* get some unsigned bits */
 static INLINE int rjpeg_jpeg_get_bits(rjpeg_jpeg *j, int n)
 {
-   unsigned int k;
+   rjpeg_bitbuf k;
    if (j->code_bits < n)
       rjpeg_grow_buffer_unsafe(j);
    k              = RJPEG_LROT(j->code_buffer, n);
-   j->code_buffer = k & ~rjpeg_bmask[n];
+   j->code_buffer = k & ~(rjpeg_bitbuf)rjpeg_bmask[n];
    k             &= rjpeg_bmask[n];
    j->code_bits  -= n;
-   return k;
+   return (int)k;
 }
 
 static INLINE int rjpeg_jpeg_get_bit(rjpeg_jpeg *j)
 {
-   unsigned int k;
+   rjpeg_bitbuf k;
    if (j->code_bits < 1)
       rjpeg_grow_buffer_unsafe(j);
 
    k                = j->code_buffer;
    j->code_buffer <<= 1;
    --j->code_bits;
-   return k & 0x80000000;
+   /* Every caller tests this as a boolean.  Return a plain 0/1: the top
+    * bit of a wide buffer no longer fits in the int return type. */
+   return (int)(k >> (RJPEG_BITBUF_BITS - 1));
 }
 
 /* given a value that's at position X in the zigzag stream,
@@ -885,7 +935,7 @@ static INLINE int rjpeg_jpeg_decode_block(
          rjpeg_grow_buffer_unsafe(j);
       if (j->hit_wall)
          return 0;   /* refill stalled at resident frontier: fail, roll back */
-      c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+      c = (j->code_buffer >> (RJPEG_BITBUF_BITS - FAST_BITS)) & ((1 << FAST_BITS)-1);
       r = fac[c];
       if (r)
       {
@@ -1013,7 +1063,7 @@ static int rjpeg_jpeg_decode_block_prog_ac(
          int c,r,s;
          if (j->code_bits < 16)
             rjpeg_grow_buffer_unsafe(j);
-         c = (j->code_buffer >> (32 - FAST_BITS)) & ((1 << FAST_BITS)-1);
+         c = (j->code_buffer >> (RJPEG_BITBUF_BITS - FAST_BITS)) & ((1 << FAST_BITS)-1);
          r = fac[c];
          if (r)
          {
@@ -4716,7 +4766,7 @@ bool rjpeg_iterate_image(rjpeg_t *rjpeg)
          if (j->img_buffer_end < j->img_buffer_true_end)
          {
             uint8_t *save_buf   = j->img_buffer;
-            uint32_t save_cbuf  = j->code_buffer;
+            rjpeg_bitbuf save_cbuf  = j->code_buffer;
             int      save_cbits = j->code_bits;
             int      save_nomore= j->nomore;
             unsigned char save_marker = j->marker;
