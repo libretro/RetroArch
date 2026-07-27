@@ -665,6 +665,12 @@ enum audio_type_enum audio_decode_get_type(const char *path)
  * it has to be honoured from here. */
 #define AUDIO_OPUS_MAX_FRAME 5760
 
+/* The largest an Opus packet can be: a code 3 packet carries at most
+ * 48 frames of at most 1275 bytes (RFC 6716 s3.2.5), plus the TOC and
+ * the frame count byte.  Rounded up, and the bound the reassembly
+ * buffer below is held to. */
+#define AUDIO_OPUS_MAX_PACKET 61500
+
 struct audio_transfer_opus
 {
    /* Demuxed input (set_demuxed_ptr): OpusHead as setup, concatenated
@@ -707,7 +713,16 @@ struct audio_transfer_opus
                               * bound instead of scanning to EOF at open;
                               * -1 means do the full forward scan. */
    int64_t     emitted;      /* frames handed out so far                 */
-   uint8_t     asm_buf[61500]; /* only for packets spanning pages        */
+   /* Reassembly for a packet that spans Ogg pages, which is the only
+    * thing that needs a copy - an ordinary packet is read from the
+    * page in place.  Allocated on the first one that does, the way
+    * the Vorbis arm's asm_buf is, rather than carried inline: page
+    * spanning is rare, AUDIO_OPUS_MAX_PACKET is large, and every
+    * context paid for it whether or not it ever spanned.  It also sat
+    * between the two halves of the hot state, so the fields the read
+    * path touches were 60 KiB apart and in different pages. */
+   uint8_t    *asm_buf;      /* only for packets spanning pages          */
+   size_t      asm_cap;
    ropus_t    *handle;
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
@@ -3151,6 +3166,25 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
 }
 
 #ifdef HAVE_ROPUS
+/* Room for the reassembly buffer, allocated on the first packet that
+ * needs it and never grown after: AUDIO_OPUS_MAX_PACKET is the whole
+ * of what one can be, so a request past it is a malformed stream and
+ * not a reason to reallocate - which is what the fixed array this
+ * replaces already enforced. */
+static int audio_transfer_opus_asm(struct audio_transfer_opus *op,
+      size_t need)
+{
+   if (need > AUDIO_OPUS_MAX_PACKET)
+      return 0;
+   if (!op->asm_buf)
+   {
+      if (!(op->asm_buf = (uint8_t*)malloc(AUDIO_OPUS_MAX_PACKET)))
+         return 0;
+      op->asm_cap = AUDIO_OPUS_MAX_PACKET;
+   }
+   return 1;
+}
+
 /* Assemble the next Opus packet from the Ogg pages.  Returns 1 with
  * the packet bytes (aliasing the buffer unless it spans pages, in
  * which case it is copied into asm_buf), 0 at end of stream, < 0 on a
@@ -3193,7 +3227,7 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
          /* packet continues on the next page: stash what we have */
          if (run)
          {
-            if (asm_len + run > sizeof(op->asm_buf))
+            if (!audio_transfer_opus_asm(op, asm_len + run))
                return -1;
             memcpy(op->asm_buf + asm_len, op->buf + start, run);
             asm_len += run;
@@ -3215,7 +3249,7 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
       }
       else
       {
-         if (asm_len + run > sizeof(op->asm_buf))
+         if (!audio_transfer_opus_asm(op, asm_len + run))
             return -1;
          memcpy(op->asm_buf + asm_len, op->buf + start, run);
          asm_len += run;
@@ -4578,7 +4612,10 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
             rwebm_close(op->demux);
 #endif
          if (op)
+         {
             free(op->pend);
+            free(op->asm_buf);
+         }
          break;
       }
 #endif
