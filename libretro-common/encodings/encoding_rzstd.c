@@ -865,25 +865,27 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
     * read-modify-write of next_rank_start[w] -- which the profile
     * showed as a load-use stall on a table rebuilt for every frame. */
    {
+      /* Every symbol lands somewhere, absent ones included, so this is
+       * sized for all of them rather than for those with a weight. */
       uint8_t  by_rank[RZSTD_HUF_MAX_SYMBOLS + 2];
       uint32_t at_rank[RZSTD_HUF_MAX_BITS + 2];
       uint32_t w;
 
-      /* Where each rank's symbols start in by_rank. */
+      /* Where each rank's symbols start in by_rank. Weight zero gets a
+       * region of its own past the end rather than a test in the loop
+       * below: an absent symbol is written somewhere harmless and never
+       * read, which costs a store and saves a branch taken on nearly
+       * half of as many as two hundred and fifty-six symbols. */
       position = 0;
       for (w = 1; w <= max_bits; w++)
       {
          at_rank[w] = position;
          position  += rank_count[w];
       }
+      at_rank[0] = position;
 
       for (i = 0; i < count; i++)
-      {
-         uint32_t v = all[i];
-
-         if (v)
-            by_rank[at_rank[v]++] = (uint8_t)i;
-      }
+         by_rank[at_rank[all[i]]++] = (uint8_t)i;
 
       /* at_rank now points one past each rank; walk them in order. */
       position = 0;
