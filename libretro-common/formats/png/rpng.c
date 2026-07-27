@@ -1795,8 +1795,16 @@ static int rpng_load_image_argb_process_inflate_init(
    enum trans_stream_error err;
    uint32_t rd, wn, slice;
    struct rpng_process *process = (struct rpng_process*)rpng->process;
-   bool to_continue             = (process->avail_in  > 0
-                                && process->avail_out > 0);
+   /* Keep going while output is still owed, even once the compressed
+    * input is exhausted.  An inflate backend buffers whole input bytes
+    * into its bit accumulator ahead of use and reports them as read, so
+    * "input consumed" does not mean "output finished" - there can be a
+    * bit accumulator's worth of decodable data left after the last byte
+    * has been handed over.  Requiring avail_in > 0 here truncated those
+    * trailing bytes and then failed the whole image on the
+    * under-produced check below.  Progress is enforced after the call
+    * instead. */
+   bool to_continue             = (process->avail_out > 0);
 
    if (!to_continue)
       goto end;
@@ -1821,6 +1829,14 @@ static int rpng_load_image_argb_process_inflate_init(
       process->stream_backend->set_in(process->stream,
             rpng->buff_start + sp->off + process->span_pos,
             sp->len - process->span_pos);
+   }
+   else
+   {
+      /* All spans consumed: declare an empty input window so the
+       * backend drains whatever it still holds internally rather than
+       * re-reading the previous one. */
+      process->stream_backend->set_in(process->stream,
+            rpng->buff_start, 0);
    }
 
    {
@@ -1859,6 +1875,13 @@ static int rpng_load_image_argb_process_inflate_init(
    process->avail_out     -= wn;
    process->total_out     += wn;
    process->inflated_total += wn;
+
+   /* No input taken and no output made means the backend cannot get any
+    * further - a truncated or corrupt stream.  Without this the
+    * avail_in > 0 condition above was doing double duty as the
+    * termination guarantee. */
+   if (rd == 0 && wn == 0)
+      goto error;
 
    if (err)
       return 0;
