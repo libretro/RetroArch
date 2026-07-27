@@ -337,6 +337,14 @@ endif
 
 -include $(RARCH_OBJ:.o=.d)
 
+# libsmb2 and libnfs both ship include/slist.h with different macros
+# (SMB2_LIST_* vs LIBNFS_LIST_*).  Prepend libnfs include dirs for its
+# own objects so "#include \"slist.h\"" resolves correctly when both
+# clients are enabled.  Same pattern as top-level Makefile.
+ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_BUILTINNFSCLIENT)))
+$(OBJDIR)/deps/libnfs/%.o: CFLAGS := -I$(DEPS_DIR)/libnfs/include -I$(DEPS_DIR)/libnfs $(CFLAGS)
+endif
+
 SYMBOL_MAP := -Wl,-Map=output.map
 
 prebuild:
