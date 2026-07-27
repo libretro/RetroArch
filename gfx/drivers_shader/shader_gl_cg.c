@@ -342,16 +342,18 @@ static bool gl_cg_set_coords(void *shader_data,
       return true;
    }
 
-   if (cg->prg[cg->active_idx].vertex)
+   /* A NULL stream means the caller has nothing for that attribute;
+    * leave it unbound rather than walk a NULL pointer. */
+   if (cg->prg[cg->active_idx].vertex && coords->vertex)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].vertex, cg, coords->vertex, 2);
 
-   if (cg->prg[cg->active_idx].tex)
+   if (cg->prg[cg->active_idx].tex && coords->tex_coord)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].tex, cg, coords->tex_coord, 2);
 
-   if (cg->prg[cg->active_idx].lut_tex)
+   if (cg->prg[cg->active_idx].lut_tex && coords->lut_tex_coord)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].lut_tex, cg, coords->lut_tex_coord, 2);
 
-   if (cg->prg[cg->active_idx].color)
+   if (cg->prg[cg->active_idx].color && coords->color)
       gl_cg_set_coord_array(cg->prg[cg->active_idx].color, cg, coords->color, 4);
 
    return true;
