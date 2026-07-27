@@ -463,8 +463,10 @@ static void rjpeg_build_fast_ac(int16_t *fast_ac, rjpeg_huffman *h)
                k += (~0U << magbits) + 1;
 
             /* if the result is small enough, we can fit it in fast_ac table */
+            /* k is signed and routinely negative here; shifting a
+             * negative value left is undefined, so scale instead. */
             if (k >= -128 && k <= 127)
-               fast_ac[i] = (int16_t) ((k << 8) + (run << 4) + (len + magbits));
+               fast_ac[i] = (int16_t) ((k * 256) + (run << 4) + (len + magbits));
          }
       }
    }
@@ -855,7 +857,11 @@ static INLINE int rjpeg_jpeg_decode_block(
       return 0;   /* refill stalled at resident frontier: fail, roll back */
    t = rjpeg_jpeg_huff_decode_nocheck(j, hdc);
 
-   if (t < 0)
+   /* t is a raw Huffman table value (0-255).  A DC magnitude category is
+    * only ever 0-15; anything larger comes from a corrupt DHT segment and
+    * would index rjpeg_bmask[] / rjpeg_jbias[] out of bounds and shift by
+    * more than the bit-buffer width.  Reject rather than trust it. */
+   if (t < 0 || t > 15)
       return 0;
 
    if (t)
@@ -957,12 +963,17 @@ static int rjpeg_jpeg_decode_block_prog_dc(
       /* first scan for DC coefficient, must be first */
       memset(data,0,64*sizeof(data[0])); /* 0 all the ac values now */
       t       = rjpeg_jpeg_huff_decode(j, hdc);
+      /* huff_decode returns -1 on a bad code, and a corrupt table can
+       * yield a category above 15; both are out-of-range indices for
+       * rjpeg_bmask[] / rjpeg_jbias[] and out-of-range shift counts. */
+      if (t < 0 || t > 15)
+         return 0;
       if (t)
          diff = rjpeg_extend_receive(j, t);
 
       dc      = j->img_comp[b].dc_pred + diff;
       j->img_comp[b].dc_pred = dc;
-      data[0] = (short) (dc << j->succ_low);
+      data[0] = (short) (dc * (1 << j->succ_low));
    }
    else
    {
@@ -1012,7 +1023,7 @@ static int rjpeg_jpeg_decode_block_prog_ac(
             j->code_buffer <<= s;
             j->code_bits    -= s;
             zig              = rjpeg_jpeg_dezigzag[k++];
-            data[zig]        = (short) ((r >> 8) << shift);
+            data[zig]        = (short) ((r >> 8) * (1 << shift));
          }
          else
          {
@@ -1040,7 +1051,7 @@ static int rjpeg_jpeg_decode_block_prog_ac(
             {
                k         += r;
                zig        = rjpeg_jpeg_dezigzag[k++];
-               data[zig]  = (short) (rjpeg_extend_receive(j,s) << shift);
+               data[zig]  = (short) (rjpeg_extend_receive(j,s) * (1 << shift));
             }
          }
       } while (k <= j->spec_end);
@@ -2534,6 +2545,12 @@ static int rjpeg_process_marker(rjpeg_jpeg *z, int m)
    {
       /* Skip the segment payload, clamped to the end of the buffer. */
       int n = rjpeg_get16be(z)-2;
+      /* A segment length below 2 is malformed, and reading the length at
+       * end of data yields 0.  The clamp below only bounds the cursor
+       * from above, so a negative payload length would walk it backwards
+       * and the enclosing marker scan would never terminate. */
+      if (n < 0)
+         return 0;
       if (z->img_buffer + n > z->img_buffer_end)
          z->img_buffer = z->img_buffer_end;
       else
