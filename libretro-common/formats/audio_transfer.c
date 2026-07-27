@@ -3921,8 +3921,14 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          }
          else /* 8-bit unsigned PCM -> signed 16-bit */
          {
+            /* Biased before the shift, not after: (v - 128) is
+             * negative for the lower half of the range and shifting a
+             * negative value left is undefined.  src[i] << 8 is at
+             * most 65280 and fits an int on every target this builds
+             * for, so the same numbers come out of a defined
+             * expression. */
             for (i = 0; i < n; i++)
-               out[i] = (int16_t)(((int)src[i] - 128) << 8);
+               out[i] = (int16_t)(((int)src[i] << 8) - 32768);
          }
          w->cursor += want;
          produced   = want;
