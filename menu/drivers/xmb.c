@@ -5708,7 +5708,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
    }
 }
 
-static int xmb_draw_item(
+XMB_NOINLINE static int xmb_draw_item(
       const xmb_draw_ctx_t *ctx,
       size_t i,
       size_t current)
@@ -8328,7 +8328,7 @@ XMB_NOINLINE static void xmb_draw_bg(
       dispctx->blend_end(userdata);
 }
 
-static void xmb_draw_dark_layer(
+XMB_NOINLINE static void xmb_draw_dark_layer(
       xmb_handle_t *xmb,
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
@@ -8439,7 +8439,7 @@ static void xmb_draw_no_thumbnail_available(
          xmb->font2);
 }
 
-static void xmb_draw_fullscreen_thumbnails(
+XMB_NOINLINE static void xmb_draw_fullscreen_thumbnails(
       xmb_handle_t *xmb,
       gfx_animation_t *p_anim,
       gfx_display_t *p_disp,
