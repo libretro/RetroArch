@@ -1304,44 +1304,16 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
    {
       if (flg & WASAPI_FLG_NONBLOCK)
       {
-         size_t write_avail = 0;
+         size_t write_avail = FIFO_WRITE_AVAIL(w->buffer);
          UINT32 padding     = 0;
-         if (w->buffer)
+         if (!write_avail)
          {
-            write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            if (!write_avail)
-            {
-               size_t read_avail = 0;
-               if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-                  return -1;
-               read_avail  = FIFO_READ_AVAIL(w->buffer);
-               write_avail = w->engine_buffer_size - padding * w->frame_size;
-               _len        = read_avail < write_avail ? read_avail : write_avail;
-               if (_len)
-               {
-                  BYTE *dest         = NULL;
-                  UINT32 frame_count = _len >> w->frame_shift;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  fifo_read(w->buffer, dest, _len);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-               }
-               write_avail = FIFO_WRITE_AVAIL(w->buffer);
-            }
-            _len = len < write_avail ? len : write_avail;
-            if (_len)
-               fifo_write(w->buffer, data, _len);
-         }
-         else
-         {
+            size_t read_avail = 0;
             if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
                return -1;
-            if (!(write_avail = w->engine_buffer_size - padding * w->frame_size))
-               return 0;
-            _len = (len < write_avail) ? len : write_avail;
+            read_avail  = FIFO_READ_AVAIL(w->buffer);
+            write_avail = w->engine_buffer_size - padding * w->frame_size;
+            _len        = read_avail < write_avail ? read_avail : write_avail;
             if (_len)
             {
                BYTE *dest         = NULL;
@@ -1349,14 +1321,18 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (FAILED(_IAudioRenderClient_GetBuffer(
                            w->renderer, frame_count, &dest)))
                   return -1;
-               memcpy(dest, data, _len);
+               fifo_read(w->buffer, dest, _len);
                if (FAILED(_IAudioRenderClient_ReleaseBuffer(
                            w->renderer, frame_count, 0)))
                   return -1;
             }
+            write_avail = FIFO_WRITE_AVAIL(w->buffer);
          }
+         _len = len < write_avail ? len : write_avail;
+         if (_len)
+            fifo_write(w->buffer, data, _len);
       }
-      else if (w->buffer)
+      else
       {
          while (_len < len)
          {
@@ -1394,37 +1370,6 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                const void *_data = (char*)data + _len;
                fifo_write(w->buffer, _data, ir);
                _len += ir;
-            }
-         }
-      }
-      else
-      {
-         while (_len < len)
-         {
-            size_t write_avail = 0;
-            UINT32 padding     = 0;
-            if (!(WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0))
-               return -1;
-            if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
-               return -1;
-            if ((write_avail = w->engine_buffer_size - padding * w->frame_size))
-            {
-               size_t __len      = len - _len;
-               size_t ir         = (__len < write_avail) ? __len : write_avail;
-               if (ir)
-               {
-                  BYTE *dest         = NULL;
-                  const void *_data  = (char*)data + _len;
-                  UINT32 frame_count = ir >> w->frame_shift;
-                  if (FAILED(_IAudioRenderClient_GetBuffer(
-                              w->renderer, frame_count, &dest)))
-                     return -1;
-                  memcpy(dest, _data, ir);
-                  if (FAILED(_IAudioRenderClient_ReleaseBuffer(
-                              w->renderer, frame_count, 0)))
-                     return -1;
-                  _len += ir;
-               }
             }
          }
       }
@@ -1524,24 +1469,20 @@ static size_t wasapi_write_avail(void *wh)
    wasapi_t *w    = (wasapi_t*)wh;
    UINT32 padding = 0;
 
-   if (w->flags & WASAPI_FLG_EXCLUSIVE && w->buffer)
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
       return FIFO_WRITE_AVAIL(w->buffer);
    if (FAILED(_IAudioClient_GetCurrentPadding(w->client, &padding)))
       return 0;
-   if (w->buffer)
-   {
-      /* Free space across the whole pipeline the writer can fill:
-       * free fifo bytes plus free engine-buffer bytes.  The previous
-       * form added GetCurrentPadding() directly - a frame count
-       * (1/8 scale for float frames) added to a byte count, and a
-       * measure of *queued* data rather than free space, so a fuller
-       * engine reported more room.  Rate control consumed that as a
-       * mis-scaled, inverted, period-rate noise term in its occupancy
-       * measurement. */
-      return FIFO_WRITE_AVAIL(w->buffer)
-            + (w->engine_buffer_size - padding * w->frame_size);
-   }
-   return w->engine_buffer_size - padding * w->frame_size;
+   /* Free space across the whole pipeline the writer can fill:
+    * free fifo bytes plus free engine-buffer bytes.  The previous
+    * form added GetCurrentPadding() directly - a frame count
+    * (1/8 scale for float frames) added to a byte count, and a
+    * measure of *queued* data rather than free space, so a fuller
+    * engine reported more room.  Rate control consumed that as a
+    * mis-scaled, inverted, period-rate noise term in its occupancy
+    * measurement. */
+   return FIFO_WRITE_AVAIL(w->buffer)
+         + (w->engine_buffer_size - padding * w->frame_size);
 }
 
 static size_t wasapi_buffer_size(void *wh)
@@ -1553,11 +1494,9 @@ static size_t wasapi_buffer_size(void *wh)
     * shared mode's spans fifo + engine.  Reporting only the fifo in
     * shared mode let avail exceed the "buffer size", pushing the rate
     * controller's direction term past its intended +-1 range. */
-   if (w->flags & WASAPI_FLG_EXCLUSIVE && w->buffer)
+   if (w->flags & WASAPI_FLG_EXCLUSIVE)
       return w->buffer->size;
-   if (w->buffer)
-      return w->buffer->size + w->engine_buffer_size;
-   return w->engine_buffer_size;
+   return w->buffer->size + w->engine_buffer_size;
 }
 
 audio_driver_t audio_wasapi = {
