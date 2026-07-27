@@ -249,21 +249,27 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
    {
       AVAudioSession *audioSession = [AVAudioSession sharedInstance];
       NSError *error = nil;
+      AVAudioSessionCategoryOptions options =
+         AVAudioSessionCategoryOptionAllowBluetoothA2DP;
       Float64 actualRate;
 
+#if TARGET_OS_IOS
       /* PlayAndRecord routes output to the receiver on iPhone unless
        * DefaultToSpeaker is set, which would make game audio quiet and thin
-       * the moment a core asks for a microphone.
-       *
-       * AllowBluetooth (HFP) is deliberately not requested: it would make a
+       * the moment a core asks for a microphone. tvOS has no receiver to be
+       * routed to and marks the option unavailable, so it is iOS-only -
+       * TARGET_OS_IPHONE covers tvOS as well and is too broad to gate it. */
+      options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+#endif
+
+      /* AllowBluetooth (HFP) is deliberately not requested: it would make a
        * paired headset's microphone available, but only by dragging the whole
        * route down to narrowband mono. Keeping A2DP alone leaves game audio
        * at full quality on the headset and takes input from the built-in mic,
        * which is the better trade for an emulator. It is also the option
        * deprecated in the iOS 26 SDK in favour of AllowBluetoothHFP. */
       [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord
-                    withOptions:AVAudioSessionCategoryOptionDefaultToSpeaker
-                              | AVAudioSessionCategoryOptionAllowBluetoothA2DP
+                    withOptions:options
                           error:&error];
       if (error)
       {
