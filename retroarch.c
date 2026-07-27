@@ -2072,6 +2072,33 @@ bool driver_ctl(enum driver_ctl_state state, void *data)
 
             video_monitor_set_refresh_rate(*hz);
 
+            /* With no content loaded it is the dummy core that is
+             * running, and its retro_get_system_av_info() reports
+             * timing.fps as whatever GET_TARGET_REFRESH_RATE answered
+             * at core init - that is, the display rate.  Nothing
+             * re-queries it when the display rate changes afterwards,
+             * so it goes stale the moment the user switches mode.
+             *
+             * That matters because audio_driver_menu_sample() emits
+             * timing.sample_rate / timing.fps frames per runloop
+             * iteration, while the runloop is driven at the *actual*
+             * display rate.  A stale fps scales the menu audio feed by
+             * (real rate / stale fps): after a 120 Hz -> 60 Hz switch
+             * it is halved, so the mixer - which audio_driver_flush()
+             * advances by the post-resample output frame count -
+             * starves and menu BGM garbles.
+             *
+             * driver_adjust_system_rates() below cannot repair this,
+             * because it derives audio_st->input from this very
+             * timing.fps and so re-derives the same wrong answer.
+             *
+             * Only the dummy core gets this treatment: a real core's
+             * fps is a property of the emulated system, not of the
+             * display, and must never be overwritten here. */
+            if (     *hz > 0.0f
+                  && runloop_st->current_core_type == CORE_TYPE_DUMMY)
+               video_st->av_info.timing.fps = *hz;
+
             /* Sets audio monitor rate to new value. */
             audio_st->src_ratio_orig   =
             audio_st->src_ratio_curr   =
