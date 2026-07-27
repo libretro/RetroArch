@@ -71,38 +71,6 @@ LIBCO_OBJ = libretro-common/libco/ps3.o
 # building it separately as well would define every symbol twice.
 OBJ = $(SHADER_OBJS) $(LIBCO_OBJ) griffin/griffin.o
 
-# Bundled libnfs cannot live inside griffin (symbol clashes); compile apart.
-# griffin still picks up vfs_implementation_nfs.c via HAVE_NFSCLIENT.
-HAVE_NFSCLIENT := 1
-HAVE_BUILTINNFSCLIENT := 1
-OBJ += \
-	deps/libnfs/ps3_ppu/ps3_compat.o \
-	deps/libnfs/lib/init.o \
-	deps/libnfs/lib/krb5-wrapper.o \
-	deps/libnfs/lib/libnfs.o \
-	deps/libnfs/lib/libnfs-sync.o \
-	deps/libnfs/lib/libnfs-zdr.o \
-	deps/libnfs/lib/multithreading.o \
-	deps/libnfs/lib/nfs_v3.o \
-	deps/libnfs/lib/nfs_v4.o \
-	deps/libnfs/lib/pdu.o \
-	deps/libnfs/lib/socket.o \
-	deps/libnfs/mount/mount.o \
-	deps/libnfs/mount/libnfs-raw-mount.o \
-	deps/libnfs/nfs/nfs.o \
-	deps/libnfs/nfs/nfsacl.o \
-	deps/libnfs/nfs/libnfs-raw-nfs.o \
-	deps/libnfs/nfs4/nfs4.o \
-	deps/libnfs/nfs4/libnfs-raw-nfs4.o \
-	deps/libnfs/nlm/nlm.o \
-	deps/libnfs/nlm/libnfs-raw-nlm.o \
-	deps/libnfs/nsm/nsm.o \
-	deps/libnfs/nsm/libnfs-raw-nsm.o \
-	deps/libnfs/portmap/portmap.o \
-	deps/libnfs/portmap/libnfs-raw-portmap.o \
-	deps/libnfs/rquota/rquota.o \
-	deps/libnfs/rquota/libnfs-raw-rquota.o
-
 ifeq ($(HAVE_LOGGER), 1)
 CFLAGS		+= -DHAVE_LOGGER
 endif
@@ -132,18 +100,6 @@ SHARED_FLAGS += -DHAVE_MENU \
 		-DHAVE_GRIFFIN=1 \
 		-DHAVE_NETWORKING=1 \
 		-DHAVE_SOCKET_LEGACY=1 \
-		-DHAVE_NFSCLIENT=1 \
-		-DHAVE_BUILTINNFSCLIENT=1 \
-		-DPS3_PPU \
-		-D_U_= \
-		-DHAVE_STDINT_H -DHAVE_STDLIB_H -DHAVE_STRING_H -DSTDC_HEADERS \
-		-DHAVE_SOCKADDR_STORAGE \
-		-Dmajor(d)='((int)(((unsigned)(d)>>8)&0xff))' \
-		-Dminor(d)='((int)((unsigned)(d)&0xff))' \
-		-Ideps/libnfs -Ideps/libnfs/include -Ideps/libnfs/include/nfsc \
-		-Ideps/libnfs/mount -Ideps/libnfs/nfs -Ideps/libnfs/nfs4 \
-		-Ideps/libnfs/nlm -Ideps/libnfs/nsm -Ideps/libnfs/portmap \
-		-Ideps/libnfs/rquota -Ideps/libnfs/ps3_ppu \
 		-DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" \
 		-DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT) \
 		-Wno-char-subscripts \
