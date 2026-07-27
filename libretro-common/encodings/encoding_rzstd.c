@@ -1689,7 +1689,24 @@ static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
       return;
    }
 
+   /* The seed is at most two vector widths, and libc is reached through
+    * the PLT and then dispatches on length to decide how to move
+    * thirty-two bytes. Two vector stores do it here with neither. The
+    * source is behind the destination by @offset and this writes at
+    * most 2 * RZSTD_VEC_WIDTH, so a caller with slack has room. */
+#if defined(RZSTD_VEC_SSE2)
+   _mm_storeu_si128((__m128i*)to,
+         _mm_loadu_si128((const __m128i*)from));
+   if (offset > RZSTD_VEC_WIDTH)
+      _mm_storeu_si128((__m128i*)(to + RZSTD_VEC_WIDTH),
+            _mm_loadu_si128((const __m128i*)(from + RZSTD_VEC_WIDTH)));
+#elif defined(RZSTD_VEC_NEON)
+   vst1q_u8(to, vld1q_u8(from));
+   if (offset > RZSTD_VEC_WIDTH)
+      vst1q_u8(to + RZSTD_VEC_WIDTH, vld1q_u8(from + RZSTD_VEC_WIDTH));
+#else
    memmove(to, from, offset);
+#endif
    have = offset;
 
    /* Doubling keeps the run a whole number of periods, which is what
