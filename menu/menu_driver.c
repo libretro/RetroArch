@@ -4155,7 +4155,12 @@ bool menu_entries_append(
    if (!list || !label)
       return false;
 
-   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   /* Bail out on a failed append rather than carrying on with
+    * idx = list->size - 1, which underflows to SIZE_MAX when the
+    * list is still empty. */
+   if (!file_list_append(list, path, label, type, directory_ptr, entry_idx))
+      return false;
+
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
    idx                   = list->size - 1;
