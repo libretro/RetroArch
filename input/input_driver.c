@@ -79,6 +79,21 @@
 
 #include "../ai/game_ai.h"
 
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define INPUT_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define INPUT_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define INPUT_NOINLINE __declspec(noinline)
+#else
+#define INPUT_NOINLINE
+#endif
+
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Precomputed reciprocals used in analog input scaling.
@@ -1312,7 +1327,7 @@ static int16_t input_joypad_analog_axis(
  *
  * @return true if the stick was processed, false if skipped (dpad mode)
  */
-static bool input_joypad_analog_stick(
+INPUT_NOINLINE static bool input_joypad_analog_stick(
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
@@ -4078,7 +4093,7 @@ static void input_overlay_update_pointer_coords(
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static void input_poll_overlay(
+INPUT_NOINLINE static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,
