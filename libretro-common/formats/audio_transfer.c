@@ -665,12 +665,6 @@ enum audio_type_enum audio_decode_get_type(const char *path)
 }
 
 #ifdef HAVE_ROPUS
-/* The longest an Opus packet codes, in 48 kHz frames (120 ms), which
- * is the per-channel output room ropus_decode_s16/f32 require of the
- * caller.  Neither takes a length, so this is the whole contract and
- * it has to be honoured from here. */
-#define AUDIO_OPUS_MAX_FRAME 5760
-
 /* The largest an Opus packet can be: a code 3 packet carries at most
  * 48 frames of at most 1275 bytes (RFC 6716 s3.2.5), plus the TOC and
  * the frame count byte.  Rounded up, and the bound the reassembly
@@ -744,7 +738,7 @@ struct audio_transfer_opus
     *
     * One buffer, not two, and sized for the stream rather than for a
     * guess.  ropus_decode_s16/f32 take no output length and require
-    * room for AUDIO_OPUS_MAX_FRAME * channels samples; the two arrays
+    * room for ROPUS_MAX_FRAME * channels samples; the two arrays
     * that used to sit here were sized 5760 * 2 apiece, which is that
     * room only for a stream of at most two channels.  ropus_open takes
     * mapping family 1 up to eight, so a six- or eight-channel file -
@@ -763,6 +757,7 @@ struct audio_transfer_opus
    size_t      pend_pos;
    void       *pend;        /* int16_t* when fmt 1, float* when fmt 2  */
    size_t      pend_elem;   /* sizeof the element pend holds, 0 if none */
+   size_t      pend_samples;/* room at pend, in interleaved samples     */
 };
 
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
@@ -3427,7 +3422,7 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 {
    size_t elem = (fmt == 1) ? sizeof(int16_t) : sizeof(float);
 
-   /* The decoder writes AUDIO_OPUS_MAX_FRAME * channels samples into
+   /* The decoder writes ROPUS_MAX_FRAME * channels samples into
     * this and is given no bound, so the buffer is made to fit before
     * the first packet of a format goes through it.  A format change
     * can only follow a rewind, which leaves nothing pending. */
@@ -3436,11 +3431,13 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       if (!op->channels)
          return -1;
       free(op->pend);
-      op->pend_elem = 0;
-      if (!(op->pend = calloc((size_t)AUDIO_OPUS_MAX_FRAME
+      op->pend_elem    = 0;
+      op->pend_samples = 0;
+      if (!(op->pend = calloc((size_t)ROPUS_MAX_FRAME
                   * (size_t)op->channels, elem)))
          return -1;
-      op->pend_elem   = elem;
+      op->pend_elem    = elem;
+      op->pend_samples = (size_t)ROPUS_MAX_FRAME * (size_t)op->channels;
       op->pend_frames = 0;
       op->pend_pos    = 0;
    }
@@ -3462,10 +3459,10 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
          return r;
       if (fmt == 1)
          r = ropus_decode_s16(op->handle, pdata, plen,
-               (int16_t*)op->pend);
+               (int16_t*)op->pend, op->pend_samples);
       else
          r = ropus_decode_f32(op->handle, pdata, plen,
-               (float*)op->pend);
+               (float*)op->pend, op->pend_samples);
       if (r < 0)
          return -1;
       op->pend_frames = (size_t)r;

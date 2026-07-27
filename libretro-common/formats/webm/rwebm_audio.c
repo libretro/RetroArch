@@ -93,7 +93,9 @@ static int rwebm_pcm_reserve(rwebm_pcm_acc *a, size_t add_frames)
 
 #ifdef HAVE_ROPUS
 /* Maximum frames one Opus packet can produce: 120 ms at 48 kHz. */
-#define RWEBM_OPUS_MAX_FRAMES 5760
+/* The reserve above and the room passed to the decoder are the
+ * same number; take it from ropus rather than restating it. */
+#define RWEBM_OPUS_MAX_FRAMES ROPUS_MAX_FRAME
 
 static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
       int track_idx, rwebm_pcm_acc *a, unsigned *rate)
@@ -121,10 +123,12 @@ static int rwebm_audio_decode_opus(rwebm_t *m, const rwebm_track *t,
        * of one another */
       if (a->elem == sizeof(float))
          produced = ropus_decode_f32(o, pkt.data, pkt.size,
-               (float*)RWEBM_ACC_AT(a, a->frames));
+               (float*)RWEBM_ACC_AT(a, a->frames),
+               (size_t)RWEBM_OPUS_MAX_FRAMES * a->channels);
       else
          produced = ropus_decode_s16(o, pkt.data, pkt.size,
-               (int16_t*)RWEBM_ACC_AT(a, a->frames));
+               (int16_t*)RWEBM_ACC_AT(a, a->frames),
+               (size_t)RWEBM_OPUS_MAX_FRAMES * a->channels);
       if (produced < 0)
          break;                    /* malformed packet: keep what we have */
       if (pkt.discard_padding > 0)

@@ -10608,8 +10608,10 @@ ropus_t *ropus_open(const void *head, size_t head_size)
    o->f = (ropus_dec_f *)calloc((size_t)o->nb_streams, sizeof(*o->f));
    if (o->nb_streams > 1)
    {
-      o->sub_q = (int16_t *)calloc((size_t)5760 * 2, sizeof(int16_t));
-      o->sub_f = (float   *)calloc((size_t)5760 * 2, sizeof(float));
+      o->sub_q = (int16_t *)calloc((size_t)ROPUS_MAX_FRAME * 2,
+            sizeof(int16_t));
+      o->sub_f = (float   *)calloc((size_t)ROPUS_MAX_FRAME * 2,
+            sizeof(float));
    }
    if (   !o->q || !o->f
        || (o->nb_streams > 1 && (!o->sub_q || !o->sub_f)))
@@ -10691,14 +10693,14 @@ static void ropus_toc_props(uint8_t toc, int *mode, int *bw, int *nfp)
 /* Decode one Opus packet to interleaved 48 kHz s16.  out must hold
  * 5760 * channels samples (120 ms).  Returns frames or < 0.            */
 int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
-      int16_t *out)
+      int16_t *out, size_t out_samples)
 {
    ropus_packet pk;
    const uint8_t *d = (const uint8_t *)pkt;
    int32_t left = (int32_t)len;
    int mode, bw, nfp, fr, s, total = 0;
    if (o->fmt == ROPUS_FMT_F32)
-      return -3;
+      return ROPUS_ERR_FMT;
    o->fmt = ROPUS_FMT_S16;
 
    /* Each substream is a packet in its own right, laid end to end.
@@ -10716,7 +10718,14 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
       int16_t *sub  = o->sub_q ? o->sub_q : out;
       if (ropus_packet_parse(d, left, &pk, s < o->nb_streams - 1,
                &used) < 0)
-         return -1;
+         return ROPUS_ERR_PACKET;
+      /* What this packet can write to out, whether the frames land
+       * there directly (one substream) or through the scatter below
+       * (several).  Checked before anything is written, and on every
+       * substream, they all having to agree on the span anyway. */
+      if ((size_t)pk.nframes * (size_t)pk.frame_size
+            * (size_t)o->channels > out_samples)
+         return ROPUS_ERR_ROOM;
       ropus_toc_props(d[0], &mode, &bw, &nfp);
       for (fr = 0; fr < pk.nframes; fr++)
       {
@@ -10724,7 +10733,7 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
             pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
             (d[0] & 4) ? 2 : 1, nfp, 1);
          if (r <= 0)
-            return -2;
+            return ROPUS_ERR_DECODE;
          got += r;
       }
       /* Every substream of a packet codes the same span; a stream
@@ -10732,7 +10741,7 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
       if (s == 0)
          total = got;
       else if (got != total)
-         return -2;
+         return ROPUS_ERR_DECODE;
       /* Scatter this substream's channels to whichever output
        * channels the table points at them. */
       if (sub != out)
@@ -10774,14 +10783,14 @@ int ropus_decode_s16(ropus_t *o, const void *pkt, size_t len,
 
 /* Decode one Opus packet to interleaved 48 kHz float.                  */
 int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
-      float *out)
+      float *out, size_t out_samples)
 {
    ropus_packet pk;
    const uint8_t *d = (const uint8_t *)pkt;
    int32_t left = (int32_t)len;
    int mode, bw, nfp, fr, s, total = 0;
    if (o->fmt == ROPUS_FMT_S16)
-      return -3;
+      return ROPUS_ERR_FMT;
    o->fmt = ROPUS_FMT_F32;
 
    /* See the s16 path: substreams end to end, all but the last
@@ -10796,7 +10805,14 @@ int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
       float   *sub  = o->sub_f ? o->sub_f : out;
       if (ropus_packet_parse(d, left, &pk, s < o->nb_streams - 1,
                &used) < 0)
-         return -1;
+         return ROPUS_ERR_PACKET;
+      /* What this packet can write to out, whether the frames land
+       * there directly (one substream) or through the scatter below
+       * (several).  Checked before anything is written, and on every
+       * substream, they all having to agree on the span anyway. */
+      if ((size_t)pk.nframes * (size_t)pk.frame_size
+            * (size_t)o->channels > out_samples)
+         return ROPUS_ERR_ROOM;
       ropus_toc_props(d[0], &mode, &bw, &nfp);
       for (fr = 0; fr < pk.nframes; fr++)
       {
@@ -10804,13 +10820,13 @@ int ropus_decode_f32(ropus_t *o, const void *pkt, size_t len,
             pk.sizes[fr], sub + got * sch, pk.frame_size, mode, bw,
             (d[0] & 4) ? 2 : 1, nfp, 1);
          if (r <= 0)
-            return -2;
+            return ROPUS_ERR_DECODE;
          got += r;
       }
       if (s == 0)
          total = got;
       else if (got != total)
-         return -2;
+         return ROPUS_ERR_DECODE;
       if (sub != out)
          for (c = 0; c < o->channels; c++)
          {

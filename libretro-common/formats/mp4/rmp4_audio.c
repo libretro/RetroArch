@@ -100,7 +100,9 @@ static int rmp4_pcm_reserve(rmp4_pcm_acc *a, size_t add_frames)
 
 #ifdef HAVE_ROPUS
 /* Maximum frames one Opus packet can produce: 120 ms at 48 kHz. */
-#define RMP4_OPUS_MAX_FRAMES 5760
+/* The reserve above and the room passed to the decoder are the
+ * same number; take it from ropus rather than restating it. */
+#define RMP4_OPUS_MAX_FRAMES ROPUS_MAX_FRAME
 
 static int rmp4_audio_decode_opus(rmp4_t *m, const rmp4_track *t,
       int track_idx, rmp4_pcm_acc *a, unsigned *rate)
@@ -128,10 +130,12 @@ static int rmp4_audio_decode_opus(rmp4_t *m, const rmp4_track *t,
        * of one another */
       if (a->elem == sizeof(float))
          produced = ropus_decode_f32(o, pkt.data, pkt.size,
-               (float*)RMP4_ACC_AT(a, a->frames));
+               (float*)RMP4_ACC_AT(a, a->frames),
+               (size_t)RMP4_OPUS_MAX_FRAMES * a->channels);
       else
          produced = ropus_decode_s16(o, pkt.data, pkt.size,
-               (int16_t*)RMP4_ACC_AT(a, a->frames));
+               (int16_t*)RMP4_ACC_AT(a, a->frames),
+               (size_t)RMP4_OPUS_MAX_FRAMES * a->channels);
       if (produced < 0)
          break;                    /* malformed packet: keep what we have */
       if (skip)
