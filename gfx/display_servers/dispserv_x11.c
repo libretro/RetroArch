@@ -258,6 +258,9 @@ static bool x11_display_server_set_resolution(void *data,
       {
          XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[i]);
 
+         if (!outputs)
+            continue;
+
          if (outputs->connection == RR_Connected)
          {
             XRRCrtcInfo *crtc = NULL;
@@ -266,7 +269,11 @@ static bool x11_display_server_set_resolution(void *data,
             XSync(dpy, False);
             strlcpy(dispserv->orig_output, outputs->name,
                   sizeof(dispserv->orig_output));
-            crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+            if (!(crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc)))
+            {
+               XRRFreeOutputInfo(outputs);
+               continue;
+            }
             crtc->mode   = swmode->id;
             crtc->width  = swmode->width;
             crtc->height = swmode->height;
@@ -291,16 +298,19 @@ static bool x11_display_server_set_resolution(void *data,
    else
    {
       XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[monitor_index]);
+      XRRCrtcInfo *crtc      = NULL;
 
-      if (outputs->connection == RR_Connected)
+      if (outputs && outputs->connection == RR_Connected)
       {
-         XRRCrtcInfo *crtc = NULL;
-
          XRRAddOutputMode(dpy, res->outputs[monitor_index], swmode->id);
          XSync(dpy, False);
          strlcpy(dispserv->orig_output, outputs->name,
                sizeof(dispserv->orig_output));
          crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+      }
+
+      if (crtc)
+      {
          crtc->mode   = swmode->id;
          crtc->width  = swmode->width;
          crtc->height = swmode->height;
@@ -316,7 +326,8 @@ static bool x11_display_server_set_resolution(void *data,
 
          XRRFreeCrtcInfo(crtc);
       }
-      XRRFreeOutputInfo(outputs);
+      if (outputs)
+         XRRFreeOutputInfo(outputs);
    }
    XRRFreeScreenResources(resources);
    XCloseDisplay(dpy);
@@ -337,9 +348,22 @@ static void x11_display_server_set_screen_orientation(void *data,
 
    screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
 
+   if (!screen)
+   {
+      XUngrabServer(dpy);
+      if (config)
+         XRRFreeScreenConfigInfo(config);
+      XCloseDisplay(dpy);
+      return;
+   }
+
    for (i = 0; i < screen->noutput; i++)
    {
       XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+      /* See x11_display_server_get_screen_orientation(). */
+      if (!info)
+         continue;
 
       if (info->connection != RR_Connected)
       {
@@ -349,8 +373,11 @@ static void x11_display_server_set_screen_orientation(void *data,
 
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtcs[j]);
          Rotation new_rotation = RR_Rotate_0;
+
+         if (!crtc)
+            continue;
 
          if (crtc->width == 0 || crtc->height == 0)
          {
@@ -399,7 +426,7 @@ static void x11_display_server_set_screen_orientation(void *data,
 
          XRRSetScreenSize(dpy, DefaultRootWindow(dpy), crtc->width, crtc->height, (25.4 * crtc->width) / dpi, (25.4 * crtc->height) / dpi);
 
-         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
+         XRRSetCrtcConfig(dpy, screen, info->crtcs[j], CurrentTime, crtc->x, crtc->y, crtc->mode, crtc->rotation, crtc->outputs, crtc->noutput);
 
          XRRFreeCrtcInfo(crtc);
       }
@@ -411,7 +438,8 @@ static void x11_display_server_set_screen_orientation(void *data,
 
    XUngrabServer(dpy);
    XSync(dpy, False);
-   XRRFreeScreenConfigInfo(config);
+   if (config)
+      XRRFreeScreenConfigInfo(config);
    XCloseDisplay(dpy);
 }
 
@@ -422,14 +450,31 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
    enum rotation     rotation     = ORIENTATION_NORMAL;
    dispserv_x11_t *dispserv       = (dispserv_x11_t*)data;
    Display               *dpy     = x11_display_server_open_display(dispserv);
-   XRRScreenResources *screen     = XRRGetScreenResources(dpy, DefaultRootWindow(dpy));
-   if (!screen)
-     return ORIENTATION_NORMAL;
+   XRRScreenResources *screen     = NULL;
+
+   /* x11_display_server_open_display() returns NULL when there is no
+    * global display and XOpenDisplay() fails; DefaultRootWindow()
+    * dereferences its argument. */
+   if (!dpy)
+      return ORIENTATION_NORMAL;
+
+   if (!(screen = XRRGetScreenResources(dpy, DefaultRootWindow(dpy))))
+   {
+      x11_display_server_close_display(dispserv, dpy);
+      return ORIENTATION_NORMAL;
+   }
+
    config                         = XRRGetScreenInfo(dpy, DefaultRootWindow(dpy));
 
    for (i = 0; i < screen->noutput; i++)
    {
       XRROutputInfo *info = XRRGetOutputInfo(dpy, screen, screen->outputs[i]);
+
+      /* XRRGetOutputInfo() returns NULL for an output the server
+       * cannot describe, which is the normal case under Xvfb and any
+       * other server with RandR present but no configured output. */
+      if (!info)
+         continue;
 
       if (info->connection != RR_Connected)
       {
@@ -437,9 +482,15 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
          continue;
       }
 
+      /* The crtcs to walk are this output's, not the screen's: ncrtc
+       * bounds info->crtcs, and there is no guarantee the screen has
+       * that many. */
       for (j = 0; j < info->ncrtc; j++)
       {
-         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, screen->crtcs[j]);
+         XRRCrtcInfo *crtc = XRRGetCrtcInfo(dpy, screen, info->crtcs[j]);
+
+         if (!crtc)
+            continue;
 
          if (crtc->width == 0 || crtc->height == 0)
          {
@@ -471,7 +522,9 @@ static enum rotation x11_display_server_get_screen_orientation(void *data)
    }
 
    XRRFreeScreenResources(screen);
-   XRRFreeScreenConfigInfo(config);
+   /* XRRGetScreenInfo() can fail; the free is not NULL-tolerant. */
+   if (config)
+      XRRFreeScreenConfigInfo(config);
 
    x11_display_server_close_display(dispserv, dpy);
 
