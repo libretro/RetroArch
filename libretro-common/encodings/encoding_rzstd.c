@@ -526,15 +526,32 @@ static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
  * The counting version ran up to accuracy_log times for every one of a
  * table's states, and a table is built three times a block on any frame
  * that transmits its own. */
+#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#define RZSTD_HAVE_CLZ 1
+#endif
+
 static uint32_t rzstd_highbit(uint32_t v)
 {
+#ifdef RZSTD_HAVE_CLZ
+   /* One instruction where the halving form is four compares and four
+    * branches. This runs once per state of every table built, and a
+    * frame small enough to be a disc hunk spends more time building
+    * tables than decoding through them. */
+   return 31u - (uint32_t)__builtin_clz(v);
+#else
    uint32_t r = 0;
 
-   if (v >= 0x100) { v >>= 8; r += 8; }
-   if (v >= 0x10)  { v >>= 4; r += 4; }
-   if (v >= 0x04)  { v >>= 2; r += 2; }
-   if (v >= 0x02)  { r += 1; }
+   /* The 0x10000 step is not optional. Without it this answers 15 for
+    * everything at or above 65536, which the callers here never reach
+    * -- a state index is bounded by its table -- but a reader of this
+    * function has no way to know that, and the two forms must agree. */
+   if (v >= 0x10000) { v >>= 16; r += 16; }
+   if (v >= 0x100)   { v >>= 8;  r += 8;  }
+   if (v >= 0x10)    { v >>= 4;  r += 4;  }
+   if (v >= 0x04)    { v >>= 2;  r += 2;  }
+   if (v >= 0x02)    {           r += 1;  }
    return r;
+#endif
 }
 
 #define RZSTD_FSE_MAX_ACCURACY_LOG 9
@@ -777,13 +794,24 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
    if (!count || count > RZSTD_HUF_MAX_SYMBOLS)
       return RZ_DATA;
 
+   /* One pass over the weights, not two: validate, sum the shares and
+    * count the ranks together. The three passes this function made over
+    * as many as two hundred and fifty-six symbols were a third of the
+    * time spent decoding a two-kilobyte frame, where the table is
+    * rebuilt for barely more output than it has entries. */
+   memset(rank_count, 0, sizeof(rank_count));
    for (i = 0; i < count; i++)
    {
-      if (weights[i] > RZSTD_HUF_MAX_BITS)
+      uint32_t w = weights[i];
+
+      if (w > RZSTD_HUF_MAX_BITS)
          return RZ_DATA;
-      all[i] = weights[i];
-      if (weights[i])
-         total += (uint32_t)1 << (weights[i] - 1);
+      all[i] = (uint8_t)w;
+      if (w)
+      {
+         total += (uint32_t)1 << (w - 1);
+         rank_count[w]++;
+      }
    }
    if (!total)
       return RZ_DATA;
@@ -808,15 +836,11 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       while (((uint32_t)1 << w) < left)
          w++;
       all[count] = (uint8_t)(w + 1);
+      rank_count[w + 1]++;
       count++;
    }
 
    huf->max_bits = max_bits;
-
-   memset(rank_count, 0, sizeof(rank_count));
-   for (i = 0; i < count; i++)
-      if (all[i])
-         rank_count[all[i]]++;
 
    /* Slots are laid out by ascending weight: the lowest weights take
     * the lowest codes, and within a weight the symbols keep their
@@ -855,10 +879,31 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       {
          uint16_t packed = (uint16_t)(((uint32_t)i << 8)
                | (max_bits + 1 - w));
-         uint32_t k;
+         uint16_t *e     = huf->entry + at;
+         uint32_t  k     = 0;
 
-         for (k = 0; k < n; k++)
-            huf->entry[at + k] = packed;
+         /* Four entries at a time.
+          *
+          * Every slot a symbol occupies holds the same value, and a
+          * symbol of weight w occupies 2^(w-1) of them -- up to half
+          * the table for one symbol. Written one at a time this is the
+          * single largest cost of decoding a small frame: a 2 KB hunk
+          * rebuilds the whole table and then decodes barely more bytes
+          * than the table has entries. Measured against the reference,
+          * the two builders were where the time went, not the decode
+          * loops those were tuned on large frames where a table is
+          * built once and used for megabytes. */
+         if (n >= 4)
+         {
+            uint64_t quad = (uint64_t)packed;
+
+            quad |= quad << 16;
+            quad |= quad << 32;
+            for (; k + 4 <= n; k += 4)
+               memcpy(e + k, &quad, 8);
+         }
+         for (; k < n; k++)
+            e[k] = packed;
       }
    }
 
