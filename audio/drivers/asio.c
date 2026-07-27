@@ -678,6 +678,14 @@ typedef struct ra_asio
    slock_t           *cond_lock;
 #endif
    ASIOBufferInfo     buf_info[2];  /* L and R output channels */
+   /* Deinterleave scratch, owned by the consumer (ASIO callback).
+    * One bulk retro_spsc_read per callback lands here and the format
+    * conversion below reads out of it, instead of taking the ring's
+    * cursors once per frame.  Sized for buffer_frames stereo float
+    * frames; allocated once buffer_frames is known in ra_asio_init and
+    * kept across park/reclaim, since the ASIO buffer size is fixed by
+    * the driver for the lifetime of the COM object. */
+   float             *scratch;
    ASIOSampleType     sample_type;
    long               buffer_frames;
    size_t             ring_size;
@@ -738,6 +746,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       long index, long frames)
 {
    long i;
+   const float *src = ad->scratch;
    void *buf_l  = ad->buf_info[0].buffers[index];
    void *buf_r  = ad->buf_info[1].buffers[index];
    /* Acquire-load on the producer's head cursor.  Pairs with the
@@ -750,18 +759,25 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    if (have > frames)
       have = frames;
 
+   /* Drain what we're going to use in one go.  The cursors are touched
+    * exactly once per callback rather than once per frame; everything
+    * below reads out of thread-local scratch.  retro_spsc_read is
+    * capped by the read_avail above so it returns the full request,
+    * but use its return value in case that contract changes. */
+   if (have > 0)
+      have = (long)(retro_spsc_read(&ad->ring, ad->scratch,
+            (size_t)have * 2 * sizeof(float)) / (2 * sizeof(float)));
+
    switch (ad->sample_type)
    {
       case ASIOSTFloat32LSB:
       {
          float *dl = (float *)buf_l;
          float *dr = (float *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = tmp[0];
-            dr[i] = tmp[1];
+            dl[i] = src[i * 2 + 0];
+            dr[i] = src[i * 2 + 1];
          }
          for (; i < frames; i++) { dl[i] = 0.0f; dr[i] = 0.0f; }
          break;
@@ -771,12 +787,10 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          double *dl = (double *)buf_l;
          double *dr = (double *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = (double)tmp[0];
-            dr[i] = (double)tmp[1];
+            dl[i] = (double)src[i * 2 + 0];
+            dr[i] = (double)src[i * 2 + 1];
          }
          for (; i < frames; i++) { dl[i] = 0.0; dr[i] = 0.0; }
          break;
@@ -786,11 +800,9 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          int32_t *dl = (int32_t *)buf_l;
          int32_t *dr = (int32_t *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
             double l, r;
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             /* Symmetric full-scale (2^31) with round-half-away and
              * saturation, matching convert_float_to_s16's semantics at
              * 16-bit.  The previous (2^31 - 1) truncating form had an
@@ -799,8 +811,8 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
              * range safety.  Computed in double: float's 24-bit mantissa
              * cannot address 32-bit steps, and the +-0.5 bias would be
              * absorbed at float precision. */
-            l = (double)tmp[0] * 2147483648.0;
-            r = (double)tmp[1] * 2147483648.0;
+            l = (double)src[i * 2 + 0] * 2147483648.0;
+            r = (double)src[i * 2 + 1] * 2147483648.0;
             l += (l >= 0.0) ? 0.5 : -0.5;
             r += (r >= 0.0) ? 0.5 : -0.5;
             if      (l >  2147483647.0) dl[i] = INT32_MAX;
@@ -818,16 +830,14 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          char *dl = (char *)buf_l;
          char *dr = (char *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
             float fl, fr;
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             /* Symmetric full-scale (2^23), round-half-away, saturate -
              * see the Int32 branch comment. */
-            fl = tmp[0] * 8388608.0f;
-            fr = tmp[1] * 8388608.0f;
+            fl = src[i * 2 + 0] * 8388608.0f;
+            fr = src[i * 2 + 1] * 8388608.0f;
             fl += (fl >= 0.0f) ? 0.5f : -0.5f;
             fr += (fr >= 0.0f) ? 0.5f : -0.5f;
             if      (fl >  8388607.0f) l =  8388607;
@@ -851,18 +861,16 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          int16_t *dl = (int16_t *)buf_l;
          int16_t *dr = (int16_t *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
             float fl, fr;
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
             /* Same semantics as convert_float_to_s16's scalar path:
              * symmetric 0x8000 scale, round-half-away, saturate.  The
              * previous 32767-scale truncating form cost ~6 dB of
              * quantisation noise and skewed the transfer curve. */
-            fl = tmp[0] * 32768.0f;
-            fr = tmp[1] * 32768.0f;
+            fl = src[i * 2 + 0] * 32768.0f;
+            fr = src[i * 2 + 1] * 32768.0f;
             fl += (fl >= 0.0f) ? 0.5f : -0.5f;
             fr += (fr >= 0.0f) ? 0.5f : -0.5f;
             if      (fl >  32767.0f) l =  32767;
@@ -897,7 +905,8 @@ static void asio_cb_buffer_switch(long index,
 {
    ra_asio_t *ad = g_asio;
 
-   if (!ad || !ad->ring_initialized || ad->is_paused || ad->shutdown)
+   if (     !ad || !ad->ring_initialized || !ad->scratch
+         || ad->is_paused || ad->shutdown)
    {
       if (ad && ad->buf_info[0].buffers[index])
       {
@@ -999,6 +1008,12 @@ static void asio_atexit_cleanup(void)
    {
       retro_spsc_free(&ad->ring);
       ad->ring_initialized = false;
+   }
+
+   if (ad->scratch)
+   {
+      free(ad->scratch);
+      ad->scratch = NULL;
    }
 
 #ifdef HAVE_THREADS
@@ -1268,6 +1283,21 @@ static void *ra_asio_init(const char *device, unsigned rate,
          ad->buffer_frames,
          (float)ad->buffer_frames * 1000.0f / ad->sample_rate);
 
+   /* Scratch for the callback's bulk ring drain.  Allocated here, once
+    * buffer_frames is known and before anything can issue a
+    * bufferSwitch: the driver may call back during ASIOCreateBuffers.
+    * buffer_frames is never reassigned afterwards - the ASIO buffer
+    * size belongs to the COM object, which outlives park/reclaim - so
+    * this allocation stays correctly sized for the instance's whole
+    * life and is only released when the instance is really destroyed. */
+   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
+         * 2 * sizeof(float));
+   if (!ad->scratch)
+   {
+      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
+      goto error;
+   }
+
    /* Query output channel sample type */
    memset(&ch_info, 0, sizeof(ch_info));
    ch_info.channel  = 0;
@@ -1393,6 +1423,11 @@ error:
    {
       retro_spsc_free(&ad->ring);
       ad->ring_initialized = false;
+   }
+   if (ad->scratch)
+   {
+      free(ad->scratch);
+      ad->scratch = NULL;
    }
 #ifdef HAVE_THREADS
    if (ad->cond_lock)
