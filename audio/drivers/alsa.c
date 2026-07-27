@@ -564,9 +564,13 @@ typedef struct alsa_thread_info
     * reads). */
    volatile bool worker_waiting;
    sthread_t *worker_thread;
+   /* Guards buffer, worker_waiting and thread_dead, and is also the
+    * mutex `cond` is waited on with.  These must be the same lock: a
+    * condition variable whose predicate is protected by a different
+    * mutex has a window between testing the predicate and blocking,
+    * during which a signal has no waiter to reach and is discarded. */
    slock_t *fifo_lock;
    scond_t *cond;
-   slock_t *cond_lock;
    alsa_stream_info_t stream_info;
    volatile bool thread_dead;
 } alsa_thread_info_t;
@@ -577,9 +581,10 @@ static void alsa_thread_free_info_members(alsa_thread_info_t *info)
    {
       if (info->worker_thread)
       {
-         slock_lock(info->cond_lock);
+         slock_lock(info->fifo_lock);
          info->thread_dead = true;
-         slock_unlock(info->cond_lock);
+         scond_signal(info->cond);
+         slock_unlock(info->fifo_lock);
          sthread_join(info->worker_thread);
       }
       if (info->buffer)
@@ -588,8 +593,6 @@ static void alsa_thread_free_info_members(alsa_thread_info_t *info)
          scond_free(info->cond);
       if (info->fifo_lock)
          slock_free(info->fifo_lock);
-      if (info->cond_lock)
-         slock_free(info->cond_lock);
       if (info->pcm)
          alsa_free_pcm(info->pcm);
    }
@@ -733,10 +736,10 @@ static void alsa_microphone_worker_thread(void *mic_context)
    }
 
 end:
-   slock_lock(mic->info.cond_lock);
+   slock_lock(mic->info.fifo_lock);
    mic->info.thread_dead = true;
    scond_signal(mic->info.cond);
-   slock_unlock(mic->info.cond_lock);
+   slock_unlock(mic->info.fifo_lock);
    free(buf);
    RARCH_DBG("[ALSA] [capture thread %p] Ending microphone worker thread.\n", thread_id);
 }
@@ -804,19 +807,17 @@ static int alsa_thread_microphone_read(void *driver_context, void *mic_context, 
          if (avail == 0)
          { /* "Oh, wait, it's empty." */
 
-            /* "Here, take it back..." */
-            slock_unlock(mic->info.fifo_lock);
-
-            /* "...I'll just wait right here." */
-            slock_lock(mic->info.cond_lock);
-
-            /* "Unless we're closing up shop..." */
+            /* "Let me know when you've produced some samples."
+             * Waiting on fifo_lock, which we still hold and which also
+             * guards the emptiness we just tested, is what makes this
+             * safe: scond_wait releases it atomically with blocking,
+             * so a producer cannot slip in between the test and the
+             * wait and have its signal go nowhere. */
             if (!mic->info.thread_dead)
-               /* "...let me know when you've produced some samples." */
-               scond_wait(mic->info.cond, mic->info.cond_lock);
+               scond_wait(mic->info.cond, mic->info.fifo_lock);
 
             /* "Oh, you're ready? Okay, I'm gonna continue." */
-            slock_unlock(mic->info.cond_lock);
+            slock_unlock(mic->info.fifo_lock);
          }
          else
          {
@@ -859,10 +860,9 @@ static void *alsa_thread_microphone_open_mic(void *driver_context,
       goto error;
 
    mic->info.fifo_lock = slock_new();
-   mic->info.cond_lock = slock_new();
    mic->info.cond      = scond_new();
    mic->info.buffer    = fifo_new(mic->info.stream_info.buffer_size);
-   if (!mic->info.fifo_lock || !mic->info.cond_lock || !mic->info.cond || !mic->info.buffer || !mic->info.pcm)
+   if (!mic->info.fifo_lock || !mic->info.cond || !mic->info.buffer || !mic->info.pcm)
       goto error;
 
    mic->info.worker_thread = sthread_create(alsa_microphone_worker_thread, mic);
@@ -1015,17 +1015,18 @@ static void alsa_worker_thread(void *data)
                 && !alsa->info.thread_dead)
          {
             alsa->info.worker_waiting = true;
-            slock_unlock(alsa->info.fifo_lock);
-            slock_lock(alsa->info.cond_lock);
+            /* Waits on fifo_lock, the same lock the avail test above
+             * was made under, so the producer's signal cannot land in
+             * a gap where nobody is waiting yet.  scond_wait_timeout
+             * releases it while blocked and reacquires it on return,
+             * so the reread below is still under the lock. */
             if (!alsa->info.thread_dead)
                scond_wait_timeout(alsa->info.cond,
-                     alsa->info.cond_lock, period_us / 2);
-            slock_unlock(alsa->info.cond_lock);
+                     alsa->info.fifo_lock, period_us / 2);
             /* Upper bound on time spent regardless of early wakeups:
              * overestimating only makes the worker give up sooner,
              * never lets the device xrun. */
             waited_us += period_us / 2;
-            slock_lock(alsa->info.fifo_lock);
             avail = FIFO_READ_AVAIL(alsa->info.buffer);
          }
          alsa->info.worker_waiting = false;
@@ -1065,10 +1066,10 @@ static void alsa_worker_thread(void *data)
    }
 
 end:
-   slock_lock(alsa->info.cond_lock);
+   slock_lock(alsa->info.fifo_lock);
    alsa->info.thread_dead = true;
    scond_signal(alsa->info.cond);
-   slock_unlock(alsa->info.cond_lock);
+   slock_unlock(alsa->info.fifo_lock);
    free(buf);
    RARCH_DBG("[ALSA] [playback thread %p] Ending playback worker thread...\n", thread_id);
 }
@@ -1110,10 +1111,9 @@ static void *alsa_thread_init(const char *device,
       goto error;
 
    alsa->info.fifo_lock = slock_new();
-   alsa->info.cond_lock = slock_new();
    alsa->info.cond      = scond_new();
    alsa->info.buffer    = fifo_new(alsa->info.stream_info.buffer_size);
-   if (!alsa->info.fifo_lock || !alsa->info.cond_lock || !alsa->info.cond || !alsa->info.buffer)
+   if (!alsa->info.fifo_lock || !alsa->info.cond || !alsa->info.buffer)
       goto error;
 
    alsa->info.worker_thread = sthread_create(alsa_worker_thread, alsa);
@@ -1164,11 +1164,16 @@ static ssize_t alsa_thread_write(void *data, const void *s, size_t len)
 
          if (avail == 0)
          {
-            slock_unlock(alsa->info.fifo_lock);
-            slock_lock(alsa->info.cond_lock);
+            /* Wait on the lock the avail test was made under; see the
+             * note on fifo_lock in alsa_thread_info_t.  Previously
+             * this dropped fifo_lock and took cond_lock before
+             * blocking, so a worker that drained and signalled in
+             * between found no waiter, and this thread then sat in an
+             * untimed wait until the worker's next period despite the
+             * space it wanted already existing. */
             if (!alsa->info.thread_dead)
-               scond_wait(alsa->info.cond, alsa->info.cond_lock);
-            slock_unlock(alsa->info.cond_lock);
+               scond_wait(alsa->info.cond, alsa->info.fifo_lock);
+            slock_unlock(alsa->info.fifo_lock);
          }
          else
          {
