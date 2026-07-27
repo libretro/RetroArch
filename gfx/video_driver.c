@@ -232,22 +232,49 @@ static INLINE bool realloc_checked(void **ptr, size_t len)
    return *ptr == nptr;
 }
 
-static bool video_coord_array_resize(video_coord_array_t *ca,
-   unsigned cap)
+/* Grow one stream, or bring it into existence if this is the first
+ * append that carries it.  A stream nobody has ever appended stays
+ * NULL and costs nothing; consumers already treat a NULL stream as
+ * "not present" -- every shader backend binds a stream only when its
+ * attribute location is >= 0, and the display drivers substitute a
+ * default for one they need and did not get. */
+static bool video_coord_array_grow(float **dst, const float *src,
+      unsigned comps, unsigned cap, unsigned have)
 {
-   size_t base_size    = sizeof(float) * cap;
+   size_t stride = comps * sizeof(float);
 
-   if (!realloc_checked((void**)&ca->coords.vertex,
-            2 * base_size))
+   if (!src && !*dst)
+      return true;
+
+   if (!*dst && have)
+   {
+      /* First appearance of this stream part-way through the array.
+       * The vertices already appended have no data for it, so zero
+       * them rather than hand the consumer whatever realloc found. */
+      if (!(*dst = (float*)calloc(cap, stride)))
+         return false;
+      return true;
+   }
+
+   return realloc_checked((void**)dst, cap * stride);
+}
+
+static bool video_coord_array_resize(video_coord_array_t *ca,
+   const video_coords_t *coords, unsigned cap)
+{
+   unsigned have = (unsigned)ca->coords.vertices;
+
+   if (!video_coord_array_grow(&ca->coords.vertex,
+            coords->vertex, 2, cap, have))
       return false;
-   if (!realloc_checked((void**)&ca->coords.color,
-            4 * base_size))
+   if (!video_coord_array_grow(&ca->coords.color,
+            coords->color, 4, cap, have))
       return false;
-   if (!realloc_checked((void**)&ca->coords.tex_coord,
-            2 * base_size))
+   if (!video_coord_array_grow(&ca->coords.tex_coord,
+            coords->tex_coord, 2, cap, have))
       return false;
-   if (!realloc_checked((void**)&ca->coords.lut_tex_coord,
-            2 * base_size))
+   if (!video_coord_array_grow(&ca->coords.lut_tex_coord,
+            coords->lut_tex_coord, 2, cap, have))
       return false;
 
    ca->allocated = cap;
@@ -261,29 +288,43 @@ bool video_coord_array_append(video_coord_array_t *ca,
    size_t base_size, offset;
    count          = MIN(count, coords->vertices);
 
-   if (ca->coords.vertices + count >= ca->allocated)
+   if (     (ca->coords.vertices + count >= ca->allocated)
+         || (coords->vertex        && !ca->coords.vertex)
+         || (coords->color         && !ca->coords.color)
+         || (coords->tex_coord     && !ca->coords.tex_coord)
+         || (coords->lut_tex_coord && !ca->coords.lut_tex_coord))
    {
       unsigned cap = next_pow2(ca->coords.vertices + count);
-      if (!video_coord_array_resize(ca, cap))
+      if (cap < ca->allocated)
+         cap       = ca->allocated;
+      if (!video_coord_array_resize(ca, coords, cap))
          return false;
    }
 
    base_size = count * sizeof(float);
    offset    = ca->coords.vertices;
 
-   /* XXX: I wish we used interlaced arrays so
-    * we could call memcpy only once. */
-   memcpy(ca->coords.vertex        + offset * 2,
-         coords->vertex, base_size * 2);
+   /* A NULL stream means the caller has nothing to say about that
+    * attribute, which is not the same as having zeroes to say about
+    * it: the XMB ribbon, the only producer of the shared display
+    * array, passes one buffer of zeros as three of the four streams
+    * purely to satisfy this function, and its shaders declare a
+    * single attribute.  Skip what was not given rather than copy it. */
+   if (coords->vertex)
+      memcpy(ca->coords.vertex        + offset * 2,
+            coords->vertex, base_size * 2);
 
-   memcpy(ca->coords.color         + offset * 4,
-         coords->color, base_size * 4);
+   if (coords->color)
+      memcpy(ca->coords.color         + offset * 4,
+            coords->color, base_size * 4);
 
-   memcpy(ca->coords.tex_coord     + offset * 2,
-         coords->tex_coord, base_size * 2);
+   if (coords->tex_coord)
+      memcpy(ca->coords.tex_coord     + offset * 2,
+            coords->tex_coord, base_size * 2);
 
-   memcpy(ca->coords.lut_tex_coord + offset * 2,
-         coords->lut_tex_coord, base_size * 2);
+   if (coords->lut_tex_coord)
+      memcpy(ca->coords.lut_tex_coord + offset * 2,
+            coords->lut_tex_coord, base_size * 2);
 
    ca->coords.vertices += count;
 

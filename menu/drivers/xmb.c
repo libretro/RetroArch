@@ -10148,24 +10148,15 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
    gfx_display_t *p_disp     = disp_get_ptr();
    video_coord_array_t *ca   = &p_disp->dispca;
    unsigned vertices_total   = XMB_RIBBON_VERTICES;
-   float *dummy              = (float*)calloc(4 * vertices_total, sizeof(float));
    float *ribbon_verts       = (float*)calloc(2 * vertices_total, sizeof(float));
 
-   /* NULL-check both callocs: the for-loop below unconditionally
-    * writes into ribbon_verts via xmb_ribbon_set_vertex, and the
-    * video_coord_array_append call at the bottom passes dummy
-    * as color/tex_coord/lut_tex_coord which the underlying
-    * append implementation would copy from (reading NULL).
-    * Skip ribbon init entirely on OOM - the ribbon is a
-    * decorative background animation; its absence is visually
-    * degraded but not functionally broken.  The free()s at
-    * the bottom are NULL-safe. */
-   if (!dummy || !ribbon_verts)
-   {
-      free(dummy);
-      free(ribbon_verts);
+   /* NULL-check the calloc: the for-loop below unconditionally writes
+    * into ribbon_verts via xmb_ribbon_set_vertex.  Skip ribbon init
+    * entirely on OOM - the ribbon is a decorative background
+    * animation; its absence is visually degraded but not
+    * functionally broken. */
+   if (!ribbon_verts)
       return;
-   }
 
    /* Set up vertices */
    for (r = 0; r < XMB_RIBBON_ROWS - 1; r++)
@@ -10179,15 +10170,23 @@ static void xmb_init_ribbon(xmb_handle_t * xmb)
       }
    }
 
-   coords.color         = dummy;
+   /* The ribbon vertex shaders declare exactly one attribute --
+    * "in vec3 VertexCoord" in modern_pipeline_xmb_ribbon.glsl.vert.h,
+    * "attribute vec3 VertexCoord" in the legacy one -- and every
+    * shader backend binds a stream only when its attribute location
+    * is >= 0, so colour, texture and LUT coordinates are never read
+    * back out of this array.  They used to be supplied anyway, as one
+    * calloc()ed buffer of zeros passed three times, because
+    * video_coord_array_append() copied all four streams
+    * unconditionally.  It no longer does. */
+   coords.color         = NULL;
    coords.vertex        = ribbon_verts;
-   coords.tex_coord     = dummy;
-   coords.lut_tex_coord = dummy;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
    coords.vertices      = vertices_total;
 
    video_coord_array_append(ca, &coords, coords.vertices);
 
-   free(dummy);
    free(ribbon_verts);
 }
 

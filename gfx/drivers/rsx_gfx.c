@@ -341,8 +341,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord   = &rsx_tex_coords[0];
    if (!draw->texture)
       return;
 
