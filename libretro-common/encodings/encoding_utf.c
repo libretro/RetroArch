@@ -361,19 +361,53 @@ const char *utf8skip(const char *str, size_t chars)
  **/
 size_t utf8len(const char *string)
 {
+   const unsigned char *p;
+   size_t n;
    size_t ret = 0;
 
    if (!string)
       return 0;
 
-   /* Count every byte that is not a continuation byte. Advancing
-    * exactly one byte per iteration is what keeps this in bounds:
-    * a truncated sequence cannot step over the terminator. */
-   while (*string)
+   p = (const unsigned char*)string;
+   n = strlen(string);
+
+   /* Byte at a time up to the first aligned address. */
+   while (n && (((size_t)p & 7) != 0))
    {
-      if ((*string & 0xC0) != 0x80)
+      if ((*p & 0xC0) != 0x80)
          ret++;
-      string++;
+      p++;
+      n--;
+   }
+
+   /* The length is known, so the word loop needs no terminator test
+    * and never reads a byte the caller did not supply. */
+   while (n >= 8)
+   {
+      uint64_t w;
+      uint64_t c;
+      memcpy(&w, p, sizeof(w));
+      /* A continuation byte is the pattern 10xxxxxx: bit 7 set and
+       * bit 6 clear. Both halves of the test stay inside their own
+       * byte, so this is endian neutral. */
+      c    = (w & ~(w << 1) & 0x8080808080808080ULL) >> 7;
+      /* Horizontal sum. Every byte of c is 0 or 1 and the running
+       * total tops out at 8, so the folds cannot carry out of a
+       * byte and no 64-bit multiply is needed. */
+      c   += c >> 32;
+      c   += c >> 16;
+      c   += c >> 8;
+      ret += 8 - (size_t)(c & 0xFF);
+      p   += 8;
+      n   -= 8;
+   }
+
+   while (n)
+   {
+      if ((*p & 0xC0) != 0x80)
+         ret++;
+      p++;
+      n--;
    }
    return ret;
 }
