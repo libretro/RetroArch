@@ -1786,6 +1786,8 @@ SMB CLIENT
 #ifndef _U_
 #define _U_ __attribute__((unused))
 #endif
+/* Force the libsmb2 slist macros: libnfs also ships include/slist.h. */
+#include "../deps/libsmb2/include/slist.h"
 #include "../deps/libsmb2/lib/aes.c"
 #include "../deps/libsmb2/lib/aes_apple.c"
 #include "../deps/libsmb2/lib/aes128ccm.c"
@@ -1845,4 +1847,15 @@ SMB CLIENT
 
 #ifdef HAVE_SMBCLIENT
 #include "../libretro-common/vfs/vfs_implementation_smb.c"
+#endif
+
+/*============================================================
+NFS CLIENT
+============================================================ */
+/* libnfs cannot be amalgamated into griffin.c: multiple TUs define the
+ * same file-scope statics (e.g. oom) and collide with libsmb2 symbols.
+ * Builtin libnfs is compiled as separate objects (Makefile.common /
+ * Apple Xcode sources). */
+#ifdef HAVE_NFSCLIENT
+#include "../libretro-common/vfs/vfs_implementation_nfs.c"
 #endif

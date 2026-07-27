@@ -1,0 +1,91 @@
+# Security Analysis (security-scan)
+
+This file records an independent, third-party security analysis of libnfs, contributed at
+the maintainer's invitation. It documents the methodology, the findings, how they were
+scored, and their remediation status. All issues described here were fixed in `master`
+in May–June 2026.
+
+- **Analyst:** Michalis Vasileiadis — independent security researcher (GitHub: [@vmihalis](https://github.com/vmihalis))
+- **Reviewed:** libnfs `master` @ `589e23304a30ffe9624f24a8a8955240a66ec98e` (May 2026)
+- **Disclosure:** reported privately to the maintainer on 2026-05-20; fixes landed in `master`
+  on 2026-05-30/31, each commit carrying a `Reported-by:` credit.
+
+## Methodology
+
+A static-analysis security review of the XDR/RPC decoding paths and the TLS handshake,
+focused on attacker-reachable input handling — an untrusted NFS server in client context,
+or an untrusted NFS client in server context (`rpc_init_server_context`).
+
+The review combined AI-assisted static analysis (using my security-analysis system,
+"Hacker Bob") with manual verification and triage: each candidate was traced to a concrete
+`file:line`, validated against the surrounding code paths, and scored by reachability and
+impact. The initial pass was static-only — no live server or sanitizer build — so findings
+cite source evidence (`file:line`/symbol) rather than crash dumps. Sanitizer and fuzzing
+reproductions (libFuzzer / AFL++ with AddressSanitizer) were offered as a follow-up for
+regression testing.
+
+## Severity scoring
+
+Severities reflect a network threat model: these decoders run on data controlled by the
+remote peer, with no application-level interaction required. **HIGH** = memory-corruption
+(out-of-bounds access or NULL dereference) reachable during decoding; **MEDIUM** =
+denial-of-service or a security-control weakness (silent downgrade). All values are the
+analyst's own assessment.
+
+## Findings
+
+### F-1 — Signed cast bypasses bounds check in `libnfs_zdr_bytes` (HIGH, CWE-125)
+- **Location:** `lib/libnfs-zdr.c:200`
+- The bounds guard cast a `uint32_t` size to `(int)`; a value with the high bit set becomes
+  negative and defeats the `zdrs->pos + (int)*size > zdrs->size` check, while the subsequent
+  `memcpy` uses the raw `uint32_t`. Reachable via AUTH opaque credential/verifier decode →
+  out-of-bounds read/write.
+- **Fixed:** ZDR object sizes clamped to 1 GB — commit [`3c23b77d82e9`](https://github.com/sahlberg/libnfs/commit/3c23b77d82e9).
+
+### F-2 — Negative length in NFSv4 attribute parsing (HIGH, CWE-125)
+- **Location:** `lib/nfs_v4.c:547,559`
+- `int slen` stored a network `uint32_t` length in `nfs_parse_attributes`; a negative `slen`
+  bypassed `CHECK_GETATTR_BUF_SPACE` and drove an infinite loop + out-of-bounds read in
+  `nfs_get_ugid`'s `while (slen) { ...; slen--; }` (owner and group fields).
+- **Fixed:** attribute size sanity-checked — commit [`0a628210dc88`](https://github.com/sahlberg/libnfs/commit/0a628210dc88).
+
+### F-3 — Integer overflow + unchecked allocation in `zdr_malloc` (HIGH, CWE-476)
+- **Location:** `lib/libnfs-zdr.c:114-119`
+- `int mem_size = offsetof(...) + size` overflowed for large server-controlled sizes; the
+  `malloc` result was not checked, leading to an unconditional NULL dereference at line 119.
+  Reachable from any server-controlled string, pointer, or array length.
+- **Fixed:** `zdr_malloc` allocation clamped to 1 GB — commit [`627e37d36bfd`](https://github.com/sahlberg/libnfs/commit/627e37d36bfd).
+
+### F-4 — Unbounded recursion in READDIR/READDIRPLUS decoders (MEDIUM, CWE-674)
+- **Location:** `nfs/libnfs-raw-nfs.c:1571,1579` (via `lib/libnfs-zdr.c:273`)
+- `zdr_entry3` / `zdr_entryplus3` recursed through `libnfs_zdr_pointer` with no depth limit;
+  a single ~8 MB PDU packed with minimal entry records yields hundreds of thousands of linked
+  entries, exceeding the thread stack → stack overflow / SIGSEGV.
+- **Fixed:** directory entries decoded iteratively rather than recursively — commit [`0e6398550c8d`](https://github.com/sahlberg/libnfs/commit/0e6398550c8d).
+
+### F-5 — Silent mTLS downgrade when client credentials are absent (MEDIUM, CWE-297)
+- **Location:** `tls/handshake.c:258-264`
+- When `xprtsec=mtls` was requested but `LIBNFS_TLS_CLIENT_CERT_PEM` /
+  `LIBNFS_TLS_CLIENT_KEY_PEM` were unset, `tls_global_init()` returned success with only a
+  debug-level log; `wanted_xprtsec` was never read, so the layer could not distinguish `tls`
+  from `mtls` → silent downgrade to one-way TLS, defeating the documented mutual-auth
+  guarantee. This also lowers the precondition for F-1–F-4 (a man-in-the-middle on a believed
+  mutually-authenticated channel could inject crafted PDUs).
+- **Fixed:** `mtls` now fails closed when credentials are unavailable — commit [`f0b109df8fd8`](https://github.com/sahlberg/libnfs/commit/f0b109df8fd8).
+
+## Threat model
+
+F-1 through F-4 are reachable from an untrusted NFS server (client context) or an untrusted
+NFS client (server context, via `rpc_init_server_context`), with no application-level
+interaction — they trigger during XDR decoding. F-5 silently weakens the mutual-authentication
+precondition for the rest.
+
+## Remediation status
+
+All five issues were fixed in `master` on 2026-05-30/31, each commit carrying a `Reported-by:`
+credit, and are included in the subsequent release. CVE identifiers were requested
+independently (the maintainer opted not to file advisories); they will be listed here once
+assigned.
+
+---
+*Contributed by Michalis Vasileiadis ([@vmihalis](https://github.com/vmihalis)). Follow-up via GitHub.*

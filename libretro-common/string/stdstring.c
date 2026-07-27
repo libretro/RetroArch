@@ -227,7 +227,12 @@ size_t word_wrap(
    /* Early return if src string length is less
     * than line width */
    if (src_len < (size_t)line_width)
+   {
+      /* In-place wrap is a no-op; fortified strlcpy aborts on overlap. */
+      if (s == src)
+         return src_len;
       return strlcpy(s, src, len);
+   }
 
    while (*src != '\0')
    {

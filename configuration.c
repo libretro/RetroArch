@@ -1657,6 +1657,12 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("smb_client_workgroup", settings->arrays.smb_client_workgroup, false, NULL, true);
 #endif
 
+#ifdef HAVE_NFSCLIENT
+   SETTING_ARRAY("nfs_client_server_address", settings->arrays.nfs_client_server_address, false, NULL, true);
+   SETTING_ARRAY("nfs_client_export", settings->arrays.nfs_client_export, false, NULL, true);
+   SETTING_ARRAY("nfs_client_subdir", settings->arrays.nfs_client_subdir, false, NULL, true);
+#endif
+
 #ifdef HAVE_LAKKA
    SETTING_ARRAY("cpu_main_gov",                 settings->arrays.cpu_main_gov, false, NULL, true);
    SETTING_ARRAY("cpu_menu_gov",                 settings->arrays.cpu_menu_gov, false, NULL, true);
@@ -2117,6 +2123,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client_opts.h"
+#endif
 #include "settings/settings_def_midi_volume.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_ports.h"
@@ -2190,6 +2199,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_NETWORKGAMEPAD
 #include "settings/settings_def_netplay_stateless.h"
@@ -2261,6 +2273,9 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_settings_show_nfs.h"
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -2827,6 +2842,9 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client_opts.h"
+#endif
 #include "settings/settings_def_midi_volume.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_ports.h"
@@ -2900,6 +2918,9 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_NETWORKGAMEPAD
 #include "settings/settings_def_netplay_stateless.h"
@@ -2971,6 +2992,9 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_settings_show_nfs.h"
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -3495,6 +3519,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client_opts.h"
+#endif
 #include "settings/settings_def_midi_volume.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_ports.h"
@@ -3568,6 +3595,9 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_NETWORKGAMEPAD
 #include "settings/settings_def_netplay_stateless.h"
@@ -3639,6 +3669,9 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_settings_show_nfs.h"
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -4200,6 +4233,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client_opts.h"
+#endif
 #include "settings/settings_def_midi_volume.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_ports.h"
@@ -4273,6 +4309,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_NETWORKGAMEPAD
 #include "settings/settings_def_netplay_stateless.h"
@@ -4344,6 +4383,9 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_settings_show_nfs.h"
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -4792,6 +4834,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client_auth.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client_opts.h"
+#endif
 #include "settings/settings_def_midi_volume.h"
 #ifdef HAVE_NETWORKING
 #include "settings/settings_def_netplay_ports.h"
@@ -4865,6 +4910,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_smb_client.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_nfs_client.h"
+#endif
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_NETWORKGAMEPAD
 #include "settings/settings_def_netplay_stateless.h"
@@ -4936,6 +4984,9 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
+#endif
+#ifdef HAVE_NFSCLIENT
+#include "settings/settings_def_settings_show_nfs.h"
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST

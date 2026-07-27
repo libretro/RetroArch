@@ -2932,6 +2932,82 @@ endif
    OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_smb.o
 endif
 
+ifneq (,$(filter 1,$(HAVE_NFSCLIENT) $(HAVE_BUILTINNFSCLIENT)))
+   DEFINES += -DHAVE_NFSCLIENT
+
+   ifeq ($(HAVE_NFSCLIENT),1)
+      ifeq ($(shell pkg-config --exists libnfs && echo yes),yes)
+         CFLAGS += $(shell pkg-config --cflags libnfs)
+         LIBS   += $(shell pkg-config --libs libnfs)
+      else
+         LIBS   += -lnfs
+      endif
+   else ifeq ($(HAVE_BUILTINNFSCLIENT),1)
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/include
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/include/nfsc
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/mount
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/nfs
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/nfs4
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/nlm
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/nsm
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/portmap
+      INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/rquota
+      CFLAGS += "-D_U_=__attribute__((unused))"
+      # Avoid -DHAVE_CONFIG_H: RetroArch's own config.h would be picked
+      # up by libnfs "#include \"config.h\"". Pass feature macros instead.
+      CFLAGS += -DHAVE_ARPA_INET_H -DHAVE_DLFCN_H -DHAVE_INTTYPES_H
+      CFLAGS += -DHAVE_MEMORY_H -DHAVE_NETDB_H -DHAVE_NETINET_IN_H
+      CFLAGS += -DHAVE_NETINET_TCP_H -DHAVE_NET_IF_H -DHAVE_POLL_H
+      CFLAGS += -DHAVE_PWD_H -DHAVE_SOCKADDR_STORAGE -DHAVE_STDINT_H
+      CFLAGS += -DHAVE_STDLIB_H -DHAVE_STDATOMIC_H -DHAVE_STRINGS_H
+      CFLAGS += -DHAVE_STRING_H -DHAVE_SYS_IOCTL_H -DHAVE_SYS_STATVFS_H
+      CFLAGS += -DHAVE_SYS_STAT_H -DHAVE_SYS_TIME_H -DHAVE_SYS_TYPES_H
+      CFLAGS += -DHAVE_SYS_UIO_H -DHAVE_UNISTD_H -DHAVE_UTIME_H
+      CFLAGS += -DHAVE_SIGNAL_H -DHAVE_SYS_UTSNAME_H -DSTDC_HEADERS
+ifeq ($(findstring Darwin,$(OS)),)
+ifeq ($(findstring Win32,$(OS)),)
+      CFLAGS += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+endif
+endif
+ifneq ($(findstring Darwin,$(OS)),)
+      CFLAGS += -DHAVE_SOCKADDR_LEN -DHAVE_SYS_FILIO_H
+endif
+ifneq ($(findstring Linux,$(OS)),)
+      CFLAGS += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
+      CFLAGS += -DHAVE_SYS_VFS_H -DHAVE_SYS_SYSMACROS_H -DHAVE_SO_BINDTODEVICE
+endif
+      OBJ += \
+         deps/libnfs/lib/init.o \
+         deps/libnfs/lib/krb5-wrapper.o \
+         deps/libnfs/lib/libnfs.o \
+         deps/libnfs/lib/libnfs-sync.o \
+         deps/libnfs/lib/libnfs-zdr.o \
+         deps/libnfs/lib/multithreading.o \
+         deps/libnfs/lib/nfs_v3.o \
+         deps/libnfs/lib/nfs_v4.o \
+         deps/libnfs/lib/pdu.o \
+         deps/libnfs/lib/socket.o \
+         deps/libnfs/mount/mount.o \
+         deps/libnfs/mount/libnfs-raw-mount.o \
+         deps/libnfs/nfs/nfs.o \
+         deps/libnfs/nfs/nfsacl.o \
+         deps/libnfs/nfs/libnfs-raw-nfs.o \
+         deps/libnfs/nfs4/nfs4.o \
+         deps/libnfs/nfs4/libnfs-raw-nfs4.o \
+         deps/libnfs/nlm/nlm.o \
+         deps/libnfs/nlm/libnfs-raw-nlm.o \
+         deps/libnfs/nsm/nsm.o \
+         deps/libnfs/nsm/libnfs-raw-nsm.o \
+         deps/libnfs/portmap/portmap.o \
+         deps/libnfs/portmap/libnfs-raw-portmap.o \
+         deps/libnfs/rquota/rquota.o \
+         deps/libnfs/rquota/libnfs-raw-rquota.o
+   endif
+
+   OBJ += $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_nfs.o
+endif
+
 #####################################
 ### Android Play Feature Delivery ###
 ### (Play Store build core        ###

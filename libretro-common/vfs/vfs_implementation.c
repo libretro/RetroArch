@@ -220,6 +220,10 @@
 #include "vfs_implementation_smb.h"
 #endif
 
+#ifdef HAVE_NFSCLIENT
+#include "vfs_implementation_nfs.h"
+#endif
+
 #if (defined(_POSIX_C_SOURCE) && (_POSIX_C_SOURCE - 0) >= 200112) || (defined(__POSIX_VISIBLE) && __POSIX_VISIBLE >= 200112) || (defined(_POSIX_VERSION) && _POSIX_VERSION >= 200112) || __USE_LARGEFILE || (defined(_FILE_OFFSET_BITS) && _FILE_OFFSET_BITS == 64)
 #ifndef HAVE_64BIT_OFFSETS
 #define HAVE_64BIT_OFFSETS
@@ -243,6 +247,16 @@ static int path_is_smb(const char *p)
 {
    return (p
          && p[0] == 's' && p[1] == 'm' && p[2] == 'b'
+         && p[3] == ':' && p[4] == '/' && p[5] == '/'
+         && p[6] != '\0');
+}
+#endif
+
+#ifdef HAVE_NFSCLIENT
+static int path_is_nfs(const char *p)
+{
+   return (p
+         && p[0] == 'n' && p[1] == 'f' && p[2] == 's'
          && p[3] == ':' && p[4] == '/' && p[5] == '/'
          && p[6] != '\0');
 }
@@ -276,6 +290,10 @@ int64_t retro_vfs_file_seek_internal(
 #ifdef HAVE_SMBCLIENT
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_seek_smb(stream, offset, whence);
+#endif
+#ifdef HAVE_NFSCLIENT
+      if (stream->scheme == VFS_SCHEME_NFS)
+         return retro_vfs_file_seek_nfs(stream, offset, whence);
 #endif
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit fseek */
@@ -389,6 +407,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
    }
 #endif
 
+#ifdef HAVE_NFSCLIENT
+   if (path_is_nfs(path))
+   {
+      stream->scheme    = VFS_SCHEME_NFS;
+   }
+#endif
+
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (path_is_saf(path))
    {
@@ -472,6 +497,13 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #ifdef HAVE_SMBCLIENT
          case VFS_SCHEME_SMB:
             if (!retro_vfs_file_open_smb(stream, path, mode, hints))
+               goto error;
+            break;
+#endif
+
+#ifdef HAVE_NFSCLIENT
+         case VFS_SCHEME_NFS:
+            if (!retro_vfs_file_open_nfs(stream, path, mode, hints))
                goto error;
             break;
 #endif
@@ -692,6 +724,14 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
    }
 #endif
 
+#ifdef HAVE_NFSCLIENT
+   if (stream->scheme == VFS_SCHEME_NFS)
+   {
+      retro_vfs_file_close_nfs(stream);
+      goto nfsend;
+   }
+#endif
+
    if ((stream->hints & RFILE_HINT_UNBUFFERED) == 0)
    {
       if (stream->fp)
@@ -714,6 +754,9 @@ end:
 #endif
 #ifdef HAVE_SMBCLIENT
 smbend:
+#endif
+#ifdef HAVE_NFSCLIENT
+nfsend:
 #endif
 
    if (stream->buf)
@@ -738,6 +781,10 @@ int retro_vfs_file_error_impl(libretro_vfs_implementation_file *stream)
 #ifdef HAVE_SMBCLIENT
     if (stream->scheme == VFS_SCHEME_SMB)
         return retro_vfs_file_error_smb(stream);
+#endif
+#ifdef HAVE_NFSCLIENT
+    if (stream->scheme == VFS_SCHEME_NFS)
+        return retro_vfs_file_error_nfs(stream);
 #endif
    if (!stream->fp)
       return -1;
@@ -803,6 +850,10 @@ int64_t retro_vfs_file_tell_impl(libretro_vfs_implementation_file *stream)
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_tell_smb(stream);
 #endif
+#ifdef HAVE_NFSCLIENT
+      if (stream->scheme == VFS_SCHEME_NFS)
+         return retro_vfs_file_tell_nfs(stream);
+#endif
 #ifdef ATLEAST_VC2005
       /* VC2005 and up have a special 64-bit ftell */
       return _ftelli64(stream->fp);
@@ -846,6 +897,10 @@ int64_t retro_vfs_file_read_impl(libretro_vfs_implementation_file *stream,
 #ifdef HAVE_SMBCLIENT
       if (stream->scheme == VFS_SCHEME_SMB)
          return retro_vfs_file_read_smb(stream, s, len);
+#endif
+#ifdef HAVE_NFSCLIENT
+      if (stream->scheme == VFS_SCHEME_NFS)
+         return retro_vfs_file_read_nfs(stream, s, len);
 #endif
       return fread(s, 1, (size_t)len, stream->fp);
    }
@@ -903,6 +958,10 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
          return ret;
       }
 #endif
+#ifdef HAVE_NFSCLIENT
+      if (stream->scheme == VFS_SCHEME_NFS)
+         return -1; /* read-only */
+#endif
       pos = retro_vfs_file_tell_impl(stream);
       ret = fwrite(s, 1, (size_t)len, stream->fp);
 
@@ -935,6 +994,10 @@ int retro_vfs_file_flush_impl(libretro_vfs_implementation_file *stream)
 #endif
 #ifdef HAVE_SMBCLIENT
    if (stream->scheme == VFS_SCHEME_SMB)
+      return 0;
+#endif
+#ifdef HAVE_NFSCLIENT
+   if (stream->scheme == VFS_SCHEME_NFS)
       return 0;
 #endif
    if (stream->fp && fflush(stream->fp) == 0)
@@ -1092,6 +1155,11 @@ int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 #ifdef HAVE_SMBCLIENT
    if (path_is_smb(path))
       return retro_vfs_stat_smb(path, size);
+#endif
+
+#ifdef HAVE_NFSCLIENT
+   if (path_is_nfs(path))
+      return retro_vfs_stat_nfs(path, size);
 #endif
 
 #if defined(ANDROID) && defined(HAVE_SAF)
@@ -1397,6 +1465,10 @@ struct libretro_vfs_implementation_dir
    smb_dir_handle* smb_handle;
    char smb_path[PATH_MAX_LENGTH];
 #endif
+#ifdef HAVE_NFSCLIENT
+   nfs_dir_handle* nfs_handle;
+   char nfs_path[PATH_MAX_LENGTH];
+#endif
 };
 
 static bool dirent_check_err(libretro_vfs_implementation_dir *rdir)
@@ -1454,6 +1526,22 @@ libretro_vfs_implementation_dir *retro_vfs_opendir_impl(
       }
       rdir->smb_handle = dh;
       rdir->smb_path[0] = '\0';
+      return rdir;
+   }
+#endif
+
+#ifdef HAVE_NFSCLIENT
+   if (path_is_nfs(name))
+   {
+      nfs_dir_handle *dh = retro_vfs_opendir_nfs(name, include_hidden);
+      if (!dh || !dh->dir)
+      {
+         free(rdir->orig_path);
+         free(rdir);
+         return NULL;
+      }
+      rdir->nfs_handle = dh;
+      rdir->nfs_path[0] = '\0';
       return rdir;
    }
 #endif
@@ -1546,6 +1634,18 @@ bool retro_vfs_readdir_impl(libretro_vfs_implementation_dir *rdir)
    if (path_is_smb(rdir->orig_path))
       return false;
 #endif
+#ifdef HAVE_NFSCLIENT
+   if (rdir->nfs_handle && rdir->nfs_handle->dir)
+   {
+      struct nfs_dirent *de = retro_vfs_readdir_nfs(rdir->nfs_handle);
+      if (!de)
+         return false;
+      strlcpy(rdir->nfs_path, de->name, sizeof(rdir->nfs_path));
+      return true;
+   }
+   if (path_is_nfs(rdir->orig_path))
+      return false;
+#endif
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
       return retro_vfs_readdir_saf(rdir->saf_directory);
@@ -1577,6 +1677,10 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
 #ifdef HAVE_SMBCLIENT
    if (rdir->smb_handle && rdir->smb_handle->dir)
       return rdir->smb_path;
+#endif
+#ifdef HAVE_NFSCLIENT
+   if (rdir->nfs_handle && rdir->nfs_handle->dir)
+      return rdir->nfs_path;
 #endif
 #if defined(ANDROID) && defined(HAVE_SAF)
    if (rdir->saf_directory != NULL)
@@ -1621,6 +1725,23 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 
       fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
       st = retro_vfs_stat_smb(full, &sz);
+
+      return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+   }
+#endif
+#ifdef HAVE_NFSCLIENT
+   if (rdir->nfs_handle && rdir->nfs_handle->dir)
+   {
+      char full[PATH_MAX_LENGTH];
+      const char *name = retro_vfs_dirent_get_name_impl(rdir);
+      int64_t sz = 0;
+      int st = 0;
+
+      if (!name)
+         return false;
+
+      fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
+      st = retro_vfs_stat_nfs(full, &sz);
 
       return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
    }
@@ -1672,6 +1793,14 @@ int retro_vfs_closedir_impl(libretro_vfs_implementation_dir *rdir)
    {
       retro_vfs_closedir_smb(rdir->smb_handle);
       rdir->smb_handle = NULL;
+   }
+#endif
+
+#ifdef HAVE_NFSCLIENT
+   if (rdir->nfs_handle && rdir->nfs_handle->dir)
+   {
+      retro_vfs_closedir_nfs(rdir->nfs_handle);
+      rdir->nfs_handle = NULL;
    }
 #endif
 

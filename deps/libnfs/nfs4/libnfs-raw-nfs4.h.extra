@@ -1,0 +1,49 @@
+#include <nfsc/libnfs.h>
+
+#if defined(WIN32) && defined(libnfs_EXPORTS)
+#define EXTERN __declspec( dllexport )
+#else
+#ifndef EXTERN
+#define EXTERN
+#endif
+#endif
+
+/*
+ * NFSv4 ACL
+ */
+/*
+ * Async nfs4 get acl
+ * Function returns
+ *  0 : The command was queued successfully. The callback will be invoked once
+ *      the command completes.
+ * <0 : An error occured when trying to queue the command.
+ *      The callback will not be invoked.
+ *
+ * When the callback is invoked, status indicates the result:
+ *      0 : Success.
+ *          data is fattr4_acl *
+ * -errno : An error occured.
+ *          data is the error string.
+ */
+EXTERN int nfs4_getacl_async(struct nfs_context *nfs, struct nfsfh *nfsfh,
+                             nfs_cb cb, void *private_data);
+
+/*
+ * Sync nfs4 get acl
+ * Function returns
+ *      0 : The operation was successful.
+ * -errno : The command failed.
+ *
+ * If the command was successful, the returned data in nfs4acl must be freed
+ * by calling nfs4_acl_free()
+ */
+EXTERN int nfs4_getacl(struct nfs_context *nfs, struct nfsfh *nfsfh,
+                       fattr4_acl *nfs4acl);
+
+EXTERN void nfs4_acl_free(fattr4_acl *nfs4acl);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* !_NFS4_H_RPCGEN */

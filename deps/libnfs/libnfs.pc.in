@@ -1,0 +1,15 @@
+# libnfs pkg-config file
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libnfs
+Description: libnfs is a client library for accessing NFS shares over a network.
+Version: @VERSION@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lnfs  @tls_library@
+Libs.private: @LIBS_PRIVATE@
+Cflags: -I${includedir}

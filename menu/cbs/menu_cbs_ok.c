@@ -426,6 +426,10 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
       case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST;
 #endif
+#ifdef HAVE_NFSCLIENT
+      case ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST;
+#endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_ACCESSIBILITY_SETTINGS_LIST;
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
@@ -1810,6 +1814,9 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_AI_SERVICE_SETTINGS_LIST:
 #ifdef HAVE_SMBCLIENT
       case ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST:
+#endif
+#ifdef HAVE_NFSCLIENT
+      case ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST:
 #endif
       case ACTION_OK_DL_ACCESSIBILITY_SETTINGS_LIST:
       case ACTION_OK_DL_POWER_MANAGEMENT_SETTINGS_LIST:
@@ -6893,6 +6900,9 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_audio_mixer_settings_list, ACTION_O
 #ifdef HAVE_SMBCLIENT
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_smb_client_settings_list, ACTION_OK_DL_SMB_CLIENT_SETTINGS_LIST)
 #endif
+#ifdef HAVE_NFSCLIENT
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_nfs_client_settings_list, ACTION_OK_DL_NFS_CLIENT_SETTINGS_LIST)
+#endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_user_binds_list, ACTION_OK_DL_USER_BINDS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_accounts_cheevos_list, ACTION_OK_DL_ACCOUNTS_CHEEVOS_LIST)
 #ifdef HAVE_LAKKA
@@ -9307,6 +9317,95 @@ static int action_ok_smb_browse(const char *path,
 }
 #endif
 
+#ifdef HAVE_NFSCLIENT
+static int action_ok_nfs_browse(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t *settings = config_get_ptr();
+   char nfs_path[PATH_MAX_LENGTH];
+   char *ptr       = nfs_path;
+   size_t remaining = sizeof(nfs_path);
+   size_t len;
+
+   if (!settings->bools.nfs_client_enable)
+   {
+      runloop_msg_queue_push(
+            "NFS is not enabled. Enable it in Network Settings.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
+      return -1;
+   }
+
+   if (!*settings->arrays.nfs_client_server_address)
+   {
+      runloop_msg_queue_push(
+            "NFS server address not configured.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR);
+      return -1;
+   }
+
+   if (!*settings->arrays.nfs_client_export)
+   {
+      runloop_msg_queue_push(
+            "NFS export path not configured.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR);
+      return -1;
+   }
+
+   /* Build base NFS path: nfs://<server> */
+   len = snprintf(ptr, remaining, "nfs://%s",
+         settings->arrays.nfs_client_server_address);
+   if (len >= remaining)
+      len = remaining - 1;
+   ptr       += len;
+   remaining -= len;
+
+   /* Append export path if set */
+   if (remaining > 1 && *settings->arrays.nfs_client_export)
+   {
+      if (settings->arrays.nfs_client_export[0] != '/')
+      {
+         *ptr++ = '/';
+         remaining--;
+      }
+      len = strlcpy(ptr, settings->arrays.nfs_client_export, remaining);
+      if (len >= remaining)
+         len = remaining - 1;
+      ptr       += len;
+      remaining -= len;
+   }
+
+   /* Append /<subdir> if set */
+   if (remaining > 1 && *settings->arrays.nfs_client_subdir)
+   {
+      if (settings->arrays.nfs_client_subdir[0] != '/')
+      {
+         *ptr++ = '/';
+         remaining--;
+      }
+      len = strlcpy(ptr, settings->arrays.nfs_client_subdir, remaining);
+      if (len >= remaining)
+         len = remaining - 1;
+      ptr       += len;
+      remaining -= len;
+   }
+
+   return generic_action_ok_displaylist_push(
+      nfs_path,
+      nfs_path,
+      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NFS_SHARE),
+      FILE_TYPE_DIRECTORY,
+      idx,
+      entry_idx,
+      ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+}
+#endif
+
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -9507,6 +9606,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_SMBCLIENT
          {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS,                 action_ok_push_smb_client_settings_list},
          {MENU_ENUM_LABEL_SMB_CLIENT_BROWSE,                   action_ok_smb_browse},
+#endif
+#ifdef HAVE_NFSCLIENT
+         {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,                 action_ok_push_nfs_client_settings_list},
+         {MENU_ENUM_LABEL_NFS_CLIENT_BROWSE,                   action_ok_nfs_browse},
 #endif
          {MENU_ENUM_LABEL_CORE_DELETE,                         action_ok_core_delete},
          {MENU_ENUM_LABEL_CORE_CREATE_BACKUP,                  action_ok_core_create_backup},

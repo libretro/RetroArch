@@ -1,0 +1,39 @@
+Libnfs components fall under two separate licences
+
+
+The library sources and include directories
+===========================================
+The nfs client library itself, i.e. the lib and include directories,
+is licenced under GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+The protocol definition, .x, files
+==================================
+These are based on old RFCs and studying how wireshark dissects various packets.
+These are distributed under the simplified BSD licence.
+
+The files generated from the .x files
+=====================================
+The files that are generated from the .x sources,
+i.e. */libnfs-raw-<protocol>.[ch]
+can be considered to be distributed under the simplified BSD licence.
+
+These files are only provided as a convenience, so that you do not need to
+install and run rpcgen on the *.x files locally.
+If you disagree with the simplified BSD licence I provide them under
+then just delete them and then generate identical copies of these files yourself
+using "make compile_rpc" in each protocol subdirectory.
+
+Then you can pick whatever licence you want on those files.
+
+The examples directory
+================================
+The utility and example applications using this library, i.e. the
+examples directory, are licenced under the GNU General Public License
+as published by the Free Software Foundation; either version 3 of the
+License, or (at your option) any later version.
+
+
+To avoid any confusion, every source file contains a licence boilerplate.
+

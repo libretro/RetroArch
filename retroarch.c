@@ -78,6 +78,9 @@
 #ifdef HAVE_SMBCLIENT
 #include "libretro-common/vfs/vfs_implementation_smb.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "libretro-common/vfs/vfs_implementation_nfs.h"
+#endif
 
 #include <features/features_cpu.h>
 
@@ -399,6 +402,23 @@ void retroarch_smb_init(void)
    smb_global_cfg.subdir = settings->arrays.smb_client_subdir;
 
    smb_init_cfg(&smb_global_cfg);
+}
+#endif
+
+#ifdef HAVE_NFSCLIENT
+static struct nfs_settings nfs_global_cfg;
+
+void retroarch_nfs_init(void)
+{
+   settings_t *settings = config_get_ptr();
+
+   nfs_global_cfg.server_address = settings->arrays.nfs_client_server_address;
+   nfs_global_cfg.export_path = settings->arrays.nfs_client_export;
+   nfs_global_cfg.subdir = settings->arrays.nfs_client_subdir;
+   nfs_global_cfg.timeout = settings->uints.nfs_client_timeout;
+   nfs_global_cfg.num_contexts = settings->uints.nfs_client_num_contexts;
+
+   nfs_init_cfg(&nfs_global_cfg);
 }
 #endif
 
@@ -6498,6 +6518,10 @@ int rarch_main(int argc, char *argv[], void *data)
    retroarch_smb_init();
 #endif
 
+#ifdef HAVE_NFSCLIENT
+   retroarch_nfs_init();
+#endif
+
    ui_companion_driver_init_first(
 #ifdef HAVE_QT
          settings->bools.desktop_menu_enable,
@@ -9356,6 +9380,10 @@ bool retroarch_main_quit(void)
 
 #ifdef HAVE_SMBCLIENT
    smb_shutdown();
+#endif
+
+#ifdef HAVE_NFSCLIENT
+   nfs_shutdown();
 #endif
 
    return true;

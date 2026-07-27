@@ -1,0 +1,95 @@
+Multithreading
+==============
+Libnfs supports multithreading using the pthread API on linux/unix and using
+the native API for Windows.
+By default libnfs is beuilt without pthread support to avoid the overhead
+for locking, but pthread support, and thus support for multithreading, can be
+configured using --enable-pthread
+
+$ ./configure --prefix=/usr --enable-examples --enable-pthread
+
+or, for cmake
+
+$ cmake -DENABLE_MULTITHREADING=yes ..
+
+The process to use multithreading from your application is:
+1,  nfs_init_context()     to create an NFS context. This context defaults to
+                           not (yet) be multithreading aware.
+2, nfs_mount(...)          to mount the NFS share.
+
+IF the share mounted successfully we can now turn on multithreading for all I/O
+to the share:
+3,  nfs_mt_service_thread_start(nfs)
+                           this starts a dedicated thread to manage all socket
+			   I/O and queue management and also flags the context
+			   to be multithreading ready.
+			   If this returns successfully you can now start using
+			   this context from separate threads in your
+			   application. But remember, only the SYNC API
+			   is supported from this point.
+...   use the nfs context from all your threads ...
+
+Once the application is finished and ready to terminate, first close all other
+threads, or make sure that they will NOT perform any further I/O to the nfs
+context. Wait until all in-flight I/O has stopped.
+
+Then call nfs_mt_service_thread_stop(nfs) to terminate the service thread and
+disable the multithreading support.
+
+
+See examples/nfs-pthreads-*.c for examples on how to use multithreading.
+
+Porting
+-------
+The multithreading support is abstracted out into two separate files to make
+it easier to add other threading APIs instead of pthreads.
+include/libnfs-multithreading.h and lib/multithreading.c
+
+Multithreading requires two separate defines to be present.
+The global one is HAVE_MULTITHREADING which will activate general
+multithreading support in the library and the second one that enables a specific
+implementation of threading.
+HAVE_PTHREAD is defined when you want to use libpthread.
+For other threading APIs you will need a new define HAVE_OTHER_API
+to select it.
+
+include/libnfs-multithreading.h
+-------------------------------
+This file consists of two parts.
+The first part is creating typedefs for a tread, a mutex and a semaphore.
+When porting to a different threads API, add a new section that adds suitable
+typedefs for thread/mutex/semaphore.
+
+The second part is the wrapper API for the libnfs threading abstractions and
+should not need to be changed.
+
+lib/multithreading.c
+--------------------
+This file contains the actual abstraction used for multithreading.
+When porting to a different threads API you will need to create replacement
+functions for :
+
+nfs_mt_service_thread() : This is the service thread that is responsible
+                          for performing all socket I/O.
+nfs_mt_service_thread_start()
+nfs_mt_service_thread_stop()
+                        : Functions to start/stop the service thread.
+
+nfs_mt_mutex_init()
+nfs_mt_mutex_destroy()
+nfs_mt_mutex_lock()
+nfs_mt_mutex_unlock()   : Wrappers that implement the 4 basic mutex calls.
+
+nfs_mt_sem_init()
+nfs_mt_sem_destroy()
+nfs_mt_sem_post()
+nfs_mt_sem_wait()       : Wrappers that implement the 4 basic semaphore calls.
+
+nfs_mt_get_tid()        : Get an identifier for the current thread.        
+
+
+TODO
+----
+* Optimization: have the service thread just read the PDU from the socket and
+add it to a new queue. Then have a pool of threads to read from this queue and
+unmarshall the pdu's in concurrently.

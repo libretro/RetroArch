@@ -385,6 +385,10 @@ typedef struct settings
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
 #endif
+#ifdef HAVE_NFSCLIENT
+      unsigned nfs_client_num_contexts;
+      unsigned nfs_client_timeout;
+#endif
       unsigned input_sensor_orientation;
    } uints;
 
@@ -809,6 +813,9 @@ typedef struct settings
 #ifdef HAVE_SMBCLIENT
       bool settings_show_smb_client;
 #endif
+#ifdef HAVE_NFSCLIENT
+      bool settings_show_nfs_client;
+#endif
       bool quick_menu_show_resume_content;
       bool quick_menu_show_restart_content;
       bool quick_menu_show_close_content;
@@ -1073,6 +1080,9 @@ typedef struct settings
 #ifdef HAVE_SMBCLIENT
       bool smb_client_enable;
 #endif
+#ifdef HAVE_NFSCLIENT
+      bool nfs_client_enable;
+#endif
    } bools;
 
    struct
@@ -1157,6 +1167,11 @@ typedef struct settings
       char smb_client_username[128];
       char smb_client_password[128];
       char smb_client_workgroup[64];
+#endif
+#ifdef HAVE_NFSCLIENT
+      char nfs_client_server_address[256];
+      char nfs_client_export[PATH_MAX_LENGTH];
+      char nfs_client_subdir[PATH_MAX_LENGTH];
 #endif
 } arrays;
 

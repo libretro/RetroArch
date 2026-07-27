@@ -296,6 +296,10 @@ GENERIC_DEFERRED_PUSH(deferred_push_core_game_ai_options,             DISPLAYLIS
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_settings_list,       DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_smb_client_options,             DISPLAYLIST_OPTIONS_SMB_CLIENT)
 #endif
+#ifdef HAVE_NFSCLIENT
+GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_settings_list,       DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_nfs_client_options,             DISPLAYLIST_OPTIONS_NFS_CLIENT)
+#endif
 
 static int general_push(menu_displaylist_info_t *info,
       unsigned id, enum menu_displaylist_ctl_state state)
@@ -809,6 +813,10 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST, deferred_push_smb_client_settings_list},
       {MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS, deferred_push_smb_client_options},
 #endif
+#ifdef HAVE_NFSCLIENT
+      {MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST, deferred_push_nfs_client_settings_list},
+      {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS, deferred_push_nfs_client_options},
+#endif
    };
 
    /* Fast path: try O(1) enum_idx switch first before O(n) string scan */
@@ -931,6 +939,12 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_SIDELOAD_CORE_LIST, deferred_push_file_browser_select_sideload_core },
          { MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_LIST, deferred_push_add_to_playlist_list },
          { MENU_ENUM_LABEL_DEFERRED_ADD_TO_PLAYLIST_QUICKMENU, deferred_push_add_to_playlist_quickmenu },
+#ifdef HAVE_SMBCLIENT
+         { MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST, deferred_push_smb_client_settings_list },
+#endif
+#ifdef HAVE_NFSCLIENT
+         { MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST, deferred_push_nfs_client_settings_list },
+#endif
       };
 
       {
@@ -1019,6 +1033,11 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
 #ifdef HAVE_SMBCLIENT
          case MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS:
             BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_smb_client_options);
+            break;
+#endif
+#ifdef HAVE_NFSCLIENT
+         case MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS:
+            BIND_ACTION_DEFERRED_PUSH(cbs, deferred_push_nfs_client_options);
             break;
 #endif
          default:

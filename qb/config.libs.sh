@@ -914,3 +914,15 @@ elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto"
     echo "SMB support - building bundled libsmb2"
     add_dirs INCLUDE ./deps/libsmb2/include
 fi
+
+# First try system libnfs
+check_pkgconf NFSCLIENT libnfs 0.0
+check_enabled NETWORKING NFSCLIENT libnfs 'NFS client support is' false
+
+if [ "$HAVE_NFSCLIENT" = "yes" ]; then
+    echo "NFS support enabled (system libnfs)"
+elif [ "$HAVE_BUILTINNFSCLIENT" = "yes" ] || [ "$HAVE_BUILTINNFSCLIENT" = "auto" ]; then
+    HAVE_BUILTINNFSCLIENT=yes
+    echo "NFS support - building bundled libnfs"
+    add_dirs INCLUDE ./deps/libnfs/include
+fi

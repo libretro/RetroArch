@@ -7307,20 +7307,22 @@ static void ozone_draw_osk(
 
    if (!draw_placeholder && input_st->keyboard_line.buffer)
    {
+      char cursor_src[2048];
       char cursor_message[2048];
       size_t ptr = input_st->keyboard_line.ptr;
 
       if (ptr > input_st->keyboard_line.size)
          ptr = input_st->keyboard_line.size;
-      if (ptr >= sizeof(cursor_message))
-         ptr = sizeof(cursor_message) - 1;
+      if (ptr >= sizeof(cursor_src))
+         ptr = sizeof(cursor_src) - 1;
 
-      memcpy(cursor_message, input_st->keyboard_line.buffer, ptr);
-      cursor_message[ptr] = '\0';
+      memcpy(cursor_src, input_st->keyboard_line.buffer, ptr);
+      cursor_src[ptr] = '\0';
+      /* word_wrap src/dst must not overlap (fortified strlcpy on Darwin). */
       (ozone->word_wrap)(cursor_message,
             sizeof(cursor_message),
-            cursor_message,
-            strlen(cursor_message),
+            cursor_src,
+            strlen(cursor_src),
             (video_width - (margin * 2) - (padding * 2)) / ozone->fonts.entries_label.glyph_width,
             ozone->fonts.entries_label.wideglyph_width,
             0);

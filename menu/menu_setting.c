@@ -397,6 +397,9 @@ enum settings_list_type
 #ifdef HAVE_SMBCLIENT
    SETTINGS_LIST_SMBCLIENT,
 #endif
+#ifdef HAVE_NFSCLIENT
+   SETTINGS_LIST_NFSCLIENT,
+#endif
    SETTINGS_LIST_MANUAL_CONTENT_SCAN
 };
 
@@ -8033,6 +8036,9 @@ static const enum settings_list_type settings_list_build_order[] =
 #ifdef HAVE_SMBCLIENT
       SETTINGS_LIST_SMBCLIENT,
 #endif
+#ifdef HAVE_NFSCLIENT
+      SETTINGS_LIST_NFSCLIENT,
+#endif
       SETTINGS_LIST_MANUAL_CONTENT_SCAN
    };
 
@@ -12536,6 +12542,13 @@ static const setting_desc_t ui_desc_9[] = {
 };
 #endif
 
+#ifdef HAVE_NFSCLIENT
+static const setting_desc_t ui_desc_nfs_show[] = {
+/* GENERATED: rows come from settings_def_settings_show_nfs.h in order. */
+#include "../settings/settings_def_settings_show_nfs.h"
+};
+#endif
+
 static const setting_desc_t ui_desc_10[] = {
 /* GENERATED: rows come from settings_def_menu_quick_views.h in order. */
 #include "../settings/settings_def_menu_quick_views.h"
@@ -12631,7 +12644,7 @@ static const setting_desc_t core_updater_desc_2[] = {
 #endif
 #endif
 
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 static const setting_desc_t np_desc_0[] = {
 /* GENERATED: rows come from settings_def_netplay_action.h in order. */
 #include "../settings/settings_def_netplay_action.h"
@@ -12823,6 +12836,22 @@ static const setting_desc_t smbclient_desc_0[] = {
 static const setting_desc_t smbclient_desc_1[] = {
 /* GENERATED: rows come from settings_def_smb_client_auth.h in order. */
 #include "../settings/settings_def_smb_client_auth.h"
+#include "../settings/settings_def_rows_end.h"
+};
+#endif
+
+#ifdef HAVE_NFSCLIENT
+#include "../settings/settings_def_menu_rows_begin.h"
+static const setting_desc_t nfsclient_desc_0[] = {
+/* GENERATED: rows come from settings_def_nfs_client.h in order. */
+#include "../settings/settings_def_nfs_client.h"
+};
+#endif
+
+#ifdef HAVE_NFSCLIENT
+static const setting_desc_t nfsclient_desc_1[] = {
+/* GENERATED: rows come from settings_def_nfs_client_opts.h in order. */
+#include "../settings/settings_def_nfs_client_opts.h"
 #include "../settings/settings_def_rows_end.h"
 };
 #endif
@@ -15855,6 +15884,10 @@ static void settings_build_user_interface(
                      ADD_DESC(ui_desc_9);
 #endif
 
+#ifdef HAVE_NFSCLIENT
+                     ADD_DESC(ui_desc_nfs_show);
+#endif
+
                      ADD_DESC(ui_desc_10);
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
@@ -16233,8 +16266,17 @@ static void settings_build_netplay(
 
       parent_group = msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS);
 
-#ifdef HAVE_SMBCLIENT
-      if (settings->bools.settings_show_smb_client)
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+      if (
+#if defined(HAVE_SMBCLIENT)
+            settings->bools.settings_show_smb_client
+#else
+            false
+#endif
+#if defined(HAVE_NFSCLIENT)
+            || settings->bools.settings_show_nfs_client
+#endif
+         )
       {
             ADD_DESC(np_desc_0);
       }
@@ -17300,6 +17342,72 @@ static void settings_build_smbclient(
 }
 #endif
 
+#ifdef HAVE_NFSCLIENT
+static void settings_build_nfsclient(
+      settings_t *settings, global_t *global,
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      const char *parent_group)
+{
+   rarch_setting_group_info_t group_info;
+   rarch_setting_group_info_t subgroup_info;
+   group_info.name    = NULL;
+   subgroup_info.name = NULL;
+   (void)settings; (void)global; (void)group_info; (void)subgroup_info;
+   {
+      GROUP_STATE(MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS, MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS);
+
+            ADD_DESC(nfsclient_desc_0);
+
+      /* Descriptor holdout: non-general read/write handler. */
+      CONFIG_STRING(
+         list, list_info,
+         settings->arrays.nfs_client_server_address,
+         sizeof(settings->arrays.nfs_client_server_address),
+         MENU_ENUM_LABEL_NFS_CLIENT_SERVER,
+         MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+         "",
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         NULL,
+         NULL);
+      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+      CONFIG_STRING(
+         list, list_info,
+         settings->arrays.nfs_client_export,
+         sizeof(settings->arrays.nfs_client_export),
+         MENU_ENUM_LABEL_NFS_CLIENT_EXPORT,
+         MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+         "",
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         NULL,
+         NULL);
+      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+      CONFIG_STRING(
+         list, list_info,
+         settings->arrays.nfs_client_subdir,
+         sizeof(settings->arrays.nfs_client_subdir),
+         MENU_ENUM_LABEL_NFS_CLIENT_SUBDIR,
+         MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+         "",
+         &group_info,
+         &subgroup_info,
+         parent_group,
+         NULL,
+         NULL);
+      SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+
+            ADD_DESC(nfsclient_desc_1);
+
+      GROUP_END();
+   }
+}
+#endif
+
 typedef struct settings_build_entry
 {
    enum settings_list_type type;
@@ -17465,6 +17573,9 @@ static const settings_build_entry_t settings_build_registry[] = {
 #endif
 #ifdef HAVE_SMBCLIENT
    { SETTINGS_LIST_SMBCLIENT, settings_build_smbclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
+#endif
+#ifdef HAVE_NFSCLIENT
+   { SETTINGS_LIST_NFSCLIENT, settings_build_nfsclient, NULL, 0, MSG_UNKNOWN, MSG_UNKNOWN, MSG_UNKNOWN },
 #endif
 };
 
@@ -18027,6 +18138,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #ifdef HAVE_SMBCLIENT
    { ui_desc_9, (uint16_t)ARRAY_SIZE(ui_desc_9) },
 #endif
+#ifdef HAVE_NFSCLIENT
+   { ui_desc_nfs_show, (uint16_t)ARRAY_SIZE(ui_desc_nfs_show) },
+#endif
    { ui_desc_10, (uint16_t)ARRAY_SIZE(ui_desc_10) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { ui_desc_11, (uint16_t)ARRAY_SIZE(ui_desc_11) },
@@ -18062,7 +18176,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { core_updater_desc_2, (uint16_t)ARRAY_SIZE(core_updater_desc_2) },
 #endif
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    { np_desc_0, (uint16_t)ARRAY_SIZE(np_desc_0) },
 #endif
 #if defined(HAVE_NETWORKING)
@@ -18134,6 +18248,12 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifdef HAVE_SMBCLIENT
    { smbclient_desc_1, (uint16_t)ARRAY_SIZE(smbclient_desc_1) },
+#endif
+#ifdef HAVE_NFSCLIENT
+   { nfsclient_desc_0, (uint16_t)ARRAY_SIZE(nfsclient_desc_0) },
+#endif
+#ifdef HAVE_NFSCLIENT
+   { nfsclient_desc_1, (uint16_t)ARRAY_SIZE(nfsclient_desc_1) },
 #endif
 };
 

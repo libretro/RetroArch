@@ -915,6 +915,7 @@
 #define MENU_ENUM_LABEL_MIXER_ACTION_VOLUME_STR "mixer_action_volume"
 #define MENU_ENUM_LABEL_CORE_GAME_AI_OPTIONS_STR "core_game_ai_options"
 #define MENU_ENUM_LABEL_DEFERRED_SMB_CLIENT_SETTINGS_LIST_STR "deferred_smb_client_settings_list"
+#define MENU_ENUM_LABEL_SMB_CLIENT_SETTINGS_STR "smb_client_settings"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SERVER_STR "smb_client_server"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SHARE_STR "smb_client_share"
 #define MENU_ENUM_LABEL_SMB_CLIENT_SUBDIR_STR "smb_client_subdir"
@@ -922,5 +923,11 @@
 #define MENU_ENUM_LABEL_SMB_CLIENT_PASSWORD_STR "smb_client_password"
 #define MENU_ENUM_LABEL_SMB_CLIENT_WORKGROUP_STR "smb_client_workgroup"
 #define MENU_ENUM_LABEL_SMB_CLIENT_BROWSE_STR "smb_client_browse"
+#define MENU_ENUM_LABEL_DEFERRED_NFS_CLIENT_SETTINGS_LIST_STR "deferred_nfs_client_settings_list"
+#define MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR "nfs_client_settings"
+#define MENU_ENUM_LABEL_NFS_CLIENT_SERVER_STR "nfs_client_server"
+#define MENU_ENUM_LABEL_NFS_CLIENT_EXPORT_STR "nfs_client_export"
+#define MENU_ENUM_LABEL_NFS_CLIENT_SUBDIR_STR "nfs_client_subdir"
+#define MENU_ENUM_LABEL_NFS_CLIENT_BROWSE_STR "nfs_client_browse"
 
 #endif /* MSG_HASH_LBL_STR_H__ */
