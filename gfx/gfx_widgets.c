@@ -228,7 +228,54 @@ void gfx_widgets_msg_queue_push(
       if (task && task->frontend_userdata)
       {
          msg_widget            = (disp_widget_msg_t*)task->frontend_userdata;
-         /* msg_widgets can be passed between tasks */
+         /* msg_widgets can be passed between tasks: a download task
+          * hands its widget to the decompress task it spawns (see
+          * task_push_decompress()'s frontend_userdata argument), so the
+          * widget we just picked up may have been keyed to a different,
+          * now-retired task.
+          *
+          * The per-task lifecycle flags are sticky - they are only ever
+          * OR'd in, never cleared - so without re-keying here they
+          * describe the *previous* owner for the rest of the widget's
+          * life. That is not cosmetic:
+          *
+          *   - gfx_widgets_iterate() arms the TASK_FINISHED_DURATION
+          *     expiration timer for any widget flagged FINISHED or
+          *     CANCELLED, so the widget starts dying immediately even
+          *     though the task now driving it has barely started.
+          *
+          *   - gfx_widgets_msg_queue_free() deliberately skips the
+          *     task_ptr->frontend_userdata unlink when FINISHED is set,
+          *     because for the task that actually finished, task_ptr is
+          *     dangling by then. Applied to an inherited flag it skips
+          *     the unlink for a task that is still running, leaving
+          *     frontend_userdata pointing at the freed widget.
+          *
+          * The task then keeps pushing progress every frame and
+          * task_queue_push_progress() walks straight back into the freed
+          * block, where msg_new is whatever the allocator has since put
+          * there - a use-after-free read in string_is_equal() below.
+          *
+          * task->ident is unique per task (task_count++ at allocation)
+          * and never reused, so a mismatch is an exact test for
+          * "different owner". Clear the inherited state and disarm any
+          * expiration timer armed on the strength of it. EXPIRED is
+          * deliberately left alone: once the FINISHED flag is accurate,
+          * a widget already on its way out unlinks correctly on free. */
+         if (msg_widget->task_ident != task->ident)
+         {
+            if (msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)
+            {
+               uintptr_t _tag     = (uintptr_t)&msg_widget->expiration_timer;
+               gfx_animation_kill_by_tag(&_tag);
+               msg_widget->flags &= ~DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED;
+            }
+
+            msg_widget->flags    &= ~(DISPWIDG_FLAG_TASK_FINISHED
+                                    | DISPWIDG_FLAG_TASK_ERROR
+                                    | DISPWIDG_FLAG_TASK_CANCELLED);
+            msg_widget->task_ident = task->ident;
+         }
          msg_widget->task_ptr  = task;
          msg_widget->flags    |= DISPWIDG_FLAG_TASK;
       }
