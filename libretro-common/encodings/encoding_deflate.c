@@ -37,6 +37,238 @@
 #include <retro_endianness.h>
 #include <encodings/deflate.h>
 
+/* ---------------- adler32 (RFC 1950), shared by both halves --------------
+ *
+ * Both the inflate and the deflate side of this file need adler32 over a
+ * byte range, so the kernel lives here rather than being written twice.
+ *
+ * The textbook loop is
+ *
+ *    for each byte:  a += *buf++;  b += a;
+ *
+ * whose b += a carries a serial dependency across every single byte.  Over
+ * a block of N bytes the same result is
+ *
+ *    a' = a + SUM(x[j])
+ *    b' = b + N*a + SUM((N-j)*x[j])
+ *
+ * two independent reductions with constant weights, which is the form that
+ * vectorises.  Accumulating across blocks rather than per block keeps even
+ * the N*a term out of the loop: with vs1 the running SUM of bytes, vps the
+ * running SUM of vs1 sampled before each block, and vs2 the running SUM of
+ * the per-block weighted sums, after K blocks of 16
+ *
+ *    a' = a + SUM(vs1)
+ *    b' = b + 16*K*a + 16*SUM(vps) + SUM(vs2)
+ *
+ * so the loop body is three vector adds and no cross-iteration scalar work
+ * at all.
+ *
+ * This is written by hand rather than left to the auto-vectoriser, which
+ * cannot be relied on for it: GCC takes the shape in one of the two
+ * adler32 sites in this file and declines the byte-identical other one
+ * ("loop nest containing two or more consecutive inner loops cannot be
+ * vectorized"), and clang declines both at -O2 and -O3.  Doing it
+ * explicitly also buys what the vectoriser will not reach for - psadbw
+ * for the unweighted sum, where the generic form pays an unpack and a
+ * pmaddwd instead.
+ *
+ * RD_ADLER_NMAX is the classic 5552 - the largest run for which b cannot
+ * overflow 32 bits - and every intermediate above stays inside it too.
+ * Worst case is 5552 bytes of 0xff seeded at the largest legal adler
+ * (a = b = 65520), which is 347 blocks of 16:
+ *
+ *    16*SUM(vps)  0xE994_8100   (the binding term)
+ *    16*K*a         363767040
+ *    SUM(vs2)        12033960
+ *    b                  65520
+ *    -------------------------
+ *    total        0xFFFB_C598   of 0xFFFF_FFFF, 277095 to spare
+ *
+ * so do not raise NMAX.  ktest covers exactly this input. */
+
+#define RD_ADLER_MODULUS 65521u
+#define RD_ADLER_NMAX    5552u   /* 347 blocks of 16 */
+
+#if defined(__SSE2__) || (defined(_MSC_VER) && (defined(_M_X64) \
+   || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)))
+#include <emmintrin.h>
+#define RD_ADLER_SIMD 1
+
+static INLINE uint32_t rd_adler_hsum(__m128i v)
+{
+   v = _mm_add_epi32(v, _mm_shuffle_epi32(v, _MM_SHUFFLE(1, 0, 3, 2)));
+   v = _mm_add_epi32(v, _mm_shuffle_epi32(v, _MM_SHUFFLE(2, 3, 0, 1)));
+   return (uint32_t)_mm_cvtsi128_si32(v);
+}
+
+/* Consume `blocks` whole 16-byte blocks. */
+static void rd_adler_blocks(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t blocks)
+{
+   const __m128i zero = _mm_setzero_si128();
+   const __m128i wlo  = _mm_setr_epi16(16, 15, 14, 13, 12, 11, 10, 9);
+   const __m128i whi  = _mm_setr_epi16( 8,  7,  6,  5,  4,  3,  2, 1);
+   __m128i vs1        = zero;
+   __m128i vps        = zero;
+   __m128i vs2        = zero;
+   uint32_t a         = *pa;
+   uint32_t b         = *pb;
+   size_t n           = blocks;
+
+   while (n--)
+   {
+      __m128i v = _mm_loadu_si128((const __m128i*)buf);
+      /* sampled before the update, so vps ends up holding
+       * SUM over blocks i of (SUM of bytes in blocks < i) */
+      vps = _mm_add_epi32(vps, vs1);
+      /* psadbw: two 64-bit sums of 8 bytes each, no unpack needed */
+      vs1 = _mm_add_epi32(vs1, _mm_sad_epu8(v, zero));
+      vs2 = _mm_add_epi32(vs2,
+            _mm_add_epi32(
+               _mm_madd_epi16(_mm_unpacklo_epi8(v, zero), wlo),
+               _mm_madd_epi16(_mm_unpackhi_epi8(v, zero), whi)));
+      buf += 16;
+   }
+
+   *pb = b + (uint32_t)(blocks << 4) * a
+           + (rd_adler_hsum(vps) << 4)
+           +  rd_adler_hsum(vs2);
+   *pa = a + rd_adler_hsum(vs1);
+}
+
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON)
+#include <arm_neon.h>
+#define RD_ADLER_SIMD 1
+
+static INLINE uint32_t rd_adler_hsum(uint32x4_t v)
+{
+   uint32x2_t s = vadd_u32(vget_low_u32(v), vget_high_u32(v));
+   s            = vpadd_u32(s, s);
+   return vget_lane_u32(s, 0);
+}
+
+static void rd_adler_blocks(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t blocks)
+{
+   static const uint8_t w[16] = {
+      16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+   };
+   const uint8x16_t vw = vld1q_u8(w);
+   uint32x4_t vs1      = vdupq_n_u32(0);
+   uint32x4_t vps      = vdupq_n_u32(0);
+   uint32x4_t vs2      = vdupq_n_u32(0);
+   uint32_t a          = *pa;
+   uint32_t b          = *pb;
+   size_t n            = blocks;
+
+   while (n--)
+   {
+      uint8x16_t v = vld1q_u8(buf);
+      uint16x8_t p;
+      vps = vaddq_u32(vps, vs1);
+      vs1 = vpadalq_u16(vs1, vpaddlq_u8(v));
+      /* lane j holds w[j]*x[j] + w[j+8]*x[j+8] <= 6120, so the u16
+       * product vector cannot overflow before it is widened */
+      p   = vmull_u8(vget_low_u8(v),  vget_low_u8(vw));
+      p   = vmlal_u8(p, vget_high_u8(v), vget_high_u8(vw));
+      vs2 = vpadalq_u16(vs2, p);
+      buf += 16;
+   }
+
+   *pb = b + (uint32_t)(blocks << 4) * a
+           + (rd_adler_hsum(vps) << 4)
+           +  rd_adler_hsum(vs2);
+   *pa = a + rd_adler_hsum(vs1);
+}
+
+#else   /* no SIMD: same decomposition, 32 bytes at a time.
+         *
+         * In its own function rather than inline in rd_adler_run: inline,
+         * the group loop and the byte tail read as two consecutive inner
+         * loops, a nest GCC's vectoriser refuses outright, so it would be
+         * emitted scalar on targets whose intrinsics are simply not
+         * covered above.  Correct either way. */
+#define RD_ADLER_BLOCK 32
+
+static void rd_adler_blocks(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t blocks)
+{
+   uint32_t a = *pa;
+   uint32_t b = *pb;
+   while (blocks--)
+   {
+      uint32_t sum  = 0;
+      uint32_t wsum = 0;
+      unsigned j;
+      for (j = 0; j < 32; j++)
+      {
+         sum  += buf[j];
+         wsum += (uint32_t)(32 - j) * buf[j];
+      }
+      b   += 32 * a + wsum;
+      a   += sum;
+      buf += 32;
+   }
+   *pa = a;
+   *pb = b;
+}
+#endif
+
+#ifndef RD_ADLER_BLOCK
+#define RD_ADLER_BLOCK 16
+#endif
+
+/* Fold up to RD_ADLER_NMAX bytes into (a, b) with no reduction inside. */
+static void rd_adler_run(uint32_t *pa, uint32_t *pb,
+      const uint8_t *buf, size_t n)
+{
+   uint32_t a = *pa;
+   uint32_t b = *pb;
+   if (n >= RD_ADLER_BLOCK)
+   {
+      size_t blocks = n / RD_ADLER_BLOCK;
+      size_t got    = blocks * RD_ADLER_BLOCK;
+      rd_adler_blocks(&a, &b, buf, blocks);
+      buf += got;
+      n   -= got;
+   }
+   while (n--)
+   {
+      a += *buf++;
+      b += a;
+   }
+   *pa = a;
+   *pb = b;
+}
+
+static uint32_t rd_adler32_update(uint32_t adler,
+      const uint8_t *buf, size_t len)
+{
+   uint32_t a = adler & 0xffff;
+   uint32_t b = (adler >> 16) & 0xffff;
+   while (len)
+   {
+      size_t n = len > RD_ADLER_NMAX ? RD_ADLER_NMAX : len;
+      len -= n;
+      rd_adler_run(&a, &b, buf, n);
+      buf += n;
+      a %= RD_ADLER_MODULUS;
+      b %= RD_ADLER_MODULUS;
+   }
+   return (b << 16) | a;
+}
+
+/* Test entry point for tools/encodings/adler32_test.c: the kernel above is
+ * static, and driving it only through rinflate/rdeflate would exercise
+ * whatever lengths and alignments a stream happens to produce rather than
+ * the ones that matter (block boundaries, the NMAX bound, the worst-case
+ * seed).  Not declared in any header - the tool declares it itself. */
+uint32_t rd_probe_adler32(uint32_t adler, const uint8_t *buf, size_t len)
+{
+   return rd_adler32_update(adler, buf, len);
+}
+
 /* ===================== inflate (RFC 1951 / RFC 1950) ===================== */
 /* Clean-room RFC 1951 (DEFLATE) / RFC 1950 (zlib) inflate.
  * Non-blocking, resumable: suspends when input is exhausted or output is
@@ -141,59 +373,6 @@ struct rinflate
 
    int            error;
 };
-
-/* --- adler32 (RFC 1950) --- */
-#define ADLER_MOD 65521u
-static uint32_t rinf_adler32_update(uint32_t adler,
-      const uint8_t *buf, size_t len)
-{
-   uint32_t a = adler & 0xffff;
-   uint32_t b = (adler >> 16) & 0xffff;
-   while (len)
-   {
-      /* process in chunks so the sums never overflow before the modulo */
-      size_t n = len > 5552 ? 5552 : len;
-      size_t k = n;
-      len -= n;
-   {
-      /* Thirty-two bytes at a time.  The textbook loop carries a
-       * serial dependency - b += a after every byte - that no
-       * compiler can vectorise.  Over a group of N the same result is
-       *    a' = a + SUM(buf[j])
-       *    b' = b + N*a + SUM((N-j)*buf[j])
-       * two independent reductions with constant weights.  N is 32
-       * rather than 16 because that is what GCC's vectoriser
-       * actually takes: at 16 it declines and unrolls scalar, at 32
-       * it emits punpck/paddd (and the NEON equivalent on ARM).
-       * Verified in the object file, not assumed - and correct
-       * either way, since a compiler that declines still computes
-       * the same sums.  The chunk bound is untouched, so the
-       * overflow argument is unchanged with it. */
-      while (k >= 32)
-      {
-         uint32_t sum = 0, wsum = 0;
-         unsigned j;
-         for (j = 0; j < 32; j++)
-         {
-            sum  += buf[j];
-            wsum += (uint32_t)(32 - j) * buf[j];
-         }
-         b   += 32 * a + wsum;
-         a   += sum;
-         buf += 32;
-         k   -= 32;
-      }
-      while (k--)
-      {
-         a += *buf++;
-         b += a;
-      }
-   }
-      a %= ADLER_MOD;
-      b %= ADLER_MOD;
-   }
-   return (b << 16) | a;
-}
 
 /* --- bit reader helpers (LSB-first) --- */
 /* Ensure at least n bits are available; returns 0 if input ran out. */
@@ -897,7 +1076,7 @@ block_done:
             /* fold any output produced in this call before comparing */
             if (s->out_pos > fold_start)
             {
-               s->adler = rinf_adler32_update(s->adler,
+               s->adler = rd_adler32_update(s->adler,
                      s->out + fold_start, s->out_pos - fold_start);
                fold_start = s->out_pos; /* don't re-fold at the done label */
             }
@@ -925,7 +1104,7 @@ suspend:
 done:
    rinf_window_commit(s);
    if (s->wrapped && s->out_pos > fold_start)
-      s->adler = rinf_adler32_update(s->adler,
+      s->adler = rd_adler32_update(s->adler,
             s->out + fold_start, s->out_pos - fold_start);
    if (read)  *read  = s->in_pos  - in_start;
    if (wrote) *wrote = s->out_pos - out_start;
@@ -933,7 +1112,7 @@ done:
 
 error:
    if (s->wrapped && s->out_pos > fold_start)
-      s->adler = rinf_adler32_update(s->adler,
+      s->adler = rd_adler32_update(s->adler,
             s->out + fold_start, s->out_pos - fold_start);
    if (read)
       *read  = s->in_pos  - in_start;
@@ -1056,57 +1235,6 @@ struct rdeflate
    uint8_t  dyn_rle_extra[288 + 30];
    int      dyn_rle_n;
 };
-
-/* ------- adler32 ------- */
-#define RD_ADLER_MOD 65521u
-static uint32_t rd_adler32(uint32_t adler, const uint8_t *buf, size_t len)
-{
-   uint32_t a = adler & 0xffff;
-   uint32_t b = (adler >> 16) & 0xffff;
-   while (len)
-   {
-      size_t n = len > 5552 ? 5552 : len;
-      size_t k = n;
-      len -= n;
-   {
-      /* Thirty-two bytes at a time.  The textbook loop carries a
-       * serial dependency - b += a after every byte - that no
-       * compiler can vectorise.  Over a group of N the same result is
-       *    a' = a + SUM(buf[j])
-       *    b' = b + N*a + SUM((N-j)*buf[j])
-       * two independent reductions with constant weights.  N is 32
-       * rather than 16 because that is what GCC's vectoriser
-       * actually takes: at 16 it declines and unrolls scalar, at 32
-       * it emits punpck/paddd (and the NEON equivalent on ARM).
-       * Verified in the object file, not assumed - and correct
-       * either way, since a compiler that declines still computes
-       * the same sums.  The chunk bound is untouched, so the
-       * overflow argument is unchanged with it. */
-      while (k >= 32)
-      {
-         uint32_t sum = 0, wsum = 0;
-         unsigned j;
-         for (j = 0; j < 32; j++)
-         {
-            sum  += buf[j];
-            wsum += (uint32_t)(32 - j) * buf[j];
-         }
-         b   += 32 * a + wsum;
-         a   += sum;
-         buf += 32;
-         k   -= 32;
-      }
-      while (k--)
-      {
-         a += *buf++;
-         b += a;
-      }
-   }
-      a %= RD_ADLER_MOD;
-      b %= RD_ADLER_MOD;
-   }
-   return (b << 16) | a;
-}
 
 /* ------- bit writer (LSB-first) -------
  * Bits accumulate in bitbuf; whole bytes are flushed to the output window.
@@ -2337,7 +2465,7 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
          n = sizeof(s->win) - s->win_len;   
       memcpy(s->win + s->win_len, s->in + s->in_pos, n);
       if (s->wrapped)
-         s->adler = rd_adler32(s->adler, s->in + s->in_pos, n);
+         s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
       s->win_len += (uint32_t)n;
       s->in_pos  += n;
    }
@@ -2400,7 +2528,7 @@ int rdeflate_process(void *data, size_t *read, size_t *wrote)
                n = sizeof(s->win) - s->win_len;
             memcpy(s->win + s->win_len, s->in + s->in_pos, n);
             if (s->wrapped)
-               s->adler = rd_adler32(s->adler, s->in + s->in_pos, n);
+               s->adler = rd_adler32_update(s->adler, s->in + s->in_pos, n);
             s->win_len += (uint32_t)n;
             s->in_pos  += n;
          }
