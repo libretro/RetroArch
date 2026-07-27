@@ -84,6 +84,7 @@ jobs:
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
+            audio_mixer_loop_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).

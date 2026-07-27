@@ -2229,6 +2229,7 @@ static void audio_mixer_mix_stream(float* buffer, size_t num_frames,
    unsigned buf_free                = (unsigned)(num_frames * 2);
    unsigned temp_samples            = 0;
    float* pcm                       = NULL;
+   int rewound                      = 0;
 
    if (!voice->types.stream.stream)
       return;
@@ -2275,12 +2276,21 @@ again:
 
       if (temp_samples == 0)
       {
-         if (voice->repeat)
+         /* A repeat that comes back empty from the start of the stream
+          * has nothing left to hand out, and going round again would
+          * not change that - it would spin here forever, holding the
+          * mixer, with no frame ever produced.  One rewind is allowed
+          * per empty read; a second in a row ends the voice the way a
+          * stream that simply finished does. */
+         if (     voice->repeat
+               && !rewound
+               && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
+            rewound = 1;
+
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
 
-            audio_transfer_seek(voice->types.stream.stream, type, 0);
             goto again;
          }
 
@@ -2290,6 +2300,12 @@ again:
          audio_mixer_release(voice);
          return;
       }
+
+      /* Frames came out, so the next empty read is a fresh end of
+       * stream and gets its own rewind.  A sound shorter than one
+       * mixing buffer loops more than once per call and must not be
+       * cut off by the guard above. */
+      rewound = 0;
 
       if (voice->types.stream.resampler)
       {
@@ -2343,6 +2359,7 @@ static void audio_mixer_mix_stream_s16(int16_t* buffer, size_t num_frames,
    unsigned buf_free     = (unsigned)(num_frames * 2);
    unsigned temp_samples = 0;
    int16_t *pcm          = NULL;
+   int rewound           = 0;
 
    if (!voice->types.stream.stream)
       return;
@@ -2389,11 +2406,16 @@ again:
       }
       if (temp_samples == 0)
       {
-         if (voice->repeat)
+         /* See audio_mixer_mix_stream: one rewind per empty read, so a
+          * repeat that yields nothing twice ends the voice instead of
+          * spinning here with no frame ever produced. */
+         if (     voice->repeat
+               && !rewound
+               && audio_transfer_seek(voice->types.stream.stream, type, 0))
          {
+            rewound = 1;
             if (voice->stop_cb)
                voice->stop_cb(voice->sound, AUDIO_MIXER_SOUND_REPEATED);
-            audio_transfer_seek(voice->types.stream.stream, type, 0);
             goto again;
          }
          if (voice->stop_cb)
@@ -2401,6 +2423,8 @@ again:
          audio_mixer_release(voice);
          return;
       }
+
+      rewound = 0;
 
       info.data_in       = temp_buffer;
       info.data_out      = voice->types.stream.buffer_s16;

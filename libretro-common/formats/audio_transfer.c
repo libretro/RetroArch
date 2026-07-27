@@ -4462,22 +4462,30 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
                return audio_transfer_vorbis_seek_walk(v, (int64_t)frame);
             if (frame != 0)
                return false;
+            /* Every source the packet path can have, and that is more
+             * than the blob cursor: an Ogg page feeder has a page,
+             * segment and body offset of its own, and leaving those
+             * where the last read left them means the rewound stream
+             * hands out nothing. */
+            audio_transfer_vorbis_to_head(v);
             rvorbis_packet_reset(v->handle);
-#ifdef HAVE_RWEBM
-            if (v->demux)
-               rwebm_rewind(v->demux);
-#endif
-            v->pkt_index  = 0;
-            v->pkt_offset = 0;
             v->emitted    = 0;
             return true;
          }
+         /* The emission bound is counted against what has been handed
+          * out, so a seek that moves the stream has to move that count
+          * with it.  Left alone, a loop back to the start reaches the
+          * bound immediately and the stream reads as ended for good. */
          if (frame == 0) /* loop-to-start: seek_start always succeeds */
          {
             rvorbis_seek_start(v->handle);
+            v->emitted = 0;
             return true;
          }
-         return rvorbis_seek(v->handle, (unsigned int)frame) != 0;
+         if (rvorbis_seek(v->handle, (unsigned int)frame) == 0)
+            return false;
+         v->emitted = (int64_t)frame;
+         return true;
       }
 #endif
 #ifdef HAVE_RMP3

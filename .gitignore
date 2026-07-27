@@ -262,6 +262,7 @@ gfx/common/wayland/tearing-control-v1.c
 
 # libretro-common samples
 libretro-common/samples/streams/rzip/rzip
+libretro-common/samples/audio/audio_mixer_loop/audio_mixer_loop_test
 
 # DINGUX
 *.opk
