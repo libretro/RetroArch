@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <memcpy_nt.h>
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_video.h>
@@ -121,16 +122,13 @@ static void sdl_rs90_scale_frame16_integer(sdl_rs90_video_t *vid,
    uint16_t *out_ptr = (uint16_t*)(vid->screen->pixels) + vid->frame_padding_x +
          out_stride * vid->frame_padding_y;
 
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint16_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
+   /* Streaming stores: the surface is written once here and next
+    * touched by the display engine, so allocating the whole padded
+    * rectangle into the cache every frame evicts the core's working
+    * set for nothing.  Not memcpy_nt per line - one scanline is well
+    * under its threshold and would fall back to memcpy. */
+   memcpy_nt_2d(out_ptr, vid->screen->pitch, in_ptr, src_pitch,
+         vid->frame_width * sizeof(uint16_t), vid->frame_height);
 }
 
 static void sdl_rs90_scale_frame32_integer(sdl_rs90_video_t *vid,
@@ -147,16 +145,9 @@ static void sdl_rs90_scale_frame32_integer(sdl_rs90_video_t *vid,
    uint32_t *out_ptr = (uint32_t*)(vid->screen->pixels) + vid->frame_padding_x +
          out_stride * vid->frame_padding_y;
 
-   size_t y          = vid->frame_height;
-
-   /* TODO/FIXME: Optimize this loop */
-   do
-   {
-      memcpy(out_ptr, in_ptr, vid->frame_width * sizeof(uint32_t));
-      in_ptr  += in_stride;
-      out_ptr += out_stride;
-   }
-   while (--y);
+   /* Streaming stores; see the 16-bit path above. */
+   memcpy_nt_2d(out_ptr, vid->screen->pitch, in_ptr, src_pitch,
+         vid->frame_width * sizeof(uint32_t), vid->frame_height);
 }
 
 /* Approximate nearest-neighbour scaling using
@@ -1044,7 +1035,7 @@ static void sdl_rs90_blit_frame16(sdl_rs90_video_t *vid,
     * GBA content */
    if (src_pitch == vid->screen->pitch &&
        height == SDL_RS90_HEIGHT)
-      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+      memcpy_nt(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
       vid->scale_frame16(vid, src, width, height, src_pitch);
 }
@@ -1059,7 +1050,7 @@ static void sdl_rs90_blit_frame32(sdl_rs90_video_t *vid,
     * GBA content */
    if ((src_pitch == vid->screen->pitch) &&
        (height == SDL_RS90_HEIGHT))
-      memcpy(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
+      memcpy_nt(vid->screen->pixels, src, src_pitch * SDL_RS90_HEIGHT);
    else
       vid->scale_frame32(vid, src, width, height, src_pitch);
 }

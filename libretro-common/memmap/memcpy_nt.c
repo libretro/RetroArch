@@ -148,3 +148,100 @@ void *memcpy_nt(void *dst, const void *src, size_t len)
    return memcpy(dst, src, len);
 #endif
 }
+
+/* One line of the rectangle, streamed, with no barrier of its own.
+ *
+ * The destination is realigned per line: dst_pitch is whatever the
+ * display surface uses and need not be a multiple of 16, so each line
+ * can start at a different offset within the 16-byte grid.  The head
+ * and tail go through memcpy; only the aligned middle streams. */
+static void memcpy_nt_line(uint8_t *d, const uint8_t *s, size_t len)
+{
+#if defined(MEMCPY_NT_HAVE_SSE2) || defined(MEMCPY_NT_HAVE_STNP)
+   size_t head = (size_t)((uintptr_t)(-(intptr_t)(uintptr_t)d) & 15);
+
+   if (head > len)
+      head = len;
+   if (head)
+   {
+      memcpy(d, s, head);
+      d   += head;
+      s   += head;
+      len -= head;
+   }
+
+   while (len >= 64)
+   {
+#if defined(MEMCPY_NT_HAVE_SSE2)
+      __m128i a = _mm_loadu_si128((const __m128i*)(const void*)(s +  0));
+      __m128i b = _mm_loadu_si128((const __m128i*)(const void*)(s + 16));
+      __m128i c = _mm_loadu_si128((const __m128i*)(const void*)(s + 32));
+      __m128i e = _mm_loadu_si128((const __m128i*)(const void*)(s + 48));
+      _mm_stream_si128((__m128i*)(void*)(d +  0), a);
+      _mm_stream_si128((__m128i*)(void*)(d + 16), b);
+      _mm_stream_si128((__m128i*)(void*)(d + 32), c);
+      _mm_stream_si128((__m128i*)(void*)(d + 48), e);
+#else
+      /* See memcpy_nt() above for why the clobbers name v0-v3
+       * rather than q0-q3. */
+      __asm__ __volatile__(
+            "ldp q0, q1, [%1]\n\t"
+            "ldp q2, q3, [%1, #32]\n\t"
+            "stnp q0, q1, [%0]\n\t"
+            "stnp q2, q3, [%0, #32]\n\t"
+            : : "r"(d), "r"(s) : "v0", "v1", "v2", "v3", "memory");
+#endif
+      d   += 64;
+      s   += 64;
+      len -= 64;
+   }
+
+   if (len)
+      memcpy(d, s, len);
+#else
+   memcpy(d, s, len);
+#endif
+}
+
+void *memcpy_nt_2d(void *dst, size_t dst_pitch,
+      const void *src, size_t src_pitch,
+      size_t line_bytes, size_t rows)
+{
+   uint8_t       *d = (uint8_t*)dst;
+   const uint8_t *s = (const uint8_t*)src;
+   size_t         y;
+
+   if (!rows || !line_bytes)
+      return dst;
+
+   /* Contiguous in both buffers: nothing strided about it. */
+   if (dst_pitch == line_bytes && src_pitch == line_bytes)
+      return memcpy_nt(dst, src, line_bytes * rows);
+
+   /* Judge the threshold against the whole rectangle, not one line. */
+   if (line_bytes * rows < MEMCPY_NT_MIN_LEN)
+   {
+      for (y = 0; y < rows; y++)
+      {
+         memcpy(d, s, line_bytes);
+         d += dst_pitch;
+         s += src_pitch;
+      }
+      return dst;
+   }
+
+   for (y = 0; y < rows; y++)
+   {
+      memcpy_nt_line(d, s, line_bytes);
+      d += dst_pitch;
+      s += src_pitch;
+   }
+
+   /* One barrier for the whole rectangle. */
+#if defined(MEMCPY_NT_HAVE_SSE2)
+   _mm_sfence();
+#elif defined(MEMCPY_NT_HAVE_STNP)
+   __asm__ __volatile__("dmb ishst" : : : "memory");
+#endif
+   return dst;
+}
