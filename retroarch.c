@@ -8458,7 +8458,7 @@ bool retroarch_main_init(int argc, char *argv[])
       }
 #elif defined(WEBOS)
       {
-         char str_output[128];
+         char str_output[256];
          char osbuf[128];
          int major = 0, minor = 0;
          frontend_state_t *frontend_st = frontend_state_get_ptr();
