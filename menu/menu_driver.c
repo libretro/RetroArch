@@ -1145,7 +1145,7 @@ size_t menu_entries_get_title(char *s, size_t len)
          const char *path      = NULL;
          unsigned menu_type    = 0;
 
-         if (     string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+         if (     string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
                && !path_is_empty(RARCH_PATH_CONTENT))
          {
             char content_label[NAME_MAX_LENGTH];
@@ -2373,7 +2373,7 @@ static bool menu_driver_displaylist_push_internal(
    else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
       return menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings);
 #ifdef HAVE_CHEATS
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR))
       return menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings);
 #endif
    else if (string_is_equal(label, MENU_ENUM_LABEL_MUSIC_TAB_STR))
@@ -3449,7 +3449,7 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
                     || (type == FILE_TYPE_PLAYLIST_COLLECTION);
 
    if (!filter_enabled && label && *label)
-      filter_enabled =    string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+      filter_enabled =    string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
                        || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -3672,7 +3672,7 @@ static void generic_menu_init_list(struct menu_state *menu_st,
    menu_displaylist_info_init(&info);
 
    info.label                   = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+         MENU_ENUM_LABEL_MAIN_MENU_STR);
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_append(menu_stack,
@@ -8337,7 +8337,7 @@ size_t menu_update_fullscreen_thumbnail_label(
    /* > State slot label */
    else if (   is_quick_menu
             && (
-               string_is_equal(selected_entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               string_is_equal(selected_entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
             || string_is_equal(selected_entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR)
                )

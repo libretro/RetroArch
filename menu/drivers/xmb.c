@@ -1813,7 +1813,7 @@ static void xmb_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -2873,45 +2873,45 @@ static void xmb_set_title(xmb_handle_t *xmb)
          enum_idx = MENU_ENUM_LABEL_DOWNLOAD_CORE_CONTENT_DIRS;
       else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CORE_LIST_SET_STR))
          enum_idx = MENU_ENUM_LABEL_CORE_LIST;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_MAIN_MENU_STR))
          enum_idx = MENU_ENUM_LABEL_MAIN_MENU;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_SETTINGS_TAB;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_HISTORY_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_GOTO_FAVORITES;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_IMAGES_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_GOTO_IMAGES;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_MUSIC_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_GOTO_MUSIC;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_VIDEO_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_VIDEO_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_GOTO_VIDEO;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_ADD_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_ADD_CONTENT_LIST;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_CONTENTLESS_CORES_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_GOTO_CONTENTLESS_CORES;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST_STR))
          enum_idx = MENU_ENUM_LABEL_DEFERRED_EXPLORE_LIST;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_EXPLORE_TAB_STR))
          enum_idx = MENU_ENUM_LABEL_EXPLORE_TAB;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR))
          enum_idx = MENU_ENUM_LABEL_HORIZONTAL_MENU;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR))
          enum_idx = MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_USER_BINDS_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_REMAPPINGS_PORT_LIST_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DEVICE_TYPE_STR))
          enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_INDEX;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_RESERVED_DEVICE_STR))
          enum_idx = MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME;
-      else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION))
-            || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD)))
+      else if (string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_STR)
+            || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD_STR))
       {
          unsigned input_id;
          if (type < MENU_SETTINGS_INPUT_DESC_KBD_BEGIN)
@@ -3852,7 +3852,7 @@ static void xmb_populate_entries(void *data,
 #endif
             )
          )
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
@@ -3902,14 +3902,14 @@ static void xmb_populate_entries(void *data,
     *   selecting 'load content' */
    xmb->is_file_list =
             string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_MENU_WALLPAPER));
+         || string_is_equal(label, MENU_ENUM_LABEL_MENU_WALLPAPER_STR);
 
    /* Determine whether this is the quick menu */
    xmb->is_quick_menu =
             string_is_equal(label,
                   MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
          || string_is_equal(label,
-               msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+               MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
          || string_is_equal(label,
                MENU_ENUM_LABEL_SAVESTATE_LIST_STR);
 
@@ -3934,7 +3934,7 @@ static void xmb_populate_entries(void *data,
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          xmb->is_quick_menu = true;
@@ -6920,7 +6920,7 @@ static enum menu_action xmb_parse_menu_entry_action(
                   free(menu_stack->list[stack_size - 1].label);
                menu_stack->list[stack_size - 1].label = NULL;
 
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
 
                menu_driver_deferred_push_content_list(selection_buf);
@@ -10565,59 +10565,59 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
          switch (xmb_get_system_tab(xmb, (unsigned)xmb->categories_selection_ptr))
          {
             case XMB_SYSTEM_TAB_MAIN:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS;
                break;
             case XMB_SYSTEM_TAB_SETTINGS:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_SETTINGS_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTINGS_TAB;
                break;
 #ifdef HAVE_IMAGEVIEWER
             case XMB_SYSTEM_TAB_IMAGES:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_IMAGES_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_IMAGES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_IMAGES_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_MUSIC:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MUSIC_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_MUSIC_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_MUSIC_TAB;
                break;
 #if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
             case XMB_SYSTEM_TAB_VIDEO:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_VIDEO_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_VIDEO_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_VIDEO_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_HISTORY:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_HISTORY_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_HISTORY_TAB;
                break;
             case XMB_SYSTEM_TAB_FAVORITES:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_FAVORITES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_FAVORITES_TAB;
                break;
 #ifdef HAVE_NETWORKING
             case XMB_SYSTEM_TAB_NETPLAY:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_NETPLAY_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_NETPLAY_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_ADD:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_ADD_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_ADD_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_ADD_TAB;
                break;
 #if defined(HAVE_LIBRETRODB)
             case XMB_SYSTEM_TAB_EXPLORE:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_EXPLORE_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_EXPLORE_TAB;
                break;
 #endif
             case XMB_SYSTEM_TAB_CONTENTLESS_CORES:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_CONTENTLESS_CORES_TAB_STR);
                menu_stack->list[stack_size - 1].type  = MENU_CONTENTLESS_CORES_TAB;
                break;
             default:
-               menu_stack->list[stack_size - 1].label = strdup(msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU));
+               menu_stack->list[stack_size - 1].label = strdup(MENU_ENUM_LABEL_HORIZONTAL_MENU_STR);
                menu_stack->list[stack_size - 1].type  = MENU_SETTING_HORIZONTAL_MENU;
                break;
          }
@@ -10778,7 +10778,7 @@ static bool xmb_menu_init_list(void *data)
 
    menu_displaylist_info_init(&info);
 
-   info.label                 = strdup(msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+   info.label                 = strdup(MENU_ENUM_LABEL_MAIN_MENU_STR);
    info.type_default          = FILE_TYPE_PLAIN;
    info.enum_idx              = MENU_ENUM_LABEL_MAIN_MENU;
 

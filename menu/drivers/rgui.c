@@ -7527,7 +7527,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -8017,7 +8017,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -8027,14 +8027,14 @@ static void rgui_populate_entries(
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLIST;
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   if (string_is_equal(label, MENU_ENUM_LABEL_PLAYLISTS_TAB_STR))
       rgui->flags |=  RGUI_FLAG_IS_PLAYLISTS_TAB;
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLISTS_TAB;
 
    /* Determine whether this is the quick menu */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+         || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
@@ -8064,7 +8064,7 @@ static void rgui_populate_entries(
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
@@ -8084,7 +8084,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -8096,7 +8096,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_st->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)
