@@ -1037,6 +1037,15 @@ static int16_t input_joypad_analog_button(
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
+   /* The joypad driver pointer can be NULL for the duration of a
+    * driver teardown/reinit cycle - video_driver_free_internal()
+    * clears primary_joypad before the joypad is recreated by
+    * input_driver_init_joypads(). input_joypad_axis() already
+    * guards against this, but the digital button fallback paths
+    * below dereference drv directly. */
+   if (!drv)
+      return 0;
+
    /* Early exit for digital-only buttons: if neither the user bind
     * nor the autoconfig bind has an analog axis, this button has no
     * analog capability. Skip the input_joypad_axis() call and
@@ -1107,6 +1116,11 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_x_plus  = NULL;
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return 0;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
@@ -1320,6 +1334,11 @@ static bool input_joypad_analog_stick(
 
    *out_x = 0;
    *out_y = 0;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return false;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
