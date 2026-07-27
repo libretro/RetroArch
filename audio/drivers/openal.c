@@ -256,7 +256,6 @@ static ssize_t al_write(void *data, const void *s, size_t len)
 
    while (len)
    {
-      ALint val;
       ALuint buffer;
       size_t rc    = MIN(OPENAL_BUFSIZE, len);
 
@@ -269,11 +268,22 @@ static ssize_t al_write(void *data, const void *s, size_t len)
       _len           += rc;
       buf            += rc;
       len            -= rc;
+   }
 
+   /* Kick the source once, after everything is queued, rather than
+    * once per OPENAL_BUFSIZE chunk.  Queueing onto a stopped source
+    * does not start it, so the restart still happens before this call
+    * returns; it just happens with the whole write already queued
+    * instead of partway through it.  Skipped entirely when nothing was
+    * queued, which is what the per-chunk form did too. */
+   if (_len)
+   {
+      ALint val;
       alGetSourcei(al->source, AL_SOURCE_STATE, &val);
       if (val != AL_PLAYING)
          alSourcePlay(al->source);
    }
+
    return _len;
 }
 
