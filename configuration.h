@@ -813,7 +813,7 @@ typedef struct settings
 #ifdef HAVE_SMBCLIENT
       bool settings_show_smb_client;
 #endif
-#ifdef HAVE_NFSCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_NFSCLIENT)
       bool settings_show_nfs_client;
 #endif
       bool quick_menu_show_resume_content;

@@ -2274,8 +2274,10 @@ static struct config_bool_setting *populate_settings_bool(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
 #endif
+#ifdef HAVE_MENU
 #ifdef HAVE_NFSCLIENT
 #include "settings/settings_def_settings_show_nfs.h"
+#endif
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -2993,8 +2995,10 @@ static struct config_float_setting *populate_settings_float(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
 #endif
+#ifdef HAVE_MENU
 #ifdef HAVE_NFSCLIENT
 #include "settings/settings_def_settings_show_nfs.h"
+#endif
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -3670,8 +3674,10 @@ static struct config_uint_setting *populate_settings_uint(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
 #endif
+#ifdef HAVE_MENU
 #ifdef HAVE_NFSCLIENT
 #include "settings/settings_def_settings_show_nfs.h"
+#endif
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -4384,8 +4390,10 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
 #endif
+#ifdef HAVE_MENU
 #ifdef HAVE_NFSCLIENT
 #include "settings/settings_def_settings_show_nfs.h"
+#endif
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
@@ -4985,8 +4993,10 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_SMBCLIENT
 #include "settings/settings_def_settings_show_smb.h"
 #endif
+#ifdef HAVE_MENU
 #ifdef HAVE_NFSCLIENT
 #include "settings/settings_def_settings_show_nfs.h"
+#endif
 #endif
 #ifdef HAVE_MENU
 #ifdef HAVE_MIST
