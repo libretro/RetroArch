@@ -2982,6 +2982,13 @@ ifneq ($(findstring Linux,$(OS)),)
       CFLAGS += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
       CFLAGS += -DHAVE_SYS_VFS_H -DHAVE_SYS_SYSMACROS_H -DHAVE_SO_BINDTODEVICE
 endif
+ifeq ($(findstring Linux,$(OS)),)
+ifeq ($(findstring Darwin,$(OS)),)
+      # Consoles / other non-glibc targets: mknod helpers need major()/minor().
+      CFLAGS += '-Dmajor(d)=((int)(((unsigned)(d)>>8)&0xff))'
+      CFLAGS += '-Dminor(d)=((int)((unsigned)(d)&0xff))'
+endif
+endif
 endif
       OBJ += \
          deps/libnfs/lib/init.o \
