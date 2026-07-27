@@ -32,11 +32,13 @@ typedef struct {
 
 bool nfs_init_cfg(const struct nfs_settings *new_cfg);
 
-/* File operations (read-only) */
+/* File operations */
 bool    retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
         const char *path, unsigned mode, unsigned hints);
 int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
         void *s, uint64_t len);
+int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
+        const void *s, uint64_t len);
 int64_t retro_vfs_file_seek_nfs(libretro_vfs_implementation_file *stream,
         int64_t offset, int whence);
 int64_t retro_vfs_file_tell_nfs(libretro_vfs_implementation_file *stream);

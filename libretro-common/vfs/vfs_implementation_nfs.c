@@ -163,9 +163,8 @@ static bool nfs_init(void)
          return false;
       }
 
-      /* Read-only NFSv3, no Kerberos. */
+      /* NFSv3, no Kerberos. */
       nfs_set_version(nfs, RETRO_NFS_VERSION_3);
-      nfs_set_readonly(nfs, 1);
 
       if (nfs_cfg->timeout)
          nfs_set_timeout(nfs, (int)nfs_cfg->timeout * 1000);
@@ -287,7 +286,7 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    char full_path[PATH_MAX_LENGTH];
    struct nfsfh *fh = NULL;
    struct nfs_context *nfs;
-   int flags = O_RDONLY;
+   int flags = 0;
    int ret;
 
    (void)hints;
@@ -298,12 +297,25 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    stream->nfs_fh  = (intptr_t)0;
    stream->nfs_ctx = (intptr_t)0;
 
-   /* Read-only: reject any write access. */
-   if (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+   if (mode & RETRO_VFS_FILE_ACCESS_READ)
+   {
+      if (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+         flags = O_RDWR;
+      else
+         flags = O_RDONLY;
+   }
+   else if (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+      flags = O_WRONLY;
+   else
       return false;
 
-   if (!(mode & RETRO_VFS_FILE_ACCESS_READ))
-      return false;
+   /* Match local VFS: WRITE creates; without UPDATE_EXISTING also truncates. */
+   if (mode & RETRO_VFS_FILE_ACCESS_WRITE)
+   {
+      flags |= O_CREAT;
+      if (!(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING))
+         flags |= O_TRUNC;
+   }
 
    if (!nfs_init())
       return false;
@@ -318,7 +330,11 @@ bool retro_vfs_file_open_nfs(libretro_vfs_implementation_file *stream,
    if (full_path[0] == '\0')
       strlcpy(full_path, "/", sizeof(full_path));
 
-   ret = nfs_open(nfs, full_path, flags, &fh);
+   if (flags & O_CREAT)
+      ret = nfs_open2(nfs, full_path, flags, 0644, &fh);
+   else
+      ret = nfs_open(nfs, full_path, flags, &fh);
+
    if (ret != 0 || !fh)
    {
       const char *err = nfs_get_error(nfs);
@@ -364,6 +380,45 @@ int64_t retro_vfs_file_read_nfs(libretro_vfs_implementation_file *stream,
          want = (size_t)INT32_MAX;
 
       ret = nfs_read(ctx, fh, ptr + total, want);
+      if (ret < 0)
+         return (total > 0) ? (int64_t)total : -1;
+      if (ret == 0)
+         break;
+
+      total += (uint64_t)ret;
+   }
+
+   return (int64_t)total;
+}
+
+int64_t retro_vfs_file_write_nfs(libretro_vfs_implementation_file *stream,
+   const void *s, uint64_t len)
+{
+   const uint8_t *ptr = (const uint8_t *)s;
+   uint64_t total     = 0;
+   struct nfs_context *ctx;
+   struct nfsfh *fh;
+
+   if (!nfs_initialized || !stream || !s || stream->nfs_fh == 0)
+      return -1;
+
+   if (len == 0)
+      return 0;
+
+   ctx = (struct nfs_context *)(void *)(uintptr_t)stream->nfs_ctx;
+   fh  = (struct nfsfh *)(void *)(uintptr_t)stream->nfs_fh;
+   if (!ctx || !fh)
+      return -1;
+
+   while (total < len)
+   {
+      uint64_t want = len - total;
+      int ret;
+
+      if (want > (uint64_t)INT32_MAX)
+         want = (uint64_t)INT32_MAX;
+
+      ret = nfs_write(ctx, fh, ptr + total, want);
       if (ret < 0)
          return (total > 0) ? (int64_t)total : -1;
       if (ret == 0)

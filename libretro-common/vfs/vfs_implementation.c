@@ -960,7 +960,13 @@ int64_t retro_vfs_file_write_impl(libretro_vfs_implementation_file *stream, cons
 #endif
 #ifdef HAVE_NFSCLIENT
       if (stream->scheme == VFS_SCHEME_NFS)
-         return -1; /* read-only */
+      {
+         pos = retro_vfs_file_tell_nfs(stream);
+         ret = retro_vfs_file_write_nfs(stream, s, len);
+         if (ret != -1 && pos + ret > stream->size)
+            stream->size = pos + ret;
+         return ret;
+      }
 #endif
       pos = retro_vfs_file_tell_impl(stream);
       ret = fwrite(s, 1, (size_t)len, stream->fp);
