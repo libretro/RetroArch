@@ -392,36 +392,95 @@ static INLINE void rpng_store8_u16_to_u8(uint8_t *p, __m128i v)
    _mm_storel_epi64((__m128i*)p, _mm_packus_epi16(v, v));
 }
 
-static void rpng_filter_sub_rgba(uint8_t *decoded,
-      const uint8_t *raw, size_t pitch)
+/* Sub and Average both fit in 8-bit lanes, so unlike Paeth they never
+ * need the widening load.  Sub is a plain mod-256 add.  Average wants
+ * floor((a + b) / 2) and pavgb gives (a + b + 1) >> 1, but
+ *   floor((a + b) / 2) = pavgb(a, b) - ((a ^ b) & 1)
+ * so the rounding correction is two extra ops off the critical path.
+ * Staying in u8 removes the unpack from the loop-carried chain and
+ * doubles the useful lanes; see rpng_filter_paeth_simd for why a fixed
+ * window may be stepped by an arbitrary stride. */
+static INLINE __m128i rpng_load4_u8(const uint8_t *p)
 {
-   size_t i;
-   __m128i prev_pixel = _mm_setzero_si128();
-   const __m128i mask = _mm_set1_epi16(0x00FF);
-   for (i = 0; i + 4 <= pitch; i += 4)
-   {
-      __m128i r   = rpng_load4_u8_to_u16(raw + i);
-      __m128i out = _mm_and_si128(_mm_add_epi16(r, prev_pixel), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel  = out;
-   }
+   int32_t tmp;
+   memcpy(&tmp, p, sizeof(tmp));
+   return _mm_cvtsi32_si128(tmp);
 }
 
-static void rpng_filter_avg_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+static INLINE void rpng_store4_u8(uint8_t *p, __m128i v)
 {
-   size_t i;
+   int32_t tmp = _mm_cvtsi128_si32(v);
+   memcpy(p, &tmp, sizeof(tmp));
+}
+
+static void rpng_filter_sub_simd(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
    __m128i prev_pixel = _mm_setzero_si128();
-   const __m128i mask = _mm_set1_epi16(0x00FF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   if (bpp <= 4)
    {
-      __m128i r   = rpng_load4_u8_to_u16(raw  + i);
-      __m128i pv  = rpng_load4_u8_to_u16(prev + i);
-      __m128i avg = _mm_srli_epi16(_mm_add_epi16(prev_pixel, pv), 1);
-      __m128i out = _mm_and_si128(_mm_add_epi16(r, avg), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel  = out;
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         __m128i out = _mm_add_epi8(rpng_load4_u8(raw + i), prev_pixel);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel  = out;
+      }
    }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         __m128i out = _mm_add_epi8(
+               _mm_loadl_epi64((const __m128i*)(raw + i)), prev_pixel);
+         _mm_storel_epi64((__m128i*)(decoded + i), out);
+         prev_pixel  = out;
+      }
+   }
+   memcpy(decoded + i, raw + i, pitch - i);
+   /* Leading bpp bytes have no left neighbour and stay as-is. */
+   if (i < bpp)
+      i = bpp < pitch ? bpp : pitch;
+   for (; i < pitch; i++)
+      decoded[i] += decoded[i - bpp];
+}
+
+static void rpng_filter_avg_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
+   __m128i prev_pixel = _mm_setzero_si128();
+   const __m128i one  = _mm_set1_epi8(1);
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         __m128i pv  = rpng_load4_u8(prev + i);
+         __m128i avg = _mm_sub_epi8(_mm_avg_epu8(prev_pixel, pv),
+               _mm_and_si128(_mm_xor_si128(prev_pixel, pv), one));
+         __m128i out = _mm_add_epi8(rpng_load4_u8(raw + i), avg);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel  = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         __m128i pv  = _mm_loadl_epi64((const __m128i*)(prev + i));
+         __m128i avg = _mm_sub_epi8(_mm_avg_epu8(prev_pixel, pv),
+               _mm_and_si128(_mm_xor_si128(prev_pixel, pv), one));
+         __m128i out = _mm_add_epi8(
+               _mm_loadl_epi64((const __m128i*)(raw + i)), avg);
+         _mm_storel_epi64((__m128i*)(decoded + i), out);
+         prev_pixel  = out;
+      }
+   }
+   memcpy(decoded + i, raw + i, pitch - i);
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i] >> 1;
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)((decoded[i - bpp] + prev[i]) >> 1);
 }
 
 /* Branch-free Paeth predictor for 16-bit lanes, following the identity
@@ -540,36 +599,84 @@ static INLINE void rpng_store4_u16_to_u8(uint8_t *p, uint16x4_t v)
    memcpy(p, &word, sizeof(word));
 }
 
-static void rpng_filter_sub_rgba(uint8_t *decoded,
-      const uint8_t *raw, size_t pitch)
+/* u8-lane Sub/Average, mirroring the SSE2 side.  NEON's vhadd_u8 is
+ * already floor((a + b) / 2), so Average needs no rounding correction
+ * here. */
+static INLINE uint8x8_t rpng_load4_u8(const uint8_t *p)
 {
-   size_t i;
-   uint16x4_t prev_pixel = vdup_n_u16(0);
-   const uint16x4_t mask = vdup_n_u16(0xFF);
-   for (i = 0; i + 4 <= pitch; i += 4)
-   {
-      uint16x4_t r   = rpng_load4_u8_to_u16(raw + i);
-      uint16x4_t out = vand_u16(vadd_u16(r, prev_pixel), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel     = out;
-   }
+   uint32_t v;
+   memcpy(&v, p, sizeof(v));
+   return vreinterpret_u8_u32(vdup_n_u32(v));
 }
 
-static void rpng_filter_avg_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+static INLINE void rpng_store4_u8(uint8_t *p, uint8x8_t v)
 {
-   size_t i;
-   uint16x4_t prev_pixel = vdup_n_u16(0);
-   const uint16x4_t mask = vdup_n_u16(0xFF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   uint32_t word = vget_lane_u32(vreinterpret_u32_u8(v), 0);
+   memcpy(p, &word, sizeof(word));
+}
+
+static void rpng_filter_sub_simd(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch, unsigned bpp)
+{
+   size_t i             = 0;
+   uint8x8_t prev_pixel = vdup_n_u8(0);
+   if (bpp <= 4)
    {
-      uint16x4_t r   = rpng_load4_u8_to_u16(raw  + i);
-      uint16x4_t pv  = rpng_load4_u8_to_u16(prev + i);
-      uint16x4_t avg = vshr_n_u16(vadd_u16(prev_pixel, pv), 1);
-      uint16x4_t out = vand_u16(vadd_u16(r, avg), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel     = out;
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         uint8x8_t out = vadd_u8(rpng_load4_u8(raw + i), prev_pixel);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
    }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         uint8x8_t out = vadd_u8(vld1_u8(raw + i), prev_pixel);
+         vst1_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   memcpy(decoded + i, raw + i, pitch - i);
+   if (i < bpp)
+      i = bpp < pitch ? bpp : pitch;
+   for (; i < pitch; i++)
+      decoded[i] += decoded[i - bpp];
+}
+
+static void rpng_filter_avg_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
+{
+   size_t i             = 0;
+   uint8x8_t prev_pixel = vdup_n_u8(0);
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         uint8x8_t pv  = rpng_load4_u8(prev + i);
+         uint8x8_t out = vadd_u8(rpng_load4_u8(raw + i),
+               vhadd_u8(prev_pixel, pv));
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         uint8x8_t pv  = vld1_u8(prev + i);
+         uint8x8_t out = vadd_u8(vld1_u8(raw + i),
+               vhadd_u8(prev_pixel, pv));
+         vst1_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   memcpy(decoded + i, raw + i, pitch - i);
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i] >> 1;
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)((decoded[i - bpp] + prev[i]) >> 1);
 }
 
 static INLINE uint16x4_t rpng_paeth_predictor_u16(
@@ -1431,7 +1538,9 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
 {
+#if !defined(RPNG_SIMD_SSE2) && !defined(RPNG_SIMD_NEON)
    unsigned i;
+#endif
 
    switch (filter)
    {
@@ -1440,17 +1549,15 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          break;
       case PNG_FILTER_SUB:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         if (pngp->bpp == 4)
-         {
-            rpng_filter_sub_rgba(pngp->decoded_scanline,
-                  pngp->inflate_buf, pngp->pitch);
-            break;
-         }
-#endif
+         rpng_filter_sub_simd(pngp->decoded_scanline,
+               pngp->inflate_buf, pngp->pitch, pngp->bpp);
+         break;
+#else
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = pngp->bpp; i < pngp->pitch; i++)
             pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
          break;
+#endif
       case PNG_FILTER_UP:
          /* Filter Up is a pure vector add—no inter-byte dependency. */
          rpng_filter_up(pngp->decoded_scanline,
@@ -1458,13 +1565,11 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          break;
       case PNG_FILTER_AVERAGE:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         if (pngp->bpp == 4)
-         {
-            rpng_filter_avg_rgba(pngp->decoded_scanline,
-                  pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
-            break;
-         }
-#endif
+         rpng_filter_avg_simd(pngp->decoded_scanline,
+               pngp->inflate_buf, pngp->prev_scanline,
+               pngp->pitch, pngp->bpp);
+         break;
+#else
          memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
          {
@@ -1477,6 +1582,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
             pngp->decoded_scanline[i] += avg;
          }
          break;
+#endif
       case PNG_FILTER_PAETH:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
          /* Stride-generic: every bpp benefits, not just RGBA8. */
