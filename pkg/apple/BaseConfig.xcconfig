@@ -59,7 +59,7 @@ OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKING
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORK_CMD
-/* Bundled libnfs sources are wired in RetroArch_Metal.xcodeproj only. */
+// Bundled libnfs sources are wired in RetroArch_Metal.xcodeproj only.
 OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_NFSCLIENT -DHAVE_BUILTINNFSCLIENT
 OTHER_CFLAGS = $(inherited) -D_U_=__attribute__((unused))
 OTHER_CFLAGS = $(inherited) -DHAVE_ARPA_INET_H -DHAVE_DLFCN_H -DHAVE_INTTYPES_H
