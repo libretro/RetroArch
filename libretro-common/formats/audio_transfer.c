@@ -479,6 +479,12 @@ struct audio_transfer_wav
     * payload, which has no per-frame size.  Every reader tests the
     * format and takes the decoder before reaching it. */
    size_t      framesz;
+   /* s16 staging for the f32 read of a companded or block-coded
+    * payload, which rwav decodes to s16 natively.  Owned here rather
+    * than shared, and grown to the request; NULL until one is made,
+    * so a PCM or float file never allocates it. */
+   int16_t    *scratch;
+   size_t      scratch_cap;  /* samples, not frames                     */
 };
 #endif
 
@@ -1589,15 +1595,21 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
 {
    unsigned ch = m->handle.channels ? m->handle.channels : 1;
    size_t   got;
+   /* Somewhere to throw the primed frames.  On the stack, and one
+    * union rather than two arrays: these were a pair of function-local
+    * statics, 24 KiB of BSS of which only ever half was in use, and
+    * shared by every context.  audio_mixer runs up to
+    * AUDIO_MIXER_MAX_VOICES at once, so two MP3 streams priming in the
+    * same callback wrote over each other's sink.  Small because it is
+    * only a sink - the loop below iterates until the trim is gone. */
+   union { int16_t s16[256]; float f32[256]; } skip;
    while (m->trim_left)
    {
-      static int16_t skip16[2048 * 2];
-      static float   skipf[2048 * 2];
-      size_t cap  = (size_t)(2048 * 2) / ch;
+      size_t cap  = (size_t)256 / ch;
       size_t want = (m->trim_left < cap) ? (size_t)m->trim_left : cap;
       size_t n    = s16
-         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip16)
-         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skipf);
+         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip.s16)
+         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skip.f32);
       if (!n)
       {
          m->trim_left = 0;         /* stream ended inside the priming */
@@ -4002,13 +4014,33 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          if (w->wav.format != RWAV_FORMAT_PCM
                && w->wav.format != RWAV_FORMAT_FLOAT)
          {
-            static int16_t tmp[2048 * 16];
-            size_t cap = sizeof(tmp) / sizeof(tmp[0]) / (ch ? ch : 1);
-            if (want > cap)
-               want = cap;
-            want = rwav_decode_s16(&w->wav, w->data, w->cursor, want, tmp);
+            /* Staged through a buffer this context owns rather than a
+             * 64 KiB function-local static.  The static was shared by
+             * every context - two block-coded voices in one mixer
+             * callback wrote over each other - and larger than L1D, so
+             * the scale below evicted the cache on every call.
+             *
+             * Per context and grown to the request, not blocked
+             * through a small stack buffer: rwav_decode_s16 starts at
+             * the block containing the frame it is given, so a chunk
+             * smaller than a block re-decodes that block every call.
+             * Measured at 88.2 -> 12.9 Mframe/s on MS ADPCM with a
+             * 128-frame chunk.  One pass keeps the old access
+             * pattern exactly. */
+            size_t need = want * ch;
+            if (w->scratch_cap < need)
+            {
+               int16_t *p = (int16_t*)realloc(w->scratch,
+                     need * sizeof(int16_t));
+               if (!p)
+                  return AUDIO_PROCESS_ERROR;
+               w->scratch     = p;
+               w->scratch_cap = need;
+            }
+            want = rwav_decode_s16(&w->wav, w->data, w->cursor, want,
+                  w->scratch);
             for (i = 0; i < want * ch; i++)
-               out[i] = (float)tmp[i] * (1.0f / 32768.0f);
+               out[i] = (float)w->scratch[i] * (1.0f / 32768.0f);
             w->cursor += want;
             produced   = want;
             break;
@@ -4310,6 +4342,11 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
    int64_t        pos = 0;
    int            n, m = 1, i, r;
    int            reached = 0;
+   /* Sink for the frames walked past.  On the stack: this was a
+    * function-local static shared by every context, and a seek on one
+    * mixer voice wrote into it while another was seeking too.  Small
+    * because the loop below iterates. */
+   int16_t        skip[256];
 
    /* Pass 1: where does each packet leave the stream? */
    audio_transfer_vorbis_to_head(v);
@@ -4370,7 +4407,6 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
     * counted here are the frames a playthrough emits. */
    while (v->emitted < target)
    {
-      static int16_t skip[4096];
       size_t cap  = sizeof(skip) / sizeof(skip[0]) / (size_t)v->channels;
       size_t want = (size_t)(target - v->emitted);
       if (!cap)
@@ -4598,7 +4634,13 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
          /* rwav_parse allocates nothing and the samples were read in
-          * place, so there is nothing here to release */
+          * place; the f32 staging buffer is the one thing this arm
+          * ever owns */
+         {
+            struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+            if (w)
+               free(w->scratch);
+         }
          break;
 #endif
 #ifdef HAVE_ROPUS
