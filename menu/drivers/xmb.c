@@ -5560,6 +5560,147 @@ typedef struct
    bool                      shadows_enable;
 } xmb_draw_ctx_t;
 
+/* Force a helper out of line even though it has a single call site.
+ *
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Used below for the per-entry
+ * draw path, where an inlined helper's stack slots are charged to the
+ * caller's frame on every call regardless of whether the helper's
+ * branch is taken.  Under -Os the outlining only adds call overhead,
+ * so it is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define XMB_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define XMB_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define XMB_NOINLINE __declspec(noinline)
+#else
+#define XMB_NOINLINE
+#endif
+
+/* Sublabel rendering for the selected entry.
+ *
+ * Split out of xmb_draw_item() rather than left inline: the block owns
+ * a 1024-byte sublabel buffer, two 256-byte fade buffers and two
+ * ticker structs, but only ever runs for one entry per frame (it is
+ * guarded on i == current).  Inline, every visible entry paid for
+ * those slots in xmb_draw_item()'s frame, which is entered once per
+ * visible entry per frame on top of xmb_frame()'s own ~9.5 KB. */
+XMB_NOINLINE static void xmb_draw_item_sublabel(
+      const xmb_draw_ctx_t *ctx,
+      const xmb_node_t *node,
+      const char *sublabel,
+      enum gfx_animation_ticker_type menu_ticker_type,
+      unsigned line_ticker_width,
+      bool use_smooth_ticker,
+      bool show_entry_icons)
+{
+   xmb_handle_t *xmb      = ctx->xmb;
+   settings_t   *settings = ctx->settings;
+   bool shadows_enable    = ctx->shadows_enable;
+   unsigned width         = ctx->video_width;
+   unsigned height        = ctx->video_height;
+   char entry_sublabel[MENU_LABEL_MAX_LENGTH];
+   char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
+   char entry_sublabel_bottom_fade[MENU_LABEL_MAX_LENGTH >> 2];
+   gfx_animation_ctx_line_ticker_t line_ticker;
+   gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+   float ticker_y_offset             = 0.0f;
+   float ticker_top_fade_y_offset    = 0.0f;
+   float ticker_bottom_fade_y_offset = 0.0f;
+   float ticker_top_fade_alpha       = 0.0f;
+   float ticker_bottom_fade_alpha    = 0.0f;
+   float sublabel_x                  = node->x + xmb->margins_screen_left +
+         xmb->icon_spacing_horizontal + xmb->margins_label_left;
+   float sublabel_y                  = xmb->margins_screen_top +
+         node->y + (xmb->margins_label_top * 3.5f);
+
+   entry_sublabel[0]                 = '\0';
+   entry_sublabel_top_fade[0]        = '\0';
+   entry_sublabel_bottom_fade[0]     = '\0';
+
+   if (!show_entry_icons)
+      sublabel_x -= xmb->icon_size;
+
+   if (use_smooth_ticker)
+   {
+      line_ticker_smooth.fade_enabled         = true;
+      line_ticker_smooth.type_enum            = menu_ticker_type;
+      line_ticker_smooth.idx                  = ctx->p_anim->ticker_pixel_line_idx;
+
+      line_ticker_smooth.font                 = xmb->font2;
+      line_ticker_smooth.font_scale           = 1.0f;
+
+      line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.5f * line_ticker_width);
+      line_ticker_smooth.field_height         = (unsigned)(
+            (xmb->icon_spacing_vertical * ((1 + xmb->under_item_offset) - xmb->active_item_factor)) -
+               (xmb->margins_label_top * 3.5f) - xmb->under_item_offset);
+
+      line_ticker_smooth.src_str              = sublabel;
+      line_ticker_smooth.dst_str              = entry_sublabel;
+      line_ticker_smooth.dst_str_len          = sizeof(entry_sublabel);
+      line_ticker_smooth.y_offset             = &ticker_y_offset;
+
+      line_ticker_smooth.top_fade_str         = entry_sublabel_top_fade;
+      line_ticker_smooth.top_fade_str_len     = sizeof(entry_sublabel_top_fade);
+      line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
+      line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
+
+      line_ticker_smooth.bottom_fade_str      = entry_sublabel_bottom_fade;
+      line_ticker_smooth.bottom_fade_str_len  = sizeof(entry_sublabel_bottom_fade);
+      line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
+      line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
+
+      xmb_animation_line_ticker_smooth(ctx->p_anim, &line_ticker_smooth);
+   }
+   else
+   {
+      line_ticker.type_enum = menu_ticker_type;
+      line_ticker.idx       = ctx->p_anim->ticker_idx;
+
+      line_ticker.line_len  = (size_t)(line_ticker_width);
+      /* Note: max_lines should be calculated at runtime,
+       * but this is a nuisance. There is room for 4 lines
+       * to be displayed when using all existing XMB themes,
+       * so leave this value hard coded for now. */
+      line_ticker.max_lines = 4;
+
+      line_ticker.s         = entry_sublabel;
+      line_ticker.len       = sizeof(entry_sublabel);
+      line_ticker.str       = sublabel;
+
+      xmb_animation_line_ticker(ctx->p_anim, &line_ticker);
+   }
+
+   /* Draw sublabel */
+   xmb_draw_text(shadows_enable, xmb, settings,
+         entry_sublabel,
+         sublabel_x,
+         ticker_y_offset + sublabel_y,
+         1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
+         width, height, xmb->font2);
+
+   /* Draw top/bottom line fade effect, if required */
+   if (use_smooth_ticker)
+   {
+      if (     *entry_sublabel_top_fade
+            && ticker_top_fade_alpha > 0.0f)
+         xmb_draw_text(shadows_enable, xmb, settings,
+               entry_sublabel_top_fade,
+               sublabel_x, ticker_top_fade_y_offset + sublabel_y,
+               1, ticker_top_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
+               width, height, xmb->font2);
+
+      if (     *entry_sublabel_bottom_fade
+            && ticker_bottom_fade_alpha > 0.0f)
+         xmb_draw_text(shadows_enable, xmb, settings,
+               entry_sublabel_bottom_fade,
+               sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
+               1, ticker_bottom_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
+               width, height, xmb->font2);
+   }
+}
+
 static int xmb_draw_item(
       const xmb_draw_ctx_t *ctx,
       size_t i,
@@ -5658,7 +5799,11 @@ static int xmb_draw_item(
 
    if (entry_type == FILE_TYPE_CONTENTLIST_ENTRY)
    {
-      char entry_path[PATH_MAX_LENGTH];
+      /* Sized to the only thing that can ever be copied in here.
+       * entry.path is char[256]; PATH_MAX_LENGTH is 2048, and this
+       * buffer sits in a frame that is entered once per visible entry
+       * per frame. */
+      char entry_path[sizeof(entry.path)];
       strlcpy(entry_path, entry.path, sizeof(entry_path));
       fill_pathname(entry_path, path_basename(entry_path), "",
             sizeof(entry_path));
@@ -5871,107 +6016,10 @@ static int xmb_draw_item(
             && width > 320 && height > 240
             && *entry.sublabel)
       {
-         char entry_sublabel[MENU_LABEL_MAX_LENGTH];
-         char entry_sublabel_top_fade[MENU_LABEL_MAX_LENGTH >> 2];
-         char entry_sublabel_bottom_fade[MENU_LABEL_MAX_LENGTH >> 2];
-         gfx_animation_ctx_line_ticker_t line_ticker;
-         gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
-         float ticker_y_offset             = 0.0f;
-         float ticker_top_fade_y_offset    = 0.0f;
-         float ticker_bottom_fade_y_offset = 0.0f;
-         float ticker_top_fade_alpha       = 0.0f;
-         float ticker_bottom_fade_alpha    = 0.0f;
-         float sublabel_x                  = node->x + xmb->margins_screen_left +
-               xmb->icon_spacing_horizontal + xmb->margins_label_left;
-         float sublabel_y                  = xmb->margins_screen_top +
-               node->y + (xmb->margins_label_top * 3.5f);
-
-         entry_sublabel[0]                 = '\0';
-         entry_sublabel_top_fade[0]        = '\0';
-         entry_sublabel_bottom_fade[0]     = '\0';
-
-         if (!show_entry_icons)
-            sublabel_x -= xmb->icon_size;
-
-         if (use_smooth_ticker)
-         {
-            line_ticker_smooth.fade_enabled         = true;
-            line_ticker_smooth.type_enum            = menu_ticker_type;
-            line_ticker_smooth.idx                  = ctx->p_anim->ticker_pixel_line_idx;
-
-            line_ticker_smooth.font                 = xmb->font2;
-            line_ticker_smooth.font_scale           = 1.0f;
-
-            line_ticker_smooth.field_width          = (unsigned)(xmb->font2_size * 0.5f * line_ticker_width);
-            line_ticker_smooth.field_height         = (unsigned)(
-                  (xmb->icon_spacing_vertical * ((1 + xmb->under_item_offset) - xmb->active_item_factor)) -
-                     (xmb->margins_label_top * 3.5f) - xmb->under_item_offset);
-
-            line_ticker_smooth.src_str              = entry.sublabel;
-            line_ticker_smooth.dst_str              = entry_sublabel;
-            line_ticker_smooth.dst_str_len          = sizeof(entry_sublabel);
-            line_ticker_smooth.y_offset             = &ticker_y_offset;
-
-            line_ticker_smooth.top_fade_str         = entry_sublabel_top_fade;
-            line_ticker_smooth.top_fade_str_len     = sizeof(entry_sublabel_top_fade);
-            line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
-            line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
-
-            line_ticker_smooth.bottom_fade_str      = entry_sublabel_bottom_fade;
-            line_ticker_smooth.bottom_fade_str_len  = sizeof(entry_sublabel_bottom_fade);
-            line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
-            line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
-
-            xmb_animation_line_ticker_smooth(ctx->p_anim, &line_ticker_smooth);
-         }
-         else
-         {
-            line_ticker.type_enum = menu_ticker_type;
-            line_ticker.idx       = ctx->p_anim->ticker_idx;
-
-            line_ticker.line_len  = (size_t)(line_ticker_width);
-            /* Note: max_lines should be calculated at runtime,
-             * but this is a nuisance. There is room for 4 lines
-             * to be displayed when using all existing XMB themes,
-             * so leave this value hard coded for now. */
-            line_ticker.max_lines = 4;
-
-            line_ticker.s         = entry_sublabel;
-            line_ticker.len       = sizeof(entry_sublabel);
-            line_ticker.str       = entry.sublabel;
-
-            xmb_animation_line_ticker(ctx->p_anim, &line_ticker);
-         }
-
          label_offset = -xmb->margins_label_top;
-
-         /* Draw sublabel */
-         xmb_draw_text(shadows_enable, xmb, settings,
-               entry_sublabel,
-               sublabel_x,
-               ticker_y_offset + sublabel_y,
-               1, node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-               width, height, xmb->font2);
-
-         /* Draw top/bottom line fade effect, if required */
-         if (use_smooth_ticker)
-         {
-            if (     *entry_sublabel_top_fade
-                  && ticker_top_fade_alpha > 0.0f)
-               xmb_draw_text(shadows_enable, xmb, settings,
-                     entry_sublabel_top_fade,
-                     sublabel_x, ticker_top_fade_y_offset + sublabel_y,
-                     1, ticker_top_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-                     width, height, xmb->font2);
-
-            if (     *entry_sublabel_bottom_fade
-                  && ticker_bottom_fade_alpha > 0.0f)
-               xmb_draw_text(shadows_enable, xmb, settings,
-                     entry_sublabel_bottom_fade,
-                     sublabel_x, ticker_bottom_fade_y_offset + sublabel_y,
-                     1, ticker_bottom_fade_alpha * node->label_alpha * xmb->alpha_list, TEXT_ALIGN_LEFT,
-                     width, height, xmb->font2);
-         }
+         xmb_draw_item_sublabel(ctx, node, entry.sublabel,
+               menu_ticker_type, line_ticker_width,
+               use_smooth_ticker, show_entry_icons);
       }
    }
 
