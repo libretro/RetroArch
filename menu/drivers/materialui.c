@@ -67,6 +67,26 @@
  * unit reference size for all UI elements.
  * 212 px corresponds to the the baseline standard
  * 22 inch, 96 DPI display */
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * materialui_frame() is already factored into named phases, but at -O3
+ * the ones called exactly once are inlined straight back into it, so
+ * branches that are not taken on a given frame still occupy the
+ * fall-through path in L1i.  Under -Os the compiler already optimises
+ * for size and the forced outlining only adds call overhead, so it is
+ * disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define MUI_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define MUI_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define MUI_NOINLINE __declspec(noinline)
+#else
+#define MUI_NOINLINE
+#endif
+
 #define MUI_DIP_BASE_UNIT_SIZE (212.0f)
 
 /* Spacer for left scrolling ticker text */
@@ -6441,7 +6461,7 @@ static void (*materialui_render_selected_entry_aux)(
  * ============================== */
 
 /* Draws current menu list */
-static void materialui_render_menu_list(
+MUI_NOINLINE static void materialui_render_menu_list(
       materialui_handle_t *mui, gfx_display_t *p_disp,
       void *userdata, size_t selection,
       unsigned video_width, unsigned video_height,
@@ -6562,7 +6582,7 @@ static size_t materialui_list_get_size(void *data, enum menu_list_type type)
    return 0;
 }
 
-static void materialui_render_background(
+MUI_NOINLINE static void materialui_render_background(
       materialui_handle_t *mui,
       uintptr_t tex_bg,
       gfx_display_t *p_disp,
@@ -6639,7 +6659,7 @@ static void materialui_render_background(
    }
 }
 
-static void materialui_render_landscape_border(
+MUI_NOINLINE static void materialui_render_landscape_border(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
@@ -6774,7 +6794,7 @@ static void materialui_render_selection_highlight(
    }
 }
 
-static void materialui_render_entry_touch_feedback(
+MUI_NOINLINE static void materialui_render_entry_touch_feedback(
       materialui_handle_t *mui,
       gfx_display_t *p_disp, void *userdata,
       menu_input_t *menu_input,
@@ -6877,7 +6897,7 @@ static void materialui_render_entry_touch_feedback(
    }
 }
 
-static void materialui_render_header(
+MUI_NOINLINE static void materialui_render_header(
       materialui_handle_t *mui,
       const uintptr_t *tex_list,
       struct menu_state *menu_st,
@@ -7549,7 +7569,7 @@ static void materialui_render_nav_bar_right(materialui_handle_t *mui,
    }
 }
 
-static void materialui_render_nav_bar(materialui_handle_t *mui,
+MUI_NOINLINE static void materialui_render_nav_bar(materialui_handle_t *mui,
       const uintptr_t *tex_list,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
@@ -7709,7 +7729,7 @@ static void materialui_show_fullscreen_thumbnails(
    mui->flags                         |= MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS;
 }
 
-static void materialui_draw_no_thumbnail_available(
+MUI_NOINLINE static void materialui_draw_no_thumbnail_available(
       materialui_handle_t *mui,
       gfx_display_t *p_disp,
       void *userdata,
@@ -7763,7 +7783,7 @@ static void materialui_draw_no_thumbnail_available(
          true);
 }
 
-static void materialui_render_fullscreen_thumbnails(materialui_handle_t *mui,
+MUI_NOINLINE static void materialui_render_fullscreen_thumbnails(materialui_handle_t *mui,
       gfx_display_t *p_disp, void *userdata,
       unsigned video_width, unsigned video_height,
       unsigned header_height, size_t selection)
