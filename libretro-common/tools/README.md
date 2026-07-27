@@ -6,7 +6,7 @@ them up.
 
 The layout mirrors the tree they test: `tools/chd` for
 `formats/chd`, `tools/flac` for `formats/flac`, `tools/encodings` for
-`encodings`.
+`encodings`, `tools/formats` for the rest of `formats`.
 
 None of these are part of any build. Each is a standalone program or
 script, compiled or run by hand against the sources it names.
@@ -57,3 +57,9 @@ Matroska one found a real defect on first use.
 | `rzstd_fse_test.c` | Builds the FSE tables RFC 8878 predefines and checks the spread closes. |
 | `huff_test.c` | Decodes every `huff` hunk of an image and compares against the original uncompressed source. |
 | `adler32_test.c` | Checks `encoding_deflate.c`'s adler32 against a textbook reference over block boundaries, unaligned starts, the chunk bound and the worst case for its 32-bit overflow argument. Build it once per SIMD path; all must agree. |
+
+## formats
+
+| | |
+|---|---|
+| `rxml_treehash.c` | Hashes the tree rxml builds for each document given, so two builds can be diffed over a corpus. Rejected documents print REJECT, so a change in what is accepted shows up as well. |
