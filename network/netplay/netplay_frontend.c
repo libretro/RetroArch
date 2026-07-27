@@ -6084,6 +6084,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             size_t   load_ptr;
             uint32_t load_frame_count;
             uint32_t rd, wn;
+            enum trans_stream_error zerr = TRANS_STREAM_ERROR_NONE;
             struct compression_transcoder *ctrans = NULL;
             NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
@@ -6204,9 +6205,21 @@ static bool netplay_get_cmd(netplay_t *netplay,
             ctrans->decompression_backend->set_out(
                ctrans->decompression_stream,
                (uint8_t*)netplay->buffer[load_ptr].state, state_size);
-            ctrans->decompression_backend->trans(
-               ctrans->decompression_stream,
-               true, &rd, &wn, NULL);
+            /* trans() returns true for a finalized stream and also for
+             * "input exhausted, codec still mid-stream" (reported as
+             * TRANS_STREAM_ERROR_AGAIN), so neither the return value nor
+             * a nonzero wn means the state decompressed.  A truncated or
+             * malformed payload from a peer would otherwise be loaded as
+             * a partially-filled state buffer. */
+            if (!ctrans->decompression_backend->trans(
+                     ctrans->decompression_stream,
+                     true, &rd, &wn, &zerr)
+                  || zerr != TRANS_STREAM_ERROR_NONE
+                  || wn != state_size)
+            {
+               RARCH_ERR("[Netplay] Failed to decompress peer save state.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             if (memcmp(netplay->buffer[load_ptr].state, "NETPLAY", 7) != 0)
             {
