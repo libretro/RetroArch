@@ -1238,9 +1238,10 @@ static bool content_file_extract_from_archive(
 }
 #endif
 
-/* Stage smb:// / nfs:// content to a local cache file so cores can
- * fopen() it. Keeps the file in cache (not temporary_files) so a failed
- * load still leaves evidence, and Settings → Cache is the place to look. */
+/* Stage smb:// / nfs:// content to a local cache file when the core
+ * cannot open network VFS URLs (or when the path is archive#entry).
+ * Keeps the file in cache (not temporary_files) so a failed load still
+ * leaves evidence, and Settings → Cache is the place to look. */
 static bool content_file_copy_vfs_url_to_cache(
       content_information_ctx_t *content_ctx,
       content_state_t *p_content,
@@ -1637,18 +1638,36 @@ static bool content_file_load(
          if (p_content->content_override_list)
             content_file_apply_overrides(p_content, content, i, content_path);
 
-         /* smb:// / nfs://: always stage to cache (plain and archives). */
+         /* smb:// / nfs://: stage to cache only when needed.
+          * - Cores with VFS + need_fullpath can open nfs/smb URLs directly
+          *   (stream CHD etc. without a full local copy).
+          * - Cores without VFS that need_fullpath still require a local file.
+          * - archive#entry cannot be opened by nfs/smb VFS; stage the archive
+          *   only (content_file_copy_vfs_url_to_cache reattaches #entry).
+          * In-memory loads (!need_fullpath) use frontend filestream/VFS, so
+          * they do not need a disk stage either. */
          if (content_path
                && (string_starts_with_case_insensitive(content_path, "nfs://")
                   || string_starts_with_case_insensitive(content_path, "smb://")))
          {
-            if (!content_file_copy_vfs_url_to_cache(content_ctx, p_content,
-                     &content_path, err_string))
-               return false;
-            /* After staging, path is local — archive flag still applies
-             * to the staged file's extension. */
-            content_compressed = path_is_compressed_file(content_path)
-                  || path_contains_compressed_file(content_path);
+            bool need_fullpath = ((content->elems[i].attr.i
+                     & BLCK_NEED_FULLPATH) != 0);
+            bool has_archive_entry =
+                  (path_get_archive_delim(content_path) != NULL);
+            bool stage_to_cache = has_archive_entry
+                  || (need_fullpath
+                        && (!sys_info || !sys_info->supports_vfs));
+
+            if (stage_to_cache)
+            {
+               if (!content_file_copy_vfs_url_to_cache(content_ctx, p_content,
+                        &content_path, err_string))
+                  return false;
+               /* After staging, path is local — archive flag still applies
+                * to the staged file's extension. */
+               content_compressed = path_is_compressed_file(content_path)
+                     || path_contains_compressed_file(content_path);
+            }
          }
 
          /* If core does not require 'fullpath', load
@@ -1682,7 +1701,8 @@ static bool content_file_load(
                      valid_exts, &content_path, err_string))
                return false;
 #endif
-            /* Other VFS URL schemes (non-smb/nfs already staged above). */
+            /* Remaining VFS URL schemes (and nfs/smb that were not staged
+             * above because the core supports VFS). */
             if (   (!sys_info || !sys_info->supports_vfs)
                 && content_path
                 && strstr(content_path, "://"))
