@@ -76,6 +76,7 @@ jobs:
             rbmp_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
+            rpng_decode_corpus_test
             word_wrap_overflow_test
             task_queue_title_error_test
             tpool_wait_test
@@ -83,6 +84,7 @@ jobs:
             retro_atomic_extern_c_linkage_test
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
+            audio_mixer_loop_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).

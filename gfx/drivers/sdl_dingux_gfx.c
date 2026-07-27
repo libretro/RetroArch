@@ -703,23 +703,17 @@ static void sdl_dingux_blit_frame16(sdl_dingux_video_t *vid,
       memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
-      /* Otherwise copy pixel data line-by-line */
-
-      /* 16 bit - divide pitch by 2 */
-      uint16_t in_stride  = (uint16_t)(src_pitch >> 1);
-      uint16_t out_stride = (uint16_t)(dst_pitch >> 1);
-      size_t y;
+      /* Otherwise copy the padded rectangle line by line.  Still
+       * streaming: a single line is far below memcpy_nt's threshold,
+       * so memcpy_nt per line would degrade to memcpy and reintroduce
+       * exactly the eviction the fast path above avoids. */
 
       /* If SDL surface has horizontal padding,
        * shift output image to the right */
       out_ptr += vid->frame_padding_x;
 
-      for (y = 0; y < height; y++)
-      {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint16_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
-      }
+      memcpy_nt_2d(out_ptr, dst_pitch, in_ptr, src_pitch,
+            width * sizeof(uint16_t), height);
    }
 }
 
@@ -739,23 +733,15 @@ static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
       memcpy_nt(out_ptr, in_ptr, src_pitch * height);
    else
    {
-      /* Otherwise copy pixel data line-by-line */
-
-      /* 32 bit - divide pitch by 4 */
-      uint32_t in_stride  = (uint32_t)(src_pitch >> 2);
-      uint32_t out_stride = (uint32_t)(dst_pitch >> 2);
-      size_t y;
+      /* Otherwise copy the padded rectangle line by line; see the
+       * 16-bit path above for why this is not memcpy_nt per line. */
 
       /* If SDL surface has horizontal padding,
        * shift output image to the right */
       out_ptr += vid->frame_padding_x;
 
-      for (y = 0; y < height; y++)
-      {
-         memcpy(out_ptr, in_ptr, width * sizeof(uint32_t));
-         in_ptr  += in_stride;
-         out_ptr += out_stride;
-      }
+      memcpy_nt_2d(out_ptr, dst_pitch, in_ptr, src_pitch,
+            width * sizeof(uint32_t), height);
    }
 }
 

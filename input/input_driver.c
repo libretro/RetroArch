@@ -79,6 +79,21 @@
 
 #include "../ai/game_ai.h"
 
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define INPUT_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define INPUT_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define INPUT_NOINLINE __declspec(noinline)
+#else
+#define INPUT_NOINLINE
+#endif
+
 #define HOLD_BTN_DELAY_SEC 2
 
 /* Precomputed reciprocals used in analog input scaling.
@@ -1037,6 +1052,15 @@ static int16_t input_joypad_analog_button(
       ? joypad_info->auto_binds[ident].joyaxis
       : bind->joyaxis;
 
+   /* The joypad driver pointer can be NULL for the duration of a
+    * driver teardown/reinit cycle - video_driver_free_internal()
+    * clears primary_joypad before the joypad is recreated by
+    * input_driver_init_joypads(). input_joypad_axis() already
+    * guards against this, but the digital button fallback paths
+    * below dereference drv directly. */
+   if (!drv)
+      return 0;
+
    /* Early exit for digital-only buttons: if neither the user bind
     * nor the autoconfig bind has an analog axis, this button has no
     * analog capability. Skip the input_joypad_axis() call and
@@ -1107,6 +1131,11 @@ static int16_t input_joypad_analog_axis(
    const struct retro_keybind *bind_x_plus  = NULL;
    const struct retro_keybind *bind_y_minus = NULL;
    const struct retro_keybind *bind_y_plus  = NULL;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return 0;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
@@ -1298,7 +1327,7 @@ static int16_t input_joypad_analog_axis(
  *
  * @return true if the stick was processed, false if skipped (dpad mode)
  */
-static bool input_joypad_analog_stick(
+INPUT_NOINLINE static bool input_joypad_analog_stick(
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
@@ -1320,6 +1349,11 @@ static bool input_joypad_analog_stick(
 
    *out_x = 0;
    *out_y = 0;
+
+   /* See input_joypad_analog_button() - drv is NULL while the
+    * joypad driver is being torn down and reinitialised. */
+   if (!drv)
+      return false;
 
    /* Skip analog input with analog_dpad_mode */
    switch (input_analog_dpad_mode)
@@ -4059,7 +4093,7 @@ static void input_overlay_update_pointer_coords(
  *
  * Poll pressed buttons/keys on currently active overlay.
  **/
-static void input_poll_overlay(
+INPUT_NOINLINE static void input_poll_overlay(
       bool keyboard_mapping_blocked,
       settings_t *settings,
       void *ol_data,

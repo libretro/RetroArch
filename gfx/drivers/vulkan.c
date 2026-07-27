@@ -878,7 +878,13 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       pool->sets[i]                = VK_NULL_HANDLE;
    pool->next                      = NULL;
 
-   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
+   if (vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool)
+         != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to create descriptor pool.\n");
+      free(pool);
+      return NULL;
+   }
 
    /* Just allocate all descriptor sets up front. */
    alloc_info.sType                = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -887,8 +893,21 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    alloc_info.descriptorSetCount   = 1;
    alloc_info.pSetLayouts          = &manager->set_layout;
 
+   /* A partially populated block is unusable: the manager hands out
+    * sets by index, so a VK_NULL_HANDLE hole would be written to and
+    * bound as if it were live. Tear the whole block down instead. */
    for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
+   {
+      if (vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i])
+            != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to allocate descriptor set %u/%u.\n",
+               i, (unsigned)VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS);
+         vkDestroyDescriptorPool(device, pool->pool, NULL);
+         free(pool);
+         return NULL;
+      }
+   }
 
    return pool;
 }
@@ -897,17 +916,22 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 static VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device, struct vk_descriptor_manager *manager)
 {
+   if (!manager->current)
+      return VK_NULL_HANDLE;
+
    if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
    {
-      while (manager->current->next)
+      if (!manager->current->next)
       {
-         manager->current = manager->current->next;
-         manager->count   = 0;
-         return manager->current->sets[manager->count++];
+         struct vk_descriptor_pool *block =
+            vulkan_alloc_descriptor_pool(device, manager);
+         /* Out of descriptor memory. Report the failure upwards so the
+          * caller can drop the draw; handing back a stale or null set
+          * leaves the driver writing through a dangling descriptor. */
+         if (!block)
+            return VK_NULL_HANDLE;
+         manager->current->next = block;
       }
-
-      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-      retro_assert(manager->current->next);
 
       manager->current = manager->current->next;
       manager->count   = 0;
@@ -983,6 +1007,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       vulkan_write_quad_descriptors(
             vk->context->device,
@@ -1673,6 +1699,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
             sizeof(ubo), &range))
@@ -1973,8 +2001,6 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
       vertex                      = &vk_vertexes[0];
    if (!tex_coord)
       tex_coord                   = &vk_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &vk_tex_coords[0];
    if (!texture)
       texture                     = &vk->display.blank_texture;
    if (!color)
@@ -2912,6 +2938,8 @@ static void vulkan_font_render_msg(
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       vulkan_write_quad_descriptors(
             vk->context->device,
@@ -4321,6 +4349,7 @@ static void vulkan_set_hdr10(vk_t* vk, vulkan_filter_chain_t* filter_chain, bool
 static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
    struct vulkan_filter_chain_create_info info;
+   settings_t *settings;
 
    if (!vk->context)
       return false;
@@ -4328,7 +4357,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    if (vk->filter_chain_default)
       return true;
 
-   settings_t *settings       = config_get_ptr();
+   settings                   = config_get_ptr();
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -4428,11 +4457,12 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 {
    struct vulkan_filter_chain_create_info info;
+   settings_t *settings;
 
    if (!vk->context)
       return false;
 
-   settings_t* settings       = config_get_ptr();
+   settings                   = config_get_ptr();
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -6229,6 +6259,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
          set = vulkan_descriptor_manager_alloc(
                vk->context->device,
                &vk->chain->descriptor_manager);
+         if (set == VK_NULL_HANDLE)
+            return;
 
          vulkan_write_quad_descriptors(
                vk->context->device,
@@ -6502,6 +6534,9 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
 
       vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
 
+      if (set == VK_NULL_HANDLE)
+         return;
+
       *mapped_ubo  = vk->hdr.ubo_values;
 
       VULKAN_SET_UNIFORM_BUFFER(vk->context->device,
@@ -6633,6 +6668,24 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned frame_index;
    unsigned swapchain_index;
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
+   bool message_visible;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_visible;
+#endif
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool end_pass;
+   bool end_main_pass;
+   bool video_hdr_enable;
+#endif
+   gfx_ctx_mode_t mode;
+   struct vk_per_frame *chain;
+   struct vk_image *backbuffer;
+   struct vk_descriptor_manager *manager;
+   struct vk_buffer_chain *buff_chain_vbo;
+   struct vk_buffer_chain *buff_chain_ubo;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool use_offscreen_buffer                     = false;
+#endif
 
    /* The context may recreate its swapchain while acquiring the next
     * image. Rebuild driver-owned framebuffers before recording commands
@@ -6674,7 +6727,6 @@ static bool vulkan_frame(void *data, const void *frame,
     * The default filter chain already contains the internal HDR shader
     * (hdr_frag) so it renders directly to the swapchain — no offscreen needed.
     * Custom shader chains need offscreen unless they emit HDR natively. */
-   bool use_offscreen_buffer = false;
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       && filter_chain != vk->filter_chain_default)
    {
@@ -6696,11 +6748,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
-   struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
-   struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
-   struct vk_descriptor_manager *manager         = &chain->descriptor_manager;
-   struct vk_buffer_chain *buff_chain_vbo        = &chain->vbo;
-   struct vk_buffer_chain *buff_chain_ubo        = &chain->ubo;
+   chain                                         = &vk->swapchain[frame_index];
+   backbuffer                                    = &vk->backbuffers[swapchain_index];
+   manager                                       = &chain->descriptor_manager;
+   buff_chain_vbo                                = &chain->vbo;
+   buff_chain_ubo                                = &chain->ubo;
 
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
@@ -6899,12 +6951,14 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)filter_chain, video_driver_get_core_aspect());
 
    /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-   uint32_t rot = retroarch_get_rotation();
-   float core_aspect_rot = video_driver_get_core_aspect();
-   if (rot == 1 || rot == 3)
-      core_aspect_rot = 1/core_aspect_rot;
-   vulkan_filter_chain_set_core_aspect_rot(
-         (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   {
+      uint32_t rot          = retroarch_get_rotation();
+      float core_aspect_rot = video_driver_get_core_aspect();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot    = 1 / core_aspect_rot;
+      vulkan_filter_chain_set_core_aspect_rot(
+            (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    {
@@ -7075,8 +7129,8 @@ static bool vulkan_frame(void *data, const void *frame,
             &vk->vk_vp, vk->mvp.data);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      bool end_pass = true;
-      bool end_main_pass = true;
+      end_pass      = true;
+      end_main_pass = true;
 
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
@@ -7117,10 +7171,10 @@ static bool vulkan_frame(void *data, const void *frame,
          end_main_pass = false;
       }
 
-      const bool message_visible = msg && *msg;
+      message_visible = msg && *msg;
 
 #ifdef HAVE_GFX_WIDGETS
-      const bool widgets_visible = gfx_widgets_visible(video_info);
+      widgets_visible = gfx_widgets_visible(video_info);
 #endif
 
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
@@ -7516,7 +7570,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   bool video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
+   video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
    if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
          || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
          != video_hdr_enable))
@@ -7543,7 +7597,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-      gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
 

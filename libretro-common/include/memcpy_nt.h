@@ -53,6 +53,29 @@ RETRO_BEGIN_DECLS
  */
 void *memcpy_nt(void *dst, const void *src, size_t len);
 
+/**
+ * memcpy_nt_2d:
+ *
+ * memcpy_nt for a strided rectangular copy: @rows lines of
+ * @line_bytes each, advancing @dst_pitch and @src_pitch bytes between
+ * lines.  Regions must not overlap.
+ *
+ * This exists because calling memcpy_nt once per line does not work.
+ * A single scanline of a handheld frame buffer is a few hundred bytes,
+ * far below memcpy_nt's minimum length, so every call falls straight
+ * back to memcpy and the destination is allocated into the cache
+ * anyway.  Judging the threshold against the whole rectangle, and
+ * keeping the streaming stores running across line boundaries with a
+ * single barrier at the end, is what makes it work.
+ *
+ * Where the rectangle is contiguous in both buffers this defers to
+ * memcpy_nt.  On platforms without a streaming-store path it is a
+ * line-by-line memcpy.
+ */
+void *memcpy_nt_2d(void *dst, size_t dst_pitch,
+      const void *src, size_t src_pitch,
+      size_t line_bytes, size_t rows);
+
 RETRO_END_DECLS
 
 #endif

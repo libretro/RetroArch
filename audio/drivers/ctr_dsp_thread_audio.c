@@ -174,8 +174,23 @@ static void ctr_dsp_thread_audio_free(void *data)
 
    if (ctr->running)
    {
+      /* Under fifo_lock, which every other signaller of fifo_avail
+       * already holds.  The worker tests both `avail` and `running`
+       * while holding it and gives it up only inside scond_wait, so
+       * signalling from outside the lock can land entirely within the
+       * gap between that test and the wait.  The signal then reaches
+       * no waiter, nothing signals fifo_avail again, and the join
+       * below waits on a thread that will never return - a deadlock on
+       * content close and on any audio settings change, not on some
+       * exotic failure.
+       *
+       * Safe to take here: ctr->running is only still true if init
+       * ran to completion, since its failure path clears the flag
+       * before calling this function, so fifo_lock is non-NULL. */
+      slock_lock(ctr->fifo_lock);
       ctr->running = false;
       scond_signal(ctr->fifo_avail);
+      slock_unlock(ctr->fifo_lock);
    }
 
    if (ctr->thread)

@@ -2087,6 +2087,28 @@ static void rgui_color_rect(
    }
 }
 
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * rgui_render() is already factored into named phases, but at -O3 the
+ * ones called exactly once are all inlined straight back into it,
+ * producing a single 25 KB function -- about 80% of a 32 KB L1i on its
+ * own, entered every frame -- where most of the code belongs to
+ * branches that are not taken on a given frame.  Keeping the phases
+ * separate costs one call each and lets the fall-through path stay
+ * resident.  Under -Os the compiler already optimises for size and the
+ * forced outlining only adds call overhead, so it is disabled. */
+#if defined(__OPTIMIZE_SIZE__)
+#define RGUI_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define RGUI_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define RGUI_NOINLINE __declspec(noinline)
+#else
+#define RGUI_NOINLINE
+#endif
+
 static void rgui_render_border(
       rgui_t *rgui,
       uint16_t *data,
@@ -2268,7 +2290,7 @@ static void rgui_init_particle_effect(
    }
 }
 
-static void rgui_render_particle_effect(
+RGUI_NOINLINE static void rgui_render_particle_effect(
       rgui_t *rgui,
       gfx_animation_t *p_anim,
       uint16_t *frame_buf_data,
@@ -3075,7 +3097,7 @@ static bool rgui_load_image(
    return true;
 }
 
-static void rgui_render_background(
+RGUI_NOINLINE static void rgui_render_background(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -3114,7 +3136,7 @@ static void rgui_render_messagebox(
       unsigned fb_width,
       unsigned fb_height);
 
-static void rgui_render_fs_thumbnail(
+RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -5182,7 +5204,7 @@ static int rgui_osk_ptr_at_pos(
    return -1;
 }
 
-static void rgui_render_osk(
+RGUI_NOINLINE static void rgui_render_osk(
       rgui_t *rgui,
       uint16_t *frame_buf_data,
       gfx_animation_ctx_ticker_t *ticker,
@@ -7505,7 +7527,7 @@ static void rgui_update_savestate_thumbnail_path(void *data, unsigned i)
          unsigned _state_slot = string_to_unsigned(entry.label);
          if (     _state_slot == MENU_ENUM_LABEL_STATE_SLOT
                || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_RUN_STR)
-               || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+               || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_LOAD_STATE_STR)
                || string_is_equal(entry.label, MENU_ENUM_LABEL_SAVE_STATE_STR))
          {
@@ -7995,7 +8017,7 @@ static void rgui_populate_entries(
 
    /* Check whether we are currently viewing a playlist */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
+         || string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_IMAGES_LIST_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_MUSIC_LIST_STR)
@@ -8005,14 +8027,14 @@ static void rgui_populate_entries(
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLIST;
 
-   if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_PLAYLISTS_TAB)))
+   if (string_is_equal(label, MENU_ENUM_LABEL_PLAYLISTS_TAB_STR))
       rgui->flags |=  RGUI_FLAG_IS_PLAYLISTS_TAB;
    else
       rgui->flags &= ~RGUI_FLAG_IS_PLAYLISTS_TAB;
 
    /* Determine whether this is the quick menu */
    if (     string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_RPL_ENTRY_ACTIONS_STR)
-         || string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CONTENT_SETTINGS))
+         || string_is_equal(label, MENU_ENUM_LABEL_CONTENT_SETTINGS_STR)
          || string_is_equal(label, MENU_ENUM_LABEL_SAVESTATE_LIST_STR))
       rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
    else
@@ -8042,7 +8064,7 @@ static void rgui_populate_entries(
       /* Quick Menu under Explore list must also be Quick Menu */
       if (     string_is_equal(entry.label, MENU_ENUM_LABEL_RUN_STR)
             || string_is_equal(entry.label, MENU_ENUM_LABEL_RESUME_CONTENT_STR)
-            || string_is_equal(entry.label, msg_hash_to_str(MENU_ENUM_LABEL_STATE_SLOT))
+            || string_is_equal(entry.label, MENU_ENUM_LABEL_STATE_SLOT_STR)
          )
       {
          rgui->flags |=  RGUI_FLAG_IS_QUICK_MENU;
@@ -8062,7 +8084,7 @@ static void rgui_populate_entries(
    rgui->flags &= ~RGUI_FLAG_THUMBNAIL_LOAD_PENDING;
 
    if (     rgui->flags & RGUI_FLAG_IS_PLAYLIST
-         && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY)))
+         && !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
@@ -8074,7 +8096,7 @@ static void rgui_populate_entries(
             || remember_selection == MENU_REMEMBER_SELECTION_PLAYLISTS)
          menu_st->selection_ptr = rgui->playlist_selection_ptr;
    }
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_STR))
    {
       if (     remember_selection == MENU_REMEMBER_SELECTION_ALWAYS
             || remember_selection == MENU_REMEMBER_SELECTION_MAIN)

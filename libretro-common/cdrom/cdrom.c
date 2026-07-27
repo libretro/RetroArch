@@ -338,7 +338,7 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
    if (cmd[0] == 0xB9)
    {
       double time_taken = (double)(((clock() - t) * 1000) / CLOCKS_PER_SEC);
-      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom.cur_lba);
+      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom->cur_lba);
       fflush(stdout);
    }
 
@@ -816,7 +816,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
 
-         if (stream->cdrom.last_frame_valid && lba_req == stream->cdrom.last_frame_lba)
+         if (stream->cdrom->last_frame_valid && lba_req == stream->cdrom->last_frame_lba)
          {
             /* use cached frame */
             cached_read = true;
@@ -825,7 +825,7 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
             fflush(stdout);
 #endif
             /* assumes request_len is always equal to the size of last_frame */
-            memcpy(xfer_buf_pos, stream->cdrom.last_frame, sizeof(stream->cdrom.last_frame));
+            memcpy(xfer_buf_pos, stream->cdrom->last_frame, sizeof(stream->cdrom->last_frame));
          }
 
       }
@@ -876,13 +876,13 @@ retry:
                unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
 
                /* cache the last received frame */
-               memcpy(stream->cdrom.last_frame, xfer_buf_pos, sizeof(stream->cdrom.last_frame));
-               stream->cdrom.last_frame_valid = true;
+               memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
+               stream->cdrom->last_frame_valid = true;
                /* the ending frame is never actually read, so what we really just read is the one right before that */
-               stream->cdrom.last_frame_lba = frame_end - 1;
+               stream->cdrom->last_frame_lba = frame_end - 1;
             }
             else
-               stream->cdrom.last_frame_valid = false;
+               stream->cdrom->last_frame_valid = false;
 
 #if 0
             printf("Frame %d, adding %" PRId64 " to buf_pos, is now %" PRId64 ". skip is %" PRId64 "\n", i, request_len, (xfer_buf_pos + request_len) - xfer_buf, skip);
@@ -1581,7 +1581,7 @@ int cdrom_read(libretro_vfs_implementation_file *stream,
 
    if (rv)
    {
-      stream->cdrom.last_frame_valid = false;
+      stream->cdrom->last_frame_valid = false;
       return 1;
    }
 

@@ -232,6 +232,20 @@
 
 #define RFILE_HINT_UNBUFFERED (1 << 8)
 
+/* Keeps a cold path that needs a PATH_MAX_LENGTH scratch buffer out of
+ * a caller that would otherwise not need a frame at all. Under -Os the
+ * compiler is already optimizing for size and the forced outlining only
+ * buys a call, so it is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define VFS_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define VFS_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define VFS_NOINLINE __declspec(noinline)
+#else
+#define VFS_NOINLINE
+#endif
+
 #ifdef HAVE_CDROM
 static int path_is_cdrom(const char *p)
 {
@@ -395,6 +409,16 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #ifdef HAVE_CDROM
    if (path_is_cdrom(path))
    {
+      /* The sector cache and cue sheet state only exist for cdrom://
+       * handles, so they are allocated here rather than carried by
+       * every open file. Zeroed, because the old inline member was
+       * zeroed by the calloc() above and the cdrom paths rely on
+       * that (cue_buf NULL, last_frame_valid false, cur_track 0). */
+      if (!(stream->cdrom = (vfs_cdrom_t*)calloc(1, sizeof(*stream->cdrom))))
+      {
+         free(stream);
+         return NULL;
+      }
       path             += sizeof("cdrom://")-1;
       stream->scheme    = VFS_SCHEME_CDROM;
    }
@@ -749,8 +773,15 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
 #ifdef HAVE_CDROM
 end:
-   if (stream->cdrom.cue_buf)
-      free(stream->cdrom.cue_buf);
+   /* Reached both by the goto above and by fall-through from the
+    * non-cdrom path, where stream->cdrom is NULL. */
+   if (stream->cdrom)
+   {
+      if (stream->cdrom->cue_buf)
+         free(stream->cdrom->cue_buf);
+      free(stream->cdrom);
+      stream->cdrom = NULL;
+   }
 #endif
 #ifdef HAVE_SMBCLIENT
 smbend:
@@ -1716,24 +1747,54 @@ const char *retro_vfs_dirent_get_name_impl(libretro_vfs_implementation_dir *rdir
    }
 }
 
+#ifdef HAVE_SMBCLIENT
+/* Outlined for the same reason as the stat helper below: the buffer is
+ * only needed when the entry belongs to an smb:// listing. */
+static VFS_NOINLINE bool retro_vfs_dirent_is_dir_smb(
+      libretro_vfs_implementation_dir *rdir)
+{
+   char full[PATH_MAX_LENGTH];
+   const char *name = retro_vfs_dirent_get_name_impl(rdir);
+   int64_t sz       = 0;
+   int st           = 0;
+
+   if (!name)
+      return false;
+
+   fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
+   st = retro_vfs_stat_smb(full, &sz);
+
+   return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
+}
+#endif
+
+#if !defined(_WIN32) && !defined(VITA) && !defined(__PSL1GHT__) && !defined(__PS3__)
+/* Split out of retro_vfs_dirent_is_dir_impl() so that the d_type test
+ * there does not have to carry this scratch buffer. Filesystems that
+ * populate d_type - ext4, APFS, NTFS - answer from the dirent alone and
+ * never reach this, but the array and the struct stat were declared in
+ * the same scope as the test, so every entry paid a 2224-byte frame
+ * plus, under -fstack-protector-strong, a canary written and re-read at
+ * offset 2200 of a frame the fast path otherwise never touches. */
+static VFS_NOINLINE bool retro_vfs_dirent_is_dir_stat(
+      libretro_vfs_implementation_dir *rdir)
+{
+   struct stat buf;
+   char path[PATH_MAX_LENGTH];
+
+   fill_pathname_join_special(path, rdir->orig_path,
+         retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
+   if (stat(path, &buf) < 0)
+      return false;
+   return S_ISDIR(buf.st_mode);
+}
+#endif
+
 bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
 {
 #ifdef HAVE_SMBCLIENT
    if (rdir->smb_handle && rdir->smb_handle->dir)
-   {
-      char full[PATH_MAX_LENGTH];
-      const char *name = retro_vfs_dirent_get_name_impl(rdir);
-      int64_t sz = 0;
-      int st = 0;
-
-      if (!name)
-         return false;
-
-      fill_pathname_join_special(full, rdir->orig_path, name, sizeof(full));
-      st = retro_vfs_stat_smb(full, &sz);
-
-      return (st & RETRO_VFS_STAT_IS_DIRECTORY) != 0;
-   }
+      return retro_vfs_dirent_is_dir_smb(rdir);
 #endif
 #ifdef HAVE_NFSCLIENT
    if (rdir->nfs_handle && rdir->nfs_handle->dir)
@@ -1768,8 +1829,6 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
       sysFSDirent *entry          = (sysFSDirent*)&rdir->entry;
       return (entry->d_type == FS_TYPE_DIR);
 #else
-      struct stat buf;
-      char path[PATH_MAX_LENGTH];
 #if defined(DT_DIR)
       const struct dirent *entry = (const struct dirent*)rdir->entry;
       if (entry->d_type == DT_DIR)
@@ -1779,10 +1838,7 @@ bool retro_vfs_dirent_is_dir_impl(libretro_vfs_implementation_dir *rdir)
          return false;
 #endif
       /* dirent struct doesn't have d_type, do it the slow way ... */
-      fill_pathname_join_special(path, rdir->orig_path, retro_vfs_dirent_get_name_impl(rdir), sizeof(path));
-      if (stat(path, &buf) < 0)
-         return false;
-      return S_ISDIR(buf.st_mode);
+      return retro_vfs_dirent_is_dir_stat(rdir);
 #endif
    }
 }

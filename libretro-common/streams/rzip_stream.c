@@ -456,6 +456,7 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
    uint32_t compressed_chunk_size;
    uint32_t inflate_read;
    uint32_t inflate_written;
+   enum trans_stream_error inflate_err = TRANS_STREAM_ERROR_NONE;
 
    if (!stream || !stream->inflate_backend || !stream->inflate_stream)
       return false;
@@ -522,9 +523,20 @@ static bool rzipstream_read_chunk(rzipstream_t *stream)
     * can't guarantee that the entire chunk will be written
     * to the output buffer - this is inefficient, but not
     * much we can do... */
+   /* trans() returns true both for "stream finished" and for "ran out of
+    * input with the codec still mid-stream" - the latter reported as
+    * TRANS_STREAM_ERROR_AGAIN - so the return value alone does not say
+    * the chunk decompressed.  Without the error code a truncated chunk
+    * passes every check below (all input consumed, some output written)
+    * and its partial contents are handed back as if complete.  Demand
+    * TRANS_STREAM_ERROR_NONE, which both backends set only on a
+    * finalized stream. */
    if (!stream->inflate_backend->trans(
          stream->inflate_stream, true,
-         &inflate_read, &inflate_written, NULL))
+         &inflate_read, &inflate_written, &inflate_err))
+      return false;
+
+   if (inflate_err != TRANS_STREAM_ERROR_NONE)
       return false;
 
    /* Error checking */

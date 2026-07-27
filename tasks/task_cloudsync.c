@@ -1253,6 +1253,20 @@ static void task_cloud_sync_update_manifests(task_cloud_sync_state_t *sync_state
       RARCH_LOG(CSPFX "Uploading updated manifest to server...\n");
       task_cloud_sync_manifest_filename(manifest_path, sizeof(manifest_path), true);
       file = task_cloud_sync_write_updated_manifest(sync_state->updated_server_manifest, manifest_path);
+      /* task_cloud_sync_write_updated_manifest() returns NULL when the
+       * manifest cannot be opened for writing or the json writer cannot
+       * be attached to it. filestream_seek() dereferences the stream
+       * without a NULL check, so bail out the same way a failed upload
+       * does instead of crashing the task thread. The local manifest
+       * write above is already guarded this way. */
+      if (!file)
+      {
+         RARCH_ERR(CSPFX "Failed to write updated manifest to \"%s\".\n",
+               manifest_path);
+         sync_state->failures = true;
+         sync_state->phase    = CLOUD_SYNC_PHASE_END;
+         return;
+      }
       filestream_seek(file, 0, SEEK_SET);
       sync_state->waiting = 1;
       if (!cloud_sync_update(MANIFEST_FILENAME_SERVER, file, task_cloud_sync_update_manifest_cb, sync_state))

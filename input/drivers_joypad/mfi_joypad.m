@@ -723,13 +723,25 @@ static void apple_gamecontroller_joypad_destroy(void)
    {
       if (deviceHapticEngine)
       {
-         deviceHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-         deviceHapticEngine.resetHandler = ^{};
-         [deviceHapticEngine stopWithCompletionHandler:^(NSError *error) {
-            deviceWeakPlayer = nil;
-            deviceStrongPlayer = nil;
-            deviceHapticEngine = nil;
-         }];
+         CHHapticEngine *engine = deviceHapticEngine;
+
+         /* Clear the globals here, on the caller's thread, rather
+          * than from the stop completion handler. The handler runs
+          * on a CoreHaptics queue an arbitrary time later, by which
+          * point a rumble request may already have built a fresh
+          * engine via apple_gamecontroller_device_haptics_setup() -
+          * the stale handler would then nil out the new engine and
+          * its players. Dropping them up front also guarantees any
+          * such request builds a new engine instead of reusing the
+          * one being torn down. The block keeps `engine` alive
+          * until the stop completes. */
+         deviceWeakPlayer   = nil;
+         deviceStrongPlayer = nil;
+         deviceHapticEngine = nil;
+
+         engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+         engine.resetHandler   = ^{};
+         [engine stopWithCompletionHandler:^(NSError *error) {}];
       }
    }
 #endif

@@ -930,6 +930,17 @@ void config_file_initialize(struct config_file *conf)
    conf->includes                 = NULL;
    conf->include_depth            = 0;
    conf->flags                    = 0;
+
+   /* Every key handed to the map is the 'key' field of a
+    * struct config_entry_list that the config file itself owns and
+    * that always outlives the map (config_file_deinitialize tears
+    * the entry list down after the map, config_unset removes the
+    * map slot before freeing the key, and both config_file_add_
+    * child_list and config_append_file pilfer the donor's entries
+    * before freeing the donor). Storing a second private copy of
+    * every key therefore buys nothing but an allocation per entry
+    * on load and a free() per entry on teardown. */
+   RHMAP_BORROW_KEYS(conf->entries_map);
 }
 
 config_file_t *config_file_new_alloc(void)

@@ -25,6 +25,7 @@
 #include "menu_displaylist.h"
 #include "../file_path_special.h"
 #include "../core_info.h"
+#include "../msg_hash_lbl_str.h"
 
 #define CONTENTLESS_CORE_ICON_DEFAULT "default.png"
 
@@ -480,7 +481,7 @@ unsigned menu_displaylist_contentless_cores(file_list_t *list,
    if (  (count == 0)
        && menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORES_AVAILABLE),
-            msg_hash_to_str(MENU_ENUM_LABEL_NO_CORES_AVAILABLE),
+            MENU_ENUM_LABEL_NO_CORES_AVAILABLE_STR,
             MENU_ENUM_LABEL_NO_CORES_AVAILABLE,
             0, 0, 0, NULL))
       count++;

@@ -479,6 +479,12 @@ struct audio_transfer_wav
     * payload, which has no per-frame size.  Every reader tests the
     * format and takes the decoder before reaching it. */
    size_t      framesz;
+   /* s16 staging for the f32 read of a companded or block-coded
+    * payload, which rwav decodes to s16 natively.  Owned here rather
+    * than shared, and grown to the request; NULL until one is made,
+    * so a PCM or float file never allocates it. */
+   int16_t    *scratch;
+   size_t      scratch_cap;  /* samples, not frames                     */
 };
 #endif
 
@@ -659,6 +665,12 @@ enum audio_type_enum audio_decode_get_type(const char *path)
 }
 
 #ifdef HAVE_ROPUS
+/* The largest an Opus packet can be: a code 3 packet carries at most
+ * 48 frames of at most 1275 bytes (RFC 6716 s3.2.5), plus the TOC and
+ * the frame count byte.  Rounded up, and the bound the reassembly
+ * buffer below is held to. */
+#define AUDIO_OPUS_MAX_PACKET 61500
+
 struct audio_transfer_opus
 {
    /* Demuxed input (set_demuxed_ptr): OpusHead as setup, concatenated
@@ -701,7 +713,16 @@ struct audio_transfer_opus
                               * bound instead of scanning to EOF at open;
                               * -1 means do the full forward scan. */
    int64_t     emitted;      /* frames handed out so far                 */
-   uint8_t     asm_buf[61500]; /* only for packets spanning pages        */
+   /* Reassembly for a packet that spans Ogg pages, which is the only
+    * thing that needs a copy - an ordinary packet is read from the
+    * page in place.  Allocated on the first one that does, the way
+    * the Vorbis arm's asm_buf is, rather than carried inline: page
+    * spanning is rare, AUDIO_OPUS_MAX_PACKET is large, and every
+    * context paid for it whether or not it ever spanned.  It also sat
+    * between the two halves of the hot state, so the fields the read
+    * path touches were 60 KiB apart and in different pages. */
+   uint8_t    *asm_buf;      /* only for packets spanning pages          */
+   size_t      asm_cap;
    ropus_t    *handle;
    unsigned    channels;
    size_t      pkt_index;   /* next packet to decode                     */
@@ -713,11 +734,30 @@ struct audio_transfer_opus
     * seek made before the first read waits here until the read says
     * which pipeline that should be.  -1 when there is none pending. */
    int64_t     seek_to;
-   /* Decoded-but-unconsumed frames from the last packet. */
+   /* Decoded-but-unconsumed frames from the last packet.
+    *
+    * One buffer, not two, and sized for the stream rather than for a
+    * guess.  ropus_decode_s16/f32 take no output length and require
+    * room for ROPUS_MAX_FRAME * channels samples; the two arrays
+    * that used to sit here were sized 5760 * 2 apiece, which is that
+    * room only for a stream of at most two channels.  ropus_open takes
+    * mapping family 1 up to eight, so a six- or eight-channel file -
+    * anything opusenc emits from a surround source - decoded straight
+    * past the end of the buffer, and for the f32 arm past the end of
+    * the allocation.  Sizing this from op->channels at the point the
+    * format is latched closes that, and drops the two-channel case
+    * from 69120 bytes to 23040 (s16) or 46080 (f32), the other arm's
+    * buffer having never been live: fmt is latched by the first read
+    * and the opposite entry point errors for the life of the context.
+    *
+    * pend_elem is what it was allocated for, 2 or 4 bytes.  Rewinding
+    * to frame 0 clears fmt, so a context can be asked for the other
+    * format afterwards; that reallocates rather than reinterpreting. */
    size_t      pend_frames;
    size_t      pend_pos;
-   int16_t     pend_s16[5760 * 2];
-   float       pend_f32[5760 * 2];
+   void       *pend;        /* int16_t* when fmt 1, float* when fmt 2  */
+   size_t      pend_elem;   /* sizeof the element pend holds, 0 if none */
+   size_t      pend_samples;/* room at pend, in interleaved samples     */
 };
 
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
@@ -1550,15 +1590,21 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
 {
    unsigned ch = m->handle.channels ? m->handle.channels : 1;
    size_t   got;
+   /* Somewhere to throw the primed frames.  On the stack, and one
+    * union rather than two arrays: these were a pair of function-local
+    * statics, 24 KiB of BSS of which only ever half was in use, and
+    * shared by every context.  audio_mixer runs up to
+    * AUDIO_MIXER_MAX_VOICES at once, so two MP3 streams priming in the
+    * same callback wrote over each other's sink.  Small because it is
+    * only a sink - the loop below iterates until the trim is gone. */
+   union { int16_t s16[256]; float f32[256]; } skip;
    while (m->trim_left)
    {
-      static int16_t skip16[2048 * 2];
-      static float   skipf[2048 * 2];
-      size_t cap  = (size_t)(2048 * 2) / ch;
+      size_t cap  = (size_t)256 / ch;
       size_t want = (m->trim_left < cap) ? (size_t)m->trim_left : cap;
       size_t n    = s16
-         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip16)
-         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skipf);
+         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip.s16)
+         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skip.f32);
       if (!n)
       {
          m->trim_left = 0;         /* stream ended inside the priming */
@@ -3127,6 +3173,25 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
 }
 
 #ifdef HAVE_ROPUS
+/* Room for the reassembly buffer, allocated on the first packet that
+ * needs it and never grown after: AUDIO_OPUS_MAX_PACKET is the whole
+ * of what one can be, so a request past it is a malformed stream and
+ * not a reason to reallocate - which is what the fixed array this
+ * replaces already enforced. */
+static int audio_transfer_opus_asm(struct audio_transfer_opus *op,
+      size_t need)
+{
+   if (need > AUDIO_OPUS_MAX_PACKET)
+      return 0;
+   if (!op->asm_buf)
+   {
+      if (!(op->asm_buf = (uint8_t*)malloc(AUDIO_OPUS_MAX_PACKET)))
+         return 0;
+      op->asm_cap = AUDIO_OPUS_MAX_PACKET;
+   }
+   return 1;
+}
+
 /* Assemble the next Opus packet from the Ogg pages.  Returns 1 with
  * the packet bytes (aliasing the buffer unless it spans pages, in
  * which case it is copied into asm_buf), 0 at end of stream, < 0 on a
@@ -3169,7 +3234,7 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
          /* packet continues on the next page: stash what we have */
          if (run)
          {
-            if (asm_len + run > sizeof(op->asm_buf))
+            if (!audio_transfer_opus_asm(op, asm_len + run))
                return -1;
             memcpy(op->asm_buf + asm_len, op->buf + start, run);
             asm_len += run;
@@ -3191,7 +3256,7 @@ static int audio_transfer_opus_next_pkt(struct audio_transfer_opus *op,
       }
       else
       {
-         if (asm_len + run > sizeof(op->asm_buf))
+         if (!audio_transfer_opus_asm(op, asm_len + run))
             return -1;
          memcpy(op->asm_buf + asm_len, op->buf + start, run);
          asm_len += run;
@@ -3355,6 +3420,28 @@ static int64_t audio_transfer_opus_seek_to(struct audio_transfer_opus *op,
 
 static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 {
+   size_t elem = (fmt == 1) ? sizeof(int16_t) : sizeof(float);
+
+   /* The decoder writes ROPUS_MAX_FRAME * channels samples into
+    * this and is given no bound, so the buffer is made to fit before
+    * the first packet of a format goes through it.  A format change
+    * can only follow a rewind, which leaves nothing pending. */
+   if (!op->pend || op->pend_elem != elem)
+   {
+      if (!op->channels)
+         return -1;
+      free(op->pend);
+      op->pend_elem    = 0;
+      op->pend_samples = 0;
+      if (!(op->pend = calloc((size_t)ROPUS_MAX_FRAME
+                  * (size_t)op->channels, elem)))
+         return -1;
+      op->pend_elem    = elem;
+      op->pend_samples = (size_t)ROPUS_MAX_FRAME * (size_t)op->channels;
+      op->pend_frames = 0;
+      op->pend_pos    = 0;
+   }
+
    while (op->pend_frames == 0)
    {
       const uint8_t *pdata;
@@ -3371,9 +3458,11 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       if (r <= 0)
          return r;
       if (fmt == 1)
-         r = ropus_decode_s16(op->handle, pdata, plen, op->pend_s16);
+         r = ropus_decode_s16(op->handle, pdata, plen,
+               (int16_t*)op->pend, op->pend_samples);
       else
-         r = ropus_decode_f32(op->handle, pdata, plen, op->pend_f32);
+         r = ropus_decode_f32(op->handle, pdata, plen,
+               (float*)op->pend, op->pend_samples);
       if (r < 0)
          return -1;
       op->pend_frames = (size_t)r;
@@ -3725,7 +3814,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             if (take > op->pend_frames)
                take = op->pend_frames;
             memcpy(out + produced * op->channels,
-                  op->pend_s16 + op->pend_pos * op->channels,
+                  (const int16_t*)op->pend + op->pend_pos * op->channels,
                   take * op->channels * sizeof(int16_t));
             op->pend_pos    += take;
             op->pend_frames -= take;
@@ -3794,11 +3883,24 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          src   = w->data + w->wav.dataoffset + w->cursor * w->framesz;
          if (w->wav.bitspersample == 16)
          {
+#ifndef MSB_FIRST
+            /* Interleaved PCM16 on a little-endian host is already in
+             * output order, and the loop below is a memcpy spelled
+             * slowly - about thirteen instructions a sample to
+             * reassemble what is already sitting there.  Measured at
+             * 5x on a 69k-frame clip.  rwav_decode_s16 takes the same
+             * shortcut under the same condition; this arm indexes by
+             * framesz, which is the packed frame width, so the stride
+             * condition rwav has to test is structural here. */
+            memcpy(out, src, n * sizeof(int16_t));
+#else
             /* rwav.h's accessors read the file's little-endian words a
              * byte at a time: right on either endianness, and safe
-             * where an unaligned load would fault */
+             * where an unaligned load would fault.  Big-endian keeps
+             * the loop, whose byte assembly is the swab it needs. */
             for (i = 0; i < n; i++)
                out[i] = rwav_s16(src + i * 2);
+#endif
          }
          else if (w->wav.bitspersample == 24)
          {
@@ -3816,8 +3918,14 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          }
          else /* 8-bit unsigned PCM -> signed 16-bit */
          {
+            /* Biased before the shift, not after: (v - 128) is
+             * negative for the lower half of the range and shifting a
+             * negative value left is undefined.  src[i] << 8 is at
+             * most 65280 and fits an int on every target this builds
+             * for, so the same numbers come out of a defined
+             * expression. */
             for (i = 0; i < n; i++)
-               out[i] = (int16_t)(((int)src[i] - 128) << 8);
+               out[i] = (int16_t)(((int)src[i] << 8) - 32768);
          }
          w->cursor += want;
          produced   = want;
@@ -3909,13 +4017,33 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          if (w->wav.format != RWAV_FORMAT_PCM
                && w->wav.format != RWAV_FORMAT_FLOAT)
          {
-            static int16_t tmp[2048 * 16];
-            size_t cap = sizeof(tmp) / sizeof(tmp[0]) / (ch ? ch : 1);
-            if (want > cap)
-               want = cap;
-            want = rwav_decode_s16(&w->wav, w->data, w->cursor, want, tmp);
+            /* Staged through a buffer this context owns rather than a
+             * 64 KiB function-local static.  The static was shared by
+             * every context - two block-coded voices in one mixer
+             * callback wrote over each other - and larger than L1D, so
+             * the scale below evicted the cache on every call.
+             *
+             * Per context and grown to the request, not blocked
+             * through a small stack buffer: rwav_decode_s16 starts at
+             * the block containing the frame it is given, so a chunk
+             * smaller than a block re-decodes that block every call.
+             * Measured at 88.2 -> 12.9 Mframe/s on MS ADPCM with a
+             * 128-frame chunk.  One pass keeps the old access
+             * pattern exactly. */
+            size_t need = want * ch;
+            if (w->scratch_cap < need)
+            {
+               int16_t *p = (int16_t*)realloc(w->scratch,
+                     need * sizeof(int16_t));
+               if (!p)
+                  return AUDIO_PROCESS_ERROR;
+               w->scratch     = p;
+               w->scratch_cap = need;
+            }
+            want = rwav_decode_s16(&w->wav, w->data, w->cursor, want,
+                  w->scratch);
             for (i = 0; i < want * ch; i++)
-               out[i] = (float)tmp[i] * (1.0f / 32768.0f);
+               out[i] = (float)w->scratch[i] * (1.0f / 32768.0f);
             w->cursor += want;
             produced   = want;
             break;
@@ -3935,8 +4063,12 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
          {
             /* already unit-scale float: hand the file's samples
              * through unaltered, unclamped as the f32 paths are */
+#ifndef MSB_FIRST
+            memcpy(out, src, n * sizeof(float));
+#else
             for (i = 0; i < n; i++)
                out[i] = rwav_f32(src + i * 4);
+#endif
          }
          else /* 8-bit unsigned PCM */
          {
@@ -3973,7 +4105,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             if (take > op->pend_frames)
                take = op->pend_frames;
             memcpy(out + produced * op->channels,
-                  op->pend_f32 + op->pend_pos * op->channels,
+                  (const float*)op->pend + op->pend_pos * op->channels,
                   take * op->channels * sizeof(float));
             op->pend_pos    += take;
             op->pend_frames -= take;
@@ -4213,6 +4345,11 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
    int64_t        pos = 0;
    int            n, m = 1, i, r;
    int            reached = 0;
+   /* Sink for the frames walked past.  On the stack: this was a
+    * function-local static shared by every context, and a seek on one
+    * mixer voice wrote into it while another was seeking too.  Small
+    * because the loop below iterates. */
+   int16_t        skip[256];
 
    /* Pass 1: where does each packet leave the stream? */
    audio_transfer_vorbis_to_head(v);
@@ -4273,7 +4410,6 @@ static bool audio_transfer_vorbis_seek_walk(struct audio_transfer_vorbis *v,
     * counted here are the frames a playthrough emits. */
    while (v->emitted < target)
    {
-      static int16_t skip[4096];
       size_t cap  = sizeof(skip) / sizeof(skip[0]) / (size_t)v->channels;
       size_t want = (size_t)(target - v->emitted);
       if (!cap)
@@ -4326,22 +4462,30 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
                return audio_transfer_vorbis_seek_walk(v, (int64_t)frame);
             if (frame != 0)
                return false;
+            /* Every source the packet path can have, and that is more
+             * than the blob cursor: an Ogg page feeder has a page,
+             * segment and body offset of its own, and leaving those
+             * where the last read left them means the rewound stream
+             * hands out nothing. */
+            audio_transfer_vorbis_to_head(v);
             rvorbis_packet_reset(v->handle);
-#ifdef HAVE_RWEBM
-            if (v->demux)
-               rwebm_rewind(v->demux);
-#endif
-            v->pkt_index  = 0;
-            v->pkt_offset = 0;
             v->emitted    = 0;
             return true;
          }
+         /* The emission bound is counted against what has been handed
+          * out, so a seek that moves the stream has to move that count
+          * with it.  Left alone, a loop back to the start reaches the
+          * bound immediately and the stream reads as ended for good. */
          if (frame == 0) /* loop-to-start: seek_start always succeeds */
          {
             rvorbis_seek_start(v->handle);
+            v->emitted = 0;
             return true;
          }
-         return rvorbis_seek(v->handle, (unsigned int)frame) != 0;
+         if (rvorbis_seek(v->handle, (unsigned int)frame) == 0)
+            return false;
+         v->emitted = (int64_t)frame;
+         return true;
       }
 #endif
 #ifdef HAVE_RMP3
@@ -4501,7 +4645,13 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_WAV:
 #ifdef HAVE_RWAV
          /* rwav_parse allocates nothing and the samples were read in
-          * place, so there is nothing here to release */
+          * place; the f32 staging buffer is the one thing this arm
+          * ever owns */
+         {
+            struct audio_transfer_wav *w = (struct audio_transfer_wav*)data;
+            if (w)
+               free(w->scratch);
+         }
          break;
 #endif
 #ifdef HAVE_ROPUS
@@ -4514,6 +4664,11 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          if (op && op->demux)
             rwebm_close(op->demux);
 #endif
+         if (op)
+         {
+            free(op->pend);
+            free(op->asm_buf);
+         }
          break;
       }
 #endif

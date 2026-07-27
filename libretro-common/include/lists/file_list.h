@@ -50,6 +50,19 @@ typedef struct file_list
 
    size_t capacity;
    size_t size;
+   /* Optional destructor for item_file::actiondata.  NULL means the
+    * actiondata is a plain block and free() is enough, which is what
+    * every user outside the menu wants.  The menu sets this because
+    * its actiondata owns further allocations; without it every path
+    * that can destroy a list -- and there are seven, spread across
+    * menu_driver.c, xmb.c and ozone.c -- would have to know how to
+    * take one apart.
+    *
+    * Every file_list_t in tree is either calloc()ed, memset() to zero,
+    * embedded in a calloc()ed handle, or field-initialised in
+    * menu_list_new(), so this defaults to NULL without any caller
+    * change. */
+   void (*actiondata_free)(void *actiondata);
 } file_list_t;
 
 void *file_list_get_userdata_at_offset(const file_list_t *list,

@@ -49,6 +49,18 @@ enum trans_stream_error
     TRANS_STREAM_ERROR_OTHER
 };
 
+/* Values for the "strategy" property, which selects how a deflate
+ * backend trades match searching against Huffman coding.  Numerically
+ * identical to zlib's Z_* constants, restated here so callers do not
+ * have to include zlib.h to pick one.  A backend that does not
+ * implement strategies returns false from define() and keeps its
+ * default behaviour. */
+#define TRANS_STREAM_STRATEGY_DEFAULT   0
+#define TRANS_STREAM_STRATEGY_FILTERED  1
+#define TRANS_STREAM_STRATEGY_HUFFMAN   2
+#define TRANS_STREAM_STRATEGY_RLE       3
+#define TRANS_STREAM_STRATEGY_FIXED     4
+
 struct trans_stream_backend
 {
    const char *ident;

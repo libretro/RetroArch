@@ -87,7 +87,9 @@ enum menu_entry_flags
 typedef struct menu_ctx_list
 {
    const char  *path;
-   char        *fullpath;
+   /* Borrowed from the menu stack, not owned; see
+    * menu_entries_append(). */
+   const char  *fullpath;
    const char  *label;
    file_list_t *list;
    void        *entry;
@@ -154,7 +156,14 @@ typedef struct menu_file_list_cbs
          const char *label, char *s, size_t len,
          const char *path,
          char *s2, size_t len2);
-   menu_search_terms_t search;
+   /* Lazily allocated; NULL until a search term is actually pushed.
+    * Held by value this was 520 of the struct's 656 bytes, carried by
+    * every entry of every list, while only one cbs in the whole menu
+    * can ever be asked for it -- menu_entries_search_get_terms_internal()
+    * reads it from the top entry of the menu stack and nowhere else.
+    * Freed by menu_entries_cbs_free(), which file_list_t dispatches to
+    * through its actiondata_free hook. */
+   menu_search_terms_t *search;
    enum msg_hash_enums enum_idx;
    /* When the generic sublabel handler is bound from the data map,
     * this carries the description enum to look up. */
@@ -193,6 +202,9 @@ bool menu_entries_clear(file_list_t *list);
 bool menu_entries_search_pop(void);
 
 menu_search_terms_t *menu_entries_search_get_terms(void);
+
+/* file_list_t::actiondata_free hook for menu-owned lists. */
+void menu_entries_cbs_free(void *actiondata);
 
 /* Convenience function: Appends list of current
  * search terms to specified string */

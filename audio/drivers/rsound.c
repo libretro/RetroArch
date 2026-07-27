@@ -32,6 +32,10 @@ typedef struct rsd
    slock_t *cond_lock;
    scond_t *cond;
 
+   /* Bound for the blocking wait in rs_write, one callback period.
+    * See the note there. */
+   int64_t wait_us;
+
    bool nonblock;
    bool is_paused;
    volatile bool has_error;
@@ -87,6 +91,15 @@ static void *rs_init(const char *device, unsigned rate, unsigned latency,
 
    rsd_set_callback(rd, rsound_audio_cb, rsound_err_cb, 256, rsd);
 
+   /* The callback asks for 256 bytes at a time; at 16-bit stereo that
+    * is 64 frames.  Floored so a high sample rate does not turn the
+    * bounded wait into a spin. */
+   rsd->wait_us   = rate
+      ? (int64_t)(256 / 4) * 1000000 / rate
+      : 1000;
+   if (rsd->wait_us < 1000)
+      rsd->wait_us = 1000;
+
    if (rsd_start(rd) < 0)
    {
       free(rsd);
@@ -136,8 +149,22 @@ static ssize_t rs_write(void *data, const void *buf, size_t len)
             rsd_callback_unlock(rsd->rd);
             if (!rsd->has_error)
             {
+               /* Timed, not indefinite.  The predicate is guarded by
+                * librsound's callback lock, not cond_lock, and neither
+                * rsound_audio_cb nor rsound_err_cb holds cond_lock
+                * when it signals - so a signal raised between the
+                * has_error test above and this wait reaches no waiter.
+                *
+                * rsound_err_cb is the case that matters: librsound
+                * calls it and immediately returns from its worker
+                * thread, at every one of its error exits.  It is
+                * therefore the last signal that will ever be raised,
+                * and losing it to the window left this thread parked
+                * with nothing alive to wake it.  A timed wait returns
+                * to the enclosing loop, which rechecks has_error. */
                slock_lock(rsd->cond_lock);
-               scond_wait(rsd->cond, rsd->cond_lock);
+               scond_wait_timeout(rsd->cond, rsd->cond_lock,
+                     rsd->wait_us);
                slock_unlock(rsd->cond_lock);
             }
          }

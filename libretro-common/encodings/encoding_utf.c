@@ -39,11 +39,15 @@
 
 #define UTF8_WALKBYTE(string) (*((*(string))++))
 
-/* Lookup table replaces leading_ones() bit-counting loop.
- * Index by high byte value >> 3 (32 entries) to get
- * the number of leading 1-bits for any byte.
- * Only values 0..7 are meaningful for UTF-8;
- * entries for invalid prefixes are set to 0xFF. */
+/* Number of leading 1-bits of a byte, which for a lead byte is the
+ * length in bytes of the sequence it introduces: 0 for ASCII, 1 for a
+ * continuation byte, 2..4 for the valid leads, 5..7 for invalid ones.
+ * Replaces a leading_ones() bit-counting loop.
+ *
+ * Used by the decoders, which need the exact value. The scanners that
+ * only need a length deliberately do not use it: indexing this table
+ * puts a second dependent load in their pointer advance, which costs
+ * more than the branch it removes. */
 static const uint8_t utf8_lut[256] = {
    /* 0x00..0x7F: 0 leading ones (ASCII) */
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -280,6 +284,9 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
  * @s is assumed valid UTF-8.
  * Use only if @chars is considerably less than @len.
  *
+ * Nothing is written when @len is 0, since there is no room even
+ * for the terminator.
+ *
  * @return Number of bytes.
  **/
 size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
@@ -288,24 +295,24 @@ size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
    const uint8_t *sb     = (const uint8_t*)in;
    const uint8_t *sb_org = sb;
 
-   if (!in)
+   if (!in || !len)
       return 0;
 
    while (*sb && chars-- > 0)
    {
-      /* Use LUT to skip entire character at once
-       * instead of byte-by-byte continuation check */
-      unsigned ones = utf8_lut[*sb];
-      if (ones < 2)
-         sb++;          /* ASCII or (invalid) standalone continuation */
-      else
-         sb += ones;    /* Skip full multi-byte character */
+      /* Stepping over continuation bytes stops at the terminator by
+       * itself, so a truncated sequence cannot overrun the buffer. */
+      sb++;
+      while ((*sb & 0xC0) == 0x80)
+         sb++;
    }
 
    if ((size_t)(sb - sb_org) > len - 1)
    {
       sb = sb_org + len - 1;
-      while ((*sb & 0xC0) == 0x80)
+      /* @in may itself begin with continuation bytes; do not scan
+       * backwards out of the buffer looking for a lead byte. */
+      while (sb > sb_org && (*sb & 0xC0) == 0x80)
          sb--;
    }
 
@@ -355,28 +362,56 @@ const char *utf8skip(const char *str, size_t chars)
  * utf8len:
  *
  * Leaf function.
- *
- * Optimized: use LUT to skip entire multi-byte sequences
- * instead of testing each byte individually.
  **/
 size_t utf8len(const char *string)
 {
+   const unsigned char *p;
+   size_t n;
    size_t ret = 0;
 
    if (!string)
       return 0;
 
-   while (*string)
+   p = (const unsigned char*)string;
+   n = strlen(string);
+
+   /* Byte at a time up to the first aligned address. */
+   while (n && (((size_t)p & 7) != 0))
    {
-      unsigned ones = utf8_lut[(uint8_t)*string];
-      ret++;
-      /* ASCII (ones==0) or continuation byte (ones==1, shouldn't
-       * appear at sequence start in valid UTF-8). Either way,
-       * count it and advance one byte. */
-      if (ones < 2)
-         string++;
-      else /* Multi-byte lead: count one character, skip `ones` bytes */
-         string += ones;
+      if ((*p & 0xC0) != 0x80)
+         ret++;
+      p++;
+      n--;
+   }
+
+   /* The length is known, so the word loop needs no terminator test
+    * and never reads a byte the caller did not supply. */
+   while (n >= 8)
+   {
+      uint64_t w;
+      uint64_t c;
+      memcpy(&w, p, sizeof(w));
+      /* A continuation byte is the pattern 10xxxxxx: bit 7 set and
+       * bit 6 clear. Both halves of the test stay inside their own
+       * byte, so this is endian neutral. */
+      c    = (w & ~(w << 1) & 0x8080808080808080ULL) >> 7;
+      /* Horizontal sum. Every byte of c is 0 or 1 and the running
+       * total tops out at 8, so the folds cannot carry out of a
+       * byte and no 64-bit multiply is needed. */
+      c   += c >> 32;
+      c   += c >> 16;
+      c   += c >> 8;
+      ret += 8 - (size_t)(c & 0xFF);
+      p   += 8;
+      n   -= 8;
+   }
+
+   while (n)
+   {
+      if ((*p & 0xC0) != 0x80)
+         ret++;
+      p++;
+      n--;
    }
    return ret;
 }

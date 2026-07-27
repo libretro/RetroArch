@@ -153,6 +153,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_inline.h>
 #include <encodings/rzstd.h>
 
 /* RFC 8878 section 3.1.1: a frame begins with this, least significant
@@ -218,6 +219,24 @@ static uint32_t rzstd_rd32_safe(const uint8_t *p, size_t len, size_t at)
 {
    uint32_t v = 0;
    int      i;
+
+   /* One load when all four bytes are there, which is every field but
+    * the last few. Reading them one at a time with a bound test each
+    * was an eighth of the time spent reading a counts description, and
+    * a description is read three times a frame. */
+   if (at + 4 <= len)
+   {
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) \
+ && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      memcpy(&v, p + at, 4);
+      return v;
+#else
+      return  (uint32_t)p[at]
+            | ((uint32_t)p[at + 1] << 8)
+            | ((uint32_t)p[at + 2] << 16)
+            | ((uint32_t)p[at + 3] << 24);
+#endif
+   }
 
    for (i = 0; i < 4; i++)
       if (at + (size_t)i < len)
@@ -378,7 +397,23 @@ typedef struct rzstd_rbits
    int            overrun;
 } rzstd_rbits_t;
 
-static void rzstd_rbits_fill(rzstd_rbits_t *b)
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) \
+ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define RZSTD_BIG_ENDIAN 1
+static INLINE uint64_t rzstd_bswap64(uint64_t v)
+{
+   return  ((v & 0x00000000000000ffULL) << 56)
+         | ((v & 0x000000000000ff00ULL) << 40)
+         | ((v & 0x0000000000ff0000ULL) << 24)
+         | ((v & 0x00000000ff000000ULL) <<  8)
+         | ((v & 0x000000ff00000000ULL) >>  8)
+         | ((v & 0x0000ff0000000000ULL) >> 24)
+         | ((v & 0x00ff000000000000ULL) >> 40)
+         | ((v & 0xff00000000000000ULL) >> 56);
+}
+#endif
+
+static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
 {
    /* Nothing to do when the buffer is already deep enough. Worth its
     * own test at the top: the callers that fill before a run of reads
@@ -386,36 +421,27 @@ static void rzstd_rbits_fill(rzstd_rbits_t *b)
    if (b->count > 56)
       return;
 
-   /* Eight bytes at once where they are there to take. The stream runs
-    * backwards, so a whole word is read from below the cursor and its
-    * bytes reversed into place; that is one load and a few shifts
-    * against eight loads and eight shifts. */
-   if (b->count <= 56 && b->pos >= 8)
+   /* One load, not eight.
+    *
+    * The stream runs backwards, so the bytes wanted are the ones just
+    * below the cursor. Reading the eight that end at the cursor puts
+    * them in the high end of a word, and a shift brings them down --
+    * where reading them one at a time through a switch was eight loads,
+    * eight shifts, and a function too large for the compiler to inline.
+    * The reference implementation's equivalent does not appear in a
+    * profile at all, because it is inline in the loops that call it. */
+   if (b->pos >= 8)
    {
-      uint64_t v;
       uint32_t take = (64 - b->count) >> 3;
+      uint64_t v;
 
-      b->pos -= take;
-      v = 0;
-      switch (take)
-      {
-         case 8: v |= (uint64_t)b->base[b->pos + 7];
-         /* falls through */
-         case 7: v = (v << 8) | (uint64_t)b->base[b->pos + 6];
-         /* falls through */
-         case 6: v = (v << 8) | (uint64_t)b->base[b->pos + 5];
-         /* falls through */
-         case 5: v = (v << 8) | (uint64_t)b->base[b->pos + 4];
-         /* falls through */
-         case 4: v = (v << 8) | (uint64_t)b->base[b->pos + 3];
-         /* falls through */
-         case 3: v = (v << 8) | (uint64_t)b->base[b->pos + 2];
-         /* falls through */
-         case 2: v = (v << 8) | (uint64_t)b->base[b->pos + 1];
-         /* falls through */
-         default: v = (v << 8) | (uint64_t)b->base[b->pos];
-      }
-      b->bits  |= v << (64 - b->count - take * 8);
+      memcpy(&v, b->base + b->pos - 8, 8);
+#ifdef RZSTD_BIG_ENDIAN
+      v = rzstd_bswap64(v);
+#endif
+      v      >>= (8 - take) * 8;
+      b->pos  -= take;
+      b->bits |= v << (64 - b->count - take * 8);
       b->count += take * 8;
       return;
    }
@@ -486,7 +512,7 @@ static uint32_t rzstd_rbits_take(rzstd_rbits_t *b, uint32_t n)
    return v;
 }
 
-static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
+static INLINE uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
 {
    uint32_t v;
 
@@ -526,15 +552,32 @@ static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
  * The counting version ran up to accuracy_log times for every one of a
  * table's states, and a table is built three times a block on any frame
  * that transmits its own. */
-static uint32_t rzstd_highbit(uint32_t v)
+#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#define RZSTD_HAVE_CLZ 1
+#endif
+
+static INLINE uint32_t rzstd_highbit(uint32_t v)
 {
+#ifdef RZSTD_HAVE_CLZ
+   /* One instruction where the halving form is four compares and four
+    * branches. This runs once per state of every table built, and a
+    * frame small enough to be a disc hunk spends more time building
+    * tables than decoding through them. */
+   return 31u - (uint32_t)__builtin_clz(v);
+#else
    uint32_t r = 0;
 
-   if (v >= 0x100) { v >>= 8; r += 8; }
-   if (v >= 0x10)  { v >>= 4; r += 4; }
-   if (v >= 0x04)  { v >>= 2; r += 2; }
-   if (v >= 0x02)  { r += 1; }
+   /* The 0x10000 step is not optional. Without it this answers 15 for
+    * everything at or above 65536, which the callers here never reach
+    * -- a state index is bounded by its table -- but a reader of this
+    * function has no way to know that, and the two forms must agree. */
+   if (v >= 0x10000) { v >>= 16; r += 16; }
+   if (v >= 0x100)   { v >>= 8;  r += 8;  }
+   if (v >= 0x10)    { v >>= 4;  r += 4;  }
+   if (v >= 0x04)    { v >>= 2;  r += 2;  }
+   if (v >= 0x02)    {           r += 1;  }
    return r;
+#endif
 }
 
 #define RZSTD_FSE_MAX_ACCURACY_LOG 9
@@ -611,9 +654,11 @@ static int rzstd_fse_read_counts(const uint8_t *src, size_t len,
 
       /* The width is enough bits to name anything still spendable, with
        * the low part of the range using one fewer. */
-      bits_needed = 0;
-      while (((uint32_t)1 << (bits_needed + 1)) <= (uint32_t)remaining)
-         bits_needed++;
+      /* floor(log2(remaining)), which the loop above this computed by
+       * counting up to eleven times per symbol. The caller's loop
+       * guarantees remaining is at least two here, so the highbit
+       * helper's input is never zero. */
+      bits_needed = rzstd_highbit((uint32_t)remaining);
       low_mask = ((uint32_t)1 << bits_needed) - 1;
 
       value = RZ_PEEK(bits_needed + 1);
@@ -768,7 +813,6 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
 {
    uint32_t total = 0;
    uint32_t max_bits;
-   uint32_t next_rank_start[RZSTD_HUF_MAX_BITS + 2];
    uint32_t rank_count[RZSTD_HUF_MAX_BITS + 2];
    uint32_t i;
    uint32_t position = 0;
@@ -777,14 +821,30 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
    if (!count || count > RZSTD_HUF_MAX_SYMBOLS)
       return RZ_DATA;
 
+   /* One pass over the weights, not two: validate, sum the shares and
+    * count the ranks together. The three passes this function made over
+    * as many as two hundred and fifty-six symbols were a third of the
+    * time spent decoding a two-kilobyte frame, where the table is
+    * rebuilt for barely more output than it has entries. */
+   /* Count the ranks and nothing else.
+    *
+    * The sum of every symbol's share is a function of the rank counts,
+    * so accumulating it per symbol repeats a shift and an add up to two
+    * hundred and fifty-six times to learn what eleven ranks already
+    * say. */
+   memset(rank_count, 0, sizeof(rank_count));
    for (i = 0; i < count; i++)
    {
-      if (weights[i] > RZSTD_HUF_MAX_BITS)
+      uint32_t w = weights[i];
+
+      if (w > RZSTD_HUF_MAX_BITS)
          return RZ_DATA;
-      all[i] = weights[i];
-      if (weights[i])
-         total += (uint32_t)1 << (weights[i] - 1);
+      all[i] = (uint8_t)w;
+      rank_count[w]++;
    }
+
+   for (i = 1; i <= RZSTD_HUF_MAX_BITS; i++)
+      total += rank_count[i] << (i - 1);
    if (!total)
       return RZ_DATA;
 
@@ -808,15 +868,11 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       while (((uint32_t)1 << w) < left)
          w++;
       all[count] = (uint8_t)(w + 1);
+      rank_count[w + 1]++;
       count++;
    }
 
    huf->max_bits = max_bits;
-
-   memset(rank_count, 0, sizeof(rank_count));
-   for (i = 0; i < count; i++)
-      if (all[i])
-         rank_count[all[i]]++;
 
    /* Slots are laid out by ascending weight: the lowest weights take
     * the lowest codes, and within a weight the symbols keep their
@@ -827,39 +883,70 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
     * builds a table of exactly the right shape -- the same slot counts,
     * the same widths, every symbol present once. It is simply mirrored,
     * and nothing but decoding real data will say so. */
+   /* Fill in rank order, not symbol order.
+    *
+    * Every symbol of the same weight occupies the same number of slots
+    * and they sit next to each other, so walking a rank writes the
+    * table forward with one cursor. Walking symbols instead jumps
+    * between ranks and turns the cursor into a scattered
+    * read-modify-write of next_rank_start[w] -- which the profile
+    * showed as a load-use stall on a table rebuilt for every frame. */
    {
+      /* Every symbol lands somewhere, absent ones included, so this is
+       * sized for all of them rather than for those with a weight. */
+      uint8_t  by_rank[RZSTD_HUF_MAX_SYMBOLS + 2];
+      uint32_t at_rank[RZSTD_HUF_MAX_BITS + 2];
       uint32_t w;
 
+      /* Where each rank's symbols start in by_rank. Weight zero gets a
+       * region of its own past the end rather than a test in the loop
+       * below: an absent symbol is written somewhere harmless and never
+       * read, which costs a store and saves a branch taken on nearly
+       * half of as many as two hundred and fifty-six symbols. */
+      position = 0;
       for (w = 1; w <= max_bits; w++)
       {
-         next_rank_start[w] = position;
-         position += rank_count[w] * ((uint32_t)1 << (w - 1));
+         at_rank[w] = position;
+         position  += rank_count[w];
       }
-   }
+      at_rank[0] = position;
 
-   if (position != ((uint32_t)1 << max_bits))
-      return RZ_DATA;
+      for (i = 0; i < count; i++)
+         by_rank[at_rank[all[i]]++] = (uint8_t)i;
 
-   for (i = 0; i < count; i++)
-   {
-      uint32_t w = all[i];
-      uint32_t n;
-      uint32_t at;
-
-      if (!w)
-         continue;
-      n  = (uint32_t)1 << (w - 1);
-      at = next_rank_start[w];
-      next_rank_start[w] += n;
-
+      /* at_rank now points one past each rank; walk them in order. */
+      position = 0;
+      for (w = 1; w <= max_bits; w++)
       {
-         uint16_t packed = (uint16_t)(((uint32_t)i << 8)
-               | (max_bits + 1 - w));
-         uint32_t k;
+         uint32_t n     = (uint32_t)1 << (w - 1);
+         uint32_t width = max_bits + 1 - w;
+         uint32_t k     = at_rank[w] - rank_count[w];
+         uint32_t end   = at_rank[w];
 
-         for (k = 0; k < n; k++)
-            huf->entry[at + k] = packed;
+         for (; k < end; k++)
+         {
+            uint16_t  packed = (uint16_t)(((uint32_t)by_rank[k] << 8)
+                  | width);
+            uint16_t *e      = huf->entry + position;
+            uint32_t  j      = 0;
+
+            if (n >= 4)
+            {
+               uint64_t quad = (uint64_t)packed;
+
+               quad |= quad << 16;
+               quad |= quad << 32;
+               for (; j + 4 <= n; j += 4)
+                  memcpy(e + j, &quad, 8);
+            }
+            for (; j < n; j++)
+               e[j] = packed;
+            position += n;
+         }
       }
+
+      if (position != ((uint32_t)1 << max_bits))
+         return RZ_DATA;
    }
 
    return RZ_OK;
@@ -1089,7 +1176,7 @@ static int rzstd_fast_ok(const rzstd_fast_t *f)
    return f->ptr >= f->base + 8;
 }
 
-static void rzstd_fast_reload(rzstd_fast_t *f)
+static INLINE void rzstd_fast_reload(rzstd_fast_t *f)
 {
    uint32_t used = rzstd_ctz64(f->bits);
 
@@ -1252,22 +1339,40 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
                      && rzstd_fast_ok(&f[0]) && rzstd_fast_ok(&f[1])
                      && rzstd_fast_ok(&f[2]) && rzstd_fast_ok(&f[3]))
                {
-                  for (i = 0; i < 5; i++)
+                  /* Each stream's five symbols land next to each other,
+                   * so they are gathered into a word and written once
+                   * rather than a byte at a time to a computed index.
+                   * The stores were a quarter of this loop. */
                   {
-                     uint32_t e0 = ent[f[0].bits >> sh];
-                     uint32_t e1 = ent[f[1].bits >> sh];
-                     uint32_t e2 = ent[f[2].bits >> sh];
-                     uint32_t e3 = ent[f[3].bits >> sh];
+                     uint64_t w0 = 0, w1 = 0, w2 = 0, w3 = 0;
 
-                     dst[pos[0] + i] = (uint8_t)(e0 >> 8);
-                     dst[pos[1] + i] = (uint8_t)(e1 >> 8);
-                     dst[pos[2] + i] = (uint8_t)(e2 >> 8);
-                     dst[pos[3] + i] = (uint8_t)(e3 >> 8);
+                     for (i = 0; i < 5; i++)
+                     {
+                        uint32_t e0 = ent[f[0].bits >> sh];
+                        uint32_t e1 = ent[f[1].bits >> sh];
+                        uint32_t e2 = ent[f[2].bits >> sh];
+                        uint32_t e3 = ent[f[3].bits >> sh];
 
-                     f[0].bits <<= (e0 & 63);
-                     f[1].bits <<= (e1 & 63);
-                     f[2].bits <<= (e2 & 63);
-                     f[3].bits <<= (e3 & 63);
+                        w0 |= (uint64_t)(uint8_t)(e0 >> 8) << (i * 8);
+                        w1 |= (uint64_t)(uint8_t)(e1 >> 8) << (i * 8);
+                        w2 |= (uint64_t)(uint8_t)(e2 >> 8) << (i * 8);
+                        w3 |= (uint64_t)(uint8_t)(e3 >> 8) << (i * 8);
+
+                        f[0].bits <<= (e0 & 63);
+                        f[1].bits <<= (e1 & 63);
+                        f[2].bits <<= (e2 & 63);
+                        f[3].bits <<= (e3 & 63);
+                     }
+
+                     /* Five bytes wanted, eight written: the loop stops
+                      * four short of each stream's end, so the three
+                      * extra land inside the next round's five and are
+                      * overwritten by it. The last round writes into the
+                      * tail the counting reader below fills in. */
+                     memcpy(dst + pos[0], &w0, 8);
+                     memcpy(dst + pos[1], &w1, 8);
+                     memcpy(dst + pos[2], &w2, 8);
+                     memcpy(dst + pos[3], &w3, 8);
                   }
                   pos[0] += 5; pos[1] += 5; pos[2] += 5; pos[3] += 5;
                   rzstd_fast_reload(&f[0]);
@@ -1629,7 +1734,24 @@ static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
       return;
    }
 
+   /* The seed is at most two vector widths, and libc is reached through
+    * the PLT and then dispatches on length to decide how to move
+    * thirty-two bytes. Two vector stores do it here with neither. The
+    * source is behind the destination by @offset and this writes at
+    * most 2 * RZSTD_VEC_WIDTH, so a caller with slack has room. */
+#if defined(RZSTD_VEC_SSE2)
+   _mm_storeu_si128((__m128i*)to,
+         _mm_loadu_si128((const __m128i*)from));
+   if (offset > RZSTD_VEC_WIDTH)
+      _mm_storeu_si128((__m128i*)(to + RZSTD_VEC_WIDTH),
+            _mm_loadu_si128((const __m128i*)(from + RZSTD_VEC_WIDTH)));
+#elif defined(RZSTD_VEC_NEON)
+   vst1q_u8(to, vld1q_u8(from));
+   if (offset > RZSTD_VEC_WIDTH)
+      vst1q_u8(to + RZSTD_VEC_WIDTH, vld1q_u8(from + RZSTD_VEC_WIDTH));
+#else
    memmove(to, from, offset);
+#endif
    have = offset;
 
    /* Doubling keeps the run a whole number of periods, which is what

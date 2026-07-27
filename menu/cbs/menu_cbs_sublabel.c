@@ -1269,12 +1269,12 @@ static int action_bind_sublabel_playlist_entry(
 
    /* Note: This looks heavy, but each string_is_equal() call will
     * return almost immediately */
-   if (   !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HISTORY_TAB))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES_TAB))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST))
-       && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_HORIZONTAL_MENU)))
+   if (   !string_is_equal(label, MENU_ENUM_LABEL_LOAD_CONTENT_HISTORY_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_HISTORY_TAB_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_FAVORITES_LIST_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_FAVORITES_TAB_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_DEFERRED_PLAYLIST_LIST_STR)
+       && !string_is_equal(label, MENU_ENUM_LABEL_HORIZONTAL_MENU_STR))
       return 0;
 
    /* Check whether runtime info should be loaded from log file */

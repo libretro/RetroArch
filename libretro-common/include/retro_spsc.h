@@ -58,6 +58,12 @@
  *     publish would invalidate the consumer's tail line and vice versa,
  *     halving throughput on contended SMP.  The padding is a
  *     performance hint; correctness does not depend on it.
+ *   - The padding runs past tail as well, so the isolation survives
+ *     embedding retro_spsc_t by value in a larger struct.  Without a
+ *     trailing pad, whatever the embedder declares next lands within
+ *     tail's line and the consumer's publish starts invalidating it -
+ *     which defeats the point for exactly the callers this primitive
+ *     exists for.
  *
  * Lifetime:
  *   - retro_spsc_init allocates an internal buffer; retro_spsc_free
@@ -143,6 +149,9 @@ typedef struct retro_spsc
    /* Pad so tail sits on its own cache line, isolating it from head. */
    uint8_t             _pad1[RETRO_SPSC_PAD1_BYTES];
    retro_atomic_size_t tail;       /* consumer publishes; producer reads */
+   /* Pad past tail so an embedding struct's own fields cannot land on
+    * tail's line.  Same width as _pad1. */
+   uint8_t             _pad2[RETRO_SPSC_PAD1_BYTES];
 } retro_spsc_t;
 
 /**

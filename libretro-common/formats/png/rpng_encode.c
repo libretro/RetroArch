@@ -29,6 +29,18 @@
 #include <streams/interface_stream.h>
 #include <streams/trans_stream.h>
 
+/* SIMD acceleration: SSE2 on x86/x86-64, NEON on ARM.  Same gating as
+ * the decoder in rpng.c. */
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#define RPNG_ENC_SSE2 1
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#if !defined(VITA) && !defined(WEBOS) && !defined(HAVE_LIBNX)
+#include <arm_neon.h>
+#define RPNG_ENC_NEON 1
+#endif
+#endif
+
 #include "rpng_internal.h"
 
 #undef GOTO_END_ERROR
@@ -238,69 +250,323 @@ static void copy_rgb48_line(uint8_t *dst, const uint16_t *src, unsigned width)
    }
 }
 
+/* Forward filtering, fused with the sum-of-absolute-differences score
+ * that picks between the results.
+ *
+ * The encode direction has no serial dependency - every predictor input
+ * is a *raw* byte, not a byte this pass just produced - so unlike the
+ * decoder these loops vectorise across the full register width.  Fusing
+ * the score in removes four extra passes over the row: the old shape
+ * wrote each filtered row and then read it back to score it.
+ *
+ * The score is sum(|(int8)b|), the standard minimum-sum-of-absolute-
+ * differences heuristic.  |(int8)b| is min(b, 256 - b) on unsigned
+ * bytes, which is one min and one subtract, and psadbw then accumulates
+ * a whole register with no widening. */
+
+#if defined(RPNG_ENC_SSE2)
+static INLINE __m128i rpng_abs_i8(__m128i v)
+{
+   return _mm_min_epu8(v, _mm_sub_epi8(_mm_setzero_si128(), v));
+}
+
+static INLINE unsigned rpng_sad_final(__m128i acc)
+{
+   return (unsigned)_mm_cvtsi128_si32(acc)
+        + (unsigned)_mm_cvtsi128_si32(_mm_srli_si128(acc, 8));
+}
+
+/* Branch-free Paeth predictor over 8 unsigned 16-bit lanes; same
+ * identity and selection order as the decoder's. */
+static INLINE __m128i rpng_paeth_pred_epi16(__m128i a, __m128i b, __m128i c)
+{
+   __m128i bc     = _mm_sub_epi16(b, c);
+   __m128i ac     = _mm_sub_epi16(a, c);
+   __m128i sm     = _mm_add_epi16(bc, ac);
+   __m128i z      = _mm_setzero_si128();
+   __m128i pa     = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
+   __m128i pb     = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
+   __m128i pc     = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
+   __m128i not_a  = _mm_or_si128(_mm_cmpgt_epi16(pa, pb),
+                                 _mm_cmpgt_epi16(pa, pc));
+   __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
+   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, b),
+                                 _mm_and_si128(   pick_c, c));
+   return           _mm_or_si128(_mm_andnot_si128(not_a,  a),
+                                 _mm_and_si128(   not_a,  bc_sel));
+}
+#endif
+
+#if defined(RPNG_ENC_NEON)
+static INLINE uint8x16_t rpng_abs_i8(uint8x16_t v)
+{
+   return vminq_u8(v, vsubq_u8(vdupq_n_u8(0), v));
+}
+
+static INLINE uint16x8_t rpng_paeth_pred_u16(
+      uint16x8_t a, uint16x8_t b, uint16x8_t c)
+{
+   int16x8_t  bc     = vsubq_s16(vreinterpretq_s16_u16(b),
+                                 vreinterpretq_s16_u16(c));
+   int16x8_t  ac     = vsubq_s16(vreinterpretq_s16_u16(a),
+                                 vreinterpretq_s16_u16(c));
+   int16x8_t  sm     = vaddq_s16(bc, ac);
+   uint16x8_t pa     = vreinterpretq_u16_s16(vabsq_s16(bc));
+   uint16x8_t pb     = vreinterpretq_u16_s16(vabsq_s16(ac));
+   uint16x8_t pc     = vreinterpretq_u16_s16(vabsq_s16(sm));
+   uint16x8_t not_a  = vorrq_u16(vcgtq_u16(pa, pb), vcgtq_u16(pa, pc));
+   uint16x8_t pick_c = vcgtq_u16(pb, pc);
+   uint16x8_t bc_sel = vbslq_u16(pick_c, c, b);
+   return              vbslq_u16(not_a,  bc_sel, a);
+}
+#endif
+
+/* |(int8)b| without a branch, for the scalar paths.  The conditional
+ * form the old code used compiled to a branch that mispredicts on image
+ * data as often as not. */
+static INLINE unsigned rpng_abs8(uint8_t b)
+{
+   int v = (int)(int8_t)b;
+   int m = v >> (sizeof(int) * 8 - 1);
+   return (unsigned)((v + m) ^ m);
+}
+
+static INLINE int rpng_paeth_pred(int a, int b, int c)
+{
+   int pa   = b - c;
+   int pb   = a - c;
+   int pc   = pa + pb;
+   int apa  = pa < 0 ? -pa : pa;
+   int apb  = pb < 0 ? -pb : pb;
+   int apc  = pc < 0 ? -pc : pc;
+   int nota = -(int)((apa > apb) | (apa > apc));
+   int pick = -(int)(apb > apc);
+   int bc   = (b & ~pick) | (c & pick);
+   return (a & ~nota) | (bc & nota);
+}
+
 static unsigned count_sad(const uint8_t *data, size_t len)
 {
-   size_t i;
+   size_t i = 0;
    unsigned cnt = 0;
-   for (i = 0; i < len; i++)
+#if defined(RPNG_ENC_SSE2)
    {
-      /* Use conditional instead of abs() to avoid undefined behaviour
-       * when the value is -128 (INT8_MIN). */
-      int8_t val = (int8_t)data[i];
-      cnt += val < 0 ? -val : val;
+      __m128i acc = _mm_setzero_si128();
+      for (; i + 16 <= len; i += 16)
+         acc = _mm_add_epi64(acc, _mm_sad_epu8(
+                  rpng_abs_i8(_mm_loadu_si128((const __m128i*)(data + i))),
+                  _mm_setzero_si128()));
+      cnt = rpng_sad_final(acc);
    }
+#elif defined(RPNG_ENC_NEON)
+   {
+      uint32x4_t acc = vdupq_n_u32(0);
+      for (; i + 16 <= len; i += 16)
+         acc = vpadalq_u16(acc, vpaddlq_u8(rpng_abs_i8(vld1q_u8(data + i))));
+      cnt = vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
+          + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
+   }
+#endif
+   for (; i < len; i++)
+      cnt += rpng_abs8(data[i]);
    return cnt;
 }
 
 static unsigned filter_up(uint8_t *target, const uint8_t *line,
       const uint8_t *prev, unsigned width, unsigned bpp)
 {
-   unsigned i;
-   width *= bpp;
-   for (i = 0; i < width; i++)
-      target[i] = line[i] - prev[i];
-
-   return count_sad(target, width);
+   size_t i = 0, len = (size_t)width * bpp;
+   unsigned cnt = 0;
+#if defined(RPNG_ENC_SSE2)
+   {
+      __m128i acc = _mm_setzero_si128();
+      for (; i + 16 <= len; i += 16)
+      {
+         __m128i v = _mm_sub_epi8(
+               _mm_loadu_si128((const __m128i*)(line + i)),
+               _mm_loadu_si128((const __m128i*)(prev + i)));
+         _mm_storeu_si128((__m128i*)(target + i), v);
+         acc = _mm_add_epi64(acc,
+               _mm_sad_epu8(rpng_abs_i8(v), _mm_setzero_si128()));
+      }
+      cnt = rpng_sad_final(acc);
+   }
+#elif defined(RPNG_ENC_NEON)
+   {
+      uint32x4_t acc = vdupq_n_u32(0);
+      for (; i + 16 <= len; i += 16)
+      {
+         uint8x16_t v = vsubq_u8(vld1q_u8(line + i), vld1q_u8(prev + i));
+         vst1q_u8(target + i, v);
+         acc = vpadalq_u16(acc, vpaddlq_u8(rpng_abs_i8(v)));
+      }
+      cnt = vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
+          + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
+   }
+#endif
+   for (; i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - prev[i]);
+      cnt      += rpng_abs8(target[i]);
+   }
+   return cnt;
 }
 
 static unsigned filter_sub(uint8_t *target, const uint8_t *line,
       unsigned width, unsigned bpp)
 {
-   unsigned i;
-   width *= bpp;
-   for (i = 0; i < bpp; i++)
+   size_t i, len = (size_t)width * bpp;
+   unsigned cnt = 0;
+   for (i = 0; i < bpp && i < len; i++)
+   {
       target[i] = line[i];
-   for (i = bpp; i < width; i++)
-      target[i] = line[i] - line[i - bpp];
-
-   return count_sad(target, width);
+      cnt      += rpng_abs8(target[i]);
+   }
+#if defined(RPNG_ENC_SSE2)
+   {
+      __m128i acc = _mm_setzero_si128();
+      for (; i + 16 <= len; i += 16)
+      {
+         __m128i v = _mm_sub_epi8(
+               _mm_loadu_si128((const __m128i*)(line + i)),
+               _mm_loadu_si128((const __m128i*)(line + i - bpp)));
+         _mm_storeu_si128((__m128i*)(target + i), v);
+         acc = _mm_add_epi64(acc,
+               _mm_sad_epu8(rpng_abs_i8(v), _mm_setzero_si128()));
+      }
+      cnt += rpng_sad_final(acc);
+   }
+#elif defined(RPNG_ENC_NEON)
+   {
+      uint32x4_t acc = vdupq_n_u32(0);
+      for (; i + 16 <= len; i += 16)
+      {
+         uint8x16_t v = vsubq_u8(vld1q_u8(line + i), vld1q_u8(line + i - bpp));
+         vst1q_u8(target + i, v);
+         acc = vpadalq_u16(acc, vpaddlq_u8(rpng_abs_i8(v)));
+      }
+      cnt += vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
+           + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
+   }
+#endif
+   for (; i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - line[i - bpp]);
+      cnt      += rpng_abs8(target[i]);
+   }
+   return cnt;
 }
 
 static unsigned filter_avg(uint8_t *target, const uint8_t *line,
       const uint8_t *prev, unsigned width, unsigned bpp)
 {
-   unsigned i;
-   width *= bpp;
-   for (i = 0; i < bpp; i++)
-      target[i] = line[i] - (prev[i] >> 1);
-   for (i = bpp; i < width; i++)
-      target[i] = line[i] - ((line[i - bpp] + prev[i]) >> 1);
-
-   return count_sad(target, width);
+   size_t i, len = (size_t)width * bpp;
+   unsigned cnt = 0;
+   for (i = 0; i < bpp && i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - (prev[i] >> 1));
+      cnt      += rpng_abs8(target[i]);
+   }
+#if defined(RPNG_ENC_SSE2)
+   {
+      /* floor((l + p) / 2) == pavgb(l, p) - ((l ^ p) & 1), pavgb being
+       * the rounding-up form. */
+      const __m128i one = _mm_set1_epi8(1);
+      __m128i acc = _mm_setzero_si128();
+      for (; i + 16 <= len; i += 16)
+      {
+         __m128i l = _mm_loadu_si128((const __m128i*)(line + i - bpp));
+         __m128i p = _mm_loadu_si128((const __m128i*)(prev + i));
+         __m128i m = _mm_sub_epi8(_mm_avg_epu8(l, p),
+               _mm_and_si128(_mm_xor_si128(l, p), one));
+         __m128i v = _mm_sub_epi8(
+               _mm_loadu_si128((const __m128i*)(line + i)), m);
+         _mm_storeu_si128((__m128i*)(target + i), v);
+         acc = _mm_add_epi64(acc,
+               _mm_sad_epu8(rpng_abs_i8(v), _mm_setzero_si128()));
+      }
+      cnt += rpng_sad_final(acc);
+   }
+#elif defined(RPNG_ENC_NEON)
+   {
+      /* vhaddq_u8 is already the flooring halving add. */
+      uint32x4_t acc = vdupq_n_u32(0);
+      for (; i + 16 <= len; i += 16)
+      {
+         uint8x16_t m = vhaddq_u8(vld1q_u8(line + i - bpp), vld1q_u8(prev + i));
+         uint8x16_t v = vsubq_u8(vld1q_u8(line + i), m);
+         vst1q_u8(target + i, v);
+         acc = vpadalq_u16(acc, vpaddlq_u8(rpng_abs_i8(v)));
+      }
+      cnt += vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
+           + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
+   }
+#endif
+   for (; i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - ((line[i - bpp] + prev[i]) >> 1));
+      cnt      += rpng_abs8(target[i]);
+   }
+   return cnt;
 }
 
 static unsigned filter_paeth(uint8_t *target,
       const uint8_t *line, const uint8_t *prev,
       unsigned width, unsigned bpp)
 {
-   unsigned i;
-   width *= bpp;
-   for (i = 0; i < bpp; i++)
-      target[i] = line[i] - paeth(0, prev[i], 0);
-   for (i = bpp; i < width; i++)
-      target[i] = line[i] - paeth(line[i - bpp], prev[i], prev[i - bpp]);
-
-   return count_sad(target, width);
+   size_t i, len = (size_t)width * bpp;
+   unsigned cnt = 0;
+   for (i = 0; i < bpp && i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - prev[i]);  /* paeth(0, b, 0) == b */
+      cnt      += rpng_abs8(target[i]);
+   }
+#if defined(RPNG_ENC_SSE2)
+   {
+      const __m128i z = _mm_setzero_si128();
+      __m128i acc = _mm_setzero_si128();
+      for (; i + 8 <= len; i += 8)
+      {
+         __m128i a  = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(line + i - bpp)), z);
+         __m128i b  = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(prev + i)), z);
+         __m128i c  = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(prev + i - bpp)), z);
+         __m128i pr = _mm_packus_epi16(rpng_paeth_pred_epi16(a, b, c), z);
+         __m128i v  = _mm_sub_epi8(
+               _mm_loadl_epi64((const __m128i*)(line + i)), pr);
+         _mm_storel_epi64((__m128i*)(target + i), v);
+         acc = _mm_add_epi64(acc,
+               _mm_sad_epu8(rpng_abs_i8(_mm_unpacklo_epi64(v, z)), z));
+      }
+      cnt += rpng_sad_final(acc);
+   }
+#elif defined(RPNG_ENC_NEON)
+   {
+      uint32x4_t acc = vdupq_n_u32(0);
+      for (; i + 8 <= len; i += 8)
+      {
+         uint16x8_t a  = vmovl_u8(vld1_u8(line + i - bpp));
+         uint16x8_t b  = vmovl_u8(vld1_u8(prev + i));
+         uint16x8_t c  = vmovl_u8(vld1_u8(prev + i - bpp));
+         uint8x8_t  pr = vmovn_u16(rpng_paeth_pred_u16(a, b, c));
+         uint8x8_t  v  = vsub_u8(vld1_u8(line + i), pr);
+         vst1_u8(target + i, v);
+         acc = vpadalq_u16(acc, vpaddlq_u8(
+                  rpng_abs_i8(vcombine_u8(v, vdup_n_u8(0)))));
+      }
+      cnt += vgetq_lane_u32(acc, 0) + vgetq_lane_u32(acc, 1)
+           + vgetq_lane_u32(acc, 2) + vgetq_lane_u32(acc, 3);
+   }
+#endif
+   for (; i < len; i++)
+   {
+      target[i] = (uint8_t)(line[i] - rpng_paeth_pred(
+               line[i - bpp], prev[i], prev[i - bpp]));
+      cnt      += rpng_abs8(target[i]);
+   }
+   return cnt;
 }
 
 /* Size of the per-chunk deflate output buffer.  A screenshot-sized
@@ -335,14 +601,17 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
    bool ret = true;
    const struct trans_stream_backend *stream_backend = NULL;
    uint8_t *rgba_line        = NULL;
+   uint8_t *prev_base        = NULL;
+   uint8_t *rgba_base        = NULL;
+   uint8_t *up_base          = NULL;
+   uint8_t *sub_base         = NULL;
+   uint8_t *avg_base         = NULL;
+   uint8_t *paeth_base       = NULL;
    uint8_t *up_filtered      = NULL;
    uint8_t *sub_filtered     = NULL;
    uint8_t *avg_filtered     = NULL;
    uint8_t *paeth_filtered   = NULL;
    uint8_t *prev_encoded     = NULL;
-   /* filter_line holds [filter_byte][filtered_row] and is what we
-    * feed into deflate one row at a time. */
-   uint8_t *filter_line      = NULL;
    /* chunk_buf is the IDAT-chunk staging buffer:
     *   [0..4):        length field (filled in at flush time)
     *   [4..8):        "IDAT"
@@ -379,20 +648,90 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
 
    /* Per-row scratch.  ~width*bpp each -- trivial compared to the
     * frame-sized encode_buf the old full-buffer path allocated. */
-   prev_encoded   = (uint8_t*)calloc(1, line_len);
-   rgba_line      = (uint8_t*)malloc(line_len);
-   up_filtered    = (uint8_t*)malloc(line_len);
-   sub_filtered   = (uint8_t*)malloc(line_len);
-   avg_filtered   = (uint8_t*)malloc(line_len);
-   paeth_filtered = (uint8_t*)malloc(line_len);
-   filter_line    = (uint8_t*)malloc(line_len + 1);
+   /* Every row buffer carries one spare byte in front so the PNG filter
+    * tag can be written immediately before the filtered data and the
+    * whole thing handed to deflate as one span.  The old shape copied
+    * the winning row into a separate tag+data buffer, a full extra pass
+    * over the row for nothing. */
+   prev_base      = (uint8_t*)calloc(1, line_len + 1);
+   rgba_base      = (uint8_t*)malloc(line_len + 1);
+   up_base        = (uint8_t*)malloc(line_len + 1);
+   sub_base       = (uint8_t*)malloc(line_len + 1);
+   avg_base       = (uint8_t*)malloc(line_len + 1);
+   paeth_base     = (uint8_t*)malloc(line_len + 1);
    chunk_buf      = (uint8_t*)malloc(IDAT_CHUNK_SIZE + 8);
-   if (!prev_encoded || !rgba_line || !up_filtered || !sub_filtered
-         || !avg_filtered || !paeth_filtered || !filter_line
-         || !chunk_buf)
+   if (!prev_base || !rgba_base || !up_base || !sub_base
+         || !avg_base || !paeth_base || !chunk_buf)
       GOTO_END_ERROR();
 
+   prev_encoded   = prev_base  + 1;
+   rgba_line      = rgba_base  + 1;
+   up_filtered    = up_base    + 1;
+   sub_filtered   = sub_base   + 1;
+   avg_filtered   = avg_base   + 1;
+   paeth_filtered = paeth_base + 1;
+
    stream = stream_backend->stream_new();
+
+   /* Both deflate backends default to level 9, which is the wrong
+    * trade for a screenshot: it is a foreground action the user waits
+    * on, and on the content emulator screenshots actually contain the
+    * top levels buy nothing.  Measured at 1920x1080 and 3840x2160,
+    * BGR24, against libpng at its own default for scale:
+    *
+    *                  libpng        level 6        level 9
+    *   2D pixel art    59 ms/0.23    67 ms/0.23    591 ms/0.23
+    *   pixel art 4K   242 ms/0.88   272 ms/0.88   2221 ms/0.86
+    *   smooth ramp    460 ms/1.00   432 ms/1.00   2649 ms/0.92
+    *   3D scene       707 ms/2.82   458 ms/3.13    448 ms/3.13
+    *   3D scene 4K   2929 ms/11.26 1843 ms/12.49  1830 ms/12.49
+    *   menu frame      48 ms/0.01    56 ms/0.01     70 ms/0.01
+    *
+    * Level 9's deep chain search collapses on the repetitive content -
+    * flat runs, upscaled pixel art, smooth ramps - which is most of
+    * what gets captured, and returns 0-8% for 6-9x the time.  Where it
+    * does earn its keep, on noisy 3D output, level 6 matches it
+    * exactly.  Worst case here is 80 KB against 2.2 seconds.
+    *
+    * 6 is also zlib's and libpng's own default, so a screenshot is no
+    * longer larger or slower than what every other PNG writer emits. */
+   if (stream)
+      stream_backend->define(stream, "level", 6);
+
+   /* The filtered match strategy is deliberately not requested here.
+    * It does close the size gap against libpng on noisy 3D output -
+    * 3.13 MB down to 2.82 MB at 1080p, matching libpng exactly - but at
+    * level 6 it costs 390 ms to 647 ms for it, because Z_FILTERED
+    * discards matches of five bytes or fewer *after* the level-6 match
+    * finder has walked a 128-deep hash chain to find them.  The search
+    * is thrown away, not skipped.
+    *
+    * That cost is not inherent.  Level 4, whose chain is 16 deep,
+    * reaches the same 2.81 MB in 447 ms - within noise of the 436 ms
+    * the default strategy takes at level 6.  But level 4 gives up 18%
+    * on smooth content (1.00 MB to 1.18 MB on a gradient), so the two
+    * settings have to be chosen together and there is no cell that wins
+    * on both axes for every shape:
+    *
+    *                     3D scene      gradient    pixel art   menu
+    *   6 + default       436 ms/3.13   456 ms/1.00  52 ms/0.23  38 ms/0.01
+    *   6 + filtered      721 ms/2.82   466 ms/1.00  51 ms/0.23  48 ms/0.01
+    *   5 + filtered      659 ms/2.82   231 ms/1.09  46 ms/0.23  38 ms/0.01
+    *   4 + filtered      447 ms/2.81   150 ms/1.18  45 ms/0.23  37 ms/0.01
+    *   libpng default    812 ms/2.82   511 ms/1.00  87 ms/0.23  72 ms/0.01
+    *
+    * The only shape arguing for the higher level is the gradient, and
+    * that test image is a pure mathematical ramp - the least like a real
+    * screenshot of the set, since real fades carry dithering that puts
+    * them nearer the 3D row.  Deciding a size-for-time trade on it is
+    * not sound.  Default strategy is the state that gives nothing away:
+    * fastest everywhere, and still ahead of libpng on time for every
+    * shape, at the cost of 11% on noisy 3D output.
+    *
+    * Both backends implement the strategy property, so turning it on -
+    * with a level chosen alongside it, against real captures rather than
+    * synthetic ones - is a one-line change whenever that measurement
+    * exists. */
    if (!stream)
       GOTO_END_ERROR();
 
@@ -408,7 +747,7 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       uint8_t filter;
       unsigned none_score, up_score, sub_score, avg_score, paeth_score;
       unsigned min_sad;
-      const uint8_t *chosen_filtered;
+      uint8_t *chosen_filtered;
 
       if (bpp == sizeof(uint32_t))
          copy_argb_line(rgba_line, (const uint32_t*)data, width);
@@ -433,9 +772,9 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       if (avg_score < min_sad)   { filter = 3; chosen_filtered = avg_filtered;   min_sad = avg_score;   }
       if (paeth_score < min_sad) { filter = 4; chosen_filtered = paeth_filtered;                        }
 
-      filter_line[0] = filter;
-      memcpy(filter_line + 1, chosen_filtered, line_len);
-      memcpy(prev_encoded,    rgba_line,       line_len);
+      /* Tag goes in the spare byte ahead of the winning buffer, so the
+       * row is fed to deflate in place. */
+      chosen_filtered[-1] = filter;
 
       /* Feed this row into deflate. The loop handles the case where
        * our chunk buffer fills mid-row (BUFFER_FULL): flush IDAT,
@@ -445,7 +784,8 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
        * consumed what we gave it but hasn't finalized (no Z_FINISH
        * was requested) -- that's the normal "ok, send more data
        * next time" signal.  We break out and feed the next row. */
-      stream_backend->set_in(stream, filter_line, (uint32_t)(line_len + 1));
+      stream_backend->set_in(stream, chosen_filtered - 1,
+            (uint32_t)(line_len + 1));
       for (;;)
       {
          bool ok = stream_backend->trans(stream, false, &rd, &wn, &err);
@@ -480,6 +820,15 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
          chunk_fill = 0;
          stream_backend->set_out(stream,
                chunk_buf + 8, (uint32_t)IDAT_CHUNK_SIZE);
+      }
+
+      /* This row becomes the next row's predictor.  Swapping the two
+       * buffers replaces a second full-row copy; both were allocated
+       * the same way, so either can serve as either. */
+      {
+         uint8_t *tmp = prev_encoded;
+         prev_encoded = rgba_line;
+         rgba_line    = tmp;
       }
    }
 
@@ -528,13 +877,12 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       GOTO_END_ERROR();
 
 end:
-   free(rgba_line);
-   free(prev_encoded);
-   free(up_filtered);
-   free(sub_filtered);
-   free(avg_filtered);
-   free(paeth_filtered);
-   free(filter_line);
+   free(rgba_base);
+   free(prev_base);
+   free(up_base);
+   free(sub_base);
+   free(avg_base);
+   free(paeth_base);
    free(chunk_buf);
 
    if (stream_backend)

@@ -4013,8 +4013,10 @@ static void d3d11_init_history(d3d11_video_t* d3d11, unsigned width, unsigned he
 static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsigned height)
 {
    size_t i;
+   int rot;
+   bool last_pass;
    d3d11->mvp_last_pass = d3d11->ubo_values.mvp;
-   int rot = retroarch_get_rotation();
+   rot                  = retroarch_get_rotation();
 
    for (i = 0; i < d3d11->shader_preset->passes; i++)
    {
@@ -4072,7 +4074,7 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
 
       RARCH_DBG("[D3D11] Updating framebuffer size %ux%u.\n", width, height);
 	  
-	  bool last_pass = i == (d3d11->shader_preset->passes - 1);
+	  last_pass = i == (d3d11->shader_preset->passes - 1);
 	  
 
       if (     !last_pass

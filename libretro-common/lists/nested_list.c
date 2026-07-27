@@ -176,14 +176,26 @@ static nested_list_item_t *nested_list_add_item_to_list(nested_list_t *list,
    new_item->id          = strdup(id);
    new_item->value       = value;
 
+   /* A NULL id would be hashed by the map insert below and would
+    * leave an item in the buffer that no lookup can ever match */
+   if (!new_item->id)
+   {
+      nested_list_free(child_list);
+      free(new_item);
+      return NULL;
+   }
+
    /* Increment item buffer size */
    RBUF_RESIZE(list->items, num_items + 1);
 
    /* Add new item to buffer */
    list->items[num_items] = new_item;
 
-   /* Update map */
-   RHMAP_SET_STR(list->item_map, id, new_item);
+   /* Update map
+    * > Note: the map must key off the item's own copy of the id,
+    *   not the caller's @id, which is a transient token owned by
+    *   the string_list built in nested_list_add_item() */
+   RHMAP_SET_STR(list->item_map, new_item->id, new_item);
    return new_item;
 }
 

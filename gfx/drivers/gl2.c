@@ -247,13 +247,7 @@
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -616,6 +610,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
+   video_coords_t     coords;
    gl2_t             *gl  = (gl2_t*)data;
 
    if (!gl || !draw)
@@ -631,24 +626,35 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex        = &gl2_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = &gl2_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gl2_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct.  For the XMB ribbon pipeline
+    * draw->coords aliases &p_disp->dispca.coords, whose four stream
+    * pointers are heap-owned and free()d by
+    * video_coord_array_free(); writing a static array's address into
+    * one of them there is a free() of .rodata waiting to happen.  It
+    * cannot fire today only because dispca always has all four
+    * streams allocated -- which is exactly the property anyone
+    * making them optional would remove. */
+   coords = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex        = &gl2_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord     = &gl2_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord = &gl2_tex_coords[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)&gl->mvp_no_rot);
 
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -999,6 +1005,9 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   GLfloat lut_block[2 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
    int y                = roundf(pos_y * gl->vp.height);
@@ -1038,6 +1047,16 @@ static void gl2_raster_font_render_line(gl2_t *gl,
 
    glyph_q = get_glyph(font_data, '?');
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+      lut_block[2 * n + 0]   = gl->coords.lut_tex_coord[0];
+      lut_block[2 * n + 1]   = gl->coords.lut_tex_coord[1];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -1066,6 +1085,11 @@ static void gl2_raster_font_render_line(gl2_t *gl,
          GL_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
          GL_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
+         memcpy(&font_lut_tex_coord[2 * 6 * i], lut_block,
+               sizeof(lut_block));
 
          i++;
 
@@ -3423,13 +3447,20 @@ static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
+   /* NOTE: must go through the font driver here - the active font is
+    * owned by the font driver, not by gl2_t. Calling
+    * gl2_raster_font_get_message_width() with 'gl' reinterprets a
+    * gl2_t* as a gl2_raster_t*, which reads ctx_data/ctx_driver as
+    * font_driver/font_data and then branches through a garbage
+    * get_glyph pointer. */
    int msg_width           =
-      gl2_raster_font_get_message_width(gl, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;
    float y                 = settings->floats.video_msg_pos_y;
-   float width             = msg_width / (float)gl->video_width;
+   float width             = (msg_width > 0 ? msg_width : 0)
+      / (float)gl->video_width;
    float height            = video_font_size / (float)gl->video_height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;

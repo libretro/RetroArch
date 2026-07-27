@@ -296,7 +296,12 @@ void file_list_free_actiondata(const file_list_t *list, size_t idx)
    if (!list)
       return;
    if (list->list[idx].actiondata)
-       free(list->list[idx].actiondata);
+   {
+      if (list->actiondata_free)
+         list->actiondata_free(list->list[idx].actiondata);
+      else
+         free(list->list[idx].actiondata);
+   }
    list->list[idx].actiondata = NULL;
 }
 

@@ -1161,28 +1161,58 @@ float cocoa_get_refresh_rate(void)
    return (rate > 0.0) ? (float)rate : 60.0f;
 #endif
 #else /* iOS / tvOS */
-   CADisplayLink *dl = [CocoaView get].displayLink;
-   if (dl)
+   /* Prefer the panel's own capability over the CADisplayLink's
+    * preferred rate.
+    *
+    * apple_display_server_init() stamps
+    * settings->floats.video_refresh_rate onto the display link at
+    * startup, so reading that link back here closes a feedback
+    * loop: "Set Display-Reported Refresh Rate" only ever echoes the
+    * value the user already has configured, and a ProMotion panel
+    * reports 60 Hz forever because 60 is DEFAULT_REFRESH_RATE.
+    *
+    * maximumFramesPerSecond is the iOS/tvOS analogue of the
+    * CGDisplayModeGetRefreshRate() query the macOS branch above
+    * makes - a property of the display, not of our own timer.
+    *
+    * It only exists on iOS 10.3 / tvOS 10.2, and it is known to
+    * answer 0 on some simulators, so this is an extra rung on top
+    * of the ladder rather than a replacement for it.  Every path
+    * below stays reachable and unchanged: 10.0 - 10.2 still gets
+    * preferredFramesPerSecond, pre-10.0 still gets frameInterval,
+    * and a 0 answer here still falls through to them. */
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
    {
+      NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
+      if (max_fps > 0)
+         return (float)max_fps;
+   }
+#endif
+   {
+      CADisplayLink *dl = [CocoaView get].displayLink;
+      if (dl)
+      {
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
-      if (@available(iOS 15.0, tvOS 15.0, *))
-         return dl.preferredFrameRateRange.preferred;
+         if (@available(iOS 15.0, tvOS 15.0, *))
+            return dl.preferredFrameRateRange.preferred;
 #endif
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
-      if (@available(iOS 10.0, tvOS 10.0, *))
-         return dl.preferredFramesPerSecond;
+         if (@available(iOS 10.0, tvOS 10.0, *))
+            return dl.preferredFramesPerSecond;
 #endif
-      /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
-       * the number of screen refreshes between callbacks, so
-       * convert to Hz assuming a 60 Hz panel (accurate for every
-       * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
+         /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+          * the number of screen refreshes between callbacks, so
+          * convert to Hz assuming a 60 Hz panel (accurate for every
+          * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-      {
-         NSInteger fi = dl.frameInterval;
-         return 60.0f / (float)(fi > 0 ? fi : 1);
-      }
+         {
+            NSInteger fi = dl.frameInterval;
+            return 60.0f / (float)(fi > 0 ? fi : 1);
+         }
 #pragma clang diagnostic pop
+      }
    }
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
    if (@available(iOS 10.3, tvOS 10.2, *))

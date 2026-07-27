@@ -1556,8 +1556,6 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
       vertex          = &gxm_vertexes[0];
    if (!tex_coord)
       tex_coord       = &gxm_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gxm_tex_coords[0];
    if (!texture)
       return;
    if (!color)

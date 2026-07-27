@@ -5193,7 +5193,8 @@ static uint32_t vorbis_find_page(rvorbis *f, uint32_t *end, uint32_t *last)
                header[i] = get8(f);
             if (f->eof) return 0;
             if (header[4] != 0) goto invalid;
-            goal = header[22] + (header[23] << 8) + (header[24]<<16) + (header[25]<<24);
+            goal = header[22]              + ((uint32_t)header[23] << 8)
+                 + ((uint32_t)header[24] << 16) + ((uint32_t)header[25] << 24);
             for (i=22; i < 26; ++i)
                header[i] = 0;
             crc = 0;

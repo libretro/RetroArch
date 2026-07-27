@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include <encodings/utf.h>
@@ -270,13 +271,7 @@ static bool gl1_scrgb_init_program(gl1_t *gl1);
    font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
-   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
-   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
-   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y
 
 #define IS_POT(x) (((x) & (x - 1)) == 0)
 
@@ -390,17 +385,22 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_height)
 {
    const GLfloat *mvp_matrix;
+   video_coords_t     coords;
    gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
       return;
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex         = &gl1_menu_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord      = &gl1_menu_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord  = &gl1_menu_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct; see gfx_display_gl2_draw(). */
+   coords                          = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex                = &gl1_menu_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord             = &gl1_menu_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord         = &gl1_menu_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -432,25 +432,25 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
       if (vertices3)
          free(vertices3);
-      vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
-      for (i = 0; i < draw->coords->vertices; i++)
+      vertices3 = (float*)malloc(sizeof(float) * 3 * coords.vertices);
+      for (i = 0; i < coords.vertices; i++)
       {
          memcpy(&vertices3[i * 3],
-               &draw->coords->vertex[i * 2],
+               &coords.vertex[i * 2],
                sizeof(float) * 2);
          vertices3[i * 3 + 2]  = 0.0f;
       }
       glVertexPointer(3, GL_FLOAT, 0, vertices3);
    }
 #else
-   glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+   glVertexPointer(2, GL_FLOAT, 0, coords.vertex);
 #endif
 
-   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
-   glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
+   glColorPointer(4, GL_FLOAT, 0, coords.color);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords.tex_coord);
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -773,6 +773,9 @@ static void gl1_raster_font_render_line(gl1_t *gl,
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   GLfloat lut_block[2 * 6];
+   int n;
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
@@ -807,6 +810,16 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          x -= (int)(width_accum * scale) / 2;
    }
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+      lut_block[2 * n + 0]   = gl->coords.lut_tex_coord[0];
+      lut_block[2 * n + 1]   = gl->coords.lut_tex_coord[1];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -835,6 +848,11 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          GL1_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
          GL1_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL1_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
+         memcpy(&font_lut_tex_coord[2 * 6 * i], lut_block,
+               sizeof(lut_block));
 
          i++;
 

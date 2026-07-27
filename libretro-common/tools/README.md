@@ -5,8 +5,10 @@ here rather than beside it so a build of libretro-common never picks
 them up.
 
 The layout mirrors the tree they test: `tools/chd` for
-`formats/chd`, `tools/flac` for `formats/flac`, `tools/encodings` for
-`encodings`.
+`formats/chd`, `tools/cdfs` for `formats/cdfs`, `tools/flac` for
+`formats/flac`, `tools/encodings` for `encodings`, `tools/formats` for
+the rest of `formats`. `tools/cheevos` is the exception and tests
+`deps/rcheevos` as this tree feeds it.
 
 None of these are part of any build. Each is a standalone program or
 script, compiled or run by hand against the sources it names.
@@ -16,8 +18,6 @@ script, compiled or run by hand against the sources it names.
 | | |
 |---|---|
 | `chd_probe.py` | Regenerates the reference images `formats/chd/FORMAT.md` is derived from and re-checks every claim marked verified in it. Requires `chdman` on PATH. |
-| `cdfs_sector_compare.c` | Compares CHD readers over the sector-seek path RetroAchievements hashes through. |
-| `cdfs_backend_compare.c` | Digests a disc image through cdfs, for comparing CHD readers above chd_stream. |
 | `rchd_crc16_test.c` | Checks the table-driven CRC-16 against the bitwise definition. |
 | `chd_map_test.c` | Decodes the hunk map of real images and checks it against the CRC-16 the file carries, then feeds corrupted maps through the same path. |
 | `chd_cd_test.py` | Reconstructs CD hunks — sector and subchannel framing, ECC rebuild — and compares them byte for byte against another reader's decode. |
@@ -30,6 +30,19 @@ script, compiled or run by hand against the sources it names.
 | `find_av_chd.py` | Scans a tree of images and reports each one's codec, marking any that use an audio/video codec. |
 | `chd_slice.py` | Extracts the header, map, metadata and a few hunks of an image into a small self-contained file, so a format question can be settled without moving the whole thing — a laserdisc image runs to tens of gigabytes. |
 | `make_subchannel_cd.py` | Builds a CD image that carries subchannel data, which no commercial image to hand does — every one reports `SUBTYPE:NONE`, leaving half of each frame untested. |
+
+## cdfs
+
+| | |
+|---|---|
+| `cdfs_backend_compare.c` | Digests a disc image through cdfs, for comparing CHD readers above chd_stream. |
+| `cdfs_sector_compare.c` | Compares CHD readers over the sector-seek path RetroAchievements hashes through. |
+
+## cheevos
+
+| | |
+|---|---|
+| `rc_hash_backend_compare.c` | Compares the RetroAchievements hash of a disc image between CHD readers. |
 
 ## flac
 
@@ -52,8 +65,17 @@ Matroska one found a real defect on first use.
 
 | | |
 |---|---|
-' `rzstd_encode_test.c` ' Round-trips through rzstd's encoder and decodes with both rzstd and the reference implementation. '
-' `rzstd_frame_test.c` ' Decodes a Zstandard frame through `rzstd` and compares against a reference decode. |
+| `rzstd_encode_test.c` | Round-trips through rzstd's encoder and decodes with both rzstd and the reference implementation. |
+| `rzstd_frame_test.c` | Decodes a Zstandard frame through `rzstd` and compares against a reference decode. |
+| `rzstd_multiblock_test.c` | Round-trips periodic data across block boundaries, where frame-scoped state can drift. |
+| `rzstd_bench.c` | Times rzstd against the reference implementation on synthetic inputs. |
+| `rzstd_frame_bench.c` | Times rzstd against the reference implementation on frames taken from a real image. |
 | `rzstd_fse_test.c` | Builds the FSE tables RFC 8878 predefines and checks the spread closes. |
 | `huff_test.c` | Decodes every `huff` hunk of an image and compares against the original uncompressed source. |
 | `adler32_test.c` | Checks `encoding_deflate.c`'s adler32 against a textbook reference over block boundaries, unaligned starts, the chunk bound and the worst case for its 32-bit overflow argument. Build it once per SIMD path; all must agree. |
+
+## formats
+
+| | |
+|---|---|
+| `rxml_treehash.c` | Hashes the tree rxml builds for each document given, so two builds can be diffed over a corpus. Rejected documents print REJECT, so a change in what is accepted shows up as well. |

@@ -29,6 +29,14 @@
 #include <string/stdstring.h>
 
 #include "SDL.h"
+
+/* Upper bound on how long a blocking write or read will wait for the
+ * SDL callback before giving up and reporting a short count.  Never
+ * reached in normal operation - the callback signals every period -
+ * so the exact value only decides how long a stalled device takes to
+ * be noticed.  coreaudio.c already uses a flat 300ms for the same
+ * purpose on iOS. */
+#define SDL_AUDIO_STALL_TIMEOUT_US 256000
 #include "SDL_audio.h"
 
 #include "../audio_driver.h"
@@ -386,6 +394,9 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv
       while (read < len)
       {
          size_t avail;
+#ifdef HAVE_THREADS
+         bool signalled;
+#endif
 
          SDL_LockAudioDevice(mic->device_id);
          /* Stop the SDL microphone thread from running */
@@ -399,13 +410,20 @@ static int sdl_microphone_read(void *driver_context, void *mic_context, void *sv
 #ifdef HAVE_THREADS
             slock_lock(mic->lock);
             /* Let *only* the SDL microphone thread access
-             * the incoming sample queue. */
-            scond_wait(mic->cond, mic->lock);
-            /* Wait until the SDL microphone thread tells us
-             * it's added some samples. */
+             * the incoming sample queue.  Bounded for the same reason
+             * as the playback path above: sdl_microphone_read_cb is
+             * the only thing that ever signals this condition, so once
+             * the capture device stops calling back an untimed wait
+             * here never returns. */
+            signalled = scond_wait_timeout(mic->cond, mic->lock,
+                  SDL_AUDIO_STALL_TIMEOUT_US);
             slock_unlock(mic->lock);
             /* Allow this thread to access the incoming sample queue,
              * which we'll do next iteration */
+            if (!signalled)
+               break;   /* Report what we managed to capture */
+#else
+            break;
 #endif
          }
          else
@@ -686,6 +704,9 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
       while (_len < len)
       {
          size_t avail;
+#ifdef HAVE_THREADS
+         bool signalled;
+#endif
 
          /* Stop the SDL speaker thread from running */
          SDL_LockAudioDevice(sdl->speaker_device);
@@ -699,11 +720,24 @@ static ssize_t sdl_audio_write(void *data, const void *s, size_t len)
              * which will free up space for us to write new ones. */
 #ifdef HAVE_THREADS
             slock_lock(sdl->lock);
-            /* Let *only* the SDL speaker thread touch the outgoing sample queue */
-            scond_wait(sdl->cond, sdl->lock);
-            /* Block until SDL tells us that it's made room for new samples */
+            /* Let *only* the SDL speaker thread touch the outgoing sample queue.
+             * Bounded: the wait is on sdl->lock while the queue is guarded by
+             * SDL_LockAudioDevice, and sdl_audio_playback_cb signals without
+             * holding sdl->lock, so a signal raised between the avail test and
+             * this wait reaches no waiter.  Normally the next callback covers
+             * that.  If the device has stopped calling back at all there is no
+             * next one, and an untimed wait here parked the core's thread for
+             * good. */
+            signalled = scond_wait_timeout(sdl->cond, sdl->lock,
+                  SDL_AUDIO_STALL_TIMEOUT_US);
             slock_unlock(sdl->lock);
             /* Now let this thread use the outgoing sample queue (which we'll do next iteration) */
+            if (!signalled)
+               break;   /* Report what we managed to enqueue */
+#else
+            /* Without threads there is nothing to wait on, and spinning
+             * here never made progress either. */
+            break;
 #endif
          }
          else

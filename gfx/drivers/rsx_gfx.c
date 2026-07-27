@@ -240,11 +240,7 @@ typedef struct
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -345,8 +341,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord   = &rsx_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -775,6 +769,8 @@ static void rsx_font_render_line(rsx_t *rsx,
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
+   float color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * rsx->vp.height);
@@ -803,6 +799,14 @@ static void rsx_font_render_line(rsx_t *rsx,
          x -= (int)(width_accum * scale);
       else
          x -= (int)(width_accum * scale) / 2;
+   }
+
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
    }
 
    while (msg < msg_end)
@@ -834,6 +838,9 @@ static void rsx_font_render_line(rsx_t *rsx,
          RSX_FONT_EMIT(3, 1, 0); /* Top-right */
          RSX_FONT_EMIT(4, 0, 0); /* Top-left */
          RSX_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
 
          i++;
 

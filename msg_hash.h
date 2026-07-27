@@ -18,6 +18,23 @@
 #ifndef __MSG_HASH_H
 #define __MSG_HASH_H
 
+/* enum msg_hash_enums below is guarded on HAVE_DYNAMIC, HAVE_LAKKA,
+ * HAVE_LAKKA_SWITCH, HAVE_MICROPHONE, HAVE_MIST, HAVE_GAME_AI,
+ * HAVE_ODROIDGO2, HAVE_RETROFLAG and HAVE_SMBCLIENT, all of which come
+ * from config.h.  Include it here rather than relying on every
+ * translation unit to have pulled it in first: a unit that reaches
+ * this header without config.h gets a *different numbering* for every
+ * enumerator after the first guarded one, silently and with no
+ * diagnostic.
+ *
+ * All 39 units that currently include this header do reach config.h
+ * beforehand, verified by preprocessing each of them, so this changes
+ * no generated code today.  It removes the trap for the next one.
+ * msg_hash_lbl_str.h already does exactly this. */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <limits.h>

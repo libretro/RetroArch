@@ -26,6 +26,7 @@
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include "../common/gl3_defines.h"
@@ -686,17 +687,22 @@ static void gfx_display_gl3_draw_pipeline(
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
+   video_coords_t coords;
    gl3_t *gl                 = (gl3_t*)data;
 
    if (!gl || !draw)
       return;
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex          = gfx_display_gl3_get_default_vertices();
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord       = &gl3_tex_coords[0];
-   if (!draw->coords->color)
-      draw->coords->color           = &gl3_colors[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct; see gfx_display_gl2_draw(). */
+   coords                    = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex                 = gfx_display_gl3_get_default_vertices();
+   if (!coords.tex_coord)
+      coords.tex_coord              = &gl3_tex_coords[0];
+   if (!coords.color)
+      coords.color                  = &gl3_colors[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
 
@@ -705,13 +711,13 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-      gl->chain.shader->set_coords(gl->chain.shader_data, draw->coords);
+      gl->chain.shader->set_coords(gl->chain.shader_data, &coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data,
             draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
          : (math_matrix_4x4*)&gl->mvp_no_rot);
 
       /* Menu draws use a triangle-strip layout. */
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
    }
 #ifdef HAVE_SLANG
    else
@@ -799,22 +805,22 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       glEnableVertexAttribArray(1);
       glEnableVertexAttribArray(2);
 
-      gl3_bind_scratch_vbo(gl, draw->coords->vertex,
-            2 * sizeof(float) * draw->coords->vertices);
+      gl3_bind_scratch_vbo(gl, coords.vertex,
+            2 * sizeof(float) * coords.vertices);
       glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
             2 * sizeof(float), (void *)(uintptr_t)0);
-      gl3_bind_scratch_vbo(gl, draw->coords->tex_coord,
-            2 * sizeof(float) * draw->coords->vertices);
+      gl3_bind_scratch_vbo(gl, coords.tex_coord,
+            2 * sizeof(float) * coords.vertices);
       glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
             2 * sizeof(float), (void *)(uintptr_t)0);
-      gl3_bind_scratch_vbo(gl, draw->coords->color,
-            4 * sizeof(float) * draw->coords->vertices);
+      gl3_bind_scratch_vbo(gl, coords.color,
+            4 * sizeof(float) * coords.vertices);
       glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE,
             4 * sizeof(float), (void *)(uintptr_t)0);
 
       /* See the matching comment in the chain.active branch above:
        * every caller passes TRIANGLESTRIP. */
-      glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
@@ -889,11 +895,7 @@ gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -1131,6 +1133,8 @@ static void gl3_raster_font_render_line(gl3_t *gl,
    struct video_coords coords;
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   int n;
    GLfloat font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
@@ -1165,6 +1169,14 @@ static void gl3_raster_font_render_line(gl3_t *gl,
          x -= (int)(width_accum * scale) / 2;
    }
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -1193,6 +1205,9 @@ static void gl3_raster_font_render_line(gl3_t *gl,
          GL_CORE_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
          GL_CORE_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL_CORE_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
 
          i++;
 
@@ -4563,11 +4578,13 @@ static bool gl3_frame(void *data, const void *frame,
       gl3_filter_chain_set_core_aspect(filter_chain, video_driver_get_core_aspect());
 
       /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-      uint32_t rot = retroarch_get_rotation();
-      float core_aspect_rot = video_driver_get_core_aspect();
-      if (rot == 1 || rot == 3)
-         core_aspect_rot = 1/core_aspect_rot;
-      gl3_filter_chain_set_core_aspect_rot(filter_chain, core_aspect_rot);
+      {
+         uint32_t rot          = retroarch_get_rotation();
+         float core_aspect_rot = video_driver_get_core_aspect();
+         if (rot == 1 || rot == 3)
+            core_aspect_rot    = 1 / core_aspect_rot;
+         gl3_filter_chain_set_core_aspect_rot(filter_chain, core_aspect_rot);
+      }
 
       /* Sub-frame info for multiframe shaders (per real content frame).
          Should always be 1 for non-use of subframes*/

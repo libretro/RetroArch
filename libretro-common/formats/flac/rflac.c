@@ -389,13 +389,15 @@ static INLINE uint64_t rflac__swap_endian_uint64(uint64_t n)
 static INLINE uint32_t rflac__be2host_32_ptr_unaligned(const void* pData)
 {
    const uint8_t* pNum = (uint8_t*)pData;
-   return *(pNum) << 24 | *(pNum+1) << 16 | *(pNum+2) << 8 | *(pNum+3);
+   return ((uint32_t)pNum[0] << 24) | ((uint32_t)pNum[1] << 16)
+        | ((uint32_t)pNum[2] <<  8) |  (uint32_t)pNum[3];
 }
 
 static INLINE uint32_t rflac__le2host_32_ptr_unaligned(const void* pData)
 {
    const uint8_t* pNum = (uint8_t*)pData;
-   return *pNum | *(pNum+1) << 8 |  *(pNum+2) << 16 | *(pNum+3) << 24;
+   return  (uint32_t)pNum[0]        | ((uint32_t)pNum[1] <<  8)
+        | ((uint32_t)pNum[2] << 16) | ((uint32_t)pNum[3] << 24);
 }
 
 
