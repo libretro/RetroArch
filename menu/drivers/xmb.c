@@ -2709,7 +2709,7 @@ static void xmb_push_animations(xmb_node_t *node,
    gfx_animation_push(&anim_entry);
 }
 
-static void xmb_animation_list_alpha(xmb_handle_t *xmb, bool fade_in)
+XMB_NOINLINE static void xmb_animation_list_alpha(xmb_handle_t *xmb, bool fade_in)
 {
    struct gfx_animation_ctx_entry entry;
 
@@ -4936,7 +4936,7 @@ static size_t xmb_animation_line_ticker_generic(uint64_t idx,
    return (excess_lines * 2) - phase;
 }
 
-static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
+XMB_NOINLINE static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
 {
    char *wrapped_str            = NULL;
    size_t wrapped_str_len       = 0;
@@ -5288,7 +5288,7 @@ static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
             bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
 }
 
-static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
+XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
 {
    char wrapped_str[PATH_MAX_LENGTH];
    const char *wideglyph_str      = NULL;

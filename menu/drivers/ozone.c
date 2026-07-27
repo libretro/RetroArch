@@ -5436,7 +5436,7 @@ static int ozone_get_entries_padding(ozone_handle_t* ozone)
    return ozone->dimensions.entry_padding_horizontal_full;
 }
 
-static void ozone_draw_entry_value(
+OZONE_NOINLINE static void ozone_draw_entry_value(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
