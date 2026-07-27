@@ -393,6 +393,31 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
       GOTO_END_ERROR();
 
    stream = stream_backend->stream_new();
+
+   /* Both deflate backends default to level 9, which is the wrong
+    * trade for a screenshot: it is a foreground action the user waits
+    * on, and on the content emulator screenshots actually contain the
+    * top levels buy nothing.  Measured at 1920x1080 and 3840x2160,
+    * BGR24, against libpng at its own default for scale:
+    *
+    *                  libpng        level 6        level 9
+    *   2D pixel art    59 ms/0.23    67 ms/0.23    591 ms/0.23
+    *   pixel art 4K   242 ms/0.88   272 ms/0.88   2221 ms/0.86
+    *   smooth ramp    460 ms/1.00   432 ms/1.00   2649 ms/0.92
+    *   3D scene       707 ms/2.82   458 ms/3.13    448 ms/3.13
+    *   3D scene 4K   2929 ms/11.26 1843 ms/12.49  1830 ms/12.49
+    *   menu frame      48 ms/0.01    56 ms/0.01     70 ms/0.01
+    *
+    * Level 9's deep chain search collapses on the repetitive content -
+    * flat runs, upscaled pixel art, smooth ramps - which is most of
+    * what gets captured, and returns 0-8% for 6-9x the time.  Where it
+    * does earn its keep, on noisy 3D output, level 6 matches it
+    * exactly.  Worst case here is 80 KB against 2.2 seconds.
+    *
+    * 6 is also zlib's and libpng's own default, so a screenshot is no
+    * longer larger or slower than what every other PNG writer emits. */
+   if (stream)
+      stream_backend->define(stream, "level", 6);
    if (!stream)
       GOTO_END_ERROR();
 
