@@ -12,6 +12,7 @@ HAVE_FILE_LOGGER := 1
 HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
 HAVE_BUILTINSMBCLIENT := 1
+HAVE_BUILTINNFSCLIENT := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -59,6 +60,36 @@ LOCAL_MODULE := retroarch-activity
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
+# libnfs cannot live inside griffin (symbol clashes); compile as separate TUs.
+ifeq ($(HAVE_BUILTINNFSCLIENT),1)
+LOCAL_SRC_FILES += \
+   $(RARCH_DIR)/deps/libnfs/lib/init.c \
+   $(RARCH_DIR)/deps/libnfs/lib/krb5-wrapper.c \
+   $(RARCH_DIR)/deps/libnfs/lib/libnfs.c \
+   $(RARCH_DIR)/deps/libnfs/lib/libnfs-sync.c \
+   $(RARCH_DIR)/deps/libnfs/lib/libnfs-zdr.c \
+   $(RARCH_DIR)/deps/libnfs/lib/multithreading.c \
+   $(RARCH_DIR)/deps/libnfs/lib/nfs_v3.c \
+   $(RARCH_DIR)/deps/libnfs/lib/nfs_v4.c \
+   $(RARCH_DIR)/deps/libnfs/lib/pdu.c \
+   $(RARCH_DIR)/deps/libnfs/lib/socket.c \
+   $(RARCH_DIR)/deps/libnfs/mount/mount.c \
+   $(RARCH_DIR)/deps/libnfs/mount/libnfs-raw-mount.c \
+   $(RARCH_DIR)/deps/libnfs/nfs/nfs.c \
+   $(RARCH_DIR)/deps/libnfs/nfs/nfsacl.c \
+   $(RARCH_DIR)/deps/libnfs/nfs/libnfs-raw-nfs.c \
+   $(RARCH_DIR)/deps/libnfs/nfs4/nfs4.c \
+   $(RARCH_DIR)/deps/libnfs/nfs4/libnfs-raw-nfs4.c \
+   $(RARCH_DIR)/deps/libnfs/nlm/nlm.c \
+   $(RARCH_DIR)/deps/libnfs/nlm/libnfs-raw-nlm.c \
+   $(RARCH_DIR)/deps/libnfs/nsm/nsm.c \
+   $(RARCH_DIR)/deps/libnfs/nsm/libnfs-raw-nsm.c \
+   $(RARCH_DIR)/deps/libnfs/portmap/portmap.c \
+   $(RARCH_DIR)/deps/libnfs/portmap/libnfs-raw-portmap.c \
+   $(RARCH_DIR)/deps/libnfs/rquota/rquota.c \
+   $(RARCH_DIR)/deps/libnfs/rquota/libnfs-raw-rquota.c
+endif
+
 ifeq ($(HAVE_BUILTINSMBCLIENT),1)
    DEFINES += -DHAVE_BUILTINSMBCLIENT
    DEFINES += "-D_U_=__attribute__((unused))"
@@ -71,6 +102,21 @@ ifeq ($(HAVE_BUILTINSMBCLIENT),1)
    DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
    DEFINES += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
    DEFINES += -DHAVE_SMBCLIENT
+endif
+
+ifeq ($(HAVE_BUILTINNFSCLIENT),1)
+   DEFINES += -DHAVE_BUILTINNFSCLIENT -DHAVE_NFSCLIENT
+   DEFINES += "-D_U_=__attribute__((unused))"
+   DEFINES += -DHAVE_ARPA_INET_H -DHAVE_DLFCN_H -DHAVE_INTTYPES_H
+   DEFINES += -DHAVE_MEMORY_H -DHAVE_NETDB_H -DHAVE_NETINET_IN_H
+   DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NET_IF_H -DHAVE_POLL_H
+   DEFINES += -DHAVE_PWD_H -DHAVE_SOCKADDR_STORAGE -DHAVE_STDINT_H
+   DEFINES += -DHAVE_STDLIB_H -DHAVE_STDATOMIC_H -DHAVE_STRINGS_H
+   DEFINES += -DHAVE_STRING_H -DHAVE_SYS_IOCTL_H -DHAVE_SYS_STATVFS_H
+   DEFINES += -DHAVE_SYS_STAT_H -DHAVE_SYS_TIME_H -DHAVE_SYS_TYPES_H
+   DEFINES += -DHAVE_SYS_UIO_H -DHAVE_UNISTD_H -DHAVE_UTIME_H
+   DEFINES += -DHAVE_SIGNAL_H -DHAVE_SYS_UTSNAME_H -DSTDC_HEADERS
+   DEFINES += -DHAVE_CLOCK_GETTIME -DHAVE_STRUCT_STAT_ST_MTIM_TV_NSEC
 endif
 
 ifeq ($(HAVE_LOGGER), 1)
@@ -211,6 +257,21 @@ INCLUDE_DIRS     := \
 
 ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
+endif
+
+ifeq ($(HAVE_BUILTINNFSCLIENT),1)
+   # Prefer libnfs slist.h over libsmb2 when both are on the include path.
+   INCLUDE_DIRS += \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/include \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/include/nfsc \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/mount \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/nfs \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/nfs4 \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/nlm \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/nsm \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/portmap \
+      -I$(LOCAL_PATH)/$(DEPS_DIR)/libnfs/rquota
 endif
 
 ifeq ($(HAVE_BUILTINSMBCLIENT),1)
