@@ -2425,13 +2425,14 @@ static bool menu_driver_displaylist_push(
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
-   menu_file_list_cbs_t *cbs      = (menu_file_list_cbs_t*)
-      list->list[list->size - 1].actiondata;
+   menu_file_list_cbs_t *cbs      = NULL;
 
    menu_displaylist_info_init(&info);
 
    if (list && list->size)
    {
+      cbs       = (menu_file_list_cbs_t*)
+         list->list[list->size - 1].actiondata;
       path      = list->list[list->size - 1].path;
       label     = list->list[list->size - 1].label;
       type      = list->list[list->size - 1].type;
@@ -2459,7 +2460,9 @@ static bool menu_driver_displaylist_push(
       goto end;
    }
 
-   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   cbs = (list && list->size)
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
+      : NULL;
 
    if (cbs && cbs->action_deferred_push)
       if (cbs->action_deferred_push(&info) != 0)
