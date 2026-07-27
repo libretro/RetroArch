@@ -280,6 +280,9 @@ bool utf16_conv_utf8(uint8_t *out, size_t *out_chars,
  * @s is assumed valid UTF-8.
  * Use only if @chars is considerably less than @len.
  *
+ * Nothing is written when @len is 0, since there is no room even
+ * for the terminator.
+ *
  * @return Number of bytes.
  **/
 size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
@@ -288,7 +291,7 @@ size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
    const uint8_t *sb     = (const uint8_t*)in;
    const uint8_t *sb_org = sb;
 
-   if (!in)
+   if (!in || !len)
       return 0;
 
    while (*sb && chars-- > 0)
