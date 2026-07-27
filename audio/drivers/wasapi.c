@@ -863,15 +863,45 @@ static int wasapi_microphone_read(void *driver_context, void *mic_context, void 
       return wasapi_microphone_read_buffered(mic, s, len, 0);
 
    /* Both exclusive and shared modes use the same blocking read loop;
-    * the distinction is handled inside wasapi_microphone_read_buffered. */
-   for (; (size_t)bytes_read < len; bytes_read += read)
+    * the distinction is handled inside wasapi_microphone_read_buffered.
+    *
+    * WASAPI_TIMEOUT rather than INFINITE: every other wait in this
+    * driver is bounded, and an unbounded one here parks the thread the
+    * core runs on with no way out if the device stops signalling its
+    * capture event - an unplug, a driver reset, a format
+    * renegotiation.  It also made the timeout branch of
+    * wasapi_microphone_wait_for_capture_event, message and all,
+    * unreachable.
+    *
+    * Stopping on a zero-length read matters just as much.
+    * wasapi_microphone_fetch_fifo returns the queue's fill level, and
+    * that is legitimately still zero when GetBuffer hands back no
+    * frames, or when the packet is larger than the whole queue and
+    * gets dropped - which is reachable whenever the shared-buffer
+    * length setting is smaller than one device packet.  The old loop
+    * only ever left on error or on a full read, so either case span
+    * forever on an event that kept firing while no data ever arrived.
+    *
+    * A short count is not a failure the caller has to guess at:
+    * microphone_driver_flush treats <= 0 as "no frames this time" and
+    * microphone_driver_read counts the stalls, substituting silence
+    * once they pile up.  Looping here defeated that.  Errors are still
+    * reported as errors, but only when nothing was read at all -
+    * otherwise the bytes already collected are worth more to the core
+    * than the error code. */
+   while ((size_t)bytes_read < len)
    {
       read = wasapi_microphone_read_buffered(mic,
             (char *)s   + bytes_read,
             len         - bytes_read,
-            INFINITE);
-      if (read == -1)
-         return -1;
+            WASAPI_TIMEOUT);
+
+      if (read < 0)
+         return (bytes_read > 0) ? bytes_read : -1;
+      if (read == 0)
+         break;
+
+      bytes_read += read;
    }
    return bytes_read;
 }
