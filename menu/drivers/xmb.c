@@ -2343,117 +2343,141 @@ static void xmb_selection_pointer_changed(
       xmb->thumbnails.pending_icons = XMB_PENDING_THUMBNAIL_ICONS;
    }
 
+   /* Selection-only work, hoisted out of the loop below.
+    *
+    * This all used to sit inside the per-entry loop under an
+    * `if (i == selection)` guard, so its whole body -- a menu_entry_t,
+    * the thumbnail-content dispatch and the savestate path buffers --
+    * was inlined into a loop that runs once per list entry.  On a MAME
+    * or FBNeo playlist that loop is tens of thousands of iterations and
+    * it runs on every cursor movement, so the register pressure the
+    * block created was being paid per entry per keypress.
+    *
+    * Ordering: this now runs before the loop rather than partway
+    * through it.  Nothing here reads or writes the node animation
+    * fields the loop sets, and the thumbnail animations it can kill are
+    * tagged by thumbnail address, never by selection_buf, so they
+    * cannot collide with the tag the loop pushes under. */
+   if (     selection < end
+         && selection_buf->list[selection].userdata)
+   {
+      unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
+
+      /* Update entry index text */
+      if (xmb->entry_idx_enabled)
+      {
+         size_t entry_idx_selection = selection + 1;
+         size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
+         unsigned entry_idx_offset  = xmb->entry_index_offset;
+         bool show_entry_idx        = (xmb->is_playlist || xmb->is_explore_list) ? true : false;
+
+         if (xmb->is_explore_list)
+         {
+            if (entry_idx_selection > entry_idx_offset)
+               entry_idx_selection -= entry_idx_offset;
+            else
+               show_entry_idx = false;
+         }
+
+         if (!show_entry_idx)
+            xmb->entry_index_str[0] = '\0';
+         else
+            snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
+                  "%lu/%lu", (unsigned long)entry_idx_selection,
+                             (unsigned long)list_size);
+      }
+
+      if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
+            || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
+            || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
+      {
+         bool update_thumbnails = false;
+
+         /* Playlist updates */
+         if (xmb->is_playlist)
+         {
+            xmb_set_thumbnail_content(xmb, NULL);
+            update_thumbnails = true;
+         }
+         /* Database + Explore list updates */
+         else if ((xmb->is_db_manager_list && depth <= 4)
+               || xmb->is_explore_list)
+         {
+            xmb_set_thumbnail_content(xmb, NULL);
+            update_thumbnails         = true;
+            xmb->skip_thumbnail_reset = false;
+         }
+         else if (xmb->is_db_manager_list && depth == 5)
+            xmb->skip_thumbnail_reset = true;
+         /* Filebrowser image updates */
+         else if (xmb->is_file_list)
+         {
+            menu_entry_t entry;
+            MENU_ENTRY_INITIALIZE(entry);
+            entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
+            menu_entry_get(&entry, 0, selection, NULL, true);
+
+            if (     (entry.type == FILE_TYPE_IMAGEVIEWER)
+                  || (entry.type == FILE_TYPE_IMAGE)
+                  /* WebM and MP4 files preview like images: the thumbnail
+                   * pipeline decodes their video track */
+                  || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM)
+                  || (image_texture_get_type(entry.path) == IMAGE_TYPE_MP4))
+            {
+               xmb_set_thumbnail_content(xmb, "imageviewer");
+               update_thumbnails = true;
+            }
+            else
+            {
+               /* If this is a file list and current
+                * entry is not an image, have to 'reset'
+                * content + right/left thumbnails
+                * (otherwise last loaded thumbnail will
+                * persist, and be shown on the wrong entry) */
+               xmb->fullscreen_thumbnails_available = false;
+               xmb->thumbnails.pending              = XMB_PENDING_THUMBNAIL_NONE;
+               gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
+               gfx_thumbnail_cancel_pending_requests();
+               gfx_thumbnail_reset(&xmb->thumbnails.right);
+               gfx_thumbnail_reset(&xmb->thumbnails.left);
+               gfx_thumbnail_reset(&xmb->thumbnails.icon);
+            }
+         }
+
+         if (update_thumbnails && end > 1)
+            xmb_update_thumbnail_image(xmb);
+      }
+
+      if (end > 1)
+      {
+         xmb_update_savestate_thumbnail_path(xmb, selection);
+         xmb_update_savestate_thumbnail_image(xmb);
+      }
+   }
+
    for (i = 0; i < end; i++)
    {
       float iy, real_iy;
-      float ia         = xmb->items_passive_alpha;
-      float iz         = xmb->items_passive_zoom;
+      float ia;
+      float iz;
       xmb_node_t *node = (xmb_node_t*)selection_buf->list[i].userdata;
 
       if (!node)
          continue;
 
-      iy               = xmb_item_y(xmb, i, selection);
-      real_iy          = iy + xmb->margins_screen_top;
-
       if (i == selection)
       {
-         unsigned depth          = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
-
-         /* Update entry index text */
-         if (xmb->entry_idx_enabled)
-         {
-            size_t entry_idx_selection = selection + 1;
-            size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
-            unsigned entry_idx_offset  = xmb->entry_index_offset;
-            bool show_entry_idx        = (xmb->is_playlist || xmb->is_explore_list) ? true : false;
-
-            if (xmb->is_explore_list)
-            {
-               if (entry_idx_selection > entry_idx_offset)
-                  entry_idx_selection -= entry_idx_offset;
-               else
-                  show_entry_idx = false;
-            }
-
-            if (!show_entry_idx)
-               xmb->entry_index_str[0] = '\0';
-            else
-               snprintf(xmb->entry_index_str, sizeof(xmb->entry_index_str),
-                     "%lu/%lu", (unsigned long)entry_idx_selection,
-                                (unsigned long)list_size);
-         }
-
-         ia = xmb->items_active_alpha;
-         iz = xmb->items_active_zoom;
-
-         if (     gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_RIGHT)
-               || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_LEFT)
-               || gfx_thumbnail_is_enabled(menu_st->thumbnail_path_data, GFX_THUMBNAIL_ICON))
-         {
-            bool update_thumbnails = false;
-
-            /* Playlist updates */
-            if (xmb->is_playlist)
-            {
-               xmb_set_thumbnail_content(xmb, NULL);
-               update_thumbnails = true;
-            }
-            /* Database + Explore list updates */
-            else if ((xmb->is_db_manager_list && depth <= 4)
-                  || xmb->is_explore_list)
-            {
-               xmb_set_thumbnail_content(xmb, NULL);
-               update_thumbnails         = true;
-               xmb->skip_thumbnail_reset = false;
-            }
-            else if (xmb->is_db_manager_list && depth == 5)
-               xmb->skip_thumbnail_reset = true;
-            /* Filebrowser image updates */
-            else if (xmb->is_file_list)
-            {
-               menu_entry_t entry;
-               MENU_ENTRY_INITIALIZE(entry);
-               entry.flags |= MENU_ENTRY_FLAG_PATH_ENABLED;
-               menu_entry_get(&entry, 0, selection, NULL, true);
-
-               if (     (entry.type == FILE_TYPE_IMAGEVIEWER)
-                     || (entry.type == FILE_TYPE_IMAGE)
-                     /* WebM and MP4 files preview like images: the thumbnail
-                      * pipeline decodes their video track */
-                     || (image_texture_get_type(entry.path) == IMAGE_TYPE_WEBM)
-                     || (image_texture_get_type(entry.path) == IMAGE_TYPE_MP4))
-               {
-                  xmb_set_thumbnail_content(xmb, "imageviewer");
-                  update_thumbnails = true;
-               }
-               else
-               {
-                  /* If this is a file list and current
-                   * entry is not an image, have to 'reset'
-                   * content + right/left thumbnails
-                   * (otherwise last loaded thumbnail will
-                   * persist, and be shown on the wrong entry) */
-                  xmb->fullscreen_thumbnails_available = false;
-                  xmb->thumbnails.pending              = XMB_PENDING_THUMBNAIL_NONE;
-                  gfx_thumbnail_set_content(menu_st->thumbnail_path_data, NULL);
-                  gfx_thumbnail_cancel_pending_requests();
-                  gfx_thumbnail_reset(&xmb->thumbnails.right);
-                  gfx_thumbnail_reset(&xmb->thumbnails.left);
-                  gfx_thumbnail_reset(&xmb->thumbnails.icon);
-               }
-            }
-
-            if (update_thumbnails && end > 1)
-               xmb_update_thumbnail_image(xmb);
-         }
-
-         if (end > 1)
-         {
-            xmb_update_savestate_thumbnail_path(xmb, i);
-            xmb_update_savestate_thumbnail_image(xmb);
-         }
+         ia            = xmb->items_active_alpha;
+         iz            = xmb->items_active_zoom;
       }
+      else
+      {
+         ia            = xmb->items_passive_alpha;
+         iz            = xmb->items_passive_zoom;
+      }
+
+      iy               = xmb_item_y(xmb, i, selection);
+      real_iy          = iy + xmb->margins_screen_top;
 
       if (     !allow_animations
             || real_iy < -threshold
