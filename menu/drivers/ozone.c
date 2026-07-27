@@ -4759,6 +4759,14 @@ static void ozone_list_deep_copy(const file_list_t *src,
          if (data)
          {
             memcpy(data, src_adata, sizeof(menu_file_list_cbs_t));
+            /* This is a shallow copy, and menu_file_list_cbs_t::search
+             * is a pointer the source still owns.  Clear it rather
+             * than duplicate it: selection_buf_old is a display-only
+             * snapshot for the list-transition animation, nothing
+             * reads search terms from it, and leaving the pointer
+             * aliased would double-free.  Held by value this member
+             * was copied as a dead 520-byte blob. */
+            ((menu_file_list_cbs_t*)data)->search = NULL;
             dst->list[j].actiondata = data;
          }
          else

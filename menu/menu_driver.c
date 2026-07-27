@@ -526,9 +526,51 @@ static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
    {
       menu_file_list_cbs_t *cbs = NULL;
       if ((cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata))
-         return &cbs->search;
+         return cbs->search;
    }
    return NULL;
+}
+
+/* As above, but allocates the block on first use.  Only
+ * menu_entries_search_push() needs this; every other caller is happy
+ * to see NULL and treat it as "no search active". */
+static menu_search_terms_t *menu_entries_search_get_terms_alloc(void)
+{
+   struct menu_state *menu_st   = &menu_driver_state;
+   file_list_t *list            = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (list && (list->size >= 1))
+   {
+      menu_file_list_cbs_t *cbs = NULL;
+      if ((cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata))
+      {
+         if (!cbs->search)
+            cbs->search = (menu_search_terms_t*)
+               calloc(1, sizeof(*cbs->search));
+         return cbs->search;
+      }
+   }
+   return NULL;
+}
+
+/* file_list_t::actiondata_free hook for every list the menu owns.
+ * menu_file_list_cbs_t owns a further allocation now, so it can no
+ * longer be torn down with a plain free(); routing it through the
+ * hook means the seven call sites that can destroy a menu list --
+ * menu_list_free_list(), menu_entries_clear(), the two append paths,
+ * menu_driver_list_free(), xmb_list_free() and ozone_list_free() --
+ * do not each have to know that. */
+void menu_entries_cbs_free(void *actiondata)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)actiondata;
+
+   if (!cbs)
+      return;
+
+   if (cbs->search)
+      free(cbs->search);
+   cbs->search = NULL;
+
+   free(cbs);
 }
 
 /* Searches current menu list for specified 'needle'
@@ -1432,6 +1474,7 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       list->menu_stack[i]->list     = NULL;
       list->menu_stack[i]->capacity = 0;
       list->menu_stack[i]->size     = 0;
+      list->menu_stack[i]->actiondata_free = menu_entries_cbs_free;
    }
 
    for (i = 0; i < list->selection_buf_size; i++)
@@ -1444,6 +1487,7 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       list->selection_buf[i]->list     = NULL;
       list->selection_buf[i]->capacity = 0;
       list->selection_buf[i]->size     = 0;
+      list->selection_buf[i]->actiondata_free = menu_entries_cbs_free;
    }
 
    return list;
@@ -3876,7 +3920,7 @@ static bool menu_entries_search_push(const char *search_term)
 {
    size_t i;
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_alloc();
 
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
@@ -4219,18 +4263,7 @@ bool menu_entries_append(
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
-   /* size = 0 is the whole initialisation.  terms[] is never read
-    * past size: every consumer bounds its loop on it
-    * (menu_entries_search_push, menu_entries_search_get_terms_string
-    * and the five filter loops in menu_displaylist.c), and push writes
-    * terms[size] before incrementing.  Clearing all eight slots here
-    * touched eight separate cachelines -- the rows are 64 bytes apart
-    * -- in a freshly malloc()ed 656-byte block whose other 144 bytes
-    * are all this function needs.  That is eight cold write misses per
-    * appended entry, and this runs once per entry of every list,
-    * including tens of thousands of them for a MAME or FBNeo
-    * playlist. */
-   cbs->search.size                = 0;
+   cbs->search                     = NULL;
 
    list->list[idx].actiondata      = cbs;
 
@@ -4317,10 +4350,7 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
-   /* See menu_entries_append(): size = 0 is the whole
-    * initialisation, and clearing terms[] costs eight cold
-    * cachelines per entry for nothing. */
-   cbs->search.size                = 0;
+   cbs->search                     = NULL;
 
    list->list[idx].actiondata      = cbs;
 
@@ -4380,11 +4410,7 @@ bool menu_entries_clear(file_list_t *list)
       menu_st->driver_ctx->list_clear(list);
 
    for (i = 0; i < list->size; i++)
-   {
-      if (list->list[i].actiondata)
-         free(list->list[i].actiondata);
-      list->list[i].actiondata = NULL;
-   }
+      file_list_free_actiondata(list, i);
 
    file_list_clear(list);
    return true;
