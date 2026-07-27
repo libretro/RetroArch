@@ -65,14 +65,19 @@
 
 #define CHUNK_SIZE 256
 #define DSOUND_TIMEOUT 256
+/* Padding width used to isolate the contended CRITICAL_SECTION from the
+ * read-mostly fields above it.  64 covers x86-64 and AArch64; a larger
+ * coherency granule still gets most of the benefit. */
+#define DS_CACHE_LINE 64
 
 typedef struct dsound
 {
+   /* Read-mostly after init.  Both threads load ds, dsb and buffer on
+    * every iteration of their respective loops. */
    LPDIRECTSOUND ds;
    LPDIRECTSOUNDBUFFER dsb;
 
    fifo_buffer_t *buffer;
-   CRITICAL_SECTION crit;
 
    HANDLE      event;
 #ifdef HAVE_THREADS
@@ -94,6 +99,13 @@ typedef struct dsound
    bool is_paused;
    bool use_float;
    volatile bool thread_alive;
+
+   /* Written by whichever thread holds it, several times per
+    * CHUNK_SIZE of audio.  Kept a full cache line away from everything
+    * above so its LockCount/OwningThread stores do not invalidate the
+    * line the other thread is reading ds/dsb/buffer out of. */
+   char _pad[DS_CACHE_LINE];
+   CRITICAL_SECTION crit;
 } dsound_t;
 
 struct audio_lock
@@ -188,10 +200,17 @@ static void *dsound_device_list_new(void *u)
    return sl;
 }
 
+/* Both pointers are already reduced modulo buffer_size, so the sum is
+ * strictly below 2 * buffer_size and a conditional subtract is exact.
+ * The equal case yields buffer_size, which folds to 0 - same as the
+ * modulo it replaces. */
 static INLINE unsigned _dsound_write_avail(unsigned read_ptr,
       unsigned write_ptr, unsigned buffer_size)
 {
-   return (read_ptr + buffer_size - write_ptr) % buffer_size;
+   unsigned avail = read_ptr + buffer_size - write_ptr;
+   if (avail >= buffer_size)
+      avail -= buffer_size;
+   return avail;
 }
 
 static bool dsound_grab_region(dsound_t *ds, uint32_t write_ptr,
@@ -241,7 +260,9 @@ static DWORD CALLBACK dsound_thread(PVOID data)
    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
 
    IDirectSoundBuffer_GetCurrentPosition(ds->dsb, NULL, &write_ptr);
-   write_ptr = (write_ptr + ds->buffer_size / 2) % ds->buffer_size;
+   write_ptr += ds->buffer_size / 2;
+   if (write_ptr >= ds->buffer_size)
+      write_ptr -= ds->buffer_size;
 
    while (ds->thread_alive)
    {
@@ -303,8 +324,12 @@ static DWORD CALLBACK dsound_thread(PVOID data)
 
       IDirectSoundBuffer_Unlock(ds->dsb, region.chunk1,
             region.size1, region.chunk2, region.size2);
-      write_ptr = (write_ptr + region.size1 + region.size2)
-         % ds->buffer_size;
+      /* write_ptr < buffer_size and the locked region is CHUNK_SIZE,
+       * which buffer_size is both a multiple of and at least four
+       * times, so one conditional subtract is enough. */
+      write_ptr += region.size1 + region.size2;
+      if (write_ptr >= ds->buffer_size)
+         write_ptr -= ds->buffer_size;
 
       if (is_pull)
          SetEvent(ds->event);
