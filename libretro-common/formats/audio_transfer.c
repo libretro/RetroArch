@@ -659,6 +659,12 @@ enum audio_type_enum audio_decode_get_type(const char *path)
 }
 
 #ifdef HAVE_ROPUS
+/* The longest an Opus packet codes, in 48 kHz frames (120 ms), which
+ * is the per-channel output room ropus_decode_s16/f32 require of the
+ * caller.  Neither takes a length, so this is the whole contract and
+ * it has to be honoured from here. */
+#define AUDIO_OPUS_MAX_FRAME 5760
+
 struct audio_transfer_opus
 {
    /* Demuxed input (set_demuxed_ptr): OpusHead as setup, concatenated
@@ -713,11 +719,29 @@ struct audio_transfer_opus
     * seek made before the first read waits here until the read says
     * which pipeline that should be.  -1 when there is none pending. */
    int64_t     seek_to;
-   /* Decoded-but-unconsumed frames from the last packet. */
+   /* Decoded-but-unconsumed frames from the last packet.
+    *
+    * One buffer, not two, and sized for the stream rather than for a
+    * guess.  ropus_decode_s16/f32 take no output length and require
+    * room for AUDIO_OPUS_MAX_FRAME * channels samples; the two arrays
+    * that used to sit here were sized 5760 * 2 apiece, which is that
+    * room only for a stream of at most two channels.  ropus_open takes
+    * mapping family 1 up to eight, so a six- or eight-channel file -
+    * anything opusenc emits from a surround source - decoded straight
+    * past the end of the buffer, and for the f32 arm past the end of
+    * the allocation.  Sizing this from op->channels at the point the
+    * format is latched closes that, and drops the two-channel case
+    * from 69120 bytes to 23040 (s16) or 46080 (f32), the other arm's
+    * buffer having never been live: fmt is latched by the first read
+    * and the opposite entry point errors for the life of the context.
+    *
+    * pend_elem is what it was allocated for, 2 or 4 bytes.  Rewinding
+    * to frame 0 clears fmt, so a context can be asked for the other
+    * format afterwards; that reallocates rather than reinterpreting. */
    size_t      pend_frames;
    size_t      pend_pos;
-   int16_t     pend_s16[5760 * 2];
-   float       pend_f32[5760 * 2];
+   void       *pend;        /* int16_t* when fmt 1, float* when fmt 2  */
+   size_t      pend_elem;   /* sizeof the element pend holds, 0 if none */
 };
 
 /* Opus packet duration in 48 kHz frames from the TOC (RFC 6716 s3). */
@@ -3355,6 +3379,26 @@ static int64_t audio_transfer_opus_seek_to(struct audio_transfer_opus *op,
 
 static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
 {
+   size_t elem = (fmt == 1) ? sizeof(int16_t) : sizeof(float);
+
+   /* The decoder writes AUDIO_OPUS_MAX_FRAME * channels samples into
+    * this and is given no bound, so the buffer is made to fit before
+    * the first packet of a format goes through it.  A format change
+    * can only follow a rewind, which leaves nothing pending. */
+   if (!op->pend || op->pend_elem != elem)
+   {
+      if (!op->channels)
+         return -1;
+      free(op->pend);
+      op->pend_elem = 0;
+      if (!(op->pend = calloc((size_t)AUDIO_OPUS_MAX_FRAME
+                  * (size_t)op->channels, elem)))
+         return -1;
+      op->pend_elem   = elem;
+      op->pend_frames = 0;
+      op->pend_pos    = 0;
+   }
+
    while (op->pend_frames == 0)
    {
       const uint8_t *pdata;
@@ -3371,9 +3415,11 @@ static int audio_transfer_opus_fill(struct audio_transfer_opus *op, int fmt)
       if (r <= 0)
          return r;
       if (fmt == 1)
-         r = ropus_decode_s16(op->handle, pdata, plen, op->pend_s16);
+         r = ropus_decode_s16(op->handle, pdata, plen,
+               (int16_t*)op->pend);
       else
-         r = ropus_decode_f32(op->handle, pdata, plen, op->pend_f32);
+         r = ropus_decode_f32(op->handle, pdata, plen,
+               (float*)op->pend);
       if (r < 0)
          return -1;
       op->pend_frames = (size_t)r;
@@ -3725,7 +3771,7 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
             if (take > op->pend_frames)
                take = op->pend_frames;
             memcpy(out + produced * op->channels,
-                  op->pend_s16 + op->pend_pos * op->channels,
+                  (const int16_t*)op->pend + op->pend_pos * op->channels,
                   take * op->channels * sizeof(int16_t));
             op->pend_pos    += take;
             op->pend_frames -= take;
@@ -3990,7 +4036,7 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             if (take > op->pend_frames)
                take = op->pend_frames;
             memcpy(out + produced * op->channels,
-                  op->pend_f32 + op->pend_pos * op->channels,
+                  (const float*)op->pend + op->pend_pos * op->channels,
                   take * op->channels * sizeof(float));
             op->pend_pos    += take;
             op->pend_frames -= take;
@@ -4531,6 +4577,8 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
          if (op && op->demux)
             rwebm_close(op->demux);
 #endif
+         if (op)
+            free(op->pend);
          break;
       }
 #endif
