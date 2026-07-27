@@ -63,6 +63,31 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
+/* Force a helper out of line even though it has a single call site.
+ *
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * Two reasons it is needed here.  An inlined helper's stack slots are
+ * charged to the caller's frame on every call, whether or not the
+ * helper's branch is taken, which matters on the per-entry draw path.
+ * And xmb_frame() is already factored into named phases, but the ones
+ * called exactly once get inlined straight back into it, so branches
+ * that are not taken on a given frame still occupy the fall-through
+ * path in L1i.
+ *
+ * Under -Os the compiler already optimises for size and the forced
+ * outlining only adds call overhead, so it is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define XMB_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define XMB_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define XMB_NOINLINE __declspec(noinline)
+#else
+#define XMB_NOINLINE
+#endif
+
 #define XMB_RIBBON_ROWS (64)
 #define XMB_RIBBON_COLS (64)
 #define XMB_RIBBON_VERTICES (XMB_RIBBON_ROWS * (2 * XMB_RIBBON_COLS)) - (2 * XMB_RIBBON_COLS)
@@ -1233,7 +1258,7 @@ static void xmb_messagebox(void *data, const char *message)
    }
 }
 
-static void xmb_render_messagebox_internal(
+XMB_NOINLINE static void xmb_render_messagebox_internal(
       void *userdata,
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
@@ -5560,24 +5585,6 @@ typedef struct
    bool                      shadows_enable;
 } xmb_draw_ctx_t;
 
-/* Force a helper out of line even though it has a single call site.
- *
- * Follows the RXML_NOINLINE precedent in
- * libretro-common/formats/xml/rxml.c.  Used below for the per-entry
- * draw path, where an inlined helper's stack slots are charged to the
- * caller's frame on every call regardless of whether the helper's
- * branch is taken.  Under -Os the outlining only adds call overhead,
- * so it is disabled there. */
-#if defined(__OPTIMIZE_SIZE__)
-#define XMB_NOINLINE
-#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-#define XMB_NOINLINE __attribute__((noinline))
-#elif defined(_MSC_VER)
-#define XMB_NOINLINE __declspec(noinline)
-#else
-#define XMB_NOINLINE
-#endif
-
 /* Sublabel rendering for the selected entry.
  *
  * Split out of xmb_draw_item() rather than left inline: the block owns
@@ -8213,7 +8220,7 @@ static void xmb_render(void *data,
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
 }
 
-static void xmb_draw_bg(
+XMB_NOINLINE static void xmb_draw_bg(
       void *userdata,
       gfx_display_t *p_disp,
       gfx_display_ctx_driver_t *dispctx,
