@@ -293,19 +293,19 @@ size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
 
    while (*sb && chars-- > 0)
    {
-      /* Use LUT to skip entire character at once
-       * instead of byte-by-byte continuation check */
-      unsigned ones = utf8_lut[*sb];
-      if (ones < 2)
-         sb++;          /* ASCII or (invalid) standalone continuation */
-      else
-         sb += ones;    /* Skip full multi-byte character */
+      /* Stepping over continuation bytes stops at the terminator by
+       * itself, so a truncated sequence cannot overrun the buffer. */
+      sb++;
+      while ((*sb & 0xC0) == 0x80)
+         sb++;
    }
 
    if ((size_t)(sb - sb_org) > len - 1)
    {
       sb = sb_org + len - 1;
-      while ((*sb & 0xC0) == 0x80)
+      /* @in may itself begin with continuation bytes; do not scan
+       * backwards out of the buffer looking for a lead byte. */
+      while (sb > sb_org && (*sb & 0xC0) == 0x80)
          sb--;
    }
 
