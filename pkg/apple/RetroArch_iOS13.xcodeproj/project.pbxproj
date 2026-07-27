@@ -21,6 +21,56 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		DCA144C1F2D0669C4F8615A8 /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 37409E73AF4D2A7313805071 /* init.c */; };
+		89F6FA3282CC1AB62E51EE33 /* krb5-wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 5B5E88148F17A4D04FC6290E /* krb5-wrapper.c */; };
+		D26FDEBB2C87A3A8AE5B3AC5 /* libnfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 545E1C54835F0C9466747BFD /* libnfs.c */; };
+		041B1BC56F626891766D9083 /* libnfs-sync.c in Sources */ = {isa = PBXBuildFile; fileRef = EC88DFF5AF97A4609C577863 /* libnfs-sync.c */; };
+		418020E21A59481CE75C3728 /* libnfs-zdr.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C531BC14A9F4A2989AEF07A /* libnfs-zdr.c */; };
+		DF50F27A06FD677977D40575 /* multithreading.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A871E15A332DD97395DDDCF /* multithreading.c */; };
+		5CC20C7F47DAABE4BC701782 /* nfs_v3.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D614F075482BDFFBDD74AB0 /* nfs_v3.c */; };
+		C94F3B7AC904063AC38CBCAF /* nfs_v4.c in Sources */ = {isa = PBXBuildFile; fileRef = 71D0FCC74D9B4466506512D6 /* nfs_v4.c */; };
+		7A536987DA7775A1A9748656 /* pdu.c in Sources */ = {isa = PBXBuildFile; fileRef = B12C2A0F2307A8FCE2FFCEF4 /* pdu.c */; };
+		C8182809F45E6C523693B8D9 /* socket.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C8E159EF44B056138D00F34 /* socket.c */; };
+		EF71BDF9277DC80E468EDF72 /* mount.c in Sources */ = {isa = PBXBuildFile; fileRef = 0F31C03F2498645681C90418 /* mount.c */; };
+		1162D1ABE19B0F9C531AAFF0 /* libnfs-raw-mount.c in Sources */ = {isa = PBXBuildFile; fileRef = F0F9D8060F15213897A5162D /* libnfs-raw-mount.c */; };
+		0F09608340640B30796D86B7 /* nfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 48BD13171876EEE72F4A88ED /* nfs.c */; };
+		0ADB1372000910DC48F6EF20 /* nfsacl.c in Sources */ = {isa = PBXBuildFile; fileRef = A114EEE68059D5FA1643289F /* nfsacl.c */; };
+		DC84BC69FCCC792B4DE15031 /* libnfs-raw-nfs.c in Sources */ = {isa = PBXBuildFile; fileRef = CCA3A9C801DDFF74E4BB42CC /* libnfs-raw-nfs.c */; };
+		989A1AA91C0411610F80B78A /* nfs4.c in Sources */ = {isa = PBXBuildFile; fileRef = E08369CC0F41405AD973F3ED /* nfs4.c */; };
+		39A8F3361B503ECF77B6C017 /* libnfs-raw-nfs4.c in Sources */ = {isa = PBXBuildFile; fileRef = 5B4C49D06B9F13B7EA0F2F24 /* libnfs-raw-nfs4.c */; };
+		2C1BAEA5A6BE170549F862D5 /* nlm.c in Sources */ = {isa = PBXBuildFile; fileRef = 706E99A264F1571BB02F25B6 /* nlm.c */; };
+		317CDE8E134F77BCD9BC4A65 /* libnfs-raw-nlm.c in Sources */ = {isa = PBXBuildFile; fileRef = 29FD8205A478A6E4054E6561 /* libnfs-raw-nlm.c */; };
+		3BB4913DD1C6BFAA2559339C /* nsm.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B9A3C5364EC6312EB6DD58F /* nsm.c */; };
+		D8FCADC70C6613761C04D74B /* libnfs-raw-nsm.c in Sources */ = {isa = PBXBuildFile; fileRef = 06245C5082B4C280FF2AA008 /* libnfs-raw-nsm.c */; };
+		B7A577B77C7C8E97A90A55CC /* portmap.c in Sources */ = {isa = PBXBuildFile; fileRef = 67326B7F9BE081ACCE736946 /* portmap.c */; };
+		553019B6E138785D5644B255 /* libnfs-raw-portmap.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B21CEA0A0AE6F808C9922A1 /* libnfs-raw-portmap.c */; };
+		5C011FFD85E2EEA1A46828D9 /* rquota.c in Sources */ = {isa = PBXBuildFile; fileRef = C8AA87DBE34ECD2F80074EAF /* rquota.c */; };
+		A07BC8706552BBF254892BA6 /* libnfs-raw-rquota.c in Sources */ = {isa = PBXBuildFile; fileRef = C5E1410D2342740F67D4F105 /* libnfs-raw-rquota.c */; };
+		1E3143E3071829B8E99A460B /* init.c in Sources */ = {isa = PBXBuildFile; fileRef = 37409E73AF4D2A7313805071 /* init.c */; };
+		4A5845FE2A51CB04A3962910 /* krb5-wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 5B5E88148F17A4D04FC6290E /* krb5-wrapper.c */; };
+		EAFDB3636DD05A6813D6801B /* libnfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 545E1C54835F0C9466747BFD /* libnfs.c */; };
+		423A4A494CDC5267A8952A26 /* libnfs-sync.c in Sources */ = {isa = PBXBuildFile; fileRef = EC88DFF5AF97A4609C577863 /* libnfs-sync.c */; };
+		3B9050BAF91B39DC0D2679F4 /* libnfs-zdr.c in Sources */ = {isa = PBXBuildFile; fileRef = 7C531BC14A9F4A2989AEF07A /* libnfs-zdr.c */; };
+		10560F2B181CC2FE5CD2049D /* multithreading.c in Sources */ = {isa = PBXBuildFile; fileRef = 2A871E15A332DD97395DDDCF /* multithreading.c */; };
+		DE822A062BAD7FBCE06FD02D /* nfs_v3.c in Sources */ = {isa = PBXBuildFile; fileRef = 8D614F075482BDFFBDD74AB0 /* nfs_v3.c */; };
+		3C302C234A3511A6DB74CC00 /* nfs_v4.c in Sources */ = {isa = PBXBuildFile; fileRef = 71D0FCC74D9B4466506512D6 /* nfs_v4.c */; };
+		312244FA8202464BC6A435DD /* pdu.c in Sources */ = {isa = PBXBuildFile; fileRef = B12C2A0F2307A8FCE2FFCEF4 /* pdu.c */; };
+		359795FDDCF5EA12561D311F /* socket.c in Sources */ = {isa = PBXBuildFile; fileRef = 8C8E159EF44B056138D00F34 /* socket.c */; };
+		A7A77A9C00DE2F59F044B588 /* mount.c in Sources */ = {isa = PBXBuildFile; fileRef = 0F31C03F2498645681C90418 /* mount.c */; };
+		DB0388A4F55D7933878B4B3A /* libnfs-raw-mount.c in Sources */ = {isa = PBXBuildFile; fileRef = F0F9D8060F15213897A5162D /* libnfs-raw-mount.c */; };
+		58F7010852490D04C83B5FBE /* nfs.c in Sources */ = {isa = PBXBuildFile; fileRef = 48BD13171876EEE72F4A88ED /* nfs.c */; };
+		19B16DA32B274DCB10744503 /* nfsacl.c in Sources */ = {isa = PBXBuildFile; fileRef = A114EEE68059D5FA1643289F /* nfsacl.c */; };
+		6F827C6D27DE0A32B7232F6A /* libnfs-raw-nfs.c in Sources */ = {isa = PBXBuildFile; fileRef = CCA3A9C801DDFF74E4BB42CC /* libnfs-raw-nfs.c */; };
+		ACDA3D87E3A5A3AFE8C65FF4 /* nfs4.c in Sources */ = {isa = PBXBuildFile; fileRef = E08369CC0F41405AD973F3ED /* nfs4.c */; };
+		E6AD16E846FC068C2A6ECEB8 /* libnfs-raw-nfs4.c in Sources */ = {isa = PBXBuildFile; fileRef = 5B4C49D06B9F13B7EA0F2F24 /* libnfs-raw-nfs4.c */; };
+		C3454B1DA238B2BD135CFD00 /* nlm.c in Sources */ = {isa = PBXBuildFile; fileRef = 706E99A264F1571BB02F25B6 /* nlm.c */; };
+		B9A0082C1E0D088F4E520561 /* libnfs-raw-nlm.c in Sources */ = {isa = PBXBuildFile; fileRef = 29FD8205A478A6E4054E6561 /* libnfs-raw-nlm.c */; };
+		C9A7439FB97B081176DBCFBE /* nsm.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B9A3C5364EC6312EB6DD58F /* nsm.c */; };
+		11EE97CEA7FF1F4CA6F453E3 /* libnfs-raw-nsm.c in Sources */ = {isa = PBXBuildFile; fileRef = 06245C5082B4C280FF2AA008 /* libnfs-raw-nsm.c */; };
+		B430D3F33791D7B3AA2D6832 /* portmap.c in Sources */ = {isa = PBXBuildFile; fileRef = 67326B7F9BE081ACCE736946 /* portmap.c */; };
+		86C4E149E925052F607B8B70 /* libnfs-raw-portmap.c in Sources */ = {isa = PBXBuildFile; fileRef = 8B21CEA0A0AE6F808C9922A1 /* libnfs-raw-portmap.c */; };
+		7E625403A58C1D5F1384AD8A /* rquota.c in Sources */ = {isa = PBXBuildFile; fileRef = C8AA87DBE34ECD2F80074EAF /* rquota.c */; };
+		2346BC25B0F1997FFFCEB0DC /* libnfs-raw-rquota.c in Sources */ = {isa = PBXBuildFile; fileRef = C5E1410D2342740F67D4F105 /* libnfs-raw-rquota.c */; };
 		07019B932CD24FF200D6C3FD /* GCDWebDAVServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 07C5C63E2CD167470030FBEC /* GCDWebDAVServer.m */; };
 		070672FB2D1723A10099FC74 /* GCDWebUploader.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 92CC059F21FE3C1700FF79F0 /* GCDWebUploader.bundle */; };
 		070A88432A4E7AA9003161C0 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 070A88422A4E7AA9003161C0 /* OpenAL.framework */; };
@@ -163,6 +213,31 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		37409E73AF4D2A7313805071 /* init.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = init.c; path = ../../deps/libnfs/lib/init.c; sourceTree = "<group>"; };
+		5B5E88148F17A4D04FC6290E /* krb5-wrapper.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = krb5-wrapper.c; path = ../../deps/libnfs/lib/krb5-wrapper.c; sourceTree = "<group>"; };
+		545E1C54835F0C9466747BFD /* libnfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs.c; path = ../../deps/libnfs/lib/libnfs.c; sourceTree = "<group>"; };
+		EC88DFF5AF97A4609C577863 /* libnfs-sync.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-sync.c; path = ../../deps/libnfs/lib/libnfs-sync.c; sourceTree = "<group>"; };
+		7C531BC14A9F4A2989AEF07A /* libnfs-zdr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-zdr.c; path = ../../deps/libnfs/lib/libnfs-zdr.c; sourceTree = "<group>"; };
+		2A871E15A332DD97395DDDCF /* multithreading.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = multithreading.c; path = ../../deps/libnfs/lib/multithreading.c; sourceTree = "<group>"; };
+		8D614F075482BDFFBDD74AB0 /* nfs_v3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nfs_v3.c; path = ../../deps/libnfs/lib/nfs_v3.c; sourceTree = "<group>"; };
+		71D0FCC74D9B4466506512D6 /* nfs_v4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nfs_v4.c; path = ../../deps/libnfs/lib/nfs_v4.c; sourceTree = "<group>"; };
+		B12C2A0F2307A8FCE2FFCEF4 /* pdu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = pdu.c; path = ../../deps/libnfs/lib/pdu.c; sourceTree = "<group>"; };
+		8C8E159EF44B056138D00F34 /* socket.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = socket.c; path = ../../deps/libnfs/lib/socket.c; sourceTree = "<group>"; };
+		0F31C03F2498645681C90418 /* mount.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mount.c; path = ../../deps/libnfs/mount/mount.c; sourceTree = "<group>"; };
+		F0F9D8060F15213897A5162D /* libnfs-raw-mount.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-mount.c; path = ../../deps/libnfs/mount/libnfs-raw-mount.c; sourceTree = "<group>"; };
+		48BD13171876EEE72F4A88ED /* nfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nfs.c; path = ../../deps/libnfs/nfs/nfs.c; sourceTree = "<group>"; };
+		A114EEE68059D5FA1643289F /* nfsacl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nfsacl.c; path = ../../deps/libnfs/nfs/nfsacl.c; sourceTree = "<group>"; };
+		CCA3A9C801DDFF74E4BB42CC /* libnfs-raw-nfs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-nfs.c; path = ../../deps/libnfs/nfs/libnfs-raw-nfs.c; sourceTree = "<group>"; };
+		E08369CC0F41405AD973F3ED /* nfs4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nfs4.c; path = ../../deps/libnfs/nfs4/nfs4.c; sourceTree = "<group>"; };
+		5B4C49D06B9F13B7EA0F2F24 /* libnfs-raw-nfs4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-nfs4.c; path = ../../deps/libnfs/nfs4/libnfs-raw-nfs4.c; sourceTree = "<group>"; };
+		706E99A264F1571BB02F25B6 /* nlm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nlm.c; path = ../../deps/libnfs/nlm/nlm.c; sourceTree = "<group>"; };
+		29FD8205A478A6E4054E6561 /* libnfs-raw-nlm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-nlm.c; path = ../../deps/libnfs/nlm/libnfs-raw-nlm.c; sourceTree = "<group>"; };
+		9B9A3C5364EC6312EB6DD58F /* nsm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = nsm.c; path = ../../deps/libnfs/nsm/nsm.c; sourceTree = "<group>"; };
+		06245C5082B4C280FF2AA008 /* libnfs-raw-nsm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-nsm.c; path = ../../deps/libnfs/nsm/libnfs-raw-nsm.c; sourceTree = "<group>"; };
+		67326B7F9BE081ACCE736946 /* portmap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = portmap.c; path = ../../deps/libnfs/portmap/portmap.c; sourceTree = "<group>"; };
+		8B21CEA0A0AE6F808C9922A1 /* libnfs-raw-portmap.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-portmap.c; path = ../../deps/libnfs/portmap/libnfs-raw-portmap.c; sourceTree = "<group>"; };
+		C8AA87DBE34ECD2F80074EAF /* rquota.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = rquota.c; path = ../../deps/libnfs/rquota/rquota.c; sourceTree = "<group>"; };
+		C5E1410D2342740F67D4F105 /* libnfs-raw-rquota.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = libnfs-raw-rquota.c; path = ../../deps/libnfs/rquota/libnfs-raw-rquota.c; sourceTree = "<group>"; };
 		070A88422A4E7AA9003161C0 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
 		071212C72C6FD65B00F1B4B0 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		0712A7702B807AE400C9765F /* RetroArchTopShelfExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RetroArchTopShelfExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -512,6 +587,38 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F2B87FF9E192F75FD4F0329B /* libnfs */ = {
+			isa = PBXGroup;
+			children = (
+				37409E73AF4D2A7313805071 /* init.c */,
+				5B5E88148F17A4D04FC6290E /* krb5-wrapper.c */,
+				545E1C54835F0C9466747BFD /* libnfs.c */,
+				EC88DFF5AF97A4609C577863 /* libnfs-sync.c */,
+				7C531BC14A9F4A2989AEF07A /* libnfs-zdr.c */,
+				2A871E15A332DD97395DDDCF /* multithreading.c */,
+				8D614F075482BDFFBDD74AB0 /* nfs_v3.c */,
+				71D0FCC74D9B4466506512D6 /* nfs_v4.c */,
+				B12C2A0F2307A8FCE2FFCEF4 /* pdu.c */,
+				8C8E159EF44B056138D00F34 /* socket.c */,
+				0F31C03F2498645681C90418 /* mount.c */,
+				F0F9D8060F15213897A5162D /* libnfs-raw-mount.c */,
+				48BD13171876EEE72F4A88ED /* nfs.c */,
+				A114EEE68059D5FA1643289F /* nfsacl.c */,
+				CCA3A9C801DDFF74E4BB42CC /* libnfs-raw-nfs.c */,
+				E08369CC0F41405AD973F3ED /* nfs4.c */,
+				5B4C49D06B9F13B7EA0F2F24 /* libnfs-raw-nfs4.c */,
+				706E99A264F1571BB02F25B6 /* nlm.c */,
+				29FD8205A478A6E4054E6561 /* libnfs-raw-nlm.c */,
+				9B9A3C5364EC6312EB6DD58F /* nsm.c */,
+				06245C5082B4C280FF2AA008 /* libnfs-raw-nsm.c */,
+				67326B7F9BE081ACCE736946 /* portmap.c */,
+				8B21CEA0A0AE6F808C9922A1 /* libnfs-raw-portmap.c */,
+				C8AA87DBE34ECD2F80074EAF /* rquota.c */,
+				C5E1410D2342740F67D4F105 /* libnfs-raw-rquota.c */,
+			);
+			name = libnfs;
+			sourceTree = "<group>";
+		};
 		0712A7732B807AE400C9765F /* RetroArchTopShelfExtension */ = {
 			isa = PBXGroup;
 			children = (
@@ -1154,6 +1261,7 @@
 				9210C2FB24B4CB4900E6FE7C /* Shaders.metal */,
 				83D632D719ECFCC4009E3161 /* iOS */,
 				926C77D821FD1E6500103EDE /* tvOS */,
+				F2B87FF9E192F75FD4F0329B /* libnfs */,
 				92CC05CC21FF782C00FF79F0 /* WebServer */,
 				07649B662E1C47220003184B /* AppIntents */,
 				9292D6E628F549D100E47A75 /* RetroArchWidgetExtension */,
@@ -1530,6 +1638,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DCA144C1F2D0669C4F8615A8 /* init.c in Sources */,
+				89F6FA3282CC1AB62E51EE33 /* krb5-wrapper.c in Sources */,
+				D26FDEBB2C87A3A8AE5B3AC5 /* libnfs.c in Sources */,
+				041B1BC56F626891766D9083 /* libnfs-sync.c in Sources */,
+				418020E21A59481CE75C3728 /* libnfs-zdr.c in Sources */,
+				DF50F27A06FD677977D40575 /* multithreading.c in Sources */,
+				5CC20C7F47DAABE4BC701782 /* nfs_v3.c in Sources */,
+				C94F3B7AC904063AC38CBCAF /* nfs_v4.c in Sources */,
+				7A536987DA7775A1A9748656 /* pdu.c in Sources */,
+				C8182809F45E6C523693B8D9 /* socket.c in Sources */,
+				EF71BDF9277DC80E468EDF72 /* mount.c in Sources */,
+				1162D1ABE19B0F9C531AAFF0 /* libnfs-raw-mount.c in Sources */,
+				0F09608340640B30796D86B7 /* nfs.c in Sources */,
+				0ADB1372000910DC48F6EF20 /* nfsacl.c in Sources */,
+				DC84BC69FCCC792B4DE15031 /* libnfs-raw-nfs.c in Sources */,
+				989A1AA91C0411610F80B78A /* nfs4.c in Sources */,
+				39A8F3361B503ECF77B6C017 /* libnfs-raw-nfs4.c in Sources */,
+				2C1BAEA5A6BE170549F862D5 /* nlm.c in Sources */,
+				317CDE8E134F77BCD9BC4A65 /* libnfs-raw-nlm.c in Sources */,
+				3BB4913DD1C6BFAA2559339C /* nsm.c in Sources */,
+				D8FCADC70C6613761C04D74B /* libnfs-raw-nsm.c in Sources */,
+				B7A577B77C7C8E97A90A55CC /* portmap.c in Sources */,
+				553019B6E138785D5644B255 /* libnfs-raw-portmap.c in Sources */,
+				5C011FFD85E2EEA1A46828D9 /* rquota.c in Sources */,
+				A07BC8706552BBF254892BA6 /* libnfs-raw-rquota.c in Sources */,
 				92CC05B821FE3C1700FF79F0 /* GCDWebServerDataRequest.m in Sources */,
 				92CC05A421FE3C1700FF79F0 /* GCDWebServerRequest.m in Sources */,
 				92CC05AA21FE3C1700FF79F0 /* GCDWebServerConnection.m in Sources */,
@@ -1562,6 +1695,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1E3143E3071829B8E99A460B /* init.c in Sources */,
+				4A5845FE2A51CB04A3962910 /* krb5-wrapper.c in Sources */,
+				EAFDB3636DD05A6813D6801B /* libnfs.c in Sources */,
+				423A4A494CDC5267A8952A26 /* libnfs-sync.c in Sources */,
+				3B9050BAF91B39DC0D2679F4 /* libnfs-zdr.c in Sources */,
+				10560F2B181CC2FE5CD2049D /* multithreading.c in Sources */,
+				DE822A062BAD7FBCE06FD02D /* nfs_v3.c in Sources */,
+				3C302C234A3511A6DB74CC00 /* nfs_v4.c in Sources */,
+				312244FA8202464BC6A435DD /* pdu.c in Sources */,
+				359795FDDCF5EA12561D311F /* socket.c in Sources */,
+				A7A77A9C00DE2F59F044B588 /* mount.c in Sources */,
+				DB0388A4F55D7933878B4B3A /* libnfs-raw-mount.c in Sources */,
+				58F7010852490D04C83B5FBE /* nfs.c in Sources */,
+				19B16DA32B274DCB10744503 /* nfsacl.c in Sources */,
+				6F827C6D27DE0A32B7232F6A /* libnfs-raw-nfs.c in Sources */,
+				ACDA3D87E3A5A3AFE8C65FF4 /* nfs4.c in Sources */,
+				E6AD16E846FC068C2A6ECEB8 /* libnfs-raw-nfs4.c in Sources */,
+				C3454B1DA238B2BD135CFD00 /* nlm.c in Sources */,
+				B9A0082C1E0D088F4E520561 /* libnfs-raw-nlm.c in Sources */,
+				C9A7439FB97B081176DBCFBE /* nsm.c in Sources */,
+				11EE97CEA7FF1F4CA6F453E3 /* libnfs-raw-nsm.c in Sources */,
+				B430D3F33791D7B3AA2D6832 /* portmap.c in Sources */,
+				86C4E149E925052F607B8B70 /* libnfs-raw-portmap.c in Sources */,
+				7E625403A58C1D5F1384AD8A /* rquota.c in Sources */,
+				2346BC25B0F1997FFFCEB0DC /* libnfs-raw-rquota.c in Sources */,
 				92CC05B921FE3C1700FF79F0 /* GCDWebServerDataRequest.m in Sources */,
 				92CC05A521FE3C1700FF79F0 /* GCDWebServerRequest.m in Sources */,
 				92CC05AB21FE3C1700FF79F0 /* GCDWebServerConnection.m in Sources */,

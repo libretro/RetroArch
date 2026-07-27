@@ -59,8 +59,8 @@ OTHER_CFLAGS = $(inherited) -DHAVE_NETPLAYDISCOVERY_NSNET
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKGAMEPAD
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORKING
 OTHER_CFLAGS = $(inherited) -DHAVE_NETWORK_CMD
-// Bundled libnfs sources are wired in RetroArch_Metal.xcodeproj only.
-OTHER_CFLAGS[sdk=macosx*] = $(inherited) -DHAVE_NFSCLIENT -DHAVE_BUILTINNFSCLIENT
+// Bundled libnfs is compiled as separate sources in Metal + iOS13 Xcode projects.
+OTHER_CFLAGS = $(inherited) -DHAVE_NFSCLIENT -DHAVE_BUILTINNFSCLIENT
 OTHER_CFLAGS = $(inherited) -D_U_=__attribute__((unused))
 OTHER_CFLAGS = $(inherited) -DHAVE_ARPA_INET_H -DHAVE_DLFCN_H -DHAVE_INTTYPES_H
 OTHER_CFLAGS = $(inherited) -DHAVE_MEMORY_H -DHAVE_NETDB_H -DHAVE_NETINET_IN_H
@@ -185,16 +185,16 @@ HEADER_SEARCH_PATHS = $(inherited) $(GLSLANG_BUILTIN_HEADER_SEARCH_PATHS)
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/rcheevos/include
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/stb
 HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/zstd/lib
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/include
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/include/nfsc
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/mount
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/nfs
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/nfs4
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/nlm
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/nsm
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/portmap
-HEADER_SEARCH_PATHS[sdk=macosx*] = $(inherited) $(DEPS_DIR)/libnfs/rquota
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/include
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/include/nfsc
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/mount
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/nfs
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/nfs4
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/nlm
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/nsm
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/portmap
+HEADER_SEARCH_PATHS = $(inherited) $(DEPS_DIR)/libnfs/rquota
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/gfx/include
 HEADER_SEARCH_PATHS = $(inherited) $(SRCBASE)/libretro-common/include
