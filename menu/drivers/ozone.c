@@ -7165,7 +7165,7 @@ static void ozone_draw_thumbnail_bar(
    }
 }
 
-static void ozone_draw_backdrop(
+OZONE_NOINLINE static void ozone_draw_backdrop(
       void *userdata,
       void *disp_data,
       unsigned video_width,
@@ -7198,7 +7198,7 @@ static void ozone_draw_backdrop(
          NULL);
 }
 
-static void ozone_draw_osk(
+OZONE_NOINLINE static void ozone_draw_osk(
       ozone_handle_t *ozone,
       void *userdata,
       void *disp_userdata,
@@ -7445,7 +7445,7 @@ static void ozone_draw_osk(
    }
 }
 
-static void ozone_draw_messagebox(
+OZONE_NOINLINE static void ozone_draw_messagebox(
       ozone_handle_t *ozone,
       gfx_display_t *p_disp,
       void *userdata,
@@ -7865,7 +7865,7 @@ static void ozone_show_fullscreen_thumbnails(ozone_handle_t *ozone)
    ozone_set_thumbnail_delay(ozone, false);
 }
 
-static void ozone_draw_fullscreen_thumbnails(
+OZONE_NOINLINE static void ozone_draw_fullscreen_thumbnails(
       ozone_handle_t *ozone,
       void *userdata,
       void *disp_userdata,
