@@ -76,7 +76,6 @@ static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
 
 static int alsa_microphone_read(void *driver_context, void *mic_context, void *s, size_t len)
 {
-   size_t frames_size;
    snd_pcm_sframes_t size;
    snd_pcm_state_t state;
    alsa_microphone_t       *alsa = (alsa_microphone_t*)driver_context;
@@ -89,7 +88,6 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
       return -1;
 
    size        = BYTES_TO_FRAMES(len, mic->stream_info.frame_bits);
-   frames_size = mic->stream_info.has_float ? sizeof(float) : sizeof(int16_t);
 
    state = snd_pcm_state(mic->pcm);
    if (state != SND_PCM_STATE_RUNNING)
@@ -133,7 +131,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
             return -1;
 
          read += frames;
-         buf  += frames_size;
+         buf  += FRAMES_TO_BYTES(frames, mic->stream_info.frame_bits);
          size -= frames;
       }
    }
@@ -176,7 +174,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
             return -1;
 
          read += frames;
-         buf  += frames_size;
+         buf  += FRAMES_TO_BYTES(frames, mic->stream_info.frame_bits);
          size -= frames;
       }
    }
