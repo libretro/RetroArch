@@ -90,6 +90,13 @@ static char scan_file_exts_core[PATH_MAX_LENGTH];
 static char scan_file_exts_custom[PATH_MAX_LENGTH];
 static char scan_dat_file_path[PATH_MAX_LENGTH];
 static char scan_content_dir[DIR_MAX_LENGTH];
+/* Number of bytes held back when populating
+ * manual_content_scan_task_config_t::system_name, so that the file
+ * extensions appended to it downstream (".lpl", ".rdb") still fit in
+ * the fixed-size buffers that carry them.  See the comment in
+ * manual_content_scan_get_task_config(). */
+#define MANUAL_CONTENT_SCAN_SYSTEM_NAME_EXT_RESERVE 4
+
 static char scan_system_name_content_dir[DIR_MAX_LENGTH];
 static char scan_system_name_database[NAME_MAX_LENGTH];
 static char scan_system_name_custom[NAME_MAX_LENGTH];
@@ -1319,7 +1326,21 @@ bool manual_content_scan_get_task_config(
       else if (scan_settings.db_selection == MANUAL_CONTENT_SCAN_SELECT_DB_SPECIFIC)
          scan_settings.system_name_type = MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE;
    }
-   /* Get target playlist ("system name") */
+   /* Get target playlist ("system name")
+    *
+    * The system name is not a leaf value: the scan pipeline appends a
+    * file extension to it repeatedly, each time into a buffer that is
+    * also NAME_MAX_LENGTH bytes.  system_name -> database_name gains
+    * ".lpl" (below), database_name -> rdb_name gains ".rdb"
+    * (task_database.c), and the basename of that is then copied back
+    * into a NAME_MAX_LENGTH buffer by
+    * database_info_list_iterate_found_match().
+    *
+    * Copying up to sizeof(system_name) - 1 here therefore yields a name
+    * that provably cannot survive the round trip: at 255 characters the
+    * ".lpl" is silently dropped, ".rdb" pushes the string to 259, and
+    * the final copy overflows its 256-byte destination.  Reserve room
+    * for the longest extension so every hop stays representable. */
    switch (scan_settings.system_name_type)
    {
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR:
@@ -1328,7 +1349,8 @@ bool manual_content_scan_get_task_config(
          strlcpy(
                task_config->system_name,
                scan_system_name_content_dir,
-               sizeof(task_config->system_name));
+               sizeof(task_config->system_name)
+                  - MANUAL_CONTENT_SCAN_SYSTEM_NAME_EXT_RESERVE);
          task_config->target_is_single_determined_playlist = true;
          break;
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_CUSTOM:
@@ -1337,7 +1359,8 @@ bool manual_content_scan_get_task_config(
          strlcpy(
                task_config->system_name,
                scan_system_name_custom,
-               sizeof(task_config->system_name));
+               sizeof(task_config->system_name)
+                  - MANUAL_CONTENT_SCAN_SYSTEM_NAME_EXT_RESERVE);
          task_config->target_is_single_determined_playlist = true;
          break;
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_DATABASE:
@@ -1346,7 +1369,8 @@ bool manual_content_scan_get_task_config(
          strlcpy(
                task_config->system_name,
                scan_system_name_database,
-               sizeof(task_config->system_name));
+               sizeof(task_config->system_name)
+                  - MANUAL_CONTENT_SCAN_SYSTEM_NAME_EXT_RESERVE);
          task_config->target_is_single_determined_playlist = true;
          break;
       case MANUAL_CONTENT_SCAN_SYSTEM_NAME_AUTO:
