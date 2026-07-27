@@ -1251,8 +1251,13 @@ static bool content_file_copy_vfs_url_to_cache(
    RFILE *fp_dst = NULL;
    char new_path[PATH_MAX_LENGTH];
    char new_basedir[DIR_MAX_LENGTH];
+   char archive_path[PATH_MAX_LENGTH];
+   char staged_with_entry[PATH_MAX_LENGTH];
    char buf[64 * 1024];
    const char *basename_ptr;
+   const char *open_path;
+   const char *archive_delim;
+   const char *result_path;
    int64_t n;
    int64_t total = 0;
    static char *staged_path = NULL;
@@ -1264,6 +1269,29 @@ static bool content_file_copy_vfs_url_to_cache(
 
    if (!strstr(*content_path, "://"))
       return true;
+
+   /* nfs/smb cannot open archive#entry paths — stage the archive only,
+    * then reattach #entry so local extract/load can run. */
+   open_path      = *content_path;
+   archive_delim  = path_get_archive_delim(*content_path);
+   archive_path[0] = '\0';
+   if (archive_delim)
+   {
+      size_t archive_len = (size_t)(archive_delim - *content_path);
+      if (archive_len == 0 || archive_len >= sizeof(archive_path))
+      {
+         char msg[PATH_MAX_LENGTH];
+         snprintf(msg, sizeof(msg),
+               "%s: bad archive path \"%.200s\"\n",
+               msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
+               *content_path);
+         *err_string = strdup(msg);
+         return false;
+      }
+      memcpy(archive_path, *content_path, archive_len);
+      archive_path[archive_len] = '\0';
+      open_path = archive_path;
+   }
 
    new_basedir[0] = '\0';
    if (content_ctx->directory_cache && *content_ctx->directory_cache)
@@ -1323,7 +1351,7 @@ static bool content_file_copy_vfs_url_to_cache(
       return false;
    }
 
-   basename_ptr = path_basename(*content_path);
+   basename_ptr = path_basename(open_path);
    if (!basename_ptr || !*basename_ptr)
       basename_ptr = "content.bin";
 
@@ -1331,28 +1359,28 @@ static bool content_file_copy_vfs_url_to_cache(
          basename_ptr, sizeof(new_path));
 
    RARCH_LOG("[Content] Staging VFS URL to cache: \"%s\" -> \"%s\"\n",
-         *content_path, new_path);
+         open_path, new_path);
 
-   fp_src = filestream_open(*content_path,
+   fp_src = filestream_open(open_path,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
    if (!fp_src)
    {
       char msg[PATH_MAX_LENGTH];
 #if defined(HAVE_NFSCLIENT)
       const char *nfs_err = NULL;
-      if (string_starts_with_case_insensitive(*content_path, "nfs://"))
+      if (string_starts_with_case_insensitive(open_path, "nfs://"))
          nfs_err = nfs_get_last_error();
       if (nfs_err && *nfs_err)
          snprintf(msg, sizeof(msg),
-               "%s: open \"%.160s\" failed (%.40s)\n",
+               "%s: open \"%.160s\" failed (%.80s)\n",
                msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-               *content_path, nfs_err);
+               open_path, nfs_err);
       else
 #endif
       snprintf(msg, sizeof(msg),
             "%s: open \"%.200s\" failed\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-            *content_path);
+            open_path);
       *err_string = strdup(msg);
       return false;
    }
@@ -1397,19 +1425,27 @@ static bool content_file_copy_vfs_url_to_cache(
       snprintf(msg, sizeof(msg),
             "%s: read 0 bytes from \"%.200s\"\n",
             msg_hash_to_str(MSG_COULD_NOT_READ_CONTENT_FILE),
-            *content_path);
+            open_path);
       *err_string = strdup(msg);
       return false;
    }
 
+   result_path = new_path;
+   if (archive_delim)
+   {
+      strlcpy(staged_with_entry, new_path, sizeof(staged_with_entry));
+      strlcat(staged_with_entry, archive_delim, sizeof(staged_with_entry));
+      result_path = staged_with_entry;
+   }
+
    free(staged_path);
-   staged_path = strdup(new_path);
+   staged_path = strdup(result_path);
    if (!staged_path)
       return false;
 
    *content_path = staged_path;
    RARCH_LOG("[Content] Staged %lld bytes at \"%s\".\n",
-         (long long)total, new_path);
+         (long long)total, result_path);
    return true;
 }
 
