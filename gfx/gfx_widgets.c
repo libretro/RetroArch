@@ -423,10 +423,23 @@ void gfx_widgets_msg_queue_push(
             if (fifo_full)
             {
                /* Lost the race against another producer.  Roll back
-                * the widget we just allocated -- nobody else has a
-                * reference to it yet (we only got here from the
-                * spawn-new branch, where msg_widget is freshly
-                * allocated above), so this is safe. */
+                * the widget we just allocated.
+                *
+                * The spawn-new branch has already published it to
+                * task->frontend_userdata, so that reference has to be
+                * dropped here regardless of the task's flags: the task
+                * is unambiguously alive (we are inside a call it just
+                * made), and leaving the pointer behind would hand the
+                * next progress push a freed widget.
+                *
+                * The sticky DISPWIDG_FLAG_TASK is cleared too: this
+                * widget never reached current_msgs, so it was never
+                * counted in msg_queue_tasks_count and must not
+                * decrement it on the way out. */
+               if (task && task->frontend_userdata == msg_widget)
+                  task->frontend_userdata = NULL;
+               msg_widget->task_ptr  = NULL;
+               msg_widget->flags    &= ~DISPWIDG_FLAG_TASK;
                gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
                free(msg_widget);
                return;
@@ -576,20 +589,33 @@ static void gfx_widgets_msg_queue_free(
    uintptr_t tag = (uintptr_t)msg;
    uintptr_t hourglass_timer_tag = (uintptr_t)&msg->hourglass_timer;
 
-   if (msg->task_ptr)
-   {
-      /* remove the reference the task has of ourself
-         only if the task is not finished already
-         (finished tasks are freed before the widget) */
-      if (     !(msg->flags & DISPWIDG_FLAG_TASK_FINISHED)
-            && !(msg->flags & DISPWIDG_FLAG_TASK_ERROR)
-            && !(msg->flags & DISPWIDG_FLAG_TASK_CANCELLED))
-         msg->task_ptr->frontend_userdata = NULL;
-   }
+   /* Remove the reference the task has of ourself, so that its next
+    * progress push spawns a fresh widget instead of dereferencing the
+    * memory we are about to free().
+    *
+    * Only DISPWIDG_FLAG_TASK_FINISHED marks task_ptr as potentially
+    * dangling: tasks are exclusively free()d by
+    * retro_task_internal_gather(), which always delivers a final
+    * progress push with RETRO_TASK_FLG_FINISHED set immediately
+    * beforehand. Any task we have not seen finish is therefore still
+    * alive and safe to write to.
+    *
+    * DISPWIDG_FLAG_TASK_ERROR and DISPWIDG_FLAG_TASK_CANCELLED carry
+    * no such guarantee and must not gate this. Cancellation in
+    * particular is purely advisory - retro_task_*_cancel() only raises
+    * a flag, and the handler keeps running (and keeps pushing progress,
+    * once per frame) until it notices. The widget, meanwhile, gets an
+    * expiration timer the moment the flag is observed and is gone
+    * TASK_FINISHED_DURATION later. Skipping the unlink for those two
+    * left task->frontend_userdata pointing into freed memory for the
+    * entire remaining lifetime of the task. */
+   if (msg->task_ptr && !(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
+      msg->task_ptr->frontend_userdata = NULL;
+
+   msg->task_ptr = NULL;
 
    /* Update tasks count. Keyed off the sticky flag rather than
-    * task_ptr, so that it stays correct once task_ptr becomes a
-    * pure liveness link that may be cleared early. */
+    * task_ptr, which may already have been unlinked above. */
    if (msg->flags & DISPWIDG_FLAG_TASK)
    {
       if (p_dispwidget->msg_queue_tasks_count > 0)
@@ -2058,18 +2084,20 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
       fifo_read(&p_dispwidget->msg_queue,
             &msg_widget, sizeof(msg_widget));
 
-      /* Note: gfx_widgets_free() is only called when
-       * main_exit() is invoked. At this stage, we cannot
-       * guarantee that any task pointers are valid (the
-       * task may have been free()'d, but we can't know
-       * that here) - so all we can do is unset the task
-       * pointer associated with each message
-       * > If we don't do this, gfx_widgets_msg_queue_free()
-       *   will generate heap-use-after-free errors */
-      msg_widget->task_ptr = NULL;
-
-      /* These widgets never reached current_msgs, so they were never
-       * counted in msg_queue_tasks_count and must not decrement it. */
+      /* Note: task_ptr is deliberately left intact here.
+       * gfx_widgets_free() is NOT only reached from main_exit():
+       * driver_uninit(), retroarch_deinit_drivers() and a user
+       * toggling notification widgets off all call
+       * gfx_widgets_deinit(false) with tasks still in flight. Blanket
+       * unsetting task_ptr suppressed the unlink in
+       * gfx_widgets_msg_queue_free(), so every live task kept a
+       * frontend_userdata pointer to the widget freed just below.
+       * gfx_widgets_msg_queue_free() applies the TASK_FINISHED rule
+       * instead, which is safe in both situations.
+       *
+       * The sticky DISPWIDG_FLAG_TASK is cleared first: these widgets
+       * never reached current_msgs, so they were never counted in
+       * msg_queue_tasks_count and must not decrement it. */
       msg_widget->flags &= ~DISPWIDG_FLAG_TASK;
 
       gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
@@ -2090,16 +2118,9 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
       if (!msg)
          continue;
 
-      /* Note: gfx_widgets_free() is only called when
-         * main_exit() is invoked. At this stage, we cannot
-         * guarantee that any task pointers are valid (the
-         * task may have been free()'d, but we can't know
-         * that here) - so all we can do is unset the task
-         * pointer associated with each message
-         * > If we don't do this, gfx_widgets_msg_queue_free()
-         *   will generate heap-use-after-free errors */
-      msg->task_ptr = NULL;
-
+      /* See the note in the fifo purge above: task_ptr is left for
+       * gfx_widgets_msg_queue_free() to unlink under the
+       * TASK_FINISHED rule. */
       gfx_widgets_msg_queue_free(p_dispwidget, msg);
       free(msg);
       p_dispwidget->current_msgs[i] = NULL;
