@@ -342,6 +342,8 @@ struct rinflate
    /* huffman tables for the current dynamic/fixed block */
    struct rinf_huff lencode;
    struct rinf_huff distcode;
+   /* lencode/distcode currently hold the RFC 1951 fixed tables. */
+   int              fixed_loaded;
    int              have_tables;
 
    /* dynamic-table construction scratch, persisted across suspends */
@@ -524,10 +526,23 @@ static int rinf_decode(struct rinflate *s, struct rinf_huff *h)
 }
 
 /* fixed huffman tables (RFC 1951 3.2.6) */
+/* The fixed tables are the same two tables every time - RFC 1951 states
+ * their code lengths outright - so a stream that emits a run of fixed
+ * blocks was rebuilding identical content per block.  One PNG in a
+ * libretro core's asset set drove 28 of them, and each rebuild is two
+ * rinf_build calls, the most expensive thing in the decoder outside the
+ * symbol loop.  Skip it when lencode/distcode already hold them; a
+ * dynamic block clears the flag when it builds over them. */
 static void rinf_fixed_tables(struct rinflate *s)
 {
    uint8_t ll[288], dd[30];
    int i;
+
+   if (s->fixed_loaded)
+   {
+      s->have_tables = 1;
+      return;
+   }
    for (i = 0;   i < 144; i++)
       ll[i] = 8;
    for (i = 144; i < 256; i++)
@@ -540,7 +555,8 @@ static void rinf_fixed_tables(struct rinflate *s)
       dd[i] = 5;
    rinf_build(&s->lencode, ll, 288);
    rinf_build(&s->distcode, dd, 30);
-   s->have_tables = 1;
+   s->have_tables  = 1;
+   s->fixed_loaded = 1;
 }
 
 /* length/distance base + extra-bit tables */
@@ -836,6 +852,7 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                }
             }
             /* build lit/len and dist tables */
+            s->fixed_loaded = 0;
             if (!rinf_build(&s->lencode, s->lengths, s->hlit))
                { s->error = 1; goto error; }
             if (!rinf_build(&s->distcode, s->lengths + s->hlit, s->hdist))
