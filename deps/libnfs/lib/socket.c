@@ -208,8 +208,10 @@ set_keepalive(struct rpc_context *rpc, int sockfd)
 
 	if (setsockopt(sockfd, SOL_SOCKET, SO_KEEPALIVE,
 		       &enable_keepalive, sizeof(enable_keepalive)) != 0) {
+		/* Keepalive is best-effort: sandboxed platforms (webOS, etc.)
+		 * may deny these options. Do not abort the NFS connection. */
 		RPC_LOG(rpc, 2, "setsockopt(SO_KEEPALIVE) failed: %s", strerror(errno));
-		return -1;
+		return 0;
 	}
 #endif
 
@@ -227,7 +229,7 @@ set_keepalive(struct rpc_context *rpc, int sockfd)
 
 		if (set_tcp_sockopt(sockfd, TCP_KEEPIDLE, keepidle_secs) != 0) {
 			RPC_LOG(rpc, 2, "setsockopt(TCP_KEEPIDLE) failed: %s", strerror(errno));
-			return -1;
+			/* non-fatal */
 		}
 	}
 #endif
@@ -239,7 +241,7 @@ set_keepalive(struct rpc_context *rpc, int sockfd)
 
 		if (set_tcp_sockopt(sockfd, TCP_KEEPINTVL, keepinterval_secs) != 0) {
 			RPC_LOG(rpc, 2, "setsockopt(TCP_KEEPINTVL) failed: %s", strerror(errno));
-			return -1;
+			/* non-fatal */
 		}
 	}
 #endif
@@ -251,7 +253,7 @@ set_keepalive(struct rpc_context *rpc, int sockfd)
 
 		if (set_tcp_sockopt(sockfd, TCP_KEEPCNT, keepcnt) != 0) {
 			RPC_LOG(rpc, 2, "setsockopt(TCP_KEEPCNT) failed: %s", strerror(errno));
-			return -1;
+			/* non-fatal */
 		}
 	}
 #endif
@@ -1579,11 +1581,19 @@ static int
 rpc_set_sockaddr(struct rpc_context *rpc, const char *server, int port)
 {
 	struct addrinfo *ai = NULL;
+	struct addrinfo hints;
 
-	if (getaddrinfo(server, NULL, NULL, &ai) != 0) {
-		rpc_set_error(rpc, "Invalid address:%s. "
-			      "Can not resolv into IPv4/v6 structure.", server);
-		return -1;
+	/* Prefer IPv4: NFSv3 portmap + IPv6 is unreliable, and many LAN
+	 * NAS boxes only expose the share on IPv4. Fall back to any family. */
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	if (getaddrinfo(server, NULL, &hints, &ai) != 0) {
+		if (getaddrinfo(server, NULL, NULL, &ai) != 0) {
+			rpc_set_error(rpc, "Invalid address:%s. "
+				      "Can not resolv into IPv4/v6 structure.", server);
+			return -1;
+		}
  	}
 
 	switch (ai->ai_family) {

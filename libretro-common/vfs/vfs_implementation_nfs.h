@@ -56,6 +56,11 @@ int retro_vfs_file_error_nfs(libretro_vfs_implementation_file *stream);
 /* Context management */
 void nfs_shutdown(void);
 
+/* Mount with current settings; returns false on failure.
+ * nfs_get_last_error() has a short reason after failure. */
+bool nfs_probe_connection(void);
+const char *nfs_get_last_error(void);
+
 #ifdef __cplusplus
 }
 #endif

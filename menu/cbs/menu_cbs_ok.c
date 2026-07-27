@@ -38,6 +38,9 @@
 #ifdef HAVE_SMBCLIENT
 #include "../vfs/vfs_implementation_smb.h"
 #endif
+#ifdef HAVE_NFSCLIENT
+#include "../../libretro-common/vfs/vfs_implementation_nfs.h"
+#endif
 
 #ifdef HAVE_DISCORD
 #include "../../network/discord.h"
@@ -9351,6 +9354,18 @@ static int action_ok_nfs_browse(const char *path,
    {
       runloop_msg_queue_push(
             "NFS export path not configured.",
+            0, 100, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_ERROR);
+      return -1;
+   }
+
+   /* Fail early with a visible reason instead of "Directory Not Found". */
+   if (!nfs_probe_connection())
+   {
+      const char *err = nfs_get_last_error();
+      runloop_msg_queue_push(
+            (err && *err) ? err : "NFS mount failed.",
             0, 100, 180, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT,
             MESSAGE_QUEUE_CATEGORY_ERROR);

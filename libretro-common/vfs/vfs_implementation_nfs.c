@@ -39,6 +39,20 @@ static int nfs_next_context_index = 0;
 static bool nfs_initialized = false;
 static int nfs_max_context_configured = 0;
 static const struct nfs_settings *nfs_cfg = NULL;
+static char nfs_last_error[256] = {0};
+
+static void nfs_set_last_error(const char *msg)
+{
+   if (msg && *msg)
+      strlcpy(nfs_last_error, msg, sizeof(nfs_last_error));
+   else
+      nfs_last_error[0] = '\0';
+}
+
+const char *nfs_get_last_error(void)
+{
+   return nfs_last_error;
+}
 
 static struct nfs_context *get_nfs_context(void)
 {
@@ -97,13 +111,22 @@ static bool nfs_init(void)
       return true;
 
    if (!network_init())
+   {
+      nfs_set_last_error("network_init failed");
       return false;
+   }
 
    if (!nfs_cfg || !nfs_cfg->server_address || !*nfs_cfg->server_address)
+   {
+      nfs_set_last_error("NFS server not configured");
       return false;
+   }
 
    if (!nfs_cfg->export_path || !*nfs_cfg->export_path)
+   {
+      nfs_set_last_error("NFS export not configured");
       return false;
+   }
 
    max_nfs_contexts = nfs_cfg->num_contexts;
    if (max_nfs_contexts == 0)
@@ -115,15 +138,27 @@ static bool nfs_init(void)
       return false;
 
    strlcpy(server, nfs_cfg->server_address, sizeof(server));
-   strlcpy(export_path, nfs_cfg->export_path, sizeof(export_path));
+   /* MOUNT protocol expects an absolute export path. */
+   if (nfs_cfg->export_path[0] == '/')
+      strlcpy(export_path, nfs_cfg->export_path, sizeof(export_path));
+   else
+   {
+      export_path[0] = '/';
+      strlcpy(export_path + 1, nfs_cfg->export_path,
+            sizeof(export_path) - 1);
+   }
+
+   nfs_set_last_error(NULL);
 
    for (i = 0; i < max_nfs_contexts; i++)
    {
       struct nfs_context *nfs;
+      const char *err;
 
       nfs = nfs_init_context();
       if (!nfs)
       {
+         nfs_set_last_error("nfs_init_context failed");
          nfs_reset((unsigned)nfs_max_context_configured);
          return false;
       }
@@ -137,6 +172,8 @@ static bool nfs_init(void)
 
       if (nfs_mount(nfs, server, export_path) != 0)
       {
+         err = nfs_get_error(nfs);
+         nfs_set_last_error(err && *err ? err : "nfs_mount failed");
          nfs_destroy_context(nfs);
          nfs_reset((unsigned)nfs_max_context_configured);
          return false;
@@ -148,6 +185,13 @@ static bool nfs_init(void)
 
    nfs_initialized = true;
    return true;
+}
+
+bool nfs_probe_connection(void)
+{
+   /* Remount with current settings so browse reflects edits without restart. */
+   nfs_shutdown();
+   return nfs_init();
 }
 
 void nfs_shutdown(void)
