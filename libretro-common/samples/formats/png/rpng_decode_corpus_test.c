@@ -405,6 +405,151 @@ done:
    return b.p;
 }
 
+/* Adam7: seven passes of (x offset, y offset, x stride, y stride).  Each
+ * pass is an independent sub-image with its own filter state and its own
+ * scanline width, which is why the decoder has a separate driver for it -
+ * and why nothing above reaches that driver. */
+static const unsigned adam7[7][4] = {
+   { 0, 0, 8, 8 }, { 4, 0, 8, 8 }, { 0, 4, 4, 8 }, { 2, 0, 4, 4 },
+   { 0, 2, 2, 4 }, { 1, 0, 2, 2 }, { 0, 1, 1, 2 }
+};
+
+static unsigned pass_count(unsigned total, unsigned offset, unsigned stride)
+{
+   if (total <= offset)
+      return 0;
+   return (total - offset + stride - 1) / stride;
+}
+
+/* Pack one scanline of a pass, sampling the full-image grid at the
+ * pass's stride so the expected pixels stay the same function of
+ * position that expect_pixel() uses. */
+static void pack_pass_row(uint8_t *dst, const struct fmt *f,
+      unsigned pass, unsigned sy, unsigned pw)
+{
+   unsigned i, c;
+   unsigned maxv = (f->depth >= 8) ? 255u : ((1u << f->depth) - 1u);
+   unsigned xo = adam7[pass][0], yo = adam7[pass][1];
+   unsigned xs = adam7[pass][2], ys = adam7[pass][3];
+   unsigned y  = yo + sy * ys;
+   if (f->depth < 8)
+   {
+      unsigned per = 8u / f->depth;
+      size_t   n   = ((size_t)pw + per - 1) / per;
+      memset(dst, 0, n);
+      for (i = 0; i < pw; i++)
+      {
+         unsigned v    = sample_at(xo + i * xs, y, 0, maxv);
+         unsigned slot = i % per;
+         dst[i / per] |= (uint8_t)(v << (8u - f->depth * (slot + 1u)));
+      }
+      return;
+   }
+   for (i = 0; i < pw; i++)
+      for (c = 0; c < f->channels; c++)
+      {
+         unsigned v = sample_at(xo + i * xs, y, c, maxv);
+         if (f->depth == 16)
+         {
+            dst[((size_t)i * f->channels + c) * 2 + 0] = (uint8_t)v;
+            dst[((size_t)i * f->channels + c) * 2 + 1] = (uint8_t)(v ^ 0x5a);
+         }
+         else
+            dst[(size_t)i * f->channels + c] = (uint8_t)v;
+      }
+}
+
+/* Build an interlaced PNG with `ftype` forced on every row of every
+ * pass.  Empty passes contribute nothing to the stream, which is itself
+ * a case worth covering: at small widths several of the seven are
+ * empty. */
+static uint8_t *build_png_adam7(const struct fmt *f, unsigned width,
+      unsigned height, int ftype, size_t *out_len)
+{
+   struct buf b;
+   uint8_t ihdr[13];
+   uint8_t *raw = NULL, *prev = NULL, *stream = NULL, *comp = NULL;
+   uint8_t *plte = NULL;
+   size_t maxpitch = row_bytes(f, width) + 8;
+   size_t slen = 0, clen = 0, cap;
+   unsigned pass, bpp = pixel_stride(f);
+   int ok = 0;
+
+   memset(&b, 0, sizeof(b));
+   cap    = (maxpitch + 1) * (size_t)height * 2 + 64;
+   raw    = (uint8_t*)calloc(1, maxpitch);
+   prev   = (uint8_t*)calloc(1, maxpitch);
+   stream = (uint8_t*)malloc(cap);
+   if (!raw || !prev || !stream)
+      goto done;
+
+   for (pass = 0; pass < 7; pass++)
+   {
+      unsigned pw = pass_count(width,  adam7[pass][0], adam7[pass][2]);
+      unsigned ph = pass_count(height, adam7[pass][1], adam7[pass][3]);
+      size_t   pitch;
+      unsigned sy;
+      if (!pw || !ph)
+         continue;
+      pitch = row_bytes(f, pw);
+      memset(prev, 0, pitch);
+      for (sy = 0; sy < ph; sy++)
+      {
+         uint8_t *row = stream + slen;
+         pack_pass_row(raw, f, pass, sy, pw);
+         row[0] = (uint8_t)ftype;
+         filter_row(row + 1, raw, sy ? prev : NULL, pitch, bpp, ftype);
+         memcpy(prev, raw, pitch);
+         slen += pitch + 1;
+      }
+   }
+
+   be32(ihdr + 0, width);
+   be32(ihdr + 4, height);
+   ihdr[8]  = (uint8_t)f->depth;
+   ihdr[9]  = (uint8_t)f->color_type;
+   ihdr[10] = 0;
+   ihdr[11] = 0;
+   ihdr[12] = 1;   /* Adam7 */
+
+   if (!buf_add(&b, png_sig, sizeof(png_sig)))
+      goto done;
+   if (!chunk(&b, "IHDR", ihdr, sizeof(ihdr)))
+      goto done;
+   if (f->color_type == 3)
+   {
+      unsigned n = 1u << f->depth, i;
+      if (!(plte = (uint8_t*)malloc((size_t)n * 3)))
+         goto done;
+      for (i = 0; i < n; i++)
+      {
+         uint32_t e = palette_entry(i);
+         plte[i * 3 + 0] = (uint8_t)(e >> 16);
+         plte[i * 3 + 1] = (uint8_t)(e >> 8);
+         plte[i * 3 + 2] = (uint8_t)e;
+      }
+      if (!chunk(&b, "PLTE", plte, (size_t)n * 3))
+         goto done;
+   }
+   if (!(comp = deflate_all(stream, slen, &clen)))
+      goto done;
+   if (!chunk(&b, "IDAT", comp, clen))
+      goto done;
+   if (!chunk(&b, "IEND", NULL, 0))
+      goto done;
+   ok = 1;
+
+done:
+   free(raw); free(prev); free(stream); free(comp); free(plte);
+   if (!ok)
+   {
+      free(b.p);
+      return NULL;
+   }
+   *out_len = b.len;
+   return b.p;
+}
+
 /* ------------------------------------------------------------------ */
 /* Decode and compare                                                  */
 /* ------------------------------------------------------------------ */
@@ -438,18 +583,20 @@ fail:
 
 static int failures;
 
-static void check_image(const struct fmt *f, unsigned width, unsigned height,
-      int ftype)
+static void check_image_mode(const struct fmt *f, unsigned width,
+      unsigned height, int ftype, int interlaced)
 {
    size_t len = 0;
-   uint8_t *png = build_png(f, width, height, ftype, &len);
+   uint8_t *png = interlaced
+      ? build_png_adam7(f, width, height, ftype, &len)
+      : build_png(f, width, height, ftype, &len);
    uint32_t *got;
    unsigned dw = 0, dh = 0, x, y;
 
    if (!png)
    {
-      printf("FAIL %-8s w=%-5u f=%d: could not build test image\n",
-            f->name, width, ftype);
+      printf("FAIL %-8s w=%-5u f=%d i=%d: could not build test image\n",
+            f->name, width, ftype, interlaced);
       failures++;
       return;
    }
@@ -485,6 +632,12 @@ static void check_image(const struct fmt *f, unsigned width, unsigned height,
          }
       }
    free(png); free(got);
+}
+
+static void check_image(const struct fmt *f, unsigned width, unsigned height,
+      int ftype)
+{
+   check_image_mode(f, width, height, ftype, 0);
 }
 
 int main(void)
@@ -524,6 +677,26 @@ int main(void)
          check_image(&formats[wide_fmts[i]], 11000, 4, 4);
       }
       printf("6 wide-scanline images checked\n");
+   }
+
+   /* Adam7.  Widths below 8 leave several of the seven passes empty,
+    * and heights below 8 leave others with a single row, so the small
+    * sizes here are as much of the point as the large ones. */
+   {
+      static const unsigned iw[] = { 1, 2, 3, 5, 7, 8, 9, 15, 16, 17, 33, 64, 129 };
+      static const unsigned ih[] = { 1, 2, 3, 5, 8, 9, 16, 17 };
+      unsigned n = 0;
+      for (fi = 0; fi < nfmt; fi++)
+         for (wi = 0; wi < sizeof(iw) / sizeof(iw[0]); wi++)
+         {
+            unsigned hi = wi % (sizeof(ih) / sizeof(ih[0]));
+            for (ft = 0; ft < 5; ft++)
+            {
+               check_image_mode(&formats[fi], iw[wi], ih[hi], ft, 1);
+               n++;
+            }
+         }
+      printf("%u interlaced combinations checked\n", n);
    }
 
    if (failures)

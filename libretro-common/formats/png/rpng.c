@@ -1419,6 +1419,40 @@ static void rpng_pass_geom(const struct png_ihdr *ihdr,
       *pitch_out = (unsigned)pitch;
 }
 
+/* Exact size of an Adam7 stream: the seven passes are seven independent
+ * sub-images, each with its own scanline rounded up to a whole byte and
+ * its own filter byte per row, so the total is not the non-interlaced
+ * size and cannot be approximated from it.
+ *
+ * It used to be approximated - the non-interlaced size doubled, "to be
+ * sure".  That holds at 8 bits and up, where the per-pass rounding adds
+ * a byte or two per row, but not below: a 16x1 1-bit image is 3 bytes
+ * non-interlaced and 8 interlaced, because all four non-empty passes
+ * round their 2-to-8 pixel scanlines up to one byte apiece.  The
+ * undersized buffer failed the decode outright, so 1- and 2-bit
+ * interlaced images at a range of sizes did not load at all. */
+static size_t rpng_adam7_buf_size(const struct png_ihdr *ihdr)
+{
+   size_t total = 0;
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(rpng_passes); i++)
+   {
+      struct png_ihdr sub;
+      size_t pass_size = 0;
+      if (     ihdr->width  <= rpng_passes[i].x
+            || ihdr->height <= rpng_passes[i].y)
+         continue;   /* empty pass, contributes nothing */
+      sub        = *ihdr;
+      sub.width  = (ihdr->width  - rpng_passes[i].x
+            + rpng_passes[i].stride_x - 1) / rpng_passes[i].stride_x;
+      sub.height = (ihdr->height - rpng_passes[i].y
+            + rpng_passes[i].stride_y - 1) / rpng_passes[i].stride_y;
+      rpng_pass_geom(&sub, sub.width, sub.height, NULL, NULL, &pass_size);
+      total += pass_size;
+   }
+   return total;
+}
+
 static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
       const struct png_ihdr *ihdr,
       const uint32_t *input, unsigned pass_width, unsigned pass_height,
@@ -2022,10 +2056,11 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
       return NULL;
    }
 
-   rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
-         rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
-   if (rpng->ihdr.interlace == 1) /* To be sure. */
-      process->inflate_buf_size *= 2;
+   if (rpng->ihdr.interlace == 1)
+      process->inflate_buf_size = rpng_adam7_buf_size(&rpng->ihdr);
+   else
+      rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+            rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
 
    /* Interleaved decode lets the inflate window recycle: filtering
     * consumes scanlines as slices arrive, so for regular images the
@@ -2269,8 +2304,11 @@ bool rpng_iterate_image(rpng_t *rpng)
           * when each factor is 32-bit). */
          {
             size_t pass_size = 0;
-            rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
-                           rpng->ihdr.height, NULL, NULL, &pass_size);
+            if (rpng->ihdr.interlace == 1)
+               pass_size = rpng_adam7_buf_size(&rpng->ihdr);
+            else
+               rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+                              rpng->ihdr.height, NULL, NULL, &pass_size);
             if ((uint64_t)rpng->ihdr.width * rpng->ihdr.height
                      * sizeof(uint32_t) >= 0x100000000ULL
 #if SIZE_MAX > 0xFFFFFFFFULL
