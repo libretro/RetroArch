@@ -7993,12 +7993,29 @@ int generic_menu_entry_action(
 
    if (MENU_ENTRIES_NEEDS_REFRESH(menu_st) && selection_buf_size)
    {
-      menu_driver_displaylist_push(
-            menu_st,
-            settings,
-            selection_buf,
-            menu_stack);
-      menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      /* The action handler dispatched above is free to tear the menu
+       * down and build it again from scratch - a menu or video reinit,
+       * a driver switch, a language change and 'close content' all end
+       * up in RARCH_MENU_CTL_DEINIT, which menu_list_free()s every
+       * menu_stack[i] / selection_buf[i] before menu_list_new()
+       * allocates replacements.
+       *
+       * The pointers captured on entry to this function are dangling in
+       * that case, so re-fetch them from menu_st before handing them to
+       * the displaylist push. */
+      menu_list         = menu_st->entries.list;
+      selection_buf     = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+      menu_stack        = menu_list
+         ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+
+      if (selection_buf && menu_stack)
+         menu_driver_displaylist_push(
+               menu_st,
+               settings,
+               selection_buf,
+               menu_stack);
+      menu_st->flags   &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
 
 #ifdef HAVE_ACCESSIBILITY
