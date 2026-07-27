@@ -3423,13 +3423,20 @@ static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
+   /* NOTE: must go through the font driver here - the active font is
+    * owned by the font driver, not by gl2_t. Calling
+    * gl2_raster_font_get_message_width() with 'gl' reinterprets a
+    * gl2_t* as a gl2_raster_t*, which reads ctx_data/ctx_driver as
+    * font_driver/font_data and then branches through a garbage
+    * get_glyph pointer. */
    int msg_width           =
-      gl2_raster_font_get_message_width(gl, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;
    float y                 = settings->floats.video_msg_pos_y;
-   float width             = msg_width / (float)gl->video_width;
+   float width             = (msg_width > 0 ? msg_width : 0)
+      / (float)gl->video_width;
    float height            = video_font_size / (float)gl->video_height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;
