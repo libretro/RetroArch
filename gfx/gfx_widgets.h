@@ -271,6 +271,18 @@ typedef struct dispgfx_widget
 #endif
 
    uint8_t flags;
+   /* Kept next to 'flags' rather than at the end of the struct.  It is
+    * read once or twice per frame from the video and runloop paths
+    * (gfx/video_driver.c, runloop.c) while nothing else near the tail
+    * is touched, so at the end it cost a cache line of its own that
+    * carried a single byte; here it shares the line 'flags' already
+    * pulls in every frame for gfx_widgets_frame().  It lands in
+    * padding that existed anyway ahead of the status text, so this
+    * costs nothing: sizeof(dispgfx_widget_t) drops by 8, because the
+    * byte and its trailing pad at the end of the struct are
+    * reclaimed.  Its address is taken as an opaque animation tag in
+    * retroarch.c -- only uniqueness matters there, not the value. */
+   bool active;
 
    char gfx_widgets_status_text[NAME_MAX_LENGTH];
    /* Cached strlen of gfx_widgets_status_text, written by the
@@ -287,8 +299,6 @@ typedef struct dispgfx_widget
 
    char monochrome_png_path[PATH_MAX_LENGTH];
    char gfx_widgets_path[PATH_MAX_LENGTH];
-
-   bool active;
 } dispgfx_widget_t;
 
 /* A widget */
