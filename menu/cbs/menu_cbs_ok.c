@@ -7514,7 +7514,18 @@ int action_cb_push_dropdown_item_resolution(const char *path,
       if (refreshrate == (60.0f * refresh_mod) - 1)
          refresh_exact = 59.94f * refresh_mod;
 
-      video_monitor_set_refresh_rate(refresh_exact);
+      /* Apply through driver_ctl rather than calling
+       * video_monitor_set_refresh_rate() directly.  Updating the
+       * config float is only half the job: the driver_ctl case also
+       * resets the resampler ratio, re-runs
+       * driver_adjust_system_rates() and recomputes the DRC
+       * threshold.  Skipping those leaves the audio resampler
+       * converting for the previous refresh rate until something
+       * else happens to re-adjust the rates - on a 120 Hz -> 60 Hz
+       * switch the ratio is wrong by 2x and the output is audibly
+       * garbled.  Every refresh-rate case in menu_setting.c already
+       * applies changes this way. */
+      driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE, &refresh_exact);
 
       settings->uints.video_fullscreen_x = width;
       settings->uints.video_fullscreen_y = height;
