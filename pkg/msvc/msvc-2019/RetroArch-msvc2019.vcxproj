@@ -1003,32 +1003,84 @@
     <ClCompile Include="..\..\..\griffin\griffin.c">
       <CompileAs>CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\..\deps\libnfs\lib\init.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\krb5-wrapper.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs-sync.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs-zdr.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\multithreading.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\nfs_v3.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\nfs_v4.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\pdu.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\lib\socket.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\mount\mount.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\mount\libnfs-raw-mount.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nfs\nfs.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nfs\nfsacl.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nfs\libnfs-raw-nfs.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nfs4\nfs4.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nfs4\libnfs-raw-nfs4.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nlm\nlm.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nlm\libnfs-raw-nlm.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nsm\nsm.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\nsm\libnfs-raw-nsm.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\portmap\portmap.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\portmap\libnfs-raw-portmap.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\rquota\rquota.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\rquota\libnfs-raw-rquota.c" />
-    <ClCompile Include="..\..\..\deps\libnfs\win32\win32_compat.c" />
+    <ClCompile Include="..\..\..\deps\libnfs\lib\init.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\krb5-wrapper.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs-sync.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\libnfs-zdr.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\multithreading.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\nfs_v3.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\nfs_v4.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\pdu.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\lib\socket.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\mount\mount.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\mount\libnfs-raw-mount.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nfs\nfs.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nfs\nfsacl.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nfs\libnfs-raw-nfs.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nfs4\nfs4.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nfs4\libnfs-raw-nfs4.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nlm\nlm.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nlm\libnfs-raw-nlm.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nsm\nsm.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\nsm\libnfs-raw-nsm.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\portmap\portmap.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\portmap\libnfs-raw-portmap.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\rquota\rquota.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\rquota\libnfs-raw-rquota.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\..\deps\libnfs\win32\win32_compat.c">
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
     <ClCompile Include="..\..\..\griffin\griffin_cpp.cpp">
       <AdditionalOptions Condition="$(Configuration.Contains('Debug')) And '$(Platform)'=='x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
