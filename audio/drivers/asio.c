@@ -933,6 +933,22 @@ static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
    RARCH_LOG("[ASIO] Sample rate changed to %.0f Hz.\n", rate);
 }
 
+/* Raise the shutdown flag and wake anyone blocked in ra_asio_write.
+ * Setting the flag alone is not enough: it makes asio_cb_buffer_switch
+ * take its early-out, so the routine that would otherwise have done the
+ * waking stops signalling from that moment on. */
+static void asio_request_shutdown(void)
+{
+   ra_asio_t *ad = g_asio;
+   if (!ad)
+      return;
+   ad->shutdown = true;
+#ifdef HAVE_THREADS
+   if (ad->cond)
+      scond_signal(ad->cond);
+#endif
+}
+
 static long asio_cb_message(long selector, long value,
       void *message, double *opt)
 {
@@ -952,13 +968,11 @@ static long asio_cb_message(long selector, long value,
          return 2L;
       case kAsioResetRequest:
          RARCH_WARN("[ASIO] Driver requests reset.\n");
-         if (g_asio)
-            g_asio->shutdown = true;
+         asio_request_shutdown();
          return 1L;
       case kAsioBufferSizeChange:
          RARCH_WARN("[ASIO] Buffer size change requested.\n");
-         if (g_asio)
-            g_asio->shutdown = true;
+         asio_request_shutdown();
          return 1L;
       case kAsioSupportsTimeInfo:
          return 1L; /* We implement bufferSwitchTimeInfo */
@@ -1446,9 +1460,20 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
    ra_asio_t *ad      = (ra_asio_t *)data;
    const char *src    = (const char *)buf;
    size_t written     = 0;
+   int64_t wait_us    = 1000;
 
    if (!ad || ad->shutdown)
       return -1;
+
+   /* Bound for the blocking wait below, one device period.  Both
+    * operands are fixed for the lifetime of the COM object, so this is
+    * loop-invariant. */
+   if (ad->sample_rate)
+   {
+      wait_us = (int64_t)ad->buffer_frames * 1000000 / ad->sample_rate;
+      if (wait_us < 1000)
+         wait_us = 1000;
+   }
 
    while (len > 0)
    {
@@ -1477,8 +1502,25 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       else if (!ad->nonblock)
       {
 #ifdef HAVE_THREADS
+         /* Timed, not indefinite.  The predicate here is the ring's
+          * write_avail, which is lock-free by design - the consumer is
+          * a real-time ASIO callback and must not take a lock - so
+          * cond_lock cannot also guard the predicate and a signal
+          * raised between the write_avail test above and this wait has
+          * no waiter to reach.  Where a condition variable can lose a
+          * wakeup by construction, the correct shape is a timed wait
+          * inside a loop that rechecks, which is what the enclosing
+          * while does: it retests ad->shutdown and write_avail on
+          * every pass.
+          *
+          * This is also the only thing standing between a driver reset
+          * and a hung emulator thread.  asio_cb_buffer_switch is the
+          * sole routine that signals during streaming, and it returns
+          * early - before signalling - once shutdown or is_paused is
+          * set.  An untimed wait entered before that point was never
+          * woken again. */
          slock_lock(ad->cond_lock);
-         scond_wait(ad->cond, ad->cond_lock);
+         scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
          slock_unlock(ad->cond_lock);
 #else
          Sleep(1);
