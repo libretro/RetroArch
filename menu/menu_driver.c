@@ -4165,10 +4165,19 @@ bool menu_entries_append(
       menu_path          = mlist->list[mlist->size - 1].path;
    idx                   = list->size - 1;
 
-   list_info.fullpath    = NULL;
-
-   if (menu_path && *menu_path)
-      list_info.fullpath = strdup(menu_path);
+   /* The menu path is handed to list_insert() by pointer rather than
+    * copied.  It is the same string for every entry of a list, so the
+    * strdup()/free() pair this replaces ran once per appended entry --
+    * tens of thousands of times for a MAME or FBNeo playlist -- to
+    * hand each driver a private copy none of them needed.
+    *
+    * Checked against all three hooks that take it: xmb_list_insert()
+    * and ozone_list_insert() strdup() their own copy into the node,
+    * materialui_list_insert() only compares and atoi()s it, and rgui
+    * has no list_insert at all.  None of them appends to or frees a
+    * menu list, so nothing can reallocate mlist->list underneath the
+    * pointer while they hold it. */
+   list_info.fullpath    = (menu_path && *menu_path) ? menu_path : NULL;
    list_info.list        = list;
    list_info.path        = path;
    list_info.label       = label;
@@ -4185,9 +4194,6 @@ bool menu_entries_append(
             list_info.label,
             list_info.idx,
             list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
 
@@ -4267,10 +4273,8 @@ void menu_entries_prepend(file_list_t *list,
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
 
-   list_info.fullpath    = NULL;
-
-   if (menu_path && *menu_path)
-      list_info.fullpath = strdup(menu_path);
+   /* See menu_entries_append(): handed over by pointer, not copied. */
+   list_info.fullpath    = (menu_path && *menu_path) ? menu_path : NULL;
    list_info.list        = list;
    list_info.path        = path;
    list_info.label       = label;
@@ -4287,9 +4291,6 @@ void menu_entries_prepend(file_list_t *list,
             list_info.label,
             list_info.idx,
             list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
    cbs                             = (menu_file_list_cbs_t*)

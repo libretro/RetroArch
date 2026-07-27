@@ -87,7 +87,9 @@ enum menu_entry_flags
 typedef struct menu_ctx_list
 {
    const char  *path;
-   char        *fullpath;
+   /* Borrowed from the menu stack, not owned; see
+    * menu_entries_append(). */
+   const char  *fullpath;
    const char  *label;
    file_list_t *list;
    void        *entry;
