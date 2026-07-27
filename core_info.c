@@ -29,6 +29,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+
 #include "retroarch.h"
 #include "verbosity.h"
 
@@ -96,6 +100,40 @@ static core_info_state_t core_info_st = {
    NULL,
    NULL
 };
+
+#ifdef HAVE_THREADS
+/* Guards publication and teardown of core_info_st.curr_list.
+ *
+ * The list is built, replaced and freed on the main thread, but it
+ * is *read* from task threads - the content scanner calls
+ * core_info_database_supports_content_path() and
+ * core_info_database_match_archive_member() from
+ * task_database_iterate_crc_lookup(). Closing content runs
+ * driver_uninit() -> core_info_deinit_list() on the main thread with
+ * no regard for a scan that is still in flight, so without this lock
+ * a worker walks a list that has just been freed.
+ *
+ * Created once, before the first list is ever published, and
+ * deliberately never destroyed: core_info_st is a process-lifetime
+ * singleton and the lock has to outlive any task thread that could
+ * still be sitting inside a reader. */
+static slock_t *core_info_list_mutex = NULL;
+
+#define CORE_INFO_LIST_LOCK() \
+   do { \
+      if (core_info_list_mutex) \
+         slock_lock(core_info_list_mutex); \
+   } while (0)
+
+#define CORE_INFO_LIST_UNLOCK() \
+   do { \
+      if (core_info_list_mutex) \
+         slock_unlock(core_info_list_mutex); \
+   } while (0)
+#else
+#define CORE_INFO_LIST_LOCK()   do { } while (0)
+#define CORE_INFO_LIST_UNLOCK() do { } while (0)
+#endif
 
 /* Parameters of the last successful core info scan; used by
  * core_info_list_is_current() to let CMD_EVENT_CORE_INFO_INIT
@@ -2433,9 +2471,21 @@ bool core_info_get_current_core(core_info_t **core)
 void core_info_deinit_list(void)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (p_coreinfo->curr_list)
-      core_info_list_free(p_coreinfo->curr_list);
+   core_info_list_t  *list                = NULL;
+
+   /* Detach first, free afterwards. Once the NULL store has been
+    * published under the lock no reader can reach 'list' any more
+    * (they all re-read curr_list while holding the lock), so the
+    * free itself does not need to be inside the critical section -
+    * and keeping it out means a scan thread is never blocked for
+    * the length of a full list teardown. */
+   CORE_INFO_LIST_LOCK();
+   list                  = p_coreinfo->curr_list;
    p_coreinfo->curr_list = NULL;
+   CORE_INFO_LIST_UNLOCK();
+
+   if (list)
+      core_info_list_free(list);
 }
 
 bool core_info_init_list(
@@ -2444,7 +2494,19 @@ bool core_info_init_list(
       bool enable_cache, bool *cache_supported)
 {
    core_info_state_t *p_coreinfo          = &core_info_st;
-   if (!(p_coreinfo->curr_list            = core_info_list_new(
+   core_info_list_t  *list                = NULL;
+
+#ifdef HAVE_THREADS
+   /* Main thread only, and always reached before the first list
+    * becomes visible to a task thread. */
+   if (!core_info_list_mutex)
+      core_info_list_mutex                = slock_new();
+#endif
+
+   /* Scan into a local first - the new list is private until it is
+    * published below, so the (slow) directory walk and .info parse
+    * stay outside the critical section. */
+   if (!(list                             = core_info_list_new(
                dir_cores,
                (path_info && *path_info)
                ? path_info
@@ -2454,6 +2516,10 @@ bool core_info_init_list(
                enable_cache,
                cache_supported)))
       return false;
+
+   CORE_INFO_LIST_LOCK();
+   p_coreinfo->curr_list                  = list;
+   CORE_INFO_LIST_UNLOCK();
 
    /* Remember the parameters of this scan so
     * core_info_list_is_current() can identify redundant rescans. */
@@ -2667,6 +2733,10 @@ bool core_info_database_match_archive_member(const char *database_path)
       return false;
    path_remove_extension(database);
    p_coreinfo                     = &core_info_st;
+
+   /* Task thread reader - see the comment in
+    * core_info_database_supports_content_path(). */
+   CORE_INFO_LIST_LOCK();
    if (p_coreinfo->curr_list)
    {
       size_t i;
@@ -2681,10 +2751,12 @@ bool core_info_database_match_archive_member(const char *database_path)
          if (!string_list_find_elem(info->databases_list, database))
              continue;
 
+         CORE_INFO_LIST_UNLOCK();
          free(database);
          return true;
       }
    }
+   CORE_INFO_LIST_UNLOCK();
 
    free(database);
    return false;
@@ -2702,6 +2774,12 @@ bool core_info_database_supports_content_path(
       return false;
    path_remove_extension(database);
    p_coreinfo                    = &core_info_st;
+
+   /* Called from the content scanner on a task thread. The whole
+    * walk has to be under the lock, not just the NULL check - the
+    * main thread can free the list out from under us at any point
+    * between the two. */
+   CORE_INFO_LIST_LOCK();
    if (p_coreinfo->curr_list)
    {
       size_t i;
@@ -2717,10 +2795,12 @@ bool core_info_database_supports_content_path(
          if (!string_list_find_elem(info->databases_list, database))
             continue;
 
+         CORE_INFO_LIST_UNLOCK();
          free(database);
          return true;
       }
    }
+   CORE_INFO_LIST_UNLOCK();
 
    free(database);
    return false;
