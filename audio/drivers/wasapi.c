@@ -74,6 +74,12 @@ typedef struct
    fifo_buffer_t      *buffer;
    size_t engine_buffer_size;
    unsigned char frame_size;          /* 4 or 8 only */
+   /* log2(frame_size), i.e. 2 or 3.  Invariant: the two are set
+    * together in wasapi_init and frame_size == 1u << frame_shift.
+    * Exists so the byte-count-to-frame-count conversions on the write
+    * path are shifts rather than 64-bit hardware divides.  Fits in the
+    * struct's existing tail padding, so wasapi_t stays 64 bytes. */
+   unsigned char frame_shift;
    uint8_t flags;
 } wasapi_t;
 
@@ -1146,6 +1152,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       goto error;
 
    w->frame_size             = float_format ? 8 : 4;
+   w->frame_shift            = float_format ? 3 : 2;
    w->engine_buffer_size     = frame_count * w->frame_size;
 
    if (w->flags & WASAPI_FLG_EXCLUSIVE)
@@ -1250,7 +1257,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             BYTE *dest         = NULL;
             if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) != WAIT_OBJECT_0)
                return 0;
-            frame_count        = w->engine_buffer_size / w->frame_size;
+            frame_count        = w->engine_buffer_size >> w->frame_shift;
             if (FAILED(_IAudioRenderClient_GetBuffer(
                         w->renderer, frame_count, &dest)))
                return -1;
@@ -1276,7 +1283,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (WaitForSingleObject(w->write_event, WASAPI_TIMEOUT) == WAIT_OBJECT_0)
                {
                   BYTE *dest = NULL;
-                  UINT32 frame_count = w->engine_buffer_size / w->frame_size;
+                  UINT32 frame_count = w->engine_buffer_size >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
@@ -1313,7 +1320,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (_len)
                {
                   BYTE *dest         = NULL;
-                  UINT32 frame_count = _len / w->frame_size;
+                  UINT32 frame_count = _len >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
@@ -1338,7 +1345,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
             if (_len)
             {
                BYTE *dest         = NULL;
-               UINT32 frame_count = _len / w->frame_size;
+               UINT32 frame_count = _len >> w->frame_shift;
                if (FAILED(_IAudioRenderClient_GetBuffer(
                            w->renderer, frame_count, &dest)))
                   return -1;
@@ -1370,7 +1377,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                if (ir)
                {
                   BYTE *dest         = NULL;
-                  UINT32 frame_count = ir / w->frame_size;
+                  UINT32 frame_count = ir >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
@@ -1408,7 +1415,7 @@ static ssize_t wasapi_write(void *wh, const void *data, size_t len)
                {
                   BYTE *dest         = NULL;
                   const void *_data  = (char*)data + _len;
-                  UINT32 frame_count = ir / w->frame_size;
+                  UINT32 frame_count = ir >> w->frame_shift;
                   if (FAILED(_IAudioRenderClient_GetBuffer(
                               w->renderer, frame_count, &dest)))
                      return -1;
