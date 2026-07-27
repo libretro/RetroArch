@@ -1445,86 +1445,138 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
       return true;
    }
 
-parse_again:
    if (response->bodytype == T_CHUNK)
    {
-      if (response->part == P_BODY_CHUNKLEN)
+      char  *out;
+      char  *in;
+      char  *rawend;
+      size_t leftover;
+
+      /* De-chunking is a single pass over the raw region.
+       *
+       * Invariants, unchanged from before: in P_BODY_CHUNKLEN,
+       * response->len is the number of decoded body bytes (i.e. the
+       * offset of the current chunk-length line) and response->pos is
+       * the end of the raw wire data; in P_BODY, response->len is the
+       * number of bytes still outstanding in the current chunk and
+       * response->pos is the decoded byte count.
+       *
+       * The previous implementation slid the entire remaining raw tail
+       * down over each chunk-length line it consumed, so a byte near
+       * the end of the receive window was moved once for every chunk
+       * header preceding it.  That is O(window * chunks), and the
+       * window is response->buflen - response->pos, which grows
+       * without bound as buflen doubles.  A 16 MiB body delivered in
+       * 1 KiB chunks moved 45.5 GB; the same body in 8 KiB chunks
+       * moved 5.7 GB.  Chunk size is the server's choice, so this is
+       * also a cheap way for a peer to burn client CPU and memory
+       * bandwidth.
+       *
+       * Instead, walk the raw region once with separate read and write
+       * cursors and copy each chunk payload down to the write cursor.
+       * out <= in always holds (decoded data can only ever be shorter
+       * than the wire bytes it came from), so the copies stay in
+       * bounds; they may overlap, hence memmove.  Every payload byte
+       * now moves exactly once per parse pass: O(window). */
+
+      if (response->part == P_BODY)
       {
-         response->pos      += newlen;
-
-         if (response->pos - response->len >= 2)
+         /* Finish the chunk carried over from the previous call. */
+         if ((size_t)newlen < response->len)
          {
-            /*
-             * len=start of chunk including \r\n
-             * pos=end of data
-             */
-
-            char *fullend = response->data + response->pos;
-            char *end     = (char*)memchr(response->data + response->len + 2,
-            '\n', response->pos - response->len - 2);
-
-            if (end)
-            {
-               size_t chunklen = strtoul(response->data + response->len, NULL, 16);
-               /* Cap the chunk length at the same Content-Length
-                * ceiling.  A hostile server sending a chunklen
-                * like ffffffffffffffff drives the client into
-                * an effectively unbounded receive loop (each
-                * net_http_update tick nibbles at response->len
-                * and response->len never reaches zero). */
-               if (chunklen > NET_HTTP_MAX_CONTENT_LENGTH)
-               {
-                  response->part = P_DONE;
-                  state->err     = true;
-                  return false;
-               }
-               response->pos   = response->len;
-               end++;
-
-               memmove(response->data + response->len, end, fullend-end);
-
-               response->len   = chunklen;
-               newlen          = (fullend - end);
-
-               /*
-                 len=num bytes
-                 newlen=unparsed bytes after \n
-                 pos=start of chunk including \r\n
-               */
-
-               response->part = P_BODY;
-               if (response->len == 0)
-               {
-                  char *tmp;
-                  response->part = P_DONE;
-                  response->len  = response->pos;
-                  tmp            = (char*)realloc(response->data,
-                        response->len);
-                  if (!tmp)
-                  {
-                     state->err = true;
-                     return false;
-                  }
-                  response->data = tmp;
-                  return true;
-               }
-               goto parse_again;
-            }
+            response->pos += newlen;
+            response->len -= newlen;
+            goto check_grow;
          }
+         response->pos += response->len;
+         newlen        -= (ssize_t)response->len;
+         response->len  = response->pos;
+         response->part = P_BODY_CHUNKLEN;
       }
-      else if (response->part == P_BODY)
+
+      response->pos += newlen;
+
+      out    = response->data + response->len;
+      in     = response->data + response->len;
+      rawend = response->data + response->pos;
+
+      for (;;)
       {
-         if ((size_t)newlen >= response->len)
+         char  *end;
+         size_t chunklen;
+         size_t avail = (size_t)(rawend - in);
+
+         if (avail < 2)
+            break;
+
+         /* Skip the CRLF terminating the previous chunk, then find the
+          * end of the chunk-length line.  Starting the scan at in + 2
+          * matches the previous behaviour, including on the first
+          * chunk where those two bytes are length digits. */
+         end = (char*)memchr(in + 2, '\n', avail - 2);
+         if (!end)
+            break;
+
+         chunklen = strtoul(in, NULL, 16);
+         /* Cap the chunk length at the same Content-Length ceiling.
+          * A hostile server sending a chunklen like ffffffffffffffff
+          * drives the client into an effectively unbounded receive
+          * loop. */
+         if (chunklen > NET_HTTP_MAX_CONTENT_LENGTH)
          {
-            response->pos += response->len;
-            newlen        -= response->len;
+            response->part = P_DONE;
+            state->err     = true;
+            return false;
+         }
+         end++;
+
+         if (chunklen == 0)
+         {
+            /* Terminal chunk.  Any trailers after it are discarded,
+             * as before.  Shrink the buffer to the decoded length. */
+            char *tmp;
+            response->pos  = (size_t)(out - response->data);
+            response->part = P_DONE;
             response->len  = response->pos;
-            response->part = P_BODY_CHUNKLEN;
-            goto parse_again;
+            tmp            = (char*)realloc(response->data,
+                  response->len);
+            if (!tmp)
+            {
+               state->err = true;
+               return false;
+            }
+            response->data = tmp;
+            return true;
          }
-         response->pos += newlen;
-         response->len -= newlen;
+
+         avail = (size_t)(rawend - end);
+         if (avail < chunklen)
+         {
+            /* Chunk straddles the end of the raw region.  Move what
+             * we have and remember the outstanding remainder. */
+            if (avail && out != end)
+               memmove(out, end, avail);
+            out           += avail;
+            response->pos  = (size_t)(out - response->data);
+            response->len  = chunklen - avail;
+            response->part = P_BODY;
+            goto check_grow;
+         }
+
+         if (out != end)
+            memmove(out, end, chunklen);
+         out += chunklen;
+         in   = end + chunklen;
       }
+
+      /* Carry the unconsumed raw remainder down behind the decoded
+       * data so the next receive appends to it as before. */
+      leftover      = (size_t)(rawend - in);
+      response->len = (size_t)(out - response->data);
+      if (leftover && out != in)
+         memmove(out, in, leftover);
+      response->pos  = response->len + leftover;
+      response->part = P_BODY_CHUNKLEN;
    }
    else
    {
@@ -1549,6 +1601,7 @@ parse_again:
       }
    }
 
+check_grow:
    if (response->pos >= response->buflen)
    {
       char *tmp;
