@@ -696,44 +696,42 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
     * 6 is also zlib's and libpng's own default, so a screenshot is no
     * longer larger or slower than what every other PNG writer emits. */
    if (stream)
-   {
       stream_backend->define(stream, "level", 6);
 
-      /* Filtered scanlines are mostly small residuals with a fairly
-       * random distribution, which is exactly the case Z_FILTERED
-       * exists for: fewer long match searches, more Huffman.  zlib's
-       * default strategy is tuned for text-like input and leaves size
-       * on the table here.  libpng has used the filtered strategy for
-       * IDAT since forever, and this is the whole of the size gap
-       * against it - with the same filter choices per row (verified by
-       * dumping both encoders' filter bytes: identical) rpng was
-       * producing a 3.13 MB file where libpng produced 2.82 MB.
-       *
-       * Cost, 1920x1080 then 3840x2160, against libpng at its default:
-       *
-       *                  libpng         default        filtered
-       *   3D scene       712 ms/2.82   390 ms/3.13    679 ms/2.82
-       *   3D scene 4K   2856 ms/11.26 1565 ms/12.49  2597 ms/11.26
-       *   smooth ramp    459 ms/1.00   416 ms/1.00    419 ms/1.00
-       *   2D pixel art    61 ms/0.23    36 ms/0.23     36 ms/0.23
-       *   menu frame      47 ms/0.01    25 ms/0.01     24 ms/0.01
-       *
-       * Only noisy 3D output pays, and it pays 1.03 s for 1.23 MB at
-       * 4K.  That is a far better exchange than the one turned down in
-       * 13e0986 (2.2 s for 80 KB), and it leaves the encoder both
-       * faster than libpng and the same size as libpng on every shape
-       * measured rather than faster but bigger.
-       *
-       * Z_RLE is the interesting third option - 258 ms/11.19 MB on the
-       * 4K 3D scene, beating filtered on both axes - but it collapses
-       * on smooth content, 7.70 MB against 3.97 for the 4K ramp, so it
-       * is not safe as a blanket choice.
-       *
-       * The clean-room backend has no strategy support and returns
-       * false here, keeping its current output. */
-      stream_backend->define(stream, "strategy",
-            TRANS_STREAM_STRATEGY_FILTERED);
-   }
+   /* The filtered match strategy is deliberately not requested here.
+    * It does close the size gap against libpng on noisy 3D output -
+    * 3.13 MB down to 2.82 MB at 1080p, matching libpng exactly - but at
+    * level 6 it costs 390 ms to 647 ms for it, because Z_FILTERED
+    * discards matches of five bytes or fewer *after* the level-6 match
+    * finder has walked a 128-deep hash chain to find them.  The search
+    * is thrown away, not skipped.
+    *
+    * That cost is not inherent.  Level 4, whose chain is 16 deep,
+    * reaches the same 2.81 MB in 447 ms - within noise of the 436 ms
+    * the default strategy takes at level 6.  But level 4 gives up 18%
+    * on smooth content (1.00 MB to 1.18 MB on a gradient), so the two
+    * settings have to be chosen together and there is no cell that wins
+    * on both axes for every shape:
+    *
+    *                     3D scene      gradient    pixel art   menu
+    *   6 + default       436 ms/3.13   456 ms/1.00  52 ms/0.23  38 ms/0.01
+    *   6 + filtered      721 ms/2.82   466 ms/1.00  51 ms/0.23  48 ms/0.01
+    *   5 + filtered      659 ms/2.82   231 ms/1.09  46 ms/0.23  38 ms/0.01
+    *   4 + filtered      447 ms/2.81   150 ms/1.18  45 ms/0.23  37 ms/0.01
+    *   libpng default    812 ms/2.82   511 ms/1.00  87 ms/0.23  72 ms/0.01
+    *
+    * The only shape arguing for the higher level is the gradient, and
+    * that test image is a pure mathematical ramp - the least like a real
+    * screenshot of the set, since real fades carry dithering that puts
+    * them nearer the 3D row.  Deciding a size-for-time trade on it is
+    * not sound.  Default strategy is the state that gives nothing away:
+    * fastest everywhere, and still ahead of libpng on time for every
+    * shape, at the cost of 11% on noisy 3D output.
+    *
+    * Both backends implement the strategy property, so turning it on -
+    * with a level chosen alongside it, against real captures rather than
+    * synthetic ones - is a one-line change whenever that measurement
+    * exists. */
    if (!stream)
       GOTO_END_ERROR();
 
