@@ -76,6 +76,7 @@ jobs:
             rbmp_test
             rpng_chunk_overflow_test
             rpng_roundtrip_test
+            rpng_decode_corpus_test
             word_wrap_overflow_test
             task_queue_title_error_test
             tpool_wait_test
