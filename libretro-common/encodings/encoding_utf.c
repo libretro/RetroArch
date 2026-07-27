@@ -39,11 +39,15 @@
 
 #define UTF8_WALKBYTE(string) (*((*(string))++))
 
-/* Lookup table replaces leading_ones() bit-counting loop.
- * Index by high byte value >> 3 (32 entries) to get
- * the number of leading 1-bits for any byte.
- * Only values 0..7 are meaningful for UTF-8;
- * entries for invalid prefixes are set to 0xFF. */
+/* Number of leading 1-bits of a byte, which for a lead byte is the
+ * length in bytes of the sequence it introduces: 0 for ASCII, 1 for a
+ * continuation byte, 2..4 for the valid leads, 5..7 for invalid ones.
+ * Replaces a leading_ones() bit-counting loop.
+ *
+ * Used by the decoders, which need the exact value. The scanners that
+ * only need a length deliberately do not use it: indexing this table
+ * puts a second dependent load in their pointer advance, which costs
+ * more than the branch it removes. */
 static const uint8_t utf8_lut[256] = {
    /* 0x00..0x7F: 0 leading ones (ASCII) */
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
