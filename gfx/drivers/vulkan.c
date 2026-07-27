@@ -4351,6 +4351,7 @@ static void vulkan_set_hdr10(vk_t* vk, vulkan_filter_chain_t* filter_chain, bool
 static bool vulkan_init_default_filter_chain(vk_t *vk)
 {
    struct vulkan_filter_chain_create_info info;
+   settings_t *settings;
 
    if (!vk->context)
       return false;
@@ -4358,7 +4359,7 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
    if (vk->filter_chain_default)
       return true;
 
-   settings_t *settings       = config_get_ptr();
+   settings                   = config_get_ptr();
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -4458,11 +4459,12 @@ static bool vulkan_init_default_filter_chain(vk_t *vk)
 static bool vulkan_init_filter_chain_preset(vk_t *vk, const char *shader_path)
 {
    struct vulkan_filter_chain_create_info info;
+   settings_t *settings;
 
    if (!vk->context)
       return false;
 
-   settings_t* settings       = config_get_ptr();
+   settings                   = config_get_ptr();
 
    info.device                = vk->context->device;
    info.gpu                   = vk->context->gpu;
@@ -6668,6 +6670,24 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned frame_index;
    unsigned swapchain_index;
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
+   bool message_visible;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_visible;
+#endif
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool end_pass;
+   bool end_main_pass;
+   bool video_hdr_enable;
+#endif
+   gfx_ctx_mode_t mode;
+   struct vk_per_frame *chain;
+   struct vk_image *backbuffer;
+   struct vk_descriptor_manager *manager;
+   struct vk_buffer_chain *buff_chain_vbo;
+   struct vk_buffer_chain *buff_chain_ubo;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   bool use_offscreen_buffer                     = false;
+#endif
 
    /* The context may recreate its swapchain while acquiring the next
     * image. Rebuild driver-owned framebuffers before recording commands
@@ -6709,7 +6729,6 @@ static bool vulkan_frame(void *data, const void *frame,
     * The default filter chain already contains the internal HDR shader
     * (hdr_frag) so it renders directly to the swapchain — no offscreen needed.
     * Custom shader chains need offscreen unless they emit HDR natively. */
-   bool use_offscreen_buffer = false;
    if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
       && filter_chain != vk->filter_chain_default)
    {
@@ -6731,11 +6750,11 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
    /* Bookkeeping on start of frame. */
-   struct vk_per_frame *chain                    = &vk->swapchain[frame_index];
-   struct vk_image *backbuffer                   = &vk->backbuffers[swapchain_index];
-   struct vk_descriptor_manager *manager         = &chain->descriptor_manager;
-   struct vk_buffer_chain *buff_chain_vbo        = &chain->vbo;
-   struct vk_buffer_chain *buff_chain_ubo        = &chain->ubo;
+   chain                                         = &vk->swapchain[frame_index];
+   backbuffer                                    = &vk->backbuffers[swapchain_index];
+   manager                                       = &chain->descriptor_manager;
+   buff_chain_vbo                                = &chain->vbo;
+   buff_chain_ubo                                = &chain->ubo;
 
    vk->chain                                     = chain;
    vk->backbuffer                                = backbuffer;
@@ -6934,12 +6953,14 @@ static bool vulkan_frame(void *data, const void *frame,
          (vulkan_filter_chain_t*)filter_chain, video_driver_get_core_aspect());
 
    /* OriginalAspectRotated: return 1/aspect for 90 and 270 rotated content */
-   uint32_t rot = retroarch_get_rotation();
-   float core_aspect_rot = video_driver_get_core_aspect();
-   if (rot == 1 || rot == 3)
-      core_aspect_rot = 1/core_aspect_rot;
-   vulkan_filter_chain_set_core_aspect_rot(
-         (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   {
+      uint32_t rot          = retroarch_get_rotation();
+      float core_aspect_rot = video_driver_get_core_aspect();
+      if (rot == 1 || rot == 3)
+         core_aspect_rot    = 1 / core_aspect_rot;
+      vulkan_filter_chain_set_core_aspect_rot(
+            (vulkan_filter_chain_t*)filter_chain, core_aspect_rot);
+   }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
    {
@@ -7110,8 +7131,8 @@ static bool vulkan_frame(void *data, const void *frame,
             &vk->vk_vp, vk->mvp.data);
 
 #ifdef VULKAN_HDR_SWAPCHAIN
-      bool end_pass = true;
-      bool end_main_pass = true;
+      end_pass      = true;
+      end_main_pass = true;
 
       /* Copy over back buffer to swap chain render targets */
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
@@ -7152,10 +7173,10 @@ static bool vulkan_frame(void *data, const void *frame,
          end_main_pass = false;
       }
 
-      const bool message_visible = msg && *msg;
+      message_visible = msg && *msg;
 
 #ifdef HAVE_GFX_WIDGETS
-      const bool widgets_visible = gfx_widgets_visible(video_info);
+      widgets_visible = gfx_widgets_visible(video_info);
 #endif
 
       if ((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) &&
@@ -7551,7 +7572,7 @@ static bool vulkan_frame(void *data, const void *frame,
    /* Handle spurious swapchain invalidations as soon as we can,
     * i.e. right after swap buffers. */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   bool video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
+   video_hdr_enable = (video_driver_get_disp_flags() & VIDEO_FLAG_HDR_SUPPORT) && (video_info->hdr_mode > 0);
    if (       (vk->flags & VK_FLAG_SHOULD_RESIZE)
          || (((vk->context->flags & VK_CTX_FLAG_HDR_ENABLE) > 0)
          != video_hdr_enable))
@@ -7578,7 +7599,6 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
-      gfx_ctx_mode_t mode;
       mode.width  = width;
       mode.height = height;
 

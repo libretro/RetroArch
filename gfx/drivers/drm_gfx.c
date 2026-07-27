@@ -226,6 +226,7 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
 {
    struct drm_video *_drmvars = data;
    int i;
+   int ret;
    struct drm_surface *surface = NULL;
 
    *sp = calloc (1, sizeof(struct drm_surface));
@@ -285,7 +286,7 @@ static void drm_surface_setup(void *data,  int src_width, int src_height,
    {
       surface->pages[i].buf.width  = src_width;
       surface->pages[i].buf.height = src_height;
-      int ret                      = modeset_create_dumbfb(
+      ret                          = modeset_create_dumbfb(
             drm.fd, &surface->pages[i].buf, bpp, pixformat);
 
       if (ret)
@@ -467,6 +468,16 @@ static void drm_plane_setup(struct drm_surface *surface)
 {
    int i,j;
    char fmt_name[5];
+   unsigned int crtc_index = 0;
+   uint32_t plane_flags = 0;
+   uint32_t plane_w;
+   uint32_t plane_h;
+   uint32_t plane_x;
+   uint32_t plane_y;
+   uint32_t src_w;
+   uint32_t src_h;
+   uint32_t src_x = 0;
+   uint32_t src_y = 0;
 
    /* Get plane resources */
    drmModePlane *plane;
@@ -487,7 +498,6 @@ static void drm_plane_setup(struct drm_surface *surface)
     * CRTC index first, then iterate over available planes.
     * Yes, strangely we need the in-use CRTC index to mask possible_crtc
     * during the planes iteration... */
-   unsigned int crtc_index = 0;
    for (i = 0; i < (unsigned int)drm.resources->count_crtcs; i++)
    {
       if (drm.crtc_id == drm.resources->crtcs[i])
@@ -557,21 +567,18 @@ static void drm_plane_setup(struct drm_surface *surface)
     * crtc_w and crtc_h are the final size with applied scale/ratio.
     * crtc_x and crtc_y are the position of the plane
     * pw and ph are the input size: the size of the area we read from the fb. */
-   uint32_t plane_flags = 0;
-   uint32_t plane_w = drm.current_mode->vdisplay * surface->aspect;
-   uint32_t plane_h = drm.current_mode->vdisplay;
+   plane_w = drm.current_mode->vdisplay * surface->aspect;
+   plane_h = drm.current_mode->vdisplay;
    /* If we obtain a scaled image width that is bigger than the physical screen width,
     * then we keep the physical screen width as our maximum width. */
    if (plane_w > drm.current_mode->hdisplay)
       plane_w = drm.current_mode->hdisplay;
 
-   uint32_t plane_x = (drm.current_mode->hdisplay - plane_w) / 2;
-   uint32_t plane_y = (drm.current_mode->vdisplay - plane_h) / 2;
+   plane_x = (drm.current_mode->hdisplay - plane_w) / 2;
+   plane_y = (drm.current_mode->vdisplay - plane_h) / 2;
 
-   uint32_t src_w = surface->src_width;
-   uint32_t src_h = surface->src_height;
-   uint32_t src_x = 0;
-   uint32_t src_y = 0;
+   src_w = surface->src_width;
+   src_h = surface->src_height;
 
    /* We have to set a buffer for the plane, whatever buffer we want,
     * but we must set a buffer so the plane starts reading from it now. */
@@ -643,6 +650,7 @@ static bool init_drm(void)
 {
    uint i;
    drmModeConnector *connector;
+   struct modeset_buf buf;
 
    drm.fd = open("/dev/dri/card0", O_RDWR);
 
@@ -719,7 +727,6 @@ static bool init_drm(void)
    g_drm_mode = drm.current_mode;
 
    /* Set mode physical video mode. Not really needed, but clears TTY console. */
-   struct modeset_buf buf;
    buf.width = drm.current_mode->hdisplay;
    buf.height = drm.current_mode->vdisplay;
    if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))

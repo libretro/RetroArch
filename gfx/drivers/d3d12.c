@@ -930,13 +930,16 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       {
          unsigned width  = texture->desc.Width  >> i;
          unsigned height = texture->desc.Height >> i;
-         if (width == 0) width = 1;
-         if (height == 0) height = 1;
          struct
          {
             uint32_t src_level;
             float    texel_size[2];
-         } cbuffer = { i - 1, { 1.0f / width, 1.0f / height } };
+         } cbuffer;
+         if (width == 0) width = 1;
+         if (height == 0) height = 1;
+         cbuffer.src_level    = i - 1;
+         cbuffer.texel_size[0] = 1.0f / width;
+         cbuffer.texel_size[1] = 1.0f / height;
 
          {
             D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
@@ -4980,6 +4983,11 @@ static bool d3d12_gfx_frame(
       &video_info->osd_stat_params;
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
+   D3D12GraphicsCommandList cmd;
+   bool message_visible;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_visible;
+#endif
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -5052,7 +5060,7 @@ static bool d3d12_gfx_frame(
 
    d3d12->chain.current_rt_format = back_buffer_format;
 #endif
-   D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
+   cmd                            = d3d12->queue.cmd;
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       WaitForSingleObjectEx(
@@ -6029,10 +6037,10 @@ static bool d3d12_gfx_frame(
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
-   const bool widgets_visible        = gfx_widgets_visible(video_info);
+   widgets_visible                   = gfx_widgets_visible(video_info);
 #endif
 
-   const bool message_visible         = ((statistics_show) && (osd_params)) || (msg && *msg);
+   message_visible                    = ((statistics_show) && (osd_params)) || (msg && *msg);
 
 #ifdef HAVE_DXGI_HDR
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) &&
@@ -6057,12 +6065,14 @@ static bool d3d12_gfx_frame(
        * warning
        */
 
-      float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-      cmd->lpVtbl->ClearRenderTargetView(
-            cmd,
-            d3d12->chain.back_buffer.rt_view,
-            clear_colour,
-            0, NULL);
+      {
+         float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+         cmd->lpVtbl->ClearRenderTargetView(
+               cmd,
+               d3d12->chain.back_buffer.rt_view,
+               clear_colour,
+               0, NULL);
+      }
    }
 #endif
 
