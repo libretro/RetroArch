@@ -93,6 +93,21 @@ typedef struct menu_input_ctx_bind
    size_t len;
 } menu_input_ctx_bind_t;
 
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define MENU_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define MENU_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define MENU_NOINLINE __declspec(noinline)
+#else
+#define MENU_NOINLINE
+#endif
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 
@@ -1255,7 +1270,7 @@ static float menu_input_get_dpi(
    return dpi;
 }
 
-static bool input_event_osk_show_symbol_pages(
+MENU_NOINLINE static bool input_event_osk_show_symbol_pages(
       menu_handle_t *menu)
 {
 #if defined(HAVE_LANGEXTRA)
@@ -1853,7 +1868,7 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
    }
 }
 
-static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
+MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
@@ -1921,7 +1936,7 @@ static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
    }
 }
 
-static void menu_input_get_mouse_hw_state(
+MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -2159,7 +2174,7 @@ static void menu_input_get_mouse_hw_state(
       hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
 }
 
-static void menu_input_get_touchscreen_hw_state(
+MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -3549,7 +3564,7 @@ static void menu_input_key_bind_poll_bind_state(
    }
 }
 
-static int menu_dialog_iterate(
+MENU_NOINLINE static int menu_dialog_iterate(
       menu_dialog_t *p_dialog,
       settings_t *settings,
       char *s, size_t len,
@@ -3783,7 +3798,7 @@ static bool rarch_menu_init(
    return true;
 }
 
-static void menu_input_set_pointer_visibility(
+MENU_NOINLINE static void menu_input_set_pointer_visibility(
       menu_input_pointer_hw_state_t *pointer_hw_state,
       menu_input_t *menu_input,
       retro_time_t current_time)
@@ -4837,7 +4852,7 @@ bool menu_input_key_bind_set_mode(
    return true;
 }
 
-static bool menu_input_key_bind_iterate(
+MENU_NOINLINE static bool menu_input_key_bind_iterate(
       settings_t *settings,
       menu_input_ctx_bind_t *bind,
       retro_time_t current_time)
@@ -5856,7 +5871,7 @@ unsigned menu_event(
    return ret;
 }
 
-static int menu_input_post_iterate(
+MENU_NOINLINE static int menu_input_post_iterate(
       gfx_display_t *p_disp,
       struct menu_state *menu_st,
       unsigned action,
