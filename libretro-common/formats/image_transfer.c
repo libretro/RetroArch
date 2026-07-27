@@ -535,64 +535,82 @@ int image_transfer_process(
    if (ret == IMAGE_PROCESS_END && *buf && *width && *height)
    {
       unsigned tmp_pitch, width2, i;
-      const uint16_t *src = NULL;
-      uint16_t *dst       = NULL;
-      /* (size_t) casts on width and height: pre-patch the uint32
-       * multiplication width * height * 4 wrapped on 32-bit Wii
-       * (Gekko is a 32-bit PowerPC) for any image with
-       * width*height > 2^30, the malloc returned an undersized
-       * buffer, and the memcpy below ran off the end.  This file
-       * is reached only after rpng/rjpeg has already accepted the
-       * image; on 32-bit (which is where this matters) those
-       * decoders cap dimensions at 0x4000 which closes the
-       * primitive at the source.  The casts here keep the
-       * arithmetic safe regardless of upstream caps and on any
-       * platform where image_transfer.c is compiled, including
-       * future 64-bit Wii-class targets. */
-      void *tmp           = malloc(
-            (size_t)(*width) * (size_t)(*height) * sizeof(uint32_t));
-
-      if (!tmp)
-         return IMAGE_PROCESS_ERROR;
-
-      memcpy(tmp, *buf,
-            (size_t)(*width) * (size_t)(*height) * sizeof(uint32_t));
-      tmp_pitch = ((*width) * sizeof(uint32_t)) >> 1;
+      uint16_t *dst      = NULL;
+      size_t    bandsz;
+      /* The temporary is four source rows, not the whole image.
+       * (size_t) casts on width: pre-patch the uint32 multiplication
+       * width * height * 4 wrapped on 32-bit Wii (Gekko is a 32-bit
+       * PowerPC) for any image with width*height > 2^30, the malloc
+       * returned an undersized buffer, and the memcpy below ran off
+       * the end.  This file is reached only after rpng/rjpeg has
+       * already accepted the image; on 32-bit (which is where this
+       * matters) those decoders cap dimensions at 0x4000 which closes
+       * the primitive at the source.  A band cannot overflow at all,
+       * being linear in width, and the casts here keep the arithmetic
+       * safe regardless of upstream caps.
+       *
+       * The whole-image copy was the expensive part of this
+       * conversion, not the tiling: a 1280x720 wallpaper allocated
+       * and copied 3.6 MB on a console with 24 MB of MEM1, where the
+       * band is 20 KB.  A band also stays resident across the four
+       * row passes below, which the image did not.
+       *
+       * Reading the band before writing is what makes it safe to
+       * source from the destination buffer: the four rows are copied
+       * out, then the tiles that overwrite exactly those rows are
+       * written.  tmp_pitch is taken from the unmasked width and
+       * width2 from the masked one, so where the width is not a
+       * multiple of four the writes trail the reads rather than
+       * running ahead of them. */
+      tmp_pitch = (unsigned)(((size_t)(*width) * sizeof(uint32_t)) >> 1);
+      bandsz    = (size_t)tmp_pitch * 4 * sizeof(uint16_t);
 
       *width  &= ~3;
       *height &= ~3;
       width2   = (*width) << 1;
-      src      = (const uint16_t*)tmp;
       dst      = (uint16_t*)*buf;
 
-      for (i = 0; i < *height; i += 4, dst += 4 * width2)
       {
-#define GX_BLIT_LINE_32(off) \
-         { \
-            unsigned x; \
-            const uint16_t *tmp_src = src; \
-            uint16_t       *tmp_dst = dst; \
-            for (x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
-            { \
-               tmp_dst[  0 + off] = tmp_src[0]; \
-               tmp_dst[ 16 + off] = tmp_src[1]; \
-               tmp_dst[  1 + off] = tmp_src[2]; \
-               tmp_dst[ 17 + off] = tmp_src[3]; \
-               tmp_dst[  2 + off] = tmp_src[4]; \
-               tmp_dst[ 18 + off] = tmp_src[5]; \
-               tmp_dst[  3 + off] = tmp_src[6]; \
-               tmp_dst[ 19 + off] = tmp_src[7]; \
-            } \
-            src += tmp_pitch; \
-         }
-         GX_BLIT_LINE_32(0)
-         GX_BLIT_LINE_32(4)
-         GX_BLIT_LINE_32(8)
-         GX_BLIT_LINE_32(12)
-#undef GX_BLIT_LINE_32
-      }
+         void *tmp = malloc(bandsz);
 
-      free(tmp);
+         if (!tmp)
+            return IMAGE_PROCESS_ERROR;
+
+         for (i = 0; i < *height; i += 4, dst += 4 * width2)
+         {
+            const uint16_t *src;
+
+            memcpy(tmp, (const uint16_t*)*buf + (size_t)i * tmp_pitch,
+                  bandsz);
+            src = (const uint16_t*)tmp;
+
+#define GX_BLIT_LINE_32(off) \
+            { \
+               unsigned x; \
+               const uint16_t *tmp_src = src; \
+               uint16_t       *tmp_dst = dst; \
+               for (x = 0; x < width2 >> 3; x++, tmp_src += 8, tmp_dst += 32) \
+               { \
+                  tmp_dst[  0 + off] = tmp_src[0]; \
+                  tmp_dst[ 16 + off] = tmp_src[1]; \
+                  tmp_dst[  1 + off] = tmp_src[2]; \
+                  tmp_dst[ 17 + off] = tmp_src[3]; \
+                  tmp_dst[  2 + off] = tmp_src[4]; \
+                  tmp_dst[ 18 + off] = tmp_src[5]; \
+                  tmp_dst[  3 + off] = tmp_src[6]; \
+                  tmp_dst[ 19 + off] = tmp_src[7]; \
+               } \
+               src += tmp_pitch; \
+            }
+            GX_BLIT_LINE_32(0)
+            GX_BLIT_LINE_32(4)
+            GX_BLIT_LINE_32(8)
+            GX_BLIT_LINE_32(12)
+#undef GX_BLIT_LINE_32
+         }
+
+         free(tmp);
+      }
    }
 #endif
 
