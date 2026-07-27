@@ -56,6 +56,11 @@ typedef struct xaudio2 xaudio2_t;
 
 #define MAX_BUFFERS      16
 #define MAX_BUFFERS_MASK (MAX_BUFFERS - 1)
+/* Padding width used to isolate the cross-thread fields of struct
+ * xaudio2 on their own cache line.  64 covers x86-64, AArch64 and
+ * modern ARM/PowerPC; Apple Silicon's effective coherency granule is
+ * 128, where this still removes the sharing, just less tightly. */
+#define XA_CACHE_LINE    64
 /* Bytes writable without blocking: free queue slots minus what the
  * current staging sub-buffer has already consumed.  The previous form
  * ignored bufptr, overstating free space by up to one sub-buffer
@@ -138,8 +143,8 @@ struct xaudio2
 #if defined(__cplusplus) && !defined(CINTERFACE)
    xaudio2() :
       buf(0), pXAudio2(0), pMasterVoice(0),
-      pSourceVoice(0), hEvent(0), buffers(0), bufsize(0),
-      bufptr(0), write_buffer(0)
+      pSourceVoice(0), bufsize(0), bufptr(0),
+      write_buffer(0), hEvent(0), buffers(0)
    {}
 
    virtual ~xaudio2() {}
@@ -164,12 +169,24 @@ struct xaudio2
    IXAudio2MasteringVoice *pMasterVoice;
    IXAudio2SourceVoice *pSourceVoice;
    WAVEFORMATEX wf;
-   HANDLE hEvent;
 
-   unsigned long volatile buffers;
+   /* Producer-only (emulator thread).  bufptr and write_buffer are
+    * stored on every chunk copied in xa_write. */
    size_t bufsize;
    unsigned bufptr;
    unsigned write_buffer;
+
+   /* A full cache line of padding on either side of the cross-thread
+    * pair below, so no allocation alignment can put a producer-only
+    * field on the same line as `buffers`.  See the commit message. */
+   char _pad0[XA_CACHE_LINE];
+
+   /* Touched by the XAudio2 engine thread: OnBufferEnd decrements
+    * `buffers` and signals `hEvent`.  The producer reads both. */
+   HANDLE hEvent;
+   unsigned long volatile buffers;
+
+   char _pad1[XA_CACHE_LINE];
 };
 
 #if !defined(__cplusplus) || defined(CINTERFACE)
