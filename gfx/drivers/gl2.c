@@ -1004,9 +1004,7 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat color_block[4 * 6];
-   GLfloat lut_block[2 * 6];
    int n;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
@@ -1053,8 +1051,6 @@ static void gl2_raster_font_render_line(gl2_t *gl,
       color_block[4 * n + 1] = color[1];
       color_block[4 * n + 2] = color[2];
       color_block[4 * n + 3] = color[3];
-      lut_block[2 * n + 0]   = gl->coords.lut_tex_coord[0];
-      lut_block[2 * n + 1]   = gl->coords.lut_tex_coord[1];
    }
 
    while (msg < msg_end)
@@ -1088,8 +1084,6 @@ static void gl2_raster_font_render_line(gl2_t *gl,
 
          memcpy(&font_color[4 * 6 * i], color_block,
                sizeof(color_block));
-         memcpy(&font_lut_tex_coord[2 * 6 * i], lut_block,
-               sizeof(lut_block));
 
          i++;
 
@@ -1101,7 +1095,7 @@ static void gl2_raster_font_render_line(gl2_t *gl,
       coords.vertex        = font_vertex;
       coords.color         = font_color;
       coords.vertices      = i * 6;
-      coords.lut_tex_coord = font_lut_tex_coord;
+      coords.lut_tex_coord = NULL;
 
       if (font->block)
          video_coord_array_append(&font->block->carr,
