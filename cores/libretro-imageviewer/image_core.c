@@ -35,8 +35,7 @@
 
 #ifdef RARCH_INTERNAL
 #include "internal_cores.h"
-extern uint32_t video_driver_get_disp_flags(void);
-#define VIDEO_FLAG_USE_RGBA (1 << 3)
+#include "../../gfx/video_driver.h"
 #define IMAGE_CORE_PREFIX(s) libretro_imageviewer_##s
 #else
 #define IMAGE_CORE_PREFIX(s) s
