@@ -220,6 +220,24 @@ static uint32_t rzstd_rd32_safe(const uint8_t *p, size_t len, size_t at)
    uint32_t v = 0;
    int      i;
 
+   /* One load when all four bytes are there, which is every field but
+    * the last few. Reading them one at a time with a bound test each
+    * was an eighth of the time spent reading a counts description, and
+    * a description is read three times a frame. */
+   if (at + 4 <= len)
+   {
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) \
+ && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+      memcpy(&v, p + at, 4);
+      return v;
+#else
+      return  (uint32_t)p[at]
+            | ((uint32_t)p[at + 1] << 8)
+            | ((uint32_t)p[at + 2] << 16)
+            | ((uint32_t)p[at + 3] << 24);
+#endif
+   }
+
    for (i = 0; i < 4; i++)
       if (at + (size_t)i < len)
          v |= (uint32_t)p[at + i] << (i * 8);
@@ -636,9 +654,11 @@ static int rzstd_fse_read_counts(const uint8_t *src, size_t len,
 
       /* The width is enough bits to name anything still spendable, with
        * the low part of the range using one fewer. */
-      bits_needed = 0;
-      while (((uint32_t)1 << (bits_needed + 1)) <= (uint32_t)remaining)
-         bits_needed++;
+      /* floor(log2(remaining)), which the loop above this computed by
+       * counting up to eleven times per symbol. The caller's loop
+       * guarantees remaining is at least two here, so the highbit
+       * helper's input is never zero. */
+      bits_needed = rzstd_highbit((uint32_t)remaining);
       low_mask = ((uint32_t)1 << bits_needed) - 1;
 
       value = RZ_PEEK(bits_needed + 1);
