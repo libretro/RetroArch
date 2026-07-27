@@ -123,7 +123,11 @@ enum disp_widget_flags_enum
    DISPWIDG_FLAG_CATEGORY_ERROR            = (1 << 9),
    DISPWIDG_FLAG_CATEGORY_SUCCESS          = (1 << 10),
    /* Size */
-   DISPWIDG_FLAG_SMALL                     = (1 << 11)
+   DISPWIDG_FLAG_SMALL                     = (1 << 11),
+   /* Was this widget spawned by a task? Sticky for the lifetime of
+    * the widget; unlike task_ptr, which is a liveness link that may
+    * legitimately be cleared while the widget is still on screen. */
+   DISPWIDG_FLAG_TASK                      = (1 << 12)
 };
 
 /* There can only be one message animation at a time to

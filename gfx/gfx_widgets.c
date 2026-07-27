@@ -227,9 +227,10 @@ void gfx_widgets_msg_queue_push(
       /* Get current msg if it exists */
       if (task && task->frontend_userdata)
       {
-         msg_widget           = (disp_widget_msg_t*)task->frontend_userdata;
+         msg_widget            = (disp_widget_msg_t*)task->frontend_userdata;
          /* msg_widgets can be passed between tasks */
-         msg_widget->task_ptr = task;
+         msg_widget->task_ptr  = task;
+         msg_widget->flags    |= DISPWIDG_FLAG_TASK;
       }
 
       /* Spawn a new notification */
@@ -280,6 +281,7 @@ void gfx_widgets_msg_queue_push(
 
          if (task)
          {
+            msg_widget->flags                  |= DISPWIDG_FLAG_TASK;
 
             if (task->error && *task->error)
             {
@@ -534,7 +536,8 @@ static void gfx_widgets_msg_queue_move(dispgfx_widget_t *p_dispwidget)
       if (!msg || (msg->flags & DISPWIDG_FLAG_DYING))
          continue;
 
-      size_small             = (msg->task_ptr || (msg->flags & DISPWIDG_FLAG_SMALL));
+      size_small             = (   (msg->flags & DISPWIDG_FLAG_TASK)
+                                || (msg->flags & DISPWIDG_FLAG_SMALL));
 
       if (y == 0)
          y += (p_dispwidget->msg_queue_padding * 4.0f);
@@ -582,8 +585,13 @@ static void gfx_widgets_msg_queue_free(
             && !(msg->flags & DISPWIDG_FLAG_TASK_ERROR)
             && !(msg->flags & DISPWIDG_FLAG_TASK_CANCELLED))
          msg->task_ptr->frontend_userdata = NULL;
+   }
 
-      /* update tasks count */
+   /* Update tasks count. Keyed off the sticky flag rather than
+    * task_ptr, so that it stays correct once task_ptr becomes a
+    * pure liveness link that may be cleared early. */
+   if (msg->flags & DISPWIDG_FLAG_TASK)
+   {
       if (p_dispwidget->msg_queue_tasks_count > 0)
          p_dispwidget->msg_queue_tasks_count--;
    }
@@ -1056,7 +1064,8 @@ void gfx_widgets_iterate(
          if (msg_widget)
          {
             /* Task messages always appear from the bottom of the screen, append it */
-            if (p_dispwidget->msg_queue_tasks_count == 0 || msg_widget->task_ptr)
+            if (   p_dispwidget->msg_queue_tasks_count == 0
+                || (msg_widget->flags & DISPWIDG_FLAG_TASK))
                p_dispwidget->current_msgs[p_dispwidget->current_msgs_size] = msg_widget;
             /* Regular messages are always above tasks, make room and insert it */
             else
@@ -1079,7 +1088,7 @@ void gfx_widgets_iterate(
       if (msg_widget)
       {
          /* Start expiration timer if not associated to a task */
-         if (!msg_widget->task_ptr)
+         if (!(msg_widget->flags & DISPWIDG_FLAG_TASK))
          {
             if (!(msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED))
                gfx_widgets_start_msg_expiration_timer(
@@ -1107,7 +1116,7 @@ void gfx_widgets_iterate(
       if (!msg_widget)
          continue;
 
-      if (msg_widget->task_ptr
+      if (      (msg_widget->flags & DISPWIDG_FLAG_TASK)
             &&   ((msg_widget->flags & DISPWIDG_FLAG_TASK_FINISHED)
                || (msg_widget->flags & DISPWIDG_FLAG_TASK_CANCELLED)))
          if (!(msg_widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED))
@@ -1984,7 +1993,7 @@ void gfx_widgets_frame(void *data)
          if (!msg)
             continue;
 
-         if (msg->task_ptr)
+         if (msg->flags & DISPWIDG_FLAG_TASK)
             gfx_widgets_draw_task_msg(
                p_dispwidget,
                p_disp,
@@ -2058,6 +2067,10 @@ static void gfx_widgets_free(dispgfx_widget_t *p_dispwidget)
        * > If we don't do this, gfx_widgets_msg_queue_free()
        *   will generate heap-use-after-free errors */
       msg_widget->task_ptr = NULL;
+
+      /* These widgets never reached current_msgs, so they were never
+       * counted in msg_queue_tasks_count and must not decrement it. */
+      msg_widget->flags &= ~DISPWIDG_FLAG_TASK;
 
       gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
       free(msg_widget);
