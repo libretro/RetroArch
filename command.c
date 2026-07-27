@@ -1067,11 +1067,157 @@ bool command_version(command_t *cmd, const char* arg)
    return true;
 }
 
+/* LOAD_CORE <core path>
+ *
+ * Mirrors selecting a core in the menu's core list / file browser,
+ * action_ok_load_core() -> generic_action_ok()'s ACTION_OK_LOAD_CORE
+ * branch.  Same task_push_load_new_core() call with the same arguments;
+ * the result is propagated rather than discarded so a bad core path is
+ * reported as a failed command instead of a silent no-op. */
 bool command_load_core(command_t *cmd, const char* arg)
 {
    content_ctx_info_t content_info = {0};
-   task_push_load_new_core(arg, NULL,
+
+   if (!arg || !*arg)
+      return false;
+
+   return task_push_load_new_core(arg, NULL,
          &content_info, CORE_TYPE_PLAIN, NULL, NULL);
+}
+
+/* START_CORE
+ *
+ * Mirrors the Main Menu "Start Core" entry, action_ok_start_core():
+ * clears the content path and starts the currently loaded core without
+ * content.  The list_cache() call that entry makes first is menu
+ * animation bookkeeping and has no equivalent here. */
+bool command_start_core(command_t *cmd, const char* arg)
+{
+   content_ctx_info_t content_info = {0};
+
+   path_clear(RARCH_PATH_BASENAME);
+
+   return task_push_start_current_core(&content_info);
+}
+
+/* LOAD_CONTENT <core path>|<content path>
+ *
+ * The separator is '|' rather than a space because both operands are
+ * filesystem paths and may legitimately contain spaces.  Routed through
+ * the companion UI entry point so that the command interface takes the
+ * same content load path as any other frontend-external requester,
+ * rather than duplicating the menu-only variant. */
+bool command_load_content(command_t *cmd, const char* arg)
+{
+   char core_path[PATH_MAX_LENGTH];
+   content_ctx_info_t content_info = {0};
+   const char *sep                 = NULL;
+   size_t _len                     = 0;
+
+   if (!arg || !*arg)
+      return false;
+   if (!(sep = strchr(arg, '|')))
+      return false;
+
+   _len = (size_t)(sep - arg);
+   if (_len == 0 || _len >= sizeof(core_path))
+      return false;
+   if (!*(sep + 1))
+      return false;
+
+   memcpy(core_path, arg, _len);
+   core_path[_len] = '\0';
+
+   return task_push_load_content_with_new_core_from_companion_ui(
+         core_path, sep + 1, NULL, NULL, NULL, &content_info, NULL, NULL);
+}
+
+/* CLOSE_CONTENT
+ *
+ * On HAVE_MENU builds this is CMD_EVENT_CLOSE_CONTENT, the same event the
+ * Quick Menu "Close Content" entry issues.
+ *
+ * On builds without a menu, CMD_EVENT_CLOSE_CONTENT is defined as
+ * CMD_EVENT_QUIT -- reasonable for a hotkey on a frontend that has
+ * nowhere to return to, but wrong here: a command interface consumer
+ * asking to close content is not asking to terminate the process, and
+ * has no way to discover that the two are the same on this build.  Use
+ * CMD_EVENT_UNLOAD_CORE instead, which unloads the core and starts the
+ * dummy core.  That is as close to "content closed" as a menuless build
+ * gets, and it leaves the process alive to accept further commands.
+ *
+ * This was previously a map[] entry driving RARCH_CLOSE_CONTENT_KEY,
+ * which is not what the menu entry does either: the hotkey path in
+ * runloop_iterate() also applies the 'confirm_close' double press timer,
+ * and nothing external can produce the second press inside the window,
+ * so with that setting enabled the command was silently swallowed.  The
+ * menu entry's confirmation is a dialog rather than a timer and is
+ * equally unreachable over the command interface, so neither form of
+ * confirmation applies on this path. */
+bool command_close_content(command_t *cmd, const char* arg)
+{
+#ifdef HAVE_MENU
+   return command_event(CMD_EVENT_CLOSE_CONTENT, NULL);
+#else
+   return command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+#endif
+}
+
+/* UNLOAD_CORE
+ *
+ * CMD_EVENT_UNLOAD_CORE releases the core and starts the dummy core, and
+ * is not menu dependent.  The Main Menu "Unload Core" entry issues the
+ * same event and then clears the last core path; that clear is a
+ * frontend path operation rather than a menu one, so it belongs here
+ * too.  Only the entry refresh afterwards is menu state. */
+bool command_unload_core(command_t *cmd, const char* arg)
+{
+   if (!command_event(CMD_EVENT_UNLOAD_CORE, NULL))
+      return false;
+
+   path_clear(RARCH_PATH_CORE_LAST);
+
+#ifdef HAVE_MENU
+   {
+      struct menu_state *menu_st = menu_state_get_ptr();
+      if (menu_st)
+         menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                         |  MENU_ST_FLAG_PREVENT_POPULATE;
+   }
+#endif
+
+   return true;
+}
+
+/* VIDEO_REINIT / AUDIO_REINIT / DRIVERS_REINIT
+ *
+ * Driver reinit, split by scope.  None has a menu equivalent; they exist
+ * so that a driver teardown and rebuild can be triggered on its own,
+ * rather than only as a side effect of loading content.
+ *
+ * CMD_EVENT_REINIT takes an optional driver mask through its data
+ * pointer and falls back to DRIVERS_CMD_ALL when passed NULL, so
+ * VIDEO_REINIT passes DRIVER_VIDEO_MASK explicitly rather than relying on
+ * the default -- otherwise it would tear down audio, input, MIDI and the
+ * rest as well, and would not be a video reinit at all.  A video-only
+ * mask through video_driver_reinit() is what the CRT switch path already
+ * does.  DRIVERS_REINIT keeps the all-drivers behaviour under a name that
+ * says so. */
+bool command_video_reinit(command_t *cmd, const char* arg)
+{
+   int flags = DRIVER_VIDEO_MASK;
+   command_event(CMD_EVENT_REINIT, &flags);
+   return true;
+}
+
+bool command_audio_reinit(command_t *cmd, const char* arg)
+{
+   return command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+}
+
+bool command_drivers_reinit(command_t *cmd, const char* arg)
+{
+   command_event(CMD_EVENT_REINIT, NULL);
    return true;
 }
 
