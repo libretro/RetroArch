@@ -1161,44 +1161,33 @@ float cocoa_get_refresh_rate(void)
    return (rate > 0.0) ? (float)rate : 60.0f;
 #endif
 #else /* iOS / tvOS */
-   /* Report what the panel is capable of, NOT what we last asked
-    * the CADisplayLink to run at.
-    *
-    * apple_display_server_init() stamps
-    * settings->floats.video_refresh_rate onto the display link at
-    * startup, so querying preferredFrameRateRange here closes a
-    * feedback loop: "Set Display-Reported Refresh Rate" would just
-    * echo the value the user already has configured.  On a
-    * ProMotion device with a default config that means a permanent
-    * 60 Hz readout even though the panel does 120 Hz.
-    *
-    * maximumFramesPerSecond is the iOS/tvOS analogue of the
-    * CGDisplayModeGetRefreshRate() query the macOS branch above
-    * makes - a property of the display, not of our own timer. */
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
-   if (@available(iOS 10.3, tvOS 10.2, *))
+   CADisplayLink *dl = [CocoaView get].displayLink;
+   if (dl)
    {
-      NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
-      if (max_fps > 0)
-         return (float)max_fps;
-   }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+      if (@available(iOS 15.0, tvOS 15.0, *))
+         return dl.preferredFrameRateRange.preferred;
 #endif
-   /* iOS 6 - 9 / tvOS < 10: maximumFramesPerSecond does not exist.
-    * Only CADisplayLink's frameInterval does - the number of screen
-    * refreshes between callbacks - so convert to Hz assuming a 60 Hz
-    * panel (accurate for every pre-iOS-10 device; ProMotion is iPad
-    * Pro 2017 / iOS 10.3+). */
-   {
-      CADisplayLink *dl = [[CocoaView get] displayLink];
-      if (dl)
-      {
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
+      if (@available(iOS 10.0, tvOS 10.0, *))
+         return dl.preferredFramesPerSecond;
+#endif
+      /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
+       * the number of screen refreshes between callbacks, so
+       * convert to Hz assuming a 60 Hz panel (accurate for every
+       * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-         NSInteger fi = [dl frameInterval];
-#pragma clang diagnostic pop
+      {
+         NSInteger fi = dl.frameInterval;
          return 60.0f / (float)(fi > 0 ? fi : 1);
       }
+#pragma clang diagnostic pop
    }
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
+   if (@available(iOS 10.3, tvOS 10.2, *))
+      return [UIScreen mainScreen].maximumFramesPerSecond;
+#endif
    return 60.0f;
 #endif
 }
