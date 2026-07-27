@@ -972,6 +972,8 @@ typedef struct alsa_thread
 
 static void alsa_worker_thread(void *data)
 {
+   int64_t period_us;
+   int64_t budget_us;
    alsa_thread_t *alsa = (alsa_thread_t*)data;
    uint8_t        *buf = (uint8_t *)calloc(1, alsa->info.stream_info.period_size);
    uintptr_t thread_id = sthread_get_current_thread_id();
@@ -992,9 +994,9 @@ static void alsa_worker_thread(void *data)
     * the period grid) without injecting an audible mid-stream gap;
     * only a genuinely stalled producer still degrades to silence,
     * and it does so before the device xruns. */
-   int64_t period_us = (int64_t)alsa->info.stream_info.period_frames
+   period_us = (int64_t)alsa->info.stream_info.period_frames
          * 1000000 / alsa->info.stream_info.rate;
-   int64_t budget_us = period_us
+   budget_us = period_us
          * ((int64_t)(alsa->info.stream_info.buffer_size
                / alsa->info.stream_info.period_size) - 1);
 
