@@ -2087,6 +2087,28 @@ static void rgui_color_rect(
    }
 }
 
+/* Force a render phase out of line even though it has a single call
+ * site.  Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * rgui_render() is already factored into named phases, but at -O3 the
+ * ones called exactly once are all inlined straight back into it,
+ * producing a single 25 KB function -- about 80% of a 32 KB L1i on its
+ * own, entered every frame -- where most of the code belongs to
+ * branches that are not taken on a given frame.  Keeping the phases
+ * separate costs one call each and lets the fall-through path stay
+ * resident.  Under -Os the compiler already optimises for size and the
+ * forced outlining only adds call overhead, so it is disabled. */
+#if defined(__OPTIMIZE_SIZE__)
+#define RGUI_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define RGUI_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define RGUI_NOINLINE __declspec(noinline)
+#else
+#define RGUI_NOINLINE
+#endif
+
 static void rgui_render_border(
       rgui_t *rgui,
       uint16_t *data,
@@ -2268,7 +2290,7 @@ static void rgui_init_particle_effect(
    }
 }
 
-static void rgui_render_particle_effect(
+RGUI_NOINLINE static void rgui_render_particle_effect(
       rgui_t *rgui,
       gfx_animation_t *p_anim,
       uint16_t *frame_buf_data,
@@ -3075,7 +3097,7 @@ static bool rgui_load_image(
    return true;
 }
 
-static void rgui_render_background(
+RGUI_NOINLINE static void rgui_render_background(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -3114,7 +3136,7 @@ static void rgui_render_messagebox(
       unsigned fb_width,
       unsigned fb_height);
 
-static void rgui_render_fs_thumbnail(
+RGUI_NOINLINE static void rgui_render_fs_thumbnail(
       rgui_t *rgui,
       unsigned fb_width,
       unsigned fb_height,
@@ -5182,7 +5204,7 @@ static int rgui_osk_ptr_at_pos(
    return -1;
 }
 
-static void rgui_render_osk(
+RGUI_NOINLINE static void rgui_render_osk(
       rgui_t *rgui,
       uint16_t *frame_buf_data,
       gfx_animation_ctx_ticker_t *ticker,
