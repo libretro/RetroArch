@@ -2379,9 +2379,83 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.msg_queue);
 }
 
+/* Severs the two-way link between every notification widget and its
+ * task.
+ *
+ * Must run before p_dispwidget->active goes false and progress pushes
+ * stop reaching us. Display widgets persist across driver reinits by
+ * default (DISPGFX_WIDGET_FLAG_PERSISTING), so a task that finishes
+ * while we are inactive gets retired and free()d with the widget still
+ * holding a task_ptr to it, and DISPWIDG_FLAG_TASK_FINISHED never set
+ * to warn us off. This is the last point at which the link can be
+ * dropped safely: any task we have not seen finish is still alive,
+ * because pushes are only about to stop, not already stopped.
+ *
+ * Widgets severed from a still-running task are marked expired. They
+ * can no longer be updated, and a running task never reaches the state
+ * that would start their expiration timer, so they would otherwise
+ * linger indefinitely next to the fresh widget the task spawns on its
+ * first push after reinit. */
+static void gfx_widgets_detach_tasks(dispgfx_widget_t *p_dispwidget)
+{
+   size_t i;
+
+   /* Widgets still in the fifo have not been displayed yet and cannot
+    * be reached individually, so discard them outright. At most one
+    * frame's worth can be queued: gfx_widgets_iterate() drains the
+    * fifo every frame. */
+   for (;;)
+   {
+      disp_widget_msg_t *msg_widget = NULL;
+
+#ifdef HAVE_THREADS
+      slock_lock(p_dispwidget->msg_queue_lock);
+#endif
+      if (FIFO_READ_AVAIL_NONPTR(p_dispwidget->msg_queue) > 0)
+         fifo_read(&p_dispwidget->msg_queue,
+               &msg_widget, sizeof(msg_widget));
+#ifdef HAVE_THREADS
+      slock_unlock(p_dispwidget->msg_queue_lock);
+#endif
+
+      if (!msg_widget)
+         break;
+
+      /* Never entered current_msgs, so never counted in
+       * msg_queue_tasks_count */
+      msg_widget->flags &= ~DISPWIDG_FLAG_TASK;
+      gfx_widgets_msg_queue_free(p_dispwidget, msg_widget);
+      free(msg_widget);
+   }
+
+#ifdef HAVE_THREADS
+   slock_lock(p_dispwidget->current_msgs_lock);
+#endif
+   for (i = 0; i < p_dispwidget->current_msgs_size; i++)
+   {
+      disp_widget_msg_t *msg = p_dispwidget->current_msgs[i];
+
+      if (!msg || !msg->task_ptr)
+         continue;
+
+      if (!(msg->flags & DISPWIDG_FLAG_TASK_FINISHED))
+      {
+         msg->task_ptr->frontend_userdata  = NULL;
+         msg->flags                       |= DISPWIDG_FLAG_EXPIRED;
+      }
+
+      msg->task_ptr = NULL;
+   }
+#ifdef HAVE_THREADS
+   slock_unlock(p_dispwidget->current_msgs_lock);
+#endif
+}
+
 void gfx_widgets_deinit(bool widgets_persisting)
 {
    dispgfx_widget_t *p_dispwidget = &dispwidget_st;
+
+   gfx_widgets_detach_tasks(p_dispwidget);
 
    gfx_widgets_context_destroy(p_dispwidget);
 
