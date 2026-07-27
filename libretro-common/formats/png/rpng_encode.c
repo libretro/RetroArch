@@ -696,7 +696,44 @@ bool rpng_save_image_stream(const uint8_t *data, intfstream_t* intf_s,
     * 6 is also zlib's and libpng's own default, so a screenshot is no
     * longer larger or slower than what every other PNG writer emits. */
    if (stream)
+   {
       stream_backend->define(stream, "level", 6);
+
+      /* Filtered scanlines are mostly small residuals with a fairly
+       * random distribution, which is exactly the case Z_FILTERED
+       * exists for: fewer long match searches, more Huffman.  zlib's
+       * default strategy is tuned for text-like input and leaves size
+       * on the table here.  libpng has used the filtered strategy for
+       * IDAT since forever, and this is the whole of the size gap
+       * against it - with the same filter choices per row (verified by
+       * dumping both encoders' filter bytes: identical) rpng was
+       * producing a 3.13 MB file where libpng produced 2.82 MB.
+       *
+       * Cost, 1920x1080 then 3840x2160, against libpng at its default:
+       *
+       *                  libpng         default        filtered
+       *   3D scene       712 ms/2.82   390 ms/3.13    679 ms/2.82
+       *   3D scene 4K   2856 ms/11.26 1565 ms/12.49  2597 ms/11.26
+       *   smooth ramp    459 ms/1.00   416 ms/1.00    419 ms/1.00
+       *   2D pixel art    61 ms/0.23    36 ms/0.23     36 ms/0.23
+       *   menu frame      47 ms/0.01    25 ms/0.01     24 ms/0.01
+       *
+       * Only noisy 3D output pays, and it pays 1.03 s for 1.23 MB at
+       * 4K.  That is a far better exchange than the one turned down in
+       * 13e0986 (2.2 s for 80 KB), and it leaves the encoder both
+       * faster than libpng and the same size as libpng on every shape
+       * measured rather than faster but bigger.
+       *
+       * Z_RLE is the interesting third option - 258 ms/11.19 MB on the
+       * 4K 3D scene, beating filtered on both axes - but it collapses
+       * on smooth content, 7.70 MB against 3.97 for the 4K ramp, so it
+       * is not safe as a blanket choice.
+       *
+       * The clean-room backend has no strategy support and returns
+       * false here, keeping its current output. */
+      stream_backend->define(stream, "strategy",
+            TRANS_STREAM_STRATEGY_FILTERED);
+   }
    if (!stream)
       GOTO_END_ERROR();
 
