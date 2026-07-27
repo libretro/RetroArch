@@ -377,6 +377,16 @@ libretro_vfs_implementation_file *retro_vfs_file_open_impl(
 #ifdef HAVE_CDROM
    if (path_is_cdrom(path))
    {
+      /* The sector cache and cue sheet state only exist for cdrom://
+       * handles, so they are allocated here rather than carried by
+       * every open file. Zeroed, because the old inline member was
+       * zeroed by the calloc() above and the cdrom paths rely on
+       * that (cue_buf NULL, last_frame_valid false, cur_track 0). */
+      if (!(stream->cdrom = (vfs_cdrom_t*)calloc(1, sizeof(*stream->cdrom))))
+      {
+         free(stream);
+         return NULL;
+      }
       path             += sizeof("cdrom://")-1;
       stream->scheme    = VFS_SCHEME_CDROM;
    }
@@ -709,8 +719,15 @@ int retro_vfs_file_close_impl(libretro_vfs_implementation_file *stream)
       close(stream->fd);
 #ifdef HAVE_CDROM
 end:
-   if (stream->cdrom.cue_buf)
-      free(stream->cdrom.cue_buf);
+   /* Reached both by the goto above and by fall-through from the
+    * non-cdrom path, where stream->cdrom is NULL. */
+   if (stream->cdrom)
+   {
+      if (stream->cdrom->cue_buf)
+         free(stream->cdrom->cue_buf);
+      free(stream->cdrom);
+      stream->cdrom = NULL;
+   }
 #endif
 #ifdef HAVE_SMBCLIENT
 smbend:

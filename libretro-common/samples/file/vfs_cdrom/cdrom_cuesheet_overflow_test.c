@@ -50,21 +50,28 @@ static int failures = 0;
 static void test_cuesheet_byte_pos_wrap(void)
 {
    libretro_vfs_implementation_file stream;
+   /* vfs_cdrom_t hangs off the handle by pointer rather than being an
+    * inline member, so the test supplies its own storage. Backing it
+    * with a local keeps the zero-init below covering both objects and
+    * spares the test an allocation it would have to unwind. */
+   vfs_cdrom_t cdrom_state;
    char out[64];
    int64_t rc;
    const char *fake_cue = "FILE \"track01.bin\" BINARY\nTRACK 01 MODE1/2048\n";
    size_t cue_size      = strlen(fake_cue) + 1;  /* incl NUL */
 
    memset(&stream, 0, sizeof(stream));
+   memset(&cdrom_state, 0, sizeof(cdrom_state));
+   stream.cdrom = &cdrom_state;
 
-   stream.cdrom.cue_buf = strdup(fake_cue);
-   if (!stream.cdrom.cue_buf)
+   stream.cdrom->cue_buf = strdup(fake_cue);
+   if (!stream.cdrom->cue_buf)
    {
       printf("[ERROR] strdup failed\n");
       failures++;
       return;
    }
-   stream.cdrom.cue_len = cue_size;
+   stream.cdrom->cue_len = cue_size;
 
    /* orig_path must end in ".cue" for the read function to dispatch
     * into the cuesheet path.  The function calls path_get_extension
@@ -72,14 +79,14 @@ static void test_cuesheet_byte_pos_wrap(void)
    stream.orig_path = strdup("test.cue");
    if (!stream.orig_path)
    {
-      free(stream.cdrom.cue_buf);
+      free(stream.cdrom->cue_buf);
       printf("[ERROR] strdup failed (orig_path)\n");
       failures++;
       return;
    }
 
    /* Baseline: read at byte_pos=0 with small len should succeed. */
-   stream.cdrom.byte_pos = 0;
+   stream.cdrom->byte_pos = 0;
    rc = retro_vfs_file_read_cdrom(&stream, out, 10);
    if (rc < 0 || rc > 10)
    {
@@ -94,7 +101,7 @@ static void test_cuesheet_byte_pos_wrap(void)
     *   cue_len - byte_pos - 1 = 0 - 1 = SIZE_MAX (size_t wrap)
     *   len = SIZE_MAX, memcpy reads gigabytes -> OOB.
     * Post-patch: byte_pos >= cue_len, return 0. */
-   stream.cdrom.byte_pos = (int64_t)cue_size;
+   stream.cdrom->byte_pos = (int64_t)cue_size;
    rc = retro_vfs_file_read_cdrom(&stream, out, 10);
    if (rc != 0)
    {
@@ -106,7 +113,7 @@ static void test_cuesheet_byte_pos_wrap(void)
       printf("[SUCCESS] byte_pos==cue_len returned 0\n");
 
    /* Attack 2: byte_pos past cue_len.  Pre-patch: same size_t wrap. */
-   stream.cdrom.byte_pos = (int64_t)cue_size + 100;
+   stream.cdrom->byte_pos = (int64_t)cue_size + 100;
    rc = retro_vfs_file_read_cdrom(&stream, out, 10);
    if (rc != 0)
    {
@@ -121,7 +128,7 @@ static void test_cuesheet_byte_pos_wrap(void)
     * SIZE_MAX-ish, then cue_len - huge wraps around into a small
     * positive value, then memcpy reads gigabytes off cue_buf.
     * Post-patch: byte_pos < 0, return 0. */
-   stream.cdrom.byte_pos = -1;
+   stream.cdrom->byte_pos = -1;
    rc = retro_vfs_file_read_cdrom(&stream, out, 10);
    if (rc != 0)
    {
@@ -139,7 +146,7 @@ static void test_cuesheet_byte_pos_wrap(void)
     * and the full UINT64_MAX reaches memcpy.  OOB.
     * Post-patch: clamp is unsigned, len is compared to unsigned
     * remaining, clamp always fires correctly. */
-   stream.cdrom.byte_pos = 5;
+   stream.cdrom->byte_pos = 5;
    rc = retro_vfs_file_read_cdrom(&stream, out, (uint64_t)-1);
    {
       int64_t max_expected = (int64_t)cue_size - 5 - 1;
@@ -153,7 +160,7 @@ static void test_cuesheet_byte_pos_wrap(void)
          printf("[SUCCESS] huge len clamped to rc=%lld\n", (long long)rc);
    }
 
-   free(stream.cdrom.cue_buf);
+   free(stream.cdrom->cue_buf);
    free(stream.orig_path);
 }
 
