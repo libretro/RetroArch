@@ -23,6 +23,14 @@
 
 #include "../audio_driver.h"
 
+/* Upper bound on how long a blocking write will wait for the buffer
+ * queue callback before giving up and reporting a short write.  Never
+ * reached in normal operation - the callback fires as each enqueued
+ * block finishes - so the value only decides how long a device that
+ * has stopped consuming takes to be noticed.  Matches the flat
+ * bail-out timeouts in sdl_audio.c and wasapi.c. */
+#define OPENSL_STALL_TIMEOUT_US 256000
+
 /* Helper macros, COM-style. */
 #define SLObjectItf_Realize(a, ...) ((*(a))->Realize(a, __VA_ARGS__))
 #define SLObjectItf_GetInterface(a, ...) ((*(a))->GetInterface(a, __VA_ARGS__))
@@ -249,10 +257,33 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
       }
       else
       {
+         bool signalled = true;
          slock_lock(sl->lock);
+         /* Bounded.  opensl_callback is the only thing in this file
+          * that ever signals sl->cond, and it does not hold sl->lock
+          * while doing so - the predicate is buffered_blocks, updated
+          * with __sync_fetch_and_sub - so a signal raised between the
+          * test above and this wait reaches no waiter.  While the
+          * device keeps consuming blocks the next callback covers
+          * that.  If it has stopped consuming - device loss, a player
+          * error - there is no next callback, no shutdown or error
+          * signal anywhere in this driver, and the one `return -1`
+          * below sits past the wait where a blocked thread can never
+          * reach it.  An untimed wait here parked the thread the core
+          * runs on for good. */
          while (sl->buffered_blocks == sl->buf_count)
-            scond_wait(sl->cond, sl->lock);
+         {
+            if (!(signalled = scond_wait_timeout(sl->cond, sl->lock,
+                        OPENSL_STALL_TIMEOUT_US)))
+               break;
+         }
          slock_unlock(sl->lock);
+
+         /* Report what was enqueued so far, exactly as the nonblock
+          * path above does when the queue is full.  Any partial block
+          * stays in sl->buffer_ptr for the next call. */
+         if (!signalled)
+            break;
       }
 
       avail_write = MIN(sl->buf_size - sl->buffer_ptr, len);
