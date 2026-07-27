@@ -980,7 +980,7 @@ static void alsa_worker_thread(void *data)
 
    if (!buf)
    {
-      RARCH_ERR("[ALSA] [playback thread %u] Failed to allocate audio buffer.\n", thread_id);
+      RARCH_ERR("[ALSA] [playback thread %p] Failed to allocate audio buffer.\n", thread_id);
       goto end;
    }
 
@@ -1047,7 +1047,7 @@ static void alsa_worker_thread(void *data)
       {
          if (snd_pcm_recover(alsa->info.pcm, frames, false) < 0)
          {
-            RARCH_ERR("[ALSA] [playback thread %u] Failed to recover from error: %s.\n",
+            RARCH_ERR("[ALSA] [playback thread %p] Failed to recover from error: %s.\n",
                thread_id,
                snd_strerror(frames));
             break;
@@ -1057,7 +1057,7 @@ static void alsa_worker_thread(void *data)
       }
       else if (frames < 0)
       {
-         RARCH_ERR("[ALSA] [playback thread %u] Error writing audio to device: %s.\n",
+         RARCH_ERR("[ALSA] [playback thread %p] Error writing audio to device: %s.\n",
             thread_id,
             snd_strerror(frames));
          break;
