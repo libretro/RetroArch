@@ -878,7 +878,13 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
       pool->sets[i]                = VK_NULL_HANDLE;
    pool->next                      = NULL;
 
-   vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool);
+   if (vkCreateDescriptorPool(device, &pool_info, NULL, &pool->pool)
+         != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to create descriptor pool.\n");
+      free(pool);
+      return NULL;
+   }
 
    /* Just allocate all descriptor sets up front. */
    alloc_info.sType                = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -887,8 +893,21 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
    alloc_info.descriptorSetCount   = 1;
    alloc_info.pSetLayouts          = &manager->set_layout;
 
+   /* A partially populated block is unusable: the manager hands out
+    * sets by index, so a VK_NULL_HANDLE hole would be written to and
+    * bound as if it were live. Tear the whole block down instead. */
    for (i = 0; i < VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS; i++)
-      vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i]);
+   {
+      if (vkAllocateDescriptorSets(device, &alloc_info, &pool->sets[i])
+            != VK_SUCCESS)
+      {
+         RARCH_ERR("[Vulkan] Failed to allocate descriptor set %u/%u.\n",
+               i, (unsigned)VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS);
+         vkDestroyDescriptorPool(device, pool->pool, NULL);
+         free(pool);
+         return NULL;
+      }
+   }
 
    return pool;
 }
@@ -897,17 +916,22 @@ static struct vk_descriptor_pool *vulkan_alloc_descriptor_pool(
 static VkDescriptorSet vulkan_descriptor_manager_alloc(
       VkDevice device, struct vk_descriptor_manager *manager)
 {
+   if (!manager->current)
+      return VK_NULL_HANDLE;
+
    if (manager->count >= VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS)
    {
-      while (manager->current->next)
+      if (!manager->current->next)
       {
-         manager->current = manager->current->next;
-         manager->count   = 0;
-         return manager->current->sets[manager->count++];
+         struct vk_descriptor_pool *block =
+            vulkan_alloc_descriptor_pool(device, manager);
+         /* Out of descriptor memory. Report the failure upwards so the
+          * caller can drop the draw; handing back a stale or null set
+          * leaves the driver writing through a dangling descriptor. */
+         if (!block)
+            return VK_NULL_HANDLE;
+         manager->current->next = block;
       }
-
-      manager->current->next = vulkan_alloc_descriptor_pool(device, manager);
-      retro_assert(manager->current->next);
 
       manager->current = manager->current->next;
       manager->count   = 0;
@@ -983,6 +1007,8 @@ static void vulkan_draw_triangles(vk_t *vk, const struct vk_draw_triangles *call
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       vulkan_write_quad_descriptors(
             vk->context->device,
@@ -1673,6 +1699,8 @@ static void vulkan_copy_staging_to_dynamic(vk_t *vk, VkCommandBuffer cmd,
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->ubo,
             sizeof(ubo), &range))
@@ -2912,6 +2940,8 @@ static void vulkan_font_render_msg(
       set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
+      if (set == VK_NULL_HANDLE)
+         return;
 
       vulkan_write_quad_descriptors(
             vk->context->device,
@@ -6229,6 +6259,8 @@ static void vulkan_draw_quad(vk_t *vk, const struct vk_draw_quad *quad)
          set = vulkan_descriptor_manager_alloc(
                vk->context->device,
                &vk->chain->descriptor_manager);
+         if (set == VK_NULL_HANDLE)
+            return;
 
          vulkan_write_quad_descriptors(
                vk->context->device,
@@ -6501,6 +6533,9 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
             &vk->chain->descriptor_manager);
 
       vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
+
+      if (set == VK_NULL_HANDLE)
+         return;
 
       *mapped_ubo  = vk->hdr.ubo_values;
 
