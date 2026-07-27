@@ -76,9 +76,30 @@
 
 #define FRAME_DELAY_AUTO_DEBUG 0
 
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.
+ *
+ * video_driver_frame() is the hottest function outside the cores
+ * themselves -- once per emulated frame, forever -- and the helpers it
+ * calls exactly once get inlined straight back into it, so work that
+ * is conditional on a pixel format, a scanline racing mode or a
+ * per-frame toggle still occupies its fall-through path.  Under -Os
+ * the compiler already optimises for size and the outlining only adds
+ * call overhead, so it is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define VIDEO_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define VIDEO_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define VIDEO_NOINLINE __declspec(noinline)
+#else
+#define VIDEO_NOINLINE
+#endif
+
 /* Forward declarations */
-static INLINE void video_driver_scanline_before_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
-static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
+VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
+VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st, float refresh_rate, uint16_t frame_time_target, uint16_t core_run_time);
 
 typedef struct
 {
@@ -4556,7 +4577,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  * allocation failure (in which case the caller leaves the frame untouched).
  * The packed layout is bits [29:20]=R, [19:10]=G, [9:0]=B, 2 ignored high
  * bits; output is 0xFFRRGGBB (XRGB8888, native endian). */
-static const void *video_driver_convert_xrgb2101010(
+VIDEO_NOINLINE static const void *video_driver_convert_xrgb2101010(
       video_driver_state_t *video_st,
       const void *data, unsigned width, unsigned height,
       size_t in_pitch, size_t *out_pitch)
@@ -6001,7 +6022,7 @@ static INLINE int16_t video_driver_scanline_get(void)
    return -1;
 }
 
-static INLINE void video_driver_scanline_before_frame(video_driver_state_t *video_st,
+VIDEO_NOINLINE static void video_driver_scanline_before_frame(video_driver_state_t *video_st,
       float refresh_rate,
       uint16_t frame_time_target,
       uint16_t core_run_time)
@@ -6084,7 +6105,7 @@ static INLINE void video_driver_scanline_before_frame(video_driver_state_t *vide
    video_st->scanline[SCANLINE_HOLD] = scanline_hold;
 }
 
-static INLINE void video_driver_scanline_after_frame(video_driver_state_t *video_st,
+VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_t *video_st,
       float refresh_rate,
       uint16_t frame_time_target,
       uint16_t core_run_time)
