@@ -906,6 +906,7 @@ fi
 # First try system libsmb2
 check_pkgconf SMBCLIENT libsmb2 0.0
 check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+check_enabled NETWORKING BUILTINSMBCLIENT libsmb2 'SMB client support is' false
 
 if [ "$HAVE_SMBCLIENT" = "yes" ]; then
     echo "SMB support enabled (system libsmb2)"
@@ -918,6 +919,7 @@ fi
 # First try system libnfs
 check_pkgconf NFSCLIENT libnfs 0.0
 check_enabled NETWORKING NFSCLIENT libnfs 'NFS client support is' false
+check_enabled NETWORKING BUILTINNFSCLIENT libnfs 'NFS client support is' false
 
 if [ "$HAVE_NFSCLIENT" = "yes" ]; then
     echo "NFS support enabled (system libnfs)"

@@ -2957,7 +2957,7 @@ ifneq ($(findstring Win32,$(OS)),)
       # MinGW / MXE: use libnfs win32 shims (do not force Unix feature macros).
       INCLUDE_DIRS += -I$(DEPS_DIR)/libnfs/win32
       CFLAGS += '-D_U_=/**/' -DHAVE_STDINT_H -DHAVE_STDLIB_H -DHAVE_STRING_H
-      CFLAGS += -DSTDC_HEADERS -DHAVE_SOCKADDR_STORAGE
+      CFLAGS += -DSTDC_HEADERS -DHAVE_SOCKADDR_STORAGE -DHAVE_UTIME_H
       OBJ += deps/libnfs/win32/win32_compat.o
 else
       CFLAGS += "-D_U_=__attribute__((unused))"
