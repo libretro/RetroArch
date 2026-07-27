@@ -153,6 +153,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_inline.h>
 #include <encodings/rzstd.h>
 
 /* RFC 8878 section 3.1.1: a frame begins with this, least significant
@@ -378,7 +379,7 @@ typedef struct rzstd_rbits
    int            overrun;
 } rzstd_rbits_t;
 
-static void rzstd_rbits_fill(rzstd_rbits_t *b)
+static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
 {
    /* Nothing to do when the buffer is already deep enough. Worth its
     * own test at the top: the callers that fill before a run of reads
@@ -486,7 +487,7 @@ static uint32_t rzstd_rbits_take(rzstd_rbits_t *b, uint32_t n)
    return v;
 }
 
-static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
+static INLINE uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
 {
    uint32_t v;
 
@@ -530,7 +531,7 @@ static uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
 #define RZSTD_HAVE_CLZ 1
 #endif
 
-static uint32_t rzstd_highbit(uint32_t v)
+static INLINE uint32_t rzstd_highbit(uint32_t v)
 {
 #ifdef RZSTD_HAVE_CLZ
    /* One instruction where the halving form is four compares and four
@@ -785,7 +786,6 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
 {
    uint32_t total = 0;
    uint32_t max_bits;
-   uint32_t next_rank_start[RZSTD_HUF_MAX_BITS + 2];
    uint32_t rank_count[RZSTD_HUF_MAX_BITS + 2];
    uint32_t i;
    uint32_t position = 0;
@@ -856,60 +856,68 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
     * builds a table of exactly the right shape -- the same slot counts,
     * the same widths, every symbol present once. It is simply mirrored,
     * and nothing but decoding real data will say so. */
+   /* Fill in rank order, not symbol order.
+    *
+    * Every symbol of the same weight occupies the same number of slots
+    * and they sit next to each other, so walking a rank writes the
+    * table forward with one cursor. Walking symbols instead jumps
+    * between ranks and turns the cursor into a scattered
+    * read-modify-write of next_rank_start[w] -- which the profile
+    * showed as a load-use stall on a table rebuilt for every frame. */
    {
+      uint8_t  by_rank[RZSTD_HUF_MAX_SYMBOLS + 2];
+      uint32_t at_rank[RZSTD_HUF_MAX_BITS + 2];
       uint32_t w;
 
+      /* Where each rank's symbols start in by_rank. */
+      position = 0;
       for (w = 1; w <= max_bits; w++)
       {
-         next_rank_start[w] = position;
-         position += rank_count[w] * ((uint32_t)1 << (w - 1));
+         at_rank[w] = position;
+         position  += rank_count[w];
       }
-   }
 
-   if (position != ((uint32_t)1 << max_bits))
-      return RZ_DATA;
-
-   for (i = 0; i < count; i++)
-   {
-      uint32_t w = all[i];
-      uint32_t n;
-      uint32_t at;
-
-      if (!w)
-         continue;
-      n  = (uint32_t)1 << (w - 1);
-      at = next_rank_start[w];
-      next_rank_start[w] += n;
-
+      for (i = 0; i < count; i++)
       {
-         uint16_t packed = (uint16_t)(((uint32_t)i << 8)
-               | (max_bits + 1 - w));
-         uint16_t *e     = huf->entry + at;
-         uint32_t  k     = 0;
+         uint32_t v = all[i];
 
-         /* Four entries at a time.
-          *
-          * Every slot a symbol occupies holds the same value, and a
-          * symbol of weight w occupies 2^(w-1) of them -- up to half
-          * the table for one symbol. Written one at a time this is the
-          * single largest cost of decoding a small frame: a 2 KB hunk
-          * rebuilds the whole table and then decodes barely more bytes
-          * than the table has entries. Measured against the reference,
-          * the two builders were where the time went, not the decode
-          * loops those were tuned on large frames where a table is
-          * built once and used for megabytes. */
-         if (n >= 4)
-         {
-            uint64_t quad = (uint64_t)packed;
-
-            quad |= quad << 16;
-            quad |= quad << 32;
-            for (; k + 4 <= n; k += 4)
-               memcpy(e + k, &quad, 8);
-         }
-         for (; k < n; k++)
-            e[k] = packed;
+         if (v)
+            by_rank[at_rank[v]++] = (uint8_t)i;
       }
+
+      /* at_rank now points one past each rank; walk them in order. */
+      position = 0;
+      for (w = 1; w <= max_bits; w++)
+      {
+         uint32_t n     = (uint32_t)1 << (w - 1);
+         uint32_t width = max_bits + 1 - w;
+         uint32_t k     = at_rank[w] - rank_count[w];
+         uint32_t end   = at_rank[w];
+
+         for (; k < end; k++)
+         {
+            uint16_t  packed = (uint16_t)(((uint32_t)by_rank[k] << 8)
+                  | width);
+            uint16_t *e      = huf->entry + position;
+            uint32_t  j      = 0;
+
+            if (n >= 4)
+            {
+               uint64_t quad = (uint64_t)packed;
+
+               quad |= quad << 16;
+               quad |= quad << 32;
+               for (; j + 4 <= n; j += 4)
+                  memcpy(e + j, &quad, 8);
+            }
+            for (; j < n; j++)
+               e[j] = packed;
+            position += n;
+         }
+      }
+
+      if (position != ((uint32_t)1 << max_bits))
+         return RZ_DATA;
    }
 
    return RZ_OK;
@@ -1139,7 +1147,7 @@ static int rzstd_fast_ok(const rzstd_fast_t *f)
    return f->ptr >= f->base + 8;
 }
 
-static void rzstd_fast_reload(rzstd_fast_t *f)
+static INLINE void rzstd_fast_reload(rzstd_fast_t *f)
 {
    uint32_t used = rzstd_ctz64(f->bits);
 
