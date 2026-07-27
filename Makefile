@@ -141,7 +141,8 @@ $(OBJDIR)/deps/libnfs/%.o: CFLAGS := \
    -I$(DEPS_DIR)/libnfs/include -I$(DEPS_DIR)/libnfs/win32 -I$(DEPS_DIR)/libnfs \
    $(filter-out $(LIBNFS_CFLAGS_FILTER),$(CFLAGS)) \
    -std=gnu99 -Wno-pedantic
-$(OBJDIR)/libretro-common/vfs/vfs_implementation_nfs.o: CFLAGS := \
+# LIBRETRO_COMM_DIR is "./libretro-common", so the object path keeps "./".
+$(OBJDIR)/$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation_nfs.o: CFLAGS := \
    $(filter-out $(LIBNFS_CFLAGS_FILTER),$(CFLAGS)) \
    -std=gnu99 -Wno-pedantic
 endif
