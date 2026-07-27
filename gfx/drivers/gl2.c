@@ -610,6 +610,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
+   video_coords_t     coords;
    gl2_t             *gl  = (gl2_t*)data;
 
    if (!gl || !draw)
@@ -625,24 +626,35 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex        = &gl2_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = &gl2_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gl2_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct.  For the XMB ribbon pipeline
+    * draw->coords aliases &p_disp->dispca.coords, whose four stream
+    * pointers are heap-owned and free()d by
+    * video_coord_array_free(); writing a static array's address into
+    * one of them there is a free() of .rodata waiting to happen.  It
+    * cannot fire today only because dispca always has all four
+    * streams allocated -- which is exactly the property anyone
+    * making them optional would remove. */
+   coords = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex        = &gl2_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord     = &gl2_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord = &gl2_tex_coords[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)&gl->mvp_no_rot);
 
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }

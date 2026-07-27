@@ -385,17 +385,22 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       unsigned video_height)
 {
    const GLfloat *mvp_matrix;
+   video_coords_t     coords;
    gl1_t             *gl1          = (gl1_t*)data;
 
    if (!gl1 || !draw)
       return;
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex         = &gl1_menu_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord      = &gl1_menu_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord  = &gl1_menu_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct; see gfx_display_gl2_draw(). */
+   coords                          = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex                = &gl1_menu_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord             = &gl1_menu_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord         = &gl1_menu_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -427,25 +432,25 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
 
       if (vertices3)
          free(vertices3);
-      vertices3 = (float*)malloc(sizeof(float) * 3 * draw->coords->vertices);
-      for (i = 0; i < draw->coords->vertices; i++)
+      vertices3 = (float*)malloc(sizeof(float) * 3 * coords.vertices);
+      for (i = 0; i < coords.vertices; i++)
       {
          memcpy(&vertices3[i * 3],
-               &draw->coords->vertex[i * 2],
+               &coords.vertex[i * 2],
                sizeof(float) * 2);
          vertices3[i * 3 + 2]  = 0.0f;
       }
       glVertexPointer(3, GL_FLOAT, 0, vertices3);
    }
 #else
-   glVertexPointer(2, GL_FLOAT, 0, draw->coords->vertex);
+   glVertexPointer(2, GL_FLOAT, 0, coords.vertex);
 #endif
 
-   glColorPointer(4, GL_FLOAT, 0, draw->coords->color);
-   glTexCoordPointer(2, GL_FLOAT, 0, draw->coords->tex_coord);
+   glColorPointer(4, GL_FLOAT, 0, coords.color);
+   glTexCoordPointer(2, GL_FLOAT, 0, coords.tex_coord);
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
