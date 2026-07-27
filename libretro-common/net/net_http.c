@@ -1533,19 +1533,30 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          if (chunklen == 0)
          {
             /* Terminal chunk.  Any trailers after it are discarded,
-             * as before.  Shrink the buffer to the decoded length. */
-            char *tmp;
+             * as before.  Shrink the buffer to the decoded length.
+             *
+             * The length guard matters: a legitimate zero-length
+             * chunked body ("0\r\n\r\n") would otherwise reach
+             * realloc(data, 0), which glibc answers by freeing the
+             * block and returning NULL.  That failed the transfer and
+             * left response->data dangling.  Both sibling shrink
+             * sites (T_FULL, T_LEN) already carry this guard; this
+             * was the only one without it. */
             response->pos  = (size_t)(out - response->data);
             response->part = P_DONE;
             response->len  = response->pos;
-            tmp            = (char*)realloc(response->data,
-                  response->len);
-            if (!tmp)
+            if (   response->buflen != response->len
+                && response->len > 0)
             {
-               state->err = true;
-               return false;
+               char *tmp = (char*)realloc(response->data,
+                     response->len);
+               if (!tmp)
+               {
+                  state->err = true;
+                  return false;
+               }
+               response->data = tmp;
             }
-            response->data = tmp;
             return true;
          }
 
