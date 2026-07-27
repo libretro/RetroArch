@@ -355,9 +355,6 @@ const char *utf8skip(const char *str, size_t chars)
  * utf8len:
  *
  * Leaf function.
- *
- * Optimized: use LUT to skip entire multi-byte sequences
- * instead of testing each byte individually.
  **/
 size_t utf8len(const char *string)
 {
@@ -366,17 +363,14 @@ size_t utf8len(const char *string)
    if (!string)
       return 0;
 
+   /* Count every byte that is not a continuation byte. Advancing
+    * exactly one byte per iteration is what keeps this in bounds:
+    * a truncated sequence cannot step over the terminator. */
    while (*string)
    {
-      unsigned ones = utf8_lut[(uint8_t)*string];
-      ret++;
-      /* ASCII (ones==0) or continuation byte (ones==1, shouldn't
-       * appear at sequence start in valid UTF-8). Either way,
-       * count it and advance one byte. */
-      if (ones < 2)
-         string++;
-      else /* Multi-byte lead: count one character, skip `ones` bytes */
-         string += ones;
+      if ((*string & 0xC0) != 0x80)
+         ret++;
+      string++;
    }
    return ret;
 }
