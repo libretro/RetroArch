@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include <encodings/utf.h>
@@ -270,13 +271,7 @@ static bool gl1_scrgb_init_program(gl1_t *gl1);
    font_vertex[     2 * (6 * i + c) + 0]       = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1]       = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0]       = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0]       = color[0]; \
-   font_color[      4 * (6 * i + c) + 1]       = color[1]; \
-   font_color[      4 * (6 * i + c) + 2]       = color[2]; \
-   font_color[      4 * (6 * i + c) + 3]       = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+   font_tex_coords[ 2 * (6 * i + c) + 1]       = (tex_y + vy * height) * inv_tex_size_y
 
 #define IS_POT(x) (((x) & (x - 1)) == 0)
 
@@ -773,6 +768,9 @@ static void gl1_raster_font_render_line(gl1_t *gl,
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   GLfloat lut_block[2 * 6];
+   int n;
    GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
@@ -807,6 +805,16 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          x -= (int)(width_accum * scale) / 2;
    }
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+      lut_block[2 * n + 0]   = gl->coords.lut_tex_coord[0];
+      lut_block[2 * n + 1]   = gl->coords.lut_tex_coord[1];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -835,6 +843,11 @@ static void gl1_raster_font_render_line(gl1_t *gl,
          GL1_RASTER_FONT_EMIT(3, 1, 0); /* Top-right */
          GL1_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL1_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
+         memcpy(&font_lut_tex_coord[2 * 6 * i], lut_block,
+               sizeof(lut_block));
 
          i++;
 
