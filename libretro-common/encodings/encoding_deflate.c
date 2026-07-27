@@ -906,10 +906,31 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                    * - so nothing below needs to touch the input again.
                    * The loop guard has already established that 8 input
                    * bytes are available, and this consumes at most 7. */
-                  while (bitcnt <= 56)
+                  if (bitcnt <= 56)
                   {
-                     bitbuf |= (uint64_t)in[in_pos++] << bitcnt;
-                     bitcnt += 8;
+                     /* Exactly what the byte loop did, in one load: take
+                      * the whole bytes that fit above bitcnt, mask off
+                      * the rest so nothing lands above the new count,
+                      * and advance by that many.  Keeping the mask means
+                      * the invariant every other path relies on - bits
+                      * at or above bitcnt are zero - still holds, which
+                      * the maskless form used elsewhere would break for
+                      * the byte-aligning stored-block path. */
+                     static const uint64_t keep[8] = {
+                        0x0000000000000000ull, 0x00000000000000ffull,
+                        0x000000000000ffffull, 0x0000000000ffffffull,
+                        0x00000000ffffffffull, 0x000000ffffffffffull,
+                        0x0000ffffffffffffull, 0x00ffffffffffffffull
+                     };
+                     int      nb_ = (63 - bitcnt) >> 3;
+                     uint64_t chunk_;
+                     memcpy(&chunk_, in + in_pos, sizeof(chunk_));
+#if RETRO_IS_BIG_ENDIAN
+                     chunk_ = SWAP64(chunk_);
+#endif
+                     bitbuf |= (chunk_ & keep[nb_]) << bitcnt;
+                     in_pos += (size_t)nb_;
+                     bitcnt += nb_ * 8;
                   }
                   {
                      uint16_t f = lfast[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
