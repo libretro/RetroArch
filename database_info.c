@@ -959,9 +959,14 @@ end:
  * order is what makes the two paths interchangeable.
  * ------------------------------------------------------------------ */
 
+/* uint32 offset rather than uint64: paired with the key this packs to
+ * 8 bytes where a uint64 would pad the pair to 16, halving what an
+ * index costs.  The largest database shipped today is 7.3 MB, so the
+ * range is not close to being a constraint, and db_crc_collect()
+ * refuses to index anything that would not fit. */
 struct db_crc_entry
 {
-   uint64_t offset;
+   uint32_t offset;
    uint32_t crc;
 };
 
@@ -982,16 +987,6 @@ static int db_crc_by_crc(const void *a, const void *b)
 {
    uint32_t x = ((const struct db_crc_entry*)a)->crc;
    uint32_t y = ((const struct db_crc_entry*)b)->crc;
-   if (x < y) return -1;
-   if (x > y) return  1;
-   return 0;
-}
-
-static int db_crc_by_offset_generic(const void *a, const void *b)
-{
-   /* Both index entry types lead with a uint64 offset. */
-   uint64_t x = *(const uint64_t*)a;
-   uint64_t y = *(const uint64_t*)b;
    if (x < y) return -1;
    if (x > y) return  1;
    return 0;
@@ -1043,6 +1038,14 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
    if (key_len != 4)
       return 0;
 
+   /* Offsets are held in 32 bits; a database large enough to exceed
+    * that is handed to the query path rather than indexed wrongly. */
+   if (offset > (uint64_t)0xFFFFFFFFu)
+   {
+      b->failed = true;
+      return 1;
+   }
+
    if (b->count == b->capacity)
    {
       size_t cap = b->capacity ? b->capacity * 2 : 1024;
@@ -1071,7 +1074,7 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
                                | ((uint32_t)key[1] << 16)
                                | ((uint32_t)key[2] <<  8)
                                |  (uint32_t)key[3];
-   b->entries[b->count].offset = offset;
+   b->entries[b->count].offset = (uint32_t)offset;
    b->count++;
    return 0;
 }
@@ -1289,9 +1292,10 @@ database_info_list_t *database_info_list_new_crc(
  * extra record read, never a wrong answer.
  * ------------------------------------------------------------------ */
 
+/* See struct db_crc_entry for why the offset is 32-bit. */
 struct db_serial_entry
 {
-   uint64_t offset;
+   uint32_t offset;
    uint32_t hash;
 };
 
@@ -1309,6 +1313,19 @@ static uint32_t db_serial_hash(const uint8_t *key, size_t len)
    for (i = 0; i < len; i++)
       h = ((h << 5) + h) + key[i];
    return h;
+}
+
+/* Typed rather than punning the leading field: the previous version
+ * read the first eight bytes as a uint64, which only worked while the
+ * offset happened to be that wide and would silently have compared
+ * offset and key together once it was not. */
+static int db_serial_by_offset(const void *a, const void *b)
+{
+   uint32_t x = ((const struct db_serial_entry*)a)->offset;
+   uint32_t y = ((const struct db_serial_entry*)b)->offset;
+   if (x < y) return -1;
+   if (x > y) return  1;
+   return 0;
 }
 
 static int db_serial_by_hash(const void *a, const void *b)
@@ -1340,8 +1357,15 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
 
    /* A record can carry the key more than once; one entry per record
     * is enough because the lookup reads the record back anyway. */
-   if (b->count && b->entries[b->count - 1].offset == offset)
+   if (b->count && b->entries[b->count - 1].offset == (uint32_t)offset)
       return 0;
+
+   /* See db_crc_collect(). */
+   if (offset > (uint64_t)0xFFFFFFFFu)
+   {
+      b->failed = true;
+      return 1;
+   }
 
    if (b->count == b->capacity)
    {
@@ -1366,7 +1390,7 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
    }
 
    b->entries[b->count].hash   = db_serial_hash(key, key_len);
-   b->entries[b->count].offset = offset;
+   b->entries[b->count].offset = (uint32_t)offset;
    b->count++;
    return 0;
 }
@@ -1536,7 +1560,7 @@ database_info_list_t *database_info_list_new_serial(
       return list;
 
    if (found > 1)
-      qsort(hits, found, sizeof(hits[0]), db_crc_by_offset_generic);
+      qsort(hits, found, sizeof(hits[0]), db_serial_by_offset);
 
    if (!(items = (database_info_t*)calloc(found, sizeof(*items))))
    {

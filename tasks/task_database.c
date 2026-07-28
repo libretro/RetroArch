@@ -183,7 +183,7 @@ enum db_state_flags_enum
  * mixer uses, because these indexes are held for the whole scan
  * rather than consulted once.  The cap keeps a large-memory host from
  * hoarding: the biggest database shipped today, Nintendo -
- * Nintendo Entertainment System, indexes to 474 KB across 30359
+ * Nintendo Entertainment System, indexes to 237 KB across 30359
  * records, so 32 MB covers far more databases than exist.  Below the
  * floor there is no point starting, and the query path is only
  * slower, never wrong. */
