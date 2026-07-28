@@ -1699,12 +1699,29 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
    {
       scan_result_t *result = &sr->results[i];
       char db_name_noext[PATH_MAX_LENGTH];
+      /* The key identifying which playlist this result belongs to.
+       * With a fixed playlist file every result goes to the same
+       * playlist, so the key is that path; otherwise results are
+       * grouped by database name.
+       *
+       * This used to compare current_playlist against result->db_name
+       * unconditionally, but the fixed-file branch below assigns
+       * task_config->playlist_file to current_playlist - a path like
+       * ".../MyList.lpl", which never equals a db_name like
+       * "Sega - Genesis.lpl".  The test was therefore true on every
+       * iteration, and each result closed the playlist (a full
+       * playlist_write_file()) and reopened it (a full
+       * playlist_init() parse from disk).  N results meant N complete
+       * loads and N complete writes of the same file. */
+      const char *group_key = (*manual_scan->task_config->playlist_file)
+         ? manual_scan->task_config->playlist_file
+         : result->db_name;
 
       strlcpy(db_name_noext, result->db_name, sizeof(db_name_noext));
       path_remove_extension(db_name_noext);
 
       /* Check if we need to switch to a different playlist */
-      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, result->db_name)))
+      if (!single_playlist && (!current_playlist || !string_is_equal(current_playlist, group_key)))
       {
          /* Write and close previous playlist if any */
          if (playlist)
@@ -1733,6 +1750,18 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
          }
 
          playlist = playlist_init(&manual_scan->playlist_config);
+
+         /* Check before use: the playlist_set_scan_* calls below are
+          * not all NULL-guarded (playlist_set_scan_search_recursively,
+          * playlist_set_sort_mode, playlist_qsort, playlist_write_file
+          * and several others dereference unconditionally).  The test
+          * used to sit after all of them. */
+         if (!playlist)
+         {
+            RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
+            current_playlist = NULL;
+            continue;
+         }
 
          /* Set default core, if required */
          if (manual_scan->task_config->core_set)
@@ -1768,12 +1797,6 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
                manual_scan->task_config->db_usage);
          playlist_set_scan_omit_db_ref(playlist,
                manual_scan->task_config->omit_db_reference);
-
-         if (!playlist)
-         {
-            RARCH_ERR("[Scanner] Failed to open playlist: \"%s\".\n", result->db_name);
-            continue;
-         }
 
          RARCH_LOG("[Scanner] Processing playlist: \"%s\".\n", result->db_name);
       }
@@ -1835,7 +1858,12 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
       playlist_set_sort_mode(playlist, PLAYLIST_SORT_MODE_DEFAULT);
       playlist_qsort(playlist);
       playlist_write_file(playlist);
-      if (!string_is_equal(current_playlist, manual_scan->task_config->playlist_file))
+      /* Free whatever this function opened.  Only the single-playlist
+       * path borrows manual_scan->playlist, which the handle teardown
+       * owns; comparing the handles says that exactly, where the
+       * previous string compare against playlist_file also matched
+       * the playlist this function had opened itself and leaked it. */
+      if (playlist != manual_scan->playlist)
          playlist_free(playlist);
    }
 
