@@ -2447,7 +2447,6 @@ static const struct
    char s_daf6d7e2[41];
    char s_042502c4[52];
    char s_90ae9a9f[89];
-   char s_81b79d5b[397];
    char s_c9235dab[64];
    char s_330be970[449];
    char s_98b02857[220];
@@ -6828,11 +6827,6 @@ static const struct
    "A\305\255tomate silentigi sonon kiam uzante rapidpluigon.",
    "Rapidpluigi sonon kiam rapidpluigante la ludon. Evitas kraketadon sed \305\235an\304\235as la to"
    "non.",
-   "Uzi la fikspunktan (entjeran) resonpecigilon anstata\305\255 la glitpunktan kiam kerno eligas 16"
-   "-bitan sonon. Evitas la duoblan konverton el entjero al glita\304\265o kaj produktas bit-identan"
-   " eligon sur \304\211iu platformo, farante sonan eligon ludeblaj trans sistemojn. Havas nenian ef"
-   "ikon sur kernoj, kiuj eligas glitpunktajn sonojn, kaj retropa\305\235as al glitpunkta vojo kiam "
-   "nekongrua filtrilo DSP estas aktiva.",
    "Filtriloj de sono DSP estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Sonspeciga formato postulata de la sonpelilo de la eligaparato. \"Glita\304\265o\" postulas 32-b"
    "itan glitpunkta\304\265on; \"Int16\", 16-bitan entjeron. Nur influas pelilojn, kiuj povas intert"
@@ -9082,7 +9076,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (173165u
+      (sizeof(msg_hash_eo_blob) == (172768u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11927,7 +11921,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,

@@ -110,7 +110,7 @@ static const struct
    char s_78cabcca[485];
    char s_0e85a0d1[59];
    char s_ff583ef3_0[500];
-   char s_ff583ef3_1[159];
+   char s_ff583ef3_1[160];
 #ifdef ANDROID
    char s_2bd047ef[373];
 #endif
@@ -709,8 +709,8 @@ static const struct
    char s_a46a4178[20];
    char s_0ef6cd3a[64];
    char s_1c0f54f0[29];
-   char s_97c02a5a[34];
-   char s_998d1a40[49];
+   char s_97c02a5a[35];
+   char s_998d1a40[50];
    char s_c6622b4d[20];
 #ifdef HAVE_GAME_AI
    char s_cef4e317[26];
@@ -2009,8 +2009,8 @@ static const struct
    char s_5c7bbce1[26];
    char s_cd916c68[26];
    char s_8fe41f79[37];
-   char s_2c296537[29];
-   char s_519cd5f8[48];
+   char s_2c296537[30];
+   char s_519cd5f8[49];
    char s_43ac80a0[13];
    char s_6959ce80[18];
    char s_886631ec[20];
@@ -2189,6 +2189,7 @@ static const struct
    char s_a12ce1bf[8];
    char s_bfa23080[8];
    char s_ec326380[6];
+   char s_8a86d1de[21];
    char s_8fc1e4da[12];
    char s_88157cb0[6];
    char s_14ed14d0[12];
@@ -2420,7 +2421,7 @@ static const struct
    char s_042502c4[55];
    char s_90ae9a9f[101];
    char s_81b79d5b_0[500];
-   char s_81b79d5b_1[95];
+   char s_81b79d5b_1[290];
    char s_c9235dab[55];
    char s_330be970_0[500];
    char s_330be970_1[109];
@@ -2596,7 +2597,7 @@ static const struct
    char s_c9c04b6d[61];
 #endif
    char s_daa8dfca[38];
-   char s_d3bff7ab[217];
+   char s_d3bff7ab[218];
    char s_d4953ccc[69];
    char s_e00d4e7a[168];
    char s_5bee81e1[47];
@@ -2660,7 +2661,7 @@ static const struct
    char s_aa771128_0[500];
    char s_aa771128_1[9];
    char s_e531c55e[175];
-   char s_deab66ee[179];
+   char s_deab66ee[181];
    char s_5ce79fca[196];
 #ifdef HAVE_GAME_AI
    char s_b7dcc585[37];
@@ -2690,7 +2691,7 @@ static const struct
    char s_744c0f80[83];
    char s_2aa39081[48];
    char s_e85b309d[71];
-   char s_cd94bb16[227];
+   char s_cd94bb16[228];
    char s_a17a67e1[74];
    char s_1c4b447a[123];
    char s_df4225b9[79];
@@ -2817,7 +2818,7 @@ static const struct
    char s_47df0525[61];
    char s_03e272fc[71];
    char s_5c2cc60f[103];
-   char s_d6d8d4be[93];
+   char s_d6d8d4be[94];
    char s_e86d2704[99];
    char s_dda608b5[384];
    char s_6f5a032a[52];
@@ -3484,6 +3485,8 @@ static const struct
    char s_698d5124[174];
    char s_7e43d750[209];
    char s_87ca7bc6[204];
+   char s_cfa51e8c_0[500];
+   char s_cfa51e8c_1[4];
    char s_b62c2f7e[396];
    char s_456fcbc9[401];
    char s_82fab47a[45];
@@ -3889,7 +3892,7 @@ static const struct
    char s_1a5de3f6[56];
    char s_1d77112b[18];
    char s_00a5b29d[85];
-   char s_2471a06d[33];
+   char s_2471a06d[34];
    char s_98e55de8[60];
    char s_03d08020[62];
    char s_e9fb0749[11];
@@ -4313,14 +4316,14 @@ static const struct
    "a ignor\303\251e lors du jeu en r\303\251seau.",
    "Utilisez le tactile avant plut\303\264t que le tactile arri\303\250re.",
    "Libretro utilise une abstraction de manette virtuelle connue sous le nom de 'RetroManette' pour "
-   "communiquer depuis des interfaces frontales (comme RetroArch) \303\240 des c\305\223urs et vice "
-   "versa. Ce menu d\303\251termine comment la RetroManette virtuelle est mapp\303\251e aux p\303"
+   "communiquer depuis des interfaces graphiques (comme RetroArch) \303\240 des c\305\223urs et vice"
+   " versa. Ce menu d\303\251termine comment la RetroManette virtuelle est mapp\303\251e aux p\303"
    "\251riph\303\251riques d'entr\303\251e physiques et quels ports d'entr\303\251e virtuels ces p"
    "\303\251riph\303\251riques occupent.\nSi un p\303\251riph\303\251rique d'entr\303\251e physique "
    "est reconnu et configur\303\251 correctement automatiquement, les utilisateurs n'ont probablemen"
-   "t pas besoin d",
-   "'utiliser ce menu du tout, et pour les changements d'entr\303\251es sp\303\251cifiques au coeur,"
-   " vous pouvez utiliser le sous-menu 'Commandes' du menu rapide \303\240 la place.",
+   "t pas besoin ",
+   "d'utiliser ce menu du tout, et pour les changements d'entr\303\251es sp\303\251cifiques au coeur"
+   ", vous pouvez utiliser le sous-menu 'Commandes' du menu rapide \303\240 la place.",
 #ifdef ANDROID
    "Si RetroArch identifie un clavier mat\303\251riel comme une sorte de manette de jeu, ce r\303"
    "\251glage peut \303\252tre utilis\303\251 pour forcer RetroArch \303\240 traiter le p\303\251rip"
@@ -5112,8 +5115,8 @@ static const struct
    "Limiteur d'images/s",
    "R\303\251initialisation automatique apr\303\250s \303\251v\303\251nements perturbateurs",
    "Compteur de temps par images",
-   "Compteurs de l'interface frontale",
-   "Niveau de journalisation de l'interface frontale",
+   "Compteurs de l'interface graphique",
+   "Niveau de journalisation de l'interface graphique",
    "Mode jeu (GameMode)",
 #ifdef HAVE_GAME_AI
    "Remplacement du joueur IA",
@@ -6426,9 +6429,9 @@ static const struct
    "Points/pouce de l'\303\251cran ",
    "Hauteur de l'\303\251cran (mm) ",
    "Largeur de l'\303\251cran (mm) ",
-   "Identifiant de l'interface frontale ",
-   "Nom de l'interface frontale ",
-   "Syst\303\250me d'exploitation de l'interface frontale",
+   "Identifiant de l'interface graphique",
+   "Nom de l'interface graphique ",
+   "Syst\303\250me d'exploitation de l'interface graphique",
    "Version Git ",
    "Version de Lakka ",
    "Version de MoltenVK",
@@ -6609,6 +6612,7 @@ static const struct
    "Pr\303\251cis",
    "\303\211tendu",
    "Large",
+   "Luminosit\303\251 maximale",
    "D\303\251sactiv\303\251",
    "scRVB",
    "Luminosit\303\251",
@@ -6863,13 +6867,15 @@ static const struct
    "dio mais r\303\251hausse le pitch.",
    "Utiliser le r\303\251\303\251chantillonneur \303\240 virgule fixe (entier) plut\303\264t que cel"
    "ui \303\240 virgule flottante lorsqu'un c\305\223ur g\303\251n\303\250re un signal audio 16 bits"
-   ". Cela \303\251vite la conversion aller-retour entre entier et virgule flottante et produit une "
-   "sortie identique au bit pr\303\250s sur toutes les plateformes, garantissant ainsi la reproducti"
-   "bilit\303\251 de la sortie audio d'une ex\303\251cution \303\240 l'autre et d'un syst\303\250me "
-   "\303\240 l'autre. Cette option n'a pas d'effet sur les c\305\223urs qui g\303\251n\303\250rent u"
-   "n signal audio \303\240 virgule flotta",
-   "nte et utilise la conversion \303\240 virgule flottante lorsqu'un filtre DSP incompatible est ac"
-   "tif.",
+   ". Cela garantit une sortie identique au bit pr\303\250s sur toutes les plateformes, assurant ain"
+   "si la reproductibilit\303\251 audio entre les diff\303\251rentes ex\303\251cutions et les diff"
+   "\303\251rents syst\303\250mes. Ce choix est motiv\303\251 par la reproductibilit\303\251, et non"
+   " par la vitesse\302\240: si le processeur dispose d'une unit\303\251 de calcul en virgule flotta"
+   "nte vectorielle, le r\303\251\303\251chantillo",
+   "nneur entier est plus lent, car seul le r\303\251\303\251chantillonneur \303\240 virgule flottan"
+   "te est vectoris\303\251. Aucun impact sur les c\305\223urs g\303\251n\303\251rant un signal audi"
+   "o \303\240 virgule flottante\302\240; le r\303\251\303\251chantillonneur \303\240 virgule flotta"
+   "nte est utilis\303\251 par d\303\251faut lorsqu'un filtre DSP incompatible est actif.",
    "Les filtres audio DSP sont conserv\303\251s dans ce dossier.",
    "Format d'\303\251chantillon demand\303\251 par le pilote audio au p\303\251riph\303\251rique de "
    "sortie. 'Float' correspond \303\240 un nombre \303\240 virgule flottante 32\302\240bits, 'Int16'"
@@ -7129,7 +7135,7 @@ static const struct
    "Modifier les options pour le contenu.",
    "Force l'\303\251criture des r\303\251glages actuels dans le fichier d'options actif. Permet de s"
    "'assurer que les options sont conserv\303\251es dans le cas o\303\271 un bug de c\305\223ur prov"
-   "oque une fermeture incorrecte de l'interface frontale.",
+   "oque une fermeture incorrecte de l'interface graphique.",
    "D\303\251finit toutes les options du c\305\223ur actuel aux valeurs par d\303\251faut.",
    "Permettre aux c\305\223urs de pr\303\251senter leurs options dans des sous-menus par cat\303\251"
    "gories. REMARQUE : Le c\305\223ur doit \303\252tre recharg\303\251 pour que les changements pren"
@@ -7235,9 +7241,9 @@ static const struct
    "Modifier les r\303\251glages qui influent sur le compteur de temps par image. Cette option est a"
    "ctive uniquement lorsque la vid\303\251o sur plusieurs fils d'ex\303\251cution est d\303\251sact"
    "iv\303\251e.",
-   "Ajuster le niveau de journalisation pour l'interface frontale. Si un niveau de journalisation "
-   "\303\251mis par l'interface frontale est inf\303\251rieur \303\240 cette valeur, il est alors ig"
-   "nor\303\251.",
+   "Ajuster le niveau de journalisation pour l'interface graphique. Si un niveau de journalisation "
+   "\303\251mis par l'interface graphique est inf\303\251rieur \303\240 cette valeur, il est alors i"
+   "gnor\303\251.",
    "Peut am\303\251liorer les performances, r\303\251duire la latence et corriger les probl\303\250m"
    "es de cr\303\251pitements audio. Vous avez besoin de https://github.com/FeralInteractive/gamemod"
    "e pour que cela fonctionne.",
@@ -7279,7 +7285,7 @@ static const struct
    "Tente de configurer automatiquement les manettes, style Plug-and-Play.",
    "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lo"
    "rsque r\303\251gl\303\251 sur 'D\303\251tecter', l'option sera activ\303\251e si le c\305\223ur "
-   "actuel impl\303\251mente le rappel du clavier de l'interface frontale.",
+   "actuel impl\303\251mente le rappel du clavier de l'interface graphique.",
    "Active la capture de la souris lorsque l'application est en premier plan.",
    "Assigner toutes les directions et touches, l'une apr\303\250s l'autre, dans l'ordre dans lequel "
    "elles apparaissent dans ce menu.",
@@ -7491,7 +7497,7 @@ static const struct
    "Remplacer les assignations des touches par les assignations remapp\303\251es d\303\251finies pou"
    "r le c\305\223ur actuel.",
    "Sp\303\251cifie quel port du c\305\223ur recevra les entr\303\251es du port global %u de l'inter"
-   "face frontale.",
+   "face graphique.",
    "Les remappages ne s'appliqueront qu'\303\240 la manette active pour laquelle ils ont \303\251t"
    "\303\251 sauvegard\303\251s.",
    "Change la fa\303\247on dont la RetroManette virtuelle est mapp\303\251e \303\240 un p\303\251rip"
@@ -8612,6 +8618,14 @@ static const struct
    "Utilise la gamme compl\303\250te de couleurs de votre \303\251cran pour cr\303\251er une image p"
    "lus brillante et plus satur\303\251e. Pour les couleurs plus fid\303\250les au design original d"
    "u jeu, r\303\251gler cette option sur Pr\303\251cise.",
+   "Luminosit\303\251 maximale de votre \303\251cran, en nits. Cette option d\303\251termine la marg"
+   "e de luminosit\303\251 disponible pour les hautes lumi\303\250res, permettant ainsi aux c\305"
+   "\223urs g\303\251rant le HDR de savoir jusqu'o\303\271 ils peuvent aller avant que la luminosit"
+   "\303\251 ne soit att\303\251nu\303\251e. Consultez les sp\303\251cifications de votre \303\251cr"
+   "an\302\240; en cas de doute, laissez ce param\303\250tre \303\240 1000. Un r\303\251glage sup"
+   "\303\251rieur \303\240 la luminosit\303\251 maximale de l'\303\251cran entra\303\256ne un \303"
+   "\251cr\303\252tage des d\303\251tails lumineux au lieu d'une att\303\251nuation progressi",
+   "ve.",
    "D\303\251finit le niveau de luminosit\303\251 HDR en nits. \303\200 utiliser en combinaison avec"
    " les param\303\250tres de luminosit\303\251 physique de votre \303\251cran. Pour un point de d"
    "\303\251part, r\303\251gler cette option \303\240 80 et la luminosit\303\251 de votre \303\251cr"
@@ -9155,7 +9169,7 @@ static const struct
    "Soumis %s pour %s",
    "est compil\303\251 avec une version diff\303\251rente de l'impl\303\251mentation de libretro act"
    "uelle.",
-   "Interface frontale pour libretro",
+   "Interface graphique pour libretro",
    "Sauvegarde instantan\303\251e charg\303\251e depuis l'emplacement : %d.",
    "Sauvegarde instantan\303\251e charg\303\251e depuis l'emplacement : Auto.",
    "Chargement",
@@ -9446,7 +9460,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (214433u
+      (sizeof(msg_hash_fr_blob) == (215164u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12025,6 +12039,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_SCRGB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
@@ -13317,6 +13332,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

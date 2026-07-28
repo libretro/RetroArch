@@ -987,6 +987,7 @@ static const struct
    char s_d264a13e[30];
    char s_d3213ff3[34];
    char s_ac60056b[12];
+   char s_54d6b95e[18];
    char s_1ad09b45[19];
    char s_87064238[35];
    char s_2a273dd7[20];
@@ -4472,6 +4473,7 @@ static const struct
    "Ota valinta\303\244\303\244ni k\303\244ytt\303\266\303\266n",
    "Ota \"vieritys\303\244\303\244net\" k\303\244ytt\303\266\303\266n",
    "Aloitussivu",
+   "Mipmap-k\303\244sittely",
    "Pikkukuvan taustat",
    "Esikatselukuvien suurennuksen arvo",
    "Pehme\303\244 tekstinauha",
@@ -7458,7 +7460,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124205u
+      (sizeof(msg_hash_fi_blob) == (124223u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8738,6 +8740,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,

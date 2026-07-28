@@ -1631,6 +1631,8 @@ void drivers_init(
       menu_st->flags             |= MENU_ST_FLAG_DATA_OWN;
 #endif
 
+   DRIVER_FLAGS_NORMALIZE(flags);
+
    /* Content av_info based automatic swap interval must be set early. */
    runloop_set_video_swap_interval(settings);
 
@@ -1875,6 +1877,8 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    dispgfx_widget_t *p_dispwidget   = dispwidget_get_ptr();
 #endif
 
+   DRIVER_FLAGS_NORMALIZE(flags);
+
    core_info_deinit_list();
    core_info_free_current_core();
 
@@ -1887,7 +1891,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * use-after-free crashes on D3D12/Vulkan under threaded video.
     *
     * No-op when threaded video is not active. */
-   if (     (flags & DRIVERS_VIDEO_INPUT)
+   if (     (flags & DRIVER_VIDEO_AND_INPUT_MASK)
          && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
          && (video_st->flags & VIDEO_FLAG_THREAD_WRAPPER_ACTIVE))
       video_thread_wait_idle();
@@ -1946,10 +1950,10 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
       wifi_driver_ctl(RARCH_WIFI_CTL_DEINIT, NULL);
 #endif
 
-   if (flags & DRIVER_LED)
+   if (flags & DRIVER_LED_MASK)
       led_driver_free();
 
-   if (flags & DRIVERS_VIDEO_INPUT)
+   if (flags & DRIVER_VIDEO_AND_INPUT_MASK)
    {
       video_driver_free_internal();
 #ifdef HAVE_THREADS
@@ -1964,9 +1968,6 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 
    if (flags & DRIVER_AUDIO_MASK)
       audio_driver_deinit();
-
-   if ((flags & DRIVER_VIDEO_MASK))
-      video_st->data = NULL;
 
    if ((flags & DRIVER_INPUT_MASK))
       input_state_get_ptr()->current_data = NULL;
@@ -8482,7 +8483,7 @@ bool retroarch_main_init(int argc, char *argv[])
       }
 #elif defined(WEBOS)
       {
-         char str_output[128];
+         char str_output[256];
          char osbuf[128];
          int major = 0, minor = 0;
          frontend_state_t *frontend_st = frontend_state_get_ptr();

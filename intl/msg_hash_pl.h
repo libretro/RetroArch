@@ -2419,7 +2419,6 @@ static const struct
    char s_daf6d7e2[53];
    char s_042502c4[64];
    char s_90ae9a9f[92];
-   char s_81b79d5b[481];
    char s_c9235dab[51];
    char s_330be970_0[500];
    char s_330be970_1[58];
@@ -6861,13 +6860,6 @@ static const struct
    "Automatycznie wycisz d\305\272wi\304\231k podczas u\305\274ywania przyspieszenia.",
    "Przyspiesz d\305\272wi\304\231k podczas przewijania. Zapobiega trzeszczeniu d\305\272wi\304\231k"
    "u, ale zmienia ton.",
-   "U\305\274ywaj resamplera ze sta\305\202\304\205 liczb\304\205 (ca\305\202kowit\304\205) zamiast "
-   "zmiennoprzecinkowego, gdy rdze\305\204 wysy\305\202a 16-bitowy d\305\272wi\304\231k. Unika niepo"
-   "trzebnej zmiany sta\305\202ej-na-zmiennoprzecinkow\304\205 i produkuje identyczne co do bita wyj"
-   "\305\233cie na ka\305\274dej platformie, co czyni wyj\305\233cie audio odtwarzalnym przy ka\305"
-   "\274dym podej\305\233ciu i systemie. Nie ma wp\305\202ywu na rdzenie kt\303\263re wysylaj\304"
-   "\205 d\305\272wi\304\231k zmiennoprzecinkowy, wracaj\304\205 one na zmiennoprzecinkow\304\205 "
-   "\305\233cie\305\274k\304\231 gdy aktywny jest niekompatybilny filtr DSP.",
    "Filtry DSP audio s\304\205 przechowywane w tym katalogu.",
    "Format sampli o kt\303\263re sterownik audio prosi z urz\304\205dzenia wyj\305\233ciowego. 'Zmie"
    "nnoprzecinkowe' prosi o 32-bitow\304\205 liczb\304\231 zmiennoprzecinkow\304\205, 'Int16' 16-bit"
@@ -9434,7 +9426,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (187089u
+      (sizeof(msg_hash_pl_blob) == (186608u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12256,7 +12248,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,

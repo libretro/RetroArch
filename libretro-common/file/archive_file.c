@@ -50,7 +50,6 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
 
    if (valid_exts)
    {
@@ -85,6 +84,7 @@ static int file_archive_get_file_list_cb(
       string_list_deinitialize(&ext_list);
    }
 
+   attr.i = RARCH_COMPRESSED_FILE_IN_ARCHIVE;
    return string_list_append(userdata->list, path, attr);
 }
 
@@ -227,7 +227,10 @@ int file_archive_parse_file_iterate(
             state->type = ARCHIVE_TRANSFER_ITERATE;
          }
          else
+         {
             state->type = ARCHIVE_TRANSFER_DEINIT_ERROR;
+            goto deinit_error;
+         }
          break;
       case ARCHIVE_TRANSFER_ITERATE:
          if (state->backend)
@@ -302,7 +305,9 @@ int file_archive_parse_file_iterate(
          }
          return -1;
       case ARCHIVE_TRANSFER_DEINIT_ERROR:
-         *returnerr = false;
+deinit_error:
+         if (returnerr)
+            *returnerr = false;
       case ARCHIVE_TRANSFER_DEINIT:
          if (state->context)
          {

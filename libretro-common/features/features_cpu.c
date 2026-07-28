@@ -33,6 +33,7 @@
 #include <streams/file_stream.h>
 #include <libretro.h>
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 #include <retro_timers.h>
 
 #if defined(_WIN32) && !defined(_XBOX)
@@ -606,7 +607,7 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
-uint64_t cpu_features_get(void)
+static uint64_t cpu_features_probe(void)
 {
    uint64_t cpu        = 0;
 #if defined(CPU_X86) && !defined(__MACH__)
@@ -860,6 +861,33 @@ uint64_t cpu_features_get(void)
    return cpu;
 }
 
+/* The probe is not cheap: on x86 it issues a chain of serialising CPUID
+ * instructions, and on ARM/Linux it opens and line-parses /proc/cpuinfo
+ * once per feature queried.  The answer cannot change over the lifetime
+ * of the process, so probe once and hand out the cached mask thereafter.
+ * Callers that sit on a per-frame or per-asset path (the image decoders
+ * select their SIMD kernels this way) were paying the full probe on every
+ * single call. */
+uint64_t cpu_features_get(void)
+{
+   /* The mask is published with a release store and consumed with an
+    * acquire load, so a thread that observes the ready flag is
+    * guaranteed to see the fully written mask.  The probe is idempotent,
+    * so if several threads reach it before any has published they simply
+    * compute and store the same bits. */
+   static uint64_t           cpu_features_cache;
+   static retro_atomic_int_t cpu_features_ready; /* 0 = not probed yet */
+   uint64_t                  cpu;
+
+   if (retro_atomic_load_acquire_int(&cpu_features_ready))
+      return cpu_features_cache;
+
+   cpu                = cpu_features_probe();
+   cpu_features_cache = cpu;
+   retro_atomic_store_release_int(&cpu_features_ready, 1);
+   return cpu;
+}
+
 void cpu_features_get_model_name(char *s, int len)
 {
 #if defined(CPU_X86) && !defined(__MACH__)
@@ -959,7 +987,7 @@ end:
                   if (p)
                   {
                      size_t len2;
-                     p++; // skip ':'
+                     p++; /* skip ':' */
                      while (*p == ' ' || *p == '\t')
                         p++;
                      len2 = strcspn(p, "\r\n");

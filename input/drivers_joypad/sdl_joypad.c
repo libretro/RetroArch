@@ -81,7 +81,14 @@ static uint8_t sdl_pad_get_hat(sdl_joypad_t *pad, unsigned hat)
 {
 #ifdef HAVE_SDL2
    if (pad->controller)
-      return sdl_pad_get_button(pad, hat);
+   {
+      /* Stock code called get_button(hat) here, which is wrong for a hat
+       * index. Read the real joystick hat so h0* autoconfigs work (webOS
+       * Switch Pro reports the D-pad as hat 0). */
+      if (hat != 0 || !pad->joypad || SDL_JoystickNumHats(pad->joypad) <= 0)
+         return 0;
+      return SDL_JoystickGetHat(pad->joypad, 0);
+   }
 #endif
    return SDL_JoystickGetHat(pad->joypad, hat);
 }
@@ -180,14 +187,14 @@ static void sdl_pad_connect(unsigned id)
        * So, we can claim to support all axes/buttons, and when we try to poll
        * an unbound ID, SDL simply returns the correct unpressed value.
        *
-       * Note that, in addition to 0 trackballs, we also have 0 hats. This is
-       * because the d-pad is in the button list, as the last 4 enum entries.
+       * Expose one hat so autoconfigs / remap that bind h0up/... work when
+       * the platform reports the D-pad as a joystick hat (webOS uhid).
        *
-       * -flibit
+       * -flibit (num_hats note updated for hat fallback)
        */
       pad->num_axes    = SDL_CONTROLLER_AXIS_MAX;
       pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
-      pad->num_hats    = 0;
+      pad->num_hats    = 1;
       pad->num_balls   = 0;
 
       /* SDL Device supports Game Controller API. */

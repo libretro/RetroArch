@@ -6037,7 +6037,12 @@ static enum runloop_state_enum runloop_check_state(
    }
 
    frame_count = video_st->frame_count;
-   is_alive    = video_st->current_video
+   /* current_video and data have independent lifetimes: driver_uninit()
+    * clears data while leaving the vtable pointer installed, and only
+    * retroarch_deinit_drivers() clears current_video.  Every alive()
+    * implementation dereferences its argument, so the handle has to be
+    * checked as well as the vtable. */
+   is_alive    = (video_st->current_video && video_st->data)
       ? video_st->current_video->alive(video_st->data)
       : true;
    is_focused  = VIDEO_HAS_FOCUS(video_st);
