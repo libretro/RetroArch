@@ -282,7 +282,11 @@ static int crc32_have_pclmul(void)
 
 #if defined(CRC32_HAVE_ARM_PATH)
 
-#ifdef _M_ARM64
+/* arm64_neon.h is an MSVC header. Selecting it on _M_ARM64 alone breaks
+ * every Clang that defines that macro for Windows-on-ARM compatibility,
+ * MSYS2's CLANGARM64 among them, which has arm_acle.h and no
+ * arm64_neon.h. Key on the compiler rather than the target macro. */
+#if defined(_MSC_VER) && !defined(__clang__)
 #include <arm64_neon.h>
 #else
 #include <arm_acle.h>
