@@ -15,7 +15,7 @@ TEST_FILE_LIST_SRC = test/lists/test_file_list.c lists/file_list.c \
 
 TEST_STDSTRING = test/string/test_stdstring
 TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c \
-		     compat/compat_strl.c
+		     compat/compat_strl.c compat/compat_strldup.c
 
 TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
