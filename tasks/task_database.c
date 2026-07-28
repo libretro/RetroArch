@@ -21,6 +21,7 @@
 #include <retro_miscellaneous.h>
 #include <string/stdstring.h>
 #include <lists/dir_list.h>
+#include <memory/mem_stats.h>
 #include <lists/string_list.h>
 #include <file/file_path.h>
 #include <formats/logiqx_dat.h>
@@ -170,19 +171,49 @@ enum db_state_flags_enum
    DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
 
-/* Ceiling on the crc and serial indexes a single scan may hold.  The
- * databases shipped today index to roughly 360 KB each at their
- * largest, so this covers a good many of them before the scan falls
- * back to querying, and the fallback is only slower, never wrong. */
-#ifndef DB_STATE_INDEX_BUDGET
-#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) \
- || defined(GEKKO) || defined(WIIU) || defined(__PSL1GHT__) \
- || defined(__PS3__) || defined(HAVE_EMSCRIPTEN) || defined(VITA)
-#define DB_STATE_INDEX_BUDGET (2 * 1024 * 1024)
-#else
-#define DB_STATE_INDEX_BUDGET (24 * 1024 * 1024)
+/* Ceiling on the crc and serial indexes a single scan may hold.
+ *
+ * Taken as a share of what is actually free rather than from a
+ * platform list: mem_stats_free() has implementations for the 3DS and
+ * the GameCube/Wii among others, which are the platforms where this
+ * matters, and task_audio_mixer_threshold() already sizes a
+ * task-lifetime allocation the same way.
+ *
+ * An eighth is deliberately more conservative than the quarter the
+ * mixer uses, because these indexes are held for the whole scan
+ * rather than consulted once.  The cap keeps a large-memory host from
+ * hoarding: the biggest database shipped today indexes to roughly
+ * 360 KB, so 32 MB covers far more databases than exist.  Below the
+ * floor there is no point starting, and the query path is only
+ * slower, never wrong. */
+#define DB_STATE_INDEX_BUDGET_SHARE  8
+#define DB_STATE_INDEX_BUDGET_CAP    (32 * 1024 * 1024)
+#define DB_STATE_INDEX_BUDGET_FLOOR  (256 * 1024)
+
+/* Used when mem_stats_free() has no implementation for the platform
+ * and returns 0.  Small enough to be harmless where memory is tight,
+ * since the only cost of running out is falling back to querying. */
+#ifndef DB_STATE_INDEX_BUDGET_UNKNOWN
+#define DB_STATE_INDEX_BUDGET_UNKNOWN (2 * 1024 * 1024)
 #endif
-#endif
+
+static size_t task_database_index_budget(void)
+{
+   uint64_t free_mem = mem_stats_free();
+   uint64_t share;
+
+   if (!free_mem)
+      return (size_t)DB_STATE_INDEX_BUDGET_UNKNOWN;
+
+   share = free_mem / DB_STATE_INDEX_BUDGET_SHARE;
+
+   if (share > (uint64_t)DB_STATE_INDEX_BUDGET_CAP)
+      share = (uint64_t)DB_STATE_INDEX_BUDGET_CAP;
+   if (share < (uint64_t)DB_STATE_INDEX_BUDGET_FLOOR)
+      return 0;
+
+   return (size_t)share;
+}
 
 typedef struct database_state_handle
 {
@@ -218,8 +249,7 @@ typedef struct database_state_handle
    database_info_serial_index_t **serial_index;
    /* Bytes of index the scan may still allocate.  Indexes are held
     * for the whole scan, so without a ceiling a large database set
-    * costs tens of megabytes - fine on desktop, not on the consoles
-    * where DIR_MAX_LENGTH is already halved for the same reason. */
+    * costs tens of megabytes.  See task_database_index_budget(). */
    size_t index_budget;
 } database_state_handle_t;
 
@@ -1213,7 +1243,7 @@ static bool task_database_state_alloc_arrays(
       calloc(count, sizeof(*db_state->crc_index));
    db_state->serial_index = (database_info_serial_index_t**)
       calloc(count, sizeof(*db_state->serial_index));
-   db_state->index_budget = DB_STATE_INDEX_BUDGET;
+   db_state->index_budget = task_database_index_budget();
 
    if (   !db_state->min_sizes
        || !db_state->max_sizes
