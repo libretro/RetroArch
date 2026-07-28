@@ -72,6 +72,29 @@ static const uint8_t MPF_FIXARRAY = _MPF_FIXARRAY;
 static const uint8_t MPF_FIXSTR   = _MPF_FIXSTR;
 static const uint8_t MPF_NIL      = _MPF_NIL;
 
+/* Maximum container nesting accepted from a stream.
+ *
+ * The readers below recurse once per level of map/array nesting and
+ * had no limit, while the "len > remaining bytes" guards in
+ * rmsgpack_read_map()/rmsgpack_read_array() bound only how *wide* a
+ * container may be.  Depth costs one byte per level: a run of 0x91
+ * (fixarray of one element) recurses once per byte, so a 200 KB .rdb
+ * of 0x91 exhausts the stack:
+ *
+ *   AddressSanitizer: stack-overflow
+ *     rmsgpack_read        rmsgpack.c:530
+ *     rmsgpack_read_array  rmsgpack.c:513
+ *     ... repeated to exhaustion
+ *
+ * The DOM reader's own MAX_DEPTH does not catch this - a one-element
+ * array pops one entry and pushes one, so its stack index never
+ * grows.
+ *
+ * Records written by the converter nest two deep (a map of scalars);
+ * 32 leaves room for any plausible schema change while keeping worst
+ * case recursion bounded. */
+#define RMSGPACK_MAX_DEPTH 32
+
 int rmsgpack_write_array_header(intfstream_t *fd, uint32_t size)
 {
    uint8_t buf[5];
@@ -470,8 +493,13 @@ static int rmsgpack_read_buff(intfstream_t *fd, size_t size, char **pbuff, uint6
    return 0;
 }
 
+static int rmsgpack_read_depth(intfstream_t *fd,
+      struct rmsgpack_read_callbacks *callbacks, void *data,
+      unsigned depth);
+
 static int rmsgpack_read_map(intfstream_t *fd, uint32_t len,
-        struct rmsgpack_read_callbacks *callbacks, void *data)
+        struct rmsgpack_read_callbacks *callbacks, void *data,
+        unsigned depth)
 {
    int rv;
    unsigned i;
@@ -505,9 +533,9 @@ static int rmsgpack_read_map(intfstream_t *fd, uint32_t len,
 
    for (i = 0; i < len; i++)
    {
-      if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
+      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
          return rv;
-      if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
+      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
          return rv;
    }
 
@@ -515,7 +543,8 @@ static int rmsgpack_read_map(intfstream_t *fd, uint32_t len,
 }
 
 static int rmsgpack_read_array(intfstream_t *fd, uint32_t len,
-      struct rmsgpack_read_callbacks *callbacks, void *data)
+      struct rmsgpack_read_callbacks *callbacks, void *data,
+      unsigned depth)
 {
    int rv;
    unsigned i;
@@ -540,7 +569,7 @@ static int rmsgpack_read_array(intfstream_t *fd, uint32_t len,
 
    for (i = 0; i < len; i++)
    {
-      if ((rv = rmsgpack_read(fd, callbacks, data)) < 0)
+      if ((rv = rmsgpack_read_depth(fd, callbacks, data, depth)) < 0)
          return rv;
    }
 
@@ -550,12 +579,23 @@ static int rmsgpack_read_array(intfstream_t *fd, uint32_t len,
 int rmsgpack_read(intfstream_t *fd,
       struct rmsgpack_read_callbacks *callbacks, void *data)
 {
+   return rmsgpack_read_depth(fd, callbacks, data, 0);
+}
+
+static int rmsgpack_read_depth(intfstream_t *fd,
+      struct rmsgpack_read_callbacks *callbacks, void *data,
+      unsigned depth)
+{
    int rv;
    uint64_t tmp_len  = 0;
    uint64_t tmp_uint = 0;
    int64_t tmp_int   = 0;
    uint8_t type      = 0;
    char *buff        = NULL;
+
+   if (depth >= RMSGPACK_MAX_DEPTH)
+      return -1;
+   depth++;
 
    if (rmsgpack_read_exact(fd, &type, sizeof(uint8_t)) == -1)
       return -1;
@@ -569,12 +609,12 @@ int rmsgpack_read(intfstream_t *fd,
    else if (type < MPF_FIXARRAY)
    {
       tmp_len = type - MPF_FIXMAP;
-      return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data);
+      return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data, depth);
    }
    else if (type < MPF_FIXSTR)
    {
       tmp_len = type - MPF_FIXARRAY;
-      return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data);
+      return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data, depth);
    }
    else if (type < MPF_NIL)
    {
@@ -658,12 +698,12 @@ int rmsgpack_read(intfstream_t *fd,
       case _MPF_ARRAY16:
       case _MPF_ARRAY32:
          if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_ARRAY16)) != -1)
-            return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data);
+            return rmsgpack_read_array(fd, (uint32_t)tmp_len, callbacks, data, depth);
          return -1;
       case _MPF_MAP16:
       case _MPF_MAP32:
          if (rmsgpack_read_uint(fd, &tmp_len, 2<<(type - _MPF_MAP16)) != -1)
-            return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data);
+            return rmsgpack_read_map(fd, (uint32_t)tmp_len, callbacks, data, depth);
          return -1;
    }
 
@@ -703,11 +743,22 @@ static int rmsgpack_skip_bytes(intfstream_t *fd, uint64_t len)
  *
  * Returns: 0 on success, -1 on error.
  */
+static int rmsgpack_skip_value_depth(intfstream_t *fd, unsigned depth);
+
 int rmsgpack_skip_value(intfstream_t *fd)
+{
+   return rmsgpack_skip_value_depth(fd, 0);
+}
+
+static int rmsgpack_skip_value_depth(intfstream_t *fd, unsigned depth)
 {
    uint8_t  type  = 0;
    uint64_t len   = 0;
    uint64_t i;
+
+   if (depth >= RMSGPACK_MAX_DEPTH)
+      return -1;
+   depth++;
 
    if (rmsgpack_read_exact(fd, &type, 1) == -1)
       return -1;
@@ -721,7 +772,7 @@ int rmsgpack_skip_value(intfstream_t *fd)
    {
       len = type - _MPF_FIXMAP;
       for (i = 0; i < len * 2; i++)
-         if (rmsgpack_skip_value(fd) < 0)
+         if (rmsgpack_skip_value_depth(fd, depth) < 0)
             return -1;
       return 0;
    }
@@ -731,7 +782,7 @@ int rmsgpack_skip_value(intfstream_t *fd)
    {
       len = type - _MPF_FIXARRAY;
       for (i = 0; i < len; i++)
-         if (rmsgpack_skip_value(fd) < 0)
+         if (rmsgpack_skip_value_depth(fd, depth) < 0)
             return -1;
       return 0;
    }
@@ -778,23 +829,23 @@ int rmsgpack_skip_value(intfstream_t *fd)
       case _MPF_ARRAY16:
          if (rmsgpack_read_uint(fd, &len, 2) == -1) return -1;
          for (i = 0; i < len; i++)
-            if (rmsgpack_skip_value(fd) < 0) return -1;
+            if (rmsgpack_skip_value_depth(fd, depth) < 0) return -1;
          return 0;
       case _MPF_ARRAY32:
          if (rmsgpack_read_uint(fd, &len, 4) == -1) return -1;
          for (i = 0; i < len; i++)
-            if (rmsgpack_skip_value(fd) < 0) return -1;
+            if (rmsgpack_skip_value_depth(fd, depth) < 0) return -1;
          return 0;
 
       case _MPF_MAP16:
          if (rmsgpack_read_uint(fd, &len, 2) == -1) return -1;
          for (i = 0; i < len * 2; i++)
-            if (rmsgpack_skip_value(fd) < 0) return -1;
+            if (rmsgpack_skip_value_depth(fd, depth) < 0) return -1;
          return 0;
       case _MPF_MAP32:
          if (rmsgpack_read_uint(fd, &len, 4) == -1) return -1;
          for (i = 0; i < len * 2; i++)
-            if (rmsgpack_skip_value(fd) < 0) return -1;
+            if (rmsgpack_skip_value_depth(fd, depth) < 0) return -1;
          return 0;
    }
 
