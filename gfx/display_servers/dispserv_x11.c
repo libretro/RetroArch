@@ -252,7 +252,19 @@ static bool x11_display_server_set_resolution(void *data,
       }
    }
 
-   if (dispserv->monitor_index == 20)
+      /* XRRCreateMode() can fail, and the refreshed resource list is not
+    * guaranteed to carry the mode back; everything below dereferences
+    * swmode. */
+   if (!swmode)
+   {
+      XRRFreeScreenResources(resources);
+      if (res)
+         XRRFreeScreenResources(res);
+      XCloseDisplay(dpy);
+      return false;
+   }
+
+if (dispserv->monitor_index == 20)
    {
       for (i = 0; i < res->noutput; i++)
       {
@@ -277,12 +289,12 @@ static bool x11_display_server_set_resolution(void *data,
             crtc->mode   = swmode->id;
             crtc->width  = swmode->width;
             crtc->height = swmode->height;
-            XRRSetCrtcConfig(dpy, res,res->crtcs[i], CurrentTime,
+            XRRSetCrtcConfig(dpy, res, outputs->crtc, CurrentTime,
                   0, 0, None, RR_Rotate_0, NULL, 0);
             XSync(dpy, False);
             XRRSetScreenSize(dpy, window, width, height, (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
             XSync(dpy, False);
-            XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
+            XRRSetCrtcConfig(dpy, res, outputs->crtc, CurrentTime,
                   crtc->x, crtc->y, crtc->mode, crtc->rotation,
                   crtc->outputs, crtc->noutput);
             XSync(dpy, False);
@@ -314,12 +326,12 @@ static bool x11_display_server_set_resolution(void *data,
          crtc->mode   = swmode->id;
          crtc->width  = swmode->width;
          crtc->height = swmode->height;
-         XRRSetCrtcConfig(dpy, res,res->crtcs[monitor_index], CurrentTime,
+         XRRSetCrtcConfig(dpy, res, outputs->crtc, CurrentTime,
                0, 0, None, RR_Rotate_0, NULL, 0);
          XSync(dpy, False);
          XRRSetScreenSize(dpy, window, width, height, (int) ((25.4 * width) / 96.0), (int) ((25.4 * height) / 96.0));
          XSync(dpy, False);
-         XRRSetCrtcConfig(dpy, res, res->crtcs[monitor_index], CurrentTime,
+         XRRSetCrtcConfig(dpy, res, outputs->crtc, CurrentTime,
                crtc->x, crtc->y, crtc->mode, crtc->rotation,
                crtc->outputs, crtc->noutput);
          XSync(dpy, False);
@@ -330,6 +342,9 @@ static bool x11_display_server_set_resolution(void *data,
          XRRFreeOutputInfo(outputs);
    }
    XRRFreeScreenResources(resources);
+   /* res is a second, separate query and was never released. */
+   if (res)
+      XRRFreeScreenResources(res);
    XCloseDisplay(dpy);
    return true;
 }
@@ -406,7 +421,7 @@ static void x11_display_server_set_screen_orientation(void *data,
                break;
          }
 
-         XRRSetCrtcConfig(dpy, screen, screen->crtcs[j], CurrentTime,
+         XRRSetCrtcConfig(dpy, screen, info->crtcs[j], CurrentTime,
                0, 0, None, RR_Rotate_0, NULL, 0);
 
          if ((crtc->rotation & RR_Rotate_0 || crtc->rotation & RR_Rotate_180) && (rotation == ORIENTATION_VERTICAL || rotation == ORIENTATION_FLIPPED_ROTATED))
@@ -583,9 +598,10 @@ static void x11_display_server_destroy(void *data)
       dispserv->crt_rrmode.hSkew         = 0;
 
       res                      = XRRGetScreenResources(dpy, window);
-      resources                = XRRGetScreenResourcesCurrent(dpy, window);
       XSync(dpy, False);
 
+      /* The result of this query was previously overwritten by an
+       * identical one on the next line and leaked. */
       resources = XRRGetScreenResourcesCurrent(dpy, window);
 
       for (m = 0; m < resources->nmode; m++)
@@ -621,6 +637,9 @@ static void x11_display_server_destroy(void *data)
             XRROutputInfo *outputs =
                XRRGetOutputInfo(dpy, res, res->outputs[i]);
 
+            if (!outputs)
+               continue;
+
             if (outputs->connection == RR_Connected)
             {
                XRRCrtcInfo *crtc;
@@ -629,14 +648,18 @@ static void x11_display_server_destroy(void *data)
                XSync(dpy, False);
                strlcpy(dispserv->orig_output, outputs->name,
                      sizeof(dispserv->orig_output));
-               crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+               if (!(crtc = XRRGetCrtcInfo(dpy, resources, outputs->crtc)))
+               {
+                  XRRFreeOutputInfo(outputs);
+                  continue;
+               }
                crtc->mode   = swdeskmode->id;
                crtc->width  = swdeskmode->width;
                crtc->height = swdeskmode->height;
-               XRRSetCrtcConfig(dpy, res,res->crtcs[i],
+               XRRSetCrtcConfig(dpy, res, outputs->crtc,
                      CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
                XSync(dpy, False);
-               XRRSetCrtcConfig(dpy, res, res->crtcs[i], CurrentTime,
+               XRRSetCrtcConfig(dpy, res, outputs->crtc, CurrentTime,
                      crtc->x, crtc->y, crtc->mode, crtc->rotation,
                      crtc->outputs, crtc->noutput);
                XSync(dpy, False);
@@ -654,7 +677,7 @@ static void x11_display_server_destroy(void *data)
                for (i = 1 ; i <= dispserv->crt_name_id; i++ )
                {
                   XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[j]);
-                  if (outputs->connection == RR_Connected)
+                  if (outputs && outputs->connection == RR_Connected)
                   {
                      snprintf(dispserv->old_mode, sizeof(dispserv->old_mode),
                         "CRT%d", i);
@@ -667,6 +690,8 @@ static void x11_display_server_destroy(void *data)
                         XSync(dpy, False);
                      }
                   }
+                  if (outputs)
+                     XRRFreeOutputInfo(outputs);
                }
             }
          }
@@ -675,25 +700,27 @@ static void x11_display_server_destroy(void *data)
       {
          XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res,
                res->outputs[dispserv->monitor_index]);
+         XRRCrtcInfo *crtc      = NULL;
 
-         if (outputs->connection == RR_Connected)
+         if (outputs && outputs->connection == RR_Connected)
          {
-            XRRCrtcInfo *crtc = NULL;
             XRRAddOutputMode(dpy,
                   res->outputs[dispserv->monitor_index], swdeskmode->id);
             XSync(dpy, False);
             strlcpy(dispserv->orig_output, outputs->name,
                   sizeof(dispserv->orig_output));
             crtc         = XRRGetCrtcInfo(dpy, resources, outputs->crtc);
+         }
+
+         if (crtc)
+         {
             crtc->mode   = swdeskmode->id;
             crtc->width  = swdeskmode->width;
             crtc->height = swdeskmode->height;
-            XRRSetCrtcConfig(dpy, res,
-                  res->crtcs[dispserv->monitor_index],
+            XRRSetCrtcConfig(dpy, res, outputs->crtc,
                   CurrentTime, 0, 0, None, RR_Rotate_0, NULL, 0);
             XSync(dpy, False);
-            XRRSetCrtcConfig(dpy, res,
-                  res->crtcs[dispserv->monitor_index],
+            XRRSetCrtcConfig(dpy, res, outputs->crtc,
                   CurrentTime, crtc->x, crtc->y,
                   crtc->mode, crtc->rotation,
                   crtc->outputs, crtc->noutput);
@@ -701,14 +728,15 @@ static void x11_display_server_destroy(void *data)
 
             XRRFreeCrtcInfo(crtc);
          }
-         XRRFreeOutputInfo(outputs);
+         if (outputs)
+            XRRFreeOutputInfo(outputs);
 
          for (m = 0; m < resources->nmode; m++)
          {
             for (i = 1 ; i <= dispserv->crt_name_id; i++ )
             {
                XRROutputInfo *outputs = XRRGetOutputInfo(dpy, res, res->outputs[dispserv->monitor_index]);
-               if (outputs->connection == RR_Connected)
+               if (outputs && outputs->connection == RR_Connected)
                {
                   snprintf(dispserv->old_mode, sizeof(dispserv->old_mode),
                         "CRT%d", i);
@@ -721,6 +749,8 @@ static void x11_display_server_destroy(void *data)
                      XSync(dpy, False);
                   }
                }
+               if (outputs)
+                  XRRFreeOutputInfo(outputs);
             }
          }
       }
