@@ -186,6 +186,14 @@ static int rzstd_cpu_bmi2(void)
    }
    return have;
 }
+/* Deciding the flag in a constructor means no thread ever races the
+ * lazy path: by the time a second thread can exist, the answer is
+ * written. The lazy check stays as the fallback for an environment
+ * that skips constructors. */
+__attribute__((constructor)) static void rzstd_cpu_bmi2_init(void)
+{
+   (void)rzstd_cpu_bmi2();
+}
 #else
 #define RZSTD_BODY_INLINE static INLINE
 #endif
@@ -627,8 +635,8 @@ typedef struct rzstd_fse_entry
 
 typedef struct rzstd_fse
 {
-   rzstd_fse_entry_t *table;
-   uint32_t           accuracy_log;
+   const rzstd_fse_entry_t *table;
+   uint32_t                 accuracy_log;
 } rzstd_fse_t;
 
 /* Reads a table description (4.1.1) into normalised counts. These are
@@ -1955,29 +1963,69 @@ typedef struct rzstd_seq_tables
  * The build is deterministic, so two threads racing to do it write the
  * same bytes and no lock is needed; the flag is only an optimisation
  * and being seen late costs a rebuild, not correctness. */
-static rzstd_fse_entry_t rzstd_ll_predef[1 << 6];
-static rzstd_fse_entry_t rzstd_ml_predef[1 << 6];
-static rzstd_fse_entry_t rzstd_of_predef[1 << 5];
-static int               rzstd_predef_ready;
+/* The three predefined tables (3.1.1.3.2.2), spelled out rather than
+ * built on first use. They are constants of the format, and building
+ * them lazily left two threads racing on the ready flag and on the
+ * table contents -- a real hazard on weakly ordered machines, where a
+ * reader can observe the flag before the entries. The initialisers
+ * were emitted by the same rzstd_fse_build that used to fill them at
+ * run time, from the same default distributions, and byte-compare
+ * equal to what it builds. */
+static const rzstd_fse_entry_t rzstd_ll_predef[64] = {
+   {   0,  0, 4 },   {  16,  0, 4 },   {  32,  1, 5 },   {   0,  3, 5 },
+   {   0,  4, 5 },   {   0,  6, 5 },   {   0,  7, 5 },   {   0,  9, 5 },
+   {   0, 10, 5 },   {   0, 12, 5 },   {   0, 14, 6 },   {   0, 16, 5 },
+   {   0, 18, 5 },   {   0, 19, 5 },   {   0, 21, 5 },   {   0, 22, 5 },
+   {   0, 24, 5 },   {  32, 25, 5 },   {   0, 26, 5 },   {   0, 27, 6 },
+   {   0, 29, 6 },   {   0, 31, 6 },   {  32,  0, 4 },   {   0,  1, 4 },
+   {   0,  2, 5 },   {  32,  4, 5 },   {   0,  5, 5 },   {  32,  7, 5 },
+   {   0,  8, 5 },   {  32, 10, 5 },   {   0, 11, 5 },   {   0, 13, 6 },
+   {  32, 16, 5 },   {   0, 17, 5 },   {  32, 19, 5 },   {   0, 20, 5 },
+   {  32, 22, 5 },   {   0, 23, 5 },   {   0, 25, 4 },   {  16, 25, 4 },
+   {  32, 26, 5 },   {   0, 28, 6 },   {   0, 30, 6 },   {  48,  0, 4 },
+   {  16,  1, 4 },   {  32,  2, 5 },   {  32,  3, 5 },   {  32,  5, 5 },
+   {  32,  6, 5 },   {  32,  8, 5 },   {  32,  9, 5 },   {  32, 11, 5 },
+   {  32, 12, 5 },   {   0, 15, 6 },   {  32, 17, 5 },   {  32, 18, 5 },
+   {  32, 20, 5 },   {  32, 21, 5 },   {  32, 23, 5 },   {  32, 24, 5 },
+   {   0, 35, 6 },   {   0, 34, 6 },   {   0, 33, 6 },   {   0, 32, 6 },
+};
 
-static void rzstd_build_predefined(void)
-{
-   rzstd_fse_t t;
+static const rzstd_fse_entry_t rzstd_ml_predef[64] = {
+   {   0,  0, 6 },   {   0,  1, 4 },   {  32,  2, 5 },   {   0,  3, 5 },
+   {   0,  5, 5 },   {   0,  6, 5 },   {   0,  8, 5 },   {   0, 10, 6 },
+   {   0, 13, 6 },   {   0, 16, 6 },   {   0, 19, 6 },   {   0, 22, 6 },
+   {   0, 25, 6 },   {   0, 28, 6 },   {   0, 31, 6 },   {   0, 33, 6 },
+   {   0, 35, 6 },   {   0, 37, 6 },   {   0, 39, 6 },   {   0, 41, 6 },
+   {   0, 43, 6 },   {   0, 45, 6 },   {  16,  1, 4 },   {   0,  2, 4 },
+   {  32,  3, 5 },   {   0,  4, 5 },   {  32,  6, 5 },   {   0,  7, 5 },
+   {   0,  9, 6 },   {   0, 12, 6 },   {   0, 15, 6 },   {   0, 18, 6 },
+   {   0, 21, 6 },   {   0, 24, 6 },   {   0, 27, 6 },   {   0, 30, 6 },
+   {   0, 32, 6 },   {   0, 34, 6 },   {   0, 36, 6 },   {   0, 38, 6 },
+   {   0, 40, 6 },   {   0, 42, 6 },   {   0, 44, 6 },   {  32,  1, 4 },
+   {  48,  1, 4 },   {  16,  2, 4 },   {  32,  4, 5 },   {  32,  5, 5 },
+   {  32,  7, 5 },   {  32,  8, 5 },   {   0, 11, 6 },   {   0, 14, 6 },
+   {   0, 17, 6 },   {   0, 20, 6 },   {   0, 23, 6 },   {   0, 26, 6 },
+   {   0, 29, 6 },   {   0, 52, 6 },   {   0, 51, 6 },   {   0, 50, 6 },
+   {   0, 49, 6 },   {   0, 48, 6 },   {   0, 47, 6 },   {   0, 46, 6 },
+};
 
-   if (rzstd_predef_ready)
-      return;
-   rzstd_fse_build(&t, rzstd_ll_predef, rzstd_ll_default, 36, 6);
-   rzstd_fse_build(&t, rzstd_ml_predef, rzstd_ml_default, 53, 6);
-   rzstd_fse_build(&t, rzstd_of_predef, rzstd_of_default, 29, 5);
-   rzstd_predef_ready = 1;
-}
+static const rzstd_fse_entry_t rzstd_of_predef[32] = {
+   {   0,  0, 5 },   {   0,  6, 4 },   {   0,  9, 5 },   {   0, 15, 5 },
+   {   0, 21, 5 },   {   0,  3, 5 },   {   0,  7, 4 },   {   0, 12, 5 },
+   {   0, 18, 5 },   {   0, 23, 5 },   {   0,  5, 5 },   {   0,  8, 4 },
+   {   0, 14, 5 },   {   0, 20, 5 },   {   0,  2, 5 },   {  16,  7, 4 },
+   {   0, 11, 5 },   {   0, 17, 5 },   {   0, 22, 5 },   {   0,  4, 5 },
+   {  16,  8, 4 },   {   0, 13, 5 },   {   0, 19, 5 },   {   0,  1, 5 },
+   {  16,  6, 4 },   {   0, 10, 5 },   {   0, 16, 5 },   {   0, 28, 5 },
+   {   0, 27, 5 },   {   0, 26, 5 },   {   0, 25, 5 },   {   0, 24, 5 },
+};
 
 /* Sets up one of the three tables according to its two-bit mode. */
 RZSTD_BODY_INLINE int rzstd_seq_table_body(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
-      rzstd_fse_entry_t *shared)
+      const rzstd_fse_entry_t *shared)
 {
    int16_t  counts[RZSTD_FSE_MAX_SYMBOLS];
    uint32_t symbol_count = 0;
@@ -1989,9 +2037,8 @@ RZSTD_BODY_INLINE int rzstd_seq_table_body(rzstd_fse_t *fse, rzstd_fse_entry_t *
    switch (mode)
    {
       case RZSTD_SEQ_PREDEFINED:
-         /* Point at the shared table rather than filling this block's
-          * copy of it. */
-         rzstd_build_predefined();
+         /* Point at the shared constant table rather than filling this
+          * block's copy of it. */
          fse->table        = shared;
          fse->accuracy_log = predef_log;
          (void)predef;
@@ -2035,7 +2082,7 @@ static int rzstd_seq_table_sse(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
-      rzstd_fse_entry_t *shared)
+      const rzstd_fse_entry_t *shared)
 {
    return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
          predef_log, max_symbol, max_log, src, len, used,
@@ -2047,7 +2094,7 @@ static int rzstd_seq_table_bmi2(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
-      rzstd_fse_entry_t *shared)
+      const rzstd_fse_entry_t *shared)
 {
    return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
          predef_log, max_symbol, max_log, src, len, used,
@@ -2058,7 +2105,7 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
-      rzstd_fse_entry_t *shared)
+      const rzstd_fse_entry_t *shared)
 {
    if (rzstd_cpu_bmi2())
       return rzstd_seq_table_bmi2(fse, storage, mode, predef, predef_count,
@@ -2073,7 +2120,7 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
-      rzstd_fse_entry_t *shared)
+      const rzstd_fse_entry_t *shared)
 {
    return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
          predef_log, max_symbol, max_log, src, len, used,
