@@ -398,19 +398,13 @@ static int64_t zstd_file_read(
    return (int64_t)result;
 }
 
-static uint32_t zstd_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t len)
-{
-   return encoding_crc32(crc, data, len);
-}
-
 const struct file_archive_file_backend zstd_backend = {
    zstd_parse_file_init,
    zstd_parse_file_iterate_step,
    zstd_parse_file_free,
    zstd_stream_decompress_data_to_file_init,
    zstd_stream_decompress_data_to_file_iterate,
-   zstd_stream_crc32_calculate,
+   encoding_crc32,
    zstd_file_read,
    "zstd"
 };

@@ -26,6 +26,7 @@
 #include <retro_endianness.h>
 #include <streams/file_stream.h>
 #include <streams/interface_stream.h>
+#include <encodings/crc32.h>
 #include <string/stdstring.h>
 #include "task_database_cue.h"
 
@@ -1882,28 +1883,41 @@ bool intfstream_file_get_crc_and_size(const char *name,
 
    if (offset != 0 || len < file_size)
    {
+      /* A bounded span - a CD data track, routinely hundreds of MB.
+       * This used to allocate the whole span, read it in, wrap it in
+       * a memory stream and have intfstream_get_crc() copy it back
+       * out again: two passes and a track-sized buffer, which on a
+       * console is the difference between scanning and not.  Seek
+       * once and fold it in place instead.  A short read fails the
+       * call, as the single full-span read used to. */
+      uint32_t accumulator = 0;
+      int64_t  remaining   = len;
+      size_t   buffer_len  = 256 * 1024;
+
       if (intfstream_seek(fd, (int64_t)offset, SEEK_SET) == -1)
          goto error;
 
-      data = (uint8_t*)malloc(len);
-      /* NULL-check: intfstream_read below would NULL-deref on
-       * OOM via filestream_read's fread. */
-      if (!data)
+      if (!(data = (uint8_t*)malloc(buffer_len)))
          goto error;
 
-      if (intfstream_read(fd, data, len) != (int64_t)len)
-         goto error;
+      while (remaining > 0)
+      {
+         int64_t want = (remaining < (int64_t)buffer_len)
+               ? remaining : (int64_t)buffer_len;
 
-      intfstream_close(fd);
-      free(fd);
-      fd = intfstream_open_memory(data, RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE, len);
+         if (intfstream_read(fd, data, want) != want)
+            goto error;
 
-      if (!fd)
-         goto error;
+         accumulator = encoding_crc32(accumulator, data, (size_t)want);
+         remaining  -= want;
+      }
+
+      *crc = accumulator;
+      rv   = true;
    }
+   else
+      rv = intfstream_get_crc(fd, crc);
 
-   rv = intfstream_get_crc(fd, crc);
    intfstream_close(fd);
    free(fd);
    free(data);

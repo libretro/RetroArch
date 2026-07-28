@@ -474,12 +474,6 @@ static int zlib_stream_decompress_data_to_file_iterate(
    return -1;
 }
 
-static uint32_t zlib_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t len)
-{
-   return encoding_crc32(crc, data, len);
-}
-
 static bool zip_file_decompressed_handle(
       file_archive_transfer_t *transfer,
       file_archive_file_handle_t* handle,
@@ -1183,7 +1177,7 @@ const struct file_archive_file_backend zlib_backend = {
    zip_parse_file_free,
    zlib_stream_decompress_data_to_file_init,
    zlib_stream_decompress_data_to_file_iterate,
-   zlib_stream_crc32_calculate,
+   encoding_crc32,
    zip_file_read,
    "zlib"
 };
