@@ -25,10 +25,11 @@ SOURCES := vulkan_validation_test.c \
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
            -DHAVE_VULKAN -DVULKAN_DEBUG -DHAVE_THREADS -DHAVE_DYLIB \
+           -DHAVE_XLIB \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 
-LDFLAGS += -lvulkan -lpthread -ldl
+LDFLAGS += -lvulkan -lpthread -ldl -lX11
 
 OBJS := $(SOURCES:.c=.o)
 
@@ -45,9 +46,12 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-# Needs a Vulkan device and the validation layer.  lavapipe is enough:
-#   apt-get install mesa-vulkan-drivers vulkan-validationlayers
-# With no device at all the test exits 77 (skipped) rather than failing.
+# Needs an X display, a Vulkan device and the validation layer.  Xvfb
+# plus lavapipe is enough, and both are packaged:
+#   apt-get install xvfb mesa-vulkan-drivers vulkan-validationlayers
+#   Xvfb :99 -screen 0 1280x720x24 &
+# With no display or no device the test exits 77 (skipped) rather than
+# failing, so it is safe to run unconditionally.
 VK_DRIVER_FILES ?= /usr/share/vulkan/icd.d/lvp_icd.json
 
 run: $(TARGET)

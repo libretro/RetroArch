@@ -40,10 +40,18 @@ static void vk_log(const char *fmt, va_list ap)
 {
    char line[4096];
    vsnprintf(line, sizeof(line), fmt, ap);
-   if (strstr(line, "Validation"))
+   /* vulkan_debug_cb() formats as "[Vulkan] <SEVERITY> <TYPE>: ...",
+    * so key on the pair.  Matching "WARNING" anywhere in the line
+    * instead would score VUID names like WARNING-cache-file-error,
+    * which arrive at INFO severity, as warnings. */
+   if (strstr(line, "ERROR Validation"))
    {
-      if (strstr(line, "ERROR"))   g_vk_validation_errors++;
-      if (strstr(line, "WARNING")) g_vk_validation_warnings++;
+      g_vk_validation_errors++;
+      fputs(line, stderr);
+   }
+   else if (strstr(line, "WARNING Validation"))
+   {
+      g_vk_validation_warnings++;
       fputs(line, stderr);
    }
 }
