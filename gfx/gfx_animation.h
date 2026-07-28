@@ -131,6 +131,13 @@ typedef struct gfx_animation_ctx_ticker
    char *s;
    const char *str;
    const char *spacer;
+   /* Size of the buffer @s points at, in BYTES.  Must be set; a
+    * ticker with s_len == 0 is rejected rather than guessed at.
+    * Distinct from @len below, and the distinction matters: one
+    * glyph of CJK or emoji is three or four bytes, so a string that
+    * fits @len glyphs can be several times @s_len bytes long. */
+   size_t s_len;
+   /* Width of the field to fit the string into, in GLYPHS. */
    size_t len;
    enum gfx_animation_ticker_type type_enum;
    bool selected;
