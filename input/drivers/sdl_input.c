@@ -78,6 +78,11 @@ enum sdl_webos_special_key
 
 static uint8_t sdl_webos_special_keymap[sdl_webos_spkey_size] = {0};
 
+/* Set after a real typing key while the OSK/line editor is open. Magic
+ * Remote arrows/OK/digits must leave this false so the OSK grid stays
+ * under remote control. */
+static bool sdl_webos_phys_kbd_typing = false;
+
 /* One-shot sticky keys: webOS often delivers KEYDOWN+KEYUP in the same
  * poll, so SDL_GetKeyboardState is already clear when the menu reads input. */
 static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
@@ -88,6 +93,43 @@ static bool sdl_webos_sticky_pressed(enum sdl_webos_special_key slot)
       return true;
    }
    return false;
+}
+
+static bool sdl_webos_is_remote_nav_scancode(SDL_Scancode scancode)
+{
+   switch ((int)scancode)
+   {
+      case SDL_SCANCODE_UP:
+      case SDL_SCANCODE_DOWN:
+      case SDL_SCANCODE_LEFT:
+      case SDL_SCANCODE_RIGHT:
+      case SDL_SCANCODE_RETURN:
+      case SDL_SCANCODE_ESCAPE:
+      case SDL_SCANCODE_PAGEUP:
+      case SDL_SCANCODE_PAGEDOWN:
+      case SDL_WEBOS_SCANCODE_BACK:
+      case SDL_WEBOS_SCANCODE_RED:
+      case SDL_WEBOS_SCANCODE_GREEN:
+      case SDL_WEBOS_SCANCODE_YELLOW:
+      case SDL_WEBOS_SCANCODE_BLUE:
+      case SDL_WEBOS_SCANCODE_EXIT:
+         return true;
+      default:
+         return false;
+   }
+}
+
+/* Keys that mean a physical BT keyboard is in use (not Magic Remote). */
+static bool sdl_webos_scancode_enables_phys_kbd(SDL_Scancode scancode)
+{
+   if (sdl_webos_is_remote_nav_scancode(scancode))
+      return false;
+
+   /* Remote digit row inserts text but must not switch to caret mode. */
+   if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_0)
+      return false;
+
+   return true;
 }
 #endif
 
@@ -120,23 +162,32 @@ static bool sdl_key_pressed(int key)
    if (key == RETROK_BACKSPACE
          && sdl_webos_sticky_pressed(sdl_webos_spkey_back))
       return true;
-   /* Return must stay RETROK_RETURN so display_kb can map it to menu OK
-    * (OSK character select). Mapping it to LCTRL selected nothing. */
+   /* Sticky pulse (Magic Remote) → OSK grid / OK. Held BT keys must not
+    * also report as menu joypad while the line editor owns them. */
    if (key == RETROK_RETURN
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_return))
-      return true;
-   if (key == RETROK_UP
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_up))
-      return true;
-   if (key == RETROK_DOWN
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_down))
-      return true;
-   if (key == RETROK_LEFT
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_left))
-      return true;
-   if (key == RETROK_RIGHT
-         && sdl_webos_sticky_pressed(sdl_webos_spkey_right))
-      return true;
+         || key == RETROK_UP
+         || key == RETROK_DOWN
+         || key == RETROK_LEFT
+         || key == RETROK_RIGHT)
+   {
+      enum sdl_webos_special_key slot = sdl_webos_spkey_return;
+
+      if (key == RETROK_UP)
+         slot = sdl_webos_spkey_up;
+      else if (key == RETROK_DOWN)
+         slot = sdl_webos_spkey_down;
+      else if (key == RETROK_LEFT)
+         slot = sdl_webos_spkey_left;
+      else if (key == RETROK_RIGHT)
+         slot = sdl_webos_spkey_right;
+
+      if (sdl_webos_sticky_pressed(slot))
+         return true;
+
+      if (input_state_get_ptr()
+            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+         return false;
+   }
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
       return true;
    if (key == RETROK_x && keymap[SDL_WEBOS_SCANCODE_RED])
@@ -499,6 +550,9 @@ static void sdl_input_poll(void *data)
          input_driver_state_t *input_st = input_state_get_ptr();
          bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 
+         if (!osk_active)
+            sdl_webos_phys_kbd_typing = false;
+
          switch ((int) event.key.keysym.scancode)
          {
             case SDL_WEBOS_SCANCODE_BACK:
@@ -526,8 +580,9 @@ static void sdl_input_poll(void *data)
             case SDL_SCANCODE_DOWN:
             case SDL_SCANCODE_LEFT:
             case SDL_SCANCODE_RIGHT:
-               /* OSK: navigate the grid, do not move the text cursor. */
-               if (osk_active)
+               /* Default: Magic Remote → OSK grid. After BT typing keys,
+                * ←/→ move the caret and ↑/↓ act as home/end. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
                {
                   if (event.type == SDL_KEYDOWN)
                   {
@@ -544,9 +599,8 @@ static void sdl_input_poll(void *data)
                }
                break;
             case SDL_SCANCODE_RETURN:
-               /* OSK: remote OK selects the highlighted character (via
-                * RETROK_RETURN → menu OK), do not submit the line as '\n'. */
-               if (osk_active)
+               /* Default: remote OK → OSK select. After BT typing → save. */
+               if (osk_active && !sdl_webos_phys_kbd_typing)
                {
                   if (event.type == SDL_KEYDOWN)
                      sdl_webos_special_keymap[sdl_webos_spkey_return] = 1;
@@ -556,6 +610,13 @@ static void sdl_input_poll(void *data)
             default:
                break;
          }
+
+         /* Letters / numpad / backspace / punctuation ⇒ BT keyboard session.
+          * Remote digit row is excluded (see sdl_webos_scancode_enables_phys_kbd). */
+         if (osk_active
+               && event.type == SDL_KEYDOWN
+               && sdl_webos_scancode_enables_phys_kbd(event.key.keysym.scancode))
+            sdl_webos_phys_kbd_typing = true;
 
          /* Disable cursor when using the buttons */
          if (code && code != RETROK_RETURN)
@@ -582,11 +643,25 @@ static void sdl_input_poll(void *data)
          if (event.key.keysym.mod & 0x8000 /*KMOD_SCROLL*/)
             mod |= RETROKMOD_SCROLLOCK;
 
-         /* Use key+mod ASCII so Shift does not leak as '?' and capitals work. */
-         input_keyboard_event(event.type == SDL_KEYDOWN, code,
-               input_keymaps_translate_rk_to_ascii(
-                     (enum retro_key)code, (enum retro_mod)mod),
-               mod, RETRO_DEVICE_KEYBOARD);
+         {
+            /* Use key+mod ASCII so Shift does not leak as '?' and capitals work.
+             * Force Enter / numpad Enter to '\r' so they save the line instead
+             * of inserting RETROK_KP_ENTER (271) as '?'. */
+            uint32_t character = input_keymaps_translate_rk_to_ascii(
+                  (enum retro_key)code, (enum retro_mod)mod);
+
+            if (code == RETROK_RETURN || code == RETROK_KP_ENTER)
+               character = '\r';
+
+#ifdef WEBOS
+            /* Numpad Enter is never sent by the Magic Remote; always save. */
+            if (code == RETROK_KP_ENTER)
+               sdl_webos_phys_kbd_typing = true;
+#endif
+
+            input_keyboard_event(event.type == SDL_KEYDOWN, code,
+                  character, mod, RETRO_DEVICE_KEYBOARD);
+         }
       }
 #ifdef HAVE_SDL2
       else if (event.type == SDL_MOUSEWHEEL)
