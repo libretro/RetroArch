@@ -56,8 +56,14 @@ check: all
 	./libretrodb_leak_test
 	./libretrodb_parser_test
 
+# Build and run everything under ASan, UBSan, LeakSan and TSan.
+# Set SWEEP_CORPUS to add the checks that need .rdb data too large
+# to keep in the repository; see the header of sweep.sh.
+sweep:
+	./sweep.sh
+
 clean:
 	rm -f $(TARGETS) $(COMMON_OBJS) libretrodb_leak_test.o \
 	      libretrodb_parser_test.o
 
-.PHONY: clean check
+.PHONY: clean check sweep
