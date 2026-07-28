@@ -849,6 +849,17 @@ int libretrodb_cursor_open(libretrodb_t *db,
    return 0;
 }
 
+/* bintree stores values by pointer and does not own them, so the
+ * key buffers handed to bintree_insert() have to be released here.
+ * They were not, leaking (key_size + 8) bytes per indexed record -
+ * 240 KB for a 20000-record index. */
+static int node_free_iter(void *value, void *ctx)
+{
+   (void)ctx;
+   free(value);
+   return 0;
+}
+
 static int node_iter(void *value, void *ctx)
 {
    struct node_iter_ctx *nictx = (struct node_iter_ctx*)ctx;
@@ -904,9 +915,15 @@ int libretrodb_create_index(libretrodb_t *db,
       if (item.type != RDT_MAP)
          goto clean;
 
-      /* Field not found in item? */
+      /* Field not found in item?  The free at the end of the loop is
+       * skipped by this continue, so do it here. */
       if (!(field = rmsgpack_dom_value_map_value(&item, &key)))
-        continue;
+      {
+         rmsgpack_dom_value_free(&item);
+         item.type = RDT_NULL;
+         item_loc  = intfstream_tell(cur.fd);
+         continue;
+      }
 
       /* Field is not binary? */
       if (field->type != RDT_BINARY)
@@ -974,7 +991,10 @@ clean:
    if (cur.is_valid)
       libretrodb_cursor_close(&cur);
    if (tree && tree->root)
+   {
+      bintree_iterate(tree->root, node_free_iter, NULL);
       bintree_free(tree->root);
+   }
    free(tree);
    return rval;
 }
