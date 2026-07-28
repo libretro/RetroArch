@@ -49,9 +49,21 @@ int main(int argc, char **argv)
    for (i = 0; i < reps; i++) rzstd_decode(out, n + 64, enc, rzsz, NULL);
    t_rz_d = (now() - t0) / reps;
 
-   t0 = now();
-   for (i = 0; i < reps; i++) ZSTD_decompress(out, n + 64, ref, zssz);
-   t_zs_d = (now() - t0) / reps;
+   /* The reference is timed with one context reused across calls, the
+    * way every real consumer holds one. ZSTD_decompress() allocates and
+    * frees a context inside every call, and on small inputs that is
+    * most of what gets measured: this benchmark once reported rzstd at
+    * twice the reference's speed on two-kilobyte frames, and about half
+    * of it was the reference paying a context per frame. */
+   {
+      ZSTD_DCtx *c = ZSTD_createDCtx();
+
+      t0 = now();
+      for (i = 0; i < reps; i++)
+         ZSTD_decompressDCtx(c, out, n + 64, ref, zssz);
+      t_zs_d = (now() - t0) / reps;
+      ZSTD_freeDCtx(c);
+   }
 
    printf("\n  encode   rzstd %7.1f MB/s -> %-9lu   reference %7.1f MB/s -> %-9lu\n",
           n / t_rz_e / 1e6, (unsigned long)rzsz,
