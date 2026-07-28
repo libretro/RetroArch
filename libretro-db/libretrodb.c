@@ -811,7 +811,15 @@ int libretrodb_cursor_open(libretrodb_t *db,
    cursor->query    = q;
 
    if (q)
+   {
       libretrodb_query_inc_ref(q);
+      /* min()/max() accumulate across the rows a cursor yields, so
+       * their state belongs to the walk, not to the compiled query.
+       * Reset it here as well as at compile time: a query outlives
+       * the cursor that references it, and a second walk over the
+       * same query used to inherit the first walk's extreme. */
+      libretrodb_query_reset_accumulator();
+   }
 
    return 0;
 }

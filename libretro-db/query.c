@@ -90,7 +90,30 @@ struct registered_func
    rarch_query_func func;
 };
 
-struct rmsgpack_dom_value intermediate_res;
+/* Accumulator for query_func_min()/query_func_max(), which report
+ * "smaller/larger than everything seen so far" so that the last row a
+ * cursor yields carries the actual extreme.
+ *
+ * Its lifetime is one cursor walk, but it was only ever reset in
+ * libretrodb_query_compile().  A compiled query outlives the walk -
+ * libretrodb_cursor_open() takes a reference to it - so opening a
+ * second cursor over the same query started with the first walk's
+ * accumulated extreme and silently under- or over-reported.
+ *
+ * It is also file-scope rather than static, leaking an unqualified
+ * symbol out of the object.  Nothing outside this file refers to it.
+ *
+ * NOTE: this is still shared mutable state.  Two cursor walks
+ * evaluating min()/max() concurrently will corrupt each other's
+ * accumulator; only moving it into struct query, which needs a
+ * context parameter on rarch_query_func, fixes that. */
+static struct rmsgpack_dom_value intermediate_res;
+
+void libretrodb_query_reset_accumulator(void)
+{
+   intermediate_res.val.int_  = 0;
+   intermediate_res.val.uint_ = 0;
+}
 
 /* Forward declarations */
 static struct buffer query_parse_method_call(char *s, size_t len,
@@ -995,8 +1018,7 @@ void *libretrodb_query_compile(libretrodb_t *db,
    struct query *q     = (struct query*)malloc(sizeof(*q));
    size_t err_buff_len = sizeof(tmp_err_buff);
 
-   intermediate_res.val.int_  = 0;
-   intermediate_res.val.uint_ = 0;
+   libretrodb_query_reset_accumulator();
 
    if (!q)
       return NULL;
