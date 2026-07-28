@@ -2155,8 +2155,17 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
 
       if (dbstate)
       {
+         /* The per-database arrays are sized from the list, so the
+          * count has to be taken before the list goes away.  Reading
+          * it afterwards is a use-after-free, and the value it
+          * returns then drives the loops below. */
+         size_t db_count = dbstate->list ? dbstate->list->size : 0;
+
          if (dbstate->list)
+         {
             dir_list_free(dbstate->list);
+            dbstate->list = NULL;
+         }
          /* db_state->info is only released along the iterate paths,
           * so cancelling a scan while a database query result was
           * live leaked the whole database_info_list_t - every
@@ -2170,8 +2179,7 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          if (dbstate->crc_index)
          {
             size_t ci;
-            size_t cn = dbstate->list ? dbstate->list->size : 0;
-            for (ci = 0; ci < cn; ci++)
+            for (ci = 0; ci < db_count; ci++)
                database_info_crc_index_free(dbstate->crc_index[ci]);
             free(dbstate->crc_index);
             dbstate->crc_index = NULL;
@@ -2179,8 +2187,7 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
          if (dbstate->serial_index)
          {
             size_t si;
-            size_t sn = dbstate->list ? dbstate->list->size : 0;
-            for (si = 0; si < sn; si++)
+            for (si = 0; si < db_count; si++)
                database_info_serial_index_free(dbstate->serial_index[si]);
             free(dbstate->serial_index);
             dbstate->serial_index = NULL;
