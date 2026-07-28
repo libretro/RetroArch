@@ -562,6 +562,123 @@ static void case_index(const char *dir)
    }
 }
 
+/* min() and max() used zero as their "nothing accumulated yet" marker,
+ * so a record whose value really is zero was indistinguishable from an
+ * unstarted walk: it overwrote the running extreme and accumulation
+ * began again from the next record. What came back was the extreme
+ * over the tail of the database rather than over all of it.
+ *
+ * Reached from the databases shipped today, not only from crafted
+ * input. Mobile - J2ME carries one zero-size record 133800 records in,
+ * and max(size) returned 25639896 against a true 27853509 - so the
+ * scanner, which takes that as the largest thing the database can
+ * hold, could not match the two largest entries in it at all.
+ *
+ * The fixture puts the zero in the middle, with the true extremes on
+ * either side of it, so a reset shows up in both directions. */
+static void case_minmax_zero(const char *dir)
+{
+   /* sizes in record order; 0 sits between the true min and max */
+   static const uint8_t sizes[] = { 40, 90, 0, 10, 70 };
+   char          path[512];
+   buf_t         body, meta;
+   libretrodb_t *db = libretrodb_new();
+   unsigned      i;
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+
+   for (i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++)
+   {
+      char name[32];
+      sprintf(name, "rec%u", i);
+      bfixmap(&body, 2);
+      bfixstr(&body, "name"); bfixstr(&body, name);
+      bfixstr(&body, "size"); buint8(&body, sizes[i]);
+   }
+   bnil(&body);
+   meta_count(&meta, (uint8_t)(sizeof(sizes) / sizeof(sizes[0])));
+
+   sprintf(path, "%s/minmax_zero.rdb", dir);
+   if (!write_rdb(path, &body, &meta))
+   {
+      check(0, "min/max fixture written", "write failed");
+      bfree(&body); bfree(&meta);
+      libretrodb_free(db);
+      return;
+   }
+   bfree(&body); bfree(&meta);
+
+   if (!db || libretrodb_open(path, db, false) != 0)
+   {
+      check(0, "min/max host database", "could not be opened");
+      libretrodb_free(db);
+      return;
+   }
+
+   for (i = 0; i < 2; i++)
+   {
+      const char *text  = i ? "{'size': max(0)}" : "{'size': min(0)}";
+      const char *what  = i ? "max() survives a zero value"
+                            : "min() survives a zero value";
+      unsigned    want  = i ? 90u : 0u;
+      const char *err   = NULL;
+      void       *q;
+
+      begin(what);
+      q = libretrodb_query_compile(db, text, strlen(text), &err);
+      if (!q || err)
+      {
+         check(0, what, err ? err : "did not compile");
+         continue;
+      }
+
+      {
+         libretrodb_cursor_t      *cur = libretrodb_cursor_new();
+         struct rmsgpack_dom_value it;
+         unsigned                  last = 0;
+         int                       any  = 0;
+         char                      detail[64];
+
+         if (cur && libretrodb_cursor_open(db, cur,
+                  (libretrodb_query_t*)q) == 0)
+         {
+            /* The extreme is carried by the final row the walk
+             * yields, which is how database_info.c reads it. */
+            while (libretrodb_cursor_read_item(cur, &it) == 0)
+            {
+               unsigned k;
+               if (it.type == RDT_MAP)
+                  for (k = 0; k < it.val.map.len; k++)
+                  {
+                     struct rmsgpack_dom_value *key =
+                        &it.val.map.items[k].key;
+                     struct rmsgpack_dom_value *val =
+                        &it.val.map.items[k].value;
+                     if (   key->type == RDT_STRING
+                         && key->val.string.buff
+                         && !strcmp(key->val.string.buff, "size")
+                         && val->type == RDT_UINT)
+                     {
+                        last = (unsigned)val->val.uint_;
+                        any  = 1;
+                     }
+                  }
+               rmsgpack_dom_value_free(&it);
+            }
+            libretrodb_cursor_close(cur);
+         }
+         sprintf(detail, "got %u, want %u", last, want);
+         check(any && last == want, what, detail);
+         libretrodb_cursor_free(cur);
+      }
+      libretrodb_query_free((libretrodb_query_t*)q);
+   }
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+}
+
 /* libretrodb_query_compile() is documented by its signature to take
  * a pointer and a length.  Feed it exactly-sized heap buffers with no
  * terminator so that any read past the length is a heap overflow the
@@ -882,6 +999,7 @@ int main(int argc, char **argv)
    case_window(dir);
    case_index(dir);
    case_query_slices(dir);
+   case_minmax_zero(dir);
    case_index_round_trip(dir);
    case_field_scan(dir);
 

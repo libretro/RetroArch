@@ -46,6 +46,12 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len);
  * interchangeable with encoding_crc32() above. */
 uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *buf, size_t len);
 
+/* CRC-16/CCITT-FALSE: polynomial 0x1021 MSB-first, no final xor. The
+ * seed is the caller's; this variant is conventionally started at
+ * 0xFFFF. Sixteen bits and a different polynomial from either
+ * function above, so it is not interchangeable with them. */
+uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *buf, size_t len);
+
 RETRO_END_DECLS
 
 #endif

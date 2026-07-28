@@ -76,6 +76,19 @@ struct argument;
 struct query_ctx
 {
    struct rmsgpack_dom_value intermediate_res;
+   /* Whether intermediate_res holds a value yet.  min() and max() used
+    * zero for that, which is indistinguishable from a stored zero: a
+    * record with size 0 read as "nothing accumulated", the running
+    * extreme was discarded, and the walk started again from the next
+    * record.  The reported extreme was then taken over the tail of the
+    * database rather than all of it.
+    *
+    * Live in the databases shipped today: Mobile - J2ME carries one
+    * zero-size record two thirds of the way in, so max(size) came back
+    * as 25639896 against a true 27853509, and the two largest entries
+    * sat outside the range the scanner filters on - they could not be
+    * matched at all. */
+   int                       have_res;
 };
 
 typedef struct rmsgpack_dom_value (*rarch_query_func)(
@@ -120,6 +133,7 @@ void libretrodb_query_reset_accumulator(libretrodb_query_t *q)
       return;
    rq->ctx.intermediate_res.val.int_  = 0;
    rq->ctx.intermediate_res.val.uint_ = 0;
+   rq->ctx.have_res                   = 0;
 }
 
 /* Forward declarations */
@@ -308,20 +322,22 @@ static struct rmsgpack_dom_value query_func_min(
    switch (input.type)
    {
       case RDT_INT:
-         res.val.bool_ = (
-               (input.val.int_ == 0)
-               || (input.val.int_ < ctx->intermediate_res.val.int_)
-               || (ctx->intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || ctx->intermediate_res.val.int_ == 0)
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.int_ < ctx->intermediate_res.val.int_));
+         if (res.val.bool_)
+         {
             memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       case RDT_UINT:
-         res.val.bool_ = (
-               (input.val.uint_ == 0)
-               || (input.val.uint_ < ctx->intermediate_res.val.uint_)
-               || (ctx->intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || ctx->intermediate_res.val.uint_ == 0)
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.uint_ < ctx->intermediate_res.val.uint_));
+         if (res.val.bool_)
+         {
             memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       default:
          break;
@@ -343,20 +359,22 @@ static struct rmsgpack_dom_value query_func_max(
    switch (input.type)
    {
       case RDT_INT:
-         res.val.bool_ = (
-               (input.val.int_ == 0)
-               || (input.val.int_ > ctx->intermediate_res.val.int_)
-               || (ctx->intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || ctx->intermediate_res.val.int_ == 0)
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.int_ > ctx->intermediate_res.val.int_));
+         if (res.val.bool_)
+         {
             memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       case RDT_UINT:
-         res.val.bool_ = (
-               (input.val.uint_ == 0)
-               || (input.val.uint_ > ctx->intermediate_res.val.uint_)
-               || (ctx->intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || ctx->intermediate_res.val.uint_ == 0)
+         res.val.bool_ = (!ctx->have_res
+               || (input.val.uint_ > ctx->intermediate_res.val.uint_));
+         if (res.val.bool_)
+         {
             memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
+            ctx->have_res = 1;
+         }
          break;
       default:
          break;

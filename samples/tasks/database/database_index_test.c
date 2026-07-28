@@ -198,6 +198,8 @@ static void bbin(buf_t *b, const void *s, uint8_t n)
    bput(b, s, n);
 }
 static void buint8(buf_t *b, uint8_t v) { bbyte(b, 0xcc); bbyte(b, v); }
+static void buint16(buf_t *b, uint16_t v)
+{ bbyte(b, 0xcd); bbyte(b, (uint8_t)(v >> 8)); bbyte(b, (uint8_t)v); }
 
 /* One database: @count records named "<tag> NNN", carrying crcs from
  * @crc_base upwards and a serial built from @tag. */
@@ -229,6 +231,74 @@ static int write_db(const char *path, const char *tag, uint32_t crc_base,
       bfixstr(&body, "crc");    bbin(&body, crc, 4);
       bfixstr(&body, "serial"); bbin(&body, serial, (uint8_t)strlen(serial));
       bfixstr(&body, "size");   buint8(&body, (uint8_t)(16 + i));
+   }
+   bbyte(&body, 0xc0);
+
+   bfixmap(&meta, 1);
+   bfixstr(&meta, "count");
+   buint8(&meta, 1);
+
+   off = 16 + (uint64_t)body.len;
+   memcpy(hdr, "RARCHDB", 7);
+   hdr[7] = 0;
+   for (i = 0; i < 8; i++)
+      hdr[8 + i] = (uint8_t)(off >> (56 - 8 * i));
+
+   if (!(f = fopen(path, "wb")))
+      return 0;
+   fwrite(hdr, 1, sizeof(hdr), f);
+   fwrite(body.data, 1, body.len, f);
+   fwrite(meta.data, 1, meta.len, f);
+   fclose(f);
+
+   free(body.data);
+   free(meta.data);
+   return 1;
+}
+
+
+/* A database shaped like the ones that broke the size range:
+ * @zero_at gets a size of 0 (the value min()/max() used to read as
+ * "nothing accumulated yet"), and @crcless_at carries a size but no
+ * crc, so the index walk only sees it if the scan reports records
+ * that lack the key it was asked for. Sizes are 100 + 10 * i
+ * otherwise, so the true range is known. */
+static int write_db_sizes(const char *path, int count, int zero_at,
+      int crcless_at)
+{
+   buf_t    body, meta;
+   FILE    *f;
+   uint8_t  hdr[16];
+   uint64_t off;
+   int      i;
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+
+   for (i = 0; i < count; i++)
+   {
+      char     name[64];
+      uint8_t  crc[4];
+      uint32_t c    = 0x9000u + (uint32_t)i;
+      int      size = (i == zero_at) ? 0 : 100 + 10 * i;
+
+      sprintf(name, "Sized %03d", i);
+      crc[0] = (uint8_t)(c >> 24); crc[1] = (uint8_t)(c >> 16);
+      crc[2] = (uint8_t)(c >> 8);  crc[3] = (uint8_t)c;
+
+      if (i == crcless_at)
+      {
+         bfixmap(&body, 2);
+         bfixstr(&body, "name"); bfixstr(&body, name);
+         bfixstr(&body, "size"); buint16(&body, (uint16_t)size);
+      }
+      else
+      {
+         bfixmap(&body, 3);
+         bfixstr(&body, "name"); bfixstr(&body, name);
+         bfixstr(&body, "crc");  bbin(&body, crc, 4);
+         bfixstr(&body, "size"); buint16(&body, (uint16_t)size);
+      }
    }
    bbyte(&body, 0xc0);
 
@@ -404,6 +474,39 @@ int main(int argc, char **argv)
    database_info_crc_index_free(cib);
    database_info_serial_index_free(sia);
    database_info_serial_index_free(sib);
+
+   /* Both of these produced a size range narrower than the data, and a
+    * range used to decide which databases to skip is a missed match
+    * when it is too narrow rather than a slow scan. */
+   {
+      char  path[1024];
+      int64_t lo = -1, hi = -1;
+      database_info_crc_index_t *idx;
+      char  detail[128];
+
+      /* 20 records, sizes 100..290 by tens, except: index 7 has size 0,
+       * and index 19 - which holds the largest size - has no crc. */
+      sprintf(path, "%s/sizes.rdb", dir);
+      if (!write_db_sizes(path, 20, 7, 19))
+      {
+         check(0, "size-range fixture written", "write failed");
+      }
+      else if (!(idx = database_info_crc_index_new(path, 0)))
+      {
+         check(0, "size-range index built", "no index");
+      }
+      else
+      {
+         int got = database_info_crc_index_size_range(idx, &lo, &hi);
+
+         sprintf(detail, "[%ld, %ld]", (long)lo, (long)hi);
+         check(got && hi == 290,
+               "size range covers a record with no crc", detail);
+         check(got && lo == 0,
+               "a zero size does not truncate the range", detail);
+         database_info_crc_index_free(idx);
+      }
+   }
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

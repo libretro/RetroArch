@@ -1052,8 +1052,10 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
       }
    }
 
-   /* Only fixed 4-byte crcs are indexable.  Anything else is left to
-    * the query path, which is still what runs without an index. */
+   /* Only fixed 4-byte crcs are indexable.  Anything else - including
+    * a record that carries a size but no crc at all, which arrives
+    * here with a zero-length key so its size still counts towards the
+    * range above - is left to the query path. */
    if (key_len != 4)
       return 0;
 

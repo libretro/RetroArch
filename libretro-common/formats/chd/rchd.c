@@ -129,6 +129,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
 #include <formats/rchd.h>
 #include <encodings/huffman.h>
 #include <encodings/crc32.h>
@@ -260,49 +261,6 @@ static uint64_t rchd_rd_be(const uint8_t *p, int n)
    for (i = 0; i < n; i++)
       v = (v << 8) | (uint64_t)p[i];
    return v;
-}
-
-/* CRC-16/CCITT-FALSE: polynomial 0x1021, initial 0xffff, no reflection
- * and no final xor. Validates a decoded v5 map (FORMAT.md 2.3.6).
- *
- * A byte at a time through a table, not a bit at a time through a
- * branch. The map of a large image runs to megabytes and every byte of
- * it goes through here: bitwise, that was half of everything an open
- * spends, and the table costs five hundred and twelve bytes built once.
- *
- * The construction is deterministic, so two threads racing to do it
- * write the same bytes and the flag needs no lock. */
-static uint16_t rchd_crc16_table[256];
-static int      rchd_crc16_ready;
-
-static void rchd_crc16_build(void)
-{
-   uint32_t i;
-
-   if (rchd_crc16_ready)
-      return;
-   for (i = 0; i < 256; i++)
-   {
-      uint16_t c = (uint16_t)(i << 8);
-      int      bit;
-
-      for (bit = 0; bit < 8; bit++)
-         c = (uint16_t)((c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1));
-      rchd_crc16_table[i] = c;
-   }
-   rchd_crc16_ready = 1;
-}
-
-static uint16_t rchd_crc16(const uint8_t *data, size_t len)
-{
-   uint16_t crc = 0xffff;
-   size_t   i;
-
-   rchd_crc16_build();
-   for (i = 0; i < len; i++)
-      crc = (uint16_t)((crc << 8)
-          ^ rchd_crc16_table[(uint8_t)((crc >> 8) ^ data[i])]);
-   return crc;
 }
 
 /* -------- decoder state -------- */
@@ -977,7 +935,8 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
    if (rhuff_bits_overflow(&bits))
       goto done;
 
-   if (rchd_crc16(checkbuf, (size_t)chd->info.hunk_count * 12) != stored_crc)
+   if (encoding_crc16_ccitt(0xffff, checkbuf,
+            (size_t)chd->info.hunk_count * 12) != stored_crc)
    {
       err = RCHD_ERROR_CRC;
       goto done;

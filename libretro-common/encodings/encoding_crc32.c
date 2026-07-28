@@ -350,6 +350,50 @@ static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
  * table has no initialiser to race on.
  */
 
+/* ------------------------------------------------------------------ *
+ * CRC-16/CCITT-FALSE                                                   *
+ * ------------------------------------------------------------------ *
+ *
+ * Polynomial 0x1021 MSB-first, no final xor. The seed is the caller's:
+ * this variant is conventionally started at 0xFFFF, which is what the
+ * CHD readers pass, but nothing here assumes it.
+ *
+ * Sixteen bits rather than thirty-two, and a different polynomial from
+ * either function above, so it shares no table with them - only the
+ * slicing arrangement, which is a property of the technique rather
+ * than of any particular CRC.
+ */
+
+uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *data, size_t len)
+{
+   while (len >= 8)
+   {
+      crc = (uint16_t)(
+              crc16_ccitt_slice8[7][(uint8_t)(data[0] ^ (crc >> 8))]
+            ^ crc16_ccitt_slice8[6][(uint8_t)(data[1] ^  crc      )]
+            ^ crc16_ccitt_slice8[5][data[2]]
+            ^ crc16_ccitt_slice8[4][data[3]]
+            ^ crc16_ccitt_slice8[3][data[4]]
+            ^ crc16_ccitt_slice8[2][data[5]]
+            ^ crc16_ccitt_slice8[1][data[6]]
+            ^ crc16_ccitt_slice8[0][data[7]]);
+
+      data += 8;
+      len  -= 8;
+   }
+
+   /* Decremented inside the body, as in the two above, so the loop
+    * test cannot wrap len to SIZE_MAX on its last pass. */
+   while (len > 0)
+   {
+      crc = (uint16_t)((crc << 8)
+            ^ crc16_ccitt_slice8[0][(uint8_t)((crc >> 8) ^ (*data++))]);
+      len--;
+   }
+
+   return crc;
+}
+
 uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *data, size_t len)
 {
    /* Slicing-by-8, as for the reflected variant above, but assembling

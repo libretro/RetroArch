@@ -781,11 +781,18 @@ int libretrodb_scan_field(libretrodb_t *db, const char *field,
             goto end;
       }
 
-      if (have_key)
+      /* A record carrying the companion field but not the key is still
+       * reported, with a zero-length key, so a caller accumulating
+       * something over the companion - a size range, say - sees every
+       * record rather than only the ones it can index.  Reporting only
+       * on the key gave a range narrower than the data, which is the
+       * wrong direction for a range used to decide what to skip. */
+      if (have_key || have_aux)
       {
          int64_t resume = intfstream_tell(fd);
 
-         if (cb(ctx, key_val, (size_t)key_val_len,
+         if (cb(ctx, have_key ? key_val : NULL,
+                  have_key ? (size_t)key_val_len : 0,
                   (uint64_t)record_start, have_aux ? &aux_val : NULL))
             stop = 1;
 
