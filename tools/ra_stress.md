@@ -10,7 +10,7 @@ transition goes through
 
 | File | What it is |
 |---|---|
-| `tools/ra_stress.py` | The driver. Python 3, stdlib only, no dependencies. |
+| `tools/ra_stress.py` | The driver. Python 3.6+, standard library only. |
 | `tools/ra_stress.md` | This document. |
 
 The driver depends on the `LOAD_CONTENT`, `START_CORE`, `UNLOAD_CORE`,
@@ -33,7 +33,7 @@ lifecycle commands that match the menu entries they correspond to:
 | `LOAD_CONTENT <core path>\|<content path>` | *(new)* content loading - see note below |
 | `CLOSE_CONTENT` | Quick Menu -> *Close Content* (`action_ok_close_content`) |
 | `UNLOAD_CORE` | Main Menu -> *Unload Core* (`action_ok_unload_core`) |
-| `VIDEO_REINIT` | *(no menu equivalent)* `CMD_EVENT_REINIT` + `DRIVER_VIDEO_MASK` |
+| `VIDEO_REINIT` | *(no menu equivalent)* `CMD_EVENT_REINIT` + `DRIVER_VIDEO_MASK` (normalised to video+input) |
 | `AUDIO_REINIT` | *(no menu equivalent)* `CMD_EVENT_AUDIO_REINIT` |
 | `DRIVERS_REINIT` | *(no menu equivalent)* `CMD_EVENT_REINIT` + `DRIVERS_CMD_ALL` |
 
@@ -71,15 +71,25 @@ The three reinit commands are split by scope, which matters:
 `CMD_EVENT_REINIT` falls back to `DRIVERS_CMD_ALL` when its data pointer is
 NULL, so a naive "video reinit" would in fact tear down audio, input, MIDI,
 Bluetooth, LED and the rest too. `VIDEO_REINIT` passes `DRIVER_VIDEO_MASK`
-explicitly — the same video-only mask the CRT switch path uses — and
-`DRIVERS_REINIT` keeps the all-drivers behaviour under an honest name.
+explicitly — the same mask the CRT switch path uses — and `DRIVERS_REINIT`
+keeps the all-drivers behaviour under an honest name.
 
-`VIDEO_REINIT` is usually the most valuable discriminator: it cycles
-the video driver *without* core churn and without dragging every other
-driver along. If it alone kills the target, the fault is in the video
-driver's own teardown/rebuild cycle. If only `DRIVERS_REINIT` does,
-something outside video is implicated. If neither does and only content
-cycling kills it, core load/unload is involved.
+Note that `DRIVER_FLAGS_NORMALIZE()` widens that request to
+`DRIVER_VIDEO_AND_INPUT_MASK` inside both `drivers_init()` and
+`driver_uninit()`, so `VIDEO_REINIT` cycles video **and input**. That is not
+a leak in the scoping — the input driver is not separately initialisable, it
+is brought up inside `video_driver_init_internal()` and several video
+drivers hand back the input driver and its data through their `init()`
+out-params. Video-without-input is not a state the frontend can be in, so
+video+input is the narrowest honest scope.
+
+`VIDEO_REINIT` is still the most valuable discriminator: it cycles the video
+stack *without* core churn and without dragging audio, MIDI, camera,
+Bluetooth, LED and the rest along. If it alone kills the target, the fault
+is in video/input teardown and rebuild. If only `DRIVERS_REINIT` does,
+something outside that pair is implicated — and `AUDIO_REINIT` narrows that
+further. If neither does and only content cycling kills it, core
+load/unload is involved.
 
 Closing content and unloading the core are different operations - the first
 leaves the core loaded, the second releases it so the next load goes through
@@ -87,6 +97,19 @@ a fresh `dlopen`. Your crash log shows the full sequence (`Unloading
 game... Unloading core... Unloading core symbols...`), so they are separate
 driver ops and the fuzzer can tell you which one matters.
 
+
+### Python requirement
+
+Python 3.6 or newer, standard library only — no `pip install` step. The
+floor is 3.6 because of `random.choices()` in the fuzzer; everything else
+needs at most 3.5 (`subprocess.run`, the `signal.Signals` enum).
+
+**Python 2 is not supported**, and this is not a matter of adding a
+compatibility shim: the file does not parse under it, because
+`print(x, flush=True)` is a syntax error where `print` is a statement
+rather than a function. Every other script in `tools/` is
+`#!/usr/bin/env python3` as well. If `python` on your box is still Python 2,
+invoke `python3` explicitly.
 
 ## Setup
 

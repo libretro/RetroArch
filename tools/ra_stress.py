@@ -11,6 +11,9 @@ an exact op sequence, and what the driver does when the target dies.
 Exits non-zero if the target died, so it drops into a shell loop or a CI
 job without extra plumbing.
 
+Requires Python 3.6 or newer.  Python 2 is not supported and cannot be:
+the file does not even parse under it.  No third-party packages.
+
 Drives an *unmodified-behaviour* RetroArch build over its own UDP command
 interface, cycling core loads, content loads, unloads and driver reinits to
 shake out bugs in the teardown and rebuild paths. Nothing here reimplements
@@ -486,8 +489,12 @@ class Runner:
         self.settle(self.a.menu_seconds, "core unloaded")
 
     def op_reinit(self):
-        """Video driver only -- the tightest isolation of the graphics
-        context teardown/rebuild."""
+        """Video and input only -- the narrowest reinit scope available.
+
+        DRIVER_FLAGS_NORMALIZE() widens a video-only request to
+        video+input, since the input driver is brought up inside
+        video_driver_init_internal() and is not separately initialisable.
+        """
         self.chan.send("VIDEO_REINIT")
         self.settle(self.a.reinit_seconds, "after VIDEO_REINIT")
 
