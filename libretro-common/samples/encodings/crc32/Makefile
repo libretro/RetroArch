@@ -7,9 +7,13 @@ LIBRETRO_COMM_DIR := ../../..
 # lack rthreads would exercise anyway.
 HAVE_THREADS ?= 1
 
+# encoding_crc32.c asks cpu_features_get() whether the CPU has
+# PCLMULQDQ.  features_cpu.c needs no VFS, only compat_strl.c.
 SOURCES := \
 	crc32_test.c \
-	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g -O2 -I$(LIBRETRO_COMM_DIR)/include
 

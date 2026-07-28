@@ -30,7 +30,6 @@
 #endif
 
 #include <compat/strl.h>
-#include <streams/file_stream.h>
 #include <libretro.h>
 #include <features/features_cpu.h>
 #include <retro_atomic.h>
@@ -366,14 +365,12 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   RFILE *fp = filestream_open("/proc/cpuinfo",
-         RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   FILE *fp = fopen("/proc/cpuinfo", "r");
 
    if (!fp)
       return 0;
 
-   while (filestream_gets(fp, line, sizeof(line)))
+   while (fgets(line, sizeof(line), fp))
    {
       if (strncmp(line, "Features\t: ", 11))
          continue;
@@ -384,7 +381,7 @@ static unsigned char check_arm_cpu_feature(const char* feature)
       break;
    }
 
-   filestream_close(fp);
+   fclose(fp);
 
    return status;
 }
@@ -438,9 +435,9 @@ static const char *parse_decimal(const char* input,
  *             2,4-127,128-143
  *             0-1
  **/
-static void cpulist_parse(CpuList* list, char **buf, ssize_t len)
+static void cpulist_parse(CpuList* list, const char *buf, ssize_t len)
 {
-   const char* p   = (const char*)buf;
+   const char* p   = buf;
    const char* end = p + len;
 
    /* NOTE: the input line coming from sysfs typically contains a
@@ -491,18 +488,20 @@ static void cpulist_parse(CpuList* list, char **buf, ssize_t len)
  **/
 static void cpulist_read_from(CpuList* list, const char* filename)
 {
-   ssize_t _len;
-   char *buf  = NULL;
+   char   buf[512];
+   size_t _len;
+   FILE  *fp  = fopen(filename, "r");
 
    list->mask = 0;
 
-   if (filestream_read_file(filename, (void**)&buf, &_len) != 1)
+   if (!fp)
       return;
 
-   cpulist_parse(list, &buf, _len);
-   if (buf)
-      free(buf);
-   buf = NULL;
+   _len      = fread(buf, 1, sizeof(buf) - 1, fp);
+   fclose(fp);
+   buf[_len] = '\0';
+
+   cpulist_parse(list, buf, (ssize_t)_len);
 }
 #endif
 
@@ -607,6 +606,32 @@ unsigned cpu_features_get_core_amount(void)
 #define VENDOR_INTEL_c  0x6c65746e
 #define VENDOR_INTEL_d  0x49656e69
 
+#if defined(__MACH__) && defined(CPU_X86)
+/* Whole-token search of machdep.cpu.features, which is a space
+ * separated list of CPUID leaf-1 feature names. */
+static bool darwin_cpu_feature_present(const char *want)
+{
+   char   buf[1024];
+   size_t len  = sizeof(buf);
+   size_t wlen = strlen(want);
+   const char *p;
+
+   buf[0] = '\0';
+   if (sysctlbyname("machdep.cpu.features", buf, &len, NULL, 0) != 0)
+      return false;
+   buf[sizeof(buf) - 1] = '\0';
+
+   for (p = buf; (p = strstr(p, want)); p += wlen)
+   {
+      char after  = p[wlen];
+      char before = (p == buf) ? ' ' : p[-1];
+      if ((before == ' ') && (after == ' ' || after == '\0'))
+         return true;
+   }
+   return false;
+}
+#endif
+
 static uint64_t cpu_features_probe(void)
 {
    uint64_t cpu        = 0;
@@ -675,6 +700,12 @@ static uint64_t cpu_features_probe(void)
    _len = sizeof(_val);
    if (sysctlbyname("hw.optional.altivec", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_VMX;
+   /* Darwin publishes no hw.optional key for PCLMULQDQ, so read the
+    * CPUID leaf-1 feature-name list instead.  Matching is on whole
+    * space-separated tokens: a plain strstr() would also fire on a
+    * hypothetical future "PCLMULQDQ2". */
+   if (darwin_cpu_feature_present("PCLMULQDQ"))
+      cpu |= RETRO_SIMD_PCLMUL;
 #else
    _val = 0;
    _len = sizeof(_val);
@@ -751,6 +782,9 @@ static uint64_t cpu_features_probe(void)
 
    if (flags[2] & (1 << 25))
       cpu |= RETRO_SIMD_AES;
+
+   if (flags[2] & (1 << 1))
+      cpu |= RETRO_SIMD_PCLMUL;
 
    /* Must only perform xgetbv check if we have
     * AVX CPU support (guaranteed to have at least i686). */
@@ -947,14 +981,12 @@ end:
       return;
    {
       char *model_name, line[128];
-      RFILE *fp = filestream_open("/proc/cpuinfo",
-            RETRO_VFS_FILE_ACCESS_READ,
-            RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      FILE *fp = fopen("/proc/cpuinfo", "r");
 
       if (!fp)
          return;
 
-      while (filestream_gets(fp, line, sizeof(line)))
+      while (fgets(line, sizeof(line), fp))
       {
          if (strncmp(line, "model name", 10))
             continue;
@@ -968,7 +1000,7 @@ end:
          break;
       }
 
-      filestream_close(fp);
+      fclose(fp);
 
 #if defined(WEBOS)
       struct stat st;

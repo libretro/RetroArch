@@ -26,7 +26,6 @@
 #include <stdlib.h>
 
 #include <encodings/crc32.h>
-#include <retro_atomic.h>
 #include <retro_endianness.h>
 #include <retro_inline.h>
 
@@ -131,12 +130,12 @@ static uint32_t crc32_slice_by_8(uint32_t crc, const uint8_t *data, size_t len)
 
 #if defined(CRC32_HAVE_PCLMUL_PATH)
 
+#include <features/features_cpu.h>
+
 #if defined(_MSC_VER)
-#include <intrin.h>
 #include <wmmintrin.h>
 #define CRC32_TARGET_PCLMUL
 #else
-#include <cpuid.h>
 #include <emmintrin.h>
 #include <wmmintrin.h>
 #define CRC32_TARGET_PCLMUL __attribute__((target("pclmul")))
@@ -252,45 +251,16 @@ static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
    return crc;
 }
 
-/* Feature detection is cached in a single atomic word rather than a
- * plain int guarding a separate payload: the whole state is the value,
- * so concurrent probers simply store the same result and there is no
- * unsynchronised write to order against. Follows the acquire/release
- * idiom already used by cpu_features_get().
- *
- * 0 = not probed yet, 1 = absent, 2 = present. */
-#define CRC32_PCLMUL_UNPROBED 0
-#define CRC32_PCLMUL_ABSENT   1
-#define CRC32_PCLMUL_PRESENT  2
-
-static retro_atomic_int_t crc32_pclmul_state;
-
+/* Detection lives in cpu_features_get(), which probes once behind an
+ * acquire/release pair and is the frontend's single answer to "what
+ * does this CPU have".  PCLMULQDQ needs no OSXSAVE/XCR0 dance: it is
+ * an XMM instruction, so CR4.OSFXSR is the only OS requirement and
+ * that is universal.  Only AVX-width state needs the xgetbv check. */
 static int crc32_have_pclmul(void)
 {
-   int state = retro_atomic_load_acquire_int(&crc32_pclmul_state);
-
-   if (state == CRC32_PCLMUL_UNPROBED)
-   {
-      int have;
-#if defined(_MSC_VER)
-      int regs[4];
-      __cpuid(regs, 0);
-      have = (regs[0] >= 1);
-      if (have)
-      {
-         __cpuid(regs, 1);
-         have = ((regs[2] & (1 << 1)) != 0);
-      }
-#else
-      unsigned a, b, c, d;
-      have = (__get_cpuid(1, &a, &b, &c, &d) && (c & (1u << 1))) ? 1 : 0;
-#endif
-      state = have ? CRC32_PCLMUL_PRESENT : CRC32_PCLMUL_ABSENT;
-      retro_atomic_store_release_int(&crc32_pclmul_state, state);
-   }
-
-   return state == CRC32_PCLMUL_PRESENT;
+   return (cpu_features_get() & RETRO_SIMD_PCLMUL) != 0;
 }
+
 #endif /* x86 */
 
 /* ------------------------------------------------------------------ */
