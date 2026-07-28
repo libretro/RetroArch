@@ -704,30 +704,36 @@ static enum msg_file_type extension_to_file_type(const char *ext)
    strlcpy(ext_lower, ext, sizeof(ext_lower));
    string_to_lower(ext_lower);
 
+   /* These were memcmp() against a fixed count, which is specified to
+    * read all n bytes.  For an extension shorter than the count - an
+    * empty extension being the common case - those bytes are
+    * uninitialised stack, which MSan reports and which vectorised
+    * memcmp() implementations really do load.  string_is_equal()
+    * stops at the terminator. */
    if (
-            memcmp(ext_lower, "7z",  3) == 0
-         || memcmp(ext_lower, "zip", 4) == 0
-         || memcmp(ext_lower, "apk", 4) == 0
-         || memcmp(ext_lower, "zst", 4) == 0
+            string_is_equal(ext_lower, "7z")
+         || string_is_equal(ext_lower, "zip")
+         || string_is_equal(ext_lower, "apk")
+         || string_is_equal(ext_lower, "zst")
       )
       return FILE_TYPE_COMPRESSED;
-   if (memcmp(ext_lower, "cue",   4) == 0)
+   if (string_is_equal(ext_lower, "cue"))
       return FILE_TYPE_CUE;
-   if (memcmp(ext_lower, "gdi",   4) == 0)
+   if (string_is_equal(ext_lower, "gdi"))
       return FILE_TYPE_GDI;
-   if (memcmp(ext_lower, "iso",   4) == 0)
+   if (string_is_equal(ext_lower, "iso"))
       return FILE_TYPE_ISO;
-   if (memcmp(ext_lower, "chd",   4) == 0)
+   if (string_is_equal(ext_lower, "chd"))
       return FILE_TYPE_CHD;
-   if (memcmp(ext_lower, "wbfs",  5) == 0)
+   if (string_is_equal(ext_lower, "wbfs"))
       return FILE_TYPE_WBFS;
-   if (memcmp(ext_lower, "rvz",   4) == 0)
+   if (string_is_equal(ext_lower, "rvz"))
       return FILE_TYPE_RVZ;
-   if (memcmp(ext_lower, "wia",   4) == 0)
+   if (string_is_equal(ext_lower, "wia"))
       return FILE_TYPE_WIA;
-   if (memcmp(ext_lower, "pbp",   4) == 0)
+   if (string_is_equal(ext_lower, "pbp"))
       return FILE_TYPE_PBP;
-   if (memcmp(ext_lower, "lutro", 6) == 0)
+   if (string_is_equal(ext_lower, "lutro"))
       return FILE_TYPE_LUTRO;
    return FILE_TYPE_NONE;
 }

@@ -673,12 +673,22 @@ static bool type_is_prioritized(const char *path)
    const char *ext = path_get_extension(path);
    if (ext)
    {
-      char e0 = ext[0] | 0x20;
-      char e1 = ext[1] | 0x20;
-      char e2 = ext[2] | 0x20;
-      if (ext[3] == '\0')
-         return (e0 == 'c' && e1 == 'u' && e2 == 'e')
-            || (e0 == 'g' && e1 == 'd' && e2 == 'i');
+      char e0, e1, e2;
+
+      /* ext[1] and ext[2] were read before anything established the
+       * string was that long, and path_get_extension() returns a
+       * pointer to the terminator for a path with no extension - a
+       * three byte read past the end of the string, on every element
+       * of the qsort() comparator below. */
+      if (!ext[0] || !ext[1] || !ext[2] || ext[3] != '\0')
+         return false;
+
+      e0 = ext[0] | 0x20;
+      e1 = ext[1] | 0x20;
+      e2 = ext[2] | 0x20;
+
+      return (e0 == 'c' && e1 == 'u' && e2 == 'e')
+          || (e0 == 'g' && e1 == 'd' && e2 == 'i');
    }
    return false;
 }
