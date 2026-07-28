@@ -866,7 +866,23 @@ static void wl_registry_handle_global_remove(void *data,
       {
          if (wl_current_outputs_remove(wl, od->output->output))
             surface_output_removed = true;
+
+         /* wl->current_output points into the output_info_t about to
+          * be freed.  wl_update_scale() below only reassigns it when
+          * it finds a replacement, so on the last output going away --
+          * a single monitor unplugged, or the surface leaving every
+          * output -- it would be left dangling for the next scale
+          * query to read. */
+         if (wl->current_output == od->output)
+            wl->current_output = NULL;
+
          wl_list_remove(&od->link);
+         /* The wl_output proxy is ours from wl_registry_bind() and has
+          * to go back; freeing only the output_info_t leaks it on
+          * every hotplug.  The teardown in
+          * gfx/common/wayland_common.c does destroy it. */
+         if (od->output->output)
+            wl_output_destroy(od->output->output);
          free(od->output);
          free(od);
          break;
