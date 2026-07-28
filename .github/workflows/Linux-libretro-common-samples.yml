@@ -364,6 +364,26 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
 
+      - name: Run crc32_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          # encoding_crc32() caches x86 feature detection on first use.
+          # The failure that matters is publishing that result without
+          # release/acquire ordering, which is invisible to the value
+          # checks -- every thread still computes the right number on
+          # x86 TSO -- and only shows up as a race.  The test holds its
+          # threads on a gate so they all make their first dispatching
+          # call at once; see the comment above crc_first_touch_worker
+          # for why that section makes exactly one call per thread.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./crc32_test
+
   # Cross-architecture validation lane for retro_atomic_test.
   #
   # The samples job above runs on x86_64, which is a strongly-ordered
@@ -407,26 +427,6 @@ jobs:
             sysroot: /usr/arm-linux-gnueabihf
 
     steps:
-      - name: Run crc32_test under Clang + ThreadSanitizer
-        shell: bash
-        working-directory: libretro-common/samples/encodings/crc32
-        run: |
-          # encoding_crc32() caches x86 feature detection on first use.
-          # The failure that matters is publishing that result without
-          # release/acquire ordering, which is invisible to the value
-          # checks -- every thread still computes the right number on
-          # x86 TSO -- and only shows up as a race.  The test holds its
-          # threads on a gate so they all make their first dispatching
-          # call at once; see the comment above crc_first_touch_worker
-          # for why that section makes exactly one call per thread.
-          set -u
-          set -o pipefail
-
-          make clean
-          CC=clang make all SANITIZER=thread
-
-          TSAN_OPTIONS=halt_on_error=1 ./crc32_test
-
       - name: Install dependencies
         run: |
           sudo apt-get update -y
