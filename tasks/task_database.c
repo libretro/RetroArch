@@ -1100,13 +1100,27 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
    snprintf(query, sizeof(query), "{size:min(0)}");
    database_info_list_iterate_new(db_state, query);
 
+   /* database_info_list_new_filtered() returns NULL when the .rdb
+    * cannot be opened, when the query fails to compile, or on OOM, so
+    * db_state->info is not guaranteed here.  Treat a failed query the
+    * same way an empty result is treated below: mark the database as
+    * having no usable size range and move on. */
+   if (!db_state->info)
+   {
+      db_state->min_sizes[db_state->list_index] = -1;
+      db_state->max_sizes[db_state->list_index] = -1;
+      db_state->entry_index                     = 0;
+      return;
+   }
+
    if (db_state->info->count > 0)
    {
       db_state->min_sizes[db_state->list_index] = db_state->info->list[db_state->info->count-1].size;
       snprintf(query, sizeof(query), "{size:max(0)}");
       database_info_list_iterate_new(db_state, query);
 
-      if (db_state->info->count > 0)
+      /* Second query, same failure modes as the first. */
+      if (db_state->info && db_state->info->count > 0)
       {
          size_t i;
          db_state->max_sizes[db_state->list_index] = db_state->info->list[db_state->info->count-1].size;
