@@ -57,7 +57,28 @@ enum argument_type
 
 struct argument;
 
+/* Per-query evaluation state.
+ *
+ * query_func_min()/query_func_max() report "smaller/larger than
+ * everything seen so far", so they need somewhere to keep the running
+ * extreme across the rows of a walk.  That used to be a single
+ * file-scope 'intermediate_res', which two queries evaluated
+ * concurrently would corrupt for each other:
+ *
+ *   WARNING: ThreadSanitizer: data race
+ *     Write of size 8 by thread T2:
+ *       #1 query_func_min  query.c:310
+ *     Location is global 'intermediate_res' of size 24
+ *
+ * Give every compiled query its own, and pass it to the evaluation
+ * functions rather than reaching for a global. */
+struct query_ctx
+{
+   struct rmsgpack_dom_value intermediate_res;
+};
+
 typedef struct rmsgpack_dom_value (*rarch_query_func)(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv);
 
@@ -81,6 +102,7 @@ struct argument
 struct query
 {
    struct invocation root; /* ptr alignment */
+   struct query_ctx ctx;
    unsigned ref_count;
 };
 
@@ -90,29 +112,13 @@ struct registered_func
    rarch_query_func func;
 };
 
-/* Accumulator for query_func_min()/query_func_max(), which report
- * "smaller/larger than everything seen so far" so that the last row a
- * cursor yields carries the actual extreme.
- *
- * Its lifetime is one cursor walk, but it was only ever reset in
- * libretrodb_query_compile().  A compiled query outlives the walk -
- * libretrodb_cursor_open() takes a reference to it - so opening a
- * second cursor over the same query started with the first walk's
- * accumulated extreme and silently under- or over-reported.
- *
- * It is also file-scope rather than static, leaking an unqualified
- * symbol out of the object.  Nothing outside this file refers to it.
- *
- * NOTE: this is still shared mutable state.  Two cursor walks
- * evaluating min()/max() concurrently will corrupt each other's
- * accumulator; only moving it into struct query, which needs a
- * context parameter on rarch_query_func, fixes that. */
-static struct rmsgpack_dom_value intermediate_res;
-
-void libretrodb_query_reset_accumulator(void)
+void libretrodb_query_reset_accumulator(libretrodb_query_t *q)
 {
-   intermediate_res.val.int_  = 0;
-   intermediate_res.val.uint_ = 0;
+   struct query *rq = (struct query *)q;
+   if (!rq)
+      return;
+   rq->ctx.intermediate_res.val.int_  = 0;
+   rq->ctx.intermediate_res.val.uint_ = 0;
 }
 
 /* Forward declarations */
@@ -123,6 +129,7 @@ static struct buffer query_parse_table(char *s, size_t len, struct buffer buff,
 
 /* Errors */
 static struct rmsgpack_dom_value query_func_is_true(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
@@ -138,6 +145,7 @@ static struct rmsgpack_dom_value query_func_is_true(
 }
 
 static struct rmsgpack_dom_value func_equals(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -166,6 +174,7 @@ static struct rmsgpack_dom_value func_equals(
 }
 
 static struct rmsgpack_dom_value query_func_operator_or(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -178,10 +187,10 @@ static struct rmsgpack_dom_value query_func_operator_or(
    for (i = 0; i < argc; i++)
    {
       if (argv[i].type == AT_VALUE)
-         res = func_equals(input, 1, &argv[i]);
+         res = func_equals(ctx, input, 1, &argv[i]);
       else
-         res = query_func_is_true(
-                  argv[i].a.invocation.func(input,
+         res = query_func_is_true(ctx,
+                  argv[i].a.invocation.func(ctx, input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ), 0, NULL);
@@ -194,6 +203,7 @@ static struct rmsgpack_dom_value query_func_operator_or(
 }
 
 static struct rmsgpack_dom_value query_func_operator_and(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -206,10 +216,10 @@ static struct rmsgpack_dom_value query_func_operator_and(
    for (i = 0; i < argc; i++)
    {
       if (argv[i].type == AT_VALUE)
-         res = func_equals(input, 1, &argv[i]);
+         res = func_equals(ctx, input, 1, &argv[i]);
       else
-         res = query_func_is_true(
-               argv[i].a.invocation.func(input,
+         res = query_func_is_true(ctx,
+               argv[i].a.invocation.func(ctx, input,
                   argv[i].a.invocation.argc,
                   argv[i].a.invocation.argv
                   ),
@@ -222,6 +232,7 @@ static struct rmsgpack_dom_value query_func_operator_and(
 }
 
 static struct rmsgpack_dom_value query_func_between(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -259,6 +270,7 @@ static struct rmsgpack_dom_value query_func_between(
 }
 
 static struct rmsgpack_dom_value query_func_glob(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -283,6 +295,7 @@ static struct rmsgpack_dom_value query_func_glob(
  * - in practice, last entry will contain the actual min/max value.           *
  * Empty result means there is no such field. */
 static struct rmsgpack_dom_value query_func_min(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -296,18 +309,18 @@ static struct rmsgpack_dom_value query_func_min(
       case RDT_INT:
          res.val.bool_ = (
                (input.val.int_ == 0)
-               || (input.val.int_ < intermediate_res.val.int_)
-               || (intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || intermediate_res.val.int_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+               || (input.val.int_ < ctx->intermediate_res.val.int_)
+               || (ctx->intermediate_res.val.int_ == 0));
+         if (res.val.bool_ || ctx->intermediate_res.val.int_ == 0)
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
          break;
       case RDT_UINT:
          res.val.bool_ = (
                (input.val.uint_ == 0)
-               || (input.val.uint_ < intermediate_res.val.uint_)
-               || (intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+               || (input.val.uint_ < ctx->intermediate_res.val.uint_)
+               || (ctx->intermediate_res.val.uint_ == 0));
+         if (res.val.bool_ || ctx->intermediate_res.val.uint_ == 0)
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
          break;
       default:
          break;
@@ -317,6 +330,7 @@ static struct rmsgpack_dom_value query_func_min(
 }
 
 static struct rmsgpack_dom_value query_func_max(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument * argv)
 {
@@ -330,18 +344,18 @@ static struct rmsgpack_dom_value query_func_max(
       case RDT_INT:
          res.val.bool_ = (
                (input.val.int_ == 0)
-               || (input.val.int_ > intermediate_res.val.int_)
-               || (intermediate_res.val.int_ == 0));
-         if (res.val.bool_ || intermediate_res.val.int_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+               || (input.val.int_ > ctx->intermediate_res.val.int_)
+               || (ctx->intermediate_res.val.int_ == 0));
+         if (res.val.bool_ || ctx->intermediate_res.val.int_ == 0)
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
          break;
       case RDT_UINT:
          res.val.bool_ = (
                (input.val.uint_ == 0)
-               || (input.val.uint_ > intermediate_res.val.uint_)
-               || (intermediate_res.val.uint_ == 0));
-         if (res.val.bool_ || intermediate_res.val.uint_ == 0)
-            memcpy(&intermediate_res, &input, sizeof(intermediate_res));
+               || (input.val.uint_ > ctx->intermediate_res.val.uint_)
+               || (ctx->intermediate_res.val.uint_ == 0));
+         if (res.val.bool_ || ctx->intermediate_res.val.uint_ == 0)
+            memcpy(&ctx->intermediate_res, &input, sizeof(ctx->intermediate_res));
          break;
       default:
          break;
@@ -744,6 +758,7 @@ static struct buffer query_parse_argument(
 }
 
 static struct rmsgpack_dom_value query_func_all_map(
+      struct query_ctx *ctx,
       struct rmsgpack_dom_value input,
       unsigned argc, const struct argument *argv)
 {
@@ -778,10 +793,11 @@ static struct rmsgpack_dom_value query_func_all_map(
             value = &nil_value;
          arg      = argv[i + 1];
          if (arg.type == AT_VALUE)
-            res   = func_equals(*value, 1, &arg);
+            res   = func_equals(ctx, *value, 1, &arg);
          else
          {
-            res   = query_func_is_true(arg.a.invocation.func(
+            res   = query_func_is_true(ctx, arg.a.invocation.func(
+                  ctx,
                      *value,
                      arg.a.invocation.argc,
                      arg.a.invocation.argv
@@ -1018,12 +1034,12 @@ void *libretrodb_query_compile(libretrodb_t *db,
    struct query *q     = (struct query*)malloc(sizeof(*q));
    size_t err_buff_len = sizeof(tmp_err_buff);
 
-   libretrodb_query_reset_accumulator();
-
    if (!q)
       return NULL;
 
    q->ref_count        = 1;
+   q->ctx.intermediate_res.val.int_  = 0;
+   q->ctx.intermediate_res.val.uint_ = 0;
    q->root.argc        = 0;
    q->root.func        = NULL;
    q->root.argv        = NULL;
@@ -1082,8 +1098,9 @@ void libretrodb_query_inc_ref(libretrodb_query_t *q)
 int libretrodb_query_filter(libretrodb_query_t *q,
       struct rmsgpack_dom_value *v)
 {
-   struct invocation inv         = ((struct query *)q)->root;
-   struct rmsgpack_dom_value res = inv.func(*v, inv.argc, inv.argv);
+   struct query *rq              = (struct query *)q;
+   struct invocation inv         = rq->root;
+   struct rmsgpack_dom_value res = inv.func(&rq->ctx, *v, inv.argc, inv.argv);
    return (res.type == RDT_BOOL && res.val.bool_);
 }
 
@@ -1196,13 +1213,14 @@ int libretrodb_query_eval_field(libretrodb_query_t *q,
       /* Evaluate the matcher against the value */
       if (val_arg->type == AT_VALUE)
       {
-         struct rmsgpack_dom_value res = func_equals(*value, 1, val_arg);
+         struct rmsgpack_dom_value res = func_equals(&rq->ctx, *value, 1, val_arg);
          return res.val.bool_ ? 1 : 0;
       }
       else
       {
-         struct rmsgpack_dom_value res = query_func_is_true(
+         struct rmsgpack_dom_value res = query_func_is_true(&rq->ctx,
                val_arg->a.invocation.func(
+                  &rq->ctx,
                   *value,
                   val_arg->a.invocation.argc,
                   val_arg->a.invocation.argv),

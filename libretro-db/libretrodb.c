@@ -818,7 +818,7 @@ int libretrodb_cursor_open(libretrodb_t *db,
        * Reset it here as well as at compile time: a query outlives
        * the cursor that references it, and a second walk over the
        * same query used to inherit the first walk's extreme. */
-      libretrodb_query_reset_accumulator();
+      libretrodb_query_reset_accumulator(q);
    }
 
    return 0;

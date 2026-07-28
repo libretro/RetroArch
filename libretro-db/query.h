@@ -34,9 +34,9 @@ typedef struct libretrodb_query libretrodb_query_t;
 
 void libretrodb_query_inc_ref(libretrodb_query_t *q);
 
-/* Reset the min()/max() accumulator.  Called when a cursor walk
- * begins; see the comment on intermediate_res in query.c. */
-void libretrodb_query_reset_accumulator(void);
+/* Reset @q's min()/max() accumulator.  Called when a cursor walk
+ * begins; see the comment on struct query_ctx in query.c. */
+void libretrodb_query_reset_accumulator(libretrodb_query_t *q);
 
 void libretrodb_query_dec_ref(libretrodb_query_t *q);
 
