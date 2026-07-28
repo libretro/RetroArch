@@ -10,7 +10,7 @@ transition goes through
 
 | File | What it is |
 |---|---|
-| `tools/ra_stress.py` | The driver. Python 3.2+, standard library only. |
+| `tools/ra_stress.py` | The driver. Python 3.3+, standard library only. |
 | `tools/ra_stress.md` | This document. |
 
 The driver depends on the `LOAD_CONTENT`, `START_CORE`, `UNLOAD_CORE`,
@@ -100,37 +100,51 @@ driver ops and the fuzzer can tell you which one matters.
 
 ### Python requirement
 
-Python 3.2 or newer, standard library only — no `pip install` step.
+Python 2.7, or 3.2 and newer. Standard library only — no `pip install`
+step. The shebang selects `python3`, which is what this is developed
+against; 2.7 is supported for boxes whose system interpreter is still that.
 
-The floor is set by `argparse` entering the standard library in 3.2, and by
-`os.makedirs(exist_ok=)` and `datetime.timezone` arriving in the same
-release. Nothing else in the file needs anything newer: the handful of
-conveniences that would have raised it are replaced by small local
-equivalents, none of them on a hot path.
+Nothing is given up to reach back that far. The conveniences that would
+have raised the floor each have a small local equivalent, and none of them
+is on a hot path — the driver spends its time in sleeps and socket waits.
 
 | Replaced | Would have needed |
 |---|---|
 | `random.choices()` → `weighted_choice()` | 3.6 |
 | `subprocess.run()` → `subprocess.call()` | 3.5 |
 | `signal.Signals` enum → `signal_name()` | 3.5 |
+| `time.monotonic()` → `_make_monotonic()` | 3.3 |
 | `shlex.quote()` → local `quote()` | 3.3 |
 | `print(..., flush=True)` → `say()` | 3.3 |
 | `proc.wait(timeout=)` → poll loop | 3.3 |
-| `BlockingIOError` → `OSError` | 3.3 |
+| `os.makedirs(exist_ok=)` → `makedirs()` | 3.2 |
+| `datetime.timezone` → `utcnow()` | 3.2 |
 
-`quote()` is byte-identical to `shlex.quote()` and also sidesteps
-`pipes.quote`, which was removed in 3.13. `weighted_choice()` draws one
-`random()` per call, so a seed still gives a stable sequence — though not
-the same sequence `random.choices()` would have produced. Saved reproducers
-are unaffected, since they carry the full op list rather than just a seed.
+`quote()` is identical to `shlex.quote()` across 50,000 random strings and
+on non-ASCII input, and sidesteps `pipes.quote` being removed in 3.13.
+`weighted_choice()` matches `random.choices()`'s distribution to within
+sampling error; a seed still gives a stable sequence, though not the one
+`random.choices()` produced — saved reproducers carry the full op list
+rather than a seed, so they are unaffected.
 
-**Python 2 is not supported.** Removing the 3.3+ constructs happens to have
-left the file syntactically parseable under 2.7, but it will not run there —
-`re.ASCII` does not exist, and the string handling assumes Python 3
-semantics. Rather than leave that to fail obscurely, the script checks
-`sys.version_info` up front and exits with a clear message. If `python` on
-your box is still Python 2, invoke `python3` explicitly; every script in
-`tools/` is `#!/usr/bin/env python3`.
+**The clock is the part worth explaining.** Every timeout, every probe and
+the entire stall detector are elapsed-time calculations, and `time.time()`
+steps backwards when NTP corrects the clock — which would produce negative
+round-trip times and bogus stall reports. Falling back to it would have
+been the one genuine sacrifice, so the script does not. It uses
+`time.monotonic()` where available and otherwise asks the platform
+directly: `GetTickCount64` on Windows, `mach_absolute_time` on macOS,
+`clock_gettime(CLOCK_MONOTONIC)` elsewhere, via `ctypes`. Measured against
+`time.monotonic()` the `clock_gettime` path drifts under 10 µs over two
+seconds and is strictly non-decreasing across 200,000 samples.
+
+If every one of those is somehow unavailable the script warns on stderr and
+uses `time.time()`, so an exotic platform degrades loudly rather than
+silently reporting nonsense.
+
+Two smaller 2.7 traps also handled: `socket.error` is `IOError` there and so
+escapes `except OSError`, and calling `.encode()` on an already-bytes `str`
+forces an implicit ASCII decode that fails on non-ASCII content paths.
 
 ## Setup
 

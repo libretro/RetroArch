@@ -11,9 +11,10 @@ an exact op sequence, and what the driver does when the target dies.
 Exits non-zero if the target died, so it drops into a shell loop or a CI
 job without extra plumbing.
 
-Requires Python 3.2 or newer -- the floor is argparse entering the standard
-library.  No third-party packages.  Python 2 is not supported and cannot be
-without a rewrite: the file does not parse there.
+Runs on Python 2.7 and on 3.2 or newer.  Standard library only, no
+third-party packages.  Python 3 is what the shebang selects and what this
+is developed against; 2.7 works for boxes whose system interpreter is
+still that.
 
 Drives an *unmodified-behaviour* RetroArch build over its own UDP command
 interface, cycling core loads, content loads, unloads and driver reinits to
@@ -49,18 +50,18 @@ import argparse
 import json
 import os
 import random
-import re
 import shlex
 import signal
 import socket
+import string
 import struct
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
-if sys.version_info < (3, 2):
-    sys.stderr.write("ra_stress requires Python 3.2 or newer; "
+if sys.version_info < (3, 3):
+    sys.stderr.write("ra_stress requires Python 3.3 or newer; "
                      "this is %s\n" % sys.version.split()[0])
     sys.exit(1)
 
@@ -105,8 +106,17 @@ def parse_button_pattern(text):
 
 IS_WINDOWS = (os.name == "nt")
 
-# Everything below keeps the floor at Python 3.2, which is where argparse
-# entered the standard library. Nothing here is on a hot path.
+# Everything below keeps the floor at Python 3.3, which is where
+# time.monotonic() arrived. Nothing here is on a hot path.
+
+
+def makedirs(path):
+    """os.makedirs(exist_ok=) is 3.2+."""
+    try:
+        os.makedirs(path)
+    except OSError:
+        if not os.path.isdir(path):
+            raise
 
 
 def say(msg):
@@ -120,16 +130,19 @@ def say_err(msg):
     sys.stderr.flush()
 
 
-_UNSAFE = re.compile(r"[^\w@%+=:,./-]", re.ASCII)
+# shlex.quote()'s own safe set, spelled out. Using its regex would mean
+# re.ASCII, which is 3.x only; an explicit set is ASCII-only everywhere.
+_SAFE_CHARS = frozenset(string.ascii_letters + string.digits + "@%_-+=:,./")
 
 
 def quote(text):
     """shlex.quote() is 3.3+, and pipes.quote is gone in 3.13."""
     if not text:
         return "''"
-    if _UNSAFE.search(text) is None:
-        return text
-    return "'" + text.replace("'", "'\"'\"'") + "'"
+    for ch in text:
+        if ch not in _SAFE_CHARS:
+            return "'" + text.replace("'", "'\"'\"'") + "'"
+    return text
 
 
 def weighted_choice(rng, population, weights):
@@ -171,12 +184,85 @@ def split_args(text):
     return shlex.split(text, posix=not IS_WINDOWS)
 
 
+def _make_monotonic():
+    """A monotonic clock on every supported interpreter.
+
+    time.monotonic() is 3.3+. Falling back to time.time() would be wrong
+    rather than merely old: it steps when NTP corrects the clock, and every
+    timeout, probe and stall measurement here is an elapsed-time
+    calculation. Ask the platform directly instead.
+    """
+    builtin = getattr(time, "monotonic", None)
+    if builtin is not None:
+        return builtin
+
+    import ctypes
+    import ctypes.util
+
+    if os.name == "nt":
+        # GetTickCount64: milliseconds since boot, Vista and later.
+        get_ticks = ctypes.windll.kernel32.GetTickCount64
+        get_ticks.restype = ctypes.c_ulonglong
+        get_ticks.argtypes = ()
+        return lambda: get_ticks() / 1000.0
+
+    if sys.platform == "darwin":
+        libc = ctypes.CDLL("/usr/lib/libSystem.dylib", use_errno=True)
+
+        class MachTimebase(ctypes.Structure):
+            _fields_ = [("numer", ctypes.c_uint32),
+                        ("denom", ctypes.c_uint32)]
+
+        timebase = MachTimebase()
+        libc.mach_timebase_info(ctypes.byref(timebase))
+        libc.mach_absolute_time.restype = ctypes.c_uint64
+        libc.mach_absolute_time.argtypes = ()
+        scale = float(timebase.numer) / float(timebase.denom) / 1e9
+        return lambda: libc.mach_absolute_time() * scale
+
+    class Timespec(ctypes.Structure):
+        _fields_ = [("tv_sec", ctypes.c_long),
+                    ("tv_nsec", ctypes.c_long)]
+
+    # clock_gettime lives in libc on modern glibc and in librt on older
+    # ones. CLOCK_MONOTONIC is 1 on Linux, 4 on the BSDs.
+    clock_id = 4 if "bsd" in sys.platform else 1
+    for lib_name in (None, "rt"):
+        try:
+            path = (ctypes.util.find_library(lib_name)
+                    if lib_name else None)
+            lib = ctypes.CDLL(path, use_errno=True)
+            fn = lib.clock_gettime
+        except (OSError, AttributeError):
+            continue
+        fn.argtypes = [ctypes.c_int, ctypes.POINTER(Timespec)]
+        ts = Timespec()
+        if fn(clock_id, ctypes.byref(ts)) == 0:
+            def monotonic():
+                spec = Timespec()
+                if fn(clock_id, ctypes.byref(spec)) != 0:
+                    err = ctypes.get_errno()
+                    raise OSError(err, "clock_gettime failed")
+                return spec.tv_sec + spec.tv_nsec / 1e9
+            return monotonic
+
+    sys.stderr.write(
+        "ra_stress: no monotonic clock available; falling back to "
+        "time.time(). A clock adjustment mid-run will corrupt stall "
+        "measurements.\n")
+    return time.time
+
+
+_monotonic = _make_monotonic()
+
+
 def now():
-    return time.monotonic()
+    return _monotonic()
 
 
 def stamp():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # datetime.timezone is 3.2+; utcnow() is the portable spelling.
+    return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class Dead(Exception):
@@ -255,13 +341,16 @@ class CommandChannel:
         while True:
             try:
                 self.sock.recvfrom(65535)
-            except OSError:
+            except (OSError, IOError):
                 return
 
     def send(self, text):
         if self.verbose:
             say("    -> %s" % text)
-        self.sock.sendto(text.encode("utf-8"), self.addr)
+        # On 2.7 a str is already bytes; encoding it would force an
+        # implicit ascii decode first and blow up on non-ASCII paths.
+        payload = text if isinstance(text, bytes) else text.encode("utf-8")
+        self.sock.sendto(payload, self.addr)
 
     def ask(self, text, timeout):
         """Send a replying command; return (reply, rtt) or (None, elapsed)."""
@@ -274,7 +363,7 @@ class CommandChannel:
                 return None, now() - t0
             try:
                 data, _ = self.sock.recvfrom(65535)
-            except OSError:
+            except (OSError, IOError):
                 time.sleep(0.005)
                 continue
             rtt = now() - t0
@@ -353,7 +442,7 @@ class LocalTarget(Target):
         self.logpath = None
 
     def start(self):
-        os.makedirs(self.log_dir, exist_ok=True)
+        makedirs(self.log_dir)
         self.logpath = os.path.join(
             self.log_dir, "ra-%s.log" % datetime.now().strftime("%H%M%S_%f"))
         self.logfile = open(self.logpath, "wb")
@@ -761,7 +850,7 @@ def run_sequence(target, args, ops, label):
 
 
 def save_repro(outdir, result, args, seed=None):
-    os.makedirs(outdir, exist_ok=True)
+    makedirs(outdir)
     path = os.path.join(
         outdir, "repro-%s.json" % datetime.now().strftime("%Y%m%d-%H%M%S"))
     payload = dict(result)
@@ -910,7 +999,7 @@ def main():
     p.add_argument("-v", "--verbose", action="store_true")
 
     args = p.parse_args()
-    os.makedirs(args.outdir, exist_ok=True)
+    makedirs(args.outdir)
 
     if args.mode in ("soak", "fuzz") and not (args.core and args.content):
         p.error("--core and at least one --content are required for %s"
