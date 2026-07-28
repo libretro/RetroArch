@@ -71,6 +71,11 @@ struct libretrodb
    uint64_t first_index_offset;
 };
 
+/* Widest index key the format is expected to carry (SHA-1 is 20
+ * bytes).  Used to reject nonsense key sizes from a malformed index
+ * header before they reach binsearch(). */
+#define LIBRETRODB_MAX_KEY_SIZE 256
+
 struct libretrodb_index
 {
    char name[50];
@@ -308,35 +313,76 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       if (strncmp(index_name, idx->name, strlen(idx->name)) == 0)
          return 0;
 
-      intfstream_seek(db->fd, (ssize_t)idx->next,
-            RETRO_VFS_SEEK_POSITION_CURRENT);
+      /* idx->next is a file-supplied relative seek.  Zero re-reads
+       * the same header forever and a value that wraps negative
+       * seeks backwards, so intfstream_eof() is never reached and
+       * the lookup hangs.  Require forward progress. */
+      if (idx->next == 0 || idx->next > (uint64_t)INT64_MAX)
+         break;
+
+      if (intfstream_seek(db->fd, (ssize_t)idx->next,
+            RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+         break;
    }
 
    return -1;
 }
 
+/**
+ * binsearch:
+ *
+ * Locate @item in the @count fixed-size entries at @buff and return
+ * the record offset stored alongside it.  Each entry is @field_size
+ * key bytes followed by a uint64 offset.
+ *
+ * The previous recursive form had three defects, all reachable from
+ * a malformed index header:
+ *
+ *  - the memcmp() ran before the "count == 0" test, so an empty
+ *    sub-range was compared against buff[0..field_size) - a read past
+ *    the end of the allocation whenever the search narrowed to
+ *    nothing;
+ *  - the tail call passed "count - mid", and mid is 0 when count is
+ *    1, so a one-element range recursed on itself forever, walking
+ *    further past the buffer on each step until it faulted;
+ *  - the offset was read with *(uint64_t*)(current + field_size).
+ *    field_size comes from the file, so unless it is a multiple of
+ *    eight every entry after the first is misaligned - undefined
+ *    behaviour that UBSan flags and that faults outright on
+ *    strict-alignment targets.
+ *
+ * Iterative, half-open [lo, hi), and the offset is assembled with
+ * memcpy so alignment never matters.
+ */
 static int binsearch(const void *buff, const void *item,
-      uint64_t count, uint8_t field_size, uint64_t *offset)
+      uint64_t count, uint64_t field_size, uint64_t *offset)
 {
-   int mid            = (int)(count / 2);
-   int item_size      = field_size + sizeof(uint64_t);
-   uint8_t *current   = ((uint8_t *)buff + (mid * item_size));
-   int rv             = memcmp(current, item, field_size);
+   uint64_t lo        = 0;
+   uint64_t hi        = count;
+   uint64_t item_size = field_size + sizeof(uint64_t);
 
-   if (rv == 0)
-   {
-      *offset         = *(uint64_t *)(current + field_size);
-      return 0;
-   }
-
-   if (count == 0)
+   if (field_size == 0)
       return -1;
 
-   if (rv > 0)
-      return binsearch(buff, item, mid, field_size, offset);
+   while (lo < hi)
+   {
+      uint64_t mid           = lo + ((hi - lo) / 2);
+      const uint8_t *current = (const uint8_t *)buff + (mid * item_size);
+      int rv                 = memcmp(current, item, (size_t)field_size);
 
-   return binsearch(current + item_size, item,
-         count - mid, field_size, offset);
+      if (rv == 0)
+      {
+         memcpy(offset, current + field_size, sizeof(uint64_t));
+         return 0;
+      }
+
+      if (rv > 0)
+         hi = mid;
+      else
+         lo = mid + 1;
+   }
+
+   return -1;
 }
 
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
@@ -346,19 +392,38 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
    int rv;
    uint8_t *buff;
    uint64_t offset;
-   ssize_t bufflen, nread = 0;
+   uint64_t item_size;
+   uint64_t bufflen;
+   int64_t  nread = 0;
 
    if (libretrodb_find_index(db, index_name, &idx) < 0)
       return -1;
 
-   bufflen        = idx.next;
-   if (!(buff = (uint8_t*)malloc(bufflen)))
+   /* idx.next, idx.count and idx.key_size all come from the file
+    * with no relationship enforced between them.  binsearch() walks
+    * idx.count entries of (key_size + 8) bytes, so without this
+    * check a small "next" and a large "count" send it off the end of
+    * the allocation.  Require the payload the header describes to
+    * actually fit in the payload the header reserved, and reject
+    * degenerate key sizes outright. */
+   if (idx.key_size == 0 || idx.key_size > LIBRETRODB_MAX_KEY_SIZE)
       return -1;
 
-   while (nread < bufflen)
+   item_size = idx.key_size + sizeof(uint64_t);
+   if (idx.count > idx.next / item_size)
+      return -1;
+
+   bufflen        = idx.next;
+   if (bufflen == 0 || bufflen > (uint64_t)INT64_MAX)
+      return -1;
+   if (!(buff = (uint8_t*)malloc((size_t)bufflen)))
+      return -1;
+
+   while (nread < (int64_t)bufflen)
    {
       void *buff_ = (buff + nread);
-      rv          = (int)intfstream_read(db->fd, buff_, bufflen - nread);
+      rv          = (int)intfstream_read(db->fd, buff_,
+            (uint64_t)((int64_t)bufflen - nread));
 
       if (rv <= 0)
       {
@@ -368,7 +433,7 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
       nread += rv;
    }
 
-   rv = binsearch(buff, key, idx.count, (ssize_t)idx.key_size, &offset);
+   rv = binsearch(buff, key, idx.count, idx.key_size, &offset);
    free(buff);
 
    if (rv == 0)
