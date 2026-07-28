@@ -129,7 +129,7 @@ static int libretrodb_validate_document(const struct rmsgpack_dom_value *doc)
       if (value.type != RDT_MAP)
          continue;
 
-      if ((rv == libretrodb_validate_document(&value)) != 0)
+      if ((rv = libretrodb_validate_document(&value)) != 0)
          return rv;
    }
 
