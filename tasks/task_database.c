@@ -2348,7 +2348,8 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP),
                      sizeof(task_title));
 
-               if (   (entry->path && *entry->path)
+               if (   _len < sizeof(task_title)
+                   && (entry->path && *entry->path)
                    && (entry_file = path_basename(entry->path)))
                   strlcpy(task_title       + _len,
                         entry_file,
@@ -2512,7 +2513,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_IN_PROGRESS),
                      sizeof(task_title));
 
-               if (content_file && *content_file)
+               if (_len < sizeof(task_title) && content_file && *content_file)
                   strlcpy(task_title       + _len,
                         content_file,
                         sizeof(task_title) - _len);
@@ -2629,7 +2630,7 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                      msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_M3U_CLEANUP),
                      sizeof(task_title));
 
-               if (m3u_name && *m3u_name)
+               if (_len < sizeof(task_title) && m3u_name && *m3u_name)
                   strlcpy(task_title       + _len,
                         m3u_name,
                         sizeof(task_title) - _len);
@@ -2830,13 +2831,23 @@ bool task_push_manual_content_scan(
    if (!(task = task_init()))
       goto error;
 
-   /* > Get task title */
+   /* > Get task title
+    *
+    * strlcpy() returns the length of its source, so _len can exceed
+    * the buffer when the (translated) message does not fit.  The
+    * append would then form an out-of-bounds pointer and pass a
+    * wrapped size_t as the bound.  The shipped strings leave a wide
+    * margin - the longest of these four is 26 bytes into 128 - so
+    * this is hardening rather than a live overflow, but it is the
+    * same misuse of the return value that overflowed the serial
+    * query buffer, and translations come from Crowdin. */
    _len = strlcpy(
          task_title, msg_hash_to_str(MSG_MANUAL_CONTENT_SCAN_START),
          sizeof(task_title));
-   strlcpy(task_title       + _len,
-         manual_scan->task_config->system_name,
-         sizeof(task_title) - _len);
+   if (_len < sizeof(task_title))
+      strlcpy(task_title       + _len,
+            manual_scan->task_config->system_name,
+            sizeof(task_title) - _len);
 
    /* > Configure task */
    task->handler                 = task_manual_content_scan_handler;
