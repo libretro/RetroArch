@@ -1248,13 +1248,17 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       database_info_list_iterate_new(db_state, query);
    }
 
-   if (db_state->info)
+   /* Same shape as the serial path above: entry_index was used to
+    * index the list without checking it against count, so a query
+    * that matched nothing (count == 0, list either empty or NULL)
+    * still had list[0] dereferenced. */
+   if (db_state->info && db_state->entry_index < db_state->info->count)
    {
       database_info_t *db_info_entry =
          &db_state->info->list[db_state->entry_index];
 
       /* When scanning an archive, "first" file crc32 is also checked. */
-      if (db_info_entry && db_info_entry->crc32)
+      if (db_info_entry->crc32)
       {
          if (db_state->archive_crc == db_info_entry->crc32)
             return database_info_list_iterate_found_match(
@@ -1465,12 +1469,20 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->info)
    {
-      while (db_state->entry_index <= db_state->info->count)
+      /* "<=" walked one element past the end of the list and then
+       * dereferenced it: db_info_entry->serial reads a pointer out of
+       * whatever follows the allocation and hands it to
+       * string_is_equal().  The list is empty on the common no-match
+       * path, so this fired on ordinary scans, not just crafted ones.
+       *
+       * The "db_info_entry &&" test below was dead - the address of an
+       * array element is never NULL - and is dropped with it. */
+      while (db_state->entry_index < db_state->info->count)
       {
          database_info_t *db_info_entry = &db_state->info->list[
             db_state->entry_index];
 
-         if (db_info_entry && db_info_entry->serial)
+         if (db_info_entry->serial)
          {
             if (string_is_equal(db_state->serial, db_info_entry->serial))
             {
