@@ -120,8 +120,8 @@ static void ntsc_process_line(const struct filter_data *filt,
       
       // Notch filter optimized for system-specific bandwidth
       int notchedY = (filt->c64_mode) ? 
-         (cbuf[i_m1] + (cbuf[x] << 1) + cbuf[i_p1]) >> 2 :
-         (cbuf[i_m2] + (cbuf[i_m1] << 2) + (cbuf[x] * 6) + (cbuf[i_p1] << 2) + cbuf[i_p2]) >> 4;
+         (cbuf[i_m1] + (cbuf[x] * 2) + cbuf[i_p1]) >> 2 :
+         (cbuf[i_m2] + (cbuf[i_m1] * 4) + (cbuf[x] * 6) + (cbuf[i_p1] * 4) + cbuf[i_p2]) >> 4;
 
       lineY[x] = ((notchedY * (256 - filt->artifacts)) + (cbuf[x] * filt->artifacts)) >> 8;
    }
