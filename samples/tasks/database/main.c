@@ -194,7 +194,14 @@ int main(int argc, char *argv[])
 #else
    task_queue_init(false /* threaded enable */, main_msg_queue_push);
 #endif
-   core_info_init_list(core_info_dir, core_dir, exts, true, false, NULL);
+   {
+      /* core_info_list_new() writes through this unconditionally, so
+       * it cannot be NULL - passing one crashed the sample before it
+       * reached the scan. */
+      bool cache_supported = false;
+      core_info_init_list(core_info_dir, core_dir, exts, true, false,
+            &cache_supported);
+   }
 
    /* The scan reads its playlist directory from settings, not from the
     * argument below, so put it where the scan will look. */
