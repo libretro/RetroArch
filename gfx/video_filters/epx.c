@@ -107,7 +107,7 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
       int first, int lsat, uint16_t *src,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
-   uint16_t colorA;
+   uint32_t colorA;
    int w;
 
    for (; height; height--)
@@ -119,10 +119,10 @@ static void epx_generic_rgb565 (unsigned width, unsigned height,
       uint32_t *dP2   = (uint32_t *) (dst + dst_stride);
 
       /* left edge */
-      uint16_t colorX = *sP;
-      uint16_t colorC = *++sP;
-      uint16_t colorB = *lP++;
-      uint16_t colorD = *uP++;
+      uint32_t colorX = *sP;
+      uint32_t colorC = *++sP;
+      uint32_t colorB = *lP++;
+      uint32_t colorD = *uP++;
 
       if ((colorX != colorC) && (colorB != colorD))
       {
