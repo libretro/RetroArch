@@ -4525,6 +4525,17 @@ struct retro_log_callback
  */
 #define RETRO_SIMD_PCLMUL   (1 << 24)
 
+/**
+ * Indicates CPU support for the ARMv8 CRC32 instructions
+ * (\c crc32b / \c crc32h / \c crc32w / \c crc32x).
+ *
+ * These compute CRC-32/ISO-HDLC, the gzip and PNG polynomial, not
+ * CRC-32C. Optional in ARMv8.0 and mandatory from ARMv8.1, so a
+ * 64-bit ARM CPU does not imply their presence: Apple's A7 through
+ * A10 lack them, for instance.
+ */
+#define RETRO_SIMD_CRC32    (1 << 25)
+
 /** @} */
 
 /**

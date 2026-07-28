@@ -46,7 +46,20 @@
  */
 
 #if defined(__ARM_FEATURE_CRC32)
+/* Baseline already has the instructions, so use them unconditionally. */
 #define CRC32_HAVE_ARM_PATH 1
+#elif (defined(__aarch64__) || defined(_M_ARM64)) \
+   && (defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9))
+/* Baseline does not, but the toolchain can build the instructions into
+ * one function without raising the ISA for the translation unit, so
+ * compile them in and choose at runtime.  This is the common case: of
+ * everything in tree only Makefile.libnx passes +crc explicitly, and
+ * arm64 macOS gets it from the compiler default, which leaves Android,
+ * Linux ARM, iOS and tvOS on the table path despite every one of those
+ * CPUs from ARMv8.1 onwards having the instructions. */
+#define CRC32_HAVE_ARM_PATH     1
+#define CRC32_ARM_NEEDS_TARGET  1
+#define CRC32_ARM_DISPATCH      1
 #elif defined(__x86_64__) || defined(__i386__) \
    || defined(_M_X64)     || defined(_M_IX86)
 /* Being on x86 is necessary but not sufficient: the toolchain also has
@@ -74,7 +87,7 @@
 /* Portable slicing-by-8                                              */
 /* ------------------------------------------------------------------ */
 
-#if !defined(CRC32_HAVE_ARM_PATH)
+#if !defined(CRC32_HAVE_ARM_PATH) || defined(CRC32_ARM_DISPATCH)
 
 /* Load a 32-bit little-endian word without assuming pointer alignment
  * and without punning through a uint32_t lvalue. A constant-size memcpy
@@ -122,7 +135,7 @@ static uint32_t crc32_slice_by_8(uint32_t crc, const uint8_t *data, size_t len)
 
    return crc;
 }
-#endif /* !CRC32_HAVE_ARM_PATH */
+#endif /* !CRC32_HAVE_ARM_PATH || CRC32_ARM_DISPATCH */
 
 /* ------------------------------------------------------------------ */
 /* x86 carry-less multiply folding                                    */
@@ -275,6 +288,18 @@ static int crc32_have_pclmul(void)
 #include <arm_acle.h>
 #endif
 
+#if defined(CRC32_ARM_NEEDS_TARGET)
+#include <features/features_cpu.h>
+#if defined(__clang__)
+#define CRC32_TARGET_ARM __attribute__((target("crc")))
+#else
+#define CRC32_TARGET_ARM __attribute__((target("arch=armv8-a+crc")))
+#endif
+#else
+#define CRC32_TARGET_ARM
+#endif
+
+CRC32_TARGET_ARM
 static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
 {
    while (((uintptr_t)data & 7) && len > 0)
@@ -306,7 +331,12 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
 {
    crc = ~crc;
 
-#if defined(CRC32_HAVE_ARM_PATH)
+#if defined(CRC32_ARM_DISPATCH)
+   if (cpu_features_get() & RETRO_SIMD_CRC32)
+      crc = crc32_arm(crc, data, len);
+   else
+      crc = crc32_slice_by_8(crc, data, len);
+#elif defined(CRC32_HAVE_ARM_PATH)
    crc = crc32_arm(crc, data, len);
 #elif defined(CRC32_HAVE_PCLMUL_PATH)
    if (len >= 64 && crc32_have_pclmul())

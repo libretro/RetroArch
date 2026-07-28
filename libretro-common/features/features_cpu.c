@@ -709,6 +709,15 @@ static uint64_t cpu_features_probe(void)
 #else
    _val = 0;
    _len = sizeof(_val);
+   /* Older key first; newer systems also carry the FEAT_ spelling. */
+   if (   (sysctlbyname("hw.optional.armv8_crc32", &_val, &_len, NULL, 0) == 0
+           && _val)
+       || (_val = 0, _len = sizeof(_val),
+           sysctlbyname("hw.optional.arm.FEAT_CRC32", &_val, &_len, NULL, 0) == 0
+           && _val))
+      cpu |= RETRO_SIMD_CRC32;
+   _val = 0;
+   _len = sizeof(_val);
    if (sysctlbyname("hw.optional.neon", &_val, &_len, NULL, 0) == 0 && _val)
       cpu |= RETRO_SIMD_NEON;
    _val = 0;
@@ -869,6 +878,10 @@ static uint64_t cpu_features_probe(void)
 
    if (check_arm_cpu_feature("vfpv4"))
       cpu |= RETRO_SIMD_VFPV4;
+
+   /* aarch64 lists it as "crc32" in the Features: line. */
+   if (check_arm_cpu_feature("crc32"))
+      cpu |= RETRO_SIMD_CRC32;
 
    if (check_arm_cpu_feature("asimd"))
    {
