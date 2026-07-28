@@ -909,19 +909,32 @@ uint64_t cpu_features_get(void)
 {
    /* The mask is published with a release store and consumed with an
     * acquire load, so a thread that observes the ready flag is
-    * guaranteed to see the fully written mask.  The probe is idempotent,
-    * so if several threads reach it before any has published they simply
-    * compute and store the same bits. */
+    * guaranteed to see the fully written mask.
+    *
+    * The probe being idempotent is not on its own enough: if several
+    * threads reach it before any has published, they all write
+    * cpu_features_cache with plain stores, and those writes are
+    * unordered with respect to one another.  Same value or not, that
+    * is a data race and ThreadSanitizer reports it.  Elect exactly one
+    * writer with an atomic increment; the threads that lose return the
+    * value they computed themselves, which is identical, so nobody
+    * spins and nobody writes memory another thread is writing. */
    static uint64_t           cpu_features_cache;
+   static retro_atomic_int_t cpu_features_claim; /* 0 = unclaimed */
    static retro_atomic_int_t cpu_features_ready; /* 0 = not probed yet */
    uint64_t                  cpu;
 
    if (retro_atomic_load_acquire_int(&cpu_features_ready))
       return cpu_features_cache;
 
-   cpu                = cpu_features_probe();
-   cpu_features_cache = cpu;
-   retro_atomic_store_release_int(&cpu_features_ready, 1);
+   cpu = cpu_features_probe();
+
+   if (retro_atomic_fetch_add_int(&cpu_features_claim, 1) == 0)
+   {
+      cpu_features_cache = cpu;
+      retro_atomic_store_release_int(&cpu_features_ready, 1);
+   }
+
    return cpu;
 }
 
