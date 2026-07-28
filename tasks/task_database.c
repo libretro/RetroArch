@@ -46,8 +46,6 @@
 #include "../verbosity.h"
 #include "task_database_cue.h"
 
-#define MAX_DATABASE_COUNT 256
-
 /* Scan result structure for accumulating identification results */
 typedef struct scan_result
 {
@@ -178,9 +176,19 @@ typedef struct database_state_handle
    uint64_t archive_size;
    char archive_name[512]; /* TODO/FIXME - check size */
    char serial[4096];      /* TODO/FIXME - check size */
-   int64_t min_sizes[MAX_DATABASE_COUNT];
-   int64_t max_sizes[MAX_DATABASE_COUNT];
-   uint8_t flags[MAX_DATABASE_COUNT];
+   /* One entry per database in 'list'.  These used to be
+    * [MAX_DATABASE_COUNT] arrays indexed by list_index, which is
+    * bounded only by list->size - the number of .rdb files in the
+    * database directory.  Nothing clamped it, so a database
+    * directory with more than MAX_DATABASE_COUNT entries wrote past
+    * all three arrays, and the shuffle in
+    * database_info_list_iterate_found_match() memmove()d past them
+    * as well.  The shipped set is already over half that limit and
+    * grows every release.  Allocated by
+    * task_database_state_alloc_arrays(). */
+   int64_t *min_sizes;
+   int64_t *max_sizes;
+   uint8_t *flags;
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -1092,6 +1100,35 @@ static enum scan_verdict database_info_list_iterate_next(
    return SCAN_VERDICT_CONTINUE;
 }
 
+/* Allocate the per-database size/flag caches once the database list
+ * is known.  Returns false on OOM; the caller aborts the scan. */
+static bool task_database_state_alloc_arrays(
+      database_state_handle_t *db_state)
+{
+   size_t count;
+
+   if (!db_state || !db_state->list)
+      return false;
+
+   count = db_state->list->size;
+
+   /* An empty database directory is not an error: every lookup path
+    * bails on "list_index == list->size" before touching these. */
+   if (count == 0)
+      return true;
+
+   db_state->min_sizes = (int64_t*)calloc(count, sizeof(int64_t));
+   db_state->max_sizes = (int64_t*)calloc(count, sizeof(int64_t));
+   db_state->flags     = (uint8_t*)calloc(count, sizeof(uint8_t));
+
+   if (   !db_state->min_sizes
+       || !db_state->max_sizes
+       || !db_state->flags)
+      return false;
+
+   return true;
+}
+
 static void task_database_fill_db_min_max(database_state_handle_t *db_state)
 {
    char query[50];
@@ -1843,6 +1880,15 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       {
          if (dbstate->list)
             dir_list_free(dbstate->list);
+         if (dbstate->min_sizes)
+            free(dbstate->min_sizes);
+         if (dbstate->max_sizes)
+            free(dbstate->max_sizes);
+         if (dbstate->flags)
+            free(dbstate->flags);
+         dbstate->min_sizes = NULL;
+         dbstate->max_sizes = NULL;
+         dbstate->flags     = NULL;
       }
 
       if (    manual_scan->content_database_path 
@@ -2082,6 +2128,16 @@ static void task_manual_content_scan_handler(retro_task_t *task)
                               "rdb", false,
                               manual_scan->flags & DB_HANDLE_FLAG_SHOW_HIDDEN_FILES,
                               false, false);
+                     }
+
+                     /* Size the per-database size/flag caches to the
+                      * database list we just built.  Both branches
+                      * above land here. */
+                     if (   dbstate->list
+                         && !task_database_state_alloc_arrays(dbstate))
+                     {
+                        RARCH_ERR("[Scanner] Out of memory allocating database state\n");
+                        goto task_finished;
                      }
                   }
 
