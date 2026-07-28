@@ -30,7 +30,7 @@ $LC/compat/compat_strl.c $LC/string/stdstring.c \
 $LC/encodings/encoding_utf.c $LC/file/file_path.c \
 $LC/compat/fopen_utf8.c $LC/time/rtime.c $LC/lists/string_list.c \
 $LC/compat/compat_strcasestr.c $LC/compat/compat_fnmatch.c \
-$LC/encodings/encoding_crc32.c"
+$LC/encodings/encoding_crc32.c $LC/features/features_cpu.c"
 
 INC="-I$LC/include -I$DB"
 
