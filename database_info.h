@@ -164,8 +164,9 @@ bool menu_dbinfo_cache_has(const char *path, const char *query);
 /* A crc -> record-offset index over one database, built in a single
  * pass.  The scanner otherwise walks a whole database per content
  * file; with an index it walks once and binary-searches thereafter.
- * Costs 12 bytes per indexed record and lives for as long as the
- * caller keeps it. */
+ * Costs sizeof(struct db_crc_entry) per indexed record - 16 bytes
+ * where a uint64 offset and a uint32 key pad to that - and lives for
+ * as long as the caller keeps it. */
 typedef struct database_info_crc_index database_info_crc_index_t;
 
 /* @max_bytes caps the entry table; the build gives up and returns

@@ -1199,8 +1199,12 @@ database_info_list_t *database_info_list_new_crc(
       const database_info_crc_index_t *idx, const char *rdb_path,
       uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
-   /* The scanner stops at the first entry that matches, so a bounded
-    * number of hits is always enough. */
+   /* Working set for one lookup.  A run longer than this is handed
+    * back to the query path rather than truncated - see
+    * db_crc_gather().  It is not rare: Sega - Mega Drive - Genesis
+    * carries a placeholder serial shared by hundreds of records, and
+    * assuming a bounded run was always enough is what silently
+    * shortened those results before. */
    struct db_crc_entry   hits[32];
    database_info_list_t *list  = NULL;
    database_info_t      *items = NULL;
@@ -1484,6 +1488,8 @@ database_info_list_t *database_info_list_new_serial(
       const database_info_serial_index_t *idx, const char *rdb_path,
       const char *serial, unsigned fields)
 {
+   /* See database_info_list_new_crc(): a run too long to hold goes to
+    * the query path rather than being cut short. */
    struct db_serial_entry hits[32];
    database_info_list_t  *list  = NULL;
    database_info_t       *items = NULL;

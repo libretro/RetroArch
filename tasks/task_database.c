@@ -182,8 +182,9 @@ enum db_state_flags_enum
  * An eighth is deliberately more conservative than the quarter the
  * mixer uses, because these indexes are held for the whole scan
  * rather than consulted once.  The cap keeps a large-memory host from
- * hoarding: the biggest database shipped today indexes to roughly
- * 360 KB, so 32 MB covers far more databases than exist.  Below the
+ * hoarding: the biggest database shipped today, Nintendo -
+ * Nintendo Entertainment System, indexes to 474 KB across 30359
+ * records, so 32 MB covers far more databases than exist.  Below the
  * floor there is no point starting, and the query path is only
  * slower, never wrong. */
 #define DB_STATE_INDEX_BUDGET_SHARE  8
@@ -1532,7 +1533,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
       }
    }
 
-   /* Same shape as the serial path above: entry_index was used to
+   /* Same shape as the serial lookup below: entry_index was used to
     * index the list without checking it against count, so a query
     * that matched nothing (count == 0, list either empty or NULL)
     * still had list[0] dereferenced. */
