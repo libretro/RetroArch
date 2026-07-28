@@ -180,6 +180,22 @@ database_info_list_t *database_info_list_new_crc(
       const database_info_crc_index_t *idx, uint32_t crc,
       uint32_t archive_crc, unsigned fields);
 
+/* The same treatment for the serial lookup disc content uses.  A
+ * serial is variable-length, so the index keeps a hash and the
+ * candidate records are read back and compared exactly: a collision
+ * costs an extra read, never a wrong match. */
+typedef struct database_info_serial_index database_info_serial_index_t;
+
+database_info_serial_index_t *database_info_serial_index_new(
+      const char *rdb_path);
+void database_info_serial_index_free(database_info_serial_index_t *idx);
+size_t database_info_serial_index_count(
+      const database_info_serial_index_t *idx);
+
+database_info_list_t *database_info_list_new_serial(
+      const database_info_serial_index_t *idx, const char *serial,
+      unsigned fields);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 

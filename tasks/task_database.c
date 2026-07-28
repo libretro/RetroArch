@@ -193,6 +193,8 @@ typedef struct database_state_handle
     * is probed and kept for the rest of the scan.  Without it every
     * (content file, database) pair is a full walk of the database. */
    database_info_crc_index_t **crc_index;
+   /* Likewise for the serial lookup disc content uses. */
+   database_info_serial_index_t **serial_index;
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -1162,11 +1164,14 @@ static bool task_database_state_alloc_arrays(
    db_state->flags     = (uint8_t*)calloc(count, sizeof(uint8_t));
    db_state->crc_index = (database_info_crc_index_t**)
       calloc(count, sizeof(*db_state->crc_index));
+   db_state->serial_index = (database_info_serial_index_t**)
+      calloc(count, sizeof(*db_state->serial_index));
 
    if (   !db_state->min_sizes
        || !db_state->max_sizes
        || !db_state->flags
-       || !db_state->crc_index)
+       || !db_state->crc_index
+       || !db_state->serial_index)
       return false;
 
    return true;
@@ -1550,7 +1555,40 @@ static int task_database_iterate_serial_lookup(
       size_t query_len;
       char  query_buf[128];
       char *query      = query_buf;
-      char *serial_buf = bin_to_hex_alloc(
+      char *serial_buf;
+      const char *rdb  = db_state->list->elems[db_state->list_index].data;
+      database_info_list_t *hits = NULL;
+
+      /* Same treatment as the crc path: one walk builds this
+       * database's serial index, and every content file after that is
+       * a lookup instead of another walk.  The index reports the same
+       * records in the same order with the same fields extracted, and
+       * returns NULL for anything it cannot serve so the query below
+       * still runs. */
+      if (rdb && *rdb)
+      {
+         if (!db_state->serial_index[db_state->list_index])
+            db_state->serial_index[db_state->list_index] =
+               database_info_serial_index_new(rdb);
+
+         if (db_state->serial_index[db_state->list_index])
+            hits = database_info_list_new_serial(
+                  db_state->serial_index[db_state->list_index],
+                  db_state->serial, DB_EXTRACT_SCAN_FIELDS);
+      }
+
+      if (hits)
+      {
+         if (db_state->info)
+         {
+            database_info_list_free(db_state->info);
+            free(db_state->info);
+         }
+         db_state->info = hits;
+         goto serial_query_done;
+      }
+
+      serial_buf = bin_to_hex_alloc(
             (uint8_t*)db_state->serial,
             strlen(db_state->serial) * sizeof(uint8_t));
 
@@ -1597,6 +1635,9 @@ static int task_database_iterate_serial_lookup(
       if (query != query_buf)
          free(query);
       free(serial_buf);
+
+serial_query_done:
+      ;
    }
 
    if (db_state->info)
@@ -2007,6 +2048,15 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
                database_info_crc_index_free(dbstate->crc_index[ci]);
             free(dbstate->crc_index);
             dbstate->crc_index = NULL;
+         }
+         if (dbstate->serial_index)
+         {
+            size_t si;
+            size_t sn = dbstate->list ? dbstate->list->size : 0;
+            for (si = 0; si < sn; si++)
+               database_info_serial_index_free(dbstate->serial_index[si]);
+            free(dbstate->serial_index);
+            dbstate->serial_index = NULL;
          }
          if (dbstate->min_sizes)
             free(dbstate->min_sizes);

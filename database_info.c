@@ -981,6 +981,16 @@ static int db_crc_by_crc(const void *a, const void *b)
    return 0;
 }
 
+static int db_crc_by_offset_generic(const void *a, const void *b)
+{
+   /* Both index entry types lead with a uint64 offset. */
+   uint64_t x = *(const uint64_t*)a;
+   uint64_t y = *(const uint64_t*)b;
+   if (x < y) return -1;
+   if (x > y) return  1;
+   return 0;
+}
+
 static int db_crc_by_offset(const void *a, const void *b)
 {
    uint64_t x = ((const struct db_crc_entry*)a)->offset;
@@ -1097,7 +1107,11 @@ size_t database_info_crc_index_count(const database_info_crc_index_t *idx)
    return idx ? idx->count : 0;
 }
 
-/* Append every entry whose crc is @crc, returning the new count. */
+/* Append every entry whose crc is @crc, returning the new count, or
+ * (size_t)-1 if the run does not fit.  Truncating instead would hand
+ * the caller a shorter list than the query path returns for the same
+ * crc, which is a wrong answer rather than a slow one - databases do
+ * carry placeholder keys shared by hundreds of records. */
 static size_t db_crc_gather(const database_info_crc_index_t *idx,
       uint32_t crc, struct db_crc_entry *out, size_t have, size_t cap)
 {
@@ -1113,8 +1127,12 @@ static size_t db_crc_gather(const database_info_crc_index_t *idx,
          hi = mid;
    }
 
-   while (lo < idx->count && idx->entries[lo].crc == crc && have < cap)
+   while (lo < idx->count && idx->entries[lo].crc == crc)
+   {
+      if (have >= cap)
+         return (size_t)-1;
       out[have++] = idx->entries[lo++];
+   }
 
    return have;
 }
@@ -1137,9 +1155,14 @@ database_info_list_t *database_info_list_new_crc(
 
    found = db_crc_gather(idx, crc, hits, found,
          sizeof(hits) / sizeof(hits[0]));
-   if (archive_crc && archive_crc != crc)
+   if (found != (size_t)-1 && archive_crc && archive_crc != crc)
       found = db_crc_gather(idx, archive_crc, hits, found,
             sizeof(hits) / sizeof(hits[0]));
+
+   /* Too many records share this crc to answer from the index; let
+    * the query path, which has no such bound, handle it. */
+   if (found == (size_t)-1)
+      return NULL;
 
    if (!(list = (database_info_list_t*)calloc(1, sizeof(*list))))
       return NULL;
@@ -1173,6 +1196,279 @@ database_info_list_t *database_info_list_new_crc(
          continue;
       if (database_info_fill_from_dom(&item, &items[kept], fields) == 0)
          kept++;
+      rmsgpack_dom_value_free(&item);
+   }
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+
+   list->list  = items;
+   list->count = kept;
+   return list;
+}
+
+
+/* ------------------------------------------------------------------
+ * Serial index
+ *
+ * Disc content is matched on serial rather than crc, and that lookup
+ * walks the database exactly like the crc one did.  Same treatment,
+ * with one difference: a serial is variable-length, so the index
+ * keeps a hash rather than the bytes and the candidate records are
+ * read back and compared exactly.  A collision therefore costs an
+ * extra record read, never a wrong answer.
+ * ------------------------------------------------------------------ */
+
+struct db_serial_entry
+{
+   uint64_t offset;
+   uint32_t hash;
+};
+
+struct database_info_serial_index
+{
+   struct db_serial_entry *entries;
+   size_t                  count;
+   char                   *rdb_path;
+};
+
+static uint32_t db_serial_hash(const uint8_t *key, size_t len)
+{
+   uint32_t h = 5381;
+   size_t   i;
+   for (i = 0; i < len; i++)
+      h = ((h << 5) + h) + key[i];
+   return h;
+}
+
+static int db_serial_by_hash(const void *a, const void *b)
+{
+   uint32_t x = ((const struct db_serial_entry*)a)->hash;
+   uint32_t y = ((const struct db_serial_entry*)b)->hash;
+   if (x < y) return -1;
+   if (x > y) return  1;
+   return 0;
+}
+
+struct db_serial_build
+{
+   struct db_serial_entry *entries;
+   size_t                  count;
+   size_t                  capacity;
+   bool                    failed;
+};
+
+static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
+      uint64_t offset)
+{
+   struct db_serial_build *b = (struct db_serial_build*)ctx;
+
+   if (!key_len)
+      return 0;
+
+   /* A record can carry the key more than once; one entry per record
+    * is enough because the lookup reads the record back anyway. */
+   if (b->count && b->entries[b->count - 1].offset == offset)
+      return 0;
+
+   if (b->count == b->capacity)
+   {
+      size_t cap = b->capacity ? b->capacity * 2 : 1024;
+      struct db_serial_entry *tmp = (struct db_serial_entry*)
+         realloc(b->entries, cap * sizeof(*tmp));
+      if (!tmp)
+      {
+         b->failed = true;
+         return 1;
+      }
+      b->entries  = tmp;
+      b->capacity = cap;
+   }
+
+   b->entries[b->count].hash   = db_serial_hash(key, key_len);
+   b->entries[b->count].offset = offset;
+   b->count++;
+   return 0;
+}
+
+database_info_serial_index_t *database_info_serial_index_new(
+      const char *rdb_path)
+{
+   struct db_serial_build        build;
+   database_info_serial_index_t *idx = NULL;
+   libretrodb_t                 *db  = NULL;
+
+   if (!rdb_path || !*rdb_path)
+      return NULL;
+
+   memset(&build, 0, sizeof(build));
+
+   if (!(db = libretrodb_new()))
+      return NULL;
+
+   if (libretrodb_open(rdb_path, db, false) != 0)
+   {
+      libretrodb_free(db);
+      return NULL;
+   }
+
+   if (   libretrodb_scan_field(db, "serial", db_serial_collect, &build) != 0
+       || build.failed)
+      goto error;
+
+   if (!(idx = (database_info_serial_index_t*)calloc(1, sizeof(*idx))))
+      goto error;
+
+   if (!(idx->rdb_path = strdup(rdb_path)))
+   {
+      free(idx);
+      idx = NULL;
+      goto error;
+   }
+
+   if (build.count > 1)
+      qsort(build.entries, build.count, sizeof(*build.entries),
+            db_serial_by_hash);
+
+   idx->entries = build.entries;
+   idx->count   = build.count;
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+   return idx;
+
+error:
+   free(build.entries);
+   libretrodb_close(db);
+   libretrodb_free(db);
+   return NULL;
+}
+
+void database_info_serial_index_free(database_info_serial_index_t *idx)
+{
+   if (!idx)
+      return;
+   free(idx->entries);
+   free(idx->rdb_path);
+   free(idx);
+}
+
+size_t database_info_serial_index_count(
+      const database_info_serial_index_t *idx)
+{
+   return idx ? idx->count : 0;
+}
+
+/* True when @item carries @serial in a "serial" field. */
+static bool db_record_has_serial(struct rmsgpack_dom_value *item,
+      const char *serial, size_t serial_len)
+{
+   size_t i;
+
+   if (item->type != RDT_MAP)
+      return false;
+
+   for (i = 0; i < item->val.map.len; i++)
+   {
+      struct rmsgpack_dom_value *k = &item->val.map.items[i].key;
+      struct rmsgpack_dom_value *v = &item->val.map.items[i].value;
+
+      if (   !k || !v
+          || k->type != RDT_STRING || !k->val.string.buff
+          || strcmp(k->val.string.buff, "serial"))
+         continue;
+
+      if (   v->type == RDT_BINARY
+          && v->val.binary.len == serial_len
+          && v->val.binary.buff
+          && memcmp(v->val.binary.buff, serial, serial_len) == 0)
+         return true;
+
+      if (   v->type == RDT_STRING
+          && v->val.string.buff
+          && strlen(v->val.string.buff) == serial_len
+          && memcmp(v->val.string.buff, serial, serial_len) == 0)
+         return true;
+   }
+
+   return false;
+}
+
+database_info_list_t *database_info_list_new_serial(
+      const database_info_serial_index_t *idx, const char *serial,
+      unsigned fields)
+{
+   struct db_serial_entry hits[32];
+   database_info_list_t  *list  = NULL;
+   database_info_t       *items = NULL;
+   libretrodb_t          *db    = NULL;
+   size_t                 serial_len;
+   uint32_t               want;
+   size_t                 lo, hi, found = 0, i, kept = 0;
+
+   if (!idx || !serial || !*serial)
+      return NULL;
+
+   serial_len = strlen(serial);
+   want       = db_serial_hash((const uint8_t*)serial, serial_len);
+
+   lo = 0;
+   hi = idx->count;
+   while (lo < hi)
+   {
+      size_t mid = lo + ((hi - lo) / 2);
+      if (idx->entries[mid].hash < want)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+
+   while (lo < idx->count && idx->entries[lo].hash == want)
+   {
+      /* Same rule as the crc index: a run too long to hold is handed
+       * back to the query path rather than truncated.  Placeholder
+       * serials shared by hundreds of records do occur. */
+      if (found >= sizeof(hits) / sizeof(hits[0]))
+         return NULL;
+      hits[found++] = idx->entries[lo++];
+   }
+
+   if (!(list = (database_info_list_t*)calloc(1, sizeof(*list))))
+      return NULL;
+
+   if (found == 0)
+      return list;
+
+   if (found > 1)
+      qsort(hits, found, sizeof(hits[0]), db_crc_by_offset_generic);
+
+   if (!(items = (database_info_t*)calloc(found, sizeof(*items))))
+   {
+      free(list);
+      return NULL;
+   }
+
+   if (!(db = libretrodb_new())
+       || libretrodb_open(idx->rdb_path, db, false) != 0)
+   {
+      free(items);
+      free(list);
+      libretrodb_free(db);
+      return NULL;
+   }
+
+   for (i = 0; i < found; i++)
+   {
+      struct rmsgpack_dom_value item;
+
+      if (libretrodb_read_at(db, hits[i].offset, &item) != 0)
+         continue;
+
+      /* The index matched a hash; this is where it is made exact. */
+      if (   db_record_has_serial(&item, serial, serial_len)
+          && database_info_fill_from_dom(&item, &items[kept], fields) == 0)
+         kept++;
+
       rmsgpack_dom_value_free(&item);
    }
 
