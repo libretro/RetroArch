@@ -355,15 +355,26 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
     *
     *   AddressSanitizer: heap-buffer-overflow
     *   READ of size 1 ... located 1022 bytes after 1024-byte region
-    *
-    * Clamp to what was actually written. */
+    */
    _len = strlcpy(scan_content_dir, content_dir,
          sizeof(scan_content_dir));
 
-   if (_len >= sizeof(scan_content_dir))
-      _len = sizeof(scan_content_dir) - 1;
-
    if (_len == 0)
+      goto error;
+
+   /* A path that did not fit is rejected rather than kept truncated.
+    * Truncation cuts mid-component, so what remains is a different
+    * directory: scanning ".../subdirectory_number_041/subdirectory_n"
+    * either finds nothing, with no indication why, or finds whatever
+    * happens to sit at that shortened path.  The tail also becomes
+    * the content-directory system name, so a scan that did produce
+    * entries would file them under a fragment of a folder name.
+    *
+    * Nothing is lost by refusing: a path this long already produced
+    * one of those two outcomes.  Failing here instead surfaces it as
+    * an invalid content directory, which is what the menu already
+    * reports for the other rejections above. */
+   if (_len >= sizeof(scan_content_dir))
       goto error;
 
    if (scan_content_dir[_len - 1] == PATH_DEFAULT_SLASH_C())
