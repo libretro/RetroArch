@@ -326,20 +326,44 @@ bool manual_content_scan_set_menu_content_dir(const char *content_dir)
 {
    size_t _len;
    const char *dir_name = NULL;
-
    char _tmpbuf[PATH_MAX_LENGTH];
-   fill_pathname_expand_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
-   content_dir = _tmpbuf;
 
-   /* Sanity check */
+   /* Sanity check before the expansion.  It used to sit after
+    * content_dir had been reassigned to _tmpbuf, by which point it
+    * could never fire - and fill_pathname_expand_special() had
+    * already dereferenced the caller's pointer. */
    if (!content_dir || !*content_dir)
       goto error;
 
+   fill_pathname_expand_special(_tmpbuf, content_dir, sizeof(_tmpbuf));
+   content_dir = _tmpbuf;
+
+   if (!*content_dir)
+      goto error;
+
    /* Copy directory path to settings struct.
-    * Remove trailing slash, if required */
-   if ((_len = strlcpy(
-         scan_content_dir, content_dir,
-         sizeof(scan_content_dir))) <= 0)
+    * Remove trailing slash, if required.
+    *
+    * strlcpy() returns the length of its source, not the number of
+    * bytes it wrote, and the source can be longer than the
+    * destination here: _tmpbuf is PATH_MAX_LENGTH while
+    * scan_content_dir is DIR_MAX_LENGTH, which is half of it on
+    * every platform.  Indexing with the return value therefore ran
+    * off the end of the buffer for any content directory longer than
+    * DIR_MAX_LENGTH - a deeply nested folder picked in the file
+    * browser is enough:
+    *
+    *   AddressSanitizer: heap-buffer-overflow
+    *   READ of size 1 ... located 1022 bytes after 1024-byte region
+    *
+    * Clamp to what was actually written. */
+   _len = strlcpy(scan_content_dir, content_dir,
+         sizeof(scan_content_dir));
+
+   if (_len >= sizeof(scan_content_dir))
+      _len = sizeof(scan_content_dir) - 1;
+
+   if (_len == 0)
       goto error;
 
    if (scan_content_dir[_len - 1] == PATH_DEFAULT_SLASH_C())
