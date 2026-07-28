@@ -214,10 +214,19 @@ int main(int argc, char *argv[])
             &cache_supported);
    }
 
-   /* The scan reads its playlist directory from settings, not from the
-    * argument below, so put it where the scan will look. */
+   /* task_push_dbscan() ignores its playlist_directory and
+    * content_database arguments - both are marked "always from
+    * settings" and the scan reads them from there.  Passing them and
+    * not setting the settings left the database path empty, so the
+    * scan had nothing to match against and never produced a result:
+    *
+    *   [Scanner] ""...
+    *
+    * is that empty path being logged. */
    strlcpy(config_get_ptr()->paths.directory_playlist, playlist_dir,
          sizeof(config_get_ptr()->paths.directory_playlist));
+   strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
+         sizeof(config_get_ptr()->paths.path_content_database));
 
    /* A scan needs a system name to build its playlist from.  Without
     * one manual_content_scan_get_task_config refuses and no task is
