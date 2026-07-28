@@ -115,23 +115,27 @@ static void twoxsai_generic_destroy(void *data)
 
 #define twoxsai_result(A, B, C, D) (((A) != (C) || (A) != (D)) - ((B) != (C) || (B) != (D)));
 
-#define twoxsai_declare_variables(typename_t, in, nextline) \
+/* prevline/nextline/nextline2 are row offsets already clamped against
+ * the top and bottom of the frame, and xm1/xp1/xp2 are column offsets
+ * clamped against its left and right edge, so the 4x4 neighbourhood
+ * never reaches outside the source. */
+#define twoxsai_declare_variables(typename_t, in, prevline, nextline, nextline2, xm1, xp1, xp2) \
          typename_t product, product1, product2; \
-         typename_t colorI = *(in - nextline - 1); \
-         typename_t colorE = *(in - nextline + 0); \
-         typename_t colorF = *(in - nextline + 1); \
-         typename_t colorJ = *(in - nextline + 2); \
-         typename_t colorG = *(in - 1); \
-         typename_t colorA = *(in + 0); \
-         typename_t colorB = *(in + 1); \
-         typename_t colorK = *(in + 2); \
-         typename_t colorH = *(in + nextline - 1); \
-         typename_t colorC = *(in + nextline + 0); \
-         typename_t colorD = *(in + nextline + 1); \
-         typename_t colorL = *(in + nextline + 2); \
-         typename_t colorM = *(in + nextline + nextline - 1); \
-         typename_t colorN = *(in + nextline + nextline + 0); \
-         typename_t colorO = *(in + nextline + nextline + 1);
+         typename_t colorI = *(in - prevline + xm1); \
+         typename_t colorE = *(in - prevline); \
+         typename_t colorF = *(in - prevline + xp1); \
+         typename_t colorJ = *(in - prevline + xp2); \
+         typename_t colorG = *(in + xm1); \
+         typename_t colorA = *(in); \
+         typename_t colorB = *(in + xp1); \
+         typename_t colorK = *(in + xp2); \
+         typename_t colorH = *(in + nextline + xm1); \
+         typename_t colorC = *(in + nextline); \
+         typename_t colorD = *(in + nextline + xp1); \
+         typename_t colorL = *(in + nextline + xp2); \
+         typename_t colorM = *(in + nextline2 + xm1); \
+         typename_t colorN = *(in + nextline2); \
+         typename_t colorO = *(in + nextline2 + xp1);
 
 #ifndef twoxsai_function
 #define twoxsai_function(result_cb, interpolate_cb, interpolate2_cb) \
@@ -212,16 +216,29 @@ static void twoxsai_generic_xrgb8888(unsigned width, unsigned height,
       unsigned src_stride, uint32_t *dst, unsigned dst_stride)
 {
    unsigned finish;
-   unsigned nextline = (last) ? 0 : src_stride;
+   unsigned row = 0;
 
-   for (; height; height--)
+   for (; height; height--, row++)
    {
-      uint32_t *in  = (uint32_t*)src;
-      uint32_t *out = (uint32_t*)dst;
+      uint32_t *in            = (uint32_t*)src;
+      uint32_t *out           = (uint32_t*)dst;
+      /* Rows above are only unavailable on the frame's very first row;
+       * a worker that does not start at the top can always read back
+       * into the preceding slice. */
+      unsigned prevline   = (first == 0 && row == 0) ? 0 : src_stride;
+      unsigned nextline   = (last && height <= 1) ? 0 : src_stride;
+      unsigned nextline2  = (last && height <= 2) ? nextline : 2 * src_stride;
 
       for (finish = width; finish; finish -= 1)
       {
-         twoxsai_declare_variables(uint32_t, in, nextline);
+         /* finish counts down from width, so it doubles as the distance
+          * to the right edge. */
+         int xm1 = (finish < width) ? -1 : 0;
+         int xp1 = (finish > 1) ? 1 : 0;
+         int xp2 = (finish > 2) ? 2 : (int)finish - 1;
+
+         twoxsai_declare_variables(uint32_t, in, prevline, nextline, nextline2,
+               xm1, xp1, xp2);
 
          /*
           * Map of the pixels:           I|E F|J
@@ -244,16 +261,29 @@ static void twoxsai_generic_rgb565(unsigned width, unsigned height,
       unsigned src_stride, uint16_t *dst, unsigned dst_stride)
 {
    unsigned finish;
-   unsigned nextline = (last) ? 0 : src_stride;
+   unsigned row = 0;
 
-   for (; height; height--)
+   for (; height; height--, row++)
    {
-      uint16_t *in  = (uint16_t*)src;
-      uint16_t *out = (uint16_t*)dst;
+      uint16_t *in            = (uint16_t*)src;
+      uint16_t *out           = (uint16_t*)dst;
+      /* Rows above are only unavailable on the frame's very first row;
+       * a worker that does not start at the top can always read back
+       * into the preceding slice. */
+      unsigned prevline   = (first == 0 && row == 0) ? 0 : src_stride;
+      unsigned nextline   = (last && height <= 1) ? 0 : src_stride;
+      unsigned nextline2  = (last && height <= 2) ? nextline : 2 * src_stride;
 
       for (finish = width; finish; finish -= 1)
       {
-         twoxsai_declare_variables(uint16_t, in, nextline);
+         /* finish counts down from width, so it doubles as the distance
+          * to the right edge. */
+         int xm1 = (finish < width) ? -1 : 0;
+         int xp1 = (finish > 1) ? 1 : 0;
+         int xp2 = (finish > 2) ? 2 : (int)finish - 1;
+
+         twoxsai_declare_variables(uint16_t, in, prevline, nextline, nextline2,
+               xm1, xp1, xp2);
 
          /*
           * Map of the pixels:           I|E F|J
