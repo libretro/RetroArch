@@ -1411,8 +1411,9 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      size_t _len;
-      char query[50];
+      size_t query_len;
+      char  query_buf[128];
+      char *query      = query_buf;
       char *serial_buf = bin_to_hex_alloc(
             (uint8_t*)db_state->serial,
             strlen(db_state->serial) * sizeof(uint8_t));
@@ -1420,16 +1421,45 @@ static int task_database_iterate_serial_lookup(
       if (!serial_buf)
          return SCAN_VERDICT_ERROR;
 
-      _len           = strlcpy(query, "{'serial': b'", sizeof(query));
-      _len          += strlcpy(query + _len, serial_buf, sizeof(query) - _len);
-      query[  _len]  = '\'';
-      query[++_len]  = '}';
-      query[++_len]  = '\0';
+      /* strlcpy() returns the length of its *source*, not the number
+       * of bytes it copied, so the previous form advanced _len by the
+       * full hex expansion even when the copy had been truncated to
+       * fit.  The three stores that follow then landed at
+       * query[13 + 2 * strlen(serial)], past the end of a 50 byte
+       * buffer for any serial longer than 17 characters:
+       *
+       *   AddressSanitizer: stack-buffer-overflow
+       *   WRITE of size 1
+       *
+       * db_state->serial is 4 KiB, and detect_dc_game() alone
+       * concatenates lgame_id[20] and rgame_id[20] before appending a
+       * disc suffix, so it can hand us close to forty characters.
+       *
+       * Size the buffer from the string being built instead, keeping
+       * the common case on the stack and falling back to the heap for
+       * a serial that does not fit - the same pattern
+       * database_info_list_iterate_found_match() uses for db_crc. */
+      query_len = STRLEN_CONST("{'serial': b'")
+                + strlen(serial_buf)
+                + STRLEN_CONST("'}") + 1;
+
+      if (query_len > sizeof(query_buf))
+         query = (char*)malloc(query_len);
+
+      if (!query)
+      {
+         free(serial_buf);
+         return SCAN_VERDICT_ERROR;
+      }
+
+      snprintf(query, query_len, "{'serial': b'%s'}", serial_buf);
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Serial orig / decoded: \"%s\" / \"%s\".\n", db_state->serial, serial_buf);
 #endif
       database_info_list_iterate_new(db_state, query);
 
+      if (query != query_buf)
+         free(query);
       free(serial_buf);
    }
 
