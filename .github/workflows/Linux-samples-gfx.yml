@@ -25,7 +25,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential \
+            libx11-dev libxrandr-dev libdrm-dev
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -288,3 +289,181 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_widgets_msg_queue_race_test
           echo "[pass] gfx_widgets_msg_queue_race_test"
+
+      - name: Build and run display_servers_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers
+        run: |
+          set -eu
+          # Regression test for the XRandR query handling in
+          # gfx/display_servers/dispserv_x11.c.  Pre-fix every query
+          # was treated as infallible: XRRGetOutputInfo() returns NULL
+          # for an output the server cannot describe and
+          # info->connection was read straight off it; likewise
+          # XRRGetCrtcInfo() and crtc->width, XRRGetScreenResources(),
+          # and XRRGetScreenInfo() feeding a XRRFreeScreenConfigInfo()
+          # that is not NULL-tolerant.  On any X server advertising
+          # RandR without a usable output -- Xvfb, a headless box, a
+          # display with everything disconnected -- RetroArch died
+          # inside video_display_server_init() before drawing
+          # anything.  Both orientation walks also indexed
+          # screen->crtcs with the output's ncrtc, reading past the
+          # end and then configuring a crtc other than the one whose
+          # geometry had just been read.
+          #
+          # The test stubs libXrandr and the handful of Xlib entry
+          # points the driver reaches, so it needs the headers but no
+          # X server, no display and no RandR extension: what is under
+          # test is what happens when the queries FAIL, and a working
+          # display is exactly the environment that cannot produce
+          # that.  The stub numbers screen crtcs from 100 and output
+          # crtcs from 200 so which array was walked is read off the
+          # call log, and tracks every pointer it hands out so a
+          # double free or leak is attributed to the case that caused
+          # it.  If dispserv_x11.c amends the query handling, this
+          # goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_test
+          timeout 60 ./display_servers_test
+          echo "[pass] display_servers_test"
+
+      - name: Build and run display_servers_kms_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers_kms
+        run: |
+          set -eu
+          # Regression test for two defects in
+          # gfx/display_servers/dispserv_kms.c::
+          # kms_display_server_get_resolution_list().  g_drm_connector
+          # is owned by gfx/common/drm_common.c and set to NULL by
+          # drm_free(), which runs on every context teardown -- a
+          # resolution change, a fullscreen toggle, a driver reinit --
+          # while the display server object outlives it, so the menu
+          # could ask for the list with no connector to describe and
+          # the function read straight through NULL.  g_drm_mode, the
+          # sibling global, was already tested for exactly this a few
+          # lines earlier.  Separately the qsort() at the end was
+          # passed `count`, which was declared zero and never
+          # assigned; `j` is the element count.  So the sort ran over
+          # zero elements and the resolution list came back in
+          # whatever order the connector reported its modes -- no
+          # crash, no diagnostic, just an unsorted list that looks
+          # plausible.
+          #
+          # The test fabricates the drmModeConnector the driver reads,
+          # so it needs the libdrm headers but links nothing from
+          # libdrm: presenting a connector that is absent, empty, or
+          # reporting modes in an awkward order is the whole exercise
+          # and a real one will not do it on request.  The ordering
+          # check feeds modes in descending size, which a working sort
+          # must reverse and a broken one leaves untouched.  If
+          # dispserv_kms.c amends either, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_kms_test
+          timeout 60 ./display_servers_kms_test
+          echo "[pass] display_servers_kms_test"
+
+      - name: Build and run gfx_animation_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_animation_sanitize
+        run: |
+          set -eu
+          # Regression test for the stack overflow in
+          # gfx/gfx_animation.c::gfx_animation_ticker().  Pre-fix it
+          # passed PATH_MAX_LENGTH to utf8cpy() as the destination
+          # size, in all five places it copies, regardless of what the
+          # caller had provided.  utf8cpy()'s second argument is a
+          # size in BYTES; ticker->len, which the surrounding logic
+          # uses, is a width in GLYPHS -- so the guard
+          # `str_len <= ticker->len` compared glyph counts and then
+          # copied bytes, and one glyph of CJK or emoji is three or
+          # four of them.  PATH_MAX_LENGTH is 512 and not one of the
+          # 27 call sites in tree provides that much (mostly
+          # NAME_MAX_LENGTH, 64 bytes in one RGUI case), so the
+          # function was licensed to write 511 bytes plus a
+          # terminator into any of them.  Reachable from content: RGUI
+          # sets ticker.len from term_layout.width and ticker.s to a
+          # NAME_MAX_LENGTH stack buffer, so a playlist entry with a
+          # long enough Japanese, Cyrillic or emoji title overran it.
+          # Fixed by giving the struct an s_len field carrying the
+          # destination size in bytes, mirroring the dst_str_len that
+          # gfx_animation_ticker_smooth() had all along.
+          #
+          # AddressSanitizer is the validator: the test allocates
+          # every ticker destination at exactly the length it hands
+          # over, so a single byte past the end is a report rather
+          # than a stomp on whatever followed.  It also sweeps every
+          # easing type through push/update/expire, frees animation
+          # subjects while their animation is in flight, and deinits
+          # with animations still running.  If gfx_animation.c amends
+          # the destination sizing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_animation_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_animation_sanitize_test
+          echo "[pass] gfx_animation_sanitize_test"
+
+      - name: Build and run gfx_thumbnail_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_sanitize
+        run: |
+          set -eu
+          # Sanitizer sweep of gfx/gfx_thumbnail.c: init, work,
+          # teardown; path-data reset and reuse mid-stream; the
+          # request/callback/reset cycle; repeated and idempotent
+          # frees; and the producer/consumer pairing the atomic
+          # status field exists for, across two real threads.
+          # task_push_image_load() is stubbed to record the request
+          # rather than queue it, so the test fires the callback
+          # itself on a thread of its choosing -- which is what makes
+          # that pairing reachable at all.
+          #
+          # This one pins no historical defect: the file came back
+          # clean and stays clean.  It is a tripwire for the next
+          # change rather than a regression test.  The texture load
+          # and unload counts are asserted rather than printed, so a
+          # build where the request path is never entered fails
+          # instead of reporting a clean sweep having swept nothing.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_thumbnail_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_thumbnail_sanitize_test
+          echo "[pass] gfx_thumbnail_sanitize_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_thumbnail_sanitize_test
+          echo "[pass] gfx_thumbnail_sanitize_test (TSan)"
+
+      - name: Build and run gfx_widgets_sanitize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_sanitize
+        run: |
+          set -eu
+          # Sanitizer sweep of gfx/gfx_widgets.c, focused on the
+          # message queue: it has the same shape as the
+          # gfx_animation ticker overflow -- a caller-supplied
+          # string, internal fixed buffers, and arithmetic that has
+          # to keep glyphs and bytes apart.  Multi-byte text,
+          # over-long text, text with no break opportunity, embedded
+          # newlines and empty strings across every message/title
+          # pairing, a 256-message overflow to drive eviction and
+          # free, and eight init/deinit cycles with messages still
+          # outstanding at teardown.
+          #
+          # Like the thumbnail sweep this pins no historical defect
+          # and is a tripwire.  Two things decide whether it sweeps
+          # anything: the font metric stubs return a non-zero
+          # proportional width (a zero-width font makes every "does
+          # this fit" test succeed and the layout paths are never
+          # entered), and gfx_widgets_init() returning false makes
+          # the whole run vacuous -- hence the asserted push and
+          # frame counters.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_widgets_sanitize_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_widgets_sanitize_test
+          echo "[pass] gfx_widgets_sanitize_test (TSan)"
