@@ -162,6 +162,9 @@ LD_RUNPATH_SEARCH_PATHS[sdk=macosx*][config=Debug] = $(inherited) /opt/homebrew/
 // (debug symbols still go to dSYM files)
 STRIP_STYLE[config=Release] = debugging
 
+// actool's device-thinned compile flattens the layered tvOS icon wrong (black when unfocused)
+ENABLE_ONLY_ACTIVE_RESOURCES[sdk=appletvos*] = NO
+
 SRCBASE  = $(SRCROOT)/../..
 DEPS_DIR = $(SRCBASE)/deps
 
