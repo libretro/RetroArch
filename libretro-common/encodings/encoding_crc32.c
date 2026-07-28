@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include <encodings/crc32.h>
+#include <retro_atomic.h>
 #include <retro_endianness.h>
 #include <retro_inline.h>
 
@@ -35,10 +36,11 @@
  * CRC-32, polynomial 0xEDB88320 (bit-reflected 0x04C11DB7).
  * Bit-exact with zlib crc32(), gzip and PNG.
  *
- * Two implementations, in descending order of speed:
+ * Three implementations, in descending order of speed:
  *
- *   1. ARMv8 CRC32 instructions (chosen at compile time).
- *   2. Slicing-by-8 over a const table (every other target, both endians).
+ *   1. Carry-less multiply folding (x86 PCLMULQDQ, chosen at runtime).
+ *   2. ARMv8 CRC32 instructions (chosen at compile time).
+ *   3. Slicing-by-8 over a const table (every other target, both endians).
  *
  * The byte-at-a-time loop survives only as the tail handler for the
  * table path; no target uses it as a whole-buffer implementation.
@@ -46,6 +48,9 @@
 
 #if defined(__ARM_FEATURE_CRC32)
 #define CRC32_HAVE_ARM_PATH 1
+#elif defined(__x86_64__) || defined(__i386__) \
+   || defined(_M_X64)     || defined(_M_IX86)
+#define CRC32_HAVE_PCLMUL_PATH 1
 #endif
 
 /* ------------------------------------------------------------------ */
@@ -103,6 +108,174 @@ static uint32_t crc32_slice_by_8(uint32_t crc, const uint8_t *data, size_t len)
 #endif /* !CRC32_HAVE_ARM_PATH */
 
 /* ------------------------------------------------------------------ */
+/* x86 carry-less multiply folding                                    */
+/* ------------------------------------------------------------------ */
+
+#if defined(CRC32_HAVE_PCLMUL_PATH)
+
+#if defined(_MSC_VER)
+#include <intrin.h>
+#include <wmmintrin.h>
+#define CRC32_TARGET_PCLMUL
+#else
+#include <cpuid.h>
+#include <emmintrin.h>
+#include <wmmintrin.h>
+#define CRC32_TARGET_PCLMUL __attribute__((target("pclmul")))
+#endif
+
+/* Folding constants, all of the form
+ *    K(n) = bit_reflect_32(x^n mod P(x)) << 1
+ * with P(x) = 0x104C11DB7:
+ *
+ *    k1 = K(4*128 + 32)  advance four 128-bit accumulators
+ *    k2 = K(4*128 - 32)
+ *    k3 = K(  128 + 32)  advance one 128-bit accumulator
+ *    k4 = K(  128 - 32)
+ *    k5 = K(64)          reduce 128 -> 64
+ *    mu = bit_reflect_33(floor(x^64 / P(x)))   Barrett quotient
+ *    P' = bit_reflect_33(P(x))
+ */
+/* Built with _mm_set_epi32 rather than _mm_set_epi64x: the latter is
+ * not available in 32-bit MSVC. Each pair is {high dword, low dword}. */
+#define CRC32_K1_HI 0x00000001
+#define CRC32_K1_LO 0x54442BD4
+#define CRC32_K2_HI 0x00000001
+#define CRC32_K2_LO 0xC6E41596
+#define CRC32_K3_HI 0x00000001
+#define CRC32_K3_LO 0x751997D0
+#define CRC32_K4_HI 0x00000000
+#define CRC32_K4_LO 0xCCAA009E
+#define CRC32_K5_HI 0x00000001
+#define CRC32_K5_LO 0x63CD6124
+#define CRC32_MU_HI 0x00000001
+#define CRC32_MU_LO 0xF7011641
+#define CRC32_PP_HI 0x00000001
+#define CRC32_PP_LO 0xDB710641
+
+CRC32_TARGET_PCLMUL
+static INLINE __m128i crc32_fold16(__m128i x, __m128i k)
+{
+   return _mm_xor_si128(_mm_clmulepi64_si128(x, k, 0x00),
+                        _mm_clmulepi64_si128(x, k, 0x11));
+}
+
+CRC32_TARGET_PCLMUL
+static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
+{
+   const __m128i k1k2   = _mm_set_epi32((int)CRC32_K2_HI, (int)CRC32_K2_LO,
+                                        (int)CRC32_K1_HI, (int)CRC32_K1_LO);
+   const __m128i k3k4   = _mm_set_epi32((int)CRC32_K4_HI, (int)CRC32_K4_LO,
+                                        (int)CRC32_K3_HI, (int)CRC32_K3_LO);
+   const __m128i k5     = _mm_set_epi32(0, 0,
+                                        (int)CRC32_K5_HI, (int)CRC32_K5_LO);
+   const __m128i mupp   = _mm_set_epi32((int)CRC32_PP_HI, (int)CRC32_PP_LO,
+                                        (int)CRC32_MU_HI, (int)CRC32_MU_LO);
+   const __m128i mask32 = _mm_set_epi32(0, 0, 0, -1);
+   __m128i x0, x1, x2, x3, t;
+
+   /* Below four accumulators' worth, the reduction tail dominates. */
+   if (len < 64)
+      return crc32_slice_by_8(crc, data, len);
+
+   x0 = _mm_loadu_si128((const __m128i *)(data +  0));
+   x1 = _mm_loadu_si128((const __m128i *)(data + 16));
+   x2 = _mm_loadu_si128((const __m128i *)(data + 32));
+   x3 = _mm_loadu_si128((const __m128i *)(data + 48));
+   x0 = _mm_xor_si128(x0, _mm_cvtsi32_si128((int)crc));
+   data += 64;
+   len  -= 64;
+
+   /* Four independent chains, 64 bytes per iteration. */
+   while (len >= 64)
+   {
+      x0 = _mm_xor_si128(crc32_fold16(x0, k1k2),
+            _mm_loadu_si128((const __m128i *)(data +  0)));
+      x1 = _mm_xor_si128(crc32_fold16(x1, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 16)));
+      x2 = _mm_xor_si128(crc32_fold16(x2, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 32)));
+      x3 = _mm_xor_si128(crc32_fold16(x3, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 48)));
+      data += 64;
+      len  -= 64;
+   }
+
+   /* Collapse the four chains into one. */
+   x1 = _mm_xor_si128(crc32_fold16(x0, k3k4), x1);
+   x2 = _mm_xor_si128(crc32_fold16(x1, k3k4), x2);
+   x0 = _mm_xor_si128(crc32_fold16(x2, k3k4), x3);
+
+   while (len >= 16)
+   {
+      x0 = _mm_xor_si128(crc32_fold16(x0, k3k4),
+            _mm_loadu_si128((const __m128i *)data));
+      data += 16;
+      len  -= 16;
+   }
+
+   /* 128 -> 64 */
+   t  = _mm_clmulepi64_si128(x0, k3k4, 0x10);
+   x0 = _mm_xor_si128(_mm_srli_si128(x0, 8), t);
+
+   /* 64 -> 32 */
+   t  = _mm_clmulepi64_si128(_mm_and_si128(x0, mask32), k5, 0x00);
+   x0 = _mm_xor_si128(_mm_srli_si128(x0, 4), t);
+
+   /* Barrett reduction to the final 32-bit remainder. */
+   t  = _mm_clmulepi64_si128(_mm_and_si128(x0, mask32), mupp, 0x00);
+   t  = _mm_clmulepi64_si128(_mm_and_si128(t,  mask32), mupp, 0x10);
+   x0 = _mm_xor_si128(x0, t);
+
+   crc = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(x0, 4));
+
+   if (len)
+      crc = crc32_slice_by_8(crc, data, len);
+   return crc;
+}
+
+/* Feature detection is cached in a single atomic word rather than a
+ * plain int guarding a separate payload: the whole state is the value,
+ * so concurrent probers simply store the same result and there is no
+ * unsynchronised write to order against. Follows the acquire/release
+ * idiom already used by cpu_features_get().
+ *
+ * 0 = not probed yet, 1 = absent, 2 = present. */
+#define CRC32_PCLMUL_UNPROBED 0
+#define CRC32_PCLMUL_ABSENT   1
+#define CRC32_PCLMUL_PRESENT  2
+
+static retro_atomic_int_t crc32_pclmul_state;
+
+static int crc32_have_pclmul(void)
+{
+   int state = retro_atomic_load_acquire_int(&crc32_pclmul_state);
+
+   if (state == CRC32_PCLMUL_UNPROBED)
+   {
+      int have;
+#if defined(_MSC_VER)
+      int regs[4];
+      __cpuid(regs, 0);
+      have = (regs[0] >= 1);
+      if (have)
+      {
+         __cpuid(regs, 1);
+         have = ((regs[2] & (1 << 1)) != 0);
+      }
+#else
+      unsigned a, b, c, d;
+      have = (__get_cpuid(1, &a, &b, &c, &d) && (c & (1u << 1))) ? 1 : 0;
+#endif
+      state = have ? CRC32_PCLMUL_PRESENT : CRC32_PCLMUL_ABSENT;
+      retro_atomic_store_release_int(&crc32_pclmul_state, state);
+   }
+
+   return state == CRC32_PCLMUL_PRESENT;
+}
+#endif /* x86 */
+
+/* ------------------------------------------------------------------ */
 /* ARMv8 CRC32 instructions                                           */
 /* ------------------------------------------------------------------ */
 
@@ -147,6 +320,11 @@ uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
 
 #if defined(CRC32_HAVE_ARM_PATH)
    crc = crc32_arm(crc, data, len);
+#elif defined(CRC32_HAVE_PCLMUL_PATH)
+   if (len >= 64 && crc32_have_pclmul())
+      crc = crc32_pclmul(crc, data, len);
+   else
+      crc = crc32_slice_by_8(crc, data, len);
 #else
    crc = crc32_slice_by_8(crc, data, len);
 #endif
