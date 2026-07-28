@@ -874,9 +874,14 @@ static bool add_files_from_archive(manual_scan_handle_t *_db,
             char new_path[PATH_MAX_LENGTH];
             strlcpy(new_path, path, sizeof(new_path));
             new_path[_len] = '#';
+            /* The copy starts at _len + 1, so the space left is
+             * sizeof(new_path) - _len - 1.  The bound said - _len,
+             * which permits one byte past the end.  The enclosing
+             * length test happens to keep that unreachable today;
+             * the two must agree regardless. */
             strlcpy(new_path + _len + 1,
                   archive_list->elems[i].data,
-                  sizeof(new_path) - _len);
+                  sizeof(new_path) - _len - 1);
             string_list_append(_db->content_list, new_path,
                   archive_list->elems[i].attr);
          }
