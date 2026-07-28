@@ -59,6 +59,10 @@ int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
 
 libretrodb_t *libretrodb_new(void);
 
+/* Scratch buffer used by libretrodb_query_compile() for error text.
+ * Owned by the db handle so that concurrent compiles do not share it. */
+char *libretrodb_query_err_buf(libretrodb_t *db, size_t *len);
+
 void libretrodb_free(libretrodb_t *db);
 
 libretrodb_cursor_t *libretrodb_cursor_new(void);

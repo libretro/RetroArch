@@ -1029,10 +1029,20 @@ void *libretrodb_query_compile(libretrodb_t *db,
       const char *query, size_t len, const char **err_string)
 {
    struct buffer buff;
-   /* TODO/FIXME - static local variable */
-   static char tmp_err_buff [MAX_ERROR_LEN] = {0};
+   /* Error text is formatted into storage owned by the db handle.
+    * This used to be a function-scope static, so the pointer returned
+    * through err_string was shared process-wide and two concurrent
+    * compiles clobbered each other's message - the second racy global
+    * in this file:
+    *
+    *   WARNING: ThreadSanitizer: data race
+    *     Location is global 'tmp_err_buff.0' of size 256
+    *
+    * When there is no db handle to borrow from, report a fixed
+    * message rather than writing anywhere. */
+   size_t err_buff_len = 0;
+   char *tmp_err_buff  = libretrodb_query_err_buf(db, &err_buff_len);
    struct query *q     = (struct query*)malloc(sizeof(*q));
-   size_t err_buff_len = sizeof(tmp_err_buff);
 
    if (!q)
       return NULL;
@@ -1048,6 +1058,16 @@ void *libretrodb_query_compile(libretrodb_t *db,
    buff.len            = len;
    buff.offset         = 0;
    *err_string         = NULL;
+
+   /* Every in-tree caller compiles against an open handle, and the
+    * parse helpers below format diagnostics straight into this
+    * buffer.  Fail cleanly rather than teaching ten snprintf() sites
+    * to tolerate a NULL destination. */
+   if (!tmp_err_buff)
+   {
+      *err_string      = "No database handle";
+      goto error;
+   }
 
    buff                  = query_chomp(buff);
 
@@ -1072,11 +1092,16 @@ void *libretrodb_query_compile(libretrodb_t *db,
 
    if (!q->root.func)
    {
-      snprintf(tmp_err_buff, err_buff_len,
-            "%" PRIu64 "::Unexpected EOF",
-            (uint64_t)buff.offset
-            );
-      *err_string = tmp_err_buff;
+      if (tmp_err_buff)
+      {
+         snprintf(tmp_err_buff, err_buff_len,
+               "%" PRIu64 "::Unexpected EOF",
+               (uint64_t)buff.offset
+               );
+         *err_string = tmp_err_buff;
+      }
+      else
+         *err_string = "Unexpected EOF";
       goto error;
    }
 

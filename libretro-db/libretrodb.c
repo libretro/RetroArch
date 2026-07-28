@@ -44,6 +44,9 @@
 
 #define MAGIC_NUMBER "RARCHDB"
 
+/* Must match MAX_ERROR_LEN in query.c */
+#define LIBRETRODB_QUERY_ERR_LEN 256
+
 /* MsgPack type bytes — needed by the fast cursor read path */
 #define _MPF_FIXMAP   0x80
 #define _MPF_FIXARRAY 0x90
@@ -64,6 +67,13 @@ struct node_iter_ctx
 struct libretrodb
 {
    intfstream_t *fd;
+   /* Scratch for libretrodb_query_compile()'s error text.  It used to
+    * be a function-scope static, so the pointer handed back through
+    * err_string was shared by every caller in the process and two
+    * concurrent compiles overwrote each other's message.  Tying it to
+    * the db handle keeps the pointer valid for as long as the caller
+    * can meaningfully use it while making it per-handle. */
+   char query_err[LIBRETRODB_QUERY_ERR_LEN];
    char *path;
    bool can_write;
    uint64_t root;
@@ -997,4 +1007,16 @@ void libretrodb_free(libretrodb_t *db)
 {
    if (db)
       free(db);
+}
+
+/* Accessor for query.c, which owns the formatting but not the
+ * storage.  Returns NULL when there is no db handle to borrow from;
+ * the caller then falls back to a fixed message. */
+char *libretrodb_query_err_buf(libretrodb_t *db, size_t *len)
+{
+   if (!db)
+      return NULL;
+   if (len)
+      *len = sizeof(db->query_err);
+   return db->query_err;
 }
