@@ -1215,6 +1215,33 @@ static INLINE void prep_huffman(vorb *f)
 {
    if (f->valid_bits <= 24)
    {
+      /* Bulk refill: this runs before every Huffman symbol, and the
+       * byte loop below pays a segment test, an EOP test, counter
+       * updates and a bounds check per byte to move at most four
+       * contiguous bytes.  When the current segment and the stream
+       * both hold the bytes the loop would take, take them in one
+       * step; every boundary - segment end, packet end, truncation -
+       * falls through to the byte loop unchanged. */
+      int want = (32 - f->valid_bits) >> 3;
+      if (f->valid_bits >= 0
+            && (int)f->bytes_in_seg >= want
+            && f->stream_end - f->stream >= want)
+      {
+         const uint8_t *p = f->stream;
+         uint32_t w = p[0];
+         if (want > 1) w |= (uint32_t)p[1] << 8;
+         if (want > 2) w |= (uint32_t)p[2] << 16;
+         if (want > 3) w |= (uint32_t)p[3] << 24;
+         if (f->valid_bits == 0)
+            f->acc = w;
+         else
+            f->acc += w << f->valid_bits;
+         f->valid_bits   += want << 3;
+         f->stream       += want;
+         f->bytes_in_seg -= (uint8_t)want;
+         f->packet_bytes += want;
+         return;
+      }
       if (f->valid_bits == 0)
          f->acc = 0;
       do
