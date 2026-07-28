@@ -29,9 +29,21 @@
 #include <formats/rbmp.h>
 #include <formats/rtga.h>
 #include <formats/rdds.h>
+#include <formats/rwebp.h>
 
-static long decoded_ok;
+/* Per format, not just in total: a cumulative count hides a decoder
+ * whose seed stopped being accepted, which would leave that format
+ * exercising only its reject paths while the sweep still reported a
+ * pass. */
+enum { FMT_BMP = 0, FMT_TGA, FMT_DDS, FMT_WEBP, FMT_COUNT };
+
+static const char *const fmt_name[FMT_COUNT] =
+{ "bmp", "tga", "dds", "webp" };
+
+static long decoded_ok[FMT_COUNT];
+static long attempted[FMT_COUNT];
 static long attempts;
+static int  cur_fmt;
 
 /* Smallest well-formed 24-bit BMP: 2x2 pixels. */
 static const unsigned char bmp_seed[] =
@@ -98,6 +110,7 @@ static void try_dds(const unsigned char *buf, size_t len)
    unsigned w = 0, h = 0;
 
    attempts++;
+   attempted[cur_fmt]++;
 
    if (!rdds)
       return;
@@ -109,12 +122,57 @@ static void try_dds(const unsigned char *buf, size_t len)
             == IMAGE_PROCESS_NEXT)
          ;
       if (ret == IMAGE_PROCESS_END)
-         decoded_ok++;
+         decoded_ok[cur_fmt]++;
    }
 
    if (out)
       free(out);
    rdds_free(rdds);
+}
+
+
+/* A 2x2 lossy WebP, as produced by a real encoder: RIFF container,
+ * "WEBP" form type, one "VP8 " chunk holding a keyframe. */
+static const unsigned char webp_seed[] =
+{
+   0x52, 0x49, 0x46, 0x46, 0x3a, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+   0x56, 0x50, 0x38, 0x20, 0x2e, 0x00, 0x00, 0x00, 0x90, 0x01, 0x00, 0x9d,
+   0x01, 0x2a, 0x02, 0x00, 0x02, 0x00, 0x01, 0x40, 0x26, 0x25, 0xa4, 0x00,
+   0x02, 0xe7, 0x59, 0xb6, 0x00, 0x00, 0xfe, 0xf6, 0x7f, 0xff, 0x9c, 0x0e,
+   0x21, 0x2d, 0xfc, 0xab, 0xff, 0xfb, 0x46, 0x3f, 0x3c, 0xb5, 0xef, 0x75,
+   0x7a, 0x26, 0x1e, 0x00, 0x00, 0x00
+};
+
+static void try_webp(const unsigned char *buf, size_t len)
+{
+   rwebp_t *rwebp = rwebp_alloc();
+   void    *out   = NULL;
+   unsigned w = 0, h = 0;
+
+   attempts++;
+   attempted[cur_fmt]++;
+
+   if (!rwebp)
+      return;
+
+   /* Unlike the other three, rwebp_set_buf_ptr() is told the length,
+    * so the decoder is not relying on the header alone to stay in
+    * bounds.  Worth exercising anyway: the still-ready probe and the
+    * chunk walk still trust sizes that came out of the file. */
+   if (rwebp_set_buf_ptr(rwebp, (void*)buf, len))
+   {
+      int ret;
+      (void)rwebp_still_ready(buf, len);
+      while ((ret = rwebp_process_image(rwebp, &out, len, &w, &h, true))
+            == IMAGE_PROCESS_NEXT)
+         ;
+      if (ret == IMAGE_PROCESS_END)
+         decoded_ok[cur_fmt]++;
+   }
+
+   if (out)
+      free(out);
+   rwebp_free(rwebp);
 }
 
 static void try_bmp(const unsigned char *buf, size_t len)
@@ -124,6 +182,7 @@ static void try_bmp(const unsigned char *buf, size_t len)
    unsigned w = 0, h = 0;
 
    attempts++;
+   attempted[cur_fmt]++;
 
    if (!rbmp)
       return;
@@ -138,7 +197,7 @@ static void try_bmp(const unsigned char *buf, size_t len)
             == IMAGE_PROCESS_NEXT)
          ;
       if (ret == IMAGE_PROCESS_END)
-         decoded_ok++;
+         decoded_ok[cur_fmt]++;
    }
 
    if (out)
@@ -153,6 +212,7 @@ static void try_tga(const unsigned char *buf, size_t len)
    unsigned w = 0, h = 0;
 
    attempts++;
+   attempted[cur_fmt]++;
 
    if (!rtga)
       return;
@@ -164,7 +224,7 @@ static void try_tga(const unsigned char *buf, size_t len)
             == IMAGE_PROCESS_NEXT)
          ;
       if (ret == IMAGE_PROCESS_END)
-         decoded_ok++;
+         decoded_ok[cur_fmt]++;
    }
 
    if (out)
@@ -174,9 +234,11 @@ static void try_tga(const unsigned char *buf, size_t len)
 
 /* Every single-byte value at every offset of the header, on a copy
  * sized exactly to the seed so a read past the end is a report. */
-static void sweep(const unsigned char *seed, size_t seed_len,
+static void sweep(int fmt, const unsigned char *seed, size_t seed_len,
       void (*fn)(const unsigned char*, size_t), size_t header_len)
 {
+   cur_fmt = fmt;
+
    size_t off;
    int    v;
    size_t trunc;
@@ -225,19 +287,33 @@ int main(void)
 {
    dds_seed_init();
 
-   sweep(bmp_seed, sizeof(bmp_seed), try_bmp, 54);
-   sweep(tga_seed, sizeof(tga_seed), try_tga, 18);
-   sweep(dds_seed, sizeof(dds_seed), try_dds, 128);
+   sweep(FMT_BMP,  bmp_seed,  sizeof(bmp_seed),  try_bmp,  54);
+   sweep(FMT_TGA,  tga_seed,  sizeof(tga_seed),  try_tga,  18);
+   sweep(FMT_DDS,  dds_seed,  sizeof(dds_seed),  try_dds,  128);
+   sweep(FMT_WEBP, webp_seed, sizeof(webp_seed), try_webp, 32);
 
-   printf("attempts=%ld decoded=%ld\n", attempts, decoded_ok);
-
-   if (decoded_ok < 3)
    {
-      fputs("FAIL: not every seed decoded; the sweep proved nothing\n",
-            stderr);
-      return 1;
+      int i, bad = 0;
+
+      for (i = 0; i < FMT_COUNT; i++)
+      {
+         printf("%-5s attempts=%-6ld decoded=%ld\n",
+               fmt_name[i], attempted[i], decoded_ok[i]);
+
+         if (decoded_ok[i] < 1)
+         {
+            fprintf(stderr,
+                  "FAIL: no %s input decoded; that format exercised"
+                  " only its reject paths\n", fmt_name[i]);
+            bad++;
+         }
+      }
+
+      if (bad)
+         return 1;
    }
 
+   printf("total attempts=%ld\n", attempts);
    puts("ALL OK");
    return 0;
 }

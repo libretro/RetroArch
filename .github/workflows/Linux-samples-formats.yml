@@ -35,11 +35,14 @@ jobs:
         working-directory: samples/formats/image_decode_fuzz
         run: |
           set -eu
-          # Malformed-input sweep for the BMP, TGA and DDS decoders in
+          # Malformed-input sweep for the BMP, TGA, DDS and WebP decoders in
           # libretro-common/formats.  All three take dimensions and
           # layout from a header the file supplies and size their
           # output from it, which is where this kind of arithmetic
-          # goes wrong, and none of the three had any test at all.
+          # goes wrong, and none of the four had any test at all.
+          # (WebP is told its buffer length, so it is the least
+          # exposed of them; its chunk walk still trusts sizes that
+          # came out of the file.)
           #
           # It found one on its first run: rbmp_proc_reset() gated the
           # free of output_image on phase != RBMP_PHASE_IDLE, but
@@ -57,7 +60,9 @@ jobs:
           # count of inputs that decode successfully is asserted
           # inside the test, so a sweep where the seeds stopped being
           # accepted would fail rather than exercise only the reject
-          # paths and report a pass.
+          # paths and report a pass.  That count is kept per format, not
+          # just in total, so one decoder quietly ceasing to accept its
+          # seed cannot hide behind the other three.
           make clean all SANITIZER=address,undefined
           test -x image_decode_fuzz_test
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
