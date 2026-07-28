@@ -333,11 +333,40 @@ int rmsgpack_write_uint(intfstream_t *fd, uint64_t value)
    return (int)len;
 }
 
+/**
+ * rmsgpack_read_exact:
+ *
+ * intfstream_read() reports a hard error as -1, but signals
+ * end-of-file as a zero-length or short read.  Every length in a
+ * MsgPack stream is exact - a type byte is one byte, a declared
+ * payload is that many bytes - so a short read is a truncated or
+ * malformed stream and never a successful parse.
+ *
+ * Checking only for -1 (as every read site here used to) makes the
+ * reader treat EOF as success: rmsgpack_read() would leave its
+ * zero-initialised type byte untouched, take the 'positive fixint'
+ * branch and hand the caller a fabricated integer 0, forever.  A
+ * .rdb whose nil sentinel is missing - a truncated download is
+ * enough - then spins libretrodb_cursor_read_item() without bound
+ * and the scanner task never completes.
+ *
+ * Returns: 0 when @len bytes were read, -1 otherwise.
+ */
+static int rmsgpack_read_exact(intfstream_t *fd, void *s, size_t len)
+{
+   if (len == 0)
+      return 0;
+   if (intfstream_read(fd, s, len) != (int64_t)len)
+      return -1;
+   return 0;
+}
+
 int rmsgpack_read_uint(intfstream_t *fd, uint64_t *s, size_t len)
 {
    union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
-   if (intfstream_read(fd, &tmp, len) == -1)
+   tmp.u64 = 0;
+   if (rmsgpack_read_exact(fd, &tmp, len) == -1)
       return -1;
 
    switch (len)
@@ -362,7 +391,8 @@ static int rmsgpack_read_int(intfstream_t *fd, int64_t *s, size_t len)
 {
    union { uint64_t u64; uint32_t u32; uint16_t u16; uint8_t u8; } tmp;
 
-   if (intfstream_read(fd, &tmp, len) == -1)
+   tmp.u64 = 0;
+   if (rmsgpack_read_exact(fd, &tmp, len) == -1)
       return -1;
 
    switch (len)
@@ -426,17 +456,17 @@ static int rmsgpack_read_buff(intfstream_t *fd, size_t size, char **pbuff, uint6
    if (!*pbuff)
       return -1;
 
-   if ((read_len      = intfstream_read(fd, *pbuff, (size_t)tmp_len)) == -1)
+   if (rmsgpack_read_exact(fd, *pbuff, (size_t)tmp_len) == -1)
    {
       free(*pbuff);
       *pbuff = NULL;
       return -1;
    }
 
-   *len               = read_len;
+   read_len           = (ssize_t)tmp_len;
+   *len               = (uint64_t)read_len;
    (*pbuff)[read_len] = 0;
 
-   /* Throw warning on read_len != tmp_len ? */
    return 0;
 }
 
@@ -527,7 +557,7 @@ int rmsgpack_read(intfstream_t *fd,
    uint8_t type      = 0;
    char *buff        = NULL;
 
-   if (intfstream_read(fd, &type, sizeof(uint8_t)) == -1)
+   if (rmsgpack_read_exact(fd, &type, sizeof(uint8_t)) == -1)
       return -1;
 
    if (type < MPF_FIXMAP)
@@ -552,11 +582,12 @@ int rmsgpack_read(intfstream_t *fd,
       tmp_len      = type - MPF_FIXSTR;
       if (!(buff = (char *)malloc((size_t)(tmp_len + 1) * sizeof(char))))
          return -1;
-      if ((_len = intfstream_read(fd, buff, (ssize_t)tmp_len)) == -1)
+      if (rmsgpack_read_exact(fd, buff, (size_t)tmp_len) == -1)
       {
          free(buff);
          return -1;
       }
+      _len       = (ssize_t)tmp_len;
       buff[_len] = '\0';
       if (callbacks->read_string)
          return callbacks->read_string(buff, (uint32_t)_len, data);
@@ -655,7 +686,7 @@ static int rmsgpack_skip_bytes(intfstream_t *fd, uint64_t len)
    while (len > 0)
    {
       uint64_t chunk = len > sizeof(tmp) ? sizeof(tmp) : len;
-      if (intfstream_read(fd, tmp, (size_t)chunk) == -1)
+      if (rmsgpack_read_exact(fd, tmp, (size_t)chunk) == -1)
          return -1;
       len -= chunk;
    }
@@ -678,7 +709,7 @@ int rmsgpack_skip_value(intfstream_t *fd)
    uint64_t len   = 0;
    uint64_t i;
 
-   if (intfstream_read(fd, &type, 1) == -1)
+   if (rmsgpack_read_exact(fd, &type, 1) == -1)
       return -1;
 
    /* positive fixint (0x00..0x7f) — no payload */

@@ -217,7 +217,11 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
    db->path  = strdup(path);
    db->root  = intfstream_tell(fd);
 
-   if ((int)intfstream_read(fd, &header, sizeof(header)) == -1)
+   /* intfstream_read() signals EOF as a short read, not as -1, so a
+    * file smaller than the header used to leave the tail of 'header'
+    * uninitialised and then feed it to strncmp() below.  Require the
+    * full header. */
+   if (intfstream_read(fd, &header, sizeof(header)) != (int64_t)sizeof(header))
       goto error;
 
    if (strncmp(header.magic_number, MAGIC_NUMBER, sizeof(MAGIC_NUMBER)) != 0)
@@ -404,7 +408,7 @@ static int32_t rmsgpack_read_map_header(intfstream_t *fd)
    uint8_t  type = 0;
    uint64_t len  = 0;
 
-   if (intfstream_read(fd, &type, 1) == -1)
+   if (intfstream_read(fd, &type, 1) != 1)
       return -1;
 
    if (type == _MPF_NIL)
@@ -442,7 +446,7 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
    uint8_t  type = 0;
    uint64_t len  = 0;
 
-   if (intfstream_read(fd, &type, 1) == -1)
+   if (intfstream_read(fd, &type, 1) != 1)
       return -1;
 
    /* fixstr: length embedded in type byte */
@@ -475,7 +479,7 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
       return -1;
    }
 
-   if (intfstream_read(fd, buf, (size_t)len) == -1)
+   if (intfstream_read(fd, buf, (size_t)len) != (int64_t)len)
       return -1;
 
    buf[len] = '\0';
