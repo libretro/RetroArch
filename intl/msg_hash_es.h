@@ -1131,6 +1131,7 @@ static const struct
    char s_d05c8ee3[24];
    char s_13bce77f[34];
    char s_1b2ee6c4[31];
+   char s_81589fd5[29];
    char s_26e9cde7[34];
    char s_b539ec6c[14];
    char s_f89e1cbc[53];
@@ -2197,6 +2198,7 @@ static const struct
    char s_bfa23080[10];
    char s_723d3966[7];
    char s_ec326380[7];
+   char s_8a86d1de[15];
    char s_8fc1e4da[11];
    char s_14ed14d0[7];
    char s_5c87e95b[19];
@@ -2428,7 +2430,8 @@ static const struct
    char s_daf6d7e2[73];
    char s_042502c4[78];
    char s_90ae9a9f[105];
-   char s_81b79d5b[444];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[69];
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[143];
@@ -2944,6 +2947,7 @@ static const struct
    char s_87ac0bd1[64];
    char s_236ddb2d[114];
    char s_d27e63b2[240];
+   char s_2297ba83[320];
    char s_32728f95[83];
    char s_c4eae01a[118];
    char s_bb0852aa[218];
@@ -3489,6 +3493,7 @@ static const struct
    char s_698d5124[131];
    char s_7e43d750[220];
    char s_87ca7bc6[201];
+   char s_cfa51e8c[441];
    char s_b62c2f7e[364];
    char s_456fcbc9[404];
    char s_82fab47a[54];
@@ -5511,6 +5516,7 @@ static const struct
    "Intercambiar miniaturas",
    "Iconos de interruptores de s\303\255/no",
    "Retraso de las miniaturas (ms)",
+   "Aplicar tramado a miniaturas",
    "M\303\251todo de escalado de miniaturas",
    "Transparencia",
    "Reanudar contenido tras utilizar un guardado r\303\241pido",
@@ -6586,6 +6592,7 @@ static const struct
    "Expandido",
    "S\303\272per",
    "Amplio",
+   "Tope de brillo",
    "Desactivar",
    "Brillo",
    "L\303\255neas de barrido",
@@ -6841,11 +6848,12 @@ static const struct
    "Acelera el audio al usar el avance r\303\241pido. Evitar\303\241 los chasquidos en el audio, per"
    "o cambiar\303\241 su tono.",
    "Utiliza el remuestrador de coma fija (por n\303\272meros enteros) en lugar del remuestrador de c"
-   "oma flotante cuando un n\303\272cleo produzca audio a 16\302\240bits. Evita la conversi\303\263n"
-   " doble de entero a flotante y viceversa, produciendo un audio de salida id\303\251ntico en todas"
-   " las partidas y sistemas. Esta opci\303\263n no afecta a n\303\272cleos cuyo audio de salida sea"
-   " por coma flotante y utilizar\303\241 la ruta de coma flotante cuando se active un filtro DSP in"
-   "compatible.",
+   "oma flotante cuando un n\303\272cleo produzca audio a 16\302\240bits. Producir\303\241 un audio "
+   "de salida id\303\251ntico al bit en todas las plataformas. El objetivo es la reproducibilidad, n"
+   "o la velocidad: si la CPU tiene una FPU de vectores, el remuestrador por n\303\272meros enteros "
+   "es m\303\241s lento, ya que solo se vectoriza el de coma flotante. Esta opci\303\263n no afecta "
+   "a n\303\272cleos cuyo audio de salida sea por coma flotante y utilizar\303\241 l",
+   "a ruta de coma flotante cuando se active un filtro DSP incompatible.",
    "En este directorio se guardar\303\241n los filtros de audio DSP.",
    "El formato de muestreo que solicitar\303\241 el controlador de audio al dispositivo de salida. "
    "\302\253Float\302\273 solicitar\303\241 un formato de coma flotante de 32\302\240bits y \302\253"
@@ -7652,6 +7660,10 @@ static const struct
    "Aplica un retardo entre el momento en el que se selecciona un elemento de una lista de reproducc"
    "i\303\263n y la carga de su miniatura correspondiente. Un valor m\303\255nimo de 256 ms elimina "
    "cualquier retraso, incluso en los dispositivos m\303\241s lentos.",
+   "Suaviza el efecto de bandas de color en las miniaturas y el fondo de pantalla aplic\303\241ndole"
+   "s un filtro de tramado que respete la paleta limitada del men\303\272. El patr\303\263n del tram"
+   "ado se magnificar\303\241 junto con todo lo dem\303\241s al aumentar la escala del men\303\272 h"
+   "asta visibilizarse su textura, de ser as\303\255, desactiva esta opci\303\263n.",
    "Selecciona el m\303\251todo de reescalado para que las miniaturas quepan en la pantalla.",
    "Muestra el contenido en el fondo del men\303\272 r\303\241pido. Desactivar la transparencia podr"
    "\303\255a alterar los colores del tema.",
@@ -8507,6 +8519,12 @@ static const struct
    "Utiliza el rango completo de colores de tu pantalla para crear una imagen m\303\241s brillante y"
    " saturada. Si deseas ver colores m\303\241s fieles a los del dise\303\261o original de los juego"
    "s, selecciona \302\253Preciso\302\273.",
+   "Establece el brillo m\303\241ximo de tu pantalla en nits. Indica el margen para potenciar el bri"
+   "llo de los resaltados para que aquellos n\303\272cleos que pueden renderizar una se\303\261al HD"
+   "R sepan hasta d\303\263nde pueden llegar. Comprueba las caracter\303\255sticas de tu pantalla y "
+   "en caso de duda, selecciona 1000. Un valor m\303\241s alto de lo que pueda alcanzar tu pantalla "
+   "har\303\241 que los detalles m\303\241s brillantes se sobresaturen en vez de mostrarse de forma "
+   "gradual.",
    "Establece el nivel de brillo del HDR en nits. Debes combinar este valor con los ajustes f\303"
    "\255sicos de brillo de tu pantalla. Un punto de partida ser\303\255a elegir 80 aqu\303\255 y pon"
    "er el brillo de la pantalla al m\303\241ximo. Por otro lado, puedes elegir aqu\303\255 el n\303"
@@ -9315,7 +9333,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (206664u
+      (sizeof(msg_hash_es_blob) == (207594u
 #ifdef ANDROID
        + 329u
 #endif
@@ -10844,6 +10862,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -11909,6 +11928,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -12655,6 +12675,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -13200,6 +13221,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

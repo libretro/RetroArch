@@ -2384,7 +2384,6 @@ static const struct
    char s_daf6d7e2[55];
    char s_042502c4[61];
    char s_90ae9a9f[71];
-   char s_81b79d5b[427];
    char s_c9235dab[55];
    char s_330be970_0[500];
    char s_330be970_1[31];
@@ -6733,11 +6732,6 @@ static const struct
    "Reproduce fluxos de audio simult\303\241neos mesmo no men\303\272.",
    "Acalar automaticamente o audio ao utilizar o avance r\303\241pido.",
    "Acelera o audio ao avanzar r\303\241pido. Evita crepitar pero cambia de ton.",
-   "Usa o remostrador de punto fixo (enteiro) en vez do de punto flotante cando un n\303\272cleo emi"
-   "te audio de 16 bits. Evita a conversi\303\263n de enteiro a flotante e produce unha sa\303\255da"
-   " id\303\251ntica bit a bit en t\303\263dalas plataformas, facendo co audio sexa reproducible ent"
-   "re execuci\303\263ns e sistemas. Non ten efecto nos n\303\272cleos que emiten audio en punto flo"
-   "tante e volve \303\241 ruta de punto flotante cando hai un filtro DSP incompatible activo.",
    "Os filtros DSP de audio almac\303\251nanse neste directorio.",
    "Formato de mostra que o controlador de audio solicita ao dispositivo de sa\303\255da. \342\200"
    "\230Float\342\200\231 solicita punto flotante de 32 bits, \342\200\230Int16\342\200\231 solicita"
@@ -9117,7 +9111,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194567u
+      (sizeof(msg_hash_gl_blob) == (194140u
 #ifdef ANDROID
        + 365u
 #endif
@@ -11888,7 +11882,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,

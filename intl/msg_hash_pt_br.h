@@ -1108,6 +1108,7 @@ static const struct
    char s_d05c8ee3[18];
    char s_13bce77f[23];
    char s_1b2ee6c4[27];
+   char s_81589fd5[28];
    char s_26e9cde7[45];
    char s_b539ec6c[15];
    char s_f89e1cbc[41];
@@ -2165,6 +2166,7 @@ static const struct
    char s_a12ce1bf[15];
    char s_bfa23080[10];
    char s_ec326380[6];
+   char s_8a86d1de[15];
    char s_8fc1e4da[10];
    char s_14ed14d0[7];
    char s_5c87e95b[20];
@@ -2392,7 +2394,8 @@ static const struct
    char s_daf6d7e2[72];
    char s_042502c4[62];
    char s_90ae9a9f[79];
-   char s_81b79d5b[451];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[69];
    char s_c9235dab[60];
    char s_330be970[482];
    char s_98b02857[202];
@@ -2907,6 +2910,7 @@ static const struct
    char s_87ac0bd1[84];
    char s_236ddb2d[79];
    char s_d27e63b2[267];
+   char s_2297ba83[318];
    char s_32728f95[80];
    char s_c4eae01a[136];
    char s_bb0852aa[188];
@@ -3452,6 +3456,7 @@ static const struct
    char s_698d5124[112];
    char s_7e43d750[209];
    char s_87ca7bc6[175];
+   char s_cfa51e8c[467];
    char s_b62c2f7e[333];
    char s_456fcbc9[362];
    char s_82fab47a[44];
@@ -5443,6 +5448,7 @@ static const struct
    "Trocar miniaturas",
    "\303\215cones de interruptor",
    "Atraso das miniaturas (ms)",
+   "Pontilhamento de Miniaturas",
    "M\303\251todo de redu\303\247\303\243o da escala de miniaturas",
    "Transpar\303\252ncia",
    "Retomar Conte\303\272do Ap\303\263s Usar Save States",
@@ -6514,6 +6520,7 @@ static const struct
    "Modo precis\303\243o",
    "Expandido",
    "Amplo",
+   "Brilho M\303\241ximo",
    "Desligado",
    "Brilho",
    "Linhas de varredura",
@@ -6762,12 +6769,14 @@ static const struct
    "Silenciar automaticamente o \303\241udio ao usar o avan\303\247o r\303\241pido.",
    "Acelerar o \303\241udio ao usar avan\303\247o r\303\241pido. Previne ru\303\255dos, mas aumenta "
    "o tom.",
-   "Usar o reamostrador de ponto fixo (inteiro) em vez do de ponto flutuante quando um n\303\272cleo"
-   " produzir \303\241udio de 16 bits. Evita a convers\303\243o de inteiro para float e produz uma s"
-   "a\303\255da bit a bit id\303\252ntica em todas as plataformas, tornando a sa\303\255da de \303"
-   "\241udio reproduz\303\255vel entre execu\303\247\303\265es e sistemas. N\303\243o tem efeito em "
-   "n\303\272cleos que produzem \303\241udio de ponto flutuante e usa o caminho de ponto flutuante e"
-   "nquanto um filtro DSP incompat\303\255vel estiver ativo.",
+   "Usa o reamostrador de ponto fixo (inteiro) em vez do de ponto flutuante quando um n\303\272cleo "
+   "emite \303\241udio de 16 bits. Produz uma sa\303\255da com bits id\303\252nticos em todas as pla"
+   "taformas, tornando o \303\241udio reprodut\303\255vel entre diferentes execu\303\247\303\265es e"
+   " sistemas. Isso serve para reprodutibilidade, n\303\243o velocidade: onde a CPU tem uma FPU veto"
+   "rial, o reamostrador inteiro \303\251 mais lento, pois apenas o de ponto flutuante \303\251 veto"
+   "rizado. N\303\243o tem efeito em n\303\272cleos que emitem \303\241udio em ponto flutuante; reve"
+   "rte para",
+   " ponto flutuante enquanto um filtro DSP incompat\303\255vel estiver ativo.",
    "Os filtros DSP de \303\241udio s\303\243o armazenadas neste diret\303\263rio.",
    "Formato de amostra que o driver de \303\241udio solicita ao dispositivo de sa\303\255da. 'Float'"
    " solicita ponto flutuante de 32 bits; 'Int16', inteiro de 16 bits. Afeta apenas drivers capazes "
@@ -7553,6 +7562,10 @@ static const struct
    "\303\247\303\243o e o carregamento de suas miniaturas associadas. Configurar isso para um valor "
    "de pelo menos 256 ms permite a rolagem r\303\241pida e sem atrasos at\303\251 mesmo nos disposit"
    "ivos mais lentos.",
+   "Suaviza as faixas de cores nas miniaturas e no plano de fundo aplicando pontilhamento para se ad"
+   "equarem \303\240 paleta limitada do menu. O padr\303\243o de pontilhamento \303\251 ampliado jun"
+   "to com todo o resto em fatores altos de 'Escala do Menu', e pode se tornar vis\303\255vel como u"
+   "ma textura; se isso acontecer, desative esta op\303\247\303\243o.",
    "Selecione o m\303\251todo de redimensionamento para que as miniaturas caibam na tela.",
    "Ativa a exibi\303\247\303\243o de fundo do conte\303\272do enquanto o Menu R\303\241pido est\303"
    "\241 ativo. Desativar a transpar\303\252ncia pode alterar as cores do tema.",
@@ -8394,6 +8407,12 @@ static const struct
    "a HDR10 ap\303\263s a aplica\303\247\303\243o da m\303\241scara.",
    "Usar toda a gama de cores do seu monitor para criar uma imagem mais brilhante e saturada. Para c"
    "ores mais fi\303\251is ao design original do jogo, defina esta op\303\247\303\243o como Preciso.",
+   "O n\303\255vel m\303\241ximo de brilho que sua tela pode alcan\303\247ar, em nits. Define quanto"
+   " espa\303\247o h\303\241 acima do Brilho para os realces, para que os n\303\272cleos que renderi"
+   "zam o pr\303\263prio HDR saibam at\303\251 onde podem ir antes de aplicar a atenua\303\247\303"
+   "\243o gradual (roll-off). Verifique as especifica\303\247\303\265es da sua tela; em caso de d"
+   "\303\272vida, deixe em 1000. Definir um valor maior do que a tela realmente suporta faz com que "
+   "os detalhes brilhantes sejam cortados (clipping) em vez de atenuados.",
    "Definir o n\303\255vel de brilho HDR em nits. Usar em conjunto com as configura\303\247\303\265e"
    "s de brilho f\303\255sico do seu monitor. Como ponto de partida, defina este valor para 80 e o b"
    "rilho do seu monitor para o m\303\241ximo. Alternativamente, defina para o m\303\241ximo de nits"
@@ -9202,7 +9221,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (192264u
+      (sizeof(msg_hash_pt_br_blob) == (193210u
 #ifdef ANDROID
        + 352u
 #endif
@@ -10712,6 +10731,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -11768,6 +11788,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -12510,6 +12531,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -13055,6 +13077,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

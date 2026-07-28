@@ -2402,7 +2402,6 @@ static const struct
    char s_daf6d7e2[59];
    char s_042502c4[68];
    char s_90ae9a9f[115];
-   char s_81b79d5b[439];
    char s_c9235dab[60];
    char s_330be970_0[500];
    char s_330be970_1[43];
@@ -6786,12 +6785,6 @@ static const struct
    "\240pid.",
    "Accelera l'\303\240udio a l'emprar l'avan\303\247ament r\303\240pid. Defugir\303\241 sorolls en "
    "l'\303\240udio per\303\262 canviant la seva tonalitat.",
-   "Fes servir un valor fix (enter) per remostrejar en comptes d'un valor decimal si la sortida d'"
-   "\303\240udio \303\251s de 16 bits. Soluciona els canvis constants d'enter a decimal i produeix u"
-   "na sortida id\303\250ntica per cada plataforma, i aix\303\262 ajuda al joc en xarxa. No t\303"
-   "\251 cap efecte en els nuclis que utilitzen un valor decimal en la sortida d'\303\240udio i torn"
-   "a a la ruta de valor decimal si un filtre DSP incompatible o el mesclador d'\303\240udio est\303"
-   "\240 actiu.",
    "Els filtres d'\303\240udio DSP s'emmagatzemen en aquesta carpeta.",
    "El format de mostreig que sol\302\267licitar\303\240 el controlador d'\303\240udio del dispositi"
    "u de sortida. 'Decimal' sol\302\267licita un decimal de 32 bits, 'Int16' per enters de 16 bits. "
@@ -9224,7 +9217,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (199195u
+      (sizeof(msg_hash_ca_blob) == (198756u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12022,7 +12015,6 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
-   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,

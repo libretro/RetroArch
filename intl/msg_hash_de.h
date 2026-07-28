@@ -1090,6 +1090,7 @@ static const struct
    char s_d05c8ee3[24];
    char s_13bce77f[16];
    char s_1b2ee6c4[26];
+   char s_81589fd5[23];
    char s_26e9cde7[35];
    char s_b539ec6c[12];
    char s_f89e1cbc[53];
@@ -2122,6 +2123,7 @@ static const struct
    char s_a12ce1bf[6];
    char s_bfa23080[10];
    char s_ec326380[6];
+   char s_8a86d1de[18];
    char s_8fc1e4da[4];
    char s_14ed14d0[11];
    char s_bb929824[16];
@@ -2344,7 +2346,7 @@ static const struct
    char s_042502c4[55];
    char s_90ae9a9f[102];
    char s_81b79d5b_0[500];
-   char s_81b79d5b_1[23];
+   char s_81b79d5b_1[111];
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[47];
@@ -2860,6 +2862,7 @@ static const struct
    char s_87ac0bd1[87];
    char s_236ddb2d[92];
    char s_d27e63b2[222];
+   char s_2297ba83[316];
    char s_32728f95[59];
    char s_c4eae01a[152];
    char s_bb0852aa[216];
@@ -3405,6 +3408,8 @@ static const struct
    char s_698d5124[108];
    char s_7e43d750[208];
    char s_87ca7bc6[203];
+   char s_cfa51e8c_0[500];
+   char s_cfa51e8c_1[13];
    char s_b62c2f7e[415];
    char s_456fcbc9[384];
    char s_82fab47a[43];
@@ -5365,6 +5370,7 @@ static const struct
    "Vorschaubilder tauschen",
    "Schaltersymbole",
    "Vorschauverz\303\266gerung (ms)",
+   "Vorschaubilder rastern",
    "Vorschaubilder-Downscaling-Methode",
    "Transparenz",
    "Inhalte nach dem Verwenden von Savestates fortsetzen",
@@ -6407,6 +6413,7 @@ static const struct
    "Genau",
    "Erweitert",
    "Breit",
+   "Spitzenhelligkeit",
    "Aus",
    "Helligkeit",
    "Subpixel-Layout",
@@ -6646,13 +6653,14 @@ static const struct
    "Audio automatisch stummschalten, wenn vorgespult wird.",
    "Audio beim schnellen Vorlauf beschleunigen. Verhindert Knackger\303\244usche, ver\303\244ndert a"
    "ber die Tonh\303\266he.",
-   "Den Festkomma-(Ganzzahl)-Resampler anstelle des Gleitkomma-Resamplers verwenden, wenn ein Core 1"
-   "6-Bit-Audio ausgibt. Dadurch wird die Umwandlung von Ganzzahlen in Gleitkommazahlen und zur\303"
-   "\274ck vermieden und erzielt auf jeder Plattform eine bitgenaue Ausgabe, wodurch die Audioausgab"
-   "e \303\274ber verschiedene Durchl\303\244ufe und Systeme hinweg reproduzierbar ist. Dies hat kei"
-   "ne Auswirkungen auf Core, die Gleitkomma-Audio ausgeben, und es wird auf den Gleitkommapfad zur"
-   "\303\274ckgegriffen, solange ein inkompatibler",
-   " DSP-Filter aktiv ist.",
+   "Den Festkomma-(Ganzzahl-)Resampler anstelle des Gleitkomma-Resamplers verwenden, wenn ein Core 1"
+   "6-Bit-Audio ausgibt. Dies erzeugt auf jeder Plattform eine bitweise identische Ausgabe, wodurch "
+   "das Audio \303\274ber verschiedene Durchl\303\244ufe und Systeme hinweg reproduzierbar ist. Dies"
+   " dient der Reproduzierbarkeit, nicht der Geschwindigkeit: Wenn die CPU \303\274ber eine Vektor-F"
+   "PU verf\303\274gt, ist der Ganzzahl-Resampler langsamer, da nur der Gleitkomma-Resampler vektori"
+   "siert ist. Hat keine Auswirkungen auf Cores,",
+   " die Gleitkomma-Audio ausgeben; greift auf Gleitkomma zur\303\274ck, solange ein inkompatibler D"
+   "SP-Filter aktiv ist.",
    "Audio-DSP-Filter werden in diesem Verzeichnis gespeichert.",
    "Das vom Audiotreiber vom Ausgabeger\303\244t angeforderte Samplingformat. \342\200\236Gleitkomma"
    "\342\200\234 fordert 32-Bit-Gleitkommazahlen an, \342\200\236Int16\342\200\234 16-Bit-Ganzzahlen"
@@ -7402,6 +7410,10 @@ static const struct
    "Verz\303\266gert das Laden der zugeh\303\266rigen Vorschaubilder bei der Auswahl eines Wiedergab"
    "elisteneintrags. Ein Wert von mindestens 256 ms erm\303\266glicht schnelles und verz\303\266geru"
    "ngsfreies Scrollen auch auf den langsamsten Ger\303\244ten.",
+   "Farbstreifen in Vorschaubildern und Hintergrundbildern gl\303\244tten, indem sie auf die begrenz"
+   "te Farbpalette des Men\303\274s gerastered werden. Das Dither-Muster wird bei hoher \342\200\236"
+   "Men\303\274skalierung\342\200\234 zusammen mit allem anderen vergr\303\266\303\237ert und kann a"
+   "ls Textur sichtbar werden; in solchen F\303\244llen sollte es deaktiviert werden.",
    "Resampling-Methode zum Verkleinern gro\303\237er Vorschaubilder.",
    "Die Hintergrundanzeige des Inhalts aktivieren, wenn das Schnellmen\303\274 aktiv ist. Das Deakti"
    "vieren der Transparenz kann die Farben des Themas ver\303\244ndern.",
@@ -8215,6 +8227,13 @@ static const struct
    "Nutzt den gesamten Farbraum des Bildschirms, um ein helleres, satteres Bild zu erzeugen. Damit d"
    "ie Farben dem urspr\303\274nglichen Spieldesign getreuer entsprechen, diese Option auf \342\200"
    "\236Genau\342\200\234 eingestellen.",
+   "Die maximale Helligkeit des Bildschirms in Nits. Legt fest, wie viel Spielraum oberhalb der Hell"
+   "igkeitseinstellung f\303\274r helle Bereiche vorhanden ist, damit die Cores, die HDR selbst rend"
+   "ern, wissen, wie weit sie gehen k\303\266nnen, bevor das Rolling-off einsetzt. Bitte die technis"
+   "chen Daten des Bildschirms \303\274berpr\303\274fen \342\200\223 im Zweifel den Wert bei 1000 be"
+   "lassen. Wird dieser Wert h\303\266her eingestellt, als der Bildschirm tats\303\244chlich erreich"
+   "en kann, werden helle Details abgeschnitten, anstatt Rolling-off ",
+   "einzusetzen.",
    "Legt die HDR-Helligkeit in Nits fest. Diese in Kombination mit den physischen Helligkeitseinstel"
    "lungen des Bildschirms verwenden. Als Ausgangspunkt sollte dieser Wert auf 80 und die Bildschirm"
    "helligkeit auf die maximale Stufe eingestellt werden. Alternativ kann dieser Wert auf die maxima"
@@ -8989,7 +9008,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (190681u
+      (sizeof(msg_hash_de_blob) == (191639u
 #ifdef ANDROID
        + 358u
 #endif
@@ -10481,6 +10500,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -11512,6 +11532,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
@@ -12248,6 +12269,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -12793,6 +12815,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

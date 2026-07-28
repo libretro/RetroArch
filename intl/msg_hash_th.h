@@ -3681,6 +3681,7 @@ static const struct
    char s_55479240[109];
    char s_db6ac45f[112];
    char s_d7c90346[111];
+   char s_4312c647[49];
    char s_e4f79c50[109];
    char s_8d677b5b[179];
    char s_e68913bc[103];
@@ -21822,6 +21823,8 @@ static const struct
    "\340\270\271\340\270\245\342\200\257SRAM \340\271\204\340\270\233\340\270\242\340\270\261\340"
    "\270\207\340\271\204\340\270\204\340\270\245\340\271\200\340\270\255\340\270\231\340\270\225\340"
    "\271\214\340\271\204\340\270\224\340\271\211",
+   "\340\271\202\340\270\253\340\270\245\340\270\224\340\270\224\340\270\264\340\270\252\340\270\201"
+   "\340\271\214\340\270\245\340\271\211\340\270\241\340\271\200\340\270\253\340\270\245\340\270\247",
    "\340\271\204\340\270\241\340\271\210\340\270\252\340\270\262\340\270\241\340\270\262\340\270\243"
    "\340\270\226\340\270\225\340\270\261\340\271\211\340\270\207\340\270\204\340\271\210\340\270\262"
    "\340\270\224\340\270\264\340\270\252\340\270\201\340\271\214\340\270\227\340\270\265\340\271\210"
@@ -23068,7 +23071,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_th_blob_check[
-      (sizeof(msg_hash_th_blob) == (401588u
+      (sizeof(msg_hash_th_blob) == (401637u
 #ifdef ANDROID
        + 757u
 #endif
@@ -27035,6 +27038,7 @@ static const uint32_t msg_hash_th_ids[] =
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_SEND_NICKNAME_TO_HOST,
    (uint32_t)MSG_FAILED_TO_SEND_SRAM_DATA_TO_CLIENT,
+   (uint32_t)MSG_FAILED_TO_SET_DISK,
    (uint32_t)MSG_FAILED_TO_SET_INITIAL_DISK,
    (uint32_t)MSG_FAILED_TO_START_AUDIO_DRIVER,
    (uint32_t)MSG_FAILED_TO_START_MOVIE_RECORD,
