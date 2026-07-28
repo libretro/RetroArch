@@ -1827,8 +1827,8 @@ static void rzstd_wild_copy(uint8_t *dst, const uint8_t *src, size_t n)
  * the period grows past the vector width in a few steps. After that the
  * remaining bytes are a plain wide copy from a distance that is now
  * large enough to be safe. */
-static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
-      size_t offset, int slack)
+RZSTD_BODY_INLINE void rzstd_match_copy(uint8_t *to, const uint8_t *from,
+      size_t n, size_t offset, int slack)
 {
    size_t have;
 
