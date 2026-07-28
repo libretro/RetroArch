@@ -205,9 +205,13 @@ void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
    {
       case RDT_STRING:
          free(v->val.string.buff);
+         v->val.string.buff = NULL;
+         v->val.string.len  = 0;
          break;
       case RDT_BINARY:
          free(v->val.binary.buff);
+         v->val.binary.buff = NULL;
+         v->val.binary.len  = 0;
          break;
       case RDT_MAP:
          for (i = 0; i < v->val.map.len; i++)
@@ -216,11 +220,15 @@ void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
             rmsgpack_dom_value_free(&v->val.map.items[i].value);
          }
          free(v->val.map.items);
+         v->val.map.items = NULL;
+         v->val.map.len   = 0;
          break;
       case RDT_ARRAY:
          for (i = 0; i < v->val.array.len; i++)
             rmsgpack_dom_value_free(&v->val.array.items[i]);
          free(v->val.array.items);
+         v->val.array.items = NULL;
+         v->val.array.len   = 0;
          break;
       case RDT_NULL:
       case RDT_INT:
@@ -229,6 +237,13 @@ void rmsgpack_dom_value_free(struct rmsgpack_dom_value *v)
          /* Do nothing */
          break;
    }
+
+   /* Leave the value in the same state a fresh RDT_NULL has, so that
+    * a second free of the same object - which the reader below can
+    * ask for when a record fails to parse - is a no-op rather than a
+    * double free.  libretrodb_create() already open-coded this
+    * assignment after every call; it belongs here. */
+   v->type = RDT_NULL;
 }
 
 struct rmsgpack_dom_value *rmsgpack_dom_value_map_value(
@@ -432,6 +447,26 @@ static struct rmsgpack_read_callbacks dom_reader_callbacks = {
 int rmsgpack_dom_read_with(intfstream_t *fd, struct rmsgpack_dom_value *out, struct rmsgpack_dom_reader_state *s)
 {
    int rv;
+
+   /* 'out' is uninitialised on entry - every caller passes the
+    * address of a bare automatic (database_cursor_iterate(),
+    * database_info_list_new_names_only(), and the fast path in
+    * libretrodb_cursor_read_item()).  rmsgpack_read() only writes
+    * through it once a callback fires, so a stream that fails before
+    * the first callback left the error path below freeing whatever
+    * happened to be in that stack slot.
+    *
+    * In the cursor loop that slot is reused across iterations and
+    * still holds the previous record: type RDT_MAP with an 'items'
+    * pointer that was already freed.  Reading a truncated .rdb
+    * therefore ran rmsgpack_dom_value_free() over a dangling map -
+    * a use-after-free walking freed pairs, then a double free of
+    * the pair array itself.
+    *
+    * Claim the object before handing it to the reader so the error
+    * path always has a well-defined value to release. */
+   out->type   = RDT_NULL;
+
    s->i        = 0;
    s->stack[0] = out;
    if ((rv = rmsgpack_read(fd, &dom_reader_callbacks, s)) < 0)
