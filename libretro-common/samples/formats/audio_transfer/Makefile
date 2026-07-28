@@ -10,6 +10,8 @@ DEFINES := -DDT_STRICT -DHAVE_RWEBM -DHAVE_RVORBIS -DHAVE_ROPUS
 COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \

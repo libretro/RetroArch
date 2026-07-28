@@ -56,6 +56,7 @@
 #elif !defined(alloca)
 #define alloca __builtin_alloca /* gcc/clang builtin: no header, portable everywhere */
 #endif
+#include <encodings/crc32.h>
 #include <formats/rvorbis.h>
 /* Convert a float coefficient in [-1, 1] to Q31, round half away from
  * zero, clamped (the window hits exactly 1.0). Double arithmetic: at
@@ -494,24 +495,10 @@ static void setup_temp_free(vorb *f, void *p, int sz)
    free(p);
 }
 
-#define CRC32_POLY    0x04c11db7   /* from spec */
-
-static uint32_t rvorbis_crc_table[256];
-static void crc32_init(void)
-{
-   int i,j;
-   uint32_t s;
-   for(i=0; i < 256; i++)
-   {
-      for (s=(uint32_t)i<<24, j=0; j < 8; ++j)
-         s = (s << 1) ^ (s >= (1U<<31) ? CRC32_POLY : 0);
-      rvorbis_crc_table[i] = s;
-   }
-}
 
 static INLINE uint32_t crc32_update(uint32_t crc, uint8_t byte)
 {
-   return (crc << 8) ^ rvorbis_crc_table[byte ^ (crc >> 24)];
+   return encoding_crc32_ogg(crc, &byte, 1);
 }
 
 /* used in setup, and for huffman that doesn't go fast path */
@@ -4501,7 +4488,6 @@ static int start_decoder_setup(vorb *f)
    int i,j,k, max_submaps = 0;
    int longest_floorlist=0;
 
-   crc32_init(); /* always init it, to avoid multithread race conditions */
 
    if (get8_packet(f) != RVORBIS_packet_setup)
       return error(f, RVORBIS_invalid_setup);

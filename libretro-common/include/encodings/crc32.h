@@ -40,6 +40,12 @@ RETRO_BEGIN_DECLS
  */
 uint32_t encoding_crc32(uint32_t crc, const uint8_t *buf, size_t len);
 
+/* Ogg page CRC: the same generator polynomial taken MSB-first
+ * (0x04C11DB7) rather than reflected, seeded with zero and with no
+ * final complement. Ogg specifies it that way, so it is not
+ * interchangeable with encoding_crc32() above. */
+uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *buf, size_t len);
+
 RETRO_END_DECLS
 
 #endif

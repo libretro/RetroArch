@@ -20,6 +20,8 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/sinc_resampler_int16.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
