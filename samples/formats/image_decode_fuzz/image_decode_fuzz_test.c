@@ -28,6 +28,7 @@
 #include <formats/image.h>
 #include <formats/rbmp.h>
 #include <formats/rtga.h>
+#include <formats/rdds.h>
 
 static long decoded_ok;
 static long attempts;
@@ -59,6 +60,62 @@ static const unsigned char tga_seed[] =
    0xff,0x00,0x00, 0x00,0xff,0x00,
    0x00,0x00,0xff, 0xff,0xff,0xff
 };
+
+
+/* Minimal well-formed uncompressed 32-bit BGRA DDS: 2x2.
+ * 4-byte magic, 124-byte header, then pixels. */
+static unsigned char dds_seed[128 + 16];
+
+static void dds_seed_init(void)
+{
+   unsigned char *h = dds_seed;
+
+   memset(dds_seed, 0, sizeof(dds_seed));
+   memcpy(h, "DDS ", 4);
+   h[4]  = 124;                        /* dwSize                */
+   h[8]  = 0x07; h[9] = 0x10;          /* CAPS|HEIGHT|WIDTH|PIXELFORMAT */
+   h[12] = 2;                          /* dwHeight              */
+   h[16] = 2;                          /* dwWidth               */
+   h[20] = 8;                          /* dwPitchOrLinearSize   */
+   h[28] = 1;                          /* dwMipMapCount         */
+   h[76] = 32;                         /* ddspf.dwSize          */
+   h[80] = 0x41;                       /* ALPHAPIXELS | RGB     */
+   h[88] = 32;                         /* dwRGBBitCount         */
+   h[92]  = 0x00; h[93]  = 0x00; h[94]  = 0xff; /* R mask       */
+   h[96]  = 0x00; h[97]  = 0xff;                /* G mask       */
+   h[100] = 0xff;                               /* B mask       */
+   h[107] = 0xff;                               /* A mask       */
+   h[109] = 0x10;                      /* dwCaps: TEXTURE       */
+
+   /* 2x2 BGRA pixels */
+   memset(dds_seed + 128, 0x7f, 16);
+}
+
+static void try_dds(const unsigned char *buf, size_t len)
+{
+   rdds_t *rdds = rdds_alloc();
+   void   *out  = NULL;
+   unsigned w = 0, h = 0;
+
+   attempts++;
+
+   if (!rdds)
+      return;
+
+   if (rdds_set_buf_ptr(rdds, (void*)buf))
+   {
+      int ret;
+      while ((ret = rdds_process_image(rdds, &out, len, &w, &h, true))
+            == IMAGE_PROCESS_NEXT)
+         ;
+      if (ret == IMAGE_PROCESS_END)
+         decoded_ok++;
+   }
+
+   if (out)
+      free(out);
+   rdds_free(rdds);
+}
 
 static void try_bmp(const unsigned char *buf, size_t len)
 {
@@ -166,14 +223,17 @@ static void sweep(const unsigned char *seed, size_t seed_len,
 
 int main(void)
 {
+   dds_seed_init();
+
    sweep(bmp_seed, sizeof(bmp_seed), try_bmp, 54);
    sweep(tga_seed, sizeof(tga_seed), try_tga, 18);
+   sweep(dds_seed, sizeof(dds_seed), try_dds, 128);
 
    printf("attempts=%ld decoded=%ld\n", attempts, decoded_ok);
 
-   if (decoded_ok < 2)
+   if (decoded_ok < 3)
    {
-      fputs("FAIL: neither seed decoded; the sweep proved nothing\n",
+      fputs("FAIL: not every seed decoded; the sweep proved nothing\n",
             stderr);
       return 1;
    }

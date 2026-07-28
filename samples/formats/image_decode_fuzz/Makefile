@@ -6,7 +6,8 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # Both decoders are self-contained; nothing else is needed.
 SOURCES := image_decode_fuzz_test.c \
            $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp.c \
-           $(LIBRETRO_COMM_DIR)/formats/tga/rtga.c
+           $(LIBRETRO_COMM_DIR)/formats/tga/rtga.c \
+           $(LIBRETRO_COMM_DIR)/formats/dds/rdds.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -I$(LIBRETRO_COMM_DIR)/include
