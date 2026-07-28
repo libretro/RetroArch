@@ -338,6 +338,23 @@ int main(int argc, char **argv)
    check(!strcmp(got, "Alpha 012"), "serial lookup, index matches database",
          got);
 
+   /* The scanner compares db_info->serial against the serial it read
+    * off the disc, so that field has to survive extraction.  Every
+    * shipped database stores serial as binary rather than string -
+    * 27056 binary and 0 string in Sony - PlayStation 2 - and a type
+    * check that accepted only RDT_STRING left it NULL, which silently
+    * stopped every disc system matching while crc-based ones kept
+    * working. */
+   {
+      database_info_list_t *l = database_info_list_new_serial(sia, path_a,
+            "Alpha-012", DB_EXTRACT_SCAN_FIELDS);
+      const char *got_serial = (l && l->count) ? l->list[0].serial : NULL;
+      check(got_serial && !strcmp(got_serial, "Alpha-012"),
+            "binary serial survives extraction",
+            got_serial ? got_serial : "(NULL)");
+      if (l) { database_info_list_free(l); free(l); }
+   }
+
    /* Mismatched pairing must be refused, not answered.  Without the
     * check these return the other database's record, which is how the
     * scanner came to file content under the wrong system. */

@@ -286,7 +286,23 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
        *
        * The md5 and sha1 fields already gate on val->type; the string
        * fields simply never did. */
-      val_string = (val->type == RDT_STRING)
+      /* Binary counts as well as string.  The readers allocate
+       * len + 1 and write the terminator, so a binary field holding
+       * text is a valid C string - and "serial" is stored that way in
+       * every database shipped: 27056 binary and 0 string in
+       * Sony - PlayStation 2, 26957 and 0 in Sony - PlayStation,
+       * 1949 and 0 in Nintendo - Nintendo Entertainment System.
+       *
+       * Rejecting it, as this did briefly, left db_info->serial NULL,
+       * and the scanner's serial match tests that pointer before it
+       * compares - so every disc system stopped matching while the
+       * crc-based ones carried on working.
+       *
+       * What actually needed excluding is a map or an array: their
+       * items pointer sits at the same offset in the union and the
+       * strdup() walks it looking for a zero byte that need not be
+       * there. */
+      val_string = (val->type == RDT_STRING || val->type == RDT_BINARY)
          ? val->val.string.buff
          : NULL;
 
@@ -656,7 +672,10 @@ static int database_info_fill_from_dom(struct rmsgpack_dom_value *item,
          case 6:
             if ((fields & DB_EXTRACT_SERIAL) && memcmp(str, "serial", 6) == 0)
             {
-               if (val->type == RDT_STRING)
+               /* Stored as binary in every shipped database; see the
+                * note on val_string in database_info_fill_from_dom's
+                * sibling above. */
+               if (val->type == RDT_STRING || val->type == RDT_BINARY)
                {
                   const char *vs = val->val.string.buff;
                   if (vs && *vs)
