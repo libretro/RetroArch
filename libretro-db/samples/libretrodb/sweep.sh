@@ -90,6 +90,25 @@ else
 fi
 ( cd "$DB/samples/libretrodb" && make clean >/dev/null 2>&1 )
 
+echo "=== archive and lzma tests (ASan+UBSan+LeakSan) ==="
+# Both cover defects that stopped a scan dead rather than failing:
+# an lc=4 stream the decoder refused, and a lookup for a member that
+# is not there spinning instead of returning.
+for d in "$LC/samples/file/archive_file" "$LC/samples/formats/r7z"; do
+   [ -f "$d/Makefile" ] || continue
+   name=$(basename "$d")
+   ( cd "$d" && make clean >/dev/null 2>&1
+     make check SANITIZER=address,undefined ) >"$WORK/$name.log" 2>&1
+   rc=$?
+   ( cd "$d" && make clean >/dev/null 2>&1 )
+   if [ $rc -eq 0 ]; then
+      judge "$name" "$WORK/$name.log"
+   else
+      bad "$name" "exit $rc (a hang here reads as a timeout)"
+      grep -E "FAIL|error:" "$WORK/$name.log" | head -3
+   fi
+done
+
 echo "=== scanner tests (ASan+UBSan+LeakSan) ==="
 # These link most of the frontend, so they are slower to build than
 # everything else here; they are the only coverage of the scan as a

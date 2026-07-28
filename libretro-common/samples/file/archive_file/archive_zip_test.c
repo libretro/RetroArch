@@ -607,6 +607,49 @@ static void test_init_failure_cleanup(void)
       printf("[SUCCESS] archive init failure cleaned up immediately\n");
 }
 
+/* file_archive_get_file_crc32_and_size() used to loop with no way out.
+ * Its iterate call is guarded on the transfer still being in ITERATE,
+ * but nothing broke once it left that state, and the name tests then
+ * re-read a current_file_path that could no longer change - so asking
+ * for a member the archive does not hold spun at full CPU forever.
+ *
+ * An archive that fails to open produces an empty walk and lands in
+ * exactly the same place, which is how it was found: a directory of
+ * 7z files stopped a scan dead rather than being skipped.
+ *
+ * A regression here does not fail this test so much as hang it. That
+ * is deliberate - there is no portable way to bound the call from
+ * inside - and a stuck test is a visible failure either way. */
+static void test_missing_member_terminates(void)
+{
+   const char *tmp_path = "rarch_zip_regression_test.zip";
+   uint8_t     buf[512];
+   size_t      len = 0;
+   char        member[256];
+   uint64_t    size = 12345;
+   uint32_t    crc;
+
+   /* One stored entry named "present.bin", built the same way as the
+    * cases above. */
+   len += write_minimal_lfh(buf + len, "present.bin");
+   len += write_eocd(buf + len, 1, 0, (uint32_t)len);
+
+   write_file(tmp_path, buf, len);
+
+   snprintf(member, sizeof(member), "%s#absent.bin", tmp_path);
+   crc = file_archive_get_file_crc32_and_size(member, &size);
+   remove(tmp_path);
+
+   if (crc != 0 || size != 0)
+   {
+      printf("FAIL  missing member reported crc=%08X size=%llu, "
+             "expected nothing\n", crc, (unsigned long long)size);
+      failures++;
+   }
+   else
+      printf("ok    missing member returns nothing rather than hanging\n");
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -616,6 +659,7 @@ int main(void)
    test_directory_size_overflow();
    test_appledouble_exact_member_selection();
    test_init_failure_cleanup();
+   test_missing_member_terminates();
 
    if (failures)
    {

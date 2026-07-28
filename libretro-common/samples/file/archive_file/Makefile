@@ -34,6 +34,11 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 all: $(TARGET)
 
 %.o: %.c Makefile
@@ -42,7 +47,10 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+check: $(TARGET)
+	./$(TARGET)
+
 clean:
 	rm -f $(TARGET) $(OBJS)
 
-.PHONY: clean
+.PHONY: all check clean
