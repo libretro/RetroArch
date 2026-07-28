@@ -387,6 +387,11 @@ int main(int argc, char **argv)
     * front. */
    const uint32_t crc_a = 0xA1B2C3D4u, crc_b = 0x5E6F7A8Bu;
    const uint32_t sz_a  = 4096,        sz_b  = 8192;
+   /* A cue sheet does not carry the checksum itself; the scanner
+    * parses it, finds the track it names and checksums that.  This
+    * is the only coverage of that path. */
+   const uint32_t crc_c = 0x0C0FFEE0u;
+   const uint32_t sz_c  = 6144;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    crc_init();
@@ -408,6 +413,9 @@ int main(int argc, char **argv)
    sprintf(p, "%s/Test Beta.rdb", db_dir);
    if (!write_db(p, "Beta The Game", crc_b, sz_b))
    { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Disc.rdb", db_dir);
+   if (!write_db(p, "Disc The Game", crc_c, sz_c))
+   { check(0, "fixture", "could not write database"); return 1; }
 
    sprintf(p, "%s/02_alpha.bin", in_dir);
    if (!write_content(p, crc_a, sz_a))
@@ -415,7 +423,26 @@ int main(int argc, char **argv)
    sprintf(p, "%s/01_beta.bin", in_dir);
    if (!write_content(p, crc_b, sz_b))
    { check(0, "fixture", "crc forcing failed"); return 1; }
-   check(1, "content forced to the databases' crcs", "alpha and beta");
+   /* The track the cue names, and the sheet itself.  The scanner
+    * reads the sheet, resolves the track beside it and checksums
+    * that, so only the track carries the matching crc. */
+   sprintf(p, "%s/03_disc.bin", in_dir);
+   if (!write_content(p, crc_c, sz_c))
+   { check(0, "fixture", "crc forcing failed"); return 1; }
+   sprintf(p, "%s/03_disc.cue", in_dir);
+   {
+      FILE *f = fopen(p, "w");
+      if (!f)
+      { check(0, "fixture", "could not write cue"); return 1; }
+      fprintf(f,
+            "FILE \"03_disc.bin\" BINARY\n"
+            "  TRACK 01 MODE1/2352\n"
+            "    INDEX 01 00:00:00\n");
+      fclose(f);
+   }
+
+   check(1, "content forced to the databases' crcs",
+         "alpha, beta and a cue track");
 
    /* The scanner skips any database no installed core claims, so the
     * core info has to name both databases as well as the extension -
@@ -430,8 +457,8 @@ int main(int argc, char **argv)
       fprintf(f,
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
-            "supported_extensions = \"bin\"\n"
-            "database = \"Test Alpha|Test Beta\"\n");
+            "supported_extensions = \"bin|cue\"\n"
+            "database = \"Test Alpha|Test Beta|Test Disc\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
@@ -487,6 +514,15 @@ int main(int argc, char **argv)
          "promoted database's game in its playlist", "Beta The Game");
    check(!file_contains(p, "Alpha The Game"),
          "and not the other database's game", "no Alpha in Beta");
+
+   /* The cue is the entry that lands in the playlist, not the track
+    * it names: the scanner checksums the track but records the sheet,
+    * which is what a frontend would load. */
+   sprintf(p, "%s/Test Disc.lpl", pl_dir);
+   check(file_contains(p, "Disc The Game"),
+         "cue resolved through its track", "Disc The Game");
+   check(file_contains(p, ".cue"),
+         "playlist records the sheet, not the track", "path ends .cue");
 
 done:
    printf("\n%d checks, %d failures\n", checks, failures);
