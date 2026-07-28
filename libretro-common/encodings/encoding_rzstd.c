@@ -854,41 +854,24 @@ typedef struct rzstd_huf
 /* Turns weights into a table. The final symbol's weight is not stored:
  * it is whatever makes the total a power of two, which is why the
  * weights alone are enough (4.2.1). */
-RZSTD_BODY_INLINE int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
-      uint32_t count)
+RZSTD_BODY_INLINE int rzstd_huf_build(rzstd_huf_t *huf, uint8_t *weights,
+      uint32_t count, uint32_t *rank_count)
 {
    uint32_t total = 0;
    uint32_t max_bits;
-   uint32_t rank_count[RZSTD_HUF_MAX_BITS + 2];
    uint32_t i;
    uint32_t position = 0;
-   uint8_t  all[RZSTD_HUF_MAX_SYMBOLS + 1];
 
    if (!count || count > RZSTD_HUF_MAX_SYMBOLS)
       return RZ_DATA;
 
-   /* One pass over the weights, not two: validate, sum the shares and
-    * count the ranks together. The three passes this function made over
-    * as many as two hundred and fifty-six symbols were a third of the
-    * time spent decoding a two-kilobyte frame, where the table is
-    * rebuilt for barely more output than it has entries. */
-   /* Count the ranks and nothing else.
-    *
-    * The sum of every symbol's share is a function of the rank counts,
-    * so accumulating it per symbol repeats a shift and an add up to two
-    * hundred and fifty-six times to learn what eleven ranks already
-    * say. */
-   memset(rank_count, 0, sizeof(rank_count));
-   for (i = 0; i < count; i++)
-   {
-      uint32_t w = weights[i];
-
-      if (w > RZSTD_HUF_MAX_BITS)
-         return RZ_DATA;
-      all[i] = (uint8_t)w;
-      rank_count[w]++;
-   }
-
+   /* The ranks arrive counted: the loops that decode the weights count
+    * them as they go, in the shadow of their own dependency chains, so
+    * the walk this function used to make over as many as two hundred
+    * and fifty-six symbols to histogram them is nobody's walk at all
+    * now. The weights themselves arrive validated the same way, and
+    * the array has a slot of slack for the implied last symbol this
+    * function appends. */
    for (i = 1; i <= RZSTD_HUF_MAX_BITS; i++)
       total += rank_count[i] << (i - 1);
    if (!total)
@@ -913,7 +896,7 @@ RZSTD_BODY_INLINE int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
          return RZ_DATA;
       while (((uint32_t)1 << w) < left)
          w++;
-      all[count] = (uint8_t)(w + 1);
+      weights[count] = (uint8_t)(w + 1);
       rank_count[w + 1]++;
       count++;
    }
@@ -958,7 +941,7 @@ RZSTD_BODY_INLINE int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       at_rank[0] = position;
 
       for (i = 0; i < count; i++)
-         by_rank[at_rank[all[i]]++] = (uint8_t)i;
+         by_rank[at_rank[weights[i]]++] = (uint8_t)i;
 
       /* at_rank now points one past each rank; walk them in order. */
       position = 0;
@@ -1007,11 +990,19 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
       size_t *used)
 {
    uint8_t  weights[RZSTD_HUF_MAX_SYMBOLS + 1];
+   uint32_t rank_count[RZSTD_HUF_MAX_BITS + 2];
    uint32_t count;
    uint32_t i;
 
    if (!len)
       return RZ_TRUNCATED;
+
+   /* The ranks are counted here, by the loops that produce the
+    * weights, rather than by a second walk over them in the build.
+    * Emitting is a serial chain -- state to table to state -- and the
+    * count rides in its shadow; the build's own histogram pass was an
+    * eighth of reading a literal tree. */
+   memset(rank_count, 0, sizeof(rank_count));
 
    if (src[0] >= 128)
    {
@@ -1022,10 +1013,18 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
       if (len < 1 + ((count + 1) / 2))
          return RZ_TRUNCATED;
       for (i = 0; i < count; i++)
-         weights[i] = (i & 1) ? (src[1 + i / 2] & 0x0f)
+      {
+         uint32_t w = (i & 1) ? (src[1 + i / 2] & 0x0f)
                               : (src[1 + i / 2] >> 4);
+
+         /* A nibble can say fifteen; a weight cannot. */
+         if (w > RZSTD_HUF_MAX_BITS)
+            return RZ_DATA;
+         weights[i] = (uint8_t)w;
+         rank_count[w]++;
+      }
       *used = 1 + (count + 1) / 2;
-      return rzstd_huf_build(huf, weights, count);
+      return rzstd_huf_build(huf, weights, count, rank_count);
    }
 
    /* The compact form: the byte is the length of an FSE-coded stream
@@ -1076,28 +1075,38 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
       count = 0;
       for (;;)
       {
+         uint32_t w;
+
          if (count + 2 > RZSTD_HUF_MAX_SYMBOLS)
             return RZ_DATA;
 
-         weights[count++] = rzstd_fse_symbol(&fse, state1);
+         w = rzstd_fse_symbol(&fse, state1);
+         weights[count++] = (uint8_t)w;
+         rank_count[w]++;
          if (!rzstd_rbits_have(&bits, fse.table[state1].bits))
          {
-            weights[count++] = rzstd_fse_symbol(&fse, state2);
+            w = rzstd_fse_symbol(&fse, state2);
+            weights[count++] = (uint8_t)w;
+            rank_count[w]++;
             break;
          }
          state1 = rzstd_fse_next(&fse, state1, &bits);
 
-         weights[count++] = rzstd_fse_symbol(&fse, state2);
+         w = rzstd_fse_symbol(&fse, state2);
+         weights[count++] = (uint8_t)w;
+         rank_count[w]++;
          if (!rzstd_rbits_have(&bits, fse.table[state2].bits))
          {
-            weights[count++] = rzstd_fse_symbol(&fse, state1);
+            w = rzstd_fse_symbol(&fse, state1);
+            weights[count++] = (uint8_t)w;
+            rank_count[w]++;
             break;
          }
          state2 = rzstd_fse_next(&fse, state2, &bits);
       }
 
       *used = 1 + size;
-      return rzstd_huf_build(huf, weights, count);
+      return rzstd_huf_build(huf, weights, count, rank_count);
    }
 }
 
