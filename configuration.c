@@ -7316,6 +7316,89 @@ bool config_load_override_file(const char *config_path)
    return true;
 }
 
+typedef struct
+{
+   retro_keybind_set *autoconf_binds;    /* heap: too large for stack */
+   input_bind_label_set *autoconf_labels;
+   input_device_info_t device_info[MAX_INPUT_DEVICES];
+} input_autoconf_backup_t;
+
+/* Autoconf binds and device info come from controller hotplug events;
+ * no config file can restore them after input_config_reset(). */
+static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
+{
+   unsigned i, j;
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   bkp->autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS,
+         sizeof(retro_keybind_set));
+   bkp->autoconf_labels = (input_bind_label_set*)calloc(MAX_USERS,
+         sizeof(input_bind_label_set));
+
+   if (!bkp->autoconf_binds || !bkp->autoconf_labels)
+   {
+      free(bkp->autoconf_binds);
+      free(bkp->autoconf_labels);
+      bkp->autoconf_binds  = NULL;
+      bkp->autoconf_labels = NULL;
+      return false;
+   }
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         memcpy(&bkp->autoconf_binds[i][j], &input_autoconf_binds[i][j],
+               sizeof(struct retro_keybind));
+         /* Duplicate allocated strings (don't share pointers!) */
+         if (input_autoconf_bind_labels[i][j].joykey)
+            bkp->autoconf_labels[i][j].joykey =
+               strdup(input_autoconf_bind_labels[i][j].joykey);
+         if (input_autoconf_bind_labels[i][j].joyaxis)
+            bkp->autoconf_labels[i][j].joyaxis =
+               strdup(input_autoconf_bind_labels[i][j].joyaxis);
+      }
+   }
+
+   memcpy(bkp->device_info, input_st->input_device_info,
+         sizeof(bkp->device_info));
+   return true;
+}
+
+static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
+{
+   unsigned i, j;
+   input_driver_state_t *input_st = input_state_get_ptr();
+
+   if (!bkp->autoconf_binds || !bkp->autoconf_labels)
+      return;
+
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+      {
+         /* Free strings allocated by input_config_reset() */
+         if (input_autoconf_bind_labels[i][j].joykey)
+            free(input_autoconf_bind_labels[i][j].joykey);
+         if (input_autoconf_bind_labels[i][j].joyaxis)
+            free(input_autoconf_bind_labels[i][j].joyaxis);
+
+         memcpy(&input_autoconf_binds[i][j], &bkp->autoconf_binds[i][j],
+               sizeof(struct retro_keybind));
+         /* String ownership moves back to input_autoconf_bind_labels */
+         input_autoconf_bind_labels[i][j] = bkp->autoconf_labels[i][j];
+      }
+   }
+
+   memcpy(input_st->input_device_info, bkp->device_info,
+         sizeof(bkp->device_info));
+
+   free(bkp->autoconf_binds);
+   free(bkp->autoconf_labels);
+   bkp->autoconf_binds  = NULL;
+   bkp->autoconf_labels = NULL;
+}
+
 /**
  * config_unload_override:
  *
@@ -7341,7 +7424,13 @@ bool config_unload_override(void)
     * This ensures settings not present in the config file
     * get their default values restored after override unload. */
    if (settings->bools.config_save_minimal)
+   {
+      input_autoconf_backup_t bkp;
+      bool have_bkp = input_autoconf_state_save(&bkp);
       config_set_defaults(global_get_ptr());
+      if (have_bkp)
+         input_autoconf_state_restore(&bkp);
+   }
 
    if (!config_load_file(global_get_ptr(),
             path_get(RARCH_PATH_CONFIG), config_st))
@@ -8293,15 +8382,12 @@ bool config_save_file(const char *path)
          }
          else
          {
-            unsigned i, j;
-            input_driver_state_t *input_st = input_state_get_ptr();
-            input_device_info_t saved_device_info[MAX_INPUT_DEVICES];
-            retro_keybind_set *saved_autoconf_binds;
-            input_bind_label_set *saved_autoconf_labels;
+            input_autoconf_backup_t autoconf_bkp;
+            bool have_autoconf_bkp;
             input_bind_label_set *saved_config_labels;
             /* Heap-allocated: MAX_USERS * sizeof(retro_keybind_set) is
              * ~51KB, too large for the stack on small-stack platforms.
-             * Matches defaults_binds / saved_autoconf_binds above. */
+             * Matches defaults_binds above. */
             retro_keybind_set *saved_binds;
 #ifdef HAVE_LANGEXTRA
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
@@ -8321,38 +8407,7 @@ bool config_save_file(const char *path)
                memcpy(saved_config_labels, input_config_bind_labels,
                      MAX_USERS * sizeof(input_bind_label_set));
 
-            /* Save current input_autoconf_binds (deep copy with string duplication) */
-            saved_autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
-            saved_autoconf_labels = (input_bind_label_set*)calloc(MAX_USERS,
-                  sizeof(input_bind_label_set));
-            if (saved_autoconf_binds && saved_autoconf_labels)
-            {
-               for (i = 0; i < MAX_USERS; i++)
-               {
-                  for (j = 0; j < RARCH_BIND_LIST_END; j++)
-                  {
-                     /* Copy struct fields */
-                     memcpy(&saved_autoconf_binds[i][j], &input_autoconf_binds[i][j],
-                            sizeof(struct retro_keybind));
-                     /* Duplicate allocated strings (don't share pointers!) */
-                     if (input_autoconf_bind_labels[i][j].joykey)
-                        saved_autoconf_labels[i][j].joykey =
-                           strdup(input_autoconf_bind_labels[i][j].joykey);
-                     else
-                        saved_autoconf_labels[i][j].joykey = NULL;
-
-                     if (input_autoconf_bind_labels[i][j].joyaxis)
-                        saved_autoconf_labels[i][j].joyaxis =
-                           strdup(input_autoconf_bind_labels[i][j].joyaxis);
-                     else
-                        saved_autoconf_labels[i][j].joyaxis = NULL;
-                  }
-               }
-            }
-
-            /* Save current input_device_info (simple memcpy, no allocated strings) */
-            memcpy(saved_device_info, input_st->input_device_info,
-                   sizeof(saved_device_info));
+            have_autoconf_bkp = input_autoconf_state_save(&autoconf_bkp);
 
             /* Temporarily set config_st to defaults struct so config_set_defaults populates it */
             config_st = defaults;
@@ -8379,45 +8434,13 @@ bool config_save_file(const char *path)
                free(saved_config_labels);
             }
 
-            /* Restore input_device_info */
-            memcpy(input_st->input_device_info, saved_device_info,
-                   sizeof(saved_device_info));
-
 #ifdef HAVE_LANGEXTRA
             /* Restore user_language global, clobbered by config_set_defaults. */
             msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, saved_user_language);
 #endif
 
-            /* Restore input_autoconf_binds (free strings allocated by input_config_reset, then restore) */
-            if (saved_autoconf_binds && saved_autoconf_labels)
-            {
-               for (i = 0; i < MAX_USERS; i++)
-               {
-                  for (j = 0; j < RARCH_BIND_LIST_END; j++)
-                  {
-                     /* Free strings allocated by input_config_reset() */
-                     if (input_autoconf_bind_labels[i][j].joykey)
-                        free(input_autoconf_bind_labels[i][j].joykey);
-                     if (input_autoconf_bind_labels[i][j].joyaxis)
-                        free(input_autoconf_bind_labels[i][j].joyaxis);
-
-                     /* Restore saved bind (with our duplicated strings) */
-                     memcpy(&input_autoconf_binds[i][j], &saved_autoconf_binds[i][j],
-                            sizeof(struct retro_keybind));
-                     input_autoconf_bind_labels[i][j] = saved_autoconf_labels[i][j];
-                  }
-               }
-
-               /* Free the temporary backup arrays (strings are now owned by
-                * input_autoconf_bind_labels) */
-               free(saved_autoconf_binds);
-               free(saved_autoconf_labels);
-            }
-            else
-            {
-               free(saved_autoconf_binds);
-               free(saved_autoconf_labels);
-            }
+            if (have_autoconf_bkp)
+               input_autoconf_state_restore(&autoconf_bkp);
          }
 
          /* Populate default setting arrays */
