@@ -3765,6 +3765,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                   ? ticker_field_width / ozone->fonts.sidebar.glyph_width
                   : 0;
             ticker.s        = console_title;
+            ticker.s_len    = sizeof(console_title);
             ticker.selected = selected;
             ticker.str      = title;
 
@@ -3925,6 +3926,7 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
                      ? ticker_field_width / ozone->fonts.sidebar.glyph_width
                      : 0;
                ticker.s        = console_title;
+               ticker.s_len    = sizeof(console_title);
                ticker.selected = selected;
                ticker.str      = node->console_name;
 
@@ -6179,6 +6181,7 @@ border_iterate:
       else
       {
          ticker.s        = rich_label;
+         ticker.s_len    = sizeof(rich_label);
          ticker.str      = entry_rich_label;
          ticker.selected = entry_selected && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR));
          ticker.len      = (entry_width - ozone->dimensions.entry_icon_padding * 6) / ozone->fonts.entries_label.glyph_width;
@@ -6476,6 +6479,7 @@ border_iterate:
       else
       {
          ticker.s        = entry_value_ticker;
+         ticker.s_len    = sizeof(entry_value_ticker);
          ticker.str      = entry_value;
          ticker.selected = entry_selected && (!(ozone->flags & OZONE_FLAG_CURSOR_IN_SIDEBAR));
          ticker.len      = (entry_width
@@ -6959,6 +6963,7 @@ static void ozone_draw_thumbnail_bar(
             ticker.selected                  = true;
             ticker.len                       = (sidebar_width - (separator_padding * 2)) / ozone->fonts.footer.glyph_width;
             ticker.s                         = ticker_buf;
+            ticker.s_len                     = sizeof(ticker_buf);
          }
       }
 
@@ -11322,6 +11327,7 @@ OZONE_NOINLINE static void ozone_draw_header(
    else
    {
       ticker.s        = title;
+      ticker.s_len    = sizeof(title);
       ticker.len      = video_width - status_row_size / ozone->fonts.title.glyph_width;
       ticker.str      = (ozone->flags2 & OZONE_FLAG2_WANT_FULLSCREEN_THUMBNAILS)
             ? ozone->fullscreen_thumbnail_label
@@ -12073,6 +12079,7 @@ static void ozone_draw_footer(
             ticker.spacer               = (ozone->font_unicode) ? OZONE_TICKER_SPACER : NULL;
 
             ticker.s                    = core_title_buf;
+            ticker.s_len                = sizeof(core_title_buf);
             ticker.len                  = usable_width / ozone->fonts.footer.glyph_width;
             ticker.str                  = core_title;
             ticker.selected             = true;

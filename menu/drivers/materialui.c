@@ -5044,6 +5044,7 @@ static void materialui_render_menu_entry_default(
                   entry_value_len      = entry_value_len_max;
 
                mui->ticker.s           = value_buf;
+               mui->ticker.s_len       = sizeof(value_buf);
                mui->ticker.len         = entry_value_len;
                mui->ticker.str         = entry_value;
 
@@ -5149,6 +5150,7 @@ static void materialui_render_menu_entry_default(
          {
             /* Label */
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(label_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5375,6 +5377,7 @@ static void materialui_render_menu_entry_playlist_list(
          {
             /* Label */
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5557,6 +5560,7 @@ static void materialui_render_menu_entry_playlist_dual_icon(
          {
             /* Label */
             mui->ticker.s   = label_buf;
+            mui->ticker.s_len = sizeof(label_buf);
             mui->ticker.len = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str = entry_label;
 
@@ -5668,6 +5672,7 @@ static void materialui_render_menu_entry_playlist_desktop(
          {
             mui->ticker.selected = entry_selected;
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -5902,6 +5907,7 @@ static void materialui_render_menu_entry_savestate_list(
                   entry_value_len      = entry_value_len_max;
 
                mui->ticker.s           = value_buf;
+               mui->ticker.s_len       = sizeof(value_buf);
                mui->ticker.len         = entry_value_len;
                mui->ticker.str         = entry_value;
 
@@ -5987,6 +5993,7 @@ static void materialui_render_menu_entry_savestate_list(
          {
             mui->ticker.selected = entry_selected;
             mui->ticker.s        = label_buf;
+            mui->ticker.s_len    = sizeof(label_buf);
             mui->ticker.len      = (size_t)(usable_width / mui->font_data.list.glyph_width);
             mui->ticker.str      = entry_label;
 
@@ -6272,6 +6279,7 @@ static void materialui_render_selected_entry_aux_playlist_desktop(
          {
             mui->ticker.selected = true;
             mui->ticker.s        = metadata_buf;
+            mui->ticker.s_len    = sizeof(metadata_buf);
             mui->ticker.len      = (size_t)(text_width / mui->font_data.hint.glyph_width);
             mui->ticker.str      = mui->status_bar.str;
 
@@ -7155,6 +7163,7 @@ MUI_NOINLINE static void materialui_render_header(
       else
       {
          mui->ticker.s        = core_title_buf;
+         mui->ticker.s_len    = sizeof(core_title_buf);
          mui->ticker.len      = (unsigned)(usable_sys_bar_width / mui->font_data.hint.glyph_width);
          mui->ticker.str      = core_title;
          mui->ticker.selected = true;
@@ -7286,6 +7295,7 @@ MUI_NOINLINE static void materialui_render_header(
    else
    {
       mui->ticker.s        = menu_title_buf;
+      mui->ticker.s_len    = sizeof(menu_title_buf);
       mui->ticker.len      = (unsigned)(usable_title_bar_width / mui->font_data.title.glyph_width) - 1;
       mui->ticker.str      = menu_title;
       mui->ticker.selected = true;
