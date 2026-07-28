@@ -285,7 +285,7 @@ retro_time_t cpu_features_get_time_usec(void)
 
 #if defined(CPU_X86) && !defined(__MACH__)
 #include <limits.h>
-void x86_cpuid(int func, int32_t flags[4])
+void x86_cpuid(uint32_t func, int32_t flags[4])
 {
    /* On Android, we compile RetroArch with PIC, and we
     * are not allowed to clobber the ebx register. */
@@ -742,7 +742,10 @@ static uint64_t cpu_features_probe(void)
          && flags[2] == VENDOR_INTEL_c
          && flags[3] == VENDOR_INTEL_d);
 
-   max_flag = flags[0];
+   /* CPUID register contents are unsigned; flags[] is int32_t, so the
+    * widening is spelled out rather than left implicit -- leaf
+    * 0x80000000 legitimately returns values with the top bit set. */
+   max_flag = (uint32_t)flags[0];
    /* Does CPUID not support func = 1? (unlikely ...) */
    if (max_flag < 1) 
       return 0;
@@ -839,7 +842,7 @@ static uint64_t cpu_features_probe(void)
    }
 
    x86_cpuid(0x80000000, flags);
-   max_flag = flags[0];
+   max_flag = (uint32_t)flags[0];
    if (max_flag >= 0x80000001u)
    {
       x86_cpuid(0x80000001, flags);
