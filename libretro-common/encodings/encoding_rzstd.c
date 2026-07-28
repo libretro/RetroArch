@@ -500,27 +500,68 @@ static INLINE void rzstd_rbits_fill(rzstd_rbits_t *b)
 /* Positions the reader at the last set bit of the final byte, which the
  * encoder wrote purely to mark where the data ends. A final byte of
  * zero has no such marker and cannot be a valid stream. */
+/* floor(log2(v)) for v >= 1, by halving rather than by counting down.
+ * The counting version ran up to accuracy_log times for every one of a
+ * table's states, and a table is built three times a block on any frame
+ * that transmits its own. */
+#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
+#define RZSTD_HAVE_CLZ 1
+#endif
+
+static INLINE uint32_t rzstd_highbit(uint32_t v)
+{
+#ifdef RZSTD_HAVE_CLZ
+   /* One instruction where the halving form is four compares and four
+    * branches. This runs once per state of every table built, and a
+    * frame small enough to be a disc hunk spends more time building
+    * tables than decoding through them. */
+   return 31u - (uint32_t)__builtin_clz(v);
+#else
+   uint32_t r = 0;
+
+   /* The 0x10000 step is not optional. Without it this answers 15 for
+    * everything at or above 65536, which the callers here never reach
+    * -- a state index is bounded by its table -- but a reader of this
+    * function has no way to know that, and the two forms must agree. */
+   if (v >= 0x10000) { v >>= 16; r += 16; }
+   if (v >= 0x100)   { v >>= 8;  r += 8;  }
+   if (v >= 0x10)    { v >>= 4;  r += 4;  }
+   if (v >= 0x04)    { v >>= 2;  r += 2;  }
+   if (v >= 0x02)    {           r += 1;  }
+   return r;
+#endif
+}
+
 static int rzstd_rbits_init(rzstd_rbits_t *b, const uint8_t *src, size_t len)
 {
    uint32_t last;
    uint32_t pad;
 
-   memset(b, 0, sizeof(*b));
    if (!len)
+   {
+      memset(b, 0, sizeof(*b));
       return RZ_DATA;
+   }
 
    last = src[len - 1];
    if (!last)
+   {
+      memset(b, 0, sizeof(*b));
       return RZ_DATA;
+   }
 
-   b->base = src;
-   b->pos  = len;
+   /* Every field is written below, so there is nothing to clear; and
+    * the padding is where the last byte's marker bit sits, which the
+    * bit scan already answers -- the loop this replaces asked one bit
+    * at a time, once per stream, several streams per frame. */
+   b->base    = src;
+   b->pos     = len;
+   b->bits    = 0;
+   b->count   = 0;
+   b->overrun = 0;
    rzstd_rbits_fill(b);
 
-   pad = 0;
-   while (!((last << pad) & 0x80))
-      pad++;
-   pad++;
+   pad = 8 - rzstd_highbit(last);
 
    b->bits  <<= pad;
    b->count  -= pad;
@@ -593,38 +634,6 @@ static INLINE uint32_t rzstd_rbits_read(rzstd_rbits_t *b, uint32_t n)
  * normalised count per symbol, and those counts are themselves coded
  * with a width that narrows as the remaining budget does.
  */
-
-/* floor(log2(v)) for v >= 1, by halving rather than by counting down.
- * The counting version ran up to accuracy_log times for every one of a
- * table's states, and a table is built three times a block on any frame
- * that transmits its own. */
-#if defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4))
-#define RZSTD_HAVE_CLZ 1
-#endif
-
-static INLINE uint32_t rzstd_highbit(uint32_t v)
-{
-#ifdef RZSTD_HAVE_CLZ
-   /* One instruction where the halving form is four compares and four
-    * branches. This runs once per state of every table built, and a
-    * frame small enough to be a disc hunk spends more time building
-    * tables than decoding through them. */
-   return 31u - (uint32_t)__builtin_clz(v);
-#else
-   uint32_t r = 0;
-
-   /* The 0x10000 step is not optional. Without it this answers 15 for
-    * everything at or above 65536, which the callers here never reach
-    * -- a state index is bounded by its table -- but a reader of this
-    * function has no way to know that, and the two forms must agree. */
-   if (v >= 0x10000) { v >>= 16; r += 16; }
-   if (v >= 0x100)   { v >>= 8;  r += 8;  }
-   if (v >= 0x10)    { v >>= 4;  r += 4;  }
-   if (v >= 0x04)    { v >>= 2;  r += 2;  }
-   if (v >= 0x02)    {           r += 1;  }
-   return r;
-#endif
-}
 
 #define RZSTD_FSE_MAX_ACCURACY_LOG 9
 #define RZSTD_FSE_MAX_SYMBOLS      256
