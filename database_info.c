@@ -264,10 +264,31 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
       if (key->type != RDT_STRING)
          continue;
 
-      str     = key->val.string.buff;
+      if (!(str = key->val.string.buff))
+         continue;
       str_len = strlen(str);
 
-      val_string = val->val.string.buff;
+      /* Only read the string member when the value actually holds a
+       * string.  string.buff, binary.buff, map.items and array.items
+       * all sit at the same offset in the union, so a field stored
+       * with an unexpected type used to hand the strdup()s below a
+       * pointer to the wrong kind of data - the raw bytes of a binary
+       * field, or the first bytes of a map's pair array - which then
+       * went into the playlist label verbatim.
+       *
+       * The scalar types are harmless in practice (uint_/int_ sit at
+       * offset 0, so buff reads the calloc'd zero and the
+       * "val_string &&" tests below reject it), and the readers
+       * NUL-terminate their buffers, so this is a correctness problem
+       * rather than a memory-safety one - but nothing bounds the walk
+       * over a map's pair array, which is not guaranteed to contain a
+       * zero byte.
+       *
+       * The md5 and sha1 fields already gate on val->type; the string
+       * fields simply never did. */
+      val_string = (val->type == RDT_STRING)
+         ? val->val.string.buff
+         : NULL;
 
       switch (str_len)
       {
@@ -578,7 +599,8 @@ static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
       if (!key || !val || key->type != RDT_STRING)
          continue;
 
-      str     = key->val.string.buff;
+      if (!(str = key->val.string.buff))
+         continue;
       str_len = key->val.string.len;
 
       switch (str_len)
@@ -608,12 +630,25 @@ static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
          case 4:
             if ((fields & DB_EXTRACT_NAME) && memcmp(str, "name", 4) == 0)
             {
-               const char *vs = val->val.string.buff;
-               if (vs && *vs)
-                  db_info->name = strdup(vs);
+               /* Gate on the stored type: string.buff, binary.buff and
+                * map.items share an offset in the union, so a
+                * mistyped field otherwise strdup()s the wrong kind of
+                * data straight into the playlist label.  Matches the
+                * md5/sha1 handling above. */
+               if (val->type == RDT_STRING)
+               {
+                  const char *vs = val->val.string.buff;
+                  if (vs && *vs)
+                     db_info->name = strdup(vs);
+               }
             }
             else if ((fields & DB_EXTRACT_SIZE) && memcmp(str, "size", 4) == 0)
-               db_info->size = (uint64_t)val->val.uint_;
+            {
+               if (val->type == RDT_UINT)
+                  db_info->size = val->val.uint_;
+               else if (val->type == RDT_INT && val->val.int_ >= 0)
+                  db_info->size = (uint64_t)val->val.int_;
+            }
             else if ((fields & DB_EXTRACT_SHA1) && memcmp(str, "sha1", 4) == 0)
             {
                if (val->type == RDT_BINARY)
@@ -625,9 +660,12 @@ static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
          case 6:
             if ((fields & DB_EXTRACT_SERIAL) && memcmp(str, "serial", 6) == 0)
             {
-               const char *vs = val->val.string.buff;
-               if (vs && *vs)
-                  db_info->serial = strdup(vs);
+               if (val->type == RDT_STRING)
+               {
+                  const char *vs = val->val.string.buff;
+                  if (vs && *vs)
+                     db_info->serial = strdup(vs);
+               }
             }
             break;
 
