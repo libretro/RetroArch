@@ -170,6 +170,20 @@ enum db_state_flags_enum
    DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
 
+/* Ceiling on the crc and serial indexes a single scan may hold.  The
+ * databases shipped today index to roughly 360 KB each at their
+ * largest, so this covers a good many of them before the scan falls
+ * back to querying, and the fallback is only slower, never wrong. */
+#ifndef DB_STATE_INDEX_BUDGET
+#if defined(_XBOX1) || defined(_3DS) || defined(PSP) || defined(PS2) \
+ || defined(GEKKO) || defined(WIIU) || defined(__PSL1GHT__) \
+ || defined(__PS3__) || defined(HAVE_EMSCRIPTEN) || defined(VITA)
+#define DB_STATE_INDEX_BUDGET (2 * 1024 * 1024)
+#else
+#define DB_STATE_INDEX_BUDGET (24 * 1024 * 1024)
+#endif
+#endif
+
 typedef struct database_state_handle
 {
    database_info_list_t *info;
@@ -202,6 +216,11 @@ typedef struct database_state_handle
    database_info_crc_index_t **crc_index;
    /* Likewise for the serial lookup disc content uses. */
    database_info_serial_index_t **serial_index;
+   /* Bytes of index the scan may still allocate.  Indexes are held
+    * for the whole scan, so without a ceiling a large database set
+    * costs tens of megabytes - fine on desktop, not on the consoles
+    * where DIR_MAX_LENGTH is already halved for the same reason. */
+   size_t index_budget;
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -1121,6 +1140,27 @@ static enum scan_verdict database_info_list_iterate_found_match(
               &db_state->flags[0],
               sizeof(flag) * db_state->list_index);
 
+      /* The index caches are keyed by the same position, so they have
+       * to travel with the entry.  Leaving them behind pairs a
+       * database with another database's index, and the lookup then
+       * answers with records that belong to a different system. */
+      {
+         database_info_crc_index_t    *ci =
+            db_state->crc_index[db_state->list_index];
+         database_info_serial_index_t *si =
+            db_state->serial_index[db_state->list_index];
+
+         memmove(&db_state->crc_index[1],
+                 &db_state->crc_index[0],
+                 sizeof(ci) * db_state->list_index);
+         memmove(&db_state->serial_index[1],
+                 &db_state->serial_index[0],
+                 sizeof(si) * db_state->list_index);
+
+         db_state->crc_index[0]    = ci;
+         db_state->serial_index[0] = si;
+      }
+
       db_state->list->elems[0] = entry;
       db_state->min_sizes[0]   = min;
       db_state->max_sizes[0]   = max;
@@ -1173,6 +1213,7 @@ static bool task_database_state_alloc_arrays(
       calloc(count, sizeof(*db_state->crc_index));
    db_state->serial_index = (database_info_serial_index_t**)
       calloc(count, sizeof(*db_state->serial_index));
+   db_state->index_budget = DB_STATE_INDEX_BUDGET;
 
    if (   !db_state->min_sizes
        || !db_state->max_sizes
@@ -1206,9 +1247,19 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
 
       if (rdb && *rdb)
       {
-         if (!db_state->crc_index[db_state->list_index])
-            db_state->crc_index[db_state->list_index] =
-               database_info_crc_index_new(rdb);
+         if (   !db_state->crc_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_crc_index_t *ci =
+               database_info_crc_index_new(rdb, db_state->index_budget);
+            if (ci)
+            {
+               size_t used = database_info_crc_index_bytes(ci);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->crc_index[db_state->list_index] = ci;
+            }
+         }
 
          if (   db_state->crc_index[db_state->list_index]
              && database_info_crc_index_size_range(
@@ -1410,13 +1461,23 @@ static enum scan_verdict task_database_iterate_crc_lookup(
        * which stays the reference path. */
       if (rdb && *rdb)
       {
-         if (!db_state->crc_index[db_state->list_index])
-            db_state->crc_index[db_state->list_index] =
-               database_info_crc_index_new(rdb);
+         if (   !db_state->crc_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_crc_index_t *ci =
+               database_info_crc_index_new(rdb, db_state->index_budget);
+            if (ci)
+            {
+               size_t used = database_info_crc_index_bytes(ci);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->crc_index[db_state->list_index] = ci;
+            }
+         }
 
          if (db_state->crc_index[db_state->list_index])
             hits = database_info_list_new_crc(
-                  db_state->crc_index[db_state->list_index],
+                  db_state->crc_index[db_state->list_index], rdb,
                   db_state->crc, db_state->archive_crc,
                   DB_EXTRACT_SCAN_FIELDS);
       }
@@ -1623,13 +1684,23 @@ static int task_database_iterate_serial_lookup(
        * still runs. */
       if (rdb && *rdb)
       {
-         if (!db_state->serial_index[db_state->list_index])
-            db_state->serial_index[db_state->list_index] =
-               database_info_serial_index_new(rdb);
+         if (   !db_state->serial_index[db_state->list_index]
+             && db_state->index_budget)
+         {
+            database_info_serial_index_t *si =
+               database_info_serial_index_new(rdb, db_state->index_budget);
+            if (si)
+            {
+               size_t used = database_info_serial_index_bytes(si);
+               db_state->index_budget = (used < db_state->index_budget)
+                  ? db_state->index_budget - used : 0;
+               db_state->serial_index[db_state->list_index] = si;
+            }
+         }
 
          if (db_state->serial_index[db_state->list_index])
             hits = database_info_list_new_serial(
-                  db_state->serial_index[db_state->list_index],
+                  db_state->serial_index[db_state->list_index], rdb,
                   db_state->serial, DB_EXTRACT_SCAN_FIELDS);
       }
 

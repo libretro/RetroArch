@@ -1011,6 +1011,7 @@ struct db_crc_build
    struct db_crc_entry *entries;
    size_t               count;
    size_t               capacity;
+   size_t               max_bytes;
    uint64_t             size_min;
    uint64_t             size_max;
    bool                 have_size;
@@ -1045,9 +1046,19 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
    if (b->count == b->capacity)
    {
       size_t cap = b->capacity ? b->capacity * 2 : 1024;
-      struct db_crc_entry *tmp = (struct db_crc_entry*)
-         realloc(b->entries, cap * sizeof(*tmp));
-      if (!tmp)
+      struct db_crc_entry *tmp;
+
+      /* Give up rather than exceed the caller's allowance.  A partial
+       * index would be worse than none: it would miss matches without
+       * saying so. */
+      if (b->max_bytes && cap * sizeof(*b->entries) > b->max_bytes)
+      {
+         b->failed = true;
+         return 1;
+      }
+
+      if (!(tmp = (struct db_crc_entry*)
+               realloc(b->entries, cap * sizeof(*tmp))))
       {
          b->failed = true;
          return 1;                        /* stop the scan */
@@ -1065,7 +1076,8 @@ static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
    return 0;
 }
 
-database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path)
+database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
+      size_t max_bytes)
 {
    struct db_crc_build        build;
    database_info_crc_index_t *idx = NULL;
@@ -1075,6 +1087,7 @@ database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path)
       return NULL;
 
    memset(&build, 0, sizeof(build));
+   build.max_bytes = max_bytes;
 
    if (!(db = libretrodb_new()))
       return NULL;
@@ -1131,6 +1144,13 @@ bool database_info_crc_index_size_range(
    return true;
 }
 
+size_t database_info_crc_index_bytes(const database_info_crc_index_t *idx)
+{
+   if (!idx)
+      return 0;
+   return idx->count * sizeof(*idx->entries) + sizeof(*idx);
+}
+
 void database_info_crc_index_free(database_info_crc_index_t *idx)
 {
    if (!idx)
@@ -1176,8 +1196,8 @@ static size_t db_crc_gather(const database_info_crc_index_t *idx,
 }
 
 database_info_list_t *database_info_list_new_crc(
-      const database_info_crc_index_t *idx, uint32_t crc,
-      uint32_t archive_crc, unsigned fields)
+      const database_info_crc_index_t *idx, const char *rdb_path,
+      uint32_t crc, uint32_t archive_crc, unsigned fields)
 {
    /* The scanner stops at the first entry that matches, so a bounded
     * number of hits is always enough. */
@@ -1189,6 +1209,14 @@ database_info_list_t *database_info_list_new_crc(
    size_t                i, kept = 0;
 
    if (!idx)
+      return NULL;
+
+   /* The caller keys its index cache by database position, and that
+    * position moves when a matched database is promoted.  Refuse an
+    * index that belongs to a different database rather than answering
+    * with another system's records: the query path then runs, which
+    * is slow but right. */
+   if (rdb_path && idx->rdb_path && strcmp(rdb_path, idx->rdb_path))
       return NULL;
 
    found = db_crc_gather(idx, crc, hits, found,
@@ -1293,6 +1321,7 @@ struct db_serial_build
    struct db_serial_entry *entries;
    size_t                  count;
    size_t                  capacity;
+   size_t                  max_bytes;
    bool                    failed;
 };
 
@@ -1313,9 +1342,17 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
    if (b->count == b->capacity)
    {
       size_t cap = b->capacity ? b->capacity * 2 : 1024;
-      struct db_serial_entry *tmp = (struct db_serial_entry*)
-         realloc(b->entries, cap * sizeof(*tmp));
-      if (!tmp)
+      struct db_serial_entry *tmp;
+
+      /* See db_crc_collect(). */
+      if (b->max_bytes && cap * sizeof(*b->entries) > b->max_bytes)
+      {
+         b->failed = true;
+         return 1;
+      }
+
+      if (!(tmp = (struct db_serial_entry*)
+               realloc(b->entries, cap * sizeof(*tmp))))
       {
          b->failed = true;
          return 1;
@@ -1331,7 +1368,7 @@ static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
 }
 
 database_info_serial_index_t *database_info_serial_index_new(
-      const char *rdb_path)
+      const char *rdb_path, size_t max_bytes)
 {
    struct db_serial_build        build;
    database_info_serial_index_t *idx = NULL;
@@ -1341,6 +1378,7 @@ database_info_serial_index_t *database_info_serial_index_new(
       return NULL;
 
    memset(&build, 0, sizeof(build));
+   build.max_bytes = max_bytes;
 
    if (!(db = libretrodb_new()))
       return NULL;
@@ -1382,6 +1420,14 @@ error:
    libretrodb_close(db);
    libretrodb_free(db);
    return NULL;
+}
+
+size_t database_info_serial_index_bytes(
+      const database_info_serial_index_t *idx)
+{
+   if (!idx)
+      return 0;
+   return idx->count * sizeof(*idx->entries) + sizeof(*idx);
 }
 
 void database_info_serial_index_free(database_info_serial_index_t *idx)
@@ -1435,8 +1481,8 @@ static bool db_record_has_serial(struct rmsgpack_dom_value *item,
 }
 
 database_info_list_t *database_info_list_new_serial(
-      const database_info_serial_index_t *idx, const char *serial,
-      unsigned fields)
+      const database_info_serial_index_t *idx, const char *rdb_path,
+      const char *serial, unsigned fields)
 {
    struct db_serial_entry hits[32];
    database_info_list_t  *list  = NULL;
@@ -1447,6 +1493,10 @@ database_info_list_t *database_info_list_new_serial(
    size_t                 lo, hi, found = 0, i, kept = 0;
 
    if (!idx || !serial || !*serial)
+      return NULL;
+
+   /* See database_info_list_new_crc(). */
+   if (rdb_path && idx->rdb_path && strcmp(rdb_path, idx->rdb_path))
       return NULL;
 
    serial_len = strlen(serial);
