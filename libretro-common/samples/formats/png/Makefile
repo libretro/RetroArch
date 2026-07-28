@@ -20,6 +20,7 @@ SOURCES_C := 	\
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -54,6 +55,8 @@ TEST_SOURCES_C := \
 	$(CORE_DIR)/rpng_chunk_overflow_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
@@ -68,6 +71,7 @@ TEST2_SOURCES_C := \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_PNG_DIR)/rpng_encode.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
@@ -105,6 +109,8 @@ TEST3_SOURCES_C := \
 	$(CORE_DIR)/rpng_decode_corpus_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
