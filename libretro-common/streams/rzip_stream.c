@@ -753,9 +753,10 @@ error:
 
 /* File Write */
 
-/* Compresses currently cached data and writes it
- * as the next RZIP file chunk */
-static bool rzipstream_write_chunk(rzipstream_t *stream)
+/* Compresses 'len' bytes of 'data' and writes the
+ * result as the next RZIP file chunk */
+static bool rzipstream_write_chunk_data(rzipstream_t *stream,
+      const uint8_t *data, uint32_t len)
 {
    unsigned i;
    uint8_t chunk_header_bytes[RZIP_CHUNK_HEADER_SIZE];
@@ -768,10 +769,10 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    for (i = 0; i < RZIP_CHUNK_HEADER_SIZE; i++)
       chunk_header_bytes[i] = 0;
 
-   /* Compress data currently held in input buffer */
+   /* Compress input data */
    stream->deflate_backend->set_in(
          stream->deflate_stream,
-         stream->in_buf, stream->in_buf_ptr);
+         data, len);
 
    stream->deflate_backend->set_out(
          stream->deflate_stream,
@@ -787,7 +788,7 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
       return false;
 
    /* Error checking */
-   if (deflate_read != stream->in_buf_ptr)
+   if (deflate_read != len)
       return false;
 
    if (   (deflate_written == 0)
@@ -808,6 +809,17 @@ static bool rzipstream_write_chunk(rzipstream_t *stream)
    /* Write compressed data to file */
    if (filestream_write(
          stream->file, stream->out_buf, deflate_written) != deflate_written)
+      return false;
+
+   return true;
+}
+
+/* Compresses currently cached data and writes it
+ * as the next RZIP file chunk */
+static bool rzipstream_write_chunk(rzipstream_t *stream)
+{
+   if (!rzipstream_write_chunk_data(stream,
+         stream->in_buf, stream->in_buf_ptr))
       return false;
 
    /* Reset input buffer pointer */
@@ -836,6 +848,25 @@ int64_t rzipstream_write(rzipstream_t *stream, const void *data, int64_t len)
       if (stream->in_buf_ptr >= stream->in_buf_size)
          if (!rzipstream_write_chunk(stream))
             return -1;
+
+      /* Fast path: if no data is currently cached and
+       * at least one whole chunk remains in the caller's
+       * buffer, compress directly from the caller's buffer
+       * (avoids a redundant memcpy through in_buf) */
+      if (   (stream->in_buf_ptr == 0)
+          && (_len >= (int64_t)stream->in_buf_size))
+      {
+         if (!rzipstream_write_chunk_data(stream,
+               data_ptr, stream->in_buf_size))
+            return -1;
+
+         data_ptr            += stream->in_buf_size;
+         _len                -= stream->in_buf_size;
+
+         stream->size        += stream->in_buf_size;
+         stream->virtual_ptr += stream->in_buf_size;
+         continue;
+      }
 
       /* Get amount of data to cache during this loop
        * > i.e. minimum of space remaining in input buffer
