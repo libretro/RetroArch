@@ -152,14 +152,37 @@ static int dom_read_map_start(uint32_t len, void *data)
    struct rmsgpack_dom_value       *v = rmsgpack_dom_reader_state_pop(dom_state);
 
    v->type                            = RDT_MAP;
-   v->val.map.len                     = len;
+   v->val.map.len                     = 0;
    v->val.map.items                   = NULL;
 
+   /* An empty map is legal MsgPack, and calloc(0, n) is permitted to
+    * return NULL, which the old code could not tell from failure. */
+   if (len == 0)
+      return 0;
+
+   /* 'len' is only published once storage backs it.  It used to be
+    * assigned before the calloc(), so a failed allocation left the
+    * value as an RDT_MAP of len pairs with a NULL items pointer.  The
+    * error then propagates to rmsgpack_dom_read_with(), whose cleanup
+    * calls rmsgpack_dom_value_free() - which walks items[0..len) and
+    * dereferences NULL.
+    *
+    * The allocation is attacker-influenced: len is bounded only by
+    * half the bytes remaining in the file, so a large .rdb with a
+    * MAP32 header sized to exceed the process' remaining memory
+    * reaches it.  Reproduced with a 2 MB .rdb claiming 1000000 pairs
+    * under a constrained allocator:
+    *
+    *   AddressSanitizer: SEGV on unknown address 0x000000000010
+    *     #0 rmsgpack_dom_value_free  rmsgpack_dom.c:204
+    *     #1 rmsgpack_dom_value_free  rmsgpack_dom.c:219
+    *     #2 rmsgpack_dom_read_with   rmsgpack_dom.c:473 */
    if (!(items = (struct rmsgpack_dom_pair *)
       calloc(len, sizeof(struct rmsgpack_dom_pair))))
       return -1;
 
    v->val.map.items                   = items;
+   v->val.map.len                     = len;
 
    for (i = 0; i < len; i++)
    {
@@ -180,14 +203,21 @@ static int dom_read_array_start(uint32_t len, void *data)
    struct rmsgpack_dom_value *items   = NULL;
 
    v->type                            = RDT_ARRAY;
-   v->val.array.len                   = len;
+   v->val.array.len                   = 0;
    v->val.array.items                 = NULL;
+
+   /* See dom_read_map_start(): empty arrays are legal, and 'len' must
+    * not be published until storage backs it or the cleanup path
+    * walks a NULL items pointer. */
+   if (len == 0)
+      return 0;
 
    if (!(items = (struct rmsgpack_dom_value *)
             calloc(len, sizeof(*items))))
       return -1;
 
    v->val.array.items                 = items;
+   v->val.array.len                   = len;
 
    for (i = 0; i < len; i++)
    {
