@@ -40,6 +40,13 @@
  *   oversized field         a field wider than the window cannot be
  *                           served from it, and returning failure
  *                           silently dropped the record.
+ *   query slices            libretrodb_query_compile() takes a
+ *                           (pointer, length) pair, but the parser
+ *                           handed identifier slices to strlcpy(),
+ *                           which strlen()s its source, and indexed
+ *                           buff.data[buff.offset] after chomping
+ *                           trailing space without checking the
+ *                           offset against the length.
  *
  * Self-contained: builds each .rdb in a temp directory, exercises
  * it, and reports.  Exits non-zero if any case regresses.
@@ -54,6 +61,7 @@
 
 #include "../../libretrodb.h"
 #include "../../rmsgpack_dom.h"
+#include "../../query.h"
 
 /* A record count no legitimate test file reaches; hitting it means
  * the cursor is not terminating. */
@@ -541,6 +549,70 @@ static void case_index(const char *dir)
    }
 }
 
+/* libretrodb_query_compile() is documented by its signature to take
+ * a pointer and a length.  Feed it exactly-sized heap buffers with no
+ * terminator so that any read past the length is a heap overflow the
+ * sanitizer can see, rather than landing on a NUL that happens to be
+ * there. */
+static void case_query_slices(const char *dir)
+{
+   static const struct
+   {
+      const char *text;
+      const char *what;
+   } queries[] = {
+      { "{crc:or(b\"DEADBEEF\",b\"00000000\")}", "query with identifiers"   },
+      { "{'serial': b'414243'}",                "query with binary string" },
+      { "{'a':",                                "query ending at a value"  },
+      { "{'a': ",                               "query ending after space" },
+      { "   ",                                  "query that is all space"  },
+      { "{crc:99999999999999999999999}",        "query with huge integer"  },
+      { "{'a': b\"\"}",                           "query with empty binary"  },
+      { "{nosuchfunction(1)}",                  "query naming unknown func" }
+   };
+   char   path[512];
+   buf_t  body, meta;
+   unsigned i;
+   libretrodb_t *db = libretrodb_new();
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+   bfixmap(&body, 1); bfixstr(&body, "name"); bfixstr(&body, "One");
+   bnil(&body);
+   meta_count(&meta, 1);
+   sprintf(path, "%s/query_host.rdb", dir);
+   write_rdb(path, &body, &meta);
+   bfree(&body); bfree(&meta);
+
+   if (!db || libretrodb_open(path, db, false) != 0)
+   {
+      check(0, "query host database", "could not be opened");
+      libretrodb_free(db);
+      return;
+   }
+
+   for (i = 0; i < sizeof(queries) / sizeof(queries[0]); i++)
+   {
+      size_t      n     = strlen(queries[i].text);
+      char       *exact = (char*)malloc(n ? n : 1);
+      const char *err   = NULL;
+      void       *q;
+
+      memcpy(exact, queries[i].text, n);
+      begin(queries[i].what);
+      q = libretrodb_query_compile(db, exact, n, &err);
+      /* Compiling or rejecting are both fine; reading out of bounds
+       * while deciding is not, and that is what the sanitizer sees. */
+      check(1, queries[i].what, (q && !err) ? "compiled" : "rejected");
+      if (q && !err)
+         libretrodb_query_free((libretrodb_query_t*)q);
+      free(exact);
+   }
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -558,6 +630,7 @@ int main(int argc, char **argv)
    case_empty_containers(dir);
    case_window(dir);
    case_index(dir);
+   case_query_slices(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;
