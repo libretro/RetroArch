@@ -1207,6 +1207,93 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
    }
 }
 
+/* Greyscale expansion, vector fast paths for the byte-aligned depths.
+ * A grey sample g becomes the word (0xFF<<24)|(g<<16)|(g<<8)|g; ORing
+ * the splatted word with 0xFF000000 forces the alpha lane regardless
+ * of g.  Depth 16 keeps the high byte only, matching the scalar path
+ * (PNG stores samples big-endian, so the high byte is the even one).
+ * Sub-byte depths (1/2/4) stay on the scalar bit walker: they multiply
+ * out through mul_table and are rare enough not to matter. */
+#if defined(RPNG_SIMD_SSE2)
+static unsigned rpng_copy_line_bw8_sse2(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   const __m128i amask = _mm_set1_epi32((int)0xFF000000u);
+   for (; (int)(width - i) >= 16; i += 16)
+   {
+      __m128i g  = _mm_loadu_si128((const __m128i*)(decoded + i));
+      __m128i lo = _mm_unpacklo_epi8(g, g);  /* g0 g0 g1 g1 ..  */
+      __m128i hi = _mm_unpackhi_epi8(g, g);
+      _mm_storeu_si128((__m128i*)(data + i + 0),
+            _mm_or_si128(_mm_unpacklo_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 4),
+            _mm_or_si128(_mm_unpackhi_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 8),
+            _mm_or_si128(_mm_unpacklo_epi16(hi, hi), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 12),
+            _mm_or_si128(_mm_unpackhi_epi16(hi, hi), amask));
+   }
+   return i;
+}
+
+static unsigned rpng_copy_line_bw16_sse2(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   const __m128i amask = _mm_set1_epi32((int)0xFF000000u);
+   const __m128i bmask = _mm_set1_epi16(0x00FF);
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      /* 8 big-endian 16-bit samples: high bytes sit in the low byte
+       * of each LE 16-bit lane. */
+      __m128i v  = _mm_loadu_si128((const __m128i*)(decoded + (size_t)i * 2));
+      __m128i g  = _mm_packus_epi16(_mm_and_si128(v, bmask), _mm_setzero_si128());
+      __m128i lo = _mm_unpacklo_epi8(g, g);
+      _mm_storeu_si128((__m128i*)(data + i + 0),
+            _mm_or_si128(_mm_unpacklo_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 4),
+            _mm_or_si128(_mm_unpackhi_epi16(lo, lo), amask));
+   }
+   return i;
+}
+#elif defined(RPNG_SIMD_NEON)
+static unsigned rpng_copy_line_bw8_neon(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      uint8x8x4_t o;
+      uint8x8_t g = vld1_u8(decoded + i);
+      o.val[0]    = g;
+      o.val[1]    = g;
+      o.val[2]    = g;
+      o.val[3]    = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(data + i), o);
+   }
+   return i;
+}
+
+static unsigned rpng_copy_line_bw16_neon(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      /* De-interleave (hi,lo) byte pairs; val[0] is the high bytes. */
+      uint8x8x2_t v = vld2_u8(decoded + (size_t)i * 2);
+      uint8x8x4_t o;
+      o.val[0]      = v.val[0];
+      o.val[1]      = v.val[0];
+      o.val[2]      = v.val[0];
+      o.val[3]      = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(data + i), o);
+   }
+   return i;
+}
+#endif /* RPNG_SIMD_SSE2 / RPNG_SIMD_NEON */
+
 static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
@@ -1217,11 +1304,30 @@ static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
 
    if (depth == 16)
    {
-      for (i = 0; i < (int)width; i++)
+      unsigned j = 0;
+#if defined(RPNG_SIMD_SSE2)
+      j = rpng_copy_line_bw16_sse2(data, decoded, width);
+#elif defined(RPNG_SIMD_NEON)
+      j = rpng_copy_line_bw16_neon(data, decoded, width);
+#endif
+      for (i = (int)j; i < (int)width; i++)
       {
          uint32_t val = decoded[i << 1];
          data[i]      = (val * 0x010101) | (0xffu << 24);
       }
+      return;
+   }
+
+   if (depth == 8)
+   {
+      unsigned j = 0;
+#if defined(RPNG_SIMD_SSE2)
+      j = rpng_copy_line_bw8_sse2(data, decoded, width);
+#elif defined(RPNG_SIMD_NEON)
+      j = rpng_copy_line_bw8_neon(data, decoded, width);
+#endif
+      for (i = (int)j; i < (int)width; i++)
+         data[i] = ((uint32_t)decoded[i] * 0x010101) | (0xffu << 24);
       return;
    }
 
