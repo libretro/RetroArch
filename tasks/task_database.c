@@ -496,29 +496,49 @@ static bool is_valid_disc_indicator(const char *str, size_t len)
 
 static void remove_disc_indicators(char *title, size_t len)
 {
+   size_t i;
    char *disc_pos = NULL;
+   size_t prefix_len = 0;
+   /* Tape and floppy releases usually do not follow the naming
+    * convention, so their prefixes skip the leading space - which
+    * makes them six characters rather than seven.  The old code
+    * skipped a hard-coded seven for all of them, so for "(Tape 1)"
+    * the indicator was taken to start at the ')' and came out empty:
+    * is_valid_disc_indicator() rejected it and no tape or side
+    * indicator was ever stripped.  Carry each prefix's own length. */
+   static const struct
+   {
+      const char *pat;
+      size_t      len;
+   } patterns[] = {
+      { " (Disc ", 7 }, { " (disc ", 7 },
+      { " (Disk ", 7 }, { " (disk ", 7 },
+      { "(Tape ",  6 }, { "(tape ",  6 },
+      { "(Side ",  6 }, { "(side ",  6 }
+   };
 
-   /* Search for common disc patterns */
-   if (   (disc_pos = strstr(title, " (Disc "))
-       || (disc_pos = strstr(title, " (disc "))
-       || (disc_pos = strstr(title, " (Disk "))
-       || (disc_pos = strstr(title, " (disk "))
-       /* Tape and floppy releases usually do not follow naming convention, so skip the space */
-       || (disc_pos = strstr(title, "(Tape "))
-       || (disc_pos = strstr(title, "(tape "))
-       || (disc_pos = strstr(title, "(Side "))
-       || (disc_pos = strstr(title, "(side ")))
+   for (i = 0; i < ARRAY_SIZE(patterns); i++)
+   {
+      if ((disc_pos = strstr(title, patterns[i].pat)))
+      {
+         prefix_len = patterns[i].len;
+         break;
+      }
+   }
+
+   if (disc_pos)
    {
       /* Find the closing parenthesis */
       char *end_pos = strchr(disc_pos, ')');
       if (end_pos)
       {
-         /* Extract the disc indicator text (between " (Disc " and ")") */
-         const char *indicator_start = disc_pos + 7; /* Skip " (Disc " */
-         size_t indicator_len = end_pos - indicator_start;
+         /* Extract the indicator text between the prefix and ")" */
+         const char *indicator_start = disc_pos + prefix_len;
+         size_t indicator_len        = (size_t)(end_pos - indicator_start);
 
          /* Validate this is actually a disc indicator, not arbitrary text */
-         if (is_valid_disc_indicator(indicator_start, indicator_len))
+         if (   end_pos >= indicator_start
+             && is_valid_disc_indicator(indicator_start, indicator_len))
          {
             /* Truncate at the disc indicator */
             *disc_pos = '\0';
