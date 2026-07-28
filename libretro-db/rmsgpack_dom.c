@@ -521,11 +521,52 @@ int rmsgpack_dom_read(intfstream_t *fd, struct rmsgpack_dom_value *out)
    return rmsgpack_dom_read_with(fd, out, &s);
 }
 
+/**
+ * rmsgpack_dom_read_into:
+ *
+ * Read a map from @fd and extract the requested keys into
+ * caller-supplied storage.  Varargs are triples of
+ *
+ *    const char *key, enum rmsgpack_dom_field_type type, <out...>
+ *
+ * terminated by a NULL key.  RDF_UINT / RDF_INT / RDF_BOOL take one
+ * output pointer; RDF_STRING / RDF_BINARY take a buffer plus a
+ * uint64_t* holding the buffer capacity on entry and the number of
+ * bytes written on exit.
+ *
+ * The type argument is what makes this safe.  This function used to
+ * switch on the type tag found in the *file* and consume a different
+ * number of va_args per case - one for RDT_UINT, two for RDT_STRING
+ * and RDT_BINARY.  A .rdb that declared a key with an unexpected
+ * type therefore slid the whole va_list out of step, and every
+ * subsequent key wrote a file-controlled uint64 through a pointer
+ * belonging to a different field.  libretrodb_find_index() passes
+ * five outputs, so the desync there is an arbitrary write rather
+ * than merely a crash.
+ *
+ * A missing key was equally unsafe: rmsgpack_dom_value_map_value()
+ * returns NULL and the result went straight into "switch
+ * (value->type)".  Reproduced with a 26-byte .rdb whose metadata map
+ * is keyed "kount" instead of "count":
+ *
+ *   rmsgpack_dom.c:526: member access within null pointer
+ *   #1 libretrodb_open  libretrodb.c:248
+ *
+ * Reading the caller's expectation first fixes both: the va_list
+ * advances by a fixed amount per key regardless of what the file
+ * says, an absent key leaves the output untouched, and a key whose
+ * stored type disagrees with the requested one is a parse failure.
+ *
+ * Returns: 0 on success, -1 if the stream is not a map, if a
+ * requested key is absent, or if a key's stored type does not match
+ * the requested type.
+ */
 int rmsgpack_dom_read_into(intfstream_t *fd, ...)
 {
-   int rv;
+   int rv = 0;
    va_list ap;
    struct rmsgpack_dom_value map;
+   struct rmsgpack_dom_value key;
 
    va_start(ap, fd);
 
@@ -535,79 +576,138 @@ int rmsgpack_dom_read_into(intfstream_t *fd, ...)
       return rv;
    }
 
-   if (map.type == RDT_MAP)
+   if (map.type != RDT_MAP)
    {
-      int *bool_value;
-      char *buff_value;
-      uint64_t min_len;
-      int64_t *int_value;
-      uint64_t *uint_value;
-      struct rmsgpack_dom_value key;
+      va_end(ap);
+      rmsgpack_dom_value_free(&map);
+      return -1;
+   }
 
-      for (;;)
+   for (;;)
+   {
+      struct rmsgpack_dom_value *value;
+      enum rmsgpack_dom_field_type ftype;
+      char       *buff_value;
+      uint64_t   *uint_value;
+      uint64_t    capacity;
+      uint64_t    min_len;
+      const char *key_name = va_arg(ap, const char *);
+
+      if (!key_name)
+         break;
+
+      /* Read the caller's expected type before touching the file's,
+       * so the number of va_args consumed for this key is fixed. */
+      ftype                = (enum rmsgpack_dom_field_type)
+         va_arg(ap, int);
+
+      key.type             = RDT_STRING;
+      key.val.string.len   = (uint32_t)strlen(key_name);
+      key.val.string.buff  = (char *)key_name;
+
+      value                = rmsgpack_dom_value_map_value(&map, &key);
+
+      switch (ftype)
       {
-         struct rmsgpack_dom_value *value;
-         const char *key_name = va_arg(ap, const char *);
-
-         if (!key_name)
+         case RDF_INT:
+            {
+               int64_t *int_value = va_arg(ap, int64_t *);
+               /* MsgPack has no single canonical encoding for a small
+                * integer - a positive fixint decodes as RDT_INT while
+                * rmsgpack_write_uint() emits UINT8..UINT64, which
+                * decode as RDT_UINT.  Accept either spelling as long
+                * as the value is representable, so that requiring a
+                * type does not reject a validly encoded file. */
+               if (value && value->type == RDT_INT)
+                  *int_value = value->val.int_;
+               else if (   value
+                        && value->type == RDT_UINT
+                        && value->val.uint_ <= (uint64_t)INT64_MAX)
+                  *int_value = (int64_t)value->val.uint_;
+               else
+                  rv = -1;
+            }
             break;
-
-         key.type             = RDT_STRING;
-         key.val.string.len   = (uint32_t)strlen(key_name);
-         key.val.string.buff  = (char *)key_name;
-
-         value                = rmsgpack_dom_value_map_value(&map, &key);
-
-         switch (value->type)
-         {
-            case RDT_INT:
-               int_value      = va_arg(ap, int64_t *);
-               *int_value     = value->val.int_;
+         case RDF_BOOL:
+            {
+               int *bool_value = va_arg(ap, int *);
+               if (!value || value->type != RDT_BOOL)
+               {
+                  rv = -1;
+                  break;
+               }
+               *bool_value = value->val.bool_;
+            }
+            break;
+         case RDF_UINT:
+            {
+               uint64_t *u = va_arg(ap, uint64_t *);
+               /* See RDF_INT above: a non-negative RDT_INT is a valid
+                * encoding of a small unsigned value. */
+               if (value && value->type == RDT_UINT)
+                  *u = value->val.uint_;
+               else if (   value
+                        && value->type == RDT_INT
+                        && value->val.int_ >= 0)
+                  *u = (uint64_t)value->val.int_;
+               else
+                  rv = -1;
+            }
+            break;
+         case RDF_BINARY:
+            buff_value     = va_arg(ap, char *);
+            uint_value     = va_arg(ap, uint64_t *);
+            if (!value || value->type != RDT_BINARY)
+            {
+               rv          = -1;
                break;
-            case RDT_BOOL:
-               bool_value     = va_arg(ap, int *);
-               *bool_value    = value->val.bool_;
+            }
+            /* *uint_value is the caller's buffer capacity on entry
+             * and the number of bytes copied on exit.  Compute the
+             * clamped copy length BEFORE overwriting *uint_value,
+             * otherwise the bound check collapses to len > len and
+             * the memcpy can overrun the caller's buffer with
+             * attacker-controlled length from the db file. */
+            capacity       = *uint_value;
+            min_len        = (value->val.binary.len > capacity)
+               ? capacity : value->val.binary.len;
+            *uint_value    = min_len;
+            memcpy(buff_value, value->val.binary.buff, (size_t)min_len);
+            break;
+         case RDF_STRING:
+            buff_value     = va_arg(ap, char *);
+            uint_value     = va_arg(ap, uint64_t *);
+            if (!value || value->type != RDT_STRING)
+            {
+               rv          = -1;
                break;
-            case RDT_UINT:
-               uint_value     = va_arg(ap, uint64_t *);
-               *uint_value    = value->val.uint_;
-               break;
-            case RDT_BINARY:
-               buff_value     = va_arg(ap, char *);
-               uint_value     = va_arg(ap, uint64_t *);
-               /* *uint_value is the caller's buffer capacity on entry
-                * and the number of bytes copied on exit.  Compute the
-                * clamped copy length BEFORE overwriting *uint_value,
-                * otherwise the bound check collapses to len > len and
-                * the memcpy can overrun the caller's buffer with
-                * attacker-controlled length from the db file. */
-               min_len        = (value->val.binary.len > *uint_value) ?
-                  *uint_value : value->val.binary.len;
-               *uint_value    = min_len;
-
-               memcpy(buff_value, value->val.binary.buff, (size_t)min_len);
-               break;
-            case RDT_STRING:
-               buff_value     = va_arg(ap, char *);
-               uint_value     = va_arg(ap, uint64_t *);
-               /* Cast to uint64_t before adding 1 to avoid uint32_t
-                * overflow when string.len == UINT32_MAX, which would
-                * wrap the sum to 0 and collapse the bounds check. */
-               min_len        = ((uint64_t)value->val.string.len + 1 > *uint_value) ?
-                  *uint_value : (uint64_t)value->val.string.len + 1;
-               *uint_value    = min_len;
-
-               memcpy(buff_value, value->val.string.buff, (size_t)min_len);
-               break;
-            default:
-               va_end(ap);
-               rmsgpack_dom_value_free(&map);
-               return 0;
-         }
+            }
+            /* Cast to uint64_t before adding 1 to avoid uint32_t
+             * overflow when string.len == UINT32_MAX, which would
+             * wrap the sum to 0 and collapse the bounds check. */
+            capacity       = *uint_value;
+            min_len        = ((uint64_t)value->val.string.len + 1 > capacity)
+               ? capacity : (uint64_t)value->val.string.len + 1;
+            *uint_value    = min_len;
+            memcpy(buff_value, value->val.string.buff, (size_t)min_len);
+            /* memcpy above may have stopped short of the terminator
+             * when the stored string does not fit.  Callers treat
+             * this as a C string (libretrodb_find_index() calls
+             * strlen() on idx->name), so terminate unconditionally
+             * rather than handing back 50 unterminated bytes. */
+            if (min_len > 0)
+               buff_value[min_len - 1] = '\0';
+            break;
+         default:
+            rv             = -1;
+            break;
       }
+
+      if (rv < 0)
+         break;
    }
 
    va_end(ap);
    rmsgpack_dom_value_free(&map);
-   return 0;
+   return rv;
 }

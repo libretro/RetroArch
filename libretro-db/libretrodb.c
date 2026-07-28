@@ -249,7 +249,7 @@ int libretrodb_open(const char *path, libretrodb_t *db, bool write)
          RETRO_VFS_SEEK_POSITION_START) < 0)
       goto error;
 
-   if (rmsgpack_dom_read_into(fd, "count", &md.count, NULL) < 0)
+   if (rmsgpack_dom_read_into(fd, "count", RDF_UINT, &md.count, NULL) < 0)
       goto error;
 
    db->count              = md.count;
@@ -295,11 +295,11 @@ static int libretrodb_find_index(libretrodb_t *db, const char *index_name,
       uint64_t name_len = 50;
       /* Read index header */
       if (rmsgpack_dom_read_into(db->fd,
-            "name",     idx->name, &name_len,
-            "key_size", &idx->key_size,
-            "next",     &idx->next,
-            "count",    &idx->count,
-                                 NULL) < 0)
+            "name",     RDF_STRING, idx->name, &name_len,
+            "key_size", RDF_UINT,   &idx->key_size,
+            "next",     RDF_UINT,   &idx->next,
+            "count",    RDF_UINT,   &idx->count,
+                                    NULL) < 0)
       {
         printf("Invalid index header\n");
         break;
