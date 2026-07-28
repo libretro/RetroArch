@@ -2270,14 +2270,21 @@ static void cb_task_manual_content_scan(
 
 #if defined(HAVE_MENU)
 end:
+#endif
    /* The caller's callback, if it gave one.  Read before the handle is
-    * released below; the menu refresh that follows is the task's own
-    * and is deliberately kept, because three of the four in-tree
-    * callers rely on it happening whether or not they pass a callback
-    * of their own. */
+    * released below.
+    *
+    * This used to sit inside the HAVE_MENU block along with the menu
+    * refresh, so a build without menu support ran the scan and then
+    * dropped the callback: a caller waiting on it waited forever.
+    * The in-tree callers only supply one under HAVE_MENU themselves,
+    * which is why nothing noticed, but the parameter is not
+    * documented as menu-only and the sample in samples/tasks/database
+    * hangs on exactly this. */
    if (manual_scan && manual_scan->user_cb)
       manual_scan->user_cb(task, task_data, user_data, err);
 
+#if defined(HAVE_MENU)
    /* When creating playlists, the playlist tabs of
     * any active menu driver must be refreshed */
    if (   
