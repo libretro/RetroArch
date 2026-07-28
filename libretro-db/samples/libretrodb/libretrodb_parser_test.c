@@ -45,6 +45,13 @@
  *                           bintree reported a failed grow as a
  *                           successful insert; nothing exercised
  *                           create-then-look-up at all.
+ *   field scan              libretrodb_scan_field() walks a database
+ *                           once reporting a field and the offset of
+ *                           the record carrying it, and
+ *                           libretrodb_read_at() fetches a record
+ *                           back from such an offset.  The two have
+ *                           to agree with what a query returns,
+ *                           including for keys that repeat.
  *   query slices            libretrodb_query_compile() takes a
  *                           (pointer, length) pair, but the parser
  *                           handed identifier slices to strlcpy(),
@@ -705,6 +712,121 @@ static void case_index_round_trip(const char *dir)
    libretrodb_free(db);
 }
 
+/* Collector for the scan test below. */
+typedef struct { uint32_t key; uint64_t off; } scan_ent_t;
+static scan_ent_t scan_ents[64];
+static size_t     scan_n;
+
+static int scan_collect(void *ctx, const uint8_t *key, size_t key_len,
+      uint64_t offset)
+{
+   (void)ctx;
+   if (key_len != 4 || scan_n >= sizeof(scan_ents) / sizeof(scan_ents[0]))
+      return 0;
+   scan_ents[scan_n].key = ((uint32_t)key[0] << 24) | ((uint32_t)key[1] << 16)
+                         | ((uint32_t)key[2] << 8)  |  (uint32_t)key[3];
+   scan_ents[scan_n].off = offset;
+   scan_n++;
+   return 0;
+}
+
+/* Walk a database with libretrodb_scan_field(), then read each record
+ * back by offset.  Includes a repeated key, because the scanner
+ * iterates every record sharing a crc and the offsets have to
+ * distinguish them. */
+static void case_field_scan(const char *dir)
+{
+   char   path[512];
+   buf_t  body, meta;
+   size_t i;
+   int    ok;
+   libretrodb_t *db;
+   /* Third and fourth records deliberately share a key. */
+   static const uint32_t keys[] = { 0x11111111u, 0x22222222u,
+                                    0x33333333u, 0x33333333u,
+                                    0x44444444u };
+   const size_t nkeys = sizeof(keys) / sizeof(keys[0]);
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+
+   for (i = 0; i < nkeys; i++)
+   {
+      char    name[32];
+      uint8_t crc[4];
+      sprintf(name, "Rec%02u", (unsigned)i);
+      crc[0] = (uint8_t)(keys[i] >> 24); crc[1] = (uint8_t)(keys[i] >> 16);
+      crc[2] = (uint8_t)(keys[i] >> 8);  crc[3] = (uint8_t)keys[i];
+      bfixmap(&body, 2);
+      bfixstr(&body, "name"); bfixstr(&body, name);
+      bfixstr(&body, "crc");  bbin(&body, crc, 4);
+   }
+   bnil(&body);
+   meta_count(&meta, 1);
+   sprintf(path, "%s/field_scan.rdb", dir);
+   write_rdb(path, &body, &meta);
+   bfree(&body); bfree(&meta);
+
+   scan_n = 0;
+   db     = libretrodb_new();
+
+   begin("field scan reports every record");
+   if (!db || libretrodb_open(path, db, false) != 0)
+   {
+      check(0, "field scan reports every record", "open failed");
+      libretrodb_free(db);
+      return;
+   }
+   ok = (libretrodb_scan_field(db, "crc", scan_collect, NULL) == 0)
+      && (scan_n == nkeys);
+   check(ok, "field scan reports every record",
+         ok ? "all keys seen, repeats included" : "wrong count");
+
+   begin("scanned keys are in file order");
+   ok = 1;
+   for (i = 0; i < scan_n && i < nkeys; i++)
+      if (scan_ents[i].key != keys[i])
+         ok = 0;
+   check(ok, "scanned keys are in file order", ok ? "match" : "reordered");
+
+   begin("offsets resolve to their own record");
+   ok = 1;
+   for (i = 0; i < scan_n; i++)
+   {
+      struct rmsgpack_dom_value v;
+      char want[32], got[64];
+      unsigned j;
+      sprintf(want, "Rec%02u", (unsigned)i);
+      got[0] = '\0';
+      if (libretrodb_read_at(db, scan_ents[i].off, &v) != 0)
+      {
+         ok = 0;
+         break;
+      }
+      if (v.type == RDT_MAP)
+         for (j = 0; j < v.val.map.len; j++)
+         {
+            struct rmsgpack_dom_value *k = &v.val.map.items[j].key;
+            struct rmsgpack_dom_value *w = &v.val.map.items[j].value;
+            if (   k->type == RDT_STRING && k->val.string.buff
+                && !strcmp(k->val.string.buff, "name")
+                && w->type == RDT_STRING && w->val.string.buff)
+               strncpy(got, w->val.string.buff, sizeof(got) - 1);
+         }
+      rmsgpack_dom_value_free(&v);
+      if (strcmp(want, got))
+      {
+         ok = 0;
+         break;
+      }
+   }
+   check(ok, "offsets resolve to their own record",
+         ok ? "including the repeated key" : "wrong record");
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -724,6 +846,7 @@ int main(int argc, char **argv)
    case_index(dir);
    case_query_slices(dir);
    case_index_round_trip(dir);
+   case_field_scan(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;
