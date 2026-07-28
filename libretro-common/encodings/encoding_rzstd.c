@@ -782,25 +782,72 @@ RZSTD_BODY_INLINE int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table
       next[sym]            = 1;
    }
 
-   for (sym = 0; sym < symbol_count; sym++)
+   /* When no symbol took the less-than-one slot, the spread runs in
+    * two stages the way the reference implementation runs it: the
+    * symbols are laid down in order, then dealt across the table in a
+    * loop whose trip count is the table size. What makes the first
+    * stage worth having is that it is branchless -- every symbol
+    * writes a word of its replicated value and advances by its count,
+    * and a count of zero advances by nothing, so the third of the
+    * symbols that are absent cost a store each rather than a
+    * mispredicted skip. An earlier attempt at this guarded that write
+    * and measured nothing, which was the guard's doing, not the
+    * technique's.
+    *
+    * A table with less-than-one symbols keeps the stepping walk, the
+    * only way to honour the slots taken from its top. */
+   if (high == size && size >= 8)
    {
-      int32_t n = counts[sym];
+      uint8_t  spread[(1 << RZSTD_FSE_MAX_ACCURACY_LOG) + 8];
+      uint64_t sv  = 0;
+      uint32_t pos = 0;
+      uint64_t rep = ((uint64_t)0x01010101 << 32) | 0x01010101;
 
-      if (n <= 0)
-         continue;
-      next[sym] = (uint16_t)n;
-      for (i = 0; i < (uint32_t)n; i++)
+      for (sym = 0; sym < symbol_count; sym++)
       {
-         table[position].symbol = (uint8_t)sym;
-         do
-         {
-            position = (position + step) & mask;
-         } while (position >= high);
+         int32_t  n = counts[sym];
+         uint32_t k;
+
+         next[sym] = (uint16_t)n;
+         memcpy(spread + pos, &sv, 8);
+         for (k = 8; k < (uint32_t)n; k += 8)
+            memcpy(spread + pos + k, &sv, 8);
+         pos += (uint32_t)n;
+         sv  += rep;
+      }
+
+      if (pos != size)
+         return RZ_DATA;
+
+      for (i = 0; i + 2 <= size; i += 2)
+      {
+         table[position].symbol                 = spread[i];
+         table[(position + step) & mask].symbol = spread[i + 1];
+         position = (position + 2 * step) & mask;
       }
    }
+   else
+   {
+      for (sym = 0; sym < symbol_count; sym++)
+      {
+         int32_t n = counts[sym];
 
-   if (position != 0)
-      return RZ_DATA;
+         if (n <= 0)
+            continue;
+         next[sym] = (uint16_t)n;
+         for (i = 0; i < (uint32_t)n; i++)
+         {
+            table[position].symbol = (uint8_t)sym;
+            do
+            {
+               position = (position + step) & mask;
+            } while (position >= high);
+         }
+      }
+
+      if (position != 0)
+         return RZ_DATA;
+   }
 
    /* A symbol holding 2^k slots reads accuracy_log - k bits, and the
     * states it can reach lie consecutively. */
