@@ -573,6 +573,205 @@ static int32_t rmsgpack_read_key_string(intfstream_t *fd,
  * fast path. Typical .rdb records have 10-15 fields. */
 #define CURSOR_MAX_MAP_FIELDS    24
 
+/**
+ * libretrodb_scan_field:
+ *
+ * Walk the database once, reporting the binary value of @field and
+ * the offset of the record carrying it.  Records without the field,
+ * or carrying it as something other than binary, are skipped.
+ *
+ * This exists so a caller can build its own lookup structure in one
+ * pass instead of re-walking the whole database for every key it
+ * wants to test.  Nothing is parsed beyond the field itself: values
+ * the caller did not ask for are stepped over, not decoded.
+ *
+ * @cb is called for each match and may return non-zero to stop the
+ * scan, which is then reported as success.
+ *
+ * Returns: 0 when the database was walked, -1 on a malformed stream.
+ */
+/**
+ * rmsgpack_read_bin_inplace:
+ *
+ * Read a MsgPack binary value into a caller buffer.  Returns -1 and
+ * leaves the stream positioned after the value when it is not binary
+ * or does not fit, so the caller can carry on scanning.
+ */
+static int rmsgpack_read_bin_inplace(intfstream_t *fd, uint8_t *buf,
+      size_t buf_size, uint64_t *len)
+{
+   uint8_t  type = 0;
+   uint64_t n    = 0;
+
+   if (intfstream_read(fd, &type, 1) != 1)
+      return -1;
+
+   switch (type)
+   {
+      case 0xc4:
+         if (rmsgpack_read_uint(fd, &n, 1) == -1)
+            return -1;
+         break;
+      case 0xc5:
+         if (rmsgpack_read_uint(fd, &n, 2) == -1)
+            return -1;
+         break;
+      case 0xc6:
+         if (rmsgpack_read_uint(fd, &n, 4) == -1)
+            return -1;
+         break;
+      default:
+         /* Not binary: step back over the type byte and let the
+          * generic skip deal with the whole value. */
+         if (intfstream_seek(fd, -1, RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+            return -1;
+         if (rmsgpack_skip_value(fd) < 0)
+            return -1;
+         return -1;
+   }
+
+   if (n > buf_size)
+   {
+      if (intfstream_seek(fd, (int64_t)n,
+               RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+         return -1;
+      return -1;
+   }
+
+   if (n && intfstream_read(fd, buf, n) != (int64_t)n)
+      return -1;
+
+   *len = n;
+   return 0;
+}
+
+int libretrodb_scan_field(libretrodb_t *db, const char *field,
+      libretrodb_scan_cb cb, void *ctx)
+{
+   intfstream_t *fd;
+   size_t        field_len;
+   int           rv = -1;
+
+   if (!db || !db->path || !*db->path || !field || !*field || !cb)
+      return -1;
+
+   field_len = strlen(field);
+
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
+
+   if (intfstream_seek(fd, (int64_t)(db->root + sizeof(libretrodb_header_t)),
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+      goto end;
+
+   for (;;)
+   {
+      int64_t record_start = intfstream_tell(fd);
+      int32_t map_len;
+      int32_t i;
+      int     stop = 0;
+
+      if (record_start < 0)
+         goto end;
+
+      map_len = rmsgpack_read_map_header(fd);
+
+      if (map_len == -2)   /* nil sentinel: end of records */
+      {
+         rv = 0;
+         goto end;
+      }
+      if (map_len < 0)
+         goto end;
+
+      for (i = 0; i < map_len; i++)
+      {
+         char    key_buf[64];
+         int32_t key_len = rmsgpack_read_key_string(fd, key_buf,
+               sizeof(key_buf));
+
+         if (key_len < 0)
+         {
+            /* Key was unreadable or too long for the buffer; its
+             * value still has to be stepped over. */
+            if (rmsgpack_skip_value(fd) < 0)
+               goto end;
+            continue;
+         }
+
+         if (     (size_t)key_len == field_len
+               && memcmp(key_buf, field, field_len) == 0)
+         {
+            uint8_t  buf[LIBRETRODB_MAX_KEY_SIZE];
+            uint64_t len = 0;
+            int64_t  resume;
+
+            if (rmsgpack_read_bin_inplace(fd, buf, sizeof(buf), &len) < 0)
+            {
+               /* Not binary, or wider than any key we index. */
+               continue;
+            }
+
+            resume = intfstream_tell(fd);
+            if (cb(ctx, buf, (size_t)len, (uint64_t)record_start))
+               stop = 1;
+            if (resume < 0
+                  || intfstream_seek(fd, resume,
+                     RETRO_VFS_SEEK_POSITION_START) < 0)
+               goto end;
+            if (stop)
+            {
+               rv = 0;
+               goto end;
+            }
+            continue;
+         }
+
+         if (rmsgpack_skip_value(fd) < 0)
+            goto end;
+      }
+   }
+
+end:
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
+
+/**
+ * libretrodb_read_at:
+ *
+ * Read the record beginning at @offset, which must have come from
+ * libretrodb_scan_field().  Lets a caller that kept only offsets
+ * fetch a record without walking to it.
+ */
+int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
+      struct rmsgpack_dom_value *out)
+{
+   intfstream_t *fd;
+   int rv = -1;
+
+   if (!db || !db->path || !*db->path || !out)
+      return -1;
+
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
+
+   if (intfstream_seek(fd, (int64_t)offset,
+            RETRO_VFS_SEEK_POSITION_START) >= 0)
+      rv = (rmsgpack_dom_read(fd, out) < 0) ? -1 : 0;
+
+   intfstream_close(fd);
+   free(fd);
+   return rv;
+}
+
 int libretrodb_cursor_read_item(libretrodb_cursor_t *cursor,
       struct rmsgpack_dom_value *out)
 {
