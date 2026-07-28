@@ -156,6 +156,41 @@
 #include <retro_inline.h>
 #include <encodings/rzstd.h>
 
+/* The decode loops spend much of their time on variable shifts, which
+ * BMI2 does in one flagless instruction where baseline x86-64 takes
+ * several and a dependency on CL. The build cannot assume BMI2, so on
+ * compilers with the target attribute the hot functions are compiled
+ * twice from one always-inline body and picked once at run time, the
+ * way the reference implementation ships its own loops. Measured on an
+ * image of two-kilobyte hunks this is worth about six per cent of the
+ * whole decode. Everywhere else this expands to the plain body alone. */
+#if defined(__GNUC__) && defined(__x86_64__) && !defined(RZSTD_NO_BMI2) \
+ && (defined(__clang__) || __GNUC__ > 4 \
+     || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))
+#define RZSTD_DYNAMIC_BMI2 1
+#include <cpuid.h>
+#define RZSTD_TARGET_BMI2 __attribute__((target("bmi2")))
+#define RZSTD_BODY_INLINE __attribute__((always_inline)) static INLINE
+
+static int rzstd_cpu_bmi2(void)
+{
+   static volatile int have = -1;
+
+   if (have < 0)
+   {
+      unsigned a, b, c, d;
+
+      /* Both racers write the same answer, so the race is benign. */
+      have = (__get_cpuid_count(7, 0, &a, &b, &c, &d) && (b & (1u << 8)))
+           ? 1 : 0;
+   }
+   return have;
+}
+#else
+#define RZSTD_BODY_INLINE static INLINE
+#endif
+
+
 /* RFC 8878 section 3.1.1: a frame begins with this, least significant
  * byte first. */
 #define RZSTD_MAGIC          0xFD2FB528U
@@ -599,7 +634,7 @@ typedef struct rzstd_fse
 /* Reads a table description (4.1.1) into normalised counts. These are
  * forward-read and least significant bit first, which is a third bit
  * order again and the reason this does its own reading. */
-static int rzstd_fse_read_counts(const uint8_t *src, size_t len,
+RZSTD_BODY_INLINE int rzstd_fse_read_counts(const uint8_t *src, size_t len,
       int16_t *counts, uint32_t *symbol_count, uint32_t *accuracy_log,
       uint32_t max_symbols, uint32_t max_log, size_t *used)
 {
@@ -704,7 +739,7 @@ static int rzstd_fse_read_counts(const uint8_t *src, size_t len,
  * than clump. A count of -1 means the symbol is less probable than one
  * slot's worth; those take slots from the end and the walk skips them.
  */
-static int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table,
+RZSTD_BODY_INLINE int rzstd_fse_build(rzstd_fse_t *fse, rzstd_fse_entry_t *table,
       const int16_t *counts, uint32_t symbol_count, uint32_t accuracy_log)
 {
    uint32_t size     = (uint32_t)1 << accuracy_log;
@@ -808,7 +843,7 @@ typedef struct rzstd_huf
 /* Turns weights into a table. The final symbol's weight is not stored:
  * it is whatever makes the total a power of two, which is why the
  * weights alone are enough (4.2.1). */
-static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
+RZSTD_BODY_INLINE int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
       uint32_t count)
 {
    uint32_t total = 0;
@@ -957,7 +992,7 @@ static int rzstd_huf_build(rzstd_huf_t *huf, const uint8_t *weights,
  * The first byte decides the form: 128 or above means the weights
  * follow directly at four bits each, and the byte itself carries how
  * many. Below that it is the byte length of an FSE-coded stream. */
-static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, size_t len,
       size_t *used)
 {
    uint8_t  weights[RZSTD_HUF_MAX_SYMBOLS + 1];
@@ -1054,6 +1089,35 @@ static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
       return rzstd_huf_build(huf, weights, count);
    }
 }
+
+#ifdef RZSTD_DYNAMIC_BMI2
+static int rzstd_huf_read_sse(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+      size_t *used)
+{
+   return rzstd_huf_read_body(huf, src, len, used);
+}
+
+RZSTD_TARGET_BMI2
+static int rzstd_huf_read_bmi2(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+      size_t *used)
+{
+   return rzstd_huf_read_body(huf, src, len, used);
+}
+
+static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+      size_t *used)
+{
+   if (rzstd_cpu_bmi2())
+      return rzstd_huf_read_bmi2(huf, src, len, used);
+   return rzstd_huf_read_sse(huf, src, len, used);
+}
+#else
+static int rzstd_huf_read(rzstd_huf_t *huf, const uint8_t *src, size_t len,
+      size_t *used)
+{
+   return rzstd_huf_read_body(huf, src, len, used);
+}
+#endif
 
 /* Pulls one symbol. The reader always holds at least max_bits, so a
  * peek is a plain index into the table. */
@@ -1223,7 +1287,7 @@ static void rzstd_fast_handoff(const rzstd_fast_t *f, rzstd_rbits_t *b,
  * taking a quarter of the output in order. The first three sizes come
  * from a six-byte jump table and the fourth is whatever remains, which
  * is why only three are stored. */
-static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
+RZSTD_BODY_INLINE int rzstd_huf_decode_body(const rzstd_huf_t *huf, const uint8_t *src,
       size_t src_len, uint8_t *dst, size_t count, int four_streams)
 {
    size_t i;
@@ -1420,6 +1484,35 @@ static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
       return RZ_OK;
    }
 }
+
+#ifdef RZSTD_DYNAMIC_BMI2
+static int rzstd_huf_decode_sse(const rzstd_huf_t *huf, const uint8_t *src,
+      size_t src_len, uint8_t *dst, size_t count, int four_streams)
+{
+   return rzstd_huf_decode_body(huf, src, src_len, dst, count, four_streams);
+}
+
+RZSTD_TARGET_BMI2
+static int rzstd_huf_decode_bmi2(const rzstd_huf_t *huf, const uint8_t *src,
+      size_t src_len, uint8_t *dst, size_t count, int four_streams)
+{
+   return rzstd_huf_decode_body(huf, src, src_len, dst, count, four_streams);
+}
+
+static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
+      size_t src_len, uint8_t *dst, size_t count, int four_streams)
+{
+   if (rzstd_cpu_bmi2())
+      return rzstd_huf_decode_bmi2(huf, src, src_len, dst, count, four_streams);
+   return rzstd_huf_decode_sse(huf, src, src_len, dst, count, four_streams);
+}
+#else
+static int rzstd_huf_decode(const rzstd_huf_t *huf, const uint8_t *src,
+      size_t src_len, uint8_t *dst, size_t count, int four_streams)
+{
+   return rzstd_huf_decode_body(huf, src, src_len, dst, count, four_streams);
+}
+#endif
 
 /* -------- literals --------
  *
@@ -1880,7 +1973,7 @@ static void rzstd_build_predefined(void)
 }
 
 /* Sets up one of the three tables according to its two-bit mode. */
-static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+RZSTD_BODY_INLINE int rzstd_seq_table_body(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
       uint32_t mode, const int16_t *predef, uint32_t predef_count,
       uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
       const uint8_t *src, size_t len, size_t *used, int have_previous,
@@ -1937,6 +2030,57 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
    return RZ_OK;
 }
 
+#ifdef RZSTD_DYNAMIC_BMI2
+static int rzstd_seq_table_sse(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+      uint32_t mode, const int16_t *predef, uint32_t predef_count,
+      uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
+      const uint8_t *src, size_t len, size_t *used, int have_previous,
+      rzstd_fse_entry_t *shared)
+{
+   return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
+         predef_log, max_symbol, max_log, src, len, used,
+         have_previous, shared);
+}
+
+RZSTD_TARGET_BMI2
+static int rzstd_seq_table_bmi2(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+      uint32_t mode, const int16_t *predef, uint32_t predef_count,
+      uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
+      const uint8_t *src, size_t len, size_t *used, int have_previous,
+      rzstd_fse_entry_t *shared)
+{
+   return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
+         predef_log, max_symbol, max_log, src, len, used,
+         have_previous, shared);
+}
+
+static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+      uint32_t mode, const int16_t *predef, uint32_t predef_count,
+      uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
+      const uint8_t *src, size_t len, size_t *used, int have_previous,
+      rzstd_fse_entry_t *shared)
+{
+   if (rzstd_cpu_bmi2())
+      return rzstd_seq_table_bmi2(fse, storage, mode, predef, predef_count,
+         predef_log, max_symbol, max_log, src, len, used,
+         have_previous, shared);
+   return rzstd_seq_table_sse(fse, storage, mode, predef, predef_count,
+         predef_log, max_symbol, max_log, src, len, used,
+         have_previous, shared);
+}
+#else
+static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
+      uint32_t mode, const int16_t *predef, uint32_t predef_count,
+      uint32_t predef_log, uint32_t max_symbol, uint32_t max_log,
+      const uint8_t *src, size_t len, size_t *used, int have_previous,
+      rzstd_fse_entry_t *shared)
+{
+   return rzstd_seq_table_body(fse, storage, mode, predef, predef_count,
+         predef_log, max_symbol, max_log, src, len, used,
+         have_previous, shared);
+}
+#endif
+
 /* Decodes a block's sequences and executes them into @dst.
  *
  * The three offsets most recently used are remembered, and an offset
@@ -1944,7 +2088,7 @@ static int rzstd_seq_table(rzstd_fse_t *fse, rzstd_fse_entry_t *storage,
  * the wrinkle that when there are no literals the meaning shifts by
  * one, because repeating the immediately previous offset would then be
  * expressible twice (3.1.1.4). */
-static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
+RZSTD_BODY_INLINE int rzstd_decode_sequences_body(rzstd_seq_tables_t *tab,
       const uint8_t *src, size_t src_len,
       const uint8_t *literals, size_t lit_len, size_t lit_readable,
       uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
@@ -2245,6 +2389,48 @@ static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
    *dst_at = out;
    return RZ_OK;
 }
+
+#ifdef RZSTD_DYNAMIC_BMI2
+static int rzstd_decode_sequences_sse(rzstd_seq_tables_t *tab,
+      const uint8_t *src, size_t src_len,
+      const uint8_t *literals, size_t lit_len, size_t lit_readable,
+      uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
+{
+   return rzstd_decode_sequences_body(tab, src, src_len, literals, lit_len,
+         lit_readable, dst, dst_len, dst_at, repeat);
+}
+
+RZSTD_TARGET_BMI2
+static int rzstd_decode_sequences_bmi2(rzstd_seq_tables_t *tab,
+      const uint8_t *src, size_t src_len,
+      const uint8_t *literals, size_t lit_len, size_t lit_readable,
+      uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
+{
+   return rzstd_decode_sequences_body(tab, src, src_len, literals, lit_len,
+         lit_readable, dst, dst_len, dst_at, repeat);
+}
+
+static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
+      const uint8_t *src, size_t src_len,
+      const uint8_t *literals, size_t lit_len, size_t lit_readable,
+      uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
+{
+   if (rzstd_cpu_bmi2())
+      return rzstd_decode_sequences_bmi2(tab, src, src_len, literals, lit_len,
+         lit_readable, dst, dst_len, dst_at, repeat);
+   return rzstd_decode_sequences_sse(tab, src, src_len, literals, lit_len,
+         lit_readable, dst, dst_len, dst_at, repeat);
+}
+#else
+static int rzstd_decode_sequences(rzstd_seq_tables_t *tab,
+      const uint8_t *src, size_t src_len,
+      const uint8_t *literals, size_t lit_len, size_t lit_readable,
+      uint8_t *dst, size_t dst_len, size_t *dst_at, uint32_t *repeat)
+{
+   return rzstd_decode_sequences_body(tab, src, src_len, literals, lit_len,
+         lit_readable, dst, dst_len, dst_at, repeat);
+}
+#endif
 
 /* -------- blocks --------
  *
