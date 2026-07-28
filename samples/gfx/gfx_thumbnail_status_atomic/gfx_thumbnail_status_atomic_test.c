@@ -214,10 +214,21 @@ typedef char _gfx_thumb_status_size_check[
  * out a missing-barrier bug under TSan within a few seconds; on
  * real weak-memory hardware (qemu-aarch64) it surfaces faster.
  * Adjust upward if the bug becomes harder to reproduce.
- * Overridable (-DSTRESS_ITERS=...) for constrained environments:
- * the lock-step handshake costs scheduler timeslices per
- * iteration on a single-CPU host, and TSan's happens-before
- * detection does not depend on the count. */
+ * Overridable for constrained environments: the lock-step
+ * handshake costs scheduler timeslices per iteration on a
+ * single-CPU host, and TSan's happens-before detection does not
+ * depend on the count.  Pass it through the Makefile's
+ * EXTRA_CFLAGS, not CFLAGS:
+ *
+ *     make EXTRA_CFLAGS=-DSTRESS_ITERS=20000
+ *
+ * CFLAGS= on the command line replaces everything the Makefile
+ * sets, -DHAVE_THREADS included, and the run then reports
+ * "[skip] HAVE_THREADS not defined" and exits 0 with the whole
+ * stress section switched off.
+ *
+ * Measured on one core: 2.9 s at 20000, 14.4 s at 100000, 36 s
+ * at 250000, ~145 s at the default. */
 #ifndef STRESS_ITERS
 #define STRESS_ITERS 1000000
 #endif
