@@ -40,6 +40,11 @@
  *   oversized field         a field wider than the window cannot be
  *                           served from it, and returning failure
  *                           silently dropped the record.
+ *   index round trip        libretrodb_create_index() leaked every
+ *                           key buffer it handed to the tree, and
+ *                           bintree reported a failed grow as a
+ *                           successful insert; nothing exercised
+ *                           create-then-look-up at all.
  *   query slices            libretrodb_query_compile() takes a
  *                           (pointer, length) pair, but the parser
  *                           handed identifier slices to strlcpy(),
@@ -613,6 +618,93 @@ static void case_query_slices(const char *dir)
    libretrodb_free(db);
 }
 
+/* Build an index over a database with unique keys, then look an
+ * entry up through it.  This is the only path that reaches
+ * bintree_insert() and binsearch(), and until now nothing exercised
+ * the two together. */
+static void case_index_round_trip(const char *dir)
+{
+   char   path[512];
+   buf_t  body, meta;
+   int    i;
+   const int records = 600;
+   libretrodb_t *db;
+
+   memset(&body, 0, sizeof(body));
+   memset(&meta, 0, sizeof(meta));
+
+   for (i = 0; i < records; i++)
+   {
+      char name[32];
+      uint8_t crc[4];
+      sprintf(name, "G%05d", i);
+      crc[0] = (uint8_t)(i >> 24); crc[1] = (uint8_t)(i >> 16);
+      crc[2] = (uint8_t)(i >> 8);  crc[3] = (uint8_t)i;
+      bfixmap(&body, 2);
+      bfixstr(&body, "name"); bfixstr(&body, name);
+      bfixstr(&body, "crc");  bbin(&body, crc, 4);
+   }
+   bnil(&body);
+   meta_count(&meta, 1);
+
+   sprintf(path, "%s/index_round_trip.rdb", dir);
+   write_rdb(path, &body, &meta);
+   bfree(&body); bfree(&meta);
+
+   begin("index creation");
+   db = libretrodb_new();
+   if (!db || libretrodb_open(path, db, true) != 0)
+   {
+      check(0, "index creation", "database would not open for write");
+      libretrodb_free(db);
+      return;
+    }
+   check(libretrodb_create_index(db, "crc", "crc") == 0,
+         "index creation", "built over unique keys");
+   libretrodb_close(db);
+   libretrodb_free(db);
+
+   /* Look up a key that is neither first nor last, so the search has
+    * to actually descend. */
+   begin("index lookup");
+   db = libretrodb_new();
+   if (db && libretrodb_open(path, db, false) == 0)
+   {
+      struct rmsgpack_dom_value out;
+      unsigned char key[4];
+      unsigned v = 337;
+      char found[64];
+      int ok = 0;
+      key[0] = (unsigned char)(v >> 24); key[1] = (unsigned char)(v >> 16);
+      key[2] = (unsigned char)(v >> 8);  key[3] = (unsigned char)v;
+      found[0] = '\0';
+      if (libretrodb_find_entry(db, "crc", key, &out) == 0)
+      {
+         if (out.type == RDT_MAP)
+         {
+            unsigned j;
+            for (j = 0; j < out.val.map.len; j++)
+            {
+               struct rmsgpack_dom_value *k = &out.val.map.items[j].key;
+               struct rmsgpack_dom_value *w = &out.val.map.items[j].value;
+               if (   k->type == RDT_STRING && k->val.string.buff
+                   && !strcmp(k->val.string.buff, "name")
+                   && w->type == RDT_STRING && w->val.string.buff)
+                  strncpy(found, w->val.string.buff, sizeof(found) - 1);
+            }
+         }
+         ok = !strcmp(found, "G00337");
+         rmsgpack_dom_value_free(&out);
+      }
+      check(ok, "index lookup", ok ? "resolved to the right record"
+                                   : "wrong or missing record");
+      libretrodb_close(db);
+   }
+   else
+      check(0, "index lookup", "database would not reopen");
+   libretrodb_free(db);
+}
+
 int main(int argc, char **argv)
 {
    const char *dir = (argc > 1) ? argv[1] : "/tmp";
@@ -631,6 +723,7 @@ int main(int argc, char **argv)
    case_window(dir);
    case_index(dir);
    case_query_slices(dir);
+   case_index_round_trip(dir);
 
    printf("\n%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;
