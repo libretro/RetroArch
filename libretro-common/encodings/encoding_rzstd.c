@@ -543,13 +543,16 @@ static int rzstd_rbits_have(rzstd_rbits_t *b, uint32_t n)
  * separately: the checked form was forty-five per cent of decode time,
  * almost all of it in checks that a caller could have made once for
  * several reads. */
-static uint32_t rzstd_rbits_take(rzstd_rbits_t *b, uint32_t n)
+static INLINE uint32_t rzstd_rbits_take(rzstd_rbits_t *b, uint32_t n)
 {
-   uint32_t v;
+   /* Two shifts rather than one so that zero asks for zero bits and
+    * gets zero, without a test. A single shift by 64 - n would be a
+    * shift by sixty-four for that case, which is undefined; shifting by
+    * 63 - n and then once more is defined for the whole range. The test
+    * this replaces sat in every field of every sequence -- six times a
+    * sequence -- for fields that are rarely but not never zero. */
+   uint32_t v = (uint32_t)((b->bits >> (63 - n)) >> 1);
 
-   if (!n)
-      return 0;
-   v         = (uint32_t)(b->bits >> (64 - n));
    b->bits <<= n;
    b->count -= n;
    return v;
