@@ -50,7 +50,25 @@
 #define CRC32_HAVE_ARM_PATH 1
 #elif defined(__x86_64__) || defined(__i386__) \
    || defined(_M_X64)     || defined(_M_IX86)
-#define CRC32_HAVE_PCLMUL_PATH 1
+/* Being on x86 is necessary but not sufficient: the toolchain also has
+ * to be able to build the intrinsics.  Prefer the feature tests, and
+ * never fall back on a bare __GNUC__ version comparison -- Clang
+ * reports itself as GCC 4.2 forever, so a ">= 4.4" predicate rejects
+ * every Clang build, which is every Apple, Android NDK, Emscripten and
+ * PS4 toolchain.  The version fallback below carries !__clang__ for
+ * that reason and exists only for GCC old enough to lack
+ * __has_attribute. */
+#  if defined(_MSC_VER)
+#    define CRC32_HAVE_PCLMUL_PATH 1
+#  elif defined(__has_attribute) && defined(__has_include)
+#    if __has_attribute(target) && __has_include(<wmmintrin.h>)
+#      define CRC32_HAVE_PCLMUL_PATH 1
+#    endif
+#  elif defined(__GNUC__) && !defined(__clang__) \
+     && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
+     /* GCC 4.4 introduced both wmmintrin.h and x86 target attributes. */
+#    define CRC32_HAVE_PCLMUL_PATH 1
+#  endif
 #endif
 
 /* ------------------------------------------------------------------ */
