@@ -970,6 +970,12 @@ struct database_info_crc_index
    struct db_crc_entry *entries;
    size_t               count;
    char                *rdb_path;
+   /* Size range of the indexed records, collected during the same
+    * walk.  The scanner otherwise pays two more walks per database
+    * for exactly this. */
+   uint64_t             size_min;
+   uint64_t             size_max;
+   bool                 have_size;
 };
 
 static int db_crc_by_crc(const void *a, const void *b)
@@ -1005,13 +1011,31 @@ struct db_crc_build
    struct db_crc_entry *entries;
    size_t               count;
    size_t               capacity;
+   uint64_t             size_min;
+   uint64_t             size_max;
+   bool                 have_size;
    bool                 failed;
 };
 
 static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
-      uint64_t offset)
+      uint64_t offset, const uint64_t *aux)
 {
    struct db_crc_build *b = (struct db_crc_build*)ctx;
+
+   if (aux)
+   {
+      if (!b->have_size)
+      {
+         b->size_min  = *aux;
+         b->size_max  = *aux;
+         b->have_size = true;
+      }
+      else
+      {
+         if (*aux < b->size_min) b->size_min = *aux;
+         if (*aux > b->size_max) b->size_max = *aux;
+      }
+   }
 
    /* Only fixed 4-byte crcs are indexable.  Anything else is left to
     * the query path, which is still what runs without an index. */
@@ -1061,7 +1085,8 @@ database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path)
       return NULL;
    }
 
-   if (   libretrodb_scan_field(db, "crc", db_crc_collect, &build) != 0
+   if (   libretrodb_scan_field(db, "crc", "size", db_crc_collect,
+             &build) != 0
        || build.failed)
       goto error;
 
@@ -1079,8 +1104,11 @@ database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path)
       qsort(build.entries, build.count, sizeof(*build.entries),
             db_crc_by_crc);
 
-   idx->entries = build.entries;
-   idx->count   = build.count;
+   idx->entries   = build.entries;
+   idx->count     = build.count;
+   idx->size_min  = build.size_min;
+   idx->size_max  = build.size_max;
+   idx->have_size = build.have_size;
 
    libretrodb_close(db);
    libretrodb_free(db);
@@ -1091,6 +1119,16 @@ error:
    libretrodb_close(db);
    libretrodb_free(db);
    return NULL;
+}
+
+bool database_info_crc_index_size_range(
+      const database_info_crc_index_t *idx, int64_t *min, int64_t *max)
+{
+   if (!idx || !idx->have_size || !min || !max)
+      return false;
+   *min = (int64_t)idx->size_min;
+   *max = (int64_t)idx->size_max;
+   return true;
 }
 
 void database_info_crc_index_free(database_info_crc_index_t *idx)
@@ -1259,9 +1297,10 @@ struct db_serial_build
 };
 
 static int db_serial_collect(void *ctx, const uint8_t *key, size_t key_len,
-      uint64_t offset)
+      uint64_t offset, const uint64_t *aux)
 {
    struct db_serial_build *b = (struct db_serial_build*)ctx;
+   (void)aux;
 
    if (!key_len)
       return 0;
@@ -1312,7 +1351,8 @@ database_info_serial_index_t *database_info_serial_index_new(
       return NULL;
    }
 
-   if (   libretrodb_scan_field(db, "serial", db_serial_collect, &build) != 0
+   if (   libretrodb_scan_field(db, "serial", NULL, db_serial_collect,
+             &build) != 0
        || build.failed)
       goto error;
 

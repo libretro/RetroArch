@@ -46,8 +46,9 @@
  *                           successful insert; nothing exercised
  *                           create-then-look-up at all.
  *   field scan              libretrodb_scan_field() walks a database
- *                           once reporting a field and the offset of
- *                           the record carrying it, and
+ *                           once reporting a field, a companion
+ *                           numeric field, and the offset of the
+ *                           record carrying them, and
  *                           libretrodb_read_at() fetches a record
  *                           back from such an offset.  The two have
  *                           to agree with what a query returns,
@@ -713,16 +714,24 @@ static void case_index_round_trip(const char *dir)
 }
 
 /* Collector for the scan test below. */
-typedef struct { uint32_t key; uint64_t off; } scan_ent_t;
+typedef struct
+{
+   uint32_t key;
+   uint64_t off;
+   uint64_t aux;
+   int      have_aux;
+} scan_ent_t;
 static scan_ent_t scan_ents[64];
 static size_t     scan_n;
 
 static int scan_collect(void *ctx, const uint8_t *key, size_t key_len,
-      uint64_t offset)
+      uint64_t offset, const uint64_t *aux)
 {
    (void)ctx;
    if (key_len != 4 || scan_n >= sizeof(scan_ents) / sizeof(scan_ents[0]))
       return 0;
+   scan_ents[scan_n].have_aux = (aux != NULL);
+   scan_ents[scan_n].aux      = aux ? *aux : 0;
    scan_ents[scan_n].key = ((uint32_t)key[0] << 24) | ((uint32_t)key[1] << 16)
                          | ((uint32_t)key[2] << 8)  |  (uint32_t)key[3];
    scan_ents[scan_n].off = offset;
@@ -757,9 +766,22 @@ static void case_field_scan(const char *dir)
       sprintf(name, "Rec%02u", (unsigned)i);
       crc[0] = (uint8_t)(keys[i] >> 24); crc[1] = (uint8_t)(keys[i] >> 16);
       crc[2] = (uint8_t)(keys[i] >> 8);  crc[3] = (uint8_t)keys[i];
-      bfixmap(&body, 2);
-      bfixstr(&body, "name"); bfixstr(&body, name);
-      bfixstr(&body, "crc");  bbin(&body, crc, 4);
+      /* The last record deliberately carries no size, so the
+       * companion field has to be reported as absent rather than
+       * carrying the previous record's value. */
+      if (i + 1 < nkeys)
+      {
+         bfixmap(&body, 3);
+         bfixstr(&body, "name"); bfixstr(&body, name);
+         bfixstr(&body, "crc");  bbin(&body, crc, 4);
+         bfixstr(&body, "size"); buint8(&body, (uint8_t)(10 * (i + 1)));
+      }
+      else
+      {
+         bfixmap(&body, 2);
+         bfixstr(&body, "name"); bfixstr(&body, name);
+         bfixstr(&body, "crc");  bbin(&body, crc, 4);
+      }
    }
    bnil(&body);
    meta_count(&meta, 1);
@@ -777,7 +799,7 @@ static void case_field_scan(const char *dir)
       libretrodb_free(db);
       return;
    }
-   ok = (libretrodb_scan_field(db, "crc", scan_collect, NULL) == 0)
+   ok = (libretrodb_scan_field(db, "crc", "size", scan_collect, NULL) == 0)
       && (scan_n == nkeys);
    check(ok, "field scan reports every record",
          ok ? "all keys seen, repeats included" : "wrong count");
@@ -788,6 +810,21 @@ static void case_field_scan(const char *dir)
       if (scan_ents[i].key != keys[i])
          ok = 0;
    check(ok, "scanned keys are in file order", ok ? "match" : "reordered");
+
+   begin("companion field follows the key");
+   ok = 1;
+   for (i = 0; i < scan_n && i < nkeys; i++)
+   {
+      if (i + 1 < nkeys)
+      {
+         if (!scan_ents[i].have_aux || scan_ents[i].aux != 10 * (i + 1))
+            ok = 0;
+      }
+      else if (scan_ents[i].have_aux)
+         ok = 0;                    /* no size on the last record */
+   }
+   check(ok, "companion field follows the key",
+         ok ? "values match, absence reported" : "wrong or leaked value");
 
    begin("offsets resolve to their own record");
    ok = 1;

@@ -645,17 +645,60 @@ static int rmsgpack_read_bin_inplace(intfstream_t *fd, uint8_t *buf,
    return 0;
 }
 
+/**
+ * rmsgpack_read_uint_inplace:
+ *
+ * Read a MsgPack unsigned (or non-negative signed) value.  Returns -1
+ * and leaves the stream positioned after the value for anything else,
+ * so the caller can carry on scanning.
+ */
+static int rmsgpack_read_uint_inplace(intfstream_t *fd, uint64_t *out)
+{
+   uint8_t  type = 0;
+   uint64_t n    = 0;
+
+   if (intfstream_read(fd, &type, 1) != 1)
+      return -1;
+
+   /* positive fixint */
+   if (type < 0x80)
+   {
+      *out = type;
+      return 0;
+   }
+
+   switch (type)
+   {
+      case 0xcc: case 0xcd: case 0xce: case 0xcf:
+         if (rmsgpack_read_uint(fd, &n, (size_t)(1 << (type - 0xcc))) == -1)
+            return -1;
+         *out = n;
+         return 0;
+      default:
+         break;
+   }
+
+   if (intfstream_seek(fd, -1, RETRO_VFS_SEEK_POSITION_CURRENT) < 0)
+      return -1;
+   if (rmsgpack_skip_value(fd) < 0)
+      return -1;
+   return -1;
+}
+
 int libretrodb_scan_field(libretrodb_t *db, const char *field,
-      libretrodb_scan_cb cb, void *ctx)
+      const char *aux_field, libretrodb_scan_cb cb, void *ctx)
 {
    intfstream_t *fd;
    size_t        field_len;
-   int           rv = -1;
+   size_t        aux_len = 0;
+   int           rv      = -1;
 
    if (!db || !db->path || !*db->path || !field || !*field || !cb)
       return -1;
 
    field_len = strlen(field);
+   if (aux_field && *aux_field)
+      aux_len = strlen(aux_field);
 
    if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
       if (!(fd = intfstream_open_file(db->path,
@@ -670,9 +713,14 @@ int libretrodb_scan_field(libretrodb_t *db, const char *field,
    for (;;)
    {
       int64_t record_start = intfstream_tell(fd);
-      int32_t map_len;
-      int32_t i;
-      int     stop = 0;
+      int32_t  map_len;
+      int32_t  i;
+      int      stop        = 0;
+      int      have_key    = 0;
+      int      have_aux    = 0;
+      uint8_t  key_val[LIBRETRODB_MAX_KEY_SIZE];
+      uint64_t key_val_len = 0;
+      uint64_t aux_val     = 0;
 
       if (record_start < 0)
          goto end;
@@ -686,6 +734,11 @@ int libretrodb_scan_field(libretrodb_t *db, const char *field,
       }
       if (map_len < 0)
          goto end;
+
+      /* The field and its companion can sit either way round in the
+       * map, so both are collected before the record is reported. */
+      have_key = 0;
+      have_aux = 0;
 
       for (i = 0; i < map_len; i++)
       {
@@ -702,36 +755,49 @@ int libretrodb_scan_field(libretrodb_t *db, const char *field,
             continue;
          }
 
-         if (     (size_t)key_len == field_len
+         if (     !have_key
+               && (size_t)key_len == field_len
                && memcmp(key_buf, field, field_len) == 0)
          {
-            uint8_t  buf[LIBRETRODB_MAX_KEY_SIZE];
-            uint64_t len = 0;
-            int64_t  resume;
+            /* Not binary, or wider than any key we index: the reader
+             * has already stepped past the value. */
+            if (rmsgpack_read_bin_inplace(fd, key_val, sizeof(key_val),
+                     &key_val_len) == 0)
+               have_key = 1;
+            continue;
+         }
 
-            if (rmsgpack_read_bin_inplace(fd, buf, sizeof(buf), &len) < 0)
-            {
-               /* Not binary, or wider than any key we index. */
-               continue;
-            }
-
-            resume = intfstream_tell(fd);
-            if (cb(ctx, buf, (size_t)len, (uint64_t)record_start))
-               stop = 1;
-            if (resume < 0
-                  || intfstream_seek(fd, resume,
-                     RETRO_VFS_SEEK_POSITION_START) < 0)
-               goto end;
-            if (stop)
-            {
-               rv = 0;
-               goto end;
-            }
+         if (     aux_len
+               && !have_aux
+               && (size_t)key_len == aux_len
+               && memcmp(key_buf, aux_field, aux_len) == 0)
+         {
+            if (rmsgpack_read_uint_inplace(fd, &aux_val) == 0)
+               have_aux = 1;
             continue;
          }
 
          if (rmsgpack_skip_value(fd) < 0)
             goto end;
+      }
+
+      if (have_key)
+      {
+         int64_t resume = intfstream_tell(fd);
+
+         if (cb(ctx, key_val, (size_t)key_val_len,
+                  (uint64_t)record_start, have_aux ? &aux_val : NULL))
+            stop = 1;
+
+         if (resume < 0
+               || intfstream_seek(fd, resume,
+                  RETRO_VFS_SEEK_POSITION_START) < 0)
+            goto end;
+         if (stop)
+         {
+            rv = 0;
+            goto end;
+         }
       }
    }
 

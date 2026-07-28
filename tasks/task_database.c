@@ -1194,6 +1194,50 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
     * This is what stops the two walks repeating per content file. */
    db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
 
+   /* The crc index collects the size range while it walks, so build
+    * it here and take the range from it: one walk instead of this
+    * function's two, and the crc lookup then finds the index already
+    * built.  The queries below still run for a database the index
+    * cannot cover. */
+   {
+      const char *rdb = db_state->list->elems[db_state->list_index].data;
+      int64_t     lo  = 0;
+      int64_t     hi  = 0;
+
+      if (rdb && *rdb)
+      {
+         if (!db_state->crc_index[db_state->list_index])
+            db_state->crc_index[db_state->list_index] =
+               database_info_crc_index_new(rdb);
+
+         if (   db_state->crc_index[db_state->list_index]
+             && database_info_crc_index_size_range(
+                   db_state->crc_index[db_state->list_index], &lo, &hi))
+         {
+            db_state->min_sizes[db_state->list_index] = lo;
+            db_state->max_sizes[db_state->list_index] = hi;
+            db_state->flags[db_state->list_index]    |=
+               DB_STATE_FLAG_HAS_SIZE;
+
+            /* HAS_SERIAL gates a skip in the serial lookup, and this
+             * walk does not observe serial keys - it scans crc with
+             * size alongside.  Set it rather than leave it clear:
+             * clear would skip every database for disc content, which
+             * is a missed match, while set costs at most one wasted
+             * serial-index build for a database that carries none.
+             * Every database shipped today carries serials.
+             *
+             * HAS_CRC is set for symmetry; nothing reads it beyond a
+             * debug line. */
+            db_state->flags[db_state->list_index] |=
+               DB_STATE_FLAG_HAS_CRC | DB_STATE_FLAG_HAS_SERIAL;
+
+            db_state->entry_index = 0;
+            return;
+         }
+      }
+   }
+
    snprintf(query, sizeof(query), "{size:min(0)}");
    database_info_list_iterate_new(db_state, query);
 

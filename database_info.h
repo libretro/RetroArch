@@ -172,6 +172,11 @@ database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path);
 void database_info_crc_index_free(database_info_crc_index_t *idx);
 size_t database_info_crc_index_count(const database_info_crc_index_t *idx);
 
+/* Size range of the records the index covers, collected during the
+ * same walk that built it.  False when no record carried a size. */
+bool database_info_crc_index_size_range(
+      const database_info_crc_index_t *idx, int64_t *min, int64_t *max);
+
 /* Records whose crc is @crc or @archive_crc, in file order, with
  * @fields extracted - the same list database_info_list_new_filtered()
  * returns for "{crc:or(...)}".  NULL if the lookup could not be
