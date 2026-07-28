@@ -50,12 +50,30 @@ int bintree_insert(bintree_t *t, struct bintree_node *root, void *value)
 {
    int cmp_res = 0;
 
+   /* A NULL node means an earlier bintree_new_nil_node() failed and
+    * left a hole in the tree.  This used to report 0 - the same value
+    * a successful insert returns - so a caller could not tell that
+    * nothing had been stored, and went on to write an index missing
+    * the entries that fell into the hole. */
    if (!root)
-      return 0;
+      return -2;
+
    if (root->value == NIL_NODE)
    {
-      root->left  = bintree_new_nil_node(root);
-      root->right = bintree_new_nil_node(root);
+      struct bintree_node *l = bintree_new_nil_node(root);
+      struct bintree_node *r = bintree_new_nil_node(root);
+
+      /* Commit only if both children exist, otherwise the next insert
+       * that descends this way hits the NULL case above. */
+      if (!l || !r)
+      {
+         free(l);
+         free(r);
+         return -2;
+      }
+
+      root->left  = l;
+      root->right = r;
       root->value = value;
       return 0;
    }
@@ -108,7 +126,14 @@ bintree_t *bintree_new(bintree_cmp_func cmp, void *ctx)
    if (!t)
       return NULL;
 
-   t->root      = bintree_new_nil_node(NULL);
+   if (!(t->root = bintree_new_nil_node(NULL)))
+   {
+      /* Returning a tree with no root made every later insert take
+       * the !root path, which reported success. */
+      free(t);
+      return NULL;
+   }
+
    t->cmp       = cmp;
    t->ctx       = ctx;
 

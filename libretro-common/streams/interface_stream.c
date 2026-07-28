@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 
+#include <string.h>
 #include <streams/interface_stream.h>
 #include <streams/file_stream.h>
 #include <streams/memory_stream.h>
@@ -57,8 +58,80 @@ struct intfstream_internal
       rzipstream_t *fp;
    } rzip;
 #endif
+   struct
+   {
+      RFILE   *fp;
+      uint8_t *buf;        /* window contents                     */
+      uint64_t cap;        /* window size                         */
+      uint64_t lo;         /* file offset of buf[0]               */
+      uint64_t hi;         /* file offset one past buf's last byte */
+      uint64_t pos;        /* logical read position                */
+      uint64_t size;
+   } buffered;
    enum intfstream_type type;
 };
+
+/* Refill the window so that [pos, pos+len) is resident. */
+static bool intfstream_buffered_fill(intfstream_internal_t *intf,
+      uint64_t pos, uint64_t len)
+{
+   int64_t got;
+
+   if (len > intf->buffered.cap || pos + len > intf->buffered.size)
+      return false;
+   if (filestream_seek(intf->buffered.fp, (int64_t)pos,
+            RETRO_VFS_SEEK_POSITION_START) < 0)
+      return false;
+   if ((got = filestream_read(intf->buffered.fp, intf->buffered.buf,
+               (int64_t)intf->buffered.cap)) <= 0)
+      return false;
+
+   intf->buffered.lo = pos;
+   intf->buffered.hi = pos + (uint64_t)got;
+   return (pos + len <= intf->buffered.hi);
+}
+
+intfstream_t *intfstream_open_buffered(const char *path, uint64_t window)
+{
+   intfstream_info_t      info;
+   intfstream_internal_t *fd = NULL;
+   RFILE                 *fp = NULL;
+   int64_t                sz;
+
+   if (!path || !*path || !window)
+      return NULL;
+
+   if (!(fp = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+      return NULL;
+
+   if ((sz = filestream_get_size(fp)) < 0)
+   {
+      filestream_close(fp);
+      return NULL;
+   }
+
+   memset(&info, 0, sizeof(info));
+   info.type = INTFSTREAM_BUFFERED;
+
+   if (!(fd = (intfstream_internal_t*)intfstream_init(&info)))
+   {
+      filestream_close(fp);
+      return NULL;
+   }
+
+   if (!(fd->buffered.buf = (uint8_t*)malloc((size_t)window)))
+   {
+      filestream_close(fp);
+      free(fd);
+      return NULL;
+   }
+
+   fd->buffered.fp   = fp;
+   fd->buffered.cap  = window;
+   fd->buffered.size = (uint64_t)sz;
+   return fd;
+}
 
 int64_t intfstream_get_size(intfstream_internal_t *intf)
 {
@@ -77,6 +150,8 @@ int64_t intfstream_get_size(intfstream_internal_t *intf)
 #else
         break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         return (int64_t)intf->buffered.size;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_get_size(intf->rzip.fp);
@@ -114,6 +189,10 @@ bool intfstream_open(intfstream_internal_t *intf, const char *path,
 #else
          return false;
 #endif
+      case INTFSTREAM_BUFFERED:
+         if (!intf->buffered.fp)
+            return false;
+         break;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          intf->rzip.fp = rzipstream_open(path, mode);
@@ -139,6 +218,8 @@ int intfstream_flush(intfstream_internal_t *intf)
          return filestream_flush(intf->file.fp);
       case INTFSTREAM_MEMORY:
       case INTFSTREAM_CHD:
+      case INTFSTREAM_BUFFERED:
+         return 0;   /* read-only */
       case INTFSTREAM_RZIP:
          /* Should we stub this for these interfaces? */
          break;
@@ -168,6 +249,14 @@ int intfstream_close(intfstream_internal_t *intf)
             chdstream_close(intf->chd.fp);
 #endif
          return 0;
+      case INTFSTREAM_BUFFERED:
+         if (intf->buffered.fp)
+            filestream_close(intf->buffered.fp);
+         if (intf->buffered.buf)
+            free(intf->buffered.buf);
+         intf->buffered.fp  = NULL;
+         intf->buffered.buf = NULL;
+         return 0;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          if (intf->rzip.fp)
@@ -189,6 +278,7 @@ void *intfstream_init(intfstream_info_t *info)
       return NULL;
 
    intf->type            = info->type;
+   memset(&intf->buffered, 0, sizeof(intf->buffered));
    intf->file.fp         = NULL;
    intf->memory.fp       = NULL;
 #ifdef HAVE_CHD
@@ -214,6 +304,8 @@ void *intfstream_init(intfstream_info_t *info)
          free(intf);
          return NULL;
 #endif
+      case INTFSTREAM_BUFFERED:
+         break;   /* filled in by intfstream_open_buffered() */
       case INTFSTREAM_RZIP:
          break;
    }
@@ -255,6 +347,32 @@ int64_t intfstream_seek(
 #else
          break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         {
+            int64_t origin;
+            switch (whence)
+            {
+               case RETRO_VFS_SEEK_POSITION_START:
+                  origin = 0;
+                  break;
+               case RETRO_VFS_SEEK_POSITION_CURRENT:
+                  origin = (int64_t)intf->buffered.pos;
+                  break;
+               case RETRO_VFS_SEEK_POSITION_END:
+                  origin = (int64_t)intf->buffered.size;
+                  break;
+               default:
+                  return -1;
+            }
+            if (      origin + offset < 0
+                  || (uint64_t)(origin + offset) > intf->buffered.size)
+               return -1;
+            /* Purely logical: a seek back into the window costs
+             * nothing, and one outside it is paid for by the refill
+             * on the next read rather than here. */
+            intf->buffered.pos = (uint64_t)(origin + offset);
+            return (int64_t)intf->buffered.pos;
+         }
       case INTFSTREAM_RZIP:
          /* Unsupported */
          break;
@@ -276,6 +394,8 @@ int64_t intfstream_truncate(intfstream_internal_t *intf, uint64_t len)
          break;
       case INTFSTREAM_CHD:
          break;
+      case INTFSTREAM_BUFFERED:
+         return -1;  /* read-only */
       case INTFSTREAM_RZIP:
          break;
    }
@@ -300,6 +420,47 @@ int64_t intfstream_read(intfstream_internal_t *intf, void *s, uint64_t len)
 #else
          break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         {
+            uint64_t p = intf->buffered.pos;
+            uint64_t n = len;
+            if (p >= intf->buffered.size)
+               return 0;
+            if (p + n > intf->buffered.size)
+               n = intf->buffered.size - p;
+            if (n == 0)
+               return 0;
+            /* A read wider than the window cannot be served from it.
+             * Go straight to the file rather than failing: field
+             * payloads are read in one call, so a single large field
+             * would otherwise be unreadable and the record silently
+             * lost. */
+            if (n > intf->buffered.cap)
+            {
+               int64_t got;
+               if (filestream_seek(intf->buffered.fp, (int64_t)p,
+                        RETRO_VFS_SEEK_POSITION_START) < 0)
+                  return -1;
+               if ((got = filestream_read(intf->buffered.fp, s,
+                           (int64_t)n)) <= 0)
+                  return -1;
+               /* The window no longer describes the file position. */
+               intf->buffered.lo  = 0;
+               intf->buffered.hi  = 0;
+               intf->buffered.pos = p + (uint64_t)got;
+               return got;
+            }
+            /* Hit test inline: the callers this exists for issue on
+             * the order of a million reads, so an out-of-line call on
+             * the common path is itself measurable. */
+            if (   !(p >= intf->buffered.lo && p + n <= intf->buffered.hi)
+                && !intfstream_buffered_fill(intf, p, n))
+               return -1;
+            memcpy(s, intf->buffered.buf + (p - intf->buffered.lo),
+                  (size_t)n);
+            intf->buffered.pos = p + n;
+            return (int64_t)n;
+         }
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_read(intf->rzip.fp, s, len);
@@ -325,6 +486,8 @@ int64_t intfstream_write(intfstream_internal_t *intf,
          return memstream_write(intf->memory.fp, s, len);
       case INTFSTREAM_CHD:
          return -1;
+      case INTFSTREAM_BUFFERED:
+         return -1;  /* read-only */
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_write(intf->rzip.fp, s, len);
@@ -356,6 +519,8 @@ int intfstream_printf(intfstream_internal_t *intf,
          return -1;
       case INTFSTREAM_CHD:
          return -1;
+      case INTFSTREAM_BUFFERED:
+         return -1;  /* read-only */
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          va_start(vl, format);
@@ -383,6 +548,8 @@ int64_t intfstream_get_ptr(intfstream_internal_t* intf)
          return memstream_get_ptr(intf->memory.fp);
       case INTFSTREAM_CHD:
          return -1;
+      case INTFSTREAM_BUFFERED:
+         return (int64_t)intf->buffered.pos;
       case INTFSTREAM_RZIP:
          return -1;
    }
@@ -410,6 +577,25 @@ char *intfstream_gets(intfstream_internal_t *intf,
 #else
          break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         {
+            uint64_t i = 0;
+            if (len == 0)
+               return NULL;
+            while (i + 1 < (uint64_t)len)
+            {
+               uint8_t c;
+               if (intfstream_read(intf, &c, 1) != 1)
+                  break;
+               s[i++] = (char)c;
+               if (c == '\n')
+                  break;
+            }
+            if (i == 0)
+               return NULL;
+            s[i] = '\0';
+            return s;
+         }
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_gets(intf->rzip.fp, s, (size_t)len);
@@ -438,6 +624,13 @@ int intfstream_getc(intfstream_internal_t *intf)
 #else
          break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         {
+            uint8_t c;
+            if (intfstream_read(intf, &c, 1) != 1)
+               return EOF;
+            return (int)c;
+         }
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_getc(intf->rzip.fp);
@@ -466,6 +659,8 @@ int64_t intfstream_tell(intfstream_internal_t *intf)
 #else
          break;
 #endif
+      case INTFSTREAM_BUFFERED:
+         return (int64_t)intf->buffered.pos;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return (int64_t)rzipstream_tell(intf->rzip.fp);
@@ -494,6 +689,8 @@ int intfstream_eof(intfstream_internal_t *intf)
          /* TODO: Add this functionality to
           * chd_stream interface */
          break;
+      case INTFSTREAM_BUFFERED:
+         return (intf->buffered.pos >= intf->buffered.size);
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_eof(intf->rzip.fp);
@@ -520,6 +717,9 @@ void intfstream_rewind(intfstream_internal_t *intf)
          chdstream_rewind(intf->chd.fp);
 #endif
          break;
+      case INTFSTREAM_BUFFERED:
+         intf->buffered.pos = 0;
+         return;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          rzipstream_rewind(intf->rzip.fp);
@@ -543,6 +743,8 @@ void intfstream_putc(intfstream_internal_t *intf, int c)
          break;
       case INTFSTREAM_CHD:
          break;
+      case INTFSTREAM_BUFFERED:
+         return;     /* read-only */
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          rzipstream_putc(intf->rzip.fp, c);
@@ -604,6 +806,8 @@ bool intfstream_is_compressed(intfstream_internal_t *intf)
          return false;
       case INTFSTREAM_CHD:
          return true;
+      case INTFSTREAM_BUFFERED:
+         return false;
       case INTFSTREAM_RZIP:
 #if defined(HAVE_COMPRESSION)
          return rzipstream_is_compressed(intf->rzip.fp);

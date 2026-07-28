@@ -3088,6 +3088,7 @@ playlist_t *playlist_init(const playlist_config_t *config)
    playlist->scan_record.search_recursively = false;
    playlist->scan_record.search_archives    = false;
    playlist->scan_record.filter_dat_content = false;
+   playlist->scan_record.overwrite_playlist = false;
    playlist->scan_record.omit_db_ref        = false;
    playlist->scan_record.content_dir        = NULL;
    playlist->scan_record.file_exts          = NULL;

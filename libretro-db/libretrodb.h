@@ -57,7 +57,30 @@ int libretrodb_create_index(libretrodb_t *db, const char *name,
 int libretrodb_find_entry(libretrodb_t *db, const char *index_name,
         const void *key, struct rmsgpack_dom_value *out);
 
+/* Reported for each record carrying the scanned field: the field's
+ * binary value and the offset of the record it came from.  Returning
+ * non-zero stops the scan. */
+/* Reported once per record carrying the scanned field: the field's
+ * binary value, the offset of the record, and the value of the
+ * companion numeric field when the record has one (NULL otherwise).
+ * Returning non-zero stops the scan. */
+typedef int (*libretrodb_scan_cb)(void *ctx, const uint8_t *key,
+      size_t key_len, uint64_t offset, const uint64_t *aux);
+
+/* @aux_field may be NULL.  Naming one lets a caller collect a numeric
+ * field in the same pass rather than walking the database again for
+ * it. */
+int libretrodb_scan_field(libretrodb_t *db, const char *field,
+      const char *aux_field, libretrodb_scan_cb cb, void *ctx);
+
+int libretrodb_read_at(libretrodb_t *db, uint64_t offset,
+      struct rmsgpack_dom_value *out);
+
 libretrodb_t *libretrodb_new(void);
+
+/* Scratch buffer used by libretrodb_query_compile() for error text.
+ * Owned by the db handle so that concurrent compiles do not share it. */
+char *libretrodb_query_err_buf(libretrodb_t *db, size_t *len);
 
 void libretrodb_free(libretrodb_t *db);
 
