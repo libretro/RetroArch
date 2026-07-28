@@ -11,8 +11,9 @@ an exact op sequence, and what the driver does when the target dies.
 Exits non-zero if the target died, so it drops into a shell loop or a CI
 job without extra plumbing.
 
-Requires Python 3.6 or newer.  Python 2 is not supported and cannot be:
-the file does not even parse under it.  No third-party packages.
+Requires Python 3.2 or newer -- the floor is argparse entering the standard
+library.  No third-party packages.  Python 2 is not supported and cannot be
+without a rewrite: the file does not parse there.
 
 Drives an *unmodified-behaviour* RetroArch build over its own UDP command
 interface, cycling core loads, content loads, unloads and driver reinits to
@@ -50,12 +51,18 @@ import os
 import random
 import re
 import shlex
+import signal
 import socket
 import struct
 import subprocess
 import sys
 import time
 from datetime import datetime, timezone
+
+if sys.version_info < (3, 2):
+    sys.stderr.write("ra_stress requires Python 3.2 or newer; "
+                     "this is %s\n" % sys.version.split()[0])
+    sys.exit(1)
 
 DEFAULT_PORT = 55355
 DEFAULT_REMOTE_BASE_PORT = 55400
@@ -97,6 +104,61 @@ def parse_button_pattern(text):
 
 
 IS_WINDOWS = (os.name == "nt")
+
+# Everything below keeps the floor at Python 3.2, which is where argparse
+# entered the standard library. Nothing here is on a hot path.
+
+
+def say(msg):
+    """say(...) is 3.3+."""
+    sys.stdout.write(msg + "\n")
+    sys.stdout.flush()
+
+
+def say_err(msg):
+    sys.stderr.write(msg + "\n")
+    sys.stderr.flush()
+
+
+_UNSAFE = re.compile(r"[^\w@%+=:,./-]", re.ASCII)
+
+
+def quote(text):
+    """shlex.quote() is 3.3+, and pipes.quote is gone in 3.13."""
+    if not text:
+        return "''"
+    if _UNSAFE.search(text) is None:
+        return text
+    return "'" + text.replace("'", "'\"'\"'") + "'"
+
+
+def weighted_choice(rng, population, weights):
+    """One draw from random.choices(), which is 3.6+.
+
+    Consumes exactly one rng.random() per call, so a given seed still
+    yields a stable sequence -- though not the same sequence 3.6's
+    implementation would have produced. Saved reproducers are unaffected:
+    they carry the full op list, not the seed alone.
+    """
+    cum = []
+    total = 0.0
+    for w in weights:
+        total += w
+        cum.append(total)
+    x = rng.random() * total
+    for i, c in enumerate(cum):
+        if x < c:
+            return population[i]
+    return population[-1]
+
+
+def signal_name(num):
+    """signal.Signals is a 3.5+ enum."""
+    for name in dir(signal):
+        if name.startswith("SIG") and not name.startswith("SIG_"):
+            if getattr(signal, name) == num:
+                return name
+    return "signal %d" % num
 
 
 def split_args(text):
@@ -193,12 +255,12 @@ class CommandChannel:
         while True:
             try:
                 self.sock.recvfrom(65535)
-            except (BlockingIOError, OSError):
+            except OSError:
                 return
 
     def send(self, text):
         if self.verbose:
-            print("    -> %s" % text, flush=True)
+            say("    -> %s" % text)
         self.sock.sendto(text.encode("utf-8"), self.addr)
 
     def ask(self, text, timeout):
@@ -212,14 +274,14 @@ class CommandChannel:
                 return None, now() - t0
             try:
                 data, _ = self.sock.recvfrom(65535)
-            except (BlockingIOError, OSError):
+            except OSError:
                 time.sleep(0.005)
                 continue
             rtt = now() - t0
             self.max_rtt = max(self.max_rtt, rtt)
             reply = data.decode("utf-8", "replace").strip()
             if self.verbose:
-                print("    <- %s  (%.0f ms)" % (reply, rtt * 1000), flush=True)
+                say("    <- %s  (%.0f ms)" % (reply, rtt * 1000))
             return reply, rtt
 
     def probe(self, timeout, stall_threshold, label=""):
@@ -229,8 +291,8 @@ class CommandChannel:
         if rtt >= stall_threshold:
             ev = {"t": stamp(), "rtt_ms": round(rtt * 1000), "at": label}
             self.stalls.append(ev)
-            print("  !! main-thread stall %.0f ms  (%s)"
-                  % (rtt * 1000, label), flush=True)
+            say("  !! main-thread stall %.0f ms  (%s)"
+                % (rtt * 1000, label))
         return rtt
 
     def status(self, timeout):
@@ -266,8 +328,8 @@ class RemoteTarget(Target):
 
     def start(self):
         if self.relaunch_cmd:
-            print("  relaunching: %s" % self.relaunch_cmd, flush=True)
-            subprocess.run(split_args(self.relaunch_cmd), check=False)
+            say("  relaunching: %s" % self.relaunch_cmd)
+            subprocess.call(split_args(self.relaunch_cmd))
             time.sleep(self.relaunch_wait)
 
     def can_restart(self):
@@ -298,17 +360,17 @@ class LocalTarget(Target):
         env = dict(os.environ)
         env.update(self.env)
         argv = [self.binary, "--verbose"] + self.extra_args
-        print("  spawning: %s" % " ".join(shlex.quote(a) for a in argv),
-              flush=True)
+        say("  spawning: %s" % " ".join(quote(a) for a in argv))
         self.proc = subprocess.Popen(
             argv, stdout=self.logfile, stderr=subprocess.STDOUT, env=env)
 
     def stop(self):
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
-            try:
-                self.proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
+            deadline = now() + 10.0
+            while self.proc.poll() is None and now() < deadline:
+                time.sleep(0.1)
+            if self.proc.poll() is None:
                 self.proc.kill()
         if self.logfile:
             self.logfile.close()
@@ -351,12 +413,7 @@ class LocalTarget(Target):
             return "process exited with status %d" % rc
 
         if rc < 0:
-            import signal as _s
-            try:
-                name = _s.Signals(-rc).name
-            except ValueError:
-                name = "signal %d" % -rc
-            return "process died on %s" % name
+            return "process died on %s" % signal_name(-rc)
         return "process exited with status %d" % rc
 
     def logs(self):
@@ -615,15 +672,17 @@ def plan_fuzz(rng, core, contents, length):
     loaded = False
     while len(ops) < length:
         if not loaded:
-            choice = rng.choices(
+            choice = weighted_choice(
+                rng,
                 ["load", "reinit", "driversreinit", "audioreinit", "menu"],
-                weights=[62, 14, 10, 6, 8])[0]
+                [62, 14, 10, 6, 8])
         else:
-            choice = rng.choices(
+            choice = weighted_choice(
+                rng,
                 ["close", "unload", "reinit", "driversreinit",
                  "audioreinit", "menu", "pause", "reset",
                  "savestate", "loadstate", "shader", "load"],
-                weights=[20, 12, 14, 10, 6, 6, 4, 4, 4, 4, 4, 12])[0]
+                [20, 12, 14, 10, 6, 6, 4, 4, 4, 4, 4, 12])
         if choice == "load":
             ops.append(("load", core, rng.choice(contents)))
             loaded = True
@@ -662,20 +721,18 @@ def run_sequence(target, args, ops, label):
         while True:
             reply, _ = chan.ask("VERSION", 2.0)
             if reply:
-                print("  target alive: %s" % reply, flush=True)
+                say("  target alive: %s" % reply)
                 break
             if now() > deadline:
-                print("  !! target never answered on %s:%d -- is "
-                      "network_cmd_enable set?" % (args.host, args.port),
-                      file=sys.stderr, flush=True)
+                say_err("  !! target never answered on %s:%d -- is "
+                        "network_cmd_enable set?" % (args.host, args.port))
                 result["error"] = "no response at startup"
                 return result
             time.sleep(1.0)
 
         runner = Runner(chan, args, pad if args.input else None)
         for i, op in enumerate(ops):
-            print("  [%3d/%3d] %s" % (i + 1, len(ops), describe(op)),
-                  flush=True)
+            say("  [%3d/%3d] %s" % (i + 1, len(ops), describe(op)))
             try:
                 runner.run_op(op)
             except Dead as e:
@@ -686,8 +743,8 @@ def run_sequence(target, args, ops, label):
                 result["reason"] = str(e)
                 time.sleep(2.0)
                 result["detail"] = target.death_detail()
-                print("  ** DIED at op %d (%s): %s\n     %s"
-                      % (i, describe(op), e, result["detail"]), flush=True)
+                say("  ** DIED at op %d (%s): %s\n     %s"
+                    % (i, describe(op), e, result["detail"]))
                 break
         else:
             result["completed"] = len(ops)
@@ -712,7 +769,7 @@ def save_repro(outdir, result, args, seed=None):
     payload["host"] = args.host
     with open(path, "w") as f:
         json.dump(payload, f, indent=2)
-    print("  reproducer written: %s" % path, flush=True)
+    say("  reproducer written: %s" % path)
     return path
 
 
@@ -731,7 +788,7 @@ def minimize(target, args, ops):
         time.sleep(args.restart_pause)
         return r["crashed"]
 
-    print("\n== minimizing %d ops ==" % len(ops), flush=True)
+    say("\n== minimizing %d ops ==" % len(ops))
     n = 2
     current = list(ops)
     while len(current) >= 2:
@@ -746,8 +803,8 @@ def minimize(target, args, ops):
             for j, c in enumerate(chunks):
                 if j != idx:
                     complement.extend(c)
-            print("  trying %d ops (dropping chunk %d/%d)"
-                  % (len(complement), idx + 1, len(chunks)), flush=True)
+            say("  trying %d ops (dropping chunk %d/%d)"
+                % (len(complement), idx + 1, len(chunks)))
             if dies(complement):
                 current = complement
                 n = max(n - 1, 2)
@@ -759,9 +816,9 @@ def minimize(target, args, ops):
                 break
             n = min(len(current), n * 2)
 
-    print("== minimized to %d ops ==" % len(current), flush=True)
+    say("== minimized to %d ops ==" % len(current))
     for op in current:
-        print("   %s" % describe(op), flush=True)
+        say("   %s" % describe(op))
     return current
 
 
@@ -869,10 +926,10 @@ def main():
     rng = random.Random(seed)
     target = build_target(args)
 
-    print("ra_stress  target=%s  mode=%s  seed=%d"
-          % (args.host, args.mode, seed), flush=True)
-    print("stall threshold %.0f ms; command RTT measures main-thread "
-          "progress\n" % (args.stall_threshold * 1000), flush=True)
+    say("ra_stress  target=%s  mode=%s  seed=%d"
+        % (args.host, args.mode, seed))
+    say("stall threshold %.0f ms; command RTT measures main-thread "
+        "progress\n" % (args.stall_threshold * 1000))
 
     if args.mode == "replay" or args.mode == "minimize":
         if not args.replay:
@@ -882,10 +939,10 @@ def main():
         ops = [tuple(o) for o in saved["ops"]]
         if args.mode == "replay":
             r = run_sequence(target, args, ops, "replay")
-            print("\ncrashed=%s  stalls=%d  max_rtt=%dms"
-                  % (r["crashed"], len(r["stalls"]), r["max_rtt_ms"]))
+            say("\ncrashed=%s  stalls=%d  max_rtt=%dms"
+                % (r["crashed"], len(r["stalls"]), r["max_rtt_ms"]))
             save_repro(args.outdir, r, args, seed)
-            return 1 if r["crashed"] else 0
+            return 1 if (r["crashed"] or r.get("error")) else 0
         if not target.can_restart():
             p.error("minimize needs a restartable target: pass --binary or "
                     "--relaunch-cmd")
@@ -900,35 +957,37 @@ def main():
         base = plan_from_log(args.core, args.content)
         ops = base * args.cycles
         r = run_sequence(target, args, ops, "soak")
-        print("\ncompleted %d/%d ops  crashed=%s  stalls=%d  max_rtt=%dms"
-              % (r["completed"], len(ops), r["crashed"], len(r["stalls"]),
-                 r["max_rtt_ms"]), flush=True)
+        say("\ncompleted %d/%d ops  crashed=%s  stalls=%d  max_rtt=%dms"
+            % (r["completed"], len(ops), r["crashed"], len(r["stalls"]),
+               r["max_rtt_ms"]))
         if r["crashed"] or r["stalls"]:
             save_repro(args.outdir, r, args, seed)
-        return 1 if r["crashed"] else 0
+        return 1 if (r["crashed"] or r.get("error")) else 0
 
     # fuzz
     for run in range(args.fuzz_runs):
         run_seed = rng.randrange(1 << 30)
         ops = plan_fuzz(random.Random(run_seed), args.core, args.content,
                         args.fuzz_length)
-        print("\n== fuzz run %d/%d  seed=%d  %d ops =="
-              % (run + 1, args.fuzz_runs, run_seed, len(ops)), flush=True)
+        say("\n== fuzz run %d/%d  seed=%d  %d ops =="
+            % (run + 1, args.fuzz_runs, run_seed, len(ops)))
         r = run_sequence(target, args, ops, "fuzz seed=%d" % run_seed)
+        if r.get("error"):
+            return 1
         if r["crashed"]:
             path = save_repro(args.outdir, r, args, run_seed)
-            print("\nCRASH REPRODUCED. Minimize with:\n"
-                  "  %s --mode minimize --replay %s --core %s %s\n"
-                  % (sys.argv[0], path, args.core,
-                     " ".join("--content %s" % shlex.quote(c)
-                              for c in args.content)), flush=True)
+            say("\nCRASH REPRODUCED. Minimize with:\n"
+                "  %s --mode minimize --replay %s --core %s %s\n"
+                % (sys.argv[0], path, args.core,
+                   " ".join("--content %s" % quote(c)
+                            for c in args.content)))
             return 1
         if r["stalls"]:
             save_repro(args.outdir, r, args, run_seed)
         target.stop()
         time.sleep(args.restart_pause)
 
-    print("\nno crash in %d fuzz runs" % args.fuzz_runs, flush=True)
+    say("\nno crash in %d fuzz runs" % args.fuzz_runs)
     return 0
 
 

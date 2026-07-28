@@ -10,7 +10,7 @@ transition goes through
 
 | File | What it is |
 |---|---|
-| `tools/ra_stress.py` | The driver. Python 3.6+, standard library only. |
+| `tools/ra_stress.py` | The driver. Python 3.2+, standard library only. |
 | `tools/ra_stress.md` | This document. |
 
 The driver depends on the `LOAD_CONTENT`, `START_CORE`, `UNLOAD_CORE`,
@@ -100,16 +100,37 @@ driver ops and the fuzzer can tell you which one matters.
 
 ### Python requirement
 
-Python 3.6 or newer, standard library only — no `pip install` step. The
-floor is 3.6 because of `random.choices()` in the fuzzer; everything else
-needs at most 3.5 (`subprocess.run`, the `signal.Signals` enum).
+Python 3.2 or newer, standard library only — no `pip install` step.
 
-**Python 2 is not supported**, and this is not a matter of adding a
-compatibility shim: the file does not parse under it, because
-`print(x, flush=True)` is a syntax error where `print` is a statement
-rather than a function. Every other script in `tools/` is
-`#!/usr/bin/env python3` as well. If `python` on your box is still Python 2,
-invoke `python3` explicitly.
+The floor is set by `argparse` entering the standard library in 3.2, and by
+`os.makedirs(exist_ok=)` and `datetime.timezone` arriving in the same
+release. Nothing else in the file needs anything newer: the handful of
+conveniences that would have raised it are replaced by small local
+equivalents, none of them on a hot path.
+
+| Replaced | Would have needed |
+|---|---|
+| `random.choices()` → `weighted_choice()` | 3.6 |
+| `subprocess.run()` → `subprocess.call()` | 3.5 |
+| `signal.Signals` enum → `signal_name()` | 3.5 |
+| `shlex.quote()` → local `quote()` | 3.3 |
+| `print(..., flush=True)` → `say()` | 3.3 |
+| `proc.wait(timeout=)` → poll loop | 3.3 |
+| `BlockingIOError` → `OSError` | 3.3 |
+
+`quote()` is byte-identical to `shlex.quote()` and also sidesteps
+`pipes.quote`, which was removed in 3.13. `weighted_choice()` draws one
+`random()` per call, so a seed still gives a stable sequence — though not
+the same sequence `random.choices()` would have produced. Saved reproducers
+are unaffected, since they carry the full op list rather than just a seed.
+
+**Python 2 is not supported.** Removing the 3.3+ constructs happens to have
+left the file syntactically parseable under 2.7, but it will not run there —
+`re.ASCII` does not exist, and the string handling assumes Python 3
+semantics. Rather than leave that to fail obscurely, the script checks
+`sys.version_info` up front and exits with a clear message. If `python` on
+your box is still Python 2, invoke `python3` explicitly; every script in
+`tools/` is `#!/usr/bin/env python3`.
 
 ## Setup
 
@@ -604,7 +625,8 @@ When it fires:
    died. Only clean runs get torn down.
 4. **A reproducer JSON is written to `--outdir`.**
 5. **The driver exits non-zero**, so it drops straight into a shell loop or
-   a CI job without extra plumbing.
+   a CI job without extra plumbing. A target that never answered at startup
+   also exits non-zero — an unreachable target is not a passing run.
 
 In `soak` the run ends there. In `fuzz` the first crash ends the run too,
 and the exact `--mode minimize` command line to shrink it is printed for
