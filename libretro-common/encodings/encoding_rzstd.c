@@ -1841,46 +1841,62 @@ static void rzstd_match_copy(uint8_t *to, const uint8_t *from, size_t n,
       return;
    }
 
+   /* The wide copy strides two vectors at a time, so it needs the
+    * source two vector widths back -- not one, which an earlier draft
+    * of this change assumed until the sanitizer produced the
+    * overlapping pair. */
    if (offset >= RZSTD_VEC_WIDTH * 2)
    {
       RZSTD_COPY(to, from, n);
       return;
    }
 
-   /* The seed is at most two vector widths, and libc is reached through
-    * the PLT and then dispatches on length to decide how to move
-    * thirty-two bytes. Two vector stores do it here with neither. The
-    * source is behind the destination by @offset and this writes at
-    * most 2 * RZSTD_VEC_WIDTH, so a caller with slack has room. */
-#if defined(RZSTD_VEC_SSE2)
-   _mm_storeu_si128((__m128i*)to,
-         _mm_loadu_si128((const __m128i*)from));
-   if (offset > RZSTD_VEC_WIDTH)
-      _mm_storeu_si128((__m128i*)(to + RZSTD_VEC_WIDTH),
-            _mm_loadu_si128((const __m128i*)(from + RZSTD_VEC_WIDTH)));
-#elif defined(RZSTD_VEC_NEON)
-   vst1q_u8(to, vld1q_u8(from));
-   if (offset > RZSTD_VEC_WIDTH)
-      vst1q_u8(to + RZSTD_VEC_WIDTH, vld1q_u8(from + RZSTD_VEC_WIDTH));
-#else
-   memmove(to, from, offset);
-#endif
-   have = offset;
-
-   /* Doubling keeps the run a whole number of periods, which is what
-    * lets the wide copy below read from exactly @have back. */
-   while (have < RZSTD_VEC_WIDTH * 2 && have < n)
+   /* Below a vector's width the period has to be grown before wide
+    * copies can run, and the reference implementation grows it in one
+    * fixed step rather than a loop: eight bytes are laid down -- four
+    * singly, then four from a source nudged forward by a table so the
+    * pattern stays right -- after which the source is pulled back to
+    * sit exactly eight behind, whatever the offset was. From there
+    * eight-byte strides never read what they wrote. A doubling loop
+    * here took a data-dependent number of rounds; a match is a couple
+    * of dozen bytes more often than not, and the rounds cost more than
+    * the copying. */
    {
-      size_t take = have;
+      static const uint32_t fwd[8]  = { 0, 1, 2, 1, 4, 4, 4, 4 };
+      static const uint32_t back[8] = { 8, 8, 8, 7, 8, 9, 10, 11 };
+      uint64_t v;
 
-      if (take > n - have)
-         take = n - have;
-      memcpy(to + have, to, take);
-      have += take;
+      if (offset < 8)
+      {
+         to[0] = from[0];
+         to[1] = from[1];
+         to[2] = from[2];
+         to[3] = from[3];
+         from += fwd[offset];
+         memcpy(&v, from, 4);
+         memcpy(to + 4, &v, 4);
+         from -= back[offset];
+      }
+      else
+      {
+         /* Eight or more apart already: the lead-in is a plain word
+          * and the strides below never catch the stores. */
+         memcpy(&v, from, 8);
+         memcpy(to, &v, 8);
+      }
+
+      /* Both advance by eight from here, at least eight apart. */
+      from += 8;
+      have  = 8;
+      while (have < n)
+      {
+         memcpy(&v, from, 8);
+         memcpy(to + have, &v, 8);
+         from += 8;
+         have += 8;
+      }
+      return;
    }
-
-   if (have < n)
-      rzstd_wild_copy(to + have, to, n - have);
 }
 
 
