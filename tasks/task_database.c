@@ -690,6 +690,11 @@ static void gdi_prune(struct string_list *list, const char *name)
       }
    }
 
+   /* task_database_cue_prune() above closes the stream before freeing
+    * the handle; this one only freed the handle, leaking the OS file
+    * descriptor and the inner stream object for every .gdi in the
+    * scan.  A large GDI collection exhausts the descriptor table. */
+   intfstream_close(fd);
    free(fd);
 }
 
@@ -1880,6 +1885,16 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
       {
          if (dbstate->list)
             dir_list_free(dbstate->list);
+         /* db_state->info is only released along the iterate paths,
+          * so cancelling a scan while a database query result was
+          * live leaked the whole database_info_list_t - every
+          * strdup'd field of every matched record. */
+         if (dbstate->info)
+         {
+            database_info_list_free(dbstate->info);
+            free(dbstate->info);
+            dbstate->info = NULL;
+         }
          if (dbstate->min_sizes)
             free(dbstate->min_sizes);
          if (dbstate->max_sizes)
