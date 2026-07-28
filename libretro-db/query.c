@@ -25,6 +25,7 @@
 #else
 #include <unistd.h>
 #endif
+#include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -388,8 +389,11 @@ static void query_raise_unknown_function(
    {
       size_t remaining = len - off;
       size_t copy_len  = (size_t)name_len < remaining ? (size_t)name_len : remaining - 1;
-      strlcpy(s + off, name, copy_len + 1);
+      /* See query_parse_table(): 'name' is a slice of the query, not
+       * a C string, so it cannot be handed to strlcpy(). */
+      memcpy(s + off, name, copy_len);
       off += copy_len;
+      s[off] = '\0';
    }
 
    if (off + 2 <= len)
@@ -425,10 +429,11 @@ static struct buffer query_parse_integer(
       struct rmsgpack_dom_value *value,
       const char **err)
 {
-   int64_t result = 0;
-   int sign       = 1;
-   bool has_digit = false;
-   size_t idx     = buff.offset;
+   int64_t result  = 0;
+   int sign        = 1;
+   bool has_digit  = false;
+   bool overflowed = false;
+   size_t idx      = buff.offset;
 
    value->type = RDT_INT;
 
@@ -442,9 +447,26 @@ static struct buffer query_parse_integer(
 
    while (idx < buff.len && ISDIGIT((int)buff.data[idx]))
    {
+      int digit = buff.data[idx] - '0';
       has_digit = true;
-      result    = result * 10 + (buff.data[idx] - '0');
+      /* Signed overflow is undefined, and the digit count here comes
+       * from the query, so bound the accumulation rather than letting
+       * it wrap. */
+      if (   result > (INT64_MAX - digit) / 10
+          || overflowed)
+         overflowed = true;
+      else
+         result     = result * 10 + digit;
       idx++;
+   }
+
+   if (overflowed)
+   {
+      snprintf(s, len,
+            "%" PRIu64 "::Number out of range",
+            (uint64_t)buff.offset);
+      *err = s;
+      return buff;
    }
 
    if (!has_digit)
@@ -562,7 +584,11 @@ static struct buffer query_parse_string(
 
       count                  = value->val.string.len + 1;
       if (is_binstr)
-	      count         /= 2;
+         count               /= 2;
+      /* b"" sizes this to zero, and calloc(0) may return NULL, which
+       * the check below would report as an allocation failure. */
+      if (count == 0)
+         count               = 1;
       value->val.string.buff = (char*)calloc(count, sizeof(char));
 
       if (!value->val.string.buff)
@@ -634,7 +660,8 @@ static struct buffer query_parse_value(char *s, size_t len,
          || query_peek(buff, "\"", STRLEN_CONST("\""))
          || query_peek(buff, "'",  STRLEN_CONST("'")))
       buff = query_parse_string(s, len, buff, value, err);
-   else if (ISDIGIT((int)buff.data[buff.offset]))
+   else if (   (size_t)buff.offset < buff.len
+            && ISDIGIT((int)buff.data[buff.offset]))
       buff = query_parse_integer(s, len, buff, value, err);
    return buff;
 }
@@ -727,7 +754,8 @@ static struct buffer query_parse_argument(
    buff = query_chomp(buff);
 
    if (
-         ISALPHA((int)buff.data[buff.offset])
+         (size_t)buff.offset < buff.len
+         && ISALPHA((int)buff.data[buff.offset])
          && !(
                query_peek(buff, "nil",   STRLEN_CONST("nil"))
             || query_peek(buff, "true",  STRLEN_CONST("true"))
@@ -850,9 +878,13 @@ static struct buffer query_parse_table(
                *err = s;
                goto clean;
             }
-            strlcpy(
-                  args[argi].a.value.val.string.buff,
-                  ident_name, _len + 1);
+            /* strlcpy() would strlen() the source to compute its
+             * return value, and ident_name points into the query
+             * buffer, which is a (pointer, length) slice with no
+             * terminator of its own.  Copy exactly the identifier. */
+            memcpy(args[argi].a.value.val.string.buff,
+                  ident_name, _len);
+            args[argi].a.value.val.string.buff[_len] = '\0';
          }
       }
       else
@@ -1078,7 +1110,8 @@ void *libretrodb_query_compile(libretrodb_t *db,
       if (*err_string)
          goto error;
    }
-   else if (ISALPHA((int)buff.data[buff.offset]))
+   else if (   (size_t)buff.offset < buff.len
+            && ISALPHA((int)buff.data[buff.offset]))
       buff = query_parse_method_call(tmp_err_buff,
             err_buff_len,
             buff, &q->root, err_string);
