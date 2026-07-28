@@ -189,6 +189,10 @@ typedef struct database_state_handle
    int64_t *min_sizes;
    int64_t *max_sizes;
    uint8_t *flags;
+   /* One crc index per database, built the first time that database
+    * is probed and kept for the rest of the scan.  Without it every
+    * (content file, database) pair is a full walk of the database. */
+   database_info_crc_index_t **crc_index;
 } database_state_handle_t;
 
 enum db_flags_enum
@@ -1156,10 +1160,13 @@ static bool task_database_state_alloc_arrays(
    db_state->min_sizes = (int64_t*)calloc(count, sizeof(int64_t));
    db_state->max_sizes = (int64_t*)calloc(count, sizeof(int64_t));
    db_state->flags     = (uint8_t*)calloc(count, sizeof(uint8_t));
+   db_state->crc_index = (database_info_crc_index_t**)
+      calloc(count, sizeof(*db_state->crc_index));
 
    if (   !db_state->min_sizes
        || !db_state->max_sizes
-       || !db_state->flags)
+       || !db_state->flags
+       || !db_state->crc_index)
       return false;
 
    return true;
@@ -1306,6 +1313,9 @@ static enum scan_verdict task_database_iterate_crc_lookup(
    if (db_state->entry_index == 0)
    {
       char query[50];
+      const char *rdb            = db_state->list->elems[
+         db_state->list_index].data;
+      database_info_list_t *hits = NULL;
 
       query[0] = '\0';
 
@@ -1328,11 +1338,46 @@ static enum scan_verdict task_database_iterate_crc_lookup(
          }
       }
 
-      snprintf(query, sizeof(query),
-            "{crc:or(b\"%08lX\",b\"%08lX\")}",
-            (unsigned long)db_state->crc, (unsigned long)db_state->archive_crc);
+      /* Answer from this database's crc index when we can.  Building
+       * it costs one walk - about what a single probe used to cost -
+       * and every later content file is then a binary search instead
+       * of another walk.  The index is only a faster route to the
+       * same records: it reports them in file order with the same
+       * fields extracted, so the matching below is unchanged.
+       *
+       * Anything the index cannot serve falls through to the query,
+       * which stays the reference path. */
+      if (rdb && *rdb)
+      {
+         if (!db_state->crc_index[db_state->list_index])
+            db_state->crc_index[db_state->list_index] =
+               database_info_crc_index_new(rdb);
 
-      database_info_list_iterate_new(db_state, query);
+         if (db_state->crc_index[db_state->list_index])
+            hits = database_info_list_new_crc(
+                  db_state->crc_index[db_state->list_index],
+                  db_state->crc, db_state->archive_crc,
+                  DB_EXTRACT_SCAN_FIELDS);
+      }
+
+      if (hits)
+      {
+         if (db_state->info)
+         {
+            database_info_list_free(db_state->info);
+            free(db_state->info);
+         }
+         db_state->info = hits;
+      }
+      else
+      {
+         snprintf(query, sizeof(query),
+               "{crc:or(b\"%08lX\",b\"%08lX\")}",
+               (unsigned long)db_state->crc,
+               (unsigned long)db_state->archive_crc);
+
+         database_info_list_iterate_new(db_state, query);
+      }
    }
 
    /* Same shape as the serial path above: entry_index was used to
@@ -1953,6 +1998,15 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
             database_info_list_free(dbstate->info);
             free(dbstate->info);
             dbstate->info = NULL;
+         }
+         if (dbstate->crc_index)
+         {
+            size_t ci;
+            size_t cn = dbstate->list ? dbstate->list->size : 0;
+            for (ci = 0; ci < cn; ci++)
+               database_info_crc_index_free(dbstate->crc_index[ci]);
+            free(dbstate->crc_index);
+            dbstate->crc_index = NULL;
          }
          if (dbstate->min_sizes)
             free(dbstate->min_sizes);

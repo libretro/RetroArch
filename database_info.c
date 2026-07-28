@@ -566,33 +566,29 @@ static int database_cursor_iterate(libretrodb_cursor_t *cur,
  *
  * @fields: Bitmask of DB_EXTRACT_* flags. 0 = extract all.
  */
-static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
+/* Extract @fields from an already-read record.  Split out of
+ * database_cursor_iterate_filtered() below so the crc-index path,
+ * which reads records by offset rather than through a cursor, fills
+ * database_info_t through exactly the same code.
+ *
+ * Returns 0 when the record was a map and was extracted, 1 otherwise.
+ * Does not free @item; the caller owns it. */
+static int database_info_fill_from_dom(struct rmsgpack_dom_value *item,
       database_info_t *db_info, unsigned fields)
 {
    size_t i;
-   struct rmsgpack_dom_value item;
 
-   /* Fall back to full extraction if no mask specified */
-   if (fields == 0)
-      return database_cursor_iterate(cur, db_info);
-
-   if (libretrodb_cursor_read_item(cur, &item) != 0)
-      return -1;
-
-   if (item.type != RDT_MAP)
-   {
-      rmsgpack_dom_value_free(&item);
+   if (item->type != RDT_MAP)
       return 1;
-   }
 
    db_info->analog_supported = -1;
    db_info->rumble_supported = -1;
    db_info->coop_supported   = -1;
 
-   for (i = 0; i < item.val.map.len; i++)
+   for (i = 0; i < item->val.map.len; i++)
    {
-      struct rmsgpack_dom_value *key = &item.val.map.items[i].key;
-      struct rmsgpack_dom_value *val = &item.val.map.items[i].value;
+      struct rmsgpack_dom_value *key = &item->val.map.items[i].key;
+      struct rmsgpack_dom_value *val = &item->val.map.items[i].value;
       const char *str;
       size_t      str_len;
 
@@ -674,8 +670,25 @@ static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
       }
    }
 
-   rmsgpack_dom_value_free(&item);
    return 0;
+}
+
+static int database_cursor_iterate_filtered(libretrodb_cursor_t *cur,
+      database_info_t *db_info, unsigned fields)
+{
+   int rv;
+   struct rmsgpack_dom_value item;
+
+   /* Fall back to full extraction if no mask specified */
+   if (fields == 0)
+      return database_cursor_iterate(cur, db_info);
+
+   if (libretrodb_cursor_read_item(cur, &item) != 0)
+      return -1;
+
+   rv = database_info_fill_from_dom(&item, db_info, fields);
+   rmsgpack_dom_value_free(&item);
+   return rv;
 }
 
 static int database_cursor_open(libretrodb_t *db,
@@ -927,6 +940,247 @@ end:
    if (cur)
       libretrodb_cursor_free(cur);
 
+   return list;
+}
+
+
+/* ------------------------------------------------------------------
+ * CRC index
+ *
+ * The scanner asks each database the same question once per content
+ * file - does it hold this crc - and every one of those is a full
+ * cursor walk.  Walking once up front and keeping crc -> record
+ * offset turns the repeats into a binary search.
+ *
+ * Entries are sorted by crc so a lookup finds the run of records
+ * sharing one.  Matches are then re-sorted by offset before the list
+ * is built, because the query path returns records in file order and
+ * the scanner takes the first entry that matches; reproducing that
+ * order is what makes the two paths interchangeable.
+ * ------------------------------------------------------------------ */
+
+struct db_crc_entry
+{
+   uint64_t offset;
+   uint32_t crc;
+};
+
+struct database_info_crc_index
+{
+   struct db_crc_entry *entries;
+   size_t               count;
+   char                *rdb_path;
+};
+
+static int db_crc_by_crc(const void *a, const void *b)
+{
+   uint32_t x = ((const struct db_crc_entry*)a)->crc;
+   uint32_t y = ((const struct db_crc_entry*)b)->crc;
+   if (x < y) return -1;
+   if (x > y) return  1;
+   return 0;
+}
+
+static int db_crc_by_offset(const void *a, const void *b)
+{
+   uint64_t x = ((const struct db_crc_entry*)a)->offset;
+   uint64_t y = ((const struct db_crc_entry*)b)->offset;
+   if (x < y) return -1;
+   if (x > y) return  1;
+   return 0;
+}
+
+struct db_crc_build
+{
+   struct db_crc_entry *entries;
+   size_t               count;
+   size_t               capacity;
+   bool                 failed;
+};
+
+static int db_crc_collect(void *ctx, const uint8_t *key, size_t key_len,
+      uint64_t offset)
+{
+   struct db_crc_build *b = (struct db_crc_build*)ctx;
+
+   /* Only fixed 4-byte crcs are indexable.  Anything else is left to
+    * the query path, which is still what runs without an index. */
+   if (key_len != 4)
+      return 0;
+
+   if (b->count == b->capacity)
+   {
+      size_t cap = b->capacity ? b->capacity * 2 : 1024;
+      struct db_crc_entry *tmp = (struct db_crc_entry*)
+         realloc(b->entries, cap * sizeof(*tmp));
+      if (!tmp)
+      {
+         b->failed = true;
+         return 1;                        /* stop the scan */
+      }
+      b->entries  = tmp;
+      b->capacity = cap;
+   }
+
+   b->entries[b->count].crc    = ((uint32_t)key[0] << 24)
+                               | ((uint32_t)key[1] << 16)
+                               | ((uint32_t)key[2] <<  8)
+                               |  (uint32_t)key[3];
+   b->entries[b->count].offset = offset;
+   b->count++;
+   return 0;
+}
+
+database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path)
+{
+   struct db_crc_build        build;
+   database_info_crc_index_t *idx = NULL;
+   libretrodb_t              *db  = NULL;
+
+   if (!rdb_path || !*rdb_path)
+      return NULL;
+
+   memset(&build, 0, sizeof(build));
+
+   if (!(db = libretrodb_new()))
+      return NULL;
+
+   if (libretrodb_open(rdb_path, db, false) != 0)
+   {
+      libretrodb_free(db);
+      return NULL;
+   }
+
+   if (   libretrodb_scan_field(db, "crc", db_crc_collect, &build) != 0
+       || build.failed)
+      goto error;
+
+   if (!(idx = (database_info_crc_index_t*)calloc(1, sizeof(*idx))))
+      goto error;
+
+   if (!(idx->rdb_path = strdup(rdb_path)))
+   {
+      free(idx);
+      idx = NULL;
+      goto error;
+   }
+
+   if (build.count > 1)
+      qsort(build.entries, build.count, sizeof(*build.entries),
+            db_crc_by_crc);
+
+   idx->entries = build.entries;
+   idx->count   = build.count;
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+   return idx;
+
+error:
+   free(build.entries);
+   libretrodb_close(db);
+   libretrodb_free(db);
+   return NULL;
+}
+
+void database_info_crc_index_free(database_info_crc_index_t *idx)
+{
+   if (!idx)
+      return;
+   free(idx->entries);
+   free(idx->rdb_path);
+   free(idx);
+}
+
+size_t database_info_crc_index_count(const database_info_crc_index_t *idx)
+{
+   return idx ? idx->count : 0;
+}
+
+/* Append every entry whose crc is @crc, returning the new count. */
+static size_t db_crc_gather(const database_info_crc_index_t *idx,
+      uint32_t crc, struct db_crc_entry *out, size_t have, size_t cap)
+{
+   size_t lo = 0;
+   size_t hi = idx->count;
+
+   while (lo < hi)
+   {
+      size_t mid = lo + ((hi - lo) / 2);
+      if (idx->entries[mid].crc < crc)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+
+   while (lo < idx->count && idx->entries[lo].crc == crc && have < cap)
+      out[have++] = idx->entries[lo++];
+
+   return have;
+}
+
+database_info_list_t *database_info_list_new_crc(
+      const database_info_crc_index_t *idx, uint32_t crc,
+      uint32_t archive_crc, unsigned fields)
+{
+   /* The scanner stops at the first entry that matches, so a bounded
+    * number of hits is always enough. */
+   struct db_crc_entry   hits[32];
+   database_info_list_t *list  = NULL;
+   database_info_t      *items = NULL;
+   libretrodb_t         *db    = NULL;
+   size_t                found = 0;
+   size_t                i, kept = 0;
+
+   if (!idx)
+      return NULL;
+
+   found = db_crc_gather(idx, crc, hits, found,
+         sizeof(hits) / sizeof(hits[0]));
+   if (archive_crc && archive_crc != crc)
+      found = db_crc_gather(idx, archive_crc, hits, found,
+            sizeof(hits) / sizeof(hits[0]));
+
+   if (!(list = (database_info_list_t*)calloc(1, sizeof(*list))))
+      return NULL;
+
+   if (found == 0)
+      return list;                  /* empty result, as a miss returns */
+
+   /* File order, so the scanner sees what the query path showed it. */
+   if (found > 1)
+      qsort(hits, found, sizeof(hits[0]), db_crc_by_offset);
+
+   if (!(items = (database_info_t*)calloc(found, sizeof(*items))))
+   {
+      free(list);
+      return NULL;
+   }
+
+   if (!(db = libretrodb_new())
+       || libretrodb_open(idx->rdb_path, db, false) != 0)
+   {
+      free(items);
+      free(list);
+      libretrodb_free(db);
+      return NULL;
+   }
+
+   for (i = 0; i < found; i++)
+   {
+      struct rmsgpack_dom_value item;
+      if (libretrodb_read_at(db, hits[i].offset, &item) != 0)
+         continue;
+      if (database_info_fill_from_dom(&item, &items[kept], fields) == 0)
+         kept++;
+      rmsgpack_dom_value_free(&item);
+   }
+
+   libretrodb_close(db);
+   libretrodb_free(db);
+
+   list->list  = items;
+   list->count = kept;
    return list;
 }
 

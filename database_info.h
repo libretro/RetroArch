@@ -161,6 +161,25 @@ database_info_list_t *menu_dbinfo_cache_get(const char *path,
       const char *query);
 bool menu_dbinfo_cache_has(const char *path, const char *query);
 
+/* A crc -> record-offset index over one database, built in a single
+ * pass.  The scanner otherwise walks a whole database per content
+ * file; with an index it walks once and binary-searches thereafter.
+ * Costs 12 bytes per indexed record and lives for as long as the
+ * caller keeps it. */
+typedef struct database_info_crc_index database_info_crc_index_t;
+
+database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path);
+void database_info_crc_index_free(database_info_crc_index_t *idx);
+size_t database_info_crc_index_count(const database_info_crc_index_t *idx);
+
+/* Records whose crc is @crc or @archive_crc, in file order, with
+ * @fields extracted - the same list database_info_list_new_filtered()
+ * returns for "{crc:or(...)}".  NULL if the lookup could not be
+ * served, so the caller falls back to the query path. */
+database_info_list_t *database_info_list_new_crc(
+      const database_info_crc_index_t *idx, uint32_t crc,
+      uint32_t archive_crc, unsigned fields);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 
