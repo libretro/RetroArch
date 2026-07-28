@@ -160,7 +160,14 @@ enum db_state_flags_enum
    DB_STATE_FLAG_HAS_SERIAL               = (1 << 0),
    DB_STATE_FLAG_HAS_CRC                  = (1 << 1),
    DB_STATE_FLAG_HAS_SIZE                 = (1 << 2),
-   DB_STATE_FLAG_MATCHED                  = (1 << 3)
+   DB_STATE_FLAG_MATCHED                  = (1 << 3),
+   /* Set once the size range for a database has been queried,
+    * whatever the answer was.  The probe used to key off
+    * "min_sizes[i] == 0", which is also what an unqueried slot holds
+    * and what a database whose smallest record is zero-sized
+    * legitimately produces - so such a database was re-queried for
+    * every content file, at two full walks a time. */
+   DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
 };
 
 typedef struct database_state_handle
@@ -1182,6 +1189,11 @@ static void task_database_fill_db_min_max(database_state_handle_t *db_state)
    char query[50];
    query[0] = '\0';
 
+   /* Marked up front so that every exit below - including the ones
+    * that record a placeholder range - counts as having been asked.
+    * This is what stops the two walks repeating per content file. */
+   db_state->flags[db_state->list_index] |= DB_STATE_FLAG_SIZE_CHECKED;
+
    snprintf(query, sizeof(query), "{size:min(0)}");
    database_info_list_iterate_new(db_state, query);
 
@@ -1275,7 +1287,7 @@ static enum scan_verdict task_database_iterate_crc_lookup(
    }
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (db_state->min_sizes[db_state->list_index] == 0)
+   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
       task_database_fill_db_min_max(db_state);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
@@ -1501,7 +1513,7 @@ static int task_database_iterate_serial_lookup(
             path_contains_compressed_file);
 
    /* If size boundaries are not filled for this DB, run the queries */
-   if (db_state->min_sizes[db_state->list_index] == 0)
+   if (!(db_state->flags[db_state->list_index] & DB_STATE_FLAG_SIZE_CHECKED))
       task_database_fill_db_min_max(db_state);
 
    if (db_state->min_sizes[db_state->list_index] > 0)
