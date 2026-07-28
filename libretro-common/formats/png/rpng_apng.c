@@ -49,6 +49,7 @@
 #include <retro_inline.h>
 #include <boolean.h>
 #include <formats/image.h>
+#include <encodings/crc32.h>
 #include <formats/rpng.h>
 
 /* APNG dispose_op / blend_op (from the spec). */
@@ -167,30 +168,6 @@ static INLINE void apng_wr32(uint8_t *p, uint32_t v)
 {
    p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16);
    p[2] = (uint8_t)(v >> 8);  p[3] = (uint8_t)v;
-}
-
-/* CRC32 (PNG polynomial) for the synthesised chunks. */
-static uint32_t apng_crc(const uint8_t *p, size_t n)
-{
-   static uint32_t tbl[256];
-   static int init = 0;
-   uint32_t c = 0xFFFFFFFFu;
-   size_t i;
-   if (!init)
-   {
-      uint32_t k, j, v;
-      for (k = 0; k < 256; k++)
-      {
-         v = k;
-         for (j = 0; j < 8; j++)
-            v = (v >> 1) ^ (0xEDB88320u & (0u - (v & 1)));
-         tbl[k] = v;
-      }
-      init = 1;
-   }
-   for (i = 0; i < n; i++)
-      c = (c >> 8) ^ tbl[(c ^ p[i]) & 0xFF];
-   return c ^ 0xFFFFFFFFu;
 }
 
 static const uint8_t apng_png_sig[8] =
@@ -589,7 +566,7 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    apng_wr32(o + pos + 8 + 4, f->height);
    /* recompute IHDR CRC over type+data (13+4 bytes) */
    {
-      uint32_t crc = apng_crc(o + pos + 4, 4 + 13);
+      uint32_t crc = encoding_crc32(0, o + pos + 4, 4 + 13);
       apng_wr32(o + pos + 8 + 13, crc);
    }
    pos += s->ihdr_total - 8;
@@ -617,7 +594,7 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
       }
    }
    {
-      uint32_t crc = apng_crc(o + pos + 4, 4 + data_len);
+      uint32_t crc = encoding_crc32(0, o + pos + 4, 4 + data_len);
       apng_wr32(o + pos + 8 + data_len, crc);
    }
    pos += 12 + data_len;
@@ -625,7 +602,7 @@ static uint8_t *apng_build_frame_png(rpng_apng_stream_t *s,
    /* IEND */
    apng_wr32(o + pos, 0);
    memcpy(o + pos + 4, "IEND", 4);
-   apng_wr32(o + pos + 8, apng_crc(o + pos + 4, 4));
+   apng_wr32(o + pos + 8, encoding_crc32(0, o + pos + 4, 4));
    pos += 12;
 
    *out_len = total;

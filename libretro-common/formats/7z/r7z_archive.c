@@ -48,6 +48,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <encodings/crc32.h>
+
 #include <7z/r7z_archive.h>
 #include <7z/r7z_lzma.h>
 #include <7z/r7z_lzma_stream.h>
@@ -396,36 +398,6 @@ static void decode_pending_reset(r7z_archive_t *a);
 /* Prefixed because griffin builds every file in this directory into a
  * single translation unit, so a file-scope crc_table would be liable to
  * collide with another unit's. */
-static uint32_t r7z_crc_table[256];
-static int      r7z_crc_ready = 0;
-
-static void crc_init(void)
-{
-   uint32_t i, j, c;
-
-   if (r7z_crc_ready)
-      return;
-   for (i = 0; i < 256; i++)
-   {
-      c = i;
-      for (j = 0; j < 8; j++)
-         c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
-      r7z_crc_table[i] = c;
-   }
-   r7z_crc_ready = 1;
-}
-
-static uint32_t crc_calc(const uint8_t *p, size_t len)
-{
-   uint32_t c = 0xFFFFFFFFu;
-   size_t   i;
-
-   crc_init();
-   for (i = 0; i < len; i++)
-      c = r7z_crc_table[(c ^ p[i]) & 0xFF] ^ (c >> 8);
-   return c ^ 0xFFFFFFFFu;
-}
-
 /* --------------------------------------------------------------------
  * PackInfo
  *
@@ -1769,7 +1741,7 @@ static int decode_folder_bcj2(r7z_archive_t *a, uint32_t fi,
       goto done;
    }
 
-   if (f->has_crc && crc_calc(dst, dst_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, dst, dst_len) != f->crc)
    {
       res = R7Z_ERROR_CRC;
       free(dst);
@@ -1898,7 +1870,7 @@ static int decode_folder(r7z_archive_t *a, uint32_t fi, uint8_t **out)
       return R7Z_ERROR_DATA;
    }
 
-   if (f->has_crc && crc_calc(cur, cur_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, cur, cur_len) != f->crc)
    {
       free(cur);
       return R7Z_ERROR_CRC;
@@ -2122,7 +2094,7 @@ int r7z_archive_open(r7z_archive_t **out, const uint8_t *data, size_t len)
    if (next_size == 0)
       return R7Z_ERROR_DATA;
 
-   if (crc_calc(data + 32 + next_off, (size_t)next_size) != next_crc)
+   if (encoding_crc32(0, data + 32 + next_off, (size_t)next_size) != next_crc)
       return R7Z_ERROR_CRC;
 
    a = (r7z_archive_t *)calloc(1, sizeof(*a));
@@ -2732,7 +2704,7 @@ static int decode_folder_bcj2_slice(r7z_archive_t *a, uint32_t fi,
    }
 
    if (f->has_crc
-         && crc_calc(a->pend_b2dst, a->pend_b2dstlen) != f->crc)
+         && encoding_crc32(0, a->pend_b2dst, a->pend_b2dstlen) != f->crc)
    {
       decode_pending_reset(a);
       return R7Z_ERROR_CRC;
@@ -2887,7 +2859,7 @@ static int decode_folder_slice(r7z_archive_t *a, uint32_t fi, int *done)
       decode_pending_reset(a);
       return R7Z_ERROR_DATA;
    }
-   if (f->has_crc && crc_calc(a->pend_in, a->pend_in_len) != f->crc)
+   if (f->has_crc && encoding_crc32(0, a->pend_in, a->pend_in_len) != f->crc)
    {
       decode_pending_reset(a);
       return R7Z_ERROR_CRC;
@@ -2933,7 +2905,7 @@ static int extract_from_cache(r7z_archive_t *a, const r7z_entry_t *e,
    memcpy(buf, a->cached_data + (size_t)e->offset_in_folder,
          (size_t)e->size);
 
-   if (e->has_crc && crc_calc(buf, (size_t)e->size) != e->crc)
+   if (e->has_crc && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
    {
       free(buf);
       return R7Z_ERROR_CRC;
@@ -3077,7 +3049,7 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
       return R7Z_ERROR_MEM;
    memcpy(buf, folder_data + (size_t)e->offset_in_folder, (size_t)e->size);
 
-   if (e->has_crc && crc_calc(buf, (size_t)e->size) != e->crc)
+   if (e->has_crc && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
    {
       free(buf);
       return R7Z_ERROR_CRC;
