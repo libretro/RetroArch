@@ -342,6 +342,61 @@ static int write_content(const char *path, uint32_t crc, uint32_t size)
    return 1;
 }
 
+/* A one-entry zip using the stored method, so no compressor is needed
+ * and the bytes are entirely predictable.  Written by hand because
+ * the point is to exercise the scanner's archive handling, not to
+ * depend on a fixture checked into the tree. */
+static int write_zip(const char *path, const char *member,
+      const uint8_t *data, uint32_t len, uint32_t crc)
+{
+   FILE    *f = fopen(path, "wb");
+   uint16_t nlen = (uint16_t)strlen(member);
+   uint8_t  h[46];
+   uint32_t local_off = 0;
+
+   if (!f)
+      return 0;
+
+#define PUT16(p, v) do { (p)[0] = (uint8_t)(v); (p)[1] = (uint8_t)((v) >> 8); } while (0)
+#define PUT32(p, v) do { (p)[0] = (uint8_t)(v);        (p)[1] = (uint8_t)((v) >> 8);                          (p)[2] = (uint8_t)((v) >> 16); (p)[3] = (uint8_t)((v) >> 24); } while (0)
+
+   /* local file header */
+   memset(h, 0, 30);
+   PUT32(h,      0x04034b50); PUT16(h + 4,  20); PUT16(h + 6, 0);
+   PUT16(h + 8,  0);          /* stored */
+   PUT16(h + 10, 0); PUT16(h + 12, 0);
+   PUT32(h + 14, crc); PUT32(h + 18, len); PUT32(h + 22, len);
+   PUT16(h + 26, nlen); PUT16(h + 28, 0);
+   fwrite(h, 1, 30, f);
+   fwrite(member, 1, nlen, f);
+   fwrite(data, 1, len, f);
+
+   /* central directory */
+   local_off = 0;
+   memset(h, 0, 46);
+   PUT32(h,      0x02014b50); PUT16(h + 4, 20); PUT16(h + 6, 20);
+   PUT16(h + 8,  0); PUT16(h + 10, 0);
+   PUT16(h + 12, 0); PUT16(h + 14, 0);
+   PUT32(h + 16, crc); PUT32(h + 20, len); PUT32(h + 24, len);
+   PUT16(h + 28, nlen); PUT16(h + 30, 0); PUT16(h + 32, 0);
+   PUT16(h + 34, 0); PUT16(h + 36, 0); PUT32(h + 38, 0);
+   PUT32(h + 42, local_off);
+   fwrite(h, 1, 46, f);
+   fwrite(member, 1, nlen, f);
+
+   /* end of central directory */
+   memset(h, 0, 22);
+   PUT32(h,      0x06054b50);
+   PUT16(h + 8,  1); PUT16(h + 10, 1);
+   PUT32(h + 12, 46 + nlen);
+   PUT32(h + 16, 30 + nlen + len);
+   fwrite(h, 1, 22, f);
+   fclose(f);
+#undef PUT16
+#undef PUT32
+   return 1;
+}
+
 static int file_contains(const char *path, const char *needle)
 {
    int64_t  len  = 0;
@@ -392,6 +447,10 @@ int main(int argc, char **argv)
     * is the only coverage of that path. */
    const uint32_t crc_c = 0x0C0FFEE0u;
    const uint32_t sz_c  = 6144;
+   /* Inside an archive, so the scanner has to expand it and build a
+    * "archive#member" path for the entry. */
+   const uint32_t crc_d = 0xD15CD15Cu;
+   const uint32_t sz_d  = 2048;
 
    setvbuf(stdout, NULL, _IONBF, 0);
    crc_init();
@@ -415,6 +474,9 @@ int main(int argc, char **argv)
    { check(0, "fixture", "could not write database"); return 1; }
    sprintf(p, "%s/Test Disc.rdb", db_dir);
    if (!write_db(p, "Disc The Game", crc_c, sz_c))
+   { check(0, "fixture", "could not write database"); return 1; }
+   sprintf(p, "%s/Test Zip.rdb", db_dir);
+   if (!write_db(p, "Zipped The Game", crc_d, sz_d))
    { check(0, "fixture", "could not write database"); return 1; }
 
    sprintf(p, "%s/02_alpha.bin", in_dir);
@@ -441,8 +503,22 @@ int main(int argc, char **argv)
       fclose(f);
    }
 
+   /* The archive itself checksums to something else entirely, so a
+    * match can only come from expanding it. */
+   {
+      uint8_t *d = (uint8_t*)malloc(sz_d);
+      uint32_t i;
+      for (i = 0; i < sz_d - 4; i++)
+         d[i] = (uint8_t)((i * 53 + 7) & 0xFF);
+      crc_force(d, sz_d - 4, crc_d, d + sz_d - 4);
+      sprintf(p, "%s/04_bundle.zip", in_dir);
+      if (!write_zip(p, "inner.bin", d, sz_d, crc_d))
+      { free(d); check(0, "fixture", "could not write zip"); return 1; }
+      free(d);
+   }
+
    check(1, "content forced to the databases' crcs",
-         "alpha, beta and a cue track");
+         "alpha, beta, a cue track and an archive member");
 
    /* The scanner skips any database no installed core claims, so the
     * core info has to name both databases as well as the extension -
@@ -457,8 +533,8 @@ int main(int argc, char **argv)
       fprintf(f,
             "display_name = \"Scan Test\"\n"
             "corename = \"ScanTest\"\n"
-            "supported_extensions = \"bin|cue\"\n"
-            "database = \"Test Alpha|Test Beta|Test Disc\"\n");
+            "supported_extensions = \"bin|cue|zip\"\n"
+            "database = \"Test Alpha|Test Beta|Test Disc|Test Zip\"\n");
       fclose(f);
    }
    sprintf(p, "%s/test_libretro.so", core_dir);
@@ -476,6 +552,14 @@ int main(int argc, char **argv)
          sizeof(config_get_ptr()->paths.directory_playlist));
    strlcpy(config_get_ptr()->paths.path_content_database, db_dir,
          sizeof(config_get_ptr()->paths.path_content_database));
+
+   /* Without this the scanner never opens an archive, and the entry
+    * inside is invisible. */
+   {
+      bool *search_archives = manual_content_scan_get_search_archives_ptr();
+      if (search_archives)
+         *search_archives = true;
+   }
 
    if (!manual_content_scan_set_menu_system_name(
             MANUAL_CONTENT_SCAN_SYSTEM_NAME_CONTENT_DIR, NULL))
@@ -518,6 +602,17 @@ int main(int argc, char **argv)
    /* The cue is the entry that lands in the playlist, not the track
     * it names: the scanner checksums the track but records the sheet,
     * which is what a frontend would load. */
+   sprintf(p, "%s/Test Zip.lpl", pl_dir);
+   check(file_contains(p, "Zipped The Game"),
+         "archive member matched", "Zipped The Game");
+   /* The member is what gets checksummed and matched, but the entry
+    * records the archive: that is the path a frontend loads.  Assert
+    * it rather than the "archive#member" form the scan builds
+    * internally, which does not reach the playlist. */
+   check(   file_contains(p, "04_bundle.zip")
+         && !file_contains(p, "#inner.bin"),
+         "entry records the archive, not the member", "04_bundle.zip");
+
    sprintf(p, "%s/Test Disc.lpl", pl_dir);
    check(file_contains(p, "Disc The Game"),
          "cue resolved through its track", "Disc The Game");
