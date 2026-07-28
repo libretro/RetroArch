@@ -10,7 +10,7 @@
  * database than the entry at that slot.  A lookup then answered with
  * records belonging to another system, and the scanner filed the
  * content under whichever database happened to be in the slot - a
- * PlayStation title recorded as a Mega Drive one, with nothing
+ * a title recorded under a wholly unrelated system, with nothing
  * reporting an error.
  *
  * Two things are checked here:

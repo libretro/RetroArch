@@ -156,8 +156,9 @@ if [ -x "$WORK/t_race_win" ]; then
    done
 fi
 if [ -x "$WORK/t_race_err" ]; then
-   f="$CORPUS/real/Sega - Mega Drive - Genesis.rdb"
-   [ -e "$f" ] || f="$CORPUS/valid/valid.rdb"
+   # any real database will do; fall back to the small built one
+   f=$(ls "$CORPUS"/real/*.rdb 2>/dev/null | head -1)
+   [ -n "$f" ] && [ -e "$f" ] || f="$CORPUS/valid/valid.rdb"
    TSAN_OPTIONS=exitcode=0 timeout 400 "$WORK/t_race_err" "$f" \
      >"$WORK/te.out" 2>&1
    judge "concurrent failing-query compiles" "$WORK/te.out"

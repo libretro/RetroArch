@@ -1204,7 +1204,7 @@ database_info_list_t *database_info_list_new_crc(
 {
    /* Working set for one lookup.  A run longer than this is handed
     * back to the query path rather than truncated - see
-    * db_crc_gather().  It is not rare: Sega - Mega Drive - Genesis
+    * db_crc_gather().  It is not rare: at least one shipped database
     * carries a placeholder serial shared by hundreds of records, and
     * assuming a bounded run was always enough is what silently
     * shortened those results before. */

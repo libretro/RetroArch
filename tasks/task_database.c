@@ -182,9 +182,9 @@ enum db_state_flags_enum
  * An eighth is deliberately more conservative than the quarter the
  * mixer uses, because these indexes are held for the whole scan
  * rather than consulted once.  The cap keeps a large-memory host from
- * hoarding: the biggest database shipped today, Nintendo -
- * Nintendo Entertainment System, indexes to 237 KB across 30359
- * records, so 32 MB covers far more databases than exist.  Below the
+ * hoarding: the biggest database shipped today indexes to 237 KB
+ * across roughly 30000 records, so 32 MB covers far more databases
+ * than exist.  Below the
  * floor there is no point starting, and the query path is only
  * slower, never wrong. */
 #define DB_STATE_INDEX_BUDGET_SHARE  8
@@ -1951,8 +1951,8 @@ static void scan_results_batch_update_playlists(scan_results_t *sr,
        * This used to compare current_playlist against result->db_name
        * unconditionally, but the fixed-file branch below assigns
        * task_config->playlist_file to current_playlist - a path like
-       * ".../MyList.lpl", which never equals a db_name like
-       * "Sega - Genesis.lpl".  The test was therefore true on every
+       * ".../MyList.lpl", which never equals a db_name, those being
+       * the database's own file name.  The test was therefore true on every
        * iteration, and each result closed the playlist (a full
        * playlist_write_file()) and reopened it (a full
        * playlist_init() parse from disk).  N results meant N complete
