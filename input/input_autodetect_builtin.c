@@ -67,6 +67,36 @@ DECL_AXIS(r_x_minus, -2) \
 DECL_AXIS(r_y_plus,  -3) \
 DECL_AXIS(r_y_minus, +3)
 
+#ifdef WEBOS
+/* Switch Pro on webOS — working physical remap. */
+#define SWITCH_PRO_SDL2_BINDS \
+DECL_BTN(a, 0) \
+DECL_BTN(b, 1) \
+DECL_BTN(x, 2) \
+DECL_BTN(y, 3) \
+DECL_BTN(select, 9) \
+DECL_BTN(start, 10) \
+DECL_BTN(up, h0up) \
+DECL_BTN(down, h0down) \
+DECL_BTN(left, h0left) \
+DECL_BTN(right, h0right) \
+DECL_BTN(l, 5) \
+DECL_BTN(r, 6) \
+DECL_BTN(l2, 7) \
+DECL_BTN(r2, 8) \
+DECL_BTN(l3, 12) \
+DECL_BTN(r3, 13) \
+DECL_AXIS(l_x_plus,  +0) \
+DECL_AXIS(l_x_minus, -0) \
+DECL_AXIS(l_y_plus,  +1) \
+DECL_AXIS(l_y_minus, -1) \
+DECL_AXIS(r_x_plus,  +2) \
+DECL_AXIS(r_x_minus, -2) \
+DECL_AXIS(r_y_plus,  -3) \
+DECL_AXIS(r_y_minus, +3) \
+DECL_MENU(11)
+#endif
+
 #define SDL3_DEFAULT_BINDS \
 DECL_BTN_EX(a,           1, "Right Face Button")   /* SDL_GAMEPAD_BUTTON_EAST           */ \
 DECL_BTN_EX(b,           0, "Bottom Face Button")  /* SDL_GAMEPAD_BUTTON_SOUTH          */ \
@@ -747,6 +777,11 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef HAVE_SDL2
    DECL_AUTOCONF_DEVICE("Standard Gamepad", "sdl2", SDL2_DEFAULT_BINDS),
+#ifdef WEBOS
+   DECL_AUTOCONF_PID(0x2009, 0x057e, "sdl2", SWITCH_PRO_SDL2_BINDS),
+   DECL_AUTOCONF_PID(0x200e, 0x057e, "sdl2", SWITCH_PRO_SDL2_BINDS),
+   DECL_AUTOCONF_DEVICE("Nintendo Switch Pro Controller", "sdl2", SWITCH_PRO_SDL2_BINDS),
+#endif
 #endif
 #ifdef HAVE_SDL3
    DECL_AUTOCONF_DEVICE("Gamepad", "sdl3", SDL3_DEFAULT_BINDS),
