@@ -731,14 +731,42 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    return 0;
 }
 
+/* macOS Archive Utility writes a resource-fork sidecar for every member
+ * it stores, parked under a top-level "__MACOSX" directory and named
+ * after the member with a "._" prefix.  These are never content, and
+ * they sort ahead of the real file, so anything picking the first entry
+ * out of a Mac-made archive picks the sidecar.
+ *
+ * The central-directory name length is already in hand at the only call
+ * site, so this needs neither strlen nor a scan of the whole entry name
+ * to find the basename. */
+static int zip_entry_is_appledouble(const uint8_t *name, uint32_t len)
+{
+   uint32_t i;
+
+   if (     len >= 8
+         && memcmp(name, "__MACOSX", 8) == 0
+         && (len == 8 || name[8] == '/' || name[8] == '\\'))
+      return 1;
+
+   i = len;
+   while (i > 0 && name[i - 1] != '/' && name[i - 1] != '\\')
+      i--;
+
+   return (len - i >= 2 && name[i] == '.' && name[i + 1] == '_');
+}
+
 static int zip_parse_file_iterate_step_internal(
       zip_context_t * zip_context, char *filename,
       const uint8_t **cdata,
       unsigned *cmode, uint32_t *size, uint32_t *csize,
       uint32_t *checksum, unsigned *payback)
 {
-   uint8_t *entry = zip_context->directory_entry;
+   uint8_t *entry;
    uint32_t signature, namelength, extralength, commentlength, offset;
+
+again:
+   entry = zip_context->directory_entry;
 
    if (entry < zip_context->directory || entry >= zip_context->directory_end)
       return 0;
@@ -772,6 +800,23 @@ static int zip_parse_file_iterate_step_internal(
    if ((size_t)(zip_context->directory_end - entry)
          < (size_t)46 + namelength + extralength + commentlength)
       return -1;
+
+   /* Drop AppleDouble sidecars before the name is even copied out.
+    * Doing it here rather than in the listing callback covers every
+    * consumer of the walk - listing, extraction and the incremental
+    * entry source alike - and keeps the whole check off the callback
+    * hot path.  The end-of-central-directory record counted these
+    * entries, so take them back out of the progress denominator. */
+   if (zip_entry_is_appledouble(zip_context->directory_entry + 46, namelength))
+   {
+      zip_context->directory_entry += 46 + namelength
+         + extralength + commentlength;
+
+      if (zip_context->state && zip_context->state->step_total > 0)
+         zip_context->state->step_total--;
+
+      goto again;
+   }
 
    memcpy(filename, zip_context->directory_entry + 46, namelength); /* file name */
    filename[namelength] = '\0';

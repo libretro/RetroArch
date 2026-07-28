@@ -39,39 +39,6 @@
 #include <sys/stat.h>
 #endif
 
-static bool file_archive_path_is_appledouble_metadata(const char *path)
-{
-   static const char macosx_dir[] = "__MACOSX";
-   const char *base    = path;
-   const char *cursor  = path;
-   const char *segment = path;
-
-   if (!path || !*path)
-      return false;
-
-   for (;;)
-   {
-      if (*cursor == '/' || *cursor == '\\' || *cursor == '\0')
-      {
-         if ((size_t)(cursor - segment) == sizeof(macosx_dir) - 1
-               && strncmp(segment, macosx_dir, sizeof(macosx_dir) - 1) == 0)
-            return true;
-
-         if (*cursor == '\0')
-         {
-            base = segment;
-            break;
-         }
-
-         segment = cursor + 1;
-      }
-
-      cursor++;
-   }
-
-   return string_starts_with(base, "._");
-}
-
 static int file_archive_get_file_list_cb(
       const char *path,
       const char *valid_exts,
@@ -83,11 +50,6 @@ static int file_archive_get_file_list_cb(
       struct archive_extract_userdata *userdata)
 {
    union string_list_elem_attr attr;
-
-   if (file_archive_get_file_backend(userdata->archive_path)
-            == file_archive_get_zlib_file_backend()
-         && file_archive_path_is_appledouble_metadata(path))
-      return 1;
 
    if (valid_exts)
    {
