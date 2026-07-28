@@ -56,6 +56,7 @@ jobs:
             compat_fnmatch_test
             snprintf
             unbase64_test
+            crc32_test
             archive_zip_test
             archive_zstd_test
             config_file_test
@@ -363,6 +364,26 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_spsc_test
 
+      - name: Run crc32_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          # encoding_crc32() caches x86 feature detection on first use.
+          # The failure that matters is publishing that result without
+          # release/acquire ordering, which is invisible to the value
+          # checks -- every thread still computes the right number on
+          # x86 TSO -- and only shows up as a race.  The test holds its
+          # threads on a gate so they all make their first dispatching
+          # call at once; see the comment above crc_first_touch_worker
+          # for why that section makes exactly one call per thread.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./crc32_test
+
   # Cross-architecture validation lane for retro_atomic_test.
   #
   # The samples job above runs on x86_64, which is a strongly-ordered
@@ -462,3 +483,82 @@ jobs:
             echo '::error title=No barrier instructions emitted::retro_atomic_test.s contains no acquire/release/barrier mnemonics for ${{ matrix.arch }}; retro_atomic.h may have fallen through to a no-barrier backend.'
             exit 1
           fi
+
+  # encoding_crc32() picks a different implementation per target: the
+  # ARMv8 CRC32 instructions when the compiler advertises +crc, a
+  # PCLMULQDQ fold on x86, and a slicing-by-8 table everywhere else.
+  # The table path reads the input as little-endian 32-bit words and
+  # byte-swaps under MSB_FIRST, so a big-endian target is the only
+  # place a missing or wrong swap is visible -- on x86 the swap
+  # compiles away and every test still passes.  powerpc is carried
+  # here for exactly that reason, and is the only big-endian lane in
+  # the sample suite.
+  #
+  # aarch64 appears twice on purpose.  Stock aarch64 gcc does not
+  # define __ARM_FEATURE_CRC32, so a default build exercises the table
+  # path; only Makefile.libnx passes +crc today, and the second entry
+  # is what covers the intrinsic path at all.
+  #
+  # qemu-user cannot run the sanitizer runtimes, so these lanes rely on
+  # the test's own bitwise reference and its guard-page section, which
+  # catches an overread as a SIGSEGV rather than a redzone hit.
+  crc32-cross:
+    name: Cross-arch crc32_test (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: aarch64
+            cc: aarch64-linux-gnu-gcc
+            cflags: ""
+            apt_pkgs: gcc-aarch64-linux-gnu
+            qemu: qemu-aarch64-static
+            sysroot: /usr/aarch64-linux-gnu
+          - name: aarch64+crc
+            cc: aarch64-linux-gnu-gcc
+            cflags: "-march=armv8-a+crc"
+            apt_pkgs: gcc-aarch64-linux-gnu
+            qemu: qemu-aarch64-static
+            sysroot: /usr/aarch64-linux-gnu
+          - name: armv7
+            cc: arm-linux-gnueabihf-gcc
+            cflags: ""
+            apt_pkgs: gcc-arm-linux-gnueabihf
+            qemu: qemu-arm-static
+            sysroot: /usr/arm-linux-gnueabihf
+          - name: powerpc-big-endian
+            cc: powerpc-linux-gnu-gcc
+            cflags: ""
+            apt_pkgs: gcc-powerpc-linux-gnu
+            qemu: qemu-ppc-static
+            sysroot: /usr/powerpc-linux-gnu
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential ${{ matrix.apt_pkgs }} qemu-user-static
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build crc32_test for ${{ matrix.name }}
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          set -u
+          set -o pipefail
+          # HAVE_THREADS=0: rthreads needs a target libpthread that the
+          # cross toolchains here do not reliably provide.  The threaded
+          # sections are covered by the native Clang/TSan lane above;
+          # what these lanes are for is the per-architecture arithmetic.
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="${{ matrix.cflags }}" make all HAVE_THREADS=0
+
+      - name: Run crc32_test under qemu-user
+        working-directory: libretro-common/samples/encodings/crc32
+        run: |
+          set -u
+          set -o pipefail
+          ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test

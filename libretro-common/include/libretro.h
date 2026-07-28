@@ -4515,6 +4515,27 @@ struct retro_log_callback
 /** Indicates CPU support for the LZCNT instruction (x86 ABM / ARM CLZ). */
 #define RETRO_SIMD_LZCNT    (1 << 23)
 
+/**
+ * Indicates CPU support for the PCLMULQDQ carry-less multiply instruction.
+ *
+ * Distinct from \c RETRO_SIMD_AES: AES-NI is CPUID.1:ECX[25] and
+ * PCLMULQDQ is CPUID.1:ECX[1]. They shipped together on most parts but
+ * hypervisors mask them independently and some early Westmere SKUs had
+ * AES fused off, so one must not be used as a proxy for the other.
+ */
+#define RETRO_SIMD_PCLMUL   (1 << 24)
+
+/**
+ * Indicates CPU support for the ARMv8 CRC32 instructions
+ * (\c crc32b / \c crc32h / \c crc32w / \c crc32x).
+ *
+ * These compute CRC-32/ISO-HDLC, the gzip and PNG polynomial, not
+ * CRC-32C. Optional in ARMv8.0 and mandatory from ARMv8.1, so a
+ * 64-bit ARM CPU does not imply their presence: Apple's A7 through
+ * A10 lack them, for instance.
+ */
+#define RETRO_SIMD_CRC32    (1 << 25)
+
 /** @} */
 
 /**
