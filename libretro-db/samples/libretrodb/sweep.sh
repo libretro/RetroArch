@@ -90,6 +90,27 @@ else
 fi
 ( cd "$DB/samples/libretrodb" && make clean >/dev/null 2>&1 )
 
+echo "=== scanner tests (ASan+UBSan+LeakSan) ==="
+# These link most of the frontend, so they are slower to build than
+# everything else here; they are the only coverage of the scan as a
+# whole, including the task teardown and the playlist write.
+SCAN_DIR="$TREE/samples/tasks/database"
+if [ -f "$SCAN_DIR/Makefile" ]; then
+   ( cd "$SCAN_DIR" && make clean >/dev/null 2>&1
+     make check SANITIZER=address,undefined >"$WORK/scan.log" 2>&1 )
+   res=$(grep -oE '[0-9]+ checks, [0-9]+ failures' "$WORK/scan.log" | tr '\n' ' ')
+   if grep -q "0 failures" "$WORK/scan.log" \
+      && ! grep -qE '[1-9][0-9]* failures' "$WORK/scan.log"; then
+      judge "scanner tests ($res)" "$WORK/scan.log"
+   else
+      bad "scanner tests" "${res:-did not run}"
+      grep -E "FAIL|error:" "$WORK/scan.log" | head -3
+   fi
+   ( cd "$SCAN_DIR" && make clean >/dev/null 2>&1 )
+else
+   say "scanner tests" "skipped (sample not present)"
+fi
+
 echo "=== real databases (ASan+UBSan+LeakSan) ==="
 if [ -n "$CORPUS" ] && [ -d "$CORPUS/real" ] && [ -x "$WORK/a_dumpall" ]; then
    for f in "$CORPUS"/real/*.rdb; do
