@@ -2269,42 +2269,66 @@ RZSTD_BODY_INLINE int rzstd_decode_sequences_body(rzstd_seq_tables_t *tab,
       uint32_t lit_run;
       uint32_t match_len;
 
-      if (ll_code >= 36 || ml_code >= 53 || of_code >= 32)
-         return RZ_DATA;
-
-      /* Offset first, then match length, then literal length: the
+      /* The codes come out of tables that cannot hold anything larger:
+       * an FSE description is refused past the cap, a one-symbol table
+       * checks its byte, the predefined tables are constants, and a
+       * repeat is a table that already passed. A range test here was
+       * per sequence for a property settled per table.
+       *
+       * Offset first, then match length, then literal length: the
        * extra bits come out in that order.
        *
-       * The three are taken without checking when the buffer holds
-       * enough for all of them, which is decided against what this
-       * sequence actually needs rather than against the worst case any
-       * sequence could need. The worst case is 63 bits and a refill
-       * tops out anywhere between 57 and 64, so testing against it
-       * misses most of the time -- which is how a fast path ends up
-       * never being taken. */
+       * One question per sequence -- whether the whole of it, values
+       * and state updates both, is provably present -- replaces the
+       * two exact sums the loop used to total. A sequence's values are
+       * at most 63 bits and its updates 26 more; against 128 the whole
+       * sequence is there, and every read below runs unchecked with
+       * refills at fixed places: one ahead of the values, one between
+       * match and literal lengths that only fires for the rare wide
+       * sequence, one after the updates for the next round. This is
+       * the reference implementation's discipline. The last couple of
+       * sequences of a block fail the test and take the checked reads,
+       * which is where that care belongs. */
+      if (bits.count + bits.pos * 8 >= 128)
       {
-         uint32_t need = of_code + rzstd_ml_bits[ml_code]
-                       + rzstd_ll_bits[ll_code];
-
-         if (bits.count < need)
-            rzstd_rbits_fill(&bits);
-         if (bits.count >= need)
-      {
+         rzstd_rbits_fill(&bits);
          offset    = ((uint32_t)1 << of_code)
                    + rzstd_rbits_take(&bits, of_code);
          match_len = rzstd_ml_base[ml_code]
                    + rzstd_rbits_take(&bits, rzstd_ml_bits[ml_code]);
+         if (of_code + rzstd_ml_bits[ml_code] + rzstd_ll_bits[ll_code]
+               >= 31)
+            rzstd_rbits_fill(&bits);
          lit_run   = rzstd_ll_base[ll_code]
                    + rzstd_rbits_take(&bits, rzstd_ll_bits[ll_code]);
-         }
-         else
+
+         if (i + 1 < nseq)
          {
-            offset    = ((uint32_t)1 << of_code)
-                      + rzstd_rbits_read(&bits, of_code);
-            match_len = rzstd_ml_base[ml_code]
-                      + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
-            lit_run   = rzstd_ll_base[ll_code]
-                      + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+            ll_state = lle->next_state + rzstd_rbits_take(&bits, lle->bits);
+            ml_state = mle->next_state + rzstd_rbits_take(&bits, mle->bits);
+            of_state = ofe->next_state + rzstd_rbits_take(&bits, ofe->bits);
+            lle_next = &tab->ll_fse.table[ll_state];
+            mle_next = &tab->ml_fse.table[ml_state];
+            ofe_next = &tab->of_fse.table[of_state];
+         }
+      }
+      else
+      {
+         offset    = ((uint32_t)1 << of_code)
+                   + rzstd_rbits_read(&bits, of_code);
+         match_len = rzstd_ml_base[ml_code]
+                   + rzstd_rbits_read(&bits, rzstd_ml_bits[ml_code]);
+         lit_run   = rzstd_ll_base[ll_code]
+                   + rzstd_rbits_read(&bits, rzstd_ll_bits[ll_code]);
+
+         if (i + 1 < nseq)
+         {
+            ll_state = lle->next_state + rzstd_rbits_read(&bits, lle->bits);
+            ml_state = mle->next_state + rzstd_rbits_read(&bits, mle->bits);
+            of_state = ofe->next_state + rzstd_rbits_read(&bits, ofe->bits);
+            lle_next = &tab->ll_fse.table[ll_state];
+            mle_next = &tab->ml_fse.table[ml_state];
+            ofe_next = &tab->of_fse.table[of_state];
          }
       }
 
@@ -2396,33 +2420,6 @@ RZSTD_BODY_INLINE int rzstd_decode_sequences_body(rzstd_seq_tables_t *tab,
          out += match_len;
       }
 
-      if (i + 1 < nseq)
-      {
-         /* Likewise for the three updates: what they need is already
-          * in the entries fetched at the top of the loop. */
-         uint32_t need = (uint32_t)lle->bits + mle->bits + ofe->bits;
-
-         if (bits.count < need)
-            rzstd_rbits_fill(&bits);
-         if (bits.count >= need)
-         {
-            ll_state = lle->next_state + rzstd_rbits_take(&bits, lle->bits);
-            ml_state = mle->next_state + rzstd_rbits_take(&bits, mle->bits);
-            of_state = ofe->next_state + rzstd_rbits_take(&bits, ofe->bits);
-         }
-         else
-         {
-            ll_state = lle->next_state + rzstd_rbits_read(&bits, lle->bits);
-            ml_state = mle->next_state + rzstd_rbits_read(&bits, mle->bits);
-            of_state = ofe->next_state + rzstd_rbits_read(&bits, ofe->bits);
-         }
-
-         /* Issue the next round's loads now, ahead of this round's
-          * copies. */
-         lle_next = &tab->ll_fse.table[ll_state];
-         mle_next = &tab->ml_fse.table[ml_state];
-         ofe_next = &tab->of_fse.table[of_state];
-      }
    }
 
    /* Whatever literals the sequences did not consume finish the block. */
