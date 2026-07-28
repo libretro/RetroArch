@@ -47,11 +47,13 @@
 /* Must match MAX_ERROR_LEN in query.c */
 #define LIBRETRODB_QUERY_ERR_LEN 256
 
-/* Upper bound on a database we are willing to read into memory for a
- * cursor walk.  The largest database shipped today is about 8 MB, so
- * this is headroom rather than a target; anything larger, or any
- * allocation that fails, falls back to streaming from the file. */
-#define LIBRETRODB_MAX_IMAGE_SIZE (32 * 1024 * 1024)
+/* Sliding window used for the cursor walk.  Has to comfortably exceed
+ * the largest backwards jump the cursor makes - a rewind to the start
+ * of the record being inspected - so that the rewind stays inside the
+ * window and costs nothing. */
+#ifndef LIBRETRODB_WINDOW_SIZE
+#define LIBRETRODB_WINDOW_SIZE (64 * 1024)
+#endif
 
 /* MsgPack type bytes — needed by the fast cursor read path */
 #define _MPF_FIXMAP   0x80
@@ -114,11 +116,6 @@ typedef struct libretrodb_header
 struct libretrodb_cursor
 {
    intfstream_t *fd;
-   /* Whole-database image backing 'fd' when it is memory-resident,
-    * NULL when streaming from the file.  Owned by the cursor - not
-    * shared with the db handle, whose lifetime is managed
-    * independently by some callers (lua/testlib.c). */
-   uint8_t      *image;
    libretrodb_query_t *query;
    libretrodb_t *db;
    int is_valid;
@@ -784,12 +781,6 @@ void libretrodb_cursor_close(libretrodb_cursor_t *cursor)
    if (!cursor)
       return;
 
-   if (cursor->image)
-   {
-      free(cursor->image);
-      cursor->image = NULL;
-   }
-
    /* See libretrodb_close: intfstream_close does not free the
     * struct.  Match the convention. */
    if (cursor->fd)
@@ -822,59 +813,22 @@ int libretrodb_cursor_open(libretrodb_t *db,
       libretrodb_cursor_t *cursor,
       libretrodb_query_t *q)
 {
-   int64_t       size;
-   uint8_t      *image = NULL;
-   intfstream_t *fd    = NULL;
+   intfstream_t *fd = NULL;
 
    if (!db || !db->path || !*db->path)
       return -1;
 
-   if (!(fd = intfstream_open_file(db->path,
-                                   RETRO_VFS_FILE_ACCESS_READ,
-                                   RETRO_VFS_FILE_ACCESS_HINT_NONE)))
-      return -1;
+   /* Walking the record stream is what a content scan spends its time
+    * on, and most of that is the per-read trip through
+    * filestream/VFS/fread rather than parsing.  A sliding window turns
+    * those reads into a memcpy while keeping the resident cost fixed
+    * at LIBRETRODB_WINDOW_SIZE instead of the size of the database. */
+   if (!(fd = intfstream_open_buffered(db->path, LIBRETRODB_WINDOW_SIZE)))
+      if (!(fd = intfstream_open_file(db->path,
+                  RETRO_VFS_FILE_ACCESS_READ,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         return -1;
 
-   /* Walking the record stream is what a content scan actually spends
-    * its time on, and most of that is per-read overhead through the
-    * stream layers rather than parsing: with the file already in the
-    * page cache, the same walk over a memory-backed stream runs about
-    * 2.2x faster (17.9 -> 8.1 ms for the Nintendo - Nintendo
-    * Entertainment System database, 14.2 -> 6.1 ms for
-    * Sony - PlayStation).
-    *
-    * Read the database in once and walk it from memory.  This is a
-    * best-effort optimisation: a database too large to image, or an
-    * allocation that fails, simply keeps the file-backed stream. */
-   size = intfstream_get_size(fd);
-
-   if (   size > 0
-       && size <= LIBRETRODB_MAX_IMAGE_SIZE
-       && (image = (uint8_t*)malloc((size_t)size)))
-   {
-      intfstream_t *mem = NULL;
-
-      if (   intfstream_seek(fd, 0, RETRO_VFS_SEEK_POSITION_START) >= 0
-          && intfstream_read(fd, image, (uint64_t)size) == size)
-         mem = intfstream_open_memory(image,
-               RETRO_VFS_FILE_ACCESS_READ,
-               RETRO_VFS_FILE_ACCESS_HINT_NONE, (uint64_t)size);
-
-      if (mem)
-      {
-         intfstream_close(fd);
-         free(fd);
-         fd    = mem;
-      }
-      else
-      {
-         free(image);
-         image = NULL;
-      }
-   }
-   else
-      image = NULL;
-
-   cursor->image    = image;
    cursor->fd       = fd;
    cursor->db       = db;
    cursor->is_valid = 1;
