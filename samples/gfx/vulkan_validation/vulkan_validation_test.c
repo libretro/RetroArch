@@ -45,16 +45,26 @@
  * which is worth something on its own account -- if the debug
  * path stops reporting, this test stops passing.
  *
- * The context is brought up with VULKAN_WSI_NONE, so no window,
- * surface or swapchain is needed and it runs headless.  On CI
- * that means lavapipe:
+ * The context is brought up over a real Xlib surface, because
+ * VULKAN_WSI_NONE reaches almost nothing:
+ * vulkan_context_init_device() is called from
+ * vulkan_surface_create(), not from vulkan_context_init(), and
+ * vulkan_surface_create() answers VULKAN_WSI_NONE with `return
+ * false`.  Init alone therefore leaves context.gpu NULL and
+ * memory_properties zeroed -- a check written against it passes
+ * by having nothing to check.
+ *
+ * With an Xvfb display and lavapipe the whole path runs
+ * headless anyway:
  *
  *     apt-get install mesa-vulkan-drivers vulkan-validationlayers
+ *     Xvfb :99 -screen 0 1280x720x24 &
+ *     export DISPLAY=:99
  *     export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
  *
- * With no Vulkan device at all the test exits 77 (the automake
- * convention for "skipped") rather than failing, so it is safe
- * to run unconditionally.
+ * With no X display or no Vulkan device the test exits 77 (the
+ * automake convention for "skipped") rather than failing, so it
+ * is safe to run unconditionally.
  *
  * WHAT IT IS NOT
  *
@@ -93,6 +103,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <X11/Xlib.h>
+
 #include "../../../gfx/common/vulkan_common.h"
 
 /* Scored by the RARCH_LOG hook in stubs_retroarch.c. */
@@ -100,6 +112,9 @@ extern int g_vk_validation_errors;
 extern int g_vk_validation_warnings;
 
 #define SKIP_EXIT_CODE 77
+
+static Display *s_dpy;
+static Window   s_win;
 
 static void reset_counts(void)
 {
@@ -121,39 +136,83 @@ static int report(const char *what)
    return 0;
 }
 
-/* Bring the context up and take it down again.  Everything
- * vulkan_common.c does before a surface exists happens here. */
+/* Bring the whole thing up: instance, surface, physical device,
+ * queues, logical device, swapchain.  Then take it down. */
+static int context_up(gfx_ctx_vulkan_data_t *vk)
+{
+   memset(vk, 0, sizeof(*vk));
+
+   if (!vulkan_context_init(vk, VULKAN_WSI_XLIB))
+      return 0;
+
+   if (!vulkan_surface_create(vk, VULKAN_WSI_XLIB,
+            s_dpy, &s_win, 640, 480, 1))
+   {
+      vulkan_context_destroy(vk, true);
+      return 0;
+   }
+   return 1;
+}
+
 static int test_context_init_destroy(int *skipped)
 {
    gfx_ctx_vulkan_data_t vk;
 
    *skipped = 0;
    reset_counts();
-   memset(&vk, 0, sizeof(vk));
 
-   if (!vulkan_context_init(&vk, VULKAN_WSI_NONE))
+   if (!context_up(&vk))
    {
-      fputs("SKIP: no usable Vulkan device"
-            " (set VK_DRIVER_FILES for a software ICD)\n", stderr);
+      fputs("SKIP: could not bring up a Vulkan context"
+            " (need a display and an ICD;"
+            " see the header of this file)\n", stderr);
       *skipped = 1;
       return 0;
-    }
+   }
 
-   /* Not printing vk.context.gpu_properties here on purpose: under
-    * VULKAN_WSI_NONE it reads back zeroed even though
-    * vulkan_context_init_device() fills it unconditionally two lines
-    * before it fills memory_properties, which does come through.  That
-    * is worth a look on its own and is not this test's business. */
+   printf("       device: %s, %u memory type(s),"
+          " %u swapchain image(s)\n",
+         vk.context.gpu_properties.deviceName,
+         vk.context.memory_properties.memoryTypeCount,
+         vk.context.num_swapchain_images);
 
-   vulkan_context_destroy(&vk, false);
+   /* Guard against the whole suite passing by having reached
+    * nothing.  VULKAN_WSI_NONE used to leave exactly this state
+    * and every check below still went green. */
+   if (!vk.context.gpu)
+   {
+      fputs("FAIL: no physical device was selected\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
+   if (!vk.context.device)
+   {
+      fputs("FAIL: no logical device was created\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
+   if (!vk.context.memory_properties.memoryTypeCount)
+   {
+      fputs("FAIL: device reports no memory types\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
+   if (!vk.context.num_swapchain_images)
+   {
+      fputs("FAIL: swapchain has no images\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      return 1;
+   }
 
-   return report("context init/destroy");
+   vulkan_context_destroy(&vk, true);
+
+   return report("context init/surface/device/swapchain/destroy");
 }
 
 /* Repeat it.  A leak that validation only notices at
  * vkDestroyInstance shows up the first time round; one that
  * needs state left over from a previous context -- a cached
- * device, a stale queue index -- only shows up on the second.
+ * device, a stale queue index -- only shows up on a later one.
  * RetroArch does this for real on every driver reinit. */
 static int test_context_cycle(void)
 {
@@ -164,14 +223,13 @@ static int test_context_cycle(void)
       gfx_ctx_vulkan_data_t vk;
 
       reset_counts();
-      memset(&vk, 0, sizeof(vk));
 
-      if (!vulkan_context_init(&vk, VULKAN_WSI_NONE))
+      if (!context_up(&vk))
       {
-         fprintf(stderr, "FAIL: context init failed on cycle %d\n", i);
+         fprintf(stderr, "FAIL: context setup failed on cycle %d\n", i);
          return 1;
       }
-      vulkan_context_destroy(&vk, false);
+      vulkan_context_destroy(&vk, true);
 
       if (g_vk_validation_errors || g_vk_validation_warnings)
       {
@@ -183,28 +241,25 @@ static int test_context_cycle(void)
       }
    }
 
-   printf("[pass] three init/destroy cycles are validation-clean\n");
+   printf("[pass] three setup/teardown cycles are validation-clean\n");
    return 0;
 }
 
 /* vulkan_find_memory_type() picks the heap for every allocation
  * the backend makes; a wrong answer is a validation error at the
  * first vkBindImageMemory rather than here, so check the
- * contract directly.  The fallback form must never return the
- * "nothing matched" sentinel when the primary form would have
- * succeeded. */
+ * contract directly. */
 static int test_memory_type_selection(void)
 {
    gfx_ctx_vulkan_data_t vk;
-   uint32_t i;
+   uint32_t i, checked = 0;
    int fail = 0;
 
    reset_counts();
-   memset(&vk, 0, sizeof(vk));
 
-   if (!vulkan_context_init(&vk, VULKAN_WSI_NONE))
+   if (!context_up(&vk))
    {
-      fputs("FAIL: context init failed\n", stderr);
+      fputs("FAIL: context setup failed\n", stderr);
       return 1;
    }
 
@@ -217,6 +272,7 @@ static int test_memory_type_selection(void)
       if (!want)
          continue;
 
+      checked++;
       got = vulkan_find_memory_type(&vk.context.memory_properties,
             1u << i, want);
 
@@ -242,29 +298,50 @@ static int test_memory_type_selection(void)
       }
    }
 
-   vulkan_context_destroy(&vk, false);
+   vulkan_context_destroy(&vk, true);
 
    if (fail)
       return 1;
+   if (!checked)
+   {
+      fputs("FAIL: no memory types to check\n", stderr);
+      return 1;
+   }
 
-   printf("[pass] every advertised memory type is selectable\n");
+   printf("[pass] all %u advertised memory type(s) are selectable\n",
+         checked);
    return 0;
 }
 
 int main(void)
 {
    int skipped = 0;
+   int ret     = 0;
+
+   if (!(s_dpy = XOpenDisplay(NULL)))
+   {
+      fputs("SKIP: no X display (try Xvfb; see the header"
+            " of this file)\n", stderr);
+      return SKIP_EXIT_CODE;
+   }
+   s_win = XCreateSimpleWindow(s_dpy, DefaultRootWindow(s_dpy),
+         0, 0, 640, 480, 0, 0, 0);
+   XMapWindow(s_dpy, s_win);
+   XSync(s_dpy, False);
 
    if (test_context_init_destroy(&skipped))
-      return 1;
-   if (skipped)
-      return SKIP_EXIT_CODE;
+      ret = 1;
+   else if (skipped)
+      ret = SKIP_EXIT_CODE;
+   else if (test_context_cycle())
+      ret = 1;
+   else if (test_memory_type_selection())
+      ret = 1;
 
-   if (test_context_cycle())
-      return 1;
-   if (test_memory_type_selection())
-      return 1;
+   XDestroyWindow(s_dpy, s_win);
+   XCloseDisplay(s_dpy);
 
-   puts("ALL OK");
-   return 0;
+   if (ret == 0)
+      puts("ALL OK");
+   return ret;
 }
