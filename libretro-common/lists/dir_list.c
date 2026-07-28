@@ -231,12 +231,14 @@ static int dir_list_read(const char *dir,
 
 #if defined(WEBOS)
       /* Skip virtual / dangerous FS nodes under jail root — readdir+stat
-       * on /proc or /sys can stall the main thread for a long time. */
-      if (   (string_is_equal(dir, "/") || string_is_equal(dir, "//"))
-          && (   string_is_equal(name, "proc")
-              || string_is_equal(name, "sys")
-              || string_is_equal(name, "dev")
-              || string_is_equal(name, "run")))
+       * on /proc or /sys can stall the main thread for a long time.
+       * Use strcmp (not string_is_equal): dir_list intentionally has no
+       * stdstring dependency. */
+      if (   (strcmp(dir, "/") == 0 || strcmp(dir, "//") == 0)
+          && (   strcmp(name, "proc") == 0
+              || strcmp(name, "sys") == 0
+              || strcmp(name, "dev") == 0
+              || strcmp(name, "run") == 0))
          continue;
 #endif
 
