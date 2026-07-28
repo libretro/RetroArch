@@ -287,8 +287,7 @@ static int rmp4_ogg_page(rmp4_ogg *g, const uint8_t *pkt, size_t len,
    g->size += head + len;
    g->seq++;
 
-   for (k = 0; k < head + len; k++)
-      crc = encoding_crc32_ogg(crc, &p[k], 1);
+   crc = encoding_crc32_ogg(crc, p, head + len);
    for (k = 0; k < 4; k++)
       p[22 + k] = (uint8_t)(crc >> (8 * k));
    return 1;
