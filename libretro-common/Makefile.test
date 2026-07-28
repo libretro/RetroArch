@@ -9,6 +9,10 @@ TEST_GENERIC_QUEUE_SRC = test/queues/test_generic_queue.c queues/generic_queue.c
 TEST_LINKED_LIST = test/lists/test_linked_list
 TEST_LINKED_LIST_SRC = test/lists/test_linked_list.c lists/linked_list.c
 
+TEST_FILE_LIST = test/lists/test_file_list
+TEST_FILE_LIST_SRC = test/lists/test_file_list.c lists/file_list.c \
+		     compat/compat_strcasestr.c
+
 TEST_STDSTRING = test/string/test_stdstring
 TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/encoding_utf.c \
 		     compat/compat_strl.c
@@ -48,6 +52,10 @@ all:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
 	lcov -c -d . -o `dirname $(TEST_LINKED_LIST)`/coverage.info
+	# file list
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_FILE_LIST_SRC) -o $(TEST_FILE_LIST)
+	$(TEST_FILE_LIST)
+	lcov -c -d . -o `dirname $(TEST_FILE_LIST)`/file_list_coverage.info
 	# queue
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_GENERIC_QUEUE_SRC) -o $(TEST_GENERIC_QUEUE)
 	$(TEST_GENERIC_QUEUE)
@@ -61,6 +69,7 @@ all:
 	     -a test/utils/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
+	     -a test/lists/file_list_coverage.info \
 	     -a test/queues/coverage.info \
 	     -a test/formats/coverage.info
 	genhtml -o test/coverage/ test/coverage.info
