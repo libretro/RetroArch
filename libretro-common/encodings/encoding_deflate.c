@@ -582,8 +582,12 @@ static void rinf_pack_len(struct rinf_huff *h)
          else if (sym == 256)
             e = (uint32_t)len | RINF_PF_EOB;
          else if (sym - 257 < 29)
+            /* Bits [4:8] hold the code-plus-extra TOTAL, not the extra
+             * count: the critical-path shift that advances to the next
+             * code then uses the field directly, and the extra count
+             * for the value mask falls off the path as total - len. */
             e = (uint32_t)len
-              | ((uint32_t)rinf_len_extra[sym - 257] << 4)
+              | ((uint32_t)(len + rinf_len_extra[sym - 257]) << 4)
               | ((uint32_t)rinf_len_base[sym - 257] << 16);
          else
             e = (uint32_t)len | RINF_PF_BAD;
@@ -605,7 +609,7 @@ static void rinf_pack_dist(struct rinf_huff *h)
          int len = f & 15;
          if (sym < 30)
             e = (uint32_t)len
-              | ((uint32_t)rinf_dist_extra[sym] << 4)
+              | ((uint32_t)(len + rinf_dist_extra[sym]) << 4)
               | ((uint32_t)rinf_dist_base[sym] << 16);
          else
             e = (uint32_t)len | RINF_PF_BAD;
@@ -984,6 +988,17 @@ fast_again:
                 * this one: a larger value there would re-enter a loop
                 * whose own guard immediately fails, bouncing control
                 * between the two paths without progress. */
+               {
+               /* Preload carrier: at the end of a match copy the next
+                * code's low table-index bits are already final - the
+                * refill only ORs into bits at or above bitcnt - so the
+                * next litlen entry can be fetched before the copy's
+                * stores retire, hiding the table load under them.  The
+                * entry is only trusted when at least 15 bits were
+                * buffered at preload time (a full code's worth), which
+                * mirrors the literal chain's own reuse condition. */
+               uint32_t e_pre    = 0;
+               int      have_pre = 0;
                while (in_pos + 8 <= s->in_size
                      && out_pos + 258 + 16 <= s->out_size)
                {
@@ -1030,7 +1045,13 @@ fast_again:
                      in_pos += (size_t)nb_;
                      bitcnt += nb_ * 8;
                   }
-                  e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
+                  if (have_pre)
+                  {
+                     e        = e_pre;
+                     have_pre = 0;
+                  }
+                  else
+                     e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
                   /* Literal chain: after one refill the buffer holds at
                    * least 48 bits, and every packed literal costs at
                    * most 15, so several literals can be emitted before
@@ -1093,7 +1114,10 @@ fast_again:
                         goto error;
                      }
                      /* Re-enter the packed flow with a synthesised
-                      * entry; the code bits are already consumed. */
+                      * entry; the code bits are already consumed, so its
+                      * code length is zero and the packed total in bits
+                      * [4:8] degenerates to the extra count - the same
+                      * encoding either way. */
                      e = ((uint32_t)rinf_len_extra[sym - 257] << 4)
                        | ((uint32_t)rinf_len_base[sym - 257] << 16);
                      if (bitcnt < 33)
@@ -1129,12 +1153,12 @@ fast_again:
                      uint32_t length, dist;
                      {
                         int l  = (int)(e & 15);
-                        int ex = (int)((e >> 4) & 31);
+                        int t  = (int)((e >> 4) & 31);
                         length = (e >> 16)
                               + (uint32_t)((bitbuf >> l)
-                                    & (((uint64_t)1 << ex) - 1));
-                        bitbuf >>= (l + ex);
-                        bitcnt  -= (l + ex);
+                                    & (((uint64_t)1 << (t - l)) - 1));
+                        bitbuf >>= t;
+                        bitcnt  -= t;
                      }
                      {
                         uint32_t d = pdist[bitbuf
@@ -1151,12 +1175,12 @@ fast_again:
                             * the head guaranteed, so the full distance
                             * group (15 + 13) is always covered here. */
                            int dl  = (int)(d & 15);
-                           int dex = (int)((d >> 4) & 31);
+                           int dt  = (int)((d >> 4) & 31);
                            dist    = (d >> 16)
                                  + (uint32_t)((bitbuf >> dl)
-                                       & (((uint64_t)1 << dex) - 1));
-                           bitbuf >>= (dl + dex);
-                           bitcnt  -= (dl + dex);
+                                       & (((uint64_t)1 << (dt - dl)) - 1));
+                           bitbuf >>= dt;
+                           bitcnt  -= dt;
                         }
                         else
                         {
@@ -1296,6 +1320,9 @@ fast_again:
                            }
                         }
                         out_pos += length;
+                        e_pre    = plen[bitbuf
+                              & ((1 << RINF_FAST_BITS) - 1)];
+                        have_pre = (bitcnt >= 15);
                      }
                      else
                      {
@@ -1306,6 +1333,7 @@ fast_again:
                         break;
                      }
                   }
+               }
                }
 
                s->bitbuf  = bitbuf;
