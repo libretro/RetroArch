@@ -179,6 +179,8 @@ struct rpng_process
    const struct trans_stream_backend *stream_backend;
    uint8_t *prev_scanline;
    uint8_t *decoded_scanline;
+   uint8_t *pair_scanline;     /* second decode row for the wavefront
+                                * pair path; see the pair kernels     */
    uint8_t *inflate_buf;      /* walking read cursor for the filters     */
    uint8_t *inflate_base;     /* fixed allocation base: inflate writes at
                                * inflate_base + inflated_total, immune to
@@ -718,6 +720,232 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
             prev[i - bpp]);
 }
 
+#define RPNG_HAVE_PAIR_KERNELS 1
+
+/* --- Wavefront pair kernels --------------------------------------------
+ *
+ * Average and Paeth are bound by the serial chain through the left
+ * neighbour: one pixel per chain length, however wide the machine.
+ * But two consecutive rows carrying the same filter can be unfiltered
+ * in one interleaved pass along the classic diagonal wavefront: row 1
+ * runs one pixel behind row 0, so its up neighbour is the row 0 output
+ * produced in the *previous* iteration and the two carried chains
+ * never wait on each other inside an iteration.  Two pixels per chain
+ * length, on the two filters where the chain is the whole cost.
+ * (A row-at-a-time decoder cannot do this, whatever its ISA level.)
+ *
+ * Window and stride semantics are exactly those of the single-row
+ * kernels above: a fixed 4- or 8-byte window stepped by bpp, lanes at
+ * or past the stride rewritten by later steps or the scalar tails.
+ * Both rows share the frontier i at loop exit - row 1 trails by one
+ * step inside the loop and settles its last window in the epilogue -
+ * so both tails resume from i, row 0 first since row 1's tail reads
+ * dec0. */
+static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
+   const __m128i mask = _mm_set1_epi16(0x00FF);
+   __m128i a0         = _mm_setzero_si128();
+   __m128i c0         = _mm_setzero_si128();
+   __m128i a1         = _mm_setzero_si128();
+   __m128i c1         = _mm_setzero_si128();
+   __m128i a0p        = _mm_setzero_si128();
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         __m128i b0 = rpng_load4_u8_to_u16(prev);
+         __m128i r0 = rpng_load4_u8_to_u16(raw0);
+         __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+         __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         rpng_store4_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            __m128i r1;
+            b0 = rpng_load4_u8_to_u16(prev + i);
+            r0 = rpng_load4_u8_to_u16(raw0 + i);
+            sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            rpng_store4_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            __m128i r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         __m128i b0 = rpng_load8_u8_to_u16(prev);
+         __m128i r0 = rpng_load8_u8_to_u16(raw0);
+         __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+         __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         rpng_store8_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            __m128i r1;
+            b0 = rpng_load8_u8_to_u16(prev + i);
+            r0 = rpng_load8_u8_to_u16(raw0 + i);
+            sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            rpng_store8_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            __m128i r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + prev[j]);
+         else
+            dec0[j] = (uint8_t)(raw0[j] + rpng_paeth(dec0[j - bpp],
+                  prev[j], prev[j - bpp]));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + dec0[j]);
+         else
+            dec1[j] = (uint8_t)(raw1[j] + rpng_paeth(dec1[j - bpp],
+                  dec0[j], dec0[j - bpp]));
+      }
+   }
+}
+
+static void rpng_filter_avg_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i          = 0;
+   const __m128i one = _mm_set1_epi8(1);
+   __m128i a0        = _mm_setzero_si128();
+   __m128i a1        = _mm_setzero_si128();
+   __m128i a0p       = _mm_setzero_si128();
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         __m128i b0 = rpng_load4_u8(prev);
+         __m128i av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+               _mm_and_si128(_mm_xor_si128(a0, b0), one));
+         a0  = _mm_add_epi8(rpng_load4_u8(raw0), av);
+         rpng_store4_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            b0 = rpng_load4_u8(prev + i);
+            av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+                  _mm_and_si128(_mm_xor_si128(a0, b0), one));
+            a0 = _mm_add_epi8(rpng_load4_u8(raw0 + i), av);
+            rpng_store4_u8(dec0 + i, a0);
+            av = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(rpng_load4_u8(raw1 + i - bpp), av);
+            rpng_store4_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         {
+            __m128i av1 = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(rpng_load4_u8(raw1 + i - bpp), av1);
+            rpng_store4_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         __m128i b0 = _mm_loadl_epi64((const __m128i*)prev);
+         __m128i av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+               _mm_and_si128(_mm_xor_si128(a0, b0), one));
+         a0  = _mm_add_epi8(_mm_loadl_epi64((const __m128i*)raw0), av);
+         _mm_storel_epi64((__m128i*)dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            b0 = _mm_loadl_epi64((const __m128i*)(prev + i));
+            av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+                  _mm_and_si128(_mm_xor_si128(a0, b0), one));
+            a0 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw0 + i)), av);
+            _mm_storel_epi64((__m128i*)(dec0 + i), a0);
+            av = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw1 + i - bpp)), av);
+            _mm_storel_epi64((__m128i*)(dec1 + i - bpp), a1);
+            a0p = a0;
+         }
+         {
+            __m128i av1 = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw1 + i - bpp)), av1);
+            _mm_storel_epi64((__m128i*)(dec1 + i - bpp), a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + (prev[j] >> 1));
+         else
+            dec0[j] = (uint8_t)(raw0[j]
+                  + ((dec0[j - bpp] + prev[j]) >> 1));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + (dec0[j] >> 1));
+         else
+            dec1[j] = (uint8_t)(raw1[j]
+                  + ((dec1[j - bpp] + dec0[j]) >> 1));
+      }
+   }
+}
+
 #elif defined(RPNG_SIMD_NEON)
 
 static INLINE uint16x4_t rpng_load4_u8_to_u16(const uint8_t *p)
@@ -1002,6 +1230,201 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
    for (; i < pitch; i++)
       decoded[i] += (uint8_t)rpng_paeth(decoded[i - bpp], prev[i],
             prev[i - bpp]);
+}
+
+#define RPNG_HAVE_PAIR_KERNELS 1
+
+/* Wavefront pair kernels; see the SSE2 side for the derivation.  Row 1
+ * trails row 0 by one step, so its up neighbour comes from a register
+ * written in the previous iteration and the two serial chains overlap.
+ * NEON's vhadd_u8 is floor((a + b) / 2) directly, so the Average pair
+ * needs no rounding correction. */
+static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i = 0;
+   if (bpp <= 4)
+   {
+      const uint16x4_t m4 = vdup_n_u16(0xFF);
+      uint16x4_t a0  = vdup_n_u16(0);
+      uint16x4_t c0  = vdup_n_u16(0);
+      uint16x4_t a1  = vdup_n_u16(0);
+      uint16x4_t c1  = vdup_n_u16(0);
+      uint16x4_t a0p = vdup_n_u16(0);
+      if (4 <= pitch)
+      {
+         uint16x4_t b0 = rpng_load4_u8_to_u16(prev);
+         uint16x4_t r0 = rpng_load4_u8_to_u16(raw0);
+         uint16x4_t sb = vand_u16(vadd_u16(r0, b0), m4);
+         uint16x4_t sc = vand_u16(vadd_u16(r0, c0), m4);
+         a0  = rpng_paeth_step_u16(a0, b0, c0, r0, sb, sc, m4);
+         rpng_store4_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            uint16x4_t r1;
+            b0 = rpng_load4_u8_to_u16(prev + i);
+            r0 = rpng_load4_u8_to_u16(raw0 + i);
+            sb = vand_u16(vadd_u16(r0, b0), m4);
+            sc = vand_u16(vadd_u16(r0, c0), m4);
+            a0 = rpng_paeth_step_u16(a0, b0, c0, r0, sb, sc, m4);
+            rpng_store4_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            sb = vand_u16(vadd_u16(r1, a0p), m4);
+            sc = vand_u16(vadd_u16(r1, c1),  m4);
+            a1 = rpng_paeth_step_u16(a1, a0p, c1, r1, sb, sc, m4);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            uint16x4_t r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            uint16x4_t s1 = vand_u16(vadd_u16(r1, a0p), m4);
+            uint16x4_t s2 = vand_u16(vadd_u16(r1, c1),  m4);
+            a1 = rpng_paeth_step_u16(a1, a0p, c1, r1, s1, s2, m4);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      const uint16x8_t m8 = vdupq_n_u16(0xFF);
+      uint16x8_t a0  = vdupq_n_u16(0);
+      uint16x8_t c0  = vdupq_n_u16(0);
+      uint16x8_t a1  = vdupq_n_u16(0);
+      uint16x8_t c1  = vdupq_n_u16(0);
+      uint16x8_t a0p = vdupq_n_u16(0);
+      if (8 <= pitch)
+      {
+         uint16x8_t b0 = rpng_load8_u8_to_u16(prev);
+         uint16x8_t r0 = rpng_load8_u8_to_u16(raw0);
+         uint16x8_t sb = vandq_u16(vaddq_u16(r0, b0), m8);
+         uint16x8_t sc = vandq_u16(vaddq_u16(r0, c0), m8);
+         a0  = rpng_paeth_step_u16q(a0, b0, c0, r0, sb, sc, m8);
+         rpng_store8_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            uint16x8_t r1;
+            b0 = rpng_load8_u8_to_u16(prev + i);
+            r0 = rpng_load8_u8_to_u16(raw0 + i);
+            sb = vandq_u16(vaddq_u16(r0, b0), m8);
+            sc = vandq_u16(vaddq_u16(r0, c0), m8);
+            a0 = rpng_paeth_step_u16q(a0, b0, c0, r0, sb, sc, m8);
+            rpng_store8_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            sb = vandq_u16(vaddq_u16(r1, a0p), m8);
+            sc = vandq_u16(vaddq_u16(r1, c1),  m8);
+            a1 = rpng_paeth_step_u16q(a1, a0p, c1, r1, sb, sc, m8);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            uint16x8_t r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            uint16x8_t s1 = vandq_u16(vaddq_u16(r1, a0p), m8);
+            uint16x8_t s2 = vandq_u16(vaddq_u16(r1, c1),  m8);
+            a1 = rpng_paeth_step_u16q(a1, a0p, c1, r1, s1, s2, m8);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + prev[j]);
+         else
+            dec0[j] = (uint8_t)(raw0[j] + rpng_paeth(dec0[j - bpp],
+                  prev[j], prev[j - bpp]));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + dec0[j]);
+         else
+            dec1[j] = (uint8_t)(raw1[j] + rpng_paeth(dec1[j - bpp],
+                  dec0[j], dec0[j - bpp]));
+      }
+   }
+}
+
+static void rpng_filter_avg_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i       = 0;
+   uint8x8_t a0   = vdup_n_u8(0);
+   uint8x8_t a1   = vdup_n_u8(0);
+   uint8x8_t a0p  = vdup_n_u8(0);
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         uint8x8_t b0 = rpng_load4_u8(prev);
+         a0  = vadd_u8(rpng_load4_u8(raw0), vhadd_u8(a0, b0));
+         rpng_store4_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            b0 = rpng_load4_u8(prev + i);
+            a0 = vadd_u8(rpng_load4_u8(raw0 + i), vhadd_u8(a0, b0));
+            rpng_store4_u8(dec0 + i, a0);
+            a1 = vadd_u8(rpng_load4_u8(raw1 + i - bpp),
+                  vhadd_u8(a1, a0p));
+            rpng_store4_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         a1 = vadd_u8(rpng_load4_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+         rpng_store4_u8(dec1 + i - bpp, a1);
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         uint8x8_t b0 = vld1_u8(prev);
+         a0  = vadd_u8(vld1_u8(raw0), vhadd_u8(a0, b0));
+         vst1_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            b0 = vld1_u8(prev + i);
+            a0 = vadd_u8(vld1_u8(raw0 + i), vhadd_u8(a0, b0));
+            vst1_u8(dec0 + i, a0);
+            a1 = vadd_u8(vld1_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+            vst1_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         a1 = vadd_u8(vld1_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+         vst1_u8(dec1 + i - bpp, a1);
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + (prev[j] >> 1));
+         else
+            dec0[j] = (uint8_t)(raw0[j]
+                  + ((dec0[j - bpp] + prev[j]) >> 1));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + (dec0[j] >> 1));
+         else
+            dec1[j] = (uint8_t)(raw1[j]
+                  + ((dec1[j - bpp] + dec0[j]) >> 1));
+      }
+   }
 }
 
 #endif /* RPNG_SIMD_SSE2 / RPNG_SIMD_NEON */
@@ -1820,6 +2243,9 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
    if (pngp->prev_scanline)
       free(pngp->prev_scanline);
    pngp->prev_scanline    = NULL;
+   if (pngp->pair_scanline)
+      free(pngp->pair_scanline);
+   pngp->pair_scanline    = NULL;
 
    pngp->flags           &= ~RPNG_PROCESS_FLAG_PASS_INITIALIZED;
    pngp->h                = 0;
@@ -1890,6 +2316,11 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
    pngp->restore_buf_size      = 0;
    pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
    pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
+#if defined(RPNG_HAVE_PAIR_KERNELS)
+   pngp->pair_scanline         = (uint8_t*)calloc(1, pngp->pitch);
+   if (!pngp->pair_scanline)
+      goto error;
+#endif
 
    if (!pngp->prev_scanline || !pngp->decoded_scanline)
       goto error;
@@ -1905,6 +2336,39 @@ error:
 }
 
 /* ---------------------------------------------------------------------------*/
+
+/* Pixel-format conversion of one unfiltered scanline into the 32-bit
+ * output row, factored out of the per-line path so the wavefront pair
+ * path below can convert two rows from two buffers. */
+static void rpng_reverse_filter_convert(uint32_t *data,
+      const struct png_ihdr *ihdr,
+      struct rpng_process *pngp, const uint8_t *decoded)
+{
+   switch (ihdr->color_type)
+   {
+      case PNG_IHDR_COLOR_GRAY:
+         rpng_reverse_filter_copy_line_bw(data, decoded, ihdr->width,
+               ihdr->depth);
+         break;
+      case PNG_IHDR_COLOR_RGB:
+         rpng_reverse_filter_copy_line_rgb(data, decoded, ihdr->width,
+               ihdr->depth, pngp->supports_rgba, pngp->want_10bit);
+         break;
+      case PNG_IHDR_COLOR_PLT:
+         rpng_reverse_filter_copy_line_plt(
+               data, decoded, ihdr->width, ihdr->depth, pngp->palette);
+         break;
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+         rpng_reverse_filter_copy_line_gray_alpha(
+               data, decoded, ihdr->width, ihdr->depth);
+         break;
+      case PNG_IHDR_COLOR_RGBA:
+         rpng_reverse_filter_copy_line_rgba(
+               data, decoded, ihdr->width, ihdr->depth,
+               pngp->supports_rgba);
+         break;
+   }
+}
 
 static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
@@ -1977,31 +2441,7 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
          return IMAGE_PROCESS_ERROR_END;
    }
 
-   switch (ihdr->color_type)
-   {
-      case PNG_IHDR_COLOR_GRAY:
-         rpng_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-         break;
-      case PNG_IHDR_COLOR_RGB:
-         rpng_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth,
-               pngp->supports_rgba, pngp->want_10bit);
-         break;
-      case PNG_IHDR_COLOR_PLT:
-         rpng_reverse_filter_copy_line_plt(
-               data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth, pngp->palette);
-         break;
-      case PNG_IHDR_COLOR_GRAY_ALPHA:
-         rpng_reverse_filter_copy_line_gray_alpha(
-               data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth);
-         break;
-      case PNG_IHDR_COLOR_RGBA:
-         rpng_reverse_filter_copy_line_rgba(
-               data, pngp->decoded_scanline, ihdr->width, ihdr->depth,
-               pngp->supports_rgba);
-         break;
-   }
+   rpng_reverse_filter_convert(data, ihdr, pngp, pngp->decoded_scanline);
 
    /* Swap scanline pointers instead of copying — the current decoded
     * scanline becomes the previous scanline for the next row.
@@ -2021,7 +2461,62 @@ static int rpng_reverse_filter_regular_iterate(
       struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
-if (pngp->h < ihdr->height)
+#if defined(RPNG_HAVE_PAIR_KERNELS)
+   /* Wavefront pair: when the next two scanlines are fully inflated,
+    * contiguous in the ring and carry the same chain-bound filter,
+    * unfilter them in one interleaved pass (see the pair kernels).
+    * Residency: total_out - restore_buf_size is exactly the inflated,
+    * not yet consumed byte count on the regular path; the interlaced
+    * path only filters once its whole pass is resident, so the check
+    * is conservative there.  Contiguity: the ring recycles only at
+    * whole-line boundaries, so two lines are contiguous unless the
+    * second would start past the ring end. */
+   if (pngp->h + 2 <= ihdr->height)
+   {
+      size_t line = (size_t)pngp->pitch + 1;
+      if (   pngp->total_out - pngp->restore_buf_size >= 2 * line
+          && (   pngp->ring_size >= pngp->inflate_buf_size
+              ||    pngp->inflate_buf + 2 * line
+                 <= pngp->inflate_base + pngp->ring_size))
+      {
+         unsigned f0 = pngp->inflate_buf[0];
+         unsigned f1 = pngp->inflate_buf[line];
+         if (   f0 == f1
+             && (f0 == PNG_FILTER_PAETH || f0 == PNG_FILTER_AVERAGE))
+         {
+            const uint8_t *raw0 = pngp->inflate_buf + 1;
+            const uint8_t *raw1 = raw0 + line;
+            uint8_t *tmp;
+            if (f0 == PNG_FILTER_PAETH)
+               rpng_filter_paeth_pair(pngp->decoded_scanline,
+                     pngp->pair_scanline, raw0, raw1,
+                     pngp->prev_scanline, pngp->pitch, pngp->bpp);
+            else
+               rpng_filter_avg_pair(pngp->decoded_scanline,
+                     pngp->pair_scanline, raw0, raw1,
+                     pngp->prev_scanline, pngp->pitch, pngp->bpp);
+            rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
+                  pngp->decoded_scanline);
+            rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
+                  ihdr, pngp, pngp->pair_scanline);
+            /* The second row's decode becomes the previous scanline;
+             * the old previous buffer takes its place as scratch. */
+            tmp                  = pngp->prev_scanline;
+            pngp->prev_scanline  = pngp->pair_scanline;
+            pngp->pair_scanline  = tmp;
+            pngp->h             += 2;
+            pngp->inflate_buf   += 2 * line;
+            pngp->restore_buf_size += 2 * line;
+            if (    pngp->ring_size < pngp->inflate_buf_size
+                &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
+               pngp->inflate_buf = pngp->inflate_base;
+            pngp->out_cursor    += 2 * (size_t)ihdr->width;
+            return IMAGE_PROCESS_NEXT;
+         }
+      }
+   }
+#endif
+   if (pngp->h < ihdr->height)
    {
       unsigned filter         = *pngp->inflate_buf++;
       pngp->restore_buf_size += 1;
@@ -2907,13 +3402,15 @@ error:
    {
       /* An externally abandoned decode (cancelled task) can be torn
        * down at any machine state: the per-pass output, the scanline
-       * pair and the inflate window may all still be live here. */
+       * buffers and the inflate window may all still be live here. */
       if (rpng->process->data)
          free(rpng->process->data);
       if (rpng->process->prev_scanline)
          free(rpng->process->prev_scanline);
       if (rpng->process->decoded_scanline)
          free(rpng->process->decoded_scanline);
+      if (rpng->process->pair_scanline)
+         free(rpng->process->pair_scanline);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
@@ -2935,7 +3432,7 @@ void rpng_free(rpng_t *rpng)
    {
       /* An externally abandoned decode (cancelled task) is torn down
        * here at an arbitrary machine state: the per-pass output and
-       * the scanline pair may still be live alongside the inflate
+       * the scanline buffers may still be live alongside the inflate
        * window. */
       if (rpng->process->data)
          free(rpng->process->data);
@@ -2943,6 +3440,8 @@ void rpng_free(rpng_t *rpng)
          free(rpng->process->prev_scanline);
       if (rpng->process->decoded_scanline)
          free(rpng->process->decoded_scanline);
+      if (rpng->process->pair_scanline)
+         free(rpng->process->pair_scanline);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
