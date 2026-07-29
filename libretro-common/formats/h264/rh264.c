@@ -5329,6 +5329,15 @@ static RH264_INLINE int rh264_inter_bs(int mbedge, int intra_p, int intra_q,
       return (mbedge && !fieldhoriz) ? 4 : 3;
    if (cbf_p || cbf_q)
       return 2;
+   /* Identical cells - same lists, same vectors - always derive 0:
+    * every reference comparison matches and every vector difference is
+    * zero.  Static and skipped regions make this the common case, so
+    * take it before the general list-pairing walk below. */
+   if (mp->mvx == mq->mvx && mp->mvy == mq->mvy
+         && mp->mvx1 == mq->mvx1 && mp->mvy1 == mq->mvy1
+         && mp->ref == mq->ref && mp->ref1 == mq->ref1
+         && mp->pic == mq->pic && mp->pic1 == mq->pic1)
+      return 0;
    p0 = mp->ref  < 0 ? -1 : mp->pic;
    p1 = mp->ref1 < 0 ? -1 : mp->pic1;
    q0 = mq->ref  < 0 ? -1 : mq->pic;
@@ -5370,6 +5379,35 @@ static RH264_INLINE int rh264_bs_nz(const rh264_frame *f, int gw,
    return f->nzL[gy*gw + gx] != 0;
 }
 
+/* All sixteen coded flags of one macroblock as a bitmask, bit
+ * gy_local*4 + gx_local, with the same 8x8 fold rh264_bs_nz applies.
+ * The bS derivation probes each internal cell several times per
+ * macroblock (as P and Q of its surrounding edges); gathering them
+ * once turns every probe into a bit test and takes the mbt8 branch
+ * per macroblock instead of per probe.  Neighbour cells still go
+ * through rh264_bs_nz, which honours the neighbour's own transform
+ * size. */
+static unsigned rh264_mb_nzmask(const rh264_frame *f, int gw,
+      int mbx, int mby)
+{
+   const uint8_t *nz = f->nzL + (size_t)(mby*4)*gw + mbx*4;
+   unsigned m = 0;
+   int x, y;
+   for (y = 0; y < 4; y++)
+      for (x = 0; x < 4; x++)
+         if (nz[y*gw + x]) m |= 1u << (y*4 + x);
+   if (m && f->mbt8 && f->mbt8[mby*f->mbw + mbx])
+   {
+      unsigned q = 0;
+      if (m & 0x0033u) q |= 0x0033u;
+      if (m & 0x00ccu) q |= 0x00ccu;
+      if (m & 0x3300u) q |= 0x3300u;
+      if (m & 0xcc00u) q |= 0xcc00u;
+      m = q;
+   }
+   return m;
+}
+
 static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
       const signed char *soA, const signed char *soB, const rh264_mv *mvg)
 {
@@ -5380,6 +5418,7 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
    for (mba = 0; mba < f->mbw * f->mbh; mba++)
    {
       int mbi, sl, oA, oB, qp, mbt8;
+      unsigned curm, lftm, topm;
       rh264_mb_pos(mba, f->mbw, f->mbaff, &mbx, &mby);
       mbi = mby*f->mbw+mbx;
       sl  = f->mbslice ? f->mbslice[mbi] : 0;
@@ -5387,6 +5426,22 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
       qp  = f->mbqp ? f->mbqp[mbi] : f->qp;
       mbt8 = f->mbt8 ? f->mbt8[mbi] : 0;
       if (sidc[sl] == 1) continue;   /* filter disabled for this slice */
+      curm = rh264_mb_nzmask(f, gw, mbx, mby);
+      lftm = topm = 0;
+      if (mbx > 0)
+      {
+         if (rh264_bs_nz(f, gw, mbx*4 - 1, mby*4    )) lftm |= 1u;
+         if (rh264_bs_nz(f, gw, mbx*4 - 1, mby*4 + 1)) lftm |= 2u;
+         if (rh264_bs_nz(f, gw, mbx*4 - 1, mby*4 + 2)) lftm |= 4u;
+         if (rh264_bs_nz(f, gw, mbx*4 - 1, mby*4 + 3)) lftm |= 8u;
+      }
+      if (mby > 0)
+      {
+         if (rh264_bs_nz(f, gw, mbx*4,     mby*4 - 1)) topm |= 1u;
+         if (rh264_bs_nz(f, gw, mbx*4 + 1, mby*4 - 1)) topm |= 2u;
+         if (rh264_bs_nz(f, gw, mbx*4 + 2, mby*4 - 1)) topm |= 4u;
+         if (rh264_bs_nz(f, gw, mbx*4 + 3, mby*4 - 1)) topm |= 8u;
+      }
 
       /* ---- vertical edges (filter columns), left to right ---- */
       for (edge = 0; edge < 4; edge++)
@@ -5419,9 +5474,11 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                int gxp = gxq - 1;             /* P block (left)   */
                const rh264_mv *mp = &mvg[gy*gw + gxp];
                const rh264_mv *mq = &mvg[gy*gw + gxq];
+               int nzp = mbedge ? (int)((lftm >> seg) & 1u)
+                                : (int)((curm >> (seg*4 + edge - 1)) & 1u);
+               int nzq = (int)((curm >> (seg*4 + edge)) & 1u);
                vbS[seg] = rh264_inter_bs(mbedge, mp->intra, mq->intra,
-                     rh264_bs_nz(f, gw, gxp, gy),
-                     rh264_bs_nz(f, gw, gxq, gy), mp, mq, 0,
+                     nzp, nzq, mp, mq, 0,
                      f->field ? 2 : 4);
                st[seg] = vbS[seg]
                      ? rh264_tc0[vbS[seg]==4?2:vbS[seg]-1][idxA] : 0;
@@ -5507,9 +5564,11 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                int gyp = gyq - 1;             /* P block (above)*/
                const rh264_mv *mp = &mvg[gyp*gw + gx];
                const rh264_mv *mq = &mvg[gyq*gw + gx];
+               int nzp = mbedge ? (int)((topm >> seg) & 1u)
+                                : (int)((curm >> ((edge-1)*4 + seg)) & 1u);
+               int nzq = (int)((curm >> (edge*4 + seg)) & 1u);
                hbS[seg] = rh264_inter_bs(mbedge, mp->intra, mq->intra,
-                     rh264_bs_nz(f, gw, gx, gyp),
-                     rh264_bs_nz(f, gw, gx, gyq), mp, mq, f->field,
+                     nzp, nzq, mp, mq, f->field,
                      f->field ? 2 : 4);
                st[seg] = hbS[seg]
                      ? rh264_tc0[hbS[seg]==4?2:hbS[seg]-1][idxA] : 0;
