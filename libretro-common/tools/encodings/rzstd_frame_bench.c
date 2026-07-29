@@ -36,10 +36,18 @@ int main(int argc, char **argv)
    for (r = 0; r < reps; r++) for (i = 0; i < n; i++)
       rzstd_decode(out, sizeof(out), fr[i], fl[i], NULL);
    trz = (now()-t0)/reps;
-   t0 = now();
-   for (r = 0; r < reps; r++) for (i = 0; i < n; i++)
-      ZSTD_decompress(out, sizeof(out), fr[i], fl[i]);
-   tzs = (now()-t0)/reps;
+   /* One context, reused -- see the note in rzstd_bench.c. On the
+    * hunk-sized frames this tool exists for, ZSTD_decompress() spends
+    * about as long creating and freeing its context as decoding. */
+   {
+      ZSTD_DCtx *c = ZSTD_createDCtx();
+
+      t0 = now();
+      for (r = 0; r < reps; r++) for (i = 0; i < n; i++)
+         ZSTD_decompressDCtx(c, out, sizeof(out), fr[i], fl[i]);
+      tzs = (now()-t0)/reps;
+      ZSTD_freeDCtx(c);
+   }
    printf("  rzstd %7.1f MB/s   reference %7.1f MB/s   %.2fx\n",
           total/trz/1e6, total/tzs/1e6, tzs/trz);
    return 0;
