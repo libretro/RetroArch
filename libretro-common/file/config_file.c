@@ -915,6 +915,181 @@ config_file_t *config_file_new_from_string(char *from_string,
    return NULL;
 }
 
+/* Streaming (push) parser - see the contract in config_file.h.
+ *
+ * The window buffer accumulates pushed bytes; every push parses the
+ * complete lines it can see and slides the unconsumed tail back to
+ * the front, so residency is bounded by the longest line plus the
+ * largest packet rather than the file.  Bytes are copied exactly
+ * once (packet -> window), the same total copy cost as the slurp
+ * path's read into its buffer.  Parsing goes through
+ * config_file_parse_buffer, the identical line loop behind every
+ * other entry point, so streamed output cannot drift from slurped
+ * output. */
+struct config_file_stream
+{
+   config_file_t *conf;
+   char *win;        /* accumulation window (unparsed tail + incoming) */
+   size_t cap;       /* window allocation                              */
+   size_t len;       /* unparsed bytes held at win[0..len)             */
+   size_t total_in;  /* cumulative pushed bytes (map pre-sizing)       */
+   bool oom;
+};
+
+config_file_stream_t *config_file_stream_new(const char *path)
+{
+   config_file_stream_t *st = (config_file_stream_t*)
+         malloc(sizeof(*st));
+   if (!st)
+      return NULL;
+   st->win      = NULL;
+   st->cap      = 0;
+   st->len      = 0;
+   st->total_in = 0;
+   st->oom      = false;
+   if (!(st->conf = config_file_new_alloc()))
+   {
+      free(st);
+      return NULL;
+   }
+   if (path && *path)
+   {
+      if (!(st->conf->path = strdup(path)))
+      {
+         config_file_free(st->conf);
+         free(st);
+         return NULL;
+      }
+   }
+   return st;
+}
+
+bool config_file_stream_push(config_file_stream_t *stream,
+      const void *data, size_t len)
+{
+   size_t need;
+   size_t cut;
+   const char *nl;
+
+   if (!stream || stream->oom)
+      return false;
+   if (!data || !len)
+      return true;
+
+   /* Grow the window to hold tail + packet + NUL */
+   need = stream->len + len + 1;
+   if (need > stream->cap)
+   {
+      size_t new_cap = (stream->cap > 0) ? stream->cap : 512;
+      char *new_win;
+      while (new_cap < need)
+      {
+         if (new_cap > ((size_t)-1) / 2)
+         {
+            stream->oom = true;
+            return false;
+         }
+         new_cap *= 2;
+      }
+      if (!(new_win = (char*)realloc(stream->win, new_cap)))
+      {
+         stream->oom = true;
+         return false;
+      }
+      stream->win = new_win;
+      stream->cap = new_cap;
+   }
+
+   memcpy(stream->win + stream->len, data, len);
+   stream->len            += len;
+   stream->total_in       += len;
+   stream->win[stream->len] = '\0';
+
+   /* Parse every complete line in the window.  memrchr is not
+    * C89/MSVC, so find the last newline by scanning the packet we
+    * just appended backwards - any newline in the retained tail
+    * would have been consumed by the push that retained it. */
+   cut = stream->len;
+   nl  = NULL;
+   while (cut > stream->len - len)
+   {
+      if (stream->win[cut - 1] == '\n')
+      {
+         nl = &stream->win[cut - 1];
+         break;
+      }
+      cut--;
+   }
+   if (nl)
+   {
+      /* Terminate the parseable prefix just past its final
+       * newline, remembering the tail byte that NUL displaces.
+       * config_file_parse_buffer stops at the NUL; the parsed
+       * prefix is then dead and the tail slides to the front. */
+      size_t head = (size_t)(nl - stream->win) + 1;
+      char saved  = stream->win[head];
+      stream->win[head] = '\0';
+
+      /* Pre-size the map from cumulative input; RHMAP_FIT is a
+       * no-op once the map is already big enough, so this stays
+       * cheap on every push after the first few. */
+      if (stream->total_in >= 64)
+         RHMAP_FIT(stream->conf->entries_map, stream->total_in / 32);
+
+      if (config_file_parse_buffer(stream->conf, stream->win,
+            0, NULL) != 0)
+      {
+         stream->oom = true;
+         return false;
+      }
+
+      stream->win[head] = saved;
+      stream->len      -= head;
+      if (stream->len)
+         memmove(stream->win, stream->win + head, stream->len);
+      stream->win[stream->len] = '\0';
+   }
+
+   return true;
+}
+
+config_file_t *config_file_stream_finish(config_file_stream_t *stream)
+{
+   config_file_t *conf;
+
+   if (!stream)
+      return NULL;
+
+   conf = stream->conf;
+
+   /* Parse the final, newline-less tail as its last line */
+   if (!stream->oom && stream->len)
+   {
+      if (config_file_parse_buffer(conf, stream->win, 0, NULL) != 0)
+         stream->oom = true;
+   }
+
+   if (stream->oom)
+   {
+      config_file_free(conf);
+      conf = NULL;
+   }
+
+   free(stream->win);
+   free(stream);
+   return conf;
+}
+
+void config_file_stream_free(config_file_stream_t *stream)
+{
+   if (!stream)
+      return;
+   if (stream->conf)
+      config_file_free(stream->conf);
+   free(stream->win);
+   free(stream);
+}
+
 /**
  * config_file_initialize:
  *

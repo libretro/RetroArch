@@ -132,6 +132,45 @@ config_file_t *config_file_new_with_callback(
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path);
 
+/* Streaming (push) parser: the codec-style ingest path.
+ *
+ * For consumers whose config bytes arrive in pieces - a network
+ * fetch, an archive entry inflating, a data_transfer fill budgeted
+ * across frames - instead of as one resident buffer.  Open a
+ * stream, push packets of any size in any split (line boundaries
+ * need not align with packet boundaries), then finish:
+ *
+ *    config_file_stream_t *st = config_file_stream_new(path);
+ *    while ((n = source_read(chunk, sizeof(chunk))) > 0)
+ *       config_file_stream_push(st, chunk, n);
+ *    conf = config_file_stream_finish(st);
+ *
+ * Memory held is one window of the unconsumed tail: complete lines
+ * are parsed and discarded as each push arrives, so the window's
+ * size is bounded by the longest line plus the largest packet, not
+ * by the file.  Parsed output is identical to handing the same
+ * bytes to config_file_new_from_string in one piece.
+ *
+ * @path is recorded as the config's path (include resolution,
+ * reference abbreviation); it may be NULL.  '#include' directives
+ * resolve through the registered io interface as usual.
+ *
+ * push returns false only on allocation failure; the stream then
+ * swallows further pushes and finish returns NULL.  finish frees
+ * the stream and returns the parsed config (caller owns it).
+ * config_file_stream_free abandons a stream part-way, freeing
+ * everything including the partial config. */
+typedef struct config_file_stream config_file_stream_t;
+
+config_file_stream_t *config_file_stream_new(const char *path);
+
+bool config_file_stream_push(config_file_stream_t *stream,
+      const void *data, size_t len);
+
+config_file_t *config_file_stream_finish(config_file_stream_t *stream);
+
+void config_file_stream_free(config_file_stream_t *stream);
+
 config_file_t *config_file_new_from_path_to_string(const char *path);
 
 /* File access used by the parser core.

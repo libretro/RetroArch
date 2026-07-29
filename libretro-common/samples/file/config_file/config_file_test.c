@@ -460,6 +460,82 @@ static void test_config_file_hash_map_agreement(void)
    config_file_free(cfg);
 }
 
+static void test_config_file_stream_matches_from_string(void)
+{
+   /* Push the same text through the streaming parser in packet
+    * sizes that cross every line boundary (1 and 7 bytes) plus one
+    * larger than the whole text, and require the entry list to
+    * match from_string exactly.  The window logic (tail retention,
+    * NUL displacement, slide-back) has its off-by-ones exercised
+    * hardest by the 1-byte case. */
+   static const char *cfgtext =
+         "alpha = \"1\"\n"
+         "# comment line\n"
+         "beta = \"two words\"\n"
+         "   gamma   =   bare\r\n"
+         "delta = \"has # inside\"\n"
+         "epsilon = \"\"\n"
+         "zeta = last_line_without_newline";
+   static const size_t packets[] = { 1, 7, 4096 };
+   size_t pi;
+
+   for (pi = 0; pi < sizeof(packets) / sizeof(packets[0]); pi++)
+   {
+      size_t off;
+      size_t text_len            = strlen(cfgtext);
+      char *copy                 = strdup(cfgtext);
+      config_file_t *slurped     = config_file_new_from_string(copy, NULL);
+      config_file_stream_t *st   = config_file_stream_new(NULL);
+      config_file_t *streamed    = NULL;
+      struct config_file_entry a;
+      struct config_file_entry b;
+      bool more_a, more_b;
+
+      free(copy);
+      if (!slurped || !st)
+         abort();
+
+      for (off = 0; off < text_len; off += packets[pi])
+      {
+         size_t n = (text_len - off < packets[pi])
+               ? (text_len - off) : packets[pi];
+         if (!config_file_stream_push(st, cfgtext + off, n))
+            abort();
+      }
+      if (!(streamed = config_file_stream_finish(st)))
+         abort();
+
+      more_a = config_get_entry_list_head(slurped, &a);
+      more_b = config_get_entry_list_head(streamed, &b);
+      while (more_a && more_b)
+      {
+         if (       !!a.key   != !!b.key
+               ||   !!a.value != !!b.value
+               || (a.key   && strcmp(a.key,   b.key))
+               || (a.value && strcmp(a.value, b.value)))
+         {
+            printf("[FAILED] stream/packet=%u entry mismatch: [%s]=[%s] vs [%s]=[%s]\n",
+                  (unsigned)packets[pi],
+                  a.key ? a.key : "(null)", a.value ? a.value : "(null)",
+                  b.key ? b.key : "(null)", b.value ? b.value : "(null)");
+            abort();
+         }
+         more_a = config_get_entry_list_next(&a);
+         more_b = config_get_entry_list_next(&b);
+      }
+      if (more_a != more_b)
+      {
+         printf("[FAILED] stream/packet=%u entry count mismatch\n",
+               (unsigned)packets[pi]);
+         abort();
+      }
+
+      config_file_free(slurped);
+      config_file_free(streamed);
+   }
+   printf("[SUCCESS] streamed parse matches from_string at packet sizes 1/7/4096\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -504,4 +580,5 @@ int main(void)
    test_config_file_deinitialize_clears_fields();
    test_config_file_high_bit_bytes_smoke();
    test_config_file_hash_map_agreement();
+   test_config_file_stream_matches_from_string();
 }
