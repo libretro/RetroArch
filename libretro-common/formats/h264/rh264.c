@@ -4839,8 +4839,72 @@ static int rh264_b_direct_cells(const rh264_bctx *bc, rh264_mv *mvg,
 
 /* Fill every direct 4x4 of one 8x8 quadrant and motion compensate it from
  * the stored cells. Used by B_Skip, B_Direct_16x16 and direct 8x8 subs. */
-static int rh264_b_direct_quadrant(rh264_frame *f, const rh264_bctx *bc,
-      const rh264_slice_hdr *sh, rh264_mv *mvg, int gwmax, int mbx, int mby,
+/* Direct cells within a region carry the same motion whenever the
+ * derivation was uniform - always per quadrant under 8x8 inference,
+ * and across the whole macroblock for the common static/skip case.
+ * Equal list refs imply equal reference pictures and equal weights,
+ * so equal (ref, mv) pairs make the compensation itself identical
+ * and it can run once over the widest uniform block. */
+static RH264_INLINE int rh264_mv_same(const rh264_mv *a, const rh264_mv *b)
+{
+   return a->ref  == b->ref  && a->mvx  == b->mvx  && a->mvy  == b->mvy
+       && a->ref1 == b->ref1 && a->mvx1 == b->mvx1 && a->mvy1 == b->mvy1;
+}
+
+/* Compensate one quadrant off its cells: one 8x8 block when the four
+ * cells agree, per 4x4 otherwise. */
+static void rh264_b_comp_quadrant(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, const rh264_mv *mvg, int gwmax,
+      int mbx, int mby, int qx, int qy)
+{
+   const rh264_mv *m0 = &mvg[(mby*4 + qy*2) * gwmax + mbx*4 + qx*2];
+   int sx, sy;
+   if (rh264_mv_same(m0, m0 + 1)
+         && rh264_mv_same(m0, m0 + gwmax)
+         && rh264_mv_same(m0, m0 + gwmax + 1))
+   {
+      rh264_b_pred_block(f, bc, sh, mbx, mby, qx * 8, qy * 8, 8, 8,
+            m0->ref, m0->mvx, m0->mvy, m0->ref1, m0->mvx1, m0->mvy1);
+      return;
+   }
+   for (sy = 0; sy < 2; sy++)
+      for (sx = 0; sx < 2; sx++)
+      {
+         const rh264_mv *m = &mvg[(mby*4 + qy*2 + sy) * gwmax
+                                 + mbx*4 + qx*2 + sx];
+         rh264_b_pred_block(f, bc, sh, mbx, mby,
+               (qx*2 + sx) * 4, (qy*2 + sy) * 4, 4, 4,
+               m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
+      }
+}
+
+/* Compensate a whole macroblock off its 4x4 cells at the widest uniform
+ * granularity: one 16x16 block when all sixteen cells agree (static
+ * areas, skips), else per quadrant. */
+static void rh264_b_comp_mb(rh264_frame *f, const rh264_bctx *bc,
+      const rh264_slice_hdr *sh, const rh264_mv *mvg, int gwmax,
+      int mbx, int mby)
+{
+   const rh264_mv *m0 = &mvg[(mby*4) * gwmax + mbx*4];
+   int x, y, q, uni = 1;
+   for (y = 0; y < 4 && uni; y++)
+      for (x = 0; x < 4 && uni; x++)
+         uni = rh264_mv_same(m0, &m0[y * gwmax + x]);
+   if (uni)
+   {
+      rh264_b_pred_block(f, bc, sh, mbx, mby, 0, 0, 16, 16,
+            m0->ref, m0->mvx, m0->mvy, m0->ref1, m0->mvx1, m0->mvy1);
+      return;
+   }
+   for (q = 0; q < 4; q++)
+      rh264_b_comp_quadrant(f, bc, sh, mvg, gwmax, mbx, mby, q & 1, q >> 1);
+}
+
+/* Derive one direct quadrant's cells.  Compensation happens at the
+ * macroblock level (rh264_b_comp_mb) so uniform motion merges into the
+ * widest possible block. */
+static int rh264_b_direct_quadrant(const rh264_bctx *bc,
+      rh264_mv *mvg, int gwmax, int mbx, int mby,
       int qx, int qy, int l0r, int l1r, int pm0x, int pm0y, int pm1x, int pm1y)
 {
    int sx, sy;
@@ -4852,16 +4916,6 @@ static int rh264_b_direct_quadrant(rh264_frame *f, const rh264_bctx *bc,
                qx * 2 + sx, qy * 2 + sy, step, l0r, l1r,
                pm0x, pm0y, pm1x, pm1y) != 0)
             return -1;
-      }
-   /* compensate per 4x4 straight off the cells */
-   for (sy = 0; sy < 2; sy++)
-      for (sx = 0; sx < 2; sx++)
-      {
-         const rh264_mv *m = &mvg[(mby*4 + qy*2 + sy) * gwmax
-                                 + mbx*4 + qx*2 + sx];
-         rh264_b_pred_block(f, bc, sh, mbx, mby,
-               (qx*2 + sx) * 4, (qy*2 + sy) * 4, 4, 4,
-               m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
       }
    return 0;
 }
@@ -4876,9 +4930,10 @@ static int rh264_b_direct_mb(rh264_frame *f, const rh264_bctx *bc,
       rh264_b_direct_prepare(bc, mvg, gwmax, ghmax, mbx, mby,
             &l0r, &l1r, &pm0x, &pm0y, &pm1x, &pm1y);
    for (q = 0; q < 4; q++)
-      if (rh264_b_direct_quadrant(f, bc, sh, mvg, gwmax, mbx, mby,
+      if (rh264_b_direct_quadrant(bc, mvg, gwmax, mbx, mby,
             q & 1, q >> 1, l0r, l1r, pm0x, pm0y, pm1x, pm1y) != 0)
          return -1;
+   rh264_b_comp_mb(f, bc, sh, mvg, gwmax, mbx, mby);
    return 0;
 }
 
@@ -5204,17 +5259,9 @@ static int rh264_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                      }
                }
             }
-            /* compensate every 4x4 off its cell (direct subs included) */
-            {
-               int cy, cx;
-               for (cy = 0; cy < 4; cy++)
-                  for (cx = 0; cx < 4; cx++)
-                  {
-                     const rh264_mv *m = &mvg[(mby*4+cy)*gwmax + mbx*4+cx];
-                     rh264_b_pred_block(f, bc, sh, mbx, mby, cx*4, cy*4, 4, 4,
-                           m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
-                  }
-            }
+            /* compensate off the cells, widest uniform block first
+             * (direct subs included) */
+            rh264_b_comp_mb(f, bc, sh, mvg, gwmax, mbx, mby);
          }
 
          cbp = rh264_ue(b);
@@ -8236,14 +8283,9 @@ static int rh264_cabac_decode_bslice(rh264_bits *b, const rh264_sps *sps,
                         }
                   }
                }
-               /* compensate every 4x4 off its cell (direct subs included) */
-               for (cy = 0; cy < 4; cy++)
-                  for (cx = 0; cx < 4; cx++)
-                  {
-                     const rh264_mv *m = &mvg[(mby*4+cy)*gwmax + mbx*4+cx];
-                     rh264_b_pred_block(f, bc, sh, mbx, mby, cx*4, cy*4, 4, 4,
-                           m->ref, m->mvx, m->mvy, m->ref1, m->mvx1, m->mvy1);
-                  }
+               /* compensate off the cells, widest uniform block first
+                * (direct subs included) */
+               rh264_b_comp_mb(f, bc, sh, mvg, gwmax, mbx, mby);
             }
 
             /* coded_block_pattern (9.3.3.1.1.4) */
