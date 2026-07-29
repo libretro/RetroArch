@@ -1968,8 +1968,6 @@ static const ok_dl_map_t ok_dl_map[] = {
    { MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS, ACTION_OK_DL_AUDIO_OUTPUT_SETTINGS_LIST },
    { MENU_ENUM_LABEL_LATENCY_SETTINGS, ACTION_OK_DL_LATENCY_SETTINGS_LIST },
    { MENU_ENUM_LABEL_CORE_SETTINGS, ACTION_OK_DL_CORE_SETTINGS_LIST },
-   { MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST },
-   { MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST },
    { MENU_ENUM_LABEL_CONFIGURATION_SETTINGS, ACTION_OK_DL_CONFIGURATION_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_SETTINGS, ACTION_OK_DL_PLAYLIST_SETTINGS_LIST },
    { MENU_ENUM_LABEL_PLAYLIST_MANAGER_LIST, ACTION_OK_DL_PLAYLIST_MANAGER_LIST },
@@ -6830,6 +6828,8 @@ static int action_ok_delete_entry(const char *path,
 }
 
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_cdrom_info_list, ACTION_OK_DL_CDROM_INFO_DETAIL_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_restore_backup_list, ACTION_OK_DL_CORE_RESTORE_BACKUP_LIST)
+STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_push_core_delete_backup_list, ACTION_OK_DL_CORE_DELETE_BACKUP_LIST)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_preset_manager, ACTION_OK_DL_SHADER_PRESET_MANAGER_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_shader_parameters, ACTION_OK_DL_SHADER_PARAMETERS)
@@ -9534,6 +9534,8 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #ifdef HAVE_MIST
          {MENU_ENUM_LABEL_CORE_MANAGER_STEAM_ENTRY,            action_ok_push_core_information_steam_list},
 #endif
+         {MENU_ENUM_LABEL_CORE_RESTORE_BACKUP_LIST,            action_ok_push_core_restore_backup_list},
+         {MENU_ENUM_LABEL_CORE_DELETE_BACKUP_LIST,             action_ok_push_core_delete_backup_list},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS,           action_ok_push_playlist_manager_settings},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_RESET_CORES,        action_ok_playlist_reset_cores},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,     action_ok_playlist_clean},
