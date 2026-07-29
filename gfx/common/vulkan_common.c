@@ -1059,8 +1059,7 @@ static const char *vulkan_optional_instance_extensions[] = {
 static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *create_info)
 {
    VkResult res;
-   uint32_t i, layer_count;
-   VkLayerProperties properties[128];
+   uint32_t i;
    gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
    VkInstanceCreateInfo info        = *create_info;
    VkInstance instance              = VK_NULL_HANDLE;
@@ -1126,9 +1125,6 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
    required_extensions[required_extension_count++] = "VK_EXT_debug_utils";
 #endif
-
-   layer_count = ARRAY_SIZE(properties);
-   vkEnumerateInstanceLayerProperties(&layer_count, properties);
 
    if (!(vulkan_find_instance_extensions(
             instance_extensions, &info.enabledExtensionCount,
