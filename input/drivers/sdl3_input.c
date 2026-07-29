@@ -659,10 +659,20 @@ static void sdl3_input_poll(void *data)
       }
       else if (event.type == SDL_EVENT_MOUSE_WHEEL)
       {
-         sdl->mouse_wu |= event.wheel.integer_y > 0;
-         sdl->mouse_wd |= event.wheel.integer_y < 0;
-         sdl->mouse_wl |= event.wheel.integer_x < 0;
-         sdl->mouse_wr |= event.wheel.integer_x > 0;
+         Sint32 wx = event.wheel.integer_x;
+         Sint32 wy = event.wheel.integer_y;
+
+         /* FLIPPED = "natural" scrolling: SDL delivers inverted
+          * signs and expects the caller to negate them. */
+         if (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+         {
+            wx = -wx;
+            wy = -wy;
+         }
+         sdl->mouse_wu |= wy > 0;
+         sdl->mouse_wd |= wy < 0;
+         sdl->mouse_wl |= wx < 0;
+         sdl->mouse_wr |= wx > 0;
       }
       else if (event.type == SDL_EVENT_KEYMAP_CHANGED)
          sdl3_build_scancode_lut(sdl);
