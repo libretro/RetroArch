@@ -155,7 +155,7 @@ static int ra_clock_gettime(int clk_ik, struct timespec *t)
 #define ra_clock_gettime clock_gettime
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
@@ -219,7 +219,7 @@ retro_perf_tick_t cpu_features_get_perf_counter(void)
    time_ticks = OSGetSystemTime();
 #elif defined(HAVE_LIBNX)
    time_ticks = armGetSystemTick();
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    time_ticks = emscripten_get_now() * 1000;
 #endif
 
@@ -258,7 +258,7 @@ retro_time_t cpu_features_get_time_usec(void)
    if (ra_clock_gettime(CLOCK_MONOTONIC, &tv) < 0)
       return 0;
    return tv.tv_sec * INT64_C(1000000) + (tv.tv_nsec + 500) / 1000;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    return emscripten_get_now() * 1000;
 #elif defined(PS2)
    return ps2_clock() / PS2_CLOCKS_PER_MSEC * 1000;
