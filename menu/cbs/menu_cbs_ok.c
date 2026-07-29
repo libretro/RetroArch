@@ -9305,14 +9305,18 @@ static int action_ok_smb_browse(const char *path,
       remaining -= len;
    }
 
+   /* Push as a content list under the same label Load Content uses:
+    * files inside then bind to the detect-core handler instead of
+    * "load with current core", which fatals when no core is loaded */
+   filebrowser_set_type(FILEBROWSER_SELECT_FILE);
    return generic_action_ok_displaylist_push(
       smb_path,
       smb_path,
-      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE),
+      msg_hash_to_str(MENU_ENUM_LABEL_FAVORITES),
       FILE_TYPE_DIRECTORY,
       idx,
       entry_idx,
-      ACTION_OK_DL_FILE_BROWSER_SELECT_DIR);
+      ACTION_OK_DL_CONTENT_LIST);
 }
 #endif
 
