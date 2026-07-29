@@ -17,6 +17,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(_MSC_VER)
+#include <intrin.h>   /* _BitScanReverse, _byteswap_uint64 */
+#endif
 #if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #include <emmintrin.h>
 #define RH264_SSE2 1
@@ -27,8 +30,13 @@
 
 /* ==================== rh264_bits.h ==================== */
 /* rh264 -- bitstream layer: NAL RBSP + Exp-Golomb. */
-typedef struct { const uint8_t *buf; size_t size; size_t bitpos; } rh264_bits;
-static void rh264_bits_init(rh264_bits *b, const uint8_t *buf, size_t size){ b->buf=buf; b->size=size; b->bitpos=0; }
+struct rh264_vlc_set;
+typedef struct { const uint8_t *buf; size_t size; size_t bitpos;
+   /* inverse CAVLC tables of the owning decoder instance; NULL (as for
+    * parameter-set parsing, which never reads residual) selects the
+    * serial matchers */
+   const struct rh264_vlc_set *vlc; } rh264_bits;
+static void rh264_bits_init(rh264_bits *b, const uint8_t *buf, size_t size){ b->buf=buf; b->size=size; b->bitpos=0; b->vlc=NULL; }
 static int rh264_more_data(const rh264_bits *b){ return b->bitpos < b->size*8; }
 /* more_rbsp_data (7.2): true when bits remain beyond the current position
  * other than the rbsp_stop_one_bit and its trailing zeros. */
@@ -41,17 +49,88 @@ static int rh264_more_rbsp(const rh264_bits *b){
    while(!(v&1)){ v>>=1; stop--; }
    return b->bitpos < stop-1;
 }
-static uint32_t rh264_u1(rh264_bits *b){
-   size_t byte=b->bitpos>>3; int off=7-(int)(b->bitpos&7); uint32_t v;
-   if(byte>=b->size){ b->bitpos++; return 0; }
-   v=(b->buf[byte]>>off)&1; b->bitpos++; return v;
+#if defined(__GNUC__) || defined(__clang__)
+#define RH264_BITS_INLINE static __inline__ __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#define RH264_BITS_INLINE static __forceinline
+#else
+#define RH264_BITS_INLINE static
+#endif
+/* Count of leading zeros in a non-zero 32-bit value; 32 for zero. */
+RH264_BITS_INLINE uint32_t rh264_clz32(uint32_t v)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   return v ? (uint32_t)__builtin_clz(v) : 32u;
+#elif defined(_MSC_VER)
+   unsigned long i;
+   if (_BitScanReverse(&i, v)) return 31u - (uint32_t)i;
+   return 32u;
+#else
+   uint32_t n = 0;
+   if (!v) return 32u;
+   while (!(v & 0x80000000u)) { v <<= 1; n++; }
+   return n;
+#endif
 }
-static uint32_t rh264_un(rh264_bits *b,int n){ uint32_t v=0; int i; for(i=0;i<n;i++) v=(v<<1)|rh264_u1(b); return v; }
-static uint32_t rh264_ue(rh264_bits *b){
+/* Read the next 1..32 bits at bitpos without consuming them.  Bits past
+ * the end of the buffer read as zero, exactly as the serial reader did:
+ * every consumer either treats trailing zeros as benign padding or fails
+ * the parse downstream, and rh264_more_data / rh264_more_rbsp remain the
+ * authoritative end-of-data tests. */
+RH264_BITS_INLINE uint32_t rh264_peek(const rh264_bits *b, int n)
+{
+   size_t byte = b->bitpos >> 3;
+   int off     = (int)(b->bitpos & 7);
+   uint64_t acc;
+   if (byte + 8 <= b->size)
+   {
+#if defined(_MSC_VER)
+      memcpy(&acc, b->buf + byte, 8);
+      acc = _byteswap_uint64(acc);
+#elif defined(__GNUC__) && defined(__BYTE_ORDER__) && \
+      (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+      memcpy(&acc, b->buf + byte, 8);
+#elif defined(__GNUC__)
+      memcpy(&acc, b->buf + byte, 8);
+      acc = __builtin_bswap64(acc);
+#else
+      acc = ((uint64_t)b->buf[byte]   << 56) | ((uint64_t)b->buf[byte+1] << 48)
+          | ((uint64_t)b->buf[byte+2] << 40) | ((uint64_t)b->buf[byte+3] << 32)
+          | ((uint64_t)b->buf[byte+4] << 24) | ((uint64_t)b->buf[byte+5] << 16)
+          | ((uint64_t)b->buf[byte+6] <<  8) |  (uint64_t)b->buf[byte+7];
+#endif
+   }
+   else
+   {
+      int i;
+      acc = 0;
+      for (i = 0; i < 8; i++)
+         acc = (acc << 8) | (byte + (size_t)i < b->size ? b->buf[byte + i] : 0);
+   }
+   return (uint32_t)((acc << off) >> (64 - n));
+}
+static uint32_t rh264_u1(rh264_bits *b){
+   uint32_t v=rh264_peek(b,1); b->bitpos++; return v;
+}
+static uint32_t rh264_un(rh264_bits *b,int n){
+   uint32_t v; if(n<=0) return 0; v=rh264_peek(b,n); b->bitpos+=(size_t)n; return v;
+}
+/* The serial Exp-Golomb reader, kept for the two cases the peek window
+ * cannot settle: a run of 15+ leading zeros, and data exhausted mid-run
+ * (both end the parse or a conformant value shortly after). */
+static uint32_t rh264_ue_slow(rh264_bits *b){
    int z=0; while(rh264_more_data(b)&&rh264_u1(b)==0) z++;
    if(z==0) return 0;
    if(z>=32) return 0xFFFFFFFFu;
    return ((1u<<z)-1u)+rh264_un(b,z);
+}
+static uint32_t rh264_ue(rh264_bits *b){
+   uint32_t v=rh264_peek(b,32),z;
+   if(!v) return rh264_ue_slow(b);
+   z=rh264_clz32(v);
+   if(z>15) return rh264_ue_slow(b);
+   b->bitpos+=(size_t)(2*z+1);
+   return (v>>(31-2*z))-1u;
 }
 static int32_t rh264_se(rh264_bits *b){ uint32_t k=rh264_ue(b); uint32_t m=(k+1)>>1; return (k&1)?(int32_t)m:-(int32_t)m; }
 static uint8_t *rh264_unescape(const uint8_t *nal,size_t len,size_t *out_size){
@@ -775,6 +854,153 @@ static const uint8_t rh264_cdctz_code[4][4]={
 /* Match a prefix-free VLC: read bits MSB-first until (len,code) hits a
  * table row whose value index is returned. tab_len/tab_code are [N]; the
  * decoded symbol is the matching index. Returns -1 on failure. */
+/* ---- inverse (lookup) form of the VLC tables ----
+ * The len/code arrays above stay the single source of truth: when a
+ * decoder is opened they are inverted into direct-indexed tables,
+ * tab[peek] -> (symbol << 5) | code_length, 0 marking an invalid
+ * prefix.  A code of length L occupies the 1 << (bits - L) slots
+ * sharing its prefix, which is exactly the prefix-free property the
+ * tables were verified for.  Lookup is then one peek and one load
+ * where the serial matcher rescanned the candidate list after every
+ * appended bit.  The set lives in the decoder instance - no globals,
+ * so concurrent instances never share state - and costs ~190 KiB,
+ * small next to the plane buffers.  Should the build fail, every site
+ * falls back to the serial matcher, so behaviour is unchanged, only
+ * slower. */
+typedef struct { uint16_t *tab; int bits; } rh264_vlc;
+struct rh264_vlc_set
+{
+   rh264_vlc ct[4];        /* coeff_token by nC class      */
+   rh264_vlc ctc;          /* chroma-DC coeff_token, 4:2:0 */
+   rh264_vlc ctc422;       /* chroma-DC coeff_token, 4:2:2 */
+   rh264_vlc tz[16];       /* total_zeros by total_coeff   */
+   rh264_vlc cdctz[4];     /* chroma-DC total_zeros, 4:2:0 */
+   rh264_vlc cdctz422[8];  /* chroma-DC total_zeros, 4:2:2 */
+   rh264_vlc rb[8];        /* run_before by zeros bucket   */
+};
+
+static int rh264_vlc_put(rh264_vlc *v, uint32_t code, int len, int idx)
+{
+   uint32_t base = code << (v->bits - len);
+   uint32_t span = 1u << (v->bits - len), j;
+   uint16_t e = (uint16_t)(((unsigned)idx << 5) | (unsigned)len);
+   for (j = 0; j < span; j++)
+   {
+      if (v->tab[base + j]) return -1;   /* prefix collision: refuse */
+      v->tab[base + j] = e;
+   }
+   return 0;
+}
+
+static int rh264_vlc_alloc(rh264_vlc *v, int bits)
+{
+   v->bits = bits;
+   v->tab  = (uint16_t*)calloc((size_t)1 << bits, sizeof(uint16_t));
+   return v->tab ? 0 : -1;
+}
+
+/* Invert one [n]-entry len/code row pair (the rh264_vlc_match1 shape). */
+static int rh264_vlc_build_row(rh264_vlc *v, const uint8_t *len_row,
+      const uint8_t *code_row, int n)
+{
+   int i, maxl = 0;
+   for (i = 0; i < n; i++)
+      if (len_row[i] > maxl) maxl = len_row[i];
+   if (!maxl) { v->tab = NULL; v->bits = 0; return 0; }   /* empty row */
+   if (rh264_vlc_alloc(v, maxl) != 0) return -1;
+   for (i = 0; i < n; i++)
+      if (len_row[i])
+         if (rh264_vlc_put(v, code_row[i], len_row[i], i) != 0) return -1;
+   return 0;
+}
+
+/* Invert one coeff_token grid: symbol = total_coeff * 4 + trailing_ones,
+ * walking the same (tc, t1) domain the serial matcher searches. */
+static int rh264_vlc_build_ct(rh264_vlc *v,
+      const uint8_t len[17][4], const uint8_t code[17][4], int ntc)
+{
+   int tc, t1, maxl = 0;
+   for (tc = 0; tc < ntc; tc++)
+      for (t1 = 0; t1 <= (tc < 3 ? tc : 3); t1++)
+         if (len[tc][t1] > maxl) maxl = len[tc][t1];
+   if (rh264_vlc_alloc(v, maxl) != 0) return -1;
+   for (tc = 0; tc < ntc; tc++)
+      for (t1 = 0; t1 <= (tc < 3 ? tc : 3); t1++)
+         if (len[tc][t1]
+               && rh264_vlc_put(v, code[tc][t1], len[tc][t1],
+                     tc * 4 + t1) != 0)
+            return -1;
+   return 0;
+}
+
+/* The 4:2:2 chroma-DC token table is stored transposed, [t1][tc]. */
+static int rh264_vlc_build_ctc422(rh264_vlc *v)
+{
+   int tc, t1, maxl = 0;
+   for (tc = 0; tc < 9; tc++)
+      for (t1 = 0; t1 <= (tc < 3 ? tc : 3); t1++)
+         if (rh264_ctc422_len[t1][tc] > maxl) maxl = rh264_ctc422_len[t1][tc];
+   if (rh264_vlc_alloc(v, maxl) != 0) return -1;
+   for (tc = 0; tc < 9; tc++)
+      for (t1 = 0; t1 <= (tc < 3 ? tc : 3); t1++)
+         if (rh264_ctc422_len[t1][tc]
+               && rh264_vlc_put(v, rh264_ctc422_code[t1][tc],
+                     rh264_ctc422_len[t1][tc], tc * 4 + t1) != 0)
+            return -1;
+   return 0;
+}
+
+static void rh264_vlc_free(struct rh264_vlc_set *s)
+{
+   int i;
+   for (i = 0; i < 4; i++)  { free(s->ct[i].tab);       s->ct[i].tab = NULL; }
+   for (i = 0; i < 16; i++) { free(s->tz[i].tab);       s->tz[i].tab = NULL; }
+   for (i = 0; i < 4; i++)  { free(s->cdctz[i].tab);    s->cdctz[i].tab = NULL; }
+   for (i = 0; i < 8; i++)  { free(s->cdctz422[i].tab); s->cdctz422[i].tab = NULL; }
+   for (i = 0; i < 8; i++)  { free(s->rb[i].tab);       s->rb[i].tab = NULL; }
+   free(s->ctc.tab);    s->ctc.tab = NULL;
+   free(s->ctc422.tab); s->ctc422.tab = NULL;
+}
+
+/* Build the whole set; 0 on success, -1 with the set freed on failure. */
+static int rh264_vlc_init(struct rh264_vlc_set *s)
+{
+   int i, ok = 1;
+   memset(s, 0, sizeof(*s));
+   for (i = 0; i < 4 && ok; i++)
+      ok = rh264_vlc_build_ct(&s->ct[i],
+            rh264_ct_len[i], rh264_ct_code[i], 17) == 0;
+   if (ok) ok = rh264_vlc_build_ct(&s->ctc,
+            rh264_ctc_len, rh264_ctc_code, 5) == 0;
+   if (ok) ok = rh264_vlc_build_ctc422(&s->ctc422) == 0;
+   for (i = 1; i < 16 && ok; i++)
+      ok = rh264_vlc_build_row(&s->tz[i],
+            rh264_tz_len[i], rh264_tz_code[i], 16) == 0;
+   for (i = 1; i < 4 && ok; i++)
+      ok = rh264_vlc_build_row(&s->cdctz[i],
+            rh264_cdctz_len[i], rh264_cdctz_code[i], 4) == 0;
+   for (i = 1; i < 8 && ok; i++)
+      ok = rh264_vlc_build_row(&s->cdctz422[i],
+            rh264_cdctz422_len[i], rh264_cdctz422_code[i], 8) == 0;
+   for (i = 1; i < 8 && ok; i++)
+      ok = rh264_vlc_build_row(&s->rb[i],
+            rh264_rb_len[i], rh264_rb_code[i], 15) == 0;
+   if (!ok) { rh264_vlc_free(s); return -1; }
+   return 0;
+}
+
+/* One-lookup decode: symbol index on success, -1 on an invalid prefix,
+ * -2 when no inverse table is attached (caller falls back). */
+RH264_BITS_INLINE int rh264_vlc_look(rh264_bits *b, const rh264_vlc *v)
+{
+   uint16_t e;
+   if (!v || !v->tab) return -2;
+   e = v->tab[rh264_peek(b, v->bits)];
+   if (!e) return -1;
+   b->bitpos += (size_t)(e & 31u);
+   return (int)(e >> 5);
+}
+
 static int rh264_vlc_match1(rh264_bits *b, const uint8_t *len_row,
       const uint8_t *code_row, int n)
 {
@@ -799,6 +1025,16 @@ static int rh264_coeff_token(rh264_bits *b, int nC,
    else if (nC >= 4) t = 2;
    else if (nC >= 2) t = 1;
    else              t = 0;
+   {
+      int r = rh264_vlc_look(b, b->vlc ? &b->vlc->ct[t] : NULL);
+      if (r >= 0)
+      {
+         *total_coeff   = r >> 2;
+         *trailing_ones = r & 3;
+         return 1;
+      }
+      if (r == -1) return 0;
+   }
    /* Search the [17][4] (tc,t1) grid for a matching prefix. */
    {
       uint32_t acc = 0; int L = 0;
@@ -830,6 +1066,15 @@ static int rh264_level_prefix(rh264_bits *b)
     * otherwise drive the 1 << (level_prefix - 3) below past the width of
     * an int.  Stop counting at 32: the caller's level_code arithmetic
     * then saturates harmlessly and the block is rejected downstream. */
+   uint32_t v = rh264_peek(b, 32);
+   if (v)
+   {
+      /* the terminating 1 is real data (padding past the end reads as
+       * zero), so consume the zeros and the terminator in one step */
+      lz = (int)rh264_clz32(v);
+      b->bitpos += (size_t)lz + 1;
+      return lz;
+   }
    while (lz < 32 && rh264_more_data(b) && rh264_u1(b) == 0)
       lz++;
    return lz;
@@ -854,6 +1099,14 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
        * runs to thirteen bits. */
       uint32_t acc = 0; int L = 0, tc, t1;
       int f422 = (nC == -2), maxL = f422 ? 13 : 8, ntc = f422 ? 9 : 5;
+      int r = rh264_vlc_look(b, b->vlc ? (f422 ? &b->vlc->ctc422 : &b->vlc->ctc) : NULL);
+      if (r == -1) return -1;
+      if (r >= 0)
+      {
+         total_coeff = r >> 2; trailing_ones = r & 3;
+         if (total_coeff == 0) return 0;
+         goto levels;
+      }
       total_coeff = -1;
       while (L < maxL && total_coeff < 0)
       {
@@ -886,6 +1139,7 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
    }
 
    /* Levels. */
+levels:
    {
       int suffix_length = (total_coeff > 10 && trailing_ones < 3) ? 1 : 0;
       for (i = 0; i < total_coeff; i++)
@@ -940,14 +1194,26 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
       {
          int idx;
          if (is_chroma_dc && maxNumCoeff == 8)
-            idx = rh264_vlc_match1(b, rh264_cdctz422_len[total_coeff],
-                  rh264_cdctz422_code[total_coeff], 8);
+         {
+            idx = rh264_vlc_look(b, b->vlc ? &b->vlc->cdctz422[total_coeff] : NULL);
+            if (idx == -2)
+               idx = rh264_vlc_match1(b, rh264_cdctz422_len[total_coeff],
+                     rh264_cdctz422_code[total_coeff], 8);
+         }
          else if (is_chroma_dc)
-            idx = rh264_vlc_match1(b, rh264_cdctz_len[total_coeff],
-                  rh264_cdctz_code[total_coeff], 4);
+         {
+            idx = rh264_vlc_look(b, b->vlc ? &b->vlc->cdctz[total_coeff] : NULL);
+            if (idx == -2)
+               idx = rh264_vlc_match1(b, rh264_cdctz_len[total_coeff],
+                     rh264_cdctz_code[total_coeff], 4);
+         }
          else
-            idx = rh264_vlc_match1(b, rh264_tz_len[total_coeff],
-                  rh264_tz_code[total_coeff], 16);
+         {
+            idx = rh264_vlc_look(b, b->vlc ? &b->vlc->tz[total_coeff] : NULL);
+            if (idx == -2)
+               idx = rh264_vlc_match1(b, rh264_tz_len[total_coeff],
+                     rh264_tz_code[total_coeff], 16);
+         }
          if (idx < 0) return -1;
          zeros_left = idx;
       }
@@ -958,8 +1224,10 @@ static int rh264_residual_block(rh264_bits *b, int nC, int maxNumCoeff,
          if (zeros_left > 0)
          {
             int bucket = zeros_left > 6 ? 7 : zeros_left;
-            int idx = rh264_vlc_match1(b, rh264_rb_len[bucket],
-                  rh264_rb_code[bucket], 15);
+            int idx = rh264_vlc_look(b, b->vlc ? &b->vlc->rb[bucket] : NULL);
+            if (idx == -2)
+               idx = rh264_vlc_match1(b, rh264_rb_len[bucket],
+                     rh264_rb_code[bucket], 15);
             if (idx < 0) return -1;
             rbv = idx;
          }
@@ -5352,6 +5620,10 @@ struct rh264_video
    int        out_used[RH264_OUT_SLOTS];
    int        out_len;          /* pictures queued and not yet shown         */
    int        out_show;         /* slot most recently handed out, -1 if none */
+   /* Inverse CAVLC tables of this instance; vlc_ready 0 (a failed build)
+    * routes all residual decode through the serial matchers instead. */
+   struct rh264_vlc_set vlc;
+   int        vlc_ready;
    int        idr_gen;          /* IDR generation of the current picture     */
    int        reorder_delay;    /* output delay in pictures, fixed per SPS   */
    /* marking ops of the picture just decoded, executed before it is stored */
@@ -5524,6 +5796,9 @@ rh264_video *rh264_video_open(void)
 {
    rh264_video *v = (rh264_video*)calloc(1, sizeof(*v));
    if (!v) return NULL;
+   /* Invert the CAVLC tables for this instance; on failure the decoder
+    * runs on the serial matchers instead. */
+   v->vlc_ready = rh264_vlc_init(&v->vlc) == 0;
    /* Annex-B until rh264_video_set_extradata reports the avcC length
     * size; sample format is decided by that call, never sniffed. */
    v->nal_length_size = 0;
@@ -5542,6 +5817,7 @@ void rh264_video_close(rh264_video *v)
    }
    free(v->mvg);
    free(v->pic_mvg);
+   rh264_vlc_free(&v->vlc);
    free(v);
 }
 
@@ -5730,6 +6006,21 @@ static int rh264_cb_bit(rh264_cabac *c)
    c->bitcnt--;
    b = (int)((c->bitbuf >> c->bitcnt) & 1);
    return b;
+}
+
+/* Pull n (1..7) bits at once for renormalisation: at most one byte of
+ * refill is ever needed since bitcnt < 8 going in.  Bytes past the end
+ * read as zero, matching rh264_cb_bit. */
+static RH264_INLINE uint32_t rh264_cb_bits(rh264_cabac *c, int n)
+{
+   if (c->bitcnt < n)
+   {
+      c->bitbuf = (c->bitbuf << 8)
+            | (uint32_t)((c->buf < c->end) ? *c->buf++ : 0);
+      c->bitcnt += 8;
+   }
+   c->bitcnt -= n;
+   return (c->bitbuf >> c->bitcnt) & ((1u << n) - 1u);
 }
 
 static const int8_t rh264_cabac_init_PB[3][460][2]={
@@ -5969,10 +6260,13 @@ static int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
       bin = valMPS;
       c->state[ctxIdx] = rh264_transIdxMPS[pState];
    }
-   while (c->range < 256)
+   if (c->range < 256)
    {
-      c->range  <<= 1;
-      c->offset  = (c->offset << 1) | (uint32_t)rh264_cb_bit(c);
+      /* range is 2..255 here, so 1..7 doublings restore it; take them
+       * in one step instead of a bit at a time */
+      int n = (int)rh264_clz32(c->range) - 23;
+      c->range <<= n;
+      c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
    }
    return bin;
 }
@@ -5988,10 +6282,11 @@ static int rh264_cabac_terminate(rh264_cabac *c)
 {
    c->range -= 2;
    if (c->offset >= c->range) return 1;
-   while (c->range < 256)
+   if (c->range < 256)
    {
-      c->range  <<= 1;
-      c->offset  = (c->offset << 1) | (uint32_t)rh264_cb_bit(c);
+      int n = (int)rh264_clz32(c->range) - 23;
+      c->range <<= n;
+      c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
    }
    return 0;
 }
@@ -8314,6 +8609,7 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
    rbsp = rh264_unescape(nal + 1, len - 1, &rl);
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
+   if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { if (sh.switching) v->saw_switching = 1;
      free(rbsp); return -1; }
@@ -8616,6 +8912,7 @@ static int rh264_video_decode_inter(rh264_video *v, const uint8_t *nal, size_t l
    rbsp = rh264_unescape(nal + 1, len - 1, &rl);
    if (!rbsp) return -1;
    rh264_bits_init(&b, rbsp, rl);
+   if (v->vlc_ready) b.vlc = &v->vlc;
    if (!rh264_parse_slice_header_adv(&b, nut, nri, &v->sps, &v->pps, &sh))
    { if (sh.switching) v->saw_switching = 1;
      free(rbsp); return -1; }   /* unsupported slice type (e.g. B) */
