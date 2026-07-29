@@ -469,7 +469,11 @@ size_t utf8len(const char *string)
 /**
  * utf8_walk:
  *
- * Does not validate the input.
+ * Does not validate the input, but never reads or steps past a
+ * terminating NUL, even mid-sequence: a truncated multibyte tail
+ * previously read up to three bytes beyond the terminator and left
+ * the cursor past it, walking a while (*str) caller out of the
+ * buffer.
  *
  * Leaf function.
  *
@@ -479,6 +483,7 @@ uint32_t utf8_walk(const char **string)
 {
    const uint8_t *s = (const uint8_t*)*string;
    uint8_t first    = *s++;
+   uint8_t b;
    uint32_t ret;
 
    if (first < 0x80)
@@ -492,7 +497,12 @@ uint32_t utf8_walk(const char **string)
     * critical path of every glyph decoded by the per-frame text
     * renderers, and the compare chain resolves the common 2- and
     * 3-byte leads first. Continuation and 5-byte-plus leads take the
-    * final branch and decode to garbage, as before. */
+    * final branch and decode to garbage, as before.
+    *
+    * Each continuation read tests the byte it already loaded against
+    * NUL before consuming it; the branch is never taken on valid
+    * input, and on a truncated tail the cursor parks at the
+    * terminator with a partial (garbage) return. */
    if (first < 0xE0)
    {
       if (first < 0xC0)
@@ -502,21 +512,47 @@ uint32_t utf8_walk(const char **string)
           * as the LUT path produced. */
          ret = first & 0x3F;
       else
-         ret = ((uint32_t)(first & 0x1F) << 6)
-             |  (*s++ & 0x3F);
+      {
+         ret = first & 0x1F;
+         if ((b = *s) != 0)
+         {
+            s++;
+            ret = (ret << 6) | (b & 0x3F);
+         }
+      }
    }
    else if (first < 0xF0)
    {
-      ret = (uint32_t)(first & 0x0F) << 6;
-      ret = (ret | (*s++ & 0x3F)) << 6;
-      ret =  ret | (*s++ & 0x3F);
+      ret = first & 0x0F;
+      if ((b = *s) != 0)
+      {
+         s++;
+         ret = (ret << 6) | (b & 0x3F);
+         if ((b = *s) != 0)
+         {
+            s++;
+            ret = (ret << 6) | (b & 0x3F);
+         }
+      }
    }
    else if (first < 0xF8)
    {
-      ret = (uint32_t)(first & 0x07) << 6;
-      ret = (ret | (*s++ & 0x3F)) << 6;
-      ret = (ret | (*s++ & 0x3F)) << 6;
-      ret =  ret | (*s++ & 0x3F);
+      ret = first & 0x07;
+      if ((b = *s) != 0)
+      {
+         s++;
+         ret = (ret << 6) | (b & 0x3F);
+         if ((b = *s) != 0)
+         {
+            s++;
+            ret = (ret << 6) | (b & 0x3F);
+            if ((b = *s) != 0)
+            {
+               s++;
+               ret = (ret << 6) | (b & 0x3F);
+            }
+         }
+      }
    }
    else
       ret = first & ((1 << (7 - utf8_lut[first])) - 1);
