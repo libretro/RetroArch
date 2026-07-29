@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <errno.h>
 
 #include <libdrm/drm.h>
 #include <gbm.h>
@@ -562,7 +563,21 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 {
    struct drm_fb *fb = NULL;
 
-   drm->next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   struct gbm_bo *next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   if (!next_bo){
+      RARCH_DBG(
+         "[KMS] FIX ME!!! gbm_surface_lock_front_buffer failed: "
+         "surface=%p size=%ux%u errno=%d (%s)\n",
+         (void *)drm->gbm_surface,
+         drm->fb_width,
+         drm->fb_height,
+         errno,
+         strerror(errno));
+
+      return false;
+   }else{
+      drm->next_bo = next_bo;
+   }
    fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
 
    if (!fb)
@@ -571,7 +586,29 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
    if (switch_mode)
    {
       RARCH_DBG("[KMS] modeswitch detected, creating the new CRTC.\n");
-      drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      if (ret != 0)
+      {
+         RARCH_ERR(
+               "[KMS] drmModeSetCrtc failed for %ux%u%s: "
+               "ret=%d errno=%d (%s), clock=%u flags=0x%x\n",
+               g_drm_mode->hdisplay,
+               g_drm_mode->vdisplay,
+               (g_drm_mode->flags & DRM_MODE_FLAG_INTERLACE) ? "i" : "p",
+               ret,
+               errno,
+               strerror(errno),
+               g_drm_mode->clock,
+               g_drm_mode->flags);
+
+         gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+         drm->next_bo = NULL;
+
+         /* Keep running on the previous valid mode.
+          * A later frame may provide a better geometry/mode. */
+         switch_mode = false;
+         return false;
+      }
       switch_mode = false;
    }
 
@@ -598,9 +635,8 @@ static void gfx_ctx_drm_swap_buffers(void *data)
          if (drm->bo)
             gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
          if (drm->next_bo)
-            gbm_surface_release_buffer(drm->gbm_surface, drm->bo);
-         egl_ctx_data_t *egl = &drm->egl;
-         eglDestroySurface(egl->dpy, egl->surf);
+            gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+         egl_destroy_surface(&drm->egl);
 
          gbm_surface_destroy(drm->gbm_surface);
       }
@@ -940,7 +976,10 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
 #endif
 
-   drm->bo   = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   struct gbm_bo *bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   if (!bo)
+      goto error;
+   drm->bo   = bo;
 
    if (!(fb = (struct drm_fb*)gbm_bo_get_user_data(drm->bo)))
       fb     = drm_fb_get_from_bo(drm->bo);
