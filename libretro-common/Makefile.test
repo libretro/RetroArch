@@ -26,6 +26,7 @@ TEST_STDSTRING_SRC = test/string/test_stdstring.c string/stdstring.c encodings/e
 
 TEST_UTILS = test/utils/test_utils
 TEST_UTILS_SRC = test/utils/test_utils.c utils/md5.c encodings/encoding_crc32.c \
+		features/features_cpu.c \
 		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
 		file/file_path_io.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
@@ -48,12 +49,14 @@ TEST_RJPEG_SRC = test/formats/test_rjpeg.c formats/jpeg/rjpeg.c \
 # Not a libcheck suite: a plain main() that prints its own verdict and
 # returns non-zero on failure.
 TEST_RWEBM_AUDIO = test/formats/test_rwebm_audio
-TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c
+TEST_RWEBM_AUDIO_SRC = test/formats/test_rwebm_audio.c \
+		encodings/encoding_crc32.c features/features_cpu.c
 
 TEST_RPNG = test/formats/test_rpng
 TEST_RPNG_SRC = test/formats/test_rpng.c formats/png/rpng.c \
 		streams/trans_stream.c streams/trans_stream_deflate.c \
 		encodings/encoding_deflate.c \
+		features/features_cpu.c \
 		streams/trans_stream_pipe.c
 TEST_RPNG_LIBS = -lz
 
