@@ -195,12 +195,18 @@ int memsync(void *start, void *end)
 #elif defined(__arm__) && !defined(__QNX__)
    __clear_cache(start, end);
    return 0;
-#elif defined(HAVE_MMAN) && defined(MS_SYNC) && defined(MS_INVALIDATE)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__) && defined(MS_SYNC) && defined(MS_INVALIDATE)
    /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
     * into the HAVE_MMAN branch of memmap.h and ships a <sys/mman.h>
     * that includes cleanly but declares neither msync nor the MS_
     * flags. Without this the call compiles to an implicit declaration
-    * and then fails on the undefined constants. */
+    * and then fails on the undefined constants.
+    *
+    * Emscripten is excluded because its msync() only accepts the exact
+    * base of a live mapping and returns -EINVAL for anything else, so
+    * an arbitrary range - which is all this function is ever handed -
+    * reports failure. There is no separate instruction cache behind a
+    * wasm linear memory, so the fallthrough's 0 is the right answer. */
    size_t _len = (char*)end - (char*)start;
    return msync(start, _len, MS_SYNC | MS_INVALIDATE
 #ifdef __QNX__
@@ -228,7 +234,16 @@ int memprotect(void *addr, size_t len)
 
 #if defined(_WIN32)
 #define MEMMAP_HAVE_RESERVE 1
-#elif defined(HAVE_MMAN)
+#elif defined(HAVE_MMAN) && !defined(__EMSCRIPTEN__)
+/* Emscripten has a working <sys/mman.h> but no reservation to build on:
+ * a wasm linear memory is grown monotonically and is committed in full,
+ * there is no unmap, no shrink and no page protection. An anonymous
+ * PROT_NONE mmap there is a plain memalign of the whole length plus a
+ * memset over it, so a reservation would commit - and touch - every
+ * byte it was meant to leave alone, and munmap() rejects any length
+ * that is not an exact match for the mapping, so it could not be
+ * handed back either. Report unsupported and let callers take their
+ * bounded-allocation path, which is what the platform can honour. */
 /* memmap.h has already included <sys/mman.h> in this case; sysconf and
  * _SC_PAGESIZE need <unistd.h> as well. */
 #include <unistd.h>
