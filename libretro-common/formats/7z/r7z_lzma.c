@@ -274,41 +274,11 @@
    p2          = prob_lit + (offs + bit + symbol); \
    RC_GET_BIT_2(p2, symbol, offs ^= bit, ;)
 
-/* Branchless matched-literal step, same construction as the plain
- * literal above. The offs update (which is what makes the matched
- * literal degenerate into a normal one once the bits disagree) becomes
- * a masked xor rather than a conditional. */
-#define MATCHED_LITER_DEC_BL \
-   { \
-      uint32_t pv, bnd, m, upd; \
-      match_byte += match_byte; \
-      bit         = offs; \
-      offs       &= match_byte; \
-      p2          = prob_lit + (offs + bit + symbol); \
-      pv          = *p2; \
-      RC_NORMALIZE \
-      bnd   = (range >> NUM_MODEL_BITS) * pv; \
-      m     = (uint32_t)0 - (uint32_t)(code >= bnd); \
-      upd   = pv - (BIT_MODEL_OFFSET & ~m); \
-      *p2   = (uint16_t)(pv - (uint32_t)((int32_t)upd >> NUM_MOVE_BITS)); \
-      range = bnd + ((range - bnd - bnd) & m); \
-      code -= bnd & m; \
-      symbol = (symbol + symbol) + (m & 1); \
-      offs  ^= bit & ~m; \
-   }
-
 #undef TREE_DECODE
 #define TREE_DECODE(base, limit, dest) \
    { \
       dest = 1; \
       do { TREE_GET_BIT(base, dest) } while (dest < (limit)); \
-      dest -= (limit); \
-   }
-
-#define TREE_DECODE_BL(base, limit, dest) \
-   { \
-      dest = 1; \
-      do { TREE_GET_BIT_BL(base, dest) } while (dest < (limit)); \
       dest -= (limit); \
    }
 
@@ -754,8 +724,9 @@ int rlzma_dec_decode(rlzma_dec_t *dec,
             {
                /* Overlapping copy: run-length semantics fall out of a
                 * forward copy, so memcpy is not usable. Copying in
-                * rep0-sized blocks lets each block be non-overlapping
-                * and doubles the run each time round. */
+                * rep0-sized blocks keeps every block's source and
+                * destination disjoint, since each block reads only bytes
+                * written before it started. */
                uint32_t done = 0;
                while (done < copy_len)
                {
