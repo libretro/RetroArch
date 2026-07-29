@@ -628,9 +628,16 @@ static bool utf16_to_char(uint8_t **utf_data,
       p++;
    {
       size_t in_len = (size_t)(p - in);
-      utf16_conv_utf8(NULL, dest_len, in, in_len);
-      *dest_len  += 1;
-      if ((*utf_data = (uint8_t*)malloc(*dest_len)) != 0)
+      /* Single pass with a worst-case allocation instead of the
+       * count-then-encode double pass: a UTF-16 unit encodes to at
+       * most three UTF-8 bytes (a surrogate pair is two units for
+       * four bytes, i.e. two bytes per unit), so 3n + 1 always fits
+       * and the counting pass cost half the throughput of this
+       * function. The buffer is short-lived - the only caller copies
+       * out of it and frees it immediately. */
+      if (in_len > (((size_t)-1) - 1) / 3)
+         return false;
+      if ((*utf_data = (uint8_t*)malloc(3 * in_len + 1)) != 0)
          return utf16_conv_utf8(*utf_data, dest_len, in, in_len);
    }
    return false;
