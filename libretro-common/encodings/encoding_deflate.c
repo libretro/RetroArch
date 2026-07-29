@@ -290,7 +290,13 @@ enum rinf_phase
 /* A canonical-huffman decode table.  We use a two-level scheme: a direct
  * lookup on the low FAST_BITS bits, and for codes longer than FAST_BITS a
  * small linear/step search via the canonical first-code arrays. */
-#define RINF_FAST_BITS 9
+/* 11 bits: the dynamic litlen tables photographic PNG streams build
+ * put most of their code mass at 8-11 bits, which a 9-bit table sent
+ * to the canonical slow path.  The tables are per-stream heap state,
+ * so the growth (4 KB -> 16 KB of packed entries per table) costs
+ * nothing per decode; the splat loop in rinf_build touches each
+ * table entry once per dynamic block, which is noise. */
+#define RINF_FAST_BITS 11
 #define RINF_MAX_BITS  15
 
 struct rinf_huff
@@ -299,6 +305,17 @@ struct rinf_huff
     * (bit-reversed reading order) equal b and len<=FAST_BITS; len==0 means
     * "not a complete code, use the slow path". */
    uint16_t fast[1 << RINF_FAST_BITS];
+   /* Packed fast entries for the litlen/dist tables, consumed only by
+    * the fast inner loop.  One lookup yields everything a symbol needs:
+    * bits 0-3 code length (0 = long code, take the fast[]/slow path),
+    * bits 4-8 extra-bit count, bit 9 literal, bit 10 end-of-block, bit
+    * 11 invalid symbol (litlen 286/287, dist 30/31 - real codes a
+    * hostile dynamic header can define, which must fail exactly as the
+    * scalar lane fails them), bits 16-31 base value (the literal byte,
+    * the length base or the distance base).  Code length and extra
+    * bits are consumed with one fused shift.  Left all-zero for the
+    * code-length table, which the fast loop never touches. */
+   uint32_t pfast[1 << RINF_FAST_BITS];
    /* Canonical decode for the slow path. */
    uint16_t firstcode[RINF_MAX_BITS + 1];  /* first canonical code of len  */
    int      firstsym[RINF_MAX_BITS + 1];   /* symbol index of that code    */
@@ -525,6 +542,82 @@ static int rinf_decode(struct rinflate *s, struct rinf_huff *h)
    return -2;
 }
 
+
+/* length/distance base + extra-bit tables */
+static const uint16_t rinf_len_base[29] = {
+   3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,
+   67,83,99,115,131,163,195,227,258 };
+static const uint8_t rinf_len_extra[29] = {
+   0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0 };
+static const uint16_t rinf_dist_base[30] = {
+   1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,
+   1025,1537,2049,3073,4097,6145,8193,12289,16385,24577 };
+static const uint8_t rinf_dist_extra[30] = {
+   0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13 };
+
+/* order of code-length code lengths (RFC 1951 3.2.7) */
+static const uint8_t rinf_clc_order[19] = {
+   16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
+
+/* Populate pfast[] from a freshly built fast[]; layout in the struct
+ * note.  Two variants because the litlen and distance base tables
+ * differ. */
+#define RINF_PF_LIT  (1u << 9)
+#define RINF_PF_EOB  (1u << 10)
+#define RINF_PF_BAD  (1u << 11)
+
+static void rinf_pack_len(struct rinf_huff *h)
+{
+   int j;
+   for (j = 0; j < (1 << RINF_FAST_BITS); j++)
+   {
+      uint16_t f = h->fast[j];
+      uint32_t e = 0;
+      if (f)
+      {
+         int sym = f >> 4;
+         int len = f & 15;
+         if (sym < 256)
+            e = (uint32_t)len | RINF_PF_LIT | ((uint32_t)sym << 16);
+         else if (sym == 256)
+            e = (uint32_t)len | RINF_PF_EOB;
+         else if (sym - 257 < 29)
+            /* Bits [4:8] hold the code-plus-extra TOTAL, not the extra
+             * count: the critical-path shift that advances to the next
+             * code then uses the field directly, and the extra count
+             * for the value mask falls off the path as total - len. */
+            e = (uint32_t)len
+              | ((uint32_t)(len + rinf_len_extra[sym - 257]) << 4)
+              | ((uint32_t)rinf_len_base[sym - 257] << 16);
+         else
+            e = (uint32_t)len | RINF_PF_BAD;
+      }
+      h->pfast[j] = e;
+   }
+}
+
+static void rinf_pack_dist(struct rinf_huff *h)
+{
+   int j;
+   for (j = 0; j < (1 << RINF_FAST_BITS); j++)
+   {
+      uint16_t f = h->fast[j];
+      uint32_t e = 0;
+      if (f)
+      {
+         int sym = f >> 4;
+         int len = f & 15;
+         if (sym < 30)
+            e = (uint32_t)len
+              | ((uint32_t)(len + rinf_dist_extra[sym]) << 4)
+              | ((uint32_t)rinf_dist_base[sym] << 16);
+         else
+            e = (uint32_t)len | RINF_PF_BAD;
+      }
+      h->pfast[j] = e;
+   }
+}
+
 /* fixed huffman tables (RFC 1951 3.2.6) */
 /* The fixed tables are the same two tables every time - RFC 1951 states
  * their code lengths outright - so a stream that emits a run of fixed
@@ -555,25 +648,11 @@ static void rinf_fixed_tables(struct rinflate *s)
       dd[i] = 5;
    rinf_build(&s->lencode, ll, 288);
    rinf_build(&s->distcode, dd, 30);
+   rinf_pack_len(&s->lencode);
+   rinf_pack_dist(&s->distcode);
    s->have_tables  = 1;
    s->fixed_loaded = 1;
 }
-
-/* length/distance base + extra-bit tables */
-static const uint16_t rinf_len_base[29] = {
-   3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,
-   67,83,99,115,131,163,195,227,258 };
-static const uint8_t rinf_len_extra[29] = {
-   0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0 };
-static const uint16_t rinf_dist_base[30] = {
-   1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,
-   1025,1537,2049,3073,4097,6145,8193,12289,16385,24577 };
-static const uint8_t rinf_dist_extra[30] = {
-   0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13 };
-
-/* order of code-length code lengths (RFC 1951 3.2.7) */
-static const uint8_t rinf_clc_order[19] = {
-   16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15 };
 
 /* emit a byte to the output + window, updating adler */
 static int rinf_emit(struct rinflate *s, uint8_t b)
@@ -857,12 +936,15 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                { s->error = 1; goto error; }
             if (!rinf_build(&s->distcode, s->lengths + s->hlit, s->hdist))
                { s->error = 1; goto error; }
+            rinf_pack_len(&s->lencode);
+            rinf_pack_dist(&s->distcode);
             s->have_tables = 1;
             s->copy_active = 0;
             s->phase = RINF_BLOCK_DATA;
             break;
 
          case RINF_BLOCK_DATA:
+fast_again:
             if (s->have_pending_lit)
             {
                if (!rinf_emit(s, s->pending_lit)) goto suspend;
@@ -892,14 +974,35 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                size_t   out_pos      = s->out_pos;
                const uint8_t *in     = s->in;
                uint8_t       *out    = s->out;
-               const uint16_t *lfast = s->lencode.fast;
-               const uint16_t *dfast = s->distcode.fast;
+               const uint32_t *plen  = s->lencode.pfast;
+               const uint32_t *pdist = s->distcode.pfast;
                int      done_fast    = 0;
 
-               while (in_pos + 8 <= s->in_size
-                     && out_pos + 258 + 1 <= s->out_size)
+               /* The output guard reserves the longest match plus the
+                * copy over-run pad: the inlined copies below write in
+                * whole 8- or 16-byte steps and may run up to 15 bytes
+                * past the match end.  Those bytes lie beyond out_pos,
+                * so they are scratch - either rewritten by later output
+                * or beyond the produced length entirely.  The margin in
+                * the careful path's hand-back check must stay equal to
+                * this one: a larger value there would re-enter a loop
+                * whose own guard immediately fails, bouncing control
+                * between the two paths without progress. */
                {
-                  int sym;
+               /* Preload carrier: at the end of a match copy the next
+                * code's low table-index bits are already final - the
+                * refill only ORs into bits at or above bitcnt - so the
+                * next litlen entry can be fetched before the copy's
+                * stores retire, hiding the table load under them.  The
+                * entry is only trusted when at least 15 bits were
+                * buffered at preload time (a full code's worth), which
+                * mirrors the literal chain's own reuse condition. */
+               uint32_t e_pre    = 0;
+               int      have_pre = 0;
+               while (in_pos + 8 <= s->in_size
+                     && out_pos + 258 + 16 <= s->out_size)
+               {
+                  uint32_t e;
                   /* Refill only when the buffer cannot already cover a
                    * whole length/distance group - litlen (15) + length
                    * extra (5) + distance (15) + distance extra (13) = 48
@@ -942,73 +1045,142 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                      in_pos += (size_t)nb_;
                      bitcnt += nb_ * 8;
                   }
+                  if (have_pre)
                   {
-                     uint16_t f = lfast[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
-                     if (f)
-                     {
-                        int l   = f & 15;
-                        bitbuf >>= l;
-                        bitcnt  -= l;
-                        sym      = f >> 4;
-                     }
-                     else
-                     {
-                        /* Long code: hand back to the shared decoder. */
-                        s->bitbuf = bitbuf;
-                        s->bitcnt = bitcnt;
-                        s->in_pos = in_pos;
-                        sym       = rinf_decode(s, &s->lencode);
-                        bitbuf    = s->bitbuf;
-                        bitcnt    = s->bitcnt;
-                        in_pos    = s->in_pos;
-                        if (sym < -1)
-                        {
-                           s->out_pos = out_pos;
-                           goto error;
-                        }
-                        if (sym == -1)
-                           break;
-                     }
+                     e        = e_pre;
+                     have_pre = 0;
                   }
-                  if (sym < 256)
+                  else
+                     e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
+                  /* Literal chain: after one refill the buffer holds at
+                   * least 48 bits, and every packed literal costs at
+                   * most 15, so several literals can be emitted before
+                   * the next refill.  bitcnt >= 15 before each lookup
+                   * guarantees the entry's code length is covered; the
+                   * output side is covered by the loop guard's 258+16
+                   * reserve, which no chain can outrun (a literal code
+                   * is at least one bit, so at most 47 emissions). */
+                  while (e & RINF_PF_LIT)
                   {
-                     out[out_pos++] = (uint8_t)sym;
+                     bitbuf >>= (e & 15);
+                     bitcnt  -= (int)(e & 15);
+                     out[out_pos++] = (uint8_t)(e >> 16);
+                     if (bitcnt < 15)
+                        break;
+                     e = plen[bitbuf & ((1 << RINF_FAST_BITS) - 1)];
+                  }
+                  if (e & RINF_PF_LIT)
+                     continue;      /* broke for a refill; guards re-run */
+                  /* A non-literal group needs up to 48 buffered bits
+                   * (15 + 5 + 15 + 13); a chain can leave fewer.  Retry
+                   * through the loop head, which refills. */
+                  if (bitcnt < 48 && e)
                      continue;
-                  }
-                  if (sym == 256)
+                  if (!e)
                   {
+                     /* Long code: hand back to the shared decoder. */
+                     int sym;
+                     s->bitbuf = bitbuf;
+                     s->bitcnt = bitcnt;
+                     s->in_pos = in_pos;
+                     sym       = rinf_decode(s, &s->lencode);
+                     bitbuf    = s->bitbuf;
+                     bitcnt    = s->bitcnt;
+                     in_pos    = s->in_pos;
+                     if (sym < -1)
+                     {
+                        s->out_pos = out_pos;
+                        goto error;
+                     }
+                     if (sym == -1)
+                        break;
+                     if (sym < 256)
+                     {
+                        out[out_pos++] = (uint8_t)sym;
+                        continue;
+                     }
+                     if (sym == 256)
+                     {
+                        s->phase = s->bfinal
+                           ? (s->wrapped ? RINF_ADLER : RINF_DONE)
+                           : RINF_BLOCK_HDR;
+                        done_fast = 1;
+                        break;
+                     }
+                     if (sym - 257 >= 29)
+                     {
+                        s->error   = 1;
+                        s->out_pos = out_pos;
+                        goto error;
+                     }
+                     /* Re-enter the packed flow with a synthesised
+                      * entry; the code bits are already consumed, so its
+                      * code length is zero and the packed total in bits
+                      * [4:8] degenerates to the extra count - the same
+                      * encoding either way. */
+                     e = ((uint32_t)rinf_len_extra[sym - 257] << 4)
+                       | ((uint32_t)rinf_len_base[sym - 257] << 16);
+                     if (bitcnt < 33)
+                     {
+                        /* Not enough buffered bits for the extra-bits
+                         * and distance group without a refill the loop
+                         * guard may no longer permit; park the decoded
+                         * symbol in the careful path's resume state and
+                         * let it finish this one group. */
+                        s->ld_lensym = sym - 257;
+                        s->ld_step   = 1;
+                        break;
+                     }
+                  }
+                  if (e & RINF_PF_EOB)
+                  {
+                     bitbuf >>= (e & 15);
+                     bitcnt  -= (int)(e & 15);
                      s->phase = s->bfinal
                         ? (s->wrapped ? RINF_ADLER : RINF_DONE)
                         : RINF_BLOCK_HDR;
                      done_fast = 1;
                      break;
                   }
+                  if (e & RINF_PF_BAD)
                   {
-                     int li = sym - 257, dsym, ei;
+                     s->error   = 1;
+                     s->out_pos = out_pos;
+                     goto error;
+                  }
+                  {
+                     int dsym, ei;
                      uint32_t length, dist;
-                     if (li >= 29)
                      {
-                        s->error   = 1;
-                        s->out_pos = out_pos;
-                        goto error;
-                     }
-                     ei     = rinf_len_extra[li];
-                     length = rinf_len_base[li];
-                     if (ei)
-                     {
-                        length += (uint32_t)(bitbuf & ((1u << ei) - 1));
-                        bitbuf >>= ei;
-                        bitcnt  -= ei;
+                        int l  = (int)(e & 15);
+                        int t  = (int)((e >> 4) & 31);
+                        length = (e >> 16)
+                              + (uint32_t)((bitbuf >> l)
+                                    & (((uint64_t)1 << (t - l)) - 1));
+                        bitbuf >>= t;
+                        bitcnt  -= t;
                      }
                      {
-                        uint16_t fd = dfast[bitbuf
+                        uint32_t d = pdist[bitbuf
                            & ((1 << RINF_FAST_BITS) - 1)];
-                        if (fd)
+                        if (d & RINF_PF_BAD)
                         {
-                           int dl   = fd & 15;
-                           bitbuf >>= dl;
-                           bitcnt  -= dl;
-                           dsym     = fd >> 4;
+                           s->error   = 1;
+                           s->out_pos = out_pos;
+                           goto error;
+                        }
+                        if (d)
+                        {
+                           /* Length consumed at most 20 bits of the 48
+                            * the head guaranteed, so the full distance
+                            * group (15 + 13) is always covered here. */
+                           int dl  = (int)(d & 15);
+                           int dt  = (int)((d >> 4) & 31);
+                           dist    = (d >> 16)
+                                 + (uint32_t)((bitbuf >> dl)
+                                       & (((uint64_t)1 << (dt - dl)) - 1));
+                           bitbuf >>= dt;
+                           bitcnt  -= dt;
                         }
                         else
                         {
@@ -1022,25 +1194,39 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                            if (dsym < 0)
                            {
                               if (dsym == -1)
+                              {
+                                 /* Bits ran short mid-group; park the
+                                  * assembled length for the careful
+                                  * path to finish. */
+                                 s->ld_length = length;
+                                 s->ld_step   = 2;
                                  break;
+                              }
                               s->out_pos = out_pos;
                               goto error;
                            }
+                           if (dsym >= 30)
+                           {
+                              s->error   = 1;
+                              s->out_pos = out_pos;
+                              goto error;
+                           }
+                           ei   = rinf_dist_extra[dsym];
+                           dist = rinf_dist_base[dsym];
+                           if (ei)
+                           {
+                              if (bitcnt < ei)
+                              {
+                                 s->ld_length  = length;
+                                 s->ld_distsym = dsym;
+                                 s->ld_step    = 3;
+                                 break;
+                              }
+                              dist  += (uint32_t)(bitbuf & ((1u << ei) - 1));
+                              bitbuf >>= ei;
+                              bitcnt  -= ei;
+                           }
                         }
-                     }
-                     if (dsym >= 30)
-                     {
-                        s->error   = 1;
-                        s->out_pos = out_pos;
-                        goto error;
-                     }
-                     ei   = rinf_dist_extra[dsym];
-                     dist = rinf_dist_base[dsym];
-                     if (ei)
-                     {
-                        dist  += (uint32_t)(bitbuf & ((1u << ei) - 1));
-                        bitbuf >>= ei;
-                        bitcnt  -= ei;
                      }
                      if (dist > out_pos + s->whave)
                      {
@@ -1050,29 +1236,93 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                      }
                      if (dist <= out_pos)
                      {
+                        /* All copies below run in whole 8-byte steps
+                         * (constant-size memcpy compiles to one move,
+                         * not a call) and may write up to 7 bytes past
+                         * the match end - covered by the loop guard's
+                         * pad.  Short distances replicate the pattern:
+                         * 1/2/4 broadcast into a 64-bit word; 3/5/6/7
+                         * prime 16 bytes serially, after which 8-byte
+                         * chunks at distance dist*(16/dist) >= 9 both
+                         * preserve the period and never load a byte
+                         * stored in the same step. */
                         uint8_t       *dst  = out + out_pos;
                         const uint8_t *srcp = dst - dist;
-                        if (dist >= length)
-                           memcpy(dst, srcp, length);
-                        else if (dist == 1) /* run of a single byte */
-                           memset(dst, srcp[0], length);
-                        else
+                        uint8_t       *dend = dst + length;
+                        if (dist >= 16)
                         {
-                           /* overlapping run: grow the copied region by
-                            * doubling so we memcpy progressively larger
-                            * blocks instead of one byte at a time */
-                           uint32_t cdone = dist;
-                           memcpy(dst, srcp, dist);
-                           while (cdone < length)
+                           do
                            {
-                              uint32_t chunk = cdone;
-                              if (chunk > length - cdone)
-                                 chunk = length - cdone;
-                              memcpy(dst + cdone, dst, chunk);
-                              cdone += chunk;
+                              memcpy(dst, srcp, 16);
+                              dst  += 16;
+                              srcp += 16;
+                           } while (dst < dend);
+                        }
+                        else if (dist >= 8)
+                        {
+                           do
+                           {
+                              memcpy(dst, srcp, 8);
+                              dst  += 8;
+                              srcp += 8;
+                           } while (dst < dend);
+                        }
+                        else if (dist == 1)
+                        {
+                           uint64_t pat = (uint64_t)srcp[0]
+                                 * 0x0101010101010101ull;
+                           do
+                           {
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
+                           } while (dst < dend);
+                        }
+                        else if (dist == 2 || dist == 4)
+                        {
+                           uint64_t pat;
+                           if (dist == 2)
+                           {
+                              uint16_t w;
+                              memcpy(&w, srcp, 2);
+                              pat = (uint64_t)w * 0x0001000100010001ull;
+                           }
+                           else
+                           {
+                              uint32_t w;
+                              memcpy(&w, srcp, 4);
+                              pat = (uint64_t)w | ((uint64_t)w << 32);
+                           }
+                           do
+                           {
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
+                           } while (dst < dend);
+                        }
+                        else /* dist 3, 5, 6, 7 */
+                        {
+                           size_t k;
+                           size_t prime = length < 16 ? (size_t)length : 16;
+                           for (k = 0; k < prime; k++)
+                              dst[k] = srcp[k];
+                           if (length > 16)
+                           {
+                              uint32_t D        = dist * (16 / dist);
+                              uint8_t *p        = dst + 16;
+                              const uint8_t *q  = p - D;
+                              do
+                              {
+                                 memcpy(p, q, 8);
+                                 p += 8;
+                                 q += 8;
+                              } while (p < dend);
                            }
                         }
                         out_pos += length;
+                        e_pre    = plen[bitbuf
+                              & ((1 << RINF_FAST_BITS) - 1)];
+                        have_pre = (bitcnt >= 15);
                      }
                      else
                      {
@@ -1083,6 +1333,7 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
                         break;
                      }
                   }
+               }
                }
 
                s->bitbuf  = bitbuf;
@@ -1095,6 +1346,23 @@ int rinflate_process(void *data, size_t *read, size_t *wrote)
 
             for (;;)
             {
+               /* The careful path exists for boundary states - a copy
+                * or a length/distance group straddling a slice edge, a
+                * long Huffman code, tight margins.  Once the boundary
+                * state is resolved and the margins are comfortable
+                * again, hand control straight back to the fast loop:
+                * without this, one straddling match at a slice edge
+                * left the whole next slice on the symbol-at-a-time
+                * path (the fast block only ran on entry to the phase),
+                * which was most of them, since a 32 KB output slice
+                * almost always fills mid-match.  The first iteration
+                * after a fast-loop exit fails these margin checks by
+                * construction, so this cannot spin. */
+               if (   !s->copy_active && s->ld_step == 0
+                   && !s->have_pending_lit
+                   && s->in_pos + 8 <= s->in_size
+                   && s->out_pos + 258 + 16 <= s->out_size)
+                  goto fast_again;
                /* finish any pending back-reference copy first */
                if (s->copy_active)
                {
