@@ -14538,7 +14538,7 @@ static void settings_build_video(
             ADD_DESC(vid_desc_20);
          }
 
-#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__)
+#if defined(HAVE_THREADS) && !defined(__PSL1GHT__) && !defined(__PS3__) && !defined(__APPLE__)
          /* Descriptor holdout: value target outside settings_t. */
          CONFIG_BOOL(
                list, list_info,
