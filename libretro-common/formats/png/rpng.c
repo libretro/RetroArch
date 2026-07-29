@@ -177,10 +177,25 @@ struct rpng_process
    uint32_t *palette;
    void *stream;
    const struct trans_stream_backend *stream_backend;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   uint8_t *pair_scanline;     /* second decode row for the wavefront
-                                * pair path; see the pair kernels     */
+   /* Unfiltering runs in place inside the inflate ring wherever a
+    * kernel's stores cannot clobber raw bytes a later step still
+    * needs: None, Up, the prefix and stride-exact Sub widths, and
+    * Average/Paeth at stride == window (bpp 4 and 8).  For those, a
+    * line's decoded bytes overwrite its raw bytes and the previous
+    * line's ring slot doubles as the prev pointer; held is that
+    * slot's byte size, excluded from restore_buf_size until the next
+    * line no longer needs it, so the ring cannot recycle it.  The
+    * remaining filter/bpp combinations keep their wide window stores
+    * and decode out of place into three rotating scratch lines -
+    * three, because the wavefront pair needs two fresh lines while a
+    * third may still be the pair's prev.  scratch[0] starts zeroed
+    * and serves as row 0's prev; scratch_cur indexes the most
+    * recently written line, so (cur + 1) % 3 and (cur + 2) % 3 are
+    * always free. */
+   uint8_t       *scratch[3];
+   unsigned       scratch_cur;
+   const uint8_t *prev_line;
+   size_t         held;
    uint8_t *inflate_buf;      /* walking read cursor for the filters     */
    uint8_t *inflate_base;     /* fixed allocation base: inflate writes at
                                * inflate_base + inflated_total, immune to
@@ -372,7 +387,7 @@ static void rpng_filter_up(uint8_t *out,
  *
  * All three helpers assume:
  *   - bpp == 4, pitch is a multiple of 4 (guaranteed by PNG spec for RGBA)
- *   - prev is a valid prev_scanline pointer (zero-initialised on row 0
+ *   - prev is a valid previous-line pointer (a zero line on row 0
  *     by rpng_reverse_filter_init -> calloc)
  *   - raw and decoded may alias (the original code memcpy's raw->decoded
  *     first; we do the filter in-place from raw directly)
@@ -446,21 +461,6 @@ static INLINE void rpng_store4_u8(uint8_t *p, __m128i v)
    memcpy(p, &tmp, sizeof(tmp));
 }
 
-/* Sub is a byte prefix sum at pixel stride, and a prefix sum has a
- * log-depth form: a shift-add tree at byte distances s, 2s, 4s, ...
- * (every multiple of s up to 15 is a subset sum of those), then one
- * add of the inter-block carry.  The tree only involves the current
- * block, so it runs entirely off the loop-carried chain; the chain is
- * the carry add plus the broadcast that derives the next carry from
- * the block's last pixel, two to four ops per 16 bytes against one
- * per pixel for the windowed loop.
- *
- * That trade only wins where the windowed loop's ceiling (bpp bytes
- * per cycle, one paddb each) is below the tree's: strides 1, 2 and 4.
- * At 3, 6 and 8 bytes per pixel the windowed chain already meets or
- * beats the tree's block rate, so those strides keep the window.
- * (wuffs vectorizes none of this below stride 4, and nothing at 16-bit
- * strides at all.) */
 static void rpng_filter_sub_prefix1(uint8_t *decoded,
       const uint8_t *raw, size_t pitch)
 {
@@ -564,7 +564,8 @@ static void rpng_filter_sub_simd(uint8_t *decoded,
          prev_pixel  = out;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    /* Leading bpp bytes have no left neighbour and stay as-is. */
    if (i < bpp)
       i = bpp < pitch ? bpp : pitch;
@@ -603,7 +604,8 @@ static void rpng_filter_avg_simd(uint8_t *decoded,
          prev_pixel  = out;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    for (; i < bpp && i < pitch; i++)
       decoded[i] += prev[i] >> 1;
    for (; i < pitch; i++)
@@ -709,7 +711,8 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
          prev_upper_left = pv;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    /* A scanline shorter than the vector window leaves i == 0, so the
     * leading bpp bytes still have to go through the a == c == 0 case
     * (Paeth(0, b, 0) == b) before the general tail can index i - bpp. */
@@ -980,10 +983,6 @@ static INLINE void rpng_store4_u8(uint8_t *p, uint8x8_t v)
    memcpy(p, &word, sizeof(word));
 }
 
-/* Sub as a byte prefix sum at strides 1, 2 and 4; see the SSE2 side
- * for the derivation and for why strides 3, 6 and 8 keep the windowed
- * per-pixel loop.  A left byte shift of a whole q register is
- * vextq(zero, x, 16 - k). */
 static void rpng_filter_sub_prefix1(uint8_t *decoded,
       const uint8_t *raw, size_t pitch)
 {
@@ -1087,7 +1086,8 @@ static void rpng_filter_sub_simd(uint8_t *decoded,
          prev_pixel    = out;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    if (i < bpp)
       i = bpp < pitch ? bpp : pitch;
    for (; i < pitch; i++)
@@ -1121,7 +1121,8 @@ static void rpng_filter_avg_simd(uint8_t *decoded,
          prev_pixel    = out;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    for (; i < bpp && i < pitch; i++)
       decoded[i] += prev[i] >> 1;
    for (; i < pitch; i++)
@@ -1221,7 +1222,8 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
          prev_upper_left = pv;
       }
    }
-   memcpy(decoded + i, raw + i, pitch - i);
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
    /* A scanline shorter than the vector window leaves i == 0, so the
     * leading bpp bytes still have to go through the a == c == 0 case
     * (Paeth(0, b, 0) == b) before the general tail can index i - bpp. */
@@ -2237,15 +2239,16 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
 {
    if (!pngp)
       return;
-   if (pngp->decoded_scanline)
-      free(pngp->decoded_scanline);
-   pngp->decoded_scanline = NULL;
-   if (pngp->prev_scanline)
-      free(pngp->prev_scanline);
-   pngp->prev_scanline    = NULL;
-   if (pngp->pair_scanline)
-      free(pngp->pair_scanline);
-   pngp->pair_scanline    = NULL;
+   if (pngp->scratch[0])
+      free(pngp->scratch[0]);
+   if (pngp->scratch[1])
+      free(pngp->scratch[1]);
+   if (pngp->scratch[2])
+      free(pngp->scratch[2]);
+   pngp->scratch[0] = NULL;
+   pngp->scratch[1] = NULL;
+   pngp->scratch[2] = NULL;
+   pngp->prev_line  = NULL;
 
    pngp->flags           &= ~RPNG_PROCESS_FLAG_PASS_INITIALIZED;
    pngp->h                = 0;
@@ -2314,16 +2317,18 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
       return -1;
 
    pngp->restore_buf_size      = 0;
-   pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
-   pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
-#if defined(RPNG_HAVE_PAIR_KERNELS)
-   pngp->pair_scanline         = (uint8_t*)calloc(1, pngp->pitch);
-   if (!pngp->pair_scanline)
-      goto error;
-#endif
+   pngp->held                  = 0;
+   /* scratch[0] doubles as row 0's zero prev; scratch_cur starts at 0
+    * so the first out-of-place line (cur ^= 1) lands in scratch[1],
+    * leaving the zeroes intact while anything still points at them. */
+   pngp->scratch[0]            = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->scratch[1]            = (uint8_t*)malloc(pngp->pitch);
+   pngp->scratch[2]            = (uint8_t*)malloc(pngp->pitch);
+   pngp->scratch_cur           = 0;
 
-   if (!pngp->prev_scanline || !pngp->decoded_scanline)
+   if (!pngp->scratch[0] || !pngp->scratch[1] || !pngp->scratch[2])
       goto error;
+   pngp->prev_line             = pngp->scratch[0];
 
    pngp->h                    = 0;
    pngp->flags               |= RPNG_PROCESS_FLAG_PASS_INITIALIZED;
@@ -2374,6 +2379,28 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
 {
+   /* In-place when the kernel tolerates dec aliasing raw: None does
+    * no work, Up and the prefix Subs load before every store, and at
+    * stride == window the window kernels' spill lanes land exactly on
+    * their own next input.  At stride < window a wide store would
+    * clobber raw bytes the next step re-reads, and width-exact stores
+    * measure worse (a 1-3 byte store feeding an overlapping 4-byte
+    * load stalls forwarding every pixel), so those combinations keep
+    * their wide stores and decode into alternating scratch lines
+    * instead. */
+   uint8_t       *dec = pngp->inflate_buf;
+   const uint8_t *raw = pngp->inflate_buf;
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+   if (!(   filter == PNG_FILTER_NONE
+         || filter == PNG_FILTER_UP
+         || (filter == PNG_FILTER_SUB
+               && pngp->bpp != 3 && pngp->bpp != 6)
+         || (pngp->bpp == 4 || pngp->bpp == 8)))
+   {
+      pngp->scratch_cur = (pngp->scratch_cur + 1) % 3;
+      dec = pngp->scratch[pngp->scratch_cur];
+   }
+#endif
 #if !defined(RPNG_SIMD_SSE2) && !defined(RPNG_SIMD_NEON)
    unsigned i;
 #endif
@@ -2381,77 +2408,57 @@ static int rpng_reverse_filter_copy_line(uint32_t *data,
    switch (filter)
    {
       case PNG_FILTER_NONE:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
       case PNG_FILTER_SUB:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         rpng_filter_sub_simd(pngp->decoded_scanline,
-               pngp->inflate_buf, pngp->pitch, pngp->bpp);
+         rpng_filter_sub_simd(dec, raw, pngp->pitch, pngp->bpp);
          break;
 #else
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
+            dec[i] += dec[i - pngp->bpp];
          break;
 #endif
       case PNG_FILTER_UP:
          /* Filter Up is a pure vector add—no inter-byte dependency. */
-         rpng_filter_up(pngp->decoded_scanline,
-               pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
+         rpng_filter_up(dec, raw, pngp->prev_line, pngp->pitch);
          break;
       case PNG_FILTER_AVERAGE:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         rpng_filter_avg_simd(pngp->decoded_scanline,
-               pngp->inflate_buf, pngp->prev_scanline,
+         rpng_filter_avg_simd(dec, raw, pngp->prev_line,
                pngp->pitch, pngp->bpp);
          break;
 #else
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
-         {
-            uint8_t avg = pngp->prev_scanline[i] >> 1;
-            pngp->decoded_scanline[i] += avg;
-         }
+            dec[i] += (uint8_t)(pngp->prev_line[i] >> 1);
          for (i = pngp->bpp; i < pngp->pitch; i++)
-         {
-            uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-            pngp->decoded_scanline[i] += avg;
-         }
+            dec[i] += (uint8_t)((dec[i - pngp->bpp]
+                  + pngp->prev_line[i]) >> 1);
          break;
 #endif
       case PNG_FILTER_PAETH:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
          /* Stride-generic: every bpp benefits, not just RGBA8. */
-         rpng_filter_paeth_simd(pngp->decoded_scanline,
-               pngp->inflate_buf, pngp->prev_scanline,
+         rpng_filter_paeth_simd(dec, raw, pngp->prev_line,
                pngp->pitch, pngp->bpp);
          break;
 #else
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
+            dec[i] += pngp->prev_line[i];
          for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += (uint8_t)rpng_paeth(
-                  pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i],
-                  pngp->prev_scanline[i - pngp->bpp]);
+            dec[i] += (uint8_t)rpng_paeth(dec[i - pngp->bpp],
+                  pngp->prev_line[i], pngp->prev_line[i - pngp->bpp]);
          break;
 #endif
       default:
          return IMAGE_PROCESS_ERROR_END;
    }
 
-   rpng_reverse_filter_convert(data, ihdr, pngp, pngp->decoded_scanline);
+rpng_reverse_filter_convert(data, ihdr, pngp, dec);
 
-   /* Swap scanline pointers instead of copying — the current decoded
-    * scanline becomes the previous scanline for the next row.
-    * Both buffers are the same size (pitch bytes), allocated in
-    * rpng_reverse_filter_init, so swapping is always safe. */
-   {
-      uint8_t *tmp           = pngp->prev_scanline;
-      pngp->prev_scanline    = pngp->decoded_scanline;
-      pngp->decoded_scanline = tmp;
-   }
+   /* The line just unfiltered becomes the previous line; its ring
+    * slot stays protected through pngp->held until the next line has
+    * consumed it. */
+   pngp->prev_line = dec;
 
    return IMAGE_PROCESS_NEXT;
 }
@@ -2464,17 +2471,20 @@ static int rpng_reverse_filter_regular_iterate(
 #if defined(RPNG_HAVE_PAIR_KERNELS)
    /* Wavefront pair: when the next two scanlines are fully inflated,
     * contiguous in the ring and carry the same chain-bound filter,
-    * unfilter them in one interleaved pass (see the pair kernels).
-    * Residency: total_out - restore_buf_size is exactly the inflated,
-    * not yet consumed byte count on the regular path; the interlaced
-    * path only filters once its whole pass is resident, so the check
-    * is conservative there.  Contiguity: the ring recycles only at
-    * whole-line boundaries, so two lines are contiguous unless the
-    * second would start past the ring end. */
+    * unfilter them in one interleaved pass (see the pair kernels),
+    * in place, the second row's up neighbour being the first row's
+    * bytes as they decode.  Residency: total_out - restore_buf_size
+    * - held is exactly the inflated, not yet unfiltered byte count on
+    * the regular path; the interlaced path only filters once its
+    * whole pass is resident, so the check is conservative there.
+    * Contiguity: the ring recycles only at whole-line boundaries, so
+    * two lines are contiguous unless the second would start past the
+    * ring end. */
    if (pngp->h + 2 <= ihdr->height)
    {
       size_t line = (size_t)pngp->pitch + 1;
-      if (   pngp->total_out - pngp->restore_buf_size >= 2 * line
+      if (      pngp->total_out - pngp->restore_buf_size - pngp->held
+             >= 2 * line
           && (   pngp->ring_size >= pngp->inflate_buf_size
               ||    pngp->inflate_buf + 2 * line
                  <= pngp->inflate_base + pngp->ring_size))
@@ -2486,27 +2496,55 @@ static int rpng_reverse_filter_regular_iterate(
          {
             const uint8_t *raw0 = pngp->inflate_buf + 1;
             const uint8_t *raw1 = raw0 + line;
-            uint8_t *tmp;
-            if (f0 == PNG_FILTER_PAETH)
-               rpng_filter_paeth_pair(pngp->decoded_scanline,
-                     pngp->pair_scanline, raw0, raw1,
-                     pngp->prev_scanline, pngp->pitch, pngp->bpp);
+            uint8_t *dec0;
+            uint8_t *dec1;
+            int in_place = (pngp->bpp == 4 || pngp->bpp == 8);
+            if (in_place)
+            {
+               /* Stride == window: the wide stores land exactly on
+                * their own next input, so decode in the ring. */
+               dec0 = pngp->inflate_buf + 1;
+               dec1 = dec0 + line;
+            }
             else
-               rpng_filter_avg_pair(pngp->decoded_scanline,
-                     pngp->pair_scanline, raw0, raw1,
-                     pngp->prev_scanline, pngp->pitch, pngp->bpp);
+            {
+               /* Stride < window: wide stores would clobber raw, so
+                * take the next two free scratch lines. */
+               unsigned i0 = (pngp->scratch_cur + 1) % 3;
+               unsigned i1 = (pngp->scratch_cur + 2) % 3;
+               dec0 = pngp->scratch[i0];
+               dec1 = pngp->scratch[i1];
+               pngp->scratch_cur = i1;
+            }
+            if (f0 == PNG_FILTER_PAETH)
+               rpng_filter_paeth_pair(dec0, dec1, raw0, raw1,
+                     pngp->prev_line, pngp->pitch, pngp->bpp);
+            else
+               rpng_filter_avg_pair(dec0, dec1, raw0, raw1,
+                     pngp->prev_line, pngp->pitch, pngp->bpp);
             rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
-                  pngp->decoded_scanline);
+                  dec0);
             rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
-                  ihdr, pngp, pngp->pair_scanline);
-            /* The second row's decode becomes the previous scanline;
-             * the old previous buffer takes its place as scratch. */
-            tmp                  = pngp->prev_scanline;
-            pngp->prev_scanline  = pngp->pair_scanline;
-            pngp->pair_scanline  = tmp;
-            pngp->h             += 2;
-            pngp->inflate_buf   += 2 * line;
-            pngp->restore_buf_size += 2 * line;
+                  ihdr, pngp, dec1);
+            if (in_place)
+            {
+               /* Release the line the pair's first row used as prev
+                * and the first row itself; the second row is the new
+                * prev and stays held so the ring cannot recycle its
+                * slot. */
+               pngp->restore_buf_size += pngp->held + line;
+               pngp->held              = line;
+            }
+            else
+            {
+               /* Scratch lines need no ring protection: release both
+                * raw lines and anything held. */
+               pngp->restore_buf_size += pngp->held + 2 * line;
+               pngp->held              = 0;
+            }
+            pngp->prev_line         = dec1;
+            pngp->h                += 2;
+            pngp->inflate_buf      += 2 * line;
             if (    pngp->ring_size < pngp->inflate_buf_size
                 &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
                pngp->inflate_buf = pngp->inflate_base;
@@ -2519,7 +2557,6 @@ static int rpng_reverse_filter_regular_iterate(
    if (pngp->h < ihdr->height)
    {
       unsigned filter         = *pngp->inflate_buf++;
-      pngp->restore_buf_size += 1;
       ret                     = rpng_reverse_filter_copy_line(pngp->out_cursor,
             ihdr, pngp, filter);
       if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
@@ -2529,8 +2566,22 @@ static int rpng_reverse_filter_regular_iterate(
       goto end;
 
    pngp->h++;
+   /* Consume-late: a line unfiltered in place is the next line's
+    * prev, living in the ring, so the previously held line is
+    * released and this one held in its stead.  A line decoded into
+    * scratch needs no ring protection: release it and any held line
+    * at once. */
+   if (pngp->prev_line == pngp->inflate_buf)
+   {
+      pngp->restore_buf_size   += pngp->held;
+      pngp->held                = (size_t)pngp->pitch + 1;
+   }
+   else
+   {
+      pngp->restore_buf_size   += pngp->held + pngp->pitch + 1;
+      pngp->held                = 0;
+   }
    pngp->inflate_buf           += pngp->pitch;
-   pngp->restore_buf_size      += pngp->pitch;
 
    /* Recycling window: the ring is a whole number of scanlines, so
     * the cursor lands exactly on the ring end between lines and
@@ -2544,6 +2595,11 @@ static int rpng_reverse_filter_regular_iterate(
    return IMAGE_PROCESS_NEXT;
 
 end:
+   /* Nothing will use the held line as prev any more; fold it into
+    * the consumed count so the full-buffer rewind below and the
+    * ring's free-space arithmetic both see every processed byte. */
+   pngp->restore_buf_size += pngp->held;
+   pngp->held              = 0;
    rpng_reverse_filter_deinit(pngp);
 
    if (pngp->ring_size < pngp->inflate_buf_size)
@@ -3383,14 +3439,19 @@ int rpng_process_image(rpng_t *rpng,
    }
 
    /* A scanline is one filter byte plus pitch bytes; pull one inflate
-    * slice when the next one has not fully arrived. */
+    * slice when the next one has not fully arrived.  held bytes are
+    * already unfiltered in place - they lag restore_buf_size only to
+    * keep their ring slot out of the recycling window - so they do
+    * not count as an available raw line. */
    if (   !(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED)
        &&   rpng->process->total_out - rpng->process->restore_buf_size
+              - rpng->process->held
           < (size_t)rpng->process->pitch + 1)
    {
       if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
          goto error;
       if (   rpng->process->total_out - rpng->process->restore_buf_size
+               - rpng->process->held
            < (size_t)rpng->process->pitch + 1)
          return IMAGE_PROCESS_NEXT;
    }
@@ -3405,12 +3466,12 @@ error:
        * buffers and the inflate window may all still be live here. */
       if (rpng->process->data)
          free(rpng->process->data);
-      if (rpng->process->prev_scanline)
-         free(rpng->process->prev_scanline);
-      if (rpng->process->decoded_scanline)
-         free(rpng->process->decoded_scanline);
-      if (rpng->process->pair_scanline)
-         free(rpng->process->pair_scanline);
+      if (rpng->process->scratch[0])
+         free(rpng->process->scratch[0]);
+      if (rpng->process->scratch[1])
+         free(rpng->process->scratch[1]);
+      if (rpng->process->scratch[2])
+         free(rpng->process->scratch[2]);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
@@ -3436,12 +3497,12 @@ void rpng_free(rpng_t *rpng)
        * window. */
       if (rpng->process->data)
          free(rpng->process->data);
-      if (rpng->process->prev_scanline)
-         free(rpng->process->prev_scanline);
-      if (rpng->process->decoded_scanline)
-         free(rpng->process->decoded_scanline);
-      if (rpng->process->pair_scanline)
-         free(rpng->process->pair_scanline);
+      if (rpng->process->scratch[0])
+         free(rpng->process->scratch[0]);
+      if (rpng->process->scratch[1])
+         free(rpng->process->scratch[1]);
+      if (rpng->process->scratch[2])
+         free(rpng->process->scratch[2]);
       if (rpng->process->inflate_base)
          free(rpng->process->inflate_base);
       if (rpng->process->stream)
