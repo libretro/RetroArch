@@ -181,6 +181,7 @@ static bool font_init_first(
                return true;
             }
          }
+         break;
 #endif
 #ifdef HAVE_SDL2
 #if SDL_VERSION_ATLEAST(2, 0, 18)
