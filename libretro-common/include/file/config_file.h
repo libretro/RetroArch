@@ -57,10 +57,33 @@ enum config_file_flags
    CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES = (1 << 1)
 };
 
+/* Per-entry ownership bits (struct config_entry_list::flags).
+ * Entries parsed from a buffer the conf owns borrow their key and
+ * value strings from it - the strings live exactly as long as the
+ * conf, no per-entry allocation or copy is made, and the free paths
+ * skip them.  Entries created or overwritten through config_set_*
+ * own heap strings as before.  Treat key/value of entries with a
+ * BORROWED bit as read-only storage. */
+#define CONF_ENTRY_FLG_KEY_BORROWED (1 << 0)
+#define CONF_ENTRY_FLG_VAL_BORROWED (1 << 1)
+
+/* A text buffer owned by a config_file that entries borrow from.
+ * 'io' is the interface the buffer came from (NULL: plain free). */
+struct config_file_owned_buf
+{
+   struct config_file_owned_buf *next;
+   char *data;
+   const struct config_file_io *io;
+};
+
 struct config_file
 {
    char *path;
    struct config_entry_list **entries_map;
+   /* Chain of adopted text buffers entries borrow from (see
+    * CONF_ENTRY_FLG_*); released at deinitialize, spliced to the
+    * parent on include/append pilfering. */
+   struct config_file_owned_buf *owned_bufs;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
@@ -268,6 +291,8 @@ struct config_entry_list
    /* If we got this from an #include,
     * do not allow overwrite. */
    bool readonly;
+   /* CONF_ENTRY_FLG_* ownership bits */
+   uint8_t flags;
 };
 
 struct config_file_entry

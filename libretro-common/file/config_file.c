@@ -72,10 +72,110 @@ struct config_include_list
  * per-byte __ctype_b table load from the two hottest scan loops. */
 #define CONFIG_FILE_ISGRAPH(c) ((unsigned char)((unsigned char)(c) - 0x21) < 0x5e)
 
+/* Internal key hash for the entries map (murmur3-32 over 4-byte
+ * words).  rhmap's default rhmap_hash_string is FNV-1a, whose
+ * one-multiply-per-byte dependency chain was the largest single
+ * cost left in the parse profile after the fused scan; mixing four
+ * bytes per step cuts that chain ~4x on typical 10-30 byte keys.
+ * The hash is purely module-internal: every insert, lookup and
+ * delete on entries_map goes through the _FULL rhmap macros with
+ * this value (the three direct RHMAP_*_STR pokes configuration.c
+ * used to make were converted to config_get_entry), it is never
+ * serialized, and stored hashes travel verbatim through the
+ * pilfer/merge paths, so insert- and lookup-side agreement is the
+ * only requirement - pinned by the hash-agreement test in
+ * samples/file/config_file and by the differential fuzzer.
+ * Word loads go through memcpy (alignment-safe) and stay strictly
+ * inside [s, s+len), so no over-read at buffer ends; the result is
+ * endian-dependent, which is fine for a per-process table. */
+static uint32_t config_file_hash_span(const char *s, size_t _len)
+{
+   uint32_t h = 0x811c9dc5u ^ (uint32_t)_len;
+   uint32_t k;
+   while (_len >= 4)
+   {
+      memcpy(&k, s, 4);
+      k    *= 0xcc9e2d51u;
+      k     = (k << 15) | (k >> 17);
+      k    *= 0x1b873593u;
+      h    ^= k;
+      h     = (h << 13) | (h >> 19);
+      h     = h * 5 + 0xe6546b64u;
+      s    += 4;
+      _len -= 4;
+   }
+   if (_len)
+   {
+      k = 0;
+      memcpy(&k, s, _len);
+      k *= 0xcc9e2d51u;
+      k  = (k << 15) | (k >> 17);
+      k *= 0x1b873593u;
+      h ^= k;
+   }
+   h ^= h >> 16;
+   h *= 0x85ebca6bu;
+   h ^= h >> 13;
+   h *= 0xc2b2ae35u;
+   h ^= h >> 16;
+   return (h ? h : 1);
+}
+
+static uint32_t config_file_hash_key(const char *key)
+{
+   return config_file_hash_span(key, strlen(key));
+}
+
+/* Internal parse option: entries borrow key/value strings from the
+ * buffer being parsed instead of copying them out.  Only legal when
+ * the conf owns that buffer for its whole lifetime (adopted via
+ * config_file_adopt_buffer) - the load paths qualify, the public
+ * from_string (caller-owned buffer) and the streaming window
+ * (slides) do not. */
+#define CONFIG_FILE_PARSE_BORROW (1 << 0)
+
+/* Shared storage for borrowed empty values: flagged VAL_BORROWED so
+ * it is never freed, and never written through (see the read-only
+ * contract on CONF_ENTRY_FLG_* in config_file.h). */
+static char config_file_empty_value[1] = "";
+
+/* Take ownership of a text buffer entries will borrow from.
+ * Returns false on allocation failure - the caller then parses
+ * without BORROW and frees the buffer itself as before. */
+static bool config_file_adopt_buffer(config_file_t *conf,
+      char *buf, const config_file_io_t *io)
+{
+   struct config_file_owned_buf *node = (struct config_file_owned_buf*)
+         malloc(sizeof(*node));
+   if (!node)
+      return false;
+   node->data      = buf;
+   node->io        = io;
+   node->next      = conf->owned_bufs;
+   conf->owned_bufs = node;
+   return true;
+}
+
+static void config_file_free_owned(config_file_t *conf)
+{
+   struct config_file_owned_buf *b = conf->owned_bufs;
+   while (b)
+   {
+      struct config_file_owned_buf *hold = b;
+      b = b->next;
+      if (hold->io)
+         hold->io->free_file(hold->data, hold->io->ud);
+      else
+         free(hold->data);
+      free(hold);
+   }
+   conf->owned_bufs = NULL;
+}
+
 /* Forward declaration */
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb,
-      uint32_t *khash);
+      uint32_t *khash, unsigned p_opts);
 
 static int config_file_sort_compare_func(struct config_entry_list *a,
       struct config_entry_list *b)
@@ -233,7 +333,8 @@ static char *config_file_strip_comment(char *str)
    return NULL;
 }
 
-static char *config_file_extract_value(char *line)
+static char *config_file_extract_value(char *line, unsigned p_opts,
+      uint8_t *vflags)
 {
    while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
       line++;
@@ -249,21 +350,39 @@ static char *config_file_extract_value(char *line)
     * literal */
    if (*line == '"')
    {
-      size_t idx  = 0;
-      char *value = NULL;
       /* Skip to next character */
       line++;
 
       /* If this a ("), then value string is empty */
       if (*line != '"')
       {
-         /* Find the next (") character */
-         while (line[idx] && (line[idx] != '\"'))
-            idx++;
+         /* Find the next (") character.  strchr is the libc's
+          * vectorized scan; the previous byte loop walked the
+          * value one compare at a time.  An unterminated literal
+          * keeps the old semantics: everything to end of line is
+          * the value. */
+         size_t idx;
+         char *end = strchr(line, '\"');
+         idx       = end ? (size_t)(end - line) : strlen(line);
 
          line[idx] = '\0';
-         if ((value = line) && *value)
-            return strdup(value);
+         if (idx)
+         {
+            char *value;
+            if (p_opts & CONFIG_FILE_PARSE_BORROW)
+            {
+               /* The literal is already NUL-terminated in place -
+                * the conf owns this buffer, so the entry can point
+                * straight at it. */
+               *vflags |= CONF_ENTRY_FLG_VAL_BORROWED;
+               return line;
+            }
+            /* Length is known - copy directly instead of strdup
+             * re-walking the value to find it again. */
+            if ((value = (char*)malloc(idx + 1)))
+               memcpy(value, line, idx + 1);
+            return value;
+         }
       }
    }
    /* This is not a string literal - just read
@@ -272,18 +391,33 @@ static char *config_file_extract_value(char *line)
    else if (*line != '\0')
    {
       size_t idx  = 0;
-      char *value = NULL;
       /* Find next space character */
       while (line[idx] && CONFIG_FILE_ISGRAPH(line[idx]))
          idx++;
 
       line[idx] = '\0';
-      if ((value = line) && *value)
-         return strdup(value);
+      if (idx)
+      {
+         char *value;
+         if (p_opts & CONFIG_FILE_PARSE_BORROW)
+         {
+            *vflags |= CONF_ENTRY_FLG_VAL_BORROWED;
+            return line;
+         }
+         if ((value = (char*)malloc(idx + 1)))
+            memcpy(value, line, idx + 1);
+         return value;
+      }
    }
 
    /* Note 2: Return an empty string.
-    * calloc gives us a NUL-terminated empty string in one call. */
+    * calloc gives us a NUL-terminated empty string in one call;
+    * borrowed entries share one static instead. */
+   if (p_opts & CONFIG_FILE_PARSE_BORROW)
+   {
+      *vflags |= CONF_ENTRY_FLG_VAL_BORROWED;
+      return config_file_empty_value;
+   }
    return (char*)calloc(1, 1);
 }
 
@@ -293,6 +427,19 @@ static void config_file_add_child_list(config_file_t *parent,
 {
    struct config_entry_list *list = child->entries;
    bool merge_hash_map            = false;
+
+   /* The child's entries borrow from buffers the child owns; the
+    * entries are pilfered below, so the buffers must move with
+    * them. */
+   if (child->owned_bufs)
+   {
+      struct config_file_owned_buf *tail = child->owned_bufs;
+      while (tail->next)
+         tail = tail->next;
+      tail->next         = parent->owned_bufs;
+      parent->owned_bufs = child->owned_bufs;
+      child->owned_bufs  = NULL;
+   }
 
    /* set list readonly */
    while (list)
@@ -498,7 +645,7 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
  * the buffer and any cleanup of @conf).
  **/
 static int config_file_parse_buffer(config_file_t *conf,
-      char *buf, size_t len, config_file_cb_t *cb)
+      char *buf, size_t len, config_file_cb_t *cb, unsigned p_opts)
 {
    char *line = buf;
 
@@ -531,11 +678,12 @@ static int config_file_parse_buffer(config_file_t *conf,
          return -1;
 
       list->readonly  = false;
+      list->flags     = 0;
       list->key       = NULL;
       list->value     = NULL;
       list->next      = NULL;
 
-      if (config_file_parse_line(conf, list, line, cb, &hash))
+      if (config_file_parse_line(conf, list, line, cb, &hash, p_opts))
       {
          if (conf->entries)
             conf->tail->next = list;
@@ -616,8 +764,24 @@ static int config_file_load_internal(
    conf->path          = new_path;
    conf->include_depth = depth;
 
+   /* Adopt the buffer so entries can borrow key/value strings
+    * straight out of it - no per-entry allocation or copy.  On
+    * adopt failure (OOM) fall back to the copying parse and free
+    * the buffer as before.  Once adopted, teardown owns it on
+    * every path, including a mid-parse -1: the caller frees the
+    * conf, which releases the buffer after the borrowed pointers
+    * into it are dropped. */
+   if (config_file_adopt_buffer(conf, buf, io))
+   {
+      if (config_file_parse_buffer(conf, buf,
+            (length > 0) ? (size_t)length : 0, cb,
+            CONFIG_FILE_PARSE_BORROW) != 0)
+         return -1;
+      return 0;
+   }
+
    if (config_file_parse_buffer(conf, buf,
-         (length > 0) ? (size_t)length : 0, cb) != 0)
+         (length > 0) ? (size_t)length : 0, cb, 0) != 0)
    {
       io->free_file(buf, io->ud);
       free(conf->path);
@@ -638,7 +802,7 @@ int config_file_load_file(config_file_t *conf, const char *path,
 
 static bool config_file_parse_line(config_file_t *conf,
       struct config_entry_list *list, char *line, config_file_cb_t *cb,
-      uint32_t *khash)
+      uint32_t *khash, unsigned p_opts)
 {
    size_t idx            = 0;
    char *key             = NULL;
@@ -664,7 +828,7 @@ static bool config_file_parse_line(config_file_t *conf,
          char *include_line = comment + (sizeof("include ")-1);
          if (*include_line == '\0')
             return false;
-         if (!(path = config_file_extract_value(include_line)))
+         if (!(path = config_file_extract_value(include_line, 0, NULL)))
             return false;
          if (     *path == '\0'
                || conf->include_depth >= MAX_INCLUDE_DEPTH)
@@ -707,7 +871,7 @@ static bool config_file_parse_line(config_file_t *conf,
          char *reference_line = comment + (sizeof("reference ")-1);
          if (*reference_line == '\0')
             return false;
-         if (!(path = config_file_extract_value(reference_line)))
+         if (!(path = config_file_extract_value(reference_line, 0, NULL)))
             return false;
          config_file_add_reference(conf, path);
          if (!path)
@@ -719,52 +883,52 @@ static bool config_file_parse_line(config_file_t *conf,
    /* Skip to first non-space character */
    while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
       line++;
-   /* Measure key length first (up to next non-graph char),
-    * then copy once - avoids malloc+realloc growth pattern.
-    * The FNV-1a hash the entries map needs is folded into the
-    * same scan: the profiled parse spent ~10% of its time in
-    * rhmap_hash_string re-walking key bytes this loop had just
-    * classified.  The fold below is bit-identical to
-    * rhmap_hash_string (same seed, same per-byte step, same
-    * zero-avoidance), which the differential test in
-    * samples/file/config_file verifies against the real thing. */
+   /* Measure the key span (up to next non-graph char) and hash it
+    * with the word-at-a-time internal hash; the classify loop is a
+    * compare-only walk with no multiply chain, and the hash then
+    * advances four bytes per step over the known span instead of
+    * one.  In BORROW mode nothing is copied: the key's terminating
+    * NUL is written into the buffer only once the line has proven
+    * valid ('=' present, value extracted), overwriting a
+    * whitespace/'=' byte the parse has already consumed - so an
+    * invalid line bails with the buffer untouched and nothing
+    * allocated. */
    {
       const char *key_start = line;
-      uint32_t h            = (uint32_t)0x811c9dc5;
       while (CONFIG_FILE_ISGRAPH(*line))
-      {
-         h = (h * (uint32_t)0x01000193) ^ (uint32_t)(unsigned char)*line;
          line++;
-      }
       idx = (size_t)(line - key_start);
       if (idx == 0)
          return false;
-      if (!(key = (char*)malloc(idx + 1)))
+      *khash = config_file_hash_span(key_start, idx);
+      /* An entry without a value is invalid */
+      while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
+         line++;
+      /* If we don't have an equal sign here,
+       * we've got an invalid string. */
+      if (*line != '=')
          return false;
-      memcpy(key, key_start, idx);
-      key[idx] = '\0';
-      *khash   = (h ? h : 1);
-   }
-   /* Add key and value entries to list */
-   list->key     = key;
-   /* An entry without a value is invalid */
-   while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
       line++;
-   /* If we don't have an equal sign here,
-    * we've got an invalid string. */
-   if (*line != '=')
-   {
-      list->value = NULL;
-      list->key   = NULL;
-      free(key);
-      return false;
-   }
-   line++;
-   if (!(list->value   = config_file_extract_value(line)))
-   {
-      list->key   = NULL;
-      free(key);
-      return false;
+      if (!(list->value = config_file_extract_value(line, p_opts,
+            &list->flags)))
+         return false;
+      if (p_opts & CONFIG_FILE_PARSE_BORROW)
+      {
+         ((char*)key_start)[idx] = '\0';
+         list->flags |= CONF_ENTRY_FLG_KEY_BORROWED;
+         list->key    = (char*)key_start;
+         return true;
+      }
+      if (!(key = (char*)malloc(idx + 1)))
+      {
+         if (!(list->flags & CONF_ENTRY_FLG_VAL_BORROWED))
+            free(list->value);
+         list->value = NULL;
+         return false;
+      }
+      memcpy(key, key_start, idx);
+      key[idx]  = '\0';
+      list->key = key;
    }
    return true;
 }
@@ -782,7 +946,7 @@ static int config_file_from_string_internal(
     * loader's only in the (always NULL) callback - two places for
     * the grammar to drift apart.  Both now share
     * config_file_parse_buffer. */
-   return config_file_parse_buffer(conf, from_string, 0, NULL);
+   return config_file_parse_buffer(conf, from_string, 0, NULL, 0);
 }
 
 bool config_file_deinitialize(config_file_t *conf)
@@ -797,9 +961,9 @@ bool config_file_deinitialize(config_file_t *conf)
    while (tmp)
    {
       struct config_entry_list *hold = NULL;
-      if (tmp->key)
+      if (tmp->key && !(tmp->flags & CONF_ENTRY_FLG_KEY_BORROWED))
          free(tmp->key);
-      if (tmp->value)
+      if (tmp->value && !(tmp->flags & CONF_ENTRY_FLG_VAL_BORROWED))
          free(tmp->value);
 
       tmp->value = NULL;
@@ -830,6 +994,10 @@ bool config_file_deinitialize(config_file_t *conf)
       free(conf->path);
 
    RHMAP_FREE(conf->entries_map);
+
+   /* Borrowed key/value pointers into these buffers were all
+    * dropped above, so the backing text can go now. */
+   config_file_free_owned(conf);
 
    /* NULL out all pointer fields so that a caller who reuses the
     * struct after deinitialize() -- or who accidentally calls
@@ -899,6 +1067,18 @@ bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf)
       new_conf->tail->next = conf->entries;
       conf->entries        = new_conf->entries; /* Pilfer. */
       new_conf->entries    = NULL;
+   }
+
+   /* Pilfered entries borrow from buffers new_conf owns - splice
+    * them across before the free below releases them. */
+   if (new_conf->owned_bufs)
+   {
+      struct config_file_owned_buf *tail = new_conf->owned_bufs;
+      while (tail->next)
+         tail = tail->next;
+      tail->next           = conf->owned_bufs;
+      conf->owned_bufs     = new_conf->owned_bufs;
+      new_conf->owned_bufs = NULL;
    }
 
    config_file_free(new_conf);
@@ -1073,7 +1253,7 @@ bool config_file_stream_push(config_file_stream_t *stream,
          RHMAP_FIT(stream->conf->entries_map, stream->total_in / 32);
 
       if (config_file_parse_buffer(stream->conf, stream->win,
-            0, NULL) != 0)
+            0, NULL, 0) != 0)
       {
          stream->oom = true;
          return false;
@@ -1101,7 +1281,7 @@ config_file_t *config_file_stream_finish(config_file_stream_t *stream)
    /* Parse the final, newline-less tail as its last line */
    if (!stream->oom && stream->len)
    {
-      if (config_file_parse_buffer(conf, stream->win, 0, NULL) != 0)
+      if (config_file_parse_buffer(conf, stream->win, 0, NULL, 0) != 0)
          stream->oom = true;
    }
 
@@ -1137,6 +1317,7 @@ void config_file_initialize(struct config_file *conf)
       return;
 
    conf->path                     = NULL;
+   conf->owned_bufs               = NULL;
    conf->entries_map              = NULL;
    conf->entries                  = NULL;
    conf->tail                     = NULL;
@@ -1176,7 +1357,7 @@ static struct config_entry_list *config_get_entry_internal(
       const config_file_t *conf,
       const char *key, struct config_entry_list **prev)
 {
-   struct config_entry_list *entry = RHMAP_GET_STR(conf->entries_map, key);
+   struct config_entry_list *entry = RHMAP_GET_FULL(conf->entries_map, config_file_hash_key(key), key);
 
    if (entry)
       return entry;
@@ -1196,7 +1377,7 @@ static struct config_entry_list *config_get_entry_internal(
 struct config_entry_list *config_get_entry(
       const config_file_t *conf, const char *key)
 {
-   return RHMAP_GET_STR(conf->entries_map, key);
+   return RHMAP_GET_FULL(conf->entries_map, config_file_hash_key(key), key);
 }
 
 /**
@@ -1511,7 +1692,9 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
          {
             if (strcmp(entry->value, val) == 0)
                return;
-            free(entry->value);
+            if (!(entry->flags & CONF_ENTRY_FLG_VAL_BORROWED))
+               free(entry->value);
+            entry->flags &= (uint8_t)~CONF_ENTRY_FLG_VAL_BORROWED;
          }
          entry->value    = strdup(val);
          entry->readonly = false;
@@ -1522,6 +1705,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    if (!(entry = (struct config_entry_list*)malloc(sizeof(*entry))))
       return;
    entry->readonly  = false;
+   entry->flags     = 0;
    entry->next      = NULL;
    entry->key       = strdup(key);
    entry->value     = strdup(val);
@@ -1542,7 +1726,7 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    else
       conf->entries = entry;
    conf->last       = entry;
-   RHMAP_SET_STR(conf->entries_map, entry->key, entry);
+   RHMAP_SET_FULL(conf->entries_map, config_file_hash_key(entry->key), entry->key, entry);
 }
 
 void config_unset(config_file_t *conf, const char *key)
@@ -1558,16 +1742,17 @@ void config_unset(config_file_t *conf, const char *key)
    if (!(entry = config_get_entry_internal(conf, key, &last)))
       return;
 
-   (void)RHMAP_DEL_STR(conf->entries_map, entry->key);
+   (void)RHMAP_DEL_FULL(conf->entries_map, config_file_hash_key(entry->key), entry->key);
 
-   if (entry->key)
+   if (entry->key && !(entry->flags & CONF_ENTRY_FLG_KEY_BORROWED))
       free(entry->key);
 
-   if (entry->value)
+   if (entry->value && !(entry->flags & CONF_ENTRY_FLG_VAL_BORROWED))
       free(entry->value);
 
    entry->key     = NULL;
    entry->value   = NULL;
+   entry->flags   = 0;
    conf->flags   |= CONF_FILE_FLG_MODIFIED;
 }
 

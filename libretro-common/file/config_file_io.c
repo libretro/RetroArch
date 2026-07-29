@@ -130,28 +130,15 @@ config_file_t *config_file_new(const char *path)
 
 config_file_t *config_file_new_from_path_to_string(const char *path)
 {
-   const config_file_io_t *io;
-   char *buf     = NULL;
-   int64_t _len  = 0;
-
-   config_file_io_ensure_default();
-   io = config_file_get_io_default();
-
-   if ((buf = io->read_file(path, &_len, io->ud)))
-   {
-      config_file_t *conf = NULL;
-      /* Note: 'buf' is not used outside this function - we do not
-       * care that it will be modified by
-       * config_file_new_from_string() */
-      if (_len >= 0)
-         conf = config_file_new_from_string(buf, path);
-
-      io->free_file(buf, io->ud);
-
-      return conf;
-   }
-
-   return NULL;
+   /* Historically this read the file and re-parsed it through
+    * config_file_new_from_string; since the line loops were
+    * unified the two path constructors have identical behaviour
+    * (same parse, same include handling, path set before parsing,
+    * no callback), so route through config_file_new - which parses
+    * in borrow mode: the conf adopts the file buffer and entries
+    * point straight into it, skipping the per-entry key/value
+    * allocations and copies the from_string detour forced. */
+   return config_file_new(path);
 }
 
 /**

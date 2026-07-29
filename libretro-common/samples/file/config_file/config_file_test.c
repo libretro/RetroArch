@@ -602,6 +602,65 @@ static void test_config_file_pathless_reference_no_crash(void)
    config_file_free(cfg);
 }
 
+static void test_config_file_borrowed_entry_lifecycle(void)
+{
+   /* Path-loaded entries borrow their strings from the adopted file
+    * buffer.  Exercise every mutation path against borrowed
+    * entries - overwrite (must not free borrowed storage), unset
+    * (same), append pilfering (buffers must travel), then teardown
+    * (borrowed skipped, owned freed, buffers released) - under the
+    * suite's sanitizers this catches any wrong free or dangling
+    * borrow. */
+   const char *tmp_a = "/tmp/cfg_borrow_a.cfg";
+   const char *tmp_b = "/tmp/cfg_borrow_b.cfg";
+   FILE *f;
+   config_file_t *cfg;
+   char *out = NULL;
+
+   f = fopen(tmp_a, "w");
+   fprintf(f, "alpha = \"one\"\nbeta = \"two\"\ngamma = \"three\"\n");
+   fclose(f);
+   f = fopen(tmp_b, "w");
+   fprintf(f, "beta = \"TWO\"\ndelta = \"four\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(tmp_a)))
+      abort();
+
+   /* Overwrite a borrowed value with an owned one, twice */
+   config_set_string(cfg, "alpha", "replaced");
+   config_set_string(cfg, "alpha", "replaced-again");
+   if (!config_get_string(cfg, "alpha", &out) || strcmp(out, "replaced-again"))
+      abort();
+   free(out);
+   out = NULL;
+
+   /* Unset a borrowed entry */
+   config_unset(cfg, "gamma");
+   if (config_get_entry(cfg, "gamma"))
+      abort();
+
+   /* Append a second borrowed config: its buffers must move over */
+   if (!config_append_file(cfg, tmp_b))
+      abort();
+   if (!config_get_string(cfg, "delta", &out) || strcmp(out, "four"))
+      abort();
+   free(out);
+   out = NULL;
+   if (!config_get_string(cfg, "beta", &out) || strcmp(out, "TWO"))
+      abort();
+   free(out);
+   out = NULL;
+
+   /* New owned entry alongside borrowed ones */
+   config_set_string(cfg, "epsilon", "five");
+
+   config_file_free(cfg);
+   remove(tmp_a);
+   remove(tmp_b);
+   printf("[SUCCESS] borrowed-entry lifecycle (set/unset/append/free) clean\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -649,4 +708,5 @@ int main(void)
    test_config_file_stream_matches_from_string();
    test_config_file_stream_nul_ends_stream();
    test_config_file_pathless_reference_no_crash();
+   test_config_file_borrowed_entry_lifecycle();
 }
