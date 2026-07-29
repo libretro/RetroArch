@@ -730,7 +730,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WINRAW;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_ANDROID;
 #elif defined(HAVE_MFI)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_MFI;
-#elif defined(HAVE_SDL) || defined(HAVE_SDL2)
+#elif defined(HAVE_SDL) || defined(HAVE_SDL2) || defined(HAVE_SDL3)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL;
 #elif defined(DJGPP)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
