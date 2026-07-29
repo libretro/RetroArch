@@ -1,0 +1,52 @@
+name: CI Linux libretro-common tests
+
+# libretro-common/Makefile.test builds and runs the libcheck unit
+# suites under -fsanitize=address -fsanitize=undefined.  Nothing ran
+# it, which is how three of its suites came to reference sources that
+# had moved and one referenced a library it never linked: a suite that
+# cannot be built reads exactly like a suite that passes.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  libretro-common-tests:
+    name: Build and run libretro-common/Makefile.test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential check pkg-config \
+            zlib1g-dev lcov
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and run the unit test suites
+        shell: bash
+        working-directory: libretro-common
+        run: |
+          set -eu
+          # The recipe builds each suite, runs it, and collects
+          # coverage, in order -- coverage files collide otherwise.
+          # Any suite failing to build, or any check failing, or any
+          # sanitizer report, fails the job.
+          make -f Makefile.test \
+             LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
+             CFLAGS="$(pkg-config --cflags check)"
+          echo "[pass] libretro-common unit test suites"

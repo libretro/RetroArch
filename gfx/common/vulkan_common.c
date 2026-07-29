@@ -399,7 +399,15 @@ static void vulkan_debug_mark_object(VkDevice device,
    {
       char merged_name[1024];
       VkDebugUtilsObjectNameInfoEXT info;
+      /* strlcpy() returns the length of the SOURCE, not the number of
+       * bytes copied, so a name longer than the buffer would put
+       * merged_name + _len past the end and underflow the remaining
+       * size to near SIZE_MAX.  Every caller in tree passes a short
+       * literal, so this is not reachable today -- but the next one
+       * need not. */
       size_t _len                        = strlcpy(merged_name, name, sizeof(merged_name));
+      if (_len >= sizeof(merged_name))
+         _len                            = sizeof(merged_name) - 1;
       snprintf(merged_name + _len, sizeof(merged_name) - _len, " (%u)", count);
 
       info.sType                         = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -1059,8 +1067,7 @@ static const char *vulkan_optional_instance_extensions[] = {
 static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkInstanceCreateInfo *create_info)
 {
    VkResult res;
-   uint32_t i, layer_count;
-   VkLayerProperties properties[128];
+   uint32_t i;
    gfx_ctx_vulkan_data_t *vk        = (gfx_ctx_vulkan_data_t *)opaque;
    VkInstanceCreateInfo info        = *create_info;
    VkInstance instance              = VK_NULL_HANDLE;
@@ -1083,8 +1090,13 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       goto end;
    }
 
-   memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
-   memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
+   /* A caller enabling no extensions or no layers legitimately
+    * passes NULL with a zero count; memcpy's second argument is
+    * declared non-NULL even for n == 0, so guard each copy. */
+   if (info.enabledExtensionCount)
+      memcpy((void*)instance_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
+   if (info.enabledLayerCount)
+      memcpy((void*)instance_layers,     info.ppEnabledLayerNames,     info.enabledLayerCount     * sizeof(const char *));
    info.ppEnabledExtensionNames     = instance_extensions;
    info.ppEnabledLayerNames         = instance_layers;
 
@@ -1126,9 +1138,6 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
    instance_layers[info.enabledLayerCount++]         = "VK_LAYER_KHRONOS_validation";
    required_extensions[required_extension_count++] = "VK_EXT_debug_utils";
 #endif
-
-   layer_count = ARRAY_SIZE(properties);
-   vkEnumerateInstanceLayerProperties(&layer_count, properties);
 
    if (!(vulkan_find_instance_extensions(
             instance_extensions, &info.enabledExtensionCount,
@@ -3074,6 +3083,23 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       string_list_free(vk->gpu_list);
       vk->gpu_list = NULL;
    }
+
+#ifdef HAVE_THREADS
+   /* vulkan_context_init_device() creates a fresh queue_lock on
+    * every bring-up -- including the cached-context path, which
+    * restores the device and then falls through to slock_new() like
+    * any other init -- so the lock's lifetime ends here regardless
+    * of whether the device itself is being cached.  Everything that
+    * takes it (vulkan_present, the frame submission paths) is done
+    * by this point: vkDeviceWaitIdle() ran at the top of this
+    * function.  Freeing it here stops one slock leaking per driver
+    * reinit -- every resolution change and fullscreen toggle. */
+   if (vk->context.queue_lock)
+   {
+      slock_free(vk->context.queue_lock);
+      vk->context.queue_lock = NULL;
+   }
+#endif
 }
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
