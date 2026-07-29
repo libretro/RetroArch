@@ -686,8 +686,11 @@ static char *mb_to_mb_string_alloc(const char *str,
    if (!path_buf_wide_len)
       return strdup(str);
 
+   /* +1 element for the terminator; the old expression added
+    * sizeof(wchar_t) ELEMENTS (a byte count used as an element
+    * count), harmlessly over-allocating. */
    if ((path_buf_wide = (wchar_t*)
-      calloc(path_buf_wide_len + sizeof(wchar_t), sizeof(wchar_t))))
+      calloc((size_t)path_buf_wide_len + 1, sizeof(wchar_t))))
    {
       MultiByteToWideChar(cp_in, 0,
             str, -1, path_buf_wide, path_buf_wide_len);
@@ -700,7 +703,7 @@ static char *mb_to_mb_string_alloc(const char *str,
          if (path_buf_len)
          {
             char *path_buf = (char*)
-               calloc(path_buf_len + sizeof(char), sizeof(char));
+               calloc((size_t)path_buf_len + 1, sizeof(char));
 
             if (path_buf)
             {
