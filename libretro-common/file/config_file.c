@@ -946,6 +946,7 @@ struct config_file_stream
    size_t len;       /* unparsed bytes held at win[0..len)             */
    size_t total_in;  /* cumulative pushed bytes (map pre-sizing)       */
    bool oom;
+   bool ended;       /* an embedded NUL ended the stream (see push)    */
 };
 
 config_file_stream_t *config_file_stream_new(const char *path)
@@ -959,6 +960,7 @@ config_file_stream_t *config_file_stream_new(const char *path)
    st->len      = 0;
    st->total_in = 0;
    st->oom      = false;
+   st->ended    = false;
    if (!(st->conf = config_file_new_alloc()))
    {
       free(st);
@@ -985,8 +987,30 @@ bool config_file_stream_push(config_file_stream_t *stream,
 
    if (!stream || stream->oom)
       return false;
-   if (!data || !len)
+   if (!data || !len || stream->ended)
       return true;
+
+   /* An embedded NUL ends the stream, to keep streamed output
+    * structurally identical to handing the same bytes to
+    * config_file_new_from_string: the slurp path's line walk
+    * cannot see past a NUL (strchr stops there), so it parses the
+    * NUL-truncated line as its final line and drops everything
+    * after.  Without this clamp the stream would drop only to the
+    * end of the current window and then keep parsing later
+    * packets - a structural divergence on non-text input, found by
+    * inspection and pinned by the differential fuzzer.  Bytes
+    * before the NUL still parse; later pushes are accepted and
+    * discarded. */
+   {
+      const char *nulp = (const char*)memchr(data, '\0', len);
+      if (nulp)
+      {
+         len           = (size_t)(nulp - (const char*)data);
+         stream->ended = true;
+         if (!len)
+            return true;
+      }
+   }
 
    /* Grow the window to hold tail + packet + NUL */
    need = stream->len + len + 1;

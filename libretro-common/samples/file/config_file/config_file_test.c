@@ -537,6 +537,45 @@ static void test_config_file_stream_matches_from_string(void)
    printf("[SUCCESS] streamed parse matches from_string at packet sizes 1/7/4096\n");
 }
 
+static void test_config_file_stream_nul_ends_stream(void)
+{
+   /* An embedded NUL must end the stream the way it ends the slurp
+    * path's line walk: the truncated line parses as final, and
+    * everything after - even in later packets - is dropped.  Push
+    * byte-at-a-time so a packet boundary is guaranteed to fall
+    * between the NUL and the later lines (the divergent case the
+    * clamp exists for). */
+   static const char raw[] = "a = \"1\"\nb\0c = \"2\"\nd = \"3\"\n";
+   size_t raw_len          = sizeof(raw) - 1; /* keep embedded NUL */
+   config_file_stream_t *st = config_file_stream_new(NULL);
+   config_file_t *conf;
+   char *out               = NULL;
+   size_t i;
+
+   if (!st)
+      abort();
+   for (i = 0; i < raw_len; i++)
+      if (!config_file_stream_push(st, raw + i, 1))
+         abort();
+   if (!(conf = config_file_stream_finish(st)))
+      abort();
+
+   if (!config_get_string(conf, "a", &out))
+   {
+      printf("[FAILED] NUL-ended stream lost the entry before the NUL\n");
+      abort();
+   }
+   free(out);
+   out = NULL;
+   if (config_get_string(conf, "d", &out) || config_get_string(conf, "c", &out))
+   {
+      printf("[FAILED] NUL-ended stream parsed entries past the NUL\n");
+      abort();
+   }
+   printf("[SUCCESS] embedded NUL ends the stream with slurp semantics\n");
+   config_file_free(conf);
+}
+
 static void test_config_file_pathless_reference_no_crash(void)
 {
    /* '#reference' in a pathless string config previously handed a
@@ -608,5 +647,6 @@ int main(void)
    test_config_file_high_bit_bytes_smoke();
    test_config_file_hash_map_agreement();
    test_config_file_stream_matches_from_string();
+   test_config_file_stream_nul_ends_stream();
    test_config_file_pathless_reference_no_crash();
 }
