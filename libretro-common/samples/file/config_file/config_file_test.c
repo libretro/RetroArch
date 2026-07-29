@@ -373,6 +373,83 @@ static void test_config_file_high_bit_bytes_smoke(void)
    printf("[SUCCESS] high-bit byte in config parsed without crash\n");
 }
 
+static void test_config_file_hash_map_agreement(void)
+{
+   /* The parser computes each entry's map hash inline during its key
+    * scan instead of re-walking the key with rhmap_hash_string; every
+    * *lookup* still hashes with the real rhmap_hash_string.  So if the
+    * inline fold ever diverges from rhmap_hash_string for any key
+    * byte, the entry becomes unfindable through the map while still
+    * sitting in the entry list.  Parse a corpus that covers the whole
+    * accepted key alphabet (0x21..0x7e), then require that every
+    * listed key resolves through config_get_entry to the entry
+    * holding it. */
+   char cfgtext[8192];
+   size_t _len   = 0;
+   int i;
+   int checked   = 0;
+   int misses    = 0;
+   config_file_t *cfg           = NULL;
+   struct config_file_entry ent;
+
+   /* One key per accepted byte: k<byte>x = "v" */
+   for (i = 0x21; i <= 0x7e; i++)
+   {
+      if (i == '=' || i == '#' || i == '"')
+         continue; /* structural characters cannot appear bare */
+      _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+            "k%cx = \"v%d\"\n", (char)i, i);
+   }
+   /* Plus long keys and a duplicate */
+   _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+         "%s = \"long\"\n", "a_rather_long_configuration_key_name_to_cross_hash_word_sizes");
+   _len += snprintf(cfgtext + _len, sizeof(cfgtext) - _len,
+         "dup = \"first\"\ndup = \"second\"\n");
+
+   {
+      char *copy = strdup(cfgtext);
+      cfg        = config_file_new_from_string(copy, NULL);
+      free(copy);
+   }
+
+   if (!cfg)
+   {
+      printf("[FAILED] hash-map agreement: parse failed\n");
+      abort();
+   }
+
+   if (config_get_entry_list_head(cfg, &ent))
+   {
+      do
+      {
+         if (ent.key)
+         {
+            const struct config_entry_list *hit =
+                  config_get_entry(cfg, ent.key);
+            checked++;
+            if (!hit)
+               misses++;
+            /* The map keeps the *first* entry for a duplicated
+             * key; for unique keys the value must match. */
+            else if (strcmp(ent.key, "dup") && strcmp(hit->value, ent.value))
+               misses++;
+         }
+      } while (config_get_entry_list_next(&ent));
+   }
+
+   if (misses == 0 && checked > 80)
+      printf("[SUCCESS] all %d parsed keys resolve through the hash map\n",
+            checked);
+   else
+   {
+      printf("[FAILED] hash-map agreement: %d misses of %d keys\n",
+            misses, checked);
+      abort();
+   }
+
+   config_file_free(cfg);
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -416,4 +493,5 @@ int main(void)
 
    test_config_file_deinitialize_clears_fields();
    test_config_file_high_bit_bytes_smoke();
+   test_config_file_hash_map_agreement();
 }
