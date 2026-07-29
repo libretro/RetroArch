@@ -464,7 +464,19 @@ size_t config_file_add_reference(config_file_t *conf, char *path)
       conf->references->next = NULL;
       conf->references->path = NULL;
    }
-   _len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
+   /* A conf parsed from a string may have no path ("It is expected
+    * that the conf has it's path already set" was aspiration, not
+    * enforcement): a '#reference' directive then handed NULL to
+    * fill_pathname_abbreviated_or_relative, whose unconditional
+    * strlcpy(buf_b, in_refpath, ...) runs strlen on it - undefined
+    * behaviour, found by the differential fuzzer.  With no base
+    * path there is nothing to abbreviate against, so record the
+    * reference path verbatim - the same resolution fallback the
+    * '#include' handler adopted for pathless configs. */
+   if (!conf->path)
+      _len = strlcpy(short_path, path, sizeof(short_path));
+   else
+      _len = fill_pathname_abbreviated_or_relative(short_path, conf->path, path, sizeof(short_path));
    path_linked_list_add_path(conf->references, short_path);
    return _len;
 }

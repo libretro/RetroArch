@@ -27,6 +27,7 @@
 #include <errno.h>
 
 #include <file/config_file.h>
+#include <file/file_path.h>
 
 static void test_config_file_parse_contains(
       const char *cfgtext,
@@ -536,6 +537,32 @@ static void test_config_file_stream_matches_from_string(void)
    printf("[SUCCESS] streamed parse matches from_string at packet sizes 1/7/4096\n");
 }
 
+static void test_config_file_pathless_reference_no_crash(void)
+{
+   /* '#reference' in a pathless string config previously handed a
+    * NULL base path to fill_pathname_abbreviated_or_relative,
+    * whose strlcpy runs strlen on it - UB found by the
+    * differential fuzzer.  The reference must now be recorded
+    * verbatim. */
+   char *copy         = strdup("#reference \"some/other.cfg\"\nfoo = \"bar\"\n");
+   config_file_t *cfg = config_file_new_from_string(copy, NULL);
+
+   free(copy);
+   if (!cfg)
+      abort();
+   if (     !cfg->references
+         || !cfg->references->path
+         || strcmp(cfg->references->path, "some/other.cfg"))
+   {
+      printf("[FAILED] pathless #reference not recorded verbatim (got %s)\n",
+            (cfg->references && cfg->references->path)
+                  ? cfg->references->path : "(none)");
+      abort();
+   }
+   printf("[SUCCESS] pathless '#reference' recorded verbatim without UB\n");
+   config_file_free(cfg);
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -581,4 +608,5 @@ int main(void)
    test_config_file_high_bit_bytes_smoke();
    test_config_file_hash_map_agreement();
    test_config_file_stream_matches_from_string();
+   test_config_file_pathless_reference_no_crash();
 }
