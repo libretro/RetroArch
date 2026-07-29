@@ -790,8 +790,13 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
             }
             default:
                if (wav->bitspersample == 8)
+                  /* 8-bit PCM is unsigned with a bias of 128, so the
+                   * centred value is negative for the lower half of
+                   * the range and shifting it left is undefined.
+                   * Multiply instead; the result is identical on every
+                   * representation and defined on all of them. */
                   out[done * ch + c] =
-                        (short)(((int)p[c] - 128) << 8);
+                        (short)(((int)p[c] - 128) * 256);
                else if (wav->bitspersample == 24)
                   out[done * ch + c] = rwav_s24_to_s16(p + c * 3);
                else
