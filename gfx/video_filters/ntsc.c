@@ -21,6 +21,14 @@
 
 typedef struct { int Y, I, Q; } yiq_t;
 
+/* Scratch for one worker: four line buffers plus the YIQ cache.  Held
+ * per thread rather than on the stack - as locals these came to 45264
+ * bytes of frame in the work callback, against the 64 KB thread stack
+ * rthreads asks for on Vita. */
+#define NTSC_SCRATCH_INTS  (4 * NTSC_MAX_WIDTH * 2)
+#define NTSC_SCRATCH_BYTES (NTSC_SCRATCH_INTS * sizeof(int) \
+      + NTSC_MAX_WIDTH * sizeof(yiq_t))
+
 struct softfilter_thread_data {
    void       *out_data;
    const void *in_data;
@@ -29,6 +37,12 @@ struct softfilter_thread_data {
    unsigned    width;
    unsigned    height;
    int         first;
+   void       *scratch;
+   int        *cbuf;
+   int        *lineI;
+   int        *lineQ;
+   int        *lineY;
+   yiq_t      *yiq_cache;
 };
 
 struct filter_data {
@@ -106,8 +120,8 @@ static void ntsc_process_line(const struct filter_data *filt,
       
       // Notch filter optimized for system-specific bandwidth
       int notchedY = (filt->c64_mode) ? 
-         (cbuf[i_m1] + (cbuf[x] << 1) + cbuf[i_p1]) >> 2 :
-         (cbuf[i_m2] + (cbuf[i_m1] << 2) + (cbuf[x] * 6) + (cbuf[i_p1] << 2) + cbuf[i_p2]) >> 4;
+         (cbuf[i_m1] + (cbuf[x] * 2) + cbuf[i_p1]) >> 2 :
+         (cbuf[i_m2] + (cbuf[i_m1] * 4) + (cbuf[x] * 6) + (cbuf[i_p1] * 4) + cbuf[i_p2]) >> 4;
 
       lineY[x] = ((notchedY * (256 - filt->artifacts)) + (cbuf[x] * filt->artifacts)) >> 8;
    }
@@ -134,14 +148,15 @@ static void ntsc_process_line(const struct filter_data *filt,
    }
 }
 
+static void ntsc_destroy(void *data);
+
 static void ntsc_work_cb(void *data, void *thread_data) {
    struct filter_data *filt = (struct filter_data*)data;
    struct softfilter_thread_data *thr = (struct softfilter_thread_data*)thread_data;
-   int cbuf[NTSC_MAX_WIDTH * 2], lineI[NTSC_MAX_WIDTH * 2], lineQ[NTSC_MAX_WIDTH * 2], lineY[NTSC_MAX_WIDTH * 2];
-   yiq_t yiq_cache[NTSC_MAX_WIDTH];
    for (unsigned y = 0; y < thr->height; y++) {
       void *dst = (uint8_t*)thr->out_data + (y * thr->out_pitch);
-      ntsc_process_line(filt, thr, y, cbuf, lineI, lineQ, lineY, yiq_cache, dst);
+      ntsc_process_line(filt, thr, y, thr->cbuf, thr->lineI, thr->lineQ,
+            thr->lineY, thr->yiq_cache, dst);
    }
 }
 
@@ -183,6 +198,24 @@ static void *ntsc_create(const struct softfilter_config *config,
    }
    filt->threads = threads;
    filt->workers = (struct softfilter_thread_data*)calloc(threads, sizeof(struct softfilter_thread_data));
+   if (!filt->workers) {
+      free(filt);
+      return NULL;
+   }
+   for (unsigned i = 0; i < threads; i++) {
+      struct softfilter_thread_data *thr = &filt->workers[i];
+      /* one block per worker, so the four line buffers and the YIQ
+       * cache stay adjacent rather than landing in five allocations */
+      if (!(thr->scratch = calloc(1, NTSC_SCRATCH_BYTES))) {
+         ntsc_destroy(filt);
+         return NULL;
+      }
+      thr->cbuf      = (int*)thr->scratch;
+      thr->lineI     = thr->cbuf  + NTSC_MAX_WIDTH * 2;
+      thr->lineQ     = thr->lineI + NTSC_MAX_WIDTH * 2;
+      thr->lineY     = thr->lineQ + NTSC_MAX_WIDTH * 2;
+      thr->yiq_cache = (yiq_t*)(void*)(thr->lineY + NTSC_MAX_WIDTH * 2);
+   }
    return filt;
 }
 
@@ -197,16 +230,24 @@ static void ntsc_packets(void *data, struct softfilter_work_packet *packets,
       thr->in_data = (const uint8_t*)input + y_start * input_stride;
       thr->out_data = (uint8_t*)output + y_start * output_stride;
       thr->in_pitch = input_stride; thr->out_pitch = output_stride;
-      thr->width = width; thr->height = y_end - y_start;
+      thr->width = (width > NTSC_MAX_WIDTH) ? NTSC_MAX_WIDTH : width;
+      thr->height = y_end - y_start;
       thr->first = (int)y_start;
       packets[i].work = ntsc_work_cb;
       packets[i].thread_data = thr;
    }
 }
 
-static void ntsc_destroy(void *data) { 
-   struct filter_data *f = (struct filter_data*)data; 
-   if (f) { free(f->workers); free(f); }
+static void ntsc_destroy(void *data) {
+   struct filter_data *f = (struct filter_data*)data;
+   if (!f)
+      return;
+   if (f->workers) {
+      for (unsigned i = 0; i < f->threads; i++)
+         free(f->workers[i].scratch);
+      free(f->workers);
+   }
+   free(f);
 }
 
 static void ntsc_output(void *data, unsigned *ow, unsigned *oh, unsigned w, unsigned h) { *ow = w*2; *oh = h; }
