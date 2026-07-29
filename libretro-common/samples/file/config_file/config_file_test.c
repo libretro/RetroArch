@@ -46,7 +46,15 @@ static void test_config_file_parse_contains(
    if (ok != (bool)val)
       abort();
    if (!val)
+   {
+      /* The harness frees everything it allocates so that under
+       * strict LeakSanitizer any surviving allocation belongs to
+       * config_file itself - this early return previously leaked
+       * the conf (and masked real parser leaks behind harness
+       * noise). */
+      config_file_free(cfg);
       return;
+   }
 
    if (!out)
       out = strdup("");
@@ -57,6 +65,7 @@ static void test_config_file_parse_contains(
    }
    printf("[SUCCESS] Key [%s] contains val [%s]\n", key, val);
    free(out);
+   config_file_free(cfg);
 }
 
 /* Regression for commit 87f2d0b (memcmp OOB on short '#' comment lines).
@@ -109,6 +118,7 @@ static void test_config_file_short_comments(void)
    }
    printf("[SUCCESS] short '#' comment lines parsed without OOB\n");
    free(out);
+   config_file_free(cfg);
 }
 
 /* Regression for commit <round2-TBD> (config_get_int family silent zero).

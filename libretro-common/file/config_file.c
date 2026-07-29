@@ -639,14 +639,24 @@ static bool config_file_parse_line(config_file_t *conf,
             case 0:
                /* Pilfer internal list. */
                config_file_add_child_list(conf, &sub_conf);
-               /* fall-through to deinitialize */
-            case -1:
-               config_file_deinitialize(&sub_conf);
                break;
+            case -1:
             case 1:
             default:
                break;
          }
+         /* Deinitialize on every outcome.  config_file_initialize
+          * above allocated the (empty) entries map eagerly - the
+          * RHMAP_BORROW_KEYS call forces the map header into
+          * existence - so the ret==1 path (include file missing or
+          * unreadable) leaked that header, its key table and its
+          * key-string table: ~370 bytes per unresolvable #include
+          * directive, found by LeakSanitizer.  A game override
+          * whose sub-config was deleted leaks it on every load.
+          * After a successful pilfer the struct's pointers are
+          * NULL/transferred, so the call is equally correct
+          * there. */
+         config_file_deinitialize(&sub_conf);
       }
       /* Starting a line with an 'reference' directive
        * sets the reference path */
