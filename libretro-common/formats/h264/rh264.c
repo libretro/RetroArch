@@ -149,7 +149,8 @@ typedef struct { int valid,profile_idc,level_idc,log2_max_frame_num,pic_order_cn
    log2_max_poc_lsb,frame_mbs_only_flag,mb_adaptive_frame_field_flag,
    frame_mbs,
    pic_width_in_mbs,pic_height_in_map_units,
-   frame_width,frame_height,chroma_format_idc,direct_8x8_inference_flag,
+   frame_width,frame_height,crop_x,crop_y,
+   chroma_format_idc,direct_8x8_inference_flag,
    poc_type1_always_zero,
    poc1_offset_non_ref, poc1_offset_ttb, poc1_ncycle,
    vui_num_reorder; /* VUI max_num_reorder_frames, -1 when not signalled */
@@ -313,7 +314,13 @@ static int rh264_parse_sps(const uint8_t *rbsp,size_t size,rh264_sps *s){
        int cw=s->pic_width_in_mbs*16, ch=mbh*16;
        int fw=cw-sw*(int)(cl+cr), fh=ch-sh*(int)(ct+cb);
        if(fw<16||fh<16||fw>cw||fh>ch) return 0;
-       s->frame_width=fw; s->frame_height=fh; } }
+       s->frame_width=fw; s->frame_height=fh;
+       /* left/top offsets of the visible window in luma samples; the
+        * offsets stay within the checks above so they cannot escape the
+        * coded picture.  crop_x is always even (sw is 2) and crop_y is
+        * even whenever chroma subsamples vertically (sh is then even),
+        * so the chroma window origin below is exact. */
+       s->crop_x=sw*(int)cl; s->crop_y=sh*(int)ct; } }
    /* VUI, walked only as far as max_num_reorder_frames (E.1.1), which bounds
     * how many decoded pictures can precede a given picture in output order
     * and so sets the display reorder delay. Absent VUI or an early end of
@@ -1420,6 +1427,7 @@ typedef struct {
     * use. */
    struct rh264_mv_s *mvg2;
    int poc;                /* picture order count of this picture */
+   int cropx, cropy;       /* visible window origin, luma samples */
 } rh264_frame;
 
 /* Macroblock position from its address.  With macroblock-adaptive
@@ -5781,6 +5789,7 @@ static int rh264_frame_alloc(rh264_frame *f, const rh264_sps *sps)
            : (sps->frame_height + 15) / 16;
    rh264_frame_free(f);
    f->w = sps->frame_width;  f->h = sps->frame_height;
+   f->cropx = sps->crop_x;   f->cropy = sps->crop_y;
    f->mbw = mbw;             f->mbh = mbh;
    f->ystride = mbw * 16;    f->cstride = mbw * 8;
    f->mbh_frame = mbh; f->field = 0;
@@ -9473,10 +9482,19 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
    int st, w, h;
    if (!v) return NULL;
    f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->f;
-   if (plane == 0)      { st = f->ysb;     w = f->w;         h = f->h;         p = f->Yb; }
+   /* Cropping is display-only (reference reads use the full coded
+    * picture), so it is applied here and nowhere else: the returned
+    * pointer starts at the visible window's origin.  crop_x is always
+    * even, and crop_y is even whenever chroma subsamples vertically,
+    * so the chroma origin divides exactly. */
+   if (plane == 0)      { st = f->ysb;     w = f->w;         h = f->h;
+                          p = f->Yb + (size_t)f->cropy * st + f->cropx; }
    else                 { st = f->csb;     w = (f->w+1)/2;
                           h = (f->cmbh == 16) ? f->h : (f->h+1)/2;
-                          p = (plane == 1) ? f->Ub : f->Vb; }
+                          p = ((plane == 1) ? f->Ub : f->Vb)
+                            + (size_t)((f->cmbh == 16) ? f->cropy
+                                                       : (f->cropy >> 1)) * st
+                            + (f->cropx >> 1); }
    if (stride) *stride = st;
    if (width)  *width  = w;
    if (height) *height = h;
