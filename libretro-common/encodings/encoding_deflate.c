@@ -290,7 +290,13 @@ enum rinf_phase
 /* A canonical-huffman decode table.  We use a two-level scheme: a direct
  * lookup on the low FAST_BITS bits, and for codes longer than FAST_BITS a
  * small linear/step search via the canonical first-code arrays. */
-#define RINF_FAST_BITS 9
+/* 11 bits: the dynamic litlen tables photographic PNG streams build
+ * put most of their code mass at 8-11 bits, which a 9-bit table sent
+ * to the canonical slow path.  The tables are per-stream heap state,
+ * so the growth (4 KB -> 16 KB of packed entries per table) costs
+ * nothing per decode; the splat loop in rinf_build touches each
+ * table entry once per dynamic block, which is noise. */
+#define RINF_FAST_BITS 11
 #define RINF_MAX_BITS  15
 
 struct rinf_huff
@@ -969,13 +975,17 @@ fast_again:
                int      done_fast    = 0;
 
                /* The output guard reserves the longest match plus the
-                * copy over-run pad: every inlined copy below writes in
-                * whole 8-byte steps and may run up to 7 bytes past the
-                * match end.  Those bytes lie beyond out_pos, so they are
-                * scratch - either rewritten by later output or beyond
-                * the produced length entirely. */
+                * copy over-run pad: the inlined copies below write in
+                * whole 8- or 16-byte steps and may run up to 15 bytes
+                * past the match end.  Those bytes lie beyond out_pos,
+                * so they are scratch - either rewritten by later output
+                * or beyond the produced length entirely.  The margin in
+                * the careful path's hand-back check must stay equal to
+                * this one: a larger value there would re-enter a loop
+                * whose own guard immediately fails, bouncing control
+                * between the two paths without progress. */
                while (in_pos + 8 <= s->in_size
-                     && out_pos + 258 + 8 <= s->out_size)
+                     && out_pos + 258 + 16 <= s->out_size)
                {
                   uint32_t e;
                   /* Refill only when the buffer cannot already cover a
@@ -1026,7 +1036,7 @@ fast_again:
                    * most 15, so several literals can be emitted before
                    * the next refill.  bitcnt >= 15 before each lookup
                    * guarantees the entry's code length is covered; the
-                   * output side is covered by the loop guard's 258+8
+                   * output side is covered by the loop guard's 258+16
                    * reserve, which no chain can outrun (a literal code
                    * is at least one bit, so at most 47 emissions). */
                   while (e & RINF_PF_LIT)
@@ -1215,7 +1225,16 @@ fast_again:
                         uint8_t       *dst  = out + out_pos;
                         const uint8_t *srcp = dst - dist;
                         uint8_t       *dend = dst + length;
-                        if (dist >= 8)
+                        if (dist >= 16)
+                        {
+                           do
+                           {
+                              memcpy(dst, srcp, 16);
+                              dst  += 16;
+                              srcp += 16;
+                           } while (dst < dend);
+                        }
+                        else if (dist >= 8)
                         {
                            do
                            {
@@ -1230,8 +1249,9 @@ fast_again:
                                  * 0x0101010101010101ull;
                            do
                            {
-                              memcpy(dst, &pat, 8);
-                              dst += 8;
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
                            } while (dst < dend);
                         }
                         else if (dist == 2 || dist == 4)
@@ -1251,8 +1271,9 @@ fast_again:
                            }
                            do
                            {
-                              memcpy(dst, &pat, 8);
-                              dst += 8;
+                              memcpy(dst,     &pat, 8);
+                              memcpy(dst + 8, &pat, 8);
+                              dst += 16;
                            } while (dst < dend);
                         }
                         else /* dist 3, 5, 6, 7 */
@@ -1312,7 +1333,7 @@ fast_again:
                if (   !s->copy_active && s->ld_step == 0
                    && !s->have_pending_lit
                    && s->in_pos + 8 <= s->in_size
-                   && s->out_pos + 258 + 8 <= s->out_size)
+                   && s->out_pos + 258 + 16 <= s->out_size)
                   goto fast_again;
                /* finish any pending back-reference copy first */
                if (s->copy_active)
