@@ -1123,6 +1123,7 @@ static const struct
    char s_d05c8ee3[18];
    char s_13bce77f[17];
    char s_1b2ee6c4[28];
+   char s_81589fd5[20];
    char s_26e9cde7[32];
    char s_b539ec6c[18];
    char s_f89e1cbc[39];
@@ -2186,6 +2187,7 @@ static const struct
    char s_a12ce1bf[10];
    char s_bfa23080[12];
    char s_ec326380[8];
+   char s_8a86d1de[20];
    char s_8fc1e4da[12];
    char s_14ed14d0[10];
    char s_5c87e95b[10];
@@ -2419,6 +2421,8 @@ static const struct
    char s_daf6d7e2[53];
    char s_042502c4[64];
    char s_90ae9a9f[92];
+   char s_81b79d5b_0[500];
+   char s_81b79d5b_1[99];
    char s_c9235dab[51];
    char s_330be970_0[500];
    char s_330be970_1[58];
@@ -2934,6 +2938,7 @@ static const struct
    char s_87ac0bd1[81];
    char s_236ddb2d[109];
    char s_d27e63b2[250];
+   char s_2297ba83[258];
    char s_32728f95[97];
    char s_c4eae01a[143];
    char s_bb0852aa[174];
@@ -3479,6 +3484,7 @@ static const struct
    char s_698d5124[102];
    char s_7e43d750[183];
    char s_87ca7bc6[183];
+   char s_cfa51e8c[397];
    char s_b62c2f7e[318];
    char s_456fcbc9[326];
    char s_82fab47a[29];
@@ -5519,6 +5525,7 @@ static const struct
    "Zamie\305\204 miniatury",
    "Prze\305\202\304\205cz ikony",
    "Op\303\263\305\272nienie miniatury (ms)",
+   "Ditheruj miniaturki",
    "Metoda redukcji skali miniatury",
    "Przezroczysto\305\233\304\207",
    "Wzn\303\263w tre\305\233\304\207 po u\305\274yciu zapisu stanu",
@@ -6595,6 +6602,7 @@ static const struct
    "Dok\305\202adna",
    "Rozszerzony",
    "Szeroki",
+   "Szczytowa jasno\305\233\304\207",
    "Wy\305\202\304\205czony",
    "Jasno\305\233\304\207",
    "Skanlinie",
@@ -6860,6 +6868,15 @@ static const struct
    "Automatycznie wycisz d\305\272wi\304\231k podczas u\305\274ywania przyspieszenia.",
    "Przyspiesz d\305\272wi\304\231k podczas przewijania. Zapobiega trzeszczeniu d\305\272wi\304\231k"
    "u, ale zmienia ton.",
+   "U\305\274yj resamplera o sta\305\202ej liczbie (ca\305\202kowitej) zamiast zmiennoprzecinkowego "
+   "gdy rdze\305\204 wy\305\233le 16-bitowy d\305\272wi\304\231k. Tworzy dane wyj\305\233ciowe ident"
+   "yczne co do bita na ka\305\274dej platformie, dzi\304\231ki czemu d\305\272wi\304\231k odtwarzal"
+   "ny jest przy ka\305\274dym podej\305\233ciu i systemie. Dotyczy to odtwarzalno\305\233ci, a nie "
+   "pr\304\231dko\305\233ci: w przypadku gdy procesor posiada wektor FPU, resampler z liczbami ca"
+   "\305\202kowitymi jest wolniejszy, poniewa\305\274 tylko zmiennoprzecinkowy jest wektoryczny. Bra"
+   "k wp\305\202ywu na rdzenie z d\305\272wi\304\231kiem zmienn",
+   "oprzecinkowym wyj\305\233cia; wraca do zmiennoprzecinkowego, gdy aktywny jest niekompatybilny fi"
+   "ltr DSP.",
    "Filtry DSP audio s\304\205 przechowywane w tym katalogu.",
    "Format sampli o kt\303\263re sterownik audio prosi z urz\304\205dzenia wyj\305\233ciowego. 'Zmie"
    "nnoprzecinkowe' prosi o 32-bitow\304\205 liczb\304\231 zmiennoprzecinkow\304\205, 'Int16' 16-bit"
@@ -7696,6 +7713,10 @@ static const struct
    "\202adowaniem powi\304\205zanych miniatur. Ustawianie tej warto\305\233ci na poziomie co najmnie"
    "j 256 ms umo\305\274liwia szybkie przewijanie bez op\303\263\305\272nie\305\204 nawet na najwoln"
    "iejszych urz\304\205dzeniach.",
+   "Wyg\305\202ad\305\272 banding kolor\303\263w w miniaturkach i tapecie przez ich dithering do ogr"
+   "aniczonej palety kolor\303\263w menu. Wz\303\263r ditheringu jest powi\304\231kszany razem ze ws"
+   "zystkim innym w du\305\274ej skali menu, i mo\305\274e by\304\207 widoczny jako tekstura; je\305"
+   "\274eli tak jest wy\305\202\304\205cz to.",
    "Metoda Resamplingu u\305\274ywana podczas kurczenia du\305\274ych miniatur, aby dopasowa\304\207"
    " do wy\305\233wietlacza.",
    "W\305\202\304\205cz wy\305\233wietlanie w tle uruchomionych tre\305\233ci, gdy szybkie menu jest"
@@ -8587,6 +8608,12 @@ static const struct
    "U\305\274ywa pe\305\202nego zakresu kolor\303\263w twojego ekranu, aby stworzy\304\207 ja\305"
    "\233niejszy, bardziej nasycony obraz. Dla lepszego oddania kolor\303\263w bardziej pasuj\304\205"
    "cego do gry, ustaw to na Dok\305\202adny.",
+   "Masksymalna jasno\305\233\304\207 twojego ekranu w nitach. Ile miejsca jest nad Jasno\305\233ci"
+   "\304\205 na pod\305\233wietlanie, wi\304\231c rdzenie kt\303\263re same renderuj\304\205 HDR wie"
+   "dz\304\205 jak daleko mog\304\205 zaj\305\233\304\207 przed zjechaniem. Sprawd\305\272 specyfika"
+   "cj\304\231 twojego ekranu; w razie w\304\205tpliwo\305\233ci, pozostaw to ustawione na 1000. Ust"
+   "awienie tego wy\305\274ej ni\305\274 jasno\305\233\304\207 ekranu mo\305\274e spowodowa\304\207 "
+   "ucinanie jasnych szczeg\303\263\305\202\303\263w zamiast zjechania.",
    "Ustawia poziom jasno\305\233ci HDR w nitach. U\305\274ywaj razem z ustawieniami jasno\305\233ci "
    "twojego fizycznego ekranu. Na pocz\304\205tku, ustaw to na 80 a jasno\305\233\304\207 twojego ek"
    "ranu na maksymaln\304\205. Alternatywnie, ustaw to na maksymaln\304\205 ilo\305\233\304\207 nit"
@@ -9426,7 +9453,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (186608u
+      (sizeof(msg_hash_pl_blob) == (187902u
 #ifdef ANDROID
        + 385u
 #endif
@@ -10953,6 +10980,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -12015,6 +12043,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_ACCURATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -12248,6 +12277,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
@@ -12762,6 +12792,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
@@ -13307,6 +13338,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_EXPAND_GAMUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,

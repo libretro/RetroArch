@@ -1139,6 +1139,7 @@ static const struct
    char s_d264a13e[35];
    char s_d3213ff3[24];
    char s_ac60056b[18];
+   char s_54d6b95e[14];
    char s_1ad09b45[19];
    char s_87064238[27];
    char s_2a273dd7[24];
@@ -5437,6 +5438,7 @@ static const struct
    "Povoli\305\245 zvukov\303\275 efekt potvrdenia",
    "Povoli\305\245 zvuky 'Scroll'",
    "\303\232vodn\303\241 str\303\241nka",
+   "MIP mapovanie",
    "Pozadia n\303\241h\304\276adov",
    "Prah upscalingu n\303\241h\304\276adov",
    "Plynul\303\275 roluj\303\272ci text",
@@ -9295,7 +9297,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (175623u
+      (sizeof(msg_hash_sk_blob) == (175637u
 #ifdef ANDROID
        + 389u
 #endif
@@ -10832,6 +10834,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_OK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_SCROLL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_STARTUP_PAGE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,

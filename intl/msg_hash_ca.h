@@ -1112,6 +1112,7 @@ static const struct
    char s_d05c8ee3[23];
    char s_13bce77f[22];
    char s_1b2ee6c4[30];
+   char s_81589fd5[25];
    char s_26e9cde7[32];
    char s_b539ec6c[15];
    char s_f89e1cbc[57];
@@ -2173,6 +2174,7 @@ static const struct
    char s_bfa23080[8];
    char s_723d3966[7];
    char s_ec326380[6];
+   char s_8a86d1de[32];
    char s_8fc1e4da[7];
    char s_14ed14d0[11];
    char s_5c87e95b[19];
@@ -2918,6 +2920,7 @@ static const struct
    char s_87ac0bd1[63];
    char s_236ddb2d[110];
    char s_d27e63b2[224];
+   char s_2297ba83[282];
    char s_32728f95[84];
    char s_c4eae01a[111];
    char s_bb0852aa[171];
@@ -5456,6 +5459,7 @@ static const struct
    "Intercanvia miniatures",
    "Icones d'interruptors",
    "Retard en les miniatures (ms)",
+   "Tramat de les miniatures",
    "M\303\250tode d'escalat de miniatures",
    "Transpar\303\250ncia",
    "Reprendre contingut despr\303\251s d'utilitzar un desat r\303\240pid",
@@ -6531,6 +6535,7 @@ static const struct
    "Ampliat",
    "S\303\272per",
    "Ample",
+   "Llindar m\303\240xim de la brillantor",
    "Apagat",
    "Brillantor",
    "L\303\255nies d'escaneig",
@@ -7561,6 +7566,10 @@ static const struct
    "Aplica un retard entre el moment en qu\303\250 se selecciona un element d'una llista de reproduc"
    "ci\303\263 i la c\303\240rrega de la miniatura corresponent. Un valor m\303\255nim de 256 ms eli"
    "mina qualsevol retard, tamb\303\251 en els equips m\303\251s lents.",
+   "Suavitza l'efecte de les bandes de color en les miniatures i en el fons de pantalla aplicant un "
+   "filtre de tramat que respecta la limitada paleta del men\303\272. El patr\303\263 del tramat es "
+   "magnifica en augmentar l'escala del men\303\272 i es podria fer visible; desactiva aquesta opci"
+   "\303\263 si passa.",
    "Selecciona el m\303\250tode de redimensionat perqu\303\250 les miniatures entrin a la pantalla.",
    "Mostra el contingut en el fons del men\303\272 r\303\240pid. Desactivar la transpar\303\250ncia "
    "pot canviar els colors del tema.",
@@ -9217,7 +9226,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (198756u
+      (sizeof(msg_hash_ca_blob) == (199095u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10726,6 +10735,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SAVESTATE_RESUME,
@@ -11786,6 +11796,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_EXPANDED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_WIDE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
@@ -12530,6 +12541,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWAP_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DELAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DITHER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_THUMBNAIL_DOWNSCALER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_TRANSPARENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SAVESTATE_RESUME,
