@@ -808,12 +808,14 @@ static bool rbmp_needs_fixup(const rbmp_t *bmp)
  * received. */
 static void rbmp_proc_reset(rbmp_t *rbmp)
 {
-   if (rbmp->phase != RBMP_PHASE_IDLE)
-   {
-      free(rbmp->output_image);
-      rbmp->output_image = NULL;
-   }
-   rbmp->phase = RBMP_PHASE_IDLE;
+   /* Unconditional: rbmp_begin() allocates output_image before it
+    * sets a phase, and returns false between the two for a palette
+    * header claiming a bpp other than 4 or 8.  Gating the free on
+    * phase != IDLE therefore leaked the surface for any such image,
+    * and free(NULL) is a no-op so the guard bought nothing. */
+   free(rbmp->output_image);
+   rbmp->output_image = NULL;
+   rbmp->phase        = RBMP_PHASE_IDLE;
 }
 
 int rbmp_process_image(rbmp_t *rbmp, void **buf_data,
