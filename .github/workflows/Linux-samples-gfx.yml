@@ -25,7 +25,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y build-essential
+          sudo apt-get install -y build-essential \
+            libx11-dev libxrandr-dev libdrm-dev
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -400,3 +401,75 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run display_servers_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers
+        run: |
+          set -eu
+          # Regression test for the XRandR query handling in
+          # gfx/display_servers/dispserv_x11.c.  Pre-fix every query
+          # was treated as infallible: XRRGetOutputInfo() returns NULL
+          # for an output the server cannot describe and
+          # info->connection was read straight off it; likewise
+          # XRRGetCrtcInfo() and crtc->width, XRRGetScreenResources(),
+          # and XRRGetScreenInfo() feeding a XRRFreeScreenConfigInfo()
+          # that is not NULL-tolerant.  On any X server advertising
+          # RandR without a usable output -- Xvfb, a headless box, a
+          # display with everything disconnected -- RetroArch died
+          # inside video_display_server_init() before drawing
+          # anything.  Both orientation walks also indexed
+          # screen->crtcs with the output's ncrtc, reading past the
+          # end and then configuring a crtc other than the one whose
+          # geometry had just been read.
+          #
+          # The test stubs libXrandr and the handful of Xlib entry
+          # points the driver reaches, so it needs the headers but no
+          # X server, no display and no RandR extension: what is under
+          # test is what happens when the queries FAIL, and a working
+          # display is exactly the environment that cannot produce
+          # that.  The stub numbers screen crtcs from 100 and output
+          # crtcs from 200 so which array was walked is read off the
+          # call log, and tracks every pointer it hands out so a
+          # double free or leak is attributed to the case that caused
+          # it.  If dispserv_x11.c amends the query handling, this
+          # goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_test
+          timeout 60 ./display_servers_test
+          echo "[pass] display_servers_test"
+
+      - name: Build and run display_servers_kms_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/display_servers_kms
+        run: |
+          set -eu
+          # Regression test for two defects in
+          # gfx/display_servers/dispserv_kms.c::
+          # kms_display_server_get_resolution_list().  g_drm_connector
+          # is owned by gfx/common/drm_common.c and set to NULL by
+          # drm_free(), which runs on every context teardown -- a
+          # resolution change, a fullscreen toggle, a driver reinit --
+          # while the display server object outlives it, so the menu
+          # could ask for the list with no connector to describe and
+          # the function read straight through NULL.  g_drm_mode, the
+          # sibling global, was already tested for exactly this a few
+          # lines earlier.  Separately the qsort() at the end was
+          # passed `count`, which was declared zero and never
+          # assigned; `j` is the element count.  So the sort ran over
+          # zero elements and the resolution list came back in
+          # whatever order the connector reported its modes -- no
+          # crash, no diagnostic, just an unsorted list that looks
+          # plausible.
+          #
+          # The test fabricates the drmModeConnector the driver reads,
+          # so it needs the libdrm headers but links nothing from
+          # libdrm: presenting a connector that is absent, empty, or
+          # reporting modes in an awkward order is the whole exercise
+          # and a real one will not do it on request.  The ordering
+          # check feeds modes in descending size, which a working sort
+          # must reverse and a broken one leaves untouched.  If
+          # dispserv_kms.c amends either, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x display_servers_kms_test
+          timeout 60 ./display_servers_kms_test
+          echo "[pass] display_servers_kms_test"
