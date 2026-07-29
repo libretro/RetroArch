@@ -190,22 +190,22 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
       /* Set the LED to match the player number. */
       switch (slot) {
-         case 0: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;
-         case 1: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;
-         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;
-         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;
-         case 4: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;
-         case 5: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;
-         case 6: SDL_SetGamepadLED(gamepad, 255, 128, 0); break;
-         case 7: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;
-         case 8: SDL_SetGamepadLED(gamepad, 128, 0, 255); break;
-         case 9: SDL_SetGamepadLED(gamepad, 0, 128, 255); break;
-         case 10: SDL_SetGamepadLED(gamepad, 128, 255, 0); break;
-         case 11: SDL_SetGamepadLED(gamepad, 255, 0, 128); break;
-         case 12: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;
-         case 13: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;
-         case 14: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;
-         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;
+         case 0: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;       /* Blue */
+         case 1: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;       /* Red */
+         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;       /* Green */
+         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;     /* Yellow */
+         case 4: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;     /* Cyan */
+         case 5: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;     /* Magenta */
+         case 6: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;       /* Navy */
+         case 7: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;       /* Maroon */
+         case 8: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;       /* Dark Green */
+         case 9: SDL_SetGamepadLED(gamepad, 128, 128, 0); break;     /* Olive */
+         case 10: SDL_SetGamepadLED(gamepad, 0, 128, 128); break;    /* Teal */
+         case 11: SDL_SetGamepadLED(gamepad, 128, 0, 128); break;    /* Purple */
+         case 12: SDL_SetGamepadLED(gamepad, 128, 128, 255); break;  /* Sky Blue */
+         case 13: SDL_SetGamepadLED(gamepad, 255, 128, 128); break;  /* Light Pink */
+         case 14: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;  /* White */
+         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;  /* Gray */
          default: SDL_SetGamepadLED(gamepad, 0, 0, 0); break;
       }
    }
