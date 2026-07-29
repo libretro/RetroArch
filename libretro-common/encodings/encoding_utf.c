@@ -707,8 +707,6 @@ wchar_t *utf8_to_utf16_string_alloc(const char *str)
 {
 #ifdef _WIN32
    int _len       = 0;
-#else
-   size_t _len    = 0;
 #endif
    wchar_t *buf   = NULL;
 
@@ -743,17 +741,61 @@ wchar_t *utf8_to_utf16_string_alloc(const char *str)
       }
    }
 #else
-   /* NOTE: For now, assume non-Windows platforms' locale is already UTF-8. */
-   if ((_len = mbstowcs(NULL, str, 0) + 1))
+   /* Locale-independent conversion. mbstowcs only decodes UTF-8 when
+    * the active locale says so: under the default C/POSIX locale
+    * (headless machines, containers, any process that never calls
+    * setlocale) it fails on the first non-ASCII byte and this
+    * function returned NULL. Decode with the in-house converter
+    * instead: exact UTF-32 into 32-bit wchar_t, UTF-16 with
+    * surrogate pairs when wchar_t is 16-bit. Scalars above U+10FFFF
+    * (only reachable from invalid input) become U+FFFD on the
+    * 16-bit path. */
    {
-      if (!(buf = (wchar_t*)calloc(_len, sizeof(wchar_t))))
+      size_t    n8 = strlen(str);
+      uint32_t *u32 = (uint32_t*)malloc(n8 * sizeof(uint32_t));
+
+      if (!u32)
          return NULL;
 
-      if ((mbstowcs(buf, str, _len)) == (size_t)-1)
       {
-         free(buf);
-         return NULL;
+         size_t n32 = utf8_conv_utf32(u32, n8, str, n8);
+         size_t i;
+
+         if (sizeof(wchar_t) == 2)
+         {
+            /* Worst case two units per scalar, plus terminator */
+            if ((buf = (wchar_t*)malloc((2 * n32 + 1) * sizeof(wchar_t))))
+            {
+               size_t o = 0;
+               for (i = 0; i < n32; i++)
+               {
+                  uint32_t cp = u32[i];
+                  if (cp < 0x10000)
+                     buf[o++] = (wchar_t)cp;
+                  else if (cp <= 0x10FFFF)
+                  {
+                     cp      -= 0x10000;
+                     buf[o++] = (wchar_t)(0xD800 | (cp >> 10));
+                     buf[o++] = (wchar_t)(0xDC00 | (cp & 0x3FF));
+                  }
+                  else
+                     buf[o++] = (wchar_t)0xFFFD;
+               }
+               buf[o] = 0;
+            }
+         }
+         else
+         {
+            if ((buf = (wchar_t*)malloc((n32 + 1) * sizeof(wchar_t))))
+            {
+               for (i = 0; i < n32; i++)
+                  buf[i] = (wchar_t)u32[i];
+               buf[n32] = 0;
+            }
+         }
       }
+
+      free(u32);
    }
 #endif
 
@@ -801,18 +843,72 @@ char *utf16_to_utf8_string_alloc(const wchar_t *str)
       }
    }
 #else
-   /* NOTE: For now, assume non-Windows platforms'
-    * locale is already UTF-8. */
-   if ((_len = wcstombs(NULL, str, 0) + 1))
+   /* Locale-independent conversion; see utf8_to_utf16_string_alloc.
+    * wcstombs had the same C/POSIX-locale failure on non-ASCII.
+    * 32-bit wchar_t is re-expressed as UTF-16 (exact for valid
+    * scalars) so the existing count-then-encode converter can do the
+    * encoding; unpaired surrogates or out-of-range values make it
+    * bail, and NULL is returned as the old code did for input
+    * wcstombs could not represent. */
    {
-      if (!(buf = (char*)calloc(_len, sizeof(char))))
+      size_t in_len = 0;
+      const wchar_t *p = str;
+      uint16_t *u16;
+
+      while (*p++)
+         in_len++;
+
+      /* Worst case two units per wchar */
+      if (!(u16 = (uint16_t*)malloc((2 * in_len) * sizeof(uint16_t))))
          return NULL;
 
-      if (wcstombs(buf, str, _len) == (size_t)-1)
       {
-         free(buf);
-         return NULL;
+         size_t n16 = 0;
+         size_t i;
+         bool ok = true;
+
+         if (sizeof(wchar_t) == 2)
+         {
+            for (i = 0; i < in_len; i++)
+               u16[n16++] = (uint16_t)str[i];
+         }
+         else
+         {
+            for (i = 0; i < in_len; i++)
+            {
+               uint32_t cp = (uint32_t)str[i];
+               if (cp < 0x10000)
+                  u16[n16++] = (uint16_t)cp;
+               else if (cp <= 0x10FFFF)
+               {
+                  cp          -= 0x10000;
+                  u16[n16++]   = (uint16_t)(0xD800 | (cp >> 10));
+                  u16[n16++]   = (uint16_t)(0xDC00 | (cp & 0x3FF));
+               }
+               else
+               {
+                  ok = false;
+                  break;
+               }
+            }
+         }
+
+         if (ok && utf16_conv_utf8(NULL, &_len, u16, n16))
+         {
+            if ((buf = (char*)malloc(_len + 1)))
+            {
+               if (utf16_conv_utf8((uint8_t*)buf, &_len, u16, n16))
+                  buf[_len] = '\0';
+               else
+               {
+                  free(buf);
+                  buf = NULL;
+               }
+            }
+         }
       }
+
+      free(u16);
    }
 #endif
 
