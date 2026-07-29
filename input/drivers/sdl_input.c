@@ -310,12 +310,6 @@ static int16_t sdl_input_state(
                       return 1;
                   }
                   break;
-#else
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return sdl->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return sdl->mouse_wd;
-#endif
                case RETRO_DEVICE_ID_MOUSE_X:
                   /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
                    * RETRO_DEVICE_MOUSE stays relative for cores. */
@@ -324,6 +318,16 @@ static int16_t sdl_input_state(
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return (device == RARCH_DEVICE_MOUSE_SCREEN)
                         ? sdl->mouse_abs_y : sdl->mouse_y;
+#else
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  return sdl->mouse_wu;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  return sdl->mouse_wd;
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return sdl->mouse_x;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return sdl->mouse_y;
+#endif
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
                case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
