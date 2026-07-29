@@ -10337,7 +10337,11 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_8[] = {
                   { MENU_ENUM_LABEL_VIDEO_DRIVER, PARSE_ONLY_STRING_OPTIONS, false },
+#ifndef __APPLE__
+                  /* Hide 'Threaded Video' from the menu on Apple platforms;
+                   * the underlying video_threaded setting itself is kept. */
                   { MENU_ENUM_LABEL_VIDEO_THREADED, PARSE_ONLY_BOOL, false },
+#endif
                   { MENU_ENUM_LABEL_VIDEO_GPU_INDEX, PARSE_ONLY_INT, false },
                   { MENU_ENUM_LABEL_VIDEO_MONITOR_INDEX, PARSE_ONLY_UINT, false },
                   { MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH, PARSE_ONLY_UINT, false },
