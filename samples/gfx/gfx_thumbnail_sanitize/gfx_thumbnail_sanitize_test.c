@@ -47,6 +47,7 @@
  * runs.
  *
  * THREE WAYS THIS NEARLY LIED, AND WHAT STOPS IT NOW
+ * (AND ONE WAY IT HUNG)
  *
  * The first working version reported ALL OK with
  * texture loads=0: it pointed at a path that did not exist,
@@ -66,6 +67,14 @@
  * ints.  volatile is not a synchronisation primitive and TSan
  * was right to say so; they are atomics now, because six
  * harness warnings would bury one real report.
+ *
+ * The first TSan CI run that hung (exit 124) was the handshake
+ * again: the upload thread cleared the go token after the status
+ * release store, so the main thread could observe AVAILABLE and
+ * re-arm go for the next iteration before the clear -- which then
+ * ate the fresh token and left both threads spinning forever.
+ * The token is now consumed before publishing, so it is gone
+ * strictly before the event that lets main issue the next one.
  */
 
 #include <stdio.h>
@@ -258,14 +267,22 @@ static void upload_thread(void *arg)
       if (retro_atomic_load_acquire_int(&st->stop))
          return;
 
+      /* Consume the go token BEFORE publishing.  The status store
+       * below is what releases the main thread; if the token were
+       * cleared after it, main could observe AVAILABLE and re-arm
+       * go=1 for the next iteration first, and the clear would then
+       * destroy that token -- main spins on status, this thread
+       * spins on go, and the run dies on the CI timeout.  Cleared
+       * here, the token is gone strictly before the event that lets
+       * main issue the next one. */
+      retro_atomic_store_release_int(&st->go, 0);
+
       /* Publish, in the order the real upload callback does. */
       st->thumb.width  = 64;
       st->thumb.height = 64;
       st->thumb.texture = (uintptr_t)(0x2000 + i);
       GFX_THUMB_STATUS_STORE(&st->thumb.status,
             GFX_THUMBNAIL_STATUS_AVAILABLE);
-
-      retro_atomic_store_release_int(&st->go, 0);
    }
 }
 
