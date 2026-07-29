@@ -399,7 +399,15 @@ static void vulkan_debug_mark_object(VkDevice device,
    {
       char merged_name[1024];
       VkDebugUtilsObjectNameInfoEXT info;
+      /* strlcpy() returns the length of the SOURCE, not the number of
+       * bytes copied, so a name longer than the buffer would put
+       * merged_name + _len past the end and underflow the remaining
+       * size to near SIZE_MAX.  Every caller in tree passes a short
+       * literal, so this is not reachable today -- but the next one
+       * need not. */
       size_t _len                        = strlcpy(merged_name, name, sizeof(merged_name));
+      if (_len >= sizeof(merged_name))
+         _len                            = sizeof(merged_name) - 1;
       snprintf(merged_name + _len, sizeof(merged_name) - _len, " (%u)", count);
 
       info.sType                         = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
