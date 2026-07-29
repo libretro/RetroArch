@@ -6379,6 +6379,13 @@ int rarch_main(int argc, char *argv[], void *data)
    settings_t *settings;
    struct rarch_state *p_rarch         = &rarch_st;
    runloop_state_t *runloop_st         = runloop_state_get_ptr();
+   /* Register file access for the config parser before anything can
+    * load a config - including config-from-string paths that carry
+    * '#include' directives, which resolve through this interface.
+    * The constructors in config_file_io.c self-register too; this
+    * explicit call just removes any ordering dependency on which
+    * config API gets used first. */
+   config_file_set_io_default(config_file_io_filestream());
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    video_driver_modify_disp_flags(VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD, 0);
 #endif

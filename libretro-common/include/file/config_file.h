@@ -134,6 +134,59 @@ config_file_t *config_file_new_from_string(char *from_string,
 
 config_file_t *config_file_new_from_path_to_string(const char *path);
 
+/* File access used by the parser core.
+ *
+ * config_file.c itself performs no file I/O: every byte it parses is
+ * either handed to it directly (config_file_new_from_string) or
+ * fetched through this interface - the path-based constructors and
+ * the '#include' directive both route through it.  The interface is
+ * how a host decides where config bytes come from: the plain-VFS
+ * implementation in config_file_io.c, an archive, a network fetch,
+ * or a test harness.
+ *
+ * read_file returns the entire file as a heap buffer with a NUL
+ * appended after *len content bytes (the parser consumes the buffer
+ * in place and relies on the terminator), or NULL on any failure.
+ * free_file releases a buffer read_file returned.
+ *
+ * The default is registered once at startup, before any threads
+ * that touch config files exist, and is only read afterwards.
+ * The path-based constructors in config_file_io.c self-register the
+ * filestream implementation, so any binary that links that file and
+ * loads at least one config by path is covered; a host whose first
+ * config comes from a string and may contain '#include' directives
+ * must register explicitly first.  With no interface registered,
+ * path loads fail as file-not-found and include directives are
+ * recorded in the include list but not loaded. */
+struct config_file_io
+{
+   char *(*read_file)(const char *path, int64_t *len, void *ud);
+   void  (*free_file)(char *buf, void *ud);
+   void   *ud;
+};
+
+typedef struct config_file_io config_file_io_t;
+
+void config_file_set_io_default(const config_file_io_t *io);
+
+const config_file_io_t *config_file_get_io_default(void);
+
+/* The filestream/VFS-backed implementation (config_file_io.c). */
+const config_file_io_t *config_file_io_filestream(void);
+
+/**
+ * config_file_load_file:
+ *
+ * Loads the file at @path (through the registered io interface)
+ * into an already-initialized @conf.  Building block for the
+ * path-based constructors in config_file_io.c.
+ *
+ * Returns 0 on success, 1 if the file could not be read (@conf is
+ * untouched), -1 on allocation failure (@conf must be freed).
+ **/
+int config_file_load_file(config_file_t *conf, const char *path,
+      config_file_cb_t *cb);
+
 /**
  * config_file_free:
  *
@@ -152,6 +205,18 @@ bool config_file_deinitialize(config_file_t *conf);
  * The key-value pairs of the new config file takes priority over the old.
  **/
 bool config_append_file(config_file_t *conf, const char *path);
+
+/**
+ * config_file_append_conf:
+ *
+ * Appends the entries of @new_conf to @conf - the merge half of
+ * config_append_file, usable directly when the second config was
+ * obtained some other way (parsed from a string, streamed in).
+ * The key-value pairs of @new_conf take priority over @conf's.
+ * Consumes @new_conf: its entries are pilfered and the struct is
+ * freed regardless of outcome.
+ **/
+bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf);
 
 /* All extract functions return true when value is valid and exists.
  * Returns false otherwise. */

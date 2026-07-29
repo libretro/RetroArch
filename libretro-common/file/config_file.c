@@ -29,14 +29,32 @@
 #include <retro_miscellaneous.h>
 #include <compat/strl.h>
 #include <compat/posix_string.h>
-#include <compat/fopen_utf8.h>
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
-#include <streams/file_stream.h>
 #include <array/rhmap.h>
 
 #define MAX_INCLUDE_DEPTH 16
+
+/* All file access goes through this interface - the parser core
+ * performs no file I/O of its own (no streams/file_stream.h, no
+ * fopen): bytes are handed in, or fetched through the registered
+ * implementation, the way the codecs under formats/ consume
+ * caller-supplied data.  See the contract in config_file.h.
+ *
+ * Written once at startup before config-touching threads exist,
+ * read-only afterwards. */
+static const config_file_io_t *config_file_io_default = NULL;
+
+void config_file_set_io_default(const config_file_io_t *io)
+{
+   config_file_io_default = io;
+}
+
+const config_file_io_t *config_file_get_io_default(void)
+{
+   return config_file_io_default;
+}
 
 struct config_include_list
 {
@@ -556,10 +574,16 @@ static int config_file_load_internal(
       struct config_file *conf,
       const char *path, unsigned depth, config_file_cb_t *cb)
 {
+   const config_file_io_t *io = config_file_io_default;
    int64_t   length    = 0;
    char     *buf       = NULL;
-   char     *new_path  = strdup(path);
-   if (!new_path)
+   char     *new_path;
+   /* No io interface registered: the core cannot reach files by
+    * itself, so a path load reports file-not-found.  See the
+    * registration contract in config_file.h. */
+   if (!io)
+      return 1;
+   if (!(new_path = strdup(path)))
       return 1;
    /* Read the whole file once, then walk it line by line in memory.
     * The previous loop fetched each line with filestream_getline,
@@ -571,7 +595,7 @@ static int config_file_load_internal(
     * the identical config_file_parse_line, so include/reference
     * directives, callbacks, and grammar are byte-for-byte
     * unchanged. */
-   if (!filestream_read_file(path, (void**)&buf, &length) || !buf)
+   if (!(buf = io->read_file(path, &length, io->ud)))
    {
       free(new_path);
       return 1;
@@ -583,15 +607,21 @@ static int config_file_load_internal(
    if (config_file_parse_buffer(conf, buf,
          (length > 0) ? (size_t)length : 0, cb) != 0)
    {
-      free(buf);
+      io->free_file(buf, io->ud);
       free(conf->path);
       conf->path = NULL;
       return -1;
    }
 
-   free(buf);
+   io->free_file(buf, io->ud);
 
    return 0;
+}
+
+int config_file_load_file(config_file_t *conf, const char *path,
+      config_file_cb_t *cb)
+{
+   return config_file_load_internal(conf, path, 0, cb);
 }
 
 static bool config_file_parse_line(config_file_t *conf,
@@ -821,15 +851,18 @@ void config_file_free(config_file_t *conf)
 }
 
 /**
- * config_append_file:
+ * config_file_append_conf:
  *
- * Loads a new config, and appends its data to @conf.
- * The key-value pairs of the new config file takes priority over the old.
+ * Appends the entries of @new_conf to @conf - the merge half of
+ * config_append_file (whose path-loading wrapper lives in
+ * config_file_io.c), usable directly when the second config was
+ * obtained some other way (parsed from a string, streamed in).
+ * The key-value pairs of @new_conf take priority over @conf's.
+ * Consumes @new_conf.
  **/
-bool config_append_file(config_file_t *conf, const char *path)
+bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf)
 {
    size_t i, cap;
-   config_file_t *new_conf = config_file_new_from_path_to_string(path);
 
    if (!new_conf)
       return false;
@@ -880,91 +913,6 @@ config_file_t *config_file_new_from_string(char *from_string,
    if (conf)
       config_file_free(conf);
    return NULL;
-}
-
-config_file_t *config_file_new_from_path_to_string(const char *path)
-{
-   uint8_t *ret_buf                    = NULL;
-   int64_t length                      = 0;
-
-   /* No path_is_valid() first: filestream_read_file() opens the file
-    * itself and returns 0 when it cannot, so a preceding stat only
-    * repeats the lookup the open already does - and no caller can see
-    * its result, since a missing file and an unreadable one both land
-    * on the same NULL return.  Dropping it also closes the window
-    * between the stat and the open in which the file could change. */
-   if (filestream_read_file(path, (void**)&ret_buf, &length))
-   {
-      config_file_t *conf              = NULL;
-      /* Note: 'ret_buf' is not used outside this
-       * function - we do not care that it will be
-       * modified by config_file_new_from_string() */
-      if (length >= 0)
-         conf = config_file_new_from_string((char*)ret_buf, path);
-
-      if ((void*)ret_buf)
-         free((void*)ret_buf);
-
-      return conf;
-   }
-
-   return NULL;
-}
-
-/**
- * config_file_new_with_callback:
- *
- * Loads a config file.
- * If @path is NULL, will create an empty config file.
- * Includes cb callbacks  to run custom code during config file processing.
- *
- * @return Returns NULL if file doesn't exist.
- **/
-config_file_t *config_file_new_with_callback(
-      const char *path, config_file_cb_t *cb)
-{
-   int ret                  = 0;
-   struct config_file *conf = config_file_new_alloc();
-   if (!path || !*path)
-      return conf;
-   if ((ret = config_file_load_internal(conf, path, 0, cb)) == -1)
-   {
-      config_file_free(conf);
-      return NULL;
-   }
-   else if (ret == 1)
-   {
-      free(conf);
-      return NULL;
-   }
-   return conf;
-}
-
-/**
- * config_file_new:
- *
- * Loads a config file.
- * If @path is NULL, will create an empty config file.
- *
- * @return Returns NULL if file doesn't exist.
- **/
-config_file_t *config_file_new(const char *path)
-{
-   int ret                  = 0;
-   struct config_file *conf = config_file_new_alloc();
-   if (!path || !*path)
-      return conf;
-   if ((ret = config_file_load_internal(conf, path, 0, NULL)) == -1)
-   {
-      config_file_free(conf);
-      return NULL;
-   }
-   else if (ret == 1)
-   {
-      free(conf);
-      return NULL;
-   }
-   return conf;
 }
 
 /**
@@ -1483,35 +1431,6 @@ size_t config_set_char(config_file_t *conf, const char *key, char val)
    size_t _len = snprintf(buf, sizeof(buf), "%c", val);
    config_set_string(conf, key, buf);
    return _len;
-}
-
-/**
- * config_file_write:
- *
- * Write the current config to a file.
- **/
-bool config_file_write(config_file_t *conf, const char *path, bool sort)
-{
-   if (!conf)
-      return false;
-   if (conf->flags & CONF_FILE_FLG_MODIFIED)
-   {
-      if (!path || !*path)
-         config_file_dump(conf, stdout, sort);
-      else
-      {
-         char buf[0x4000];
-         FILE *file = (FILE*)fopen_utf8(path, "wb");
-         if (!file)
-            return false;
-         setvbuf(file, buf, _IOFBF, sizeof(buf));
-         config_file_dump(conf, file, sort);
-         if (file != stdout)
-            fclose(file);
-         conf->flags &= ~CONF_FILE_FLG_MODIFIED;
-      }
-   }
-   return true;
 }
 
 /**

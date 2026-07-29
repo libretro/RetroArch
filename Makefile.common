@@ -359,6 +359,7 @@ OBJ += \
        core_backup.o \
        core_option_manager.o \
        $(LIBRETRO_COMM_DIR)/file/config_file.o \
+	$(LIBRETRO_COMM_DIR)/file/config_file_io.o \
        $(LIBRETRO_COMM_DIR)/file/config_file_userdata.o \
        runtime_file.o \
        disk_index_file.o
