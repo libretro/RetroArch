@@ -97,55 +97,105 @@ size_t utf8_conv_utf32(uint32_t *out, size_t out_chars,
       uint8_t first;
       unsigned ones;
 
-      /* Fast path: batch ASCII characters */
-      while (in_size && out_chars && (uint8_t)*in < 0x80)
+      /* Fast path: batch ASCII characters.
+       *
+       * Same word test as the utf8len counting loop: a byte is ASCII
+       * iff bit 7 is clear, so one masked 64-bit compare clears eight
+       * bytes at a time. The loads go through memcpy, so alignment
+       * does not matter and no strict-aliasing rule is broken. Widening
+       * to uint32_t is done per byte, which is endian neutral.
+       *
+       * The word loop is only entered when the next byte is ASCII, so
+       * multibyte-dense text does not pay a wide load and test on
+       * every character. */
+      if ((uint8_t)*in < 0x80)
       {
-         *out++ = (uint8_t)*in++;
-         in_size--;
-         out_chars--;
-         ret++;
+         while (in_size >= 8 && out_chars >= 8)
+         {
+            uint64_t w;
+            memcpy(&w, in, sizeof(w));
+            if (w & 0x8080808080808080ULL)
+               break;
+            out[0] = (uint8_t)in[0];
+            out[1] = (uint8_t)in[1];
+            out[2] = (uint8_t)in[2];
+            out[3] = (uint8_t)in[3];
+            out[4] = (uint8_t)in[4];
+            out[5] = (uint8_t)in[5];
+            out[6] = (uint8_t)in[6];
+            out[7] = (uint8_t)in[7];
+            in        += 8;
+            out       += 8;
+            in_size   -= 8;
+            out_chars -= 8;
+            ret       += 8;
+         }
+
+         while (in_size && out_chars && (uint8_t)*in < 0x80)
+         {
+            *out++ = (uint8_t)*in++;
+            in_size--;
+            out_chars--;
+            ret++;
+         }
+
+         if (!in_size || !out_chars)
+            break;
       }
 
-      if (!in_size || !out_chars)
-         break;
-
       first = (uint8_t)*in++;
-      ones  = utf8_lut[first];
 
-      if (ones > 6 || ones < 2) /* Invalid or desync. */
-         break;
-
-      /* ones includes the lead byte; we already consumed it,
-       * but need (ones - 1) more continuation bytes */
-      if (ones > in_size)       /* Not enough data. */
-         break;
-
-      /* Decode based on sequence length to avoid inner loop */
-      c = first & ((1 << (7 - ones)) - 1);
-      switch (ones)
+      /* Dispatch on the lead byte with direct comparisons instead of
+       * the LUT: the table indexing puts a dependent load on the
+       * critical path of every multibyte character, and the compare
+       * chain resolves 2- and 3-byte leads (the common cases) first. */
+      if (first < 0xE0)
       {
-         case 4:
-            c = (c << 6) | ((uint8_t)*in++ & 0x3F);
-            /* fall through */
-         case 3:
-            c = (c << 6) | ((uint8_t)*in++ & 0x3F);
-            /* fall through */
-         case 2:
-            c = (c << 6) | ((uint8_t)*in++ & 0x3F);
+         if (first < 0xC0)          /* Continuation byte: desync. */
             break;
-         default:
-         {
-            /* 5 or 6 byte sequences (ones == 5 or 6) */
-            unsigned i;
-            unsigned extra = ones - 1;
-            for (i = 0; i < extra; i++)
-               c = (c << 6) | ((uint8_t)*in++ & 0x3F);
+         if (in_size < 2)           /* Not enough data. */
             break;
-         }
+         c        = ((uint32_t)(first & 0x1F) << 6)
+                  | ((uint8_t)*in++ & 0x3F);
+         in_size -= 2;
+      }
+      else if (first < 0xF0)
+      {
+         if (in_size < 3)
+            break;
+         c        = (uint32_t)(first & 0x0F) << 6;
+         c        = (c | ((uint8_t)*in++ & 0x3F)) << 6;
+         c        =  c | ((uint8_t)*in++ & 0x3F);
+         in_size -= 3;
+      }
+      else if (first < 0xF8)
+      {
+         if (in_size < 4)
+            break;
+         c        = (uint32_t)(first & 0x07) << 6;
+         c        = (c | ((uint8_t)*in++ & 0x3F)) << 6;
+         c        = (c | ((uint8_t)*in++ & 0x3F)) << 6;
+         c        =  c | ((uint8_t)*in++ & 0x3F);
+         in_size -= 4;
+      }
+      else
+      {
+         /* 5/6-byte forms and 0xFE/0xFF: invalid UTF-8. Decode the
+          * 5/6-byte shapes as before (garbage in, garbage out), stop
+          * on 0xFE/0xFF. */
+         unsigned i;
+         ones = utf8_lut[first];
+         if (ones > 6)
+            break;
+         if (ones > in_size)
+            break;
+         c = first & ((1 << (7 - ones)) - 1);
+         for (i = 0; i < ones - 1; i++)
+            c = (c << 6) | ((uint8_t)*in++ & 0x3F);
+         in_size -= ones;
       }
 
       *out++   = c;
-      in_size -= ones;
       out_chars--;
       ret++;
    }
@@ -437,22 +487,39 @@ uint32_t utf8_walk(const char **string)
       return first;
    }
 
-   /* Use LUT + switch to decode, matching utf8_conv_utf32 style */
-   ret = first & ((1 << (7 - utf8_lut[first])) - 1);
-   switch (utf8_lut[first])
+   /* Dispatch on the lead byte with direct comparisons, matching
+    * utf8_conv_utf32: the LUT indexing put a dependent load on the
+    * critical path of every glyph decoded by the per-frame text
+    * renderers, and the compare chain resolves the common 2- and
+    * 3-byte leads first. Continuation and 5-byte-plus leads take the
+    * final branch and decode to garbage, as before. */
+   if (first < 0xE0)
    {
-      case 4:
-         ret = (ret << 6) | (*s++ & 0x3F);
-         /* fall through */
-      case 3:
-         ret = (ret << 6) | (*s++ & 0x3F);
-         /* fall through */
-      case 2:
-         ret = (ret << 6) | (*s++ & 0x3F);
-         break;
-      default:
-         break;
+      if (first < 0xC0)
+         /* Lone continuation byte: desync. Do not consume another
+          * byte, or a caller iterating with while (*str) could be
+          * carried past the terminator. Same masked-garbage return
+          * as the LUT path produced. */
+         ret = first & 0x3F;
+      else
+         ret = ((uint32_t)(first & 0x1F) << 6)
+             |  (*s++ & 0x3F);
    }
+   else if (first < 0xF0)
+   {
+      ret = (uint32_t)(first & 0x0F) << 6;
+      ret = (ret | (*s++ & 0x3F)) << 6;
+      ret =  ret | (*s++ & 0x3F);
+   }
+   else if (first < 0xF8)
+   {
+      ret = (uint32_t)(first & 0x07) << 6;
+      ret = (ret | (*s++ & 0x3F)) << 6;
+      ret = (ret | (*s++ & 0x3F)) << 6;
+      ret =  ret | (*s++ & 0x3F);
+   }
+   else
+      ret = first & ((1 << (7 - utf8_lut[first])) - 1);
 
    *string = (const char*)s;
    return ret;
