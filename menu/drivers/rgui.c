@@ -5871,6 +5871,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s        = thumbnail_title_buf;
+            ticker.s_len    = sizeof(thumbnail_title_buf);
             ticker.len      = rgui->term_layout.width;
             ticker.str      = thumbnail_title;
             ticker.selected = true;
@@ -6073,6 +6074,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
       else
       {
          ticker.s        = title_buf;
+         ticker.s_len    = sizeof(title_buf);
          ticker.len      = title_max_len;
          ticker.str      = rgui->menu_title;
          ticker.selected = true;
@@ -6226,6 +6228,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = entry_title_buf;
+            ticker.s_len              = sizeof(entry_title_buf);
             ticker.len                = entry_title_max_len;
             if (*entry.rich_label)
                ticker.str             = entry.rich_label;
@@ -6263,6 +6266,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
                else
                {
                   ticker.s                  = type_str_buf;
+                  ticker.s_len              = sizeof(type_str_buf);
                   ticker.len                = entry_value_len;
                   ticker.str                = entry_value;
 
@@ -6379,6 +6383,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = sublabel_buf;
+            ticker.s_len              = sizeof(sublabel_buf);
             ticker.len                = rgui->term_layout.width;
             ticker.str                = rgui->menu_sublabel;
             ticker.selected           = true;
@@ -6416,6 +6421,7 @@ static void rgui_render(void *data, unsigned width, unsigned height,
          else
          {
             ticker.s                  = core_title_buf;
+            ticker.s_len              = sizeof(core_title_buf);
             ticker.len                = rgui->term_layout.width;
             ticker.str                = core_title;
             ticker.selected           = true;

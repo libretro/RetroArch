@@ -328,6 +328,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       ticker.idx        = p_anim->ticker_idx;
       ticker.len        = state->shotname_length;
       ticker.s          = shotname;
+      ticker.s_len      = sizeof(shotname);
       ticker.selected   = true;
       ticker.str        = state->shotname;
       ticker.spacer     = NULL;

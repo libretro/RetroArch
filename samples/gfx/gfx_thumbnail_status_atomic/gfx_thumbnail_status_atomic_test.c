@@ -99,6 +99,34 @@
  * through to the static-assert checks otherwise. */
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_timers.h>
+
+/* Yield inside the spin waits.
+ *
+ * The three waits below are pure busy loops.  On a machine with more
+ * than one core that is exactly what is wanted -- the point is to
+ * hammer the release/acquire pair, not to test a scheduler -- but on a
+ * uniprocessor it is a livelock: the spinning thread holds the CPU for
+ * its whole quantum while the thread it is waiting on never runs, so
+ * progress happens only by preemption and a million generations takes
+ * effectively forever.  Single-core CI runners and containers are
+ * common enough to matter; this test used to hang on them.
+ *
+ * Spin a short while first and only then yield: on a multi-core host
+ * the other thread is normally already running and the wait resolves
+ * inside the spin budget, so the yield costs nothing there, while on a
+ * uniprocessor the loop still hands the CPU over instead of holding
+ * it.  retro_sleep(0) is a yield on every platform rthreads supports. */
+#define STRESS_SPIN_BUDGET 64
+
+#define STRESS_YIELD(counter) \
+   do { \
+      if (++(counter) >= STRESS_SPIN_BUDGET) \
+      { \
+         (counter) = 0; \
+         retro_sleep(0); \
+      } \
+   } while (0)
 #endif
 
 /* === Verbatim mirror of gfx_thumbnail.h's relevant pieces === */
@@ -186,10 +214,21 @@ typedef char _gfx_thumb_status_size_check[
  * out a missing-barrier bug under TSan within a few seconds; on
  * real weak-memory hardware (qemu-aarch64) it surfaces faster.
  * Adjust upward if the bug becomes harder to reproduce.
- * Overridable (-DSTRESS_ITERS=...) for constrained environments:
- * the lock-step handshake costs scheduler timeslices per
- * iteration on a single-CPU host, and TSan's happens-before
- * detection does not depend on the count. */
+ * Overridable for constrained environments: the lock-step
+ * handshake costs scheduler timeslices per iteration on a
+ * single-CPU host, and TSan's happens-before detection does not
+ * depend on the count.  Pass it through the Makefile's
+ * EXTRA_CFLAGS, not CFLAGS:
+ *
+ *     make EXTRA_CFLAGS=-DSTRESS_ITERS=20000
+ *
+ * CFLAGS= on the command line replaces everything the Makefile
+ * sets, -DHAVE_THREADS included, and the run then reports
+ * "[skip] HAVE_THREADS not defined" and exits 0 with the whole
+ * stress section switched off.
+ *
+ * Measured on one core: 2.9 s at 20000, 14.4 s at 100000, 36 s
+ * at 250000, ~145 s at the default. */
 #ifndef STRESS_ITERS
 #define STRESS_ITERS 1000000
 #endif
@@ -246,7 +285,8 @@ typedef struct
 
 static void producer_thread(void *arg)
 {
-   stress_state_t *s = (stress_state_t *)arg;
+   stress_state_t *s     = (stress_state_t *)arg;
+   unsigned        spins = 0;
    int             i;
 
    for (i = 1; i <= STRESS_ITERS; i++)
@@ -258,7 +298,7 @@ static void producer_thread(void *arg)
        * previous triple. */
       while (GFX_THUMB_STATUS_LOAD(&s->thumb.status)
             != GFX_THUMBNAIL_STATUS_PENDING)
-         ; /* spin */
+         STRESS_YIELD(spins);
 
       /* Stage the generation's data (no ordering required
        * between these). */
@@ -277,13 +317,14 @@ static void producer_thread(void *arg)
     * same field. */
    while (GFX_THUMB_STATUS_LOAD(&s->thumb.status)
          != GFX_THUMBNAIL_STATUS_PENDING)
-      ; /* drain */
+      STRESS_YIELD(spins);
    GFX_THUMB_STATUS_STORE(&s->thumb.status,
          GFX_THUMBNAIL_STATUS_MISSING);
 }
 
 static void consumer_thread(void *arg)
 {
+   unsigned        spins         = 0;
    stress_state_t *s             = (stress_state_t *)arg;
    unsigned long   mismatches    = 0;
    int             expected      = 1;
@@ -300,10 +341,14 @@ static void consumer_thread(void *arg)
       unsigned                  w, h;
       enum gfx_thumbnail_status st;
 
-      do {
+      for (;;)
+      {
          st = GFX_THUMB_STATUS_LOAD(&s->thumb.status);
-      } while (st != GFX_THUMBNAIL_STATUS_AVAILABLE
-            && st != GFX_THUMBNAIL_STATUS_MISSING);
+         if (     st == GFX_THUMBNAIL_STATUS_AVAILABLE
+               || st == GFX_THUMBNAIL_STATUS_MISSING)
+            break;
+         STRESS_YIELD(spins);
+      }
 
       if (st == GFX_THUMBNAIL_STATUS_MISSING)
          break;

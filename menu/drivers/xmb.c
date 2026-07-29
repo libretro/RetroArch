@@ -6003,6 +6003,7 @@ XMB_NOINLINE static int xmb_draw_item(
       ticker.len                = xmb->ticker_limit;
       ticker.str                = ticker_str;
       ticker.s                  = tmp;
+      ticker.s_len              = sizeof(tmp);
 
       if (ticker.str)
          gfx_animation_ticker(&ticker);
@@ -6100,6 +6101,7 @@ XMB_NOINLINE static int xmb_draw_item(
    else
    {
       ticker.s                  = tmp;
+      ticker.s_len              = sizeof(tmp);
       ticker.len                = ((xmb->use_ps3_layout) ? 40 : 26) * xmb->scale_mod[7];
       ticker.selected           = (i == current);
       ticker.str                = entry.value;
@@ -10002,6 +10004,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
          ticker.str                = title_truncated;
          ticker.s                  = tmp;
+         ticker.s_len              = sizeof(tmp);
          ticker.len                = (tmp_len * xmb->last_scale_factor) / font_width;
 
          if (ticker.str)

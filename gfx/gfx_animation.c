@@ -1114,13 +1114,20 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    gfx_animation_t *p_anim = &anim_st;
    size_t str_len          = utf8len(ticker->str);
 
+   /* utf8cpy() computes its clamp as (len - 1), so a zero here
+    * underflows to SIZE_MAX and the clamp never fires.  A caller that
+    * forgot to set s_len gets nothing written rather than an
+    * unbounded write. */
+   if (ticker->s_len < 1)
+      return false;
+
    if (!ticker->spacer)
       ticker->spacer       = TICKER_SPACER_DEFAULT;
 
    if ((size_t)str_len <= ticker->len)
    {
       utf8cpy(ticker->s,
-            PATH_MAX_LENGTH,
+            ticker->s_len,
             ticker->str,
             ticker->len);
       return false;
@@ -1129,14 +1136,16 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
    if (!ticker->selected)
    {
       size_t _len = utf8cpy(ticker->s,
-            PATH_MAX_LENGTH, ticker->str, ticker->len - 3);
-      if (_len + 4 <= PATH_MAX_LENGTH)
+            ticker->s_len, ticker->str, ticker->len - 3);
+      if (_len + 4 <= ticker->s_len)
       {
          ticker->s[  _len] = '.';
          ticker->s[++_len] = '.';
          ticker->s[++_len] = '.';
          ticker->s[++_len] = '\0';
       }
+      else
+         ticker->s[ticker->s_len - 1] = '\0';
       return false;
    }
 
@@ -1163,7 +1172,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
                   offset1, width1,
                   offset2, width2,
                   offset3, width3,
-                  ticker->s, PATH_MAX_LENGTH);
+                  ticker->s, ticker->s_len);
          }
          break;
       case TICKER_TYPE_BOUNCE:
@@ -1177,7 +1186,7 @@ bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker)
 
             utf8cpy(
                   ticker->s,
-                  PATH_MAX_LENGTH,
+                  ticker->s_len,
                   utf8skip(ticker->str, offset),
                   str_len);
          }
