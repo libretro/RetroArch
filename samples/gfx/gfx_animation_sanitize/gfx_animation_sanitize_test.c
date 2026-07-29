@@ -22,8 +22,7 @@
 
 /* Sanitizer sweep for gfx/gfx_animation.c.
  *
- * Companion to the gfx_thumbnail_sanitize sample; same idea,
- * different file.  gfx_animation.c reaches for only sixteen
+ * gfx_animation.c reaches for only sixteen
  * symbols outside itself, so it stands up almost bare.
  *
  * Two areas are worth the sanitizers' attention.
