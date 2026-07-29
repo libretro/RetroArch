@@ -237,7 +237,14 @@ jobs:
           # GFX_THUMB_STATUS_STORE / GFX_THUMB_STATUS_LOAD or the
           # .status field type, the verbatim copies in
           # gfx_thumbnail_status_atomic_test.c must follow.
-          make clean all SANITIZER=thread
+          #
+          # STRESS_ITERS is bounded here because the default of
+          # 1000000 measures ~145 s on a single core before TSan
+          # multiplies it, and this step allows 60 s.  20000 runs
+          # in ~2.4 s under TSan on one core and still routes every
+          # round trip through the instrumented release/acquire
+          # pair; the default stays at 1000000 for local soak runs.
+          make clean all SANITIZER=thread EXTRA_CFLAGS="-DSTRESS_ITERS=20000"
           test -x gfx_thumbnail_status_atomic_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
              ./gfx_thumbnail_status_atomic_test
