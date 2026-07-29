@@ -366,6 +366,18 @@ static void config_file_get_realpath(char *s, size_t len,
       if (config_path && *config_path)
          fill_pathname_resolve_relative(s, config_path,
             path, len);
+      else
+         /* No base path to resolve against: use the include
+          * path as-is.  Pre-patch this branch left 's'
+          * (a stack buffer in config_file_parse_line)
+          * uninitialized, so a '#include' directive inside a
+          * config parsed via config_file_new_from_string()
+          * with a NULL/empty path handed whatever was on the
+          * stack to the loader as a file name.  Copying the
+          * path verbatim also makes absolute includes work
+          * from pathless configs, which is the only kind
+          * that can resolve without a base. */
+         strlcpy(s, path, len);
    }
 }
 
