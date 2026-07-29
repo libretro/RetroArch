@@ -297,9 +297,26 @@ static void rpng_filter_up(uint8_t *out,
       size_t len)
 {
 #if defined(RPNG_SIMD_SSE2)
+   /* Four vectors per iteration: the loop is bound by load/store
+    * throughput, and the wider body halves the per-16-byte loop
+    * overhead against the single-vector form. */
    size_t i  = 0;
-   size_t n  = len & ~15UL;         /* floor to multiple of 16 */
-   for (; i < n; i += 16)
+   for (; i + 64 <= len; i += 64)
+   {
+      __m128i r0 = _mm_loadu_si128((const __m128i*)(raw   + i));
+      __m128i p0 = _mm_loadu_si128((const __m128i*)(prior + i));
+      __m128i r1 = _mm_loadu_si128((const __m128i*)(raw   + i + 16));
+      __m128i p1 = _mm_loadu_si128((const __m128i*)(prior + i + 16));
+      __m128i r2 = _mm_loadu_si128((const __m128i*)(raw   + i + 32));
+      __m128i p2 = _mm_loadu_si128((const __m128i*)(prior + i + 32));
+      __m128i r3 = _mm_loadu_si128((const __m128i*)(raw   + i + 48));
+      __m128i p3 = _mm_loadu_si128((const __m128i*)(prior + i + 48));
+      _mm_storeu_si128((__m128i*)(out + i),      _mm_add_epi8(r0, p0));
+      _mm_storeu_si128((__m128i*)(out + i + 16), _mm_add_epi8(r1, p1));
+      _mm_storeu_si128((__m128i*)(out + i + 32), _mm_add_epi8(r2, p2));
+      _mm_storeu_si128((__m128i*)(out + i + 48), _mm_add_epi8(r3, p3));
+   }
+   for (; i + 16 <= len; i += 16)
    {
       __m128i r  = _mm_loadu_si128((const __m128i*)(raw   + i));
       __m128i p  = _mm_loadu_si128((const __m128i*)(prior + i));
@@ -309,8 +326,22 @@ static void rpng_filter_up(uint8_t *out,
       out[i] = raw[i] + prior[i];
 #elif defined(RPNG_SIMD_NEON)
    size_t i  = 0;
-   size_t n  = len & ~15UL;
-   for (; i < n; i += 16)
+   for (; i + 64 <= len; i += 64)
+   {
+      uint8x16_t r0 = vld1q_u8(raw   + i);
+      uint8x16_t p0 = vld1q_u8(prior + i);
+      uint8x16_t r1 = vld1q_u8(raw   + i + 16);
+      uint8x16_t p1 = vld1q_u8(prior + i + 16);
+      uint8x16_t r2 = vld1q_u8(raw   + i + 32);
+      uint8x16_t p2 = vld1q_u8(prior + i + 32);
+      uint8x16_t r3 = vld1q_u8(raw   + i + 48);
+      uint8x16_t p3 = vld1q_u8(prior + i + 48);
+      vst1q_u8(out + i,      vaddq_u8(r0, p0));
+      vst1q_u8(out + i + 16, vaddq_u8(r1, p1));
+      vst1q_u8(out + i + 32, vaddq_u8(r2, p2));
+      vst1q_u8(out + i + 48, vaddq_u8(r3, p3));
+   }
+   for (; i + 16 <= len; i += 16)
    {
       uint8x16_t r  = vld1q_u8(raw   + i);
       uint8x16_t p  = vld1q_u8(prior + i);
@@ -413,11 +444,105 @@ static INLINE void rpng_store4_u8(uint8_t *p, __m128i v)
    memcpy(p, &tmp, sizeof(tmp));
 }
 
+/* Sub is a byte prefix sum at pixel stride, and a prefix sum has a
+ * log-depth form: a shift-add tree at byte distances s, 2s, 4s, ...
+ * (every multiple of s up to 15 is a subset sum of those), then one
+ * add of the inter-block carry.  The tree only involves the current
+ * block, so it runs entirely off the loop-carried chain; the chain is
+ * the carry add plus the broadcast that derives the next carry from
+ * the block's last pixel, two to four ops per 16 bytes against one
+ * per pixel for the windowed loop.
+ *
+ * That trade only wins where the windowed loop's ceiling (bpp bytes
+ * per cycle, one paddb each) is below the tree's: strides 1, 2 and 4.
+ * At 3, 6 and 8 bytes per pixel the windowed chain already meets or
+ * beats the tree's block rate, so those strides keep the window.
+ * (wuffs vectorizes none of this below stride 4, and nothing at 16-bit
+ * strides at all.) */
+static void rpng_filter_sub_prefix1(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
+   {
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 1));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 2));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      /* broadcast byte 15 (SSE2 has no byte splat) */
+      carry = _mm_unpackhi_epi8(x, x);
+      carry = _mm_shufflehi_epi16(carry, 0xFF);
+      carry = _mm_shuffle_epi32(carry, 0xEE);
+   }
+   {
+      uint8_t c = i ? decoded[i - 1] : 0;
+      for (; i < pitch; i++)
+      {
+         c          = (uint8_t)(raw[i] + c);
+         decoded[i] = c;
+      }
+   }
+}
+
+static void rpng_filter_sub_prefix2(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
+   {
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 2));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      carry = _mm_shufflehi_epi16(x, 0xFF);
+      carry = _mm_shuffle_epi32(carry, 0xEE);
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 2 ? decoded[i - 2] : 0));
+}
+
+static void rpng_filter_sub_prefix4(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
+   {
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      carry = _mm_shuffle_epi32(x, 0xFF);
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 4 ? decoded[i - 4] : 0));
+}
+
 static void rpng_filter_sub_simd(uint8_t *decoded,
       const uint8_t *raw, size_t pitch, unsigned bpp)
 {
    size_t i           = 0;
    __m128i prev_pixel = _mm_setzero_si128();
+   switch (bpp)
+   {
+      case 1:
+         rpng_filter_sub_prefix1(decoded, raw, pitch);
+         return;
+      case 2:
+         rpng_filter_sub_prefix2(decoded, raw, pitch);
+         return;
+      case 4:
+         rpng_filter_sub_prefix4(decoded, raw, pitch);
+         return;
+   }
    if (bpp <= 4)
    {
       for (; i + 4 <= pitch; i += bpp)
@@ -489,24 +614,32 @@ static void rpng_filter_avg_simd(uint8_t *decoded,
  *   pc = |(b - c) + (a - c)| = |a + b - 2c|
  * PNG selection rule (in priority order): a if pa <= pb && pa <= pc,
  * else b if pb <= pc, else c. */
-static INLINE __m128i rpng_paeth_predictor_epi16(
-      __m128i a, __m128i b, __m128i c)
+/* One Paeth pixel, selecting among speculative sums.  The three
+ * candidate outputs (r + a) & FF, (r + b) & FF and (r + c) & FF are
+ * formed up front: sb and sc do not involve a, so they leave the
+ * loop-carried chain entirely, and the final add and mask move off the
+ * chain as well.  The "don't pick a" test compares pa against
+ * min(pb, pc), one comparison instead of two plus an or.  The chain a
+ * -> ac -> pb -> min -> compare -> select is nine ops; the plain
+ * predictor's is eleven.
+ *
+ * SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
+static INLINE __m128i rpng_paeth_step_epi16(__m128i a, __m128i b,
+      __m128i c, __m128i r, __m128i sb, __m128i sc, __m128i mask)
 {
    __m128i bc = _mm_sub_epi16(b, c);
    __m128i ac = _mm_sub_epi16(a, c);
    __m128i sm = _mm_add_epi16(bc, ac);
    __m128i z  = _mm_setzero_si128();
-   /* SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
    __m128i pa = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
    __m128i pb = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
    __m128i pc = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
-   /* cmpgt returns 0xFFFF on "greater than" — mask of "don't pick a/b". */
-   __m128i not_a  = _mm_or_si128(_mm_cmpgt_epi16(pa, pb),
-                                 _mm_cmpgt_epi16(pa, pc));
+   __m128i not_a  = _mm_cmpgt_epi16(pa, _mm_min_epi16(pb, pc));
    __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
-   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, b),
-                                 _mm_and_si128(   pick_c, c));
-   return            _mm_or_si128(_mm_andnot_si128(not_a, a),
+   __m128i sa     = _mm_and_si128(_mm_add_epi16(r, a), mask);
+   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, sb),
+                                 _mm_and_si128(   pick_c, sc));
+   return            _mm_or_si128(_mm_andnot_si128(not_a, sa),
                                   _mm_and_si128(   not_a, bc_sel));
 }
 
@@ -548,9 +681,11 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
       {
          __m128i r    = rpng_load4_u8_to_u16(raw  + i);
          __m128i pv   = rpng_load4_u8_to_u16(prev + i);
-         __m128i pred = rpng_paeth_predictor_epi16(
-               prev_pixel, pv, prev_upper_left);
-         __m128i out  = _mm_and_si128(_mm_add_epi16(r, pred), mask);
+         __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
+         __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
+               mask);
+         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+               prev_upper_left, r, sb, sc, mask);
          rpng_store4_u16_to_u8(decoded + i, out);
          prev_pixel      = out;
          prev_upper_left = pv;
@@ -562,9 +697,11 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
       {
          __m128i r    = rpng_load8_u8_to_u16(raw  + i);
          __m128i pv   = rpng_load8_u8_to_u16(prev + i);
-         __m128i pred = rpng_paeth_predictor_epi16(
-               prev_pixel, pv, prev_upper_left);
-         __m128i out  = _mm_and_si128(_mm_add_epi16(r, pred), mask);
+         __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
+         __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
+               mask);
+         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+               prev_upper_left, r, sb, sc, mask);
          rpng_store8_u16_to_u8(decoded + i, out);
          prev_pixel      = out;
          prev_upper_left = pv;
@@ -615,11 +752,95 @@ static INLINE void rpng_store4_u8(uint8_t *p, uint8x8_t v)
    memcpy(p, &word, sizeof(word));
 }
 
+/* Sub as a byte prefix sum at strides 1, 2 and 4; see the SSE2 side
+ * for the derivation and for why strides 3, 6 and 8 keep the windowed
+ * per-pixel loop.  A left byte shift of a whole q register is
+ * vextq(zero, x, 16 - k). */
+static void rpng_filter_sub_prefix1(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
+   {
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 15));
+      x = vaddq_u8(x, vextq_u8(zero, x, 14));
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vdupq_lane_u8(vget_high_u8(x), 7);
+   }
+   {
+      uint8_t c = i ? decoded[i - 1] : 0;
+      for (; i < pitch; i++)
+      {
+         c          = (uint8_t)(raw[i] + c);
+         decoded[i] = c;
+      }
+   }
+}
+
+static void rpng_filter_sub_prefix2(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
+   {
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 14));
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vreinterpretq_u8_u16(vdupq_lane_u16(
+            vreinterpret_u16_u8(vget_high_u8(x)), 3));
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 2 ? decoded[i - 2] : 0));
+}
+
+static void rpng_filter_sub_prefix4(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
+   {
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vreinterpretq_u8_u32(vdupq_lane_u32(
+            vreinterpret_u32_u8(vget_high_u8(x)), 1));
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 4 ? decoded[i - 4] : 0));
+}
+
 static void rpng_filter_sub_simd(uint8_t *decoded,
       const uint8_t *raw, size_t pitch, unsigned bpp)
 {
    size_t i             = 0;
    uint8x8_t prev_pixel = vdup_n_u8(0);
+   switch (bpp)
+   {
+      case 1:
+         rpng_filter_sub_prefix1(decoded, raw, pitch);
+         return;
+      case 2:
+         rpng_filter_sub_prefix2(decoded, raw, pitch);
+         return;
+      case 4:
+         rpng_filter_sub_prefix4(decoded, raw, pitch);
+         return;
+   }
    if (bpp <= 4)
    {
       for (; i + 4 <= pitch; i += bpp)
@@ -679,8 +900,14 @@ static void rpng_filter_avg_simd(uint8_t *decoded,
       decoded[i] += (uint8_t)((decoded[i - bpp] + prev[i]) >> 1);
 }
 
-static INLINE uint16x4_t rpng_paeth_predictor_u16(
-      uint16x4_t a, uint16x4_t b, uint16x4_t c)
+/* One Paeth pixel, selecting among speculative sums; see the SSE2
+ * side for the derivation.  The masked sums sb = (r + b) & FF and
+ * sc = (r + c) & FF do not involve a, so they run off the carried
+ * chain, and pa > min(pb, pc) replaces the two-compare-plus-or
+ * "don't pick a" test. */
+static INLINE uint16x4_t rpng_paeth_step_u16(
+      uint16x4_t a, uint16x4_t b, uint16x4_t c,
+      uint16x4_t r, uint16x4_t sb, uint16x4_t sc, uint16x4_t mask)
 {
    int16x4_t bc = vsub_s16(vreinterpret_s16_u16(b), vreinterpret_s16_u16(c));
    int16x4_t ac = vsub_s16(vreinterpret_s16_u16(a), vreinterpret_s16_u16(c));
@@ -688,10 +915,11 @@ static INLINE uint16x4_t rpng_paeth_predictor_u16(
    uint16x4_t pa = vreinterpret_u16_s16(vabs_s16(bc));
    uint16x4_t pb = vreinterpret_u16_s16(vabs_s16(ac));
    uint16x4_t pc = vreinterpret_u16_s16(vabs_s16(sm));
-   uint16x4_t not_a  = vorr_u16(vcgt_u16(pa, pb), vcgt_u16(pa, pc));
+   uint16x4_t not_a  = vcgt_u16(pa, vmin_u16(pb, pc));
    uint16x4_t pick_c = vcgt_u16(pb, pc);
-   uint16x4_t bc_sel = vbsl_u16(pick_c, c, b);
-   return              vbsl_u16(not_a,  bc_sel, a);
+   uint16x4_t sa     = vand_u16(vadd_u16(r, a), mask);
+   uint16x4_t bc_sel = vbsl_u16(pick_c, sc, sb);
+   return              vbsl_u16(not_a,  bc_sel, sa);
 }
 
 /* 8-lane forms of the load/store/predict trio, mirroring the SSE2 side. */
@@ -705,8 +933,9 @@ static INLINE void rpng_store8_u16_to_u8(uint8_t *p, uint16x8_t v)
    vst1_u8(p, vmovn_u16(v));
 }
 
-static INLINE uint16x8_t rpng_paeth_predictor_u16q(
-      uint16x8_t a, uint16x8_t b, uint16x8_t c)
+static INLINE uint16x8_t rpng_paeth_step_u16q(
+      uint16x8_t a, uint16x8_t b, uint16x8_t c,
+      uint16x8_t r, uint16x8_t sb, uint16x8_t sc, uint16x8_t mask)
 {
    int16x8_t bc      = vsubq_s16(vreinterpretq_s16_u16(b),
                                  vreinterpretq_s16_u16(c));
@@ -716,10 +945,11 @@ static INLINE uint16x8_t rpng_paeth_predictor_u16q(
    uint16x8_t pa     = vreinterpretq_u16_s16(vabsq_s16(bc));
    uint16x8_t pb     = vreinterpretq_u16_s16(vabsq_s16(ac));
    uint16x8_t pc     = vreinterpretq_u16_s16(vabsq_s16(sm));
-   uint16x8_t not_a  = vorrq_u16(vcgtq_u16(pa, pb), vcgtq_u16(pa, pc));
+   uint16x8_t not_a  = vcgtq_u16(pa, vminq_u16(pb, pc));
    uint16x8_t pick_c = vcgtq_u16(pb, pc);
-   uint16x8_t bc_sel = vbslq_u16(pick_c, c, b);
-   return              vbslq_u16(not_a,  bc_sel, a);
+   uint16x8_t sa     = vandq_u16(vaddq_u16(r, a), mask);
+   uint16x8_t bc_sel = vbslq_u16(pick_c, sc, sb);
+   return              vbslq_u16(not_a,  bc_sel, sa);
 }
 
 /* See the SSE2 rpng_filter_paeth_simd above for why an 8-byte window can
@@ -740,8 +970,9 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
       {
          uint16x4_t r    = rpng_load4_u8_to_u16(raw  + i);
          uint16x4_t pv   = rpng_load4_u8_to_u16(prev + i);
-         uint16x4_t pred = rpng_paeth_predictor_u16(pp, pv, pul);
-         uint16x4_t out  = vand_u16(vadd_u16(r, pred), m4);
+         uint16x4_t sb   = vand_u16(vadd_u16(r, pv),  m4);
+         uint16x4_t sc   = vand_u16(vadd_u16(r, pul), m4);
+         uint16x4_t out  = rpng_paeth_step_u16(pp, pv, pul, r, sb, sc, m4);
          rpng_store4_u16_to_u8(decoded + i, out);
          pp  = out;
          pul = pv;
@@ -753,9 +984,10 @@ static void rpng_filter_paeth_simd(uint8_t *decoded,
       {
          uint16x8_t r    = rpng_load8_u8_to_u16(raw  + i);
          uint16x8_t pv   = rpng_load8_u8_to_u16(prev + i);
-         uint16x8_t pred = rpng_paeth_predictor_u16q(
-               prev_pixel, pv, prev_upper_left);
-         uint16x8_t out  = vandq_u16(vaddq_u16(r, pred), mask);
+         uint16x8_t sb   = vandq_u16(vaddq_u16(r, pv), mask);
+         uint16x8_t sc   = vandq_u16(vaddq_u16(r, prev_upper_left), mask);
+         uint16x8_t out  = rpng_paeth_step_u16q(
+               prev_pixel, pv, prev_upper_left, r, sb, sc, mask);
          rpng_store8_u16_to_u8(decoded + i, out);
          prev_pixel      = out;
          prev_upper_left = pv;
@@ -1789,7 +2021,7 @@ static int rpng_reverse_filter_regular_iterate(
       struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
-   if (pngp->h < ihdr->height)
+if (pngp->h < ihdr->height)
    {
       unsigned filter         = *pngp->inflate_buf++;
       pngp->restore_buf_size += 1;
