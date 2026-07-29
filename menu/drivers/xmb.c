@@ -9932,15 +9932,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    if (!vertical_fade_factor && selection > 1)
    {
       /* skip 25 UTF8 multi-byte chars */
-      char *end = title_truncated;
-
-      for (i = 0; i < 25 && *end; i++)
-      {
-         end++;
-         while ((*end & 0xC0) == 0x80)
-            end++;
-      }
-
+      char *end = (char*)utf8skip(title_truncated, 25);
       *end = '\0';
    }
 

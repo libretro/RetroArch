@@ -494,7 +494,7 @@ static INLINE unsigned is_misc_ws(const unsigned char* src)
 }
 
 static INLINE unsigned font_get_arabic_replacement(
-      const char* src, const char* start)
+      const char* src, const char* start, const char* end)
 {
    /* 0x0620 to 0x064F */
    static const unsigned arabic_shape_map[0x100][0x4] = {
@@ -638,7 +638,11 @@ static INLINE unsigned font_get_arabic_replacement(
    const char*   prev           = src - 2;
    const char*   next           = src + 2;
 
-   if (IS_ARABIC(prev) && (prev >= start))
+   /* prev/next straddle src by one Arabic character (2 bytes). Bounds
+    * must be tested before IS_ARABIC dereferences them: prev can point
+    * before start when src is at the first character, and the forward
+    * scan must not read past the terminator. */
+   if ((prev >= start) && IS_ARABIC(prev))
    {
       unsigned char prev_id = GET_ID_ARABIC(prev);
 
@@ -658,7 +662,7 @@ static INLINE unsigned font_get_arabic_replacement(
          const char*   prev2    = prev - 2;
 
          if (prev2 >= start)
-            prev2_id            = (prev2[0] << 6) | (prev2[1] & 0x3F);
+            prev2_id            = GET_ID_ARABIC(prev2);
 
          /* nonspacing diacritics 0x4b -- 0x5f */
          while (prev2_id > 0x4A && prev2_id < 0x60)
@@ -687,7 +691,7 @@ static INLINE unsigned font_get_arabic_replacement(
       prev_connected = !!arabic_shape_map[prev_id][2];
    }
 
-   if (IS_ARABIC(next))
+   if ((next + 1 < end) && IS_ARABIC(next))
    {
       unsigned char next_id = GET_ID_ARABIC(next);
 
@@ -695,7 +699,7 @@ static INLINE unsigned font_get_arabic_replacement(
       while (next_id > 0x4A && next_id < 0x60)
       {
          next += 2;
-         if (!IS_ARABIC(next))
+         if ((next + 1 >= end) || !IS_ARABIC(next))
             break;
          next_id = GET_ID_ARABIC(next);
       }
@@ -760,7 +764,7 @@ static char* font_driver_reshape_msg(const char* msg, size_t msg_len,
             if (IS_ARABIC(src))
             {
                unsigned replacement = font_get_arabic_replacement(
-                     (const char*)src, msg);
+                     (const char*)src, msg, (const char*)msg + msg_len);
 
                if (replacement)
                {
