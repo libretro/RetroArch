@@ -648,16 +648,20 @@ static void sdl_input_poll(void *data)
             mod |= RETROKMOD_SCROLLOCK;
 
          {
-            /* Use key+mod ASCII so Shift does not leak as '?' and capitals work.
-             * Force Enter / numpad Enter to '\r' so they save the line instead
-             * of inserting RETROK_KP_ENTER (271) as '?'. */
+            /* Use key+mod ASCII so Shift does not leak as '?' and capitals work. */
             uint32_t character = input_keymaps_translate_rk_to_ascii(
                   (enum retro_key)code, (enum retro_mod)mod);
 
+#ifdef WEBOS
+            /* Force Enter / numpad Enter to '\r' so they save the line
+             * (see #19275). This must stay webOS-only: with no modifiers
+             * held the translation already yields '\r' / '\n', both of
+             * which save the line, and with Alt/Ctrl/Meta held it
+             * deliberately yields no character so that hotkey chords such
+             * as Alt+Enter cannot submit an open line editor. */
             if (code == RETROK_RETURN || code == RETROK_KP_ENTER)
                character = '\r';
 
-#ifdef WEBOS
             /* Numpad Enter is never sent by the Magic Remote; always save. */
             if (code == RETROK_KP_ENTER)
                sdl_webos_phys_kbd_typing = true;
