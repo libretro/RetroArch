@@ -404,20 +404,26 @@ const char *utf8skip(const char *str, size_t chars)
          if (b < 0x80)
          {
             /* Batch the rest of an ASCII run. The current character
-             * is consumed by the --chars below, so only batch while
-             * more than eight characters remain in the budget. A word
-             * qualifies when no byte has the high bit set (ASCII) and
-             * no byte is zero (standard SWAR zero test; with the high
-             * bits already known clear it cannot false-negative). */
-            while (chars > 8)
+             * is consumed by the --chars below, so batch only while
+             * more than one character remains in the budget.
+             *
+             * Byte steps rather than a wide word test: utf8skip's
+             * contract is a NUL-terminated string with no length, so
+             * an 8-byte load could read past a terminator that falls
+             * inside the word - on a tightly sized allocation that is
+             * a read beyond the end of the buffer, even though the
+             * zero test would stop the cursor before consuming those
+             * bytes. Stepping a byte at a time stops exactly at the
+             * terminator or the first multibyte lead and still skips
+             * the per-character dispatch for the run; only the load
+             * width changes. */
+            while (chars > 1)
             {
-               uint64_t w;
-               memcpy(&w, strb, sizeof(w));
-               if ((w | (w - 0x0101010101010101ULL))
-                     & 0x8080808080808080ULL)
+               uint8_t nb = *strb;
+               if (nb == 0 || nb >= 0x80)
                   break;
-               strb  += 8;
-               chars -= 8;
+               strb++;
+               chars--;
             }
          }
       }
