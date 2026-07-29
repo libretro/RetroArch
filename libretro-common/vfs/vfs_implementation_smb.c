@@ -35,6 +35,8 @@ static int next_context_index = 0;
 static bool smb_initialized = false;
 static int max_context_configured = 0;
 static const struct smb_settings *smb_cfg = NULL;
+/* Auth mode that actually worked at init, reused when healing contexts */
+static int resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
 
 static struct smb2_context *get_smb_context(void)
 {
@@ -56,6 +58,77 @@ static struct smb2_context *get_smb_context(void)
       return NULL;
 
    return smb_context_pool[idx];
+}
+
+/* Create and connect one context using the auth mode resolved at init */
+static struct smb2_context *smb_create_context(void)
+{
+   char server[256];
+   char share[256];
+   const char *username = NULL;
+   struct smb2_context *ctx;
+
+   if (!smb_cfg || !smb_cfg->server_address || !*smb_cfg->server_address)
+      return NULL;
+
+   if (!(ctx = smb2_init_context()))
+      return NULL;
+
+   strlcpy(server, smb_cfg->server_address, sizeof(server));
+   if (smb_cfg->share && *smb_cfg->share)
+      strlcpy(share, smb_cfg->share, sizeof(share));
+   else
+      share[0] = '\0';
+
+   if (smb_cfg->username && *smb_cfg->username)
+   {
+      username = smb_cfg->username;
+      smb2_set_user(ctx, username);
+   }
+   if (smb_cfg->password && *smb_cfg->password)
+      smb2_set_password(ctx, smb_cfg->password);
+   if (smb_cfg->workgroup && *smb_cfg->workgroup)
+      smb2_set_domain(ctx, smb_cfg->workgroup);
+   smb2_set_timeout(ctx, smb_cfg->timeout);
+   smb2_set_security_mode(ctx, resolved_auth_mode);
+   smb2_set_authentication(ctx, resolved_auth_mode);
+
+   if (smb2_connect_share(ctx, server, share, username) < 0)
+   {
+      smb2_destroy_context(ctx);
+      return NULL;
+   }
+
+   return ctx;
+}
+
+/* Connect the replacement before destroying the dead context so a failed
+ * reconnect leaves the pool unchanged. */
+static struct smb2_context *smb_heal_context(struct smb2_context *dead)
+{
+   int i;
+   struct smb2_context *fresh;
+
+   for (i = 0; i < max_context_configured; i++)
+      if (smb_context_pool[i] == dead)
+         break;
+   if (i == max_context_configured)
+      return NULL;
+
+   if (!(fresh = smb_create_context()))
+      return NULL;
+
+   smb2_destroy_context(dead);
+   smb_context_pool[i] = fresh;
+   return fresh;
+}
+
+/* Echo failure on an established session means the transport is dead */
+static struct smb2_context *smb_heal_if_dead(struct smb2_context *ctx)
+{
+   if (smb2_echo(ctx) == 0)
+      return NULL;
+   return smb_heal_context(ctx);
 }
 
 void reset(unsigned num_contexts)
@@ -143,10 +216,12 @@ static bool smb_init(void)
          case RETRO_SMB2_SEC_NTLMSSP:
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
             smb2_set_authentication(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+            resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
             break;
          case RETRO_SMB2_SEC_KRB5:
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_KRB5);
             smb2_set_authentication(smb_context, RETRO_SMB2_SEC_KRB5);
+            resolved_auth_mode = RETRO_SMB2_SEC_KRB5;
             break;
          case RETRO_SMB2_SEC_UNDEFINED:
          default:
@@ -160,6 +235,7 @@ static bool smb_init(void)
                if (smb2_connect_share(smb_context, server, share, username) == 0)
                {
                   /* KRB5 worked — use it for all remaining contexts */
+                  resolved_auth_mode = RETRO_SMB2_SEC_KRB5;
                   smb_context_pool[i] = smb_context;
                   max_context_configured = i + 1;
                   continue;
@@ -186,6 +262,7 @@ static bool smb_init(void)
             /* if that fails, try SMB2_SEC_KRB5 in fallthrough */
             smb2_set_security_mode(smb_context, RETRO_SMB2_SEC_NTLMSSP);
             smb2_set_authentication(smb_context, RETRO_SMB2_SEC_NTLMSSP);
+            resolved_auth_mode = RETRO_SMB2_SEC_NTLMSSP;
             break;
       }
 
@@ -341,7 +418,12 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
 
    fh = smb2_open(smb_context, full_path, flags);
    if (!fh)
-      return false;
+   {
+      if ((smb_context = smb_heal_if_dead(smb_context)))
+         fh = smb2_open(smb_context, full_path, flags);
+      if (!fh)
+         return false;
+   }
 
    stream->smb_fh = (intptr_t)(uintptr_t)fh;
    stream->smb_ctx = (intptr_t)(uintptr_t)smb_context;
@@ -364,7 +446,7 @@ int64_t retro_vfs_file_read_smb(libretro_vfs_implementation_file *stream,
       return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx)
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
@@ -411,7 +493,7 @@ int64_t retro_vfs_file_write_smb(libretro_vfs_implementation_file *stream,
       return 0;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx)
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    fh = (struct smb2fh *)(intptr_t)stream->smb_fh;
@@ -460,7 +542,7 @@ int64_t retro_vfs_file_seek_smb(libretro_vfs_implementation_file *stream,
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx)
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    /* Only allow valid values */
@@ -494,7 +576,7 @@ int64_t retro_vfs_file_tell_smb(libretro_vfs_implementation_file *stream)
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx)
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    ret = smb2_lseek(ctx, fh, 0, SEEK_CUR, &cur);
@@ -520,6 +602,14 @@ int retro_vfs_file_close_smb(libretro_vfs_implementation_file *stream)
    if (!ctx)
       return -1;
 
+   /* Context healed away: leak the fh rather than use-after-free */
+   if (!smb2_context_active(ctx))
+   {
+      stream->smb_fh = (intptr_t)-1;
+      stream->smb_ctx = (intptr_t)0;
+      return -1;
+   }
+
    ret = smb2_close(ctx, (struct smb2fh *)(intptr_t)stream->smb_fh);
 
    stream->smb_fh = (intptr_t)-1;
@@ -536,6 +626,7 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
    smb_dir_handle *handle;
 
    (void)include_hidden;
+
 
    if (!smb_init())
       return NULL;
@@ -556,7 +647,12 @@ smb_dir_handle* retro_vfs_opendir_smb(const char *path, bool include_hidden)
 
    dir = smb2_opendir(smb_context, full_path);
    if (!dir)
-      return NULL;
+   {
+      if ((smb_context = smb_heal_if_dead(smb_context)))
+         dir = smb2_opendir(smb_context, full_path);
+      if (!dir)
+         return NULL;
+   }
 
    handle = (smb_dir_handle*)malloc(sizeof(smb_dir_handle));
    if (!handle)
@@ -579,7 +675,7 @@ struct smbc_dirent* retro_vfs_readdir_smb(smb_dir_handle* dh)
    if (!smb_initialized || !dh)
       return NULL;
 
-   if (!dh->ctx || !dh->dir)
+   if (!dh->ctx || !dh->dir || !smb2_context_active(dh->ctx))
       return NULL;
 
    ent = smb2_readdir(dh->ctx, dh->dir);
@@ -602,6 +698,13 @@ int retro_vfs_closedir_smb(smb_dir_handle* dh)
 
    if (!dh->ctx || !dh->dir)
       return -1;
+
+   /* Context healed away: leak the smb2dir rather than use-after-free */
+   if (!smb2_context_active(dh->ctx))
+   {
+      free(dh);
+      return -1;
+   }
 
    smb2_closedir(dh->ctx, dh->dir);
    free(dh);
@@ -633,7 +736,12 @@ int retro_vfs_stat_smb(const char *path, int64_t *size)
       return 0;
 
    if (smb2_stat(smb_context, rel_path, &st) < 0)
-      return 0;
+   {
+      if (!(smb_context = smb_heal_if_dead(smb_context)))
+         return 0;
+      if (smb2_stat(smb_context, rel_path, &st) < 0)
+         return 0;
+   }
 
    /* smb2_size is uint64_t; *size is int64_t.  A naked cast on
     * files > INT64_MAX (8 EiB) would produce a negative value
@@ -664,7 +772,7 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream)
       return -1;
 
    ctx = (struct smb2_context *)(void *)(uintptr_t)stream->smb_ctx;
-   if (!ctx)
+   if (!ctx || !smb2_context_active(ctx))
       return -1;
 
    err = smb2_get_error(ctx);
