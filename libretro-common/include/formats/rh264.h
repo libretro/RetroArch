@@ -1,13 +1,23 @@
 /* rh264 -- self-contained H.264 decoder for libretro-common.
  *
- * Decodes H.264 (AVC) I and P pictures: NAL/SPS/PPS/slice parsing, CAVLC and
- * CABAC residual decoding, 4x4 and 16x16 luma intra prediction and chroma
- * intra prediction, inter prediction (motion vector prediction, sub-pel
- * luma and chroma interpolation, a single reference picture), the inverse
- * 4x4 transform and Hadamard DC transforms, dequantisation (with correct
- * chroma-QP derivation), and the in-loop deblocking filter.  B pictures,
- * CABAC-coded P slices, multiple reference pictures and the higher profiles
- * are not present.
+ * Decodes H.264 (AVC) I, P and B pictures with either entropy coding
+ * (CAVLC and CABAC): NAL/SPS/PPS/slice parsing; 4x4, 8x8 and 16x16 luma
+ * and chroma intra prediction; inter prediction with quarter-pel motion
+ * compensation, multiple reference pictures (a DPB with sliding-window
+ * and MMCO marking and reference list modifications), weighted and
+ * implicit bi-prediction, and spatial and temporal direct modes; the
+ * 4x4 and 8x8 integer transforms with scaling matrices and the Hadamard
+ * DC transforms; dequantisation with correct chroma-QP derivation; the
+ * in-loop deblocking filter; and picture order count types 0, 1 and 2
+ * with display-order output.  Reconstruction is 8-bit 4:2:0 and 4:2:2,
+ * which covers the baseline, main and high profiles as commonly emitted.
+ *
+ * Out-of-scope streams are refused at the parameter-set or slice level
+ * rather than decoded wrongly: 4:4:4, monochrome, high bit depths and
+ * lossless transform bypass; SP/SI switching slices; FMO/ASO and
+ * redundant pictures; field-coded B and CABAC pictures and field-coded
+ * macroblock pairs (frame-coded MBAFF pairs decode; field pictures
+ * decode for CAVLC I/P).
  *
  * The CAVLC VLC tables are extracted verbatim from the encoder tables in
  * libopenh264 (verified prefix-free); no table is hand-transcribed.
