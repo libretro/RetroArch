@@ -723,17 +723,24 @@ int rlzma_dec_decode(rlzma_dec_t *dec,
             else
             {
                /* Overlapping copy: run-length semantics fall out of a
-                * forward copy, so memcpy is not usable. Copying in
-                * rep0-sized blocks keeps every block's source and
-                * destination disjoint, since each block reads only bytes
-                * written before it started. */
+                * forward copy, so memcpy is not usable directly. Copy
+                * from the fixed base instead, doubling the chunk each
+                * round: once done bytes are out, [copy_pos, pos + done)
+                * is one periodic run, so the next chunk may take
+                * rep0 + done bytes and still read only bytes written
+                * before it started. done stays a multiple of rep0 for
+                * every chunk but the last, which keeps the period
+                * aligned; the last chunk is a truncation and needs no
+                * alignment. Small periods are the common case here, and
+                * fixed rep0-sized chunks would mean a 2-16 byte memcpy
+                * per round for a match that can run to 273 bytes. */
                uint32_t done = 0;
                while (done < copy_len)
                {
-                  uint32_t chunk = rep0;
+                  uint32_t chunk = rep0 + done;
                   if (chunk > copy_len - done)
                      chunk = copy_len - done;
-                  memcpy(dst + pos + done, dst + copy_pos + done, chunk);
+                  memcpy(dst + pos + done, dst + copy_pos, chunk);
                   done += chunk;
                }
                pos += copy_len;
