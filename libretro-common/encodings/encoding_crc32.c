@@ -71,7 +71,11 @@
  * that reason and exists only for GCC old enough to lack
  * __has_attribute. */
 #  if defined(_MSC_VER)
-#    define CRC32_HAVE_PCLMUL_PATH 1
+     /* wmmintrin.h arrived in Visual Studio 2008 SP1, which is not
+      * distinguishable from RTM by _MSC_VER, so require VS2010. */
+#    if _MSC_VER >= 1600
+#      define CRC32_HAVE_PCLMUL_PATH 1
+#    endif
 #  elif defined(__has_attribute) && defined(__has_include)
 #    if __has_attribute(target) && __has_include(<wmmintrin.h>)
 #      define CRC32_HAVE_PCLMUL_PATH 1

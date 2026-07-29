@@ -1855,9 +1855,13 @@ static void rd_fixed_lit_lengths(uint8_t *ll)
  * to be able to build the intrinsic.  Same predicate shape as the
  * carry-less multiply path in encoding_crc32.c, and for the same
  * reason: Clang reports itself as GCC 4.2 forever, so a bare version
- * comparison would reject every Clang build. */
+ * comparison would reject every Clang build.  MSVC gained
+ * nmmintrin.h in Visual Studio 2008 (_MSC_VER 1500); older MSVC
+ * takes the shift-xor hash. */
 #  if defined(_MSC_VER)
-#    define RD_CRC32_HASH_RUNTIME 1
+#    if _MSC_VER >= 1500
+#      define RD_CRC32_HASH_RUNTIME 1
+#    endif
 #  elif defined(__has_attribute) && defined(__has_include)
 #    if __has_attribute(target) && __has_include(<nmmintrin.h>)
 #      define RD_CRC32_HASH_RUNTIME 1
