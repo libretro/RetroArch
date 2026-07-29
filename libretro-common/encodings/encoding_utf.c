@@ -377,8 +377,13 @@ size_t utf8cpy(char *s, size_t len, const char *in, size_t chars)
  *
  * Leaf function.
  *
- * Optimized: use LUT to jump over entire multi-byte
- * characters instead of scanning continuation bytes.
+ * Optimized: comparison dispatch on the lead byte (no dependent LUT
+ * load on the per-character path), NUL-guarded stepping over
+ * multibyte sequences, and ASCII runs skipped eight characters per
+ * masked 64-bit word test. The word test requires every byte to be
+ * ASCII and non-NUL, so it can neither overshoot the terminator nor
+ * miscount characters. memcpy load: alignment/aliasing safe, endian
+ * neutral.
  **/
 const char *utf8skip(const char *str, size_t chars)
 {
@@ -389,15 +394,68 @@ const char *utf8skip(const char *str, size_t chars)
 
    do
    {
-      unsigned ones;
-      if (!*strb)
+      uint8_t b = *strb;
+      if (!b)
          break;
-      ones = utf8_lut[*strb];
-      if (ones < 2)
+      if (b < 0xC0)
+      {
+         /* ASCII or lone continuation byte: one char, one byte. */
          strb++;
+         if (b < 0x80)
+         {
+            /* Batch the rest of an ASCII run. The current character
+             * is consumed by the --chars below, so only batch while
+             * more than eight characters remain in the budget. A word
+             * qualifies when no byte has the high bit set (ASCII) and
+             * no byte is zero (standard SWAR zero test; with the high
+             * bits already known clear it cannot false-negative). */
+            while (chars > 8)
+            {
+               uint64_t w;
+               memcpy(&w, strb, sizeof(w));
+               if ((w | (w - 0x0101010101010101ULL))
+                     & 0x8080808080808080ULL)
+                  break;
+               strb  += 8;
+               chars -= 8;
+            }
+         }
+      }
+      else if (b < 0xE0)
+      {
+         strb++;
+         if (*strb)
+            strb++;
+      }
+      else if (b < 0xF0)
+      {
+         strb++;
+         if (*strb)
+         {
+            strb++;
+            if (*strb)
+               strb++;
+         }
+      }
+      else if (b < 0xF8)
+      {
+         strb++;
+         if (*strb)
+         {
+            strb++;
+            if (*strb)
+            {
+               strb++;
+               if (*strb)
+                  strb++;
+            }
+         }
+      }
       else
       {
-         /* Verify we don't walk past a NUL inside a multi-byte seq */
+         /* Invalid 5/6/7-lead: step over utf8_lut[b] bytes stopping
+          * at NUL, exactly as the LUT loop did. */
+         unsigned ones = utf8_lut[b];
          unsigned i;
          for (i = 0; i < ones && strb[i]; i++)
             ;
