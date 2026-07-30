@@ -103,9 +103,17 @@ run
 # asserting this pins vid/pid-tuple ranking above name ranking.
 assert_seen 'device name D configured in port 1'    "P1 connect: vid/pid winner on port 1"
 assert_seen 'device B configured in port 2'         "P1 connect: name match on port 2"
-assert_seen 'device name D disconnected from port 1' "P1 disconnect clears port 1"
+# Disconnect assertions check the port, not the device name.  The
+# notice carries the port's stored display name when the connect task
+# had already applied it, the raw driver-reported name when it had
+# not, and a "not available" placeholder when neither is set - see the
+# fallbacks in input_autoconfigure_disconnect.  Which one appears
+# depends on connect/disconnect task ordering, so pinning the name
+# pins a race.  Device identity is asserted on the connect side above,
+# where it is stable and where it actually exercises profile matching.
+assert_seen 'disconnected from port 1' "P1 disconnect clears port 1"
 assert_seen 'device C configured in port 1'          "P1 reconnect: different device reconfigures port 1"
-assert_seen 'device B disconnected from port 2'      "P1 disconnect clears port 2"
+assert_seen 'disconnected from port 2'               "P1 disconnect clears port 2"
 [ -s "$INDEX" ] && pass "P1 index written" || fail "P1 index missing/empty"
 
 # ---------------------------------------------------------------
