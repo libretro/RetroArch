@@ -2821,6 +2821,17 @@ gl3_filter_chain_t *gl3_filter_chain_create_default(
    return chain.release();
 }
 
+/* Owns an include cache for a scope, so the pass loops below can share
+ * one across every pass without having to free it on each error exit. */
+struct glslang_include_cache_guard
+{
+   void *handle;
+   glslang_include_cache_guard() : handle(glslang_include_cache_new()) {}
+   ~glslang_include_cache_guard() { glslang_include_cache_free(handle); }
+   glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
+   glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
+};
+
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path, glslang_filter_chain_filter filter)
 {
@@ -2845,6 +2856,14 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
    shader->num_parameters = 0;
 
+   /* One include cache for every pass of this preset.  The passes share
+    * helper .inc files, so without this each pass re-reads them: a
+    * 24-pass preset over 8 shared helpers issues 216 reads for 32
+    * distinct files.  The guard frees it on every exit from here,
+    * including the error paths below. */
+   glslang_include_cache_guard include_cache_guard;
+   void *include_cache = include_cache_guard.handle;
+
    for (i = 0; i < shader->passes; i++)
    {
       glslang_output output;
@@ -2863,7 +2882,8 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       pass_info.address       = GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT;
       pass_info.max_levels    = 0;
 
-      if (!glslang_compile_shader(pass->source.path, &output))
+      if (!glslang_compile_shader_cached(pass->source.path, &output,
+               include_cache))
       {
          RARCH_ERR("[GLCore] Failed to compile shader: \"%s\".\n",
                pass->source.path);

@@ -757,6 +757,12 @@ static bool glslang_parse_meta(const struct shader_line_buf *lines,
  * ----------------------------------------------------------------------- */
 bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 {
+   return glslang_compile_shader_cached(shader_path, output, NULL);
+}
+
+bool glslang_compile_shader_cached(const char *shader_path,
+      glslang_output *output, void *include_cache)
+{
 #if defined(HAVE_GLSLANG)
    struct shader_line_buf lines;
    char cache_filename[PATH_MAX_LENGTH];
@@ -766,7 +772,8 @@ bool glslang_compile_shader(const char *shader_path, glslang_output *output)
 
    RARCH_LOG("[Slang] Compiling shader: \"%s\".\n", shader_path);
 
-   if (!glslang_read_shader_file(shader_path, &lines, true, false))
+   if (!glslang_read_shader_file_cached(shader_path, &lines, true, false,
+            include_cache))
       goto error;
 
    /* Compute cache key from preprocessed source (vertex + fragment stages) */

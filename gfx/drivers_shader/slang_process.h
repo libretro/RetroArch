@@ -258,6 +258,14 @@ struct glslang_output
 
 bool glslang_compile_shader(const char *shader_path, glslang_output *output);
 
+/* As glslang_compile_shader(), but expands '#include' directives
+ * through @include_cache (see glslang_include_cache_new).  A preset's
+ * passes share helper files, so one cache across a filter chain's pass
+ * loop reads each file once instead of once per pass.  A NULL cache
+ * behaves exactly like the uncached call. */
+bool glslang_compile_shader_cached(const char *shader_path,
+      glslang_output *output, void *include_cache);
+
 bool slang_preprocess_parse_parameters(glslang_meta& meta,
       struct video_shader *shader);
 
