@@ -1254,7 +1254,9 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
    unsigned short data_len = 0;
    unsigned char first_session = 0;
    unsigned char last_session = 0;
-   int i;
+   size_t max_entries = 0;
+   size_t num_entries = 0;
+   size_t i;
 #endif
    int rv;
 
@@ -1267,6 +1269,9 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
      return 1;
 
 #ifdef CDROM_DEBUG
+   if (len < 4)
+      return 0;
+
    data_len      = s[0] << 8 | s[1];
    first_session = s[2];
    last_session  = s[3];
@@ -1275,7 +1280,15 @@ int cdrom_read_subq(libretro_vfs_implementation_file *stream, unsigned char *s, 
    printf("[CDROM] First Session: %d\n", first_session);
    printf("[CDROM] Last Session: %d\n", last_session);
 
-   for (i = 0; i < (data_len - 2) / 11; i++)
+   /* data_len comes off the wire; never let it walk the parse past
+    * the caller's buffer. */
+   max_entries = (len - 4) / 11;
+   if (data_len >= 2)
+      num_entries = (size_t)(data_len - 2) / 11;
+   if (num_entries > max_entries)
+      num_entries = max_entries;
+
+   for (i = 0; i < num_entries; i++)
    {
       unsigned char session_num = s[4 + (i * 11) + 0];
       unsigned char adr         = (s[4 + (i * 11) + 1] >> 4) & 0xF;
