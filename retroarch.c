@@ -6940,6 +6940,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_XAUDIO
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_XAUDIO,          "XAudio2",         "Audio driver");
 #endif
+#ifdef HAVE_CHD
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_CHD,             "CHD",             "CHD support");
+#endif
 #ifdef HAVE_7ZIP
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_7ZIP,            "7zip",            "7zip support");
 #endif

@@ -578,8 +578,10 @@ chdstream_t *chdstream_open(const char *path, int32_t track)
    chdstream_t *stream     = NULL;
    chd_file *chd           = NULL;
    chd_error err           = chd_open(path, CHD_OPEN_READ, NULL, &chd);
-   if (err != CHDERR_NONE)
+   if (err != CHDERR_NONE) {
+      RARCH_LOG("[CHD] %s\n", chd_error_string(err));
       return NULL;
+   }
    if (!chdstream_find_track(chd, track, &meta))
       goto error;
    stream                  = (chdstream_t*)malloc(sizeof(*stream));
