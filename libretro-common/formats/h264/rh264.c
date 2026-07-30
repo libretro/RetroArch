@@ -6877,6 +6877,18 @@ static const uint8_t rh264_sig8map[64]={
 static const uint8_t rh264_last8map[64]={
    0,1,1,1,1,1,1,1, 1,1,1,1,1,1,1,1, 2,2,2,2,2,2,2,2, 2,2,2,2,2,2,2,2,
    3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4, 5,5,5,5,6,6,6,6, 7,7,7,7,8,8,8,8};
+/* ctxIdxInc maps for the 4x4/chroma-DC significance and last flags, so
+ * the per-coefficient derivation is a table load rather than a chain of
+ * tests on values fixed for the whole block: identity for the 4x4
+ * categories, and min(i,2) / min(i>>1,2) for chroma DC in 4:2:0 and
+ * 4:2:2 respectively (9.3.3.1.3). */
+static const uint8_t rh264_sig_ident[64]={
+ 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
+ 16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,
+ 32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,
+ 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63};
+static const uint8_t rh264_sig_cdc420[8]={0,1,2,2,2,2,2,2};
+static const uint8_t rh264_sig_cdc422[8]={0,0,1,1,2,2,2,2};
 
 /* significant_coeff_flag ctxIdxInc = scan position (0..14) for 4x4 blocks.
   * last_significant likewise. abs_level uses its own numDecodAbsLevel logic. */
@@ -6896,30 +6908,39 @@ static int rh264_cabac_residual(rh264_cabac *c, int cat, int cbf_ctxinc,
       coded = rh264_cabac_decode(c,
             CTX_CBF + rh264_cbf_catoff[cat] + cbf_ctxinc);
    if (!coded) return 0;
-   /* significance map (forward scan) */
-   for (i = 0; i < maxNumCoeff - 1; i++)
+   /* significance map (forward scan).  The context bases and the
+    * ctxIdxInc maps depend only on the category and the field/4:2:2
+    * flags, all fixed for the block, so they are settled once here
+    * instead of per coefficient. */
    {
-      int sinc = (cat==5) ? (c->field ? rh264_sig8map_fld[i]
-                                      : rh264_sig8map[i])
-                          : (cat==3)
-                            ? (c->c422 ? ((i>>1)>2?2:(i>>1)) : (i>2?2:i))
-                            : i;
-      int sctx = (cat==5) ? (c->field ? RH264_CTX_SIG8_F : RH264_CTX_SIG8) + sinc
-                          : (c->field ? RH264_CTX_SIG_F : CTX_SIG)
-                            + rh264_sig_catoff[cat] + sinc;
-      if (rh264_cabac_decode(c, sctx))
+      const uint8_t *sm, *lm;
+      int sbase, lbase;
+      if (cat == 5)
       {
-         int linc = (cat==5) ? rh264_last8map[i]
-                  : (cat==3)
-                    ? (c->c422 ? ((i>>1)>2?2:(i>>1)) : (i>2?2:i))
-                    : i;
-         int lctx = (cat==5) ? (c->field ? RH264_CTX_LAST8_F
-                                         : RH264_CTX_LAST8) + linc
-                             : (c->field ? RH264_CTX_LAST_F : CTX_LAST)
-                               + rh264_last_catoff[cat] + linc;
-         sig[nsig++] = i;
-         if (rh264_cabac_decode(c, lctx))
-            break;
+         sm    = c->field ? rh264_sig8map_fld : rh264_sig8map;
+         lm    = rh264_last8map;
+         sbase = c->field ? RH264_CTX_SIG8_F  : RH264_CTX_SIG8;
+         lbase = c->field ? RH264_CTX_LAST8_F : RH264_CTX_LAST8;
+      }
+      else
+      {
+         if (cat == 3)
+            sm = lm = c->c422 ? rh264_sig_cdc422 : rh264_sig_cdc420;
+         else
+            sm = lm = rh264_sig_ident;
+         sbase = (c->field ? RH264_CTX_SIG_F  : CTX_SIG)
+               + rh264_sig_catoff[cat];
+         lbase = (c->field ? RH264_CTX_LAST_F : CTX_LAST)
+               + rh264_last_catoff[cat];
+      }
+      for (i = 0; i < maxNumCoeff - 1; i++)
+      {
+         if (rh264_cabac_decode(c, sbase + sm[i]))
+         {
+            sig[nsig++] = i;
+            if (rh264_cabac_decode(c, lbase + lm[i]))
+               break;
+         }
       }
    }
    if (i == maxNumCoeff - 1) sig[nsig++] = maxNumCoeff - 1;
