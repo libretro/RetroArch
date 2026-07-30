@@ -91,6 +91,41 @@ void task_window_progress_cb(retro_task_t *task)
  * question from this one and the two are meant to differ.) */
 #define NBIO_XFER_TICK_USEC        4000
 
+/* ...and that budget is shared by every file-transfer task in a tick,
+ * not handed to each one separately.
+ *
+ * retro_task_regular_gather() calls every running task's handler once
+ * per task_queue_check(), i.e. once per frame, so a per-task slice
+ * multiplies: eight concurrent loads spent 30.65 ms in a single
+ * frame, four already spent 15.07 ms, and it scaled linearly with
+ * the task count.  A window is the fix - at most NBIO_XFER_TICK_USEC
+ * of file I/O per NBIO_XFER_TICK_PERIOD_USEC of wall time, whatever
+ * the number of tasks.
+ *
+ * A tick has no identity this file can see, so the window is a plain
+ * fixed one rather than something keyed to the gather: consumed
+ * microseconds accumulate until a period has elapsed, then reset.
+ * It over-counts nothing (only time actually spent filling is
+ * charged) and needs no cooperation from task_queue. */
+#define NBIO_XFER_TICK_PERIOD_USEC 16666
+
+/* Every task gets one read regardless of the window, or a queue
+ * whose budget is already spent would make no progress at all.  The
+ * frame is then bounded by the window plus one chunk per task, which
+ * is a few hundred microseconds for a queue of dozens, rather than
+ * by the task count times the whole slice. */
+typedef struct
+{
+   retro_time_t start;       /* when this task's fill began       */
+   retro_time_t allowance;   /* usec this task may spend in it    */
+   uint8_t      floor;       /* the guaranteed first read         */
+} nbio_budget_t;
+
+/* Window state.  Only ever touched on the thread that runs handlers,
+ * and only when that is the frame thread - see slice_open(). */
+static retro_time_t nbio_slice_start;
+static retro_time_t nbio_slice_used;
+
 /* The budget is handed to the fill rather than checked around it, so
  * it is consulted between the fill's own reads.  This used to be a
  * do/while around iterate() with a 256 KiB byte budget standing in
@@ -100,10 +135,54 @@ void task_window_progress_cb(retro_task_t *task)
 static bool task_file_transfer_within_budget(void *ud, size_t avail,
       size_t len)
 {
+   nbio_budget_t *b = (nbio_budget_t*)ud;
    (void)avail;
    (void)len;
-   return cpu_features_get_time_usec() - *(retro_time_t*)ud
-         < NBIO_XFER_TICK_USEC;
+   if (b->floor)
+   {
+      b->floor = 0;
+      return true;
+   }
+   return cpu_features_get_time_usec() - b->start < b->allowance;
+}
+
+/* Claim this task's share of the window.
+ *
+ * Declined entirely under a threaded task queue.  There the handler
+ * runs on the worker thread, which rotates the task and re-enters
+ * immediately; there is no frame to protect, slicing buys only
+ * round-robin fairness between file tasks, and a shared static
+ * across threads would be a race for no benefit.  Each task gets the
+ * whole slice there, which is what it effectively had before. */
+static void task_file_transfer_slice_open(nbio_budget_t *b)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+
+   b->start = now;
+   b->floor = 1;
+
+   if (task_queue_is_threaded())
+   {
+      b->allowance = NBIO_XFER_TICK_USEC;
+      return;
+   }
+   if (now - nbio_slice_start >= (retro_time_t)NBIO_XFER_TICK_PERIOD_USEC)
+   {
+      nbio_slice_start = now;
+      nbio_slice_used  = 0;
+   }
+   b->allowance = (nbio_slice_used < (retro_time_t)NBIO_XFER_TICK_USEC)
+      ? (retro_time_t)NBIO_XFER_TICK_USEC - nbio_slice_used
+      : 0;
+}
+
+/* Charge back what the fill actually spent, including the floor read
+ * that ran outside the allowance. */
+static void task_file_transfer_slice_close(nbio_budget_t *b)
+{
+   if (task_queue_is_threaded())
+      return;
+   nbio_slice_used += cpu_features_get_time_usec() - b->start;
 }
 
 const uint8_t *nbio_xfer_ptr(nbio_handle_t *nbio, size_t *len)
@@ -143,15 +222,21 @@ static int task_file_transfer_iterate_transfer(nbio_handle_t *nbio)
    if (nbio->is_finished)
       return 0;
 
-   if (     nbio->type == NBIO_TYPE_WEBM
-         || nbio->type == NBIO_TYPE_MP4
-         || nbio->type == NBIO_TYPE_WEBP)
-      data_transfer_iterate(nbio->xfer, NBIO_XFER_TICK_BYTES);
-   else
    {
-      retro_time_t t0 = cpu_features_get_time_usec();
-      data_transfer_iterate_while(nbio->xfer, 0,
-            task_file_transfer_within_budget, &t0);
+      nbio_budget_t b;
+      /* Both budgets go to the fill and whichever comes first stops
+       * it: the prefix types keep their byte cap so they do not race
+       * past the point of use, and every type is bounded by the
+       * tick's remaining time. */
+      size_t bytes = (     nbio->type == NBIO_TYPE_WEBM
+                        || nbio->type == NBIO_TYPE_MP4
+                        || nbio->type == NBIO_TYPE_WEBP)
+         ? (size_t)NBIO_XFER_TICK_BYTES : 0;
+
+      task_file_transfer_slice_open(&b);
+      data_transfer_iterate_while(nbio->xfer, bytes,
+            task_file_transfer_within_budget, &b);
+      task_file_transfer_slice_close(&b);
    }
    if (data_transfer_complete(nbio->xfer)
          || data_transfer_failed(nbio->xfer)
@@ -194,8 +279,9 @@ void task_file_load_handler(retro_task_t *task)
                 * The cap is stated here rather than left to the
                 * module.  data_transfer's fallback used to impose a
                 * built-in 32 MiB one on an uncapped caller, which
-                * was wrong and is gone; what replaces it is a policy
-                * question, and this is where the type is known.
+                * was wrong and is gone; the answer to what replaced
+                * it is a policy question, and this is where the type
+                * is known.
                 *
                 * Only the prefix types get one.  Their decode
                 * finishes on a fraction of the file - a still at a
@@ -205,34 +291,29 @@ void task_file_load_handler(retro_task_t *task)
                 * (truncated, corrupt, mislabelled) can cost.  It is
                 * deliberately far above what a real still needs.
                 * Everything else is read whole by design and gets no
-                * cap, so capped() cannot reach a consumer with no
-                * way to act on it. */
+                * cap, so capped() cannot reach a consumer that has
+                * no way to act on it. */
                if ((nbio->xfer = data_transfer_open_prefix(nbio->path,
                            (     nbio->type == NBIO_TYPE_WEBM
                               || nbio->type == NBIO_TYPE_MP4
                               || nbio->type == NBIO_TYPE_WEBP)
                            ? (size_t)NBIO_XFER_PREFIX_CAP : 0)))
                {
-                  size_t xlen = 0;
-                  data_transfer_ptr(nbio->xfer, &xlen);
-                  if (xlen <= NBIO_SMALL_FILE_THRESHOLD)
-                  {
-                     /* small file: finish in this tick */
-                     data_transfer_iterate(nbio->xfer, 0);
-                     if (!data_transfer_complete(nbio->xfer))
-                     {
-                        task_set_flags(task,
-                              RETRO_TASK_FLG_CANCELLED, true);
-                        break;
-                     }
-                     nbio->status = NBIO_STATUS_TRANSFER_PARSE;
-                     goto do_transfer_parse;
-                  }
                   nbio->status = NBIO_STATUS_TRANSFER;
                   /* Fall through into the fill instead of returning
                    * from a tick that read nothing - the same frame
                    * the two jumps to do_transfer_parse save, at the
-                   * other end of the transfer. */
+                   * other end of the transfer.
+                   *
+                   * A file under NBIO_SMALL_FILE_THRESHOLD used to
+                   * get an unbudgeted iterate() here, finishing in
+                   * this tick however long that took.  That was the
+                   * one path with no bound at all: forty 512 KiB
+                   * loads cost 10.72 ms in a frame with the cache
+                   * warm and nothing whatever on cold storage.  It
+                   * takes the shared window like everything else
+                   * now, and still finishes in one tick whenever the
+                   * window has the room. */
                   goto do_transfer;
                }
             }
