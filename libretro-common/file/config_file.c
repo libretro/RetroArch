@@ -32,6 +32,7 @@
 #include <compat/msvc.h>
 #include <file/config_file.h>
 #include <file/file_path.h>
+#include <string/stdstring.h>
 #include <array/rhmap.h>
 
 #define MAX_INCLUDE_DEPTH 16
@@ -1934,16 +1935,73 @@ size_t config_set_char(config_file_t *conf, const char *key, char val)
  * Dump the current config to an already opened file.
  * Does not close the file.
  **/
+/* Buffered line assembly for config_file_dump.  The previous dump
+ * issued two-argument fprintf calls per entry (plus one per
+ * reference and include line); with stdio buffering the write
+ * itself was cheap, but format parsing per line dominated the save
+ * path.  Lines are assembled with memcpy at lengths that are
+ * already known and flushed with fwrite; output is byte-identical
+ * (no escaping is added - values containing '"' round-trip exactly
+ * as lossily as before). */
+struct config_file_dump_buf
+{
+   FILE *file;
+   size_t fill;
+   char data[4096];
+};
+
+static void config_file_dump_flush(struct config_file_dump_buf *b)
+{
+   if (b->fill)
+   {
+      fwrite(b->data, 1, b->fill, b->file);
+      b->fill = 0;
+   }
+}
+
+static void config_file_dump_put(struct config_file_dump_buf *b,
+      const char *s, size_t _len)
+{
+   /* Anything larger than the buffer goes out directly */
+   if (_len >= sizeof(b->data))
+   {
+      config_file_dump_flush(b);
+      fwrite(s, 1, _len, b->file);
+      return;
+   }
+   if (b->fill + _len > sizeof(b->data))
+      config_file_dump_flush(b);
+   memcpy(b->data + b->fill, s, _len);
+   b->fill += _len;
+}
+
+static void config_file_dump_line(struct config_file_dump_buf *b,
+      const char *prefix, size_t prefix_len,
+      const char *body,   size_t body_len,
+      const char *suffix, size_t suffix_len)
+{
+   config_file_dump_put(b, prefix, prefix_len);
+   config_file_dump_put(b, body,   body_len);
+   config_file_dump_put(b, suffix, suffix_len);
+}
+
 void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
+   struct config_file_dump_buf buf;
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
    struct path_linked_list *ref_tmp = conf->references;
 
+   buf.file = file;
+   buf.fill = 0;
+
    while (ref_tmp)
    {
       pathname_make_slashes_portable(ref_tmp->path);
-      fprintf(file, "#reference \"%s\"\n", ref_tmp->path);
+      config_file_dump_line(&buf,
+            "#reference \"", STRLEN_CONST("#reference \""),
+            ref_tmp->path, strlen(ref_tmp->path),
+            "\"\n", STRLEN_CONST("\"\n"));
       ref_tmp = ref_tmp->next;
    }
 
@@ -1959,7 +2017,12 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    while (list)
    {
       if (!list->readonly && list->key)
-         fprintf(file, "%s = \"%s\"\n", list->key, list->value);
+      {
+         config_file_dump_put(&buf, list->key, strlen(list->key));
+         config_file_dump_put(&buf, " = \"", STRLEN_CONST(" = \""));
+         config_file_dump_put(&buf, list->value, strlen(list->value));
+         config_file_dump_put(&buf, "\"\n", STRLEN_CONST("\"\n"));
+      }
       list = list->next;
    }
 
@@ -1971,9 +2034,14 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
     * any custom-set values */
    while (includes)
    {
-      fprintf(file, "#include \"%s\"\n", includes->path);
+      config_file_dump_line(&buf,
+            "#include \"", STRLEN_CONST("#include \""),
+            includes->path, strlen(includes->path),
+            "\"\n", STRLEN_CONST("\"\n"));
       includes = includes->next;
    }
+
+   config_file_dump_flush(&buf);
 }
 
 /**
