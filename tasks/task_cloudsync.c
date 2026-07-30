@@ -1231,7 +1231,17 @@ static RFILE *task_cloud_sync_write_updated_manifest(file_list_t *manifest, char
    }
 
    rjsonwriter_raw(writer, "\n]\n", 3);
-   rjsonwriter_free(writer);
+
+   /* rjsonwriter_free() performs the final flush, so its result is what
+    * says whether the manifest was written completely.  Without it a
+    * short write - a full disk, an I/O error - was reported as a
+    * successful manifest, and the caller went on to upload it. */
+   if (!rjsonwriter_free(writer))
+   {
+      RARCH_ERR(CSPFX "Failed to write \"%s\".\n", path);
+      filestream_close(file);
+      return NULL;
+   }
 
    RARCH_LOG(CSPFX "Wrote \"%s\".\n", path);
 
