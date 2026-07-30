@@ -867,9 +867,14 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
              ? rjson_get_error(parser)
              : "format error"));
 
-      /* Info cache is corrupt - discard it */
+      /* Info cache is corrupt - discard it.
+       * core_info_cache_list_free() releases the contents but not the
+       * structure itself (see the caller in core_info_list_new, which
+       * pairs it with free()), so both are needed here. */
       core_info_cache_list_free(context.core_info_cache_list);
-      core_info_cache_list = core_info_cache_list_new();
+      free(context.core_info_cache_list);
+      context.core_info_cache_list = NULL;
+      core_info_cache_list         = core_info_cache_list_new();
    }
    else
       core_info_cache_list = context.core_info_cache_list;
@@ -898,7 +903,13 @@ static core_info_cache_list_t *core_info_cache_read(const char *info_dir)
             CORE_INFO_CACHE_VERSION,
             core_info_cache_list->version);
 
-      core_info_cache_list_free(context.core_info_cache_list);
+      /* Free the list actually in hand, not the parse context's.  On a
+       * corrupt cache the branch above has already replaced it with a
+       * fresh one and cleared the context pointer, so freeing the
+       * context here leaked that replacement - and would have been a
+       * double free had the parse built a list before failing. */
+      core_info_cache_list_free(core_info_cache_list);
+      free(core_info_cache_list);
       core_info_cache_list = core_info_cache_list_new();
    }
 
@@ -910,12 +921,50 @@ end:
 }
 #endif
 
+/* Move a completed temporary over its destination.
+ *
+ * POSIX rename() replaces atomically, which is the whole point;
+ * Windows' rename() refuses when the destination exists, so fall back
+ * to moving the original aside first and putting it back if the second
+ * move fails - never leaving nothing behind.
+ *
+ * (playlist.c carries the same helper for the same reason.  A third
+ * caller would justify hoisting one copy into libretro-common.) */
+static bool core_info_replace_file(const char *from, const char *to)
+{
+   char saved[PATH_MAX_LENGTH];
+   size_t _len;
+
+   if (filestream_rename(from, to) == 0)
+      return true;
+
+   _len = strlcpy(saved, to, sizeof(saved));
+   if (_len + STRLEN_CONST(".old") >= sizeof(saved))
+      return false;
+   strlcpy(saved + _len, ".old", sizeof(saved) - _len);
+
+   filestream_delete(saved);          /* a leftover from a previous run */
+   if (filestream_rename(to, saved) != 0)
+      return false;                   /* original untouched; give up   */
+
+   if (filestream_rename(from, to) == 0)
+   {
+      filestream_delete(saved);
+      return true;
+   }
+
+   filestream_rename(saved, to);      /* put the original back */
+   return false;
+}
+
 static bool core_info_cache_write(core_info_cache_list_t *list, const char *info_dir)
 {
    intfstream_t *file    = NULL;
    rjsonwriter_t *writer = NULL;
    bool success          = false;
+   bool wrote_ok         = false;
    char file_path[PATH_MAX_LENGTH];
+   char write_path[PATH_MAX_LENGTH];
    size_t i, j;
 
    if (!list)
@@ -929,17 +978,35 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    else
       strlcpy(file_path, FILE_PATH_CORE_INFO_CACHE, sizeof(file_path));
 
+   /* Write to a temporary and move it into place.  Truncating the
+    * cache in situ means a crash, a power loss or a full disk part way
+    * through leaves a half-written file, and the next startup then
+    * fails to parse it and falls back to reading every .info file
+    * individually - the slow path this cache exists to avoid.  The
+    * temporary sits in the same directory so the move stays within one
+    * filesystem. */
+   {
+      size_t _len = strlcpy(write_path, file_path, sizeof(write_path));
+      if (_len + STRLEN_CONST(".tmp") >= sizeof(write_path))
+      {
+         RARCH_ERR("[Core info] Path too long to write safely: \"%s\".\n",
+               file_path);
+         return false;
+      }
+      strlcpy(write_path + _len, ".tmp", sizeof(write_path) - _len);
+   }
+
 #if defined(CORE_INFO_CACHE_COMPRESS)
-   file = intfstream_open_rzip_file(file_path, RETRO_VFS_FILE_ACCESS_WRITE);
+   file = intfstream_open_rzip_file(write_path, RETRO_VFS_FILE_ACCESS_WRITE);
 #else
-   file = intfstream_open_file(file_path,
+   file = intfstream_open_file(write_path,
          RETRO_VFS_FILE_ACCESS_WRITE,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
 #endif
 
    if (!file)
    {
-      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n", file_path);
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n", write_path);
       return false;
    }
 
@@ -1206,7 +1273,33 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
    rjsonwriter_raw(writer, "\n", 1);
    rjsonwriter_add_spaces(writer, 2);
    rjsonwriter_raw(writer, "]\n}\n", 4);
-   rjsonwriter_free(writer);
+
+   /* rjsonwriter_free performs the final flush, so its result is what
+    * says whether the temporary is complete.  Without it a short write
+    * was reported as a successful cache write - and the 'force
+    * refresh' marker below was then deleted, so the next startup
+    * trusted a truncated cache instead of rebuilding it. */
+   if (!(wrote_ok = rjsonwriter_free(writer)))
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
+            write_path);
+   writer = NULL;
+
+   if (!wrote_ok)
+      goto end;
+
+   /* Commit: only now does the new cache replace the old one. */
+   intfstream_close(file);
+   free(file);
+   file    = NULL;
+
+   if (!core_info_replace_file(write_path, file_path))
+   {
+      filestream_delete(write_path);
+      RARCH_ERR("[Core info] Failed to write core info cache file: \"%s\".\n",
+            file_path);
+      list->refresh = false;
+      return false;
+   }
 
    RARCH_LOG("[Core info] Wrote to cache file: \"%s\".\n", file_path);
    success = true;
@@ -1224,8 +1317,16 @@ static bool core_info_cache_write(core_info_cache_list_t *list, const char *info
       filestream_delete(file_path);
 
 end:
-   intfstream_close(file);
-   free(file);
+   if (file)
+   {
+      intfstream_close(file);
+      free(file);
+   }
+
+   /* A temporary left behind by any failure above is discarded; what
+    * is on disk stays exactly what it was. */
+   if (!success && *write_path)
+      filestream_delete(write_path);
 
    list->refresh = false;
    return success;
