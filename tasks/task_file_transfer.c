@@ -193,7 +193,11 @@ void task_file_load_handler(retro_task_t *task)
                      goto do_transfer_parse;
                   }
                   nbio->status = NBIO_STATUS_TRANSFER;
-                  return;
+                  /* Fall through into the fill instead of returning
+                   * from a tick that read nothing - the same frame
+                   * the two jumps to do_transfer_parse save, at the
+                   * other end of the transfer. */
+                  goto do_transfer;
                }
             }
             /* Outside the path check, not inside it.  A NULL path
@@ -230,6 +234,7 @@ do_transfer_parse:
             }
             nbio->status = NBIO_STATUS_TRANSFER_FINISHED;
             break;
+do_transfer:
          case NBIO_STATUS_TRANSFER:
             if (task_file_transfer_iterate_transfer(nbio) == -1)
             {
