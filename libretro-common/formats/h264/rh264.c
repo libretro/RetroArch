@@ -8853,7 +8853,30 @@ static int rh264_out_push(rh264_video *v, int poc, int is_idr)
    if (slot < 0) return -1;            /* cannot happen: delay < slot count */
    if (!v->out[slot].Yb)
       if (rh264_frame_alloc(&v->out[slot], &v->sps) != 0) return -1;
-   rh264_frame_copy_planes(&v->out[slot], &v->f);
+   if (!v->cur_field)
+   {
+      /* Frame pictures swap their planes into the output slot instead
+       * of copying them: the reference copy (when the picture is one)
+       * already sits in the DPB, every macroblock of the next picture
+       * rewrites the working planes, and the slot was allocated from
+       * the same SPS so the geometry is identical.  Field pairs keep
+       * the copy - their two pictures fill the working planes
+       * incrementally, which a swapped-in stale buffer would break. */
+      uint8_t *ty = v->out[slot].Yb, *tu = v->out[slot].Ub,
+              *tv = v->out[slot].Vb;
+      v->out[slot].Yb = v->f.Yb; v->out[slot].Ub = v->f.Ub;
+      v->out[slot].Vb = v->f.Vb;
+      v->f.Yb = ty; v->f.Ub = tu; v->f.Vb = tv;
+      v->f.Y = v->f.Yb; v->f.U = v->f.Ub; v->f.V = v->f.Vb;
+      v->out[slot].Y = v->out[slot].Yb;
+      v->out[slot].U = v->out[slot].Ub;
+      v->out[slot].V = v->out[slot].Vb;
+      v->out[slot].qp = v->f.qp;
+      v->out[slot].chroma_qp_offset  = v->f.chroma_qp_offset;
+      v->out[slot].chroma_qp_offset2 = v->f.chroma_qp_offset2;
+   }
+   else
+      rh264_frame_copy_planes(&v->out[slot], &v->f);
    v->out[slot].w = v->f.w; v->out[slot].h = v->f.h;
    v->out_poc[slot] = poc; v->out_gen[slot] = v->idr_gen;
    v->out_used[slot] = 1;  v->out_len++;
