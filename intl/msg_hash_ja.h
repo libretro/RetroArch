@@ -38,6 +38,8 @@ static const struct
    char s_76fae911[70];
    char s_56581215[73];
    char s_6b45243b[13];
+   char s_43585d45[19];
+   char s_43585d53[19];
    char s_ea6df2a1[133];
    char s_bfb33e98[104];
    char s_87603f77[25];
@@ -3703,6 +3705,8 @@ static const struct
    "\347\255\211\343\201\227\343\201\217\343\201\252\343\201\204\343\201\250\343\201\215\343\201\253"
    "\346\254\241\343\201\256\343\203\201\343\203\274\343\203\210\343\202\222\345\256\237\350\241\214",
    "\345\200\244\343\201\253\350\250\255\345\256\232",
+   "\346\211\213\345\213\225\346\260\264\345\271\263\344\275\231\347\231\275",
+   "\346\211\213\345\213\225\345\236\202\347\233\264\344\275\231\347\231\275",
    "RetroAchievements \343\202\265\343\203\274\343\203\220\343\203\274\343\201\253\343\202\242\343"
    "\202\257\343\202\273\343\202\271\343\201\247\343\201\215\343\201\276\343\201\233\343\202\223\343"
    "\200\202\346\210\220\345\212\237\343\201\231\343\202\213\343\201\213\343\202\242\343\203\227\343"
@@ -13990,7 +13994,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (201515u
+      (sizeof(msg_hash_ja_blob) == (201553u
 #ifdef ANDROID
        + 484u
 #endif
@@ -14363,6 +14367,8 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

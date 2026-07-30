@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[18];
    char s_9a250c33[29];
    char s_dec692c9[32];
    char s_9a250c34[29];
@@ -37,6 +38,8 @@ static const struct
    char s_76fae911[52];
    char s_56581215[53];
    char s_6b45243b[12];
+   char s_43585d45[34];
+   char s_43585d53[32];
    char s_ea6df2a1[121];
    char s_bfb33e98[95];
    char s_87603f77[23];
@@ -48,7 +51,7 @@ static const struct
    char s_b3841fa4[49];
    char s_d7d5e8f7[26];
    char s_23b2ac5a[228];
-   char s_37033dd5[110];
+   char s_37033dd5[95];
    char s_534835b5[59];
    char s_534cf44d[101];
    char s_5f9d9369[71];
@@ -60,14 +63,14 @@ static const struct
    char s_5523ef09[35];
    char s_38e226a5[34];
    char s_239aa255[134];
-   char s_fa198259[116];
+   char s_fa198259[124];
    char s_55288d64[31];
    char s_41d19ccb[44];
    char s_d32da48f[16];
    char s_d1558b35[49];
    char s_4c378b95[86];
    char s_c435566b[311];
-   char s_793f841a[253];
+   char s_793f841a[249];
    char s_b4ed19c0[32];
    char s_3a147fac[92];
    char s_a4a373a7[30];
@@ -129,7 +132,7 @@ static const struct
    char s_c073450a[195];
    char s_e6cd4ada[137];
 #ifdef HAVE_MICROPHONE
-   char s_86e940b7[107];
+   char s_86e940b7[103];
 #endif
    char s_3f5ab0a6[143];
    char s_39308167[416];
@@ -140,7 +143,7 @@ static const struct
    char s_1bd35af2[41];
    char s_24e40f00[287];
    char s_1382c258[265];
-   char s_4caab10c[281];
+   char s_4caab10c[265];
    char s_03580e17[184];
    char s_9998fdce[332];
    char s_1d269383[200];
@@ -188,7 +191,7 @@ static const struct
    char s_2d9d0a50[286];
    char s_0e7699a6[272];
    char s_16721de3[271];
-   char s_abab74fb[177];
+   char s_abab74fb[185];
    char s_c0a60ee2[231];
    char s_14a6bfe2[303];
    char s_4b0e8809[193];
@@ -868,7 +871,7 @@ static const struct
    char s_267cef24[50];
    char s_727b11f4[34];
    char s_21ec213c[28];
-   char s_030a629f[29];
+   char s_030a629f[27];
    char s_8bc5b398[30];
    char s_0c353c96[34];
    char s_629528b9[32];
@@ -2120,7 +2123,7 @@ static const struct
    char s_e9bca139[28];
    char s_59dc5d76[36];
    char s_78198818[17];
-   char s_a12ce1bf[6];
+   char s_a12ce1bf[9];
    char s_bfa23080[10];
    char s_ec326380[6];
    char s_8a86d1de[18];
@@ -2214,6 +2217,7 @@ static const struct
    char s_1edf58ee[21];
    char s_d74474ce[7];
    char s_541958e5[6];
+   char s_ba3e4ee6[12];
    char s_45816e1d[21];
    char s_c017f975[12];
    char s_730df420[16];
@@ -2294,9 +2298,11 @@ static const struct
    char s_f9dd6e61[13];
    char s_f4b6d13e[39];
    char s_25e89959[3];
+   char s_b1d6fea6[10];
    char s_aa0659db[24];
    char s_49757b91[24];
    char s_660eb9c4[24];
+   char s_b6ca9df2[21];
 #if defined(RARCH_MOBILE)
    char s_b754294b[54];
    char s_b754294c[54];
@@ -2350,7 +2356,7 @@ static const struct
    char s_c9235dab[59];
    char s_330be970_0[500];
    char s_330be970_1[47];
-   char s_98b02857[229];
+   char s_98b02857[228];
    char s_6c3c586d[232];
    char s_950e7a66[26];
    char s_ce113b1c[34];
@@ -3203,7 +3209,7 @@ static const struct
    char s_86d4b7cd[67];
    char s_6fed6990[127];
    char s_b775da75[160];
-   char s_5ae6337d[62];
+   char s_5ae6337d[63];
    char s_5ae9d14c[163];
    char s_f207335a[173];
    char s_9f7d37f6[142];
@@ -3472,7 +3478,7 @@ static const struct
    char s_3c679f0a[336];
    char s_5b059407[144];
    char s_36033606[199];
-   char s_d62ed5dc[425];
+   char s_d62ed5dc[404];
    char s_2e69508b[389];
    char s_7e96b5ce[44];
    char s_3547866d[156];
@@ -4072,6 +4078,7 @@ static const struct
    char s_2dbb6496[42];
 } msg_hash_de_blob =
 {
+   "KI-Dienst-Backend",
    "1-Bit, maximaler Wert = 0x01",
    "16-Bit, maximaler Wert = 0xFFFF",
    "2-Bit, maximaler Wert = 0x03",
@@ -4095,6 +4102,8 @@ static const struct
    "N\303\244chsten Cheat ausf\303\274hren wenn Wert < Speicherwert",
    "N\303\244chsten Cheat ausf\303\274hren wenn Wert != Speicherwert",
    "Fester Wert",
+   "Manuelles horizontales Auff\303\274llen",
+   "Manuelles vertikales Auff\303\274llen",
    "RetroAchievements-Server ist nicht erreichbar. Es wird bis zum Erfolg erneut versucht oder bis d"
    "ie App geschlossen wird.",
    "Alle ausstehenden Anfragen wurden erfolgreich mit dem RetroAchievements-Server synchronisiert.",
@@ -4109,8 +4118,8 @@ static const struct
    "Anmeldedaten f\303\274r das RetroAchievements-Konto. Bitte retroachievements.org besuchen und si"
    "ch f\303\274r ein kostenloses Konto anmelden.\nNach erfolgter Registrierung muss der Benutzernam"
    "e und das Passwort in RetroArch eingeben werden.",
-   "Das Standard-Audioger\303\244t, welches vom Audiotreiber verwendet wird, \303\274berschreiben. D"
-   "ies ist treiberabh\303\244ngig.",
+   "Das vom Audiotreiber verwendete Standardaudioger\303\244t \303\274berschreiben. Dies ist treiber"
+   "abh\303\244ngig.",
    "Benutzerdefinierter PCM-Ger\303\244tewert f\303\274r den ALSA-Treiber.",
    "Benutzerdefinierte Portnameangabe f\303\274r den JACK-Treiber (z.\302\240B. system:playback1,sys"
    "tem:playback_2).",
@@ -4124,8 +4133,8 @@ static const struct
    "Legacy-Open-Sound-System-Treiber.",
    "PipeWire-Treiber. Falls das System PipeWire verwendet, sollte dieser Treiber anstelle von beispi"
    "elsweise PulseAudio verwendet werden.",
-   "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von z.\302"
-   "\240B. ALSA zu verwenden.",
+   "PulseAudio-Treiber. Wenn das System PulseAudio verwendet, ist dieser Treiber anstelle von beispi"
+   "elsweise ALSA zu verwenden.",
    "RoarAudio Sound-Systemtreiber.",
    "RSound-Treiber f\303\274r vernetzte Audiosysteme.",
    "OpenSL-Treiber.",
@@ -4136,8 +4145,8 @@ static const struct
    "auf NTSC-Bildschirmen zu spielen, auf Kosten von ungenauen Tonh\303\266hen.\nEingangsrate ist de"
    "finiert als:\nEingangsrate * (1.0 +/- (Max. Audioversatz))",
    "0 deaktiviert die Ratensteuerung.\nJeder andere Wert bestimmt das Delta der Audioratensteuerung,"
-   " welches festlegt, wie stark die Eingangsrate dynamisch angepasst werden kann.\nDie Eingangsrate"
-   " ist definiert als:\nEingangsrate * (1,0 +/- (Steuerungsdelta))",
+   " das festlegt, wie stark die Eingangsrate dynamisch angepasst werden kann.\nDie Eingangsrate ist"
+   " definiert als:\nEingangsrate * (1,0 +/- (Steuerungsdelta))",
    "Kosinusfaltung-Implementierung.",
    "N\303\244chstes-Resampling-Implementierung. Dieser Resampler ignoriert die Qualit\303\244tseinst"
    "ellung.",
@@ -4274,8 +4283,8 @@ static const struct
    "XMB ist eine RetroArch-GUI, die wie ein Konsolenmen\303\274 der 7. Generation aussieht. Sie kann"
    " dieselben Funktionen wie Ozone unterst\303\274tzen.",
 #ifdef HAVE_MICROPHONE
-   "\303\234berschreibt das Standardeingabeger\303\244t, welches der Mikrofontreiber verwendet. Dies"
-   " ist treiberabh\303\244ngig.",
+   "\303\234berschreibt das Standardeingabeger\303\244t, das der Mikrofontreiber verwendet. Dies ist"
+   " treiberabh\303\244ngig.",
 #endif
    "Legt das Eingabeger\303\244t fest (treiberspezifisch). Bei \342\200\236Aus\342\200\234 wird der "
    "MIDI-Eingang deaktiviert. Der Ger\303\244tename kann auch eingegeben werden.",
@@ -4313,9 +4322,9 @@ static const struct
    "chert werden, deserialisiert werden sollen. Sollte f\303\274r die meisten Kerne auf true gesetzt"
    " werden, aber einige k\303\266nnen bei der Deserialisierung von Inhalten janky Verhalten zeigen.",
    "Speichert den Spielstatus w\303\244hrend der Replay-Aufnahme in einem regelm\303\244\303\237igen"
-   " Intervall. Dies ist standardm\303\244\303\237ig deaktiviert, es sei denn, es wird etwas anderes"
-   " festgelegt. Das Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnun"
-   "g von Kontrollpunkten.",
+   " Intervall. Dies ist standardm\303\244\303\237ig deaktiviert, falls nicht anders festgelegt. Das"
+   " Intervall wird in Sekunden gemessen. Ein Wert von 0 deaktiviert die Aufzeichnung von Kontrollpu"
+   "nkten.",
    "Alle Speicherdaten (*.srm) in diesem Verzeichnis speichern. Dies beinhaltet verwandte Dateitypen"
    " wie .rt, .psrm usw. Bestimmte Kommandozeilenoptionen \303\274berschreiben diese Einstellung.",
    "Speichert automatisch in regelm\303\244\303\237igen Zeitabst\303\244nden, in Sekunden angegeben,"
@@ -4429,9 +4438,9 @@ static const struct
    " versetzt wird, bevor er gestartet wird. Reduziert die Latenz auf Kosten eines h\303\266heren Ri"
    "sikos von Stottern.\nWerte von 20 und h\303\266her werden als Frame-Zeit-Prozents\303\244tze beh"
    "andelt.",
-   "Versucht das gew\303\274nschte Ziel der \"Bildverz\303\266gerung\" zu halten und Frame-Drops zu "
-   "minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \"Bildverz\303\266gerung\" 0 (Automatisch"
-   ") ist.",
+   "Versucht das gew\303\274nschte Ziel der \342\200\236Bildverz\303\266gerung\342\200\234 zu halten"
+   " und Frame-Drops zu minimieren. Ausgangspunkt ist die 3/4 Frame-Zeit, wenn \342\200\236Bildverz"
+   "\303\266gerung\342\200\234 0 (Automatisch) ist.",
    "Legt fest, wie viele Frames die CPU der GPU vorauslaufen kann, wenn \342\200\236GPU und CPU sync"
    "hronisieren\342\200\234 aktiviert ist. Das Maximum ist 3.\n 0: Sofort mit der GPU synchronisiere"
    "n.\n 1: Mit dem vorherigen Frame synchronisieren.\n 2: usw.",
@@ -5148,7 +5157,7 @@ static const struct
    "Gr\303\266\303\237e von Tastatur-Overlay automatisch anpassen",
    "ABXY \303\234berlappungsempfindlichkeit",
    "Analoge Neuzentrierungszone",
-   "Overlay automatisch rotieren",
+   "Overlay automatisch drehen",
    "Overlay automatisch skalieren",
    "Overlay hinter dem Men\303\274 anzeigen",
    "D-Pad Diagonale Empfindlichkeit",
@@ -5457,7 +5466,7 @@ static const struct
    "Mikrofon",
    "Standard-Eingangsfrequenz (Hz)",
    "Audioeingabelatenz (ms)",
-   "Mikrofon Resampler",
+   "Mikrofon-Resampler",
    "Audio-Resampler-Qualit\303\244t",
    "Mikrofon",
 #endif
@@ -6410,7 +6419,7 @@ static const struct
    "GPU und CPU synchronisieren",
    "Anzahl der Frames f\303\274r GPU-CPU-Sync",
    "Farbverst\303\244rkung",
-   "Genau",
+   "Pr\303\244zise",
    "Erweitert",
    "Breit",
    "Spitzenhelligkeit",
@@ -6501,9 +6510,10 @@ static const struct
    "Benutzerdefiniert",
    "Lokal",
    "Streamingqualit\303\244t",
-   "Bittiefe der Ausgabe",
+   "Bittiefe der Anzeige",
    "10-Bit",
    "8-Bit",
+   "Automatisch",
    "VSync Swap-Intervall",
    "Automatisch",
    "Synchronisation",
@@ -6584,9 +6594,11 @@ static const struct
    "Symboldesign",
    "Vertikale Anordnung der Miniaturbilder",
    "Ja",
+   "HDR-Modus",
    "Shader-Voreinstellungen",
    "Shader-Voreinstellungen",
    "Shader-Voreinstellungen",
+   "Bittiefe der Anzeige",
 #if defined(RARCH_MOBILE)
    "Ansichtsfenster-Ankerpunkt-Ausrichtung X (Hochformat)",
    "Ansichtsfenster-Ankerpunkt-Ausrichtung Y (Hochformat)",
@@ -6670,9 +6682,9 @@ static const struct
    "16\342\200\234 wird mit dem Hinweis \342\200\236Auf feste Ganzzahl resampeln\342\200\234 kombini"
    "ert, um den ge",
    "samten Audiopfad im Ganzzahlbereich zu halten.",
-   "Maximale Audio-Latenz in Millisekunden. Der Treiber versucht, die tats\303\244chliche Latenz bei"
-   " 50\302\240% dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiot"
-   "reiber die angegebene Latenz nicht liefern kann.",
+   "Maximale Audiolatenz in Millisekunden. Der Treiber versucht, die tats\303\244chliche Latenz bei "
+   "50\302\240% dieses Wertes zu halten. Dieser Wert kann nicht eingehalten werden, wenn der Audiotr"
+   "eiber die angegebene Latenz nicht liefern kann.",
    "Maximale \303\204nderung der Audio-Eingangsrate. Das Erh\303\266hen dieses Wertes erm\303\266gli"
    "cht sehr gro\303\237e \303\204nderungen im Timing (beispielsweise um einen PAL-Core auf einem NT"
    "SC-Bildschirm darzustellen), verursacht jedoch fehlerhafte Tonh\303\266hen.",
@@ -7933,7 +7945,7 @@ static const struct
    ". Auf 0 setzen, um die Funktion zu deaktivieren.",
    "Vor dem Erstellen eines Savestates wird der Index des Speicherplatzes automatisch erh\303\266ht."
    " Beim Laden von Inhalten wird der h\303\266chste vorhandene Index gew\303\244hlt.",
-   "Lade den zuletzt erstellten Savestate beim Start automatisch.",
+   "Den zuletzt erstellten Savestate beim Start automatisch laden.",
    "Beim Schlie\303\237en des Inhalts automatisch einen Speicherstand erstellen. Dieser Speicherstan"
    "d wird beim Start geladen, wenn \342\200\236Automatisches Laden\342\200\234 aktiviert ist.",
    "Savestates und Replays werden in diesem Verzeichnis gespeichert. Wenn nicht festgelegt, wird ver"
@@ -8342,11 +8354,11 @@ static const struct
    "Dem Bild eine leichte Unsch\303\244rfe hinzuf\303\274gen, um harte Pixelkanten zu gl\303\244tten"
    ". Diese Option hat nur sehr geringe Auswirkungen auf die Leistung. Sollte bei Verwendung von Sha"
    "dern deaktiviert werden.",
-   "Bittiefe f\303\274r die endg\303\274ltige Ausgabe von Oberfl\303\244che bei deaktiviertem HDR. 1"
-   "0-Bit beseitigt Streifenbildung, verursacht durch Shader, die das Bild stark abdunkeln, wie beis"
-   "pielsweise CRT-Beam-Profile und Schlitzmasken. Es wird auf 8-Bit zur\303\274ckgegriffen, wenn da"
-   "s Display oder der Compositor diese Option nicht unterst\303\274tzt. Wird ignoriert, solange HDR"
-   " aktiviert ist, da in diesem Fall ein eigenes Format ausgew\303\244hlt wird.",
+   "Bittiefe der finalen Oberfl\303\244che bei deaktiviertem HDR. 10-Bit beseitigt Streifenbildung, "
+   "verursacht durch Shader, die das Bild stark abdunkeln, wie beispielsweise CRT-Beam-Profile und S"
+   "chlitzmasken. Es wird auf 8-Bit zur\303\274ckgegriffen, wenn das Display oder der Compositor die"
+   "se Option nicht unterst\303\274tzt. Wird ignoriert, solange HDR aktiviert ist, da in diesem Fall"
+   " ein eigenes Format ausgew\303\244hlt wird.",
    "Benutzerdefinierte Swap-Intervalle f\303\274r VSync verwenden. Reduziert effektiv die Bildwieder"
    "holfrequenz des Monitors um den angegebenen Faktor. \"Automatisch\" legt den Faktor auf Basis de"
    "r vom Kern gemeldeten Bildwiederholfrequenz fest und sorgt f\303\274r besseres Frame Pacing, wen"
@@ -9008,12 +9020,12 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (191639u
+      (sizeof(msg_hash_de_blob) == (191727u
 #ifdef ANDROID
        + 358u
 #endif
 #ifdef HAVE_MICROPHONE
-       + 107u
+       + 103u
 #endif
 #ifdef HAVE_LAKKA
        + 217u
@@ -9428,6 +9440,7 @@ typedef char msg_hash_de_blob_check[
 
 static const uint32_t msg_hash_de_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
@@ -9451,6 +9464,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -11623,6 +11638,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_10,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_8,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
@@ -11703,9 +11719,11 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_THEME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[32];
    char s_54d907f5[9];
    char s_9a250c33[28];
    char s_dec692c9[32];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[46];
    char s_56581215[44];
    char s_6b45243b[20];
+   char s_43585d45[26];
+   char s_43585d53[23];
    char s_ea6df2a1[116];
    char s_bfb33e98[99];
    char s_87603f77[19];
@@ -2336,6 +2339,7 @@ static const struct
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
+   char s_b6ca9df2[31];
 #if defined(RARCH_MOBILE)
    char s_b754294b[74];
    char s_b754294c[74];
@@ -4098,6 +4102,7 @@ static const struct
    char s_2dbb6496[23];
 } msg_hash_gl_blob =
 {
+   "Infraestrutura do servizo de IA",
    "Emulador",
    "1 bit, valor m\303\241ximo = 0x01",
    "16 Bits, valor m\303\241ximo = 0xFFFF",
@@ -4122,6 +4127,8 @@ static const struct
    "Executa o seguinte truco se o valor < Memoria",
    "Executar seguinte Cheat If Value != Memoria",
    "Establecer en Valor",
+   "Relleno horizontal manual",
+   "Recheo vertical manual",
    "O servidor de RetroAchievements non \303\251 accesible. Tentarase de novo ata que te\303\261a "
    "\303\251xito ou se peche a aplicaci\303\263n.",
    "Todas as solicitudes pendentes foron sincronizadas correctamente co servidor de RetroAchievement"
@@ -6668,6 +6675,7 @@ static const struct
    "Predefinido de sombreado",
    "Predefinido de sombreado",
    "Predefinido de sombreado",
+   "Profundidade de bits de sa\303\255da",
 #if defined(RARCH_MOBILE)
    "Desprazamento da ancoraxe da Xanela Gr\303\241fica en X (orientaci\303\263n vertical)",
    "Desprazamento da ancoraxe da Xanela Gr\303\241fica en Y (orientaci\303\263n vertical)",
@@ -9111,7 +9119,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (194140u
+      (sizeof(msg_hash_gl_blob) == (194252u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9518,6 +9526,7 @@ typedef char msg_hash_gl_blob_check[
 
 static const uint32_t msg_hash_gl_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9542,6 +9551,8 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -11834,6 +11845,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

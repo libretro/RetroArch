@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[23];
    char s_54d907f5[10];
    char s_9a250c33[25];
    char s_dec692c9[28];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[52];
    char s_56581215[53];
    char s_6b45243b[21];
+   char s_43585d45[30];
+   char s_43585d53[30];
    char s_ea6df2a1[132];
    char s_bfb33e98[119];
    char s_87603f77[24];
@@ -2369,9 +2372,11 @@ static const struct
    char s_f4b6d13e[43];
    char s_25e89959[4];
    char s_a7468d68[27];
+   char s_b1d6fea6[9];
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
+   char s_b6ca9df2[32];
 #if defined(RARCH_MOBILE)
    char s_b754294b[68];
    char s_b754294c[68];
@@ -4149,6 +4154,7 @@ static const struct
    char s_2dbb6496[26];
 } msg_hash_fr_blob =
 {
+   "Moteur des services AI",
    "Emulateur",
    "1-bit, valeur max = 0x01",
    "16-bit, valeur max = 0xFFFF",
@@ -4173,6 +4179,8 @@ static const struct
    "Ex\303\251cuter le prochain cheat si la valeur < m\303\251moire",
    "Ex\303\251cuter le prochain cheat si la valeur != m\303\251moire",
    "R\303\251gler \303\240 la valeur",
+   "Remplissage horizontal manuel",
+   "Remplissage horizontal manuel",
    "Le serveur RetroSucc\303\250s (RetroAchievements) est inaccessible. R\303\251essai jusqu'\303"
    "\240 ce qu'il le soit ou que l'application soit ferm\303\251e.",
    "Toutes les requ\303\252tes en attente ont \303\251t\303\251 synchronis\303\251es avec succ\303"
@@ -6793,9 +6801,11 @@ static const struct
    "Disposition des miniatures \303\240 la verticale",
    "Oui",
    "Cl\303\251 de streaming YouTube ",
+   "Mode HDR",
    "Pr\303\251r\303\251glages de shaders",
    "Pr\303\251r\303\251glages de shaders",
    "Pr\303\251r\303\251glages de shaders",
+   "Profondeur de bits de la sortie",
 #if defined(RARCH_MOBILE)
    "Biais d'ancrage X de la fen\303\252tre d'affichage (orientation portrait)",
    "Biais d'ancrage Y de la fen\303\252tre d'affichage (orientation portrait)",
@@ -9460,7 +9470,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (215164u
+      (sizeof(msg_hash_fr_blob) == (215288u
 #ifdef ANDROID
        + 373u
 #endif
@@ -9872,6 +9882,7 @@ typedef char msg_hash_fr_blob_check[
 
 static const uint32_t msg_hash_fr_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9896,6 +9907,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -12219,9 +12232,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

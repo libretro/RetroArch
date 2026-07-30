@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[23];
    char s_54d907f5[12];
    char s_9a250c33[27];
    char s_dec692c9[30];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[49];
    char s_56581215[50];
    char s_6b45243b[18];
+   char s_43585d45[32];
+   char s_43585d53[28];
    char s_ea6df2a1[127];
    char s_bfb33e98[92];
    char s_87603f77[22];
@@ -2393,9 +2396,11 @@ static const struct
    char s_f4b6d13e[29];
    char s_25e89959[4];
    char s_a7468d68[22];
+   char s_b1d6fea6[9];
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
+   char s_b6ca9df2[28];
 #if defined(RARCH_MOBILE)
    char s_b754294b[59];
    char s_b754294c[59];
@@ -4176,6 +4181,7 @@ static const struct
    char s_2dbb6496[29];
 } msg_hash_ga_blob =
 {
+   "C\303\272ltaca Seirbh\303\255se AI",
    "Aithriseoir",
    "1-Giot\303\241n, Uasluach = 0x01",
    "16-Giot\303\241n, Uasluach = 0xFFFF",
@@ -4200,6 +4206,8 @@ static const struct
    "Rith an Ch\303\251ad Aicearra Eile M\303\241 Luach < Cuimhne",
    "Rith an Ch\303\251ad Aicearra Eile M\303\241 Luach != Cuimhne",
    "Socraigh go Luach",
+   "P\303\241ip\303\251ar Cothrom\303\241nach L\303\241imhe",
+   "P\303\241ip\303\251ar Ingearach L\303\241imhe",
    "N\303\255 f\303\251idir teacht ar fhreastala\303\255 RetroAchievements. D\303\251anfaidh s\303"
    "\251 iarracht eile go n-\303\251ireoidh leis n\303\263 go nd\303\272nfar an aip.",
    "T\303\241 gach iarratas ar feitheamh sioncr\303\263naithe go rath\303\272il le freastala\303\255"
@@ -6916,9 +6924,11 @@ static const struct
    "Socr\303\272 Ingearach Mionsamhail",
    "T\303\241",
    "Eochair Sruth YouTube",
+   "M\303\263d HDR",
    "R\303\251amhshocr\303\272 Sc\303\241th\303\263ra",
    "R\303\251amhshocr\303\272 Sc\303\241th\303\263ra",
    "R\303\251amhshocr\303\272 Sc\303\241th\303\263ra",
+   "Doimhneacht Giot\303\241n Aschuir",
 #if defined(RARCH_MOBILE)
    "Claonadh Ancaire Radharcphoirt X (Treoshu\303\255omh Portr\303\241ide)",
    "Claonadh Ancaire Radharcphoirt Y (Treoshu\303\255omh Portr\303\241ide)",
@@ -9827,7 +9837,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ga_blob_check[
-      (sizeof(msg_hash_ga_blob) == (203505u
+      (sizeof(msg_hash_ga_blob) == (203625u
 #ifdef ANDROID
        + 390u
 #endif
@@ -10242,6 +10252,7 @@ typedef char msg_hash_ga_blob_check[
 
 static const uint32_t msg_hash_ga_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -10266,6 +10277,8 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -12613,9 +12626,11 @@ static const uint32_t msg_hash_ga_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

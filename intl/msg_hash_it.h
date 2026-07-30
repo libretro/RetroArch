@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[24];
    char s_54d907f5[10];
    char s_9a250c33[29];
    char s_dec692c9[32];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[46];
    char s_56581215[47];
    char s_6b45243b[17];
+   char s_43585d45[29];
+   char s_43585d53[27];
    char s_ea6df2a1[141];
    char s_bfb33e98[104];
    char s_87603f77[23];
@@ -3992,6 +3995,7 @@ static const struct
    char s_2dbb6496[40];
 } msg_hash_it_blob =
 {
+   "Backend del Servizio AI",
    "Emulatore",
    "1-Bit, Valore Massimo = 0x01",
    "16-Bit, Valore Massimo = 0xFFFF",
@@ -4016,6 +4020,8 @@ static const struct
    "Esegui Il Prossimo Trucco Se Valore < Memoria",
    "Esegui Il Prossimo Trucco Se Valore != Memoria",
    "Imposta a valore",
+   "Distanza Orizzontale Manuale",
+   "Distanza Verticale Manuale",
    "Il server di RetroAchievements \303\250 irraggiungibile. Il sistema riprover\303\240 finch\303"
    "\251 non andr\303\240 a buon fine, oppure fino alla chiusura dell'app.",
    "Tutte le richieste in sospeso sono state sincronizzate con successo con il server di RetroAchiev"
@@ -8713,7 +8719,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183645u
+      (sizeof(msg_hash_it_blob) == (183725u
 #ifdef ANDROID
        + 376u
 #endif
@@ -9132,6 +9138,7 @@ typedef char msg_hash_it_blob_check[
 
 static const uint32_t msg_hash_it_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9156,6 +9163,8 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

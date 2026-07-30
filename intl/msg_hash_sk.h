@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[19];
    char s_54d907f5[10];
    char s_9a250c33[33];
    char s_dec692c9[36];
@@ -37,6 +38,8 @@ static const struct
    char s_76fae911[46];
    char s_56581215[47];
    char s_6b45243b[21];
+   char s_43585d45[34];
+   char s_43585d53[32];
    char s_ea6df2a1[118];
    char s_bfb33e98[94];
    char s_87603f77[23];
@@ -4033,6 +4036,7 @@ static const struct
    char s_2dbb6496[31];
 } msg_hash_sk_blob =
 {
+   "Backend AI Service",
    "Emul\303\241tor",
    "1-Bit, maxim\303\241lna hodnota = 0x01",
    "16-Bit, maxim\303\241lna hodnota = 0xFFFF",
@@ -4056,6 +4060,8 @@ static const struct
    "Spusti\305\245 \304\217al\305\241\303\255 cheat, ak hodnota < pam\303\244\305\245",
    "Spusti\305\245 \304\217al\305\241\303\255 cheat, ak hodnota != pam\303\244\305\245",
    "Nastavi\305\245 na hodnotu",
+   "Manu\303\241lne horizont\303\241lne odsadenie",
+   "Manu\303\241lne vertik\303\241lne odsadenie",
    "Server RetroAchievements je nedostupn\303\275. Bude sa to opakova\305\245, pokia\304\276 nebude "
    "\303\272spech alebo sa aplik\303\241cia neukon\304\215\303\255.",
    "V\305\241etky \304\215akaj\303\272ce po\305\276iadavky boli \303\272spe\305\241ne synchronizovan"
@@ -9297,7 +9303,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (175637u
+      (sizeof(msg_hash_sk_blob) == (175722u
 #ifdef ANDROID
        + 389u
 #endif
@@ -9712,6 +9718,7 @@ typedef char msg_hash_sk_blob_check[
 
 static const uint32_t msg_hash_sk_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9735,6 +9742,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

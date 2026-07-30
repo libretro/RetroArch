@@ -38,6 +38,8 @@ static const struct
    char s_76fae911[44];
    char s_56581215[45];
    char s_6b45243b[15];
+   char s_43585d45[20];
+   char s_43585d53[20];
    char s_ea6df2a1[120];
    char s_bfb33e98[77];
    char s_87603f77[20];
@@ -3928,6 +3930,8 @@ static const struct
    "Sonraki Hileyi \303\207al\304\261\305\237t\304\261r De\304\237er < Bellek",
    "Sonraki Hileyi \303\207al\304\261\305\237t\304\261r De\304\237er != Bellek",
    "De\304\237ere Ayarla",
+   "El \304\260le Yatay Dolgu",
+   "El \304\260le Dikey Dolgu",
    "RetroAchievements sunucusuna eri\305\237ilemiyor. Ba\305\237ar\304\261l\304\261 oluncaya veya uy"
    "gulama kapat\304\261l\304\261ncaya kadar yeniden denenecek.",
    "Bekleyen t\303\274m istekler RetroAchievements sunucusuyla ba\305\237ar\304\261yla e\305\237itle"
@@ -9183,7 +9187,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (171014u
+      (sizeof(msg_hash_tr_blob) == (171054u
 #ifdef ANDROID
        + 340u
 #endif
@@ -9587,6 +9591,8 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

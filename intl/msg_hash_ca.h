@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[18];
    char s_54d907f5[9];
    char s_9a250c33[27];
    char s_dec692c9[31];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[68];
    char s_56581215[69];
    char s_6b45243b[14];
+   char s_43585d45[30];
+   char s_43585d53[27];
    char s_ea6df2a1[161];
    char s_bfb33e98[96];
    char s_87603f77[25];
@@ -2352,10 +2355,10 @@ static const struct
    char s_f4b6d13e[35];
    char s_25e89959[4];
    char s_a7468d68[32];
-   char s_b1d6fea6[15];
    char s_aa0659db[18];
    char s_49757b91[18];
    char s_660eb9c4[18];
+   char s_b6ca9df2[34];
 #if defined(RARCH_MOBILE)
    char s_b754294b[97];
    char s_b754294c[97];
@@ -4128,6 +4131,7 @@ static const struct
    char s_2dbb6496[36];
 } msg_hash_ca_blob =
 {
+   "Servei IA de fons",
    "Emulador",
    "1-Bit, Valor m\303\240xim = 0x01",
    "16 Bits, valor m\303\240xim = 0xFFFF",
@@ -4152,6 +4156,8 @@ static const struct
    "Executa el seg\303\274ent truc si el valor \303\251s inferior al de la mem\303\262ria",
    "Executa el seg\303\274ent truc si el valor \303\251s diferent del de la mem\303\262ria",
    "Assigna valor",
+   "Separaci\303\263 horitzontal manual",
+   "Separaci\303\263 vertical manual",
    "El servidor de RetroAchievements no est\303\240 disponible. Es seguir\303\240 intentant la conne"
    "xi\303\263 fins que es confirmi la comunicaci\303\263 o fins que es tanqui l'aplicaci\303\263.",
    "Totes les sol\302\267licituds pendents han sigut sincronitzades amb el servidor de RetroAchievem"
@@ -6715,10 +6721,10 @@ static const struct
    "Disposici\303\263 vertical de miniatures",
    "S\303\255",
    "Clau de transmissi\303\263 de Youtube",
-   "bideo_hdr_mode",
    "Shader predefinit",
    "Shader predefinit",
    "Shader predefinit",
+   "Profunditat de la sortida en bits",
 #if defined(RARCH_MOBILE)
    "Compensaci\303\263 de l'eix X del punt d'ancoratge de l'\303\240rea de visualitzaci\303\263 (ori"
    "entaci\303\263 vertical)",
@@ -9226,7 +9232,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (199095u
+      (sizeof(msg_hash_ca_blob) == (199189u
 #ifdef ANDROID
        + 281u
 #endif
@@ -9641,6 +9647,7 @@ typedef char msg_hash_ca_blob_check[
 
 static const uint32_t msg_hash_ca_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9665,6 +9672,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -11974,10 +11983,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
-   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

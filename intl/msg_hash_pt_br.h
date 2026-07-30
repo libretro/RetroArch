@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[26];
    char s_54d907f5[9];
    char s_9a250c33[26];
    char s_dec692c9[30];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[66];
    char s_56581215[67];
    char s_6b45243b[14];
+   char s_43585d45[32];
+   char s_43585d53[30];
    char s_ea6df2a1[136];
    char s_bfb33e98[97];
    char s_87603f77[28];
@@ -2346,6 +2349,7 @@ static const struct
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
+   char s_b6ca9df2[31];
 #if defined(RARCH_MOBILE)
    char s_b754294b[69];
    char s_b754294c[69];
@@ -4119,6 +4123,7 @@ static const struct
    char s_2dbb6496[28];
 } msg_hash_pt_br_blob =
 {
+   "Backend do Servi\303\247o de IA",
    "Emulador",
    "1 bit, valor m\303\241x. = 0x01",
    "16 bits, valor m\303\241x. = 0xFFFF",
@@ -4143,6 +4148,8 @@ static const struct
    "Executar a pr\303\263xima trapa\303\247a caso valor seja menor que a mem\303\263ria",
    "Executar a pr\303\263xima trapa\303\247a caso valor seja diferente da mem\303\263ria",
    "Definir valor",
+   "Preenchimento Horizontal Manual",
+   "Preenchimento Vertical Manual",
    "O servidor RetroAchievements est\303\241 inacess\303\255vel. Tentarei novamente at\303\251 que a"
    " conex\303\243o seja bem-sucedida ou o aplicativo seja fechado.",
    "Todas as solicita\303\247\303\265es pendentes foram sincronizadas com sucesso no servidor RetroA"
@@ -6700,6 +6707,7 @@ static const struct
    "Predefini\303\247\303\243o de shader",
    "Predefini\303\247\303\243o de shader",
    "Predefini\303\247\303\243o de shader",
+   "Profundidade de Bits de Sa\303\255da",
 #if defined(RARCH_MOBILE)
    "Deslocamento do \303\202ncora da Viewport no Eixo X (Orienta\303\247\303\243o Retrato)",
    "Deslocamento do \303\202ncora da Viewport no Eixo Y (Orienta\303\247\303\243o Retrato)",
@@ -9221,7 +9229,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193210u
+      (sizeof(msg_hash_pt_br_blob) == (193329u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9642,6 +9650,7 @@ typedef char msg_hash_pt_br_blob_check[
 
 static const uint32_t msg_hash_pt_br_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -9666,6 +9675,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -11968,6 +11979,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

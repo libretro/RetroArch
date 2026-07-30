@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[27];
    char s_54d907f5[12];
    char s_9a250c33[28];
    char s_dec692c9[31];
@@ -3444,6 +3445,7 @@ static const struct
    char s_2dbb6496[26];
 } msg_hash_fi_blob =
 {
+   "Teko\303\244lypalvelun taustaosa",
    "Emulaattori",
    "1-Bit, Enimm\303\244isarvo = 0x01",
    "16-Bit, Enimm\303\244isarvo = 0xFFFF",
@@ -7460,7 +7462,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (124223u
+      (sizeof(msg_hash_fi_blob) == (124250u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -7767,6 +7769,7 @@ typedef char msg_hash_fi_blob_check[
 
 static const uint32_t msg_hash_fi_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,

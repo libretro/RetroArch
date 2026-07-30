@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[19];
    char s_9a250c33[30];
    char s_dec692c9[33];
    char s_9a250c34[30];
@@ -37,6 +38,8 @@ static const struct
    char s_76fae911[47];
    char s_56581215[48];
    char s_6b45243b[18];
+   char s_43585d45[31];
+   char s_43585d53[31];
    char s_ea6df2a1[102];
    char s_bfb33e98[82];
    char s_87603f77[26];
@@ -3977,6 +3980,7 @@ static const struct
    char s_2dbb6496[21];
 } msg_hash_nl_blob =
 {
+   "AI-Service backend",
    "1-Bit, maximale waarde = 0x01",
    "16-Bit, maximale waarde = 0xFFFF",
    "2-Bit, maximale waarde = 0x03",
@@ -4000,6 +4004,8 @@ static const struct
    "Volgende cheat uitvoeren als waarde < geheugen",
    "Volgende cheat uitvoeren als waarde != geheugen",
    "Gezet naar waarde",
+   "Manuele horizontale uitlijning",
+   "Handmatige verticale opvulling",
    "RetroAchievements server is onbereikbaar. Zal opnieuw proberen totdat het lukt of de app is gesl"
    "oten.",
    "Alle openstaande verzoeken zijn gesynchroniseerd met de RetroAchievements server.",
@@ -8593,7 +8599,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (174457u
+      (sizeof(msg_hash_nl_blob) == (174538u
 #ifdef ANDROID
        + 375u
 #endif
@@ -9012,6 +9018,7 @@ typedef char msg_hash_nl_blob_check[
 
 static const uint32_t msg_hash_nl_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
@@ -9035,6 +9042,8 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

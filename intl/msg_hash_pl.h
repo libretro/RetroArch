@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[19];
    char s_9a250c33[35];
    char s_dec692c9[38];
    char s_9a250c34[35];
@@ -37,6 +38,8 @@ static const struct
    char s_76fae911[53];
    char s_56581215[54];
    char s_6b45243b[16];
+   char s_43585d45[32];
+   char s_43585d53[30];
    char s_ea6df2a1[111];
    char s_bfb33e98[88];
    char s_87603f77[16];
@@ -2373,6 +2376,7 @@ static const struct
    char s_aa0659db[28];
    char s_49757b91[28];
    char s_660eb9c4[28];
+   char s_b6ca9df2[25];
 #if defined(RARCH_MOBILE)
    char s_b754294b[55];
    char s_b754294c[55];
@@ -4148,6 +4152,7 @@ static const struct
    char s_2dbb6496[39];
 } msg_hash_pl_blob =
 {
+   "Backend us\305\202ugi AI",
    "1-bit, maksymalna warto\305\233\304\207 = 0x01",
    "16-bit, maksymalna warto\305\233\304\207 = 0xFFFF",
    "2-bit, maksymalna warto\305\233\304\207 = 0x03",
@@ -4171,6 +4176,8 @@ static const struct
    "Uruchom nast\304\231pny cheat, je\305\233li Warto\305\233\304\207 < Pami\304\231\304\207",
    "Uruchom nast\304\231pny cheat, je\305\233li Warto\305\233\304\207 != Pami\304\231\304\207",
    "Ustaw warto\305\233\304\207",
+   "R\304\231czne wype\305\202nienie w poziomie",
+   "R\304\231czne wype\305\202nienie w pionie",
    "Serwer RetroAchievements jest niedost\304\231pny. B\304\231dziemy pr\303\263bowa\304\207 ponowni"
    "e do skutku lub zamkni\304\231cia aplikacji.",
    "Wszystkie oczekuj\304\205ce zapytania zosta\305\202y zsynchronizowane z serwerem RetroAchievemen"
@@ -6791,6 +6798,7 @@ static const struct
    "Ustawienie wst\304\231pne shadera",
    "Ustawienie wst\304\231pne shadera",
    "Ustawienie wst\304\231pne shadera",
+   "G\305\202\304\231bia bitowa wyj\305\233cia",
 #if defined(RARCH_MOBILE)
    "Odchylenie zakotwiczenia widoku X (orientacja pionowa)",
    "Odchylenie zakotwiczenia widoku Y (orientacja pionowa)",
@@ -9453,7 +9461,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (187902u
+      (sizeof(msg_hash_pl_blob) == (188008u
 #ifdef ANDROID
        + 385u
 #endif
@@ -9877,6 +9885,7 @@ typedef char msg_hash_pl_blob_check[
 
 static const uint32_t msg_hash_pl_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_2,
@@ -9900,6 +9909,8 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -12229,6 +12240,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

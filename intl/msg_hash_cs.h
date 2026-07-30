@@ -38,6 +38,8 @@ static const struct
    char s_76fae911[46];
    char s_56581215[47];
    char s_6b45243b[20];
+   char s_43585d45[31];
+   char s_43585d53[29];
    char s_ea6df2a1[121];
    char s_bfb33e98[95];
    char s_87603f77[26];
@@ -3754,6 +3756,8 @@ static const struct
    "Spustit dal\305\241\303\255 cheat pokud hodnota < pam\304\233\305\245",
    "Spustit dal\305\241\303\255 cheat pokud hodnota != pam\304\233\305\245",
    "Nastavit na hodnotu",
+   "Ru\304\215n\303\255 horizont\303\241ln\303\255 v\303\275pl\305\210",
+   "Ru\304\215n\303\255 vertik\303\241ln\303\255 v\303\275pl\305\210",
    "Server Retro\303\272sp\304\233ch\305\257 je nedostupn\303\275. Pokusy se opakuj\303\255, dokud n"
    "ejsou \303\272sp\304\233\305\241n\303\251 nebo dokud nen\303\255 aplikace ukon\304\215ena.",
    "V\305\241echny nevy\305\231\303\255zen\303\251 \305\276\303\241dosti byly \303\272sp\304\233\305"
@@ -8813,7 +8817,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (163210u
+      (sizeof(msg_hash_cs_blob) == (163270u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9209,6 +9213,8 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

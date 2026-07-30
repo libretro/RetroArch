@@ -39,6 +39,8 @@ static const struct
    char s_76fae911[49];
    char s_56581215[52];
    char s_6b45243b[13];
+   char s_43585d45[19];
+   char s_43585d53[19];
    char s_ea6df2a1[75];
    char s_bfb33e98[60];
    char s_87603f77[16];
@@ -3931,6 +3933,8 @@ static const struct
    "\345\255\230\345\210\231\350\277\220\350\241\214\344\270\213\344\270\252\351\207\221\346\211\213"
    "\346\214\207",
    "\350\256\276\345\256\232\345\200\274\344\270\272",
+   "\346\211\213\345\212\250\346\260\264\345\271\263\345\241\253\345\205\205",
+   "\346\211\213\345\212\250\345\236\202\347\233\264\345\241\253\345\205\205",
    "Retro\346\210\220\345\260\261\346\234\215\345\212\241\345\231\250\346\227\240\346\263\225\350"
    "\256\277\351\227\256\343\200\202\345\260\206\345\234\250\345\272\224\347\224\250\347\250\213\345"
    "\272\217\345\205\263\351\227\255\344\271\213\345\211\215\351\207\215\350\257\225\343\200\202",
@@ -11149,7 +11153,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_chs_blob_check[
-      (sizeof(msg_hash_chs_blob) == (128322u
+      (sizeof(msg_hash_chs_blob) == (128360u
 #ifdef ANDROID
        + 220u
 #endif
@@ -11555,6 +11559,8 @@ static const uint32_t msg_hash_chs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,

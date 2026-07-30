@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[34];
    char s_54d907f5[19];
    char s_9a250c33[35];
    char s_dec692c9[38];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[59];
    char s_56581215[60];
    char s_6b45243b[25];
+   char s_43585d45[25];
+   char s_43585d53[25];
    char s_ea6df2a1[132];
    char s_bfb33e98[115];
    char s_87603f77[26];
@@ -2403,6 +2406,7 @@ static const struct
    char s_aa0659db[35];
    char s_49757b91[35];
    char s_660eb9c4[35];
+   char s_b6ca9df2[26];
 #if defined(RARCH_MOBILE)
    char s_b754294b[51];
    char s_b754294c[51];
@@ -4183,6 +4187,7 @@ static const struct
    char s_2dbb6496[25];
 } msg_hash_vn_blob =
 {
+   "H\341\273\207 th\341\273\221ng d\341\273\213ch v\341\273\245 n\341\273\201n AI",
    "Tr\303\254nh gi\341\272\243 l\341\272\255p",
    "1-Bit, Gi\303\241 tr\341\273\213 t\341\273\221i \304\221a = 0x01",
    "16-Bit, Gi\303\241 tr\341\273\213 t\341\273\221i \304\221a = 0xFFFF",
@@ -4211,6 +4216,8 @@ static const struct
    "Ch\341\272\241y m\303\243 Cheat ti\341\272\277p theo n\341\272\277u gi\303\241 tr\341\273\213 !="
    " b\341\273\231 nh\341\273\233",
    "\304\220\341\272\267t b\341\272\261ng gi\303\241 tr\341\273\213",
+   "\304\220\341\273\207m ngang th\341\273\247 c\303\264ng",
+   "\304\220\341\273\207m d\341\273\215c th\341\273\247 c\303\264ng",
    "M\303\241y ch\341\273\247 RetroAchievements kh\303\264ng th\341\273\203 truy c\341\272\255p. S"
    "\341\272\275 th\341\273\255 l\341\272\241i cho \304\221\341\272\277n khi th\303\240nh c\303\264n"
    "g ho\341\272\267c \341\273\251ng d\341\273\245ng b\341\273\213 \304\221\303\263ng.",
@@ -7476,6 +7483,7 @@ static const struct
    "B\341\273\231 \304\221\341\273\225 b\303\263ng c\303\240i \304\221\341\272\267t s\341\272\265n",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng c\303\240i \304\221\341\272\267t s\341\272\265n",
    "B\341\273\231 \304\221\341\273\225 b\303\263ng c\303\240i \304\221\341\272\267t s\341\272\265n",
+   "\304\220\341\273\231 s\303\242u m\303\240u \304\221\341\272\247u ra",
 #if defined(RARCH_MOBILE)
    "\304\220\341\273\231 l\341\273\207ch neo khung nh\303\254n theo tr\341\273\245c X (D\341\273\215"
    "c)",
@@ -11801,7 +11809,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (219715u
+      (sizeof(msg_hash_vn_blob) == (219825u
 #ifdef ANDROID
        + 422u
 #endif
@@ -12220,6 +12228,7 @@ typedef char msg_hash_vn_blob_check[
 
 static const uint32_t msg_hash_vn_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -12244,6 +12253,8 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -14598,6 +14609,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,

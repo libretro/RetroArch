@@ -14,6 +14,7 @@
 
 static const struct
 {
+   char s_74d0bdad[35];
    char s_54d907f5[10];
    char s_9a250c33[32];
    char s_dec692c9[35];
@@ -38,6 +39,8 @@ static const struct
    char s_76fae911[54];
    char s_56581215[55];
    char s_6b45243b[23];
+   char s_43585d45[28];
+   char s_43585d53[29];
    char s_ea6df2a1[149];
    char s_bfb33e98[88];
    char s_87603f77[17];
@@ -2302,6 +2305,7 @@ static const struct
    char s_aa0659db[14];
    char s_49757b91[14];
    char s_660eb9c4[14];
+   char s_b6ca9df2[22];
 #if defined(RARCH_MOBILE)
    char s_b754294b[53];
    char s_b754294c[54];
@@ -4051,6 +4055,7 @@ static const struct
    char s_2dbb6496[22];
 } msg_hash_hu_blob =
 {
+   "AI szolg\303\241ltat\303\241s megval\303\263s\303\255t\303\241sa",
    "Emul\303\241tor",
    "1 bites, maximum \303\251rt\303\251k = 0x01",
    "16 bites, maximum \303\251rt\303\251k = 0xFFFF",
@@ -4075,6 +4080,8 @@ static const struct
    "K\303\266vetkez\305\221 csal\303\241s futtat\303\241sa, ha \303\211rt\303\251k < Mem\303\263ria",
    "K\303\266vetkez\305\221 csal\303\241s futtat\303\241sa, ha \303\211rt\303\251k != Mem\303\263ria",
    "Be\303\241ll\303\255t\303\241s \303\251rt\303\251kre",
+   "Egyedi v\303\255zszintes eltol\303\241s",
+   "Egyedi f\303\274gg\305\221leges eltol\303\241s",
    "A RetroAchievements kiszolg\303\241l\303\263 nem el\303\251rhet\305\221. A bek\303\274ld\303\251"
    "s mindaddig \303\272jra lesz pr\303\263b\303\241lva, am\303\255g nem siker\303\274l, vagy az alk"
    "almaz\303\241s nyitva marad.",
@@ -6712,6 +6719,7 @@ static const struct
    "Shader preset",
    "Shader preset",
    "Shader preset",
+   "Kimeneti bitm\303\251lys\303\251g",
 #if defined(RARCH_MOBILE)
    "N\303\251z\305\221ablak v\303\255zszintes eltol\303\241sa (\303\241ll\303\263 n\303\251zetben)",
    "N\303\251z\305\221ablak f\303\274gg\305\221leges eltol\303\241sa (\303\241ll\303\263 n\303\251ze"
@@ -9626,7 +9634,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (185631u
+      (sizeof(msg_hash_hu_blob) == (185745u
 #ifdef ANDROID
        + 316u
 #endif
@@ -10041,6 +10049,7 @@ typedef char msg_hash_hu_blob_check[
 
 static const uint32_t msg_hash_hu_ids[] =
 {
+   (uint32_t)MENU_ENUM_LABEL_AI_SERVICE_BACKEND,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_HANDLER_TYPE_EMU,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_1,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_MEMORY_SIZE_16,
@@ -10065,6 +10074,8 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_LT,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_RUN_NEXT_IF_NEQ,
    (uint32_t)MENU_ENUM_LABEL_CHEAT_TYPE_SET_TO_VALUE,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_H,
+   (uint32_t)MENU_ENUM_LABEL_CHEEVOS_APPEARANCE_PADDING_V,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_DISCONNECTED,
    (uint32_t)MENU_ENUM_LABEL_CHEEVOS_SERVER_RECONNECTED,
    (uint32_t)MENU_ENUM_LABEL_EXPLORE_DELETE_VIEW,
@@ -12326,6 +12337,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y,
