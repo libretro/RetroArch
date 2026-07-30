@@ -47,7 +47,8 @@
  * no hidden static state, which is exactly what a sanitizer build
  * can answer and inspection cannot.
  *
- * Build:  make               (SANITIZER=address,undefined for a checked run)
+ * Build:  make                (SANITIZER=address,undefined, or thread)
+ *         make sweep          (all three passes, both lanes)
  *                            (SANITIZER=thread with ./task_file_transfer_test conc)
  * Run:    ./task_file_transfer_test        single-threaded lanes
  *         ./task_file_transfer_test conc   concurrent instances
@@ -67,7 +68,7 @@
 #include <formats/data_transfer.h>
 #include <rthreads/rthreads.h>
 
-#include "../task_file_transfer.h"
+#include "tasks/task_file_transfer.h"
 #include "mp4_moov_eof_fixture.h"
 
 void task_file_load_handler(retro_task_t *task);

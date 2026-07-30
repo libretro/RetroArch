@@ -443,3 +443,57 @@ jobs:
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
+
+      - name: Build and run gfx_thumbnail_anim_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_anim
+        run: |
+          set -eu
+          # Regression test for the two faults that froze animated
+          # thumbnails in the file browser, in gfx/gfx_thumbnail.c.
+          #
+          # gfx_thumbnail_request_file malloc'd its tag and never set
+          # tag->path, so gfx_thumbnail_anim_open - which
+          # gfx_thumbnail_handle_upload feeds that field for every
+          # load with no video stream to adopt - read uninitialised
+          # heap and returned without touching the file.  Undefined
+          # behaviour rather than a stable failure: a freed tag is
+          # the size of the next one, so the allocator commonly
+          # handed back a block still holding the previous entry's
+          # path, which opened an animation and looked like the
+          # feature working.  gfx_thumbnail_request fills the field
+          # for playlist entries, which is why playlists animated and
+          # the browser did not.
+          #
+          # Separately, anim_install marked windowed animations
+          # 'read pending' via !data_transfer_complete().  A window
+          # never completes - done stays clear for its whole life -
+          # and the pump animate() uses (iterate_while) declines
+          # windows by design, so pending forced the pump branch, the
+          # pump was a no-op, and animate() returned before ever
+          # advancing a frame, every vsync, forever.  That is every
+          # path-based open: animated WEBP, APNG, and any WEBM/MP4
+          # with no still stream to adopt.
+          #
+          # The oracle links the real gfx_thumbnail.c and measures
+          # animation as DISTINCT FRAMES REACHING THE TEXTURE - the
+          # video-driver stub CRCs every upload - not as internal
+          # flags, which is what every earlier test in this area got
+          # wrong and why neither fault was caught.  A 188-byte
+          # 3-frame lossless WEBP is embedded, so there are no
+          # fixtures.  One lane drives anim_open with a garbage path
+          # and requires no stream; one opens the real animation and
+          # requires multiple distinct uploads within bounded paced
+          # vsyncs, naming the windowed+pending deadlock explicitly
+          # before the timeout would.  Both pre-fix trees score zero
+          # uploads in 240 vsyncs.  If gfx_thumbnail.c amends the
+          # pending decision or the request plumbing, this goes red.
+          make clean all SANITIZER=address,undefined
+          test -x gfx_thumbnail_anim_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 \
+             ./gfx_thumbnail_anim_test
+          echo "[pass] gfx_thumbnail_anim_test (TSan)"

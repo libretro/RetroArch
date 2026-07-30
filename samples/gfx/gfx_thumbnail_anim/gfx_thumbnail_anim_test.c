@@ -51,7 +51,8 @@
  * The animation is a 188-byte 3-frame lossless WEBP embedded below,
  * written to a temp file at startup, so the test needs no fixtures.
  *
- * Build:  make -C gfx/tests            (SANITIZER=address,undefined etc.)
+ * Build:  make                (SANITIZER=address,undefined, or thread)
+ *         make sweep          (all three passes)
  * The Makefile compiles gfx_thumbnail.c with -O0 -fno-inline and
  * globalizes the static gfx_thumbnail_anim_open via objcopy so the
  * test can call it directly, upstream of the task queue.

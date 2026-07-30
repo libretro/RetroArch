@@ -221,3 +221,71 @@ jobs:
           test -x patch_stream_test
           timeout 900 ./patch_stream_test
           echo "[pass] patch_stream_test"
+
+      - name: Build and run task_file_transfer_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/file_transfer
+        run: |
+          set -eu
+          # Oracle for tasks/task_file_transfer.c, compiled from the
+          # tree so it exercises the shipping translation unit.  The
+          # handler is a switch whose states advance at most one step
+          # per tick, so what matters is how many ticks a load takes,
+          # whether every input reaches a terminal at all, and what a
+          # caller reading task_get_progress() sees on the way - a
+          # test that only checks the bytes passes on every defect
+          # below.  Lanes run to a tick cap rather than looping, so a
+          # task that never finishes reports instead of hanging CI.
+          #
+          # Pinned here: a NULL path and a parse callback that
+          # returns success without setting is_finished, both of
+          # which once left the task running forever with no flag set
+          # (a per-frame call under the regular queue, a hot spin on
+          # the worker thread under the threaded one); progress
+          # reaching 100 on every completion path, not just the
+          # single-tick one; the tick that opens the file also
+          # reading, which one byte either side of the threshold used
+          # to decide; a file truncated underneath an in-flight fill
+          # cancelling rather than parsing a buffer whose tail was
+          # never written; and every audio type reaching the mixer
+          # arm, since M4A and OPUS were once absent from that switch
+          # while both push paths set them, so those sounds loaded
+          # and silently did not play.
+          #
+          # Two lanes guard the 256 MiB prefix cap that cancelled
+          # every large non-faststart video.  The real-demuxer lane
+          # pins the premise the cap got wrong: a genuine h264 MP4
+          # (real ftyp/mdat/moov, real coded frames) is written with
+          # a ~300 MiB free box pushing moov to EOF - a valid file,
+          # the layout most cameras produce - and the real rmp4, via
+          # image_transfer's avail-aware open, must answer need_more
+          # on a 1 MiB prefix and decode real frames once fully
+          # resident.  Anyone restoring a prefix ceiling on the
+          # "a still only needs a few per cent" argument is refuted
+          # by that lane directly.  The task lane pins the
+          # mechanism: a still ready only at EOF, over a 300 MiB
+          # file, must finish uncancelled with every byte resident.
+          # On the capped tree it stops at exactly 268435456 and
+          # cancels - no thumbnail, no animation - and the oracle
+          # exits non-zero.
+          #
+          # The conc lane runs disjoint handles on many threads at
+          # once.  data_transfer synchronises nothing by design and
+          # the task layer gives one handle to one task, so it is not
+          # looking for contention on a shared handle - it checks
+          # that the spine keeps no hidden static state, which a
+          # sanitizer build can answer and inspection cannot.
+          make clean all SANITIZER=address,undefined
+          test -x task_file_transfer_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./task_file_transfer_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 600 \
+             ./task_file_transfer_test conc
+          echo "[pass] task_file_transfer_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./task_file_transfer_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./task_file_transfer_test conc
+          echo "[pass] task_file_transfer_test (TSan)"
