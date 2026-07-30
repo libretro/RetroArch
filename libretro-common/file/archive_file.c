@@ -439,6 +439,13 @@ bool file_archive_extract_file(
       if (    userdata.first_extracted_file_path 
           && *userdata.first_extracted_file_path)
          strlcpy(s, userdata.first_extracted_file_path, len);
+      /* The success path used to return here without freeing either
+       * the split extension list or the path strdup'd by
+       * file_archive_extract_cb, so every archive load through this
+       * function leaked both.  Only the failure path below cleaned
+       * up.  Fall through to the shared cleanup instead. */
+      free(userdata.first_extracted_file_path);
+      string_list_free(list);
       return true;
    }
 
