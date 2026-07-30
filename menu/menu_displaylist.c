@@ -5351,7 +5351,6 @@ static unsigned menu_displaylist_parse_content_information(
       size_t _len                  = strlcpy(tmp, cheevos_hash_str, sizeof(tmp) - 4);
       tmp[  _len]                  = ':';
       tmp[++_len]                  = ' ';
-      tmp[++_len]                  = '\n';
       tmp[++_len]                  = '\0';
       strlcpy(tmp + _len, rcheevos_get_hash(), sizeof(tmp) - _len);
       if (menu_entries_append(info_list, tmp, cheevos_hash_str,

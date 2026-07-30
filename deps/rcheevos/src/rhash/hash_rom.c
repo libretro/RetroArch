@@ -21,7 +21,7 @@ static int rc_hash_iterator_buffer(char hash[33], const rc_hash_iterator_t* iter
 int rc_hash_7800(char hash[33], const rc_hash_iterator_t* iterator)
 {
   /* if the file contains a header, ignore it */
-  if (memcmp(&iterator->buffer[1], "ATARI7800", 9) == 0) {
+  if (iterator->buffer_size > 128 && memcmp(&iterator->buffer[1], "ATARI7800", 9) == 0) {
     rc_hash_iterator_verbose(iterator, "Ignoring 7800 header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 128);
   }
@@ -184,7 +184,7 @@ int rc_hash_arduboy(char hash[33], const rc_hash_iterator_t* iterator)
 int rc_hash_lynx(char hash[33], const rc_hash_iterator_t* iterator)
 {
   /* if the file contains a header, ignore it */
-  if (memcmp(&iterator->buffer[0], "LYNX", 5) == 0) {
+  if (iterator->buffer_size > 64 && memcmp(&iterator->buffer[0], "LYNX", 5) == 0) {
     rc_hash_iterator_verbose(iterator, "Ignoring LYNX header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 64);
   }
@@ -195,12 +195,12 @@ int rc_hash_lynx(char hash[33], const rc_hash_iterator_t* iterator)
 int rc_hash_nes(char hash[33], const rc_hash_iterator_t* iterator)
 {
   /* if the file contains a header, ignore it */
-  if (memcmp(&iterator->buffer[0], "NES\x1a", 4) == 0) {
+  if (iterator->buffer_size > 16 && memcmp(&iterator->buffer[0], "NES\x1a", 4) == 0) {
     rc_hash_iterator_verbose(iterator, "Ignoring NES header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 16);
   }
 
-  if (memcmp(&iterator->buffer[0], "FDS\x1a", 4) == 0) {
+  if (iterator->buffer_size > 16 && memcmp(&iterator->buffer[0], "FDS\x1a", 4) == 0) {
     rc_hash_iterator_verbose(iterator, "Ignoring FDS header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 16);
   }
@@ -295,6 +295,92 @@ int rc_hash_n64(char hash[33], const rc_hash_iterator_t* iterator)
   free(buffer);
 
   return rc_hash_finalize(iterator, &md5, hash);
+}
+
+int rc_hash_neogeo_cart(char hash[33], const rc_hash_iterator_t* iterator)
+{
+  /* The first 4096 bytes of a .neo file are a header: a magic number, the
+   * sizes of the ROM sections, and metadata text fields (name, manufacturer,
+   * genre, ...). The text fields can differ between conversion tools, so the
+   * header cannot participate in the hash. The decrypted, concatenated ROM
+   * data starts at byte 4096 and is deterministic for a given romset - hash
+   * only that.
+   * https://github.com/libretro/geolith-libretro (src/geo_neo.c)
+   */
+  const size_t header_size = 4096;
+  const size_t chunk_size = 65536;
+  md5_state_t md5;
+  uint8_t* buffer;
+  uint8_t header[4];
+  int64_t size;
+  void* file_handle;
+  size_t remaining;
+  int result = 0;
+
+  if (iterator->buffer) {
+    if (iterator->buffer_size < header_size ||
+        memcmp(iterator->buffer, "NEO\1", 4) != 0)
+      return rc_hash_iterator_error(iterator, "Not a valid .neo file");
+
+    rc_hash_iterator_verbose(iterator, "Ignoring NEO header");
+    return rc_hash_unheadered_iterator_buffer(hash, iterator, header_size);
+  }
+
+  file_handle = rc_file_open(iterator, iterator->path);
+  if (!file_handle)
+    return rc_hash_iterator_error(iterator, "Could not open file");
+
+  rc_file_seek(iterator, file_handle, 0, SEEK_SET);
+  if (rc_file_read(iterator, file_handle, header, 4) != 4 ||
+      memcmp(header, "NEO\1", 4) != 0) {
+    rc_file_close(iterator, file_handle);
+    return rc_hash_iterator_error(iterator, "Not a valid .neo file");
+  }
+
+  rc_file_seek(iterator, file_handle, 0, SEEK_END);
+  size = rc_file_tell(iterator, file_handle);
+  if (size <= (int64_t)header_size) {
+    rc_file_close(iterator, file_handle);
+    return rc_hash_iterator_error(iterator, "Not a valid .neo file");
+  }
+  size -= (int64_t)header_size;
+
+  if (size > MAX_BUFFER_SIZE) {
+    rc_hash_iterator_verbose_formatted(iterator, "Hashing first %u bytes (of %u bytes) of %s after 4096 byte header",
+      MAX_BUFFER_SIZE, (unsigned)size, rc_path_get_filename(iterator->path));
+    remaining = MAX_BUFFER_SIZE;
+  }
+  else {
+    rc_hash_iterator_verbose_formatted(iterator, "Hashing %s (%u bytes after 4096 byte header)",
+      rc_path_get_filename(iterator->path), (unsigned)size);
+    remaining = (size_t)size;
+  }
+
+  md5_init(&md5);
+
+  buffer = (uint8_t*)malloc(chunk_size);
+  if (!buffer) {
+    rc_file_close(iterator, file_handle);
+    return rc_hash_iterator_error(iterator, "Could not allocate temporary buffer");
+  }
+
+  rc_file_seek(iterator, file_handle, (int64_t)header_size, SEEK_SET);
+  while (remaining >= chunk_size) {
+    rc_file_read(iterator, file_handle, buffer, (int)chunk_size);
+    md5_append(&md5, buffer, (int)chunk_size);
+    remaining -= chunk_size;
+  }
+
+  if (remaining > 0) {
+    rc_file_read(iterator, file_handle, buffer, (int)remaining);
+    md5_append(&md5, buffer, (int)remaining);
+  }
+
+  free(buffer);
+  result = rc_hash_finalize(iterator, &md5, hash);
+
+  rc_file_close(iterator, file_handle);
+  return result;
 }
 
 int rc_hash_nintendo_ds(char hash[33], const rc_hash_iterator_t* iterator)
@@ -405,7 +491,7 @@ int rc_hash_scv(char hash[33], const rc_hash_iterator_t* iterator)
 {
   /* if the file contains a header, ignore it */
   /* https://gitlab.com/MaaaX-EmuSCV/libretro-emuscv/-/blob/master/readme.txt#L211 */
-  if (memcmp(iterator->buffer, "EmuSCV", 6) == 0) {
+  if (iterator->buffer_size > 32 && memcmp(iterator->buffer, "EmuSCV", 6) == 0) {
     rc_hash_iterator_verbose(iterator, "Ignoring SCV header");
     return rc_hash_unheadered_iterator_buffer(hash, iterator, 32);
   }

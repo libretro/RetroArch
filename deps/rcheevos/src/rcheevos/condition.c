@@ -166,7 +166,7 @@ static int rc_parse_operator(const char** memaddr) {
 void rc_condition_convert_to_operand(const rc_condition_t* condition, rc_operand_t* operand, rc_parse_state_t* parse) {
   if (condition->oper == RC_OPERATOR_NONE) {
     if (operand != &condition->operand1)
-      *operand = condition->operand1;
+      memcpy(operand, &condition->operand1, sizeof(*operand));
   }
   else {
     uint8_t new_size = RC_MEMSIZE_32_BITS;
@@ -411,10 +411,13 @@ void rc_condition_update_parse_state(rc_condition_t* condition, rc_parse_state_t
           negate = rc_alloc_modified_memref(parse, new_size, &parse->addsource_parent, RC_OPERATOR_SUB_PARENT, &zero);
           parse->addsource_parent.value.memref = (rc_memref_t*)negate;
           parse->addsource_parent.size = zero.size;
+
+          if (parse->addsource_parent.type == RC_OPERAND_CONST)
+            parse->addsource_parent.value.num = rc_get_modified_memref_value(negate, NULL, NULL);
         }
 
         /* subtract the condition from the chain */
-        parse->addsource_oper = rc_operand_is_memref(&parse->addsource_parent) ? RC_OPERATOR_SUB_ACCUMULATOR : RC_OPERATOR_SUB_PARENT;
+        parse->addsource_oper = RC_OPERATOR_SUB_ACCUMULATOR;
         rc_condition_convert_to_operand(condition, &cond_operand, parse);
         rc_operand_addsource(&cond_operand, parse, new_size);
         memcpy(&parse->addsource_parent, &cond_operand, sizeof(cond_operand));
