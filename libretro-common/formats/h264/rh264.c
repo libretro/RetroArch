@@ -3375,7 +3375,7 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
     * dense patch instead of re-clamping per tap. */
    uint8_t pat[21 * 21];
    int pw = bw + 5, ph = bh + 5, r, c;
-   const uint8_t *pc = pat + 2 * pw + 2;    /* patch centre (block origin) */
+   const uint8_t *pc;
 
    if (fx == 0 && fy == 0)
    {
@@ -3393,17 +3393,25 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
       return;
    }
 
-   if (ix >= 2 && iy >= 2 && ix + bw + 3 <= rw && iy + bh + 3 <= rh)
+   /* When the margined window lies inside the picture the filters can
+    * run straight off the reference plane - the patch only exists to
+    * bake the edge clamp in, so it is gathered solely at the borders. */
+   if (ix >= 2 && iy >= 2 && ix + bw + 3 <= rw && iy + bh + 3 < rh)
    {
-      const uint8_t *s = ref + (iy - 2) * rstride + (ix - 2);
-      for (r = 0; r < ph; r++)
-         memcpy(pat + r * pw, s + r * rstride, (size_t)pw);
+      /* strictly above the last row: the vector tails read a few bytes
+       * past the 6-tap margin, and the spare row keeps them inside the
+       * plane */
+      pw = rstride;
+      pc = ref + iy * rstride + ix;
    }
    else
+   {
       for (r = 0; r < ph; r++)
          for (c = 0; c < pw; c++)
             pat[r * pw + c] = (uint8_t)
                rh264_ref_luma(ref, rstride, rw, rh, ix - 2 + c, iy - 2 + r);
+      pc = pat + 2 * pw + 2;                /* patch centre (block origin) */
+   }
 
 #define PP(dx,dy) ((int)pc[(y + (dy)) * pw + x + (dx)])
 #define HTAP(px,py) rh264_tap6((int)pc[(py)*pw+(px)-2],(int)pc[(py)*pw+(px)-1],\
@@ -3545,14 +3553,14 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
 #ifdef RH264_SSE2
          for (; c + 8 <= bw; c += 8)
          {
-            const uint8_t *rp = pat + r * pw + c;
+            const uint8_t *rp = pc - 2 * pw - 2 + r * pw + c;
             _mm_storeu_si128((__m128i*)(hb + r * bw + c),
                   rh264_sse2_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
                         rp + 5));
          }
          if (c + 4 <= bw)
          {
-            const uint8_t *rp = pat + r * pw + c;
+            const uint8_t *rp = pc - 2 * pw - 2 + r * pw + c;
             _mm_storel_epi64((__m128i*)(hb + r * bw + c),
                   rh264_sse2_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
                         rp + 5));
@@ -3561,14 +3569,14 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
 #elif defined(RH264_NEON)
          for (; c + 8 <= bw; c += 8)
          {
-            const uint8_t *rp = pat + r * pw + c;
+            const uint8_t *rp = pc - 2 * pw - 2 + r * pw + c;
             vst1q_s16(hb + r * bw + c,
                   rh264_neon_tap6_u8(rp, rp + 1, rp + 2, rp + 3, rp + 4,
                         rp + 5));
          }
          if (c + 4 <= bw)
          {
-            const uint8_t *rp = pat + r * pw + c;
+            const uint8_t *rp = pc - 2 * pw - 2 + r * pw + c;
             vst1_s16(hb + r * bw + c,
                   vget_low_s16(rh264_neon_tap6_u8(rp, rp + 1, rp + 2,
                         rp + 3, rp + 4, rp + 5)));
@@ -3576,9 +3584,12 @@ static void rh264_mc_luma(uint8_t *dst, int dstride,
          }
 #endif
          for (; c < bw; c++)
+         {
+            const uint8_t *rp = pc - 2 * pw - 2 + r * pw + c;
             hb[r * bw + c] = (int16_t)rh264_tap6(
-                  (int)pat[r*pw+c],   (int)pat[r*pw+c+1], (int)pat[r*pw+c+2],
-                  (int)pat[r*pw+c+3], (int)pat[r*pw+c+4], (int)pat[r*pw+c+5]);
+                  (int)rp[0], (int)rp[1], (int)rp[2],
+                  (int)rp[3], (int)rp[4], (int)rp[5]);
+         }
       }
       for (y = 0; y < bh; y++)
       {
@@ -3765,12 +3776,16 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
    /* bilinear window: 4:2:0 chroma blocks are at most 8x8, 4:2:2 ones
     * at most 8x16, and the window is one sample wider and taller */
    uint8_t pat[9 * 17];
+   const uint8_t *pc = pat;
    int pw = bw + 1;
-   if (ix >= 0 && iy >= 0 && ix + bw + 1 <= rw && iy + bh + 1 <= rh)
+   /* run off the reference plane when the window is in-bounds; the
+    * patch is gathered only at the picture borders */
+   if (ix >= 0 && iy >= 0 && ix + bw + 1 <= rw && iy + bh + 1 < rh)
    {
-      const uint8_t *s = ref + iy * rstride + ix;
-      for (r = 0; r < bh + 1; r++)
-         memcpy(pat + r * pw, s + r * rstride, (size_t)pw);
+      /* strictly above the last row so vector tails past the bilinear
+       * window stay inside the plane */
+      pw = rstride;
+      pc = ref + iy * rstride + ix;
    }
    else
       for (r = 0; r < bh + 1; r++)
@@ -3781,7 +3796,7 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
    if (fx == 0 && fy == 0)
    {
       for (y = 0; y < bh; y++)
-         memcpy(dst + y * dstride, pat + y * pw, (size_t)bw);
+         memcpy(dst + y * dstride, pc + y * pw, (size_t)bw);
       return;
    }
 #ifdef RH264_SSE2
@@ -3794,7 +3809,7 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
       const __m128i rnd = _mm_set1_epi16(32);
       for (y = 0; y < bh; y++)
       {
-         const uint8_t *r0 = pat + y * pw, *r1 = r0 + pw;
+         const uint8_t *r0 = pc + y * pw, *r1 = r0 + pw;
          for (x = 0; x + 8 <= bw; x += 8)
          {
             __m128i a = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(r0 + x)), vz);
@@ -3839,7 +3854,7 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
       int w01 = (8 - fx) * fy,       w11 = fx * fy;
       for (y = 0; y < bh; y++)
       {
-         const uint8_t *r0 = pat + y * pw, *r1 = r0 + pw;
+         const uint8_t *r0 = pc + y * pw, *r1 = r0 + pw;
          for (x = 0; x + 8 <= bw; x += 8)
          {
             uint16x8_t s = vmull_u8(vld1_u8(r0 + x), vdup_n_u8((uint8_t)w00));
@@ -3870,8 +3885,8 @@ static void rh264_mc_chroma(uint8_t *dst, int dstride,
    for (y = 0; y < bh; y++)
       for (x = 0; x < bw; x++)
       {
-         int a = pat[y * pw + x],       b = pat[y * pw + x + 1];
-         int c2 = pat[(y+1) * pw + x],  d = pat[(y+1) * pw + x + 1];
+         int a = pc[y * pw + x],        b = pc[y * pw + x + 1];
+         int c2 = pc[(y+1) * pw + x],   d = pc[(y+1) * pw + x + 1];
          dst[y * dstride + x] = (uint8_t)(((8 - fx) * (8 - fy) * a
                + fx * (8 - fy) * b + (8 - fx) * fy * c2
                + fx * fy * d + 32) >> 6);
