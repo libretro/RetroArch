@@ -4444,78 +4444,109 @@ static void rh264_wp_row(uint8_t *d, int n, int w, int rnd, int sh, int o)
  * bi-prediction combine (explicit or implicit, 8.4.2.3.2). Products can
  * exceed int16 (implicit weights reach -64..128), so the accumulation is
  * 32-bit. */
-static void rh264_bi_row(uint8_t *d, const uint8_t *s0, const uint8_t *s1,
-      int n, int w0, int w1, int bias, int sh, int o)
+
+/* Weighted bi-prediction (8.4.2.3) over a whole block.  This was a
+ * per-row helper that rebuilt its weight, bias, shift and offset
+ * vectors on entry, so a 16-row block paid sixteen identical setups;
+ * the weights are constant across a block, so the rows are driven from
+ * inside one setup instead. */
+static void rh264_bi_block(uint8_t *d, int dstride,
+      const uint8_t *s0, int s0stride, const uint8_t *s1, int s1stride,
+      int w, int h, int w0, int w1, int bias, int sh, int o)
 {
-   int x = 0;
+   int y;
 #ifdef RH264_SSE2
+   const __m128i vz = _mm_setzero_si128();
+   const __m128i vk = _mm_set1_epi32(
+         (int32_t)(((uint32_t)(uint16_t)(int16_t)w1 << 16)
+                 |  (uint32_t)(uint16_t)(int16_t)w0));
+   const __m128i vb = _mm_set1_epi32(bias);
+   const __m128i vo = _mm_set1_epi32(o);
+   const __m128i sc = _mm_cvtsi32_si128(sh);
+   for (y = 0; y < h; y++)
    {
-      const __m128i vz = _mm_setzero_si128();
-      const __m128i vk = _mm_set1_epi32(
-            (int32_t)(((uint32_t)(uint16_t)(int16_t)w1 << 16)
-                    |  (uint32_t)(uint16_t)(int16_t)w0));
-      const __m128i vb = _mm_set1_epi32(bias);
-      const __m128i vo = _mm_set1_epi32(o);
-      const __m128i sc = _mm_cvtsi32_si128(sh);
-      for (; x + 8 <= n; x += 8)
+      uint8_t *dr = d + y * dstride;
+      const uint8_t *a0 = s0 + y * s0stride, *a1 = s1 + y * s1stride;
+      int x = 0;
+      for (; x + 8 <= w; x += 8)
       {
-         __m128i a = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s0 + x)), vz);
-         __m128i b = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(s1 + x)), vz);
+         __m128i a = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(a0 + x)), vz);
+         __m128i b = _mm_unpacklo_epi8(
+               _mm_loadl_epi64((const __m128i*)(a1 + x)), vz);
          __m128i lo = _mm_add_epi32(_mm_sra_epi32(_mm_add_epi32(
                _mm_madd_epi16(_mm_unpacklo_epi16(a, b), vk), vb), sc), vo);
          __m128i hi = _mm_add_epi32(_mm_sra_epi32(_mm_add_epi32(
                _mm_madd_epi16(_mm_unpackhi_epi16(a, b), vk), vb), sc), vo);
-         __m128i w = _mm_packs_epi32(lo, hi);
-         _mm_storel_epi64((__m128i*)(d + x), _mm_packus_epi16(w, w));
+         __m128i pw = _mm_packs_epi32(lo, hi);
+         _mm_storel_epi64((__m128i*)(dr + x), _mm_packus_epi16(pw, pw));
       }
-      if (x + 4 <= n)
+      if (x + 4 <= w)
       {
-         __m128i a = _mm_unpacklo_epi8(rh264_sse2_load4(s0 + x), vz);
-         __m128i b = _mm_unpacklo_epi8(rh264_sse2_load4(s1 + x), vz);
+         __m128i a = _mm_unpacklo_epi8(rh264_sse2_load4(a0 + x), vz);
+         __m128i b = _mm_unpacklo_epi8(rh264_sse2_load4(a1 + x), vz);
          __m128i lo = _mm_add_epi32(_mm_sra_epi32(_mm_add_epi32(
                _mm_madd_epi16(_mm_unpacklo_epi16(a, b), vk), vb), sc), vo);
-         __m128i w = _mm_packs_epi32(lo, lo);
-         rh264_sse2_store4(d + x, _mm_packus_epi16(w, w));
+         __m128i pw = _mm_packs_epi32(lo, lo);
+         rh264_sse2_store4(dr + x, _mm_packus_epi16(pw, pw));
          x += 4;
+      }
+      for (; x < w; x++)
+      {
+         int v = ((a0[x] * w0 + a1[x] * w1 + bias) >> sh) + o;
+         dr[x] = (uint8_t)RH264_CLIP(v);
       }
    }
 #elif defined(RH264_NEON)
+   const int32x4_t vb = vdupq_n_s32(bias);
+   const int32x4_t vo = vdupq_n_s32(o);
+   const int32x4_t vs = vdupq_n_s32(-sh);
+   for (y = 0; y < h; y++)
    {
-      const int32x4_t vb = vdupq_n_s32(bias);
-      const int32x4_t vo = vdupq_n_s32(o);
-      const int32x4_t vs = vdupq_n_s32(-sh);
-      for (; x + 8 <= n; x += 8)
+      uint8_t *dr = d + y * dstride;
+      const uint8_t *a0 = s0 + y * s0stride, *a1 = s1 + y * s1stride;
+      int x = 0;
+      for (; x + 8 <= w; x += 8)
       {
-         int16x8_t a = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s0 + x)));
-         int16x8_t b = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(s1 + x)));
+         int16x8_t a = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(a0 + x)));
+         int16x8_t b = vreinterpretq_s16_u16(vmovl_u8(vld1_u8(a1 + x)));
          int32x4_t lo = vmlal_n_s16(vmull_n_s16(vget_low_s16(a),
                (int16_t)w0), vget_low_s16(b), (int16_t)w1);
          int32x4_t hi = vmlal_n_s16(vmull_n_s16(vget_high_s16(a),
                (int16_t)w0), vget_high_s16(b), (int16_t)w1);
          lo = vaddq_s32(vshlq_s32(vaddq_s32(lo, vb), vs), vo);
          hi = vaddq_s32(vshlq_s32(vaddq_s32(hi, vb), vs), vo);
-         vst1_u8(d + x, vqmovun_s16(vcombine_s16(vqmovn_s32(lo),
+         vst1_u8(dr + x, vqmovun_s16(vcombine_s16(vqmovn_s32(lo),
                vqmovn_s32(hi))));
       }
-      if (x + 4 <= n)
+      if (x + 4 <= w)
       {
-         int16x8_t a = vreinterpretq_s16_u16(vmovl_u8(rh264_neon_load4(s0 + x)));
-         int16x8_t b = vreinterpretq_s16_u16(vmovl_u8(rh264_neon_load4(s1 + x)));
+         int16x8_t a = vreinterpretq_s16_u16(vmovl_u8(rh264_neon_load4(a0 + x)));
+         int16x8_t b = vreinterpretq_s16_u16(vmovl_u8(rh264_neon_load4(a1 + x)));
          int32x4_t lo = vmlal_n_s16(vmull_n_s16(vget_low_s16(a),
                (int16_t)w0), vget_low_s16(b), (int16_t)w1);
-         int16x4_t w;
+         int16x4_t pw;
          lo = vaddq_s32(vshlq_s32(vaddq_s32(lo, vb), vs), vo);
-         w = vqmovn_s32(lo);
-         rh264_neon_store4(d + x, vqmovun_s16(vcombine_s16(w, w)));
+         pw = vqmovn_s32(lo);
+         rh264_neon_store4(dr + x, vqmovun_s16(vcombine_s16(pw, pw)));
          x += 4;
       }
+      for (; x < w; x++)
+      {
+         int v = ((a0[x] * w0 + a1[x] * w1 + bias) >> sh) + o;
+         dr[x] = (uint8_t)RH264_CLIP(v);
+      }
    }
+#else
+   { int x;
+     for (y = 0; y < h; y++)
+        for (x = 0; x < w; x++)
+        {
+           int v = ((s0[y*s0stride+x] * w0 + s1[y*s1stride+x] * w1
+                 + bias) >> sh) + o;
+           d[y*dstride+x] = (uint8_t)RH264_CLIP(v);
+        } }
 #endif
-   for (; x < n; x++)
-   {
-      int v = ((s0[x] * w0 + s1[x] * w1 + bias) >> sh) + o;
-      d[x] = (uint8_t)RH264_CLIP(v);
-   }
 }
 
 static void rh264_weight_pred(rh264_frame *f, const rh264_slice_hdr *sh,
@@ -4998,9 +5029,8 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
          int w0 = sh->wp_lw[r0 > 31 ? 31 : r0], w1 = sh->wp1_lw[r1 > 31 ? 31 : r1];
          int o  = (sh->wp_lo[r0 > 31 ? 31 : r0]
                  + sh->wp1_lo[r1 > 31 ? 31 : r1] + 1) >> 1;
-         for (y = 0; y < bh; y++)
-            rh264_bi_row(f->Y + (oy+y)*f->ystride + ox,
-                  t0y + y*16, t1y + y*16, bw, w0, w1, 1 << ld, ld + 1, o);
+         rh264_bi_block(f->Y + oy*f->ystride + ox, f->ystride,
+               t0y, 16, t1y, 16, bw, bh, w0, w1, 1 << ld, ld + 1, o);
          for (c = 0; c < 2; c++)
          {
             const uint8_t *s0 = c ? t0v : t0u, *s1 = c ? t1v : t1u;
@@ -5009,25 +5039,22 @@ static void rh264_b_pred_block(rh264_frame *f, const rh264_bctx *bc,
             int cw1 = sh->wp1_cw[r1 > 31 ? 31 : r1][c];
             int co  = (sh->wp_co[r0 > 31 ? 31 : r0][c]
                      + sh->wp1_co[r1 > 31 ? 31 : r1][c] + 1) >> 1;
-            for (y = 0; y < cbh; y++)
-               rh264_bi_row(pl + (coy+y)*f->cstride + cox,
-                     s0 + y*8, s1 + y*8, cbw, cw0, cw1, 1 << cd, cd + 1, co);
+            rh264_bi_block(pl + coy*f->cstride + cox, f->cstride,
+                  s0, 8, s1, 8, cbw, cbh, cw0, cw1, 1 << cd, cd + 1, co);
          }
       }
       else if (bc->wbidc == 2)
       {
          int w1 = bc->w1imp[r0 > 31 ? 31 : r0][r1 > 31 ? 31 : r1];
          int w0 = 64 - w1;
-         for (y = 0; y < bh; y++)
-            rh264_bi_row(f->Y + (oy+y)*f->ystride + ox,
-                  t0y + y*16, t1y + y*16, bw, w0, w1, 32, 6, 0);
+         rh264_bi_block(f->Y + oy*f->ystride + ox, f->ystride,
+               t0y, 16, t1y, 16, bw, bh, w0, w1, 32, 6, 0);
          for (c = 0; c < 2; c++)
          {
             const uint8_t *s0 = c ? t0v : t0u, *s1 = c ? t1v : t1u;
             uint8_t *pl = c ? f->V : f->U;
-            for (y = 0; y < cbh; y++)
-               rh264_bi_row(pl + (coy+y)*f->cstride + cox,
-                     s0 + y*8, s1 + y*8, cbw, w0, w1, 32, 6, 0);
+            rh264_bi_block(pl + coy*f->cstride + cox, f->cstride,
+                  s0, 8, s1, 8, cbw, cbh, w0, w1, 32, 6, 0);
          }
       }
       else
