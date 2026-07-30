@@ -2861,6 +2861,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
     * 24-pass preset over 8 shared helpers issues 216 reads for 32
     * distinct files.  The guard frees it on every exit from here,
     * including the error paths below. */
+   {
    glslang_include_cache_guard include_cache_guard;
    void *include_cache = include_cache_guard.handle;
 
@@ -3076,6 +3077,7 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 
       chain->set_pass_info(i, pass_info);
    }
+   }   /* include cache scope: freed here, and on any early return above */
 
    if (last_pass_is_fbo)
    {
