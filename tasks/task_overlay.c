@@ -65,6 +65,81 @@ struct overlay_loader
    uint8_t flags;
 };
 
+/* Normalize an archive member name in place: collapse repeated
+ * separators and resolve '.' and '..' segments lexically.
+ *
+ * Paths handed to the file system are normalized for us - the disk
+ * path in overlay_resolve_path() below ends in path_resolve_realpath(),
+ * and open() would collapse the separators anyway.  An archive member
+ * is matched as a literal name, so "dir/../img/a.png" and "img//a.png"
+ * are simply not members even when the file they mean is, and the
+ * reference is dropped without an error.  Real overlay packs contain
+ * both forms.
+ *
+ * Only the member portion may be touched, never the archive path
+ * before the '#', so the caller passes the offset past the delimiter.
+ * A '..' with nothing left to pop is kept verbatim: it cannot be
+ * resolved inside an archive, and preserving it keeps the lookup
+ * failing as it did rather than silently aliasing some other member.
+ */
+static void overlay_normalize_member(char *s)
+{
+   char       *w = s;
+   const char *r = s;
+   /* Poppable segments written so far.  A '..' that had nothing to pop
+    * is kept but never counted, so a later '..' cannot consume it. */
+   size_t depth  = 0;
+
+   while (*r)
+   {
+      const char *seg;
+      size_t seg_len;
+
+      while (*r == '/')
+         r++;
+      if (!*r)
+         break;
+      seg = r;
+      while (*r && *r != '/')
+         r++;
+      seg_len = (size_t)(r - seg);
+
+      if (seg_len == 1 && seg[0] == '.')
+         continue;
+
+      if (     seg_len == 2
+            && seg[0] == '.'
+            && seg[1] == '.'
+            && depth > 0)
+      {
+         /* Pop the separator and the segment before it.  Every '..'
+          * kept verbatim precedes all poppable segments, so while
+          * depth is nonzero the last segment written is poppable. */
+         while (w > s && w[-1] != '/')
+            w--;
+         if (w > s)
+            w--;
+         depth--;
+         continue;
+      }
+
+      /* The separator goes before the segment, never after: writing a
+       * trailing one would land on the terminator's byte whenever
+       * nothing has been dropped yet, taking the write - and then the
+       * read cursor chasing it - past the end of the buffer. */
+      if (w > s)
+         *w++ = '/';
+      memmove(w, seg, seg_len);
+      w     += seg_len;
+      /* A '..' kept for want of anything to pop stays uncounted, so a
+       * later '..' cannot consume it and escape the archive root. */
+      if (!(seg_len == 2 && seg[0] == '.' && seg[1] == '.'))
+         depth++;
+   }
+
+   *w = '\0';
+}
+
 /* Resolve a relative image path against the overlay config path.
  * When the config is inside an archive (e.g. overlays.zip#dir/cfg),
  * the image path is resolved within the same archive. */
@@ -96,6 +171,7 @@ static void overlay_resolve_path(char *s,
             }
          }
          strlcpy(s + _len, rel_path, len - _len);
+         overlay_normalize_member(s + archive_len);
       }
       return;
    }
@@ -126,7 +202,12 @@ static char *task_overlay_conf_read_file(const char *path,
    int64_t buf_len          = 0;
 
    if (path_get_archive_delim(path))
-      try_path = path;
+   {
+      strlcpy(member_path, path, sizeof(member_path));
+      overlay_normalize_member(member_path
+            + (path_get_archive_delim(member_path) + 1 - member_path));
+      try_path = member_path;
+   }
    else
    {
       char basedir[PATH_MAX_LENGTH];
@@ -141,6 +222,7 @@ static char *task_overlay_conf_read_file(const char *path,
             member_path[a_len] = '#';
             strlcpy(member_path + a_len + 1, path + dir_len,
                   sizeof(member_path) - a_len - 1);
+            overlay_normalize_member(member_path + a_len + 1);
             try_path           = member_path;
          }
       }
