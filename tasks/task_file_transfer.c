@@ -61,6 +61,14 @@ void task_window_progress_cb(retro_task_t *task)
  * frame on every supported platform. */
 #define NBIO_SMALL_FILE_THRESHOLD  (1024 * 1024)
 
+/* Ceiling on committed bytes for the types whose decode completes on
+ * a prefix.  Not a tuning knob: a still needs a few per cent of its
+ * file, so this is orders of magnitude above the useful range and
+ * exists only to bound a fill whose consumer will never be ready.
+ * Reaching it settles the transfer capped(), which the handler
+ * treats as the failure it is. */
+#define NBIO_XFER_PREFIX_CAP       (256 * 1024 * 1024)
+
 /* Per-tick fill budget for the video data_transfer spine: comfortably
  * ahead of the still decoder's needs (it completes at 2-3% of the
  * file) without monopolising the tick. */
@@ -181,9 +189,29 @@ void task_file_load_handler(retro_task_t *task)
             {
                /* Every path load travels the data_transfer prefix
                 * spine: filestream/VFS routing, 64-bit lengths, the
-                * hardware guard behind avail, honest short reads. */
-               if ((nbio->xfer = data_transfer_open_prefix(
-                           nbio->path, 0)))
+                * hardware guard behind avail, honest short reads.
+                *
+                * The cap is stated here rather than left to the
+                * module.  data_transfer's fallback used to impose a
+                * built-in 32 MiB one on an uncapped caller, which
+                * was wrong and is gone; what replaces it is a policy
+                * question, and this is where the type is known.
+                *
+                * Only the prefix types get one.  Their decode
+                * finishes on a fraction of the file - a still at a
+                * few per cent of a video - so a fill that keeps
+                * going has already stopped being useful, and the cap
+                * bounds what a file whose still never becomes ready
+                * (truncated, corrupt, mislabelled) can cost.  It is
+                * deliberately far above what a real still needs.
+                * Everything else is read whole by design and gets no
+                * cap, so capped() cannot reach a consumer with no
+                * way to act on it. */
+               if ((nbio->xfer = data_transfer_open_prefix(nbio->path,
+                           (     nbio->type == NBIO_TYPE_WEBM
+                              || nbio->type == NBIO_TYPE_MP4
+                              || nbio->type == NBIO_TYPE_WEBP)
+                           ? (size_t)NBIO_XFER_PREFIX_CAP : 0)))
                {
                   size_t xlen = 0;
                   data_transfer_ptr(nbio->xfer, &xlen);
