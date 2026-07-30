@@ -73,6 +73,10 @@ typedef struct
    input_device_info_t device_info; /* unsigned alignment */
    uint8_t flags;
    uint8_t scan_done;
+   /* A tuple did not fit its index value buffer, so this
+    * directory's index would be incomplete: abandon the build (see
+    * input_autoconfigure_index_collect). */
+   uint8_t index_build_abandoned;
    /* The current directory's index was fresh (valid header, file
     * count matches) but ranked no candidate at or above the match
     * bar.  If the full walk then agrees that nothing matches, the
@@ -406,6 +410,9 @@ static void input_autoconfigure_index_collect(
    char index_val[NAME_MAX_LENGTH + 128];
    unsigned file_idx = autoconfig_handle->index_build_count;
 
+   if (autoconfig_handle->index_build_abandoned)
+      return;
+
    if (!autoconfig_handle->index_build)
    {
       if (!(autoconfig_handle->index_build = config_file_new_alloc()))
@@ -483,9 +490,31 @@ static void input_autoconfigure_index_collect(
          continue;
 
       snprintf(index_key, sizeof(index_key), "i%u_%d", file_idx, i);
-      snprintf(index_val, sizeof(index_val), "%u\t%u\t%s\t%s",
-            (unsigned)config_vid, (unsigned)config_pid,
-            config_device, config_phys);
+      /* Device names and physical locations come from the file and
+       * are not length-bounded, so the composed tuple can overflow
+       * this buffer.  A truncated tuple must never be stored: the
+       * verify step only catches an index that *overstates* a
+       * candidate (real < claimed), and truncation can just as
+       * easily understate one - a clipped physical location can
+       * drop the +10 phys bonus, and a clipped separator makes the
+       * parser skip the tuple entirely, hiding the profile from
+       * ranking.  Either way the index could rank the true winner
+       * below a rival whose own claim is honest, so the rival would
+       * verify successfully and be selected where a full scan would
+       * not have chosen it.  Abandon the whole index for this
+       * directory instead; connects then scan in full, exactly as
+       * they did before this mechanism existed. */
+      if ((size_t)snprintf(index_val, sizeof(index_val),
+               "%u\t%u\t%s\t%s",
+               (unsigned)config_vid, (unsigned)config_pid,
+               config_device, config_phys) >= sizeof(index_val))
+      {
+         autoconfig_handle->index_build_abandoned = 1;
+         config_file_free(autoconfig_handle->index_build);
+         autoconfig_handle->index_build           = NULL;
+         autoconfig_handle->index_build_count     = 0;
+         return;
+      }
       config_set_string(autoconfig_handle->index_build, index_key,
             index_val);
    }
@@ -729,6 +758,7 @@ static bool input_autoconfigure_scan_config_files_external(
           * rebuilds the index as it goes. */
          budget--;
          autoconfig_handle->index_fresh_no_candidate = 0;
+         autoconfig_handle->index_build_abandoned    = 0;
          autoconfig_handle->scan_dir_start_affinity  =
                autoconfig_handle->scan_max_affinity;
          if ((config = input_autoconfigure_index_try(
