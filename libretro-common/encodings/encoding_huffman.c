@@ -465,8 +465,86 @@ int rhuff_decode_block(rhuff_dec_t *d, rhuff_bits_t *b,
    if ((err = rhuff_read_tree_packed(d, b)) != RHUFF_OK)
       return err;
 
-   for (i = 0; i < dst_len; i++)
-      dst[i] = (uint8_t)rhuff_dec_decode_one(d, b);
+   /* The symbol loop below is rhuff_dec_decode_one with the bit cache
+    * held in locals: same refill, same clamp, same unmapped-pattern
+    * handling (latch overflow, consume one bit, emit zero), with the
+    * consumed-bit accounting summed once at the end instead of a
+    * 64-bit compare per symbol. One symbol per output byte makes the
+    * per-call bookkeeping the dominant cost at hunk sizes, and this
+    * loop is the only place that decodes symbols in bulk. */
+   {
+      const uint8_t  *data     = b->data;
+      const uint16_t *lookup   = d->lookup;
+      size_t          size     = b->size;
+      size_t          offset   = b->offset;
+      uint32_t        cache    = b->cache;
+      int             bits     = b->bits;
+      int             max_bits = (int)d->max_bits;
+      int             overflow = b->overflow;
+      uint64_t        consumed = 0;
+
+      for (i = 0; i < dst_len; i++)
+      {
+         uint16_t value;
+         int      length;
+
+         if (bits < max_bits)
+         {
+            while (bits <= RHUFF_CACHE_MIN)
+            {
+               if (offset < size)
+                  cache |= (uint32_t)data[offset]
+                        << (RHUFF_CACHE_MIN - bits);
+               offset++;
+               bits += 8;
+            }
+         }
+
+         value  = lookup[cache >> (32 - max_bits)];
+         length = (int)(value & RHUFF_LOOKUP_LEN_MASK);
+
+         if (length == 0)
+         {
+            overflow = 1;
+            length   = 1;
+            value    = 0;
+         }
+         else if (length > RHUFF_CACHE_MIN)
+            length = RHUFF_CACHE_MIN;
+
+         /* remove() refills before subtracting when the cache holds
+          * fewer bits than are being taken. A table built by
+          * rhuff_dec_init never yields a length above max_bits, so
+          * after the refill above this never triggers; it exists so
+          * the loop is bit-for-bit the decode_one sequence even on a
+          * corrupt length field. */
+         if (bits < length)
+         {
+            while (bits <= RHUFF_CACHE_MIN)
+            {
+               if (offset < size)
+                  cache |= (uint32_t)data[offset]
+                        << (RHUFF_CACHE_MIN - bits);
+               offset++;
+               bits += 8;
+            }
+         }
+
+         cache   <<= length;
+         bits     -= length;
+         consumed += (uint64_t)length;
+
+         dst[i] = (uint8_t)(value >> RHUFF_LOOKUP_LEN_BITS);
+      }
+
+      b->offset   = offset;
+      b->cache    = cache;
+      b->bits     = bits;
+      b->used    += consumed;
+      b->overflow = overflow;
+      if (b->used > (uint64_t)b->size * 8)
+         b->overflow = 1;
+   }
 
    if (rhuff_bits_overflow(b))
       return RHUFF_ERROR_DATA;
