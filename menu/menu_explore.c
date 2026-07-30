@@ -1120,7 +1120,16 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
       return;
    }
 
-   w = rjsonwriter_open_stream(file);
+   if (!(w = rjsonwriter_open_stream(file)))
+   {
+      /* Every rjsonwriter_* call below dereferences this without a
+       * check of its own. */
+      RARCH_ERR("[Explore] Failed to create json writer for %s.\n", lvwpath);
+      intfstream_close(file);
+      free(file);
+      filestream_delete(lvwpath);
+      return;
+   }
 
    rjsonwriter_add_start_object(w);
 
@@ -1184,7 +1193,23 @@ static void explore_action_saveview_complete(void *userdata, const char *name)
    rjsonwriter_add_newline(w);
    rjsonwriter_add_end_object(w);
    rjsonwriter_add_newline(w);
-   rjsonwriter_free(w);
+
+   /* rjsonwriter_free() performs the final flush, so its result is what
+    * says whether the view was written completely.  A short write used
+    * to be announced as "view saved" and left a truncated .lvw behind -
+    * which then fails to parse when the view is opened, and, because
+    * saving refuses to overwrite an existing file, also blocks saving
+    * the same view again under that name.  Remove the partial file so
+    * the name stays free. */
+   if (!rjsonwriter_free(w))
+   {
+      RARCH_ERR("[Explore] Failed to write json file %s.\n", lvwpath);
+      intfstream_close(file);
+      free(file);
+      filestream_delete(lvwpath);
+      return;
+   }
+
    intfstream_close(file);
    free(file);
 
