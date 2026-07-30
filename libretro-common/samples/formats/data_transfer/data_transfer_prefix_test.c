@@ -170,16 +170,20 @@ static int arena_overflow_check(void)
  *
  * Only meaningful in a strict build, so the default lane skips. */
 #if defined(__unix__) || defined(__APPLE__)
-static int strict_discard_check(void)
+static int strict_discard_check(int keep_filling)
 {
+   const char *lane = keep_filling ? "mid-fill" : "after fill";
 #if !defined(DT_STRICT)
+   (void)lane;
    printf("[skip] strict discard: build with -DDT_STRICT\n");
    return 0;
 #elif defined(__SANITIZE_ADDRESS__)
+   (void)lane;
    printf("[skip] strict discard: the sanitizer intercepts it\n");
    return 0;
 #else
-   const char *path = "/tmp/dtprefix_strict.bin";
+   const char *path = keep_filling ? "/tmp/dtprefix_strict_mid.bin"
+                                  : "/tmp/dtprefix_strict_end.bin";
    size_t n = 4u << 20;
    uint8_t *ref = (uint8_t*)malloc(n);
    pid_t pid;
@@ -206,11 +210,29 @@ static int strict_discard_check(void)
 
       if (!dt)
          _exit(3);
-      data_transfer_iterate(dt, 0);
-      if (!data_transfer_complete(dt))
-         _exit(4);
-      base = data_transfer_ptr(dt, &len);
-      data_transfer_discard(dt, 1u << 20);
+      if (keep_filling)
+      {
+         /* Discard mid-fill and then carry on reading, which is what
+          * a streaming consumer actually does.  Discarding only after
+          * the fill is over leaves the commit path untouched, so it
+          * cannot see a later commit re-arming the released pages;
+          * this lane crosses at least one DT_COMMIT_STEP boundary
+          * after the discard before looking back. */
+         data_transfer_iterate(dt, 2u << 20);
+         base = data_transfer_ptr(dt, &len);
+         data_transfer_discard(dt, 1u << 20);
+         data_transfer_iterate(dt, 0);
+         if (!data_transfer_complete(dt))
+            _exit(4);
+      }
+      else
+      {
+         data_transfer_iterate(dt, 0);
+         if (!data_transfer_complete(dt))
+            _exit(4);
+         base = data_transfer_ptr(dt, &len);
+         data_transfer_discard(dt, 1u << 20);
+      }
       v = base[4096];             /* well below the discard frontier */
       _exit(42);                  /* reached only if it did not fault */
       (void)v;
@@ -221,26 +243,27 @@ static int strict_discard_check(void)
    if (WIFEXITED(status) && WEXITSTATUS(status) == 42)
    {
       printf("[FAIL] a strict build still reads zeros below the "
-             "discard frontier\n");
+             "discard frontier (%s)\n", lane);
       return 1;
    }
    if (WIFEXITED(status) && WEXITSTATUS(status) >= 3
          && WEXITSTATUS(status) <= 4)
    {
-      printf("[FAIL] the strict-discard child bailed at setup (%d)\n",
-            WEXITSTATUS(status));
+      printf("[FAIL] the strict-discard child bailed at setup "
+            "(%s, %d)\n", lane, WEXITSTATUS(status));
       return 1;
    }
    /* Anything else is the fault: a signal normally, or the sanitizer
     * ending the process its own way with its own exit code. */
-   printf("[ok]   strict discard: a look-back below the frontier "
-          "faults\n");
+   printf("[ok]   strict discard (%s): a look-back below the "
+          "frontier faults\n", lane);
    return 0;
 #endif
 }
 #else
-static int strict_discard_check(void)
+static int strict_discard_check(int keep_filling)
 {
+   (void)keep_filling;
    printf("[skip] strict discard: needs fork()\n");
    return 0;
 }
@@ -412,8 +435,11 @@ int main(void)
    /* 6. the arena's growth must not spin on a size it cannot reach */
    bad |= arena_overflow_check();
 
-   /* 7. strict builds must fault on a look-back, not read zeros */
-   bad |= strict_discard_check();
+   /* 7. strict builds must fault on a look-back, not read zeros -
+    *    both after the fill is over and, the case that caught a live
+    *    bug, with the fill still advancing past the discard */
+   bad |= strict_discard_check(0);
+   bad |= strict_discard_check(1);
 
    /* 8. the continue hook pauses finely and resumes cleanly */
    bad |= continue_hook_check();

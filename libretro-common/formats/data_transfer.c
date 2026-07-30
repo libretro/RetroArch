@@ -663,7 +663,26 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    return dt;
 }
 
-/* Grow the physical backing to cover at least 'need' bytes. */
+/* Grow the physical backing to cover at least 'need' bytes.
+ *
+ * Only the new span is committed, not the whole prefix from base.
+ * The difference is not performance - mprotect short-circuits a range
+ * whose flags already match, and the two spellings measured the same
+ * on a warm run - it is that committing from base re-arms every page
+ * below the frontier, including the ones discard() just released.
+ *
+ * That silently undid the one guarantee discard() rests on.  Under
+ * DT_STRICT a look-back at a discarded byte faulted immediately after
+ * the discard and then stopped faulting as soon as the fill crossed
+ * the next DT_COMMIT_STEP boundary, reading as a zero instead - the
+ * exact silent-zeros failure the header argues against elsewhere, and
+ * invisible to a test that discards only after the fill is over.  On
+ * Windows the re-commit also brought the physical pages back, so a
+ * consumer discarding behind its read position held the whole file
+ * anyway.
+ *
+ * dt->committed only ever grows and 'need' is above it here, so the
+ * span is non-empty and never overlaps anything already released. */
 static int data_transfer_commit(data_transfer_t *dt, size_t need)
 {
    size_t target;
@@ -676,7 +695,7 @@ static int data_transfer_commit(data_transfer_t *dt, size_t need)
       target = need;
    if (target > dt->map_len)
       target = dt->map_len;
-   if (!memcommit(dt->map, target))
+   if (!memcommit(dt->map + dt->committed, target - dt->committed))
       return 0;
    dt->committed = target;
    return 1;
