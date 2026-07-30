@@ -2776,12 +2776,17 @@ static void rh264_filter_chroma_edge_seg(uint8_t *e, int s, int ls, int n,
                _mm_loadu_si128((const __m128i*)(lt + k)),
                _mm_loadu_si128((const __m128i*)(lnm + k)),
                _mm_loadu_si128((const __m128i*)(lst + k)), a, be);
-         for (i = 0; i < 4; i++)
-            c[i] = _mm_packus_epi16(v[i], v[i]);
-         for (; i < 8; i++) c[i] = vz;
-         rh264_sse2_tr8x8(c, r);
-         for (i = 0; i < 8; i++)
-            rh264_sse2_store4(e + (k + i) * ls - 2, r[i]);
+         /* only p0/q0 change: interleave the two filtered columns into
+          * per-row byte pairs and store two bytes a row, instead of
+          * transposing all four columns back */
+         {
+            uint8_t pr[16];
+            _mm_storeu_si128((__m128i*)pr, _mm_unpacklo_epi8(
+                  _mm_packus_epi16(v[1], v[1]),
+                  _mm_packus_epi16(v[2], v[2])));
+            for (i = 0; i < 8; i++)
+               memcpy(e + (k + i) * ls - 1, pr + 2 * i, 2);
+         }
       }
    }
 #elif defined(RH264_NEON)
@@ -2816,12 +2821,17 @@ static void rh264_filter_chroma_edge_seg(uint8_t *e, int s, int ls, int n,
          rh264_neon_chroma_kernel_seg(v, vld1q_s16(lt + k),
                vreinterpretq_u16_s16(vld1q_s16(lnm + k)),
                vreinterpretq_u16_s16(vld1q_s16(lst + k)), a, be);
-         for (i = 0; i < 4; i++)
-            c[i] = vqmovun_s16(v[i]);
-         for (; i < 8; i++) c[i] = vdup_n_u8(0);
-         rh264_neon_tr8x8(c, r);
-         for (i = 0; i < 8; i++)
-            rh264_neon_store4(e + (k + i) * ls - 2, r[i]);
+         /* only p0/q0 change: store the two filtered columns as
+          * per-row byte pairs instead of transposing back */
+         {
+            uint8_t pr[16];
+            uint8x8x2_t z;
+            z.val[0] = vqmovun_s16(v[1]);
+            z.val[1] = vqmovun_s16(v[2]);
+            vst2_u8(pr, z);
+            for (i = 0; i < 8; i++)
+               memcpy(e + (k + i) * ls - 1, pr + 2 * i, 2);
+         }
       }
    }
 #endif
