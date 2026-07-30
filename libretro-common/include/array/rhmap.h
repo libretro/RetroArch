@@ -253,6 +253,11 @@ static char *rhmap_strdup(const char *s)
         ++count;
     ++count;
     out = (char*)malloc(sizeof(char) * count);
+    /* On allocation failure store no key string rather than crash:
+     * the probe comparison already treats a NULL key_str as a
+     * hash-only match, so lookups degrade instead of faulting. */
+    if (!out)
+        return NULL;
     out[--count] = 0;
     while (--count >= 0)
         out[count] = s[count];
@@ -295,6 +300,20 @@ RHMAP__UNUSED static ptrdiff_t rhmap__idx(struct rhmap__hdr* hdr, uint32_t key, 
       {
          if (add)
          {
+            /* Never claim the table's last empty slot.  Deletion
+             * uses backward-shift (no tombstones), so a completely
+             * full table has no terminator for this probe loop, for
+             * absent-key lookups, or for the deletion fixup walk -
+             * they all spin forever.  Growth keeps the load factor
+             * at or below 50%, so this bound is unreachable unless
+             * RHMAP__GROW failed under OOM and the caller kept
+             * inserting; in that case the insert is dropped (the
+             * slot is returned unclaimed: its key stays 0, len is
+             * unchanged, and a value written through it by the SET
+             * macros is simply never found) rather than corrupting
+             * or hanging. */
+            if (hdr->len >= hdr->maxlen)
+               return (ptrdiff_t)i;
             hdr->len++;
             hdr->keys[i] = key;
             if (str)
