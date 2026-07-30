@@ -3995,17 +3995,6 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_default(
    return chain.release();
 }
 
-/* Owns an include cache for a scope, so the pass loops below can share
- * one across every pass without having to free it on each error exit. */
-struct glslang_include_cache_guard
-{
-   void *handle;
-   glslang_include_cache_guard() : handle(glslang_include_cache_new()) {}
-   ~glslang_include_cache_guard() { glslang_include_cache_free(handle); }
-   glslang_include_cache_guard(const glslang_include_cache_guard&) = delete;
-   glslang_include_cache_guard& operator=(const glslang_include_cache_guard&) = delete;
-};
-
 vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
       const struct vulkan_filter_chain_create_info *info,
       const char *path, glslang_filter_chain_filter filter)
