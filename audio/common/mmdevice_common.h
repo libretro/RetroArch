@@ -49,6 +49,20 @@ const char *mmdevice_hresult_name(int hr);
 
 void *mmdevice_init_device(const char *id, unsigned data_flow);
 
+/**
+ * mmdevice_set_active_device:
+ *
+ * Records @data (an IMMDevice, or NULL to forget) as the endpoint this
+ * process holds open for @data_flow (0 render, 1 capture), so the
+ * endpoint notification callbacks can tell a state change on a device
+ * in use from one on an unrelated device.  Render and capture are
+ * tracked separately because both are open at once whenever the
+ * microphone driver is running.
+ * mmdevice_init_device() calls this itself; drivers that acquire a
+ * device another way should call it too.
+ **/
+void mmdevice_set_active_device(void *data, unsigned data_flow);
+
 #ifdef HAVE_THREADS
 void mmdevice_thread(void *data);
 #else

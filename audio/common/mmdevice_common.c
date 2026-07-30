@@ -14,6 +14,9 @@
  */
 
 #include <stdlib.h>
+#include <wchar.h>
+
+#include <rthreads/rthreads.h>
 
 #include <encodings/utf.h>
 #include <lists/string_list.h>
@@ -27,6 +30,77 @@
 #include "../../verbosity.h"
 
 DWORD IMMNotificationThreadId = 0;
+
+/* Ids of the endpoints this process actually holds open - one per
+ * data flow, since a render device and a capture device are open at
+ * the same time whenever the microphone driver is in use.  The
+ * endpoint notifications fire for *every* audio device in the system,
+ * so these are what let OnDeviceStateChanged tell "a device we opened
+ * changed" (worth a driver reinit) from "some unrelated device
+ * changed" (not).  Guarded by a lock: the notification callbacks run
+ * on an MMDevice thread while init/deinit run on the audio threads. */
+#define MMDEVICE_FLOW_COUNT 2
+
+static wchar_t *mmdevice_active_id[MMDEVICE_FLOW_COUNT];
+static slock_t *mmdevice_active_id_lock = NULL;
+
+static bool mmdevice_id_is_active(LPCWSTR id)
+{
+   bool match = false;
+   unsigned i;
+
+   if (!mmdevice_active_id_lock || !id)
+      return true;   /* cannot tell: keep the old, always-react behaviour */
+
+   slock_lock(mmdevice_active_id_lock);
+   /* With nothing recorded yet we cannot tell either, so react. */
+   if (     !mmdevice_active_id[0]
+         && !mmdevice_active_id[1])
+      match = true;
+   else
+      for (i = 0; i < MMDEVICE_FLOW_COUNT; i++)
+         if (     mmdevice_active_id[i]
+               && !wcscmp(mmdevice_active_id[i], id))
+         {
+            match = true;
+            break;
+         }
+   slock_unlock(mmdevice_active_id_lock);
+   return match;
+}
+
+void mmdevice_set_active_device(void *data, unsigned data_flow)
+{
+   IMMDevice *device = (IMMDevice*)data;
+   LPWSTR id_wstr    = NULL;
+
+   if (data_flow >= MMDEVICE_FLOW_COUNT)
+      return;
+
+   if (!mmdevice_active_id_lock)
+      if (!(mmdevice_active_id_lock = slock_new()))
+         return;
+
+   if (device && FAILED(_IMMDevice_GetId(device, &id_wstr)))
+      id_wstr = NULL;
+
+   slock_lock(mmdevice_active_id_lock);
+   if (mmdevice_active_id[data_flow])
+      free(mmdevice_active_id[data_flow]);
+   mmdevice_active_id[data_flow] = NULL;
+   if (id_wstr)
+   {
+      size_t _len = wcslen(id_wstr) + 1;
+      if ((mmdevice_active_id[data_flow] = (wchar_t*)
+               malloc(_len * sizeof(wchar_t))))
+         memcpy(mmdevice_active_id[data_flow], id_wstr,
+               _len * sizeof(wchar_t));
+   }
+   slock_unlock(mmdevice_active_id_lock);
+
+   if (id_wstr)
+      CoTaskMemFree(id_wstr);
+}
 
 /* IUnknown methods */
 HRESULT STDMETHODCALLTYPE IMM_QueryInterface(IMMNotificationClient *This,
@@ -88,7 +162,20 @@ HRESULT STDMETHODCALLTYPE OnDeviceRemoved(IMMNotificationClient *This,
 HRESULT STDMETHODCALLTYPE OnDeviceStateChanged(IMMNotificationClient *This,
       LPCWSTR pwstrDeviceId, DWORD dwNewState)
 {
-   BOOL result = PostThreadMessage(IMMNotificationThreadId,
+   BOOL result;
+
+   /* This fires for every audio endpoint in the system, not just the
+    * one in use.  Anything that exposes audio - a headset, a webcam,
+    * an HDMI sink waking up, or a gamepad with a headphone jack and a
+    * microphone (a DualSense adds both) - makes Windows report state
+    * changes here, and reinitialising the audio driver for a device
+    * this process never opened drops the stream for no reason.  A
+    * single controller reconnect could do it several times over, once
+    * per endpoint.  Only react to our own device. */
+   if (!mmdevice_id_is_active(pwstrDeviceId))
+      return S_OK;
+
+   result = PostThreadMessage(IMMNotificationThreadId,
          WM_AUDIO_DEVICE_STATE_CHANGED, 0, 0);
 
    if (!result)
@@ -516,6 +603,9 @@ void *mmdevice_init_device(const char *id, unsigned data_flow)
 
    RELEASE(collection);
    RELEASE(enumerator);
+   /* Remember which endpoint we handed out, so the notification
+    * callbacks can filter on it. */
+   mmdevice_set_active_device(device, data_flow);
    return device;
 
 error:
