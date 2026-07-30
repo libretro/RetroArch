@@ -41,6 +41,12 @@ typedef struct overlay_loader overlay_loader_t;
 struct overlay_loader
 {
    config_file_t *conf;
+   /* Set when the config came out of an archive: the io that serves
+    * the config's '#include' chain from the same archive, and the
+    * archive path it reads (also the io's ud).  Both must outlive
+    * conf, so they live here and are released after it. */
+   config_file_io_t conf_io;
+   char *conf_archive;
    char *overlay_path;
    struct overlay *overlays;
    struct overlay *active;
@@ -96,6 +102,88 @@ static void overlay_resolve_path(char *s,
 #endif
    fill_pathname_resolve_relative(s, overlay_path, rel_path, len);
 }
+
+#ifdef HAVE_COMPRESSION
+/* config_file io serving an archived overlay config's '#include'
+ * chain from the archive itself; ud is the path of the archive.
+ *
+ * The parser resolves an include against its parent config's path, so
+ * for a member with an inner directory ("pack.zip#dir/root.cfg") the
+ * request arrives with the delim intact ("pack.zip#dir/inc.cfg"),
+ * while for a member at the archive root the '#' falls to the basedir
+ * cut and the request lands beside the archive on disk
+ * ("<dir of pack.zip>/inc.cfg") - that form is remapped onto the
+ * archive here.  A name that is not a member is then tried on the
+ * file system, so an include that genuinely lives beside the archive
+ * as a file keeps resolving the way it always has. */
+static char *task_overlay_conf_read_file(const char *path,
+      int64_t *len, void *ud)
+{
+   char member_path[PATH_MAX_LENGTH];
+   const char *archive_path = (const char*)ud;
+   const char *try_path     = NULL;
+   void   *buf              = NULL;
+   int64_t buf_len          = 0;
+
+   if (path_get_archive_delim(path))
+      try_path = path;
+   else
+   {
+      char basedir[PATH_MAX_LENGTH];
+      size_t dir_len = fill_pathname_basedir(basedir, archive_path,
+            sizeof(basedir));
+      if (dir_len && !strncmp(path, basedir, dir_len))
+      {
+         size_t a_len = strlcpy(member_path, archive_path,
+               sizeof(member_path));
+         if (a_len + 1 < sizeof(member_path))
+         {
+            member_path[a_len] = '#';
+            strlcpy(member_path + a_len + 1, path + dir_len,
+                  sizeof(member_path) - a_len - 1);
+            try_path           = member_path;
+         }
+      }
+   }
+
+   if (try_path)
+   {
+      if (file_archive_compressed_read(try_path, &buf, NULL,
+               &buf_len) == 1)
+      {
+         /* NUL-terminate past *len - the parser's buffer contract. */
+         char *str = (char*)realloc(buf, (size_t)(buf_len + 1));
+         if (!str)
+         {
+            free(buf);
+            return NULL;
+         }
+         str[buf_len] = '\0';
+         if (len)
+            *len      = buf_len;
+         return str;
+      }
+      if (buf)
+         free(buf);
+      buf = NULL;
+   }
+
+   /* Not a member (or not mappable onto the archive): a delim path
+    * cannot be a plain file, anything else may be. */
+   if (path_get_archive_delim(path))
+      return NULL;
+   if (!filestream_read_file(path, &buf, &buf_len))
+      return NULL;
+   if (len)
+      *len = buf_len;
+   return (char*)buf;
+}
+
+static void task_overlay_conf_free_file(char *buf, void *ud)
+{
+   free(buf);
+}
+#endif
 
 static void task_overlay_image_done(struct overlay *overlay)
 {
@@ -1086,6 +1174,8 @@ static void task_overlay_free(retro_task_t *task)
    if (loader->conf)
       config_file_free(loader->conf);
 
+   /* After the conf: its io reads through this. */
+   free(loader->conf_archive);
    free(loader);
 }
 
@@ -1223,10 +1313,30 @@ bool task_push_overlay_load_default(
             return false;
          }
          str[buf_len] = '\0';
+         {
+            /* Serve the config's '#include' chain from the archive
+             * too; without this the includes resolve to paths the
+             * file system cannot satisfy and are silently dropped. */
+            const char *delim    = path_get_archive_delim(overlay_path);
+            size_t archive_len   = (size_t)(delim - overlay_path);
+            loader->conf_archive = (char*)malloc(archive_len + 1);
+            if (!loader->conf_archive)
+            {
+               free(str);
+               free(loader);
+               free(image_list);
+               return false;
+            }
+            memcpy(loader->conf_archive, overlay_path, archive_len);
+            loader->conf_archive[archive_len] = '\0';
+            loader->conf_io.read_file = task_overlay_conf_read_file;
+            loader->conf_io.free_file = task_overlay_conf_free_file;
+            loader->conf_io.ud        = loader->conf_archive;
+         }
          /* Hand the buffer over: the conf adopts it and entries
           * borrow from it - no per-entry copies. */
-         conf = config_file_new_take_string(str, (size_t)buf_len,
-               overlay_path);
+         conf = config_file_new_take_string_with_io(str, (size_t)buf_len,
+               overlay_path, &loader->conf_io);
       }
       if (conf)
          RARCH_DBG("[Overlay] Config parsed successfully from archive.\n");
@@ -1239,6 +1349,7 @@ bool task_push_overlay_load_default(
 
    if (!conf)
    {
+      free(loader->conf_archive);
       free(loader);
       free(image_list);
       return false;
@@ -1248,6 +1359,7 @@ bool task_push_overlay_load_default(
    {
       /* Error - overlays variable not defined in config. */
       config_file_free(conf);
+      free(loader->conf_archive);
       free(loader);
       free(image_list);
       return false;
@@ -1259,6 +1371,7 @@ bool task_push_overlay_load_default(
    if (!loader->overlays)
    {
       config_file_free(conf);
+      free(loader->conf_archive);
       free(loader);
       free(image_list);
       return false;
@@ -1282,6 +1395,7 @@ bool task_push_overlay_load_default(
    {
       config_file_free(conf);
       free(loader->overlays);
+      free(loader->conf_archive);
       free(loader);
       free(image_list);
       return false;
