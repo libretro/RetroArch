@@ -129,6 +129,26 @@ void *memreserve(size_t len);
 bool memcommit(void *addr, size_t len);
 
 /**
+ * memrearm:
+ * @addr       : start of the sub-range, within a memreserve() result
+ * @len        : length of the sub-range
+ *
+ * Make a committed range unreadable again while KEEPING its physical
+ * pages.  This is the half of memdecommit() that costs nothing to
+ * undo: memdecommit() also hands the pages back, so the next write to
+ * the range faults them in again, whereas a range taken back with
+ * memrearm() is re-armed by memcommit() without a fault.
+ *
+ * For recycling a reservation whose pages are about to be overwritten
+ * anyway - the buffer pool in data_transfer - where the guard matters
+ * and the page contents do not.  Use memdecommit() when the point is
+ * to give the memory back.
+ *
+ * Returns false where reservations are unsupported.
+ */
+bool memrearm(void *addr, size_t len);
+
+/**
  * memdecommit:
  * @addr       : start of the sub-range
  * @len        : bytes to release the physical pages of

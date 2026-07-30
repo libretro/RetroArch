@@ -306,6 +306,17 @@ bool data_transfer_failed(data_transfer_t *dt);
 /* Close, cancelling any in-flight read.  NULL-safe. */
 void data_transfer_free(data_transfer_t *dt);
 
+/* Release the calling thread's pooled reservations.
+ *
+ * A prefix transfer over a file small enough to fit a pool slot
+ * recycles its reservation instead of releasing it, which skips the
+ * first-touch faults that dominate a small load.  The pool holds a
+ * bounded amount of memory per thread between loads; this hands it
+ * back - for a low-memory signal, or when a thread is done loading.
+ * Purely an optimisation either way: nothing needs to call it, and a
+ * flushed pool simply refills. */
+void data_transfer_pool_flush(void);
+
 RETRO_END_DECLS
 
 #endif
