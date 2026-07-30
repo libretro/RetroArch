@@ -2639,6 +2639,200 @@ static void rh264_filter_chroma_edge_n(uint8_t *e, int s, int ls, int n,
       rh264_filter_chroma_edge(e + k * ls, s, bS, a, be, tc0v);
 }
 
+/* Per-segment chroma edge filter: the whole chroma edge of a macroblock
+ * in one pass, lanes carrying each 4-sample luma segment's own strength
+ * class and tc0 (bS[4]/tc[4], lane k of n belongs to segment k*4/n).
+ * The P/B derivation gives every segment its own strength, which the
+ * scalar per-sample walk this replaces paid for one pixel at a time;
+ * here both filter branches are computed vector-wide and blended per
+ * lane, inactive lanes keeping their samples. */
+#ifdef RH264_SSE2
+static void rh264_sse2_chroma_kernel_seg(__m128i v[4], __m128i vt,
+      __m128i vnorm, __m128i vstrong, int a, int be)
+{
+   __m128i p1 = v[0], p0 = v[1], q0 = v[2], q1 = v[3];
+   __m128i va  = _mm_set1_epi16((short)a);
+   __m128i vbe = _mm_set1_epi16((short)be);
+   __m128i filt = _mm_and_si128(
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p0, q0)), va),
+         _mm_and_si128(
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(p1, p0)), vbe),
+         _mm_cmplt_epi16(RH264_SSE2_ABS16(_mm_sub_epi16(q1, q0)), vbe)));
+   __m128i mn = _mm_and_si128(filt, vnorm);
+   __m128i ms = _mm_and_si128(filt, vstrong);
+   {
+      __m128i tc = _mm_add_epi16(vt, _mm_set1_epi16(1));
+      __m128i d = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(_mm_sub_epi16(q0, p0), 2),
+            _mm_sub_epi16(p1, q1)), _mm_set1_epi16(4)), 3);
+      __m128i np, nq;
+      d = _mm_max_epi16(_mm_min_epi16(d, tc),
+            _mm_sub_epi16(_mm_setzero_si128(), tc));
+      np = _mm_max_epi16(_mm_min_epi16(_mm_add_epi16(p0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      nq = _mm_max_epi16(_mm_min_epi16(_mm_sub_epi16(q0, d),
+            _mm_set1_epi16(255)), _mm_setzero_si128());
+      v[1] = RH264_SSE2_SEL(mn, np, p0);
+      v[2] = RH264_SSE2_SEL(mn, nq, q0);
+   }
+   {
+      __m128i two = _mm_set1_epi16(2);
+      __m128i np = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(p1, 1), _mm_add_epi16(p0, q1)), two), 2);
+      __m128i nq = _mm_srai_epi16(_mm_add_epi16(_mm_add_epi16(
+            _mm_slli_epi16(q1, 1), _mm_add_epi16(q0, p1)), two), 2);
+      v[1] = RH264_SSE2_SEL(ms, np, v[1]);
+      v[2] = RH264_SSE2_SEL(ms, nq, v[2]);
+   }
+}
+#elif defined(RH264_NEON)
+static void rh264_neon_chroma_kernel_seg(int16x8_t v[4], int16x8_t vt,
+      uint16x8_t vnorm, uint16x8_t vstrong, int a, int be)
+{
+   int16x8_t p1 = v[0], p0 = v[1], q0 = v[2], q1 = v[3];
+   int16x8_t va  = vdupq_n_s16((int16_t)a);
+   int16x8_t vbe = vdupq_n_s16((int16_t)be);
+   uint16x8_t filt = vandq_u16(
+         vcltq_s16(vabsq_s16(vsubq_s16(p0, q0)), va), vandq_u16(
+         vcltq_s16(vabsq_s16(vsubq_s16(p1, p0)), vbe),
+         vcltq_s16(vabsq_s16(vsubq_s16(q1, q0)), vbe)));
+   uint16x8_t mn = vandq_u16(filt, vnorm);
+   uint16x8_t ms = vandq_u16(filt, vstrong);
+   {
+      int16x8_t tc = vaddq_s16(vt, vdupq_n_s16(1));
+      int16x8_t d = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(vsubq_s16(q0, p0), 2),
+            vsubq_s16(p1, q1)), vdupq_n_s16(4)), 3);
+      int16x8_t np, nq;
+      d = vmaxq_s16(vminq_s16(d, tc), vnegq_s16(tc));
+      np = vmaxq_s16(vminq_s16(vaddq_s16(p0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      nq = vmaxq_s16(vminq_s16(vsubq_s16(q0, d), vdupq_n_s16(255)),
+            vdupq_n_s16(0));
+      v[1] = RH264_NEON_SEL(mn, np, p0);
+      v[2] = RH264_NEON_SEL(mn, nq, q0);
+   }
+   {
+      int16x8_t two = vdupq_n_s16(2);
+      int16x8_t np = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(p1, 1), vaddq_s16(p0, q1)), two), 2);
+      int16x8_t nq = vshrq_n_s16(vaddq_s16(vaddq_s16(
+            vshlq_n_s16(q1, 1), vaddq_s16(q0, p1)), two), 2);
+      v[1] = RH264_NEON_SEL(ms, np, v[1]);
+      v[2] = RH264_NEON_SEL(ms, nq, v[2]);
+   }
+}
+#endif
+
+static void rh264_filter_chroma_edge_seg(uint8_t *e, int s, int ls, int n,
+      const int *bS, const int *tc, int a, int be)
+{
+   int k = 0;
+#if defined(RH264_SSE2) || defined(RH264_NEON)
+   short lt[16], lnm[16], lst[16];
+   {
+      int i;
+      for (i = 0; i < n; i++)
+      {
+         int sg = (i * 4) / n;
+         lt[i]  = (short)tc[sg];
+         lnm[i] = (short)((bS[sg] && bS[sg] < 4) ? -1 : 0);
+         lst[i] = (short)((bS[sg] == 4) ? -1 : 0);
+      }
+   }
+#endif
+#ifdef RH264_SSE2
+   if (ls == 1)
+   {
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 8 <= n; k += 8)
+      {
+         __m128i v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = _mm_unpacklo_epi8(_mm_loadl_epi64(
+                  (const __m128i*)(e + k + (i - 2) * s)), vz);
+         rh264_sse2_chroma_kernel_seg(v,
+               _mm_loadu_si128((const __m128i*)(lt + k)),
+               _mm_loadu_si128((const __m128i*)(lnm + k)),
+               _mm_loadu_si128((const __m128i*)(lst + k)), a, be);
+         _mm_storel_epi64((__m128i*)(e + k - s), _mm_packus_epi16(v[1], v[1]));
+         _mm_storel_epi64((__m128i*)(e + k),     _mm_packus_epi16(v[2], v[2]));
+      }
+   }
+   else if (s == 1)
+   {
+      const __m128i vz = _mm_setzero_si128();
+      for (; k + 8 <= n; k += 8)
+      {
+         __m128i r[8], c[8], v[4];
+         int i;
+         for (i = 0; i < 8; i++)
+            r[i] = rh264_sse2_load4(e + (k + i) * ls - 2);
+         rh264_sse2_tr8x8(r, c);
+         for (i = 0; i < 4; i++)
+            v[i] = _mm_unpacklo_epi8(c[i], vz);
+         rh264_sse2_chroma_kernel_seg(v,
+               _mm_loadu_si128((const __m128i*)(lt + k)),
+               _mm_loadu_si128((const __m128i*)(lnm + k)),
+               _mm_loadu_si128((const __m128i*)(lst + k)), a, be);
+         for (i = 0; i < 4; i++)
+            c[i] = _mm_packus_epi16(v[i], v[i]);
+         for (; i < 8; i++) c[i] = vz;
+         rh264_sse2_tr8x8(c, r);
+         for (i = 0; i < 8; i++)
+            rh264_sse2_store4(e + (k + i) * ls - 2, r[i]);
+      }
+   }
+#elif defined(RH264_NEON)
+   if (ls == 1)
+   {
+      for (; k + 8 <= n; k += 8)
+      {
+         int16x8_t v[4];
+         int i;
+         for (i = 0; i < 4; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(
+                  vld1_u8(e + k + (i - 2) * s)));
+         rh264_neon_chroma_kernel_seg(v, vld1q_s16(lt + k),
+               vreinterpretq_u16_s16(vld1q_s16(lnm + k)),
+               vreinterpretq_u16_s16(vld1q_s16(lst + k)), a, be);
+         vst1_u8(e + k - s, vqmovun_s16(v[1]));
+         vst1_u8(e + k,     vqmovun_s16(v[2]));
+      }
+   }
+   else if (s == 1)
+   {
+      for (; k + 8 <= n; k += 8)
+      {
+         uint8x8_t r[8], c[8];
+         int16x8_t v[4];
+         int i;
+         for (i = 0; i < 8; i++)
+            r[i] = rh264_neon_load4(e + (k + i) * ls - 2);
+         rh264_neon_tr8x8(r, c);
+         for (i = 0; i < 4; i++)
+            v[i] = vreinterpretq_s16_u16(vmovl_u8(c[i]));
+         rh264_neon_chroma_kernel_seg(v, vld1q_s16(lt + k),
+               vreinterpretq_u16_s16(vld1q_s16(lnm + k)),
+               vreinterpretq_u16_s16(vld1q_s16(lst + k)), a, be);
+         for (i = 0; i < 4; i++)
+            c[i] = vqmovun_s16(v[i]);
+         for (; i < 8; i++) c[i] = vdup_n_u8(0);
+         rh264_neon_tr8x8(c, r);
+         for (i = 0; i < 8; i++)
+            rh264_neon_store4(e + (k + i) * ls - 2, r[i]);
+      }
+   }
+#endif
+   for (; k < n; k++)
+   {
+      int sg = (k * 4) / n;
+      if (bS[sg])
+         rh264_filter_chroma_edge(e + k * ls, s, bS[sg], a, be, tc[sg]);
+   }
+}
+
 /* In-loop deblocking (8.7) for an all-intra frame. */
 /* Deblock an all-intra picture. Parameters come per macroblock from the
  * slice that macroblock belongs to (idc/oA/oB indexed by f->mbslice, 8.7):
@@ -5516,35 +5710,33 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                seg++;
             }
          }
-         if ((edge&1)==0)
-         for (seg = 0; seg < 4; seg++)
+         /* chroma on even luma edges: the whole chroma edge in one
+          * pass, lanes carrying each luma segment's strength and tc
+          * (4:2:2 keeps the luma height, so a segment covers twice as
+          * many chroma rows) */
+         if ((edge&1)==0 && (vbS[0]|vbS[1]|vbS[2]|vbS[3]))
          {
-            int bS = vbS[seg];
-            if (bS == 0) continue;
-            /* chroma on even luma edges; two chroma rows per luma segment */
-            if ((edge&1)==0)
+            int cx = mbx*8 + (edge>>1)*4, cc;
+            for (cc = 0; cc < 2; cc++)
             {
-               int cx = mbx*8 + (edge>>1)*4, cc;
-               for (cc = 0; cc < 2; cc++)
-               {
-                  int coff = cc?f->chroma_qp_offset2:f->chroma_qp_offset;
-                  int qc = rh264_chroma_qp(qp, coff);
-                  int cqpavg = mbedge ?
-                     ((qc + rh264_chroma_qp(qpp,coff) + 1)>>1) : qc;
-                  int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, ct, ci;
-                  uint8_t *pl = cc?f->V:f->U;
-                  if(cA<0)cA=0; else if(cA>51)cA=51;
-                  if(cB<0)cB=0; else if(cB>51)cB=51;
-                  ca=rh264_alpha[cA]; cbe=rh264_beta[cB];
-                  ct=rh264_tc0[bS==4?2:bS-1][cA];
-                  /* 4:2:2 keeps the luma height, so each luma segment
-                   * covers twice as many chroma rows */
-                  for (ci = 0; ci < f->cmbh/4; ci++)
-                  { int cy = mby*f->cmbh + seg*(f->cmbh/4) + ci;
-                    rh264_filter_chroma_edge(pl+cy*f->cstride+cx,1,bS,ca,cbe,ct); }
-               }
-               (void)cgw;
+               int coff = cc?f->chroma_qp_offset2:f->chroma_qp_offset;
+               int qc = rh264_chroma_qp(qp, coff);
+               int cqpavg = mbedge ?
+                  ((qc + rh264_chroma_qp(qpp,coff) + 1)>>1) : qc;
+               int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, si;
+               int ctv[4];
+               uint8_t *pl = cc?f->V:f->U;
+               if(cA<0)cA=0; else if(cA>51)cA=51;
+               if(cB<0)cB=0; else if(cB>51)cB=51;
+               ca=rh264_alpha[cA]; cbe=rh264_beta[cB];
+               for (si = 0; si < 4; si++)
+                  ctv[si] = vbS[si]
+                        ? rh264_tc0[vbS[si]==4?2:vbS[si]-1][cA] : 0;
+               rh264_filter_chroma_edge_seg(
+                     pl + (size_t)(mby*f->cmbh)*f->cstride + cx,
+                     1, f->cstride, f->cmbh, vbS, ctv, ca, cbe);
             }
+            (void)cgw;
          }
       }
 
@@ -5606,31 +5798,31 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
                seg++;
             }
          }
-         if ((edge&1)==0 || f->cmbh==16)
-         for (seg = 0; seg < 4; seg++)
+         /* chroma edge in one pass, lanes along x carrying each luma
+          * segment's strength and tc */
+         if (((edge&1)==0 || f->cmbh==16)
+               && (hbS[0]|hbS[1]|hbS[2]|hbS[3]))
          {
-            int bS = hbS[seg];
-            if (bS == 0) continue;
-            if ((edge&1)==0 || f->cmbh==16)
+            int cy = mby*f->cmbh
+                   + ((f->cmbh==16) ? edge*4 : (edge>>1)*4), cc;
+            for (cc = 0; cc < 2; cc++)
             {
-               int cy = mby*f->cmbh
-                      + ((f->cmbh==16) ? edge*4 : (edge>>1)*4), cc;
-               for (cc = 0; cc < 2; cc++)
-               {
-                  int coff = cc?f->chroma_qp_offset2:f->chroma_qp_offset;
-                  int qc = rh264_chroma_qp(qp, coff);
-                  int cqpavg = mbedge ?
-                     ((qc + rh264_chroma_qp(qpp,coff) + 1)>>1) : qc;
-                  int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, ct, ci;
-                  uint8_t *pl = cc?f->V:f->U;
-                  if(cA<0)cA=0; else if(cA>51)cA=51;
-                  if(cB<0)cB=0; else if(cB>51)cB=51;
-                  ca=rh264_alpha[cA]; cbe=rh264_beta[cB];
-                  ct=rh264_tc0[bS==4?2:bS-1][cA];
-                  for (ci = 0; ci < 2; ci++)
-                  { int cx = mbx*8 + seg*2 + ci;
-                    rh264_filter_chroma_edge(pl+cy*f->cstride+cx,f->cstride,bS,ca,cbe,ct); }
-               }
+               int coff = cc?f->chroma_qp_offset2:f->chroma_qp_offset;
+               int qc = rh264_chroma_qp(qp, coff);
+               int cqpavg = mbedge ?
+                  ((qc + rh264_chroma_qp(qpp,coff) + 1)>>1) : qc;
+               int cA=cqpavg+oA, cB=cqpavg+oB, ca, cbe, si;
+               int ctv[4];
+               uint8_t *pl = cc?f->V:f->U;
+               if(cA<0)cA=0; else if(cA>51)cA=51;
+               if(cB<0)cB=0; else if(cB>51)cB=51;
+               ca=rh264_alpha[cA]; cbe=rh264_beta[cB];
+               for (si = 0; si < 4; si++)
+                  ctv[si] = hbS[si]
+                        ? rh264_tc0[hbS[si]==4?2:hbS[si]-1][cA] : 0;
+               rh264_filter_chroma_edge_seg(
+                     pl + (size_t)cy*f->cstride + mbx*8,
+                     f->cstride, 1, 8, hbS, ctv, ca, cbe);
             }
          }
       }
