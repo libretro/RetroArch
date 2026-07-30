@@ -561,32 +561,43 @@ static bool gfx_ctx_drm_wait_flip(gfx_ctx_drm_data_t *drm, bool block)
 
 static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
 {
-   struct drm_fb *fb = NULL;
+   struct drm_fb *fb     = NULL;
+   struct gbm_bo *next_bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
 
-   struct gbm_bo *next_bo      = gbm_surface_lock_front_buffer(drm->gbm_surface);
-   if (!next_bo){
+   if (!next_bo)
+   {
       RARCH_DBG(
-         "[KMS] FIX ME!!! gbm_surface_lock_front_buffer failed: "
-         "surface=%p size=%ux%u errno=%d (%s)\n",
-         (void *)drm->gbm_surface,
-         drm->fb_width,
-         drm->fb_height,
-         errno,
-         strerror(errno));
-
+            "[KMS] gbm_surface_lock_front_buffer failed: "
+            "surface=%p size=%ux%u errno=%d (%s).\n",
+            (void *)drm->gbm_surface,
+            drm->fb_width,
+            drm->fb_height,
+            errno,
+            strerror(errno));
       return false;
-   }else{
-      drm->next_bo = next_bo;
    }
-   fb                = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
+
+   drm->next_bo = next_bo;
+   fb           = (struct drm_fb*)gbm_bo_get_user_data(drm->next_bo);
 
    if (!fb)
-      fb             = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
+      fb        = (struct drm_fb*)drm_fb_get_from_bo(drm->next_bo);
+
+   if (!fb)
+   {
+      /* No framebuffer could be associated with the buffer object;
+       * release it and drop the frame rather than dereferencing NULL. */
+      RARCH_ERR("[KMS] Failed to obtain a framebuffer for the buffer object.\n");
+      gbm_surface_release_buffer(drm->gbm_surface, drm->next_bo);
+      drm->next_bo = NULL;
+      return false;
+   }
 
    if (switch_mode)
    {
+      int ret;
       RARCH_DBG("[KMS] modeswitch detected, creating the new CRTC.\n");
-      int ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
+      ret = drmModeSetCrtc(g_drm_fd, g_crtc_id, fb->fb_id, 0, 0, &g_connector_id, 1, g_drm_mode);
       if (ret != 0)
       {
          RARCH_ERR(
@@ -873,6 +884,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
    float refresh_mod;
    int i, ret                      = 0;
    struct drm_fb *fb               = NULL;
+   struct gbm_bo *bo               = NULL;
    gfx_ctx_drm_data_t *drm         = (gfx_ctx_drm_data_t*)data;
    settings_t *settings            = config_get_ptr();
    unsigned black_frame_insertion  = settings->uints.video_black_frame_insertion;
@@ -976,7 +988,7 @@ static bool gfx_ctx_drm_set_video_mode(void *data,
       goto error;
 #endif
 
-   struct gbm_bo *bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
+   bo = gbm_surface_lock_front_buffer(drm->gbm_surface);
    if (!bo)
       goto error;
    drm->bo   = bo;
