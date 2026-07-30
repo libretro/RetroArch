@@ -313,6 +313,15 @@ struct config_entry_list
    char *key;
    char *value;
    struct config_entry_list *next;
+   /* Cached strlen of key and value, so the write path does not
+    * re-measure every string it just assembled.  Zero means
+    * "not known" - readers must fall back to strlen - which covers
+    * entries whose strings were replaced without updating these,
+    * and the pathological case of a string longer than 65535 bytes.
+    * Both fit in what was structure padding, so caching them costs
+    * no memory per entry. */
+   uint16_t key_len;
+   uint16_t value_len;
    /* If we got this from an #include,
     * do not allow overwrite. */
    bool readonly;

@@ -140,6 +140,16 @@ static uint32_t config_file_hash_key(const char *key)
  * contract on CONF_ENTRY_FLG_* in config_file.h). */
 static char config_file_empty_value[1] = "";
 
+/* Cache a strlen into a uint16_t length field, storing 0 ("not
+ * known", readers fall back to strlen) for anything that would not
+ * fit.  Config strings are keys and values, not documents, so the
+ * clamp is unreachable in practice - but a shader preset or a very
+ * long path must not be silently mis-measured. */
+static uint16_t config_file_cache_len(size_t _len)
+{
+   return (_len > 0xffff) ? 0 : (uint16_t)_len;
+}
+
 /* Take ownership of a text buffer entries will borrow from.
  * Returns false on allocation failure - the caller then parses
  * without BORROW and frees the buffer itself as before. */
@@ -389,7 +399,7 @@ static char *config_file_strip_comment(char *str)
 }
 
 static char *config_file_extract_value(char *line, unsigned p_opts,
-      uint8_t *vflags)
+      uint8_t *vflags, size_t *v_len)
 {
    while (*line == ' ' || *line == '\t' || *line == '\r' || *line == '\n')
       line++;
@@ -424,6 +434,8 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
          if (idx)
          {
             char *value;
+            if (v_len)
+               *v_len = idx;
             if (p_opts & CONFIG_FILE_PARSE_BORROW)
             {
                /* The literal is already NUL-terminated in place -
@@ -454,6 +466,8 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
       if (idx)
       {
          char *value;
+         if (v_len)
+            *v_len = idx;
          if (p_opts & CONFIG_FILE_PARSE_BORROW)
          {
             *vflags |= CONF_ENTRY_FLG_VAL_BORROWED;
@@ -757,6 +771,8 @@ static int config_file_parse_buffer(config_file_t *conf,
       list->flags     = base_flags;
       list->key       = NULL;
       list->value     = NULL;
+      list->key_len   = 0;
+      list->value_len = 0;
       list->next      = NULL;
 
       if (config_file_parse_line(conf, list, line, cb, &hash, p_opts))
@@ -909,7 +925,7 @@ static bool config_file_parse_line(config_file_t *conf,
          char *include_line = comment + (sizeof("include ")-1);
          if (*include_line == '\0')
             return false;
-         if (!(path = config_file_extract_value(include_line, 0, NULL)))
+         if (!(path = config_file_extract_value(include_line, 0, NULL, NULL)))
             return false;
          if (     *path == '\0'
                || conf->include_depth >= MAX_INCLUDE_DEPTH)
@@ -952,7 +968,7 @@ static bool config_file_parse_line(config_file_t *conf,
          char *reference_line = comment + (sizeof("reference ")-1);
          if (*reference_line == '\0')
             return false;
-         if (!(path = config_file_extract_value(reference_line, 0, NULL)))
+         if (!(path = config_file_extract_value(reference_line, 0, NULL, NULL)))
             return false;
          config_file_add_reference(conf, path);
          if (!path)
@@ -990,9 +1006,14 @@ static bool config_file_parse_line(config_file_t *conf,
       if (*line != '=')
          return false;
       line++;
-      if (!(list->value = config_file_extract_value(line, p_opts,
-            &list->flags)))
-         return false;
+      {
+         size_t value_len = 0;
+         if (!(list->value = config_file_extract_value(line, p_opts,
+               &list->flags, &value_len)))
+            return false;
+         list->value_len = config_file_cache_len(value_len);
+      }
+      list->key_len = config_file_cache_len(idx);
       if (p_opts & CONFIG_FILE_PARSE_BORROW)
       {
          ((char*)key_start)[idx] = '\0';
@@ -1724,8 +1745,9 @@ char *config_take_string(config_file_t *conf, const char *key)
    else
       value = entry->value;
 
-   entry->value  = NULL;
-   entry->flags &= (uint8_t)~CONF_ENTRY_FLG_VAL_BORROWED;
+   entry->value     = NULL;
+   entry->value_len = 0;
+   entry->flags    &= (uint8_t)~CONF_ENTRY_FLG_VAL_BORROWED;
    return value;
 }
 
@@ -1856,7 +1878,9 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
                free(entry->value);
             entry->flags &= (uint8_t)~CONF_ENTRY_FLG_VAL_BORROWED;
          }
-         entry->value    = strdup(val);
+         entry->value     = strdup(val);
+         entry->value_len = entry->value
+               ? config_file_cache_len(strlen(entry->value)) : 0;
          entry->readonly = false;
          conf->flags    |= CONF_FILE_FLG_MODIFIED;
          return;
@@ -1867,6 +1891,8 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
    entry->readonly  = false;
    entry->flags     = 0;
    entry->next      = NULL;
+   entry->key_len   = 0;
+   entry->value_len = 0;
    entry->key       = strdup(key);
    entry->value     = strdup(val);
    /* If either strdup failed, don't insert a half-initialised entry
@@ -1880,6 +1906,8 @@ void config_set_string(config_file_t *conf, const char *key, const char *val)
       free(entry);
       return;
    }
+   entry->key_len   = config_file_cache_len(strlen(entry->key));
+   entry->value_len = config_file_cache_len(strlen(entry->value));
    conf->flags     |= CONF_FILE_FLG_MODIFIED;
    if (last)
       last->next    = entry;
@@ -1912,6 +1940,8 @@ void config_unset(config_file_t *conf, const char *key)
 
    entry->key     = NULL;
    entry->value   = NULL;
+   entry->key_len = 0;
+   entry->value_len = 0;
    /* Only the string-ownership bits die with the strings: POOLED
     * describes the entry struct itself, which stays in its block
     * (clearing it here made deinitialize free() a pool-interior
@@ -2084,9 +2114,13 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
    {
       if (!list->readonly && list->key)
       {
-         config_file_dump_put(&buf, list->key, strlen(list->key));
+         /* Lengths were cached when the strings were parsed or set;
+          * zero means unknown and falls back to measuring. */
+         config_file_dump_put(&buf, list->key,
+               list->key_len ? list->key_len : strlen(list->key));
          config_file_dump_put(&buf, " = \"", STRLEN_CONST(" = \""));
-         config_file_dump_put(&buf, list->value, strlen(list->value));
+         config_file_dump_put(&buf, list->value,
+               list->value_len ? list->value_len : strlen(list->value));
          config_file_dump_put(&buf, "\"\n", STRLEN_CONST("\"\n"));
       }
       list = list->next;

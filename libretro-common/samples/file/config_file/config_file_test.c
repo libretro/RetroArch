@@ -767,6 +767,104 @@ static void test_config_take_string(void)
    printf("[SUCCESS] config_take_string owns its result in both ownership modes\n");
 }
 
+static void test_config_entry_cached_lengths(void)
+{
+   /* key_len/value_len are consumed by the write path, so a stale
+    * one silently writes a truncated or over-long line.  Walk every
+    * entry after a parse and after each kind of mutation and assert
+    * the cache either matches strlen exactly or is 0 ("unknown",
+    * which readers must handle by measuring). */
+   const char *tmp_path = "/tmp/cfg_lens.cfg";
+   FILE *f;
+   config_file_t *cfg;
+   struct config_file_entry it;
+   bool more;
+   int checked = 0;
+
+   f = fopen(tmp_path, "w");
+   fprintf(f, "short = \"1\"\n");
+   fprintf(f, "longer_key_name = \"a rather longer value with spaces\"\n");
+   fprintf(f, "bare = unquoted\n");
+   fprintf(f, "empty = \"\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(tmp_path)))
+      abort();
+
+   /* Mutations: overwrite a parsed (borrowed) value, add a fresh
+    * owned entry, overwrite that again, and unset one. */
+   config_set_string(cfg, "short", "replaced with something longer");
+   config_set_string(cfg, "added", "brand new");
+   config_set_string(cfg, "added", "shorter");
+   config_unset(cfg, "bare");
+
+   {
+      const struct config_entry_list *e;
+      for (e = cfg->entries; e; e = e->next)
+      {
+         if (e->key)
+         {
+            if (e->key_len && e->key_len != (uint16_t)strlen(e->key))
+            {
+               printf("[FAILED] key_len %u != strlen %u for [%s]\n",
+                     (unsigned)e->key_len, (unsigned)strlen(e->key), e->key);
+               abort();
+            }
+            checked++;
+         }
+         else if (e->key_len)
+            abort();   /* no key, but a cached key length */
+
+         if (e->value)
+         {
+            if (e->value_len && e->value_len != (uint16_t)strlen(e->value))
+            {
+               printf("[FAILED] value_len %u != strlen %u for [%s]\n",
+                     (unsigned)e->value_len, (unsigned)strlen(e->value),
+                     e->key ? e->key : "?");
+               abort();
+            }
+         }
+         else if (e->value_len)
+            abort();   /* no value, but a cached value length */
+      }
+   }
+   if (checked < 4)
+      abort();
+
+   /* And the write path must still round-trip: read the dump back
+    * and confirm the values survive intact. */
+   if (!config_file_write(cfg, "/tmp/cfg_lens_out.cfg", false))
+      abort();
+   config_file_free(cfg);
+
+   if (!(cfg = config_file_new("/tmp/cfg_lens_out.cfg")))
+      abort();
+   more = config_get_entry_list_head(cfg, &it);
+   while (more)
+   {
+      if (!it.key || !it.value)
+         abort();
+      more = config_get_entry_list_next(&it);
+   }
+   {
+      char *v = NULL;
+      if (     !config_get_string(cfg, "short", &v)
+            || strcmp(v, "replaced with something longer"))
+         abort();
+      free(v);
+      v = NULL;
+      if (     !config_get_string(cfg, "longer_key_name", &v)
+            || strcmp(v, "a rather longer value with spaces"))
+         abort();
+      free(v);
+   }
+   config_file_free(cfg);
+   remove(tmp_path);
+   remove("/tmp/cfg_lens_out.cfg");
+   printf("[SUCCESS] cached entry lengths agree with strlen and round-trip\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -817,4 +915,5 @@ int main(void)
    test_config_file_borrowed_entry_lifecycle();
    test_config_file_take_string();
    test_config_take_string();
+   test_config_entry_cached_lengths();
 }
