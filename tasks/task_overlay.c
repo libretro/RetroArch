@@ -1223,8 +1223,10 @@ bool task_push_overlay_load_default(
             return false;
          }
          str[buf_len] = '\0';
-         conf = config_file_new_from_string(str, overlay_path);
-         free(str);
+         /* Hand the buffer over: the conf adopts it and entries
+          * borrow from it - no per-entry copies. */
+         conf = config_file_new_take_string(str, (size_t)buf_len,
+               overlay_path);
       }
       if (conf)
          RARCH_DBG("[Overlay] Config parsed successfully from archive.\n");

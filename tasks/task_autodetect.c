@@ -25,7 +25,6 @@
 #include <retro_dirent.h>
 #include <string/stdstring.h>
 #include <file/config_file.h>
-#include <compat/strcasestr.h>
 #include <streams/file_stream.h>
 
 #include "../configuration.h"
@@ -59,12 +58,31 @@ typedef struct
     * has, and this task runs on the main loop. */
    struct RDIR   *scan_rdir;
    config_file_t *scan_best;
+   /* Verified-hint index (see input_autoconfigure_index_try):
+    * index_build accumulates identity tuples for the directory
+    * currently being scanned so the index can be (re)written when
+    * the walk completes; index_build_count numbers its entries. */
+   config_file_t *index_build;
+   unsigned       index_build_count;
+   /* Affinity high-water mark when the current directory's walk
+    * began, to tell whether THIS directory produced a match. */
+   unsigned       scan_dir_start_affinity;
    unsigned       scan_max_affinity;
    unsigned       scan_dir_idx;
    unsigned       port;
    input_device_info_t device_info; /* unsigned alignment */
    uint8_t flags;
    uint8_t scan_done;
+   /* A tuple did not fit its index value buffer, so this
+    * directory's index would be incomplete: abandon the build (see
+    * input_autoconfigure_index_collect). */
+   uint8_t index_build_abandoned;
+   /* The current directory's index was fresh (valid header, file
+    * count matches) but ranked no candidate at or above the match
+    * bar.  If the full walk then agrees that nothing matches, the
+    * index was simply right, and rewriting an identical one on
+    * every connect of an unrecognised device would be waste. */
+   uint8_t index_fresh_no_candidate;
 } autoconfig_handle_t;
 
 /*********************/
@@ -75,6 +93,12 @@ static void free_autoconfig_handle(autoconfig_handle_t *autoconfig_handle)
 {
    if (!autoconfig_handle)
       return;
+
+   if (autoconfig_handle->index_build)
+   {
+      config_file_free(autoconfig_handle->index_build);
+      autoconfig_handle->index_build = NULL;
+   }
 
    /* A scan may be part way through a directory. */
    if (autoconfig_handle->scan_rdir)
@@ -130,6 +154,68 @@ static void input_autoconfigure_free(retro_task_t *task)
  * > 30-39: VID+PID match
  * > 50-59: Both device name and VID+PID match
  * > A physical port match adds 10, a physical port mismatch subtracts 10. */
+/* Affinity of one identity tuple (one of a profile's main entry or
+ * its up-to-9 alternatives) against the connected device.  Single
+ * source of truth: both the per-file computation below and the
+ * in-memory index matcher rank with this exact function, so the
+ * index can never order candidates differently than a real scan
+ * would. */
+static unsigned input_autoconfigure_tuple_affinity(
+      autoconfig_handle_t *autoconfig_handle,
+      uint16_t config_vid, uint16_t config_pid,
+      const char *config_device, const char *config_phys,
+      int alt)
+{
+   unsigned affinity = 0;
+
+   /* Check for matching VID+PID */
+#ifdef HAVE_BLISSBOX
+   /* > Bliss-Box shenanigans: its adapters report the wrapped
+    * pad's ids at a fixed pid, so profiles are matched on vid
+    * alone with the pid treated as the Bliss-Box constant. */
+   if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
+      config_pid = BLISSBOX_PID;
+
+   if (     (autoconfig_handle->device_info.vid == config_vid)
+         && (autoconfig_handle->device_info.pid == config_pid)
+         && (config_vid != 0)
+         && (config_pid != 0)
+         && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
+         && (autoconfig_handle->device_info.pid != BLISSBOX_PID))
+      affinity += 30;
+#else
+   if (     (autoconfig_handle->device_info.vid == config_vid)
+         && (autoconfig_handle->device_info.pid == config_pid)
+         && (config_vid != 0)
+         && (config_pid != 0))
+      affinity += 30;
+#endif
+
+   /* Check for matching device name */
+   if (     config_device
+         && *config_device
+         && string_is_equal(config_device,
+               autoconfig_handle->device_info.name))
+      affinity += 20;
+
+   /* Check for matching physical location */
+   if (     affinity >= 20
+         && config_phys
+         && *config_phys)
+   {
+      if (strstr(autoconfig_handle->device_info.phys, config_phys))
+         affinity += 10;
+      else
+         affinity -= 10;
+   }
+
+   /* Store the selected alternative as last digit of affinity. */
+   if (affinity > 0)
+      affinity += alt;
+
+   return affinity;
+}
+
 static unsigned input_autoconfigure_get_config_file_affinity(
       autoconfig_handle_t *autoconfig_handle,
       config_file_t *config)
@@ -148,6 +234,8 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       uint16_t config_pid = 0;
       int tmp_int         = 0;
       unsigned affinity   = 0;
+      const char *config_device = NULL;
+      const char *config_phys   = NULL;
 
       if (i == 0)
          config_key_postfix[0] = '\0';
@@ -170,57 +258,25 @@ static unsigned input_autoconfigure_get_config_file_affinity(
       if (config_get_int(config, config_key, &tmp_int))
          config_pid = (uint16_t)tmp_int;
 
-      /* Check for matching VID+PID */
-#ifdef HAVE_BLISSBOX
-      /* > Bliss-Box shenanigans... */
-      if (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-         config_pid = BLISSBOX_PID;
-
-      if (     (autoconfig_handle->device_info.vid == config_vid)
-            && (autoconfig_handle->device_info.pid == config_pid)
-            && (config_vid != 0)
-            && (config_pid != 0)
-            && (autoconfig_handle->device_info.vid != BLISSBOX_VID)
-            && (autoconfig_handle->device_info.pid != BLISSBOX_PID))
-         affinity += 30;
-#else
-      if (     (autoconfig_handle->device_info.vid == config_vid)
-            && (autoconfig_handle->device_info.pid == config_pid)
-            && (config_vid != 0)
-            && (config_pid != 0))
-         affinity += 30;
-#endif
-
-      /* Check for matching device name */
       _len  = strlcpy(config_key, "input_device",
                sizeof(config_key));
       strlcpy(config_key  + _len, config_key_postfix,
             sizeof(config_key) - _len);
       if (     (entry  = config_get_entry(config, config_key))
-            && (entry->value && *entry->value)
-            &&  string_is_equal(entry->value,
-                autoconfig_handle->device_info.name))
-         affinity += 20;
+            && (entry->value))
+         config_device = entry->value;
 
-      /* Check for matching physical location */
       _len  = strlcpy(config_key, "input_phys",
                sizeof(config_key));
       _len += strlcpy(config_key + _len, config_key_postfix,
                sizeof(config_key) - _len);
-      if (     affinity >= 20
-            && (entry = config_get_entry(config, config_key))
-            && (entry->value && *entry->value))
-      {
-         if (strstr(autoconfig_handle->device_info.phys,
-                       entry->value))
-            affinity += 10;
-         else
-            affinity -= 10;
-      }
+      if (     (entry = config_get_entry(config, config_key))
+            && (entry->value))
+         config_phys = entry->value;
 
-      /* Store the selected alternative as last digit of affinity. */
-      if (affinity > 0)
-         affinity += i;
+      affinity = input_autoconfigure_tuple_affinity(
+            autoconfig_handle, config_vid, config_pid,
+            config_device, config_phys, i);
 
       if (max_affinity < affinity)
          max_affinity = affinity;
@@ -274,85 +330,380 @@ static void input_autoconfigure_set_config_file(
  * (in the autoconfig directory) matching the connected
  * input device
  * > Returns 'true' if successful */
-/* Could this file possibly score above zero for the device we are
- * looking for?
+
+/*******************************/
+/* Verified-hint profile index */
+/*******************************/
+
+/* A per-directory index of profile identity tuples, so that a device
+ * connect can rank every profile with two file operations (read the
+ * index, open the winner) instead of one open per profile - the
+ * historical slowness of this task is exactly that per-file open
+ * latency on cold or slow storage.
  *
- * A profile is only ever selected on a positive affinity, and affinity
- * only becomes positive through a matching vendor+product id or a
- * matching device name - input_phys merely adjusts a score that is
- * already at least 20.  So a file containing neither the name nor the
- * ids cannot win, and does not need parsing.
+ * The index is a hint, never an authority:
+ *  - the ranking uses input_autoconfigure_tuple_affinity, the same
+ *    function the real scan uses, over tuples recorded verbatim;
+ *  - the winning candidate is opened and re-scored against its real
+ *    file contents, and accepted only if the real affinity is at
+ *    least what the index claimed;
+ *  - anything else - no index, unparseable index, stale file count,
+ *    winner unreadable, size drift, verify shortfall, or no
+ *    candidate reaching the same >= 20 bar a scan match needs -
+ *    falls back to the full directory scan, which also rebuilds the
+ *    index from data it necessarily reads anyway.
+ * A stale index can therefore cost one wasted open, but can never
+ * select a profile the full scan would not have selected.
  *
- * That matters because parsing is the expensive part by a wide margin:
- * building a config_file_t reads and hashes every binding in the file,
- * some fifty entries, to answer questions about four of them.  Reading
- * the bytes is cheap - one open, one read - and the file is read here
- * either way, so a candidate is parsed from the buffer already in hand
- * rather than opened a second time.
- *
- * The test is deliberately generous.  A false positive costs one parse
- * that would have happened anyway; a false negative would silently
- * pick the wrong profile, so anything uncertain must pass.  Hence:
- *
- *  - the name is matched as a substring, which is sound because the
- *    affinity check compares it with string_is_equal - the exact text
- *    has to be present for that to succeed;
- *  - the ids are read by config_get_int, which uses strtol with base
- *    0, so decimal, hexadecimal and octal are all legal spellings of
- *    the same number and all three are looked for.
- */
-static bool input_autoconfigure_file_may_match(
-      const char *buf,
-      const char *device_name,
-      unsigned vid, unsigned pid)
+ * The file lives beside the profiles it describes (no .cfg extension,
+ * so the scan's extension filter never sees it).  If the directory is
+ * not writable the write fails silently and every connect simply
+ * performs the full scan, exactly as before this mechanism existed.
+ * Freshness is keyed on the directory's *.cfg count (the VFS layer
+ * exposes no mtime): additions and removals are caught by the count,
+ * a renamed or deleted winner by the failed open, an edited winner by
+ * the re-score, and a profile hand-edited to match a previously
+ * unmatched device by the no-candidate fallback.  The one blind spot
+ * is an in-place edit that would promote a profile that was neither
+ * the winner nor previously acceptable; deleting the index file (or
+ * any add/remove in the directory) clears it. */
+
+#define AUTOCONFIG_INDEX_NAME    ".autoconfig_index"
+#define AUTOCONFIG_INDEX_VERSION 1
+
+/* Count the *.cfg entries in a directory: two getdents syscalls,
+ * no per-file opens.  Must apply the same filter as the scan walk
+ * so the count is comparable. */
+static int input_autoconfigure_index_dir_count(const char *dir)
 {
-   char num[24];
+   struct RDIR *rdir;
+   int count = 0;
 
-   if (!buf)
-      return false;
+   if (!(rdir = retro_opendir(dir)))
+      return -1;
 
-   if (device_name && *device_name && strstr(buf, device_name))
-      return true;
-
-   if (vid && pid)
+   while (retro_readdir(rdir))
    {
-      bool have_vid = false;
-      bool have_pid = false;
-
-      snprintf(num, sizeof(num), "%u", vid);
-      have_vid = (strstr(buf, num) != NULL);
-      if (!have_vid)
-      {
-         snprintf(num, sizeof(num), "0x%x", vid);
-         have_vid = (compat_strcasestr(buf, num) != NULL);
-      }
-      if (!have_vid)
-      {
-         snprintf(num, sizeof(num), "0%o", vid);
-         have_vid = (strstr(buf, num) != NULL);
-      }
-
-      if (have_vid)
-      {
-         snprintf(num, sizeof(num), "%u", pid);
-         have_pid = (strstr(buf, num) != NULL);
-         if (!have_pid)
-         {
-            snprintf(num, sizeof(num), "0x%x", pid);
-            have_pid = (compat_strcasestr(buf, num) != NULL);
-         }
-         if (!have_pid)
-         {
-            snprintf(num, sizeof(num), "0%o", pid);
-            have_pid = (strstr(buf, num) != NULL);
-         }
-      }
-
-      if (have_vid && have_pid)
-         return true;
+      const char *entry_name = retro_dirent_get_name(rdir);
+      if (     entry_name
+            && *entry_name
+            && string_is_equal_noncase(
+                  path_get_extension(entry_name), "cfg"))
+         count++;
    }
 
-   return false;
+   retro_closedir(rdir);
+   return count;
+}
+
+/* Record one profile's identity tuples into the index being built.
+ * Reads exactly the keys input_autoconfigure_get_config_file_affinity
+ * reads, and stores them verbatim (tab-separated inside the quoted
+ * value; a device name containing a tab or quote would corrupt only
+ * its own entry, which the verify step then rejects). */
+static void input_autoconfigure_index_collect(
+      autoconfig_handle_t *autoconfig_handle,
+      const char *entry_name, int64_t f_size, config_file_t *config)
+{
+   int i;
+   char index_key[32];
+   char index_val[NAME_MAX_LENGTH + 128];
+   unsigned file_idx = autoconfig_handle->index_build_count;
+
+   if (autoconfig_handle->index_build_abandoned)
+      return;
+
+   if (!autoconfig_handle->index_build)
+   {
+      if (!(autoconfig_handle->index_build = config_file_new_alloc()))
+         return;
+      autoconfig_handle->index_build->flags |=
+            CONF_FILE_FLG_GUARANTEED_NO_DUPLICATES;
+   }
+
+   snprintf(index_key, sizeof(index_key), "f%u", file_idx);
+   config_set_string(autoconfig_handle->index_build, index_key,
+         entry_name);
+   snprintf(index_key, sizeof(index_key), "s%u", file_idx);
+   /* Written as int to stay symmetric with the config_get_int the
+    * verify step reads it back with; a profile anywhere near that
+    * bound is not a profile.  Oversized files record 0, which the
+    * size-drift check treats as 'unknown' and skips. */
+   snprintf(index_val, sizeof(index_val), "%d",
+         (f_size > 0 && f_size <= 0x7fffffff) ? (int)f_size : 0);
+   config_set_string(autoconfig_handle->index_build, index_key,
+         index_val);
+
+   for (i = 0; i < 10; i++)
+   {
+      size_t _len;
+      char config_key[30];
+      char config_key_postfix[7];
+      struct config_entry_list *entry = NULL;
+      uint16_t config_vid       = 0;
+      uint16_t config_pid       = 0;
+      int tmp_int               = 0;
+      const char *config_device = "";
+      const char *config_phys   = "";
+
+      if (i == 0)
+         config_key_postfix[0] = '\0';
+      else
+         snprintf(config_key_postfix, sizeof(config_key_postfix),
+                  "_alt%d", i);
+
+      _len  = strlcpy(config_key, "input_vendor_id",
+               sizeof(config_key));
+      strlcpy(config_key + _len, config_key_postfix,
+            sizeof(config_key) - _len);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_vid = (uint16_t)tmp_int;
+
+      _len  = strlcpy(config_key, "input_product_id",
+               sizeof(config_key));
+      strlcpy(config_key + _len, config_key_postfix,
+            sizeof(config_key) - _len);
+      if (config_get_int(config, config_key, &tmp_int))
+         config_pid = (uint16_t)tmp_int;
+
+      _len  = strlcpy(config_key, "input_device",
+               sizeof(config_key));
+      strlcpy(config_key + _len, config_key_postfix,
+            sizeof(config_key) - _len);
+      if (     (entry = config_get_entry(config, config_key))
+            && (entry->value))
+         config_device = entry->value;
+
+      _len  = strlcpy(config_key, "input_phys",
+               sizeof(config_key));
+      strlcpy(config_key + _len, config_key_postfix,
+            sizeof(config_key) - _len);
+      if (     (entry = config_get_entry(config, config_key))
+            && (entry->value))
+         config_phys = entry->value;
+
+      /* Absent alternatives are not stored */
+      if (     (i > 0)
+            && (config_vid == 0)
+            && (config_pid == 0)
+            && (*config_device == '\0'))
+         continue;
+
+      snprintf(index_key, sizeof(index_key), "i%u_%d", file_idx, i);
+      /* Device names and physical locations come from the file and
+       * are not length-bounded, so the composed tuple can overflow
+       * this buffer.  A truncated tuple must never be stored: the
+       * verify step only catches an index that *overstates* a
+       * candidate (real < claimed), and truncation can just as
+       * easily understate one - a clipped physical location can
+       * drop the +10 phys bonus, and a clipped separator makes the
+       * parser skip the tuple entirely, hiding the profile from
+       * ranking.  Either way the index could rank the true winner
+       * below a rival whose own claim is honest, so the rival would
+       * verify successfully and be selected where a full scan would
+       * not have chosen it.  Abandon the whole index for this
+       * directory instead; connects then scan in full, exactly as
+       * they did before this mechanism existed. */
+      if ((size_t)snprintf(index_val, sizeof(index_val),
+               "%u\t%u\t%s\t%s",
+               (unsigned)config_vid, (unsigned)config_pid,
+               config_device, config_phys) >= sizeof(index_val))
+      {
+         autoconfig_handle->index_build_abandoned = 1;
+         config_file_free(autoconfig_handle->index_build);
+         autoconfig_handle->index_build           = NULL;
+         autoconfig_handle->index_build_count     = 0;
+         return;
+      }
+      config_set_string(autoconfig_handle->index_build, index_key,
+            index_val);
+   }
+
+   autoconfig_handle->index_build_count++;
+}
+
+/* Write the accumulated index beside the profiles.  Failure (read
+ * only directory, out of space) is ignored: the index is an
+ * optimisation, and without one every connect scans as before. */
+static void input_autoconfigure_index_write(
+      autoconfig_handle_t *autoconfig_handle, const char *dir)
+{
+   char index_path[PATH_MAX_LENGTH];
+   char index_val[32];
+   config_file_t *index_build = autoconfig_handle->index_build;
+
+   if (!index_build)
+      return;
+
+   snprintf(index_val, sizeof(index_val), "%d",
+         AUTOCONFIG_INDEX_VERSION);
+   config_set_string(index_build, "__version", index_val);
+   snprintf(index_val, sizeof(index_val), "%u",
+         autoconfig_handle->index_build_count);
+   config_set_string(index_build, "__file_count", index_val);
+
+   fill_pathname_join_special(index_path, dir,
+         AUTOCONFIG_INDEX_NAME, sizeof(index_path));
+   index_build->flags |= CONF_FILE_FLG_MODIFIED;
+   config_file_write(index_build, index_path, false);
+
+   config_file_free(index_build);
+   autoconfig_handle->index_build       = NULL;
+   autoconfig_handle->index_build_count = 0;
+}
+
+/* Try to resolve the connect from the directory's index.  On a
+ * verified hit, returns the winning profile's parsed config with
+ * *affinity set to its (re-verified) affinity.  Returns NULL on any
+ * miss or doubt, and the caller performs the full scan. */
+static config_file_t *input_autoconfigure_index_try(
+      autoconfig_handle_t *autoconfig_handle, const char *dir,
+      unsigned *affinity)
+{
+   char index_path[PATH_MAX_LENGTH];
+   config_file_t *index_conf = NULL;
+   config_file_t *winner     = NULL;
+   int file_count            = 0;
+   int version               = 0;
+   int best_file             = -1;
+   unsigned best_affinity    = 0;
+   unsigned fi;
+
+   fill_pathname_join_special(index_path, dir,
+         AUTOCONFIG_INDEX_NAME, sizeof(index_path));
+   if (!(index_conf = config_file_new(index_path)))
+      return NULL;
+
+   /* Header and freshness */
+   if (     !config_get_int(index_conf, "__version", &version)
+         || (version != AUTOCONFIG_INDEX_VERSION)
+         || !config_get_int(index_conf, "__file_count", &file_count)
+         || (file_count <= 0)
+         || (file_count !=
+               input_autoconfigure_index_dir_count(dir)))
+   {
+      config_file_free(index_conf);
+      return NULL;
+   }
+
+   /* Rank every recorded tuple with the real affinity function */
+   for (fi = 0; fi < (unsigned)file_count; fi++)
+   {
+      int i;
+      char index_key[32];
+      for (i = 0; i < 10; i++)
+      {
+         struct config_entry_list *entry;
+         const char *p;
+         char *endp;
+         char config_device[NAME_MAX_LENGTH];
+         unsigned config_vid, config_pid, a;
+         const char *config_phys;
+         size_t device_len;
+
+         snprintf(index_key, sizeof(index_key), "i%u_%d", fi, i);
+         if (     !(entry = config_get_entry(index_conf, index_key))
+               || !entry->value)
+            continue;
+
+         /* vid \t pid \t device \t phys */
+         p          = entry->value;
+         config_vid = (unsigned)strtoul(p, &endp, 10);
+         if (*endp != '\t')
+            continue;
+         p          = endp + 1;
+         config_pid = (unsigned)strtoul(p, &endp, 10);
+         if (*endp != '\t')
+            continue;
+         p          = endp + 1;
+         if (!(endp = strchr(p, '\t')))
+            continue;
+         device_len = (size_t)(endp - p);
+         if (device_len >= sizeof(config_device))
+            device_len = sizeof(config_device) - 1;
+         memcpy(config_device, p, device_len);
+         config_device[device_len] = '\0';
+         config_phys = endp + 1;
+
+         a = input_autoconfigure_tuple_affinity(autoconfig_handle,
+               (uint16_t)config_vid, (uint16_t)config_pid,
+               config_device, config_phys, i);
+         if (a > best_affinity)
+         {
+            best_affinity = a;
+            best_file     = (int)fi;
+         }
+      }
+   }
+
+   /* The same bar a scan match needs; below it, scan in full (this
+    * is also what finds a profile hand-edited to newly match).
+    * The header was valid and current, so flag it: if the scan
+    * agrees nothing matches, the index needs no rewrite. */
+   if ((best_affinity < 20) || (best_file < 0))
+   {
+      autoconfig_handle->index_fresh_no_candidate = 1;
+      config_file_free(index_conf);
+      return NULL;
+   }
+
+   /* Open only the winner and verify the claim against the file */
+   {
+      char index_key[32];
+      char profile_path[PATH_MAX_LENGTH];
+      struct config_entry_list *entry;
+      int64_t f_size    = 0;
+      int64_t f_len     = 0;
+      char *f_buf       = NULL;
+      unsigned real_affinity;
+
+      snprintf(index_key, sizeof(index_key), "f%d", best_file);
+      if (     !(entry = config_get_entry(index_conf, index_key))
+            || !entry->value
+            || !*entry->value)
+      {
+         config_file_free(index_conf);
+         return NULL;
+      }
+      fill_pathname_join_special(profile_path, dir, entry->value,
+            sizeof(profile_path));
+
+      snprintf(index_key, sizeof(index_key), "s%d", best_file);
+      {
+         int tmp_int = 0;
+         if (config_get_int(index_conf, index_key, &tmp_int))
+            f_size = (int64_t)tmp_int;
+      }
+      config_file_free(index_conf);
+
+      if (     !filestream_read_file(profile_path,
+                  (void**)&f_buf, &f_len)
+            || !f_buf)
+         return NULL;
+
+      /* Size drift: the file changed since indexing */
+      if ((f_size > 0) && (f_len != f_size))
+      {
+         free(f_buf);
+         return NULL;
+      }
+
+      if (!(winner = config_file_new_take_string(f_buf, 0,
+            profile_path)))
+         return NULL;
+
+      real_affinity = input_autoconfigure_get_config_file_affinity(
+            autoconfig_handle, winner);
+      if (real_affinity < best_affinity)
+      {
+         /* The index lied (in-place edit): scan in full instead */
+         config_file_free(winner);
+         return NULL;
+      }
+
+      *affinity = real_affinity;
+      return winner;
+   }
 }
 
 /* How many directory entries one tick will look at.
@@ -398,8 +749,32 @@ static bool input_autoconfigure_scan_config_files_external(
 
       if (!autoconfig_handle->scan_rdir)
       {
-         if (!(autoconfig_handle->scan_rdir = retro_opendir(
-                     dirs[autoconfig_handle->scan_dir_idx])))
+         const char *dir = dirs[autoconfig_handle->scan_dir_idx];
+
+         /* Entering a new directory: try its index first.  A
+          * verified hit answers the connect with two file
+          * operations instead of one open per profile.  Any miss
+          * or doubt falls through to the full walk below, which
+          * rebuilds the index as it goes. */
+         budget--;
+         autoconfig_handle->index_fresh_no_candidate = 0;
+         autoconfig_handle->index_build_abandoned    = 0;
+         autoconfig_handle->scan_dir_start_affinity  =
+               autoconfig_handle->scan_max_affinity;
+         if ((config = input_autoconfigure_index_try(
+               autoconfig_handle, dir, &affinity)))
+         {
+            if (autoconfig_handle->scan_best)
+               config_file_free(autoconfig_handle->scan_best);
+            autoconfig_handle->scan_best         = config;
+            autoconfig_handle->scan_max_affinity = affinity;
+            /* Same policy as a scan match: a directory that
+             * produced one ends the search. */
+            autoconfig_handle->scan_dir_idx      = num_dirs;
+            break;
+         }
+
+         if (!(autoconfig_handle->scan_rdir = retro_opendir(dir)))
          {
             autoconfig_handle->scan_dir_idx++;
             continue;
@@ -410,6 +785,27 @@ static bool input_autoconfigure_scan_config_files_external(
       {
          retro_closedir(autoconfig_handle->scan_rdir);
          autoconfig_handle->scan_rdir = NULL;
+         /* The walk read and parsed every profile: write the
+          * rebuilt index beside them (silently a no-op on a read
+          * only directory) - unless a fresh index already said,
+          * correctly, that nothing here matches this device, in
+          * which case the rebuilt one is identical and the write
+          * is skipped.  A scan that *contradicts* a fresh index
+          * (a profile was hand-edited in place to match) does
+          * write, healing the staleness the header cannot see. */
+         if (     !autoconfig_handle->index_fresh_no_candidate
+               || (     (autoconfig_handle->scan_max_affinity >=
+                          20)
+                     && (autoconfig_handle->scan_max_affinity >
+                          autoconfig_handle->scan_dir_start_affinity)))
+            input_autoconfigure_index_write(autoconfig_handle,
+                  dirs[autoconfig_handle->scan_dir_idx]);
+         else if (autoconfig_handle->index_build)
+         {
+            config_file_free(autoconfig_handle->index_build);
+            autoconfig_handle->index_build       = NULL;
+            autoconfig_handle->index_build_count = 0;
+         }
          autoconfig_handle->scan_dir_idx++;
          /* A directory that produced a match ends the search; the
           * later directory is only a fallback. */
@@ -430,42 +826,29 @@ static bool input_autoconfigure_scan_config_files_external(
             dirs[autoconfig_handle->scan_dir_idx], entry_name,
             sizeof(config_file_path));
 
-      /* Read once, and only parse what could win.  The Bliss-Box path
-       * rewrites the product id before comparing, so its devices skip
-       * the filter and are parsed as before. */
+      /* Read and parse every profile.  An earlier revision skipped
+       * parsing files a raw-buffer prefilter rejected; the index
+       * rebuild needs every file's identity tuples regardless, the
+       * bytes are already in memory either way, and a parse costs
+       * microseconds against the milliseconds the read itself costs
+       * cold.  Ranking parsed values also retires the prefilter's
+       * substring heuristics, which were a standing source of
+       * false-negative encodings. */
       {
          int64_t  buf_len = 0;
          char    *buf     = NULL;
-         bool     candidate;
 
          if (!filestream_read_file(config_file_path,
                   (void**)&buf, &buf_len) || !buf)
             continue;
 
-#ifdef HAVE_BLISSBOX
-         candidate = (autoconfig_handle->device_info.vid == BLISSBOX_VID)
-               || input_autoconfigure_file_may_match(buf,
-                     autoconfig_handle->device_info.name,
-                     autoconfig_handle->device_info.vid,
-                     autoconfig_handle->device_info.pid);
-#else
-         candidate = input_autoconfigure_file_may_match(buf,
-               autoconfig_handle->device_info.name,
-               autoconfig_handle->device_info.vid,
-               autoconfig_handle->device_info.pid);
-#endif
-         if (!candidate)
-         {
-            free(buf);
+         if (!(config = config_file_new_take_string(buf, 0,
+               config_file_path)))
             continue;
-         }
 
-         config = config_file_new_from_string(buf, config_file_path);
-         free(buf);
+         input_autoconfigure_index_collect(autoconfig_handle,
+               entry_name, buf_len, config);
       }
-
-      if (!config)
-         continue;
 
       affinity = input_autoconfigure_get_config_file_affinity(
             autoconfig_handle, config);
@@ -479,12 +862,22 @@ static bool input_autoconfigure_scan_config_files_external(
          config                               = NULL;
          autoconfig_handle->scan_max_affinity = affinity;
 
-         /* A vendor, product and physical location match is as good as
-          * it gets; nothing later can beat it. */
+         /* A vendor, product and physical location match is as good
+          * as it gets; nothing later can beat it.  The partial
+          * tuple collection is discarded rather than written - a
+          * device this profile fits will hit the >= 60 early exit
+          * with or without an index, so rebuilding is left to a
+          * connect that walks the whole directory. */
          if (affinity >= 60)
          {
             retro_closedir(autoconfig_handle->scan_rdir);
             autoconfig_handle->scan_rdir    = NULL;
+            if (autoconfig_handle->index_build)
+            {
+               config_file_free(autoconfig_handle->index_build);
+               autoconfig_handle->index_build       = NULL;
+               autoconfig_handle->index_build_count = 0;
+            }
             autoconfig_handle->scan_dir_idx = num_dirs;
             break;
          }
@@ -539,13 +932,12 @@ static bool input_autoconfigure_scan_config_files_internal(
       if (!input_builtin_autoconfs[i] || !*input_builtin_autoconfs[i])
          continue;
 
-      /* Load autoconfig string */
+      /* Load autoconfig string.  The strdup stays (the builtin is
+       * const and the parse mutates), but the copy is handed over:
+       * the conf adopts it and entries borrow from it. */
       autoconfig_str = strdup(input_builtin_autoconfs[i]);
-      config         = config_file_new_from_string(
-            autoconfig_str, NULL);
-
-      /* > String no longer required - clean up */
-      free(autoconfig_str);
+      config         = config_file_new_take_string(
+            autoconfig_str, 0, NULL);
       autoconfig_str = NULL;
 
       /* Check for a match */

@@ -89,12 +89,11 @@ jobs:
           )
 
           # Per-binary run command (overrides ./<binary> if present).
-          # config_file_test has pre-existing sample leaks unrelated to
-          # any regression so we disable the ASan leak detector -- if a
-          # real leak shows up elsewhere it will be flagged during build
-          # of ASan-enabled configurations, not here.
+          # config_file_test's leak exemption is gone: the harness now
+          # frees everything it allocates and the parser's own include
+          # leak is fixed, so LeakSanitizer runs at full strictness and
+          # any surviving allocation is a real config_file regression.
           declare -A RUN_ENV=(
-            [config_file_test]="ASAN_OPTIONS=detect_leaks=0"
           )
 
           # Samples that are build-only (either they require command-line
@@ -407,6 +406,62 @@ jobs:
   # Win11/ARM64 atomic ordering bug, found only on real silicon),
   # but qemu catches most categorical errors and is much cheaper than
   # provisioning ARM runners.
+  config-file-fuzz-smoke:
+    name: config_file differential fuzz (smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build fuzz target
+        shell: bash
+        working-directory: libretro-common/samples/file/config_file
+        run: |
+          set -eu
+          LC=../../..
+          clang -O1 -g -fsanitize=fuzzer,address,undefined \
+            -fno-sanitize-recover=all \
+            -I$LC/include -o config_file_fuzz config_file_fuzz.c \
+            $LC/file/config_file.c \
+            $LC/file/file_path.c \
+            $LC/compat/compat_strl.c \
+            $LC/compat/compat_strcasestr.c \
+            $LC/compat/compat_posix_string.c \
+            $LC/encodings/encoding_utf.c \
+            $LC/lists/string_list.c \
+            $LC/time/rtime.c
+
+      - name: Run fuzz smoke
+        shell: bash
+        working-directory: libretro-common/samples/file/config_file
+        run: |
+          set -eu
+          # Seed corpus: representative config shapes plus the byte
+          # patterns the target's invariants care about (embedded NUL,
+          # comment-in-literal, directives, duplicate keys, CRLF).
+          # Generated here rather than committed so no binary files
+          # live in the tree.
+          mkdir -p corpus
+          printf 'video_driver = "vulkan"\nvideo_fullscreen = "true"\naudio_rate = "48000"\n' > corpus/basic
+          printf '# comment\nkey = "has # inside"\ndup = "a"\ndup = "b"\n   spaced   =   bare\r\nempty = ""\n' > corpus/edge
+          printf '#include "sub.cfg"\n#reference "other.cfg"\nafter = "1"\n' > corpus/directives
+          python3 -c "import sys; sys.stdout.buffer.write(b'a = \"1\"\nb\x00c = \"2\"\nd = \"3\"\n')" > corpus/embedded_nul
+          # 60 seconds of coverage-guided differential fuzzing:
+          # every input is parsed whole and again through the
+          # streaming push API in input-derived packet splits, then
+          # entry-list equality, hash-map coherence and tail
+          # validity are enforced (see config_file_fuzz.c).  Any
+          # divergence or sanitizer report fails the job.
+          ./config_file_fuzz -max_len=512 -max_total_time=60 \
+            -print_final_stats=1 corpus/
+
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest

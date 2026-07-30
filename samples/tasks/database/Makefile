@@ -107,6 +107,7 @@ SOURCES_C := \
 	$(CORE_DIR)/libretro-db/rmsgpack_dom.c \
 	$(LIBRETRO_COMM_DIR)/file/archive_file.c \
 	$(LIBRETRO_COMM_DIR)/file/config_file.c \
+	$(LIBRETRO_COMM_DIR)/file/config_file_io.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
