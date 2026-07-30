@@ -190,7 +190,6 @@ void task_file_load_handler(retro_task_t *task)
                         break;
                      }
                      nbio->status = NBIO_STATUS_TRANSFER_PARSE;
-                     task_set_progress(task, 100);
                      goto do_transfer_parse;
                   }
                   nbio->status = NBIO_STATUS_TRANSFER;
@@ -215,6 +214,15 @@ void task_file_load_handler(retro_task_t *task)
             break;
 do_transfer_parse:
          case NBIO_STATUS_TRANSFER_PARSE:
+            /* Reaching parse means the whole file is in, so report it
+             * once here where both entries pass.  Only the small-file
+             * branch used to set 100, and the multi-tick path never
+             * did: it jumps straight from the completing fill to
+             * parse, skipping the progress update below, so a large
+             * local load's bar stopped at whatever the last partial
+             * tick had reported - 0 for a two-tick load - and then
+             * vanished. */
+            task_set_progress(task, 100);
             if (task_file_transfer_iterate_parse(nbio) == -1)
             {
                task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
@@ -243,14 +251,29 @@ do_transfer_parse:
             {
                size_t done = 0, total = 0;
                nbio_xfer_progress(nbio, &done, &total);
-               if (total > 0)
+               /* Scale both sides down until the multiply cannot
+                * overflow, rather than switching to a signed division
+                * for the large case.  done can exceed INT_MAX - every
+                * file over 2 GB, and on a 32-bit target every file
+                * over ~43 MiB took that branch - and converting an
+                * out-of-range size_t to int is implementation-defined:
+                * on the usual two's-complement targets it lands
+                * negative and the percentage ran backwards.  The
+                * divisor there could also reach zero for a total under
+                * 100, which only the same unreachable magnitudes kept
+                * safe.
+                *
+                * done <= total always, so testing total is enough.
+                * The loop never runs on a 64-bit size_t, and where it
+                * does it costs a bit of precision on a value that is
+                * about to be squashed into 0-100 anyway. */
+               while (total > (((size_t)-1) / 100))
                {
-                  if (done < (((size_t)-1) / 100))
-                     task_set_progress(task, (int8_t)(done * 100 / total));
-                  else
-                     task_set_progress(task,
-                           (int8_t)MIN((signed)done / (total / 100), 100));
+                  done  >>= 1;
+                  total >>= 1;
                }
+               if (total > 0)
+                  task_set_progress(task, (int8_t)(done * 100 / total));
             }
             break;
          case NBIO_STATUS_TRANSFER_FINISHED:
