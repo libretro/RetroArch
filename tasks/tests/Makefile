@@ -32,7 +32,7 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_THREADS -DHAVE_MMAP \
+CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MMAP \
 	-DHAVE_64BIT_OFFSETS -D_GNU_SOURCE \
 	-I$(RA_DIR) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lm

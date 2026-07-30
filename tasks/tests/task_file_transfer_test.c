@@ -107,6 +107,23 @@ bool task_image_load_handler(retro_task_t *task)
    return true;
 }
 
+/* The mixer facade, stubbed like the image one.  Built in (the
+ * Makefile defines HAVE_AUDIOMIXER) so the audio arm of the type
+ * switch is exercised: M4A and OPUS were absent from it while both
+ * mixer push paths set them, so those tasks finished without the
+ * mixer handler ever running and the sound never played.  Nothing
+ * catches that unless the test can see which arm a type takes. */
+static __thread int mixer_calls;
+
+bool task_audio_mixer_load_handler(retro_task_t *task)
+{
+   nbio_handle_t *nbio = (nbio_handle_t*)task->state;
+   mixer_calls++;
+   if (nbio && nbio->status == NBIO_STATUS_TRANSFER_FINISHED)
+      return false;
+   return true;
+}
+
 /* ---- helpers ---- */
 
 static __thread int cb_calls;
@@ -177,7 +194,7 @@ static int pump(const char *label, const char *path, enum nbio_type type,
    task->state   = nbio;
    task->handler = task_file_load_handler;
 
-   cb_calls = 0; img_calls = 0;
+   cb_calls = 0; img_calls = 0; mixer_calls = 0;
 
    do
    {
@@ -188,9 +205,10 @@ static int pump(const char *label, const char *path, enum nbio_type type,
       ticks++;
    } while (!(flg & RETRO_TASK_FLG_FINISHED) && ticks < max_ticks);
 
-   printf("  %-28s ticks=%-4d prog=%-4d cb=%d finished=%d cancelled=%d "
-          "avail=%zu\n",
+   printf("  %-28s ticks=%-4d prog=%-4d cb=%d img=%d mix=%d "
+          "finished=%d cancelled=%d avail=%zu\n",
          label, ticks, (int)task_get_progress(task), cb_calls,
+         img_calls, mixer_calls,
          (flg & RETRO_TASK_FLG_FINISHED) > 0 ? 1 : 0,
          (flg & RETRO_TASK_FLG_CANCELLED) > 0 ? 1 : 0,
          nbio->xfer ? data_transfer_avail(nbio->xfer) : (size_t)0);
@@ -276,6 +294,16 @@ int main(int argc, char **argv)
       pump("big 5M / WEBM (bytes)",  big,    NBIO_TYPE_WEBM, 4096, NULL);
       pump("huge 48M / PNG",         huge,   NBIO_TYPE_PNG,  65536, NULL);
       pump("huge 48M / WEBM",        huge,   NBIO_TYPE_WEBM, 65536, NULL);
+      puts("-- audio types must reach the mixer arm --");
+      pump("MP3",                    small,  NBIO_TYPE_MP3,  64, NULL);
+      pump("FLAC",                   small,  NBIO_TYPE_FLAC, 64, NULL);
+      pump("OGG",                    small,  NBIO_TYPE_OGG,  64, NULL);
+      pump("MOD",                    small,  NBIO_TYPE_MOD,  64, NULL);
+      pump("WAV",                    small,  NBIO_TYPE_WAV,  64, NULL);
+      pump("M4A",                    small,  NBIO_TYPE_M4A,  64, NULL);
+      pump("OPUS",                   small,  NBIO_TYPE_OPUS, 64, NULL);
+      puts("   (mix=0 on any row above means that type never reaches "
+           "the mixer)");
       puts("-- failure paths --");
       pump("missing path",           "/tmp/dtq_nope", NBIO_TYPE_PNG, 64, NULL);
       pump("NULL path",              NULL,   NBIO_TYPE_PNG,  64, NULL);

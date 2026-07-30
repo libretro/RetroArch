@@ -301,6 +301,14 @@ do_transfer:
          case NBIO_TYPE_OGG:
          case NBIO_TYPE_MOD:
          case NBIO_TYPE_WAV:
+         /* M4A and OPUS were missing from this list while being set
+          * by both mixer push paths, so they fell to default: the
+          * file was read, the task reported finished, and
+          * task_audio_mixer_load_handler - which is what builds the
+          * task's data and donates the transfer to the mixer - never
+          * ran.  The sound loaded and then silently did not play. */
+         case NBIO_TYPE_M4A:
+         case NBIO_TYPE_OPUS:
 #ifdef HAVE_AUDIOMIXER
             if (!task_audio_mixer_load_handler(task))
                task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
