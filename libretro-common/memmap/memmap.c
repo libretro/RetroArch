@@ -301,6 +301,30 @@ bool memcommit(void *addr, size_t len)
 #endif
 }
 
+bool memrearm(void *addr, size_t len)
+{
+#if !defined(MEMMAP_HAVE_RESERVE)
+   (void)addr;
+   (void)len;
+   return false;
+#else
+   if (!addr || !len)
+      return true;
+#if defined(_WIN32)
+   {
+      DWORD old;
+      /* Not MEM_DECOMMIT: the pages stay committed and keep their
+       * backing, so re-committing them later costs no fault. */
+      return VirtualProtect(addr, len, PAGE_NOACCESS, &old) != 0;
+   }
+#else
+   /* mprotect alone.  memdecommit() pairs this with MADV_DONTNEED,
+    * which is what frees the page and forces the refault. */
+   return mprotect(addr, len, PROT_NONE) == 0;
+#endif
+#endif
+}
+
 void memdecommit(void *addr, size_t len, bool strict)
 {
 #if !defined(MEMMAP_HAVE_RESERVE)
