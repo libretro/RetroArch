@@ -1651,23 +1651,11 @@ static void core_info_resolve_firmware(
 
       strlcpy(key + _len2, "path", sizeof(key) - _len2);
 
-      entry = config_get_entry(conf, key);
-
-      if (entry && (entry->value && *entry->value))
-      {
-         firmware[i].path = entry->value;
-         entry->value     = NULL;
-      }
+      firmware[i].path = config_take_string(conf, key);
 
       strlcpy(key + _len2, "desc", sizeof(key) - _len2);
 
-      entry = config_get_entry(conf, key);
-
-      if (entry && (entry->value && *entry->value))
-      {
-         firmware[i].desc = entry->value;
-         entry->value     = NULL;
-      }
+      firmware[i].desc = config_take_string(conf, key);
    }
 
    info->firmware_count = firmware_count;
@@ -1692,149 +1680,93 @@ static void core_info_parse_config_file(
       config_file_t *conf)
 {
    bool tmp_bool                   = false;
-   struct config_entry_list *entry = config_get_entry(conf, "display_name");
+   struct config_entry_list *entry = NULL;
 
-   if (entry && (entry->value && *entry->value))
+   info->display_name = config_take_string(conf, "display_name");
+
+   info->display_version = config_take_string(conf, "display_version");
+
+   info->core_name = config_take_string(conf, "corename");
+
+   info->systemname = config_take_string(conf, "systemname");
+
+   info->system_id = config_take_string(conf, "systemid");
+
+   info->system_manufacturer = config_take_string(conf, "manufacturer");
+
+   info->supported_extensions = config_take_string(conf, "supported_extensions");
+
+   if (info->supported_extensions)
    {
-      info->display_name = entry->value;
-      entry->value       = NULL;
-   }
-
-   entry = config_get_entry(conf, "display_version");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->display_version = entry->value;
-      entry->value          = NULL;
-   }
-
-   entry = config_get_entry(conf, "corename");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->core_name = entry->value;
-      entry->value    = NULL;
-   }
-
-   entry = config_get_entry(conf, "systemname");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->systemname = entry->value;
-      entry->value     = NULL;
-   }
-
-   entry = config_get_entry(conf, "systemid");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->system_id = entry->value;
-      entry->value    = NULL;
-   }
-
-   entry = config_get_entry(conf, "manufacturer");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->system_manufacturer = entry->value;
-      entry->value              = NULL;
-   }
-
-   entry = config_get_entry(conf, "supported_extensions");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->supported_extensions      = entry->value;
-      entry->value                    = NULL;
 
       info->supported_extensions_list =
             string_split(info->supported_extensions, "|");
    }
 
-   entry = config_get_entry(conf, "authors");
+   info->authors = config_take_string(conf, "authors");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->authors)
    {
-      info->authors      = entry->value;
-      entry->value       = NULL;
 
       info->authors_list =
             string_split(info->authors, "|");
    }
 
-   entry = config_get_entry(conf, "permissions");
+   info->permissions = config_take_string(conf, "permissions");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->permissions)
    {
-      info->permissions      = entry->value;
-      entry->value           = NULL;
 
       info->permissions_list =
             string_split(info->permissions, "|");
    }
 
-   entry = config_get_entry(conf, "license");
+   info->licenses = config_take_string(conf, "license");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->licenses)
    {
-      info->licenses      = entry->value;
-      entry->value        = NULL;
 
       info->licenses_list =
             string_split(info->licenses, "|");
    }
 
-   entry = config_get_entry(conf, "categories");
+   info->categories = config_take_string(conf, "categories");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->categories)
    {
-      info->categories      = entry->value;
-      entry->value          = NULL;
 
       info->categories_list =
             string_split(info->categories, "|");
    }
 
-   entry = config_get_entry(conf, "database");
+   info->databases = config_take_string(conf, "database");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->databases)
    {
-      info->databases      = entry->value;
-      entry->value         = NULL;
 
       info->databases_list =
             string_split(info->databases, "|");
    }
 
-   entry = config_get_entry(conf, "notes");
+   info->notes = config_take_string(conf, "notes");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->notes)
    {
-      info->notes     = entry->value;
-      entry->value    = NULL;
 
       info->note_list =
             string_split(info->notes, "|");
    }
 
-   entry = config_get_entry(conf, "required_hw_api");
+   info->required_hw_api = config_take_string(conf, "required_hw_api");
 
-   if (entry && (entry->value && *entry->value))
+   if (info->required_hw_api)
    {
-      info->required_hw_api      = entry->value;
-      entry->value               = NULL;
 
       info->required_hw_api_list =
             string_split(info->required_hw_api, "|");
    }
 
-   entry = config_get_entry(conf, "description");
-
-   if (entry && (entry->value && *entry->value))
-   {
-      info->description = entry->value;
-      entry->value      = NULL;
-   }
+   info->description = config_take_string(conf, "description");
 
    if (config_get_bool(conf, "supports_no_game",
             &tmp_bool))
@@ -2829,8 +2761,6 @@ size_t core_info_list_get_display_name(
 core_updater_info_t *core_info_get_core_updater_info(
       const char *info_path)
 {
-   struct config_entry_list
-      *entry                 = NULL;
    bool tmp_bool             = false;
    core_updater_info_t *info = NULL;
    config_file_t *conf       = NULL;
@@ -2858,31 +2788,13 @@ core_updater_info_t *core_info_get_core_updater_info(
       info->is_experimental  = tmp_bool;
 
    /* > display_name */
-   entry                     = config_get_entry(conf, "display_name");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->display_name     = entry->value;
-      entry->value           = NULL;
-   }
+   info->display_name = config_take_string(conf, "display_name");
 
    /* > description */
-   entry                     = config_get_entry(conf, "description");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->description      = entry->value;
-      entry->value           = NULL;
-   }
+   info->description = config_take_string(conf, "description");
 
    /* > licenses */
-   entry                     = config_get_entry(conf, "license");
-
-   if (entry && entry->value && *entry->value)
-   {
-      info->licenses         = entry->value;
-      entry->value           = NULL;
-   }
+   info->licenses = config_take_string(conf, "license");
 
    /* Clean up */
    config_file_free(conf);

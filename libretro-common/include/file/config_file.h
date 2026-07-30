@@ -428,6 +428,25 @@ bool config_get_char(config_file_t *conf, const char *entry, char *in);
  **/
 bool config_get_string(config_file_t *conf, const char *entry, char **in);
 
+/**
+ * config_take_string:
+ *
+ * Removes @key's value from the config and returns it as a heap
+ * string the caller owns (release with free()).  Returns NULL if the
+ * key is absent or its value empty, leaving the entry untouched.
+ *
+ * This is the safe form of the historical idiom that lifted
+ * entry->value out of the entry and NULLed it: entries parsed from a
+ * path or taken string BORROW their strings from a buffer the conf
+ * owns (see CONF_ENTRY_FLG_*), so that idiom now hands out a pointer
+ * into the middle of the conf's buffer - reading it after
+ * config_file_free is use-after-free, and free()ing it corrupts the
+ * heap.  This function copies when the value is borrowed and steals
+ * it when the entry owns it, so the caller holds a real allocation
+ * either way.
+ **/
+char *config_take_string(config_file_t *conf, const char *key);
+
 /* Extracts a string to a preallocated buffer. Avoid memory allocation. */
 bool config_get_array(config_file_t *conf, const char *entry, char *s, size_t len);
 

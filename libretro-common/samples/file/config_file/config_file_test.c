@@ -711,6 +711,62 @@ static void test_config_file_take_string(void)
    printf("[SUCCESS] take_string parses identically and owns its buffer\n");
 }
 
+static void test_config_take_string(void)
+{
+   /* config_take_string exists because core_info's historical idiom
+    * - lift entry->value out of the entry, NULL it, free it later -
+    * corrupts the heap against borrowed entries: the pointer lands
+    * in the middle of the conf's adopted file buffer (found as a
+    * STATUS_HEAP_CORRUPTION crash in core_info_free on Windows).
+    * The take must hand out a real allocation in both ownership
+    * modes, outliving the conf. */
+   const char *tmp_path = "/tmp/cfg_take.cfg";
+   FILE *f;
+   config_file_t *cfg;
+   char *taken_borrowed = NULL;
+   char *taken_owned    = NULL;
+   struct config_entry_list *entry;
+
+   f = fopen(tmp_path, "w");
+   fprintf(f, "borrowed_key = \"from file\"\nempty_key = \"\"\n");
+   fclose(f);
+
+   if (!(cfg = config_file_new(tmp_path)))   /* borrowed entries */
+      abort();
+   config_set_string(cfg, "owned_key", "from set");
+
+   /* Borrowed: must be copied out */
+   if (     !(taken_borrowed = config_take_string(cfg, "borrowed_key"))
+         || strcmp(taken_borrowed, "from file"))
+      abort();
+   /* Owned: stolen; either way the entry is emptied */
+   if (     !(taken_owned = config_take_string(cfg, "owned_key"))
+         || strcmp(taken_owned, "from set"))
+      abort();
+   if (     !(entry = config_get_entry(cfg, "borrowed_key"))
+         || entry->value)
+      abort();
+   /* Missing and empty: NULL, entry untouched */
+   if (config_take_string(cfg, "no_such_key"))
+      abort();
+   if (config_take_string(cfg, "empty_key"))
+      abort();
+   if (     !(entry = config_get_entry(cfg, "empty_key"))
+         || !entry->value)
+      abort();
+
+   /* The taken strings must outlive the conf and be free()-able:
+    * under this suite's sanitizers, a borrowed pointer leaking
+    * through here is a bad-free. */
+   config_file_free(cfg);
+   if (strcmp(taken_borrowed, "from file") || strcmp(taken_owned, "from set"))
+      abort();
+   free(taken_borrowed);
+   free(taken_owned);
+   remove(tmp_path);
+   printf("[SUCCESS] config_take_string owns its result in both ownership modes\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -760,4 +816,5 @@ int main(void)
    test_config_file_pathless_reference_no_crash();
    test_config_file_borrowed_entry_lifecycle();
    test_config_file_take_string();
+   test_config_take_string();
 }

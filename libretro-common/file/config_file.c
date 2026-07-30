@@ -1706,6 +1706,29 @@ bool config_get_char(config_file_t *conf, const char *key, char *in)
  *
  * @return true if found, otherwise false.
  **/
+char *config_take_string(config_file_t *conf, const char *key)
+{
+   char *value                     = NULL;
+   struct config_entry_list *entry = config_get_entry(conf, key);
+
+   if (!entry || !entry->value || !*entry->value)
+      return NULL;
+
+   if (entry->flags & CONF_ENTRY_FLG_VAL_BORROWED)
+   {
+      /* The string lives in the conf's adopted buffer: hand the
+       * caller a copy it can own. */
+      if (!(value = strdup(entry->value)))
+         return NULL;
+   }
+   else
+      value = entry->value;
+
+   entry->value  = NULL;
+   entry->flags &= (uint8_t)~CONF_ENTRY_FLG_VAL_BORROWED;
+   return value;
+}
+
 bool config_get_string(config_file_t *conf, const char *key, char **str)
 {
    const struct config_entry_list *entry = config_get_entry(conf, key);
