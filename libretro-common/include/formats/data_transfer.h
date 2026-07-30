@@ -219,9 +219,10 @@ void data_transfer_arena_release(data_transfer_arena_t *a);
  * complete() keeps its whole-file meaning for every consumer.
  *
  * On platforms without address-space reservation the buffer degrades
- * to a plain allocation of min(len, commit_cap) (or a built-in
- * window when commit_cap is 0), so callers there should treat the
- * cap as advisory sizing. */
+ * to a plain allocation of min(len, commit_cap), or of the whole file
+ * when commit_cap is 0.  There is no built-in ceiling: a caller that
+ * asks for no cap gets no cap, and a file too large for memory is
+ * refused at open rather than presented as a capped prefix. */
 data_transfer_t *data_transfer_open_prefix(const char *path,
       size_t commit_cap);
 

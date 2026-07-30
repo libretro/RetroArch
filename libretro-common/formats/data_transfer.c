@@ -62,8 +62,8 @@
  * File access goes through filestream/VFS throughout, so 64-bit
  * offsets and VFS-only paths work.  Where the platform cannot reserve
  * address space, every mode degrades to a plain allocation of
- * min(len, commit_cap) - or DT_FALLBACK_WINDOW when there is no cap -
- * and a window simply holds the whole file; reserve_supported() and
+ * min(len, commit_cap) - the whole file when there is no cap - and a
+ * window simply holds the whole file; reserve_supported() and
  * window_is_reserved() say which happened.
  *
  * NOT IMPLEMENTED
@@ -171,9 +171,6 @@
 #define DT_COMMIT_STEP  (1024 * 1024)
 /* Read granularity inside iterate. */
 #define DT_READ_CHUNK   (64 * 1024)
-/* Fallback window when the platform cannot reserve address space and
- * the caller gave no cap. */
-#define DT_FALLBACK_WINDOW  (32 * 1024 * 1024)
 
 
 struct data_transfer
@@ -646,9 +643,25 @@ data_transfer_t *data_transfer_open_prefix(const char *path,
    if (!dt->map)
    {
       /* No reservation (32-bit address space, or a platform without
-       * virtual memory): a bounded plain allocation.  The cap - or
-       * the built-in window - is the buffer. */
-      size_t w = dt->cap ? dt->cap : (size_t)DT_FALLBACK_WINDOW;
+       * virtual memory): a plain allocation.  The cap is the buffer
+       * when the caller set one; with no cap it is the whole file.
+       *
+       * There used to be a built-in 32 MiB ceiling for the uncapped
+       * case, so a caller that never asked for a cap got capped()
+       * anyway - and every console target takes this path, because
+       * none of them has mman.  A file past the ceiling failed after
+       * reading 32 MiB of it, and open_window failed outright, since
+       * its no-reservation degradation fills the file and requires
+       * complete(): background music over 32 MiB did not play on any
+       * of them.
+       *
+       * Sizing to the file lets the allocator answer instead.  Never
+       * worse - a file too big for memory failed before too, just
+       * later and after 32 MiB of pointless I/O - and better wherever
+       * the file would have fitted.  A caller wanting a bound still
+       * passes commit_cap, so capped() now means the caller's ceiling
+       * and nothing else. */
+      size_t w = dt->cap ? dt->cap : dt->len;
       if (w > dt->len)
          w = dt->len;
       dt->cap = w;
