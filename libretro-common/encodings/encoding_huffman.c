@@ -171,6 +171,7 @@ int rhuff_dec_build(rhuff_dec_t *d)
    uint16_t codes[RHUFF_MAX_CODES];
    uint32_t curstart;
    uint32_t i;
+   size_t   covered;
    int      len;
 
    if (!d || !d->lookup)
@@ -215,8 +216,28 @@ int rhuff_dec_build(rhuff_dec_t *d)
          codes[i] = (uint16_t)(histo[d->lengths[i]]++);
    }
 
-   for (i = 0; i < d->lookup_entries; i++)
-      d->lookup[i] = 0;
+   /* A zero entry marks a bit pattern the tree does not cover, so the
+    * table has to start zeroed unless the fills below are known to
+    * write every entry. Each code of length L claims 1 << (max_bits - L)
+    * entries and the claims are disjoint (prefix code), so their sum
+    * reaching lookup_entries means full coverage and the clear can be
+    * skipped. That is the normal case: CHD hunk and A/V trees are
+    * complete, and the clear is a second pass over as much memory as
+    * the fills themselves - 128 KiB per hunk at max_bits 16. The sum
+    * cannot overflow: it stops at lookup_entries. */
+   covered = 0;
+   for (i = 0; i < d->num_codes; i++)
+   {
+      if (d->lengths[i] == 0)
+         continue;
+      covered += (size_t)1 << (d->max_bits - d->lengths[i]);
+      if (covered >= d->lookup_entries)
+         break;
+   }
+
+   if (covered < d->lookup_entries)
+      for (i = 0; i < d->lookup_entries; i++)
+         d->lookup[i] = 0;
 
    for (i = 0; i < d->num_codes; i++)
    {
