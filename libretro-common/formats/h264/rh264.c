@@ -1394,6 +1394,10 @@ levels:
 /* rh264 -- intra prediction (H.264 clause 8.3), baseline modes. */
 #define RH264_CLIP(v) ((v)<0?0:((v)>255?255:(v)))
 
+/* residual add-and-clip; defined with the SIMD helpers it uses, below */
+static void rh264_add_residual(uint8_t *dst,int stride,
+      const int32_t *r,int n);
+
 static void rh264_intra16x16(uint8_t *dst,int stride,int mode,int have_up,int have_left){
    int x,y; const uint8_t *up=dst-stride;
    /* Vertical(0)/Horizontal(1)/Plane(3) require the corresponding neighbours;
@@ -1879,10 +1883,7 @@ static int rh264_cavlc_luma8x8(rh264_bits *b, rh264_frame *f,
      for (k = 0; k < 64; k++) coef[sc[k]] = scan[k]; }
    rh264_dequant8x8(coef, f->qp, f->w8[intra ? 0 : 1]);
    rh264_itransform8x8(coef, r);
-   { int yy, xx, v;
-     for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
-     { v = d[yy*f->ystride+xx] + ((r[yy*8+xx] + 32) >> 6);
-       d[yy*f->ystride+xx] = (uint8_t)RH264_CLIP(v); } }
+   rh264_add_residual(d, f->ystride, r, 8);
    return 0;
 }
 
@@ -2026,10 +2027,8 @@ static int rh264_decode_chroma_residual(rh264_bits *b, rh264_frame *f,
                f->w4[(inter?4:1)+comp]);
          rh264_itransform4x4(ac,r);
          {
-            uint8_t *d=p+by*4*f->cstride+bx*4; int xx,yy,val;
-            for (yy=0;yy<4;yy++) for(xx=0;xx<4;xx++)
-            { val=d[yy*f->cstride+xx]+((r[yy*4+xx]+32)>>6);
-              d[yy*f->cstride+xx]=(uint8_t)RH264_CLIP(val); }
+            uint8_t *d=p+by*4*f->cstride+bx*4;
+            rh264_add_residual(d, f->cstride, r, 4);
          }
       }
    }
@@ -2124,6 +2123,72 @@ static RH264_INLINE uint8x8_t rh264_neon_load4(const uint8_t *s)
    return vreinterpret_u8_u32(vdup_n_u32(t));
 }
 #endif
+/* Add a dequantised, inverse-transformed residual block to the
+ * prediction already in the plane and clip (8.5.13.3): r is rounded by
+ * (r + 32) >> 6, n is 4 or 8, and stride is the plane's.  Every
+ * residual path in the decoder ends here, so it runs a row at a time
+ * rather than a sample at a time: unpack the predicted bytes into
+ * 16-bit lanes, add, and pack back with unsigned saturation, which
+ * performs the clip to [0,255] for free. */
+static void rh264_add_residual(uint8_t *dst,int stride,const int32_t *r,int n)
+{
+   int y;
+#ifdef RH264_SSE2
+   const __m128i vz=_mm_setzero_si128();
+   const __m128i v32=_mm_set1_epi32(32);
+   /* The sum is formed in 32-bit lanes and narrowed with saturation at
+    * each step (32->16 signed, 16->8 unsigned).  Adding in 16-bit lanes
+    * instead would be shorter but wraps on the out-of-range residuals a
+    * corrupt stream can produce, which would make this path disagree
+    * with the scalar one below. */
+   for(y=0;y<n;y++){
+      const int32_t *rr=r+y*n;
+      __m128i p8=(n==8) ? _mm_loadl_epi64((const __m128i*)(dst+y*stride))
+                        : rh264_sse2_load4(dst+y*stride);
+      __m128i p16=_mm_unpacklo_epi8(p8,vz);
+      __m128i s0=_mm_add_epi32(_mm_unpacklo_epi16(p16,vz),
+            _mm_srai_epi32(_mm_add_epi32(
+                  _mm_loadu_si128((const __m128i*)rr),v32),6));
+      if(n==8){
+         __m128i s1=_mm_add_epi32(_mm_unpackhi_epi16(p16,vz),
+               _mm_srai_epi32(_mm_add_epi32(
+                     _mm_loadu_si128((const __m128i*)(rr+4)),v32),6));
+         _mm_storel_epi64((__m128i*)(dst+y*stride),
+               _mm_packus_epi16(_mm_packs_epi32(s0,s1),vz));
+      }else{
+         uint32_t w=(uint32_t)_mm_cvtsi128_si32(
+               _mm_packus_epi16(_mm_packs_epi32(s0,vz),vz));
+         memcpy(dst+y*stride,&w,4);
+      }
+   }
+#elif defined(RH264_NEON)
+   /* as above: sum in 32-bit lanes, saturate on the way down */
+   for(y=0;y<n;y++){
+      const int32_t *rr=r+y*n;
+      uint16x8_t p16=vmovl_u8((n==8) ? vld1_u8(dst+y*stride)
+                                     : rh264_neon_load4(dst+y*stride));
+      int32x4_t s0=vaddq_s32(
+            vreinterpretq_s32_u32(vmovl_u16(vget_low_u16(p16))),
+            vshrq_n_s32(vaddq_s32(vld1q_s32(rr),vdupq_n_s32(32)),6));
+      if(n==8){
+         int32x4_t s1=vaddq_s32(
+               vreinterpretq_s32_u32(vmovl_u16(vget_high_u16(p16))),
+               vshrq_n_s32(vaddq_s32(vld1q_s32(rr+4),vdupq_n_s32(32)),6));
+         vst1_u8(dst+y*stride,vqmovun_s16(
+               vcombine_s16(vqmovn_s32(s0),vqmovn_s32(s1))));
+      }else{
+         rh264_neon_store4(dst+y*stride,vqmovun_s16(
+               vcombine_s16(vqmovn_s32(s0),vdup_n_s16(0))));
+      }
+   }
+#else
+   { int x;
+     for(y=0;y<n;y++) for(x=0;x<n;x++){
+        int v=dst[y*stride+x]+((r[y*n+x]+32)>>6);
+        dst[y*stride+x]=(uint8_t)RH264_CLIP(v); } }
+#endif
+}
+
 
 #ifdef RH264_SSE2
 #define RH264_SSE2_ABS16(x) _mm_max_epi16((x), _mm_sub_epi16(_mm_setzero_si128(), (x)))
@@ -3231,9 +3296,7 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
                     for(k=0;k<16;k++)coef[sc[k]]=scan[k]; }
                   rh264_dequant4x4(coef,f->qp,0,f->w4[0]);
                   rh264_itransform4x4(coef,r);
-                  {int xx,yy,val;for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
-                     val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
-                     d[yy*f->ystride+xx]=(uint8_t)RH264_CLIP(val);}}
+                  rh264_add_residual(d, f->ystride, r, 4);
                }
                f->nzL[gy*gw+gx]=(uint8_t)nzc;
             }
@@ -3292,10 +3355,8 @@ static int rh264_decode_intra_mb_cavlc(rh264_bits *b, rh264_frame *f,
             ac[0]=dc[(byy*4+bxx)]; /* raster DC index within 4x4 grid */
             rh264_dequant4x4(ac,f->qp,1,f->w4[0]);
             rh264_itransform4x4(ac,r);
-            { uint8_t *bd=y+byy*4*f->ystride+bxx*4; int xx,yy,val;
-              for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
-                 val=bd[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
-                 bd[yy*f->ystride+xx]=(uint8_t)RH264_CLIP(val);} }
+            { uint8_t *bd=y+byy*4*f->ystride+bxx*4;
+              rh264_add_residual(bd, f->ystride, r, 4); }
             f->nzL[gy*gw+gx]=(uint8_t)nzc;
             f->i4mode[gy*gw+gx]=2;  /* I_16x16 -> DC for neighbour MPM (8.3.1.1) */
          }
@@ -4309,12 +4370,7 @@ static int rh264_inter_luma_residual(rh264_bits *b, rh264_frame *f,
          rh264_dequant4x4(coef, f->qp, 0, f->w4[3]);
          rh264_itransform4x4(coef, r);
          {
-            int xx, yy, val;
-            for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
-            {
-               val = d[yy * f->ystride + xx] + ((r[yy * 4 + xx] + 32) >> 6);
-               d[yy * f->ystride + xx] = (uint8_t)RH264_CLIP(val);
-            }
+            rh264_add_residual(d, f->ystride, r, 4);
          }
       }
       f->nzL[gy * gw + gx] = (uint8_t)nzc;
@@ -7190,9 +7246,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
          { int32_t q[16]; for(k=0;k<16;k++)q[k]=ac[k];
            rh264_dequant4x4(q,f->qp,1,f->w4[0]); q[0]=ac[0];
            rh264_itransform4x4(q,r); }
-         { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
-            int val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
-            d[yy*f->ystride+xx]=(uint8_t)RH264_CLIP(val);} }
+         rh264_add_residual(d, f->ystride, r, 4);
          f->nzL[(gy0+by)*gw+(gx0+bx)] = cur->luma[raster];
          }
       } }
@@ -7234,10 +7288,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
      for (k = 0; k < 64; k++) coef[sc[k]] = scan[k]; }
             rh264_dequant8x8(coef, f->qp, f->w8[0]);
             rh264_itransform8x8(coef, r);
-            { int yy, xx, val;
-              for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
-              { val = d[yy*f->ystride+xx] + ((r[yy*8+xx] + 32) >> 6);
-                d[yy*f->ystride+xx] = (uint8_t)RH264_CLIP(val); } }
+            rh264_add_residual(d, f->ystride, r, 8);
          }
          /* the four covered 4x4s inherit the 8x8's coded state (both for
           * neighbouring coded_block_flag contexts and for deblocking) */
@@ -7306,9 +7357,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
             cur->luma[raster]=nz?1:0;
             rh264_dequant4x4(coef,f->qp,0,f->w4[0]);
             rh264_itransform4x4(coef,r);
-            { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
-               int val=d[yy*f->ystride+xx]+((r[yy*4+xx]+32)>>6);
-               d[yy*f->ystride+xx]=(uint8_t)RH264_CLIP(val);} }
+            rh264_add_residual(d, f->ystride, r, 4);
          }
          f->nzL[(gy0+by)*gw+(gx0+bx)]=cur->luma[raster];
       }
@@ -7383,9 +7432,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
            rh264_dequant4x4(q,qpcc[comp],1,f->w4[1+comp]);
            q[0]=cdc[comp][blk];
            rh264_itransform4x4(q,r);
-           { int yy,xx; for(yy=0;yy<4;yy++)for(xx=0;xx<4;xx++){
-              int val=d[yy*f->cstride+xx]+((r[yy*4+xx]+32)>>6);
-              d[yy*f->cstride+xx]=(uint8_t)RH264_CLIP(val);} }
+           rh264_add_residual(d, f->cstride, r, 4);
            f->nzC[comp][(mby*(f->cmbh/4)+by)*cgw+(mbx*2+bx)]=cur->cAC[comp][blk];
         }
      }
@@ -7693,15 +7740,11 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
             int32_t scan[64], coef[64], r[64];
             uint8_t *d = Y + (by8*8)*f->ystride + bx8*8;
             rh264_cabac_residual(cb, 5, 0, 64, scan);
-            for (k = 0; k < 64; k++) coef[k] = 0;
             { const uint8_t *sc = RH264_SCAN8(f);
      for (k = 0; k < 64; k++) coef[sc[k]] = scan[k]; }
             rh264_dequant8x8(coef, f->qp, f->w8[1]);
             rh264_itransform8x8(coef, r);
-            { int yy, xx, v;
-              for (yy = 0; yy < 8; yy++) for (xx = 0; xx < 8; xx++)
-              { v = d[yy*f->ystride+xx] + ((r[yy*8+xx] + 32) >> 6);
-                d[yy*f->ystride+xx] = (uint8_t)RH264_CLIP(v); } }
+            rh264_add_residual(d, f->ystride, r, 8);
          }
          for (cy2 = 0; cy2 < 2; cy2++) for (cx2 = 0; cx2 < 2; cx2++)
          {
@@ -7716,7 +7759,9 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
       int bx = rh264_blk_x[bi], by = rh264_blk_y[bi], raster = by*4 + bx;
       int32_t coef[16], r[16];
       int nz = 0;
-      for (k = 0; k < 16; k++) coef[k] = 0;
+      /* coef needs no clearing: it is only read under nz, and the scan
+       * scatter below writes all sixteen entries from an array
+       * rh264_cabac_residual has already zero-filled. */
       if (cbp_luma & (1 << (bi >> 2)))
       {
          int32_t scan[16];
@@ -7729,10 +7774,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
            for (k = 0; k < 16; k++) coef[sc[k]] = scan[k]; }
             rh264_dequant4x4(coef, f->qp, 0, f->w4[3]);
             rh264_itransform4x4(coef, r);
-            { uint8_t *d = Y + (by*4)*f->ystride + bx*4; int xx, yy, v;
-              for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
-              { v = d[yy*f->ystride+xx] + ((r[yy*4+xx] + 32) >> 6);
-                d[yy*f->ystride+xx] = (uint8_t)RH264_CLIP(v); } }
+            rh264_add_residual(Y + (by*4)*f->ystride + bx*4,
+                  f->ystride, r, 4);
          }
       }
       cur->luma[raster] = nz ? 1 : 0;
@@ -7797,10 +7840,8 @@ static void rh264_cabac_p_residual(rh264_cabac *cb, rh264_frame *f,
                comp?f->chroma_qp_offset2:f->chroma_qp_offset), 1,
                f->w4[4+comp]);
          rh264_itransform4x4(ac, r);
-         { uint8_t *d = p + by*4*f->cstride + bx*4; int xx, yy, v;
-           for (yy = 0; yy < 4; yy++) for (xx = 0; xx < 4; xx++)
-           { v = d[yy*f->cstride+xx] + ((r[yy*4+xx] + 32) >> 6);
-             d[yy*f->cstride+xx] = (uint8_t)RH264_CLIP(v); } }
+         rh264_add_residual(p + by*4*f->cstride + bx*4,
+               f->cstride, r, 4);
       }
    }
 }
