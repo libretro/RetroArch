@@ -651,9 +651,30 @@ const input_device_driver_t *input_joypad_init_driver(
       }
    }
    /* Fall back to first available driver, skipping the configured
-    * one that just failed above. */
-   return input_joypad_init_first(data,
-         (ident && *ident) ? ident : NULL);
+    * one that just failed above.
+    *
+    * Warn when this happens: from here on the active joypad driver is
+    * not the configured one, which changes which pads are visible and
+    * how they are named, and the only prior evidence was a "Found
+    * joypad driver" line naming a driver the user never asked for.
+    * On Windows in particular the first entry that initialises is
+    * xinput, so a transient winraw/dinput init failure would silently
+    * present as xinput with no indication why. */
+   {
+      const input_device_driver_t *fallback = input_joypad_init_first(data,
+            (ident && *ident) ? ident : NULL);
+
+      if (     ident
+            && *ident
+            && fallback
+            && fallback->ident
+            && !string_is_equal(ident, fallback->ident))
+         RARCH_WARN("[Input] Configured joypad driver \"%s\" failed to "
+               "initialise; falling back to \"%s\".\n",
+               ident, fallback->ident);
+
+      return fallback;
+   }
 }
 
 static bool input_driver_button_combo_hold(
