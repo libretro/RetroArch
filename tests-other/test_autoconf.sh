@@ -69,8 +69,23 @@ CFG
 }
 
 run() {
-   HOME="$HOME_DIR" timeout 25 "$RETROARCH" --verbose > "$LOG" 2>&1
+   # Pass the config explicitly rather than relying on HOME discovery:
+   # the default search path varies with the environment (XDG base,
+   # portable-mode marker, an existing user config), and CI showed a
+   # run that found no config produces no [Autoconf] lines and fails
+   # every assertion identically.  --config is unambiguous.  HOME is
+   # still pinned so any writes land in the sandbox.
+   HOME="$HOME_DIR" timeout 25 "$RETROARCH" \
+      --config "$HOME_DIR/.config/retroarch/retroarch.cfg" \
+      --verbose > "$LOG" 2>&1
    assert_clean
+   # Guard against a silent no-op: if the run produced no autoconfig
+   # activity at all, every content assertion below would fail with
+   # the same misleading 'missing pattern' - surface the real cause.
+   if ! grep -qE '\[Autoconf\]' "$LOG"; then
+      fail "run produced no [Autoconf] output (binary ran? config loaded? test drivers built?)"
+      tail -5 "$LOG" | sed 's/^/       /'
+   fi
 }
 
 index_hash() { md5sum "$INDEX" 2>/dev/null | cut -d' ' -f1; }
@@ -89,6 +104,7 @@ run
 assert_seen 'device name D configured in port 1'    "P1 connect: vid/pid winner on port 1"
 assert_seen 'device B configured in port 2'         "P1 connect: name match on port 2"
 assert_seen 'device name D disconnected from port 1' "P1 disconnect clears port 1"
+assert_seen 'device C configured in port 1'          "P1 reconnect: different device reconfigures port 1"
 assert_seen 'device B disconnected from port 2'      "P1 disconnect clears port 2"
 [ -s "$INDEX" ] && pass "P1 index written" || fail "P1 index missing/empty"
 
