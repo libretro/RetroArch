@@ -831,7 +831,10 @@ static int config_file_load_internal(
       struct config_file *conf,
       const char *path, unsigned depth, config_file_cb_t *cb)
 {
-   const config_file_io_t *io = config_file_io_default;
+   /* The config's own interface wins over the process default, so a
+    * caller can serve one config (and its includes) from somewhere
+    * else without touching global state other threads share. */
+   const config_file_io_t *io = conf->io ? conf->io : config_file_io_default;
    int64_t   length    = 0;
    char     *buf       = NULL;
    char     *new_path;
@@ -936,6 +939,8 @@ static bool config_file_parse_line(config_file_t *conf,
          config_file_add_sub_conf(conf, path,
             real_path, sizeof(real_path), cb);
          config_file_initialize(&sub_conf);
+         /* Includes are fetched the same way their parent was. */
+         sub_conf.io = conf->io;
          switch (config_file_load_internal(&sub_conf, real_path,
             conf->include_depth + 1, cb))
          {
@@ -1221,8 +1226,40 @@ config_file_t *config_file_new_from_string(char *from_string,
    return NULL;
 }
 
-config_file_t *config_file_new_take_string(char *from_string,
-      size_t s_len, const char *path)
+static config_file_t *config_file_new_take_string_internal(
+      char *from_string, size_t s_len, const char *path,
+      const config_file_io_t *io);
+
+config_file_t *config_file_new_with_io(const char *path,
+      const config_file_io_t *io)
+{
+   struct config_file *conf;
+   if (!io)
+      return NULL;
+   if (!(conf = config_file_new_alloc()))
+      return NULL;
+   conf->io = io;
+   if (!path || !*path)
+      return conf;
+   if (config_file_load_file(conf, path, NULL) != 0)
+   {
+      config_file_free(conf);
+      return NULL;
+   }
+   return conf;
+}
+
+config_file_t *config_file_new_take_string_with_io(char *from_string,
+      size_t s_len, const char *path, const config_file_io_t *io)
+{
+   config_file_t *conf = config_file_new_take_string_internal(from_string,
+         s_len, path, io);
+   return conf;
+}
+
+static config_file_t *config_file_new_take_string_internal(
+      char *from_string, size_t s_len, const char *path,
+      const config_file_io_t *io)
 {
    struct config_file *conf = config_file_new_alloc();
    if (!conf)
@@ -1230,6 +1267,7 @@ config_file_t *config_file_new_take_string(char *from_string,
       free(from_string);
       return NULL;
    }
+   conf->io = io;
    if (path && *path)
       conf->path = strdup(path);
    if (from_string && *from_string)
@@ -1262,6 +1300,13 @@ config_file_t *config_file_new_take_string(char *from_string,
    else
       free(from_string);
    return conf;
+}
+
+config_file_t *config_file_new_take_string(char *from_string,
+      size_t s_len, const char *path)
+{
+   return config_file_new_take_string_internal(from_string, s_len, path,
+         NULL);
 }
 
 /* Streaming (push) parser - see the contract in config_file.h.
@@ -1475,6 +1520,7 @@ void config_file_initialize(struct config_file *conf)
 
    conf->path                     = NULL;
    conf->owned_bufs               = NULL;
+   conf->io                       = NULL;
    conf->entry_pool               = NULL;
    conf->entries_map              = NULL;
    conf->entries                  = NULL;

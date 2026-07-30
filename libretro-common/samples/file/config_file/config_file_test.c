@@ -865,6 +865,94 @@ static void test_config_entry_cached_lengths(void)
    printf("[SUCCESS] cached entry lengths agree with strlen and round-trip\n");
 }
 
+static struct { const char *name; const char *data; } test_io_members[] =
+{
+   { "root.cfg",
+     "a = \"1\"\n#include \"sub.cfg\"\nc = \"3\"\n" },
+   { "sub.cfg", "b = \"2\"\n" },
+   { NULL, NULL }
+};
+static int test_io_reads = 0;
+
+static char *test_io_read_file(const char *path, int64_t *len, void *ud)
+{
+   const char *base = strrchr(path, '/');
+   size_t i;
+   base = base ? base + 1 : path;
+   for (i = 0; test_io_members[i].name; i++)
+      if (!strcmp(test_io_members[i].name, base))
+      {
+         size_t n  = strlen(test_io_members[i].data);
+         char  *out = (char*)malloc(n + 1);
+         if (!out)
+            return NULL;
+         memcpy(out, test_io_members[i].data, n + 1);
+         if (len)
+            *len = (int64_t)n;
+         test_io_reads++;
+         return out;
+      }
+   return NULL;
+}
+
+static void test_io_free_file(char *buf, void *ud) { free(buf); }
+
+static void test_config_file_per_config_io(void)
+{
+   /* A config whose text is in hand while the files it includes are not
+    * reachable by path - an archive member is the motivating case.  With
+    * the default io the include resolves to a path beside the archive
+    * and is silently dropped; with a caller-supplied io it resolves
+    * through that io, and the process-wide default is not disturbed,
+    * which is what lets a task thread do this safely. */
+   static const config_file_io_t io =
+   { test_io_read_file, test_io_free_file, NULL };
+   const config_file_io_t *before = config_file_get_io_default();
+   config_file_t *conf;
+   char *buf;
+
+   /* Default io: the include cannot be found, so 'b' is absent while
+    * the config's own entries are still parsed. */
+   buf  = strdup(test_io_members[0].data);
+   if (!(conf = config_file_new_take_string(buf, 0, "/nowhere/pack.zip#root.cfg")))
+      abort();
+   if (!config_get_entry(conf, "a") || !config_get_entry(conf, "c"))
+      abort();
+   if (config_get_entry(conf, "b"))
+      abort();   /* nothing should have satisfied the include */
+   config_file_free(conf);
+
+   /* Caller-supplied io: the include resolves. */
+   test_io_reads = 0;
+   buf  = strdup(test_io_members[0].data);
+   if (!(conf = config_file_new_take_string_with_io(buf, 0,
+         "/nowhere/pack.zip#root.cfg", &io)))
+      abort();
+   if (     !config_get_entry(conf, "a")
+         || !config_get_entry(conf, "b")
+         || !config_get_entry(conf, "c"))
+      abort();
+   if (test_io_reads != 1)
+      abort();
+   config_file_free(conf);
+
+   /* And a path load served entirely by the io, includes and all. */
+   if (!(conf = config_file_new_with_io("root.cfg", &io)))
+      abort();
+   if (!config_get_entry(conf, "b"))
+      abort();
+   config_file_free(conf);
+
+   /* A NULL io is refused rather than silently falling back. */
+   if (config_file_new_with_io("root.cfg", NULL))
+      abort();
+
+   if (config_file_get_io_default() != before)
+      abort();   /* the global must be untouched throughout */
+
+   printf("[SUCCESS] per-config io resolves includes without touching the default\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -916,4 +1004,5 @@ int main(void)
    test_config_file_take_string();
    test_config_take_string();
    test_config_entry_cached_lengths();
+   test_config_file_per_config_io();
 }

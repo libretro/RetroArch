@@ -90,6 +90,10 @@ struct config_file
     * CONF_ENTRY_FLG_*); released at deinitialize, spliced to the
     * parent on include/append pilfering. */
    struct config_file_owned_buf *owned_bufs;
+   /* Interface this config reaches files through, including the files
+    * named by its '#include' directives.  NULL means the process-wide
+    * default; set per config by the *_with_io constructors. */
+   const struct config_file_io *io;
    /* Chain of entry-pool blocks (see CONF_ENTRY_FLG_POOLED);
     * lifetime and pilfer semantics match owned_bufs. */
    struct config_file_entry_pool *entry_pool;
@@ -179,6 +183,39 @@ config_file_t *config_file_new_from_string(char *from_string,
  **/
 config_file_t *config_file_new_take_string(char *from_string,
       size_t s_len, const char *path);
+
+/**
+ * config_file_new_with_io:
+ *
+ * Loads the config at @path through @io instead of the process-wide
+ * default, and resolves its '#include' directives through @io as well.
+ *
+ * The interface is recorded on the returned config rather than in a
+ * global, so a caller serving configs from somewhere other than the
+ * file system - members of an archive, a download held in memory, a
+ * virtual file system - can do so without disturbing config loads on
+ * other threads.  @io must outlive the returned config.
+ *
+ * @return NULL if the config could not be read or parsed.
+ **/
+config_file_t *config_file_new_with_io(const char *path,
+      const struct config_file_io *io);
+
+/**
+ * config_file_new_take_string_with_io:
+ *
+ * config_file_new_take_string(), but '#include' directives inside
+ * @from_string are resolved through @io rather than the default.
+ *
+ * This is the case of a config whose text is already in hand while the
+ * files it includes are not reachable by path - an archive member being
+ * the obvious one, where without an @io the include resolves to a path
+ * beside the archive and is silently dropped.  Ownership of
+ * @from_string transfers exactly as in config_file_new_take_string();
+ * @io must outlive the returned config.
+ **/
+config_file_t *config_file_new_take_string_with_io(char *from_string,
+      size_t s_len, const char *path, const struct config_file_io *io);
 
 /* Streaming (push) parser: the codec-style ingest path.
  *
