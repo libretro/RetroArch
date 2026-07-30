@@ -156,6 +156,60 @@ static bool config_file_adopt_buffer(config_file_t *conf,
    return true;
 }
 
+/* Bump-allocate an entry struct from the conf's pool, growing the
+ * block chain as needed.  'hint' sizes the first block (an entry
+ * count estimate from the buffer length); later blocks double up to
+ * a cap.  Falls back to NULL on OOM - the caller then takes the
+ * plain-malloc path, so allocation failure only loses the pooling,
+ * not the entry. */
+static struct config_entry_list *config_file_entry_pool_alloc(
+      config_file_t *conf, size_t hint)
+{
+   struct config_file_entry_pool *blk = conf->entry_pool;
+   if (!blk || blk->used == blk->cap)
+   {
+      size_t cap = hint;
+      if (blk)
+      {
+         cap = blk->cap * 2;
+         if (cap > 1024)
+            cap = 1024;
+      }
+      if (cap < 16)
+         cap = 16;
+      blk = (struct config_file_entry_pool*)malloc(
+            sizeof(*blk) + (cap - 1) * sizeof(struct config_entry_list));
+      if (!blk)
+         return NULL;
+      blk->used        = 0;
+      blk->cap         = cap;
+      blk->next        = conf->entry_pool;
+      conf->entry_pool = blk;
+   }
+   return &blk->slab[blk->used++];
+}
+
+/* Give back the most recent pool allocation (parse rejected the
+ * line).  Only ever called for the entry handed out last, so a
+ * bump-down is exact. */
+static void config_file_entry_pool_unwind(config_file_t *conf)
+{
+   if (conf->entry_pool && conf->entry_pool->used)
+      conf->entry_pool->used--;
+}
+
+static void config_file_free_pool(config_file_t *conf)
+{
+   struct config_file_entry_pool *blk = conf->entry_pool;
+   while (blk)
+   {
+      struct config_file_entry_pool *hold = blk;
+      blk = blk->next;
+      free(hold);
+   }
+   conf->entry_pool = NULL;
+}
+
 static void config_file_free_owned(config_file_t *conf)
 {
    struct config_file_owned_buf *b = conf->owned_bufs;
@@ -440,6 +494,15 @@ static void config_file_add_child_list(config_file_t *parent,
       parent->owned_bufs = child->owned_bufs;
       child->owned_bufs  = NULL;
    }
+   if (child->entry_pool)
+   {
+      struct config_file_entry_pool *ptail = child->entry_pool;
+      while (ptail->next)
+         ptail = ptail->next;
+      ptail->next        = parent->entry_pool;
+      parent->entry_pool = child->entry_pool;
+      child->entry_pool  = NULL;
+   }
 
    /* set list readonly */
    while (list)
@@ -667,6 +730,7 @@ static int config_file_parse_buffer(config_file_t *conf,
    {
       struct config_entry_list *list = NULL;
       uint32_t hash                  = 0;
+      uint8_t base_flags             = CONF_ENTRY_FLG_POOLED;
       char *next                     = strchr(line, '\n');
       if (next)
          *next = '\0';               /* terminate this line in place */
@@ -674,11 +738,22 @@ static int config_file_parse_buffer(config_file_t *conf,
       if (*line == '\0')
          goto next_line;
 
-      if (!(list = (struct config_entry_list*)malloc(sizeof(*list))))
-         return -1;
+      /* Entry structs come from the conf's pool: entries are only
+       * ever freed en masse (deinitialize) or pilfered wholesale,
+       * so one bump allocation replaces the per-line malloc and
+       * teardown frees blocks instead of walking a free() per
+       * entry.  Pool OOM falls back to plain malloc - the entry is
+       * then flagged unpooled and freed individually as before. */
+      if (!(list = config_file_entry_pool_alloc(conf,
+            len ? (len / 32) : 0)))
+      {
+         base_flags = 0;
+         if (!(list = (struct config_entry_list*)malloc(sizeof(*list))))
+            return -1;
+      }
 
       list->readonly  = false;
-      list->flags     = 0;
+      list->flags     = base_flags;
       list->key       = NULL;
       list->value     = NULL;
       list->next      = NULL;
@@ -719,7 +794,12 @@ static int config_file_parse_buffer(config_file_t *conf,
          }
       }
       else
-         free(list);
+      {
+         if (list->flags & CONF_ENTRY_FLG_POOLED)
+            config_file_entry_pool_unwind(conf);
+         else
+            free(list);
+      }
 
 next_line:
       if (!next)
@@ -972,7 +1052,7 @@ bool config_file_deinitialize(config_file_t *conf)
       hold       = tmp;
       tmp        = tmp->next;
 
-      if (hold)
+      if (hold && !(hold->flags & CONF_ENTRY_FLG_POOLED))
          free(hold);
    }
 
@@ -996,8 +1076,10 @@ bool config_file_deinitialize(config_file_t *conf)
    RHMAP_FREE(conf->entries_map);
 
    /* Borrowed key/value pointers into these buffers were all
-    * dropped above, so the backing text can go now. */
+    * dropped above, so the backing text and the entry pool can go
+    * now. */
    config_file_free_owned(conf);
+   config_file_free_pool(conf);
 
    /* NULL out all pointer fields so that a caller who reuses the
     * struct after deinitialize() -- or who accidentally calls
@@ -1069,8 +1151,9 @@ bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf)
       new_conf->entries    = NULL;
    }
 
-   /* Pilfered entries borrow from buffers new_conf owns - splice
-    * them across before the free below releases them. */
+   /* Pilfered entries borrow from buffers new_conf owns and live
+    * in pool blocks it owns - splice both across before the free
+    * below releases them. */
    if (new_conf->owned_bufs)
    {
       struct config_file_owned_buf *tail = new_conf->owned_bufs;
@@ -1079,6 +1162,15 @@ bool config_file_append_conf(config_file_t *conf, config_file_t *new_conf)
       tail->next           = conf->owned_bufs;
       conf->owned_bufs     = new_conf->owned_bufs;
       new_conf->owned_bufs = NULL;
+   }
+   if (new_conf->entry_pool)
+   {
+      struct config_file_entry_pool *ptail = new_conf->entry_pool;
+      while (ptail->next)
+         ptail = ptail->next;
+      ptail->next          = conf->entry_pool;
+      conf->entry_pool     = new_conf->entry_pool;
+      new_conf->entry_pool = NULL;
    }
 
    config_file_free(new_conf);
@@ -1318,6 +1410,7 @@ void config_file_initialize(struct config_file *conf)
 
    conf->path                     = NULL;
    conf->owned_bufs               = NULL;
+   conf->entry_pool               = NULL;
    conf->entries_map              = NULL;
    conf->entries                  = NULL;
    conf->tail                     = NULL;
@@ -1752,7 +1845,13 @@ void config_unset(config_file_t *conf, const char *key)
 
    entry->key     = NULL;
    entry->value   = NULL;
-   entry->flags   = 0;
+   /* Only the string-ownership bits die with the strings: POOLED
+    * describes the entry struct itself, which stays in its block
+    * (clearing it here made deinitialize free() a pool-interior
+    * pointer - caught immediately by ASan in the borrowed-entry
+    * lifecycle test). */
+   entry->flags  &= (uint8_t)~(CONF_ENTRY_FLG_KEY_BORROWED
+                             | CONF_ENTRY_FLG_VAL_BORROWED);
    conf->flags   |= CONF_FILE_FLG_MODIFIED;
 }
 

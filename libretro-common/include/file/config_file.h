@@ -66,6 +66,9 @@ enum config_file_flags
  * BORROWED bit as read-only storage. */
 #define CONF_ENTRY_FLG_KEY_BORROWED (1 << 0)
 #define CONF_ENTRY_FLG_VAL_BORROWED (1 << 1)
+/* Entry struct lives in a conf-owned pool block, not an individual
+ * malloc: teardown releases the block, never the entry. */
+#define CONF_ENTRY_FLG_POOLED       (1 << 2)
 
 /* A text buffer owned by a config_file that entries borrow from.
  * 'io' is the interface the buffer came from (NULL: plain free). */
@@ -76,6 +79,9 @@ struct config_file_owned_buf
    const struct config_file_io *io;
 };
 
+
+struct config_file_entry_pool;
+
 struct config_file
 {
    char *path;
@@ -84,6 +90,9 @@ struct config_file
     * CONF_ENTRY_FLG_*); released at deinitialize, spliced to the
     * parent on include/append pilfering. */
    struct config_file_owned_buf *owned_bufs;
+   /* Chain of entry-pool blocks (see CONF_ENTRY_FLG_POOLED);
+    * lifetime and pilfer semantics match owned_bufs. */
+   struct config_file_entry_pool *entry_pool;
    struct config_entry_list *entries;
    struct config_entry_list *tail;
    struct config_entry_list *last;
@@ -293,6 +302,18 @@ struct config_entry_list
    bool readonly;
    /* CONF_ENTRY_FLG_* ownership bits */
    uint8_t flags;
+};
+
+/* A block of entry structs owned by a config_file (see
+ * CONF_ENTRY_FLG_POOLED).  Entries are bump-allocated from 'slab';
+ * the block is released whole at deinitialize and spliced to the
+ * parent on include/append pilfering, exactly like owned_bufs. */
+struct config_file_entry_pool
+{
+   struct config_file_entry_pool *next;
+   size_t used;
+   size_t cap;
+   struct config_entry_list slab[1]; /* over-allocated to cap */
 };
 
 struct config_file_entry
