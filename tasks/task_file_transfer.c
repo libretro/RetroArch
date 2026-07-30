@@ -66,13 +66,21 @@ void task_window_progress_cb(retro_task_t *task)
  * file) without monopolising the tick. */
 #define NBIO_XFER_TICK_BYTES       (1024 * 1024)
 
-/* Full-file image types (PNG/JPEG/TGA/BMP) read under a time budget
- * instead: they need every byte before decoding, so there is nothing
- * to pace for - each tick reads as much as the storage delivers in a
- * few milliseconds, giving fast media the whole file in a tick or
- * two while slow media still never stalls a frame.  The video types
- * keep the byte budget: their stills complete on a small prefix and
- * a racing fill would just read past the point of use. */
+/* Types that need the whole file before they finish read under a time
+ * budget instead of a byte one: there is no prefix to stop at, so
+ * each tick reads as much as the storage delivers in a few
+ * milliseconds, giving fast media the file in a tick or two while
+ * slow media still never stalls a frame.
+ *
+ * The byte budget above stays with the types whose decode completes
+ * on a prefix - the video stills, and WEBP, which does not decode
+ * against a growing buffer the way PNG and JPEG do but starts once
+ * rwebp_still_ready() says its still chunk is wholly resident.  For
+ * those a racing fill just reads past the point of use.  (PNG and
+ * JPEG are avail-aware and decode against the partial buffer, but
+ * they still need every byte to finish, so the time budget is theirs
+ * too - task_image.c's is_prefix grouping answers a different
+ * question from this one and the two are meant to differ.) */
 #define NBIO_XFER_TICK_USEC        4000
 
 /* The budget is handed to the fill rather than checked around it, so
