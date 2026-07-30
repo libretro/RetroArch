@@ -672,22 +672,142 @@ static int rh264_parse_slice_header_adv(rh264_bits *b,int nal_unit_type,int nal_
 
 
 /* ==================== rh264_xform.h ==================== */
+#ifdef RH264_SSE2
+/* 32x32->32 low multiply; _mm_mullo_epi32 is SSE4.1, so combine the two
+ * odd/even 32x32->64 products SSE2 does have. */
+static __inline __m128i rh264_sse2_mullo32(__m128i a,__m128i b){
+   /* even lanes (0,2) from the direct product, odd lanes (1,3) from the
+    * shifted one; each 64-bit result keeps its low half, and the two
+    * are interleaved so lane order is preserved */
+   __m128i e=_mm_mul_epu32(a,b);
+   __m128i o=_mm_mul_epu32(_mm_srli_si128(a,4),_mm_srli_si128(b,4));
+   return _mm_unpacklo_epi32(
+         _mm_shuffle_epi32(e,_MM_SHUFFLE(0,0,2,0)),
+         _mm_shuffle_epi32(o,_MM_SHUFFLE(0,0,2,0)));
+}
+#define RH264_SSE2_TR4_32(a,b,c,d) do { \
+   __m128i t0=_mm_unpacklo_epi32((a),(b)), t1=_mm_unpackhi_epi32((a),(b)); \
+   __m128i t2=_mm_unpacklo_epi32((c),(d)), t3=_mm_unpackhi_epi32((c),(d)); \
+   (a)=_mm_unpacklo_epi64(t0,t2); (b)=_mm_unpackhi_epi64(t0,t2); \
+   (c)=_mm_unpacklo_epi64(t1,t3); (d)=_mm_unpackhi_epi64(t1,t3); \
+} while (0)
+#elif defined(RH264_NEON)
+#define RH264_NEON_TR4_32(a,b,c,d) do { \
+   int32x4x2_t p0=vtrnq_s32((a),(b)), p1=vtrnq_s32((c),(d)); \
+   (a)=vcombine_s32(vget_low_s32(p0.val[0]),vget_low_s32(p1.val[0])); \
+   (b)=vcombine_s32(vget_low_s32(p0.val[1]),vget_low_s32(p1.val[1])); \
+   (c)=vcombine_s32(vget_high_s32(p0.val[0]),vget_high_s32(p1.val[0])); \
+   (d)=vcombine_s32(vget_high_s32(p0.val[1]),vget_high_s32(p1.val[1])); \
+} while (0)
+#endif
 static const int rh264_dequant4_v[6][3]={{10,16,13},{11,18,14},{13,20,16},{14,23,18},{16,25,20},{18,29,23}};
 static const uint8_t rh264_dequant4_idx[16]={0,2,0,2,2,1,2,1,0,2,0,2,2,1,2,1};
+/* The per-coefficient scale w[i] * LevelScale(qP%6, i) depends only on
+ * the weight matrix and qP, both fixed for a whole block, so the two
+ * table lookups and the multiply that built it per coefficient are
+ * hoisted into one 16-entry vector.  The per/shift decision is likewise
+ * invariant across the block: taking it once turns the body into a
+ * straight multiply-and-shift over sixteen lanes.  has_dc_sep leaves
+ * blk[0] untouched (the DC arrives already scaled from the Hadamard
+ * path); it is restored after the vector pass rather than tested per
+ * lane. */
 static void rh264_dequant4x4(int32_t *blk,int qP,int has_dc_sep,
       const uint8_t *w){
    int i,per=qP/6,rem=qP%6;
-   for(i=0;i<16;i++){ int sc=w[i]*rh264_dequant4_v[rem][rh264_dequant4_idx[i]];
-      if(has_dc_sep&&i==0) continue;
-      if(per>=4) blk[i]=(int32_t)((uint32_t)(blk[i]*sc)<<(per-4)); else blk[i]=(blk[i]*sc+(1<<(3-per)))>>(4-per); }
+   int32_t sc[16];
+   int32_t dc = blk[0];
+   for(i=0;i<16;i++)
+      sc[i]=(int32_t)w[i]*rh264_dequant4_v[rem][rh264_dequant4_idx[i]];
+   if(per>=4){
+      int sh=per-4;
+#ifdef RH264_SSE2
+      for(i=0;i<16;i+=4){
+         __m128i b=_mm_loadu_si128((const __m128i*)(blk+i));
+         __m128i m=_mm_loadu_si128((const __m128i*)(sc+i));
+         _mm_storeu_si128((__m128i*)(blk+i),
+               _mm_sll_epi32(rh264_sse2_mullo32(b,m),_mm_cvtsi32_si128(sh)));
+      }
+#elif defined(RH264_NEON)
+      for(i=0;i<16;i+=4)
+         vst1q_s32(blk+i,vshlq_s32(vmulq_s32(vld1q_s32(blk+i),
+               vld1q_s32(sc+i)),vdupq_n_s32(sh)));
+#else
+      for(i=0;i<16;i++)
+         blk[i]=(int32_t)((uint32_t)(blk[i]*sc[i])<<sh);
+#endif
+   }else{
+      int sh=4-per;
+      int32_t rnd=1<<(3-per);
+#ifdef RH264_SSE2
+      __m128i vr=_mm_set1_epi32(rnd),vs=_mm_cvtsi32_si128(sh);
+      for(i=0;i<16;i+=4){
+         __m128i b=_mm_loadu_si128((const __m128i*)(blk+i));
+         __m128i m=_mm_loadu_si128((const __m128i*)(sc+i));
+         _mm_storeu_si128((__m128i*)(blk+i),
+               _mm_sra_epi32(_mm_add_epi32(rh264_sse2_mullo32(b,m),vr),vs));
+      }
+#elif defined(RH264_NEON)
+      for(i=0;i<16;i+=4)
+         vst1q_s32(blk+i,vshlq_s32(vaddq_s32(vmulq_s32(vld1q_s32(blk+i),
+               vld1q_s32(sc+i)),vdupq_n_s32(rnd)),vdupq_n_s32(-sh)));
+#else
+      for(i=0;i<16;i++)
+         blk[i]=(blk[i]*sc[i]+rnd)>>sh;
+#endif
+   }
+   if(has_dc_sep) blk[0]=dc;
 }
+/* 8.5.12.2 residual inverse transform.  The row pass runs four rows in
+ * parallel over transposed data, then one transpose feeds the identical
+ * column pass, so the same butterfly serves both directions. */
 static void rh264_itransform4x4(const int32_t *d,int32_t *r){
+#ifdef RH264_SSE2
+   __m128i s0=_mm_loadu_si128((const __m128i*)(d+0));
+   __m128i s1=_mm_loadu_si128((const __m128i*)(d+4));
+   __m128i s2=_mm_loadu_si128((const __m128i*)(d+8));
+   __m128i s3=_mm_loadu_si128((const __m128i*)(d+12));
+   int pass;
+   for(pass=0;pass<2;pass++){
+      /* transpose first so the butterfly runs down lanes: pass 0 then
+       * transforms the rows, pass 1 the columns of the result, and the
+       * vectors are left holding rows ready to store */
+      __m128i z0,z1,z2,z3;
+      RH264_SSE2_TR4_32(s0,s1,s2,s3);
+      z0=_mm_add_epi32(s0,s2);
+      z1=_mm_sub_epi32(s0,s2);
+      z2=_mm_sub_epi32(_mm_srai_epi32(s1,1),s3);
+      z3=_mm_add_epi32(s1,_mm_srai_epi32(s3,1));
+      s0=_mm_add_epi32(z0,z3); s1=_mm_add_epi32(z1,z2);
+      s2=_mm_sub_epi32(z1,z2); s3=_mm_sub_epi32(z0,z3);
+   }
+   _mm_storeu_si128((__m128i*)(r+0),s0);
+   _mm_storeu_si128((__m128i*)(r+4),s1);
+   _mm_storeu_si128((__m128i*)(r+8),s2);
+   _mm_storeu_si128((__m128i*)(r+12),s3);
+#elif defined(RH264_NEON)
+   int32x4_t s0=vld1q_s32(d+0),s1=vld1q_s32(d+4);
+   int32x4_t s2=vld1q_s32(d+8),s3=vld1q_s32(d+12);
+   int pass;
+   for(pass=0;pass<2;pass++){
+      int32x4_t z0,z1,z2,z3;
+      RH264_NEON_TR4_32(s0,s1,s2,s3);
+      z0=vaddq_s32(s0,s2);
+      z1=vsubq_s32(s0,s2);
+      z2=vsubq_s32(vshrq_n_s32(s1,1),s3);
+      z3=vaddq_s32(s1,vshrq_n_s32(s3,1));
+      s0=vaddq_s32(z0,z3); s1=vaddq_s32(z1,z2);
+      s2=vsubq_s32(z1,z2); s3=vsubq_s32(z0,z3);
+   }
+   vst1q_s32(r+0,s0); vst1q_s32(r+4,s1);
+   vst1q_s32(r+8,s2); vst1q_s32(r+12,s3);
+#else
    int32_t e[16]; int i;
    for(i=0;i<4;i++){ const int32_t*s=d+i*4;
       int32_t z0=s[0]+s[2],z1=s[0]-s[2],z2=(s[1]>>1)-s[3],z3=s[1]+(s[3]>>1);
       e[i*4+0]=z0+z3;e[i*4+1]=z1+z2;e[i*4+2]=z1-z2;e[i*4+3]=z0-z3; }
    for(i=0;i<4;i++){ int32_t z0=e[0*4+i]+e[2*4+i],z1=e[0*4+i]-e[2*4+i],z2=(e[1*4+i]>>1)-e[3*4+i],z3=e[1*4+i]+(e[3*4+i]>>1);
       r[0*4+i]=z0+z3;r[1*4+i]=z1+z2;r[2*4+i]=z1-z2;r[3*4+i]=z0-z3; }
+#endif
 }
 static void rh264_ihadamard4x4(const int32_t *in,int32_t *out){
    int32_t e[16]; int i;
