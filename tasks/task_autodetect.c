@@ -460,8 +460,8 @@ static bool input_autoconfigure_scan_config_files_external(
             continue;
          }
 
-         config = config_file_new_from_string(buf, config_file_path);
-         free(buf);
+         config = config_file_new_take_string(buf, 0,
+               config_file_path);
       }
 
       if (!config)
@@ -539,13 +539,12 @@ static bool input_autoconfigure_scan_config_files_internal(
       if (!input_builtin_autoconfs[i] || !*input_builtin_autoconfs[i])
          continue;
 
-      /* Load autoconfig string */
+      /* Load autoconfig string.  The strdup stays (the builtin is
+       * const and the parse mutates), but the copy is handed over:
+       * the conf adopts it and entries borrow from it. */
       autoconfig_str = strdup(input_builtin_autoconfs[i]);
-      config         = config_file_new_from_string(
-            autoconfig_str, NULL);
-
-      /* > String no longer required - clean up */
-      free(autoconfig_str);
+      config         = config_file_new_take_string(
+            autoconfig_str, 0, NULL);
       autoconfig_str = NULL;
 
       /* Check for a match */

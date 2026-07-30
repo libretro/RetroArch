@@ -1200,6 +1200,49 @@ config_file_t *config_file_new_from_string(char *from_string,
    return NULL;
 }
 
+config_file_t *config_file_new_take_string(char *from_string,
+      size_t s_len, const char *path)
+{
+   struct config_file *conf = config_file_new_alloc();
+   if (!conf)
+   {
+      free(from_string);
+      return NULL;
+   }
+   if (path && *path)
+      conf->path = strdup(path);
+   if (from_string && *from_string)
+   {
+      /* Adopt-and-borrow, exactly like the path loaders.  If the
+       * adopt node cannot be allocated, degrade to the copying
+       * parse and release the string ourselves - ownership was
+       * transferred either way. */
+      if (config_file_adopt_buffer(conf, from_string, NULL))
+      {
+         if (config_file_parse_buffer(conf, from_string, s_len,
+               NULL, CONFIG_FILE_PARSE_BORROW) != 0)
+         {
+            config_file_free(conf);
+            return NULL;
+         }
+      }
+      else
+      {
+         int ret = config_file_parse_buffer(conf, from_string, s_len,
+               NULL, 0);
+         free(from_string);
+         if (ret != 0)
+         {
+            config_file_free(conf);
+            return NULL;
+         }
+      }
+   }
+   else
+      free(from_string);
+   return conf;
+}
+
 /* Streaming (push) parser - see the contract in config_file.h.
  *
  * The window buffer accumulates pushed bytes; every push parses the

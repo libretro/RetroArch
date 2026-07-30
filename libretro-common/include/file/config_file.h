@@ -164,6 +164,22 @@ config_file_t *config_file_new_with_callback(
 config_file_t *config_file_new_from_string(char *from_string,
       const char *path);
 
+/**
+ * config_file_new_take_string:
+ *
+ * Like config_file_new_from_string, but takes ownership of
+ * @from_string instead of copying out of it: the conf adopts the
+ * buffer and entries borrow their key/value strings straight from
+ * it, the same zero-copy parse the path loaders use.  The buffer
+ * must come from the malloc family (it is released with free() at
+ * conf teardown) and must not be touched or freed by the caller
+ * afterwards - ownership transfers unconditionally, including on
+ * failure.  @s_len is the string length if the caller knows it, 0
+ * otherwise (sizing hint only).
+ **/
+config_file_t *config_file_new_take_string(char *from_string,
+      size_t s_len, const char *path);
+
 /* Streaming (push) parser: the codec-style ingest path.
  *
  * For consumers whose config bytes arrive in pieces - a network

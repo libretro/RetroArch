@@ -661,6 +661,56 @@ static void test_config_file_borrowed_entry_lifecycle(void)
    printf("[SUCCESS] borrowed-entry lifecycle (set/unset/append/free) clean\n");
 }
 
+static void test_config_file_take_string(void)
+{
+   /* take_string must parse identically to from_string on the same
+    * bytes while owning the buffer (entries borrow from it), and
+    * mutation after the take must behave like any borrowed conf. */
+   static const char *cfgtext =
+         "one = \"1\"\ntwo = \"double # inside\"\n   three = bare\nfour = \"\"\n";
+   char *copy_a               = strdup(cfgtext);
+   char *copy_b               = strdup(cfgtext);
+   config_file_t *ref         = config_file_new_from_string(copy_a, NULL);
+   config_file_t *took        = config_file_new_take_string(copy_b,
+         strlen(cfgtext), NULL);
+   struct config_file_entry ea;
+   struct config_file_entry eb;
+   bool ma, mb;
+   char *out = NULL;
+
+   free(copy_a); /* from_string copied; take_string owns copy_b now */
+   if (!ref || !took)
+      abort();
+
+   ma = config_get_entry_list_head(ref, &ea);
+   mb = config_get_entry_list_head(took, &eb);
+   while (ma && mb)
+   {
+      if (     strcmp(ea.key, eb.key)
+            || strcmp(ea.value, eb.value))
+      {
+         printf("[FAILED] take_string mismatch: [%s]=[%s] vs [%s]=[%s]\n",
+               ea.key, ea.value, eb.key, eb.value);
+         abort();
+      }
+      ma = config_get_entry_list_next(&ea);
+      mb = config_get_entry_list_next(&eb);
+   }
+   if (ma != mb)
+      abort();
+
+   /* Mutate through the API against the borrowed storage */
+   config_set_string(took, "two", "owned-now");
+   config_unset(took, "three");
+   if (!config_get_string(took, "two", &out) || strcmp(out, "owned-now"))
+      abort();
+   free(out);
+
+   config_file_free(ref);
+   config_file_free(took);
+   printf("[SUCCESS] take_string parses identically and owns its buffer\n");
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -709,4 +759,5 @@ int main(void)
    test_config_file_stream_nul_ends_stream();
    test_config_file_pathless_reference_no_crash();
    test_config_file_borrowed_entry_lifecycle();
+   test_config_file_take_string();
 }
