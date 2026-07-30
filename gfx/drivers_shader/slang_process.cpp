@@ -897,13 +897,21 @@ bool slang_preprocess_parse_parameters(glslang_meta& meta,
 bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader)
 {
+   return slang_preprocess_parse_parameters_cached(shader_path, shader,
+         NULL);
+}
+
+bool slang_preprocess_parse_parameters_cached(const char *shader_path,
+      struct video_shader *shader, void *include_cache)
+{
    struct shader_line_buf lines;
 
    memset(&lines, 0, sizeof(lines));
 
    if (shader_line_buf_init(&lines))
    {
-      if (glslang_read_shader_file(shader_path, &lines, true, false))
+      if (glslang_read_shader_file_cached(shader_path, &lines, true, false,
+               include_cache))
       {
          glslang_meta meta = glslang_meta{};
          if (glslang_parse_meta(&lines, &meta))

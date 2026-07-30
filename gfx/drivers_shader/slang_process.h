@@ -176,6 +176,14 @@ RETRO_BEGIN_DECLS
 bool slang_preprocess_parse_parameters(const char *shader_path,
       struct video_shader *shader);
 
+/* As slang_preprocess_parse_parameters(), but expands '#include'
+ * directives through @include_cache (see glslang_include_cache_new).
+ * Harvesting parameters walks every pass of a preset, and the passes
+ * share helper files, so one cache across that walk avoids re-reading
+ * them per pass.  A NULL cache behaves exactly like the uncached call. */
+bool slang_preprocess_parse_parameters_cached(const char *shader_path,
+      struct video_shader *shader, void *include_cache);
+
 bool slang_process(
       struct video_shader*   shader_info,
       unsigned               pass_number,

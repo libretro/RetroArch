@@ -442,6 +442,34 @@ static bool glslang_read_shader_file_internal(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional,
       struct slang_include_cache *cache);
 
+void *glslang_include_cache_new(void)
+{
+   struct slang_include_cache *cache = (struct slang_include_cache*)
+         calloc(1, sizeof(*cache));
+   return (void*)cache;
+}
+
+void glslang_include_cache_free(void *cache)
+{
+   if (!cache)
+      return;
+   slang_include_cache_free((struct slang_include_cache*)cache);
+   free(cache);
+}
+
+bool glslang_read_shader_file_cached(const char *path,
+      struct shader_line_buf *output, bool root_file, bool is_optional,
+      void *cache)
+{
+   /* A caller-owned cache spans however many root expansions the
+    * caller wants; without one, fall back to a cache scoped to this
+    * single expansion. */
+   if (cache)
+      return glslang_read_shader_file_internal(path, output, root_file,
+            is_optional, (struct slang_include_cache*)cache);
+   return glslang_read_shader_file(path, output, root_file, is_optional);
+}
+
 bool glslang_read_shader_file(const char *path,
       struct shader_line_buf *output, bool root_file, bool is_optional)
 {

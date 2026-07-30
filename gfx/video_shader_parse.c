@@ -54,6 +54,7 @@
 #include "video_shader_parse.h"
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+#include "drivers_shader/glslang_util.h"
 #include "drivers_shader/slang_process.h"
 #endif
 
@@ -1038,15 +1039,26 @@ void video_shader_resolve_parameters(struct video_shader *shader)
 #endif
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
-   for (i = 0; i < shader->passes; i++)
    {
-      const char *path          = shader->pass[i].source.path;
-      if (!path || !*path || !path_is_valid(path))
-         continue;
-      /* Now uses the same slang parsing for parameters since
-       * it should be the same implementation, but supporting
-       * #include directives */
-      slang_preprocess_parse_parameters(path, shader);
+      /* One include cache for the whole walk.  Every pass is expanded
+       * here to harvest its '#pragma parameter' lines, and the passes
+       * of a preset share helper .inc files, so without this each pass
+       * re-reads the same helpers from disk. */
+      void *include_cache = glslang_include_cache_new();
+
+      for (i = 0; i < shader->passes; i++)
+      {
+         const char *path          = shader->pass[i].source.path;
+         if (!path || !*path || !path_is_valid(path))
+            continue;
+         /* Now uses the same slang parsing for parameters since
+          * it should be the same implementation, but supporting
+          * #include directives */
+         slang_preprocess_parse_parameters_cached(path, shader,
+               include_cache);
+      }
+
+      glslang_include_cache_free(include_cache);
    }
 #else
    {
