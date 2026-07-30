@@ -1571,7 +1571,8 @@ static void handle_hotplug(android_input_t *android,
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the
     * maximum number of keyboards are already registered. */
-   else if (source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
+   else if (((source & AINPUT_SOURCE_KEYBOARD) == AINPUT_SOURCE_KEYBOARD)
+      && kbd_num < MAX_NUM_KEYBOARDS)
    {
       kbd_id[kbd_num] = id;
       kbd_num++;
@@ -1585,9 +1586,9 @@ static void handle_hotplug(android_input_t *android,
    else if ((source & AINPUT_SOURCE_KEYBOARD) && kbd_num < MAX_NUM_KEYBOARDS &&
             is_configured_as_physical_keyboard(vendorId, productId, device_name))
    {
-       kbd_id[kbd_num] = id;
-       kbd_num++;
-       return;
+      kbd_id[kbd_num] = id;
+      kbd_num++;
+      return;
    }
 
    /* if device was not keyboard only, yet did not match any of the devices
@@ -1604,6 +1605,9 @@ static void handle_hotplug(android_input_t *android,
 
    if (*port < 0)
       *port = android->pads_connected;
+
+   if (!*name_buf)
+      strlcpy(name_buf, device_name, sizeof(name_buf));
 
    input_autoconfigure_connect(
          name_buf,
