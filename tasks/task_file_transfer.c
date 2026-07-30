@@ -61,14 +61,6 @@ void task_window_progress_cb(retro_task_t *task)
  * frame on every supported platform. */
 #define NBIO_SMALL_FILE_THRESHOLD  (1024 * 1024)
 
-/* Ceiling on committed bytes for the types whose decode completes on
- * a prefix.  Not a tuning knob: a still needs a few per cent of its
- * file, so this is orders of magnitude above the useful range and
- * exists only to bound a fill whose consumer will never be ready.
- * Reaching it settles the transfer capped(), which the handler
- * treats as the failure it is. */
-#define NBIO_XFER_PREFIX_CAP       (256 * 1024 * 1024)
-
 /* Per-tick fill budget for the video data_transfer spine: comfortably
  * ahead of the still decoder's needs (it completes at 2-3% of the
  * file) without monopolising the tick. */
@@ -276,28 +268,28 @@ void task_file_load_handler(retro_task_t *task)
                 * spine: filestream/VFS routing, 64-bit lengths, the
                 * hardware guard behind avail, honest short reads.
                 *
-                * The cap is stated here rather than left to the
-                * module.  data_transfer's fallback used to impose a
-                * built-in 32 MiB one on an uncapped caller, which
-                * was wrong and is gone; the answer to what replaced
-                * it is a policy question, and this is where the type
-                * is known.
+                * No commit_cap, for any type - including the prefix
+                * ones.  There was briefly a 256 MiB cap here for
+                * WEBM/MP4/WEBP, reasoned from "a still decodes at a
+                * few per cent of its file, so a fill still running
+                * at 256 MiB is pathology".  The premise is false: a
+                * non-faststart MP4 keeps its moov index at EOF, so
+                * the demuxer cannot even open - let alone decode a
+                * still - until the WHOLE file is resident.  That is
+                * not a malformed file; it is what most cameras and
+                * phones write.  Every such file past the cap filled
+                * to exactly the cap, settled capped(), and the
+                * handler cancelled: no still, no thumbnail, and no
+                * animation either, since the upload callback bails
+                * before its animation block when the task delivers
+                * nothing.  4K content was hit first purely by size.
                 *
-                * Only the prefix types get one.  Their decode
-                * finishes on a fraction of the file - a still at a
-                * few per cent of a video - so a fill that keeps
-                * going has already stopped being useful, and the cap
-                * bounds what a file whose still never becomes ready
-                * (truncated, corrupt, mislabelled) can cost.  It is
-                * deliberately far above what a real still needs.
-                * Everything else is read whole by design and gets no
-                * cap, so capped() cannot reach a consumer that has
-                * no way to act on it. */
+                * No constant fixes that - the legitimate worst-case
+                * need is the file length - and the per-tick pacing
+                * already bounds what any single frame can cost, so
+                * the cap protected nothing the budgets did not. */
                if ((nbio->xfer = data_transfer_open_prefix(nbio->path,
-                           (     nbio->type == NBIO_TYPE_WEBM
-                              || nbio->type == NBIO_TYPE_MP4
-                              || nbio->type == NBIO_TYPE_WEBP)
-                           ? (size_t)NBIO_XFER_PREFIX_CAP : 0)))
+                           0)))
                {
                   nbio->status = NBIO_STATUS_TRANSFER;
                   /* Fall through into the fill instead of returning

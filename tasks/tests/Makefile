@@ -21,6 +21,12 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
+	$(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
+	$(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
+	$(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
+	$(LIBRETRO_COMM_DIR)/formats/vp9/rvp9.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memmap.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
@@ -33,6 +39,7 @@ SOURCES := \
 OBJS := $(SOURCES:.c=.o)
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_THREADS -DHAVE_AUDIOMIXER -DHAVE_MMAP \
+	-DHAVE_RMP4 -DHAVE_RH264 \
 	-DHAVE_64BIT_OFFSETS -D_GNU_SOURCE \
 	-I$(RA_DIR) -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lpthread -lm

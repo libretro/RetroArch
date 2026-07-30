@@ -68,6 +68,7 @@
 #include <rthreads/rthreads.h>
 
 #include "../task_file_transfer.h"
+#include "mp4_moov_eof_fixture.h"
 
 void task_file_load_handler(retro_task_t *task);
 
@@ -76,6 +77,8 @@ void task_file_load_handler(retro_task_t *task);
 static __thread int img_calls;
 static int   img_finish_after = 1;   /* pretend to finish after N calls */
 static int   img_fail;
+static int   img_moov_at_eof;  /* still ready only on the whole file */
+static int   oracle_bad;       /* any load-bearing lane failed */
 
 bool task_image_load_handler(retro_task_t *task)
 {
@@ -83,6 +86,30 @@ bool task_image_load_handler(retro_task_t *task)
    img_calls++;
    if (img_fail)
       return false;
+   if (img_moov_at_eof)
+   {
+      /* A non-faststart MP4: the moov index is the file's last box,
+       * so the demuxer cannot open - and no still can decode - until
+       * every byte is resident.  This is what most cameras write.
+       * The 256 MiB prefix cap cancelled every such file above it:
+       * the fill stopped at exactly the cap, settled capped(), and
+       * the task delivered nothing - no thumbnail, no animation.
+       * The lane below runs a file above the old cap and requires
+       * completion, so a reintroduced ceiling fails it at once. */
+      size_t d = 0, t = 0;
+      if (nbio && nbio->xfer)
+      {
+         nbio_xfer_progress(nbio, &d, &t);
+         if (t && d >= t)
+         {
+            nbio->is_finished = true;
+            return false;
+         }
+      }
+      if (nbio && nbio->status == NBIO_STATUS_TRANSFER_FINISHED)
+         return false;
+      return true;
+   }
    /* Touch the buffer exactly as a still decoder would: read only
     * the bytes the fill has delivered.  Under a strict build a read
     * past avail() faults, which is the point. */
@@ -205,6 +232,21 @@ static int pump(const char *label, const char *path, enum nbio_type type,
       ticks++;
    } while (!(flg & RETRO_TASK_FLG_FINISHED) && ticks < max_ticks);
 
+   /* the moov-at-EOF task lane is load-bearing: an incomplete or
+    * cancelled 300M run is the capped regression come back */
+   if (strstr(label, "moov-at-EOF"))
+   {
+      if (   (flg & RETRO_TASK_FLG_CANCELLED)
+          || !nbio->xfer
+          || !data_transfer_complete(nbio->xfer))
+      {
+         printf("  [FAIL] %s: cancelled=%d complete=%d - a prefix "
+                "ceiling is back\n", label,
+               (flg & RETRO_TASK_FLG_CANCELLED) > 0,
+               nbio->xfer ? (int)data_transfer_complete(nbio->xfer) : 0);
+         oracle_bad = 1;
+      }
+   }
    printf("  %-28s ticks=%-4d prog=%-4d cb=%d img=%d mix=%d "
           "finished=%d cancelled=%d avail=%zu\n",
          label, ticks, (int)task_get_progress(task), cb_calls,
@@ -253,6 +295,116 @@ static void conc_worker(void *ud)
    }
 }
 
+/* head + a 'free' box of pad_to total bytes + tail: a valid MP4 whose
+ * moov is the last box, at whatever size the lane needs. */
+static char *mk_moov_eof_mp4(const char *name, size_t pad_to)
+{
+   char *path = (char*)malloc(256);
+   FILE *f;
+   size_t body, i;
+   unsigned char hdr[8], z[65536];
+   if (!path)
+      return NULL;
+   snprintf(path, 256, "/tmp/dtq_%s.mp4", name);
+   if (!(f = fopen(path, "wb")))
+   {
+      free(path);
+      return NULL;
+   }
+   body   = pad_to - sizeof(mp4_head) - sizeof(mp4_tail) - 8;
+   hdr[0] = (unsigned char)(((body + 8) >> 24) & 0xff);
+   hdr[1] = (unsigned char)(((body + 8) >> 16) & 0xff);
+   hdr[2] = (unsigned char)(((body + 8) >>  8) & 0xff);
+   hdr[3] = (unsigned char)( (body + 8)        & 0xff);
+   hdr[4] = 'f'; hdr[5] = 'r'; hdr[6] = 'e'; hdr[7] = 'e';
+   memset(z, 0, sizeof(z));
+   fwrite(mp4_head, 1, sizeof(mp4_head), f);
+   fwrite(hdr, 1, 8, f);
+   for (i = 0; i < body; i += sizeof(z))
+      fwrite(z, 1, (body - i) < sizeof(z) ? (body - i) : sizeof(z), f);
+   fwrite(mp4_tail, 1, sizeof(mp4_tail), f);
+   fclose(f);
+   return path;
+}
+
+/* The premise check, against the real rmp4 demuxer.  Returns nonzero
+ * on failure; skipped when the image stack is not linked in. */
+#if defined(HAVE_RMP4)
+#include <formats/image.h>
+static int real_rmp4_needs_whole_file(const char *path)
+{
+   FILE *f = fopen(path, "rb");
+   long  n;
+   uint8_t *b;
+   void *s;
+   int need = 0, dur = 0, frames = 0, bad = 0;
+   if (!f)
+      return 0;
+   fseek(f, 0, SEEK_END); n = ftell(f); fseek(f, 0, SEEK_SET);
+   if (!(b = (uint8_t*)malloc((size_t)n)))
+   {
+      fclose(f);
+      return 0;
+   }
+   if (fread(b, 1, (size_t)n, f) != (size_t)n)
+   {
+      fclose(f);
+      free(b);
+      return 0;
+   }
+   fclose(f);
+
+   s = image_transfer_anim_stream_new_avail(b, (size_t)n, 1u << 20,
+         IMAGE_TYPE_MP4, &need);
+   if (s || !need)
+   {
+      printf("  [FAIL] rmp4 opened a moov-at-EOF file from a 1 MiB "
+             "prefix (stream=%p need_more=%d): the cap's premise "
+             "would hold and nothing forbids reintroducing it\n",
+            s, need);
+      if (s)
+         image_transfer_anim_stream_free(s, IMAGE_TYPE_MP4);
+      bad = 1;
+   }
+   else
+   {
+      s = image_transfer_anim_stream_new_avail(b, (size_t)n, (size_t)n,
+            IMAGE_TYPE_MP4, &need);
+      if (!s)
+      {
+         printf("  [FAIL] rmp4 cannot open the fixture even fully "
+                "resident (need_more=%d)\n", need);
+         bad = 1;
+      }
+      else
+      {
+         while (image_transfer_anim_stream_next(s, IMAGE_TYPE_MP4,
+                  &dur) && frames < 16)
+            frames++;
+         if (frames < 2)
+         {
+            printf("  [FAIL] fixture decoded %d frames fully "
+                   "resident\n", frames);
+            bad = 1;
+         }
+         else
+            printf("  real rmp4: prefix -> need_more, whole file -> "
+                   "%d frames decoded (premise pinned)\n", frames);
+         image_transfer_anim_stream_free(s, IMAGE_TYPE_MP4);
+      }
+   }
+   free(b);
+   return bad;
+}
+#else
+static int real_rmp4_needs_whole_file(const char *path)
+{
+   (void)path;
+   printf("  [skip] real-demuxer lane: built without HAVE_RMP4\n");
+   return 0;
+}
+#endif
+
 int main(int argc, char **argv)
 {
    char *small, *thresh, *big, *huge, *tiny;
@@ -294,6 +446,39 @@ int main(int argc, char **argv)
       pump("big 5M / WEBM (bytes)",  big,    NBIO_TYPE_WEBM, 4096, NULL);
       pump("huge 48M / PNG",         huge,   NBIO_TYPE_PNG,  65536, NULL);
       pump("huge 48M / WEBM",        huge,   NBIO_TYPE_WEBM, 65536, NULL);
+      puts("-- non-faststart video: index at EOF --");
+      /* Two lanes against the same regression, from opposite ends.
+       *
+       * The REAL-DEMUXER lane pins the premise the 256 MiB cap got
+       * wrong.  It writes a genuine h264 MP4 - real ftyp/mdat/moov,
+       * real coded frames - with a ~300 MiB free box pushing moov to
+       * EOF, exactly the layout cameras produce, and asks the real
+       * rmp4 (via image_transfer) to open it avail-aware at a 1 MiB
+       * prefix.  rmp4 must answer need_more, because the index is
+       * simply not resident yet; with the whole file resident it
+       * must open and decode real frames.  Anyone tempted to
+       * reintroduce a prefix ceiling on the argument that "a still
+       * only needs a few per cent" is refuted by this lane directly:
+       * here is a well-formed file whose still needs 100%.
+       *
+       * The TASK lane pins the mechanism: a still that becomes ready
+       * only at EOF, over a file larger than the old cap, must
+       * finish uncancelled with every byte resident.  On the capped
+       * tree it stopped at exactly 268435456 bytes and cancelled -
+       * no thumbnail, no animation, which is how the regression
+       * shipped. */
+      {
+         char *late = mk_moov_eof_mp4("moov_eof", 300u << 20);
+         if (late)
+         {
+            oracle_bad |= real_rmp4_needs_whole_file(late);
+            img_moov_at_eof = 1;
+            pump("300M MP4 moov-at-EOF",  late, NBIO_TYPE_MP4,
+                  400000, NULL);
+            img_moov_at_eof = 0;
+            remove(late); free(late);
+         }
+      }
       puts("-- audio types must reach the mixer arm --");
       pump("MP3",                    small,  NBIO_TYPE_MP3,  64, NULL);
       pump("FLAC",                   small,  NBIO_TYPE_FLAC, 64, NULL);
@@ -328,5 +513,7 @@ int main(int argc, char **argv)
    remove(tiny); remove(small); remove(thresh); remove(big); remove(huge);
    free(tiny); free(small); free(thresh); free(big); free(huge);
    task_queue_deinit();
-   return 0;
+   if (oracle_bad)
+      puts("FAILED");
+   return oracle_bad;
 }

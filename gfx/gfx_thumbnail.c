@@ -752,7 +752,7 @@ static void gfx_thumbnail_anim_audio_begin(gfx_thumbnail_t *thumbnail)
 
 static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
       void *stream, enum image_type_enum type,
-      void *buf, size_t len, struct data_transfer *xfer)
+      void *buf, size_t len, struct data_transfer *xfer, int windowed)
 {
    unsigned anim_w          = 0;
    unsigned anim_h          = 0;
@@ -803,6 +803,11 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
    }
 
    thumbnail->anim            = stream;
+   /* Owned here rather than patched in by the caller afterwards: the
+    * pending decision below depends on it, and anim_close (first
+    * thing this function does) had just zeroed it - so a caller-side
+    * assignment always arrived one decision too late. */
+   thumbnail->anim_windowed   = windowed ? 1 : 0;
    thumbnail->anim_buf        = buf;
    thumbnail->anim_buf_len    = len;
    thumbnail->anim_type       = (uint8_t)type;
@@ -819,9 +824,24 @@ static bool gfx_thumbnail_anim_install(gfx_thumbnail_t *thumbnail,
     * audio decoder can work from a prefix - see anim_audio_begin - but
     * feeding it progressively is a cross-thread change not made here.)
     * gfx_thumbnail_animate pumps the handle to completion; a fatter
-    * chunk shortens the catch-up. */
+    * chunk shortens the catch-up.
+    *
+    * ONLY for adopted prefix handles.  A windowed handle never
+    * completes - done stays clear for its whole life, that is what a
+    * window is - and the pump animate uses is iterate_while, which
+    * declines windows by design.  Marking a window pending therefore
+    * deadlocked the animation permanently: pending forced animate to
+    * pump, the pump was a no-op, complete() stayed false, and animate
+    * returned before ever advancing a frame - the stream sat
+    * installed behind a static thumbnail forever.  That was every
+    * path-based animation open (animated WEBP, APNG, and any WEBM/MP4
+    * with no still stream to adopt), which is the whole file-browser
+    * path.  A window needs no pending phase at all: its feeder in
+    * animate keeps the committed range straddling the decoder, and
+    * the head it decodes from is resident before install runs. */
    thumbnail->anim_read_pending =
          (thumbnail->anim_dt
+          && !windowed
           && !data_transfer_complete(thumbnail->anim_dt)) ? 1 : 0;
 
 #if defined(GFX_THUMB_PREVIEW_AUDIO)
@@ -986,10 +1006,9 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
 
       buf = (void*)base;
       len = (int64_t)blen;
-      gfx_thumbnail_anim_install(thumbnail, stream, type,
-            buf, (size_t)len, dt);
       /* The transfer owns the mapping; the install borrows it. */
-      thumbnail->anim_windowed = 1;
+      gfx_thumbnail_anim_install(thumbnail, stream, type,
+            buf, (size_t)len, dt, 1);
    }
 }
 
@@ -1504,7 +1523,7 @@ static void gfx_thumbnail_handle_upload(
       if (task_image_detach_video_stream(task, &vstream, &vtype,
             &vxfer, &vbuf, &vlen))
          gfx_thumbnail_anim_install(thumbnail_tag->thumbnail,
-               vstream, vtype, vbuf, vlen, vxfer);
+               vstream, vtype, vbuf, vlen, vxfer, 0);
       else
          /* Everything without a stream to hand over opens by path.
           * For the video types adoption is the fast route because the
@@ -1859,9 +1878,27 @@ void gfx_thumbnail_request_file(
    if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t))))
       return;
 
-   /* Configure user data */
+   /* Configure user data.
+    *
+    * The path matters beyond identifying the load: it is what
+    * gfx_thumbnail_handle_upload hands to gfx_thumbnail_anim_open for
+    * anything that has no video stream to adopt.  Leaving it unset
+    * left that call reading uninitialised malloc bytes, so the open
+    * saw either an empty string or garbage and returned without ever
+    * looking at the file - the static texture uploaded and nothing
+    * ever animated.
+    *
+    * Only this entry point was affected; gfx_thumbnail_request fills
+    * the same field for playlist entries, which is why animation
+    * worked there and not in the file browser.  Animated WEBP and
+    * APNG never adopt a stream, so they never animated here at all;
+    * WEBM and MP4 animated only when the still decode happened to
+    * leave an adoptable stream behind, which is why the larger ones
+    * stopped. */
    thumbnail_tag->thumbnail = thumbnail;
    thumbnail_tag->list_id   = p_gfx_thumb->list_id;
+   strlcpy(thumbnail_tag->path, file_path,
+         sizeof(thumbnail_tag->path));
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
