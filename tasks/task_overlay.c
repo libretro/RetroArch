@@ -77,7 +77,14 @@ struct overlay_loader
  * both forms.
  *
  * Only the member portion may be touched, never the archive path
- * before the '#', so the caller passes the offset past the delimiter.
+ * before the '#', so the caller passes the offset past the delimiter -
+ * a host separator there is part of a real file name and must survive.
+ *
+ * Either host separator is accepted and '/' is always written, because
+ * a member name uses '/' whatever the host does: on Windows a config
+ * may spell its image paths with '\\' and the member it means still
+ * has '/'.  PATH_CHAR_IS_SLASH reduces to '/' alone elsewhere, so a
+ * member legitimately containing a backslash stays intact there.
  * A '..' with nothing left to pop is kept verbatim: it cannot be
  * resolved inside an archive, and preserving it keeps the lookup
  * failing as it did rather than silently aliasing some other member.
@@ -95,12 +102,12 @@ static void overlay_normalize_member(char *s)
       const char *seg;
       size_t seg_len;
 
-      while (*r == '/')
+      while (PATH_CHAR_IS_SLASH(*r))
          r++;
       if (!*r)
          break;
       seg = r;
-      while (*r && *r != '/')
+      while (*r && !PATH_CHAR_IS_SLASH(*r))
          r++;
       seg_len = (size_t)(r - seg);
 
@@ -153,7 +160,7 @@ static void overlay_resolve_path(char *s,
    {
       size_t archive_len = (size_t)(delim + 1 - overlay_path);
       const char *inner  = delim + 1;
-      const char *slash  = strrchr(inner, '/');
+      const char *slash  = find_last_slash(inner);
 
       /* Copy archive path including '#' */
       strlcpy(s, overlay_path, len);
