@@ -59,6 +59,19 @@ enum
 
 void *rinflate_new(int window_bits);
 void  rinflate_free(void *stream);
+
+/**
+ * rinflate_reset:
+ * @stream       : stream returned by rinflate_new()
+ * @window_bits  : as for rinflate_new()
+ *
+ * Returns @stream to its freshly-created state so it can decode an
+ * unrelated stream, without freeing and reallocating. Equivalent to a
+ * rinflate_free()/rinflate_new() pair, and cheaper: callers decoding
+ * many independent streams (CHD hunks, for instance) would otherwise
+ * pay a ~42 KiB clear per stream.
+ **/
+void  rinflate_reset(void *stream, int window_bits);
 void  rinflate_set_in(void *stream, const uint8_t *in, size_t in_size);
 void  rinflate_set_out(void *stream, uint8_t *out, size_t out_size);
 

@@ -329,6 +329,11 @@ struct rchd
     * that never names the codec. */
    uint16_t          *huff_lookup;
 
+   /* The zlib codec's inflate state: ~42 KiB, held across hunks and
+    * reset per hunk rather than reallocated, and not made at all for
+    * an image that never names the codec. */
+   void              *inflate;
+
    /* Three lookup tables and one channel of samples, for A/V hunks.
     * Made on first use, so an image that is not audio/video pays
     * nothing for them. */
@@ -1054,6 +1059,8 @@ void rchd_free(rchd_t *chd)
    free(chd->meta);
    free(chd->codecs);
    free(chd->huff_lookup);
+   if (chd->inflate)
+      rinflate_free(chd->inflate);
    free(chd->cache);
    free(chd->cd_scratch);
    free(chd->tracks);
@@ -2028,18 +2035,27 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
          /* Raw DEFLATE: no two-byte header and no adler32 trailer.  An
           * image built with the zlib wrapper is rejected outright, which
           * is how this was established rather than assumed. */
-         void  *z = rinflate_new(-15);
          size_t rd = 0, wr = 0;
          int    e;
 
-         if (!z)
-            return RCHD_ERROR_MEM;
-         rinflate_set_in(z, src, src_len);
-         rinflate_set_out(z, dst, dst_len);
-         while ((e = rinflate_process(z, &rd, &wr)) == RDEFLATE_PROCESS_NEXT)
+         /* Held across hunks: a fresh instance costs a ~42 KiB clear,
+          * which is pure overhead against a hunk of typically 64 KiB or
+          * less. rinflate_reset restores the same starting state. */
+         if (!chd->inflate)
+         {
+            chd->inflate = rinflate_new(-15);
+            if (!chd->inflate)
+               return RCHD_ERROR_MEM;
+         }
+         else
+            rinflate_reset(chd->inflate, -15);
+
+         rinflate_set_in(chd->inflate, src, src_len);
+         rinflate_set_out(chd->inflate, dst, dst_len);
+         while ((e = rinflate_process(chd->inflate, &rd, &wr))
+               == RDEFLATE_PROCESS_NEXT)
             if (!rd && !wr)
                break;
-         rinflate_free(z);
          return (wr == dst_len) ? RCHD_OK : RCHD_ERROR_DATA;
       }
 #endif
