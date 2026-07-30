@@ -319,16 +319,34 @@ static bool input_autoconfigure_file_may_match(
       bool have_vid = false;
       bool have_pid = false;
 
+      /* The filter only ever skips a parse, so false positives are
+       * harmless; false negatives silently hide a profile the
+       * affinity check would have accepted.  config_get_int parses
+       * with strtol base 0 and truncates to uint16_t, so a profile
+       * matches the affinity rules in any of these encodings, and
+       * the filter must find all of them:
+       *   decimal        "1356"
+       *   hex            "0x54c" / "0x054C" - searched as bare hex
+       *                  digits, since "0x%x" is not a substring of
+       *                  a zero-padded value
+       *   octal          "0654"  (strtol base 0 accepts it)
+       *   negative int16 "-32634" for 0x8086 - what some legacy
+       *                  Windows-side exporters wrote */
       snprintf(num, sizeof(num), "%u", vid);
       have_vid = (strstr(buf, num) != NULL);
       if (!have_vid)
       {
-         snprintf(num, sizeof(num), "0x%x", vid);
+         snprintf(num, sizeof(num), "%x", vid);
          have_vid = (compat_strcasestr(buf, num) != NULL);
       }
       if (!have_vid)
       {
          snprintf(num, sizeof(num), "0%o", vid);
+         have_vid = (strstr(buf, num) != NULL);
+      }
+      if (!have_vid && (vid & 0x8000))
+      {
+         snprintf(num, sizeof(num), "%d", (int)(int16_t)(uint16_t)vid);
          have_vid = (strstr(buf, num) != NULL);
       }
 
@@ -338,12 +356,17 @@ static bool input_autoconfigure_file_may_match(
          have_pid = (strstr(buf, num) != NULL);
          if (!have_pid)
          {
-            snprintf(num, sizeof(num), "0x%x", pid);
+            snprintf(num, sizeof(num), "%x", pid);
             have_pid = (compat_strcasestr(buf, num) != NULL);
          }
          if (!have_pid)
          {
             snprintf(num, sizeof(num), "0%o", pid);
+            have_pid = (strstr(buf, num) != NULL);
+         }
+         if (!have_pid && (pid & 0x8000))
+         {
+            snprintf(num, sizeof(num), "%d", (int)(int16_t)(uint16_t)pid);
             have_pid = (strstr(buf, num) != NULL);
          }
       }
