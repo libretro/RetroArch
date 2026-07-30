@@ -6297,8 +6297,11 @@ typedef struct {
    uint32_t offset;     /* codIOffset */
    uint32_t bitbuf;
    int      bitcnt;
-   uint8_t  state[1024];
-   uint8_t  mps[1024];
+   uint8_t  state[1024];   /* pStateIdx * 2 | valMPS, fused */
+   /* fused state transitions, built from rh264_transIdxMPS/LPS at init:
+    * next[0] follows an MPS, next[1] an LPS (including the valMPS flip
+    * at pStateIdx 0, 9.3.3.2.1.1) */
+   uint8_t  next[2][128];
    /* field-coded picture: the significance maps use their own context
     * offsets and, for 8x8 blocks, their own position-to-context map
     * (Tables 9-11 and 9-43) */
@@ -6308,32 +6311,27 @@ typedef struct {
    int      c422;
 } rh264_cabac;
 
-static int rh264_cb_bit(rh264_cabac *c)
-{
-   int b;
-   if (c->bitcnt == 0)
-   {
-      c->bitbuf = (uint32_t)((c->buf < c->end) ? *c->buf++ : 0);
-      c->bitcnt = 8;
-   }
-   c->bitcnt--;
-   b = (int)((c->bitbuf >> c->bitcnt) & 1);
-   return b;
-}
-
-/* Pull n (1..7) bits at once for renormalisation: at most one byte of
- * refill is ever needed since bitcnt < 8 going in.  Bytes past the end
- * read as zero, matching rh264_cb_bit. */
+/* Pull n (1..7) bits for renormalisation.  When the buffer runs low it
+ * is topped up past 16 bits so consecutive renormalisations share one
+ * refill; bytes past the end read as zero (end-of-data semantics). */
 static RH264_INLINE uint32_t rh264_cb_bits(rh264_cabac *c, int n)
 {
    if (c->bitcnt < n)
    {
-      c->bitbuf = (c->bitbuf << 8)
-            | (uint32_t)((c->buf < c->end) ? *c->buf++ : 0);
-      c->bitcnt += 8;
+      do
+      {
+         c->bitbuf = (c->bitbuf << 8)
+               | (uint32_t)((c->buf < c->end) ? *c->buf++ : 0);
+         c->bitcnt += 8;
+      } while (c->bitcnt <= 16);
    }
    c->bitcnt -= n;
    return (c->bitbuf >> c->bitcnt) & ((1u << n) - 1u);
+}
+
+static RH264_INLINE int rh264_cb_bit(rh264_cabac *c)
+{
+   return (int)rh264_cb_bits(c, 1);
 }
 
 static const int8_t rh264_cabac_init_PB[3][460][2]={
@@ -6544,35 +6542,37 @@ static void rh264_cabac_init_contexts(rh264_cabac *c, int sliceQP, int init_idc)
                              : rh264_cabac_init_PB[init_idc][i][1];
       int pre = ((m * sliceQP) >> 4) + n;
       if (pre < 1) pre = 1; else if (pre > 126) pre = 126;
-      if (pre <= 63) { c->state[i] = (uint8_t)(63 - pre); c->mps[i] = 0; }
-      else           { c->state[i] = (uint8_t)(pre - 64); c->mps[i] = 1; }
+      if (pre <= 63) c->state[i] = (uint8_t)((63 - pre) * 2);
+      else           c->state[i] = (uint8_t)((pre - 64) * 2 + 1);
    }
    /* contexts above the extracted range default to a neutral state; they are
     * only used by High-profile 8x8 residual, which this decoder rejects. */
-   for (; i < 1024; i++) { c->state[i] = 0; c->mps[i] = 0; }
+   for (; i < 1024; i++) c->state[i] = 0;
+   for (i = 0; i < 128; i++)
+   {
+      int st = i >> 1, mp = i & 1;
+      c->next[0][i] = (uint8_t)(rh264_transIdxMPS[st] * 2 + mp);
+      c->next[1][i] = (st == 0)
+            ? (uint8_t)(rh264_transIdxLPS[0] * 2 + (1 - mp))
+            : (uint8_t)(rh264_transIdxLPS[st] * 2 + mp);
+   }
 }
 
 static int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
 {
-   int pState = c->state[ctxIdx];
-   int valMPS = c->mps[ctxIdx];
-   uint32_t qIdx = (c->range >> 6) & 3;
-   uint32_t rLPS = rh264_rangeTabLPS[pState][qIdx];
+   uint32_t s    = c->state[ctxIdx];
+   uint32_t rLPS = rh264_rangeTabLPS[s >> 1][(c->range >> 6) & 3];
+   uint32_t m;
    int bin;
    c->range -= rLPS;
-   if (c->offset >= c->range)
-   {
-      bin = 1 - valMPS;
-      c->offset -= c->range;
-      c->range   = rLPS;
-      if (pState == 0) c->mps[ctxIdx] = (uint8_t)(1 - valMPS);
-      c->state[ctxIdx] = rh264_transIdxLPS[pState];
-   }
-   else
-   {
-      bin = valMPS;
-      c->state[ctxIdx] = rh264_transIdxMPS[pState];
-   }
+   /* the LPS/MPS decision is the decoded bin itself, so as a branch it
+    * mispredicts at exactly the bin entropy; taken as an all-ones mask
+    * instead, both outcomes cost the same straight-line code */
+   m   = (uint32_t)0 - (uint32_t)(c->offset >= c->range);
+   bin = (int)((s ^ m) & 1u);
+   c->offset -= c->range & m;
+   c->range  ^= (c->range ^ rLPS) & m;
+   c->state[ctxIdx] = c->next[m & 1u][s];
    if (c->range < 256)
    {
       /* range is 2..255 here, so 1..7 doublings restore it; take them
@@ -6586,9 +6586,13 @@ static int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
 
 static int rh264_cabac_bypass(rh264_cabac *c)
 {
+   uint32_t m;
    c->offset = (c->offset << 1) | (uint32_t)rh264_cb_bit(c);
-   if (c->offset >= c->range) { c->offset -= c->range; return 1; }
-   return 0;
+   /* bypass bins (signs, suffix bits) are near-uniform - the worst
+    * case for a branch, the indifferent case for a mask */
+   m = (uint32_t)0 - (uint32_t)(c->offset >= c->range);
+   c->offset -= c->range & m;
+   return (int)(m & 1u);
 }
 
 static int rh264_cabac_terminate(rh264_cabac *c)
