@@ -196,8 +196,22 @@ void task_file_load_handler(retro_task_t *task)
                   nbio->status = NBIO_STATUS_TRANSFER;
                   return;
                }
-               task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             }
+            /* Outside the path check, not inside it.  A NULL path
+             * used to fall out of INIT having set no flag and
+             * changed no status, so the next tick re-entered INIT
+             * and did the same thing forever: a task that never
+             * finishes, never cancels, and never leaves the running
+             * queue - a permanent per-frame call under the regular
+             * task queue and a hot spin on the worker thread under
+             * the threaded one.
+             *
+             * Every producer currently guards its strdup, so this is
+             * closing the hole rather than fixing a live bug.  A
+             * state machine with no terminal for one of its inputs
+             * is the kind of thing that only stays unreachable until
+             * someone adds a caller. */
+            task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
             break;
 do_transfer_parse:
          case NBIO_STATUS_TRANSFER_PARSE:
@@ -266,7 +280,20 @@ do_transfer_parse:
             break;
          case NBIO_TYPE_NONE:
          default:
-            if (nbio->is_finished)
+            /* is_finished is the parse callback's signal that it is
+             * done with the buffer, and it is an undocumented
+             * obligation: a callback that returns 0 without setting
+             * it left the task parked in TRANSFER_FINISHED with
+             * nothing in either switch able to move it, which is the
+             * same never-terminating task the INIT path had.
+             *
+             * Reaching TRANSFER_FINISHED already means the callback
+             * returned success, so there is nothing left to do for a
+             * type with no decode handler of its own.  Keep the
+             * is_finished test as well: a callback may set it before
+             * the status advances. */
+            if (     nbio->is_finished
+                  || nbio->status == NBIO_STATUS_TRANSFER_FINISHED)
                task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
             break;
       }
