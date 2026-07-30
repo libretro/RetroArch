@@ -338,7 +338,7 @@ static int cdrom_send_command_win32(const libretro_vfs_implementation_file *stre
    if (cmd[0] == 0xB9)
    {
       double time_taken = (double)(((clock() - t) * 1000) / CLOCKS_PER_SEC);
-      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom->cur_lba);
+      printf("time taken %f ms for DT received length %ld of %" PRId64 " for %02d:%02d:%02d to %02d:%02d:%02d%s req %d cur %d cur_lba %d\n", time_taken, sptd.s.DataTransferLength, len, cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8], extra, lba_req, lba_cur, stream->cdrom ? stream->cdrom->cur_lba : 0);
       fflush(stdout);
    }
 
@@ -816,7 +816,9 @@ static int cdrom_send_command(libretro_vfs_implementation_file *stream, CDROM_CM
 
          lba_req = cdrom_msf_to_lba(cmd[3], cmd[4], cmd[5]);
 
-         if (stream->cdrom->last_frame_valid && lba_req == stream->cdrom->last_frame_lba)
+         if (     stream->cdrom
+               && stream->cdrom->last_frame_valid
+               && lba_req == stream->cdrom->last_frame_lba)
          {
             /* use cached frame */
             cached_read = true;
@@ -871,18 +873,25 @@ retry:
             memcpy((char*)s + copied_bytes, xfer_buf_pos + skip, copy_len);
             copied_bytes += copy_len;
 
-            if (read_cd && !cached_read && request_len >= 2352)
+            /* The sector cache only exists on cdrom:// handles. The
+             * raw device scan (cdrom_get_available_drives and
+             * friends) sends INQUIRY through a plain filestream open
+             * of /dev/sg* or \\.\X:, where stream->cdrom is NULL. */
+            if (stream->cdrom)
             {
-               unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
+               if (read_cd && !cached_read && request_len >= 2352)
+               {
+                  unsigned frame_end = cdrom_msf_to_lba(cmd[6], cmd[7], cmd[8]);
 
-               /* cache the last received frame */
-               memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
-               stream->cdrom->last_frame_valid = true;
-               /* the ending frame is never actually read, so what we really just read is the one right before that */
-               stream->cdrom->last_frame_lba = frame_end - 1;
+                  /* cache the last received frame */
+                  memcpy(stream->cdrom->last_frame, xfer_buf_pos, sizeof(stream->cdrom->last_frame));
+                  stream->cdrom->last_frame_valid = true;
+                  /* the ending frame is never actually read, so what we really just read is the one right before that */
+                  stream->cdrom->last_frame_lba = frame_end - 1;
+               }
+               else
+                  stream->cdrom->last_frame_valid = false;
             }
-            else
-               stream->cdrom->last_frame_valid = false;
 
 #if 0
             printf("Frame %d, adding %" PRId64 " to buf_pos, is now %" PRId64 ". skip is %" PRId64 "\n", i, request_len, (xfer_buf_pos + request_len) - xfer_buf, skip);
@@ -1581,7 +1590,8 @@ int cdrom_read(libretro_vfs_implementation_file *stream,
 
    if (rv)
    {
-      stream->cdrom->last_frame_valid = false;
+      if (stream->cdrom)
+         stream->cdrom->last_frame_valid = false;
       return 1;
    }
 
