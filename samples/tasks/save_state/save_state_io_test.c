@@ -926,6 +926,68 @@ static void test_undo_snapshot_failure_keeps_previous(void)
    content_reset_savestate_backups();
 }
 
+/* -----------------------------------------------------------------
+ * 12. Undo allocates nothing in steady state.
+ *
+ *     content_undo_load_state has to hold on to the snapshot it is
+ *     restoring while it captures the current state over the top of
+ *     it, and it used to do that by malloc'ing a full-size temporary
+ *     and copying the whole state into it - a second state-sized
+ *     allocation and a second full copy, on top of the capture's own.
+ *     It now detaches the snapshot's allocation instead, and hands it
+ *     to the spare afterwards.
+ *
+ *     So a run of undos, each of which also takes a capture, must
+ *     allocate nothing at all once the two buffers exist: the
+ *     snapshot being restored becomes the next spare, and the spare
+ *     becomes the next snapshot.  Before the change each undo cost
+ *     one temporary, and before the capture change it cost a second.
+ * ----------------------------------------------------------------- */
+static void test_undo_allocates_nothing(void)
+{
+   size_t   sz = 6 * TEST_SAVE_STATE_CHUNK;
+   uint8_t *first;
+   int      i, undone = 0;
+
+   frontend_reset();
+   core_fill(sz);
+   content_reset_savestate_backups();
+
+   first = (uint8_t*)malloc(sz);
+   memcpy(first, core_mem, sz);
+
+   /* Reach steady state first: one capture, then one undo.  The undo
+    * is what leaves both allocations in play - the snapshot it built
+    * and the one it detached and handed to the spare - so only the
+    * undos after it are measuring a system that has stopped growing.
+    * The core alternates between the two states from here on. */
+   content_save_state("RAM", false);
+   memset(core_mem, 0x21, sz);
+   content_undo_load_state();
+
+   alloc_count_begin();
+   for (i = 0; i < 6; i++)
+      if (content_undo_load_state())
+         undone++;
+   alloc_count_end();
+
+   okf(undone == 6, "six consecutive undos all succeed");
+   okf(big_allocs == 0,
+       "undo allocates no state-sized buffer in steady state");
+   if (big_allocs != 0)
+      printf("       (%d state-sized allocations for 6 undos)\n",
+            big_allocs);
+
+   /* An even number of undos of a two-state alternation lands back
+    * where it started, which is what proves the buffers were actually
+    * swapped and not merely not-allocated. */
+   okf(memcmp(first, core_mem, sz) == 0,
+       "an even number of undos returns the original state");
+
+   free(first);
+   content_reset_savestate_backups();
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -947,6 +1009,7 @@ static int run_default_lane(void)
    test_undo_snapshot_reuses();
    test_undo_snapshot_grows();
    test_undo_snapshot_failure_keeps_previous();
+   test_undo_allocates_nothing();
 
    content_reset_savestate_backups();
    task_queue_deinit();

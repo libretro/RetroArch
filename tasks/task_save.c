@@ -206,10 +206,12 @@ typedef struct rastate_size_info
 bool content_undo_load_state(void)
 {
    unsigned i;
-   size_t temp_data_size;
    bool ret                  = false;
+   bool captured             = false;
    unsigned num_blocks       = 0;
-   void *temp_data           = NULL;
+   void *restore_data        = NULL;
+   size_t restore_size       = 0;
+   size_t restore_cap        = 0;
    struct sram_block *blocks = NULL;
    struct string_list *savefile_list = (struct string_list*)savefile_ptr_get();
 
@@ -280,36 +282,49 @@ bool content_undo_load_state(void)
       }
    }
 
-   /* We need to make a temporary copy of the buffer, to allow the swap below */
-   temp_data              = malloc(undo_load_buf.size);
-   /* NULL-check the malloc before the memcpy on the next line
-    * NULL-derefs.  On OOM we also need to tear down the 'blocks'
-    * array built above to match the normal-return cleanup path
-    * at the end of this function.  Not using goto-cleanup because
-    * the existing function structure doesn't have a single exit
-    * point and retrofitting one would churn unrelated code. */
-   if (!temp_data)
-   {
-      for (i = 0; i < num_blocks; i++)
-      {
-         free(blocks[i].data);
-         blocks[i].data = NULL;
-      }
-      free(blocks);
-      return false;
-   }
-   temp_data_size         = undo_load_buf.size;
-   memcpy(temp_data, undo_load_buf.data, undo_load_buf.size);
+   /* The state about to be restored lives in undo_load_buf, and the
+    * capture below overwrites undo_load_buf - hence the copy this
+    * used to make.  Detaching the allocation does the same job for
+    * nothing: after the detach undo_load_buf owns no buffer, so the
+    * capture serializes into the spare and swaps that in, and neither
+    * one can touch the bytes being restored. */
+   restore_data           = undo_load_buf.data;
+   restore_size           = undo_load_buf.size;
+   restore_cap            = undo_load_buf.capacity;
+   undo_load_buf.data     = NULL;
+   undo_load_buf.size     = 0;
+   undo_load_buf.capacity = 0;
 
    /* Swap the current state with the backup state. This way, we can undo
    what we're undoing */
-   content_save_state("RAM", false);
+   captured               = content_save_state("RAM", false);
 
-   ret = content_deserialize_state(temp_data, temp_data_size);
+   ret = content_deserialize_state(restore_data, restore_size);
 
-   /* Clean up the temporary copy */
-   free(temp_data);
-   temp_data              = NULL;
+   if (captured)
+   {
+      /* The detached allocation has no owner now.  Hand it to the
+       * spare rather than freeing it, so the next capture finds a
+       * buffer that is still mapped instead of asking the kernel for
+       * a fresh one - the same trade the capture path makes.
+       *
+       * The spare is empty here: the capture swapped undo_load_buf's
+       * buffer into it, and the detach above left that NULL.  The
+       * free is kept so this does not become a leak if that ever
+       * stops being true. */
+      free(undo_load_spare.data);
+      undo_load_spare.data     = restore_data;
+      undo_load_spare.capacity = restore_cap;
+   }
+   else
+   {
+      /* The capture failed, so there is nothing to undo back to.  Put
+       * the snapshot back where it was, which is where the
+       * copy-based form left it in this case. */
+      undo_load_buf.data     = restore_data;
+      undo_load_buf.size     = restore_size;
+      undo_load_buf.capacity = restore_cap;
+   }
 
     /* Flush back. */
    for (i = 0; i < num_blocks; i++)
