@@ -28,6 +28,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#include <features/features_cpu.h>
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
@@ -54,18 +55,39 @@
    read/write is a possible suspend to JS code */
 #define SAVE_STATE_CHUNK 4096 * 4096
 #else
-/* A low common denominator write chunk size.  On a slow
+/* A low common denominator transfer quantum.  On a slow
   (speed class 6) SD card, we can write 6MB/s.  That gives us
-  roughly 100KB/frame.
-  This means we can write savestates with one syscall for cores
-  with less than 100KB of state. Class 10 is the standard now
-  even for lousy cards and supports 10MB/s, so you may prefer
-  to put this to 170KB. This all assumes that task_save's loop
-  is iterated once per frame at 60 FPS; if it's updated less
-  frequently this number could be doubled or quadrupled depending
-  on the tickrate. */
+  roughly 100KB/frame, so a single quantum is one syscall that
+  fits inside one frame even on the worst storage we support.
+
+  This is the size of one read/write call, NOT the amount of work
+  a tick may do.  It used to be both, which capped the save/load
+  task at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what
+  the device could actually do: measured on NVMe, one 100KB
+  intfstream_write costs ~62us out of a 16667us frame, so 99.6%
+  of every frame's budget was spent idle and a 16MB state took
+  164 ticks (2.7s at 60Hz) to write.  The tick budget below is
+  what bounds a tick now; the quantum only bounds how long the
+  handler can overshoot that budget, which is why it stays sized
+  for the slowest device rather than the fastest. */
 #define SAVE_STATE_CHUNK 100 * 1024
 #endif
+
+/* Wall-clock budget for one save/load tick, in microseconds.
+   The handler keeps transferring SAVE_STATE_CHUNK quanta until this
+   is exhausted, then yields.  ~12% of a 60Hz frame.
+
+   Chosen as a time rather than a byte count because the quantity
+   that must be bounded is the stall the user sees, and only a clock
+   measures that; a byte count is a guess about device speed that is
+   wrong by two orders of magnitude across the range of devices
+   RetroArch runs on.
+
+   The loop is do/while, so exactly one quantum is always
+   transferred.  On a device slow enough that one quantum exceeds
+   the budget the behaviour is therefore byte-for-byte what it was
+   before this budget existed - there is no worst case to regress. */
+#define SAVE_STATE_TICK_BUDGET_US 2000
 
 #define RASTATE_VERSION 1
 #define RASTATE_MEM_BLOCK "MEM "
@@ -618,13 +640,23 @@ static void task_save_handler(retro_task_t *task)
       }
    }
 
-   /* The serialize above guarantees state->data; the guard that used
-    * to stand here was what let a failed serialize fall through to a
-    * COMPLETED save of nothing. */
-   remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-   written         = (int)intfstream_write(state->file,
-         (uint8_t*)state->data + state->written, remaining);
-   state->written += written;
+   /* Transfer quanta until the tick budget is spent.  do/while, so a
+    * device slow enough that one quantum exceeds the budget behaves
+    * exactly as it did when a tick was hardcoded to one quantum. */
+   {
+      retro_time_t deadline = cpu_features_get_time_usec()
+         + SAVE_STATE_TICK_BUDGET_US;
+      do
+      {
+         remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+         written   = (int)intfstream_write(state->file,
+               (uint8_t*)state->data + state->written, remaining);
+         if (written != remaining)
+            break;
+         state->written += written;
+      } while (   state->written < state->size
+               && cpu_features_get_time_usec() < deadline);
+   }
 
    task_set_progress(task, (state->written / (float)state->size) * 100);
 
@@ -883,10 +915,22 @@ static void task_load_handler(retro_task_t *task)
       task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
 #endif
 
-   remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
-   bytes_read         = intfstream_read(state->file,
-         (uint8_t*)state->data + state->bytes_read, remaining);
-   state->bytes_read += bytes_read;
+   /* Same budgeted-quanta scheme as the save handler; see the comment
+    * on SAVE_STATE_TICK_BUDGET_US. */
+   {
+      retro_time_t deadline = cpu_features_get_time_usec()
+         + SAVE_STATE_TICK_BUDGET_US;
+      do
+      {
+         remaining  = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
+         bytes_read = intfstream_read(state->file,
+               (uint8_t*)state->data + state->bytes_read, remaining);
+         if (bytes_read != remaining)
+            break;
+         state->bytes_read += bytes_read;
+      } while (   state->bytes_read < state->size
+               && cpu_features_get_time_usec() < deadline);
+   }
 
    if (state->size > 0)
       task_set_progress(task, (state->bytes_read / (float)state->size) * 100);
