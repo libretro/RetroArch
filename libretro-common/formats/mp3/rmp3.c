@@ -2857,3 +2857,294 @@ uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex)
       return 1;
    return rmp3_read_f32(pMP3, frameIndex, NULL) == frameIndex;
 }
+
+/* --- STREAMING API -----------------------------------------------------
+ *
+ * rmp3_init_memory wants the whole file addressable: it keeps a borrowed
+ * pointer and a cursor into it, and seeking re-scans from the front.  A
+ * caller reading from storage has no such buffer, and building one costs
+ * the file in memory to play a few kilobytes of it at a time.
+ *
+ * MPEG audio needs far less than that.  A frame is self-contained apart
+ * from the bit reservoir, which the decoder already carries between
+ * frames, so all a decode needs resident is one frame - at most 1044
+ * bytes plus padding at 320kbps, and free-format streams aside, never
+ * more than a couple of kilobytes.  What was missing was a way to hand
+ * frames over as they arrive rather than pointing at all of them at
+ * once.
+ *
+ * Same shape as rvorbis and rflac: point it at input, point it at
+ * output, and step it.  Input is consumed rather than borrowed, so a
+ * window may slide freely; what is not consumed must be presented again
+ * at the head of the next window.
+ */
+
+#define RMP3_STREAM_HOLD  4096   /* comfortably one frame plus a header */
+
+struct rmp3_stream
+{
+   rmp3dec        dec;
+
+   const uint8_t *in;
+   size_t         in_size;
+   size_t         in_pos;
+
+   int16_t       *out;
+   size_t         out_frames;
+   size_t         out_pos;
+
+   /* A frame straddling two windows is reassembled here rather than
+    * asking the caller to guarantee alignment it cannot know. */
+   uint8_t        hold[RMP3_STREAM_HOLD];
+   size_t         hold_len;
+   uint64_t       in_total;    /* bytes ever taken in                  */
+   uint64_t       frame_off;   /* where the last decoded frame began   */
+   uint64_t       frames_in;   /* MPEG frames consumed since reset     */
+
+   /* One decoded frame, drained across as many calls as the caller's
+    * output takes to accept it. */
+   int16_t        pcm[RMP3_MAX_SAMPLES_PER_FRAME];
+   unsigned       pending;
+   unsigned       drained;
+
+   unsigned       channels;
+   unsigned       rate;
+   int            started;
+   int            eof_in;
+};
+
+rmp3_stream_t *rmp3_stream_new(void)
+{
+   rmp3_stream_t *s = (rmp3_stream_t*)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   memset(&s->dec, 0, sizeof(s->dec));
+   return s;
+}
+
+void rmp3_stream_free(rmp3_stream_t *s)
+{
+   free(s);
+}
+
+void rmp3_stream_set_in(rmp3_stream_t *s, const void *in, size_t in_size)
+{
+   if (!s)
+      return;
+   s->in      = (const uint8_t*)in;
+   s->in_size = in ? in_size : 0;
+   s->in_pos  = 0;
+}
+
+void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames)
+{
+   if (!s)
+      return;
+   /* A null destination, or no room in it, means parse-only: frames are
+    * located and counted, nothing is decoded. */
+   s->out        = out;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+}
+
+int rmp3_stream_info(const rmp3_stream_t *s, unsigned *channels, unsigned *rate)
+{
+   if (!s || !s->started)
+      return 0;
+   if (channels)
+      *channels = s->channels;
+   if (rate)
+      *rate = s->rate;
+   return 1;
+}
+
+uint64_t rmp3_stream_frames_in(const rmp3_stream_t *s)
+{
+   return s ? s->frames_in : 0;
+}
+
+uint64_t rmp3_stream_frame_offset(const rmp3_stream_t *s)
+{
+   return s ? s->frame_off : 0;
+}
+
+void rmp3_stream_set_eof(rmp3_stream_t *s)
+{
+   if (s)
+      s->eof_in = 1;
+}
+
+void rmp3_stream_reset(rmp3_stream_t *s)
+{
+   if (!s)
+      return;
+   memset(&s->dec, 0, sizeof(s->dec));
+   s->in       = NULL;
+   s->in_size  = 0;
+   s->in_pos   = 0;
+   s->hold_len = 0;
+   s->pending  = 0;
+   s->drained  = 0;
+   s->in_total = 0;
+   s->frame_off = 0;
+   s->frames_in = 0;
+   /* A reset re-points input, so whatever the previous run reached says
+    * nothing about the new one. */
+   s->eof_in   = 0;
+}
+
+int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
+{
+   size_t w0;
+   int    ret = RMP3_STREAM_OK;
+
+   if (!s)
+      return RMP3_STREAM_ERROR;
+   w0 = s->out_pos;
+
+   for (;;)
+   {
+      rmp3dec_frame_info info;
+      const uint8_t     *src;
+      size_t             avail;
+      int                samples;
+      int                parse_only = (!s->out || !s->out_frames);
+
+      /* Hand over what the last frame produced before decoding another:
+       * one frame is up to 1152 PCM frames and a caller's buffer may be
+       * smaller than that. */
+      if (s->pending > s->drained)
+      {
+         unsigned take = s->pending - s->drained;
+         size_t   room = s->out_frames - s->out_pos;
+         if (!parse_only)
+         {
+            if ((size_t)take > room)
+               take = (unsigned)room;
+            memcpy(s->out + s->out_pos * (size_t)s->channels,
+                  s->pcm + (size_t)s->drained * (size_t)s->channels,
+                  (size_t)take * (size_t)s->channels * sizeof(int16_t));
+            s->out_pos += take;
+         }
+         s->drained += take;
+         if (s->drained < s->pending)
+         {
+            ret = RMP3_STREAM_OK;   /* output full, frame not spent */
+            break;
+         }
+         s->pending = s->drained = 0;
+      }
+
+      if (!parse_only && s->out_pos >= s->out_frames)
+      {
+         ret = RMP3_STREAM_OK;
+         break;
+      }
+
+      /* Top the hold up so a frame split across windows is whole. */
+      if (s->hold_len < RMP3_STREAM_HOLD)
+      {
+         size_t take = RMP3_STREAM_HOLD - s->hold_len;
+         if (take > s->in_size - s->in_pos)
+            take = s->in_size - s->in_pos;
+         if (take)
+         {
+            memcpy(s->hold + s->hold_len, s->in + s->in_pos, take);
+            s->hold_len += take;
+            s->in_pos   += take;
+            s->in_total += take;
+         }
+      }
+
+      src   = s->hold;
+      avail = s->hold_len;
+
+      if (!avail)
+      {
+         ret = RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* Do not decode a partly-filled hold.  Handed fewer bytes than a
+       * frame occupies, the frame finder reports the bytes it scanned
+       * as bytes to skip - it cannot tell the head of a frame that has
+       * not all arrived from junk - and acting on that discards the
+       * frame.  So wait until the hold is full, or until the caller
+       * says nothing more is coming and a short tail is all there is. */
+      if (s->hold_len < RMP3_STREAM_HOLD && !s->eof_in)
+      {
+         ret = RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* Where in the stream whatever is decoded next begins: the hold
+       * always starts at a frame boundary once one has been found, so
+       * this is the offset a caller would seek back to. */
+      s->frame_off = s->in_total - (uint64_t)s->hold_len;
+
+      memset(&info, 0, sizeof(info));
+      samples = rmp3dec_decode_frame(&s->dec, src, (int)avail,
+            parse_only ? NULL : (void*)s->pcm, &info, 0);
+
+      if (!samples && !info.frame_bytes)
+      {
+         /* A full hold with no frame in it is a stream this cannot
+          * make progress on; short of that, more input is wanted. */
+         ret = (s->eof_in && s->hold_len < RMP3_STREAM_HOLD)
+            ? RMP3_STREAM_END : RMP3_STREAM_NEED_IN;
+         break;
+      }
+
+      /* A located frame fills in the header fields whether or not it
+       * went on to produce samples; junk that was merely scanned past
+       * leaves them clear.  That distinction is what separates a frame
+       * consumed from bytes discarded, and only the former advances the
+       * stream's position. */
+      if (info.hz)
+         s->frames_in++;
+
+      if (info.frame_bytes > 0)
+      {
+         size_t used = (size_t)info.frame_bytes;
+         if (used > s->hold_len)
+            used = s->hold_len;
+         memmove(s->hold, s->hold + used, s->hold_len - used);
+         s->hold_len -= used;
+      }
+
+      if (samples > 0)
+      {
+         if (!s->started)
+         {
+            s->channels = (unsigned)info.channels;
+            s->rate     = (unsigned)info.hz;
+            s->started  = 1;
+         }
+         /* A stream that changes geometry partway is not something the
+          * fixed output layout can express. */
+         else if ((unsigned)info.channels != s->channels
+               || (unsigned)info.hz != s->rate)
+            return RMP3_STREAM_ERROR;
+
+         if (parse_only)
+         {
+            /* One frame per call while counting, so the offset reported
+             * alongside it belongs to that frame and not to whichever
+             * of a batch happened to come first.  Building a seek index
+             * is the reason to walk a stream without decoding it, and
+             * an index of frame positions needs them one at a time. */
+            s->out_pos += (size_t)samples;
+            ret = RMP3_STREAM_OK;
+            break;
+         }
+         s->pending = (unsigned)samples;
+         s->drained = 0;
+      }
+   }
+
+   if (read)
+      *read = s->in_pos;
+   if (wrote)
+      *wrote = s->out_pos - w0;
+   return ret;
+}
