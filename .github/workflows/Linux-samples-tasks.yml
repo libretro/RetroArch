@@ -329,3 +329,110 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
              ./image_decode_slice_test
           echo "[pass] image_decode_slice_test (ASan)"
+
+      - name: Build and run save_state_io_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/save_state
+        run: |
+          set -eu
+          # Oracle for the file I/O in tasks/task_save.c, compiled
+          # from the tree so it exercises the shipping translation
+          # unit.  As in image_decode_slice, the clock is the test's
+          # instrument: the sample provides
+          # cpu_features_get_time_usec() itself, advancing a fixed
+          # step per observation, so the tick budget is assertable
+          # exactly rather than measured against a wall clock.  Step 0
+          # is a budget that never expires; step >= the budget is one
+          # that expires on first observation.
+          #
+          # The throughput regression it pins: both handlers used to
+          # transfer exactly one SAVE_STATE_CHUNK per queue tick,
+          # which caps a save at chunk * tick_rate (~6 MB/s) whatever
+          # the device can do - a 16 MB state took 164 ticks, 2.7s at
+          # 60Hz, while one 100 KB write costs ~62us of a 16667us
+          # frame.  A tick is now bounded by time and transfers as
+          # many quanta as fit.  Because a time budget is only an
+          # improvement if it cannot be worse than the fixed count it
+          # replaced, the exhausted-budget lane asserts the fallback
+          # directly: with a clock that spends the budget on its first
+          # observation the handler must still transfer exactly one
+          # quantum per tick and still produce a correct file.  That
+          # is the old behaviour reached through the new code, and it
+          # is what the slowest supported storage gets.
+          #
+          # The rest are the defects the audit turned up, each
+          # verified to fail this oracle on the pre-fix tree:
+          #
+          #  - The rastate block walker looped on 'input < stop', so
+          #    it could enter the body with one byte left and read the
+          #    block length out of input[4..7] - six bytes past the
+          #    end.  content_deserialize_state had the same shape one
+          #    level up, reading seven bytes of magic and input[7] for
+          #    the version with no length check at all.  Savestates
+          #    are shared, synced and recovered off failing media, and
+          #    the load handler's own short-read path produces exactly
+          #    this buffer, so this is a format parser on hostile
+          #    input.  ASan reports both for any state truncated to
+          #    9..15 bytes.
+          #
+          #  - A block's declared 32-bit length was never checked
+          #    against the bytes actually remaining and was then
+          #    passed to core_unserialize as the size of the buffer at
+          #    that offset.  The stub core here reads every byte it is
+          #    told the buffer holds before judging the size, exactly
+          #    as a real core does, so ASan - not the stub's own
+          #    opinion - is what catches an over-long block.  A stub
+          #    that checked size first would pass against the unfixed
+          #    walker.
+          #
+          #  - That length was also assembled as input[7] << 24 on an
+          #    int, undefined for every top byte >= 0x80, i.e. every
+          #    length at or above 2 GB - the range a corrupt length
+          #    lands in, and the value the bound check is asked to
+          #    trust.  UBSan is the assertion.
+          #
+          #  - A failed core_serialize left data NULL and size 0, at
+          #    which point every test in the save handler read as
+          #    success and the task reported COMPLETED.  The file had
+          #    already been opened and truncated, so the user was told
+          #    the save succeeded and the slot held zero bytes.
+          #
+          #  - A failed open was a bare return: not errored, not
+          #    finished, so the queue re-entered the task every tick
+          #    and it retried forever.  Save tasks are
+          #    TASK_TYPE_BLOCKING, so that one task held the single
+          #    blocking slot for the rest of the session - no state
+          #    could be saved or loaded again without a restart.  The
+          #    exclusion rule that makes it severe is itself pinned,
+          #    together with the cleanup the refusal path owes (the
+          #    task, its title, the state struct and the caller's
+          #    serialized buffer), which is why leak detection is on.
+          #
+          # The conc lane runs the same round-trip under a threaded
+          # queue, where the transfer loop executes on the worker
+          # while content_deserialize_state and the undo bookkeeping
+          # stay on the gathering thread.  It is one task at a time by
+          # design, not by simplification: TASK_TYPE_BLOCKING means
+          # the frontend cannot produce concurrent save tasks, so a
+          # lane that pushed them would be asserting against a
+          # configuration that cannot occur.  What it asks TSan is
+          # whether a loop that newly carries a deadline across
+          # iterations kept any of it shared.
+          make clean all
+          test -x save_state_io_test
+          timeout 300 ./save_state_io_test
+          timeout 300 ./save_state_io_test conc
+          echo "[pass] save_state_io_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./save_state_io_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 300 ./save_state_io_test conc
+          echo "[pass] save_state_io_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./save_state_io_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./save_state_io_test conc
+          echo "[pass] save_state_io_test (TSan)"

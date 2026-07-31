@@ -28,6 +28,7 @@
 #include <file/file_path.h>
 #include <retro_miscellaneous.h>
 #include <retro_timers.h>
+#include <features/features_cpu.h>
 #include <time/rtime.h>
 
 #ifdef HAVE_CONFIG_H
@@ -54,18 +55,39 @@
    read/write is a possible suspend to JS code */
 #define SAVE_STATE_CHUNK 4096 * 4096
 #else
-/* A low common denominator write chunk size.  On a slow
+/* A low common denominator transfer quantum.  On a slow
   (speed class 6) SD card, we can write 6MB/s.  That gives us
-  roughly 100KB/frame.
-  This means we can write savestates with one syscall for cores
-  with less than 100KB of state. Class 10 is the standard now
-  even for lousy cards and supports 10MB/s, so you may prefer
-  to put this to 170KB. This all assumes that task_save's loop
-  is iterated once per frame at 60 FPS; if it's updated less
-  frequently this number could be doubled or quadrupled depending
-  on the tickrate. */
+  roughly 100KB/frame, so a single quantum is one syscall that
+  fits inside one frame even on the worst storage we support.
+
+  This is the size of one read/write call, NOT the amount of work
+  a tick may do.  It used to be both, which capped the save/load
+  task at SAVE_STATE_CHUNK * tick_rate == ~6MB/s no matter what
+  the device could actually do: measured on NVMe, one 100KB
+  intfstream_write costs ~62us out of a 16667us frame, so 99.6%
+  of every frame's budget was spent idle and a 16MB state took
+  164 ticks (2.7s at 60Hz) to write.  The tick budget below is
+  what bounds a tick now; the quantum only bounds how long the
+  handler can overshoot that budget, which is why it stays sized
+  for the slowest device rather than the fastest. */
 #define SAVE_STATE_CHUNK 100 * 1024
 #endif
+
+/* Wall-clock budget for one save/load tick, in microseconds.
+   The handler keeps transferring SAVE_STATE_CHUNK quanta until this
+   is exhausted, then yields.  ~12% of a 60Hz frame.
+
+   Chosen as a time rather than a byte count because the quantity
+   that must be bounded is the stall the user sees, and only a clock
+   measures that; a byte count is a guess about device speed that is
+   wrong by two orders of magnitude across the range of devices
+   RetroArch runs on.
+
+   The loop is do/while, so exactly one quantum is always
+   transferred.  On a device slow enough that one quantum exceeds
+   the budget the behaviour is therefore byte-for-byte what it was
+   before this budget existed - there is no worst case to regress. */
+#define SAVE_STATE_TICK_BUDGET_US 2000
 
 #define RASTATE_VERSION 1
 #define RASTATE_MEM_BLOCK "MEM "
@@ -334,8 +356,13 @@ static void task_save_handler_finished(retro_task_t *task,
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
-   intfstream_close(state->file);
-   free(state->file);
+   /* NULL when the handler failed before the file was opened
+    * (serialize failure, or the open itself). */
+   if (state->file)
+   {
+      intfstream_close(state->file);
+      free(state->file);
+   }
 
    flg = task_get_flags(task);
 
@@ -557,6 +584,32 @@ static void task_save_handler(retro_task_t *task)
    int written              = 0;
    save_task_state_t *state = (save_task_state_t*)task->state;
 
+   /* Serialize before opening, not after.  Opening first meant a
+    * failed serialize had already created (and truncated) the target,
+    * so the slot was left holding a zero-byte file. */
+   if (!state->data)
+   {
+      size_t _len = 0;
+      state->data = content_get_serialized_data(&_len);
+      state->size = (ssize_t)_len;
+
+      /* A failed serialize used to leave data NULL and size 0, and
+       * every test below then read as success: remaining was 0, so
+       * written == remaining, and written == size, so the handler
+       * reported a COMPLETED save of a zero-byte file.  The user got
+       * a 'state saved' notification and an empty slot. */
+      if (!state->data || state->size <= 0)
+      {
+         RARCH_ERR("[State] save task could not serialize core state "
+               "for slot %d, path \"%s\".\n",
+               state->state_slot, state->path);
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+         task_save_handler_finished(task, state);
+         return;
+      }
+   }
+
    if (!state->file)
    {
       if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
@@ -569,28 +622,40 @@ static void task_save_handler(retro_task_t *task)
 
       if (!state->file)
       {
+         /* This used to be a bare return.  The task was neither
+          * errored nor finished, so the queue re-entered it on the
+          * next tick and it retried the open forever - and because
+          * save tasks are TASK_TYPE_BLOCKING, that one task wedged
+          * every other blocking task for the rest of the session.
+          * An open that failed once (read-only medium, bad path,
+          * no space) is not going to succeed on retry; fail it. */
          RARCH_ERR("[State] save task could not open \"%s\" for writing "
                "(slot %d). The auto-index slot was already advanced, so "
                "this leaves an advanced slot with no save file.\n",
                state->path, state->state_slot);
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+         task_save_handler_finished(task, state);
          return;
       }
    }
 
-   if (!state->data)
+   /* Transfer quanta until the tick budget is spent.  do/while, so a
+    * device slow enough that one quantum exceeds the budget behaves
+    * exactly as it did when a tick was hardcoded to one quantum. */
    {
-      size_t _len = 0;
-      state->data = content_get_serialized_data(&_len);
-      state->size = (ssize_t)_len;
-   }
-
-   remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-
-   if (state->data)
-   {
-      written         = (int)intfstream_write(state->file,
-         (uint8_t*)state->data + state->written, remaining);
-      state->written += written;
+      retro_time_t deadline = cpu_features_get_time_usec()
+         + SAVE_STATE_TICK_BUDGET_US;
+      do
+      {
+         remaining = MIN(state->size - state->written, SAVE_STATE_CHUNK);
+         written   = (int)intfstream_write(state->file,
+               (uint8_t*)state->data + state->written, remaining);
+         if (written != remaining)
+            break;
+         state->written += written;
+      } while (   state->written < state->size
+               && cpu_features_get_time_usec() < deadline);
    }
 
    task_set_progress(task, (state->written / (float)state->size) * 100);
@@ -801,9 +866,26 @@ static void task_load_handler(retro_task_t *task)
    save_task_state_t *state = (save_task_state_t*)task->state;
    video_driver_state_t *video_st  = video_state_get_ptr();
 
-   /* Ensure the core is ready for loading states (Dolphin CLI) */
-   while (video_st->frame_count < 2)
-      retro_sleep(1);
+   /* Ensure the core is ready for loading states (Dolphin CLI).
+    *
+    * This used to spin here (while (...) retro_sleep(1)).  Two
+    * problems with that.  When the task queue is not threaded the
+    * handler runs on the same thread that advances frame_count, so
+    * the condition it waits on can never become true and the spin is
+    * an unconditional hang; it only ever went unnoticed because
+    * frame_count is already past 2 by the time a user loads a state
+    * interactively, and CLI autoload is the one path that reaches
+    * here early.  When it IS threaded, this is an unsynchronised read
+    * of a counter the video thread writes - a data race, and TSan
+    * reports it.
+    *
+    * Yielding does both jobs: the task stays queued and is re-entered
+    * on the next tick, by which time the runloop has advanced the
+    * counter.  The read is still unsynchronised, but it is now a
+    * single benign poll of a monotonic counter rather than a spin,
+    * and no progress depends on this thread observing it promptly. */
+   if (video_st->frame_count < 2)
+      return;
 
    if (!state->file)
    {
@@ -833,10 +915,22 @@ static void task_load_handler(retro_task_t *task)
       task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
 #endif
 
-   remaining          = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
-   bytes_read         = intfstream_read(state->file,
-         (uint8_t*)state->data + state->bytes_read, remaining);
-   state->bytes_read += bytes_read;
+   /* Same budgeted-quanta scheme as the save handler; see the comment
+    * on SAVE_STATE_TICK_BUDGET_US. */
+   {
+      retro_time_t deadline = cpu_features_get_time_usec()
+         + SAVE_STATE_TICK_BUDGET_US;
+      do
+      {
+         remaining  = MIN(state->size - state->bytes_read, SAVE_STATE_CHUNK);
+         bytes_read = intfstream_read(state->file,
+               (uint8_t*)state->data + state->bytes_read, remaining);
+         if (bytes_read != remaining)
+            break;
+         state->bytes_read += bytes_read;
+      } while (   state->bytes_read < state->size
+               && cpu_features_get_time_usec() < deadline);
+   }
 
    if (state->size > 0)
       task_set_progress(task, (state->bytes_read / (float)state->size) * 100);
@@ -918,15 +1012,67 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
    bool seen_replay = false;
 #endif
 
+   /* The identifier itself must be present before anything is read
+    * past it. */
+   if (len < 8)
+      return false;
+
    input += 8;
 
-   while (input < stop)
+   /* input + 8 <= stop, not input < stop.  The old bound let the loop
+    * body run with as little as one byte remaining and then read the
+    * block length out of input[4..7] - up to six bytes past the end of
+    * the buffer.  ASan reports it for any state file truncated to
+    * 9..15 bytes, which is not a theoretical shape: savestates get
+    * shared, synced and copied off failing media, and a short read in
+    * the load handler produces exactly this buffer. */
+   while (input + 8 <= stop)
    {
-      size_t     block_size = ( input[7] << 24
-            | input[6] << 16 |  input[5] << 8 | input[4]);
+      /* Assembled through uint32_t, not int.  input[7] is an unsigned
+       * char, which promotes to int, and int << 24 is undefined for
+       * any top byte >= 0x80 - that is every block length at or above
+       * 2 GB, which is exactly the range a corrupt or hostile length
+       * lands in.  UBSan reports it; a compiler is entitled to do
+       * worse than report it, and the value it produces is the one
+       * the bound check below is asked to trust. */
+      size_t     block_size = (size_t)(  ((uint32_t)input[7] << 24)
+                                       | ((uint32_t)input[6] << 16)
+                                       | ((uint32_t)input[5] <<  8)
+                                       |  (uint32_t)input[4]);
       unsigned char *marker = input;
+      size_t          avail;
+      size_t        advance;
 
       input += 8;
+
+      /* Terminator carries no payload; check it before the extent
+       * test so a well-formed END block is not rejected. */
+      if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
+         break;
+
+      /* Nothing below may consume more than the buffer holds.  This
+       * is what stops a corrupt or hostile 32-bit length from being
+       * handed to core_unserialize / rcheevos_set_serialized_data /
+       * replay_set_serialized_data as the size of a buffer that is
+       * not that large - the block contents are attacker-controlled
+       * in any file that arrived from outside. */
+      avail = (size_t)(stop - input);
+      if (block_size > avail)
+      {
+         RARCH_ERR("[State] Block \"%.4s\" declares %u bytes with %u "
+               "left in the state; refusing.\n",
+               (const char*)marker, (unsigned)block_size,
+               (unsigned)avail);
+         return false;
+      }
+
+      /* Padding is written for every block but the last one may sit
+       * flush against the end of the buffer, so clamp rather than
+       * reject.  Computed after the bound check above: block_size is
+       * a 32-bit quantity and CONTENT_ALIGN_SIZE would overflow a
+       * 32-bit size_t near UINT32_MAX. */
+      if ((advance = CONTENT_ALIGN_SIZE(block_size)) > avail)
+         advance = avail;
 
       if (memcmp(marker, RASTATE_MEM_BLOCK, 4) == 0)
       {
@@ -981,10 +1127,8 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
             return false;
       }
 #endif
-      else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
-         break;
 
-      input += CONTENT_ALIGN_SIZE(block_size);
+      input += advance;
    }
 
    if (!seen_core)
@@ -1014,6 +1158,13 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 
 bool content_deserialize_state(const void *s, size_t len)
 {
+   /* Both branches below read the first 8 bytes: the memcmp reads 7
+    * and the version switch reads input[7].  Neither was guarded, so
+    * a state file shorter than the identifier overread here before
+    * the block walker was ever reached. */
+   if (!s || len < 8)
+      return false;
+
    if (memcmp(s, "RASTATE", 7) != 0)
    {
       /* old format is just core data, load it directly */
