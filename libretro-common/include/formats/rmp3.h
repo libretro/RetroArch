@@ -125,6 +125,127 @@ uint32_t rmp3_seek_to_frame(rmp3* pMP3, uint64_t frameIndex);
 
 /* Frees any memory that was allocated by a public rmp3 API. */
 
+
+/* Streaming API
+ * =============
+ *
+ * For an MP3 that is not resident: bytes are handed over a window at a
+ * time and PCM comes back as they arrive, so what a decode costs in
+ * memory is a frame rather than a file. The pull API above keeps a
+ * borrowed pointer to the whole stream and re-scans it to seek, which a
+ * caller reading from storage does not have and should not have to
+ * fabricate.
+ *
+ *    rmp3_stream_t *s = rmp3_stream_new();
+ *    rmp3_stream_set_out_s16(s, pcm, frames);
+ *    for (;;)
+ *    {
+ *       rmp3_stream_set_in(s, buf, filled);
+ *       r = rmp3_stream_process(s, &read, &wrote);
+ *       memmove(buf, buf + read, filled -= read);
+ *       if (r == RMP3_STREAM_NEED_IN)
+ *          filled += pull_bytes(buf + filled, cap - filled);
+ *       else if (r != RMP3_STREAM_OK)
+ *          break;
+ *    }
+ *
+ * Input is consumed, not borrowed: @read says how much was taken and the
+ * rest must be presented again, so a window may slide freely. A frame
+ * split across two windows is reassembled internally, so no alignment
+ * is asked of the caller.
+ *
+ * MPEG audio states no length: a stream is however many frames it turns
+ * out to contain, and short of a Xing header the only way to know is to
+ * walk them. Setting no output does exactly that - frames are located
+ * and counted, nothing is decoded - which is what @wrote reports. In
+ * that mode process() returns after each frame, so the offset from
+ * rmp3_stream_frame_offset() belongs to the frame just counted and a
+ * caller can build a seek index as it walks.
+ */
+
+#define RMP3_STREAM_OK        0
+#define RMP3_STREAM_NEED_IN   1  /* input window is spent           */
+#define RMP3_STREAM_END       2  /* nothing further to decode       */
+#define RMP3_STREAM_ERROR   (-1)
+
+typedef struct rmp3_stream rmp3_stream_t;
+
+rmp3_stream_t *rmp3_stream_new(void);
+void rmp3_stream_free(rmp3_stream_t *s);
+
+void rmp3_stream_set_in(rmp3_stream_t *s, const void *in, size_t in_size);
+
+/**
+ * rmp3_stream_set_out_s16:
+ *
+ * Sets the destination and its capacity in frames, interleaved at the
+ * stream's own channel count. A null destination, or a capacity of
+ * zero, is parse-only.
+ */
+void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames);
+
+int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote);
+
+/**
+ * rmp3_stream_info:
+ *
+ * Returns: nonzero once a frame has been decoded, which is the point
+ * the channel count and rate are known - MPEG audio has no header
+ * ahead of the stream to read them from.
+ */
+int rmp3_stream_info(const rmp3_stream_t *s, unsigned *channels, unsigned *rate);
+
+/**
+ * rmp3_stream_set_eof:
+ *
+ * States that no further input will be supplied.
+ *
+ * Required to decode the tail. A frame must be presented whole: given
+ * fewer bytes than one occupies, the frame finder cannot tell the head
+ * of an unfinished frame from junk and reports it as bytes to skip, so
+ * the decoder waits for a full window rather than acting on that. At
+ * the end of a stream that window never fills, and this is what says
+ * the short tail is all there is.
+ */
+/**
+ * rmp3_stream_frame_offset:
+ *
+ * Where in the stream the frame decoded by the last process() call
+ * began, counted from the first byte ever handed to set_in() since the
+ * last reset.
+ *
+ * MPEG audio carries no index and a frame is not addressable from its
+ * position alone, so seeking means noting these offsets on the way past
+ * and resuming from one. Resuming mid-stream loses whatever the bit
+ * reservoir carried into that frame, so decode a frame or two before
+ * the target and discard them.
+ */
+uint64_t rmp3_stream_frame_offset(const rmp3_stream_t *s);
+
+/**
+ * rmp3_stream_frames_in:
+ *
+ * MPEG frames consumed since the last reset, whether or not they
+ * produced samples.
+ *
+ * Not every frame does. Layer III carries part of a frame's data in the
+ * frames before it - the bit reservoir - so a decoder that joined the
+ * stream partway meets frames whose data begins before where it
+ * started, and those decode to nothing. How many depends on how the
+ * encoder distributed its bits, not on anything a caller can compute:
+ * it is one frame in some places and three in others.
+ *
+ * A caller resuming at a known frame therefore cannot assume its
+ * position advances one frame per emission. This is what says where the
+ * stream actually stands: resuming at frame N, the frame just emitted
+ * is N + frames_in - 1.
+ */
+uint64_t rmp3_stream_frames_in(const rmp3_stream_t *s);
+
+void rmp3_stream_set_eof(rmp3_stream_t *s);
+
+void rmp3_stream_reset(rmp3_stream_t *s);
+
 #ifdef __cplusplus
 }
 #endif
