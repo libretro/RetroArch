@@ -1740,7 +1740,6 @@ static void core_info_resolve_firmware(
    {
       size_t _len2;
       char key[64];
-      struct config_entry_list *entry = NULL;
       bool tmp_bool                   = false;
 
       snprintf(prefix + _len, sizeof(prefix) - _len, "%u_", i);
@@ -1781,7 +1780,6 @@ static void core_info_parse_config_file(
       config_file_t *conf)
 {
    bool tmp_bool                   = false;
-   struct config_entry_list *entry = NULL;
 
    info->display_name = config_take_string(conf, "display_name");
 
@@ -1922,7 +1920,8 @@ static void core_info_parse_config_file(
       if (tmp_bool)
       {
          /* Check if savestate features are defined */
-         entry = config_get_entry(conf, "savestate_features");
+         struct config_entry_list *entry = config_get_entry(
+               conf, "savestate_features");
 
          if (entry && (entry->value && *entry->value))
          {
