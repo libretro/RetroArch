@@ -805,3 +805,115 @@ size_t rwav_decode_s16(const rwav_t *wav, const void *base, size_t frame,
    }
    return done;
 }
+
+/* ---- windowed reading ------------------------------------------------
+ *
+ * rwav_decode_s16 addresses frames, but a caller streaming a file has
+ * bytes: it must know which ones a frame range needs before it can
+ * fetch them.  For the uncompressed and companded formats that is
+ * blockalign arithmetic the caller could do itself; for the block-coded
+ * ones it is not, because a frame lives inside a coded block that only
+ * rwav can locate, and fetching the wrong span yields silence or noise
+ * rather than an error.  So the mapping is stated here once.
+ */
+
+static int rwav_block_coded(const rwav_t *wav)
+{
+   return    wav->format == RWAV_FORMAT_MS_ADPCM
+          || wav->format == RWAV_FORMAT_IMA_ADPCM;
+}
+
+int rwav_frame_extent(const rwav_t *wav, size_t frame, size_t frames,
+      size_t *offset, size_t *length)
+{
+   size_t first, last, off, len;
+
+   if (!wav || !wav->blockalign || frame >= wav->numsamples)
+      return 0;
+   if (frames > wav->numsamples - frame)
+      frames = wav->numsamples - frame;
+   if (!frames)
+      return 0;
+
+   if (rwav_block_coded(wav))
+   {
+      unsigned spb = wav->samplesperblock;
+      if (!spb)
+         return 0;
+      first = frame / spb;
+      last  = (frame + frames - 1) / spb;
+   }
+   else
+   {
+      first = frame;
+      last  = frame + frames - 1;
+   }
+
+   off = (size_t)wav->blockalign * first;
+   len = (size_t)wav->blockalign * (last - first + 1);
+   /* A declared payload may overrun the file; subchunk2size is already
+    * clamped to what is really there, so bound against it rather than
+    * describing bytes the caller cannot read. */
+   if (off >= wav->subchunk2size)
+      return 0;
+   if (len > wav->subchunk2size - off)
+      len = wav->subchunk2size - off;
+
+   if (offset)
+      *offset = wav->dataoffset + off;
+   if (length)
+      *length = len;
+   return 1;
+}
+
+size_t rwav_decode_s16_at(const rwav_t *wav, const void *chunk,
+      size_t chunk_offset, size_t frame, size_t frames, short *out)
+{
+   rwav_t h;
+   size_t want, rel;
+
+   if (!wav || !chunk || !out || !wav->blockalign)
+      return 0;
+   if (frame >= wav->numsamples)
+      return 0;
+   if (frames > wav->numsamples - frame)
+      frames = wav->numsamples - frame;
+   if (!frames)
+      return 0;
+
+   /* Re-express the payload as though the chunk were the whole file:
+    * the decode below is position-independent once told where the data
+    * starts and how much of it there is. */
+   h = *wav;
+   h.dataoffset = 0;
+   h.samples    = NULL;
+
+   if (rwav_block_coded(wav))
+   {
+      unsigned spb   = wav->samplesperblock;
+      size_t   first = frame / spb;
+      if (!spb)
+         return 0;
+      /* The chunk must begin on the block the frame lives in - that is
+       * what rwav_frame_extent hands back - because the block carries
+       * the predictor state the frame continues from. */
+      if (chunk_offset != wav->dataoffset + (size_t)wav->blockalign * first)
+         return 0;
+      rel  = frame - first * (size_t)spb;
+      want = rel + frames;
+   }
+   else
+   {
+      if (chunk_offset != wav->dataoffset + (size_t)wav->blockalign * frame)
+         return 0;
+      rel  = 0;
+      want = frames;
+   }
+
+   h.numsamples    = want;
+   h.subchunk2size = (size_t)wav->blockalign
+      * (rwav_block_coded(wav)
+            ? (want + wav->samplesperblock - 1) / wav->samplesperblock
+            : want);
+   return rwav_decode_s16(&h, chunk, rel, frames, out);
+}
