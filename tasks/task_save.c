@@ -918,15 +918,67 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
    bool seen_replay = false;
 #endif
 
+   /* The identifier itself must be present before anything is read
+    * past it. */
+   if (len < 8)
+      return false;
+
    input += 8;
 
-   while (input < stop)
+   /* input + 8 <= stop, not input < stop.  The old bound let the loop
+    * body run with as little as one byte remaining and then read the
+    * block length out of input[4..7] - up to six bytes past the end of
+    * the buffer.  ASan reports it for any state file truncated to
+    * 9..15 bytes, which is not a theoretical shape: savestates get
+    * shared, synced and copied off failing media, and a short read in
+    * the load handler produces exactly this buffer. */
+   while (input + 8 <= stop)
    {
-      size_t     block_size = ( input[7] << 24
-            | input[6] << 16 |  input[5] << 8 | input[4]);
+      /* Assembled through uint32_t, not int.  input[7] is an unsigned
+       * char, which promotes to int, and int << 24 is undefined for
+       * any top byte >= 0x80 - that is every block length at or above
+       * 2 GB, which is exactly the range a corrupt or hostile length
+       * lands in.  UBSan reports it; a compiler is entitled to do
+       * worse than report it, and the value it produces is the one
+       * the bound check below is asked to trust. */
+      size_t     block_size = (size_t)(  ((uint32_t)input[7] << 24)
+                                       | ((uint32_t)input[6] << 16)
+                                       | ((uint32_t)input[5] <<  8)
+                                       |  (uint32_t)input[4]);
       unsigned char *marker = input;
+      size_t          avail;
+      size_t        advance;
 
       input += 8;
+
+      /* Terminator carries no payload; check it before the extent
+       * test so a well-formed END block is not rejected. */
+      if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
+         break;
+
+      /* Nothing below may consume more than the buffer holds.  This
+       * is what stops a corrupt or hostile 32-bit length from being
+       * handed to core_unserialize / rcheevos_set_serialized_data /
+       * replay_set_serialized_data as the size of a buffer that is
+       * not that large - the block contents are attacker-controlled
+       * in any file that arrived from outside. */
+      avail = (size_t)(stop - input);
+      if (block_size > avail)
+      {
+         RARCH_ERR("[State] Block \"%.4s\" declares %u bytes with %u "
+               "left in the state; refusing.\n",
+               (const char*)marker, (unsigned)block_size,
+               (unsigned)avail);
+         return false;
+      }
+
+      /* Padding is written for every block but the last one may sit
+       * flush against the end of the buffer, so clamp rather than
+       * reject.  Computed after the bound check above: block_size is
+       * a 32-bit quantity and CONTENT_ALIGN_SIZE would overflow a
+       * 32-bit size_t near UINT32_MAX. */
+      if ((advance = CONTENT_ALIGN_SIZE(block_size)) > avail)
+         advance = avail;
 
       if (memcmp(marker, RASTATE_MEM_BLOCK, 4) == 0)
       {
@@ -981,10 +1033,8 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
             return false;
       }
 #endif
-      else if (memcmp(marker, RASTATE_END_BLOCK, 4) == 0)
-         break;
 
-      input += CONTENT_ALIGN_SIZE(block_size);
+      input += advance;
    }
 
    if (!seen_core)
@@ -1014,6 +1064,13 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 
 bool content_deserialize_state(const void *s, size_t len)
 {
+   /* Both branches below read the first 8 bytes: the memcmp reads 7
+    * and the version switch reads input[7].  Neither was guarded, so
+    * a state file shorter than the identifier overread here before
+    * the block walker was ever reached. */
+   if (!s || len < 8)
+      return false;
+
    if (memcmp(s, "RASTATE", 7) != 0)
    {
       /* old format is just core data, load it directly */
