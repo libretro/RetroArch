@@ -783,6 +783,20 @@ bool disk_control_verify_initial_index(
    disk_control->initial_num_images =
          disk_control->cb.get_num_images();
 
+   /* A core that reports no images has no disk state to
+    * restore. Cores are not required to confine the disk
+    * control interface to disk content - a computer core
+    * registers it once, in retro_set_environment(), long
+    * before it knows whether the content it is about to be
+    * handed is a disk image, a tape or a snapshot - so
+    * "interface present" does not imply "content has disks".
+    * There is nothing to verify here, and get_image_path() is
+    * required to fail for every index when there are no
+    * images, so going on would report a failed restore for
+    * every non-disk load. */
+   if (disk_control->initial_num_images < 1)
+      return true;
+
    /* Get current image index + path */
    image_index = disk_control->cb.get_image_index();
 
