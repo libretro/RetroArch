@@ -194,10 +194,56 @@ static void core_fill(size_t n)
 
 size_t core_serialize_size(void) { return core_len; }
 
+/* Counting allocator, for the one property here that cannot be seen
+ * any other way.
+ *
+ * The undo snapshot keeps its allocation between captures instead of
+ * freeing and remallocing it.  Pointer identity cannot observe that:
+ * a state-sized block goes to mmap, munmap on free hands the region
+ * back, and the next request of the same size is usually handed the
+ * same address - so a run of captures looks identical whether the
+ * buffer was reused or reallocated, while the page faults that make
+ * it expensive are only paid in one of them.  Counting the calls is
+ * the discriminator.
+ *
+ * Only state-sized requests are counted, so the frontend's small
+ * incidental allocations (task structs, titles, paths) do not drown
+ * the signal.  Linked with -Wl,--wrap so this sees the calls made by
+ * the unit under test, not just by this file; under a sanitizer
+ * __real_malloc resolves to the sanitizer's allocator, which is what
+ * we want - the count is of calls, not of pages. */
+#define BIG_ALLOC_BYTES (64 * 1024)
+
+static int big_allocs     = 0;
+static int alloc_count_on = 0;
+
+extern void *__real_malloc(size_t n);
+
+void *__wrap_malloc(size_t n)
+{
+   if (alloc_count_on && n >= BIG_ALLOC_BYTES)
+      big_allocs++;
+   return __real_malloc(n);
+}
+
+static void alloc_count_begin(void)
+{
+   big_allocs     = 0;
+   alloc_count_on = 1;
+}
+
+static void alloc_count_end(void) { alloc_count_on = 0; }
+
+static int ser_dest_calls = 0;
+
+static void ser_dest_reset(void) { ser_dest_calls = 0; }
+static void ser_dest_note(void *p) { (void)p; ser_dest_calls++; }
+
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    if (core_ser_fails || !info || info->size < core_len)
       return false;
+   ser_dest_note((void*)info->data);
    memcpy((void*)info->data, core_mem, core_len);
    return true;
 }
@@ -748,6 +794,138 @@ static void test_threaded_roundtrip(void)
    filestream_delete(path);
 }
 
+/* -----------------------------------------------------------------
+ * 9. The undo snapshot reuses its allocation.
+ *
+ *    content_load_state_cb retakes the undo snapshot on every single
+ *    state load, so this is the hottest serialize the frontend does,
+ *    and it used to free its destination and malloc a new one each
+ *    time.  A state-sized allocation is served by mmap, so the free
+ *    hands the pages back to the kernel and the next serialize faults
+ *    every one of them in on first touch - measured at 63% of the
+ *    cost of a 16 MiB serialize, more than the copy it exists to
+ *    hold.
+ *
+ *    The snapshot now keeps the outgoing allocation as a spare and
+ *    swaps the two, so a run of snapshots at a fixed state size must
+ *    settle onto exactly two buffers.  Two rather than one because it
+ *    is a swap, which is what preserves the failure semantics tested
+ *    below; a third would mean something is still reallocating.
+ * ----------------------------------------------------------------- */
+static void test_undo_snapshot_reuses(void)
+{
+   int i, taken = 0;
+
+   frontend_reset();
+   core_fill(8 * TEST_SAVE_STATE_CHUNK);
+   content_reset_savestate_backups();
+   ser_dest_reset();
+
+   alloc_count_begin();
+   for (i = 0; i < 8; i++)
+      if (content_save_state("RAM", false))
+         taken++;
+   alloc_count_end();
+
+   okf(taken == 8, "eight consecutive undo snapshots all succeed");
+   okf(ser_dest_calls == 8, "eight snapshots ran eight serializes");
+
+   /* Two, not one: it is a swap, and the second capture has to build
+    * its snapshot somewhere while the first is still the live one.
+    * From the third onwards the two allocations ping-pong and nothing
+    * further is requested.  Reallocating per capture - what this
+    * replaced - measures eight. */
+   okf(big_allocs == 2,
+       "eight snapshots allocate two state-sized buffers, not eight");
+   if (big_allocs != 2)
+      printf("       (%d state-sized allocations for 8 snapshots)\n",
+            big_allocs);
+
+   content_reset_savestate_backups();
+}
+
+/* -----------------------------------------------------------------
+ * 10. The reused buffer still grows, and a grown snapshot is correct.
+ *
+ *     The serialized length is not fixed - it tracks the core's state
+ *     size, which changes when content changes.  A reused buffer that
+ *     failed to grow would be an overflow, and one that grew but kept
+ *     a stale length would be a truncated snapshot.  Undoing back to
+ *     each size is what checks both.
+ * ----------------------------------------------------------------- */
+static void test_undo_snapshot_grows(void)
+{
+   size_t   small = 3 * TEST_SAVE_STATE_CHUNK;
+   size_t   big   = 11 * TEST_SAVE_STATE_CHUNK;
+   uint8_t *expect;
+
+   frontend_reset();
+   content_reset_savestate_backups();
+
+   /* Small state, snapshot it, then grow the core and snapshot again:
+    * the second snapshot must not be served out of the first, smaller
+    * allocation. */
+   core_fill(small);
+   okf(content_save_state("RAM", false), "snapshot at the smaller size");
+
+   core_fill(big);
+   expect = (uint8_t*)malloc(big);
+   memcpy(expect, core_mem, big);
+   okf(content_save_state("RAM", false), "snapshot after the state grew");
+
+   memset(core_mem, 0x3C, big);
+   okf(content_undo_load_state(), "undo of the grown snapshot succeeds");
+   okf(memcmp(expect, core_mem, big) == 0,
+       "a grown snapshot restores byte-exactly");
+
+   free(expect);
+   content_reset_savestate_backups();
+}
+
+/* -----------------------------------------------------------------
+ * 11. A failed serialize leaves the previous snapshot intact.
+ *
+ *     This is the property the swap exists to preserve, and the one
+ *     that an in-place rewrite of the live snapshot would have
+ *     silently broken: serializing straight over the buffer would
+ *     leave a half-written snapshot that still looks valid, so an
+ *     undo after a failed capture would restore garbage.  Filling the
+ *     spare and only then swapping means the live snapshot is
+ *     untouched until a full one is ready to replace it.
+ * ----------------------------------------------------------------- */
+static void test_undo_snapshot_failure_keeps_previous(void)
+{
+   size_t   sz = 5 * TEST_SAVE_STATE_CHUNK;
+   uint8_t *expect;
+
+   frontend_reset();
+   core_fill(sz);
+   content_reset_savestate_backups();
+
+   expect = (uint8_t*)malloc(sz);
+   memcpy(expect, core_mem, sz);
+
+   okf(content_save_state("RAM", false), "a good snapshot is taken");
+
+   /* Move the core on, then fail the next capture. */
+   memset(core_mem, 0x77, sz);
+   core_ser_fails = 1;
+   okf(!content_save_state("RAM", false),
+       "a failed serialize reports failure");
+   core_ser_fails = 0;
+
+   /* The snapshot that survives must be the good one, not a partial
+    * overwrite of it. */
+   memset(core_mem, 0x11, sz);
+   okf(content_undo_load_state(),
+       "the previous snapshot is still undoable after a failure");
+   okf(memcmp(expect, core_mem, sz) == 0,
+       "a failed capture leaves the previous snapshot byte-exact");
+
+   free(expect);
+   content_reset_savestate_backups();
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -766,6 +944,9 @@ static int run_default_lane(void)
    test_truncated_state();
    test_short_file();
    test_blocking_exclusion();
+   test_undo_snapshot_reuses();
+   test_undo_snapshot_grows();
+   test_undo_snapshot_failure_keeps_previous();
 
    content_reset_savestate_backups();
    task_queue_deinit();

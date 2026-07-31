@@ -408,6 +408,20 @@ jobs:
           #    task, its title, the state struct and the caller's
           #    serialized buffer), which is why leak detection is on.
           #
+          # The undo-snapshot lane is the one that needs the counting
+          # allocator (-Wl,--wrap=malloc in the sample's Makefile).
+          # content_load_state_cb retakes the undo snapshot on every
+          # state load, and that capture used to free its destination
+          # and malloc a new one each time; it now keeps the outgoing
+          # allocation as a spare and swaps the two.  Pointer identity
+          # cannot see the difference - a state-sized block is mmap'd,
+          # munmap hands the region back, and the next request of the
+          # same size is usually given the same address - so a run of
+          # captures looks identical either way while only one of them
+          # pays the first-touch faults.  Counting state-sized malloc
+          # calls is the discriminator: eight captures allocate two
+          # buffers after the change and eight before it.
+          #
           # The conc lane runs the same round-trip under a threaded
           # queue, where the transfer loop executes on the worker
           # while content_deserialize_state and the undo bookkeeping

@@ -48,7 +48,12 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -I$(REPO_ROOT) \
            -I$(LIBRETRO_COMM_DIR)/include
 
-LDFLAGS += -lpthread -lm
+# --wrap=malloc so the sample's counting allocator sees the allocations
+# by tasks/task_save.c, not only its own.  That count is the only way
+# to observe the undo snapshot reusing its buffer: the addresses are
+# identical either way, because a state-sized block is mmap'd and the
+# kernel hands back the same region on the next request.
+LDFLAGS += -Wl,--wrap=malloc -lpthread -lm
 
 # Extra flags for the caller; CFLAGS= on the command line would replace
 # everything set above instead of adding to it.
