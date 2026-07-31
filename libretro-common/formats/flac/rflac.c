@@ -6356,6 +6356,8 @@ struct rflac_ctx
    size_t             out_frames;
    size_t             out_done;
    int                ended;
+   size_t             span_taken;    /* of the current span, last call   */
+   int                eof_in;        /* caller has no more input to give */
    int                need_header;   /* set until a header is parsed */
 };
 
@@ -6571,6 +6573,11 @@ void rflac_free(rflac_t *f)
  * its subchannel data immediately after the last FLAC frame, and finding
  * that boundary is only possible if the decoder reports where the frames
  * really ended. */
+/* Where the stream has reached, in bytes of input the decode has
+ * actually used.  The bitreader reads ahead, so this is behind what has
+ * been pulled from the source by whatever is sitting in its cache - and
+ * that difference is meaningful to a caller: it is how a CD FLAC hunk's
+ * audio is told from the subchannel data packed after it. */
 static size_t rflac__consumed(const rflac_t *f)
 {
    const rflac_bs *bs = &f->dec->bs;
@@ -6586,6 +6593,22 @@ static size_t rflac__consumed(const rflac_t *f)
    return f->src.pos - held;
 }
 
+/* How much of the caller's span the decoder has absorbed, which is a
+ * different quantity and the one a windowed caller needs.  Bytes the
+ * bitreader has pulled into its cache are gone from the span whether or
+ * not their bits have been used, and the cache survives across calls -
+ * so a caller that re-presented them would have them read twice, once
+ * from the cache and once from the new span, and the stream would run
+ * ahead of itself by the cache depth on every call.  The carry sits
+ * ahead of the span and was handed over earlier, so it does not count
+ * towards this one. */
+static size_t rflac__span_taken(const rflac_t *f)
+{
+   const rflac_push_source *s = &f->src;
+
+   return (s->pos > s->carry_len) ? s->pos - s->carry_len : 0;
+}
+
 static size_t rflac__max_frame_bytes(const rflac_t *f)
 {
    return (size_t)f->fmt.block_size * f->fmt.channels
@@ -6598,7 +6621,6 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
    size_t   span_len;
    size_t   want;
    size_t   produced;
-   int      undoable = 0;
 
    if (read)
       *read = 0;
@@ -6607,6 +6629,12 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
 
    if (!f)
       return RFLAC_PROCESS_ERROR;
+
+   /* Cleared here rather than only on the paths that set it: this call
+    * may return at any of the guards below without touching the span,
+    * and a caller advancing its window by a figure left over from the
+    * previous call would skip that much input. */
+   f->span_taken = 0;
    if (f->ended)
       return RFLAC_PROCESS_END;
 
@@ -6634,6 +6662,7 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
          f->src.data = NULL;
          f->src.size = 0;
          f->src.pos  = 0;
+         f->span_taken = span_len;
          if (read)
             *read = span_len;
          return RFLAC_PROCESS_NEXT;
@@ -6666,14 +6695,16 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
    if (want > f->out_frames - f->out_done)
       want = f->out_frames - f->out_done;
 
-   if (rflac__src_total(&f->src) - f->src.pos < rflac__max_frame_bytes(f))
-   {
-      if (!f->saved && !(f->saved = (rflac*)malloc(sizeof(rflac))))
-         return RFLAC_PROCESS_ERROR;
-      memcpy(f->saved, f->dec, sizeof(rflac));
-      f->saved_pos = f->src.pos;
-      undoable     = 1;
-   }
+   /* Always take a rewind point.  This used to be skipped when the
+    * input held more than the longest frame could be, on the reasoning
+    * that such a span cannot run dry mid-frame - but the bitreader
+    * reads ahead of the frame it is decoding, so it can and does, and
+    * the branch below then read that underrun as the end of the
+    * stream.  What ends a stream is the caller saying so. */
+   if (!f->saved && !(f->saved = (rflac*)malloc(sizeof(rflac))))
+      return RFLAC_PROCESS_ERROR;
+   memcpy(f->saved, f->dec, sizeof(rflac));
+   f->saved_pos = f->src.pos;
 
    f->src.underrun = 0;
 
@@ -6688,8 +6719,15 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
    {
       /* The span ran out mid-frame. Put everything back so the frame
        * can be decoded once from the start when the rest arrives; the
-       * decode core is never told this happened. */
-      if (undoable)
+       * decode core is never told this happened.
+       *
+       * Unless there is nothing more to arrive. A stream's last frame is
+       * shorter than the longest one it could legally be, so the tail of
+       * every file lands here with fewer bytes left than a rewind point
+       * is taken for - and waiting for the rest of a frame that is
+       * already complete loses it. Only the caller knows which case it
+       * is, which is what rflac_set_eof states. */
+      if (!f->eof_in)
       {
          memcpy(f->dec, f->saved, sizeof(rflac));
          if (!rflac__src_hold(&f->src, f->saved_pos))
@@ -6699,17 +6737,21 @@ int rflac_process(rflac_t *f, size_t *read, size_t *wrote)
          f->src.size = 0;
          /* The whole span was taken over, whether it was consumed or
           * carried, so the caller is free to reuse or free it. */
+         f->span_taken = span_len;
          if (read)
             *read = span_len;
          return RFLAC_PROCESS_NEXT;
       }
-      /* Not undoable means the span was long enough for any legal
-       * frame and still ran dry, so this is the end of the stream
-       * rather than the end of a span. */
+      /* The caller has said there is no more input, so an underrun is
+       * the end of the stream rather than the end of a span.  Whatever
+       * the last frame produced stands: it is kept below rather than
+       * rolled back. */
       f->ended = 1;
    }
 
    f->out_done += produced;
+
+   f->span_taken = rflac__span_taken(f);
 
    if (read)
    {
@@ -6793,6 +6835,36 @@ void rflac_reset(rflac_t *f)
    rflac_set_in(f, NULL, 0);
    f->out_done = 0;
    f->ended    = 0;
+}
+
+size_t rflac_span_taken(const rflac_t *f)
+{
+   return f ? f->span_taken : 0;
+}
+
+size_t rflac_min_input(const rflac_t *f)
+{
+   size_t want;
+
+   if (!f || f->need_header)
+      return 0;
+
+   /* Deliberately generous. A frame must be present whole, but the
+    * bitreader also reads ahead of the frame it is decoding, and how
+    * far is not a figure the format states - so a window sized to the
+    * longest legal frame is not in fact enough, and one sized from
+    * STREAMINFO's maximum frame size is not either. This is measured
+    * rather than derived: below roughly 16k, decoding degrades on
+    * streams whose frames are far smaller than that. Callers wanting
+    * a small footprint should treat this as the floor it is. */
+   want = rflac__max_frame_bytes(f) * 2;
+   return (want < 32768) ? 32768 : want;
+}
+
+void rflac_set_eof(rflac_t *f)
+{
+   if (f)
+      f->eof_in = 1;
 }
 
 void rflac_set_in(rflac_t *f, const uint8_t *in, size_t in_size)
