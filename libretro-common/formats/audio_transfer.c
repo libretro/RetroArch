@@ -560,6 +560,12 @@ struct audio_transfer_vorbis
     * bare packet at a time out of wherever it lives, which is the
     * caller's blob or the demuxer's own view of the caller's buffer.
     * Nothing is copied and nothing is reframed. */
+   /* Plain self-framed .ogg: demuxed incrementally by rvorbis's own
+    * Ogg layer, so what a decode holds is a packet rather than the
+    * file.  handle is borrowed from it - the stream owns the decoder -
+    * and is kept so the queries below need no special case. */
+   rvorbis_stream_t *stream;
+   size_t      stream_off;  /* bytes of the buffer consumed             */
    int         packet;      /* opened with rvorbis_open_packets         */
    size_t      pkt_index;   /* next packet in the caller's blob         */
    size_t      pkt_offset;
@@ -1095,6 +1101,161 @@ static int audio_transfer_vorbis_pull(struct audio_transfer_vorbis *v,
  * fresh packet is decoded whenever they run out.  Returns the frames
  * written, short of the ask at end of stream or at the container's
  * stated end. */
+/* Plain-Ogg read: hand rvorbis's demuxer the unconsumed tail of the
+ * buffer and take what it produces.  The compressed cursor is kept here
+ * rather than in the decoder because a windowed feeder reads it, and
+ * because a seek re-points it. */
+
+/* Seek a plain-Ogg stream.  Ogg locates a sample by bisecting on page
+ * granule positions - there is no index - and the decoder cannot read,
+ * so the bisection is driven from here over the buffer.  Each probe
+ * resynchronises at the next page and reports where it landed; the
+ * decode forward from the page before the target is what makes the
+ * landing exact, since a page boundary is the finest position the
+ * container states.
+ *
+ * The frames before the target are decoded and dropped rather than
+ * skipped: a Vorbis packet's output depends on its predecessor's
+ * overlap, so arriving with no history would resume converging on the
+ * playthrough rather than matching it. */
+static bool audio_transfer_vorbis_stream_seek(
+      struct audio_transfer_vorbis *v, uint64_t frame)
+{
+   int16_t  scratch[64 * 8];
+   size_t   lo  = 0;
+   size_t   hi  = v->size;
+   unsigned ch  = (unsigned)((v->channels > 0 && v->channels <= 8)
+         ? v->channels : 8);
+   size_t   cap = sizeof(scratch) / sizeof(scratch[0]) / ch;
+   size_t   start;
+   int      guard;
+
+   if (!v->stream)
+      return false;
+
+   if (!frame)
+   {
+      rvorbis_stream_rewind(v->stream);
+      v->stream_off = 0;
+      v->emitted    = 0;
+      return true;
+   }
+
+   for (guard = 0; lo < hi && guard < 64; guard++)
+   {
+      size_t mid = lo + (hi - lo) / 2;
+      size_t off = mid;
+      int    landed = 0;
+
+      rvorbis_stream_reset(v->stream);
+      while (off < v->size)
+      {
+         size_t rd = 0, wr = 0;
+         int    r;
+         rvorbis_stream_set_out_s16(v->stream, scratch, cap);
+         rvorbis_stream_set_in(v->stream, (const uint8_t*)v->data + off,
+               v->size - off);
+         r = rvorbis_stream_process(v->stream, &rd, &wr);
+         off += rd;
+         if (rvorbis_stream_pos_known(v->stream))
+         {
+            landed = 1;
+            break;
+         }
+         if (r == RVORBIS_STREAM_ERROR || r == RVORBIS_STREAM_EOS)
+            break;
+         if (r == RVORBIS_STREAM_NEED_IN && !rd)
+            break;
+      }
+      if (landed && rvorbis_stream_tell(v->stream) <= frame)
+         lo = mid + 1;
+      else
+         hi = mid;
+   }
+
+   /* One page back from the boundary, so the target is reached by
+    * decoding forward rather than jumped over. */
+   start = (lo > 65307) ? lo - 65307 : 0;
+
+   for (guard = 0; guard < 2; guard++)
+   {
+      size_t off = start;
+      if (start)
+         rvorbis_stream_reset(v->stream);
+      else
+         rvorbis_stream_rewind(v->stream);
+      while (off < v->size)
+      {
+         size_t rd = 0, wr = 0, want = cap;
+         int    r;
+         /* Once the position is known, ask for exactly the distance
+          * left.  Asking for a full scratch instead would step past
+          * the target and land wherever the packet happened to end. */
+         if (rvorbis_stream_pos_known(v->stream))
+         {
+            uint64_t at = rvorbis_stream_tell(v->stream);
+            if (at == frame)
+            {
+               v->stream_off = off;
+               v->emitted    = (int64_t)frame;
+               return true;
+            }
+            if (at > frame)
+               break;           /* landed late: restart from the head */
+            if (frame - at < (uint64_t)want)
+               want = (size_t)(frame - at);
+         }
+         rvorbis_stream_set_out_s16(v->stream, scratch, want);
+         rvorbis_stream_set_in(v->stream, (const uint8_t*)v->data + off,
+               v->size - off);
+         r = rvorbis_stream_process(v->stream, &rd, &wr);
+         off += rd;
+         if (r == RVORBIS_STREAM_ERROR)
+            return false;
+         if (r == RVORBIS_STREAM_EOS)
+            break;
+         if (r == RVORBIS_STREAM_NEED_IN && !rd && !wr)
+            break;
+      }
+      if (!start)
+         break;
+      start = 0;               /* the bisection landed late; take the
+                                * whole stream, which always works */
+   }
+   return false;
+}
+
+static size_t audio_transfer_vorbis_stream_pull(
+      struct audio_transfer_vorbis *v, int s16, int16_t *out16,
+      float *outf, size_t frames)
+{
+   size_t done = 0;
+   if (!v->stream || !frames)
+      return 0;
+   while (done < frames)
+   {
+      size_t rd = 0, wr = 0;
+      int    r;
+      if (s16)
+         rvorbis_stream_set_out_s16(v->stream, out16 + done * (size_t)v->channels,
+               frames - done);
+      else
+         rvorbis_stream_set_out_f32(v->stream, outf + done * (size_t)v->channels,
+               frames - done);
+      rvorbis_stream_set_in(v->stream,
+            (const uint8_t*)v->data + v->stream_off,
+            v->size - v->stream_off);
+      r = rvorbis_stream_process(v->stream, &rd, &wr);
+      v->stream_off += rd;
+      done          += wr;
+      if (r == RVORBIS_STREAM_ERROR || r == RVORBIS_STREAM_EOS)
+         break;
+      if (r == RVORBIS_STREAM_NEED_IN && !rd && !wr)
+         break;   /* the buffer is spent: a feeder must extend it */
+   }
+   return done;
+}
+
 static size_t audio_transfer_vorbis_drain(struct audio_transfer_vorbis *v,
       int s16, int16_t *out16, float *outf, size_t frames)
 {
@@ -2376,11 +2537,35 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             }
             else
             {
-               v->handle = rvorbis_open_memory(
-                     (const unsigned char*)v->data, (int)v->size,
-                     &err, NULL);
+               /* Feed until the setup headers are in.  That is all the
+                * residency an open needs; the rest of the file is read
+                * as it plays. */
+               size_t rd, wr;
+               if (!(v->stream = rvorbis_stream_new()))
+                  return false;
+               for (;;)
+               {
+                  int r;
+                  rvorbis_stream_set_out_s16(v->stream, NULL, 0);
+                  rvorbis_stream_set_in(v->stream,
+                        (const uint8_t*)v->data + v->stream_off,
+                        v->size - v->stream_off);
+                  r = rvorbis_stream_process(v->stream, &rd, &wr);
+                  v->stream_off += rd;
+                  if (rvorbis_stream_info(v->stream, NULL))
+                     break;
+                  if (r != RVORBIS_STREAM_NEED_IN || !rd
+                        || v->stream_off >= v->size)
+                  {
+                     rvorbis_stream_free(v->stream);
+                     v->stream = NULL;
+                     return false;
+                  }
+               }
+               v->handle = rvorbis_stream_decoder(v->stream);
                if (!v->handle)
                   return false;
+               (void)err;
             }
             /* The granules say what the file plays.  For a chained
              * file that is the sum over its links, which rvorbis
@@ -3761,8 +3946,8 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
          else
          {
             frames   = audio_transfer_vorbis_cap(v, frames);
-            produced = (size_t)rvorbis_get_samples_s16_interleaved(
-                  v->handle, v->channels, out, (int)frames * v->channels);
+            produced = audio_transfer_vorbis_stream_pull(v, 1, out, NULL,
+                  frames);
             v->emitted += (int64_t)produced;
          }
          break;
@@ -3972,9 +4157,8 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
             break;
          }
          frames = audio_transfer_vorbis_cap(v, frames);
-         got = rvorbis_get_samples_float_interleaved(v->handle, v->channels,
-               out, (int)(frames * (size_t)v->channels));
-         produced = (got > 0) ? (size_t)got : 0;
+         (void)got;
+         produced = audio_transfer_vorbis_stream_pull(v, 0, NULL, out, frames);
          v->emitted += (int64_t)produced;
          break;
       }
@@ -4183,7 +4367,12 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
              * nothing here; this one has a packet cursor to report. */
             if (v->packets)
                return v->pkt_offset;
-            /* Self-framed Ogg buffer. */
+            /* Self-framed Ogg buffer: the demuxer consumes the buffer
+             * as it plays, so the cursor kept alongside it is the
+             * compressed frontier - and now a real one, the bytes
+             * behind it being releasable rather than merely read. */
+            if (v->stream)
+               return v->stream_off;
             if (!v->packet)
                return (size_t)rvorbis_buffer_tell(v->handle);
          }
@@ -4476,16 +4665,7 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
           * out, so a seek that moves the stream has to move that count
           * with it.  Left alone, a loop back to the start reaches the
           * bound immediately and the stream reads as ended for good. */
-         if (frame == 0) /* loop-to-start: seek_start always succeeds */
-         {
-            rvorbis_seek_start(v->handle);
-            v->emitted = 0;
-            return true;
-         }
-         if (rvorbis_seek(v->handle, (unsigned int)frame) == 0)
-            return false;
-         v->emitted = (int64_t)frame;
-         return true;
+         return audio_transfer_vorbis_stream_seek(v, frame);
       }
 #endif
 #ifdef HAVE_RMP3
@@ -4615,7 +4795,11 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_VORBIS:
       {
          struct audio_transfer_vorbis *v = (struct audio_transfer_vorbis*)data;
-         if (v->handle)
+         /* handle is borrowed from the stream where there is one, so it
+          * must not also be closed. */
+         if (v->stream)
+            rvorbis_stream_free(v->stream);
+         else if (v->handle)
             rvorbis_close(v->handle);
 #ifdef HAVE_RWEBM
          if (v->demux)

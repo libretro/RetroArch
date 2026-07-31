@@ -6160,3 +6160,587 @@ int rvorbis_packet_frames(rvorbis *f, const void *packet, size_t len)
    }
    return right_start - left_start;
 }
+
+/* --- STREAMING OGG API -------------------------------------------------
+ *
+ * The pulling API above addresses the whole stream at once: it seeks by
+ * bisecting over a resident buffer, so a caller must hold the file to
+ * use it at all.  A caller reading from storage has no such buffer and
+ * fabricating one costs the whole file in memory to play a few
+ * kilobytes of it at a time.
+ *
+ * This walks the Ogg layer incrementally instead, and hands the packets
+ * it assembles to the raw-packet decoder above, which already reads a
+ * packet where it lies.  So nothing here decodes: it is a demuxer, and
+ * the residency it needs is one packet rather than one file.
+ *
+ * Ogg's framing is what makes that possible and also what makes it
+ * fiddly.  A packet is a run of segments, each up to 255 bytes, ended
+ * by one shorter than 255 - so a packet that is an exact multiple of
+ * 255 ends with a zero-length segment, and a packet may run past the
+ * end of its page and continue on the next.  Pages of other logical
+ * bitstreams may be interleaved with ours and have to be skipped by
+ * serial number.  And after a seek the first page is joined mid-packet,
+ * whose leading fragment must be dropped rather than decoded.
+ */
+
+#define RVS_MAX_PACKET  (1u << 20)  /* far above any real setup header */
+
+enum
+{
+   RVS_HDR = 0,   /* filling the 27-byte page header, resyncing if wrong */
+   RVS_SEGS,      /* filling the lacing table                           */
+   RVS_BODY,      /* consuming segment bytes into the packet            */
+   RVS_DONE
+};
+
+struct rvorbis_stream
+{
+   rvorbis       *dec;
+
+   const uint8_t *in;
+   size_t         in_size;
+   size_t         in_pos;
+
+   int16_t       *out16;
+   float         *outf;
+   size_t         out_frames;
+   size_t         out_pos;
+   int            s16;
+
+   uint8_t        hdr[27 + 255];
+   unsigned       hdr_have;
+
+   unsigned       nsegs;
+   unsigned       seg_idx;
+   unsigned       seg_left;
+   int            pkt_ends;
+
+   uint8_t       *pkt;
+   size_t         pkt_len;
+   size_t         pkt_cap;
+
+   uint32_t       serial;
+   uint32_t       cur_serial;
+   int            have_serial;
+   int            skip_page;
+   int            drop_pkt;
+   int            resyncing;  /* joined mid-stream; still converging   */
+
+   uint64_t       granule;
+   uint64_t       pos;       /* frame the next emission sits at        */
+   int            pos_known;
+   int            page_done;  /* page consumed; pos lands once drained  */
+   uint64_t       emitted;   /* frames handed out since the start      */
+   uint64_t       limit;     /* final granule, once the EOS page is in */
+   int            have_limit;
+   int            eos;
+   int            state;
+
+   int            hdr_count;
+   uint8_t       *id;
+   size_t         id_len;
+   uint8_t       *setup;
+   size_t         setup_len;
+   int            opened;
+
+   int            channels;
+   int            pending;
+   int            error;
+};
+
+static int rvs_pkt_reserve(rvorbis_stream_t *s, size_t need)
+{
+   uint8_t *p;
+   size_t   cap;
+   if (need <= s->pkt_cap)
+      return 1;
+   if (need > RVS_MAX_PACKET)
+      return 0;
+   cap = s->pkt_cap ? s->pkt_cap : 4096;
+   while (cap < need)
+      cap <<= 1;
+   if (cap > RVS_MAX_PACKET)
+      cap = RVS_MAX_PACKET;
+   if (!(p = (uint8_t *)realloc(s->pkt, cap)))
+      return 0;
+   s->pkt     = p;
+   s->pkt_cap = cap;
+   return 1;
+}
+
+static int rvs_is_id(const uint8_t *p, size_t n)
+{
+   return n == 30 && p[0] == 0x01 && !memcmp(p + 1, "vorbis", 6);
+}
+
+static int rvs_is_setup(const uint8_t *p, size_t n)
+{
+   return n > 7 && p[0] == 0x05 && !memcmp(p + 1, "vorbis", 6);
+}
+
+rvorbis_stream_t *rvorbis_stream_new(void)
+{
+   rvorbis_stream_t *s = (rvorbis_stream_t *)calloc(1, sizeof(*s));
+   if (!s)
+      return NULL;
+   s->s16   = 1;
+   s->state = RVS_HDR;
+   return s;
+}
+
+void rvorbis_stream_free(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   if (s->dec)
+      rvorbis_close(s->dec);
+   free(s->pkt);
+   free(s->id);
+   free(s->setup);
+   free(s);
+}
+
+void rvorbis_stream_set_in(rvorbis_stream_t *s, const void *in, size_t in_size)
+{
+   if (!s)
+      return;
+   s->in      = (const uint8_t *)in;
+   s->in_size = in ? in_size : 0;
+   s->in_pos  = 0;
+}
+
+void rvorbis_stream_set_out_s16(rvorbis_stream_t *s, int16_t *out,
+      size_t out_frames)
+{
+   if (!s)
+      return;
+   s->out16      = out;
+   s->outf       = NULL;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   s->s16        = 1;
+}
+
+void rvorbis_stream_set_out_f32(rvorbis_stream_t *s, float *out,
+      size_t out_frames)
+{
+   if (!s)
+      return;
+   s->outf       = out;
+   s->out16      = NULL;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   s->s16        = 0;
+}
+
+int rvorbis_stream_info(const rvorbis_stream_t *s, rvorbis_info *out)
+{
+   if (!s || !s->opened)
+      return 0;
+   if (out)
+      *out = rvorbis_get_info(s->dec);
+   return 1;
+}
+
+uint64_t rvorbis_stream_granule(const rvorbis_stream_t *s)
+{
+   return s ? s->granule : 0;
+}
+
+rvorbis *rvorbis_stream_decoder(const rvorbis_stream_t *s)
+{
+   return s ? s->dec : NULL;
+}
+
+uint64_t rvorbis_stream_tell(const rvorbis_stream_t *s)
+{
+   return s ? s->pos : 0;
+}
+
+int rvorbis_stream_pos_known(const rvorbis_stream_t *s)
+{
+   return s ? s->pos_known : 0;
+}
+
+int rvorbis_stream_get_error(rvorbis_stream_t *s)
+{
+   int e;
+   if (!s)
+      return RVORBIS_STREAM_ERROR;
+   e        = s->error;
+   s->error = 0;
+   return e;
+}
+
+void rvorbis_stream_rewind(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   rvorbis_stream_reset(s);
+   /* Unlike a resync into the middle of a file, this one knows where it
+    * is: the head of the stream is frame zero.  Without that, a target
+    * inside the first page is unreachable - position becomes known at a
+    * page boundary, and there is none before it. */
+   s->pos       = 0;
+   s->pos_known = 1;
+   s->resyncing = 0;
+}
+
+void rvorbis_stream_reset(rvorbis_stream_t *s)
+{
+   if (!s)
+      return;
+   s->state    = RVS_HDR;
+   s->hdr_have = 0;
+   s->nsegs    = 0;
+   s->seg_idx  = 0;
+   s->seg_left = 0;
+   s->pkt_ends = 0;
+   s->pkt_len  = 0;
+   s->in       = NULL;
+   s->in_size  = 0;
+   s->in_pos   = 0;
+   s->eos      = 0;
+   s->pending  = 0;
+   s->drop_pkt = 0;
+   s->skip_page= 0;
+   /* Nothing decoded yet from wherever this lands, so the first packets
+    * have no overlap to continue from. */
+   s->resyncing = 1;
+   s->granule  = 0;
+   s->emitted  = 0;
+   s->pos      = 0;
+   s->pos_known= 0;
+   s->page_done= 0;
+   s->limit    = 0;
+   s->have_limit = 0;
+   if (s->opened)
+      rvorbis_packet_reset(s->dec);
+}
+
+/* One assembled packet.  Returns 0 on a hard failure. */
+static int rvs_packet(rvorbis_stream_t *s)
+{
+   const uint8_t *p   = s->pkt;
+   size_t         n   = s->pkt_len;
+   int            got;
+
+   if (s->drop_pkt)
+   {
+      /* Joined mid-packet after a seek: this is a tail, not a packet. */
+      s->drop_pkt = 0;
+      return 1;
+   }
+
+   if (!s->opened)
+   {
+      if (!s->id && rvs_is_id(p, n))
+      {
+         if (!(s->id = (uint8_t *)malloc(n)))
+            return 0;
+         memcpy(s->id, p, n);
+         s->id_len      = n;
+         s->serial      = s->cur_serial;
+         s->have_serial = 1;
+         return 1;
+      }
+      if (!s->id)
+         return 1;              /* not our bitstream's first packet   */
+      if (rvs_is_setup(p, n))
+      {
+         int err = 0;
+         if (!(s->setup = (uint8_t *)malloc(n)))
+            return 0;
+         memcpy(s->setup, p, n);
+         s->setup_len = n;
+         s->dec       = rvorbis_open_packets(s->id, (int)s->id_len,
+               s->setup, (int)s->setup_len, &err, NULL);
+         if (!s->dec)
+         {
+            s->error = RVORBIS_STREAM_ERROR;
+            return 0;
+         }
+         s->opened   = 1;
+         s->channels = rvorbis_get_info(s->dec).channels;
+      }
+      return 1;                 /* comment header, or anything else   */
+   }
+
+   if (!n)
+      return 1;
+   /* A rewind re-presents the three setup packets.  Vorbis marks a
+    * header packet with bit 0 of its first byte; feeding one to the
+    * audio decoder would read a mode number out of a comment string. */
+   if (p[0] & 1)
+      return 1;
+   if ((got = rvorbis_packet_decode(s->dec, p, n, s->s16)) < 0)
+   {
+      /* Until a packet has decoded, this is a stream joined partway:
+       * the first ones after a resync reference an overlap that was
+       * never decoded, and failing on them is how converging looks
+       * rather than a broken stream.  Once one succeeds, a failure is
+       * a failure. */
+      if (s->resyncing)
+         return 1;
+      s->error = RVORBIS_STREAM_ERROR;
+      return 0;
+   }
+   if (got > 0)
+      s->resyncing = 0;
+   s->pending = got;
+   return 1;
+}
+
+int rvorbis_stream_process(rvorbis_stream_t *s, size_t *read, size_t *wrote)
+{
+   size_t w0;
+   int    ret = RVORBIS_STREAM_OK;
+
+   if (!s)
+      return RVORBIS_STREAM_ERROR;
+   w0 = s->out_pos;
+
+   for (;;)
+   {
+      /* Drain what the last packet produced before decoding another:
+       * the decoder holds one packet's frames, so a caller with a small
+       * output buffer must be able to take them a slice at a time. */
+      if (s->opened && s->pending > 0 && s->out_pos < s->out_frames)
+      {
+         size_t want = s->out_frames - s->out_pos;
+         int    got;
+         if (s->s16)
+            got = rvorbis_packet_read_s16(s->dec, s->channels,
+                  s->out16 + s->out_pos * (size_t)s->channels,
+                  (int)(want * (size_t)s->channels));
+         else
+            got = rvorbis_packet_read_float(s->dec, s->channels,
+                  s->outf + s->out_pos * (size_t)s->channels,
+                  (int)(want * (size_t)s->channels));
+         if (got > 0)
+         {
+            /* Vorbis codes in overlapping blocks, so the last packet
+             * decodes past the end of the audio.  The final page's
+             * granule is where that end actually is, and it is known
+             * before this page's packets are decoded because the header
+             * is parsed first - so the overhang is dropped rather than
+             * handed out and taken back. */
+            if (s->have_limit)
+            {
+               /* Count against the absolute position, not against what
+                * this pass has emitted: a seek resets the latter, and
+                * measuring an absolute granule from a relative origin
+                * lets the tail through. Before the first page boundary
+                * the position is not known and emitted is the same
+                * quantity, the stream having started at zero. */
+               uint64_t at   = s->pos_known ? s->pos : s->emitted;
+               uint64_t room = (at < s->limit) ? s->limit - at : 0;
+               if ((uint64_t)got > room)
+                  got = (int)room;
+            }
+            s->out_pos += (size_t)got;
+            s->emitted += (uint64_t)got;
+            s->pos     += (uint64_t)got;
+            s->pending -= got;
+            if (s->pending < 0)
+               s->pending = 0;
+            if (s->have_limit
+                  && (s->pos_known ? s->pos : s->emitted) >= s->limit)
+            {
+               s->pending = 0;
+               s->state   = RVS_DONE;
+               continue;
+            }
+            if (got > 0)
+               continue;
+         }
+         s->pending = 0;
+      }
+
+      /* A page's granule is the position reached once every packet that
+       * completes on it has been decoded.  So the instant its frames are
+       * drained, that granule is where the stream now stands - which is
+       * what makes an exact seek possible after a mid-stream resync,
+       * where nothing else says where the output landed. */
+      if (s->page_done && s->pending <= 0)
+      {
+         s->pos       = s->granule;
+         s->pos_known = 1;
+         s->page_done = 0;
+      }
+
+      /* No output buffer means parse-only: consume just enough to get
+       * the setup headers in and stop there, which is what an open
+       * wants.  Treating it as unbounded instead would run the whole
+       * stream through with nowhere to put it. */
+      if (!s->out_frames)
+      {
+         if (s->opened)
+         {
+            ret = RVORBIS_STREAM_OK;
+            break;
+         }
+      }
+      else if (s->out_pos >= s->out_frames)
+      {
+         ret = RVORBIS_STREAM_OK;
+         break;
+      }
+      if (s->state == RVS_DONE)
+      {
+         ret = RVORBIS_STREAM_EOS;
+         break;
+      }
+
+      switch (s->state)
+      {
+         case RVS_HDR:
+            while (s->hdr_have < 27 && s->in_pos < s->in_size)
+               s->hdr[s->hdr_have++] = s->in[s->in_pos++];
+            if (s->hdr_have < 27)
+            {
+               ret = RVORBIS_STREAM_NEED_IN;
+               goto out;
+            }
+            if (memcmp(s->hdr, "OggS", 4) || s->hdr[4] != 0)
+            {
+               /* Resynchronise a byte at a time: a capture pattern may
+                * begin anywhere inside what we mistook for a header. */
+               memmove(s->hdr, s->hdr + 1, 26);
+               s->hdr_have = 26;
+               break;
+            }
+            s->nsegs   = s->hdr[26];
+            s->hdr_have= 0;
+            s->state   = RVS_SEGS;
+            break;
+
+         case RVS_SEGS:
+            while (s->hdr_have < s->nsegs && s->in_pos < s->in_size)
+               s->hdr[27 + s->hdr_have++] = s->in[s->in_pos++];
+            if (s->hdr_have < s->nsegs)
+            {
+               ret = RVORBIS_STREAM_NEED_IN;
+               goto out;
+            }
+            {
+               unsigned k;
+               uint64_t g = 0;
+               uint32_t sn = 0;
+               for (k = 0; k < 8; k++)
+                  g |= (uint64_t)s->hdr[6 + k] << (8 * k);
+               for (k = 0; k < 4; k++)
+                  sn |= (uint32_t)s->hdr[14 + k] << (8 * k);
+               s->cur_serial = sn;
+               s->skip_page  = (s->have_serial && sn != s->serial);
+               if (!s->skip_page)
+               {
+                  /* A page on which no packet completes carries -1
+                   * rather than a position; it says nothing about where
+                   * the stream has reached. */
+                  if (g != (uint64_t)-1)
+                     s->granule = g;
+                  if ((s->hdr[5] & 0x04) && g != (uint64_t)-1)
+                  {
+                     s->limit      = g;
+                     s->have_limit = 1;
+                  }
+                  /* A continued flag with nothing carried over means we
+                   * joined mid-packet: its leading fragment is a tail. */
+                  if ((s->hdr[5] & 0x01) && !s->pkt_len)
+                     s->drop_pkt = 1;
+                  else if (!(s->hdr[5] & 0x01))
+                     s->pkt_len = 0;
+               }
+            }
+            s->seg_idx  = 0;
+            s->seg_left = 0;
+            s->pkt_ends = 0;
+            s->hdr_have = 0;
+            s->state    = RVS_BODY;
+            break;
+
+         case RVS_BODY:
+            for (;;)
+            {
+               if (!s->seg_left && !s->pkt_ends)
+               {
+                  unsigned lace;
+                  if (s->seg_idx >= s->nsegs)
+                     break;
+                  lace        = s->hdr[27 + s->seg_idx++];
+                  s->seg_left = lace;
+                  s->pkt_ends = (lace < 255);
+               }
+               if (s->seg_left)
+               {
+                  size_t avail = s->in_size - s->in_pos;
+                  size_t take  = s->seg_left < avail ? s->seg_left : avail;
+                  if (!take)
+                  {
+                     ret = RVORBIS_STREAM_NEED_IN;
+                     goto out;
+                  }
+                  if (s->skip_page)
+                     s->in_pos += take;
+                  else
+                  {
+                     if (!rvs_pkt_reserve(s, s->pkt_len + take))
+                     {
+                        s->error = RVORBIS_STREAM_ERROR;
+                        ret      = RVORBIS_STREAM_ERROR;
+                        goto out;
+                     }
+                     memcpy(s->pkt + s->pkt_len, s->in + s->in_pos, take);
+                     s->pkt_len += take;
+                     s->in_pos  += take;
+                  }
+                  s->seg_left -= (unsigned)take;
+                  if (s->seg_left)
+                  {
+                     ret = RVORBIS_STREAM_NEED_IN;
+                     goto out;
+                  }
+               }
+               if (s->pkt_ends)
+               {
+                  s->pkt_ends = 0;
+                  if (!s->skip_page)
+                  {
+                     if (!rvs_packet(s))
+                     {
+                        ret = RVORBIS_STREAM_ERROR;
+                        goto out;
+                     }
+                     s->pkt_len = 0;
+                     if (s->pending > 0)
+                        break;   /* drain before taking another packet */
+                  }
+               }
+            }
+            if (s->seg_idx >= s->nsegs && !s->seg_left && !s->pkt_ends)
+            {
+               if (!s->skip_page && (s->hdr[5] & 0x04))
+               {
+                  s->eos   = 1;
+                  s->state = RVS_DONE;
+               }
+               else
+               {
+                  s->page_done = 1;
+                  s->hdr_have  = 0;
+                  s->state     = RVS_HDR;
+               }
+            }
+            break;
+      }
+   }
+
+out:
+   if (read)
+      *read = s->in_pos;
+   if (wrote)
+      *wrote = s->out_pos - w0;
+   return ret;
+}
