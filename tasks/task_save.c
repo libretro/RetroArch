@@ -334,8 +334,13 @@ static void task_save_handler_finished(retro_task_t *task,
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
-   intfstream_close(state->file);
-   free(state->file);
+   /* NULL when the handler failed before the file was opened
+    * (serialize failure, or the open itself). */
+   if (state->file)
+   {
+      intfstream_close(state->file);
+      free(state->file);
+   }
 
    flg = task_get_flags(task);
 
@@ -557,6 +562,32 @@ static void task_save_handler(retro_task_t *task)
    int written              = 0;
    save_task_state_t *state = (save_task_state_t*)task->state;
 
+   /* Serialize before opening, not after.  Opening first meant a
+    * failed serialize had already created (and truncated) the target,
+    * so the slot was left holding a zero-byte file. */
+   if (!state->data)
+   {
+      size_t _len = 0;
+      state->data = content_get_serialized_data(&_len);
+      state->size = (ssize_t)_len;
+
+      /* A failed serialize used to leave data NULL and size 0, and
+       * every test below then read as success: remaining was 0, so
+       * written == remaining, and written == size, so the handler
+       * reported a COMPLETED save of a zero-byte file.  The user got
+       * a 'state saved' notification and an empty slot. */
+      if (!state->data || state->size <= 0)
+      {
+         RARCH_ERR("[State] save task could not serialize core state "
+               "for slot %d, path \"%s\".\n",
+               state->state_slot, state->path);
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+         task_save_handler_finished(task, state);
+         return;
+      }
+   }
+
    if (!state->file)
    {
       if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
@@ -569,29 +600,31 @@ static void task_save_handler(retro_task_t *task)
 
       if (!state->file)
       {
+         /* This used to be a bare return.  The task was neither
+          * errored nor finished, so the queue re-entered it on the
+          * next tick and it retried the open forever - and because
+          * save tasks are TASK_TYPE_BLOCKING, that one task wedged
+          * every other blocking task for the rest of the session.
+          * An open that failed once (read-only medium, bad path,
+          * no space) is not going to succeed on retry; fail it. */
          RARCH_ERR("[State] save task could not open \"%s\" for writing "
                "(slot %d). The auto-index slot was already advanced, so "
                "this leaves an advanced slot with no save file.\n",
                state->path, state->state_slot);
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+         task_save_handler_finished(task, state);
          return;
       }
    }
 
-   if (!state->data)
-   {
-      size_t _len = 0;
-      state->data = content_get_serialized_data(&_len);
-      state->size = (ssize_t)_len;
-   }
-
+   /* The serialize above guarantees state->data; the guard that used
+    * to stand here was what let a failed serialize fall through to a
+    * COMPLETED save of nothing. */
    remaining       = MIN(state->size - state->written, SAVE_STATE_CHUNK);
-
-   if (state->data)
-   {
-      written         = (int)intfstream_write(state->file,
+   written         = (int)intfstream_write(state->file,
          (uint8_t*)state->data + state->written, remaining);
-      state->written += written;
-   }
+   state->written += written;
 
    task_set_progress(task, (state->written / (float)state->size) * 100);
 
@@ -801,9 +834,26 @@ static void task_load_handler(retro_task_t *task)
    save_task_state_t *state = (save_task_state_t*)task->state;
    video_driver_state_t *video_st  = video_state_get_ptr();
 
-   /* Ensure the core is ready for loading states (Dolphin CLI) */
-   while (video_st->frame_count < 2)
-      retro_sleep(1);
+   /* Ensure the core is ready for loading states (Dolphin CLI).
+    *
+    * This used to spin here (while (...) retro_sleep(1)).  Two
+    * problems with that.  When the task queue is not threaded the
+    * handler runs on the same thread that advances frame_count, so
+    * the condition it waits on can never become true and the spin is
+    * an unconditional hang; it only ever went unnoticed because
+    * frame_count is already past 2 by the time a user loads a state
+    * interactively, and CLI autoload is the one path that reaches
+    * here early.  When it IS threaded, this is an unsynchronised read
+    * of a counter the video thread writes - a data race, and TSan
+    * reports it.
+    *
+    * Yielding does both jobs: the task stays queued and is re-entered
+    * on the next tick, by which time the runloop has advanced the
+    * counter.  The read is still unsynchronised, but it is now a
+    * single benign poll of a monotonic counter rather than a spin,
+    * and no progress depends on this thread observing it promptly. */
+   if (video_st->frame_count < 2)
+      return;
 
    if (!state->file)
    {
