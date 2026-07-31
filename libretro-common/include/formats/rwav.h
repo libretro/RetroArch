@@ -231,6 +231,7 @@ enum rwav_state rwav_parse(rwav_t *out, const void *buf, size_t len);
  */
 void rwav_free(rwav_t *rwav);
 
+
 RETRO_END_DECLS
 
 #endif
