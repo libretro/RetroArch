@@ -74,6 +74,67 @@ struct nbio_image_handle
 
 #define UPSCALE_MAX_PIXELS (256u * 1024u * 1024u)
 
+/* Decode-time window, shared by every image task in a tick.
+ *
+ * The transfer and process loops below spin against frame_duration
+ * per task, and retro_task_regular_gather() runs every running
+ * task's handler once per frame, so a per-task budget multiplies
+ * exactly the way the file-I/O slice in task_file_transfer.c used
+ * to: eight concurrent large decodes could each legitimately consume
+ * a frame of CPU in a single gather.  Same fix, same shape: a shared
+ * allowance of frame_duration per window, with each task keeping its
+ * first iteration (the do/while bodies run once before consulting
+ * the deadline), so a queue whose window is already spent still
+ * progresses.
+ *
+ * The period is twice the allowance, and the ratio is load-bearing.
+ * With period == allowance, a task that consumes its whole allowance
+ * has by definition advanced wall time a full period, so the next
+ * task in the same gather finds the window expired, resets it, and
+ * takes a full allowance too: the multiplication survives intact.
+ * (Caught by simulation, not inspection.  The I/O slice never hits
+ * this only because its allowance is a quarter of its period.)  At
+ * allowance <= period/2 a mid-gather reset is impossible - the
+ * spender cannot age the window past the period on its own - while
+ * gathers a frame apart still find it expired and replenished.
+ *
+ * A single task is unchanged: the same frame_duration per gather it
+ * always had, at the same sustained rate - the elapsed frame plus
+ * the allowance it spent age the window past the period by the next
+ * gather.
+ *
+ * Declined under a threaded task queue for the reason the I/O slice
+ * declines: there the handler runs on the worker thread, there is no
+ * frame to protect, and a shared static across threads would be a
+ * race for no benefit. */
+static retro_time_t image_decode_slice_start;
+static retro_time_t image_decode_slice_used;
+
+static retro_time_t task_image_decode_slice_open(
+      unsigned frame_duration, retro_time_t *start)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   *start           = now;
+   if (task_queue_is_threaded())
+      return (retro_time_t)frame_duration;
+   if (now - image_decode_slice_start
+         >= (retro_time_t)frame_duration * 2)
+   {
+      image_decode_slice_start = now;
+      image_decode_slice_used  = 0;
+   }
+   return (image_decode_slice_used < (retro_time_t)frame_duration)
+      ? (retro_time_t)frame_duration - image_decode_slice_used
+      : 0;
+}
+
+static void task_image_decode_slice_close(retro_time_t start)
+{
+   if (task_queue_is_threaded())
+      return;
+   image_decode_slice_used += cpu_features_get_time_usec() - start;
+}
+
 static int cb_image_upload_generic(void *data, size_t len)
 {
    nbio_handle_t             *nbio = (nbio_handle_t*)data;
@@ -157,15 +218,17 @@ static int task_image_iterate_process_transfer(struct nbio_image_handle *image)
    int retval                      = 0;
    unsigned width                  = 0;
    unsigned height                 = 0;
-   retro_time_t start_time         = cpu_features_get_time_usec();
+   retro_time_t start_time;
+   retro_time_t allowance          = task_image_decode_slice_open(
+         image->frame_duration, &start_time);
 
    do
    {
       if ((retval = task_image_process(image, &width, &height)) 
           != IMAGE_PROCESS_NEXT)
          break;
-   }while (cpu_features_get_time_usec() - start_time
-         < image->frame_duration);
+   }while (cpu_features_get_time_usec() - start_time < allowance);
+   task_image_decode_slice_close(start_time);
 
    if (retval == IMAGE_PROCESS_NEXT)
       return 0;
@@ -689,7 +752,9 @@ bool task_image_load_handler(retro_task_t *task)
             if (     !(image->flags & IMAGE_FLAG_IS_BLOCKING)
                   && !(image->flags & IMAGE_FLAG_IS_FINISHED))
             {
-               retro_time_t start_time = cpu_features_get_time_usec();
+               retro_time_t start_time;
+               retro_time_t allowance  = task_image_decode_slice_open(
+                     image->frame_duration, &start_time);
                do
                {
                   if (!image_transfer_iterate(image->handle, image->type))
@@ -711,7 +776,8 @@ bool task_image_load_handler(retro_task_t *task)
                      break;
                   }
                }while (cpu_features_get_time_usec() - start_time
-                     < image->frame_duration);
+                     < allowance);
+               task_image_decode_slice_close(start_time);
             }
             break;
          case IMAGE_STATUS_PROCESS_TRANSFER_PARSE:

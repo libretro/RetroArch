@@ -289,3 +289,43 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 600 \
              ./task_file_transfer_test conc
           echo "[pass] task_file_transfer_test (TSan)"
+
+      - name: Build and run image_decode_slice_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/image_decode_slice
+        run: |
+          set -eu
+          # Oracle for the shared decode window in tasks/task_image.c,
+          # compiled from the tree so it exercises the shipping
+          # translation unit.  The clock is the test's instrument: the
+          # sample provides cpu_features_get_time_usec() itself,
+          # advancing a fixed quantum per observation, so the decode
+          # loops are budget-bound deterministically and the cost of a
+          # gather is readable as the fake-clock delta across
+          # task_queue_check() - no wall-clock measurement, no
+          # flakiness.
+          #
+          # The regression it pins has two faces, both verified to
+          # fail it: the pre-window code, where eight concurrent
+          # decodes each took a full frame_duration per gather (~8
+          # frames of decode in one gather), and the subtler
+          # period == allowance variant of the window itself, where a
+          # task that spends its whole allowance has aged the window a
+          # full period and the next task in the same gather resets
+          # it - the multiplication surviving a fix that reads
+          # correct.  That variant passed inspection and failed
+          # simulation, which is why this oracle asserts on measured
+          # gather cost rather than on the code's shape.
+          #
+          # It also checks the decode itself end to end - dimensions
+          # and a pixel spot-check on every delivered image - so the
+          # budget rework cannot silently break what it budgets.
+          make clean all
+          test -x image_decode_slice_test
+          timeout 600 ./image_decode_slice_test
+          echo "[pass] image_decode_slice_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./image_decode_slice_test
+          echo "[pass] image_decode_slice_test (ASan)"

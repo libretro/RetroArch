@@ -288,8 +288,21 @@ void task_file_load_handler(retro_task_t *task)
                 * need is the file length - and the per-tick pacing
                 * already bounds what any single frame can cost, so
                 * the cap protected nothing the budgets did not. */
-               if ((nbio->xfer = data_transfer_open_prefix(nbio->path,
-                           0)))
+               /* The open is real I/O - a filestream_open, a size
+                * query, and on the pool-miss path fresh-page faults -
+                * and it ran outside the window: neither budgeted nor
+                * charged, so a queue of cold opens could silently
+                * blow the very slice the fills respect.  It cannot
+                * be interrupted mid-call, but it can be charged, so
+                * the fills that follow in the same period get that
+                * much less. */
+               {
+                  nbio_budget_t b;
+                  task_file_transfer_slice_open(&b);
+                  nbio->xfer = data_transfer_open_prefix(nbio->path, 0);
+                  task_file_transfer_slice_close(&b);
+               }
+               if (nbio->xfer)
                {
                   nbio->status = NBIO_STATUS_TRANSFER;
                   /* Fall through into the fill instead of returning

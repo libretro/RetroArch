@@ -292,6 +292,11 @@ struct data_transfer
                         across calls because the feeder advances in
                         sub-page steps - per-call rounding of a tiny
                         interval decommits nothing, ever.            */
+   size_t  scrubbed; /* pooled slots only: every byte below this is
+                        accounted for - overwritten by the fill or
+                        zeroed - so a consumer over-reading past
+                        avail() cannot see the previous load.  See
+                        data_transfer_pool_scrub().                  */
 };
 
 bool data_transfer_arena_init(data_transfer_arena_t *a, size_t ceiling)
@@ -847,23 +852,51 @@ static int data_transfer_commit(data_transfer_t *dt, size_t need)
       target = dt->map_len;
    if (!memcommit(dt->map + dt->committed, target - dt->committed))
       return 0;
-#if !defined(DT_NO_POOL)
-   /* A recycled slot's pages still hold the previous load's bytes,
-    * where a fresh reservation's are zero - and consumers can tell.
-    * The commit step is DT_COMMIT_STEP, so a file smaller than that
-    * has its whole length armed by the first commit: the guard has
-    * never been finer than the step, and everything from avail to
-    * the end of the armed region is readable either way.  What must
-    * not change is what those bytes say.  Without this a thumbnail
-    * over-reading its own buffer got the previous thumbnail rather
-    * than zeros - a leak across loads that the pool would have
-    * introduced by itself. */
-   if (dt->pooled && target > dt->committed)
-      memset(dt->map + dt->committed, 0, target - dt->committed);
-#endif
    dt->committed = target;
    return 1;
 }
+
+#if !defined(DT_NO_POOL)
+/* A recycled slot's pages still hold the previous load's bytes, where
+ * a fresh reservation's are zero - and consumers can tell.  Without a
+ * scrub, a thumbnail over-reading its own buffer got the previous
+ * thumbnail rather than zeros: a leak across loads that the pool
+ * would have introduced by itself.
+ *
+ * This used to be a memset in data_transfer_commit() over the whole
+ * newly armed span, which for the pool's own population - files under
+ * a slot, armed in full by the first commit - zeroed the entire file
+ * length and then read the file over it.  Measured at 8 us for a
+ * 512 KiB thumbnail against ~30 us for the whole open+read: a quarter
+ * of the transfer spent scrubbing bytes the very next reads
+ * overwrite.
+ *
+ * Scrub lazily instead, at the moments the consumer can actually
+ * look.  The consumer only sees the buffer between iterate() calls
+ * (the budget callback receives counts, not the pointer), so zeroing
+ * [max(avail, scrubbed), committed) as the fill returns keeps the
+ * guarantee exact: below avail is the current file, from avail to
+ * committed is zeros, past committed faults.  'scrubbed' is the
+ * high-water mark of bytes either overwritten or zeroed, so nothing
+ * is scrubbed twice; a fill that completes in one call - every
+ * thumbnail, which is what the slot size is chosen for - scrubs only
+ * the sub-page tail above the file length, at most a page.
+ *
+ * Nothing is needed at free: handing a slot back re-arms it
+ * unreadable, and the next consumer's own exit scrub governs what its
+ * over-reads say. */
+static void data_transfer_pool_scrub(data_transfer_t *dt)
+{
+   size_t from;
+   if (!dt->pooled || dt->committed <= dt->avail)
+      return;
+   from = (dt->scrubbed > dt->avail) ? dt->scrubbed : dt->avail;
+   if (from >= dt->committed)
+      return;
+   memset(dt->map + from, 0, dt->committed - from);
+   dt->scrubbed = dt->committed;
+}
+#endif
 
 static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
       size_t max_bytes, data_transfer_continue_t cb, void *ud)
@@ -950,6 +983,11 @@ static size_t data_transfer_prefix_iterate(data_transfer_t *dt,
    }
    if (dt->avail >= dt->len && !dt->failed)
       dt->done = 1;
+#if !defined(DT_NO_POOL)
+   /* Every return from the fill is a point the consumer may read:
+    * make the armed-but-unfilled span answer zeros before then. */
+   data_transfer_pool_scrub(dt);
+#endif
    return dt->avail;
 }
 
