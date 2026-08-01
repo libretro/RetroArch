@@ -285,9 +285,13 @@ uint64_t rflac_tell(const rflac_t *f);
 /**
  * rflac_reset:
  *
- * Discards decoder state but keeps the geometry, so a stream can be
- * played again from the start without reparsing a header. Any input
- * span is dropped.
+ * Rewinds the decoder to the start of the stream. Any input span,
+ * carried bytes and decode position are dropped, and rflac_tell()
+ * reports 0 again. A decoder made by rflac_new_raw() is rewound in
+ * place; one made by rflac_new() re-parses the header from the input
+ * the caller presents next, which must be the same stream from its
+ * first byte, and until that parse rflac_format() reports nothing.
+ * The geometry that comes back is unchanged.
  */
 void rflac_reset(rflac_t *f);
 

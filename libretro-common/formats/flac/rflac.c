@@ -6359,6 +6359,7 @@ struct rflac_ctx
    size_t             span_taken;    /* of the current span, last call   */
    int                eof_in;        /* caller has no more input to give */
    int                need_header;   /* set until a header is parsed */
+   int                raw;           /* made by rflac_new_raw()          */
 };
 
 static size_t rflac__on_read_push(void *pUserData, void *bufferOut,
@@ -6538,6 +6539,7 @@ rflac_t *rflac_new_raw(const rflac_format_t *fmt)
       return NULL;
 
    f->fmt = *fmt;
+   f->raw = 1;
    if (!(f->dec = rflac__alloc_raw(fmt, &f->src)))
    {
       free(f);
@@ -6832,9 +6834,43 @@ void rflac_reset(rflac_t *f)
 {
    if (!f)
       return;
+
+   /* The span, and whatever a rolled-back frame left in the carry,
+    * belong to wherever the stream used to be. A caller re-presenting
+    * the stream from its start must not find them prepended to it, and
+    * the position the decoder reports must not still be the old one. */
    rflac_set_in(f, NULL, 0);
-   f->out_done = 0;
-   f->ended    = 0;
+   f->src.carry_len = 0;
+   f->src.underrun  = 0;
+   f->eof_in        = 0;
+   f->out_done      = 0;
+   f->span_taken    = 0;
+   f->ended         = 0;
+
+   if (!f->dec)
+      return;
+
+   if (f->raw)
+   {
+      /* Headerless: nothing to parse again, so the decode state goes
+       * back to the start of the stream where it stands. */
+      memset(&f->dec->bs, 0, sizeof(f->dec->bs));
+      f->dec->bs.onRead       = rflac__on_read_push;
+      f->dec->bs.onSeek       = rflac__on_seek_push;
+      f->dec->bs.pUserData    = &f->src;
+      f->dec->currentPCMFrame = 0;
+      memset(&f->dec->currentFLACFrame, 0, sizeof(f->dec->currentFLACFrame));
+      return;
+   }
+
+   /* Otherwise the caller has only the file to hand back, from its
+    * first byte - where the first frame begins is not a figure this
+    * decoder exposes - so the header is parsed again from it. The
+    * geometry that comes back is the same, so nothing a caller sized
+    * against it moves. */
+   free(f->dec);
+   f->dec         = NULL;
+   f->need_header = 1;
 }
 
 size_t rflac_span_taken(const rflac_t *f)
