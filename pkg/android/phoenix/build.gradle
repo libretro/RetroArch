@@ -107,7 +107,7 @@ android {
       }
     }
     playStorePlus {
-      minSdkVersion 21
+      minSdkVersion 26
       targetSdkVersion 36
       versionCode getPlayStoreVersionCode()
       versionName getPlayStoreVersionName()
