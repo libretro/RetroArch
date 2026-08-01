@@ -1519,6 +1519,16 @@ ifeq ($(HAVE_NETWORK_VIDEO), 1)
    OBJ += gfx/drivers/network_gfx.o
 endif
 
+ifeq ($(HAVE_HUB75), 1)
+   DEFINES += -DHAVE_HUB75
+   INCLUDE_DIRS += -Ideps/rpi-rgb-led-matrix/include
+   OBJ += gfx/drivers/hub75_gfx.o
+   HUB75_LIBRARY := deps/rpi-rgb-led-matrix/lib/librgbmatrix.a
+   HUB75_AR := $(if $(filter %gcc,$(CC)),$(patsubst %gcc,%ar,$(CC)),$(AR))
+   LIBS += $(HUB75_LIBRARY) -lrt -lm -lpthread
+   NEED_CXX_LINKER = 1
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    ifneq ($(HAVE_LAKKA), 1)
