@@ -1,8 +1,15 @@
-/* rvorbis - Ogg Vorbis decoder (stb_vorbis-derived), memory-only.
+/* rvorbis - Ogg Vorbis decoder (stb_vorbis-derived), memory-resident.
  *
- * The public API in <formats/rvorbis.h> is the pull interface used by
- * libretro-common's audio_transfer: open a whole file from memory,
- * query the stream info, pull interleaved f32 frames, seek by sample.
+ * Two interfaces in <formats/rvorbis.h> share the decode core.  The
+ * pull interface opens a whole file from memory, queries the stream
+ * info, pulls interleaved frames and seeks by sample.  The stream
+ * interface (rvorbis_stream_*) decodes from a sliding window instead:
+ * the caller presents what bytes it has, rvorbis_stream_process
+ * consumes from the front and reports how much, and NEED_IN asks for
+ * more - which is what lets audio_transfer's Vorbis arm play a file
+ * that is still arriving, holding at most one packet across calls.
+ * The stream contract, including caller-driven seeking by granule
+ * bisection, is documented at its declarations in the header.
  *
  * Decode pipeline, in the order the code runs it:
  *

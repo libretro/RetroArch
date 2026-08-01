@@ -20,10 +20,11 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* MP4 video-to-image glue: rmp4 demuxer + rvp8/rvp9 decoders exposed
- * through the still-image and streaming-animation contracts that
- * image_transfer.c dispatches on (see rmp4_video.h).  The structure
- * mirrors rwebm_video.c with the demuxer swapped. */
+/* MP4 video-to-image glue: rmp4 demuxer + rh264/rvp8/rvp9 decoders
+ * exposed through the still-image and streaming-animation contracts
+ * that image_transfer.c dispatches on (see rmp4_video.h).  The
+ * structure mirrors rwebm_video.c with the demuxer swapped and H.264
+ * (avc1, with its avcC extradata) added to the codec dispatch. */
 
 #include <stdlib.h>
 #include <string.h>

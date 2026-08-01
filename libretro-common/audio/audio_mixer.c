@@ -20,6 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* audio_mixer -- fixed-voice sound-effect and music mixer.
+ * <audio/audio_mixer.h> declares the API.
+ *
+ * The model: a sound is loaded once from a memory buffer
+ * (audio_mixer_load_wav / _ogg / _flac / _mp3 / _m4a / _opus / _weba /
+ * _mod, each present when its codec is built in), then played on one
+ * of AUDIO_MIXER_MAX_VOICES voices with a volume, an optional repeat,
+ * and a stop callback; audio_mixer_mix and audio_mixer_mix_s16 fold
+ * every live voice into the frontend's output block at the rate given
+ * to audio_mixer_init, resampling each voice from its source rate.
+ * Sounds are shared and immutable; voices hold the playback state.
+ *
+ * Two voice pipelines, kept apart on purpose.  audio_mixer_play makes
+ * a float voice mixed by audio_mixer_mix; audio_mixer_play_s16 makes a
+ * fixed-point voice, resampled by the integer sinc resampler (quality
+ * mapped in audio_mixer_i16_quality) and mixed with integer gain and
+ * saturation by audio_mixer_mix_s16.  Nothing is decoded in one
+ * pipeline and converted into the other - a WAV sound keeps its source
+ * bytes so either pipeline builds from the original, and frame counts
+ * are tracked per pipeline because the two resamplers need not agree
+ * to the sample.  audio_mixer_has_float_voices lets the frontend skip
+ * the float mix entirely when nothing needs it.
+ *
+ * WAV plays from a decoded buffer (or streams, via load_wav_stream);
+ * every compressed format streams: those voices pull PCM through
+ * audio_transfer in AUDIO_MIXER_TEMP_BUFFER-sized blocks as the mix
+ * consumes it, which is also where repeat is implemented - a loop is
+ * audio_transfer_seek back to the first frame, not a reload.  Sounds
+ * can borrow their compressed bytes from a larger owned object
+ * (data_owner/data_release) instead of copying, and windowed sources -
+ * a file still arriving - bound the header parse with the resident
+ * byte count and, for Ogg-Opus, the injected end granule, with
+ * multichannel sources folded to stereo by the downmix tables.
+ *
+ * Voices are claimed and released from mixer and caller threads;
+ * under HAVE_THREADS each voice carries a lock, and stop callbacks
+ * run outside it. */
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif

@@ -2,6 +2,8 @@
  *
  * A pure demuxer: it parses the ISO-BMFF box tree and hands out the
  * elementary-stream packets, without decoding.  See rmp4.h for the API.
+ * The decoding glue lives next door: rmp4_audio.c (audio track to PCM)
+ * and rmp4_video.c (video track to images).
  *
  * What it implements: progressive files whose sample tables live in
  * moov/trak/mdia/minf/stbl - the parser reads the boxes it needs (mvhd

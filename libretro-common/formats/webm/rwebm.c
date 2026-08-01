@@ -2,6 +2,8 @@
  *
  * A pure demuxer: it parses the EBML/Matroska container and hands out the
  * elementary-stream packets, without decoding.  See rwebm.h for the API.
+ * The decoding glue lives next door: rwebm_audio.c (audio track to PCM)
+ * and rwebm_video.c (video track to images).
  *
  * Scope: WebM restricts Matroska to VP8/VP9 video and Vorbis/Opus audio,
  * SimpleBlock/BlockGroup lacing, and a Segment/Cluster/Block layout.  The

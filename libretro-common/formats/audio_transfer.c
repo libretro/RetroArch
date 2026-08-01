@@ -20,6 +20,47 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* audio_transfer -- one pull interface over every audio codec in the
+ * tree.  A caller that wants interleaved PCM out of a file it holds in
+ * memory allocates a state for the type (audio_transfer_new), points
+ * it at the bytes (audio_transfer_set_buffer_ptr), starts it, and
+ * pulls with audio_transfer_read_s16 or _read_f32 until
+ * AUDIO_PROCESS_END; audio_transfer_info reports the channel count and
+ * sample rate once decoding has begun.  <formats/audio.h> declares the
+ * API and per-call contracts.
+ *
+ * Each codec sits behind its own arm, compiled in by its HAVE_ flag:
+ * WAV (rwav), FLAC (rflac), Ogg Vorbis (rvorbis), MP3 (rmp3's stream
+ * interface), Opus (ropus), AAC-LC (raac) and tracker modules
+ * (rmodtracker).  The arms own whatever adaptation their codec needs -
+ * walking Ogg pages into packets, feeding rflac and rmp3 their spans,
+ * batching ropus packets, stepping raac access units - so that the
+ * caller sees the same four calls whichever format it was handed.
+ *
+ * Two ways in.  A buffer is the whole file as it sits on disk, and the
+ * type helpers say which arm reads it: audio_transfer_ogg_audio_type
+ * looks inside an Ogg container (Vorbis, Opus or FLAC), and
+ * audio_transfer_webm_audio_type inside a WebM/Matroska one, whose
+ * arms then own an rwebm demuxer internally.  Demuxed input
+ * (audio_transfer_set_demuxed_ptr) is for a caller that already runs a
+ * container demuxer - rmp4 hands the codec setup data and the
+ * elementary-stream packets straight through, so the same Vorbis, FLAC,
+ * Opus and AAC arms serve MP4 audio without a container of their own.
+ *
+ * The remaining calls serve streaming and gapless playback:
+ * audio_transfer_set_avail tells a WebM-backed arm how much of a still
+ * -downloading buffer is valid so it stops at the frontier instead of
+ * misreading truncation as corruption; audio_transfer_set_end_granule
+ * and audio_transfer_set_start_trim carry edge trims (Opus pre-skip
+ * and end granule, MP3 LAME delay/padding) so the decoded stream
+ * starts and ends on the encoded material rather than the codec
+ * priming; audio_transfer_buffer_tell reports consumption for callers
+ * that window their reads; and audio_transfer_seek moves to an
+ * absolute PCM frame, which is how a looping voice returns to the top
+ * without tearing the state down.  A demuxed packet set may also be
+ * re-pointed and grown mid-stream for progressive sources - the
+ * contract for that lives with set_demuxed_ptr in the header. */
+
 #include <stdlib.h>
 #include <string.h>
 

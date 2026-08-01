@@ -25,7 +25,33 @@
  *  - Encoding of any kind.
  *  - Negative LPC coefficient shifts (never emitted by known encoders;
  *    such streams are rejected).
- */
+ *
+ * How it is driven: the public interface in <formats/rflac.h> is a
+ * push API.  The caller hands in spans of the stream as it has them
+ * (rflac_set_in), points the decoder at an output block
+ * (rflac_set_out_s16 / _f32), and calls rflac_process, which reports
+ * bytes consumed and frames produced and returns NEXT while the
+ * stream continues, END after the last frame once rflac_set_eof has
+ * been called, or ERROR for a stream it cannot decode.  A span may
+ * end anywhere, including mid-frame: the decoder snapshots its state
+ * before each frame attempt and, when input runs out partway, rewinds
+ * and carries the unconsumed tail internally, so the frame is decoded
+ * exactly once when the rest arrives and the caller never re-sends
+ * bytes it was told were consumed.  rflac_seek and rflac_seek_resumed
+ * translate a target PCM frame into the byte position to feed from;
+ * rflac_reset rewinds to the start (a raw decoder in place, a headered
+ * one by re-parsing its header from the bytes fed after the reset).
+ *
+ * Two constructors: rflac_new decodes a whole headered file - fLaC
+ * marker, metadata, then frames - and reports the stream's format
+ * once the header has been parsed (rflac_format, rflac_total_frames).
+ * rflac_new_raw decodes a bare frame sequence with no header at all,
+ * taking the format from the caller instead; that is the shape CHD
+ * compression stores its FLAC hunks in, and libchdr and rchd are its
+ * consumers.  The dr_flac pull machinery underneath is not exported:
+ * its file-oriented assumptions (a short read is the end of the
+ * stream) are papered over at the refill and process layers, which is
+ * what the span carry above depends on. */
 
 #include <retro_inline.h>
 #include <retro_endianness.h>

@@ -10,6 +10,17 @@
  * header interpretation (VBR duration estimates and gapless
  * delay/padding trimming are the caller's concern), and encoding.
  *
+ * Two interfaces share the decode core.  The original pull interface
+ * (rmp3_init_memory / rmp3_read_s16 / rmp3_read_f32 /
+ * rmp3_seek_to_frame) decodes a complete memory-resident file.  The
+ * stream interface (rmp3_stream_new and the rmp3_stream_* calls at
+ * the bottom of this file) is a push API in the same shape as
+ * rflac's: the caller feeds spans as it has them, sets an s16 or f32
+ * output block, and calls rmp3_stream_process until END after
+ * rmp3_stream_set_eof; a span may end mid-frame, and the unconsumed
+ * tail is carried internally so nothing is decoded twice or lost.
+ * audio_transfer's MP3 arm runs on the stream interface.
+ *
  * Known, and left alone deliberately: the fixed-point kernels rely on
  * signed integers wrapping, which the standard leaves undefined.  A
  * valid stream never reaches it - the format bounds the values so the
