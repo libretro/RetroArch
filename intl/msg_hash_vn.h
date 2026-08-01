@@ -972,7 +972,7 @@ static const struct
    char s_a60a77f9[42];
    char s_f07432ff[30];
    char s_df29ad9e[25];
-   char s_3f190ff7[29];
+   char s_3f190ff7[50];
    char s_e59fc3c9[20];
    char s_7dcf9e78[20];
    char s_f07a5367[32];
@@ -5857,7 +5857,8 @@ static const struct
    "Cho ph\303\251p t\341\273\261 \304\221\341\273\231ng nh\341\272\245n tr\303\252n D-Pad",
    "G\303\241n n\303\272t T\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
    "N\303\272t T\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
-   "Chu k\341\273\263 t\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
+   "Chu k\341\273\263 ho\341\272\241t \304\221\341\273\231ng c\341\273\247a t\341\273\261 \304\221"
+   "\341\273\231ng nh\341\272\245n",
    "T\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
    "T\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
    "Ch\341\272\277 \304\221\341\273\231 T\341\273\261 \304\221\341\273\231ng nh\341\272\245n",
@@ -11816,7 +11817,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (219988u
+      (sizeof(msg_hash_vn_blob) == (220009u
 #ifdef ANDROID
        + 422u
 #endif

@@ -2373,6 +2373,7 @@ static const struct
    char s_f4b6d13e[26];
    char s_25e89959[4];
    char s_a7468d68[25];
+   char s_b1d6fea6[9];
    char s_aa0659db[28];
    char s_49757b91[28];
    char s_660eb9c4[28];
@@ -6795,6 +6796,7 @@ static const struct
    "Pozycja miniatur w pionie",
    "Tak",
    "Klucz strumienia YouTube",
+   "Tryb HDR",
    "Ustawienie wst\304\231pne shadera",
    "Ustawienie wst\304\231pne shadera",
    "Ustawienie wst\304\231pne shadera",
@@ -9461,7 +9463,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (188008u
+      (sizeof(msg_hash_pl_blob) == (188017u
 #ifdef ANDROID
        + 385u
 #endif
@@ -12237,6 +12239,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
