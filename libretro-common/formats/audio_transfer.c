@@ -286,9 +286,23 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     only what is wider than that.
  *
  * MP3 (rmp3)
- *   Does: buffer input; s16 (quantised by the synthesis filter, no float
- *     round trip) and f32; channels and rate from the first frame; seek
- *     to any PCM frame; buffer_tell, hence windowing.
+ *   Does: buffer input, decoded through rmp3_stream - the buffer is
+ *     consumed incrementally rather than borrowed whole, so
+ *     buffer_tell reports a real frontier, the bytes behind it
+ *     releasable rather than merely read (it leads the decode position
+ *     by at most the stream's reassembly hold, the safe side for a
+ *     feeder); s16 (quantised by the synthesis filter, no float round
+ *     trip) and f32, freely mixed - the stream converts its filter
+ *     state at the switch as the pull API did; channels and rate from
+ *     the first frame's header, read at open by a parse-only walk that
+ *     decodes nothing; seek to any PCM frame, recorded at seek() and
+ *     performed at the following read as a decode forward from the
+ *     head in that read's own pipeline, so the audio after a seek is
+ *     byte-identical to a linear decode's - MP3 frames depend on the
+ *     bit reservoir of their predecessors, so the top is the only
+ *     sample-accurate way in, which is also what the resident decoder
+ *     did, minus its habit of carrying stale synthesis state through
+ *     the rewind.
  *     Length and gapless trim from the Xing/Info or VBRI header in the
  *     first frame: that frame carries no audio but is decoded like any
  *     other, so the priming dropped is its own length plus the encoder
@@ -607,8 +621,17 @@ struct audio_transfer_mp3
 {
    const void *data;
    size_t      size;
-   rmp3        handle;   /* dr_mp3 initialises this in place (by value)      */
-   int         inited;   /* handle is embedded, so track init state a flag   */
+   rmp3_stream_t *stream; /* opened decoder, NULL until start() succeeds    */
+   size_t      off;      /* consumption cursor: the compressed frontier      */
+   unsigned    channels; /* from the first frame's header, read at start()   */
+   unsigned    rate;
+   int         eof_sent; /* the stream has been told the tail is all there is */
+   /* Recorded rather than done: an MP3 seek is a decode forward from
+    * the head, and which pipeline it decodes in belongs to the read
+    * that follows, so the output after a seek is byte-identical to a
+    * linear decode in that read's own format.  Same shape as the Opus
+    * arm's seek_to. */
+   int64_t     seek_to;
    /* Gapless, from the Xing/Info or VBRI header in the first frame.
     * That frame carries no audio but dr_mp3 decodes it like any
     * other, so the priming to drop is its own length plus the
@@ -1742,6 +1765,89 @@ static int audio_transfer_mp3_gapless(const uint8_t *b, size_t len,
 #endif
 
 #ifdef HAVE_RMP3
+/* Drain 'frames' frames out of the stream in one of the two pipelines,
+ * feeding it the unconsumed tail of the buffer as it asks.  The
+ * compressed cursor is kept here rather than in the decoder because a
+ * windowed feeder reads it, and because a seek re-points it.  Returns
+ * the frames written, short of the ask at end of stream. */
+static size_t audio_transfer_mp3_pull(struct audio_transfer_mp3 *m,
+      int s16, int16_t *o16, float *of, size_t frames)
+{
+   size_t done = 0;
+   if (!m->stream || !frames)
+      return 0;
+   while (done < frames)
+   {
+      size_t rd = 0, wr = 0;
+      int    r;
+      if (s16)
+         rmp3_stream_set_out_s16(m->stream,
+               o16 + done * (size_t)m->channels, frames - done);
+      else
+         rmp3_stream_set_out_f32(m->stream,
+               of + done * (size_t)m->channels, frames - done);
+      rmp3_stream_set_in(m->stream,
+            (const uint8_t*)m->data + m->off, m->size - m->off);
+      r = rmp3_stream_process(m->stream, &rd, &wr);
+      m->off += rd;
+      done   += wr;
+      if (r == RMP3_STREAM_ERROR || r == RMP3_STREAM_END)
+         break;
+      if (r == RMP3_STREAM_NEED_IN && m->off >= m->size)
+      {
+         /* A frame must be presented whole, so the tail of the stream
+          * sits in the hold waiting for a window that will never fill;
+          * this is what says the short tail is all there is.  Latched
+          * until a seek resets the stream. */
+         if (m->eof_sent && !wr)
+            break;
+         rmp3_stream_set_eof(m->stream);
+         m->eof_sent = 1;
+      }
+   }
+   return done;
+}
+
+/* Restart the stream and decode forward to @frame, discarding, in the
+ * pipeline of the read that asked - which is what makes the output
+ * after the seek byte-identical to a linear decode's.  MP3 frames
+ * depend on the bit reservoir of their predecessors, so decoding from
+ * the top is the only sample-accurate way in.  Frame numbers here are
+ * of the played audio; the priming sits before frame 0 and is part of
+ * the distance.  Returns the frame reached, or < 0 if the stream ends
+ * first. */
+static int64_t audio_transfer_mp3_seek_to(struct audio_transfer_mp3 *m,
+      int64_t frame, int s16)
+{
+   /* Somewhere to throw the frames walked past.  On the stack, and one
+    * union rather than two arrays: these were a pair of function-local
+    * statics, 24 KiB of BSS of which only ever half was in use, and
+    * shared by every context.  audio_mixer runs up to
+    * AUDIO_MIXER_MAX_VOICES at once, so two MP3 streams priming in the
+    * same callback wrote over each other's sink.  Small because it is
+    * only a sink - the loop below iterates until the distance is gone. */
+   union { int16_t s16[256]; float f32[256]; } skip;
+   uint64_t left = (uint64_t)frame + m->start_trim;
+   unsigned ch   = m->channels ? m->channels : 1;
+
+   rmp3_stream_reset(m->stream);
+   m->off      = 0;
+   m->eof_sent = 0;
+   while (left)
+   {
+      size_t cap  = (sizeof(skip.s16) / sizeof(skip.s16[0])) / ch;
+      size_t want = (left < (uint64_t)cap) ? (size_t)left : cap;
+      size_t n    = audio_transfer_mp3_pull(m, s16,
+            skip.s16, skip.f32, want);
+      if (!n)
+         return -1;                /* the stream ends before the target */
+      left -= n;
+   }
+   m->trim_left = 0;
+   m->emitted   = frame;
+   return frame;
+}
+
 /* Read past the priming and stop at the padding.  The trim is dropped
  * by decoding it and throwing it away - there is nowhere else for it
  * to go, the frames being coded - and the bound is what the tag says
@@ -1749,23 +1855,15 @@ static int audio_transfer_mp3_gapless(const uint8_t *b, size_t len,
 static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
       int s16, int16_t *o16, float *of, size_t frames)
 {
-   unsigned ch = m->handle.channels ? m->handle.channels : 1;
    size_t   got;
-   /* Somewhere to throw the primed frames.  On the stack, and one
-    * union rather than two arrays: these were a pair of function-local
-    * statics, 24 KiB of BSS of which only ever half was in use, and
-    * shared by every context.  audio_mixer runs up to
-    * AUDIO_MIXER_MAX_VOICES at once, so two MP3 streams priming in the
-    * same callback wrote over each other's sink.  Small because it is
-    * only a sink - the loop below iterates until the trim is gone. */
    union { int16_t s16[256]; float f32[256]; } skip;
+   unsigned ch = m->channels ? m->channels : 1;
    while (m->trim_left)
    {
-      size_t cap  = (size_t)256 / ch;
+      size_t cap  = (sizeof(skip.s16) / sizeof(skip.s16[0])) / ch;
       size_t want = (m->trim_left < cap) ? (size_t)m->trim_left : cap;
-      size_t n    = s16
-         ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)want, skip.s16)
-         : (size_t)rmp3_read_f32(&m->handle, (uint64_t)want, skip.f32);
+      size_t n    = audio_transfer_mp3_pull(m, s16,
+            skip.s16, skip.f32, want);
       if (!n)
       {
          m->trim_left = 0;         /* stream ended inside the priming */
@@ -1781,8 +1879,7 @@ static size_t audio_transfer_mp3_read(struct audio_transfer_mp3 *m,
       if ((int64_t)frames > left)
          frames = (size_t)left;
    }
-   got = s16 ? (size_t)rmp3_read_s16(&m->handle, (uint64_t)frames, o16)
-             : (size_t)rmp3_read_f32(&m->handle, (uint64_t)frames, of);
+   got = audio_transfer_mp3_pull(m, s16, o16, of, frames);
    m->emitted += (int64_t)got;
    return got;
 }
@@ -2707,10 +2804,50 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
          if (!m || !m->data)
             return false;
-         m->inited = (rmp3_init_memory(&m->handle, m->data, m->size) != 0);
-         if (!m->inited)
+         if (!(m->stream = rmp3_stream_new()))
             return false;
-         m->limit = -1;
+         /* Walk parse-only until the first frame is located, which is
+          * where the channel count and rate come from - MPEG audio has
+          * no header ahead of the stream to read them from.  Locating
+          * decodes nothing, so the walk costs a scan; a buffer with no
+          * frame in it fails here, as the resident open did.  Then back
+          * to the head, so the first read decodes from frame one. */
+         m->off      = 0;
+         m->eof_sent = 0;
+         for (;;)
+         {
+            size_t rd = 0, wr = 0;
+            int    r;
+            rmp3_stream_set_out_s16(m->stream, NULL, 0);
+            rmp3_stream_set_in(m->stream,
+                  (const uint8_t*)m->data + m->off, m->size - m->off);
+            r = rmp3_stream_process(m->stream, &rd, &wr);
+            m->off += rd;
+            if (rmp3_stream_info(m->stream, &m->channels, &m->rate))
+               break;
+            if (r == RMP3_STREAM_NEED_IN && m->off >= m->size
+                  && !m->eof_sent)
+            {
+               /* A file shorter than the reassembly hold never fills
+                * it; say the short tail is all there is, so its frame
+                * is still found. */
+               rmp3_stream_set_eof(m->stream);
+               m->eof_sent = 1;
+               continue;
+            }
+            if (r == RMP3_STREAM_ERROR || r == RMP3_STREAM_END
+                  || (r == RMP3_STREAM_NEED_IN && m->off >= m->size))
+            {
+               rmp3_stream_free(m->stream);
+               m->stream = NULL;
+               return false;
+            }
+         }
+         rmp3_stream_reset(m->stream);
+         m->off      = 0;
+         m->eof_sent = 0;
+         m->seek_to  = -1;
+         m->limit    = -1;
          {
             uint64_t fr = 0, delay = 0;
             if (!audio_transfer_mp3_gapless((const uint8_t*)m->data,
@@ -3141,7 +3278,7 @@ bool audio_transfer_is_valid(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         return (m && m->inited);
+         return (m && m->stream);
       }
 #endif
 #ifdef HAVE_RMODTRACKER
@@ -3252,12 +3389,12 @@ bool audio_transfer_info(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         if (!m || !m->inited)
+         if (!m || !m->stream)
             return false;
          if (channels)
-            *channels     = (unsigned)m->handle.channels;
+            *channels     = m->channels;
          if (rate)
-            *rate         = (unsigned)m->handle.sampleRate;
+            *rate         = m->rate;
          /* From the Xing/Info or VBRI count, less the gapless trim
           * where a LAME tag states one; 0 for a file carrying no
           * such header, which cannot be measured without a walk. */
@@ -3957,8 +4094,15 @@ int audio_transfer_read_s16(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         if (!m || !m->inited)
+         if (!m || !m->stream)
             return AUDIO_PROCESS_ERROR;
+         if (m->seek_to >= 0)
+         {
+            int64_t at = audio_transfer_mp3_seek_to(m, m->seek_to, 1);
+            m->seek_to = -1;
+            if (at < 0)
+               return AUDIO_PROCESS_ERROR;
+         }
          produced = audio_transfer_mp3_read(m, 1, out, NULL, frames);
          break;
       }
@@ -4167,8 +4311,15 @@ int audio_transfer_read_f32(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         if (!m || !m->inited)
+         if (!m || !m->stream)
             return AUDIO_PROCESS_ERROR;
+         if (m->seek_to >= 0)
+         {
+            int64_t at = audio_transfer_mp3_seek_to(m, m->seek_to, 0);
+            m->seek_to = -1;
+            if (at < 0)
+               return AUDIO_PROCESS_ERROR;
+         }
          produced = audio_transfer_mp3_read(m, 0, NULL, out, frames);
          break;
       }
@@ -4418,8 +4569,13 @@ size_t audio_transfer_buffer_tell(void *data, enum audio_type_enum type)
       {
          struct audio_transfer_mp3 *m =
                (struct audio_transfer_mp3*)data;
-         if (m->inited)
-            return (size_t)m->handle.readPos;
+         /* The stream consumes the buffer as it plays, so the cursor
+          * kept alongside it is the compressed frontier - a real one,
+          * the bytes behind it being releasable rather than merely
+          * read.  It leads the decode position by at most the stream's
+          * reassembly hold, which is the safe side for a feeder. */
+         if (m->stream)
+            return m->off;
          return 0;
       }
 #endif
@@ -4672,15 +4828,28 @@ bool audio_transfer_seek(void *data, enum audio_type_enum type,
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         if (!m || !m->inited)
+         if (!m || !m->stream)
             return false;
-         /* Frame numbers here are of the played audio, so the
-          * priming sits before frame 0. */
-         if (!rmp3_seek_to_frame(&m->handle,
-                  (uint64_t)frame + m->start_trim))
+         /* Where the length is known, refuse to be sent past it rather
+          * than walk to the end and report failure from there. */
+         if (m->limit >= 0 && (int64_t)frame > m->limit)
             return false;
-         m->trim_left = 0;
-         m->emitted   = (int64_t)frame;
+         if (frame == 0 && !m->start_trim)
+         {
+            /* Loop-to-start with nothing to prime past: a rewind, done
+             * here rather than deferred. */
+            rmp3_stream_reset(m->stream);
+            m->off       = 0;
+            m->eof_sent  = 0;
+            m->seek_to   = -1;
+            m->trim_left = 0;
+            m->emitted   = 0;
+            return true;
+         }
+         /* Recorded, not done: see seek_to.  Frame numbers here are of
+          * the played audio, so the priming sits before frame 0 and the
+          * walk at the read covers both. */
+         m->seek_to = (int64_t)frame;
          return true;
       }
 #endif
@@ -4812,8 +4981,8 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_MP3:
       {
          struct audio_transfer_mp3 *m = (struct audio_transfer_mp3*)data;
-         if (m->inited)
-            rmp3_uninit(&m->handle);
+         if (m->stream)
+            rmp3_stream_free(m->stream);
          break;
       }
 #endif

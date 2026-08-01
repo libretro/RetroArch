@@ -68,6 +68,15 @@ typedef struct
     } scratch;
 } rmp3dec;
 
+/* One decoded MPEG frame, in whichever format the synthesis ran in.
+ * The two pipelines share the storage through this union; a format
+ * switch converts the contents in place. */
+typedef union
+{
+    int16_t s16[RMP3_MAX_SAMPLES_PER_FRAME];
+    float   f32[RMP3_MAX_SAMPLES_PER_FRAME];
+} rmp3_frame_buf;
+
 /* Main API (Pull API)
  * ===================*/
 
@@ -80,11 +89,7 @@ typedef struct
     uint32_t framesConsumed;    /* PCM frames of the current block already returned. Internal. */
     uint32_t framesRemaining;   /* PCM frames of the current block still to return. Internal. */
     uint32_t f32_mode;          /* 0: synthesis outputs s16; 1: native float. Internal. */
-    union
-    {
-        int16_t s16[RMP3_MAX_SAMPLES_PER_FRAME];
-        float   f32[RMP3_MAX_SAMPLES_PER_FRAME];
-    } frames;                   /* Current decoded frame in the latched format. */
+    rmp3_frame_buf frames;      /* Current decoded frame in the latched format. */
     const uint8_t* pData;       /* Caller's buffer (borrowed, never freed). */
     size_t dataSize;
     size_t readPos;             /* Read cursor into pData. */
@@ -177,21 +182,33 @@ void rmp3_stream_set_in(rmp3_stream_t *s, const void *in, size_t in_size);
 
 /**
  * rmp3_stream_set_out_s16:
+ * rmp3_stream_set_out_f32:
  *
  * Sets the destination and its capacity in frames, interleaved at the
  * stream's own channel count. A null destination, or a capacity of
  * zero, is parse-only.
+ *
+ * The two entry points select the same two pipelines the pull API
+ * runs: s16 synthesises in Q28 fixed point straight to s16, f32 in
+ * native float. They may be mixed freely on one stream - the decoder's
+ * persistent filter state and any undrained frame are converted in
+ * place at the switch, exactly as the pull API's reads do - but a
+ * parse-only call selects nothing, so a walk in the middle of a decode
+ * does not disturb the pipeline the decode is in.
  */
 void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames);
+void rmp3_stream_set_out_f32(rmp3_stream_t *s, float *out, size_t out_frames);
 
 int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote);
 
 /**
  * rmp3_stream_info:
  *
- * Returns: nonzero once a frame has been decoded, which is the point
+ * Returns: nonzero once a frame has been located, which is the point
  * the channel count and rate are known - MPEG audio has no header
- * ahead of the stream to read them from.
+ * ahead of the stream to read them from, so they come off the first
+ * frame's own header.  A parse-only walk locates frames too, so this
+ * answers there without anything having been decoded.
  */
 int rmp3_stream_info(const rmp3_stream_t *s, unsigned *channels, unsigned *rate);
 
