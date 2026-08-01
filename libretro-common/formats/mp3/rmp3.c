@@ -2622,42 +2622,42 @@ static uint32_t rmp3_decode_next_frame(rmp3* pMP3)
  * frame is converted in place (the decoder state has already advanced
  * past it, so re-decoding is not an option); every later frame is
  * synthesised natively in the new format. */
-static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
+/* The two pipelines keep their persistent decoder state in different
+ * formats: float for the float pipeline, Q28 fixed point for the s16
+ * pipeline (the storage is shared through unions).  Convert the QMF
+ * and IMDCT overlap histories so decoding continues seamlessly in the
+ * new format.  Shared by the pull and streaming APIs, whose format
+ * switches are the same operation on different bookkeeping. */
+static void rmp3d_convert_state(rmp3dec *dec, uint32_t f32)
 {
-   uint32_t total;
    int i;
-   if (pMP3->f32_mode == f32)
-      return;
-   pMP3->f32_mode = f32;
-
-   /* The two pipelines keep their persistent decoder state in
-    * different formats: float for the float pipeline, Q28 fixed point
-    * for the s16 pipeline (the storage is shared through unions).
-    * Convert the QMF and IMDCT overlap histories so decoding continues
-    * seamlessly in the new format. */
+   float   *of = &dec->mdct_overlap.f[0][0];
+   int32_t *oq = &dec->mdct_overlap.q[0][0];
+   if (f32)
    {
-      float   *of = &pMP3->decoder.mdct_overlap.f[0][0];
-      int32_t *oq = &pMP3->decoder.mdct_overlap.q[0][0];
-      if (f32)
-      {
-         for (i = 0; i < 15*2*32; i++)
-            pMP3->decoder.qmf_state.f[i] =
-                  pMP3->decoder.qmf_state.q[i] * (1.0f / (float)(1 << RMP3D_QBITS));
-         for (i = 0; i < 2*9*32; i++)
-            of[i] = oq[i] * (1.0f / (float)(1 << RMP3D_QBITS));
-      }
-      else
-      {
-         for (i = 0; i < 15*2*32; i++)
-            pMP3->decoder.qmf_state.q[i] =
-                  rmp3d_float_to_q(pMP3->decoder.qmf_state.f[i]);
-         for (i = 0; i < 2*9*32; i++)
-            oq[i] = rmp3d_float_to_q(of[i]);
-      }
+      for (i = 0; i < 15*2*32; i++)
+         dec->qmf_state.f[i] =
+               dec->qmf_state.q[i] * (1.0f / (float)(1 << RMP3D_QBITS));
+      for (i = 0; i < 2*9*32; i++)
+         of[i] = oq[i] * (1.0f / (float)(1 << RMP3D_QBITS));
    }
+   else
+   {
+      for (i = 0; i < 15*2*32; i++)
+         dec->qmf_state.q[i] =
+               rmp3d_float_to_q(dec->qmf_state.f[i]);
+      for (i = 0; i < 2*9*32; i++)
+         oq[i] = rmp3d_float_to_q(of[i]);
+   }
+}
 
-   total = (pMP3->framesConsumed + pMP3->framesRemaining)
-         * pMP3->frameChannels;
+/* Convert 'total' samples of a buffered frame between the two formats,
+ * in place.  The decoder state has already advanced past the frame, so
+ * re-decoding is not an option; conversion is what keeps a buffered
+ * frame playable across a format switch. */
+static void rmp3d_convert_frames(rmp3_frame_buf *fb, uint32_t total,
+      uint32_t f32)
+{
    if (total == 0)
       return;
 
@@ -2667,7 +2667,7 @@ static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
        * backwards only clobbers s16 slots that are already consumed. */
       uint32_t i = total;
       while (i-- > 0)
-         pMP3->frames.f32[i] = pMP3->frames.s16[i] * (1.0f / 32768.0f);
+         fb->f32[i] = fb->s16[i] * (1.0f / 32768.0f);
    }
    else
    {
@@ -2676,17 +2676,28 @@ static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
       uint32_t i;
       for (i = 0; i < total; i++)
       {
-         float s = pMP3->frames.f32[i] * 32768.0f;
+         float s = fb->f32[i] * 32768.0f;
          int   v;
-         if (s >  32767.0f) { pMP3->frames.s16[i] =  32767; continue; }
-         if (s < -32768.0f) { pMP3->frames.s16[i] = -32768; continue; }
+         if (s >  32767.0f) { fb->s16[i] =  32767; continue; }
+         if (s < -32768.0f) { fb->s16[i] = -32768; continue; }
          v  = (int)(s + .5f);
          v -= (v < 0); /* round half away from zero, as rmp3d_scale_pcm */
          if (v >  32767) v =  32767;
          if (v < -32768) v = -32768;
-         pMP3->frames.s16[i] = (int16_t)v;
+         fb->s16[i] = (int16_t)v;
       }
    }
+}
+
+static void rmp3_set_output_mode(rmp3* pMP3, uint32_t f32)
+{
+   if (pMP3->f32_mode == f32)
+      return;
+   pMP3->f32_mode = f32;
+   rmp3d_convert_state(&pMP3->decoder, f32);
+   rmp3d_convert_frames(&pMP3->frames,
+         (pMP3->framesConsumed + pMP3->framesRemaining)
+         * pMP3->frameChannels, f32);
 }
 
 uint32_t rmp3_init_memory(rmp3* pMP3, const void* pData, size_t dataSize)
@@ -2889,9 +2900,14 @@ struct rmp3_stream
    size_t         in_size;
    size_t         in_pos;
 
+   /* One destination or the other, the same way the pull API's two
+    * reads are one decoder: whichever set_out_* ran last names the
+    * pipeline, and f32_mode says which. */
    int16_t       *out;
+   float         *outf;
    size_t         out_frames;
    size_t         out_pos;
+   uint32_t       f32_mode;
 
    /* A frame straddling two windows is reassembled here rather than
     * asking the caller to guarantee alignment it cannot know. */
@@ -2902,8 +2918,9 @@ struct rmp3_stream
    uint64_t       frames_in;   /* MPEG frames consumed since reset     */
 
    /* One decoded frame, drained across as many calls as the caller's
-    * output takes to accept it. */
-   int16_t        pcm[RMP3_MAX_SAMPLES_PER_FRAME];
+    * output takes to accept it; held in whichever format the synthesis
+    * ran in, converted in place if the caller switches. */
+   rmp3_frame_buf pcm;
    unsigned       pending;
    unsigned       drained;
 
@@ -2936,6 +2953,22 @@ void rmp3_stream_set_in(rmp3_stream_t *s, const void *in, size_t in_size)
    s->in_pos  = 0;
 }
 
+/* Selecting a pipeline is the same operation as the pull API's reads
+ * perform: convert the decoder's persistent filter state, and whatever
+ * of the last decoded frame has not been drained, so decoding
+ * continues seamlessly in the new format.  A parse-only call selects
+ * nothing - a walk in the middle of a decode must not disturb the
+ * pipeline the decode is in. */
+static void rmp3_stream_set_mode(rmp3_stream_t *s, uint32_t f32)
+{
+   if (s->f32_mode == f32)
+      return;
+   s->f32_mode = f32;
+   rmp3d_convert_state(&s->dec, f32);
+   rmp3d_convert_frames(&s->pcm,
+         (uint32_t)s->pending * s->channels, f32);
+}
+
 void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames)
 {
    if (!s)
@@ -2943,8 +2976,23 @@ void rmp3_stream_set_out_s16(rmp3_stream_t *s, int16_t *out, size_t out_frames)
    /* A null destination, or no room in it, means parse-only: frames are
     * located and counted, nothing is decoded. */
    s->out        = out;
+   s->outf       = NULL;
    s->out_frames = out ? out_frames : 0;
    s->out_pos    = 0;
+   if (out && out_frames)
+      rmp3_stream_set_mode(s, 0);
+}
+
+void rmp3_stream_set_out_f32(rmp3_stream_t *s, float *out, size_t out_frames)
+{
+   if (!s)
+      return;
+   s->out        = NULL;
+   s->outf       = out;
+   s->out_frames = out ? out_frames : 0;
+   s->out_pos    = 0;
+   if (out && out_frames)
+      rmp3_stream_set_mode(s, 1);
 }
 
 int rmp3_stream_info(const rmp3_stream_t *s, unsigned *channels, unsigned *rate)
@@ -3008,7 +3056,8 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
       const uint8_t     *src;
       size_t             avail;
       int                samples;
-      int                parse_only = (!s->out || !s->out_frames);
+      int                parse_only =
+            ((!s->out && !s->outf) || !s->out_frames);
 
       /* Hand over what the last frame produced before decoding another:
        * one frame is up to 1152 PCM frames and a caller's buffer may be
@@ -3021,9 +3070,14 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
          {
             if ((size_t)take > room)
                take = (unsigned)room;
-            memcpy(s->out + s->out_pos * (size_t)s->channels,
-                  s->pcm + (size_t)s->drained * (size_t)s->channels,
-                  (size_t)take * (size_t)s->channels * sizeof(int16_t));
+            if (s->f32_mode)
+               memcpy(s->outf + s->out_pos * (size_t)s->channels,
+                     s->pcm.f32 + (size_t)s->drained * (size_t)s->channels,
+                     (size_t)take * (size_t)s->channels * sizeof(float));
+            else
+               memcpy(s->out + s->out_pos * (size_t)s->channels,
+                     s->pcm.s16 + (size_t)s->drained * (size_t)s->channels,
+                     (size_t)take * (size_t)s->channels * sizeof(int16_t));
             s->out_pos += take;
          }
          s->drained += take;
@@ -3084,7 +3138,8 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
 
       memset(&info, 0, sizeof(info));
       samples = rmp3dec_decode_frame(&s->dec, src, (int)avail,
-            parse_only ? NULL : (void*)s->pcm, &info, 0);
+            parse_only ? NULL : (void*)&s->pcm, &info,
+            (int)s->f32_mode);
 
       if (!samples && !info.frame_bytes)
       {
@@ -3120,11 +3175,46 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
             s->rate     = (unsigned)info.hz;
             s->started  = 1;
          }
-         /* A stream that changes geometry partway is not something the
-          * fixed output layout can express. */
-         else if ((unsigned)info.channels != s->channels
-               || (unsigned)info.hz != s->rate)
-            return RMP3_STREAM_ERROR;
+         /* A malformed stream that changes channel count partway is
+          * adapted to the stream's own layout - mono duplicated,
+          * stereo averaged, the same arithmetic the pull API's reads
+          * apply - so the interleave stays consistent.  A rate change
+          * likewise decodes through at the stream's stated rate, which
+          * is all the pull API ever did with one. */
+         else if (!parse_only
+               && (unsigned)info.channels != s->channels)
+         {
+            if (s->channels == 2)
+            {
+               /* Widening in place: pair 2i,2i+1 overlays sample i,
+                * so walking backwards reads each source before its
+                * slots are clobbered. */
+               int i = samples;
+               if (s->f32_mode)
+                  while (i-- > 0)
+                     s->pcm.f32[2*i] = s->pcm.f32[2*i + 1]
+                                     = s->pcm.f32[i];
+               else
+                  while (i-- > 0)
+                     s->pcm.s16[2*i] = s->pcm.s16[2*i + 1]
+                                     = s->pcm.s16[i];
+            }
+            else
+            {
+               /* Narrowing in place: sample i overlays half of the
+                * pair 2i,2i+1, which is behind the read position
+                * walking forwards. */
+               int i;
+               if (s->f32_mode)
+                  for (i = 0; i < samples; i++)
+                     s->pcm.f32[i] = (s->pcm.f32[2*i]
+                           + s->pcm.f32[2*i + 1]) * 0.5f;
+               else
+                  for (i = 0; i < samples; i++)
+                     s->pcm.s16[i] = (int16_t)(((int32_t)s->pcm.s16[2*i]
+                           + (int32_t)s->pcm.s16[2*i + 1]) >> 1);
+            }
+         }
 
          if (parse_only)
          {
