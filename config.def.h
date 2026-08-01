@@ -1582,6 +1582,11 @@
 
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 
+/* Default state for the classic thumbnail media types */
+#define DEFAULT_SCREENSCRAPER_MEDIA_ON true
+/* Default state for the extended media types (videos, manuals, ...) */
+#define DEFAULT_SCREENSCRAPER_MEDIA_OFF false
+
 /* Number of entries that will be kept in content history playlist file. */
 #define DEFAULT_CONTENT_HISTORY_SIZE 200
 

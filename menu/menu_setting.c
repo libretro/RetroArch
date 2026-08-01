@@ -85,6 +85,9 @@
 
 #include "../core.h"
 #include "../configuration.h"
+#ifdef HAVE_NETWORKING
+#include "../network/screenscraper.h"
+#endif
 #include "../msg_hash.h"
 #include "../defaults.h"
 #include "../driver.h"
@@ -3685,6 +3688,67 @@ static size_t setting_get_string_representation_uint_accessibility_narrator_engi
 }
 #endif
 
+static size_t setting_get_string_representation_uint_dynamic_wallpaper_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer == 1)
+      return strlcpy(s, "Per Game", len);
+   return strlcpy(s, "Per System", len);
+}
+
+/* Extended thumbnail modes (3D boxarts, fan art, marquees) are
+ * ScreenScraper-sourced; expose them only while signed in. */
+static unsigned menu_setting_thumbnail_mode_max(void)
+{
+#ifdef HAVE_NETWORKING
+   if (screenscraper_signed_in())
+      return PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1;
+#endif
+   return PLAYLIST_THUMBNAIL_MODE_LOGOS - PLAYLIST_THUMBNAIL_MODE_OFF;
+}
+
+#ifdef HAVE_NETWORKING
+static size_t setting_get_string_representation_uint_screenscraper_primary(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer == 1)
+      return strlcpy(s, "libretro", len);
+   return strlcpy(s, "ScreenScraper", len);
+}
+
+static size_t setting_get_string_representation_uint_screenscraper_quota(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer == 1)
+      return strlcpy(s, "Continue With libretro", len);
+   return strlcpy(s, "Pause And Resume Later", len);
+}
+
+static size_t setting_get_string_representation_uint_screenscraper_region(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   return strlcpy(s, screenscraper_region_name(
+         *setting->value.target.unsigned_integer), len);
+}
+
+static size_t setting_get_string_representation_uint_screenscraper_language(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   return strlcpy(s, screenscraper_language_name(
+         *setting->value.target.unsigned_integer), len);
+}
+#endif
+
 static size_t setting_get_string_representation_uint_menu_thumbnails(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -3708,6 +3772,15 @@ static size_t setting_get_string_representation_uint_menu_thumbnails(
          break;
       case 4:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS), len);
+         break;
+      case 5:
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS_3D), len);
+         break;
+      case 6:
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_FANARTS), len);
+         break;
+      case 7:
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_MARQUEES), len);
          break;
    }
 }
@@ -12769,6 +12842,20 @@ static const setting_desc_t cheevos_acct_desc[] = {
 };
 #endif
 
+#ifdef HAVE_NETWORKING
+static const setting_desc_t screenscraper_desc[] = {
+/* GENERATED: rows come from settings_def_screenscraper.h in order. */
+#include "../settings/settings_def_screenscraper.h"
+};
+#endif
+
+#ifdef HAVE_NETWORKING
+static const setting_desc_t screenscraper_acct_desc[] = {
+/* GENERATED: rows come from settings_def_screenscraper_account.h in order. */
+#include "../settings/settings_def_screenscraper_account.h"
+};
+#endif
+
 static const setting_desc_t dir_desc_0[] = {
 /* GENERATED: rows come from settings_def_dir_core.h in order. */
 #include "../settings/settings_def_dir_core.h"
@@ -15623,7 +15710,7 @@ static void settings_build_menu(
                general_read_handler);
          SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_menu_thumbnails)
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, menu_setting_thumbnail_mode_max(), 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
 
          CONFIG_UINT(
@@ -15639,7 +15726,7 @@ static void settings_build_menu(
                general_read_handler);
          SETTINGS_ACTION_SET(ok, &(*list)[list_info->index - 1], &setting_action_ok_uint)
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], &setting_get_string_representation_uint_menu_thumbnails)
-         menu_settings_list_current_add_range(list, list_info, 0, PLAYLIST_THUMBNAIL_MODE_LAST - PLAYLIST_THUMBNAIL_MODE_OFF - 1, 1, true, true);
+         menu_settings_list_current_add_range(list, list_info, 0, menu_setting_thumbnail_mode_max(), 1, true, true);
          (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_RADIO_BUTTONS;
       }
 
@@ -15971,6 +16058,15 @@ static void settings_build_playlist(
       {
                         ADD_DESC(pl_desc_4);
       }
+#endif
+
+      END_SUB_GROUP(list, list_info, parent_group);
+
+#ifdef HAVE_NETWORKING
+      START_SUB_GROUP(list, list_info, "ScreenScraper", &group_info, &subgroup_info, parent_group);
+
+                     ADD_DESC(screenscraper_desc);
+
 #endif
 
       GROUP_END();
@@ -16747,6 +16843,9 @@ static void settings_build_user_accounts(
 #if !IOS
             ADD_DESC(user_accounts_desc_0_s1);
 #endif
+#endif
+#ifdef HAVE_NETWORKING
+            ADD_DESC(screenscraper_acct_desc);
 #endif
       GROUP_END();
    }

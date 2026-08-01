@@ -168,6 +168,28 @@ bool task_push_pl_thumbnail_download(
       const char *system,
       const playlist_config_t *playlist_config,
       const char *dir_thumbnails);
+
+/* ScreenScraper playlist scrape (metadata + media) */
+bool task_push_pl_screenscraper(
+      const char *system,
+      const playlist_config_t *playlist_config,
+      const char *dir_thumbnails);
+
+/* As above, resuming at a given playlist entry */
+bool task_push_pl_screenscraper_at(
+      const char *system,
+      const playlist_config_t *playlist_config,
+      const char *dir_thumbnails,
+      size_t start_index);
+
+/* ScreenScraper on-demand scrape of a single playlist entry */
+bool task_push_pl_entry_screenscraper(
+      const char *system,
+      playlist_t *playlist,
+      unsigned idx);
+
+/* Startup: resume a scrape that the request allowance interrupted */
+bool task_push_screenscraper_resume_check(void);
 #endif
 
 #endif

@@ -131,6 +131,9 @@
 #endif
 #include "../tasks/task_content.h"
 #include "../tasks/tasks_internal.h"
+#ifdef HAVE_NETWORKING
+#include "../network/screenscraper.h"
+#endif
 #include "../dynamic.h"
 #include "../runtime_file.h"
 #include "../manual_content_scan.h"
@@ -4999,6 +5002,16 @@ static bool menu_displaylist_parse_playlist_manager_settings(
          MENU_ENUM_LABEL_PLAYLIST_MANAGER_CLEAN_PLAYLIST,
          MENU_SETTING_ACTION_PLAYLIST_MANAGER_CLEAN_PLAYLIST, 0, 0, NULL);
 
+#ifdef HAVE_NETWORKING
+   /* Scrape using ScreenScraper */
+   if (screenscraper_signed_in())
+      menu_entries_append(list,
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_MANAGER_SCREENSCRAPER),
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SCREENSCRAPER_STR,
+            MENU_ENUM_LABEL_PLAYLIST_MANAGER_SCREENSCRAPER,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+#endif
+
    /* Delete playlist */
    menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST),
@@ -6576,8 +6589,15 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                   ? MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_RIGHT_THUMBNAIL_MODE
                   : MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_LEFT_THUMBNAIL_MODE;
 
-      /* Loop over all thumbnail modes */
-      for (i = 0; i <= (unsigned)PLAYLIST_THUMBNAIL_MODE_LOGOS; i++)
+      /* Loop over all thumbnail modes; the ScreenScraper-sourced
+       * extended types are offered only while signed in */
+      {
+         unsigned max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_LOGOS;
+#ifdef HAVE_NETWORKING
+         if (screenscraper_signed_in())
+            max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_MARQUEES;
+#endif
+      for (i = 0; i <= max_mode; i++)
       {
          enum msg_hash_enums label_value;
          enum playlist_thumbnail_mode thumbnail_mode =
@@ -6600,6 +6620,15 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                break;
             case PLAYLIST_THUMBNAIL_MODE_LOGOS:
                label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_LOGOS;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_BOXARTS_3D:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_BOXARTS_3D;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_FANARTS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_FANARTS;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_MARQUEES:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_MARQUEES;
                break;
             default:
                /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
@@ -6624,6 +6653,7 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                cbs->checked            = true;
             menu_st->selection_ptr     = i;
          }
+      }
       }
    }
 
@@ -7666,10 +7696,30 @@ unsigned menu_displaylist_build_list(
             bool playlist_show_sublabels = settings->bools.playlist_show_sublabels;
             bool history_list_enable     = settings->bools.history_list_enable;
             bool truncate_playlist       = settings->bools.ozone_truncate_playlist_name;
+#ifdef HAVE_NETWORKING
+            bool screenscraper_on        = screenscraper_signed_in();
+#endif
             static menu_displaylist_build_info_selective_t build_list[] =
             {
 #ifdef HAVE_NETWORKING
                {MENU_ENUM_LABEL_NETWORK_ON_DEMAND_THUMBNAILS,        PARSE_ONLY_BOOL, true},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_PRIMARY_SCRAPER,       PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_QUOTA_ACTION,          PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_REGION,                PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_LANGUAGE,              PARSE_ONLY_UINT, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BOXARTS,         PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_SNAPS,           PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_TITLES,          PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_LOGOS,           PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BOXARTS3D,       PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_FANARTS,         PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_MARQUEES,        PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_VIDEOS,          PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_MANUALS,         PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BEZELS,          PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_METADATA,              PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_OVERWRITE,             PARSE_ONLY_BOOL, false},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_USE_CRC,               PARSE_ONLY_BOOL, false},
 #endif
                {MENU_ENUM_LABEL_PLAYLIST_USE_FILENAME,               PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_PLAYLIST_ALLOW_NON_PNG,              PARSE_ONLY_BOOL, true},
@@ -7709,6 +7759,27 @@ unsigned menu_displaylist_build_list(
                   case MENU_ENUM_LABEL_CONTENT_HISTORY_SIZE:
                      build_list[i].checked = history_list_enable;
                      break;
+#ifdef HAVE_NETWORKING
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_PRIMARY_SCRAPER:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_QUOTA_ACTION:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_REGION:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_LANGUAGE:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BOXARTS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_SNAPS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_TITLES:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_LOGOS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BOXARTS3D:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_FANARTS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_MARQUEES:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_VIDEOS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_MANUALS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_MEDIA_BEZELS:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_METADATA:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_OVERWRITE:
+                  case MENU_ENUM_LABEL_SCREENSCRAPER_USE_CRC:
+                     build_list[i].checked = screenscraper_on;
+                     break;
+#endif
                   case MENU_ENUM_LABEL_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME:
                      build_list[i].checked = truncate_playlist;
                      break;
@@ -10821,10 +10892,31 @@ unsigned menu_displaylist_build_list(
          {
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_ACCOUNTS_RETRO_ACHIEVEMENTS,            PARSE_ACTION},
+#ifdef HAVE_NETWORKING
+               {MENU_ENUM_LABEL_ACCOUNTS_SCREENSCRAPER,                PARSE_ACTION},
+#endif
                {MENU_ENUM_LABEL_ACCOUNTS_YOUTUBE,                       PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_TWITCH,                        PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_FACEBOOK,                      PARSE_ACTION},
                {MENU_ENUM_LABEL_ACCOUNTS_KICK,                          PARSE_ACTION},
+            };
+
+            for (i = 0; i < ARRAY_SIZE(build_list); i++)
+            {
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_ACCOUNTS_SCREENSCRAPER_LIST:
+         {
+            static const menu_displaylist_build_info_t build_list[] = {
+               {MENU_ENUM_LABEL_SCREENSCRAPER_USERNAME,                 PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_PASSWORD,                 PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_DEVID,                    PARSE_ONLY_STRING},
+               {MENU_ENUM_LABEL_SCREENSCRAPER_DEVPASSWORD,              PARSE_ONLY_STRING},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
@@ -12294,6 +12386,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_WALLPAPER,                               PARSE_ONLY_PATH ,  true},
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,                            PARSE_ONLY_BOOL ,  true},
+               {MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_MODE,                       PARSE_ONLY_UINT ,  false},
                {MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY,                       PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL,   true},
@@ -12431,6 +12524,9 @@ unsigned menu_displaylist_build_list(
                      break;
                   case MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS:
                      build_list[i].checked = (settings->uints.video_hdr_mode > 0);
+                     break;
+                  case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_MODE:
+                     build_list[i].checked = settings->bools.menu_dynamic_wallpaper_enable;
                      break;
                   default:
                      break;
@@ -15117,6 +15213,7 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_OVERLAY_MOUSE_SETTINGS_LIST:
 #endif
          case DISPLAYLIST_ACCOUNTS_CHEEVOS_LIST:
+         case DISPLAYLIST_ACCOUNTS_SCREENSCRAPER_LIST:
          case DISPLAYLIST_ACCOUNTS_LIST:
          case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
          case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:

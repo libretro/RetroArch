@@ -1702,11 +1702,89 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
     * then comes 'menu_wallpaper', and then iconset 'bg.png' */
    if (menu_dynamic_wallpaper_enable)
    {
-      size_t _len = fill_pathname_join_special(s,
-               dir_dynamic_wallpapers,
-               xmb->title_name,
-               len);
-      strlcpy(s + _len, ".png", len - _len);
+      s[0] = '\0';
+
+      /* Per-game mode: dynamic_wallpapers/<System>/<Game>.png first,
+       * then the game's scraped fan art, then the per-system file */
+      if (settings->uints.menu_dynamic_wallpaper_mode == 1)
+      {
+         struct menu_state *menu_st       = menu_state_get_ptr();
+         gfx_thumbnail_path_data_t *pdata = menu_st->thumbnail_path_data;
+
+         if (pdata && (*pdata->content_img || *pdata->content_img_full))
+         {
+            /* The scraper stores media in whatever format the service
+             * served (fan art is usually JPEG), so probe the loadable
+             * extensions instead of assuming the thumbnail ".png" */
+            static const char *wp_exts[] = {
+               ".png", ".jpg", ".jpeg", ".bmp"
+            };
+            char base[PATH_MAX_LENGTH];
+            char stem[NAME_MAX_LENGTH];
+            size_t e;
+
+            /* content_img is the label-derived name and the one the
+             * thumbnail tree normally uses; content_img_full is only
+             * populated when the full file name differs from it. */
+            strlcpy(stem,
+                  *pdata->content_img
+                        ? pdata->content_img : pdata->content_img_full,
+                  sizeof(stem));
+            path_remove_extension(stem);
+
+            /* dynamic_wallpapers/<System>/<Game>.<ext> */
+            fill_pathname_join_special(base, dir_dynamic_wallpapers,
+                  xmb->title_name, sizeof(base));
+            for (e = 0; e < ARRAY_SIZE(wp_exts); e++)
+            {
+               char probe[NAME_MAX_LENGTH];
+               size_t _l = strlcpy(probe, stem, sizeof(probe));
+               strlcpy(probe + _l, wp_exts[e], sizeof(probe) - _l);
+               fill_pathname_join_special(s, base, probe, len);
+               if (path_is_valid(s))
+                  break;
+               s[0] = '\0';
+            }
+
+            if (!*s)
+            {
+               /* Scraped fan art fallback */
+               const char *db_name = *pdata->content_db_name
+                     ? pdata->content_db_name : pdata->system;
+               if (     !string_is_empty(db_name)
+                     && !string_is_empty(settings->paths.directory_thumbnails))
+               {
+                  char fan_dir[PATH_MAX_LENGTH];
+                  fill_pathname_join_special(base,
+                        settings->paths.directory_thumbnails, db_name,
+                        sizeof(base));
+                  fill_pathname_join_special(fan_dir, base,
+                        "Named_Fanarts", sizeof(fan_dir));
+
+                  for (e = 0; e < ARRAY_SIZE(wp_exts); e++)
+                  {
+                     char probe[NAME_MAX_LENGTH];
+                     size_t _l = strlcpy(probe, stem, sizeof(probe));
+                     strlcpy(probe + _l, wp_exts[e], sizeof(probe) - _l);
+                     fill_pathname_join_special(s, fan_dir, probe, len);
+                     if (path_is_valid(s))
+                        break;
+                     s[0] = '\0';
+                  }
+               }
+            }
+         }
+      }
+
+      /* Per-system wallpaper (also the per-game fallback) */
+      if (!*s)
+      {
+         size_t _len = fill_pathname_join_special(s,
+                  dir_dynamic_wallpapers,
+                  xmb->title_name,
+                  len);
+         strlcpy(s + _len, ".png", len - _len);
+      }
    }
 
    if (s && *s && path_is_valid(s))
@@ -2535,6 +2613,20 @@ static void xmb_selection_pointer_changed(
 
          gfx_animation_push(&anim_entry);
       }
+   }
+
+   /* Per-game dynamic wallpapers follow the selection, but only
+    * once it settles: each update pushes an asynchronous image
+    * load, and firing one per entry while scrolling swamps the
+    * wallpaper upload path (same reason dynamic icons defer
+    * while scroll acceleration is non-zero). */
+   if (xmb->allow_dynamic_wallpaper)
+   {
+      settings_t *settings = config_get_ptr();
+      if (     settings
+            && settings->uints.menu_dynamic_wallpaper_mode == 1
+            && menu_st->scroll.acceleration == 0)
+         xmb_update_dynamic_wallpaper(xmb, false);
    }
 }
 
