@@ -63,6 +63,10 @@
 #include "../../cheevos/cheevos_menu.h"
 #endif
 
+#ifdef HAVE_NETWORKING
+#include "../../network/screenscraper.h"
+#endif
+
 /* Force a helper out of line even though it has a single call site.
  *
  * Follows the RXML_NOINLINE precedent in
@@ -122,21 +126,9 @@
  * a fixed colour: HTML WhiteSmoke */
 #define XMB_SCREENSAVER_TINT 0xF5F5F5
 
-/* Mean human reading speed for all western languages,
- * characters per minute */
-#define TICKER_CPM (1000.0f)
-
-/* Base time for which a line should be shown, in us */
-#define TICKER_LINE_DURATION_US(line_len)         ((line_len * 60.0f * 1000.0f * 1000.0f) / TICKER_CPM)
-/* Base time for which a line should be shown, in ms */
-#define TICKER_LINE_DURATION_MS(line_len)         ((line_len * 60.0f * 1000.0f) / TICKER_CPM)
-/* Ticker updates (nominally) once every TICKER_SPEED us
- * > Base number of ticks for which line should be shown */
-#define TICKER_LINE_DISPLAY_TICKS(line_len)       ((size_t)(TICKER_LINE_DURATION_US(line_len) / (float)TICKER_SPEED))
-/* Smooth ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
- * > Base number of ticks for which text should scroll
- *   from one line to the next */
-#define TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len) ((size_t)(TICKER_LINE_DURATION_MS(line_len) / TICKER_PIXEL_PERIOD))
+/* Note: the TICKER_CPM / TICKER_LINE_* macros that used to live here
+ * moved to gfx/gfx_animation.h along with the line ticker itself, which
+ * Ozone's content metadata panel now shares. */
 
 enum
 {
@@ -363,6 +355,11 @@ typedef struct xmb_handle
 
    char *box_message;
    char *bg_file_path;
+   /* Animated background (video snap / WebM). Held as a thumbnail so
+    * the existing decode, streaming and frame-advance machinery does
+    * the work; its texture is then drawn as the wallpaper. */
+   gfx_thumbnail_t bg_anim;
+   bool bg_is_anim;
 
    file_list_t horizontal_list;   /* ptr alignment */
    /* Maps console tabs to playlist database names */
@@ -507,6 +504,19 @@ typedef struct xmb_handle
    char savestate_thumbnail_file_path[PATH_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
+#ifdef HAVE_NETWORKING
+   /* Scraped facts for the selected entry, drawn in the metadata
+    * panel that stands in for the left thumbnail */
+   char ss_publisher[NAME_MAX_LENGTH];
+   char ss_description[1024];
+   /* Rating is drawn as five stars; this is how many are filled in.
+    * Zero filled stars is a legitimate value, so a separate flag
+    * records whether a rating was scraped at all. */
+   unsigned ss_stars;
+   bool ss_has_rating;
+   bool ss_valid;
+#endif
+
    char thumbnails_left_status_prev;
    char thumbnails_right_status_prev;
 
@@ -526,6 +536,16 @@ typedef struct xmb_handle
     * traversal, without delaying the work behind any visible animation
     * — the instant input lets go, the populate runs. */
    bool pending_dynamic_icons_repopulate;
+   /* Per-game wallpapers resolve from the selected entry's thumbnail
+    * data, which is not populated yet when a list is first entered and
+    * is skipped while a scroll is still moving - so the update is
+    * deferred to a frame where both are settled. */
+   bool pending_dynamic_wallpaper;
+#ifdef HAVE_NETWORKING
+   /* Scraped facts resolve from the same thumbnail data as the
+    * per-game wallpaper, so the reload rides the same deferral */
+   bool pending_ss_metadata;
+#endif
    bool show_thumbnails;
    bool show_mouse;
    bool show_screensaver;
@@ -1715,10 +1735,19 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
          {
             /* The scraper stores media in whatever format the service
              * served (fan art is usually JPEG), so probe the loadable
-             * extensions instead of assuming the thumbnail ".png" */
-            static const char *wp_exts[] = {
+             * extensions instead of assuming the thumbnail ".png".
+             * In 'Videos' mode the animated container types come first
+             * and the stills act as the fallback. */
+            static const char *wp_exts_img[] = {
                ".png", ".jpg", ".jpeg", ".bmp"
             };
+            static const char *wp_exts_vid[] = {
+               ".mp4", ".webm", ".png", ".jpg", ".jpeg", ".bmp"
+            };
+            bool wp_video       = (settings->uints.menu_dynamic_wallpaper_type == 1);
+            const char **wp_exts = wp_video ? wp_exts_vid : wp_exts_img;
+            size_t wp_ext_count = wp_video
+                  ? ARRAY_SIZE(wp_exts_vid) : ARRAY_SIZE(wp_exts_img);
             char base[PATH_MAX_LENGTH];
             char stem[NAME_MAX_LENGTH];
             size_t e;
@@ -1735,7 +1764,7 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
             /* dynamic_wallpapers/<System>/<Game>.<ext> */
             fill_pathname_join_special(base, dir_dynamic_wallpapers,
                   xmb->title_name, sizeof(base));
-            for (e = 0; e < ARRAY_SIZE(wp_exts); e++)
+            for (e = 0; e < wp_ext_count; e++)
             {
                char probe[NAME_MAX_LENGTH];
                size_t _l = strlcpy(probe, stem, sizeof(probe));
@@ -1754,22 +1783,35 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
                if (     !string_is_empty(db_name)
                      && !string_is_empty(settings->paths.directory_thumbnails))
                {
+                  /* 'Videos' searches the video snaps first and uses
+                   * fan art as the fallback; 'Images' only ever looks
+                   * at fan art. */
+                  static const char *wp_dirs[] = {
+                     "Named_Videos", "Named_Fanarts"
+                  };
                   char fan_dir[PATH_MAX_LENGTH];
+                  size_t d0 = wp_video ? 0 : 1;
+                  size_t di;
+
                   fill_pathname_join_special(base,
                         settings->paths.directory_thumbnails, db_name,
                         sizeof(base));
-                  fill_pathname_join_special(fan_dir, base,
-                        "Named_Fanarts", sizeof(fan_dir));
 
-                  for (e = 0; e < ARRAY_SIZE(wp_exts); e++)
+                  for (di = d0; di < ARRAY_SIZE(wp_dirs) && !*s; di++)
                   {
-                     char probe[NAME_MAX_LENGTH];
-                     size_t _l = strlcpy(probe, stem, sizeof(probe));
-                     strlcpy(probe + _l, wp_exts[e], sizeof(probe) - _l);
-                     fill_pathname_join_special(s, fan_dir, probe, len);
-                     if (path_is_valid(s))
-                        break;
-                     s[0] = '\0';
+                     fill_pathname_join_special(fan_dir, base,
+                           wp_dirs[di], sizeof(fan_dir));
+
+                     for (e = 0; e < wp_ext_count; e++)
+                     {
+                        char probe[NAME_MAX_LENGTH];
+                        size_t _l = strlcpy(probe, stem, sizeof(probe));
+                        strlcpy(probe + _l, wp_exts[e], sizeof(probe) - _l);
+                        fill_pathname_join_special(s, fan_dir, probe, len);
+                        if (path_is_valid(s))
+                           break;
+                        s[0] = '\0';
+                     }
                   }
                }
             }
@@ -1809,6 +1851,65 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
    }
 }
 
+#ifdef HAVE_NETWORKING
+/* Reloads the scraped facts for the selected entry into the handle.
+ * Resolves from the same thumbnail path data as the per-game
+ * wallpaper, so it is called from the same settled frame - by which
+ * point that data describes the entry actually being looked at.
+ * Entries with no sidecar simply leave 'ss_valid' false, which the
+ * draw path reads as "no panel". */
+static void xmb_update_ss_metadata(xmb_handle_t *xmb)
+{
+   settings_t *settings             = config_get_ptr();
+   struct menu_state *menu_st       = menu_state_get_ptr();
+   gfx_thumbnail_path_data_t *pdata = menu_st->thumbnail_path_data;
+   screenscraper_meta_t meta;
+   const char *ss_db;
+   const char *ss_img;
+   int ss_stars;
+
+   xmb->ss_valid          = false;
+   xmb->ss_has_rating     = false;
+   xmb->ss_stars          = 0;
+   xmb->ss_publisher[0]   = '\0';
+   xmb->ss_description[0] = '\0';
+
+   if (   !settings
+       || !pdata
+       || !(xmb->is_playlist || xmb->is_explore_list))
+      return;
+
+   ss_db  = *pdata->content_db_name
+         ? pdata->content_db_name : pdata->system;
+   ss_img = *pdata->content_img
+         ? pdata->content_img : pdata->content_img_full;
+
+   if (!screenscraper_metadata_load_entry(
+            settings->paths.directory_thumbnails,
+            ss_db, ss_img, &meta))
+      return;
+
+   xmb->ss_valid = true;
+
+   ss_stars      = screenscraper_rating_stars(meta.rating);
+
+   /* Negative means "no rating was scraped"; the star row is then
+    * skipped entirely rather than drawn empty. */
+   if (ss_stars >= 0)
+   {
+      xmb->ss_has_rating = true;
+      xmb->ss_stars      = (unsigned)ss_stars;
+   }
+
+   if (!string_is_empty(meta.publisher))
+      snprintf(xmb->ss_publisher, sizeof(xmb->ss_publisher),
+            "Publisher: %s", meta.publisher);
+   if (!string_is_empty(meta.description))
+      strlcpy(xmb->ss_description, meta.description,
+            sizeof(xmb->ss_description));
+}
+#endif
+
 static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 {
    char path[PATH_MAX_LENGTH];
@@ -1821,6 +1922,28 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
    {
       if (path_is_valid(path))
       {
+         enum image_type_enum bg_type = image_texture_get_type(path);
+         bool is_anim                 = (bg_type == IMAGE_TYPE_MP4)
+                                     || (bg_type == IMAGE_TYPE_WEBM);
+
+         /* A video background is decoded by the animated thumbnail
+          * pipeline; the still path below only handles images. */
+         if (is_anim)
+         {
+            if (reset)
+               xmb_context_bg_destroy(xmb);
+            gfx_thumbnail_reset(&xmb->bg_anim);
+            gfx_thumbnail_request_file(path, &xmb->bg_anim, 0);
+            xmb->bg_is_anim = true;
+
+            free(xmb->bg_file_path);
+            xmb->bg_file_path = strdup(path);
+            return;
+         }
+
+         gfx_thumbnail_reset(&xmb->bg_anim);
+         xmb->bg_is_anim = false;
+
          if (reset)
          {
             xmb_context_bg_destroy(xmb);
@@ -1846,6 +1969,9 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
       }
       else
       {
+         gfx_thumbnail_reset(&xmb->bg_anim);
+         xmb->bg_is_anim = false;
+
          xmb_load_image(xmb, NULL, MENU_IMAGE_NONE);
 
          free(xmb->bg_file_path);
@@ -2615,19 +2741,15 @@ static void xmb_selection_pointer_changed(
       }
    }
 
-   /* Per-game dynamic wallpapers follow the selection, but only
-    * once it settles: each update pushes an asynchronous image
-    * load, and firing one per entry while scrolling swamps the
-    * wallpaper upload path (same reason dynamic icons defer
-    * while scroll acceleration is non-zero). */
-   if (xmb->allow_dynamic_wallpaper)
-   {
-      settings_t *settings = config_get_ptr();
-      if (     settings
-            && settings->uints.menu_dynamic_wallpaper_mode == 1
-            && menu_st->scroll.acceleration == 0)
-         xmb_update_dynamic_wallpaper(xmb, false);
-   }
+   /* Per-game dynamic wallpapers follow the selection. The work is
+    * deferred to xmb_render(): each update pushes an asynchronous
+    * load, so firing one per entry while scrolling swamps the
+    * wallpaper path, and on the first entry of a freshly entered list
+    * the thumbnail data it resolves from is not populated yet. */
+   xmb->pending_dynamic_wallpaper = true;
+#ifdef HAVE_NETWORKING
+   xmb->pending_ss_metadata       = true;
+#endif
 }
 
 static void xmb_list_open_new(xmb_handle_t *xmb,
@@ -4094,7 +4216,19 @@ static void xmb_populate_entries(void *data,
       xmb_unload_icon_thumbnail_textures(xmb);
 
    if (xmb->allow_dynamic_wallpaper)
+   {
       xmb_update_dynamic_wallpaper(xmb, false);
+      /* Entering a list: the entry that ends up selected has no
+       * thumbnail data yet, so schedule a second pass for a settled
+       * frame - that is the one that resolves its per-game media. */
+      xmb->pending_dynamic_wallpaper = true;
+   }
+
+#ifdef HAVE_NETWORKING
+   /* Same story for the scraped facts panel: the newly selected entry
+    * has no thumbnail data to resolve a sidecar from yet */
+   xmb->pending_ss_metadata = true;
+#endif
 
    /* Determine whether to show entry index */
    xmb->entry_index_str[0] = '\0';
@@ -5000,684 +5134,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
    return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
 }
 
-static size_t xmb_animation_line_ticker_loop(uint64_t idx,
-      size_t line_len, size_t num_lines)
-{
-   size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
-   size_t ticker_period = num_lines + 1;
-   size_t phase         = (idx / line_ticks) % ticker_period;
-   /* In this case, line_offset is simply equal to the phase */
-   return phase;
-}
-
-static size_t xmb_animation_line_ticker_generic(uint64_t idx,
-      size_t line_len, size_t max_lines, size_t num_lines)
-{
-   size_t line_ticks    =  TICKER_LINE_DISPLAY_TICKS(line_len);
-   /* Note: This function is only called if num_lines > max_lines */
-   size_t excess_lines  = num_lines - max_lines;
-   /* Ticker will pause for one line duration when the first
-    * or last line is reached (this is mostly required for the
-    * case where num_lines == (max_lines + 1), since otherwise
-    * the text flicks rapidly up and down in disconcerting
-    * fashion...) */
-   size_t ticker_period = (excess_lines * 2) + 2;
-   size_t phase         = (idx / line_ticks) % ticker_period;
-
-   /* Pause on first line */
-   if (phase > 0)
-      phase--;
-   /* Pause on last line */
-   if (phase > excess_lines)
-      phase--;
-
-   /* Lines scrolling upwards */
-   if (phase <= excess_lines)
-      return phase;
-   /* Lines scrolling downwards */
-   return (excess_lines * 2) - phase;
-}
-
-XMB_NOINLINE static bool xmb_animation_line_ticker(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_t *line_ticker)
-{
-   char *wrapped_str            = NULL;
-   size_t wrapped_str_len       = 0;
-   size_t line_ticker_str_len   = 0;
-   size_t line_offset           = 0;
-   size_t total_lines           = 0;
-   bool ret                     = false;
-   bool is_active               = false;
-
-   /* Sanity check */
-   if (!line_ticker)
-      return false;
-   if (    (!line_ticker->str || !*line_ticker->str)
-       || (line_ticker->line_len  < 1)
-       || (line_ticker->max_lines < 1)
-       || (line_ticker->len       < 1))
-      goto end;
-
-   /* Line wrap input string */
-   line_ticker_str_len = strlen(line_ticker->str);
-   wrapped_str_len     = line_ticker_str_len + 1 + 10; /* 10 bytes use for inserting '\n' */
-   if (!(wrapped_str   = (char*)malloc(wrapped_str_len)))
-      goto end;
-
-   wrapped_str[0] = '\0';
-
-   word_wrap(
-         wrapped_str,
-         wrapped_str_len,
-         line_ticker->str,
-         line_ticker_str_len,
-         (int)line_ticker->line_len,
-         100, 0);
-
-   if (!wrapped_str || !*wrapped_str)
-      goto end;
-
-   /* Count total number of lines */
-   {
-      size_t slen      = strlen(wrapped_str);
-      const char *p    = wrapped_str;
-      size_t remaining = slen;
-      total_lines      = 1;
-
-      while (remaining > 0)
-      {
-         const char *nl = (const char *)memchr(p, '\n', remaining);
-         if (!nl)
-            break;
-         total_lines++;
-         nl++;
-         remaining -= (size_t)(nl - p);
-         p = nl;
-      }
-   }
-
-   /* Check whether total number of lines fits within
-    * the set limit */
-   if (total_lines <= line_ticker->max_lines)
-   {
-      strlcpy(line_ticker->s, wrapped_str, line_ticker->len);
-      ret = true;
-      goto end;
-   }
-
-   /* Determine offset of first line in wrapped string */
-   switch (line_ticker->type_enum)
-   {
-      case TICKER_TYPE_LOOP:
-         line_offset = xmb_animation_line_ticker_loop(
-               line_ticker->idx,
-               line_ticker->line_len,
-               total_lines);
-         break;
-      case TICKER_TYPE_BOUNCE:
-      default:
-         line_offset = xmb_animation_line_ticker_generic(
-               line_ticker->idx,
-               line_ticker->line_len,
-               line_ticker->max_lines,
-               total_lines);
-         break;
-   }
-
-   /* Build output string from required lines */
-   {
-      const char *p    = wrapped_str;
-      size_t remaining = strlen(wrapped_str);
-      size_t cur_line  = 0;
-
-      /* Skip to the starting line */
-      while (cur_line < line_offset && remaining > 0)
-      {
-         const char *nl = (const char *)memchr(p, '\n', remaining);
-         if (!nl)
-            break;
-         nl++;
-         remaining -= (size_t)(nl - p);
-         p = nl;
-         cur_line++;
-      }
-
-      /* Find the end of the visible window */
-      {
-         const char *end_p    = p;
-         size_t end_remaining = remaining;
-         size_t lines_found   = 0;
-
-         while (lines_found < line_ticker->max_lines && end_remaining > 0)
-         {
-            const char *nl = (const char *)memchr(end_p, '\n', end_remaining);
-            if (!nl)
-            {
-               end_p = end_p + end_remaining;
-               break;
-            }
-            lines_found++;
-            if (lines_found >= line_ticker->max_lines)
-            {
-               end_p = nl;
-               break;
-            }
-            nl++;
-            end_remaining -= (size_t)(nl - end_p);
-            end_p = nl;
-         }
-
-         /* Single memcpy for the whole block */
-         {
-            size_t copy_len = (size_t)(end_p - p);
-            size_t max_copy = line_ticker->len - 1;
-            if (copy_len > max_copy)
-               copy_len = max_copy;
-            memcpy(line_ticker->s, p, copy_len);
-            line_ticker->s[copy_len] = '\0';
-         }
-      }
-   }
-
-   ret                      = true;
-   is_active                = true;
-   p_anim->flags           |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
-
-end:
-   if (wrapped_str)
-   {
-      free(wrapped_str);
-      wrapped_str = NULL;
-   }
-
-   if (!ret)
-      if (line_ticker->len > 0)
-         line_ticker->s[0] = '\0';
-
-   return is_active;
-}
-
-static void xmb_animation_set_line_smooth_fade_parameters(
-      bool scroll_up,
-      size_t scroll_ticks, size_t line_phase, size_t line_height,
-      size_t num_lines, size_t num_display_lines, size_t line_offset,
-      float y_offset,
-      size_t *top_fade_line_offset,
-      float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset,
-      float *bottom_fade_y_offset, float *bottom_fade_alpha)
-{
-   /* When a line fades out, alpha transitions from
-    * 1 to 0 over the course of one half of the
-    * scrolling line height. When a line fades in,
-    * it's the other way around */
-   float fade_out_alpha     = ((float)scroll_ticks - ((float)line_phase * 2.0f)) / (float)scroll_ticks;
-   float fade_in_alpha      = -1.0f * fade_out_alpha;
-   if (fade_out_alpha < 0.0f)
-      fade_out_alpha        = 0.0f;
-   if (fade_in_alpha  < 0.0f)
-      fade_in_alpha         = 0.0f;
-
-   *top_fade_line_offset    = (line_offset > 0) ? line_offset - 1 : num_lines;
-   *top_fade_y_offset       = y_offset - (float)line_height;
-   if (scroll_up)
-   {
-      *top_fade_alpha       = fade_out_alpha;
-      *bottom_fade_alpha    = fade_in_alpha;
-   }
-   else
-   {
-      *top_fade_alpha       = fade_in_alpha;
-      *bottom_fade_alpha    = fade_out_alpha;
-   }
-   *bottom_fade_line_offset = line_offset + num_display_lines;
-   *bottom_fade_y_offset    = y_offset + (float)(line_height * num_display_lines);
-}
-
-static void xmb_animation_set_line_smooth_fade_parameters_default(
-      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
-{
-   *top_fade_line_offset    = 0;
-   *top_fade_y_offset       = 0.0f;
-   *top_fade_alpha          = 0.0f;
-
-   *bottom_fade_line_offset = 0;
-   *bottom_fade_y_offset    = 0.0f;
-   *bottom_fade_alpha       = 0.0f;
-}
-
-
-static void xmb_animation_line_ticker_smooth_generic(uint64_t idx,
-      bool fade_enabled, size_t line_len, size_t line_height,
-      size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset,
-      float *y_offset,
-      bool *fade_active,
-      size_t *top_fade_line_offset, float *top_fade_y_offset,
-      float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset,
-      float *bottom_fade_alpha)
-{
-   size_t scroll_ticks  = TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len);
-   /* Note: This function is only called if num_lines > max_display_lines */
-   size_t excess_lines  = num_lines - max_display_lines;
-   /* Ticker will pause for one line duration when the first
-    * or last line is reached */
-   size_t ticker_period = ((excess_lines * 2) + 2) * scroll_ticks;
-   size_t phase         = idx % ticker_period;
-   size_t line_phase    = 0;
-   bool pause           = false;
-   bool scroll_up       = true;
-
-   if (phase >= scroll_ticks)
-      phase            -= scroll_ticks;
-   else
-   {
-      /* Pause on first line */
-      pause             = true;
-      phase             = 0;
-   }
-
-   /* Pause on last line and change direction */
-   if (phase >= excess_lines * scroll_ticks)
-   {
-      scroll_up = false;
-
-      if (phase < (excess_lines + 1) * scroll_ticks)
-      {
-         pause = true;
-         phase = 0;
-      }
-      else
-         phase -= (excess_lines + 1) * scroll_ticks;
-   }
-
-   line_phase = phase % scroll_ticks;
-
-   if (pause)
-   {
-      /* Static display of max_display_lines
-       * (no animation) */
-      *num_display_lines = max_display_lines;
-      *y_offset          = 0.0f;
-      *fade_active       = false;
-      *line_offset       = scroll_up ? 0 : excess_lines;
-   }
-   else if (line_phase == 0)
-   {
-      /* Static display of max_display_lines
-       * (no animation) */
-      *num_display_lines = max_display_lines;
-      *y_offset          = 0.0f;
-      *fade_active       = false;
-      *line_offset       = scroll_up ? (phase / scroll_ticks) : (excess_lines - (phase / scroll_ticks));
-   }
-   else
-   {
-      /* Scroll animation is active */
-      *num_display_lines = (max_display_lines > 1) ? max_display_lines - 1 : 1;
-      *fade_active       = fade_enabled;
-
-      if (scroll_up)
-      {
-         *line_offset    = (phase / scroll_ticks) + 1;
-         *y_offset       = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
-      }
-      else
-      {
-         *line_offset    = excess_lines - (phase / scroll_ticks);
-         *y_offset       = (float)line_height * (1.0f - (float)(scroll_ticks - line_phase) / (float)scroll_ticks);
-      }
-
-      /* Set fade parameters if fade animation is active */
-      if (*fade_active)
-         xmb_animation_set_line_smooth_fade_parameters(
-               scroll_up, scroll_ticks, line_phase, line_height,
-               num_lines, *num_display_lines, *line_offset, *y_offset,
-               top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
-               bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
-   }
-
-   /* Set 'default' fade parameters if fade animation
-    * is inactive */
-   if (!*fade_active)
-      xmb_animation_set_line_smooth_fade_parameters_default(
-            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
-            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
-}
-
-
-static void xmb_animation_line_ticker_smooth_loop(uint64_t idx,
-      bool fade_enabled, size_t line_len, size_t line_height,
-      size_t max_display_lines, size_t num_lines,
-      size_t *num_display_lines, size_t *line_offset, float *y_offset,
-      bool *fade_active,
-      size_t *top_fade_line_offset, float *top_fade_y_offset, float *top_fade_alpha,
-      size_t *bottom_fade_line_offset, float *bottom_fade_y_offset, float *bottom_fade_alpha)
-{
-   size_t scroll_ticks  = TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len);
-   size_t ticker_period = (num_lines + 1) * scroll_ticks;
-   size_t phase         = idx % ticker_period;
-   size_t line_phase    = phase % scroll_ticks;
-
-   *line_offset         = phase / scroll_ticks;
-
-   if (line_phase == (scroll_ticks - 1))
-   {
-      /* Static display of max_display_lines
-       * (no animation) */
-      *num_display_lines = max_display_lines;
-      *fade_active       = false;
-   }
-   else
-   {
-      *num_display_lines = (max_display_lines > 1) ? max_display_lines - 1 : 1;
-      *fade_active       = fade_enabled;
-   }
-
-   *y_offset             = (float)line_height * (float)(scroll_ticks - line_phase) / (float)scroll_ticks;
-
-   /* Set fade parameters */
-   if (*fade_active)
-      xmb_animation_set_line_smooth_fade_parameters(
-            true, scroll_ticks, line_phase, line_height,
-            num_lines, *num_display_lines, *line_offset, *y_offset,
-            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
-            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
-   else
-      xmb_animation_set_line_smooth_fade_parameters_default(
-            top_fade_line_offset, top_fade_y_offset, top_fade_alpha,
-            bottom_fade_line_offset, bottom_fade_y_offset, bottom_fade_alpha);
-}
-
-XMB_NOINLINE static bool xmb_animation_line_ticker_smooth(gfx_animation_t *p_anim, gfx_animation_ctx_line_ticker_smooth_t *line_ticker)
-{
-   char wrapped_str[PATH_MAX_LENGTH];
-   const char *wideglyph_str      = NULL;
-   size_t line_ticker_src_len     = 0;
-   size_t wrapped_str_len         = 0;
-   int glyph_width                = 0;
-   int glyph_height               = 0;
-   size_t line_len                = 0;
-   size_t max_display_lines       = 0;
-   size_t num_display_lines       = 0;
-   size_t line_offset             = 0;
-   size_t top_fade_line_offset    = 0;
-   size_t bottom_fade_line_offset = 0;
-   bool fade_active               = false;
-   int wideglyph_width            = 100;
-
-#define XMB_LINE_TICKER_MAX_LINES 256
-   const char *line_starts[XMB_LINE_TICKER_MAX_LINES];
-   size_t line_lengths[XMB_LINE_TICKER_MAX_LINES];
-   size_t num_lines               = 0;
-
-   size_t (*word_wrap_func)(char *dst, size_t dst_size,
-         const char *src, size_t src_len,
-         int line_width, int wideglyph_width, unsigned max_lines);
-
-   /* Sanity check */
-   if (!line_ticker)
-      return false;
-
-   if (  !line_ticker->font
-       || (!line_ticker->src_str || !*line_ticker->src_str)
-       || (line_ticker->field_width < 1)
-       || (line_ticker->field_height < 1))
-   {
-      if (line_ticker->dst_str_len > 0)
-         line_ticker->dst_str[0] = '\0';
-
-      if (line_ticker->fade_enabled)
-      {
-         if (line_ticker->top_fade_str_len > 0)
-            line_ticker->top_fade_str[0] = '\0';
-
-         if (line_ticker->bottom_fade_str_len > 0)
-            line_ticker->bottom_fade_str[0] = '\0';
-
-         *line_ticker->top_fade_alpha = 0.0f;
-         *line_ticker->bottom_fade_alpha = 0.0f;
-      }
-
-      return false;
-   }
-
-   /* Get font dimensions */
-   if ((glyph_width = font_driver_get_message_width(
-         line_ticker->font, "a", 1, line_ticker->font_scale)) <= 0)
-      goto fail;
-
-   if ((wideglyph_str = msg_hash_get_wideglyph_str()))
-   {
-      int new_glyph_width = font_driver_get_message_width(
-         line_ticker->font, wideglyph_str, strlen(wideglyph_str),
-         line_ticker->font_scale);
-
-      if (new_glyph_width > 0)
-         wideglyph_width  = new_glyph_width * 100 / glyph_width;
-      word_wrap_func      = word_wrap_wideglyph;
-   }
-   else
-      word_wrap_func      = word_wrap;
-
-   /* > Height */
-   if ((glyph_height = (int)roundf(line_ticker->font->metrics.height
-               * line_ticker->font_scale)) <= 0)
-      goto fail;
-
-   /* Determine line wrap parameters */
-   line_len          = (size_t)(line_ticker->field_width  / glyph_width);
-   max_display_lines = (size_t)(line_ticker->field_height / glyph_height);
-
-   if ((line_len < 1) || (max_display_lines < 1))
-      goto fail;
-
-   /* Line wrap input string */
-   line_ticker_src_len = strlen(line_ticker->src_str);
-   wrapped_str_len     = sizeof(wrapped_str);
-
-   if (line_ticker_src_len + 11 > wrapped_str_len)
-      goto fail;
-
-   wrapped_str[0] = '\0';
-
-   (word_wrap_func)(
-         wrapped_str,
-         wrapped_str_len,
-         line_ticker->src_str,
-         line_ticker_src_len,
-         (int)line_len,
-         wideglyph_width, 0);
-
-   if (!*wrapped_str)
-      goto fail;
-
-   /* Split into lines using memchr */
-   {
-      const char *p       = wrapped_str;
-      const char *end_ptr = wrapped_str + strlen(wrapped_str);
-
-      while (p < end_ptr)
-      {
-         const char *nl = (const char*)memchr(p, '\n', end_ptr - p);
-         if (!nl)
-            nl = end_ptr;
-
-         if (num_lines >= XMB_LINE_TICKER_MAX_LINES)
-            break;
-
-         line_starts[num_lines]  = p;
-         line_lengths[num_lines] = (size_t)(nl - p);
-         num_lines++;
-
-         p = nl + 1;
-      }
-   }
-
-   if (num_lines < 1)
-      goto fail;
-
-   /* Check whether total number of lines fits within
-    * the set field limit */
-   if (num_lines <= max_display_lines)
-   {
-      strlcpy(line_ticker->dst_str, wrapped_str, line_ticker->dst_str_len);
-      *line_ticker->y_offset = 0.0f;
-
-      if (line_ticker->fade_enabled)
-      {
-         if (line_ticker->top_fade_str_len > 0)
-            line_ticker->top_fade_str[0]    = '\0';
-
-         if (line_ticker->bottom_fade_str_len > 0)
-            line_ticker->bottom_fade_str[0] = '\0';
-
-         *line_ticker->top_fade_y_offset    = 0.0f;
-         *line_ticker->bottom_fade_y_offset = 0.0f;
-
-         *line_ticker->top_fade_alpha       = 0.0f;
-         *line_ticker->bottom_fade_alpha    = 0.0f;
-      }
-
-      return true;
-   }
-
-   /* Determine which lines should be shown, along with
-    * y axis draw offset */
-   switch (line_ticker->type_enum)
-   {
-      case TICKER_TYPE_LOOP:
-         xmb_animation_line_ticker_smooth_loop(
-               line_ticker->idx,
-               line_ticker->fade_enabled,
-               line_len, (size_t)glyph_height,
-               max_display_lines, num_lines,
-               &num_display_lines, &line_offset, line_ticker->y_offset,
-               &fade_active,
-               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
-               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
-         break;
-      case TICKER_TYPE_BOUNCE:
-      default:
-         xmb_animation_line_ticker_smooth_generic(
-               line_ticker->idx,
-               line_ticker->fade_enabled,
-               line_len, (size_t)glyph_height,
-               max_display_lines, num_lines,
-               &num_display_lines, &line_offset, line_ticker->y_offset,
-               &fade_active,
-               &top_fade_line_offset, line_ticker->top_fade_y_offset, line_ticker->top_fade_alpha,
-               &bottom_fade_line_offset, line_ticker->bottom_fade_y_offset, line_ticker->bottom_fade_alpha);
-         break;
-   }
-
-   if (!num_display_lines)
-      goto fail;
-
-   /* Build output string from required lines */
-   {
-      size_t i;
-      size_t dst_offset = 0;
-      bool is_loop      = (line_ticker->type_enum == TICKER_TYPE_LOOP);
-
-      for (i = 0; i < num_display_lines; i++)
-      {
-         size_t line_idx = line_offset + i;
-         size_t copy_len;
-
-         /* Only wrap around for loop ticker mode;
-          * for bounce/generic mode, clamp to valid range */
-         if (is_loop)
-            line_idx %= num_lines;
-         else if (line_idx >= num_lines)
-            break;
-
-         copy_len = line_lengths[line_idx];
-
-         if (dst_offset + copy_len + 2 > line_ticker->dst_str_len)
-            break;
-
-         if (i > 0)
-            line_ticker->dst_str[dst_offset++] = '\n';
-
-         memcpy(line_ticker->dst_str + dst_offset,
-               line_starts[line_idx], copy_len);
-         dst_offset += copy_len;
-      }
-
-      if (dst_offset < line_ticker->dst_str_len)
-         line_ticker->dst_str[dst_offset] = '\0';
-      else if (line_ticker->dst_str_len > 0)
-         line_ticker->dst_str[line_ticker->dst_str_len - 1] = '\0';
-   }
-
-   /* Extract top/bottom fade strings, if required */
-   if (fade_active)
-   {
-      size_t top_fade_line_index        = top_fade_line_offset;
-      size_t bottom_fade_line_index     = bottom_fade_line_offset;
-
-      if (line_ticker->type_enum == TICKER_TYPE_LOOP)
-      {
-         /* For the top fade, use (num_lines + 1) so that the
-          * sentinel value 'num_lines' (set when line_offset == 0)
-          * correctly maps to >= num_lines and suppresses the
-          * fade string during the loop gap */
-         top_fade_line_index    %= (num_lines + 1);
-         /* For the bottom fade, use num_lines so that the index
-          * wraps to the correct next line at the loop boundary
-          * instead of duplicating a line already in the main
-          * display */
-         bottom_fade_line_index %= num_lines;
-      }
-
-      if (top_fade_line_index < num_lines
-            && line_ticker->top_fade_str_len > 0)
-      {
-         size_t copy_len = line_lengths[top_fade_line_index];
-         if (copy_len >= line_ticker->top_fade_str_len)
-            copy_len = line_ticker->top_fade_str_len - 1;
-         memcpy(line_ticker->top_fade_str,
-               line_starts[top_fade_line_index], copy_len);
-         line_ticker->top_fade_str[copy_len] = '\0';
-      }
-
-      if (bottom_fade_line_index < num_lines
-            && line_ticker->bottom_fade_str_len > 0)
-      {
-         size_t copy_len = line_lengths[bottom_fade_line_index];
-         if (copy_len >= line_ticker->bottom_fade_str_len)
-            copy_len = line_ticker->bottom_fade_str_len - 1;
-         memcpy(line_ticker->bottom_fade_str,
-               line_starts[bottom_fade_line_index], copy_len);
-         line_ticker->bottom_fade_str[copy_len] = '\0';
-      }
-   }
-
-   p_anim->flags     |= GFX_ANIM_FLAG_TICKER_IS_ACTIVE;
-
-   return true;
-
-fail:
-   if (line_ticker->dst_str_len > 0)
-      line_ticker->dst_str[0] = '\0';
-
-   if (line_ticker->fade_enabled)
-   {
-      if (line_ticker->top_fade_str_len > 0)
-         line_ticker->top_fade_str[0] = '\0';
-
-      if (line_ticker->bottom_fade_str_len > 0)
-         line_ticker->bottom_fade_str[0] = '\0';
-
-      *line_ticker->top_fade_alpha = 0.0f;
-      *line_ticker->bottom_fade_alpha = 0.0f;
-   }
-
-   return false;
-}
-
 /* Loop-invariant state for xmb_draw_item().
  *
  * xmb_draw_item() used to take eighteen parameters, sixteen of which
@@ -5784,7 +5240,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
       line_ticker_smooth.bottom_fade_y_offset = &ticker_bottom_fade_y_offset;
       line_ticker_smooth.bottom_fade_alpha    = &ticker_bottom_fade_alpha;
 
-      xmb_animation_line_ticker_smooth(ctx->p_anim, &line_ticker_smooth);
+      gfx_animation_line_ticker_smooth(ctx->p_anim, &line_ticker_smooth);
    }
    else
    {
@@ -5802,7 +5258,7 @@ XMB_NOINLINE static void xmb_draw_item_sublabel(
       line_ticker.len       = sizeof(entry_sublabel);
       line_ticker.str       = sublabel;
 
-      xmb_animation_line_ticker(ctx->p_anim, &line_ticker);
+      gfx_animation_line_ticker(ctx->p_anim, &line_ticker);
    }
 
    /* Draw sublabel */
@@ -7814,6 +7270,13 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
     * corrected it.  xmb_populate_entries already uses the correct
     * set_title -> update_dynamic_wallpaper order. */
    xmb_update_dynamic_wallpaper(xmb, true);
+   /* The reset above restores the wallpaper for the current title; a
+    * deferred pass then re-resolves the selected entry's per-game
+    * media once its thumbnail data is back in place. */
+   xmb->pending_dynamic_wallpaper = true;
+#ifdef HAVE_NETWORKING
+   xmb->pending_ss_metadata       = true;
+#endif
 
    menu_screensaver_context_destroy(xmb->screensaver);
 
@@ -7836,7 +7299,9 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
       {
          /* Synchronous populate — clear any pending deferred flag so
           * xmb_render does not redundantly repeat this work once input
-          * settles. */
+          * settles. The wallpaper flag is deliberately left alone:
+          * the reset above requested it, and the per-game media can
+          * only be resolved on a later, settled frame. */
          xmb->pending_dynamic_icons_repopulate = false;
          xmb_populate_dynamic_icons(xmb);
       }
@@ -7917,6 +7382,40 @@ static void xmb_render(void *data,
     * *current* state. If the final list is not a playlist, the
     * pending-icons unload branch from populate_entries runs here
     * instead. */
+   /* Deferred per-game wallpaper update: runs on a settled frame, by
+    * which point the selected entry's thumbnail data is in place. */
+   if (      xmb->pending_dynamic_wallpaper
+         && (menu_st->scroll.acceleration == 0))
+   {
+      xmb->pending_dynamic_wallpaper = false;
+
+      if (      xmb->allow_dynamic_wallpaper
+            && settings->bools.menu_dynamic_wallpaper_enable
+            && settings->uints.menu_dynamic_wallpaper_mode == 1)
+      {
+         /* A video background whose texture has gone (context reset,
+          * decoder released) is reloaded even though the resolved
+          * path has not changed - otherwise the path check would
+          * treat it as already loaded and leave the screen bare. */
+         bool anim_lost = xmb->bg_is_anim && !xmb->bg_anim.texture;
+         xmb_update_dynamic_wallpaper(xmb, anim_lost);
+      }
+   }
+
+#ifdef HAVE_NETWORKING
+   /* Deferred scraped-facts reload, on the same settled frame. Kept
+    * separate from the wallpaper flag above because it is gated on a
+    * different setting. */
+   if (      xmb->pending_ss_metadata
+         && (menu_st->scroll.acceleration == 0))
+   {
+      xmb->pending_ss_metadata = false;
+
+      if (settings->bools.menu_xmb_show_metadata_panel)
+         xmb_update_ss_metadata(xmb);
+   }
+#endif
+
    if (      xmb->pending_dynamic_icons_repopulate
          && (menu_st->scroll.acceleration == 0))
    {
@@ -9062,6 +8561,255 @@ error:
       xmb_hide_fullscreen_thumbnails(xmb, false);
 }
 
+#ifdef HAVE_NETWORKING
+/* Draws the scraped facts for the selected entry into the rectangle
+ * the left thumbnail would otherwise occupy: a five-star rating, the
+ * publisher, then the synopsis.
+ *
+ * Nothing is drawn behind them - no quad, no frame - so the panel is
+ * transparent and whatever sits behind it shows through.
+ *
+ * The synopsis goes through the line ticker, the same machinery the
+ * entry sublabels use, so a synopsis taller than the panel scrolls
+ * through it in a loop instead of being cut off. */
+XMB_NOINLINE static void xmb_draw_metadata_panel(
+      xmb_handle_t *xmb,
+      gfx_display_t *p_disp,
+      gfx_animation_t *p_anim,
+      gfx_display_ctx_driver_t *dispctx,
+      settings_t *settings,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      bool shadows_enable,
+      uintptr_t star_texture,
+      float x,
+      float y,
+      float width,
+      float height,
+      math_matrix_4x4 *mymat)
+{
+   float line_height;
+   float row_y      = y;
+   float bottom     = y + height;
+   int   glyph_w    = 0;
+
+   if (     (width  < 1.0f)
+         || (height < 1.0f)
+         || !xmb->font2)
+      return;
+
+   if ((line_height = (float)font_driver_get_line_height(xmb->font2, 1.0f)) < 1.0f)
+      line_height = xmb->font2_size;
+
+   if ((glyph_w = font_driver_get_message_width(xmb->font2, "a", 1, 1.0f)) < 1)
+      glyph_w = (int)(xmb->font2_size * 0.5f);
+
+   /* Rating, as five stars: the earned ones solid, the rest faint so
+    * the scale itself stays readable */
+   if (xmb->ss_has_rating && star_texture)
+   {
+      /* Stack-local scratch - avoids a data race with threaded video
+       * backends reading a previous frame's colour data */
+      float star_filled[16] = {
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+      };
+      float star_empty[16] = {
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+         1.00, 1.00, 1.00, 1.00,
+      };
+      unsigned stars    = (xmb->ss_stars > 5) ? 5 : xmb->ss_stars;
+      float icon_size   = line_height;
+      unsigned i;
+
+      /* Five icons plus four quarter-icon gaps is six icon widths;
+       * shrink them if the panel is too narrow for that */
+      if ((icon_size * 6.0f) > width)
+         icon_size = width / 6.0f;
+
+      if (icon_size >= 1.0f && (row_y + icon_size) <= bottom)
+      {
+         float spacing = icon_size / 4.0f;
+
+         gfx_display_set_alpha(star_filled, xmb->alpha);
+         gfx_display_set_alpha(star_empty,  xmb->alpha * 0.25f);
+
+         if (dispctx && dispctx->blend_begin)
+            dispctx->blend_begin(userdata);
+
+         for (i = 0; i < 5; i++)
+            xmb_draw_icon(
+                  userdata,
+                  p_disp,
+                  dispctx,
+                  video_width,
+                  video_height,
+                  shadows_enable,
+                  (int)icon_size,
+                  (int)icon_size,
+                  star_texture,
+                  x + ((float)i * (icon_size + spacing)),
+                  /* xmb_draw_icon() takes the icon's bottom edge */
+                  row_y + icon_size,
+                  video_width,
+                  video_height,
+                  xmb->alpha,
+                  0.0f,
+                  1.0f,
+                  (i < stars) ? star_filled : star_empty,
+                  xmb->shadow_offset,
+                  mymat);
+
+         if (dispctx && dispctx->blend_end)
+            dispctx->blend_end(userdata);
+
+         row_y += icon_size + (line_height * 0.5f);
+      }
+   }
+
+   /* Publisher */
+   if (*xmb->ss_publisher && ((row_y + line_height) <= bottom))
+   {
+      char wrapped[NAME_MAX_LENGTH];
+      size_t w_len = (xmb->word_wrap)(
+            wrapped, sizeof(wrapped),
+            xmb->ss_publisher, strlen(xmb->ss_publisher),
+            (int)(width / (float)glyph_w),
+            xmb->wideglyph_width, 0);
+
+      if (w_len > 0)
+      {
+         size_t c;
+         unsigned lines = 1;
+
+         for (c = 0; c < w_len; c++)
+            if (wrapped[c] == '\n')
+               lines++;
+
+         xmb_draw_text(shadows_enable, xmb, settings,
+               wrapped,
+               x,
+               row_y + line_height,
+               1.0f,
+               xmb->alpha,
+               TEXT_ALIGN_LEFT,
+               video_width, video_height, xmb->font2);
+
+         row_y += ((float)lines * line_height) + (line_height * 0.5f);
+      }
+   }
+
+   /* Synopsis, scrolled through whatever height is left */
+   if (*xmb->ss_description && ((row_y + line_height) <= bottom))
+   {
+      char body[1024];
+      char top_fade[1024];
+      char bottom_fade[1024];
+      float ticker_y_offset           = 0.0f;
+      float ticker_top_fade_y_offset  = 0.0f;
+      float ticker_bot_fade_y_offset  = 0.0f;
+      float ticker_top_fade_alpha     = 0.0f;
+      float ticker_bot_fade_alpha     = 0.0f;
+      float field_height              = bottom - row_y;
+      bool use_smooth_ticker          = settings->bools.menu_ticker_smooth;
+      enum gfx_animation_ticker_type menu_ticker_type =
+            (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+
+      body[0]        = '\0';
+      top_fade[0]    = '\0';
+      bottom_fade[0] = '\0';
+
+      if (use_smooth_ticker)
+      {
+         gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+
+         line_ticker_smooth.fade_enabled         = true;
+         line_ticker_smooth.type_enum            = menu_ticker_type;
+         line_ticker_smooth.idx                  = p_anim->ticker_pixel_line_idx;
+
+         line_ticker_smooth.font                 = xmb->font2;
+         line_ticker_smooth.font_scale           = 1.0f;
+
+         line_ticker_smooth.field_width          = (unsigned)width;
+         line_ticker_smooth.field_height         = (unsigned)field_height;
+
+         line_ticker_smooth.src_str              = xmb->ss_description;
+         line_ticker_smooth.dst_str              = body;
+         line_ticker_smooth.dst_str_len          = sizeof(body);
+         line_ticker_smooth.y_offset             = &ticker_y_offset;
+
+         line_ticker_smooth.top_fade_str         = top_fade;
+         line_ticker_smooth.top_fade_str_len     = sizeof(top_fade);
+         line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
+         line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
+
+         line_ticker_smooth.bottom_fade_str      = bottom_fade;
+         line_ticker_smooth.bottom_fade_str_len  = sizeof(bottom_fade);
+         line_ticker_smooth.bottom_fade_y_offset = &ticker_bot_fade_y_offset;
+         line_ticker_smooth.bottom_fade_alpha    = &ticker_bot_fade_alpha;
+
+         gfx_animation_line_ticker_smooth(p_anim, &line_ticker_smooth);
+      }
+      else
+      {
+         gfx_animation_ctx_line_ticker_t line_ticker;
+         unsigned max_lines = (unsigned)(field_height / line_height);
+
+         if (max_lines < 1)
+            max_lines = 1;
+
+         line_ticker.type_enum = menu_ticker_type;
+         line_ticker.idx       = p_anim->ticker_idx;
+         line_ticker.line_len  = (size_t)(width / (float)glyph_w);
+         line_ticker.max_lines = max_lines;
+         line_ticker.s         = body;
+         line_ticker.len       = sizeof(body);
+         line_ticker.str       = xmb->ss_description;
+
+         gfx_animation_line_ticker(p_anim, &line_ticker);
+      }
+
+      if (*body)
+         xmb_draw_text(shadows_enable, xmb, settings,
+               body,
+               x,
+               ticker_y_offset + row_y + line_height,
+               1.0f,
+               xmb->alpha,
+               TEXT_ALIGN_LEFT,
+               video_width, video_height, xmb->font2);
+
+      if (use_smooth_ticker)
+      {
+         if (*top_fade && (ticker_top_fade_alpha > 0.0f))
+            xmb_draw_text(shadows_enable, xmb, settings,
+                  top_fade,
+                  x,
+                  ticker_top_fade_y_offset + row_y + line_height,
+                  1.0f,
+                  ticker_top_fade_alpha * xmb->alpha,
+                  TEXT_ALIGN_LEFT,
+                  video_width, video_height, xmb->font2);
+
+         if (*bottom_fade && (ticker_bot_fade_alpha > 0.0f))
+            xmb_draw_text(shadows_enable, xmb, settings,
+                  bottom_fade,
+                  x,
+                  ticker_bot_fade_y_offset + row_y + line_height,
+                  1.0f,
+                  ticker_bot_fade_alpha * xmb->alpha,
+                  TEXT_ALIGN_LEFT,
+                  video_width, video_height, xmb->font2);
+      }
+   }
+}
+#endif
+
 static void xmb_frame(void *data, video_frame_info_t *video_info)
 {
    math_matrix_4x4 mymat;
@@ -9150,6 +8898,15 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    {
       uintptr_t tex_list[XMB_TEXTURE_LAST];
       uintptr_t tex_bg = xmb->textures.bg;
+
+      /* Animated background: step it once for this frame and draw its
+       * current frame in place of the still wallpaper texture. */
+      if (xmb->bg_is_anim)
+      {
+         gfx_thumbnail_animate(&xmb->bg_anim);
+         if (xmb->bg_anim.texture)
+            tex_bg = xmb->bg_anim.texture;
+      }
       memcpy(tex_list, xmb->textures.list, sizeof(tex_list));
 
    if (tex_list[XMB_TEXTURE_MAIN_MENU])
@@ -9274,7 +9031,13 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             dispctx,
             video_width,
             video_height,
-            menu_shader_pipeline,
+            /* The shader pipeline is drawn over the wallpaper, which
+             * would sit on top of a playing video background - so a
+             * video background suppresses it for as long as it is the
+             * active wallpaper, whatever the pipeline setting says. */
+            xmb->bg_is_anim
+                  ? XMB_SHADER_PIPELINE_WALLPAPER
+                  : menu_shader_pipeline,
             color_theme,
             MIN(xmb->alpha, menu_wallpaper_opacity),
             libretro_running,
@@ -9693,6 +9456,23 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                || (  xmb->thumbnails.left.status       < GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_left_status_prev <= GFX_THUMBNAIL_STATUS_AVAILABLE
                   && xmb->thumbnails_left_status_prev != GFX_THUMBNAIL_STATUS_UNKNOWN));
+#ifdef HAVE_NETWORKING
+      /* Scraped facts panel: it stands in for the left thumbnail, so
+       * the layout below is asked to make room for a left thumbnail
+       * whether or not one actually exists, and every left thumbnail
+       * draw becomes a panel draw instead. */
+      bool show_ss_panel        =
+               settings->bools.menu_xmb_show_metadata_panel
+            && xmb->ss_valid
+            && (  xmb->ss_has_rating
+               || *xmb->ss_publisher
+               || *xmb->ss_description);
+
+      if (show_ss_panel)
+         show_left_thumbnail    = true;
+#else
+      bool show_ss_panel        = false;
+#endif
 
       /* Check if we are using the proper PS3 layout,
        * or the aborted PSP layout */
@@ -9738,19 +9518,22 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                         background_color,
                         NULL);
 
-                  gfx_display_draw_quad(
-                        p_disp,
-                        userdata,
-                        video_width,
-                        video_height,
-                        thumb_x,
-                        left_thumb_y,
-                        scaled_thumb_width,
-                        scaled_thumb_height,
-                        video_width,
-                        video_height,
-                        background_color,
-                        NULL);
+                  /* The metadata panel is transparent by design, so
+                   * it never gets the darkening quad */
+                  if (!show_ss_panel)
+                     gfx_display_draw_quad(
+                           p_disp,
+                           userdata,
+                           video_width,
+                           video_height,
+                           thumb_x,
+                           left_thumb_y,
+                           scaled_thumb_width,
+                           scaled_thumb_height,
+                           video_width,
+                           video_height,
+                           background_color,
+                           NULL);
                }
 
                gfx_thumbnail_draw(
@@ -9765,6 +9548,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      GFX_THUMBNAIL_ALIGN_CENTRE,
                      1.0f, 1.0f, &thumbnail_shadow);
 
+#ifdef HAVE_NETWORKING
+               if (show_ss_panel)
+                  xmb_draw_metadata_panel(
+                        xmb, p_disp, p_anim, dispctx, settings, userdata,
+                        video_width, video_height, shadows_enable,
+                        tex_list[XMB_TEXTURE_FAVORITE],
+                        thumb_x, left_thumb_y,
+                        scaled_thumb_width, scaled_thumb_height,
+                        &mymat);
+               else
+#endif
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -9788,7 +9582,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                                          + ((thumb_width - scaled_thumb_width) / 2.0f);
                float thumb_y             = xmb->margins_screen_top + (xmb->icon_size / 1.5f);
 
-               if (thumbnail_background)
+               if (thumbnail_background && (show_right_thumbnail || !show_ss_panel))
                   gfx_display_draw_quad(
                         p_disp,
                         userdata,
@@ -9803,6 +9597,20 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                         background_color,
                         NULL);
 
+#ifdef HAVE_NETWORKING
+               /* Only when the right thumbnail is absent does this
+                * slot belong to the left one, and therefore to the
+                * panel that replaces it */
+               if (show_ss_panel && !show_right_thumbnail)
+                  xmb_draw_metadata_panel(
+                        xmb, p_disp, p_anim, dispctx, settings, userdata,
+                        video_width, video_height, shadows_enable,
+                        tex_list[XMB_TEXTURE_FAVORITE],
+                        thumb_x, thumb_y,
+                        scaled_thumb_width, scaled_thumb_height,
+                        &mymat);
+               else
+#endif
                gfx_thumbnail_draw(
                      userdata,
                      video_width,
@@ -9877,7 +9685,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
 
                if (thumb_height > xmb->icon_size)
                {
-                  if (thumbnail_background)
+                  if (thumbnail_background && !show_ss_panel)
                      gfx_display_draw_quad(
                            p_disp,
                            userdata,
@@ -9892,6 +9700,17 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                            background_color,
                            NULL);
 
+#ifdef HAVE_NETWORKING
+                  if (show_ss_panel)
+                     xmb_draw_metadata_panel(
+                           xmb, p_disp, p_anim, dispctx, settings, userdata,
+                           video_width, video_height, shadows_enable,
+                           tex_list[XMB_TEXTURE_FAVORITE],
+                           thumb_x, thumb_y,
+                           scaled_thumb_width, scaled_thumb_height,
+                           &mymat);
+                  else
+#endif
                   gfx_thumbnail_draw(
                         userdata,
                         video_width,
@@ -9932,7 +9751,7 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
           * > Impose a minimum size limit */
          if (thumb_height > xmb->icon_size)
          {
-            if (thumbnail_background)
+            if (thumbnail_background && !show_ss_panel)
                gfx_display_draw_quad(
                      p_disp,
                      userdata,
@@ -9947,6 +9766,19 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                      background_color,
                      NULL);
 
+#ifdef HAVE_NETWORKING
+            /* The single slot of this layout is the left one, so the
+             * panel takes it whenever it is active */
+            if (show_ss_panel)
+               xmb_draw_metadata_panel(
+                     xmb, p_disp, p_anim, dispctx, settings, userdata,
+                     video_width, video_height, shadows_enable,
+                     tex_list[XMB_TEXTURE_FAVORITE],
+                     thumb_x, thumb_y,
+                     scaled_thumb_width, scaled_thumb_height,
+                     &mymat);
+            else
+#endif
             gfx_thumbnail_draw(
                   userdata,
                   video_width,
@@ -10495,6 +10327,10 @@ static void xmb_free(void *data)
 
    if (xmb)
    {
+      /* Release the animated background decoder before the rest
+       * of the handle goes away */
+      gfx_thumbnail_reset(&xmb->bg_anim);
+
       /* Invalidate any in-flight async icon loads before freeing
        * the nodes they would write into */
       xmb_icon_load_gen++;
@@ -10524,6 +10360,21 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
 {
    if (!xmb)
       return;
+
+   /* The animated background owns a decoder and a texture of its own;
+    * both belong to the graphics context being torn down, so they go
+    * with it. Leaving them behind hands the render path a stale
+    * texture handle after a resize or driver reinit. */
+   gfx_thumbnail_reset(&xmb->bg_anim);
+   xmb->bg_is_anim = false;
+
+   /* Forget which file is loaded, too. xmb_update_dynamic_wallpaper
+    * skips its work whenever the freshly resolved path still equals
+    * this one, so leaving it set after the texture has been destroyed
+    * means the background is never re-requested - it only comes back
+    * once the user moves to an entry resolving to a different path. */
+   free(xmb->bg_file_path);
+   xmb->bg_file_path = NULL;
 
    video_driver_texture_unload(&xmb->textures.bg);
    gfx_display_deinit_white_texture();

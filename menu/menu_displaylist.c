@@ -2866,6 +2866,9 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    unsigned i, j, k;
    char query[256];
    char path_base[NAME_MAX_LENGTH];
+#ifdef HAVE_NETWORKING
+   char ss_system[NAME_MAX_LENGTH];
+#endif
    playlist_config_t playlist_config;
    playlist_t *playlist                = NULL;
    database_info_list_t *db_info       = NULL;
@@ -2913,6 +2916,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    gfx_thumbnail_set_system(menu_st->thumbnail_path_data,
          path_base, playlist_get_cached());
 
+#ifdef HAVE_NETWORKING
+   /* The bare .rdb basename is also the thumbnail-tree directory
+    * name, i.e. what the scraper filed this system's sidecars under.
+    * Kept before the ".lpl" below overwrites it. */
+   strlcpy(ss_system, path_base, sizeof(ss_system));
+#endif
+
    strlcpy(path_base + _len, ".lpl", sizeof(path_base) - _len);
 
    fill_pathname_join_special(menu->db_playlist_file,
@@ -2929,6 +2939,15 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       char crc_str[20];
       database_info_t *db_info_entry = &db_info->list[i];
       size_t tmp_len;
+#ifdef HAVE_NETWORKING
+      /* Scraped facts for this title, when it has a sidecar. They
+       * take precedence over the offline database below; see the
+       * RDB_ENTRY_STR_SS() comment. */
+      const struct playlist_entry *ss_pl_entry = NULL;
+      screenscraper_meta_t ss;
+
+      ss.valid = false;
+#endif
 
       snprintf(crc_str, sizeof(crc_str), "%08lX", (unsigned long)db_info_entry->crc32);
 
@@ -2990,10 +3009,56 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                continue;
 
             menu->scratchpad.unsigned_var = j;
+#ifdef HAVE_NETWORKING
+            ss_pl_entry                   = entry;
+#endif
             break;
          }
       }
 
+#ifdef HAVE_NETWORKING
+      /* The scraper keys its sidecars off the playlist label, so the
+       * matched playlist entry is the reliable way in; the database's
+       * own name only stands in when this title is not on a playlist
+       * (in which case a sidecar is unlikely to exist anyway). */
+      {
+         settings_t *ss_settings = config_get_ptr();
+         const char *ss_label    = NULL;
+
+         if (ss_pl_entry)
+            ss_label = !string_is_empty(ss_pl_entry->label)
+                  ? ss_pl_entry->label
+                  : path_basename(ss_pl_entry->path);
+         else if (!string_is_empty(db_info_entry->name))
+            ss_label = db_info_entry->name;
+
+         if (ss_settings && ss_label && *ss_system)
+         {
+            char ss_img[NAME_MAX_LENGTH];
+
+            gfx_thumbnail_fill_content_img(ss_img, sizeof(ss_img),
+                  ss_label, false);
+
+            screenscraper_metadata_load_entry(
+                  ss_settings->paths.directory_thumbnails,
+                  ss_system, ss_img, &ss);
+         }
+      }
+
+      if (ss.valid && !string_is_empty(ss.name))
+      {
+         tmp_len  = strlcpy(tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_NAME),
+               sizeof(tmp));
+         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         strlcpy(tmp + tmp_len, ss.name, sizeof(tmp) - tmp_len);
+         menu_entries_append(info->list, tmp,
+               MENU_ENUM_LABEL_RDB_ENTRY_NAME_STR,
+               MENU_ENUM_LABEL_RDB_ENTRY_NAME,
+               0, 0, 0, NULL);
+      }
+      else
+#endif
       if (db_info_entry->name)
       {
          tmp_len  = strlcpy(tmp,
@@ -3007,6 +3072,21 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
                0, 0, 0, NULL);
       }
 
+#ifdef HAVE_NETWORKING
+      if (ss.valid && !string_is_empty(ss.description))
+      {
+         tmp_len  = strlcpy(tmp,
+               msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DESCRIPTION),
+               sizeof(tmp));
+         tmp_len += strlcpy(tmp + tmp_len, ": ", sizeof(tmp) - tmp_len);
+         strlcpy(tmp + tmp_len, ss.description, sizeof(tmp) - tmp_len);
+         menu_entries_append(info->list, tmp,
+               MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION_STR,
+               MENU_ENUM_LABEL_RDB_ENTRY_DESCRIPTION,
+               0, 0, 0, NULL);
+      }
+      else
+#endif
       if (db_info_entry->description)
       {
          tmp_len  = strlcpy(tmp,
@@ -3032,6 +3112,31 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
+/* Same row, but sourced from the ScreenScraper sidecar when it has
+ * something to say and from the offline database otherwise. The
+ * scrape wins because it covers content the shipped .rdb has never
+ * heard of, and where the two overlap it is the fresher of the two;
+ * the .rdb then fills in whatever the scrape left blank. */
+#ifdef HAVE_NETWORKING
+#define RDB_ENTRY_STR_SS(ss_field, field, enum_label, enum_val_label) \
+      { \
+         const char *_ss_val = (ss.valid && !string_is_empty(ss.ss_field)) \
+               ? ss.ss_field : db_info_entry->field; \
+         if (!string_is_empty(_ss_val)) \
+         { \
+            if (create_string_list_rdb_entry_string( \
+                     enum_label, \
+                     msg_hash_to_str(enum_val_label), \
+                     msg_hash_to_str(enum_label), \
+                     _ss_val, info->path, info->list) == -1) \
+               goto error; \
+         } \
+      }
+#else
+#define RDB_ENTRY_STR_SS(ss_field, field, enum_label, enum_val_label) \
+      RDB_ENTRY_STR(field, enum_label, enum_val_label)
+#endif
+
 #define RDB_ENTRY_INT(field, enum_label, enum_val_label) \
       if (db_info_entry->field) \
       { \
@@ -3055,9 +3160,11 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
             goto error; \
       }
 
-      RDB_ENTRY_STR(genre,       MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
+      RDB_ENTRY_STR_SS(genre,     genre,
+                                  MENU_ENUM_LABEL_RDB_ENTRY_GENRE,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_GENRE)
-      RDB_ENTRY_STR(publisher,   MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
+      RDB_ENTRY_STR_SS(publisher, publisher,
+                                  MENU_ENUM_LABEL_RDB_ENTRY_PUBLISHER,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER)
       RDB_ENTRY_STR(category,    MENU_ENUM_LABEL_RDB_ENTRY_CATEGORY,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_CATEGORY)
@@ -3088,6 +3195,21 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
       RDB_ENTRY_STR(vehicular,   MENU_ENUM_LABEL_RDB_ENTRY_VEHICULAR,
                                   MENU_ENUM_LABEL_VALUE_RDB_ENTRY_VEHICULAR)
 
+#ifdef HAVE_NETWORKING
+      /* The .rdb can list several developers, the scrape only ever
+       * one - so the scraped name replaces the whole list rather than
+       * being merged into it */
+      if (ss.valid && !string_is_empty(ss.developer))
+      {
+         if (create_string_list_rdb_entry_string(
+                  MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_RDB_ENTRY_DEVELOPER),
+                  MENU_ENUM_LABEL_RDB_ENTRY_DEVELOPER_STR,
+                  ss.developer, info->path, info->list) == -1)
+            goto error;
+      }
+      else
+#endif
       if (db_info_entry->developer)
       {
          const char *val_rdb_entry_dev =
@@ -3135,11 +3257,13 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
 
       RDB_ENTRY_STR(bbfc_rating,         MENU_ENUM_LABEL_RDB_ENTRY_BBFC_RATING,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_BBFC_RATING)
-      RDB_ENTRY_STR(esrb_rating,         MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING,
+      RDB_ENTRY_STR_SS(esrb, esrb_rating,
+                                          MENU_ENUM_LABEL_RDB_ENTRY_ESRB_RATING,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ESRB_RATING)
       RDB_ENTRY_STR(elspa_rating,        MENU_ENUM_LABEL_RDB_ENTRY_ELSPA_RATING,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ELSPA_RATING)
-      RDB_ENTRY_STR(pegi_rating,         MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING,
+      RDB_ENTRY_STR_SS(pegi, pegi_rating,
+                                          MENU_ENUM_LABEL_RDB_ENTRY_PEGI_RATING,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PEGI_RATING)
       RDB_ENTRY_STR(enhancement_hw,      MENU_ENUM_LABEL_RDB_ENTRY_ENHANCEMENT_HW,
                                           MENU_ENUM_LABEL_VALUE_RDB_ENTRY_ENHANCEMENT_HW)
@@ -3181,6 +3305,7 @@ static int menu_displaylist_parse_database_entry(menu_handle_t *menu,
    }
 
 #undef RDB_ENTRY_STR
+#undef RDB_ENTRY_STR_SS
 #undef RDB_ENTRY_INT
 #undef RDB_ENTRY_BOOL
 
@@ -6595,7 +6720,7 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
          unsigned max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_LOGOS;
 #ifdef HAVE_NETWORKING
          if (screenscraper_signed_in())
-            max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_MARQUEES;
+            max_mode = (unsigned)PLAYLIST_THUMBNAIL_MODE_VIDEOS;
 #endif
       for (i = 0; i <= max_mode; i++)
       {
@@ -6629,6 +6754,9 @@ static unsigned populate_playlist_thumbnail_mode_dropdown_list(
                break;
             case PLAYLIST_THUMBNAIL_MODE_MARQUEES:
                label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_MARQUEES;
+               break;
+            case PLAYLIST_THUMBNAIL_MODE_VIDEOS:
+               label_value = MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS;
                break;
             default:
                /* PLAYLIST_THUMBNAIL_MODE_DEFAULT */
@@ -12387,6 +12515,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_WALLPAPER,                               PARSE_ONLY_PATH ,  true},
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPER,                            PARSE_ONLY_BOOL ,  true},
                {MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_MODE,                       PARSE_ONLY_UINT ,  false},
+               {MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_TYPE,                       PARSE_ONLY_UINT ,  false},
                {MENU_ENUM_LABEL_MENU_WALLPAPER_OPACITY,                       PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,                      PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL,   true},
@@ -12433,6 +12562,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_LEFT_THUMBNAILS,                              PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_ICON_THUMBNAILS,                              PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_XMB_VERTICAL_THUMBNAILS,                      PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_XMB_SHOW_METADATA_PANEL,                      PARSE_ONLY_BOOL,   false},
                {MENU_ENUM_LABEL_MENU_XMB_THUMBNAIL_SCALE_FACTOR,              PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_THUMBNAIL_SCALE_FACTOR,                 PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,             PARSE_ONLY_UINT,   true},
@@ -12464,6 +12594,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_TICKER_TYPE,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_MENU_TICKER_SPEED,                            PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_TICKER_SMOOTH,                           PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_OZONE_METADATA_SCROLL_STYLE,                  PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_OZONE_SCROLL_CONTENT_METADATA,                PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_RGUI_EXTENDED_ASCII,                     PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MATERIALUI_MENU_TRANSITION_ANIMATION,         PARSE_ONLY_UINT,   true},
@@ -12526,7 +12657,29 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = (settings->uints.video_hdr_mode > 0);
                      break;
                   case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_MODE:
+                  case MENU_ENUM_LABEL_DYNAMIC_WALLPAPER_TYPE:
                      build_list[i].checked = settings->bools.menu_dynamic_wallpaper_enable;
+                     break;
+                  case MENU_ENUM_LABEL_XMB_SHOW_METADATA_PANEL:
+                     /* The panel is drawn by XMB only, and its content
+                      * comes from the scraper */
+#if defined(HAVE_NETWORKING)
+                     build_list[i].checked = string_is_equal(
+                           settings->arrays.menu_driver, "xmb");
+#else
+                     build_list[i].checked = false;
+#endif
+                     break;
+                  case MENU_ENUM_LABEL_OZONE_METADATA_SCROLL_STYLE:
+                     /* Only the Ozone content metadata panel honours
+                      * this, and the synopsis it scrolls comes from
+                      * the scraper */
+#if defined(HAVE_NETWORKING)
+                     build_list[i].checked = string_is_equal(
+                           settings->arrays.menu_driver, "ozone");
+#else
+                     build_list[i].checked = false;
+#endif
                      break;
                   default:
                      break;

@@ -3688,6 +3688,16 @@ static size_t setting_get_string_representation_uint_accessibility_narrator_engi
 }
 #endif
 
+static size_t setting_get_string_representation_uint_dynamic_wallpaper_type(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   if (*setting->value.target.unsigned_integer == 1)
+      return strlcpy(s, "Videos", len);
+   return strlcpy(s, "Images", len);
+}
+
 static size_t setting_get_string_representation_uint_dynamic_wallpaper_mode(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -3781,6 +3791,9 @@ static size_t setting_get_string_representation_uint_menu_thumbnails(
          break;
       case 7:
          return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_MARQUEES), len);
+         break;
+      case 8:
+         return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_THUMBNAIL_MODE_VIDEOS), len);
          break;
    }
 }
@@ -5165,6 +5178,26 @@ static size_t setting_get_string_representation_uint_ozone_header_icon(
       }
    }
    return 0;
+}
+
+/* Values are literal rather than msg_hash entries: this is a local
+ * addition, so there is nothing translated to point at. */
+static size_t setting_get_string_representation_uint_ozone_metadata_scroll_style(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case OZONE_METADATA_SCROLL_VERTICAL:
+         return strlcpy(s, "Vertical", len);
+      case OZONE_METADATA_SCROLL_OFF:
+         return strlcpy(s, "Off", len);
+      case OZONE_METADATA_SCROLL_HORIZONTAL:
+      default:
+         break;
+   }
+   return strlcpy(s, "Horizontal", len);
 }
 
 static size_t setting_get_string_representation_uint_ozone_header_separator(

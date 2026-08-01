@@ -25,6 +25,10 @@
 #include <file/file_path.h>
 
 #include "../menu_driver.h"
+#ifdef HAVE_NETWORKING
+#include "../../network/screenscraper.h"
+#include "../../gfx/gfx_thumbnail.h"
+#endif
 #include "../menu_cbs.h"
 #include "../../input/input_remapping.h"
 
@@ -1242,9 +1246,72 @@ static int action_bind_sublabel_playlist_entry(
          || string_is_equal(entry->core_path, "DETECT"))
       return 0;
 
+   _len = 0;
+
+#if defined(HAVE_NETWORKING)
+   /* Scraped facts come first, when this entry has a metadata sidecar.
+    * Drivers that draw the facts in a panel of their own are skipped,
+    * or the same text would appear twice: Ozone always does, XMB does
+    * when its metadata panel is switched on. Those panels also have
+    * room to word wrap and scroll the synopsis, which a one-line
+    * sublabel does not. */
+   {
+      const char *ss_ident    = menu_driver_ident();
+      settings_t *ss_settings = config_get_ptr();
+      bool ss_own_panel       =
+               string_is_equal(ss_ident, "ozone")
+            || (  string_is_equal(ss_ident, "xmb")
+               && ss_settings
+               && ss_settings->bools.menu_xmb_show_metadata_panel);
+
+      if (   !ss_own_panel
+          &&  ss_settings
+          && !string_is_empty(entry->db_name))
+      {
+         char ss_db[NAME_MAX_LENGTH];
+         char ss_img[NAME_MAX_LENGTH];
+         screenscraper_meta_t meta;
+
+         /* Playlist database names carry a ".lpl" suffix that the
+          * thumbnail tree does not use */
+         strlcpy(ss_db, entry->db_name, sizeof(ss_db));
+         path_remove_extension(ss_db);
+
+         gfx_thumbnail_fill_content_img(ss_img, sizeof(ss_img),
+               !string_is_empty(entry->label)
+                     ? entry->label : path_basename(entry->path),
+               false);
+
+         if (screenscraper_metadata_load_entry(
+                  ss_settings->paths.directory_thumbnails,
+                  ss_db, ss_img, &meta))
+         {
+            if (!string_is_empty(meta.rating))
+               _len += snprintf(s + _len, len - _len,
+                     "Rating: %s/20\n", meta.rating);
+            if (!string_is_empty(meta.publisher))
+               _len += snprintf(s + _len, len - _len,
+                     "Publisher: %s\n", meta.publisher);
+            if (!string_is_empty(meta.description))
+            {
+               /* A list row cannot carry a whole synopsis; the full
+                * text remains on the information screen */
+               char blurb[192];
+               size_t b_len = strlcpy(blurb, meta.description,
+                     sizeof(blurb));
+               if (b_len >= sizeof(blurb) - 1)
+                  strlcpy(blurb + sizeof(blurb) - 4, "...", 4);
+               _len += snprintf(s + _len, len - _len, "%s\n", blurb);
+            }
+         }
+      }
+   }
+#endif
+
    /* Add core name */
-   _len      = strlcpy(s,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+   _len     += strlcpy(s + _len,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
+         len - _len);
    s[  _len] =  ' ';
    s[++_len] =  '\0';
    _len     += strlcpy(s + _len, entry->core_name, len - _len);

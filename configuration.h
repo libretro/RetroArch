@@ -271,6 +271,7 @@ typedef struct settings
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
       unsigned menu_dynamic_wallpaper_mode;
+      unsigned menu_dynamic_wallpaper_type;
       unsigned screenscraper_region;
       unsigned screenscraper_language;
       unsigned screenscraper_quota_action;
@@ -300,6 +301,9 @@ typedef struct settings
       unsigned menu_ozone_header_icon;
       unsigned menu_ozone_header_separator;
       unsigned menu_ozone_font_scale;
+      /* enum ozone_metadata_scroll_style - how Ozone's content
+       * metadata panel presents the scraped synopsis */
+      unsigned ozone_metadata_scroll_style;
       unsigned menu_font_color_red;
       unsigned menu_font_color_green;
       unsigned menu_font_color_blue;
@@ -769,6 +773,9 @@ typedef struct settings
       bool menu_xmb_entry_icons;
       bool menu_xmb_switch_icons;
       bool menu_xmb_vertical_thumbnails;
+      /* Draws the scraped facts for the selected entry in place of
+       * the left thumbnail */
+      bool menu_xmb_show_metadata_panel;
       bool menu_content_show_settings;
       bool menu_content_show_favorites;
       bool menu_content_show_favorites_first;

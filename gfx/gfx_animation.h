@@ -36,6 +36,22 @@
  * */
 #define TICKER_PIXEL_PERIOD (16.666666666666668f)
 
+/* Mean human reading speed for all western languages,
+ * characters per minute */
+#define TICKER_CPM (1000.0f)
+
+/* Base time for which a line should be shown, in us */
+#define TICKER_LINE_DURATION_US(line_len)         ((line_len * 60.0f * 1000.0f * 1000.0f) / TICKER_CPM)
+/* Base time for which a line should be shown, in ms */
+#define TICKER_LINE_DURATION_MS(line_len)         ((line_len * 60.0f * 1000.0f) / TICKER_CPM)
+/* Ticker updates (nominally) once every TICKER_SPEED us
+ * > Base number of ticks for which line should be shown */
+#define TICKER_LINE_DISPLAY_TICKS(line_len)       ((size_t)(TICKER_LINE_DURATION_US(line_len) / (float)TICKER_SPEED))
+/* Smooth ticker updates (nominally) once every TICKER_PIXEL_PERIOD ms
+ * > Base number of ticks for which text should scroll
+ *   from one line to the next */
+#define TICKER_LINE_SMOOTH_SCROLL_TICKS(line_len) ((size_t)(TICKER_LINE_DURATION_MS(line_len) / TICKER_PIXEL_PERIOD))
+
 #define ANIM_IS_ACTIVE(_p) (((_p)->flags & (GFX_ANIM_FLAG_IS_ACTIVE)) || ((_p)->flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
 
 #define GFX_ANIMATION_CLEAR_ACTIVE(anim) ((anim)->flags &= ~(GFX_ANIM_FLAG_IS_ACTIVE | GFX_ANIM_FLAG_TICKER_IS_ACTIVE))
@@ -263,6 +279,18 @@ bool gfx_animation_update(
 bool gfx_animation_ticker(gfx_animation_ctx_ticker_t *ticker);
 
 bool gfx_animation_ticker_smooth(gfx_animation_ctx_ticker_smooth_t *ticker);
+
+/* Vertical (line) tickers: wrap 'str'/'src_str' to the field width and
+ * scroll the wrapped block upwards, one line at a time for
+ * gfx_animation_line_ticker() and pixel-smoothly - with optional top /
+ * bottom fade lines - for gfx_animation_line_ticker_smooth().
+ * Used by XMB's entry sublabels and metadata panel, and by Ozone's
+ * content metadata panel. */
+bool gfx_animation_line_ticker(gfx_animation_t *p_anim,
+      gfx_animation_ctx_line_ticker_t *line_ticker);
+
+bool gfx_animation_line_ticker_smooth(gfx_animation_t *p_anim,
+      gfx_animation_ctx_line_ticker_smooth_t *line_ticker);
 
 bool gfx_animation_kill_by_tag(uintptr_t *tag);
 

@@ -89,6 +89,47 @@ typedef struct
  * in, ScreenScraper acts as the primary playlist scraper. */
 bool screenscraper_signed_in(void);
 
+/* Metadata sidecar written next to the scraped media. Read back by
+ * the menus so scraped facts can stand in front of the offline
+ * database, which has no entries at all for a lot of content. */
+typedef struct
+{
+   char name[NAME_MAX_LENGTH];
+   char description[4096];
+   char genre[NAME_MAX_LENGTH];
+   char developer[NAME_MAX_LENGTH];
+   char publisher[NAME_MAX_LENGTH];
+   char players[32];
+   char rating[32];
+   char releasedate[32];
+   char esrb[64];
+   char pegi[64];
+   bool valid;
+} screenscraper_meta_t;
+
+/* Builds the sidecar path for a playlist entry:
+ * <dir_thumbnails>/<db_name>/Metadata/<img_name minus extension>.json */
+size_t screenscraper_metadata_path(char *s, size_t len,
+      const char *dir_thumbnails, const char *db_name,
+      const char *img_name);
+
+/* Loads and parses a metadata sidecar. Returns false when absent or
+ * unreadable; 'meta' is always zeroed first. */
+bool screenscraper_metadata_load(const char *path,
+      screenscraper_meta_t *meta);
+
+/* Convenience: path + load in one step. */
+bool screenscraper_metadata_load_entry(const char *dir_thumbnails,
+      const char *db_name, const char *img_name,
+      screenscraper_meta_t *meta);
+
+/* Converts a scraped rating (ScreenScraper's native 0-20 scale, held
+ * as a string) into a count of filled stars out of five, rounded to
+ * the nearest star with halves rounding up. Returns -1 when the entry
+ * carries no usable rating, so callers can tell "unrated" apart from
+ * a genuine zero-star rating and draw no star row at all. */
+int screenscraper_rating_stars(const char *rating);
+
 /* Daily request allowance reported by the service alongside every
  * lookup. 'valid' is false when the response carried no user block. */
 typedef struct

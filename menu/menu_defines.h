@@ -487,6 +487,28 @@ enum ozone_header_separator
    OZONE_HEADER_SEPARATOR_LAST
 };
 
+/* Whether, and which way, a scraped synopsis too long for the content
+ * metadata panel animates.
+ * HORIZONTAL is the upstream behaviour: the synopsis scrolls sideways
+ * on one line when ozone_scroll_content_metadata puts the panel in
+ * ticker mode, and sits statically wrapped when it does not.
+ * VERTICAL scrolls the wrapped synopsis upwards as a block, the way
+ * XMB's metadata panel does, in either panel mode.
+ * OFF never animates the synopsis, in either panel mode.
+ *
+ * The numbering is deliberately Horizontal-first: it predates the OFF
+ * value, so appending OFF at the end keeps every existing
+ * 'ozone_metadata_scroll_style' in a user's config meaning what it
+ * meant before. Menu order follows the numbering, so the drop-down
+ * reads Horizontal / Vertical / Off. */
+enum ozone_metadata_scroll_style
+{
+   OZONE_METADATA_SCROLL_HORIZONTAL = 0,
+   OZONE_METADATA_SCROLL_VERTICAL,
+   OZONE_METADATA_SCROLL_OFF,
+   OZONE_METADATA_SCROLL_LAST
+};
+
 enum ozone_font_scale
 {
    OZONE_FONT_SCALE_NONE = 0,

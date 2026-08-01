@@ -121,6 +121,10 @@ S_BOOL(ozone_scroll_content_metadata, OZONE_SCROLL_CONTENT_METADATA,
       "When enabled, each item of content metadata shown on the right sidebar of playlists (associated core, play time) will occupy a single line; strings exceeding the width of the sidebar will be displayed as scrolling ticker text. When disabled, each item of content metadata will be displayed statically, wrapped to occupy as many lines as required.")
 #endif
 #endif
+/* Note: ozone_metadata_scroll_style used to sit here, next to the
+ * ticker toggle it pairs with. It lives in settings_def_menu_startup.h
+ * now, alongside the ticker text animation / speed / smoothness rows
+ * that supply everything about the scroll except its direction. */
 /* Descriptor and configuration rows are #ifdef HAVE_OZONE; the string
  * tables always carry this row via the strings pass. */
 #if defined(HAVE_OZONE) || defined(SETTINGS_DEF_STRINGS_PASS)

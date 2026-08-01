@@ -2846,6 +2846,8 @@ static const char *gfx_thumbnail_get_type(
             return "Named_Fanarts";
          case 7:
             return "Named_Marquees";
+         case 8:
+            return "Named_Videos";
          case 0:
          default:
             break;

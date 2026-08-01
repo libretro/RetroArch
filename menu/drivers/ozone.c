@@ -39,6 +39,9 @@
 #include "../menu_screensaver.h"
 
 #include "../../msg_hash_lbl_str.h"
+#ifdef HAVE_NETWORKING
+#include "../../network/screenscraper.h"
+#endif
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_display.h"
 #include "../../gfx/gfx_thumbnail.h"
@@ -683,6 +686,30 @@ struct ozone_handle
    char selection_core_name[NAME_MAX_LENGTH];
    char selection_playtime[NAME_MAX_LENGTH];
    char selection_lastplayed[NAME_MAX_LENGTH];
+   /* Scraped facts for the selected entry, shown above the playlist
+    * metadata when a sidecar exists for it */
+   char selection_ss_publisher[NAME_MAX_LENGTH];
+   /* "<db>|<image name>" of the entry the scraped facts belong to,
+    * so a stale set can be spotted and refreshed */
+   char selection_ss_key[NAME_MAX_LENGTH];
+   /* Synopsis as scraped, i.e. one long unbroken paragraph. The
+    * horizontal ticker and the vertical line ticker both want it this
+    * way - each does its own fitting. */
+   char selection_ss_description[1024];
+   /* The same text pre-wrapped to the metadata column, for the static
+    * (non-scrolling) presentation. Kept separate from the raw copy
+    * because word_wrap() may not read and write the same buffer, and
+    * because both presentations have to be available without waiting
+    * for the next selection change. */
+   char selection_ss_description_wrapped[1024];
+   /* Line count of selection_ss_description_wrapped */
+   unsigned selection_ss_description_lines;
+   /* Rating is drawn as five stars; this is how many of them are
+    * filled in. Zero filled stars is a legitimate value, so a
+    * separate flag records whether a rating was scraped at all. */
+   unsigned selection_ss_stars;
+   bool selection_ss_has_rating;
+   bool selection_ss_valid;
    char selection_entry_enumeration[NAME_MAX_LENGTH];
    char fullscreen_thumbnail_label[NAME_MAX_LENGTH];
 
@@ -4544,6 +4571,98 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
             core_label = menu_st->thumbnail_path_data->content_core_name;
       }
 
+#if defined(HAVE_NETWORKING)
+      /* Scraped metadata for this entry, if it was ever scraped */
+      {
+         settings_t *ss_settings          = config_get_ptr();
+         gfx_thumbnail_path_data_t *pdata = menu_st->thumbnail_path_data;
+         screenscraper_meta_t meta;
+
+         ozone->selection_ss_valid          = false;
+         ozone->selection_ss_has_rating     = false;
+         ozone->selection_ss_stars          = 0;
+         ozone->selection_ss_publisher[0]   = '\0';
+         ozone->selection_ss_description[0] = '\0';
+         ozone->selection_ss_key[0]         = '\0';
+
+         if (ss_settings && pdata)
+         {
+            const char *ss_db  = *pdata->content_db_name
+                  ? pdata->content_db_name : pdata->system;
+            const char *ss_img = *pdata->content_img
+                  ? pdata->content_img : pdata->content_img_full;
+
+            /* Remember which entry these facts describe. The thumbnail
+             * data they resolve from is not populated yet when a list
+             * is first entered, so ozone_render() compares this key
+             * against the live one and refreshes when it changes. */
+            snprintf(ozone->selection_ss_key,
+                  sizeof(ozone->selection_ss_key), "%s|%s",
+                  ss_db  ? ss_db  : "",
+                  ss_img ? ss_img : "");
+
+            if (screenscraper_metadata_load_entry(
+                     ss_settings->paths.directory_thumbnails,
+                     ss_db, ss_img, &meta))
+            {
+               int ss_stars              = screenscraper_rating_stars(meta.rating);
+
+               ozone->selection_ss_valid = true;
+
+               /* Negative means "no rating was scraped"; the star row
+                * is then skipped entirely rather than drawn empty. */
+               if (ss_stars >= 0)
+               {
+                  ozone->selection_ss_has_rating = true;
+                  ozone->selection_ss_stars      = (unsigned)ss_stars;
+               }
+
+               if (!string_is_empty(meta.publisher))
+                  snprintf(ozone->selection_ss_publisher,
+                        sizeof(ozone->selection_ss_publisher),
+                        "Publisher: %s", meta.publisher);
+               if (!string_is_empty(meta.description))
+                  strlcpy(ozone->selection_ss_description,
+                        meta.description,
+                        sizeof(ozone->selection_ss_description));
+            }
+         }
+
+         /* Pre-wrap the synopsis to the metadata column. This runs
+          * whatever the scroll mode is, for two reasons: the static
+          * presentation needs the wrapped copy (a zero line count
+          * gives the row no height, so it never appears), and the
+          * vertical scroller needs the line count to decide how tall
+          * the scrolling block should be. Both metadata settings can
+          * then be flipped without waiting for a selection change.
+          *
+          * Note the destination is a distinct buffer: word_wrap()
+          * reads the source while writing the destination, so an
+          * in-place call leaves the string mangled. */
+         ozone->selection_ss_description_wrapped[0] = '\0';
+         ozone->selection_ss_description_lines      = 0;
+
+         if (     *ozone->selection_ss_description
+               && (ozone->fonts.footer.glyph_width > 0))
+         {
+            unsigned metadata_len =
+                  (ozone->dimensions.thumbnail_bar_width
+                        - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2))
+                        / ozone->fonts.footer.glyph_width;
+
+            (ozone->word_wrap)(ozone->selection_ss_description_wrapped,
+                  sizeof(ozone->selection_ss_description_wrapped),
+                  ozone->selection_ss_description,
+                  strlen(ozone->selection_ss_description),
+                  metadata_len,
+                  ozone->fonts.footer.wideglyph_width, 0);
+
+            ozone->selection_ss_description_lines =
+                  ozone_count_lines(ozone->selection_ss_description_wrapped);
+         }
+      }
+#endif
+
       _len  = strlcpy(ozone->selection_core_name,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE),
             sizeof(ozone->selection_core_name));
@@ -4563,6 +4682,8 @@ static void ozone_update_content_metadata(ozone_handle_t *ozone)
                (ozone->dimensions.thumbnail_bar_width
                      - ((ozone->dimensions.sidebar_entry_icon_padding * 2) * 2))
                      / ozone->fonts.footer.glyph_width;
+         /* The scraped synopsis is wrapped further up, into its own
+          * buffer, whatever the scroll mode is. */
          size_t _len = strlcpy(tmpstr, ozone->selection_core_name, sizeof(tmpstr));
          (ozone->word_wrap)(ozone->selection_core_name,
                sizeof(ozone->selection_core_name),
@@ -5659,6 +5780,297 @@ static void ozone_content_metadata_line(
       *y += (unsigned)(ozone->fonts.footer.line_height * (lines_count - 1))
             + (unsigned)((float)ozone->fonts.footer.line_height * 1.5f);
 }
+
+#if defined(HAVE_NETWORKING)
+/* Draws a scraped rating as a row of five stars: 'stars' of them at
+ * full opacity, the remainder dimmed. Occupies exactly the space of a
+ * one-line ozone_content_metadata_line() row - same clipping rule,
+ * same vertical advance - so the metadata rows underneath keep their
+ * spacing whichever way the rating happens to render.
+ *
+ * 'panel_width' is the usable width of the metadata column; the star
+ * size shrinks to fit if the thumbnail bar is narrow. */
+static void ozone_draw_metadata_stars(
+      gfx_display_t *p_disp,
+      void *userdata,
+      unsigned video_width,
+      unsigned video_height,
+      ozone_handle_t *ozone,
+      unsigned *y,
+      unsigned column_x,
+      unsigned panel_width,
+      unsigned stars,
+      float alpha,
+      math_matrix_4x4 *mymat)
+{
+   unsigned i;
+   int icon_y;
+   /* Stack-local scratch - avoids a data race with threaded video
+    * backends reading a previous frame's colour data */
+   float star_filled[16] = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+   float star_empty[16] = {
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+      1.00, 1.00, 1.00, 1.00,
+   };
+   gfx_display_ctx_driver_t *dispctx = p_disp->dispctx;
+   uintptr_t texture                 =
+         ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_FAVORITE];
+   unsigned line_height              = (unsigned)ozone->fonts.footer.line_height;
+   unsigned icon_size                = (unsigned)ozone->dimensions.sidebar_entry_icon_size;
+
+   if (   !dispctx
+       || !dispctx->draw
+       || !texture
+       || !line_height)
+      return;
+
+   /* Same clipping rule as a one-line text row */
+   if (*y + line_height > video_height - ozone->dimensions.footer_height)
+      return;
+
+   /* One text line tall at most, so the row does not grow, and narrow
+    * enough that five icons plus four quarter-icon gaps (six icon
+    * widths in total) stay inside the metadata column */
+   if (icon_size > line_height)
+      icon_size = line_height;
+   if (icon_size * 6 > panel_width)
+      icon_size = panel_width / 6;
+   if (!icon_size)
+      return;
+
+   if (stars > 5)
+      stars = 5;
+
+   icon_y = (int)*y + ((int)line_height - (int)icon_size) / 2;
+
+   gfx_display_set_alpha(star_filled, alpha);
+   /* Unearned stars stay visible as a faint outline of the scale */
+   gfx_display_set_alpha(star_empty,  alpha * 0.25f);
+
+   if (dispctx->blend_begin)
+      dispctx->blend_begin(userdata);
+
+   for (i = 0; i < 5; i++)
+      ozone_draw_icon(
+            p_disp,
+            userdata,
+            video_width,
+            video_height,
+            icon_size,
+            icon_size,
+            texture,
+            (float)(column_x + i * (icon_size + (icon_size / 4))),
+            (float)icon_y,
+            video_width,
+            video_height,
+            0.0f,
+            1.0f,
+            (i < stars) ? star_filled : star_empty,
+            mymat);
+
+   if (dispctx->blend_end)
+      dispctx->blend_end(userdata);
+
+   *y += (unsigned)((float)ozone->fonts.footer.line_height * 1.5f);
+}
+
+/* Room the vertically scrolling synopsis may occupy: everything from
+ * '*y' down to the top of the footer, less the height the metadata rows
+ * drawn underneath it will need. 'rows_lines' is the total number of
+ * text lines those rows occupy and 'rows_count' how many rows there
+ * are, because ozone_content_metadata_line() adds half a line of
+ * padding per row on top of the lines themselves.
+ * Returns 0 when nothing is left. */
+static unsigned ozone_metadata_description_avail_height(
+      ozone_handle_t *ozone,
+      unsigned video_height,
+      unsigned y,
+      unsigned rows_lines,
+      unsigned rows_count)
+{
+   int bottom   = (int)video_height - (int)ozone->dimensions.footer_height;
+   int reserved = (int)((float)ozone->fonts.footer.line_height
+         * ((float)rows_lines + ((float)rows_count * 0.5f)));
+   int avail    = bottom - (int)y - reserved;
+
+   return (avail > 0) ? (unsigned)avail : 0;
+}
+
+/* Draws the scraped synopsis as a vertically scrolling block, the way
+ * XMB's metadata panel presents it: the text is wrapped to the width of
+ * the metadata column, and when the wrapped block is taller than the
+ * room available it scrolls upwards in a loop, the lines entering and
+ * leaving the field fading in and out (smooth ticker only - the
+ * line-stepping ticker has no fade).
+ *
+ * 'avail_height' is the room the block may use; the caller has already
+ * subtracted whatever the rows drawn underneath need. '*y' is advanced
+ * exactly as ozone_content_metadata_line() advances it for a block of
+ * the same number of lines, so those rows keep their spacing.
+ *
+ * Returns false when there is not even one line of room, in which case
+ * nothing is drawn and '*y' is left alone. */
+static bool ozone_draw_metadata_description_vertical(
+      ozone_handle_t *ozone,
+      gfx_animation_t *p_anim,
+      settings_t *settings,
+      unsigned video_width,
+      unsigned video_height,
+      unsigned *y,
+      unsigned column_x,
+      unsigned field_width,
+      unsigned avail_height,
+      float metadata_alpha)
+{
+   char body[1024];
+   char top_fade[1024];
+   char bottom_fade[1024];
+   unsigned max_lines;
+   unsigned draw_lines;
+   float ticker_y_offset          = 0.0f;
+   float ticker_top_fade_y_offset = 0.0f;
+   float ticker_bot_fade_y_offset = 0.0f;
+   float ticker_top_fade_alpha    = 0.0f;
+   float ticker_bot_fade_alpha    = 0.0f;
+   unsigned line_height           = (unsigned)ozone->fonts.footer.line_height;
+   float text_y                   = (float)*y
+         + (float)ozone->fonts.footer.line_ascender;
+   uint32_t text_color            = COLOR_TEXT_ALPHA(
+         ozone->theme->text_rgba, (uint32_t)(metadata_alpha * 255.0f));
+   bool use_smooth_ticker         = settings->bools.menu_ticker_smooth;
+   enum gfx_animation_ticker_type menu_ticker_type =
+         (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
+
+   if (   !line_height
+       || (field_width  < 1)
+       || (avail_height < line_height)
+       || (ozone->fonts.footer.glyph_width < 1))
+      return false;
+
+   /* Height of the scrolling field: as many whole lines as fit, but
+    * never more than the synopsis actually needs. A synopsis short
+    * enough to fit therefore occupies exactly its own height and does
+    * not scroll at all, matching the static presentation. */
+   max_lines  = avail_height / line_height;
+   draw_lines = ozone->selection_ss_description_lines;
+
+   if ((draw_lines < 1) || (draw_lines > max_lines))
+      draw_lines = max_lines;
+
+   body[0]        = '\0';
+   top_fade[0]    = '\0';
+   bottom_fade[0] = '\0';
+
+   if (use_smooth_ticker)
+   {
+      gfx_animation_ctx_line_ticker_smooth_t line_ticker_smooth;
+
+      line_ticker_smooth.idx                  = p_anim->ticker_pixel_line_idx;
+      line_ticker_smooth.font                 = ozone->fonts.footer.font;
+      line_ticker_smooth.font_scale           = 1.0f;
+      line_ticker_smooth.type_enum            = menu_ticker_type;
+      line_ticker_smooth.fade_enabled         = true;
+
+      line_ticker_smooth.field_width          = field_width;
+      line_ticker_smooth.field_height         = draw_lines * line_height;
+
+      line_ticker_smooth.src_str              = ozone->selection_ss_description;
+      line_ticker_smooth.dst_str              = body;
+      line_ticker_smooth.dst_str_len          = sizeof(body);
+      line_ticker_smooth.y_offset             = &ticker_y_offset;
+
+      line_ticker_smooth.top_fade_str         = top_fade;
+      line_ticker_smooth.top_fade_str_len     = sizeof(top_fade);
+      line_ticker_smooth.top_fade_y_offset    = &ticker_top_fade_y_offset;
+      line_ticker_smooth.top_fade_alpha       = &ticker_top_fade_alpha;
+
+      line_ticker_smooth.bottom_fade_str      = bottom_fade;
+      line_ticker_smooth.bottom_fade_str_len  = sizeof(bottom_fade);
+      line_ticker_smooth.bottom_fade_y_offset = &ticker_bot_fade_y_offset;
+      line_ticker_smooth.bottom_fade_alpha    = &ticker_bot_fade_alpha;
+
+      gfx_animation_line_ticker_smooth(p_anim, &line_ticker_smooth);
+   }
+   else
+   {
+      gfx_animation_ctx_line_ticker_t line_ticker;
+
+      line_ticker.idx       = p_anim->ticker_idx;
+      line_ticker.type_enum = menu_ticker_type;
+      line_ticker.line_len  = (size_t)(field_width
+            / ozone->fonts.footer.glyph_width);
+      line_ticker.max_lines = draw_lines;
+      line_ticker.s         = body;
+      line_ticker.len       = sizeof(body);
+      line_ticker.str       = ozone->selection_ss_description;
+
+      gfx_animation_line_ticker(p_anim, &line_ticker);
+   }
+
+   if (*body)
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            body,
+            (float)column_x,
+            text_y + ticker_y_offset,
+            video_width,
+            video_height,
+            text_color,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            true);
+
+   /* Partial lines entering / leaving the field. Only the smooth
+    * ticker produces these; the line-stepping one leaves them empty. */
+   if (use_smooth_ticker)
+   {
+      if (*top_fade && (ticker_top_fade_alpha > 0.0f))
+         gfx_display_draw_text(
+               ozone->fonts.footer.font,
+               top_fade,
+               (float)column_x,
+               text_y + ticker_top_fade_y_offset,
+               video_width,
+               video_height,
+               COLOR_TEXT_ALPHA(ozone->theme->text_rgba,
+                     (uint32_t)(metadata_alpha * ticker_top_fade_alpha * 255.0f)),
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               true);
+
+      if (*bottom_fade && (ticker_bot_fade_alpha > 0.0f))
+         gfx_display_draw_text(
+               ozone->fonts.footer.font,
+               bottom_fade,
+               (float)column_x,
+               text_y + ticker_bot_fade_y_offset,
+               video_width,
+               video_height,
+               COLOR_TEXT_ALPHA(ozone->theme->text_rgba,
+                     (uint32_t)(metadata_alpha * ticker_bot_fade_alpha * 255.0f)),
+               TEXT_ALIGN_LEFT,
+               1.0f,
+               false,
+               1.0f,
+               true);
+   }
+
+   *y += (unsigned)(line_height * (draw_lines - 1))
+         + (unsigned)((float)line_height * 1.5f);
+   return true;
+}
+#endif
 
 
 /* Compute new scroll position
@@ -6933,10 +7345,17 @@ static void ozone_draw_thumbnail_bar(
       bool use_smooth_ticker                 = settings->bools.menu_ticker_smooth;
       enum gfx_animation_ticker_type
             menu_ticker_type                 = (enum gfx_animation_ticker_type)settings->uints.menu_ticker_type;
-      bool show_entry_idx                    = settings->bools.playlist_show_entry_idx;
+      /* Entry index and last played give way to the scraped facts, so
+       * the panel does not grow unboundedly - but only when there are
+       * scraped facts to show. Without them the panel keeps its full
+       * stock contents rather than losing rows for nothing. */
+      bool have_ss_facts                     = ozone->selection_ss_valid;
+      bool show_entry_idx                    = settings->bools.playlist_show_entry_idx
+            && !have_ss_facts;
       bool show_entry_core                   = (!(ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST));
       bool show_entry_playtime               = (!(ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST));
-      bool show_entry_last_played            = (!(ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST));
+      bool show_entry_last_played            = (!(ozone->flags & OZONE_FLAG_IS_DB_MANAGER_LIST))
+            && !have_ss_facts;
       unsigned y                             = (unsigned)bottom_row_y_position;
       unsigned separator_padding             = ozone->dimensions.sidebar_entry_icon_padding * 2;
       unsigned column_x                      = x_position + separator_padding;
@@ -6947,6 +7366,17 @@ static void ozone_draw_thumbnail_bar(
             : 1.0f;
       uint32_t text_color                    = COLOR_TEXT_ALPHA(
             ozone->theme->text_rgba, (uint32_t)(metadata_alpha * 255.0f));
+#if defined(HAVE_NETWORKING)
+      /* These govern the scraped synopsis only; every other row keeps
+       * whatever ozone_scroll_content_metadata gives it. Neither being
+       * set is the Horizontal default, i.e. upstream behaviour. */
+      unsigned metadata_scroll_style         =
+            settings->uints.ozone_metadata_scroll_style;
+      bool metadata_scroll_vertical          =
+            (metadata_scroll_style == OZONE_METADATA_SCROLL_VERTICAL);
+      bool metadata_scroll_off               =
+            (metadata_scroll_style == OZONE_METADATA_SCROLL_OFF);
+#endif
 
       if (scroll_content_metadata)
       {
@@ -7002,6 +7432,105 @@ static void ozone_draw_thumbnail_bar(
 
       if (scroll_content_metadata)
       {
+#if defined(HAVE_NETWORKING)
+         /* Scraped facts first. Each is run through the ticker, so a
+          * synopsis longer than the panel scrolls through in a loop
+          * instead of being cut off. */
+         if (ozone->selection_ss_valid)
+         {
+            const char *ss_rows[2];
+            unsigned ss_row_count = 0;
+            unsigned ss_i;
+
+            /* Rating is a graphic, not text, so it is drawn on its own
+             * ahead of the ticker-texted rows */
+            if (ozone->selection_ss_has_rating)
+               ozone_draw_metadata_stars(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     ozone,
+                     &y,
+                     column_x,
+                     sidebar_width - separator_padding * 2,
+                     ozone->selection_ss_stars,
+                     metadata_alpha,
+                     mymat);
+
+            if (*ozone->selection_ss_publisher)
+               ss_rows[ss_row_count++] = ozone->selection_ss_publisher;
+            /* The synopsis is only a ticker row under Horizontal.
+             * Vertical draws it as a scrolling block below, and Off
+             * draws it statically wrapped. */
+            if (     *ozone->selection_ss_description
+                  && !metadata_scroll_vertical
+                  && !metadata_scroll_off)
+               ss_rows[ss_row_count++] = ozone->selection_ss_description;
+
+            for (ss_i = 0; ss_i < ss_row_count; ss_i++)
+            {
+               ticker_buf[0] = '\0';
+
+               if (use_smooth_ticker)
+               {
+                  ticker_smooth.src_str = ss_rows[ss_i];
+                  gfx_animation_ticker_smooth(&ticker_smooth);
+               }
+               else
+               {
+                  ticker.str = ss_rows[ss_i];
+                  gfx_animation_ticker(&ticker);
+               }
+
+               ozone_content_metadata_line(
+                     video_width,
+                     video_height,
+                     ozone,
+                     &y,
+                     ticker_x_offset + column_x,
+                     ticker_buf,
+                     text_color,
+                     1);
+            }
+
+            if (*ozone->selection_ss_description && metadata_scroll_vertical)
+            {
+               /* Every remaining row is a single ticker line here */
+               unsigned rows_below =
+                       (show_entry_idx         ? 1 : 0)
+                     + (show_entry_core        ? 1 : 0)
+                     + (show_entry_playtime    ? 1 : 0)
+                     + (show_entry_last_played ? 1 : 0);
+
+               ozone_draw_metadata_description_vertical(
+                     ozone,
+                     p_anim,
+                     settings,
+                     video_width,
+                     video_height,
+                     &y,
+                     column_x,
+                     sidebar_width - separator_padding * 2,
+                     ozone_metadata_description_avail_height(
+                           ozone, video_height, y, rows_below, rows_below),
+                     metadata_alpha);
+            }
+            /* Off: the pre-wrapped copy, drawn as a static block, even
+             * though every other row on this panel is ticker text */
+            else if (*ozone->selection_ss_description && metadata_scroll_off)
+               ozone_content_metadata_line(
+                     video_width,
+                     video_height,
+                     ozone,
+                     &y,
+                     column_x,
+                     ozone->selection_ss_description_wrapped,
+                     text_color,
+                     ozone->selection_ss_description_lines);
+         }
+#endif
+
          /* Entry enumeration */
          if (show_entry_idx)
          {
@@ -7116,6 +7645,90 @@ static void ozone_draw_thumbnail_bar(
       }
       else
       {
+#if defined(HAVE_NETWORKING)
+         /* Scraped facts first: rating, publisher, description */
+         if (ozone->selection_ss_valid)
+         {
+            if (ozone->selection_ss_has_rating)
+               ozone_draw_metadata_stars(
+                     p_disp,
+                     userdata,
+                     video_width,
+                     video_height,
+                     ozone,
+                     &y,
+                     column_x,
+                     sidebar_width - separator_padding * 2,
+                     ozone->selection_ss_stars,
+                     metadata_alpha,
+                     mymat);
+
+            if (*ozone->selection_ss_publisher)
+               ozone_content_metadata_line(
+                     video_width, video_height, ozone, &y, column_x,
+                     ozone->selection_ss_publisher, text_color,
+                     ozone_count_lines(ozone->selection_ss_publisher));
+
+            if (*ozone->selection_ss_description)
+            {
+               if (metadata_scroll_vertical)
+               {
+                  /* Rows below are wrapped, so they can be several
+                   * lines each; count them so the scrolling block does
+                   * not eat their space */
+                  unsigned rows_below_lines = 0;
+                  unsigned rows_below_count = 0;
+
+                  if (show_entry_idx)
+                  {
+                     rows_below_lines += ozone_count_lines(
+                           ozone->selection_entry_enumeration);
+                     rows_below_count++;
+                  }
+                  if (show_entry_core)
+                  {
+                     rows_below_lines += ozone->selection_core_name_lines;
+                     rows_below_count++;
+                  }
+                  if (show_entry_playtime)
+                  {
+                     rows_below_lines += ozone_count_lines(
+                           ozone->selection_playtime);
+                     rows_below_count++;
+                  }
+                  if (show_entry_last_played)
+                  {
+                     rows_below_lines += ozone->selection_lastplayed_lines;
+                     rows_below_count++;
+                  }
+
+                  ozone_draw_metadata_description_vertical(
+                        ozone,
+                        p_anim,
+                        settings,
+                        video_width,
+                        video_height,
+                        &y,
+                        column_x,
+                        sidebar_width - separator_padding * 2,
+                        ozone_metadata_description_avail_height(
+                              ozone, video_height, y,
+                              rows_below_lines, rows_below_count),
+                        metadata_alpha);
+               }
+               /* Horizontal and Off coincide here: this panel mode has
+                * no ticker configured for any row, so there is nothing
+                * for Horizontal to scroll along and both draw the
+                * pre-wrapped copy statically. */
+               else
+                  ozone_content_metadata_line(
+                        video_width, video_height, ozone, &y, column_x,
+                        ozone->selection_ss_description_wrapped, text_color,
+                        ozone->selection_ss_description_lines);
+            }
+         }
+#endif
+
          /* Entry enumeration */
          if (show_entry_idx)
             ozone_content_metadata_line(
@@ -10566,6 +11179,34 @@ static void ozone_render(void *data,
 
    if (!ozone)
       return;
+
+#if defined(HAVE_NETWORKING)
+   /* The scraped facts are resolved from the selected entry's thumbnail
+    * data, which is still empty when a list is first entered - so the
+    * set gathered then belongs to no entry, or to the previous one.
+    * Compare the key against the live entry and refresh when they
+    * differ; unchanged selections cost one string compare and touch
+    * no files. */
+   {
+      gfx_thumbnail_path_data_t *ss_pdata = menu_st->thumbnail_path_data;
+
+      if (ss_pdata)
+      {
+         char ss_key[NAME_MAX_LENGTH];
+         const char *ss_db  = *ss_pdata->content_db_name
+               ? ss_pdata->content_db_name : ss_pdata->system;
+         const char *ss_img = *ss_pdata->content_img
+               ? ss_pdata->content_img : ss_pdata->content_img_full;
+
+         snprintf(ss_key, sizeof(ss_key), "%s|%s",
+               ss_db  ? ss_db  : "",
+               ss_img ? ss_img : "");
+
+         if (!string_is_equal(ss_key, ozone->selection_ss_key))
+            ozone_update_content_metadata(ozone);
+      }
+   }
+#endif
 
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
