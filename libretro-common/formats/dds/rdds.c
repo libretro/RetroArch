@@ -1216,7 +1216,14 @@ static void rdds_bcdec_bc7(const void* compressedBlock, void* decompressedBlock,
     rdds_bcdec__bitstream_t bstream;
     int mode, partition, numPartitions, numEndpoints, i, j, k, rotation, partitionSet;
     int indexSelectionBit, indexBits, indexBits2, index, index2;
-    int endpoints[6][4];
+    /* Zero-initialized: modes 0-3 carry no explicit alpha bits, so
+     * endpoints[][3] is never written by the extraction step above, yet
+     * the P-bit modes (0, 1, 3) still left-shift all four components
+     * below.  Reading the indeterminate value was undefined behaviour
+     * and could shift a large signed value out of range (caught by
+     * UBSan).  The alpha slot is overwritten with 0xFF for those modes,
+     * so decoded output is unchanged. */
+    int endpoints[6][4] = {{0}};
     char indices[4][4];
     int r, g, b, a;
     int* weights, * weights2;
