@@ -2346,6 +2346,7 @@ static const struct
    char s_f4b6d13e[37];
    char s_25e89959[4];
    char s_a7468d68[33];
+   char s_b1d6fea6[9];
    char s_aa0659db[25];
    char s_49757b91[25];
    char s_660eb9c4[25];
@@ -3458,7 +3459,7 @@ static const struct
    char s_ef13be35[58];
    char s_f2687ca7[77];
    char s_698d5124[112];
-   char s_7e43d750[209];
+   char s_7e43d750[207];
    char s_87ca7bc6[175];
    char s_cfa51e8c[467];
    char s_b62c2f7e[333];
@@ -6704,6 +6705,7 @@ static const struct
    "Disposi\303\247\303\243o Vertical das Miniaturas",
    "Sim",
    "Chave de transmiss\303\243o do YouTube",
+   "Modo HDR",
    "Predefini\303\247\303\243o de shader",
    "Predefini\303\247\303\243o de shader",
    "Predefini\303\247\303\243o de shader",
@@ -8410,9 +8412,9 @@ static const struct
    "Sincronia r\303\255gida entre CPU e GPU. Reduz a lat\303\252ncia ao custo de desempenho.",
    "Define quantos quadros a CPU pode rodar \303\240 frente da GPU quando utilizado o recurso \"Sinc"
    "ronia r\303\255gida de GPU\".",
-   "Definir o modo de sa\303\255da HDR se o monitor for compat\303\255vel. Observe: o scRGB pode sua"
-   "vizar as m\303\241scaras de shader CRT mais r\303\255gidas, pois o compositor do SO converte par"
-   "a HDR10 ap\303\263s a aplica\303\247\303\243o da m\303\241scara.",
+   "Define a sa\303\255da do modo HDR caso o monitor for compat\303\255vel. Observa\303\247\303\243o"
+   ": \"scRGB\" pode reduzir as m\303\241scaras de CRT do sombreamento, pois o compositor do SO conv"
+   "erte para HDR10 ap\303\263s a m\303\241scara ser aplicada.",
    "Usar toda a gama de cores do seu monitor para criar uma imagem mais brilhante e saturada. Para c"
    "ores mais fi\303\251is ao design original do jogo, defina esta op\303\247\303\243o como Preciso.",
    "O n\303\255vel m\303\241ximo de brilho que sua tela pode alcan\303\247ar, em nits. Define quanto"
@@ -9229,7 +9231,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193329u
+      (sizeof(msg_hash_pt_br_blob) == (193336u
 #ifdef ANDROID
        + 352u
 #endif
@@ -11976,6 +11978,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_VERTICAL_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_YOUTUBE_STREAM_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VIDEO_HDR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_APPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_PREPEND_TWO,
    (uint32_t)MENU_ENUM_LABEL_VIDEO_SHADER_PRESET_TWO,
