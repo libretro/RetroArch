@@ -323,7 +323,7 @@ static int envelope_calculate_ampl( struct envelope *envelope, int tick ) {
 			/* Guard against a malformed envelope whose adjacent points share
 			 * a tick: the division below would divide by zero. */
 			da = envelope->points_ampl[ point + 1 ] - envelope->points_ampl[ point ];
-			ampl += ( ( da << 24 ) / dt ) * ( tick - envelope->points_tick[ point ] ) >> 24;
+			ampl += ( ( da * ( 1 << 24 ) ) / dt ) * ( tick - envelope->points_tick[ point ] ) >> 24;
 		}
 	}
 	return ampl;
