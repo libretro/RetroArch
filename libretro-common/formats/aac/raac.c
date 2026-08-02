@@ -33,16 +33,18 @@
  * computed at open from their defining formulas.
  *
  * What it implements: AAC-LC (audio object type 2) raw access units,
- * mono and stereo (channel configurations 1 and 2), M/S and intensity
- * stereo, PNS, TNS, and both the s16 and f32 output paths from a
- * shared float synthesis pipeline.
+ * mono and stereo (channel configurations 1 and 2, or configuration 0
+ * with a PCE describing one SCE or one CPE), explicit as well as
+ * indexed sampling frequencies, M/S and intensity stereo, PNS, TNS,
+ * in-stream PCE and DSE elements (skipped), and both the s16 and f32
+ * output paths from a shared float synthesis pipeline.
  *
  * What it does not implement: other object types (Main, SSR, LTP,
  * HE-AAC's SBR/PS - configurations other than plain LC are refused at
  * open, as are the 960-sample frame variant and channel configurations
- * above stereo), ADTS/LATM/LOAS framing (the caller supplies the
- * AudioSpecificConfig and raw access units, as rmp4 does), and
- * encoding. */
+ * above stereo), coupling channel elements, ADTS/LATM/LOAS framing
+ * (the caller supplies the AudioSpecificConfig and raw access units,
+ * as rmp4 does), and encoding. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -1569,13 +1571,90 @@ static int raac_decode_cpe(raac_t *a, raac_bits *b)
    return 0;
 }
 
+/* program_config_element (14496-3 4.4.1.1). Parses one PCE, leaving
+ * the reader just past it. Writes the number of channel elements the
+ * layout lists (SCE, CPE and LFE each count one) and the channel
+ * total (CPEs count two) through the optional out pointers. Returns
+ * 0, or -1 when the element is truncated or declares coupling
+ * channels, which are out of scope. byte_alignment() inside a PCE is
+ * relative to the start of the enclosing structure - the ASC or the
+ * raw_data_block - and the bit reader's buffer begins there in both
+ * callers, so aligning the raw position is correct. */
+static int raac_pce(raac_bits *b, int *elems, int *channels)
+{
+   int nfront, nside, nback, nlfe, nassoc, ncc;
+   int i, n_elems, n_ch;
+   raac_getbits(b, 4);           /* element_instance_tag       */
+   raac_getbits(b, 2);           /* object_type                */
+   raac_getbits(b, 4);           /* sampling_frequency_index   */
+   nfront = (int)raac_getbits(b, 4);
+   nside  = (int)raac_getbits(b, 4);
+   nback  = (int)raac_getbits(b, 4);
+   nlfe   = (int)raac_getbits(b, 2);
+   nassoc = (int)raac_getbits(b, 3);
+   ncc    = (int)raac_getbits(b, 4);
+   if (raac_getbits(b, 1))       /* mono_mixdown_present       */
+      raac_getbits(b, 4);
+   if (raac_getbits(b, 1))       /* stereo_mixdown_present     */
+      raac_getbits(b, 4);
+   if (raac_getbits(b, 1))       /* matrix_mixdown_idx_present */
+      raac_getbits(b, 3);        /* idx + pseudo_surround      */
+   n_elems = nfront + nside + nback + nlfe;
+   n_ch    = nlfe;
+   for (i = 0; i < nfront + nside + nback; i++)
+   {
+      /* element_is_cpe + element_tag_select */
+      n_ch += raac_getbits(b, 1) ? 2 : 1;
+      raac_getbits(b, 4);
+   }
+   for (i = 0; i < nlfe; i++)
+      raac_getbits(b, 4);        /* lfe_element_tag_select     */
+   for (i = 0; i < nassoc; i++)
+      raac_getbits(b, 4);        /* assoc_data_element_tag     */
+   for (i = 0; i < ncc; i++)
+      raac_getbits(b, 5);        /* cc_element_is_ind_sw + tag */
+   b->pos = (b->pos + 7) & ~(size_t)7;   /* byte_alignment()   */
+   {
+      /* comment_field_bytes; read it into a local first: += would
+       * leave the order of the old-pos read against the call's pos
+       * advance indeterminately sequenced */
+      size_t cf = (size_t)raac_getbits(b, 8);
+      b->pos += cf * 8;
+   }
+   if (b->pos > b->size * 8 || b->err)
+      return -1;
+   if (ncc)
+      return -1;
+   if (elems)
+      *elems    = n_elems;
+   if (channels)
+      *channels = n_ch;
+   return 0;
+}
+
+/* Map an explicitly coded sampling frequency onto the sampling
+ * frequency index whose scalefactor band tables apply, per the
+ * ranges of ISO/IEC 14496-3 Table 4.55. */
+static int raac_freq_to_sfi(unsigned freq)
+{
+   static const unsigned lo[11] = {
+      92017, 75132, 55426, 46009, 37566, 27713,
+      23004, 18783, 13856, 11502, 9391
+   };
+   int i;
+   for (i = 0; i < 11; i++)
+      if (freq >= lo[i])
+         return i;
+   return 11;
+}
+
 /* ===== public API ===== */
 
 raac_t *raac_open(const uint8_t *asc, size_t asc_size)
 {
    raac_t   *a;
    raac_bits b;
-   unsigned  aot, sfi, chcfg;
+   unsigned  aot, sfi, chcfg, freq;
    int       i;
 
    if (!asc || asc_size < 2)
@@ -1584,16 +1663,24 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    aot = raac_getbits(&b, 5);
    if (aot == 31)
       aot = 32 + raac_getbits(&b, 6);
-   sfi = raac_getbits(&b, 4);
+   sfi  = raac_getbits(&b, 4);
+   freq = 0;
    if (sfi == 15)
-   {
-      raac_getbits(&b, 24);
-      return NULL; /* explicit-frequency oddity */
-   }
+      freq = raac_getbits(&b, 24); /* explicit samplingFrequency */
    chcfg = raac_getbits(&b, 4);
    if (aot != 2) /* AAC-LC only */
       return NULL;
-   if (sfi > 12 || chcfg < 1 || chcfg > 2)
+   if (sfi == 15)
+   {
+      if (!freq)
+         return NULL;
+      sfi = (unsigned)raac_freq_to_sfi(freq);
+   }
+   else if (sfi > 12)
+      return NULL;
+   else
+      freq = raac_sample_rates[sfi];
+   if (chcfg > 2)
       return NULL;
    if (raac_getbits(&b, 1)) /* frameLengthFlag: 960 */
       return NULL;
@@ -1601,13 +1688,25 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
       return NULL;
    if (raac_getbits(&b, 1)) /* extensionFlag */
       return NULL;
+   if (chcfg == 0)
+   {
+      /* the channel layout is deferred to a PCE embedded in the
+       * GASpecificConfig; accept the shapes the frame parser
+       * decodes - exactly one SCE/LFE (mono) or one CPE (stereo) */
+      int elems = 0, nch = 0;
+      if (raac_pce(&b, &elems, &nch) < 0)
+         return NULL;
+      if (elems != 1 || nch < 1 || nch > 2)
+         return NULL;
+      chcfg = (unsigned)nch;
+   }
    if (b.err)
       return NULL;
 
    if (!(a = (raac_t*)calloc(1, sizeof(*a))))
       return NULL;
    a->sfi         = (int)sfi;
-   a->sample_rate = raac_sample_rates[sfi];
+   a->sample_rate = freq;
    a->channels    = chcfg;
    a->noise_state = 0x1f2e3d4cu;
 
@@ -1687,16 +1786,25 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
          case 4:  /* DSE */
          {
             unsigned cnt;
-            raac_getbits(&b, 4);
-            if (raac_getbits(&b, 1))
-               raac_getbits(&b, 3);   /* byte alignment */
-            cnt = raac_getbits(&b, 8);
+            unsigned align;
+            raac_getbits(&b, 4);          /* element_instance_tag  */
+            align = raac_getbits(&b, 1);  /* data_byte_align_flag  */
+            cnt   = raac_getbits(&b, 8);
             if (cnt == 255)
                cnt += raac_getbits(&b, 8);
-            b.pos = (b.pos + 7) & ~(size_t)7;
+            /* byte_alignment() comes after the count fields and only
+             * when the flag asks for it (14496-3 data_stream_element);
+             * it is relative to the start of the raw_data_block, which
+             * is where this bit reader's buffer begins */
+            if (align)
+               b.pos = (b.pos + 7) & ~(size_t)7;
             b.pos += (size_t)cnt * 8;
             break;
          }
+         case 5:  /* PCE: parse to keep bit position, contents unused */
+            if (raac_pce(&b, NULL, NULL) < 0)
+               return -1;
+            break;
          case 6:  /* FIL: skip (carries implicit SBR and fill bytes)  */
          {
             unsigned cnt = raac_getbits(&b, 4);
@@ -1708,7 +1816,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
          case 7:  /* END */
             done = 1;
             break;
-         default: /* CCE, PCE: out of scope for LC mono/stereo files  */
+         default: /* CCE: out of scope for LC mono/stereo files       */
             return -1;
       }
       if (b.pos > b.size * 8)

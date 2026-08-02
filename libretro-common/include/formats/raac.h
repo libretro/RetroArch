@@ -30,8 +30,11 @@
  * per access unit.
  *
  * Scope: AAC-LC (audioObjectType 2), mono and stereo, the 1024-sample
- * frame length, every standard sampling rate, M/S and intensity
- * stereo, PNS, pulse data and TNS.  Not decoded (open or decode
+ * frame length, every standard sampling rate as well as explicitly
+ * coded ones (samplingFrequencyIndex 15), channelConfiguration 0 when
+ * the embedded PCE describes a mono or stereo program, M/S and
+ * intensity stereo, PNS, pulse data and TNS.  In-stream PCE and DSE
+ * elements are parsed and skipped.  Not decoded (open or decode
  * fails cleanly): other object types (Main, SSR, LTP, HE-AAC's
  * explicit SBR signalling), the 960-sample frame length, coupling
  * channel elements and multichannel programs.  Implicitly signalled
