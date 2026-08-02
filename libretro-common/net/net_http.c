@@ -632,6 +632,35 @@ static void net_http_dns_cache_remove_expired(void)
             || (!entry->addr && (entry->timestamp + dns_cache_fail_timeout < cpu_features_get_time_usec())))
       {
 #ifdef HAVE_THREADS
+         /* An entry whose resolver has not published a result yet
+          * cannot be evicted here.  This function only ever runs with
+          * the DNS cache lock held -- net_http_dns_cache_find() is
+          * called under it from both net_http_new_socket() and
+          * net_http_connect() -- and net_http_resolve() takes that
+          * same lock, both on entry and again on completion.
+          * sthread_join() on a thread blocked acquiring the lock we
+          * are holding deadlocks outright, taking the task thread
+          * with it (and in unthreaded builds, the frontend).
+          *
+          * The window is not theoretical.  entry->addr stays NULL for
+          * the whole resolution, so the fail-timeout arm above fires
+          * after dns_cache_fail_timeout (30s) -- and
+          * getaddrinfo_retro() against a blackholed resolver
+          * routinely blocks longer than that.  So the entry looks
+          * expired precisely while its thread is still running.
+          *
+          * entry->valid is set by the resolver under the lock
+          * immediately before it unlocks and returns, so once it is
+          * set nothing that thread does can block on us and the join
+          * below is safe.  Until then, leave the entry alone; the
+          * next sweep collects it. */
+         if (entry->thread && !entry->valid)
+         {
+            prev  = entry;
+            entry = entry->next;
+            continue;
+         }
+
          if (entry->thread)
          {
             sthread_join(entry->thread);
