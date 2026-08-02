@@ -78,6 +78,11 @@ struct module {
 	char name[ 32 ];
 	int num_channels, num_instruments;
 	int num_patterns, sequence_len, restart_pos;
+	/* IT: per-channel default volumes (0..64), NULL elsewhere, and a
+	   flag for the effect encodings whose parameter conventions
+	   diverge between ST3 and IT (Xxx panning). */
+	unsigned char *default_chan_vol;
+	char it_effects;
 	int default_gvol, default_speed, default_tempo, c2_rate, gain;
 	int linear_periods, fast_vol_slides;
 	unsigned char *default_panning, *sequence;
@@ -131,6 +136,7 @@ struct channel {
 	int id, key_on, random_seed, pl_row;
 	int sample_off, sample_idx, sample_fra, freq, ampl, pann;
 	int volume, panning, fadeout_vol, vol_env_tick, pan_env_tick;
+	int chan_vol, cvol_slide_param;
 	int period, porta_period, retrig_count, fx_count, av_count;
 	int porta_up_param, porta_down_param, tone_porta_param, offset_param;
 	int fine_porta_up_param, fine_porta_down_param, xfine_porta_param;
@@ -366,6 +372,7 @@ static void dispose_module( struct module *module ) {
 	int idx, sam;
 	struct instrument *instrument;
 	free( module->default_panning );
+	free( module->default_chan_vol );
 	free( module->sequence );
 	if( module->patterns ) {
 		for( idx = 0; idx < module->num_patterns; idx++ ) {
@@ -928,7 +935,9 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
  * actions (DCT/DCA) are not implemented; linear
  * slide mode is approximated with Amiga periods, so portamento depth
  * can differ; sustain loops are ignored in favour of the normal loop;
- * pitch and filter envelopes and channel volumes are not applied.
+ * pitch and filter envelopes, panbrello (Yxy) and the S9x
+ * sound-control set are not applied. Channel volumes (initial table,
+ * Mxx, Nxy), Wxy global volume slide and Xxx panning are.
  * ------------------------------------------------------------------ */
 
 
@@ -1397,14 +1406,22 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		dispose_module( module );
 		return NULL;
 	}
+	module->it_effects = 1;
+	module->default_chan_vol = calloc( module->num_channels,
+		sizeof( unsigned char ) );
 	for( idx = 0; idx < module->num_channels; idx++ ) {
 		int pan = data_u8( data, 0x40 + idx ) & 0x7F;
+		int cvol = data_u8( data, 0x80 + idx ) & 0x7F;
 		if( pan > 64 ) {
 			pan = 32; /* surround and out-of-range play centred */
 		}
 		pan = pan * 4;
 		module->default_panning[ idx ]
 			= ( unsigned char ) ( pan > 255 ? 255 : pan );
+		if( module->default_chan_vol ) {
+			module->default_chan_vol[ idx ]
+				= ( unsigned char ) ( cvol > 64 ? 64 : cvol );
+		}
 	}
 	/* Samples first: instrument mode copies from them. */
 	if( smp_num > 0 ) {
@@ -1965,12 +1982,38 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->replay = replay;
 	channel->id = idx;
 	channel->panning = replay->module->default_panning[ idx ];
+	channel->chan_vol = replay->module->default_chan_vol
+		? replay->module->default_chan_vol[ idx ] : 64;
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
 	/* Unsigned: the channel count comes from the file and is not
 	 * clamped, and this overflows a signed int from 191 channels up.
 	 * It is a seed, so wrapping is fine - being undefined is not. */
 	channel->random_seed = ( int ) ( ( ( unsigned int ) idx + 1u ) * 0xABCDEFu );
+}
+
+/* IT Nxy: the volume-slide grammar applied to the channel volume,
+   fine variants included. */
+static void channel_cvol_slide( struct channel *channel ) {
+	int up = channel->cvol_slide_param >> 4;
+	int down = channel->cvol_slide_param & 0xF;
+	if( down == 0xF && up > 0 ) {
+		if( channel->fx_count == 0 ) {
+			channel->chan_vol += up;
+		}
+	} else if( up == 0xF && down > 0 ) {
+		if( channel->fx_count == 0 ) {
+			channel->chan_vol -= down;
+		}
+	} else if( channel->fx_count > 0 ) {
+		channel->chan_vol += up - down;
+	}
+	if( channel->chan_vol > 64 ) {
+		channel->chan_vol = 64;
+	}
+	if( channel->chan_vol < 0 ) {
+		channel->chan_vol = 0;
+	}
 }
 
 static void channel_volume_slide( struct channel *channel ) {
@@ -2377,6 +2420,9 @@ static void channel_calculate_ampl( struct channel *channel ) {
 	if( vol < 0 ) {
 		vol = 0;
 	}
+	/* At the default of 64 this is vol * 64 >> 6 == vol exactly, so
+	   formats without channel volumes are bit-identical. */
+	vol = ( vol * channel->chan_vol ) >> 6;
 	vol = ( vol * channel->replay->module->gain * FP_ONE ) >> 13;
 	vol = ( vol * channel->fadeout_vol ) >> 15;
 	channel->ampl = ( vol * channel->replay->global_vol * env_vol ) >> 12;
@@ -2456,7 +2502,10 @@ static void channel_tick( struct channel *channel ) {
 		case 0x0A: case 0x84: /* Vol Slide. */
 			channel_volume_slide( channel );
 			break;
-		case 0x11: /* Global Volume Slide. */
+		case 0x8E: /* IT Channel Volume Slide. */
+			channel_cvol_slide( channel );
+			break;
+		case 0x11: case 0x97: /* Global Volume Slide. */
 			channel->replay->global_vol = channel->replay->global_vol
 				+ ( channel->gvol_slide_param >> 4 )
 				- ( channel->gvol_slide_param & 0xF );
@@ -2592,7 +2641,25 @@ static void channel_row( struct channel *channel, struct note *note ) {
 		case 0x10: case 0x96: /* Set Global Volume. */
 			channel->replay->global_vol = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
 			break;
-		case 0x11: /* Global Volume Slide. */
+		case 0x8D: /* IT Set Channel Volume. */
+			if( channel->note.param <= 64 ) {
+				channel->chan_vol = channel->note.param;
+			}
+			break;
+		case 0x8E: /* IT Channel Volume Slide. */
+			if( channel->note.param > 0 ) {
+				channel->cvol_slide_param = channel->note.param;
+			}
+			channel_cvol_slide( channel );
+			break;
+		case 0x98: /* Set Panning (IT Xxx full range, ST3 halved). */
+			if( channel->replay->module->it_effects ) {
+				channel->panning = channel->note.param;
+			} else if( channel->note.param <= 0x80 ) {
+				channel->panning = ( channel->note.param * 255 ) >> 7;
+			}
+			break;
+		case 0x11: case 0x97: /* Global Volume Slide. */
 			if( channel->note.param > 0 ) {
 				channel->gvol_slide_param = channel->note.param;
 			}
