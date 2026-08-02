@@ -65,9 +65,24 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size);
 
 unsigned raac_channels(const raac_t *a);
 
-/* Samples per channel each access unit decodes to: 1024, or 960 when
- * the stream signals the short frame length. Also the return value of
- * the decode calls. */
+/* Samples per channel each access unit decodes to, and the return
+ * value of the decode calls: 1024, or 960 when the stream signals the
+ * short frame length, or 2048 when the doubled output rate is active.
+ *
+ * The doubled rate turns on at open and never changes mid-stream:
+ * either the configuration signals SBR explicitly (hierarchical or
+ * syncExtension form) at twice the core rate, or an unsignaled
+ * 1024-frame stream has a core rate of 16-24 kHz, the range where
+ * HE-AAC streams hide behind plain LC configurations. In that window
+ * genuinely plain LC decodes upsampled and reports the doubled rate;
+ * raac_sample_rate() always reports the rate the output is actually
+ * at. High-frequency reconstruction is not synthesised yet, so
+ * SBR-bearing streams currently decode as upsampled core audio.
+ * HE-AAC v2 configurations open as v1: the parametric-stereo payload
+ * is skipped and the SBR mono signal is decoded. Explicitly signaled
+ * downsampled SBR (extension rate equal to the core rate) decodes as
+ * plain LC at the core rate. Size output buffers from
+ * raac_frame_len() and raac_channels(), never a constant. */
 unsigned raac_frame_len(const raac_t *a);
 unsigned raac_sample_rate(const raac_t *a);
 

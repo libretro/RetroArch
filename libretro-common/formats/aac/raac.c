@@ -972,11 +972,17 @@ typedef struct
    int      e_a[2];
    int      env_facs_q[6][48];
    int      noise_facs_q[3][5];
-   /* QMF bank state: analysis history of the core signal and the
-    * synthesis overlap ring */
-   float    qmf_x[320];
-   float    qmf_v[1280];
 } raac_sbr_ch;
+
+/* per-output-channel QMF bank state, allocated only when the doubled
+ * output rate is active: analysis history over the core signal, the
+ * synthesis overlap ring, and this channel's upsampled frame */
+typedef struct
+{
+   float x[320];
+   float v[1280];
+   float out[2 * RAAC_FRAME];
+} raac_qmf_ch;
 
 /* one SBR decoder bound to a channel element (type, tag). Stage one
  * of the SBR effort: the complete bitstream layer and frequency band
@@ -1042,6 +1048,11 @@ struct raac
                                                 * 960-mode transforms    */
    float    w60_re[60], w60_im[60];
    float    tw32_re[64], tw32_im[64];        /* SBR QMF transforms   */
+   int      sbr_mode;         /* doubled output rate active (fixed at
+                               * open: explicit SBR signaling, or the
+                               * implicit 16-24 kHz window) */
+   unsigned out_rate;         /* rate reported to the caller */
+   raac_qmf_ch *qmf;          /* one per output channel when sbr_mode */
    float    pcm[RAAC_MAX_CH][RAAC_FRAME];      /* per-frame synthesis
                                                 * scratch: too large for
                                                 * the stack at 8 ch     */
@@ -2796,15 +2807,15 @@ static void raac_imdct_half128(raac_t *a, const float in[64],
 /* one slot of the 32-band analysis QMF over the core signal
  * (14496-3 4.6.18.4): 32 fresh time samples in, one complex
  * subband vector out */
-static void raac_qmf_analysis_slot(raac_t *a, raac_sbr_ch *c,
+static void raac_qmf_analysis_slot(raac_t *a, raac_qmf_ch *c,
       const float *in32, float Wr[32], float Wi[32])
 {
    float z[320], z64[64], m[64];
    int   i, k;
-   memmove(c->qmf_x, c->qmf_x + 32, sizeof(float) * 288);
-   memcpy(c->qmf_x + 288, in32, sizeof(float) * 32);
+   memmove(c->x, c->x + 32, sizeof(float) * 288);
+   memcpy(c->x + 288, in32, sizeof(float) * 32);
    for (i = 0; i < 320; i++)
-      z[i] = raac_qmf_window[2 * i] * c->qmf_x[319 - i];
+      z[i] = raac_qmf_window[2 * i] * c->x[319 - i];
    for (k = 0; k < 64; k++)
       z[k] = z[k] + z[k + 64] + z[k + 128] + z[k + 192] + z[k + 256];
    z64[0] = z[0];
@@ -2824,28 +2835,28 @@ static void raac_qmf_analysis_slot(raac_t *a, raac_sbr_ch *c,
 
 /* one slot of the 64-band synthesis QMF (14496-3 4.6.18.4): one
  * complex subband vector in, 64 output samples at the doubled rate */
-static void raac_qmf_synthesis_slot(raac_t *a, raac_sbr_ch *c,
+static void raac_qmf_synthesis_slot(raac_t *a, raac_qmf_ch *c,
       const float Xr[64], const float Xi[64], float out64[64])
 {
    static const uint16_t vo[10] =
       { 0, 192, 256, 448, 512, 704, 768, 960, 1024, 1216 };
    float xim[64], m0[64], m1[64];
    int   n, j;
-   memmove(c->qmf_v + 128, c->qmf_v, sizeof(float) * (1280 - 128));
+   memmove(c->v + 128, c->v, sizeof(float) * (1280 - 128));
    for (n = 0; n < 64; n++)
       xim[n] = (n & 1) ? -Xi[n] : Xi[n];
    raac_imdct_half128(a, Xr, m0, 1.0f / 64.0f);
    raac_imdct_half128(a, xim, m1, 1.0f / 64.0f);
    for (n = 0; n < 64; n++)
    {
-      c->qmf_v[n]       = -m0[63 - n] + m1[n];
-      c->qmf_v[127 - n] =  m0[63 - n] + m1[n];
+      c->v[n]       = -m0[63 - n] + m1[n];
+      c->v[127 - n] =  m0[63 - n] + m1[n];
    }
    for (n = 0; n < 64; n++)
    {
       float acc = 0.0f;
       for (j = 0; j < 10; j++)
-         acc += c->qmf_v[n + vo[j]] * raac_qmf_window[n + 64 * j];
+         acc += c->v[n + vo[j]] * raac_qmf_window[n + 64 * j];
       out64[n] = acc;
    }
 }
@@ -3436,6 +3447,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    raac_t   *a;
    raac_bits b;
    unsigned  aot, sfi, chcfg, freq, channels, frame_960;
+   unsigned  sbr_explicit, ext_freq;
    int       i;
 
    if (!asc || asc_size < 2)
@@ -3449,7 +3461,27 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    if (sfi == 15)
       freq = raac_getbits(&b, 24); /* explicit samplingFrequency */
    chcfg = raac_getbits(&b, 4);
-   if (aot != 2) /* AAC-LC only */
+   sbr_explicit = 0;
+   ext_freq     = 0;
+   if (aot == 5 || aot == 29)
+   {
+      /* hierarchical HE-AAC signaling: the first rate is the core
+       * codec's, the extension rate is the SBR output. An AOT-29
+       * (HE-AAC v2) stream opens as v1: the parametric-stereo
+       * payload is skipped and the SBR mono output is decoded. */
+      unsigned ext_sfi = raac_getbits(&b, 4);
+      if (ext_sfi == 15)
+         ext_freq = raac_getbits(&b, 24);
+      else if (ext_sfi > 12)
+         return NULL;
+      else
+         ext_freq = raac_sample_rates[ext_sfi];
+      sbr_explicit = 1;
+      aot = raac_getbits(&b, 5);
+      if (aot == 31)
+         aot = 32 + raac_getbits(&b, 6);
+   }
+   if (aot != 2) /* AAC-LC core only */
       return NULL;
    if (sfi == 15)
    {
@@ -3486,6 +3518,31 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    if (b.err)
       return NULL;
 
+   /* backward-compatible signaling: a syncExtension after the
+    * GASpecificConfig carries sbrPresentFlag for players that parse
+    * it; older decoders stop reading at the config end */
+   if (!sbr_explicit && b.size * 8 - b.pos >= 16)
+   {
+      if (raac_getbits(&b, 11) == 0x2b7)
+      {
+         unsigned ext_aot = raac_getbits(&b, 5);
+         if (ext_aot == 31)
+            ext_aot = 32 + raac_getbits(&b, 6);
+         if (ext_aot == 5 && raac_getbits(&b, 1))
+         {
+            unsigned ext_sfi = raac_getbits(&b, 4);
+            if (ext_sfi == 15)
+               ext_freq = raac_getbits(&b, 24);
+            else if (ext_sfi <= 12)
+               ext_freq = raac_sample_rates[ext_sfi];
+            if (!b.err && ext_freq)
+               sbr_explicit = 1;
+         }
+      }
+      /* trailing garbage after the config is not an open failure */
+      b.err = 0;
+   }
+
    if (!(a = (raac_t*)calloc(1, sizeof(*a))))
       return NULL;
    a->sfi         = (int)sfi;
@@ -3493,6 +3550,41 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    a->channels    = channels;
    a->frame_len   = frame_960 ? 960 : 1024;
    a->noise_state = 0x1f2e3d4cu;
+
+   /* output-rate contract, fixed for the life of the instance:
+    * - explicit SBR signaling at twice the core rate turns the
+    *   doubled-rate path on (960-frame SBR is not a thing; an
+    *   explicitly signaled 960 stream is malformed)
+    * - explicit signaling at the core rate is downsampled SBR,
+    *   which is not synthesised: the stream decodes as plain LC
+    * - without signaling, cores at 16-24 kHz are upsampled from
+    *   the first frame, so streams revealing SBR data mid-stream
+    *   never switch rates; genuinely plain LC in that window costs
+    *   one QMF pair per frame and reports the doubled rate */
+   a->sbr_mode = 0;
+   a->out_rate = freq;
+   if (sbr_explicit)
+   {
+      if (frame_960 || (ext_freq != freq && ext_freq != freq * 2))
+      {
+         free(a);
+         return NULL;
+      }
+      if (ext_freq == freq * 2)
+         a->sbr_mode = 1;
+   }
+   else if (!frame_960 && freq >= 16000 && freq <= 24000)
+      a->sbr_mode = 1;
+   if (a->sbr_mode)
+   {
+      a->out_rate = freq * 2;
+      a->qmf = (raac_qmf_ch*)calloc(channels, sizeof(raac_qmf_ch));
+      if (!a->qmf)
+      {
+         free(a);
+         return NULL;
+      }
+   }
 
    for (i = 0; i < 11; i++)
       raac_huff_build(&a->spec[i], raac_hcb_code[i], raac_hcb_bits[i],
@@ -3547,8 +3639,11 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
 }
 
 unsigned raac_channels(const raac_t *a)    { return a ? a->channels : 0; }
-unsigned raac_frame_len(const raac_t *a)   { return a ? a->frame_len : 0; }
-unsigned raac_sample_rate(const raac_t *a) { return a ? a->sample_rate : 0; }
+unsigned raac_frame_len(const raac_t *a)
+{
+   return a ? (a->frame_len << (a->sbr_mode ? 1 : 0)) : 0;
+}
+unsigned raac_sample_rate(const raac_t *a) { return a ? a->out_rate : 0; }
 
 /* Shared worker: parse and synthesise one access unit into per-channel
  * float PCM in full-scale (+-32768) units. Both public entry points
@@ -3764,6 +3859,34 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
    return (int)a->frame_len;
 }
 
+/* the doubled-rate output path: each channel's core frame runs
+ * through the analysis bank and, with the upper bands empty until
+ * the high-frequency chain lands, straight back out through the
+ * synthesis bank at twice the rate */
+static int raac_upsample_frame(raac_t *a)
+{
+   unsigned ch;
+   int      s, k;
+   for (ch = 0; ch < a->channels; ch++)
+   {
+      raac_qmf_ch *q = &a->qmf[ch];
+      for (s = 0; s < (int)a->frame_len / 32; s++)
+      {
+         float Wr[32], Wi[32], Xr[64], Xi[64];
+         raac_qmf_analysis_slot(a, q, a->pcm[ch] + s * 32, Wr, Wi);
+         for (k = 0; k < 32; k++)
+         {
+            Xr[k]      = Wr[k];
+            Xi[k]      = Wi[k];
+            Xr[32 + k] = 0.0f;
+            Xi[32 + k] = 0.0f;
+         }
+         raac_qmf_synthesis_slot(a, q, Xr, Xi, q->out + s * 64);
+      }
+   }
+   return (int)(a->frame_len * 2);
+}
+
 int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       int16_t *out)
 {
@@ -3774,14 +3897,16 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       return -1;
    if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
-   for (i = 0; i < (int)a->frame_len; i++)
+   if (a->sbr_mode)
+      ret = raac_upsample_frame(a);
+   for (i = 0; i < ret; i++)
       for (ch = 0; ch < a->channels; ch++)
       {
          /* one rounding, clamped in the float domain: casting an
           * out-of-range or non-finite float to int is undefined, and
           * hostile TNS filters can push the synthesis arbitrarily
           * high, so saturate before the cast (NaN pins to zero). */
-         float v = a->pcm[ch][i];
+         float v = a->sbr_mode ? a->qmf[ch].out[i] : a->pcm[ch][i];
          if (!(v > -1e9f && v < 1e9f))
             v = 0.0f;
          v += (v >= 0.0f) ? 0.5f : -0.5f;
@@ -3802,9 +3927,12 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       return -1;
    if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
-   for (i = 0; i < (int)a->frame_len; i++)
+   if (a->sbr_mode)
+      ret = raac_upsample_frame(a);
+   for (i = 0; i < ret; i++)
       for (ch = 0; ch < a->channels; ch++)
-         out[i * a->channels + ch] = a->pcm[ch][i] * (1.0f / 32768.0f);
+         out[i * a->channels + ch] = (a->sbr_mode ? a->qmf[ch].out[i]
+               : a->pcm[ch][i]) * (1.0f / 32768.0f);
    return ret;
 }
 
@@ -3821,6 +3949,8 @@ void raac_reset(raac_t *a)
    }
    memset(a->cce, 0, sizeof(a->cce));
    memset(a->sbr, 0, sizeof(a->sbr));
+   if (a->qmf)
+      memset(a->qmf, 0, sizeof(raac_qmf_ch) * a->channels);
    /* reseed the PNS generator so a rewound stream decodes exactly as a
     * fresh one */
    a->noise_state = 0x1f2e3d4cu;
@@ -3828,25 +3958,25 @@ void raac_reset(raac_t *a)
 
 void raac_close(raac_t *a)
 {
+   free(a->qmf);
    free(a);
 }
 
 #ifdef RAAC_QMF_TEST
 /* test-build-only exports binding the unit tests to the shipped QMF */
-void raac_test_qmf_ana(raac_t *a, raac_sbr_ch *c, const float *in32,
+void raac_test_qmf_ana(raac_t *a, void *c, const float *in32,
       float Wr[32], float Wi[32])
 {
-   raac_qmf_analysis_slot(a, c, in32, Wr, Wi);
+   raac_qmf_analysis_slot(a, (raac_qmf_ch*)c, in32, Wr, Wi);
 }
-void raac_test_qmf_syn(raac_t *a, raac_sbr_ch *c, const float Xr[64],
+void raac_test_qmf_syn(raac_t *a, void *c, const float Xr[64],
       const float Xi[64], float out64[64])
 {
-   raac_qmf_synthesis_slot(a, c, Xr, Xi, out64);
+   raac_qmf_synthesis_slot(a, (raac_qmf_ch*)c, Xr, Xi, out64);
 }
 void raac_test_half(raac_t *a, const float in[64], float out[64], float s)
 {
    raac_imdct_half128(a, in, out, s);
 }
-unsigned raac_test_sbr_ch_size(void) { return sizeof(raac_sbr_ch); }
-void *raac_test_sbr_ch(raac_t *a) { return &a->sbr[0].d[0]; }
+unsigned raac_test_qmf_ch_size(void) { return sizeof(raac_qmf_ch); }
 #endif
