@@ -14,13 +14,15 @@
  * FLT8/EXO8 paired patterns, Startrekker AM EXO4 and untagged
  * 15-instrument Soundtracker modules),
  * Scream Tracker 3 S3M and FastTracker 2 XM modules with
- * their effect sets, instrument envelopes and 8/16-bit mono samples,
- * played to interleaved stereo s16 or float at the engine rate, with
- * duration calculation and rewind.
+ * their effect sets, instrument envelopes and 8/16-bit samples --
+ * mono everywhere, stereo in S3M -- plus ModPlug 4-bit ADPCM packed
+ * samples in XM and S3M, played to interleaved stereo s16 or float at
+ * the engine rate, with duration calculation and rewind.
  *
  * What it does not implement: Impulse Tracker (IT) and other later
- * formats, stereo or compressed sample data, arbitrary seeking
- * (rewind restarts from the top), and MIDI-style external control.
+ * formats including IT's sample compression, arbitrary seeking
+ * (seeking restarts from the top and walks), and MIDI-style external
+ * control.
  */
 #include <limits.h>
 #include <stdlib.h>
@@ -44,7 +46,10 @@ struct data {
 struct sample {
 	char name[ 32 ];
 	int loop_start, loop_length;
-	short volume, panning, rel_note, fine_tune, *data;
+	/* When stereo is set, data holds interleaved L,R pairs and every
+	   frame-counted field (loop points, indices) stays in frames; only
+	   the fetch multiplies by two. */
+	short volume, panning, rel_note, fine_tune, stereo, *data;
 };
 
 struct envelope {
@@ -266,6 +271,31 @@ static void data_sam_s16le( struct data *data, int offset, int count, short *des
 	}
 }
 
+/* ModPlug 4-bit ADPCM: a 16-entry signed delta table followed by a
+   nibble stream, low nibble first, accumulated with 8-bit wrap into
+   signed 8-bit PCM. The output is absolute, so callers skip their
+   delta or unsigned conversions. Compressed size on disk is
+   16 + ( count + 1 ) / 2 bytes for count output samples. */
+static void data_sam_adpcm4( struct data *data, int offset, int count, short *dest ) {
+	int idx, byt, amp, acc = 0;
+	int tab[ 16 ];
+	for( idx = 0; idx < 16; idx++ ) {
+		byt = data_u8( data, offset + idx );
+		tab[ idx ] = ( byt & 0x7F ) - ( byt & 0x80 );
+	}
+	offset += 16;
+	for( idx = 0; idx < count; idx++ ) {
+		byt = data_u8( data, offset + ( idx >> 1 ) );
+		if( idx & 1 ) {
+			byt = byt >> 4;
+		}
+		acc = ( acc + tab[ byt & 0xF ] ) & 0xFF;
+		amp = acc << 8;
+		amp = ( amp & 0x7FFF ) - ( amp & 0x8000 );
+		dest[ idx ] = ( short ) amp;
+	}
+}
+
 static int envelope_next_tick( struct envelope *envelope, int tick, int key_on ) {
 	tick++;
 	if( envelope->looped && tick >= envelope->loop_end_tick ) {
@@ -352,7 +382,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 	int num_samples, sam_loop_start, sam_loop_length, amp;
 	int note, flags, key, ins, vol, fxc, fxp;
 	int point, point_tick, point_offset;
-	int looped, ping_pong, sixteen_bit;
+	int looped, ping_pong, sixteen_bit, adpcm;
 	char ascii[ 16 ], *pattern_data;
 	struct instrument *instrument;
 	struct sample *sample;
@@ -547,6 +577,10 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				sixteen_bit = ( data_u8( data, sam_head_offset + 14 ) & 0x10 ) > 0;
 				sample->panning = data_u8( data, sam_head_offset + 15 ) + 1;
 				sample->rel_note = data_s8( data, sam_head_offset + 16 );
+				/* ModPlug marks 4-bit ADPCM packing in the reserved
+				   byte. It was only ever written for 8-bit samples;
+				   the marker on a 16-bit sample is ignored. */
+				adpcm = data_u8( data, sam_head_offset + 17 ) == 0xAD && !sixteen_bit;
 				data_ascii( data, sam_head_offset + 18, 22, sample->name );
 				sam_head_offset += 40;
 				sam_data_samples = sam_data_bytes;
@@ -563,16 +597,22 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				sample->loop_length = sam_loop_length;
 				sample->data = calloc( sam_data_samples + 1, sizeof( short ) );
 				if( sample->data ) {
-					if( sixteen_bit ) {
-						data_sam_s16le( data, offset, sam_data_samples, sample->data );
+					if( adpcm ) {
+						/* ADPCM output is absolute PCM; the delta
+						   pass below belongs to raw samples only. */
+						data_sam_adpcm4( data, offset, sam_data_samples, sample->data );
 					} else {
-						data_sam_s8( data, offset, sam_data_samples, sample->data );
-					}
-					amp = 0;
-					for( idx = 0; idx < sam_data_samples; idx++ ) {
-						amp = amp + sample->data[ idx ];
-						amp = ( amp & 0x7FFF ) - ( amp & 0x8000 );
-						sample->data[ idx ] = amp;
+						if( sixteen_bit ) {
+							data_sam_s16le( data, offset, sam_data_samples, sample->data );
+						} else {
+							data_sam_s8( data, offset, sam_data_samples, sample->data );
+						}
+						amp = 0;
+						for( idx = 0; idx < sam_data_samples; idx++ ) {
+							amp = amp + sample->data[ idx ];
+							amp = ( amp & 0x7FFF ) - ( amp & 0x8000 );
+							sample->data[ idx ] = amp;
+						}
 					}
 					sample->data[ sam_loop_start + sam_loop_length ] = sample->data[ sam_loop_start ];
 					if( ping_pong ) {
@@ -582,7 +622,7 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 					dispose_module( module );
 					return NULL;
 				}
-				offset += sam_data_bytes;
+				offset += adpcm ? 16 + ( ( sam_data_bytes + 1 ) >> 1 ) : sam_data_bytes;
 			}
 		}
 	}
@@ -592,6 +632,8 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 static struct module* module_load_s3m( struct data *data, char *message ) {
 	int idx, module_data_idx, inst_offset, flags;
 	int version, sixteen_bit, tune, signed_samples;
+	int stereo, adpcm, pack, frames;
+	short *scratch;
 	int stereo_mode, default_pan, channel_map[ 32 ];
 	int sample_offset, sample_length, loop_start, loop_length;
 	int pat_offset, note_offset, row, chan, token;
@@ -681,7 +723,9 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 				loop_start = data_u32le( data, inst_offset + 20 );
 				loop_length = data_u32le( data, inst_offset + 24 ) - loop_start;
 				sample->volume = data_u8( data, inst_offset + 28 );
-				if( data_u8( data, inst_offset + 30 ) != 0 ) {
+				pack = data_u8( data, inst_offset + 30 );
+				adpcm = pack == 4;
+				if( pack != 0 && !adpcm ) {
 					strcpy( message, "Packed samples not supported!" );
 					dispose_module( module );
 					return NULL;
@@ -695,24 +739,59 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 				}
 				sample->loop_start = loop_start;
 				sample->loop_length = loop_length;
-				/* stereo = data_u8( data, inst_offset + 31 ) & 0x2; */
+				stereo = ( data_u8( data, inst_offset + 31 ) & 0x2 ) > 0;
 				sixteen_bit = data_u8( data, inst_offset + 31 ) & 0x4;
+				sample->stereo = ( short ) stereo;
 				tune = ( log_2( data_u32le( data, inst_offset + 32 ) ) - log_2( module->c2_rate ) ) * 12;
 				sample->rel_note = tune >> FP_SHIFT;
 				sample->fine_tune = ( tune & FP_MASK ) >> ( FP_SHIFT - 7 );
-				sample->data = calloc( sample_length + 1, sizeof( short ) );
+				frames = sample_length;
+				sample->data = calloc( ( frames + 1 ) * ( stereo ? 2 : 1 ), sizeof( short ) );
 				if( sample->data ) {
-					if( sixteen_bit ) {
-						data_sam_s16le( data, sample_offset, sample_length, sample->data );
-					} else {
-						data_sam_s8( data, sample_offset, sample_length, sample->data );
-					}
-					if( !signed_samples ) {
-						for( idx = 0; idx < sample_length; idx++ ) {
-							sample->data[ idx ] = ( sample->data[ idx ] & 0xFFFF ) - 32768;
+					if( stereo ) {
+						/* Stored as the whole left block then the
+						   whole right block; interleave to frames.
+						   ADPCM packs both blocks in one stream
+						   after a single table. */
+						scratch = calloc( frames * 2, sizeof( short ) );
+						if( !scratch ) {
+							dispose_module( module );
+							return NULL;
 						}
+						if( adpcm ) {
+							data_sam_adpcm4( data, sample_offset, frames * 2, scratch );
+						} else if( sixteen_bit ) {
+							data_sam_s16le( data, sample_offset, frames * 2, scratch );
+						} else {
+							data_sam_s8( data, sample_offset, frames * 2, scratch );
+						}
+						if( !signed_samples && !adpcm ) {
+							for( idx = 0; idx < frames * 2; idx++ ) {
+								scratch[ idx ] = ( scratch[ idx ] & 0xFFFF ) - 32768;
+							}
+						}
+						for( idx = 0; idx < frames; idx++ ) {
+							sample->data[ idx * 2 ] = scratch[ idx ];
+							sample->data[ idx * 2 + 1 ] = scratch[ frames + idx ];
+						}
+						free( scratch );
+						sample->data[ ( loop_start + loop_length ) * 2 ] = sample->data[ loop_start * 2 ];
+						sample->data[ ( loop_start + loop_length ) * 2 + 1 ] = sample->data[ loop_start * 2 + 1 ];
+					} else {
+						if( adpcm ) {
+							data_sam_adpcm4( data, sample_offset, frames, sample->data );
+						} else if( sixteen_bit ) {
+							data_sam_s16le( data, sample_offset, frames, sample->data );
+						} else {
+							data_sam_s8( data, sample_offset, frames, sample->data );
+						}
+						if( !signed_samples && !adpcm ) {
+							for( idx = 0; idx < frames; idx++ ) {
+								sample->data[ idx ] = ( sample->data[ idx ] & 0xFFFF ) - 32768;
+							}
+						}
+						sample->data[ loop_start + loop_length ] = sample->data[ loop_start ];
 					}
-					sample->data[ loop_start + loop_length ] = sample->data[ loop_start ];
 				} else {
 					dispose_module( module );
 					return NULL;
@@ -1824,7 +1903,7 @@ static void channel_resample( struct channel *channel, int *mix_buf,
 		int offset, int count, int sample_rate, int interpolate ) {
 	struct sample *sample = channel->sample;
 	int l_gain, r_gain, sam_idx, sam_fra, step;
-	int loop_len, loop_end, out_idx, out_end, y, m, c;
+	int loop_len, loop_end, out_idx, out_end, y, m, c, y2, m2, c2;
 	short *sample_data = channel->sample->data;
 	if( channel->ampl > 0 ) {
 		l_gain = channel->ampl * ( 255 - channel->pann ) >> 8;
@@ -1836,7 +1915,39 @@ static void channel_resample( struct channel *channel, int *mix_buf,
 		loop_end = sample->loop_start + loop_len;
 		out_idx = offset * 2;
 		out_end = ( offset + count ) * 2;
-		if( interpolate ) {
+		if( sample->stereo ) {
+			/* Interleaved frames: the left sample feeds the left
+			   gain and the right the right, so panning acts as
+			   balance. Kept out of the mono loops so those stay
+			   instruction-identical. */
+			while( out_idx < out_end ) {
+				if( sam_idx >= loop_end ) {
+					if( loop_len > 1 ) {
+						while( sam_idx >= loop_end ) {
+							sam_idx -= loop_len;
+						}
+					} else {
+						break;
+					}
+				}
+				if( interpolate ) {
+					c = sample_data[ sam_idx * 2 ];
+					m = sample_data[ sam_idx * 2 + 2 ] - c;
+					y = ( ( m * sam_fra ) >> FP_SHIFT ) + c;
+					c2 = sample_data[ sam_idx * 2 + 1 ];
+					m2 = sample_data[ sam_idx * 2 + 3 ] - c2;
+					y2 = ( ( m2 * sam_fra ) >> FP_SHIFT ) + c2;
+				} else {
+					y = sample_data[ sam_idx * 2 ];
+					y2 = sample_data[ sam_idx * 2 + 1 ];
+				}
+				mix_buf[ out_idx++ ] += ( y * l_gain ) >> FP_SHIFT;
+				mix_buf[ out_idx++ ] += ( y2 * r_gain ) >> FP_SHIFT;
+				sam_fra += step;
+				sam_idx += sam_fra >> FP_SHIFT;
+				sam_fra &= FP_MASK;
+			}
+		} else if( interpolate ) {
 			while( out_idx < out_end ) {
 				if( sam_idx >= loop_end ) {
 					if( loop_len > 1 ) {
@@ -2228,7 +2339,7 @@ static void channel_resample_f( struct channel *channel, float *mix_buf,
 	struct sample *sample = channel->sample;
 	int l_gain, r_gain, sam_idx, sam_fra, step;
 	int loop_len, loop_end, out_idx, out_end;
-	float gl, gr, c, m, y;
+	float gl, gr, c, m, y, c2, m2, y2;
 	short *sample_data = channel->sample->data;
 	if( channel->ampl > 0 ) {
 		l_gain = channel->ampl * ( 255 - channel->pann ) >> 8;
@@ -2242,7 +2353,36 @@ static void channel_resample_f( struct channel *channel, float *mix_buf,
 		loop_end = sample->loop_start + loop_len;
 		out_idx = offset * 2;
 		out_end = ( offset + count ) * 2;
-		if( interpolate ) {
+		if( sample->stereo ) {
+			/* Same shape as the integer stereo path; see there. */
+			while( out_idx < out_end ) {
+				if( sam_idx >= loop_end ) {
+					if( loop_len > 1 ) {
+						while( sam_idx >= loop_end ) {
+							sam_idx -= loop_len;
+						}
+					} else {
+						break;
+					}
+				}
+				if( interpolate ) {
+					c = ( float ) sample_data[ sam_idx * 2 ];
+					m = ( float ) sample_data[ sam_idx * 2 + 2 ] - c;
+					y = m * ( ( float ) sam_fra * ( 1.0f / FP_ONE ) ) + c;
+					c2 = ( float ) sample_data[ sam_idx * 2 + 1 ];
+					m2 = ( float ) sample_data[ sam_idx * 2 + 3 ] - c2;
+					y2 = m2 * ( ( float ) sam_fra * ( 1.0f / FP_ONE ) ) + c2;
+				} else {
+					y = ( float ) sample_data[ sam_idx * 2 ];
+					y2 = ( float ) sample_data[ sam_idx * 2 + 1 ];
+				}
+				mix_buf[ out_idx++ ] += y * gl;
+				mix_buf[ out_idx++ ] += y2 * gr;
+				sam_fra += step;
+				sam_idx += sam_fra >> FP_SHIFT;
+				sam_fra &= FP_MASK;
+			}
+		} else if( interpolate ) {
 			while( out_idx < out_end ) {
 				if( sam_idx >= loop_end ) {
 					if( loop_len > 1 ) {
