@@ -498,27 +498,45 @@ void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
 int sha1_calculate(const char *path, char *result)
 {
    struct sha1_context sha;
-   unsigned char buff[4096];
+   const uint8_t *map = NULL;
+   int64_t        map_len = 0;
+   unsigned char *buff = NULL;
    int rv    = 1;
+   /* Ask for a mapping: where the platform provides one the whole
+    * file is already addressable and there is nothing to copy. */
    RFILE *fd = filestream_open(path,
          RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS);
 
    if (!fd)
       goto error;
 
-   buff[0] = '\0';
-
    SHA1Reset(&sha);
 
-   do
+   if ((map = filestream_get_mapped_ptr(fd, &map_len)) && map_len >= 0)
+      SHA1Input(&sha, map, (unsigned)map_len);
+   else
    {
-      rv = (int)filestream_read(fd, buff, 4096);
-      if (rv < 0)
+      /* No mapping, so copy a block at a time.  The buffer is heap
+       * rather than a local: as unsigned char buff[4096] this was a
+       * 4304-byte frame, over half of the 8 KiB a GEKKO thread gets
+       * (STACKSIZE in rthreads/gx_pthread.h), and hashing a whole
+       * file dwarfs one allocation either way. */
+      if (!(buff = (unsigned char*)malloc(4096)))
          goto error;
 
-      SHA1Input(&sha, buff, rv);
-   } while (rv);
+      do
+      {
+         rv = (int)filestream_read(fd, buff, 4096);
+         if (rv < 0)
+            goto error;
+
+         SHA1Input(&sha, buff, rv);
+      } while (rv);
+
+      free(buff);
+      buff = NULL;
+   }
 
    if (!SHA1Result(&sha, NULL))
       goto error;
@@ -533,6 +551,7 @@ int sha1_calculate(const char *path, char *result)
    return 0;
 
 error:
+   free(buff);
    if (fd)
       filestream_close(fd);
    return -1;
