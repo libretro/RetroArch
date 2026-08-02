@@ -972,6 +972,7 @@ typedef struct
    int      e_a[2];
    int      env_facs_q[6][48];
    int      noise_facs_q[3][5];
+   float    bw[5];            /* chirp factors, smoothed per frame */
 } raac_sbr_ch;
 
 /* per-output-channel QMF bank state, allocated only when the doubled
@@ -981,8 +982,20 @@ typedef struct
 {
    float x[320];
    float v[1280];
+   float W[2][32][32][2];     /* analysis output, previous and
+                               * current frame (slot, band, re/im) */
    float out[2 * RAAC_FRAME];
 } raac_qmf_ch;
+
+/* frame-local SBR scratch shared across channels (one channel is
+ * processed at a time), allocated with the QMF state */
+typedef struct
+{
+   float X_low[32][40][2];    /* 8 history + 32 current slots */
+   float X_high[64][40][2];
+   float alpha0[32][2];
+   float alpha1[32][2];
+} raac_sbr_scratch;
 
 /* one SBR decoder bound to a channel element (type, tag). Stage one
  * of the SBR effort: the complete bitstream layer and frequency band
@@ -1053,6 +1066,10 @@ struct raac
                                * implicit 16-24 kHz window) */
    unsigned out_rate;         /* rate reported to the caller */
    raac_qmf_ch *qmf;          /* one per output channel when sbr_mode */
+   raac_sbr_scratch *sbx;     /* shared HF scratch, same lifetime    */
+   int8_t   sbr_map[RAAC_MAX_CH];    /* this frame: SBR slot per
+                                      * output channel, -1 if none  */
+   int8_t   sbr_map_ch[RAAC_MAX_CH]; /* 0/1: which element channel  */
    float    pcm[RAAC_MAX_CH][RAAC_FRAME];      /* per-frame synthesis
                                                 * scratch: too large for
                                                 * the stack at 8 ch     */
@@ -2861,6 +2878,191 @@ static void raac_qmf_synthesis_slot(raac_t *a, raac_qmf_ch *c,
    }
 }
 
+
+/* assemble the low-band QMF matrix for one channel: eight slots of
+ * history from the previous frame's analysis, then the current
+ * frame (14496-3 4.6.18.5) */
+static void raac_sbr_lf_gen(raac_qmf_ch *q, float X_low[32][40][2],
+      int kx_prev, int kx_cur)
+{
+   int i, k;
+   memset(X_low, 0, sizeof(float) * 32 * 40 * 2);
+   for (k = 0; k < kx_cur; k++)
+      for (i = 8; i < 40; i++)
+      {
+         X_low[k][i][0] = q->W[1][i - 8][k][0];
+         X_low[k][i][1] = q->W[1][i - 8][k][1];
+      }
+   for (k = 0; k < kx_prev; k++)
+      for (i = 0; i < 8; i++)
+      {
+         X_low[k][i][0] = q->W[0][i + 24][k][0];
+         X_low[k][i][1] = q->W[0][i + 24][k][1];
+      }
+}
+
+/* three-lag complex autocovariance over one band's slots, packed the
+ * way the covariance solution below consumes it */
+static void raac_sbr_autocorr(float x[40][2], float phi[3][2][2],
+      int lag)
+{
+   int   i;
+   float real_sum = 0.0f;
+   float imag_sum = 0.0f;
+   if (lag)
+   {
+      for (i = 1; i < 38; i++)
+      {
+         real_sum += x[i][0] * x[i + lag][0] + x[i][1] * x[i + lag][1];
+         imag_sum += x[i][0] * x[i + lag][1] - x[i][1] * x[i + lag][0];
+      }
+      phi[2 - lag][1][0] = real_sum + x[0][0] * x[lag][0]
+                                    + x[0][1] * x[lag][1];
+      phi[2 - lag][1][1] = imag_sum + x[0][0] * x[lag][1]
+                                    - x[0][1] * x[lag][0];
+      if (lag == 1)
+      {
+         phi[0][0][0] = real_sum + x[38][0] * x[39][0]
+                                 + x[38][1] * x[39][1];
+         phi[0][0][1] = imag_sum + x[38][0] * x[39][1]
+                                 - x[38][1] * x[39][0];
+      }
+   }
+   else
+   {
+      for (i = 1; i < 38; i++)
+         real_sum += x[i][0] * x[i][0] + x[i][1] * x[i][1];
+      phi[2][1][0] = real_sum + x[0][0] * x[0][0] + x[0][1] * x[0][1];
+      phi[1][0][0] = real_sum + x[38][0] * x[38][0]
+                              + x[38][1] * x[38][1];
+   }
+}
+
+/* per-band second-order LPC by the covariance method (14496-3
+ * 4.6.18.6.2); pathological bands collapse to zero coefficients and
+ * a joint magnitude clamp guards the known numeric fragility */
+static void raac_sbr_invfilter(float alpha0[32][2], float alpha1[32][2],
+      float X_low[32][40][2], int k0)
+{
+   int k;
+   for (k = 0; k < k0; k++)
+   {
+      float phi[3][2][2], dk;
+      raac_sbr_autocorr(X_low[k], phi, 0);
+      raac_sbr_autocorr(X_low[k], phi, 1);
+      raac_sbr_autocorr(X_low[k], phi, 2);
+      dk = phi[2][1][0] * phi[1][0][0] -
+           (phi[1][1][0] * phi[1][1][0] +
+            phi[1][1][1] * phi[1][1][1]) / 1.000001f;
+      if (dk == 0.0f)
+      {
+         alpha1[k][0] = 0.0f;
+         alpha1[k][1] = 0.0f;
+      }
+      else
+      {
+         float tr = phi[0][0][0] * phi[1][1][0] -
+                    phi[0][0][1] * phi[1][1][1] -
+                    phi[0][1][0] * phi[1][0][0];
+         float ti = phi[0][0][0] * phi[1][1][1] +
+                    phi[0][0][1] * phi[1][1][0] -
+                    phi[0][1][1] * phi[1][0][0];
+         alpha1[k][0] = tr / dk;
+         alpha1[k][1] = ti / dk;
+      }
+      if (phi[1][0][0] == 0.0f)
+      {
+         alpha0[k][0] = 0.0f;
+         alpha0[k][1] = 0.0f;
+      }
+      else
+      {
+         float tr = phi[0][0][0] + alpha1[k][0] * phi[1][1][0]
+                                 + alpha1[k][1] * phi[1][1][1];
+         float ti = phi[0][0][1] + alpha1[k][1] * phi[1][1][0]
+                                 - alpha1[k][0] * phi[1][1][1];
+         alpha0[k][0] = -tr / phi[1][0][0];
+         alpha0[k][1] = -ti / phi[1][0][0];
+      }
+      if (alpha1[k][0] * alpha1[k][0] + alpha1[k][1] * alpha1[k][1]
+            >= 16.0f ||
+          alpha0[k][0] * alpha0[k][0] + alpha0[k][1] * alpha0[k][1]
+            >= 16.0f)
+      {
+         alpha0[k][0] = 0.0f;
+         alpha0[k][1] = 0.0f;
+         alpha1[k][0] = 0.0f;
+         alpha1[k][1] = 0.0f;
+      }
+   }
+}
+
+/* chirp factors from the inverse-filtering modes, smoothed against
+ * the previous frame (14496-3 4.6.18.6.1) */
+static void raac_sbr_chirp(const raac_sbr *s, raac_sbr_ch *c)
+{
+   static const float bw_tab[4] = { 0.0f, 0.75f, 0.9f, 0.98f };
+   int   i;
+   for (i = 0; i < s->n_q; i++)
+   {
+      float nb;
+      if (c->bs_invf_mode[0][i] + c->bs_invf_mode[1][i] == 1)
+         nb = 0.6f;
+      else
+         nb = bw_tab[c->bs_invf_mode[0][i]];
+      if (nb < c->bw[i])
+         nb = 0.75f    * nb + 0.25f    * c->bw[i];
+      else
+         nb = 0.90625f * nb + 0.09375f * c->bw[i];
+      c->bw[i] = nb < 0.015625f ? 0.0f : nb;
+   }
+}
+
+/* the high-frequency generator (14496-3 4.6.18.6.3): copy patch
+ * source bands above the crossover with the chirped second-order
+ * inverse filter applied, over the envelope-covered slot range */
+static int raac_sbr_hf_gen(const raac_sbr *s, const raac_sbr_ch *c,
+      float X_high[64][40][2], float X_low[32][40][2],
+      float alpha0[32][2], float alpha1[32][2])
+{
+   int i, j, x;
+   int g = 0;
+   int k = s->kx[1];
+   memset(X_high, 0, sizeof(float) * 64 * 40 * 2);
+   for (j = 0; j < s->num_patches; j++)
+      for (x = 0; x < s->patch_num_subbands[j]; x++, k++)
+      {
+         float     al[4];
+         const int p = s->patch_start_subband[j] + x;
+         while (g <= s->n_q && k >= s->f_tablenoise[g])
+            g++;
+         g--;
+         if (g < 0)
+            return -1;
+         al[0] = alpha1[p][0] * c->bw[g] * c->bw[g];
+         al[1] = alpha1[p][1] * c->bw[g] * c->bw[g];
+         al[2] = alpha0[p][0] * c->bw[g];
+         al[3] = alpha0[p][1] * c->bw[g];
+         for (i = 2 * c->t_env[0]; i < 2 * c->t_env[c->bs_num_env]; i++)
+         {
+            const int idx = i + 2;
+            X_high[k][idx][0] =
+               X_low[p][idx - 2][0] * al[0] -
+               X_low[p][idx - 2][1] * al[1] +
+               X_low[p][idx - 1][0] * al[2] -
+               X_low[p][idx - 1][1] * al[3] +
+               X_low[p][idx][0];
+            X_high[k][idx][1] =
+               X_low[p][idx - 2][1] * al[0] +
+               X_low[p][idx - 2][0] * al[1] +
+               X_low[p][idx - 1][1] * al[2] +
+               X_low[p][idx - 1][0] * al[3] +
+               X_low[p][idx][1];
+         }
+      }
+   return 0;
+}
+
 /* ceil(log2(x + 1)) for the small relative-border counts */
 static const uint8_t raac_sbr_ceil_log2[6] = { 0, 1, 2, 2, 3, 3 };
 
@@ -3579,8 +3781,11 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    {
       a->out_rate = freq * 2;
       a->qmf = (raac_qmf_ch*)calloc(channels, sizeof(raac_qmf_ch));
-      if (!a->qmf)
+      a->sbx = (raac_sbr_scratch*)calloc(1, sizeof(raac_sbr_scratch));
+      if (!a->qmf || !a->sbx)
       {
+         free(a->qmf);
+         free(a->sbx);
          free(a);
          return NULL;
       }
@@ -3665,6 +3870,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
       return -1;
    raac_bits_init(&b, pkt, size);
    memset(got, 0, sizeof(got));
+   memset(a->sbr_map, -1, sizeof(a->sbr_map));
    for (s = 0; s < RAAC_MAX_CCE; s++)
       a->cce[s].present = 0;
 
@@ -3796,7 +4002,20 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
                            break;
                         }
                   if (sb)
+                  {
+                     unsigned c0 = etab[n_elems - 1].ch;
                      raac_sbr_extension(a, sb, &b, ext == 14, cnt);
+                     if (sb->start && c0 < RAAC_MAX_CH)
+                     {
+                        a->sbr_map[c0]    = (int8_t)(sb - a->sbr);
+                        a->sbr_map_ch[c0] = 0;
+                        if (is_cpe && c0 + 1 < RAAC_MAX_CH)
+                        {
+                           a->sbr_map[c0 + 1]    = (int8_t)(sb - a->sbr);
+                           a->sbr_map_ch[c0 + 1] = 1;
+                        }
+                     }
+                  }
                }
             }
             b.pos = payload + (size_t)cnt * 8;
@@ -3859,10 +4078,15 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
    return (int)a->frame_len;
 }
 
-/* the doubled-rate output path: each channel's core frame runs
- * through the analysis bank and, with the upper bands empty until
- * the high-frequency chain lands, straight back out through the
- * synthesis bank at twice the rate */
+/* the doubled-rate output path. Each channel's core frame runs
+ * through the analysis bank into the buffered QMF matrix; when SBR
+ * data covers the channel the high-frequency generator runs over it
+ * (its output is not yet mixed into the synthesis: the envelope
+ * adjustment chain lands next, and until then the upper bands stay
+ * empty). Output timing already follows the full SBR chain: each
+ * output slot i synthesises X_low slot i+2 against the eight-slot
+ * history, a six-slot latency, so frames decoded before and after
+ * SBR data first appears in a stream splice without a seam. */
 static int raac_upsample_frame(raac_t *a)
 {
    unsigned ch;
@@ -3870,14 +4094,39 @@ static int raac_upsample_frame(raac_t *a)
    for (ch = 0; ch < a->channels; ch++)
    {
       raac_qmf_ch *q = &a->qmf[ch];
-      for (s = 0; s < (int)a->frame_len / 32; s++)
+      float (*X_low)[40][2] = a->sbx->X_low;
+      memcpy(q->W[0], q->W[1], sizeof(q->W[0]));
+      for (s = 0; s < 32; s++)
       {
-         float Wr[32], Wi[32], Xr[64], Xi[64];
+         float Wr[32], Wi[32];
          raac_qmf_analysis_slot(a, q, a->pcm[ch] + s * 32, Wr, Wi);
          for (k = 0; k < 32; k++)
          {
-            Xr[k]      = Wr[k];
-            Xi[k]      = Wi[k];
+            q->W[1][s][k][0] = Wr[k];
+            q->W[1][s][k][1] = Wi[k];
+         }
+      }
+      raac_sbr_lf_gen(q, X_low, 32, 32);
+      if (a->sbr_map[ch] >= 0)
+      {
+         raac_sbr    *sb = &a->sbr[a->sbr_map[ch]];
+         raac_sbr_ch *c  = &sb->d[a->sbr_map_ch[ch]];
+         if (sb->start && c->bs_num_env)
+         {
+            raac_sbr_invfilter(a->sbx->alpha0, a->sbx->alpha1,
+                  X_low, sb->k0);
+            raac_sbr_chirp(sb, c);
+            raac_sbr_hf_gen(sb, c, a->sbx->X_high, X_low,
+                  a->sbx->alpha0, a->sbx->alpha1);
+         }
+      }
+      for (s = 0; s < 32; s++)
+      {
+         float Xr[64], Xi[64];
+         for (k = 0; k < 32; k++)
+         {
+            Xr[k]      = X_low[k][s + 2][0];
+            Xi[k]      = X_low[k][s + 2][1];
             Xr[32 + k] = 0.0f;
             Xi[32 + k] = 0.0f;
          }
@@ -3959,6 +4208,7 @@ void raac_reset(raac_t *a)
 void raac_close(raac_t *a)
 {
    free(a->qmf);
+   free(a->sbx);
    free(a);
 }
 
@@ -3979,4 +4229,9 @@ void raac_test_half(raac_t *a, const float in[64], float out[64], float s)
    raac_imdct_half128(a, in, out, s);
 }
 unsigned raac_test_qmf_ch_size(void) { return sizeof(raac_qmf_ch); }
+void raac_test_invfilter(float a0[32][2], float a1[32][2],
+      float X_low[32][40][2], int k0)
+{
+   raac_sbr_invfilter(a0, a1, X_low, k0);
+}
 #endif
