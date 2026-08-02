@@ -62,6 +62,7 @@ BUDGET     = 2048
 #   rd_gen_lengths               12768 ->  352  scratch into struct rdeflate
 #   rzstd_emit_block              9440 ->    0  FSE tables into encoder scratch
 #   sha1_calculate                4304 ->  224  mapped view, else heap buffer
+#   filestream_vscanf             4368 ->  272  scan window to the heap
 #
 # What is left is mostly codec inner loops (rvp9, rh264, raac, ropus,
 # rflac, rzstd, rvorbis) whose working sets are large by nature. Large
@@ -80,7 +81,6 @@ BUDGET     = 2048
 ALLOWLIST  = {
     'cdfs_find_file.constprop': 2160,
     'config_file_dump': 4208,
-    'filestream_vscanf': 4368,
     'flac_decoder_decode_interleaved': 4816,
     'map_read': 8320,
     'mem_stats_proc_meminfo.constprop': 2160,

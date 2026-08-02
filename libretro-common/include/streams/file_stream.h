@@ -426,6 +426,15 @@ const char* filestream_get_path(RFILE *stream);
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
 
 /**
+ * Size of the window filestream_vscanf() reads and scans at a time,
+ * i.e. the furthest a single conversion can reach.
+ *
+ * Named so a test can drive input either side of it rather than
+ * assume a value, the way the compare window below is.
+ */
+#define FILESTREAM_SCANF_WINDOW 4096
+
+/**
  * Size of the buffer filestream_matches_buf() compares through when
  * the file is not mapped.
  *

@@ -879,16 +879,33 @@ static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
 
 int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 {
-   char        buf[4096];
+   /* The scan window is heap rather than a local: at char buf[4096]
+    * this was a 4368-byte frame, over half of the 8 KiB a GEKKO
+    * thread gets (STACKSIZE in rthreads/gx_pthread.h).  Shrinking it
+    * instead would have been the cheaper change and the wrong one -
+    * the window is how far a single conversion may reach, so a
+    * smaller one fails differently on long input rather than merely
+    * more slowly.  One allocation per call is nothing beside the read
+    * this function already performs. */
+   char       *buf       = (char*)malloc(FILESTREAM_SCANF_WINDOW);
    va_list     args_copy;
    const char *bufiter;
    const char *fmt      = format;
    int         ret      = 0;
-   int64_t     startpos = filestream_tell(stream);
-   int64_t     maxlen   = filestream_read(stream, buf, sizeof(buf) - 1);
+   int64_t     startpos;
+   int64_t     maxlen;
+
+   if (!buf)
+      return EOF;
+
+   startpos = filestream_tell(stream);
+   maxlen   = filestream_read(stream, buf, FILESTREAM_SCANF_WINDOW - 1);
 
    if (maxlen <= 0)
+   {
+      free(buf);
       return EOF;
+   }
 
    buf[maxlen] = '\0';
 
@@ -1007,9 +1024,12 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 
    va_end(args_copy);
 
+   /* Seek before the free: the new position is derived from how far
+    * bufiter walked into buf. */
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
 
+   free(buf);
    return ret;
 }
 
