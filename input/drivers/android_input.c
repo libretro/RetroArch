@@ -1170,9 +1170,13 @@ static INLINE void android_input_poll_event_type_key(
    {
       case AKEY_EVENT_ACTION_UP:
          BIT_CLEAR(buf, keysym);
+         if (keysym == AKEYCODE_BACK)
+            BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
          break;
       case AKEY_EVENT_ACTION_DOWN:
          BIT_SET(buf, keysym);
+         if (keysym == AKEYCODE_BACK)
+            BIT_SET(buf, AKEYCODE_X);
          break;
    }
 
