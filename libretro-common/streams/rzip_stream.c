@@ -782,10 +782,13 @@ bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
       goto done;
 
    {
-      /* Chunk rather than window: an rzip read is a decompress, so
-       * this trades a fixed 64 KiB of stack against how many times
-       * the inflate loop is re-entered. */
-      uint8_t chunk[64 * 1024];
+      /* 4 KiB, sized by the stack rather than by the decompressor:
+       * this is libretro-common API, so a caller can be on a spawned
+       * thread, and sthread_create() gives Vita threads a 0x10000
+       * stack - a 64 KiB buffer here is the whole of it.  See the
+       * same ceiling and its measured cost in
+       * filestream_matches_buf(). */
+      uint8_t chunk[4096];
       size_t  off = 0;
 
       match = true;

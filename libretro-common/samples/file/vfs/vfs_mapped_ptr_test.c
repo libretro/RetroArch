@@ -280,17 +280,25 @@ int main(void)
             "matches_buf: difference at the last byte is caught");
       other[len - 1] ^= 0xff;
 
-      /* A window boundary is where an off-by-one would live: the
-       * fallback reads 64 KiB at a time. */
-      other[64 * 1024 - 1] ^= 0xff;
-      CHECK(!filestream_matches_buf("mapped_fixture.bin", other, len),
-            "matches_buf: difference at a window boundary is caught");
-      other[64 * 1024 - 1] ^= 0xff;
-
-      other[64 * 1024] ^= 0xff;
-      CHECK(!filestream_matches_buf("mapped_fixture.bin", other, len),
-            "matches_buf: difference just past a window boundary is caught");
-      other[64 * 1024] ^= 0xff;
+      /* A window boundary is where an off-by-one would live.  This
+       * must track filestream_matches_buf()'s actual window - it is
+       * 4 KiB, sized by the Vita thread stack rather than by
+       * throughput - because a "boundary" test aimed at the wrong
+       * offset is just another mid-file check wearing the name. */
+      {
+         size_t win = 4096;
+         size_t at[] = { win - 1, win, win + 1, 2 * win, 8 * win };
+         size_t k;
+         for (k = 0; k < sizeof(at) / sizeof(at[0]); k++)
+         {
+            if (at[k] >= len)
+               continue;
+            other[at[k]] ^= 0xff;
+            CHECK(!filestream_matches_buf("mapped_fixture.bin", other, len),
+                  "matches_buf: difference at a window boundary is caught");
+            other[at[k]] ^= 0xff;
+         }
+      }
 
       /* Size disagreements resolve without reading, and must not
        * report a match on a prefix. */
