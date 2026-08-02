@@ -1157,12 +1157,27 @@ enum rjson_type rjson_get_context_type(rjson_t *json)
    return json->stack_top->type;
 }
 
-void rjson_free(rjson_t *json)
+/* Release the two buffers that can outgrow their inline storage.
+ * Split out of rjson_free() because a stack-allocated rjson_t has
+ * the same buffers to release but must not have free() called on
+ * the handle itself. */
+static void _rjson_free_buffers(rjson_t *json)
 {
    if (json->stack != json->inline_stack)
+   {
       free(json->stack);
+      json->stack = json->inline_stack;
+   }
    if (json->string != json->inline_string)
+   {
       free(json->string);
+      json->string = json->inline_string;
+   }
+}
+
+void rjson_free(rjson_t *json)
+{
+   _rjson_free_buffers(json);
    free(json);
 }
 
@@ -1277,12 +1292,27 @@ bool rjson_parse_quick(const char *string, size_t len, void* context, char optio
          start_object_handler, end_object_handler,
          start_array_handler, end_array_handler,
          boolean_handler, null_handler) == RJSON_DONE)
+   {
+      /* The handle is on the stack, but its string and stack buffers
+       * are not: either outgrows its inline storage onto the heap - a
+       * long string token, or deep nesting - and nothing released
+       * them on the way out.  rjson_free() cannot be used here
+       * because it frees the handle too, so the buffer release is
+       * split out.
+       *
+       * The one caller in the tree parses netplay lobby responses,
+       * so the input is a remote server's and the growth is its
+       * choice, up to _RJSON_MAX_SIZE.  That made this leak per
+       * refresh and sized by whatever the other end sent. */
+      _rjson_free_buffers(&json);
       return true;
+   }
    if (error_handler)
       error_handler(context,
             (int)rjson_get_source_line(&json),
             (int)rjson_get_source_column(&json),
             rjson_get_error(&json));
+   _rjson_free_buffers(&json);
    return false;
 }
 
