@@ -65,6 +65,7 @@ jobs:
             nbio_test
             rpng
             rzip_chunk_size_test
+            rzip_matches_buf_test
             net_ifinfo
             vfs_read_overflow_test
             vfs_mapped_ptr_test

@@ -115,6 +115,27 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len);
  * Returns false in the event of an error */
 bool rzipstream_read_file(const char *path, void **buf, int64_t *len);
 
+/* Does the file at 'path' hold exactly 'len' bytes equal to 'data'?
+ *
+ * The rzip counterpart of filestream_matches_buf(), for callers
+ * deciding whether a write is needed at all.  Settles a size
+ * mismatch from the header before decompressing anything, compares
+ * a chunk at a time, stops at the first difference, and allocates
+ * nothing - where answering this with rzipstream_read_file() meant
+ * decompressing the whole file into a fresh buffer to compare and
+ * free it.
+ *
+ * 'data' may be NULL only when 'len' is 0. A missing or unreadable
+ * file returns false rather than an error: the caller's next step is
+ * the same either way.
+ *
+ * Note one deliberate difference from filestream_matches_buf(): a
+ * zero-byte file never matches here, not even against zero bytes.
+ * It has no rzip header, so it cannot be opened and there is nothing
+ * to compare - and false is the useful answer, since writing then
+ * replaces it with a valid file. */
+bool rzipstream_matches_buf(const char *path, const void *data, size_t len);
+
 /* File Write */
 
 /* Writes 'len' bytes to an RZIP file.
