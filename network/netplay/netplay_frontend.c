@@ -753,14 +753,28 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
             sizeof(frontend_architecture_tmp));
       if (frontend_drv)
       {
+         /* strlcpy() returns the length of the *source*, not the number
+          * of bytes written, so its result is only usable as a cursor
+          * once it has been clamped: an ident longer than the field
+          * would otherwise leave _len past the end of frontend[] and
+          * make 'sizeof(frontend) - _len' underflow to a huge size_t,
+          * with the following copies landing in the sibling members.
+          * Every ident in the driver table is short enough today that
+          * this cannot happen, which is exactly why it should not be
+          * left resting on that. */
          size_t _len = strlcpy(ad_packet_buffer.frontend, frontend_drv->ident,
                sizeof(ad_packet_buffer.frontend));
-         _len += strlcpy(ad_packet_buffer.frontend + _len,
-               " ",
-               sizeof(ad_packet_buffer.frontend)   - _len);
-         strlcpy(ad_packet_buffer.frontend         + _len,
-               frontend_architecture_tmp,
-               sizeof(ad_packet_buffer.frontend)   - _len);
+
+         if (_len > sizeof(ad_packet_buffer.frontend) - 1)
+            _len = sizeof(ad_packet_buffer.frontend) - 1;
+
+         if (_len < sizeof(ad_packet_buffer.frontend) - 1)
+         {
+            ad_packet_buffer.frontend[_len++] = ' ';
+            strlcpy(ad_packet_buffer.frontend + _len,
+                  frontend_architecture_tmp,
+                  sizeof(ad_packet_buffer.frontend) - _len);
+         }
       }
       else
          strlcpy(ad_packet_buffer.frontend, "N/A",
@@ -824,10 +838,17 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          has_password |= 2;
       ad_packet_buffer.has_password = htonl(has_password);
 
-      /* Send our response */
+      /* Send our response.
+       *
+       * Not addr_size: that still holds whatever recvfrom() reported
+       * for the address as it arrived, but addr_6to4() may since have
+       * rewritten a v4-mapped v6 source into a shorter AF_INET one in
+       * place.  Linux tolerates the mismatch; Winsock is stricter about
+       * namelen, and ipv4_is_lan_address() above has already
+       * established the family. */
       sendto(net_st->lan_ad_server_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-         (struct sockaddr*)&their_addr, addr_size);
+         (struct sockaddr*)&their_addr, sizeof(struct sockaddr_in));
    }
 
    return true;
