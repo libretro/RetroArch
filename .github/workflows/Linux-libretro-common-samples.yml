@@ -66,6 +66,13 @@ jobs:
             rpng
             rzip_chunk_size_test
             rzip_matches_buf_test
+            data_transfer_source_test
+            data_transfer_prefix_test
+            data_transfer_window_test
+            audio_transfer_window_test
+            rjpeg_test
+            r7z_lzma_props_test
+            vcdiff_test
             net_ifinfo
             vfs_read_overflow_test
             vfs_mapped_ptr_test
@@ -89,6 +96,23 @@ jobs:
             retro_atomic_extern_c_linkage_test_cxx
             retro_spsc_test
             audio_mixer_loop_test
+          )
+
+          # Targets that are built but deliberately not executed, each
+          # for a reason that is not "we forgot".  Anything built and
+          # listed in neither this nor RUN_TARGETS is an error below,
+          # because a silent "not in run allowlist" skip is
+          # indistinguishable from an omission - which is how seven
+          # self-contained regression tests came to be compiled every
+          # run and never executed.
+          declare -a NORUN_TARGETS=(
+            # CLI tools that print usage and exit non-zero without
+            # arguments; they have no self-test mode.
+            rzip
+            # Performs real HTTP requests against an external host, so
+            # running it would make this job depend on a third party
+            # being up.
+            http_test
           )
 
           # Per-binary run command (overrides ./<binary> if present).
@@ -170,7 +194,12 @@ jobs:
 
             for t in "${targets[@]}"; do
               if ! is_in "$t" "${RUN_TARGETS[@]}"; then
-                printf '[skip-run] %s/%s (not in run allowlist)\n' "$rel" "$t"
+                if is_in "$t" "${NORUN_TARGETS[@]}"; then
+                  printf '[skip-run] %s/%s (deliberately not run)\n' "$rel" "$t"
+                  continue
+                fi
+                printf '::error title=Target not classified::%s/%s is built but appears in neither RUN_TARGETS nor NORUN_TARGETS. Add it to one of them.\n' "$rel" "$t"
+                fails=$((fails+1))
                 continue
               fi
 
