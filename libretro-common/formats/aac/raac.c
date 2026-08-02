@@ -1614,6 +1614,20 @@ struct raac
    float    pcm[RAAC_MAX_CH][RAAC_FRAME];      /* per-frame synthesis
                                                 * scratch: too large for
                                                 * the stack at 8 ch     */
+   /* transform scratch, for the same reason: one channel is processed
+    * at a time and none of these outlive their call, but as locals
+    * they put multiple KiB on the stack, and the threads that run a
+    * decoder on PSP and GX get 8 KiB in total                        */
+   float    imdct_v[RAAC_FRAME];               /* IMDCT quarter scatter */
+   float    fb_win[2 * RAAC_FRAME];            /* filterbank: transform
+                                                * output, then windowed
+                                                * in place              */
+   float    fb_short[256];                     /* one short transform   */
+   float    qmf_z[320];                        /* QMF analysis fold     */
+   float    qmf_z64[64], qmf_m[64];            /* analysis transform    */
+   float    qmf_xim[64];                       /* synthesis transform   */
+   float    qmf_m0[64], qmf_m1[64];
+   int      quant[RAAC_FRAME];                 /* quantised spectrum    */
    uint32_t noise_state;                        /* PNS LCG               */
 };
 
@@ -1781,7 +1795,7 @@ static void raac_imdct(raac_t *a, const float *x, float *out, int n)
    const float *pi_ = lng ? a->tw512_im : a->tw64_im;
    const float *qr  = lng ? a->tw512_re + n4 : a->tw64_re + n4;
    const float *qi  = lng ? a->tw512_im + n4 : a->tw64_im + n4;
-   float  v[1024];
+   float *v   = a->imdct_v;
    int    k;
 
    for (k = 0; k < n4; k++)
@@ -2380,8 +2394,9 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
    int   nl   = L * 2;
    int   ns   = Ls * 2;
    int   flat = (L - Ls) / 2;
-   float buf[2048];
-   float win_out[2048];
+   /* the transform output is windowed in place: every window store
+    * below reads the same index it writes                          */
+   float *buf = a->fb_win;
    int   i;
 
    if (c->window_sequence != 2)
@@ -2393,15 +2408,14 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
          case 0:  /* only long  */
          case 1:  /* long start */
             for (i = 0; i < L; i++)
-               win_out[i] = buf[i] * long_prev[i];
+               buf[i] = buf[i] * long_prev[i];
             break;
-         default: /* long stop: flat head after a short run           */
+         default: /* long stop: zero head, short rise, then a flat
+                   * run that the in-place windowing leaves alone   */
             for (i = 0; i < flat; i++)
-               win_out[i] = 0.0f;
+               buf[i] = 0.0f;
             for (i = 0; i < Ls; i++)
-               win_out[flat + i] = buf[flat + i] * shrt_prev[i];
-            for (i = flat + Ls; i < L; i++)
-               win_out[i] = buf[i];
+               buf[flat + i] = buf[flat + i] * shrt_prev[i];
             break;
       }
       /* second half: this frame's trailing shape */
@@ -2410,15 +2424,14 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
          case 0:  /* long tail */
          case 3:
             for (i = 0; i < L; i++)
-               win_out[L + i] = buf[L + i] * long_cur[L + i];
+               buf[L + i] = buf[L + i] * long_cur[L + i];
             break;
-         default: /* long start: flat, then a short tail              */
-            for (i = 0; i < flat; i++)
-               win_out[L + i] = buf[L + i];
+         default: /* long start: a flat run kept as it stands, then
+                   * a short fall and a zero tail                   */
             for (i = 0; i < Ls; i++)
-               win_out[L + flat + i] = buf[L + flat + i] * shrt_cur[Ls + i];
+               buf[L + flat + i] = buf[L + flat + i] * shrt_cur[Ls + i];
             for (i = L + flat + Ls; i < nl; i++)
-               win_out[i] = 0.0f;
+               buf[i] = 0.0f;
             break;
       }
    }
@@ -2427,26 +2440,24 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
       /* eight short windows, hop Ls, starting at the flat offset. The
        * spectral hop stays 128 for both frame lengths (960-frame short
        * windows carry 120 coefficients in 128-wide slots). */
-      float acc[2048];
-      int   w;
-      memset(acc, 0, sizeof(acc));
+      float *sbuf = a->fb_short;
+      int    w;
+      memset(buf, 0, sizeof(a->fb_win));
       for (w = 0; w < 8; w++)
       {
-         float sbuf[256];
          raac_imdct(a, c->coef + w * 128, sbuf, ns);
          for (i = 0; i < ns; i++)
          {
             const float *head = (w == 0) ? shrt_prev : shrt_cur;
             float win = (i < Ls) ? head[i] : shrt_cur[i];
-            acc[flat + w * Ls + i] += sbuf[i] * win;
+            buf[flat + w * Ls + i] += sbuf[i] * win;
          }
       }
-      memcpy(win_out, acc, sizeof(acc));
    }
 
    for (i = 0; i < L; i++)
-      out[i] = win_out[i] + c->overlap[i];
-   memcpy(c->overlap, win_out + L, sizeof(float) * (size_t)L);
+      out[i] = buf[i] + c->overlap[i];
+   memcpy(c->overlap, buf + L, sizeof(float) * (size_t)L);
    c->prev_window_shape = c->window_shape;
 }
 
@@ -2455,7 +2466,7 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
 static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
       int common_window)
 {
-   int quant[RAAC_FRAME];
+   int       *quant = a->quant;
    raac_pulse pulse;
    int global_gain = (int)raac_getbits(b, 8);
    pulse.pulse_present = 0;
@@ -3368,8 +3379,10 @@ static void raac_imdct_half128(raac_t *a, const float in[64],
 static void raac_qmf_analysis_slot(raac_t *a, raac_qmf_ch *c,
       const float *in32, float Wr[32], float Wi[32])
 {
-   float z[320], z64[64], m[64];
-   int   i, k;
+   float *z   = a->qmf_z;
+   float *z64 = a->qmf_z64;
+   float *m   = a->qmf_m;
+   int    i, k;
    memmove(c->x, c->x + 32, sizeof(float) * 288);
    memcpy(c->x + 288, in32, sizeof(float) * 32);
    for (i = 0; i < 320; i++)
@@ -3398,8 +3411,10 @@ static void raac_qmf_synthesis_slot(raac_t *a, raac_qmf_ch *c,
 {
    static const uint16_t vo[10] =
       { 0, 192, 256, 448, 512, 704, 768, 960, 1024, 1216 };
-   float xim[64], m0[64], m1[64];
-   int   n, j;
+   float *xim = a->qmf_xim;
+   float *m0  = a->qmf_m0;
+   float *m1  = a->qmf_m1;
+   int    n, j;
    memmove(c->v + 128, c->v, sizeof(float) * (1280 - 128));
    for (n = 0; n < 64; n++)
       xim[n] = (n & 1) ? -Xi[n] : Xi[n];
