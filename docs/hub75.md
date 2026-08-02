@@ -7,7 +7,7 @@ desktop session.
 
 ## Build on Raspberry Pi
 
-Initialize submodules, enable the driver, and build RetroArch:
+Enable the driver and build RetroArch:
 
 ```sh
 ./configure --enable-hub75
@@ -71,11 +71,19 @@ Scaling modes:
   pixel when the source is larger than the matrix. It keeps pixels uniform and
   shows the complete image, but may leave larger black borders.
 
-For a single 128x64 panel, `fill` is generally the most useful game mode:
+For a single 128x64 panel on Raspberry Pi 5, `fit` preserves the complete
+game image. The RP1 PIO backend is selected at runtime rather than at compile
+time:
 
 ```sh
-sudo env HUB75_ROWS=64 HUB75_COLS=128 HUB75_SCALING=fill \
-  HUB75_RP1_PIO=1 ./retroarch -v
+sudo env \
+  HUB75_ROWS=64 \
+  HUB75_COLS=128 \
+  HUB75_CHAIN=1 \
+  HUB75_PARALLEL=1 \
+  HUB75_RP1_PIO=1 \
+  HUB75_SCALING=fit \
+  ./retroarch -v
 ```
 
 GPIO initialization normally requires root. Run RetroArch locally on the Pi;
@@ -84,12 +92,30 @@ bridge.
 
 ## Cross-compile from macOS without Docker
 
-With an `aarch64-linux-gnu` cross toolchain installed:
+With an `aarch64-linux-gnu` cross toolchain installed, the following performs
+a clean build for 64-bit Raspberry Pi Linux:
 
 ```sh
-OS=Linux ./configure --host=aarch64-linux-gnu --enable-hub75
-make -j8 OBJDIR_BASE=obj-linux-arm64
+cd /path/to/RetroArch
+
+make clean OBJDIR_BASE=obj-linux-arm64
+make -C deps/rpi-rgb-led-matrix/lib clean
+rm -f config.mk
+
+OS=Linux ./configure \
+  --host=aarch64-linux-gnu \
+  --enable-hub75
+
+make -j"$(sysctl -n hw.ncpu)" \
+  OBJDIR_BASE=obj-linux-arm64
+
+file retroarch
 ```
+
+The resulting executable should be reported as an `ELF 64-bit LSB` binary for
+`ARM aarch64`. Raspberry Pi 5 does not require separate compile-time CPU
+selection; enable its RP1 PIO backend with `HUB75_RP1_PIO=1` when launching
+RetroArch on the Pi.
 
 Additional RetroArch features may require a Raspberry Pi sysroot. Disable
 features you do not need or supply their ARM64 headers and libraries through
