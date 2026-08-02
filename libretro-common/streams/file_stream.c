@@ -1233,11 +1233,14 @@ bool filestream_matches_buf(const char *path, const void *data, size_t len)
 
    {
       /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
-       * thread stack in the tree rather than by throughput.  PSP and
-       * GX threads get 8 KiB (STACKSIZE in psp_pthread.h and
-       * gx_pthread.h), 3DS 32 KiB, Vita 64 KiB - and this is
+       * thread stack in the tree rather than by throughput.  GEKKO
+       * threads get 8 KiB (STACKSIZE in rthreads/gx_pthread.h), 3DS
+       * 32 KiB (ctr_pthread.h) and Vita 64 KiB - and this is
        * libretro-common API, so a caller on a spawned thread is not
-       * hypothetical.
+       * hypothetical.  (psp_pthread.h declares 8 KiB too, but nothing
+       * includes it: rthreads.c reaches for gx_pthread.h under GEKKO
+       * and ctr_pthread.h under _3DS, and PSP falls through to plain
+       * pthreads.  The 8 KiB floor is GEKKO's.)
        *
        * Bigger reads are faster, and at or above the VFS's own 64 KiB
        * stdio buffer they skip it entirely: measured on the unchanged

@@ -434,9 +434,9 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
  * just another mid-file check under a boundary's name.
  *
  * The ceiling is a stack budget, not a throughput one: this buffer is
- * a local, and the smallest thread stacks in the tree are 8 KiB
- * (STACKSIZE in psp_pthread.h and gx_pthread.h), with 32 KiB on 3DS
- * and 64 KiB on Vita. Larger reads are faster - at or above the VFS's
+ * a local, and the smallest thread stack in the tree is GEKKO's
+ * 8 KiB (STACKSIZE in rthreads/gx_pthread.h), with 32 KiB on 3DS and
+ * 64 KiB on Vita. Larger reads are faster - at or above the VFS's
  * own 64 KiB stdio buffer they bypass it entirely - but the platforms
  * that take this path are the ones without memory mapping, which are
  * the same ones with those stacks.
