@@ -8902,6 +8902,12 @@ bool retroarch_ctl(enum rarch_ctl_state state, void *data)
                   net_st->room_list  = NULL;
                }
                net_st->room_count = 0;
+#ifdef HAVE_NETPLAYDISCOVERY
+               /* Same story for the LAN discovery list, which is grown
+                * by the scan task and only ever truncated between
+                * scans. */
+               netplay_discovery_free_hosts();
+#endif
             }
 #endif
 #ifdef HAVE_COMMAND
