@@ -470,6 +470,80 @@ static const uint16_t raac_swb_offset_128_48[15] = {
 static const uint16_t raac_swb_offset_128_96[13] = {
    0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 92, 128
 };
+/* ===== 960-sample frame band tables (14496-3 tables 4.140+) =====
+ * The 48 kHz long table also serves 32 kHz and the 96 kHz short table
+ * also serves 64 kHz: the layouts coincide, as in the reference
+ * tables, so the duplicates are folded. */
+static const uint16_t raac_swb_offset_960_96[41] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 64, 72,
+   80, 88, 96, 108, 120, 132, 144, 156, 172, 188, 212, 240, 276, 320,
+   384, 448, 512, 576, 640, 704, 768, 832, 896, 960
+};
+static const uint16_t raac_swb_offset_960_64[47] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 64, 72,
+   80, 88, 100, 112, 124, 140, 156, 172, 192, 216, 240, 268, 304,
+   344, 384, 424, 464, 504, 544, 584, 624, 664, 704, 744, 784, 824,
+   864, 904, 944, 960
+};
+static const uint16_t raac_swb_offset_960_48[50] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 72, 80, 88,
+   96, 108, 120, 132, 144, 160, 176, 196, 216, 240, 264, 292, 320,
+   352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736,
+   768, 800, 832, 864, 896, 928, 960
+};
+static const uint16_t raac_swb_offset_960_24[47] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 52, 60, 68, 76, 84,
+   92, 100, 108, 116, 124, 136, 148, 160, 172, 188, 204, 220, 240,
+   260, 284, 308, 336, 364, 396, 432, 468, 508, 552, 600, 652, 704,
+   768, 832, 896, 960
+};
+static const uint16_t raac_swb_offset_960_16[43] = {
+   0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 100, 112, 124, 136,
+   148, 160, 172, 184, 196, 212, 228, 244, 260, 280, 300, 320, 344,
+   368, 396, 424, 456, 492, 532, 572, 616, 664, 716, 772, 832, 896,
+   960
+};
+static const uint16_t raac_swb_offset_960_8[41] = {
+   0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 172,
+   188, 204, 220, 236, 252, 268, 288, 308, 328, 348, 372, 396, 420,
+   448, 476, 508, 544, 580, 620, 664, 712, 764, 820, 880, 944, 960
+};
+static const uint16_t *const raac_swb_offset_960[13] = {
+   raac_swb_offset_960_96, raac_swb_offset_960_96, raac_swb_offset_960_64,
+   raac_swb_offset_960_48, raac_swb_offset_960_48, raac_swb_offset_960_48,
+   raac_swb_offset_960_24, raac_swb_offset_960_24, raac_swb_offset_960_16,
+   raac_swb_offset_960_16, raac_swb_offset_960_16, raac_swb_offset_960_8,
+   raac_swb_offset_960_8
+};
+static const uint16_t raac_swb_offset_120_96[13] = {
+   0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 92, 120
+};
+static const uint16_t raac_swb_offset_120_48[15] = {
+   0, 4, 8, 12, 16, 20, 28, 36, 44, 56, 68, 80, 96, 112, 120
+};
+static const uint16_t raac_swb_offset_120_24[16] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 64, 76, 92, 108, 120
+};
+static const uint16_t raac_swb_offset_120_16[16] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 60, 72, 88, 108, 120
+};
+static const uint16_t raac_swb_offset_120_8[16] = {
+   0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 60, 72, 88, 108, 120
+};
+static const uint16_t *const raac_swb_offset_120[13] = {
+   raac_swb_offset_120_96, raac_swb_offset_120_96, raac_swb_offset_120_96,
+   raac_swb_offset_120_48, raac_swb_offset_120_48, raac_swb_offset_120_48,
+   raac_swb_offset_120_24, raac_swb_offset_120_24, raac_swb_offset_120_16,
+   raac_swb_offset_120_16, raac_swb_offset_120_16, raac_swb_offset_120_8,
+   raac_swb_offset_120_8
+};
+static const uint8_t raac_num_swb_960[13] = {
+   40, 40, 46, 49, 49, 49, 46, 46, 42, 42, 42, 40, 40
+};
+static const uint8_t raac_num_swb_120[13] = {
+   12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15
+};
+
 static const uint16_t raac_swb_offset_128_8[16] = {
    0, 4, 8, 12, 16, 20, 24, 28, 36, 44, 52, 60, 72, 88, 108, 128
 };
@@ -486,6 +560,9 @@ static const uint8_t raac_num_swb_1024[13] = {
 static const uint8_t raac_num_swb_128[13] = {
    12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15
 };
+/* TNS band limits: the 1024/128 tables also serve 960-sample frames,
+ * matching the dominant deployed decoder rather than the separate
+ * (near-identical) 960 columns of the reference tables. */
 static const uint8_t raac_tns_max_bands_1024[13] = {
    31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39, 39
 };
@@ -739,6 +816,14 @@ struct raac
    float    tw512_re[1024], tw512_im[1024];    /* pre+post twiddles 2048 */
    float    tw64_re[128],  tw64_im[128];       /* pre+post twiddles 256  */
    float    fft_re[512], fft_im[512];          /* scratch                */
+   unsigned frame_len;                          /* 1024, or 960 when the
+                                                * short frame length is
+                                                * signalled at open     */
+   float    mr_re[1280], mr_im[1280];          /* mixed-radix FFT output
+                                                * and recursion scratch  */
+   float    w480_re[480], w480_im[480];        /* roots of unity for the
+                                                * 960-mode transforms    */
+   float    w60_re[60], w60_im[60];
    float    pcm[RAAC_MAX_CH][RAAC_FRAME];      /* per-frame synthesis
                                                 * scratch: too large for
                                                 * the stack at 8 ch     */
@@ -849,6 +934,49 @@ static void raac_fft(float *re, float *im, int n)
    (void)k;
 }
 
+/* Mixed-radix complex FFT for the 960-frame transforms, whose cores
+ * are 480 = 2^5*3*5 and 60 = 2^2*3*5 points. Recursive decimation in
+ * time over radices 5/3/2, out-of-place per level into caller scratch,
+ * with a shared full-size root-of-unity table (every sub-length
+ * divides the root length, so twiddle indices stay integral). The
+ * radix-2 transform above keeps the 1024-frame path unchanged. */
+static void raac_fft_mr(const float *in_re, const float *in_im,
+      float *out_re, float *out_im, int n, int stride,
+      const float *w_re, const float *w_im, int root,
+      float *sc_re, float *sc_im)
+{
+   int r, m, q, j, k;
+   if (n == 1)
+   {
+      out_re[0] = in_re[0];
+      out_im[0] = in_im[0];
+      return;
+   }
+   r = (n % 5 == 0) ? 5 : ((n % 3 == 0) ? 3 : 2);
+   m = n / r;
+   for (q = 0; q < r; q++)
+      raac_fft_mr(in_re + q * stride, in_im + q * stride,
+            sc_re + q * m, sc_im + q * m, m, stride * r,
+            w_re, w_im, root, sc_re + n, sc_im + n);
+   for (j = 0; j < r; j++)
+      for (k = 0; k < m; k++)
+      {
+         int   idx  = j * m + k;
+         int   step = root / n;
+         float ar = 0.0f, ai = 0.0f;
+         for (q = 0; q < r; q++)
+         {
+            int   tw = (idx * q * step) % root;
+            float wr = w_re[tw], wi = w_im[tw];
+            float xr = sc_re[q * m + k], xi = sc_im[q * m + k];
+            ar += xr * wr - xi * wi;
+            ai += xr * wi + xi * wr;
+         }
+         out_re[idx] = ar;
+         out_im[idx] = ai;
+      }
+}
+
 /* in: N/2 spectral coefficients X, out: N time samples (2/N folded in).
  * Derivation: y is a signed/mirrored rearrangement of the length-N/2
  * DCT-IV of X, and the DCT-IV runs on an N/4-point complex FFT with
@@ -859,10 +987,13 @@ static void raac_imdct(raac_t *a, const float *x, float *out, int n)
 {
    int    n4 = n / 4, n2 = n / 2;
    float *fre = a->fft_re, *fim = a->fft_im;
-   const float *pr = (n == 2048) ? a->tw512_re : a->tw64_re;
-   const float *pi_ = (n == 2048) ? a->tw512_im : a->tw64_im;
-   const float *qr = (n == 2048) ? a->tw512_re + n4 : a->tw64_re + n4;
-   const float *qi = (n == 2048) ? a->tw512_im + n4 : a->tw64_im + n4;
+   /* the twiddle arrays hold this instance's frame-length variant:
+    * 512/64-point tables in 1024 mode, 480/60-point in 960 mode */
+   int    lng = (n >= 1920);
+   const float *pr  = lng ? a->tw512_re : a->tw64_re;
+   const float *pi_ = lng ? a->tw512_im : a->tw64_im;
+   const float *qr  = lng ? a->tw512_re + n4 : a->tw64_re + n4;
+   const float *qi  = lng ? a->tw512_im + n4 : a->tw64_im + n4;
    float  v[1024];
    int    k;
 
@@ -873,7 +1004,17 @@ static void raac_imdct(raac_t *a, const float *x, float *out, int n)
       fre[k] = xr * pr[k] - xi * pi_[k];
       fim[k] = xr * pi_[k] + xi * pr[k];
    }
-   raac_fft(fre, fim, n4);
+   if ((n4 & (n4 - 1)) == 0)
+      raac_fft(fre, fim, n4);
+   else
+   {
+      const float *wr = (n4 == 480) ? a->w480_re : a->w60_re;
+      const float *wi = (n4 == 480) ? a->w480_im : a->w60_im;
+      raac_fft_mr(fre, fim, a->mr_re, a->mr_im, n4, 1, wr, wi, n4,
+            a->mr_re + n4, a->mr_im + n4);
+      memcpy(fre, a->mr_re, sizeof(float) * (size_t)n4);
+      memcpy(fim, a->mr_im, sizeof(float) * (size_t)n4);
+   }
    for (k = 0; k < n4; k++)
    {
       float yr = fre[k] * qr[k] - fim[k] * qi[k];
@@ -912,12 +1053,18 @@ static void raac_make_twiddles(float *twr, float *twi, int n4, int n)
 
 static const uint16_t *raac_swb_off(const raac_t *a, int short_win)
 {
+   if (a->frame_len == 960)
+      return short_win ? raac_swb_offset_120[a->sfi]
+                       : raac_swb_offset_960[a->sfi];
    return short_win ? raac_swb_offset_128[a->sfi]
                     : raac_swb_offset_1024[a->sfi];
 }
 
 static int raac_num_swb(const raac_t *a, int short_win)
 {
+   if (a->frame_len == 960)
+      return short_win ? raac_num_swb_120[a->sfi]
+                       : raac_num_swb_960[a->sfi];
    return short_win ? raac_num_swb_128[a->sfi]
                     : raac_num_swb_1024[a->sfi];
 }
@@ -1438,27 +1585,35 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
    const float *shrt_cur  = c->window_shape ? a->kbd_short : a->sine_short;
    const float *long_prev = c->prev_window_shape ? a->kbd_long  : a->sine_long;
    const float *shrt_prev = c->prev_window_shape ? a->kbd_short : a->sine_short;
+   /* frame geometry: everything below derives from the frame length
+    * (1024: 2048/256-point transforms, flat run 448, short hop 128;
+    * 960: 1920/240, flat run 420, hop 120) */
+   int   L    = (int)a->frame_len;
+   int   Ls   = L >> 3;
+   int   nl   = L * 2;
+   int   ns   = Ls * 2;
+   int   flat = (L - Ls) / 2;
    float buf[2048];
    float win_out[2048];
    int   i;
 
    if (c->window_sequence != 2)
    {
-      raac_imdct(a, c->coef, buf, 2048);
+      raac_imdct(a, c->coef, buf, nl);
       /* first half: window with the previous frame's trailing shape */
       switch (c->window_sequence)
       {
          case 0:  /* only long  */
          case 1:  /* long start */
-            for (i = 0; i < 1024; i++)
+            for (i = 0; i < L; i++)
                win_out[i] = buf[i] * long_prev[i];
             break;
          default: /* long stop: flat head after a short run           */
-            for (i = 0; i < 448; i++)
+            for (i = 0; i < flat; i++)
                win_out[i] = 0.0f;
-            for (i = 0; i < 128; i++)
-               win_out[448 + i] = buf[448 + i] * shrt_prev[i];
-            for (i = 576; i < 1024; i++)
+            for (i = 0; i < Ls; i++)
+               win_out[flat + i] = buf[flat + i] * shrt_prev[i];
+            for (i = flat + Ls; i < L; i++)
                win_out[i] = buf[i];
             break;
       }
@@ -1467,42 +1622,44 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
       {
          case 0:  /* long tail */
          case 3:
-            for (i = 0; i < 1024; i++)
-               win_out[1024 + i] = buf[1024 + i] * long_cur[1024 + i];
+            for (i = 0; i < L; i++)
+               win_out[L + i] = buf[L + i] * long_cur[L + i];
             break;
          default: /* long start: flat, then a short tail              */
-            for (i = 0; i < 448; i++)
-               win_out[1024 + i] = buf[1024 + i];
-            for (i = 0; i < 128; i++)
-               win_out[1472 + i] = buf[1472 + i] * shrt_cur[128 + i];
-            for (i = 1600; i < 2048; i++)
+            for (i = 0; i < flat; i++)
+               win_out[L + i] = buf[L + i];
+            for (i = 0; i < Ls; i++)
+               win_out[L + flat + i] = buf[L + flat + i] * shrt_cur[Ls + i];
+            for (i = L + flat + Ls; i < nl; i++)
                win_out[i] = 0.0f;
             break;
       }
    }
    else
    {
-      /* eight short windows at 128-sample stride starting at 448 */
+      /* eight short windows, hop Ls, starting at the flat offset. The
+       * spectral hop stays 128 for both frame lengths (960-frame short
+       * windows carry 120 coefficients in 128-wide slots). */
       float acc[2048];
       int   w;
       memset(acc, 0, sizeof(acc));
       for (w = 0; w < 8; w++)
       {
          float sbuf[256];
-         raac_imdct(a, c->coef + w * 128, sbuf, 256);
-         for (i = 0; i < 256; i++)
+         raac_imdct(a, c->coef + w * 128, sbuf, ns);
+         for (i = 0; i < ns; i++)
          {
             const float *head = (w == 0) ? shrt_prev : shrt_cur;
-            float win = (i < 128) ? head[i] : shrt_cur[i];
-            acc[448 + w * 128 + i] += sbuf[i] * win;
+            float win = (i < Ls) ? head[i] : shrt_cur[i];
+            acc[flat + w * Ls + i] += sbuf[i] * win;
          }
       }
       memcpy(win_out, acc, sizeof(acc));
    }
 
-   for (i = 0; i < 1024; i++)
+   for (i = 0; i < L; i++)
       out[i] = win_out[i] + c->overlap[i];
-   memcpy(c->overlap, win_out + 1024, sizeof(float) * 1024);
+   memcpy(c->overlap, win_out + L, sizeof(float) * (size_t)L);
    c->prev_window_shape = c->window_shape;
 }
 
@@ -1765,7 +1922,7 @@ static void raac_cce_couple(raac_t *a, raac_cce *cc, int point,
             {
                float gain = cc->gain[index][0];
                int i;
-               for (i = 0; i < RAAC_FRAME; i++)
+               for (i = 0; i < (int)a->frame_len; i++)
                   pcm0[i] += gain * cc->time[i];
             }
             else
@@ -1779,7 +1936,7 @@ static void raac_cce_couple(raac_t *a, raac_cce *cc, int point,
             {
                float gain = cc->gain[index][0];
                int i;
-               for (i = 0; i < RAAC_FRAME; i++)
+               for (i = 0; i < (int)a->frame_len; i++)
                   pcm1[i] += gain * cc->time[i];
             }
             else
@@ -1891,7 +2048,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
 {
    raac_t   *a;
    raac_bits b;
-   unsigned  aot, sfi, chcfg, freq, channels;
+   unsigned  aot, sfi, chcfg, freq, channels, frame_960;
    int       i;
 
    if (!asc || asc_size < 2)
@@ -1919,8 +2076,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
       freq = raac_sample_rates[sfi];
    if (chcfg > 7)
       return NULL;
-   if (raac_getbits(&b, 1)) /* frameLengthFlag: 960 */
-      return NULL;
+   frame_960 = raac_getbits(&b, 1); /* frameLengthFlag: 960 frames */
    if (raac_getbits(&b, 1)) /* dependsOnCoreCoder */
       return NULL;
    if (raac_getbits(&b, 1)) /* extensionFlag */
@@ -1948,6 +2104,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    a->sfi         = (int)sfi;
    a->sample_rate = freq;
    a->channels    = channels;
+   a->frame_len   = frame_960 ? 960 : 1024;
    a->noise_state = 0x1f2e3d4cu;
 
    for (i = 0; i < 11; i++)
@@ -1972,16 +2129,37 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
          }
       }
 
-   raac_kbd_window(a->kbd_long, 2048, 4.0);
-   raac_kbd_window(a->kbd_short, 256, 6.0);
-   raac_sine_window(a->sine_long, 2048);
-   raac_sine_window(a->sine_short, 256);
-   raac_make_twiddles(a->tw512_re, a->tw512_im, 512, 2048);
-   raac_make_twiddles(a->tw64_re,  a->tw64_im,  64,  256);
+   {
+      int nl = (int)a->frame_len * 2;   /* 2048 or 1920 */
+      int ns = nl / 8;                  /*  256 or  240 */
+      raac_kbd_window(a->kbd_long, nl, 4.0);
+      raac_kbd_window(a->kbd_short, ns, 6.0);
+      raac_sine_window(a->sine_long, nl);
+      raac_sine_window(a->sine_short, ns);
+      raac_make_twiddles(a->tw512_re, a->tw512_im, nl / 4, nl);
+      raac_make_twiddles(a->tw64_re, a->tw64_im, ns / 4, ns);
+      if (a->frame_len == 960)
+      {
+         int k;
+         for (k = 0; k < 480; k++)
+         {
+            double ang    = -2.0 * M_PI * k / 480.0;
+            a->w480_re[k] = (float)cos(ang);
+            a->w480_im[k] = (float)sin(ang);
+         }
+         for (k = 0; k < 60; k++)
+         {
+            double ang   = -2.0 * M_PI * k / 60.0;
+            a->w60_re[k] = (float)cos(ang);
+            a->w60_im[k] = (float)sin(ang);
+         }
+      }
+   }
    return a;
 }
 
 unsigned raac_channels(const raac_t *a)    { return a ? a->channels : 0; }
+unsigned raac_frame_len(const raac_t *a)   { return a ? a->frame_len : 0; }
 unsigned raac_sample_rate(const raac_t *a) { return a ? a->sample_rate : 0; }
 
 /* Shared worker: parse and synthesise one access unit into per-channel
@@ -2159,7 +2337,7 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
          memset(a->ch[ch].coef, 0, sizeof(a->ch[ch].coef));
          raac_filterbank(a, &a->ch[ch], pcm[ch]);
       }
-   return RAAC_FRAME;
+   return (int)a->frame_len;
 }
 
 int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
@@ -2172,7 +2350,7 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       return -1;
    if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
-   for (i = 0; i < RAAC_FRAME; i++)
+   for (i = 0; i < (int)a->frame_len; i++)
       for (ch = 0; ch < a->channels; ch++)
       {
          /* one rounding, clamped in the float domain: casting an
@@ -2200,7 +2378,7 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       return -1;
    if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
-   for (i = 0; i < RAAC_FRAME; i++)
+   for (i = 0; i < (int)a->frame_len; i++)
       for (ch = 0; ch < a->channels; ch++)
          out[i * a->channels + ch] = a->pcm[ch][i] * (1.0f / 32768.0f);
    return ret;

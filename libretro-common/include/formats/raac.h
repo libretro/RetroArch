@@ -29,7 +29,8 @@
  * outputs interleaved signed 16-bit PCM, 1024 samples per channel
  * per access unit.
  *
- * Scope: AAC-LC (audioObjectType 2), the 1024-sample frame length,
+ * Scope: AAC-LC (audioObjectType 2), the 1024- and 960-sample frame
+ * lengths,
  * every standard sampling rate as well as explicitly coded ones
  * (samplingFrequencyIndex 15), channel configurations 1 through 7 and
  * configuration 0 with an embedded PCE, up to eight output channels,
@@ -63,6 +64,11 @@ typedef struct raac raac_t;
 raac_t *raac_open(const uint8_t *asc, size_t asc_size);
 
 unsigned raac_channels(const raac_t *a);
+
+/* Samples per channel each access unit decodes to: 1024, or 960 when
+ * the stream signals the short frame length. Also the return value of
+ * the decode calls. */
+unsigned raac_frame_len(const raac_t *a);
 unsigned raac_sample_rate(const raac_t *a);
 
 /* Decode one access unit (one MP4 sample). out must hold at least
