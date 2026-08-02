@@ -890,6 +890,737 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	return module;
 }
 
+
+/* --------------------------------------------------------------------
+ * Impulse Tracker loader, stage 1.
+ *
+ * What this stage covers: the IMPM header, orders with skip and end
+ * markers, uncompressed 8/16-bit signed/unsigned samples including
+ * stereo, sample and instrument mode, the note-to-sample keyboard,
+ * volume envelopes (clamped to the engine's sixteen nodes), fadeout,
+ * default channel pans and the packed pattern format with its
+ * per-channel mask and last-value memory. Effects reuse the S3M
+ * mapping: IT kept Scream Tracker's command letters, so the letters
+ * route to the same handlers, with IT's divergent sub-behaviours a
+ * later stage.
+ *
+ * IT214/215 sample decompression is implemented, including IT215's
+ * extra delta stage and stereo's twin streams.
+ *
+ * Known divergences, deliberate at this stage: new-note actions are
+ * not implemented (every note cuts, the
+ * engine default); note cut (254) is treated as note off; linear
+ * slide mode is approximated with Amiga periods, so portamento depth
+ * can differ; sustain loops are ignored in favour of the normal loop;
+ * pitch and filter envelopes and channel volumes are not applied.
+ * ------------------------------------------------------------------ */
+
+
+/* --- IT214/IT215 sample decompression ----------------------------
+ * The stream is a run of blocks, each a 16-bit packed byte length
+ * followed by that many bytes, decompressing to at most 0x8000 output
+ * bytes; the bit width and every accumulator reset per block. Values
+ * arrive as variable-width deltas with three escape encodings that
+ * change the width, one per width band. IT215 adds a second
+ * delta-to-PCM pass, also per block. Behaviour follows Impulse
+ * Tracker's own replayer as preserved in it2play (BSD-3-Clause),
+ * reimplemented on the bounds-checked readers here; a stereo sample
+ * is two complete streams, left then right, so the unpackers return
+ * the offset just past what they consumed. */
+
+static int it_read_bits( struct data *data, int base, int *bitpos, int count ) {
+	int byte_idx = base + ( *bitpos >> 3 );
+	int shift = *bitpos & 7;
+	unsigned int v = ( unsigned int ) data_u8( data, byte_idx )
+		| ( ( unsigned int ) data_u8( data, byte_idx + 1 ) << 8 )
+		| ( ( unsigned int ) data_u8( data, byte_idx + 2 ) << 16 )
+		| ( ( unsigned int ) data_u8( data, byte_idx + 3 ) << 24 );
+	*bitpos += count;
+	return ( int ) ( ( v >> shift ) & ( ( 1u << count ) - 1u ) );
+}
+
+/* Decompress 'count' 8-bit samples into dest at 'stride' shorts per
+ * frame, scaled to the engine's 16-bit domain. Returns the offset
+ * just past the consumed input. */
+static int it_unpack8( struct data *data, int src, short *dest,
+		int stride, int count, int it215 ) {
+	int done = 0;
+	while( done < count ) {
+		int block = count - done;
+		int packed, bitpos, width, acc, d215, n, v, w, sp, lim;
+		if( block > 0x8000 ) {
+			block = 0x8000;
+		}
+		packed = data_u16le( data, src );
+		src += 2;
+		bitpos = 0;
+		width = 9;
+		acc = 0;
+		d215 = 0;
+		n = 0;
+		lim = packed * 8;
+		while( n < block && bitpos < lim ) {
+			v = it_read_bits( data, src, &bitpos, width );
+			if( width < 7 ) {
+				if( v == 1 << ( width - 1 ) ) {
+					w = it_read_bits( data, src, &bitpos, 3 ) + 1;
+					width = ( w < width ) ? w : w + 1;
+					continue;
+				}
+				sp = 1 << ( width - 1 );
+				v = ( v & ( sp - 1 ) ) - ( v & sp );
+			} else if( width < 9 ) {
+				int border = ( 0xFF >> ( 9 - width ) ) - 4;
+				if( v > border && v <= border + 8 ) {
+					w = v - border;
+					width = ( w < width ) ? w : w + 1;
+					continue;
+				}
+				sp = 1 << ( width - 1 );
+				v = ( v & ( sp - 1 ) ) - ( v & sp );
+			} else {
+				if( v & 0x100 ) {
+					width = ( v & 0xFF ) + 1;
+					if( width > 9 ) {
+						break; /* malformed; drop the rest of the block */
+					}
+					continue;
+				}
+				v = ( v & 0x7F ) - ( v & 0x80 );
+			}
+			acc = ( acc + v ) & 0xFF;
+			w = acc;
+			if( it215 ) {
+				d215 = ( d215 + acc ) & 0xFF;
+				w = d215;
+			}
+			w = w << 8;
+			w = ( w & 0x7FFF ) - ( w & 0x8000 );
+			dest[ ( ( size_t ) done + n ) * stride ] = ( short ) w;
+			n++;
+		}
+		done += block;
+		src += packed;
+	}
+	return src;
+}
+
+/* The 16-bit twin: widths to 17, a 4-bit escape in the low band, and
+ * a block of at most 0x4000 samples (0x8000 bytes). */
+static int it_unpack16( struct data *data, int src, short *dest,
+		int stride, int count, int it215 ) {
+	int done = 0;
+	while( done < count ) {
+		int block = count - done;
+		int packed, bitpos, width, acc, d215, n, v, w, sp, lim;
+		if( block > 0x4000 ) {
+			block = 0x4000;
+		}
+		packed = data_u16le( data, src );
+		src += 2;
+		bitpos = 0;
+		width = 17;
+		acc = 0;
+		d215 = 0;
+		n = 0;
+		lim = packed * 8;
+		while( n < block && bitpos < lim ) {
+			v = it_read_bits( data, src, &bitpos, width );
+			if( width < 7 ) {
+				if( v == 1 << ( width - 1 ) ) {
+					w = it_read_bits( data, src, &bitpos, 4 ) + 1;
+					width = ( w < width ) ? w : w + 1;
+					continue;
+				}
+				sp = 1 << ( width - 1 );
+				v = ( v & ( sp - 1 ) ) - ( v & sp );
+			} else if( width < 17 ) {
+				int border = ( 0xFFFF >> ( 17 - width ) ) - 8;
+				if( v > border && v <= border + 16 ) {
+					w = v - border;
+					width = ( w < width ) ? w : w + 1;
+					continue;
+				}
+				sp = 1 << ( width - 1 );
+				v = ( v & ( sp - 1 ) ) - ( v & sp );
+			} else {
+				if( v & 0x10000 ) {
+					width = ( v & 0xFFFF ) + 1;
+					if( width > 17 ) {
+						break; /* malformed; drop the rest of the block */
+					}
+					continue;
+				}
+				v = ( v & 0x7FFF ) - ( v & 0x8000 );
+			}
+			acc = ( acc + v ) & 0xFFFF;
+			w = acc;
+			if( it215 ) {
+				d215 = ( d215 + acc ) & 0xFFFF;
+				w = d215;
+			}
+			w = ( w & 0x7FFF ) - ( w & 0x8000 );
+			dest[ ( ( size_t ) done + n ) * stride ] = ( short ) w;
+			n++;
+		}
+		done += block;
+		src += packed;
+	}
+	return src;
+}
+
+/* Fold IT's layered volumes - note default 0..64, sample global
+   0..64, instrument global 0..128 - into the engine's single 0..64
+   default. */
+static int it_fold_volume( int vol, int gvs, int gbv ) {
+	int v = vol;
+	if( v > 64 ) {
+		v = 64;
+	}
+	v = v * ( gvs > 64 ? 64 : gvs ) / 64;
+	v = v * ( gbv > 128 ? 128 : gbv ) / 128;
+	return v;
+}
+
+/* Parse one IMPS header and its data into an engine sample. Returns
+   the sample's frame count through *out_frames for the deep copies
+   instrument mode makes, or -1 on allocation failure. Compressed
+   samples (flag bit 3) become silence of their stated length. */
+static int it_load_sample( struct data *data, int offset,
+		struct sample *sample, int *out_frames ) {
+	int flg, cvt, vol, gvs, dfp, frames, loop_start, loop_end, tune;
+	int sixteen_bit, stereo, has_data, compressed, signed_samples;
+	int sample_offset, idx, c5speed;
+	short *scratch;
+	*out_frames = 0;
+	gvs = data_u8( data, offset + 0x11 );
+	flg = data_u8( data, offset + 0x12 );
+	vol = data_u8( data, offset + 0x13 );
+	data_ascii( data, offset + 0x14, 26, sample->name );
+	cvt = data_u8( data, offset + 0x2E );
+	dfp = data_u8( data, offset + 0x2F );
+	frames = data_u32le( data, offset + 0x30 );
+	loop_start = data_u32le( data, offset + 0x34 );
+	loop_end = data_u32le( data, offset + 0x38 );
+	c5speed = data_u32le( data, offset + 0x3C );
+	sample_offset = data_u32le( data, offset + 0x48 );
+	has_data = flg & 0x01;
+	sixteen_bit = flg & 0x02;
+	stereo = ( flg & 0x04 ) > 0;
+	compressed = flg & 0x08;
+	signed_samples = cvt & 0x01;
+	if( frames < 0 || frames > 0x1000000 ) {
+		frames = 0;
+	}
+	if( !has_data ) {
+		frames = 0;
+	}
+	sample->volume = ( short ) it_fold_volume( vol, gvs, 128 );
+	if( dfp & 0x80 ) {
+		idx = ( dfp & 0x7F ) * 4;
+		sample->panning = ( short ) ( ( idx > 255 ? 255 : idx ) + 1 );
+	}
+	if( c5speed < 1 ) {
+		c5speed = 8363;
+	}
+	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12;
+	sample->rel_note = ( short ) ( tune >> FP_SHIFT );
+	sample->fine_tune = ( short ) ( ( tune & FP_MASK ) >> ( FP_SHIFT - 7 ) );
+	if( !( flg & 0x10 ) || loop_end <= loop_start || loop_end > frames ) {
+		loop_start = frames;
+		loop_end = frames;
+	}
+	sample->loop_start = loop_start;
+	sample->loop_length = loop_end - loop_start;
+	sample->stereo = ( short ) stereo;
+	sample->data = calloc( ( ( size_t ) frames + 1 ) * ( stereo ? 2 : 1 ),
+		sizeof( short ) );
+	if( !sample->data ) {
+		return -1;
+	}
+	if( frames > 0 && compressed ) {
+		/* cvt bit 2 marks IT215's extra delta stage. Compressed data
+		   is stored signed whatever cvt bit 0 says. */
+		int it215 = ( cvt & 0x04 ) > 0;
+		if( stereo ) {
+			int next = sixteen_bit
+				? it_unpack16( data, sample_offset, sample->data, 2, frames, it215 )
+				: it_unpack8( data, sample_offset, sample->data, 2, frames, it215 );
+			if( sixteen_bit ) {
+				it_unpack16( data, next, sample->data + 1, 2, frames, it215 );
+			} else {
+				it_unpack8( data, next, sample->data + 1, 2, frames, it215 );
+			}
+		} else if( sixteen_bit ) {
+			it_unpack16( data, sample_offset, sample->data, 1, frames, it215 );
+		} else {
+			it_unpack8( data, sample_offset, sample->data, 1, frames, it215 );
+		}
+	} else if( frames > 0 ) {
+		if( stereo ) {
+			scratch = calloc( ( size_t ) frames * 2, sizeof( short ) );
+			if( !scratch ) {
+				return -1;
+			}
+			if( sixteen_bit ) {
+				data_sam_s16le( data, sample_offset, frames * 2, scratch );
+			} else {
+				data_sam_s8( data, sample_offset, frames * 2, scratch );
+			}
+			if( !signed_samples ) {
+				for( idx = 0; idx < frames * 2; idx++ ) {
+					scratch[ idx ] = ( scratch[ idx ] & 0xFFFF ) - 32768;
+				}
+			}
+			for( idx = 0; idx < frames; idx++ ) {
+				sample->data[ idx * 2 ] = scratch[ idx ];
+				sample->data[ idx * 2 + 1 ] = scratch[ frames + idx ];
+			}
+			free( scratch );
+		} else {
+			if( sixteen_bit ) {
+				data_sam_s16le( data, sample_offset, frames, sample->data );
+			} else {
+				data_sam_s8( data, sample_offset, frames, sample->data );
+			}
+			if( !signed_samples ) {
+				for( idx = 0; idx < frames; idx++ ) {
+					sample->data[ idx ] = ( sample->data[ idx ] & 0xFFFF ) - 32768;
+				}
+			}
+		}
+	}
+	if( stereo ) {
+		sample->data[ ( sample->loop_start + sample->loop_length ) * 2 ]
+			= sample->data[ sample->loop_start * 2 ];
+		sample->data[ ( sample->loop_start + sample->loop_length ) * 2 + 1 ]
+			= sample->data[ sample->loop_start * 2 + 1 ];
+	} else {
+		sample->data[ sample->loop_start + sample->loop_length ]
+			= sample->data[ sample->loop_start ];
+	}
+	if( ( flg & 0x40 ) && sample->loop_length > 1 && !stereo ) {
+		/* Unrolling reallocates the data to loop_start + doubled
+		   loop_length + 1 and drops any tail past the loop, so the
+		   frame count instrument-mode copies use must follow it.
+		   On allocation failure the loop stays undoubled and the
+		   original count still describes the data. */
+		idx = sample->loop_length;
+		sample_ping_pong( sample );
+		if( sample->loop_length != idx ) {
+			frames = sample->loop_start + sample->loop_length;
+		}
+	}
+	*out_frames = frames;
+	return 0;
+}
+
+/* Deep copy for instrument mode, where several instruments may map
+   notes onto the same sample: the engine's instruments own their
+   samples, so each gets its own data. */
+static int it_sample_copy( struct sample *dst, struct sample *src, int frames ) {
+	size_t words = ( ( size_t ) frames + 1 ) * ( src->stereo ? 2 : 1 );
+	*dst = *src;
+	dst->data = calloc( words, sizeof( short ) );
+	if( !dst->data ) {
+		return -1;
+	}
+	memcpy( dst->data, src->data, words * sizeof( short ) );
+	return 0;
+}
+
+/* Convert an IT node envelope (up to 25 nodes, value 0..64, tick
+   u16) to the engine's 16-point form. */
+static void it_load_envelope( struct data *data, int offset,
+		struct envelope *env ) {
+	int flg, num, lpb, lpe, slb, sle, idx;
+	flg = data_u8( data, offset );
+	num = data_u8( data, offset + 1 );
+	lpb = data_u8( data, offset + 2 );
+	lpe = data_u8( data, offset + 3 );
+	slb = data_u8( data, offset + 4 );
+	sle = data_u8( data, offset + 5 );
+	if( num > 16 ) {
+		num = 16;
+	}
+	if( num > 0 ) {
+		env->num_points = ( char ) num;
+		for( idx = 0; idx < num; idx++ ) {
+			int val = data_u8( data, offset + 6 + idx * 3 );
+			env->points_ampl[ idx ] = ( short ) ( val > 64 ? 64 : val );
+			env->points_tick[ idx ] = ( short ) data_u16le( data,
+				offset + 6 + idx * 3 + 1 );
+		}
+		env->enabled = ( flg & 0x01 ) > 0;
+		env->looped = ( flg & 0x02 ) > 0 && lpe < num;
+		env->sustain = ( flg & 0x04 ) > 0 && sle < num;
+		if( env->looped ) {
+			env->loop_start_tick = env->points_tick[ lpb < num ? lpb : 0 ];
+			env->loop_end_tick = env->points_tick[ lpe ];
+		}
+		if( env->sustain ) {
+			/* The engine has one sustain tick; IT sustains a loop.
+			   Holding at the loop's end point is the closest fit. */
+			env->sustain_tick = env->points_tick[ sle ];
+			( void ) slb;
+		}
+	}
+}
+
+static struct module* module_load_it( struct data *data, char *message ) {
+	int ord_num, ins_num, smp_num, pat_num, flags, use_instruments;
+	int idx, sub, ofs, key, ins, volume, effect, param, chan;
+	int row, num_rows, pat_len, pat_ofs_idx, max_chan, tok, mask;
+	int gv, mv, tick_speed, tempo, entry, seq_end;
+	int *smp_frames = NULL;
+	struct sample *temp_samples = NULL;
+	struct instrument *instrument;
+	char *pattern_data;
+	unsigned char last_mask[ 64 ], last_note[ 64 ], last_ins[ 64 ];
+	unsigned char last_vol[ 64 ], last_fx[ 64 ], last_pm[ 64 ];
+	struct module *module = calloc( 1, sizeof( struct module ) );
+	if( !module ) {
+		return NULL;
+	}
+	data_ascii( data, 4, 26, module->name );
+	ord_num = data_u16le( data, 0x20 );
+	ins_num = data_u16le( data, 0x22 );
+	smp_num = data_u16le( data, 0x24 );
+	pat_num = data_u16le( data, 0x26 );
+	flags = data_u16le( data, 0x2C );
+	gv = data_u8( data, 0x30 );
+	mv = data_u8( data, 0x31 );
+	tick_speed = data_u8( data, 0x32 );
+	tempo = data_u8( data, 0x33 );
+	use_instruments = ( flags & 0x04 ) > 0 && ins_num > 0;
+	if( ord_num < 0 || ord_num > 256 ) {
+		ord_num = 256;
+	}
+	if( ins_num < 0 || ins_num > 255 ) {
+		ins_num = 255;
+	}
+	if( smp_num < 0 || smp_num > 255 ) {
+		smp_num = 255;
+	}
+	if( pat_num < 0 || pat_num > 255 ) {
+		pat_num = 255;
+	}
+	module->num_patterns = pat_num > 0 ? pat_num : 1;
+	module->default_gvol = ( gv > 128 ? 128 : gv ) >> 1;
+	module->default_speed = tick_speed > 0 ? tick_speed : 6;
+	module->default_tempo = tempo > 31 ? tempo : 125;
+	module->c2_rate = 8363;
+	module->gain = ( mv & 0x7F ) > 0 ? ( mv & 0x7F ) : 48;
+	module->sequence_len = 0;
+	module->sequence = calloc( ord_num > 0 ? ord_num : 1,
+		sizeof( unsigned char ) );
+	if( !module->sequence ) {
+		dispose_module( module );
+		return NULL;
+	}
+	seq_end = 0;
+	for( idx = 0; idx < ord_num && !seq_end; idx++ ) {
+		entry = data_u8( data, 0xC0 + idx );
+		if( entry == 255 ) {
+			seq_end = 1;
+		} else {
+			/* 254 is the skip marker; anything at or past the
+			   pattern count is skipped by the sequencer walk, which
+			   is exactly its meaning. */
+			module->sequence[ module->sequence_len++ ]
+				= ( unsigned char ) ( entry > 254 ? 254 : entry );
+		}
+	}
+	if( module->sequence_len < 1 ) {
+		module->sequence_len = 1;
+	}
+	/* The three parapointer tables follow the orders. */
+	ofs = 0xC0 + ord_num;
+	/* Pre-scan the patterns for the highest channel in use, so the
+	   engine mixes only the voices the file plays. The scan walks the
+	   same packed stream as the decode below, tracking the per-channel
+	   mask memory, because the mask decides how many bytes follow. */
+	max_chan = 0;
+	for( idx = 0; idx < pat_num; idx++ ) {
+		int pofs = data_u32le( data, ofs + ins_num * 4 + smp_num * 4 + idx * 4 );
+		if( pofs == 0 ) {
+			continue;
+		}
+		pat_len = data_u16le( data, pofs );
+		num_rows = data_u16le( data, pofs + 2 );
+		memset( last_mask, 0, sizeof( last_mask ) );
+		sub = pofs + 8;
+		row = 0;
+		while( row < num_rows && sub < pofs + 8 + pat_len ) {
+			tok = data_u8( data, sub++ );
+			if( tok == 0 ) {
+				row++;
+				continue;
+			}
+			chan = ( tok - 1 ) & 63;
+			if( chan > max_chan ) {
+				max_chan = chan;
+			}
+			if( tok & 0x80 ) {
+				last_mask[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			mask = last_mask[ chan ];
+			if( mask & 0x01 ) sub++;
+			if( mask & 0x02 ) sub++;
+			if( mask & 0x04 ) sub++;
+			if( mask & 0x08 ) sub += 2;
+		}
+	}
+	module->num_channels = max_chan + 1;
+	module->default_panning = calloc( module->num_channels,
+		sizeof( unsigned char ) );
+	if( !module->default_panning ) {
+		dispose_module( module );
+		return NULL;
+	}
+	for( idx = 0; idx < module->num_channels; idx++ ) {
+		int pan = data_u8( data, 0x40 + idx ) & 0x7F;
+		if( pan > 64 ) {
+			pan = 32; /* surround and out-of-range play centred */
+		}
+		pan = pan * 4;
+		module->default_panning[ idx ]
+			= ( unsigned char ) ( pan > 255 ? 255 : pan );
+	}
+	/* Samples first: instrument mode copies from them. */
+	if( smp_num > 0 ) {
+		temp_samples = calloc( smp_num, sizeof( struct sample ) );
+		smp_frames = calloc( smp_num, sizeof( int ) );
+		if( !temp_samples || !smp_frames ) {
+			goto it_oom;
+		}
+		for( idx = 0; idx < smp_num; idx++ ) {
+			int sofs = data_u32le( data, ofs + ins_num * 4 + idx * 4 );
+			if( it_load_sample( data, sofs, &temp_samples[ idx ],
+					&smp_frames[ idx ] ) ) {
+				goto it_oom;
+			}
+		}
+	}
+	if( use_instruments ) {
+		module->num_instruments = ins_num;
+	} else {
+		module->num_instruments = smp_num > 0 ? smp_num : 1;
+	}
+	module->instruments = calloc( module->num_instruments + 1,
+		sizeof( struct instrument ) );
+	if( !module->instruments ) {
+		goto it_oom;
+	}
+	for( ins = 0; ins <= module->num_instruments; ins++ ) {
+		instrument = &module->instruments[ ins ];
+		instrument->num_samples = 1;
+		instrument->samples = calloc( 1, sizeof( struct sample ) );
+		if( !instrument->samples ) {
+			goto it_oom;
+		}
+	}
+	if( use_instruments ) {
+		for( ins = 1; ins <= ins_num; ins++ ) {
+			int iofs = data_u32le( data, ofs + ( ins - 1 ) * 4 );
+			int fade, gbv, nos, local, want, kb_note, kb_smp;
+			int local_of[ 100 ];
+			instrument = &module->instruments[ ins ];
+			data_ascii( data, iofs + 0x20, 26, instrument->name );
+			fade = data_u16le( data, iofs + 0x14 );
+			gbv = data_u8( data, iofs + 0x18 );
+			fade = fade * 64;
+			instrument->vol_fadeout = fade > 32768 ? 32768 : fade;
+			/* Gather the samples this instrument's keyboard uses and
+			   give the instrument private copies of them. */
+			nos = 0;
+			for( idx = 0; idx < 120 && nos < 100; idx++ ) {
+				kb_smp = data_u8( data, iofs + 0x40 + idx * 2 + 1 );
+				if( kb_smp >= 1 && kb_smp <= smp_num ) {
+					for( local = 0; local < nos; local++ ) {
+						if( local_of[ local ] == kb_smp ) {
+							break;
+						}
+					}
+					if( local == nos ) {
+						local_of[ nos++ ] = kb_smp;
+					}
+				}
+			}
+			if( nos > 0 ) {
+				free( instrument->samples );
+				instrument->samples = calloc( nos, sizeof( struct sample ) );
+				if( !instrument->samples ) {
+					instrument->num_samples = 0;
+					goto it_oom;
+				}
+				instrument->num_samples = nos;
+				for( local = 0; local < nos; local++ ) {
+					struct sample *src = &temp_samples[ local_of[ local ] - 1 ];
+					if( it_sample_copy( &instrument->samples[ local ], src,
+							smp_frames[ local_of[ local ] - 1 ] ) ) {
+						goto it_oom;
+					}
+					instrument->samples[ local ].volume
+						= ( short ) it_fold_volume(
+							instrument->samples[ local ].volume, 64, gbv );
+				}
+				for( idx = 0; idx < 120; idx++ ) {
+					kb_note = idx - 11;
+					if( kb_note >= 1 && kb_note <= 96 ) {
+						kb_smp = data_u8( data, iofs + 0x40 + idx * 2 + 1 );
+						want = 0;
+						for( local = 0; local < nos; local++ ) {
+							if( local_of[ local ] == kb_smp ) {
+								want = local;
+								break;
+							}
+						}
+						instrument->key_to_sample[ kb_note ] = ( char ) want;
+					}
+				}
+			}
+			it_load_envelope( data, iofs + 0x130, &instrument->vol_env );
+		}
+	} else {
+		for( ins = 1; ins <= module->num_instruments; ins++ ) {
+			instrument = &module->instruments[ ins ];
+			if( temp_samples && ins <= smp_num ) {
+				/* Sample mode: transfer ownership, no copy. */
+				instrument->samples[ 0 ] = temp_samples[ ins - 1 ];
+				memcpy( instrument->name, temp_samples[ ins - 1 ].name, 26 );
+				temp_samples[ ins - 1 ].data = NULL;
+			}
+		}
+	}
+	/* Patterns. */
+	module->patterns = calloc( module->num_patterns, sizeof( struct pattern ) );
+	if( !module->patterns ) {
+		goto it_oom;
+	}
+	for( pat_ofs_idx = 0; pat_ofs_idx < module->num_patterns; pat_ofs_idx++ ) {
+		int pofs = pat_num > 0 ? data_u32le( data,
+			ofs + ins_num * 4 + smp_num * 4 + pat_ofs_idx * 4 ) : 0;
+		num_rows = 64;
+		pat_len = 0;
+		if( pofs > 0 ) {
+			pat_len = data_u16le( data, pofs );
+			num_rows = data_u16le( data, pofs + 2 );
+			if( num_rows < 1 || num_rows > 200 ) {
+				num_rows = 64;
+			}
+		}
+		module->patterns[ pat_ofs_idx ].num_channels = module->num_channels;
+		module->patterns[ pat_ofs_idx ].num_rows = num_rows;
+		pattern_data = calloc( ( size_t ) module->num_channels * num_rows, 5 );
+		if( !pattern_data ) {
+			goto it_oom;
+		}
+		module->patterns[ pat_ofs_idx ].data = pattern_data;
+		if( pofs == 0 ) {
+			continue;
+		}
+		memset( last_mask, 0, sizeof( last_mask ) );
+		memset( last_note, 0, sizeof( last_note ) );
+		memset( last_ins, 0, sizeof( last_ins ) );
+		memset( last_vol, 0, sizeof( last_vol ) );
+		memset( last_fx, 0, sizeof( last_fx ) );
+		memset( last_pm, 0, sizeof( last_pm ) );
+		sub = pofs + 8;
+		row = 0;
+		while( row < num_rows && sub < pofs + 8 + pat_len ) {
+			tok = data_u8( data, sub++ );
+			if( tok == 0 ) {
+				row++;
+				continue;
+			}
+			chan = ( tok - 1 ) & 63;
+			if( tok & 0x80 ) {
+				last_mask[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			mask = last_mask[ chan ];
+			key = ins = volume = effect = param = 0;
+			if( mask & 0x01 ) {
+				last_note[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			if( mask & 0x11 ) {
+				entry = last_note[ chan ];
+				if( entry >= 254 ) {
+					/* 255 is note off; 254, note cut, is treated the
+					   same at this stage. */
+					key = 97;
+				} else if( entry <= 119 ) {
+					key = entry - 11;
+					if( key < 1 || key > 96 ) {
+						key = 0;
+					}
+				}
+			}
+			if( mask & 0x02 ) {
+				last_ins[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			if( mask & 0x22 ) {
+				ins = last_ins[ chan ];
+				if( ins > module->num_instruments ) {
+					ins = 0;
+				}
+			}
+			if( mask & 0x04 ) {
+				last_vol[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			if( mask & 0x44 ) {
+				entry = last_vol[ chan ];
+				if( entry <= 64 ) {
+					volume = entry + 0x10;
+				} else if( entry >= 128 && entry <= 192 ) {
+					entry = ( entry - 128 ) >> 2;
+					volume = 0xC0 | ( entry > 15 ? 15 : entry );
+				}
+			}
+			if( mask & 0x08 ) {
+				last_fx[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+				last_pm[ chan ] = ( unsigned char ) data_u8( data, sub++ );
+			}
+			if( mask & 0x88 ) {
+				effect = last_fx[ chan ];
+				param = last_pm[ chan ];
+				if( effect < 1 || effect >= 0x40 ) {
+					effect = param = 0;
+				} else {
+					effect += 0x80;
+				}
+			}
+			if( chan < module->num_channels && row < num_rows ) {
+				idx = ( row * module->num_channels + chan ) * 5;
+				pattern_data[ idx     ] = ( char ) key;
+				pattern_data[ idx + 1 ] = ( char ) ins;
+				pattern_data[ idx + 2 ] = ( char ) volume;
+				pattern_data[ idx + 3 ] = ( char ) effect;
+				pattern_data[ idx + 4 ] = ( char ) param;
+			}
+		}
+	}
+	if( temp_samples ) {
+		for( idx = 0; idx < smp_num; idx++ ) {
+			free( temp_samples[ idx ].data );
+		}
+		free( temp_samples );
+	}
+	free( smp_frames );
+	( void ) message;
+	return module;
+it_oom:
+	if( temp_samples ) {
+		for( idx = 0; idx < smp_num; idx++ ) {
+			free( temp_samples[ idx ].data );
+		}
+		free( temp_samples );
+	}
+	free( smp_frames );
+	dispose_module( module );
+	return NULL;
+}
+
 /* Untagged 15-instrument Soundtracker modules carry no format tag to
  * key on, so detection is a plausibility check on the fixed-position
  * header fields: a printable title and sample names, a sane sequence
@@ -1186,6 +1917,8 @@ static struct module* module_load( struct data *data, char *message ) {
 	struct module* module;
 	if( !memcmp( data_ascii( data, 0, 16, ascii ), "Extended Module:", 16 ) ) {
 		module = module_load_xm( data, message );
+	} else if( !memcmp( data_ascii( data, 0, 4, ascii ), "IMPM", 4 ) ) {
+		module = module_load_it( data, message );
 	} else if( !memcmp( data_ascii( data, 44, 4, ascii ), "SCRM", 4 ) ) {
 		module = module_load_s3m( data, message );
 	} else {
