@@ -601,8 +601,10 @@ static bool content_save_ram_file(unsigned slot, bool compress)
 {
    struct ram_type ram;
    retro_ctx_memory_info_t mem_info;
+#if defined(HAVE_COMPRESSION)
    int64_t disk_rc;
    void *disk_buf = NULL;
+#endif
 
    if (!content_get_memory(&mem_info, &ram, slot))
       return false;
@@ -615,9 +617,7 @@ static bool content_save_ram_file(unsigned slot, bool compress)
    {
 #if defined(HAVE_COMPRESSION)
       bool read_ok = rzipstream_read_file(ram.path, &disk_buf, &disk_rc);
-#else
-      bool read_ok = filestream_read_file(ram.path, &disk_buf, &disk_rc);
-#endif
+
       if (read_ok && disk_buf)
       {
          bool matches = (disk_rc == (int64_t)mem_info.size)
@@ -633,6 +633,30 @@ static bool content_save_ram_file(unsigned slot, bool compress)
       }
       else if (disk_buf)
          free(disk_buf);
+#else
+      /* Uncompressed saves are compared in place rather than slurped.
+       * The old path allocated a second copy of the whole save file
+       * purely to memcmp it and free it, and checked the size only
+       * after the read had already happened - so a save that had
+       * changed size, the one case where the answer is knowable for
+       * free, still paid a full-size malloc and a full-file read.
+       * Cores with megabytes of save RAM paid that on every save,
+       * against a memory budget that on the handheld targets is the
+       * scarce resource.
+       *
+       * Size first, then compare without owning a copy: the mapped
+       * view when the platform gives one, a fixed window otherwise.
+       * Either way the comparison stops at the first differing byte,
+       * which is the case that goes on to write. */
+      if (filestream_matches_buf(ram.path, mem_info.data,
+               mem_info.size))
+      {
+         RARCH_LOG("[SRAM] %s \"%s\" (unchanged, skipping write).\n",
+               msg_hash_to_str(MSG_SAVED_SUCCESSFULLY_TO),
+               ram.path);
+         return true;
+      }
+#endif
    }
 
    RARCH_LOG("[SRAM] %s #%u %s \"%s\".\n",

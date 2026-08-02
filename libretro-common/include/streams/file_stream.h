@@ -400,6 +400,57 @@ int filestream_cmp(const char *src_path, const char *dst_path);
 const char* filestream_get_path(RFILE *stream);
 
 /**
+ * Borrowed read-only pointer to the entire file, when \c stream is
+ * backed by a memory map.
+ *
+ * Open with \c RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS to ask for
+ * a mapping.  The hint has always produced one, but the map was
+ * reachable only from inside the read path, which copies out of it -
+ * so consumers of the hint paid for a copy of data that was already
+ * addressable.  Use this when the file is to be read rather than
+ * owned: compared against a buffer, hashed, or handed to a parser
+ * that takes a base pointer.
+ *
+ * \c NULL is a normal answer rather than an error - the platform may
+ * have no mapping support, the hint may not have been given, or the
+ * stream may come from a frontend-supplied VFS - so a caller must
+ * keep its ordinary read path and treat this purely as a fast lane.
+ *
+ * @param stream The file to get the mapping of.
+ * @param len Filled with the mapped length, or 0 when there is no
+ * mapping.  May be \c NULL.
+ * @return Pointer to the mapped file, or \c NULL if it is not mapped.
+ * The mapping is owned by \c stream, is valid only until \c stream is
+ * closed, and must not be written or freed by the caller.
+ */
+const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
+
+/**
+ * Does the file at \c path hold exactly \c len bytes equal to
+ * \c data?
+ *
+ * For the common "has this changed since I last wrote it?" question,
+ * where the answer decides whether to write at all.  Callers used to
+ * answer it by reading the whole file into a fresh allocation,
+ * comparing, and freeing - paying a full-size malloc and a full-file
+ * read even when a size mismatch made the answer free.
+ *
+ * This allocates nothing: it settles a size mismatch without reading,
+ * compares in place against the memory map where the platform offers
+ * one, falls back to a fixed window otherwise, and stops at the first
+ * differing byte.
+ *
+ * @param path The file to compare against.
+ * @param data The buffer to compare with. May be \c NULL only when
+ * \c len is 0.
+ * @param len The number of bytes in \c data.
+ * @return \c true only if the file exists, is exactly \c len bytes,
+ * and every byte matches. A missing or unreadable file is \c false,
+ * not an error - the caller's next step is the same either way.
+ */
+bool filestream_matches_buf(const char *path, const void *data, size_t len);
+
+/**
  * Determines if a file exists at the given path.
  *
  * @param path The path to check for existence.

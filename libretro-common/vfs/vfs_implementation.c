@@ -1113,6 +1113,30 @@ const char *retro_vfs_file_get_path_impl(
    return stream->orig_path;
 }
 
+const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
+      libretro_vfs_implementation_file *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+#ifdef HAVE_MMAP
+   /* Gate on the hint as well as the pointer, matching the read and
+    * seek paths: those consult 'mapped' only under the hint, so the
+    * map is authoritative for the file contents only when the hint
+    * put it there. */
+   if (     stream
+         && stream->mapped
+         && (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+   {
+      if (len)
+         *len = (int64_t)stream->mapsize;
+      return stream->mapped;
+   }
+#else
+   (void)stream;
+#endif
+   return NULL;
+}
+
 int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    int ret                   = RETRO_VFS_STAT_IS_VALID;

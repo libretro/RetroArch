@@ -1197,6 +1197,96 @@ const char* filestream_get_path(RFILE *stream)
          (libretro_vfs_implementation_file*)stream->hfile);
 }
 
+bool filestream_matches_buf(const char *path, const void *data, size_t len)
+{
+   const uint8_t *mem     = (const uint8_t*)data;
+   const uint8_t *map     = NULL;
+   int64_t        map_len = 0;
+   bool           match   = false;
+   RFILE         *file;
+
+   if (!path || !*path || (len && !data))
+      return false;
+
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      return false;
+
+   /* The cheap answer, before a byte moves.  Callers that slurped the
+    * file to memcmp it were paying a full-size allocation and a
+    * full-file read to learn this, and learning it last. */
+   if (filestream_get_size(file) != (int64_t)len)
+      goto done;
+
+   if ((map = filestream_get_mapped_ptr(file, &map_len)))
+   {
+      /* A view that does not span the file would compare the wrong
+       * bytes; fall through to the copying path rather than guess. */
+      if (map_len == (int64_t)len)
+      {
+         match = (len == 0) || (memcmp(map, mem, len) == 0);
+         goto done;
+      }
+      if (filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START) != 0)
+         goto done;
+   }
+
+   {
+      /* Window sized to the VFS's own stdio buffer, so each read is
+       * handed straight to the destination rather than staged through
+       * it - below that size this reintroduces the very copy the
+       * mapped path exists to avoid. */
+      uint8_t window[64 * 1024];
+      size_t  off = 0;
+
+      match = true;
+      while (off < len)
+      {
+         int64_t got;
+         size_t  want = len - off;
+
+         if (want > sizeof(window))
+            want = sizeof(window);
+
+         if ((got = filestream_read(file, window, (int64_t)want))
+               != (int64_t)want)
+         {
+            match = false;
+            break;
+         }
+         /* Stop at the first difference: the caller asked a yes/no
+          * question and a 'no' is final. */
+         if (memcmp(window, mem + off, (size_t)got) != 0)
+         {
+            match = false;
+            break;
+         }
+         off += (size_t)got;
+      }
+   }
+
+done:
+   if (filestream_close(file) != 0)
+      free(file);
+   return match;
+}
+
+const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+   if (!stream)
+      return NULL;
+   /* A frontend- or core-supplied VFS is driven entirely through the
+    * callbacks below and has no mapping this side of them, so there
+    * is nothing to hand back.  Answer NULL rather than reaching into
+    * a handle this layer does not own. */
+   if (filestream_read_cb)
+      return NULL;
+   return retro_vfs_file_get_mapped_ptr_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
 {
    int64_t output;
@@ -1267,6 +1357,78 @@ int filestream_close(RFILE *stream)
    return output;
 }
 
+/* Read an already-open stream to EOF, growing the buffer as it goes.
+ *
+ * For the path below that sizes its allocation from
+ * filestream_get_size(), a file reporting zero bytes yields a zero-
+ * byte read - so procfs, whose entries all stat as size 0, came back
+ * as an empty string *and a success return*.  Callers cannot tell
+ * that from a genuinely empty file, and did not: the /proc/apm
+ * battery probe, the /proc/modules sg check in cdrom.c and the
+ * dingux /proc/jz/battery reader all silently saw nothing.  (Which
+ * is also why mem_stats.c reads /proc/meminfo through a raw open()
+ * and read() rather than this helper.)
+ *
+ * A stat size is a hint, not a contract - synthetic filesystems have
+ * no length until they are read, and a growing file's is stale the
+ * moment it is taken - so when there is no usable hint, read until
+ * the stream says stop.  Returns bytes read, or -1.
+ */
+static int64_t filestream_read_file_to_eof(RFILE *file, void **buf)
+{
+   /* One page holds essentially every procfs entry this is used for,
+    * so the doubling below rarely runs at all. */
+   size_t   cap  = 4096;
+   size_t   used = 0;
+   char    *data = (char*)malloc(cap);
+
+   if (!data)
+      return -1;
+
+   for (;;)
+   {
+      int64_t got;
+
+      /* Keep a spare byte for the NUL, and grow before reading so a
+       * read is never issued with zero space. */
+      if (used + 1 >= cap)
+      {
+         char  *tmp;
+         size_t want = cap * 2;
+
+         /* Refuse a doubling that would wrap, rather than allocating
+          * a smaller buffer than the offsets below assume. */
+         if (want < cap)
+         {
+            free(data);
+            return -1;
+         }
+         if (!(tmp = (char*)realloc(data, want)))
+         {
+            free(data);
+            return -1;
+         }
+         data = tmp;
+         cap  = want;
+      }
+
+      if ((got = filestream_read(file, data + used,
+                  (int64_t)(cap - used - 1))) < 0)
+      {
+         free(data);
+         return -1;
+      }
+      if (got == 0)
+         break;
+
+      used += (size_t)got;
+   }
+
+   data[used] = '\0';
+   *buf       = data;
+   return (int64_t)used;
+}
+
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
    int64_t ret              = 0;
@@ -1284,6 +1446,22 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
    if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
+
+   /* No usable size hint: read to EOF instead of trusting the zero.
+    * See filestream_read_file_to_eof() above. */
+   if (content_buf_size == 0)
+   {
+      if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
+         goto error;
+
+      if (filestream_close(file) != 0)
+         free(file);
+
+      *buf = content_buf;
+      if (len)
+         *len = ret;
+      return 1;
+   }
 
    /* Reject sizes that would not survive the cast to size_t for
     * the malloc below.  Pre-patch the only check here was a

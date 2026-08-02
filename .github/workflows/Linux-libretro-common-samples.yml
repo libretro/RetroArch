@@ -67,6 +67,7 @@ jobs:
             rzip_chunk_size_test
             net_ifinfo
             vfs_read_overflow_test
+            vfs_mapped_ptr_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             chd_meta_overflow_test
@@ -618,3 +619,22 @@ jobs:
           set -u
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
+
+      - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
+        shell: bash
+        working-directory: libretro-common/samples/file/vfs
+        run: |
+          set -eu
+          # The default build has HAVE_MMAP, where filestream_matches_buf()
+          # compares against the memory map in a single memcmp and its
+          # windowed fallback never executes - so the window-boundary
+          # cases in the run above assert on code that did not run.
+          # This lane is where that path is actually under test, and it
+          # is also the only coverage the platforms without mappings
+          # get.  Verified to fail here with the window advance off by
+          # one, which the mapped lane does not notice at all.
+          make clean all MMAP=0 SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 120 \
+             ./vfs_mapped_ptr_test
+          echo "[pass] vfs_mapped_ptr_test (MMAP=0, ASan)"

@@ -57,6 +57,25 @@ int retro_vfs_file_rename_impl(const char *old_path, const char *new_path);
 
 const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *stream);
 
+/* Borrowed pointer to the whole file, when this stream is backed by a
+ * memory map, else NULL.  Valid until the stream is closed; read-only;
+ * never freed by the caller.
+ *
+ * RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS already maps the file,
+ * but the mapping was reachable only from inside the read path, which
+ * memcpy's out of it - so every consumer of the hint paid for a copy
+ * of data that was already addressable, and the point of asking for
+ * the map was lost.  This hands the map itself to callers that want
+ * to look rather than own: comparing a file against a buffer, hashing
+ * it, or passing it to a parser that takes a base pointer.
+ *
+ * NULL is a normal answer, not an error - no HAVE_MMAP, hint not
+ * given, a write mode, a scheme with no mapping, or a frontend-
+ * supplied VFS - so callers need the copying path anyway and should
+ * treat this as a fast lane, never as the only one. */
+const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
+      libretro_vfs_implementation_file *stream, int64_t *len);
+
 int retro_vfs_stat_impl(const char *path, int32_t *size);
 
 int retro_vfs_stat_64_impl(const char *path, int64_t *size);
