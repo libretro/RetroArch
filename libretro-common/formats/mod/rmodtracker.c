@@ -49,7 +49,11 @@ struct sample {
 	/* When stereo is set, data holds interleaved L,R pairs and every
 	   frame-counted field (loop points, indices) stays in frames; only
 	   the fetch multiplies by two. */
-	short volume, panning, rel_note, fine_tune, stereo, *data;
+	/* glob_vol carries IT's always-applied sample x instrument global
+	   volume, stored +1 so calloc's zero means the 64 every other
+	   format implies; the volume column overrides the default volume
+	   but never this. */
+	short volume, panning, rel_note, fine_tune, stereo, glob_vol, *data;
 };
 
 struct envelope {
@@ -62,8 +66,9 @@ struct instrument {
 	int num_samples, vol_fadeout;
 	char name[ 32 ], key_to_sample[ 97 ];
 	/* IT new-note action: 0 cut (every other format's behaviour and
-	   calloc's default), 1 continue, 2 note off, 3 fade. */
-	char nna;
+	   calloc's default), 1 continue, 2 note off, 3 fade. dct/dca are
+	   the duplicate check type and action. */
+	char nna, dct, dca;
 	char vib_type, vib_sweep, vib_depth, vib_rate;
 	struct envelope vol_env, pan_env;
 	struct sample *samples;
@@ -136,7 +141,7 @@ struct channel {
 	int id, key_on, random_seed, pl_row;
 	int sample_off, sample_idx, sample_fra, freq, ampl, pann;
 	int volume, panning, fadeout_vol, vol_env_tick, pan_env_tick;
-	int chan_vol, cvol_slide_param;
+	int chan_vol, cvol_slide_param, tempo_slide_param, high_offset;
 	int period, porta_period, retrig_count, fx_count, av_count;
 	int porta_up_param, porta_down_param, tone_porta_param, offset_param;
 	int fine_porta_up_param, fine_porta_down_param, xfine_porta_param;
@@ -937,8 +942,12 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
  * slide mode is approximated with Amiga periods, so portamento depth
  * can differ; sustain loops are ignored in favour of the normal loop;
  * pitch and filter envelopes, panbrello (Yxy) and the S9x
- * sound-control set are not applied. Channel volumes (initial table,
- * Mxx, Nxy), Wxy global volume slide and Xxx panning are.
+ * sound-control set are not applied, and the volume column's tone
+ * porta uses the engine's rate scale rather than IT's table. Channel
+ * volumes (initial table, Mxx, Nxy), Wxy global volume slide, Xxx
+ * panning, Pxy panning slide, Txx tempo slides, SAx high offset,
+ * volume-column volume effects and duplicate checks (DCT/DCA, sample
+ * check approximated as instrument check) are applied.
  * ------------------------------------------------------------------ */
 
 
@@ -1095,19 +1104,6 @@ static int it_unpack16( struct data *data, int src, short *dest,
 	return src;
 }
 
-/* Fold IT's layered volumes - note default 0..64, sample global
-   0..64, instrument global 0..128 - into the engine's single 0..64
-   default. */
-static int it_fold_volume( int vol, int gvs, int gbv ) {
-	int v = vol;
-	if( v > 64 ) {
-		v = 64;
-	}
-	v = v * ( gvs > 64 ? 64 : gvs ) / 64;
-	v = v * ( gbv > 128 ? 128 : gbv ) / 128;
-	return v;
-}
-
 /* Parse one IMPS header and its data into an engine sample. Returns
    the sample's frame count through *out_frames for the deep copies
    instrument mode makes, or -1 on allocation failure. Compressed
@@ -1141,7 +1137,8 @@ static int it_load_sample( struct data *data, int offset,
 	if( !has_data ) {
 		frames = 0;
 	}
-	sample->volume = ( short ) it_fold_volume( vol, gvs, 128 );
+	sample->volume = ( short ) ( vol > 64 ? 64 : vol );
+	sample->glob_vol = ( short ) ( ( gvs > 64 ? 64 : gvs ) + 1 );
 	if( dfp & 0x80 ) {
 		idx = ( dfp & 0x7F ) * 4;
 		sample->panning = ( short ) ( ( idx > 255 ? 255 : idx ) + 1 );
@@ -1465,6 +1462,8 @@ static struct module* module_load_it( struct data *data, char *message ) {
 			instrument = &module->instruments[ ins ];
 			data_ascii( data, iofs + 0x20, 26, instrument->name );
 			instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
+			instrument->dct = ( char ) ( data_u8( data, iofs + 0x12 ) & 3 );
+			instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
 			fade = data_u16le( data, iofs + 0x14 );
 			gbv = data_u8( data, iofs + 0x18 );
 			fade = fade * 64;
@@ -1499,9 +1498,13 @@ static struct module* module_load_it( struct data *data, char *message ) {
 							smp_frames[ local_of[ local ] - 1 ] ) ) {
 						goto it_oom;
 					}
-					instrument->samples[ local ].volume
-						= ( short ) it_fold_volume(
-							instrument->samples[ local ].volume, 64, gbv );
+					{
+						int g = instrument->samples[ local ].glob_vol;
+						g = g ? g - 1 : 64;
+						g = ( g * ( gbv > 128 ? 128 : gbv ) ) >> 7;
+						instrument->samples[ local ].glob_vol
+							= ( short ) ( g + 1 );
+					}
 				}
 				for( idx = 0; idx < 120; idx++ ) {
 					kb_note = idx - 11;
@@ -1610,9 +1613,23 @@ static struct module* module_load_it( struct data *data, char *message ) {
 				entry = last_vol[ chan ];
 				if( entry <= 64 ) {
 					volume = entry + 0x10;
+				} else if( entry <= 74 ) {
+					volume = 0x90 | ( entry - 65 );  /* fine vol up */
+				} else if( entry <= 84 ) {
+					volume = 0x80 | ( entry - 75 );  /* fine vol down */
+				} else if( entry <= 94 ) {
+					volume = 0x70 | ( entry - 85 );  /* vol slide up */
+				} else if( entry <= 104 ) {
+					volume = 0x60 | ( entry - 95 );  /* vol slide down */
 				} else if( entry >= 128 && entry <= 192 ) {
 					entry = ( entry - 128 ) >> 2;
 					volume = 0xC0 | ( entry > 15 ? 15 : entry );
+				} else if( entry >= 193 && entry <= 202 ) {
+					/* Tone porta; IT's rate table is coarser than the
+					   nibble this passes, an approximation. */
+					volume = 0xF0 | ( entry - 193 );
+				} else if( entry >= 203 && entry <= 212 ) {
+					volume = 0xB0 | ( entry - 203 );  /* vibrato depth */
 				}
 			}
 			if( mask & 0x08 ) {
@@ -2232,6 +2249,37 @@ static void channel_capture_ghost( struct channel *channel ) {
 		   exactly as it was. */
 		ghost->key_on = 0;
 	}
+	/* Duplicate check: the incoming note's instrument can ask for
+	   its own duplicates on this channel - including the voice just
+	   moved aside - to be cut, released or faded, which is what
+	   stops repeated NNA notes stacking without bound. Runs after
+	   the move, as in IT. The sample check (2) is approximated as
+	   an instrument check, since instrument-mode sample copies make
+	   pointer identity per-instrument. */
+	idx = channel->note.instrument;
+	if( idx > 0 && idx <= replay->module->num_instruments ) {
+		struct instrument *newins = &replay->module->instruments[ idx ];
+		int dct = newins->dct & 3;
+		if( dct ) {
+			for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+				int match;
+				ghost = &replay->ghosts[ idx ];
+				if( !ghost->sample || ghost->id != channel->id
+				 || ghost->instrument != newins ) {
+					continue;
+				}
+				match = dct != 1
+					|| ghost->note.key == channel->note.key;
+				if( match ) {
+					if( ( newins->dca & 3 ) == 0 ) {
+						ghost->sample = NULL;
+					} else {
+						ghost->key_on = 0;
+					}
+				}
+			}
+		}
+	}
 }
 
 static void channel_trigger( struct channel *channel ) {
@@ -2261,7 +2309,8 @@ static void channel_trigger( struct channel *channel ) {
 		if( channel->note.param > 0 ) {
 			channel->offset_param = channel->note.param;
 		}
-		channel->sample_off = channel->offset_param << 8;
+		channel->sample_off = ( channel->offset_param << 8 )
+			+ channel->high_offset;
 	}
 	if( channel->note.volume >= 0x10 && channel->note.volume < 0x60 ) {
 		channel->volume = channel->note.volume < 0x50 ? channel->note.volume - 0x10 : 64;
@@ -2422,8 +2471,11 @@ static void channel_calculate_ampl( struct channel *channel ) {
 		vol = 0;
 	}
 	/* At the default of 64 this is vol * 64 >> 6 == vol exactly, so
-	   formats without channel volumes are bit-identical. */
+	   formats without channel volumes are bit-identical; the same
+	   holds for the sample global volume below. */
 	vol = ( vol * channel->chan_vol ) >> 6;
+	vol = ( vol * ( channel->sample->glob_vol
+		? channel->sample->glob_vol - 1 : 64 ) ) >> 6;
 	vol = ( vol * channel->replay->module->gain * FP_ONE ) >> 13;
 	vol = ( vol * channel->fadeout_vol ) >> 15;
 	channel->ampl = ( vol * channel->replay->global_vol * env_vol ) >> 12;
@@ -2506,6 +2558,24 @@ static void channel_tick( struct channel *channel ) {
 		case 0x8E: /* IT Channel Volume Slide. */
 			channel_cvol_slide( channel );
 			break;
+		case 0x94: /* IT Tempo Slide, on the non-row ticks. */
+			if( channel->note.param < 0x20
+					&& channel->tempo_slide_param > 0 ) {
+				int t = channel->replay->tempo;
+				if( channel->tempo_slide_param < 0x10 ) {
+					t -= channel->tempo_slide_param;
+				} else {
+					t += channel->tempo_slide_param & 0xF;
+				}
+				if( t < 32 ) {
+					t = 32;
+				}
+				if( t > 255 ) {
+					t = 255;
+				}
+				channel->replay->tempo = t;
+			}
+			break;
 		case 0x11: case 0x97: /* Global Volume Slide. */
 			channel->replay->global_vol = channel->replay->global_vol
 				+ ( channel->gvol_slide_param >> 4 )
@@ -2517,7 +2587,7 @@ static void channel_tick( struct channel *channel ) {
 				channel->replay->global_vol = 64;
 			}
 			break;
-		case 0x19: /* Panning Slide. */
+		case 0x19: case 0x90: /* Panning Slide. */
 			channel->panning = channel->panning
 				+ ( channel->pan_slide_param >> 4 )
 				- ( channel->pan_slide_param & 0xF );
@@ -2671,7 +2741,7 @@ static void channel_row( struct channel *channel, struct note *note ) {
 		case 0x15: /* Set Envelope Tick. */
 			channel->vol_env_tick = channel->pan_env_tick = channel->note.param & 0xFF;
 			break;
-		case 0x19: /* Panning Slide. */
+		case 0x19: case 0x90: /* Panning Slide. */
 			if( channel->note.param > 0 ) {
 				channel->pan_slide_param = channel->note.param;
 			}
@@ -2765,6 +2835,11 @@ static void channel_row( struct channel *channel, struct note *note ) {
 				channel->vibrato_depth = channel->note.param & 0xF;
 			}
 			channel_vibrato( channel, 1 );
+			break;
+		case 0xFA: /* IT SAx: high sample offset, in 65536s. */
+			if( channel->replay->module->it_effects ) {
+				channel->high_offset = channel->note.param << 16;
+			}
 			break;
 		case 0xF8: /* Set Panning. */
 			channel->panning = channel->note.param * 17;
@@ -2967,9 +3042,11 @@ static void replay_row( struct replay *replay ) {
 					}
 				}
 				break;
-			case 0x94: /* Set Tempo.*/
-				if( note.param > 32 ) {
+			case 0x94: /* Set Tempo / IT Tempo Slide. */
+				if( note.param >= 0x20 ) {
 					replay->tempo = note.param;
+				} else if( note.param > 0 ) {
+					channel->tempo_slide_param = note.param;
 				}
 				break;
 			case 0x76: case 0xFB : /* Pattern Loop.*/
