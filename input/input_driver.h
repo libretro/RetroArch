@@ -96,7 +96,7 @@
 #define DEFAULT_MAX_PADS 4
 #elif defined(DINGUX)
 #define DEFAULT_MAX_PADS 2
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #define DEFAULT_MAX_PADS 4
 #else
 #define DEFAULT_MAX_PADS 16

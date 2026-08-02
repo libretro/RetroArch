@@ -4834,7 +4834,7 @@ static bool gl3_frame(void *data, const void *frame,
       gl->ctx_driver->swap_buffers(gl->ctx_data);
 
  /* Emscripten has to do black frame insertion in its main loop */
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (

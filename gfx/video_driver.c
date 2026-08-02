@@ -202,10 +202,10 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
 #ifdef HAVE_OSMESA
    &gfx_ctx_osmesa,
 #endif
-#if (defined(EMSCRIPTEN) && defined(HAVE_EGL))
+#if (defined(__EMSCRIPTEN__) && defined(HAVE_EGL))
    &gfx_ctx_emscripten,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &gfx_ctx_emscripten_webgl,
 #endif
    &gfx_ctx_null,

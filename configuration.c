@@ -603,7 +603,7 @@ static const enum microphone_driver_enum MICROPHONE_DEFAULT_DRIVER = MICROPHONE_
 
 #if defined(RS90) || defined(MIYOO)
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_NEAREST;
-#elif defined(PSP) || (defined(EMSCRIPTEN) && defined(HAVE_CC_RESAMPLER))
+#elif defined(PSP) || (defined(__EMSCRIPTEN__) && defined(HAVE_CC_RESAMPLER))
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_CC;
 #else
 static const enum audio_resampler_driver_enum AUDIO_DEFAULT_RESAMPLER_DRIVER = AUDIO_RESAMPLER_SINC;
@@ -635,13 +635,13 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XENON360;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_XINPUT;
 #elif defined(ANDROID)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_ANDROID;
-#elif defined(EMSCRIPTEN) && defined(HAVE_SDL2)
+#elif defined(__EMSCRIPTEN__) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_SDL2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_SDL2;
 #elif defined(WEBOS) && defined(HAVE_WAYLAND)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WAYLAND;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 #elif defined(_WIN32) && defined(HAVE_DINPUT)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
@@ -733,7 +733,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DOS;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_HID;
 #elif defined(__QNX__)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_QNX;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_RWEBPAD;
 #else
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
@@ -741,7 +741,7 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_NULL;
 
 #if defined(HAVE_V4L2)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_V4L2;
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_RWEBCAM;
 #elif defined(ANDROID)
 static const enum camera_driver_enum CAMERA_DEFAULT_DRIVER = CAMERA_ANDROID;

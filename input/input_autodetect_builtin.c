@@ -838,7 +838,7 @@ const char* const input_builtin_autoconfs[] =
 #if defined(__SWITCH__) || defined(SWITCH)
    DECL_AUTOCONF_DEVICE("Switch Controller", "switch", SWITCH_DEFAULT_BINDS),
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    DECL_AUTOCONF_PID(1, 1, "rwebpad", EMSCRIPTEN_DEFAULT_BINDS),
 #endif
 #if HAVE_MFI

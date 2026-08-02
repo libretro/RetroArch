@@ -13,7 +13,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
 #error "task_http_emscripten only makes sense in emscripten builds"
 #endif
 

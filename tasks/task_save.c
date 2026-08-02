@@ -49,10 +49,10 @@
 #include "../verbosity.h"
 #include "tasks_internal.h"
 
-#ifdef EMSCRIPTEN
-/* Filesystem is in-memory anyway, use huge chunks since each
-   read/write is a possible suspend to JS code */
-#define SAVE_STATE_CHUNK 4096 * 4096
+#ifdef __EMSCRIPTEN__
+/* Use huge chunks since each read/write is a possible suspend to
+   JS code */
+#define SAVE_STATE_CHUNK 16 * 1024 * 1024
 #else
 /* A low common denominator write chunk size.  On a slow
   (speed class 6) SD card, we can write 6MB/s.  That gives us

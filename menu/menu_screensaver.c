@@ -40,7 +40,7 @@
 
 /* Determines whether current platform has
  * Unicode character support */
-#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || (defined(HAVE_STB_FONT) && (defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (HAVE_EMSCRIPTEN) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)))
+#if defined(HAVE_FREETYPE) || (defined(__APPLE__) && defined(HAVE_CORETEXT)) || (defined(HAVE_STB_FONT) && (defined(VITA) || defined(WIIU) || defined(ANDROID) || (defined(_WIN32) && !defined(_XBOX) && !defined(_MSC_VER) && _MSC_VER >= 1400) || (defined(_WIN32) && !defined(_XBOX) && defined(_MSC_VER)) || defined(HAVE_LIBNX) || defined(__linux__) || defined (__EMSCRIPTEN__) || defined(__APPLE__) || defined(HAVE_ODROIDGO2) || defined(__PS3__)))
 #define MENU_SS_UNICODE_ENABLED true
 #else
 #define MENU_SS_UNICODE_ENABLED false
