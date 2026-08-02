@@ -116,6 +116,23 @@ uint32_t intfstream_get_first_sector(intfstream_internal_t* intf);
 
 bool intfstream_is_compressed(intfstream_internal_t *intf);
 
+/**
+ * intfstream_crc_step:
+ *
+ * Hash at most @max_bytes more of @intf into @accumulator, resuming
+ * from where the previous call stopped.  Returns bytes hashed, 0 at
+ * end of stream, -1 on error.
+ *
+ * For callers inside a task handler that must bound how long one tick
+ * spends hashing; intfstream_get_crc() consumes the whole stream in
+ * one call, making the tick cost a function of file size.  Timing
+ * policy stays with the caller, which owns the deadline and the
+ * quantum.  Position the stream and zero @accumulator before the
+ * first step.
+ **/
+int64_t intfstream_crc_step(intfstream_internal_t *intf,
+      uint32_t *accumulator, size_t max_bytes);
+
 bool intfstream_get_crc(intfstream_internal_t *intf, uint32_t *crc);
 
 intfstream_t *intfstream_open_file(const char *path,

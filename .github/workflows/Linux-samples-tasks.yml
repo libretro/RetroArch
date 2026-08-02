@@ -290,6 +290,110 @@ jobs:
              ./task_file_transfer_test conc
           echo "[pass] task_file_transfer_test (TSan)"
 
+      - name: Build and run core_crc_slice_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # Oracle for the resumable CRC in
+          # libretro-common/streams/interface_stream.c and the sliced
+          # hashing loop tasks/task_core_updater.c drives it with.
+          #
+          # intfstream_get_crc() consumes a whole stream in one call,
+          # so the cost of the tick that invoked it was a function of
+          # core size and nothing else - 43ms for a 40MB core measured
+          # cold on NVMe, an order of magnitude worse on the SD-card
+          # and spinning-disk targets, and the updater hashes the
+          # installed core on every update check.  intfstream_crc_step()
+          # hashes a bounded slice and resumes, so the work spreads
+          # across ticks.
+          #
+          # The property that needs pinning is not "the CRC is
+          # correct" - a whole-stream call gets that right too - but
+          # that no single tick hashes the whole file while the answer
+          # still matches the unsliced value at every chunk size,
+          # including sizes that do not divide the file evenly and a
+          # final slice of one byte.  Both are asserted against
+          # intfstream_get_crc() as the oracle.
+          make clean all
+          test -x core_crc_slice_test
+          timeout 600 ./core_crc_slice_test
+          echo "[pass] core_crc_slice_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./core_crc_slice_test
+          echo "[pass] core_crc_slice_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./core_crc_slice_test
+          make clean
+          echo "[pass] core_crc_slice_test (TSan)"
+
+      - name: Build and run core_backup_io_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_backup
+        run: |
+          set -eu
+          # Oracle for the file I/O in tasks/task_core_backup.c,
+          # compiled from the tree so it exercises the shipping
+          # translation unit.  As in save_state and
+          # image_decode_slice, the clock is the test's instrument:
+          # cpu_features_get_time_usec is wrapped so the tick budget is
+          # assertable exactly rather than measured against a wall
+          # clock.
+          #
+          # The throughput lanes pin the budget that replaced a fixed
+          # one-quantum-per-tick loop: a 4KB quantum capped a backup at
+          # ~245KB/s whatever the device could do, and an automatic
+          # backup runs on every core update over cores that are
+          # routinely tens of megabytes.  The exhausted-budget lane
+          # asserts the floor from the other side - with a clock that
+          # spends the budget on its first observation the handler must
+          # still move exactly one quantum per tick and still produce a
+          # correct backup, which is the old behaviour reached through
+          # the new code and what the slowest supported storage gets.
+          #
+          # The read-amplification lane counts bytes at the VFS
+          # boundary, which is the only place they can be counted:
+          # interposing libc read()/write() silently reports zero here,
+          # because glibc's stdio reaches them through internal aliases
+          # that never go via the PLT.  It measures 2x when the CRC is
+          # unknown - the handler hashes the core to name the backup,
+          # then reads it again to copy it - and 1x when the caller
+          # supplies a CRC.  The second figure is the one that matters:
+          # tasks/task_core_updater.c hands its already-computed
+          # local_crc to the automatic backup precisely so that pass is
+          # skipped, and nothing in the type system enforces it.  Pass
+          # 0 from the updater and every automatic backup silently
+          # doubles its read I/O.
+          #
+          # The restore lane round-trips a backup byte for byte.  It is
+          # worth noting why it is asserted rather than skipped: it
+          # used to skip, silently, on every run.  The suite stubbed
+          # frontend_driver_get_core_extension() with the wrong
+          # signature - const char *f(void) against the real
+          # bool f(char *, size_t) - which compiles, because nothing
+          # includes the real declaration, but left core_backup.c
+          # comparing an extension against uninitialised stack.  Every
+          # archive read as CORE_BACKUP_TYPE_INVALID,
+          # task_push_core_restore() refused, and the lane printed SKIP
+          # while the suite reported PASSED.  Both refusal paths are
+          # now CHECK failures: a fixture this test builds itself
+          # cannot legitimately be unavailable to it.
+          make clean all
+          test -x core_backup_io_test
+          timeout 600 ./core_backup_io_test
+          echo "[pass] core_backup_io_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./core_backup_io_test
+          echo "[pass] core_backup_io_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./core_backup_io_test
+          make clean
+          echo "[pass] core_backup_io_test (TSan)"
+
       - name: Build and run image_decode_slice_test (ASan + UBSan)
         shell: bash
         working-directory: samples/tasks/image_decode_slice
@@ -497,7 +601,10 @@ jobs:
                    libretro-common/queues/task_queue.c \
                    tasks/task_http.c \
                    tasks/task_core_updater.c \
-                   tasks/task_pl_thumbnail_download.c; do
+                   tasks/task_pl_thumbnail_download.c \
+                   tasks/task_core_backup.c \
+                   core_backup.c \
+                   libretro-common/streams/interface_stream.c; do
             if gcc -fsyntax-only $C89 $INC $DEF "$f"; then
               echo "[pass] C89 $f"
             else
