@@ -1839,9 +1839,9 @@ static size_t audio_transfer_mp3_pull(struct audio_transfer_mp3 *m,
          /* A frame must be presented whole, so the tail of the stream
           * sits in the hold waiting for a window that will never fill;
           * this is what says the short tail is all there is.  Latched
-          * until a seek resets the stream. */
-         if (m->eof_sent && !wr)
-            break;
+          * until a seek resets the stream, and once declared the
+          * stream answers END when it is spent - it no longer asks
+          * for input past EOF, so this branch runs at most once. */
          rmp3_stream_set_eof(m->stream);
          m->eof_sent = 1;
       }
@@ -2871,13 +2871,15 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             {
                /* A file shorter than the reassembly hold never fills
                 * it; say the short tail is all there is, so its frame
-                * is still found. */
+                * is still found.  Past this the stream never asks for
+                * input again - a spent stream answers END - so failing
+                * to locate a frame surfaces below, not as a second
+                * NEED_IN. */
                rmp3_stream_set_eof(m->stream);
                m->eof_sent = 1;
                continue;
             }
-            if (r == RMP3_STREAM_ERROR || r == RMP3_STREAM_END
-                  || (r == RMP3_STREAM_NEED_IN && m->off >= m->size))
+            if (r == RMP3_STREAM_ERROR || r == RMP3_STREAM_END)
             {
                rmp3_stream_free(m->stream);
                m->stream = NULL;
