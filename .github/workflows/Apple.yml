@@ -1,28 +1,13 @@
-name: CI Apple netplay discovery
+name: CI Apple
 
-# network/netplay/netplay_nsnetservice.m is not a member of any target.
-# It reaches the compiler only through griffin/griffin_objc.m, behind
+# Umbrella workflow for Apple-specific checks that are not a plain
+# "does it build" - the full builds live in MacOS.yml and iOS.yml.
 #
-#   #if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) \
-#    && defined(HAVE_NETPLAYDISCOVERY_NSNET)
-#
-# and those macros arrive from pkg/apple/BaseConfig.xcconfig by way of
-# an $(inherited) chain: the CI builds pass -xcconfig GitHubCI.xcconfig
-# on the command line, which includes Metal.xcconfig, whose
-# OTHER_CFLAGS[sdk=macosx*] assignment relies on $(inherited) to pull
-# the project-level BaseConfig settings back in.
-#
-# Every link in that chain can be broken without breaking the build.
-# Drop the file from griffin's include list, drop $(inherited) from
-# Metal.xcconfig, or move the -D out of BaseConfig, and the file simply
-# stops being compiled - CI stays green while an entire Apple-only
-# source file goes unbuilt.  That is not hypothetical: the file parses
-# a remote peer's mDNS TXT records into fixed-size buffers, so it is
-# exactly the sort of thing that should not be able to rot unnoticed.
-#
-# This job asserts the preconditions rather than duplicating the build.
-# The existing "CI macOS" and "CI iOS (13)" jobs already compile the
-# file; what they cannot tell you is whether they still are.
+# Add new jobs here rather than as new top-level workflows: things like
+# build-graph integrity checks, xcconfig assertions, extra Apple
+# targets, and anything else that is Apple-shaped but does not warrant
+# its own entry in the Actions sidebar.  Each job carries its own
+# rationale in a comment above it.
 
 on:
   push:
@@ -35,8 +20,37 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
-  guard:
-    name: Assert nsnetservice.m is still reachable
+  # ------------------------------------------------------------------
+  # Build-graph guard: the Bonjour/mDNS netplay discovery path.
+  #
+  # network/netplay/netplay_nsnetservice.m is a member of no target.
+  # It reaches the compiler only through griffin/griffin_objc.m, behind
+  #
+  #   #if defined(HAVE_NETWORKING) && defined(HAVE_NETPLAYDISCOVERY) \
+  #    && defined(HAVE_NETPLAYDISCOVERY_NSNET)
+  #
+  # and those macros arrive from pkg/apple/BaseConfig.xcconfig by way
+  # of an $(inherited) chain: the CI builds pass
+  # -xcconfig GitHubCI.xcconfig on the command line, which includes
+  # Metal.xcconfig, whose OTHER_CFLAGS[sdk=macosx*] assignment relies
+  # on $(inherited) to pull the project-level BaseConfig settings back
+  # in.  Metal.xcconfig defines none of the three macros itself.
+  #
+  # Every link in that chain can be broken without breaking the build.
+  # Drop the file from griffin's include list, drop griffin_objc.m from
+  # a Sources phase, drop $(inherited) from Metal.xcconfig, or move the
+  # -D out of BaseConfig, and the file simply stops being compiled - CI
+  # stays green while an entire Apple-only source file goes unbuilt.
+  # That is not hypothetical: the file parses a remote peer's mDNS TXT
+  # records into fixed-size buffers, so it is exactly the sort of thing
+  # that should not be able to rot unnoticed.
+  #
+  # This asserts the preconditions rather than duplicating the build.
+  # The existing "CI macOS" and "CI iOS (13)" jobs already compile the
+  # file; what they cannot tell you is whether they still are.
+  # ------------------------------------------------------------------
+  netplay-discovery-guard:
+    name: Build graph - netplay mDNS discovery
     runs-on: macos-latest
 
     steps:
@@ -105,11 +119,13 @@ jobs:
 
         exit $rc
 
+  # ------------------------------------------------------------------
+  # tvOS. The one Apple target with no build job of its own, so a break
+  # in code it shares with iOS - netplay_nsnetservice.m included - ships
+  # unnoticed there. Not gating: unrelated problems in the tvOS scheme
+  # should not hold up the tree.
+  # ------------------------------------------------------------------
   tvos:
-    # tvOS shares netplay_nsnetservice.m with iOS but has no CI job of
-    # its own, so it is the one Apple target where a break in this file
-    # ships unnoticed. Not gating: if the tvOS scheme has other problems
-    # they are not this file's fault.
     name: tvOS build (non-gating)
     runs-on: macos-latest
     continue-on-error: true
