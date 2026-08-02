@@ -220,6 +220,13 @@ bool init_netplay_discovery(void);
 /** Deinitialize and free Netplay discovery */
 void deinit_netplay_discovery(void);
 
+/**
+ * netplay_discovery_free_hosts:
+ *
+ * Frees the LAN discovery result list. One-time teardown only.
+ */
+void netplay_discovery_free_hosts(void);
+
 /** Discovery control */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,
    void *data);
