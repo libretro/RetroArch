@@ -3237,13 +3237,22 @@ typedef struct rzstd_seq
 
 /* Emits one block as literals plus sequences, or reports that doing so
  * would not be smaller than storing it. */
+/* 'cts' is three FSE compression tables owned by the caller.  They
+ * were locals, which made this a 9440-byte frame: each table carries
+ * a 1<<accuracy_log entry table plus two 256-entry delta arrays, so
+ * three of them are most of 9 KiB.  A frame that size does not belong
+ * on a stack whatever the target - it sits under whatever called it -
+ * and rzstd_encode() already owns heap scratch for the match finder,
+ * so these go alongside it and are allocated once per call rather
+ * than once per block. */
 static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       const uint8_t *src, size_t len, const rzstd_seq_t *seq, size_t nseq,
-      const uint8_t *literals, size_t lit_len, size_t *out_len)
+      const uint8_t *literals, size_t lit_len, size_t *out_len,
+      rzstd_fse_ct_t *cts)
 {
-   rzstd_fse_ct_t ll_ct;
-   rzstd_fse_ct_t ml_ct;
-   rzstd_fse_ct_t of_ct;
+   rzstd_fse_ct_t *ll_ctp = &cts[0];
+   rzstd_fse_ct_t *ml_ctp = &cts[1];
+   rzstd_fse_ct_t *of_ctp = &cts[2];
    rzstd_wbits_t  w;
    size_t         at = 0;
    size_t         i;
@@ -3309,9 +3318,9 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       return RZ_DATA;
    dst[at++] = 0;
 
-   if (rzstd_fse_build_ct(&ll_ct, rzstd_ll_default, 36, 6) != RZ_OK
-    || rzstd_fse_build_ct(&ml_ct, rzstd_ml_default, 53, 6) != RZ_OK
-    || rzstd_fse_build_ct(&of_ct, rzstd_of_default, 29, 5) != RZ_OK)
+   if (rzstd_fse_build_ct(ll_ctp, rzstd_ll_default, 36, 6) != RZ_OK
+    || rzstd_fse_build_ct(ml_ctp, rzstd_ml_default, 53, 6) != RZ_OK
+    || rzstd_fse_build_ct(of_ctp, rzstd_of_default, 29, 5) != RZ_OK)
       return RZ_DATA;
 
    rzstd_wbits_init(&w, dst + at, dst_cap - at);
@@ -3325,9 +3334,9 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       uint32_t ml = rzstd_code_for(rzstd_ml_base, 53, s2->match);
       uint32_t of = rzstd_of_code(s2->offset);
 
-      ml_state = rzstd_fse_ct_begin(&ml_ct, ml);
-      of_state = rzstd_fse_ct_begin(&of_ct, of);
-      ll_state = rzstd_fse_ct_begin(&ll_ct, ll);
+      ml_state = rzstd_fse_ct_begin(ml_ctp, ml);
+      of_state = rzstd_fse_ct_begin(of_ctp, of);
+      ll_state = rzstd_fse_ct_begin(ll_ctp, ll);
 
       rzstd_wbits_add(&w, s2->literals - rzstd_ll_base[ll],
             rzstd_ll_bits[ll]);
@@ -3346,9 +3355,9 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       /* The decoder updates literal length, then match length, then
        * offset. Everything here is written in reverse of the reading
        * order, so they go out the other way about. */
-      of_state = rzstd_fse_ct_encode(&w, of_state, &of_ct, of);
-      ml_state = rzstd_fse_ct_encode(&w, ml_state, &ml_ct, ml);
-      ll_state = rzstd_fse_ct_encode(&w, ll_state, &ll_ct, ll);
+      of_state = rzstd_fse_ct_encode(&w, of_state, of_ctp, of);
+      ml_state = rzstd_fse_ct_encode(&w, ml_state, ml_ctp, ml);
+      ll_state = rzstd_fse_ct_encode(&w, ll_state, ll_ctp, ll);
 
       rzstd_wbits_add(&w, s2->literals - rzstd_ll_base[ll],
             rzstd_ll_bits[ll]);
@@ -3357,9 +3366,9 @@ static int rzstd_emit_block(uint8_t *dst, size_t dst_cap,
       rzstd_wbits_add(&w, s2->offset - ((uint32_t)1 << of), of);
    }
 
-   rzstd_fse_ct_flush(&w, ml_state, &ml_ct);
-   rzstd_fse_ct_flush(&w, of_state, &of_ct);
-   rzstd_fse_ct_flush(&w, ll_state, &ll_ct);
+   rzstd_fse_ct_flush(&w, ml_state, ml_ctp);
+   rzstd_fse_ct_flush(&w, of_state, of_ctp);
+   rzstd_fse_ct_flush(&w, ll_state, ll_ctp);
 
    {
       size_t n = rzstd_wbits_close(&w);
@@ -3388,6 +3397,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
    uint32_t  rep[3];
    uint32_t *hash  = NULL;
    uint32_t *chain = NULL;
+   /* Three FSE compression tables for rzstd_emit_block(), which used
+    * to hold them as locals - see the comment there.  Allocated with
+    * the match-finder scratch and freed with it. */
+   rzstd_fse_ct_t *cts = NULL;
 
    (void)level;
 
@@ -3484,9 +3497,10 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
              * read. */
             chain = (uint32_t*)calloc((size_t)1 << enc_log,
                   sizeof(uint32_t));
+            cts   = (rzstd_fse_ct_t*)calloc(3, sizeof(*cts));
          }
 
-         if (seq && lits && hash && chain)
+         if (seq && lits && hash && chain && cts)
          {
             size_t   pos      = 0;
             size_t   lit_from = 0;
@@ -3694,9 +3708,9 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
                lit_len += take - lit_from;
             }
 
-            if (nseq && rzstd_emit_block(dst + at + 3, dst_len - at - 3,
+            if (nseq && cts && rzstd_emit_block(dst + at + 3, dst_len - at - 3,
                      src + in, take, seq, nseq, lits, lit_len,
-                     &produced) == RZ_OK
+                     &produced, cts) == RZ_OK
                   && produced < take)
             {
                rzstd_write_block_header(dst + at, (uint32_t)produced,
@@ -3726,6 +3740,7 @@ int rzstd_encode(uint8_t *dst, size_t dst_len, const uint8_t *src,
 
    free(hash);
    free(chain);
+   free(cts);
 
    if (wrote)
       *wrote = at;

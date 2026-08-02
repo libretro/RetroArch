@@ -60,6 +60,7 @@ BUDGET     = 2048
 #   config_file_write            16432 ->   48  stdio buffer to the heap
 #   chd_read_header_core_file    57504 ->   32  whole chd_file to the heap
 #   rd_gen_lengths               12768 ->  352  scratch into struct rdeflate
+#   rzstd_emit_block              9440 ->    0  FSE tables into encoder scratch
 #
 # What is left is mostly codec inner loops (rvp9, rh264, raac, ropus,
 # rflac, rzstd, rvorbis) whose working sets are large by nature. Large
@@ -106,7 +107,6 @@ ALLOWLIST  = {
     'rvp9_convolve8_hbd.constprop': 17392,
     'rvp9_iht_add.isra': 4496,
     'rvp9_iht_add_hbd.isra': 4496,
-    'rzstd_emit_block.constprop': 9440,
     'rzstd_huf_read_bmi2': 2368,
     'rzstd_huf_read_sse': 2368,
     'sha1_calculate': 4304,
