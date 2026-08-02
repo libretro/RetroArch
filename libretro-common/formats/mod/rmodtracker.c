@@ -61,6 +61,9 @@ struct envelope {
 struct instrument {
 	int num_samples, vol_fadeout;
 	char name[ 32 ], key_to_sample[ 97 ];
+	/* IT new-note action: 0 cut (every other format's behaviour and
+	   calloc's default), 1 continue, 2 note off, 3 fade. */
+	char nna;
 	char vib_type, vib_sweep, vib_depth, vib_rate;
 	struct envelope vol_env, pan_env;
 	struct sample *samples;
@@ -139,6 +142,15 @@ struct channel {
 	int tremolo_add, vibrato_add, arpeggio_add;
 };
 
+/* Background voices for IT new-note actions: a note whose
+   instrument's NNA is not "cut" keeps ringing here when its host
+   channel takes a new note. A ghost is an ordinary struct channel
+   that runs only the envelope, fade and mixing subset - never
+   effects - so the amplitude model and both resamplers apply to it
+   unchanged. The pool is global and the quietest voice is stolen
+   when it fills. */
+#define RMT_NUM_GHOSTS 32
+
 struct replay {
 	int sample_rate, interpolation, global_vol;
 	int seq_pos, break_pos, row, next_row, tick;
@@ -146,6 +158,7 @@ struct replay {
 	int *ramp_buf;
 	char **play_count;
 	struct channel *channels;
+	struct channel *ghosts;
 	struct module *module;
 };
 
@@ -907,9 +920,12 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
  * IT214/215 sample decompression is implemented, including IT215's
  * extra delta stage and stereo's twin streams.
  *
- * Known divergences, deliberate at this stage: new-note actions are
- * not implemented (every note cuts, the
- * engine default); note cut (254) is treated as note off; linear
+ * New-note actions run on a pool of background voices: continue, off
+ * and fade move the old note aside instead of cutting it, with fade
+ * approximated as a release. Note cut (254) is immediate silence.
+ *
+ * Known divergences, deliberate at this stage: duplicate-check
+ * actions (DCT/DCA) are not implemented; linear
  * slide mode is approximated with Amiga periods, so portamento depth
  * can differ; sustain loops are ignored in favour of the normal loop;
  * pitch and filter envelopes and channel volumes are not applied.
@@ -1310,7 +1326,10 @@ static struct module* module_load_it( struct data *data, char *message ) {
 	module->default_speed = tick_speed > 0 ? tick_speed : 6;
 	module->default_tempo = tempo > 31 ? tempo : 125;
 	module->c2_rate = 8363;
-	module->gain = ( mv & 0x7F ) > 0 ? ( mv & 0x7F ) : 48;
+	/* The S3M-style mapping of the mix-volume byte ran about 2 dB
+	   under libxmp's IT levels (geometric mean 0.77 over the
+	   real-world A/B corpus); scale by 4/3 to sit on it. */
+	module->gain = ( mv & 0x7F ) > 0 ? ( ( mv & 0x7F ) * 4 ) / 3 : 64;
 	module->sequence_len = 0;
 	module->sequence = calloc( ord_num > 0 ? ord_num : 1,
 		sizeof( unsigned char ) );
@@ -1427,6 +1446,7 @@ static struct module* module_load_it( struct data *data, char *message ) {
 			int local_of[ 100 ];
 			instrument = &module->instruments[ ins ];
 			data_ascii( data, iofs + 0x20, 26, instrument->name );
+			instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
 			fade = data_u16le( data, iofs + 0x14 );
 			gbv = data_u8( data, iofs + 0x18 );
 			fade = fade * 64;
@@ -1546,9 +1566,9 @@ static struct module* module_load_it( struct data *data, char *message ) {
 			if( mask & 0x11 ) {
 				entry = last_note[ chan ];
 				if( entry >= 254 ) {
-					/* 255 is note off; 254, note cut, is treated the
-					   same at this stage. */
-					key = 97;
+					/* 255 is note off (97); 254 is note cut, carried
+					   as 98 for its immediate-silence semantics. */
+					key = entry == 254 ? 98 : 97;
 				} else if( entry <= 119 ) {
 					key = entry - 11;
 					if( key < 1 || key > 96 ) {
@@ -2120,9 +2140,60 @@ static void channel_retrig_vol_slide( struct channel *channel ) {
 	}
 }
 
+/* Move the channel's current voice into a background slot when the
+   arriving note's instrument asks for a new-note action other than
+   cut. Runs at trigger entry, before the trigger overwrites the old
+   instrument and envelope state. */
+static void channel_capture_ghost( struct channel *channel ) {
+	struct replay *replay = channel->replay;
+	struct channel *ghost;
+	int idx, best, best_ampl, nna, porta;
+	if( !replay->ghosts || !channel->sample || channel->ampl <= 0 ) {
+		return;
+	}
+	if( channel->note.key < 1 || channel->note.key > 96 ) {
+		return;
+	}
+	porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
+		channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
+		channel->note.effect == 0x87 || channel->note.effect == 0x8C;
+	if( porta ) {
+		return;
+	}
+	nna = channel->instrument->nna;
+	if( nna < 1 || nna > 3 ) {
+		return;
+	}
+	best = 0;
+	best_ampl = INT_MAX;
+	for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+		ghost = &replay->ghosts[ idx ];
+		if( !ghost->sample ) {
+			best = idx;
+			break;
+		}
+		if( ghost->ampl < best_ampl ) {
+			best_ampl = ghost->ampl;
+			best = idx;
+		}
+	}
+	ghost = &replay->ghosts[ best ];
+	*ghost = *channel;
+	ghost->note.effect = ghost->note.param = ghost->note.volume = 0;
+	ghost->tremolo_add = ghost->vibrato_add = ghost->arpeggio_add = 0;
+	if( nna >= 2 ) {
+		/* Note off releases the envelope and starts the fade; fade
+		   proper would hold the sustain point while fading, which
+		   this approximates as a release. Continue leaves the voice
+		   exactly as it was. */
+		ghost->key_on = 0;
+	}
+}
+
 static void channel_trigger( struct channel *channel ) {
 	int key, sam, porta, period, fine_tune, ins = channel->note.instrument;
 	struct sample *sample;
+	channel_capture_ghost( channel );
 	if( ins > 0 && ins <= channel->replay->module->num_instruments ) {
 		channel->instrument = &channel->replay->module->instruments[ ins ];
 		key = channel->note.key < 97 ? channel->note.key : 0;
@@ -2187,6 +2258,11 @@ static void channel_trigger( struct channel *channel ) {
 	if( channel->note.key > 0 ) {
 		if( channel->note.key > 96 ) {
 			channel->key_on = 0;
+			if( channel->note.key == 98 ) {
+				/* IT note cut: immediate silence rather than an
+				   envelope release. */
+				channel->volume = 0;
+			}
 		} else {
 			porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
 				channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
@@ -2860,6 +2936,31 @@ static void replay_row( struct replay *replay ) {
 	}
 }
 
+static void replay_update_ghosts( struct replay *replay ) {
+	int idx;
+	struct channel *ghost;
+	if( !replay->ghosts ) {
+		return;
+	}
+	for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+		ghost = &replay->ghosts[ idx ];
+		if( !ghost->sample ) {
+			continue;
+		}
+		channel_calculate_ampl( ghost );
+		channel_update_envelopes( ghost );
+		/* A voice is done when it faded out, its one-shot sample
+		   ended, or its release reached silence. A continuing voice
+		   with a looped sample rings until stolen, as in IT. */
+		if( ghost->fadeout_vol <= 0
+		 || ( ghost->sample->loop_length <= 1
+			&& ghost->sample_idx >= ghost->sample->loop_start )
+		 || ( !ghost->key_on && ghost->ampl <= 0 ) ) {
+			ghost->sample = NULL;
+		}
+	}
+}
+
 static int replay_tick( struct replay *replay ) {
 	int idx, num_channels, count = 1;
 	if( --replay->tick <= 0 ) {
@@ -2871,6 +2972,7 @@ static int replay_tick( struct replay *replay ) {
 			channel_tick( &replay->channels[ idx ] );
 		}
 	}
+	replay_update_ghosts( replay );
 	if( replay->play_count && replay->play_count[ 0 ] ) {
 		count = replay->play_count[ replay->seq_pos ][ replay->row ] - 1;
 	}
@@ -2916,6 +3018,9 @@ static void replay_set_sequence_pos( struct replay *replay, int pos ) {
 	for( idx = 0; idx < module->num_channels; idx++ ) {
 		channel_init( &replay->channels[ idx ], replay, idx );
 	}
+	if( replay->ghosts ) {
+		memset( replay->ghosts, 0, RMT_NUM_GHOSTS * sizeof( struct channel ) );
+	}
 	memset( replay->ramp_buf, 0, 128 * sizeof( int ) );
 	replay_tick( replay );
 }
@@ -2928,6 +3033,7 @@ static void dispose_replay( struct replay *replay ) {
 	}
 	free( replay->ramp_buf );
 	free( replay->channels );
+	free( replay->ghosts );
 	free( replay );
 }
 
@@ -3020,6 +3126,17 @@ static int replay_get_audio( struct replay *replay, int *mix_buf, int mute ) {
 		}
 		channel_update_sample_idx( channel, tick_len * 2, replay->sample_rate * 2 );
 		mute >>= 1;
+	}
+	if( replay->ghosts ) {
+		for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+			channel = &replay->ghosts[ idx ];
+			if( channel->sample ) {
+				channel_resample( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+					replay->sample_rate * 2, replay->interpolation );
+				channel_update_sample_idx( channel, tick_len * 2,
+					replay->sample_rate * 2 );
+			}
+		}
 	}
 	downsample( mix_buf, tick_len + 64 );
 	replay_volume_ramp( replay, mix_buf, tick_len );
@@ -3168,6 +3285,17 @@ static int replay_get_audio_f( struct replay *replay, float *mix_buf,
 		channel_update_sample_idx( channel, tick_len * 2, replay->sample_rate * 2 );
 		mute >>= 1;
 	}
+	if( replay->ghosts ) {
+		for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+			channel = &replay->ghosts[ idx ];
+			if( channel->sample ) {
+				channel_resample_f( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+					replay->sample_rate * 2, replay->interpolation );
+				channel_update_sample_idx( channel, tick_len * 2,
+					replay->sample_rate * 2 );
+			}
+		}
+	}
 	downsample_f( mix_buf, tick_len + 64 );
 	replay_volume_ramp_f( replay, mix_buf, ramp_buf_f, tick_len );
 	replay_tick( replay );
@@ -3272,7 +3400,8 @@ static int rmt_snaps_init( struct rmodtracker *rmt )
 		return 1;
 	rmt->pc_bytes = module_init_play_count( rmt->module, NULL );
 	ch_bytes = rmt->module->num_channels * ( int ) sizeof( struct channel );
-	stride = ( int ) sizeof( struct rmt_snap ) + ch_bytes + rmt->pc_bytes;
+	stride = ( int ) sizeof( struct rmt_snap ) + ch_bytes + rmt->pc_bytes
+		+ RMT_NUM_GHOSTS * ( int ) sizeof( struct channel );
 	stride = ( stride + 15 ) & ~15;
 	interval = rmt->duration / ( RMT_SNAP_MAX - 1 );
 	if( interval < rmt->rate * 2 )
@@ -3297,6 +3426,9 @@ static void rmt_snap_capture( struct rmodtracker *rmt, int frame )
 	memcpy( body, replay->channels, ( size_t ) ch_bytes );
 	if( rmt->pc_bytes > 0 && replay->play_count && replay->play_count[ 0 ] )
 		memcpy( body + ch_bytes, replay->play_count[ 0 ], ( size_t ) rmt->pc_bytes );
+	if( replay->ghosts )
+		memcpy( body + ch_bytes + rmt->pc_bytes, replay->ghosts,
+			RMT_NUM_GHOSTS * sizeof( struct channel ) );
 	rmt->snap_count++;
 	if( rmt->snap_next <= INT_MAX - rmt->snap_interval )
 		rmt->snap_next += rmt->snap_interval;
@@ -3313,11 +3445,15 @@ static void rmt_snap_restore( struct rmodtracker *rmt, struct rmt_snap *s )
 	tmp.ramp_buf   = replay->ramp_buf;
 	tmp.play_count = replay->play_count;
 	tmp.channels   = replay->channels;
+	tmp.ghosts     = replay->ghosts;
 	tmp.module     = replay->module;
 	*replay = tmp;
 	memcpy( replay->channels, body, ( size_t ) ch_bytes );
 	if( rmt->pc_bytes > 0 && replay->play_count && replay->play_count[ 0 ] )
 		memcpy( replay->play_count[ 0 ], body + ch_bytes, ( size_t ) rmt->pc_bytes );
+	if( replay->ghosts )
+		memcpy( replay->ghosts, body + ch_bytes + rmt->pc_bytes,
+			RMT_NUM_GHOSTS * sizeof( struct channel ) );
 }
 
 /* Advance the sequencer without mixing, from a tick boundary to the
@@ -3342,6 +3478,14 @@ static int rmt_seek_walk( struct rmodtracker *rmt, int start_pos, int target )
 		for( idx = 0; idx < replay->module->num_channels; idx++ ) {
 			channel_update_sample_idx( &replay->channels[ idx ],
 				tick_len * 2, replay->sample_rate * 2 );
+		}
+		if( replay->ghosts ) {
+			for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
+				if( replay->ghosts[ idx ].sample ) {
+					channel_update_sample_idx( &replay->ghosts[ idx ],
+						tick_len * 2, replay->sample_rate * 2 );
+				}
+			}
 		}
 		current_pos += tick_len;
 		replay_tick( replay );
