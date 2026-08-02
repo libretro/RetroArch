@@ -367,9 +367,24 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 		delta_env = !memcmp( data_ascii( data, 38, 15, ascii ), "DigiBooster Pro", 15 );
 		offset = 60 + data_u32le( data, 60 );
 		module->sequence_len = data_u16le( data, 64 );
+		if( module->sequence_len < 1 ) {
+			/* A zero-length sequence (usually a truncated file whose
+			   header bytes read as zero) would have the replay index
+			   an empty play-count table; entry 0 of the zeroed
+			   sequence is pattern 0, a safe degenerate module. */
+			module->sequence_len = 1;
+		}
 		module->restart_pos = data_u16le( data, 66 );
 		module->num_channels = data_u16le( data, 68 );
 		module->num_patterns = data_u16le( data, 70 );
+		if( module->num_patterns < 1 ) {
+			/* Zero patterns (a truncated header) leaves every sequence
+			   entry unmappable and the walk to the next playable
+			   position spinning; the loop below synthesises an empty
+			   pattern from out-of-range data, which is a playable
+			   degenerate module. */
+			module->num_patterns = 1;
+		}
 		module->num_instruments = data_u16le( data, 72 );
 		module->linear_periods = data_u16le( data, 74 ) & 0x1;
 		module->default_gvol = 64;
@@ -588,8 +603,14 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	if( module ) {
 		data_ascii( data, 0, 28, module->name );
 		module->sequence_len = data_u16le( data, 32 );
+		if( module->sequence_len < 1 ) {
+			module->sequence_len = 1; /* see the XM loader note */
+		}
 		module->num_instruments = data_u16le( data, 34 );
 		module->num_patterns = data_u16le( data, 36 );
+		if( module->num_patterns < 1 ) {
+			module->num_patterns = 1; /* see the XM loader note */
+		}
 		flags = data_u16le( data, 38 );
 		version = data_u16le( data, 40 );
 		module->fast_vol_slides = ( ( flags & 0x40 ) == 0x40 ) || version == 0x1300;
@@ -920,6 +941,9 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				break;
 		}
 		module->sequence_len = data_u8( data, seq_offset ) & 0x7F;
+		if( module->sequence_len < 1 ) {
+			module->sequence_len = 1; /* see the XM loader note */
+		}
 		module->restart_pos = data_u8( data, seq_offset + 1 ) & 0x7F;
 		if( module->restart_pos >= module->sequence_len ) {
 			module->restart_pos = 0;
