@@ -3138,7 +3138,14 @@ int rmp3_stream_process(rmp3_stream_t *s, size_t *read, size_t *wrote)
 
       if (!avail)
       {
-         ret = RMP3_STREAM_NEED_IN;
+         /* Nothing held and nothing in the window.  With EOF declared
+          * this is the end of the stream, not a request for more: a
+          * file whose last frame drains the hold exactly - the common
+          * shape, ending on a frame boundary - arrives here rather
+          * than at the no-frame-in-a-short-hold return below, and
+          * before this returned END the caller had to detect the end
+          * itself from NEED_IN with nothing left to feed. */
+         ret = s->eof_in ? RMP3_STREAM_END : RMP3_STREAM_NEED_IN;
          break;
       }
 
