@@ -578,7 +578,7 @@ void cb_http_task_core_updater_download(
 
    if (!data || !transf)
       goto finish;
-   if (!data->data || !*transf->path)
+   if (!*transf->path)
       goto finish;
 
    if (!(download_handle = (core_updater_download_handle_t*)transf->user_data))
@@ -587,35 +587,24 @@ void cb_http_task_core_updater_download(
    /* Update download_handle task status */
    download_handle->http_task_complete       = true;
 
-   /* Create output directory, if required */
+   /* The body was streamed to transf->path as it arrived, so
+    * data->data is NULL by design and there is nothing to write here.
+    * task_push_http_download_file() removes the partial file unless
+    * the transfer finished cleanly, so a non-2xx means there is no
+    * file on disk to decompress. */
+   if (err && *err)
+      goto finish;
+
+   if (data->status < 200 || data->status > 299)
+   {
+      err = "Download failed.";
+      goto finish;
+   }
+
+   /* Recomputed for the decompress call below; the directory itself
+    * was created before the transfer started. */
    strlcpy(output_dir, transf->path, sizeof(output_dir));
    path_basedir_wrapper(output_dir);
-
-   if (!path_mkdir(output_dir))
-   {
-      err = msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY);
-      goto finish;
-   }
-
-#ifdef HAVE_COMPRESSION
-   /* If core file is an archive, make sure it is
-    * not being decompressed already (by another task) */
-   if (path_is_compressed_file(transf->path))
-   {
-      if (task_check_decompress(transf->path))
-      {
-         err = msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS);
-         goto finish;
-      }
-   }
-#endif
-
-   /* Write core file to disk */
-   if (!filestream_write_file(transf->path, data->data, data->len))
-   {
-      err = "Write failed.";
-      goto finish;
-   }
 
 #if defined(HAVE_COMPRESSION)
    /* Decompress core file, if required
@@ -830,16 +819,65 @@ static void task_core_updater_download_handler(retro_task_t *task)
                         sizeof(file_transfer_t))))
                goto task_finished;
 
+            char output_dir[DIR_MAX_LENGTH];
+            char http_title[NAME_MAX_LENGTH];
+            size_t _tlen;
+
             strlcpy(
                   transf->path, download_handle->local_download_path,
                   sizeof(transf->path));
 
             transf->user_data = (void*)download_handle;
 
+            /* The body is streamed straight to transf->path as it
+             * arrives, so everything that used to gate the write in
+             * cb_http_task_core_updater_download() has to happen
+             * before the transfer starts rather than after it. */
+            strlcpy(output_dir, transf->path, sizeof(output_dir));
+            path_basedir_wrapper(output_dir);
+
+            if (!path_mkdir(output_dir))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_FAILED_TO_CREATE_THE_DIRECTORY));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+
+#ifdef HAVE_COMPRESSION
+            /* If the core file is an archive, make sure it is not
+             * already being decompressed by another task -- otherwise
+             * we would now be overwriting the very file that task is
+             * reading. */
+            if (path_is_compressed_file(transf->path)
+                  && task_check_decompress(transf->path))
+            {
+               RARCH_ERR("[Core Updater] Download of \"%s\" failed: %s.\n",
+                     transf->path,
+                     msg_hash_to_str(MSG_DECOMPRESSION_ALREADY_IN_PROGRESS));
+               free(transf);
+               download_handle->status = CORE_UPDATER_DOWNLOAD_ERROR;
+               break;
+            }
+#endif
+
+            /* Title that task_push_http_transfer_file() used to build
+             * internally; task_push_http_download_file() takes it as
+             * an argument instead. */
+            _tlen = 0;
+            http_title[0] = '\0';
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  msg_hash_to_str(MSG_DOWNLOADING));
+            strlcpy_append(http_title, sizeof(http_title), &_tlen, ": ");
+            strlcpy_append(http_title, sizeof(http_title), &_tlen,
+                  transf->path);
+
             /* Push HTTP transfer task */
-            download_handle->http_task = (retro_task_t*)task_push_http_transfer_file(
-                  download_handle->remote_core_path, true, NULL,
-                  cb_http_task_core_updater_download, transf);
+            download_handle->http_task = (retro_task_t*)task_push_http_download_file(
+                  download_handle->remote_core_path, transf->path, true,
+                  http_title, cb_http_task_core_updater_download, transf);
 
             /* Update task title */
             task_free_title(task);

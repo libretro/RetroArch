@@ -62,8 +62,14 @@
  * the natural trigger, since they concatenate a long CDN base path
  * with a percent-encoded game title and routinely exceed 256 bytes.
  *
+ * Fixed by making connection_url a heap-owned copy of the full URL in
+ * both backends.  This test carries both key shapes: `key_owned`
+ * mirrors what task_http.c does now and carries the real assertions,
+ * while `key_fixed` reproduces the old fixed-buffer shape so the
+ * failure mode stays documented and a revert is caught.
+ *
  * The finder predicate is static to task_http.c and not exposed in a
- * header, so this test keeps a behavioural copy as the oracle -- the
+ * header, so this test keeps behavioural copies as the oracles -- the
  * same convention http_method_match_test.c and
  * archive_name_safety_test.c use.  If task_http.c changes how the key
  * is derived, update the copy here to match.
@@ -239,14 +245,16 @@ static void test_long_url_fails_to_dedup_itself(void)
          "fixture must exceed the key buffer (len=%u, buf=%u)",
          (unsigned)strlen(url), (unsigned)NAME_MAX_LENGTH);
 
-   /* Pre-fix: the guard silently stops guarding. */
+   /* The historical failure mode, kept as the reason the production
+    * key is heap-owned: reverting connection_url to a fixed buffer
+    * reintroduces exactly this. */
    key_fixed_set(&ka, url);
-   CHECK(key_fixed_matches(&ka, same) == 1,
-         "fixed-size key fails to match its own URL -- the "
-         "\"concurrent download of the same file\" guard is disabled, "
-         "so two tasks race to filestream_write_file() the same path");
+   CHECK(key_fixed_matches(&ka, same) == 0,
+         "fixed-size key unexpectedly matched -- this oracle is meant "
+         "to reproduce the pre-fix behaviour and no longer does, so "
+         "the rest of this test is not proving what it claims");
 
-   /* Post-fix: the guard works at any length. */
+   /* Production behaviour: the guard works at any length. */
    if (key_owned_set(&kb, url))
    {
       CHECK(key_owned_matches(&kb, same) == 1,

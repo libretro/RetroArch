@@ -69,7 +69,13 @@ struct http_handle
     * data == NULL in the callback. */
    char                 *sink_path;
    bool                  settled;
-   char                  connection_url[NAME_MAX_LENGTH];
+   /* Full request URL, owned; see the matching comment in
+    * tasks/task_http.c.  A fixed buffer truncated the stored copy but
+    * not the candidate task_http_finder() compares it against, so the
+    * duplicate-download guard stopped working past NAME_MAX_LENGTH.
+    * NULL matches nothing, so OOM admits a redundant download rather
+    * than dropping one. */
+   char                 *connection_url;
 };
 
 typedef struct http_handle http_handle_t;
@@ -262,6 +268,7 @@ static void http_handle_free(http_handle_t *http)
    http_req_headers_free(http->req_headers);
    free(http->req_data);
    free(http->sink_path);
+   free(http->connection_url);
    free(http);
 }
 
@@ -318,7 +325,8 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
    http_handle_t *http = NULL;
    if (task && (task->handler == task_http_transfer_handler) && user_data)
       if ((http = (http_handle_t*)task->state))
-         return string_is_equal(http->connection_url, (const char*)user_data);
+         return http->connection_url
+             && string_is_equal(http->connection_url, (const char*)user_data);
    return false;
 }
 
@@ -471,7 +479,7 @@ static void *task_push_http_transfer_generic(
    if (!(http = (http_handle_t*)calloc(1, sizeof(*http))))
       return NULL;
 
-   strlcpy(http->connection_url, url, sizeof(http->connection_url));
+   http->connection_url = strdup(url);
 
    /* Own a copy of the request body.  emscripten_fetch keeps the
     * pointer rather than copying it, so a caller's stack buffer, or

@@ -31,9 +31,7 @@ enum http_status_enum
 {
    HTTP_STATUS_CONNECTION_TRANSFER = 0,
    HTTP_STATUS_CONNECTION_TRANSFER_PARSE,
-   HTTP_STATUS_TRANSFER,
-   HTTP_STATUS_TRANSFER_PARSE,
-   HTTP_STATUS_TRANSFER_PARSE_FREE
+   HTTP_STATUS_TRANSFER
 };
 
 struct http_handle
@@ -54,7 +52,22 @@ struct http_handle
    bool error;
    bool headers_accept_err;
    bool sink_failed;
-   char connection_url[NAME_MAX_LENGTH];
+   /* Full request URL, owned.  This was a char[NAME_MAX_LENGTH]
+    * filled by strlcpy, but task_http_finder() compares the stored
+    * copy against the raw candidate URL -- so truncation on the
+    * stored side alone meant that past NAME_MAX_LENGTH (256, or 128
+    * on the small-path platforms) the two could never compare equal
+    * and the "concurrent download of the same file is not allowed"
+    * guard silently stopped guarding.  Playlist thumbnail URLs
+    * exceed it routinely, and the result was two tasks reaching
+    * cb_http_task_download_pl_thumbnail() and racing to
+    * filestream_write_file() the same path.
+    *
+    * NULL means "no key", which matches nothing: an allocation
+    * failure therefore degrades to admitting a redundant download
+    * rather than dropping one, which is the safe direction -- a
+    * dropped push strands the caller's completion callback forever. */
+   char *connection_url;
 };
 
 typedef struct http_handle http_handle_t;
@@ -124,8 +137,17 @@ static int cb_http_conn_default(void *data_, size_t len)
    if (!http)
       return -1;
 
+   /* Set http->error on this path too.  It used to just return -1,
+    * and the caller (task_http_conn_iterate_transfer_parse) discards
+    * the return value -- so the task advanced to HTTP_STATUS_TRANSFER
+    * with a NULL handle, net_http_update(NULL, ...) returned true
+    * immediately, and the task finished with neither data nor an
+    * error.  Callers saw a clean success with task_data == NULL. */
    if (!network_init())
+   {
+      http->error = true;
       return -1;
+   }
 
    if (!(http->handle = net_http_new(http->connection.handle)))
    {
@@ -192,8 +214,6 @@ static void task_http_transfer_handler(retro_task_t *task)
          if (!task_http_iterate_transfer(task))
             goto task_finished;
          break;
-      case HTTP_STATUS_TRANSFER_PARSE:
-         goto task_finished;
       default:
          break;
    }
@@ -273,6 +293,7 @@ task_finished:
       task_set_error(task, strldup("Internal error.",
                sizeof("Internal error.")));
 
+   free(http->connection_url);
    free(http);
 }
 
@@ -293,7 +314,8 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
    http_handle_t *http = NULL;
    if (task && (task->handler == task_http_transfer_handler) && user_data)
       if ((http = (http_handle_t*)task->state))
-         return string_is_equal(http->connection_url, (const char*)user_data);
+         return http->connection_url
+             && string_is_equal(http->connection_url, (const char*)user_data);
    return false;
 }
 
@@ -350,9 +372,7 @@ static void *task_push_http_transfer_generic_titled(
    http->sink_file           = NULL;
    http->sink_path           = NULL;
    http->sink_failed         = false;
-   http->connection_url[0]   = '\0';
-
-   strlcpy(http->connection_url, url, sizeof(http->connection_url));
+   http->connection_url      = strdup(url);
 
    /* Streaming to disk: open the output now, so a bad path fails the
     * push rather than surfacing megabytes later, and arm the sink
@@ -406,6 +426,7 @@ error:
    if (http)
    {
       task_http_sink_close(http, false);
+      free(http->connection_url);
       free(http);
    }
 

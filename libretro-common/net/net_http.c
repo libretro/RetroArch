@@ -1923,6 +1923,103 @@ static bool net_http_redirect(struct http_t *state, const char *location)
 }
 
 /**
+ * net_http_init:
+ *
+ * Creates the locks guarding the process-global DNS cache and
+ * connection pool.  Must be called once, before any thread can reach
+ * net_http_update().
+ *
+ * These were created lazily on first use inside net_http_new_socket():
+ *
+ *     if (!dns_cache_lock) dns_cache_lock = slock_new();
+ *
+ * which is an unsynchronised first-use initialisation of the very
+ * lock meant to serialise that cache.  Two threads arriving together
+ * each create one, one store wins, and the loser goes on locking an
+ * object nobody else holds -- so the cache is walked and mutated with
+ * no mutual exclusion at all.  It does not reproduce once the locks
+ * exist, which is why it survived a TSan run over concurrent
+ * transfers; the window is only ever the first two requests of the
+ * process.
+ *
+ * Idempotent, so callers that cannot easily order their startup can
+ * call it more than once -- but not concurrently, which is the whole
+ * point.
+ **/
+void net_http_init(void)
+{
+#ifdef HAVE_THREADS
+   if (!dns_cache_lock)
+      dns_cache_lock = slock_new();
+   if (!conn_pool_lock)
+      conn_pool_lock = slock_new();
+#endif
+}
+
+/**
+ * net_http_deinit:
+ *
+ * Tears down the DNS cache and connection pool.  Nothing did this
+ * before: pooled sockets (and their SSL contexts), cached addrinfo,
+ * the strdup'd domains and both mutexes simply lived until the
+ * process exited.
+ *
+ * Both lists are detached under their lock and then drained with the
+ * lock released.  That ordering matters for the DNS cache:
+ * net_http_resolve() takes the same lock at the end of its run, so
+ * joining a resolver thread while holding it deadlocks.
+ **/
+void net_http_deinit(void)
+{
+   struct conn_pool_entry *conns;
+   struct dns_cache_entry *entries;
+
+   LOCK_POOL();
+   conns     = conn_pool;
+   conn_pool = NULL;
+   UNLOCK_POOL();
+
+   while (conns)
+   {
+      struct conn_pool_entry *next = conns->next;
+      net_http_conn_pool_free(conns);
+      conns = next;
+   }
+
+   LOCK_DNS_CACHE();
+   entries   = dns_cache;
+   dns_cache = NULL;
+   UNLOCK_DNS_CACHE();
+
+   while (entries)
+   {
+      struct dns_cache_entry *next = entries->next;
+#ifdef HAVE_THREADS
+      if (entries->thread)
+         sthread_join(entries->thread);
+#endif
+      if (entries->addr)
+         freeaddrinfo_retro(entries->addr);
+      free(entries->domain);
+      free(entries);
+      entries = next;
+   }
+
+#ifdef HAVE_THREADS
+   if (dns_cache_lock)
+   {
+      slock_free(dns_cache_lock);
+      dns_cache_lock = NULL;
+   }
+   if (conn_pool_lock)
+   {
+      slock_free(conn_pool_lock);
+      conn_pool_lock = NULL;
+   }
+#endif
+}
+
+/**
  * net_http_update:
  *
  * @return true if it's done, or if something broke.

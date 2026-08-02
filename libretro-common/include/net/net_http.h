@@ -60,6 +60,24 @@ void net_http_connection_set_headers(struct http_connection_t *conn, const char 
  *
  * Runs on whichever thread drives net_http_update().
  **/
+/**
+ * net_http_init:
+ *
+ * Creates the locks guarding the process-global DNS cache and
+ * connection pool.  Call once at startup, before any thread can reach
+ * net_http_update(); they were previously created lazily on first
+ * use, which raced.  Idempotent, but not safe to call concurrently.
+ **/
+void net_http_init(void);
+
+/**
+ * net_http_deinit:
+ *
+ * Closes pooled connections and frees the DNS cache and the locks.
+ * Call at shutdown, after the last transfer has finished.
+ **/
+void net_http_deinit(void);
+
 typedef bool (*net_http_sink_t)(void *userdata, const void *data, size_t len);
 
 /**

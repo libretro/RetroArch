@@ -952,6 +952,55 @@ static void test_sink_write_failure(void)
    close(sp.listen_fd);
 }
 
+/* net_http_deinit() must close pooled connections and free the DNS
+ * cache and the locks.  Nothing did this before -- pooled sockets and
+ * their SSL contexts, cached addrinfo, strdup'd domains and both
+ * mutexes lived until the process exited, which LeakSan could not
+ * see because the lists hang off file-scope globals and so count as
+ * still reachable.  Calling deinit here is what makes any real leak
+ * in that state visible.
+ *
+ * Also covers re-init after deinit, since the locks are freed and
+ * nulled and a second init has to recreate them. */
+static void test_deinit_releases_globals(void)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   struct xfer_result r;
+
+   printf("  deinit, then re-init and transfer again\n");
+
+   net_http_deinit();
+   net_http_init();
+
+   memset(&sp, 0, sizeof(sp));
+   sp.body  = 64 * 1024;
+   sp.frame = FRAME_LEN;
+
+   if (!srv_start(&sp, &th))
+   {
+      printf("    SKIP: server start failed\n");
+      return;
+   }
+   if (!run_transfer(sp.port, &r, 0))
+   {
+      printf("    SKIP: client setup failed\n");
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+      return;
+   }
+
+   CHECK(r.len == sp.body, "transfer after re-init got %lu of %lu bytes",
+         (unsigned long)r.len, (unsigned long)sp.body);
+
+   free(r.data);
+   pthread_join(th, NULL);
+   close(sp.listen_fd);
+
+   /* Final teardown; anything still held now is a genuine leak. */
+   net_http_deinit();
+}
+
 /* ================================================================= */
 
 int main(void)
@@ -968,6 +1017,10 @@ int main(void)
    }
 
    network_init();
+   /* Explicit init, so the DNS cache and connection pool locks exist
+    * before any thread can reach net_http_update().  They used to be
+    * created lazily on first use, unsynchronised. */
+   net_http_init();
    pattern_init(BODY_LARGE);
 
    printf("net_http transfer stress tests "
@@ -1014,6 +1067,9 @@ int main(void)
 
    printf("\n[concurrency]\n");
    test_concurrent();
+
+   printf("\n[teardown]\n");
+   test_deinit_releases_globals();
 
    free((void*)g_pattern);
 
