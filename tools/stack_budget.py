@@ -40,33 +40,38 @@ SRC_ROOT   = os.path.join(ROOT, 'libretro-common')
 # Bytes. Leaves the majority of an 8 KiB stack for callers.
 BUDGET     = 2048
 
-# Frames that already exceeded the budget when this check was written,
-# with the size measured then. They are recorded rather than fixed:
-# almost all are codec and compression inner loops (rvp9, rh264, raac,
-# ropus, rflac, rzstd, rvorbis) and chd, whose working sets are large
-# by nature.
+# Frames that exceeded the budget when this check was written, with
+# the size measured then.
 #
-# That exemption was originally an assumption - that those call graphs
-# do not reach a task thread on the small-stack targets, and that
-# several of the codecs are not built there at all. It has since been
-# checked with tools/stack_chain.py against the feature sets those
-# targets really use, taken from 'make -f Makefile.griffin platform=wii
-# -n' and Makefile.ctr rather than guessed:
+# THE RULE: an entry here is debt, not an exemption. "It is not built
+# on a small-stack target" and "nothing reaches it from a task thread"
+# are both statements about today, and both have already been wrong
+# once - config_file_write() was exempt on exactly that reasoning
+# until its caller turned out to be a task handler. Platforms gain
+# features, call graphs gain edges, and a frame that is fine now is
+# fine only until someone connects it to something. So the question
+# for an entry is not "can this overflow today" but "does this need
+# to be on the stack at all", and the answer is usually no: the
+# fixable ones are a struct or a scratch array that could live on the
+# heap or in a state object that is already allocated once.
 #
-#   wii  (8 KiB threads, GEKKO):  2 of 37 entries reachable from a task
-#                                 handler - config_file_dump and
-#                                 vh_build. The rest are not compiled.
-#   ctr  (32 KiB threads):        3 of 37 - the same two plus
-#                                 mem_stats_proc_meminfo.
+# Fixed under that rule rather than argued about:
+#   vh_build                     16784 -> 400   scratch to the heap
+#   config_file_write            16432 ->   48  stdio buffer to the heap
+#   chd_read_header_core_file    57504 ->   32  whole chd_file to the heap
+#   rd_gen_lengths               12768 ->  352  scratch into struct rdeflate
 #
-# So the assumption holds for the codec entries, on those two targets,
-# in those configurations. It is not a general claim: indirect calls
-# are invisible to that analysis, and a target built with a different
-# feature set can reach further.
+# What is left is mostly codec inner loops (rvp9, rh264, raac, ropus,
+# rflac, rzstd, rvorbis) whose working sets are large by nature. Large
+# by nature is not the same as necessarily-on-the-stack: most of them
+# could hold their scratch in the decoder state, which is allocated
+# once per stream. They are recorded rather than fixed because that is
+# per-codec work with real regression risk, not because they are safe.
 #
-# The check remains a ratchet: it does not claim these are safe, it
-# stops the list growing. Removing an entry is always welcome; adding
-# one is a decision someone has to write down.
+# The check is a ratchet: it stops the list growing. Removing an entry
+# is always welcome; adding one is a decision someone has to write
+# down, and "not reachable on the targets I checked" is not one of the
+# reasons that counts.
 #
 # The value is the size at the time of writing, so a frame that grows
 # past its recorded size is caught even while allowlisted.
@@ -82,7 +87,6 @@ ALLOWLIST  = {
     'raac_imdct': 4240,
     'rchd_decompress': 28736,
     'rchd_map_v5': 2768,
-    'rd_gen_lengths': 12768,
     'rflac__alloc_raw': 4320,
     'rflac_open_with_metadata_private.constprop': 4464,
     'rh264_cabac_decode_islice.constprop.isra': 2240,
@@ -123,7 +127,15 @@ def stack_usage(path, workdir):
     su  = os.path.join(workdir, 'o.su')
     if os.path.exists(su):
         os.remove(su)
-    cmd = ['gcc', '-O2', '-DPSP', '-DHAVE_COMPRESSION',
+    # The define set has to be at least as wide as a real build, or
+    # the check measures code no target compiles and misses code every
+    # target does. HAVE_7ZIP is the case that proved it: without it
+    # libchdr_chd.c's largest frame is 8320 bytes, with it 57504 - a
+    # seven-fold difference in shipped code, under a define that wii,
+    # ctr and every desktop build set.
+    cmd = ['gcc', '-O2', '-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
+           '-DHAVE_CHD', '-DHAVE_RPNG', '-DHAVE_RJPEG', '-DHAVE_RBMP',
+           '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV',
            '-I' + INCLUDE, '-fstack-usage', '-c', path, '-o', obj]
     r = subprocess.run(cmd, cwd=workdir, capture_output=True)
     if not os.path.exists(su):

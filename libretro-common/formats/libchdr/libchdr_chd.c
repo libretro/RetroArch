@@ -1380,18 +1380,30 @@ CHD_EXPORT const chd_header *chd_get_header(chd_file *chd)
 CHD_EXPORT chd_error chd_read_header_core_file(core_file *file, chd_header *header)
 {
 	chd_error err;
-	chd_file fake;
+	chd_file *fake;
 
 	/* punt if NULL */
 	if (file == NULL || header == NULL)
 		return CHDERR_INVALID_PARAMETER;
 
 	/* header_read only touches ->file, but hand it a fully zeroed
-	 * struct so that stays true by inspection. */
-	memset(&fake, 0, sizeof(fake));
-	fake.file = file;
+	 * struct so that stays true by inspection.
+	 *
+	 * Heap rather than a local: chd_file embeds the working state of
+	 * every codec it can use - huff, zlib, cdzl, lzma - so as
+	 * 'chd_file fake;' this was a 57504-byte frame, zeroed in full,
+	 * to read a header that reads one member of it. No target with a
+	 * small thread stack builds CHD, so this was not a crash, but a
+	 * frame that size does not belong on any stack: it sits under
+	 * whatever called it, and nothing about "read this file's header"
+	 * suggests it costs 56 KiB to do. */
+	fake = (chd_file *)calloc(1, sizeof(*fake));
+	if (fake == NULL)
+		return CHDERR_OUT_OF_MEMORY;
+	fake->file = file;
 
-	err = header_read(&fake, header);
+	err = header_read(fake, header);
+	free(fake);
 	if (err != CHDERR_NONE)
 		return err;
 
