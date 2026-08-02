@@ -110,6 +110,23 @@
 #include <errno.h>
 #include <pthread.h>
 #include <sys/socket.h>
+#if defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 33))
+#include <malloc.h>
+#define HAVE_HEAP_SAMPLING 1
+#endif
+/* The sanitizer allocators intercept malloc and do not account
+ * through mallinfo2(), which then reports zero.  The heap-based
+ * assertions are silently meaningless in those builds rather than
+ * merely unavailable, so drop them explicitly -- everything else in
+ * the suite is exactly what we want ASan and TSan to see. */
+#if defined(__SANITIZE_ADDRESS__) || defined(__SANITIZE_THREAD__)
+#undef HAVE_HEAP_SAMPLING
+#endif
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer) || __has_feature(thread_sanitizer)
+#undef HAVE_HEAP_SAMPLING
+#endif
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -170,6 +187,33 @@ static size_t g_min_window;
 static size_t g_max_window;
 static size_t g_window_at_min_outstanding;
 static size_t g_outstanding;   /* body bytes still expected */
+static size_t g_heap_base;     /* allocated bytes at record_reset() */
+static size_t g_max_heap;      /* peak allocated bytes above that */
+
+/* Bytes currently handed out by malloc.  Sampled rather than
+ * interposed: the sink tests only need to tell "the whole body is
+ * resident" from "it is not", and a 4 MiB difference is not something
+ * sampling at every recv() can miss. */
+static size_t heap_now(void)
+{
+#ifdef HAVE_HEAP_SAMPLING
+   struct mallinfo2 mi = mallinfo2();
+   return (size_t)mi.uordblks;
+#else
+   return 0;
+#endif
+}
+
+static void heap_sample(void)
+{
+   size_t now;
+#ifndef HAVE_HEAP_SAMPLING
+   return;
+#endif
+   now = heap_now();
+   if (now > g_heap_base && now - g_heap_base > g_max_heap)
+      g_max_heap = now - g_heap_base;
+}
 
 static void record_reset(size_t body)
 {
@@ -178,6 +222,8 @@ static void record_reset(size_t body)
    g_max_window                = 0;
    g_window_at_min_outstanding = 0;
    g_outstanding               = body;
+   g_max_heap                  = 0;
+   g_heap_base                 = heap_now();
    g_record                    = 1;
 }
 
@@ -198,6 +244,7 @@ ssize_t recv(int fd, void *buf, size_t len, int flags)
        * possible; the tail of a transfer legitimately asks for less. */
       if (len > g_max_window)
          g_max_window = len;
+      heap_sample();
       if (g_outstanding > ASSERT_MIN_WINDOW && len < g_min_window)
       {
          g_min_window                = len;
@@ -767,12 +814,19 @@ static void test_concurrent(void)
 /* Streaming sink                                                      */
 /* ------------------------------------------------------------------ */
 
-/* Peak buffer ceiling for a streamed transfer.  Without a sink,
- * T_LEN sizes the buffer to Content-Length, so the receive window
- * grows to the whole body; with one it must stay near the receive
- * window.  Asserted against the largest window ever handed to
- * recv(), which tracks buflen. */
-#define ASSERT_SINK_MAX_WINDOW (1024 * 1024)
+/* Peak buffer ceiling for a streamed transfer.  Without a sink, T_LEN
+ * sizes the buffer to Content-Length and the whole body goes
+ * resident; with one, only a receive window's worth is ever held.
+ *
+ * This used to be asserted against the largest window handed to
+ * recv(), on the reasoning that the window tracks buflen.  It no
+ * longer does: net_http_update() clamps the window to what is left of
+ * NET_HTTP_DRAIN_BUDGET, so both paths now peak at the budget and the
+ * proxy stopped discriminating -- it measured a property of the drain
+ * loop rather than of the sink.  Measure the allocation directly
+ * instead, which is what "the body is being buffered" actually
+ * means. */
+#define ASSERT_SINK_MAX_HEAP   (1024 * 1024)
 
 struct sink_ctx
 {
@@ -836,6 +890,20 @@ static void test_sink(enum framing f, size_t body, size_t chunk,
       return;
    }
 
+   /* Pre-size the collector.  It grows to the full body by design --
+    * it exists to verify the bytes -- and if that growth happens
+    * inside the measured window it is indistinguishable from
+    * net_http.c buffering the body, which is the very thing the heap
+    * ceiling below is asserting does not happen. */
+   sc.cap = body;
+   if (!(sc.buf = (unsigned char*)malloc(body)))
+   {
+      printf("    SKIP: collector alloc failed\n");
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+      return;
+   }
+
    record_reset(body);
    if (!run_transfer_sink(sp.port, &r, 0, test_sink_cb, &sc))
    {
@@ -856,10 +924,12 @@ static void test_sink(enum framing f, size_t body, size_t chunk,
          "handle retained %lu bytes despite a sink being set",
          (unsigned long)r.len);
    CHECK(r.status == 200, "status %d, expected 200", r.status);
-   CHECK(g_max_window <= ASSERT_SINK_MAX_WINDOW,
-         "peak receive window %lu B exceeds %d B -- the body is still "
-         "being buffered",
-         (unsigned long)g_max_window, ASSERT_SINK_MAX_WINDOW);
+#ifdef HAVE_HEAP_SAMPLING
+   CHECK(g_max_heap <= ASSERT_SINK_MAX_HEAP,
+         "peak heap %lu B exceeds %d B -- the body is still being "
+         "buffered",
+         (unsigned long)g_max_heap, ASSERT_SINK_MAX_HEAP);
+#endif
 
    free(sc.buf);
    free(r.data);
@@ -899,14 +969,20 @@ static void test_no_sink_buffers_whole_body(void)
    }
    record_stop();
 
-   printf("    peak receive window %lu B for a %lu B body\n",
-         (unsigned long)g_max_window, (unsigned long)sp.body);
+#ifdef HAVE_HEAP_SAMPLING
+   printf("    peak heap %lu B for a %lu B body\n",
+         (unsigned long)g_max_heap, (unsigned long)sp.body);
+#else
+   printf("    peak heap not measurable in this build\n");
+#endif
    CHECK(r.len == sp.body, "short body: got %lu of %lu",
          (unsigned long)r.len, (unsigned long)sp.body);
-   CHECK(g_max_window > ASSERT_SINK_MAX_WINDOW,
+#ifdef HAVE_HEAP_SAMPLING
+   CHECK(g_max_heap > ASSERT_SINK_MAX_HEAP,
          "buffered path peaked at only %lu B; the sink ceiling is not "
          "actually discriminating",
-         (unsigned long)g_max_window);
+         (unsigned long)g_max_heap);
+#endif
 
    free(r.data);
    pthread_join(th, NULL);

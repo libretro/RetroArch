@@ -58,8 +58,27 @@
 
 /* Per-call drain bounds.  The budget keeps a saturated link from
  * stalling a frame; the iteration cap keeps a peer that dribbles
- * single bytes from spinning us. */
-#define NET_HTTP_DRAIN_BUDGET       ((size_t)4 * 1024 * 1024)
+ * single bytes from spinning us.
+ *
+ * The budget is a stall cap, not a throughput knob.  It only binds
+ * when the peer can deliver more than budget bytes per task-queue
+ * tick -- roughly 16MB/s at the 16.7ms unthreaded cadence -- so for
+ * any transfer slower than that the loop exits on EAGAIN long before
+ * the budget is reached and its value is irrelevant.  Measured
+ * against a rate-limited loopback server at 2MB/s, the largest single
+ * call was 112KiB with the budget at 4MiB: never once reached.
+ *
+ * What the value does control is the worst case when the link *does*
+ * outrun us, and there the previous 4MiB was too coarse.  Draining
+ * 4MiB of TLS costs one AES-GCM pass over 4MiB: 24-57ms measured on
+ * x86-64 with AES-NI (~170MB/s effective), which is 2-4 dropped
+ * frames per call in an unthreaded build, on the video thread.  A
+ * target doing software AES-GCM at 30-60MB/s lands at 70-140ms.
+ * 256KiB holds that to 2-3ms here and stays inside a frame even an
+ * order of magnitude slower, while 16MiB still completes in 1.29s
+ * against 16.9s for the pre-drain one-recv-per-tick behaviour -- so
+ * substantially all of the win survives. */
+#define NET_HTTP_DRAIN_BUDGET       ((size_t)256 * 1024)
 #define NET_HTTP_DRAIN_MAX_ITERS    256
 
 enum response_part
@@ -1588,6 +1607,28 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          if (tmp)
             response->data = tmp;
       }
+      /* The peer closing the connection *is* the terminator for
+       * T_FULL, but the transports report it as a failure:
+       * socket_receive_all_nonblocking() sets *err on recv() == 0,
+       * and both SSL backends do the same on a clean close.  So
+       * state->err was left set through P_DONE and every accessor
+       * that respects it refused the body -- net_http_data(state,
+       * &len, false), which is exactly what task_http.c calls on the
+       * success path, returned NULL for a complete 200 response with
+       * the payload sitting in the buffer.  Measured on a 1MiB
+       * close-delimited body: 0 bytes with accept_err false, 1048576
+       * with it true, on both TLS and plain.  The preceding commit
+       * got the bytes into the buffer; they were still unreachable.
+       *
+       * Clear it, having reached a terminal state we consider valid.
+       * Note this cannot distinguish a clean EOF from a socket error
+       * midway through the body -- close-delimited framing carries no
+       * length to check a truncated body against, which is precisely
+       * why HTTP/1.1 servers use Content-Length or chunked and why
+       * every other client treats close as success here.  Truncation
+       * of a framed body is unaffected: T_LEN and T_CHUNK take the
+       * `return false` above and still fail the transfer. */
+      state->err = false;
       return true;
    }
 
@@ -2145,6 +2186,37 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
             response->buflen = want;
             window           = response->buflen - response->pos;
          }
+
+         /* Clamp the window to what is left of the budget, so that the
+          * budget is an actual cap rather than a post-hoc check.
+          *
+          * It used to be tested only after the read had already
+          * happened, and for T_LEN the window is the entire remaining
+          * body -- so a single recv() off a large kernel receive
+          * buffer could return far more than the budget and the check
+          * would notice one read too late.  Measured on a 16MiB
+          * Content-Length body over loopback: single calls of 6029153
+          * and 5536467 bytes against a 4MiB budget, i.e. the bound
+          * overshot by ~1.4x, and it scales with SO_RCVBUF rather
+          * than with anything we control.
+          *
+          * drained < NET_HTTP_DRAIN_BUDGET is the loop invariant at
+          * this point (the bottom of the loop breaks as soon as that
+          * stops holding), so the subtraction cannot underflow.
+          *
+          * Stop rather than issue a read below the window floor: a
+          * clamp to whatever happens to be left of the budget would
+          * otherwise reintroduce exactly the tiny reads that
+          * NET_HTTP_MIN_RECV_WINDOW exists to prevent, once per call.
+          * The drained test guards the degenerate case where the
+          * budget is configured below the floor, which would
+          * otherwise break before reading anything and stall the
+          * transfer outright. */
+         if (     drained
+               && NET_HTTP_DRAIN_BUDGET - drained < NET_HTTP_MIN_RECV_WINDOW)
+            break;
+         if (window > NET_HTTP_DRAIN_BUDGET - drained)
+            window = NET_HTTP_DRAIN_BUDGET - drained;
 
 #ifdef HAVE_SSL
          if (state->ssl && state->conn->ssl_ctx)
