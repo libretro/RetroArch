@@ -71,11 +71,13 @@ void rmodtracker_rewind(rmodtracker *rmt);
  * the one asked for only when the song ends first.
  *
  * A module has no seek table: its state at any moment is the result of
- * every row played before it, so this restarts and works forward. The
- * mixing is skipped, which is nearly all of the cost, but the walk is
- * still proportional to the distance - seeking to the end of a long
- * module is not free, and it is done on the calling thread. Seeking to
- * 0 is rewinding and costs nothing.
+ * every row played before it, so seeking works forward with the mixing
+ * skipped, which is nearly all of the cost. The first seek walks from
+ * the top and drops bounded state snapshots along the way; later seeks
+ * restore the nearest snapshot and walk at most a few seconds, so
+ * scrubbing a long module costs one full walk once rather than every
+ * time. All of it runs on the calling thread. Seeking to 0 is
+ * rewinding and costs nothing.
  *
  * A module loops, so every frame number names a position in the stream
  * and an accidental one would be walked to just as faithfully as a

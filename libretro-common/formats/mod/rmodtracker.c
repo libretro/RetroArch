@@ -20,9 +20,9 @@
  * the engine rate, with duration calculation and rewind.
  *
  * What it does not implement: Impulse Tracker (IT) and other later
- * formats including IT's sample compression, arbitrary seeking
- * (seeking restarts from the top and walks), and MIDI-style external
- * control.
+ * formats including IT's sample compression, and MIDI-style external
+ * control. Seeking is forward-walking (a tracker has no seek table)
+ * but snapshot-accelerated after the first seek.
  */
 #include <limits.h>
 #include <stdlib.h>
@@ -2227,31 +2227,6 @@ static int calculate_mix_buf_len( int sample_rate ) {
 }
 
 /* Returns the song duration in samples at the current sampling rate. */
-/* Advance the sequencer to sample_pos without mixing, returning the
- * position actually reached - the last tick boundary at or before it.
- * A tracker has no seek table and no keyframes: where it is at a given
- * moment is the result of every row that came before, so the only way
- * to arrive somewhere is to go through the song.  What can be skipped
- * is the mixing, which is nearly all of the cost; the sequencer walk is
- * the same one replay_calculate_duration makes, and each channel's
- * sample position is carried forward by the same helper the mixer uses
- * for a channel it is not rendering. */
-static int replay_seek( struct replay *replay, int sample_pos ) {
-	int idx, tick_len, current_pos = 0;
-	replay_set_sequence_pos( replay, 0 );
-	tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
-	while( ( sample_pos - current_pos ) >= tick_len ) {
-		for( idx = 0; idx < replay->module->num_channels; idx++ ) {
-			channel_update_sample_idx( &replay->channels[ idx ],
-				tick_len * 2, replay->sample_rate * 2 );
-		}
-		current_pos += tick_len;
-		replay_tick( replay );
-		tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
-	}
-	return current_pos;
-}
-
 static int replay_calculate_duration( struct replay *replay ) {
 	int count = 0, duration = 0;
 	replay_set_sequence_pos( replay, 0 );
@@ -2527,7 +2502,123 @@ struct rmodtracker {
 	int    ended;
 	int    duration;      /* one pass, measured once at open            */
 	int    rate;          /* mix rate chosen at open                    */
+	/* Seek snapshots: full sequencer and voice state captured at tick
+	 * boundaries during the first seek's walk, so later seeks restore
+	 * the nearest one and walk at most one interval instead of the
+	 * whole distance from the top. Built lazily - a caller that never
+	 * seeks never pays for them - and bounded: at most RMT_SNAP_MAX
+	 * records, at least two seconds apart. */
+	char  *snaps;         /* slab of snapshot records                   */
+	int    snap_stride;   /* bytes per record, 16-aligned               */
+	int    snap_count;    /* captured so far                            */
+	int    snap_interval; /* frames between capture thresholds          */
+	int    snap_next;     /* next capture threshold, past all captured  */
+	int    pc_bytes;      /* play-count blob size, fixed per module     */
 };
+
+#define RMT_SNAP_MAX 33
+
+/* A record is this header, then the channels array, then the
+ * play-count blob. The struct replay copy is bitwise: its pointer
+ * fields are ignored on restore, since rewinding reallocates the
+ * play-count table and the live pointers are the valid ones. */
+struct rmt_snap {
+	int frame;
+	struct replay r;
+};
+
+static struct rmt_snap *rmt_snap_at( struct rmodtracker *rmt, int idx )
+{
+	return ( struct rmt_snap * ) ( rmt->snaps + ( size_t ) idx * rmt->snap_stride );
+}
+
+static int rmt_snaps_init( struct rmodtracker *rmt )
+{
+	int ch_bytes, stride, interval;
+	if( rmt->snaps )
+		return 1;
+	rmt->pc_bytes = module_init_play_count( rmt->module, NULL );
+	ch_bytes = rmt->module->num_channels * ( int ) sizeof( struct channel );
+	stride = ( int ) sizeof( struct rmt_snap ) + ch_bytes + rmt->pc_bytes;
+	stride = ( stride + 15 ) & ~15;
+	interval = rmt->duration / ( RMT_SNAP_MAX - 1 );
+	if( interval < rmt->rate * 2 )
+		interval = rmt->rate * 2;
+	rmt->snap_stride = stride;
+	rmt->snap_interval = interval;
+	rmt->snap_next = interval;
+	rmt->snap_count = 0;
+	rmt->snaps = ( char * ) calloc( RMT_SNAP_MAX, ( size_t ) stride );
+	/* On failure every seek simply walks from the top, as before. */
+	return rmt->snaps != NULL;
+}
+
+static void rmt_snap_capture( struct rmodtracker *rmt, int frame )
+{
+	struct replay *replay = rmt->replay;
+	struct rmt_snap *s = rmt_snap_at( rmt, rmt->snap_count );
+	char *body = ( char * ) s + sizeof( struct rmt_snap );
+	int ch_bytes = rmt->module->num_channels * ( int ) sizeof( struct channel );
+	s->frame = frame;
+	s->r = *replay;
+	memcpy( body, replay->channels, ( size_t ) ch_bytes );
+	if( rmt->pc_bytes > 0 && replay->play_count && replay->play_count[ 0 ] )
+		memcpy( body + ch_bytes, replay->play_count[ 0 ], ( size_t ) rmt->pc_bytes );
+	rmt->snap_count++;
+	if( rmt->snap_next <= INT_MAX - rmt->snap_interval )
+		rmt->snap_next += rmt->snap_interval;
+	else
+		rmt->snap_count = RMT_SNAP_MAX; /* threshold would overflow; stop */
+}
+
+static void rmt_snap_restore( struct rmodtracker *rmt, struct rmt_snap *s )
+{
+	struct replay *replay = rmt->replay;
+	char *body = ( char * ) s + sizeof( struct rmt_snap );
+	int ch_bytes = rmt->module->num_channels * ( int ) sizeof( struct channel );
+	struct replay tmp = s->r;
+	tmp.ramp_buf   = replay->ramp_buf;
+	tmp.play_count = replay->play_count;
+	tmp.channels   = replay->channels;
+	tmp.module     = replay->module;
+	*replay = tmp;
+	memcpy( replay->channels, body, ( size_t ) ch_bytes );
+	if( rmt->pc_bytes > 0 && replay->play_count && replay->play_count[ 0 ] )
+		memcpy( replay->play_count[ 0 ], body + ch_bytes, ( size_t ) rmt->pc_bytes );
+}
+
+/* Advance the sequencer without mixing, from a tick boundary to the
+ * last tick boundary at or before the target. A tracker has no seek
+ * table: where it is at a given moment is the result of every row that
+ * came before, so the only way to arrive somewhere is to go through
+ * the song. What can be skipped is the mixing, which is nearly all of
+ * the cost; each channel's sample position is carried forward by the
+ * same helper the mixer uses for a channel it is not rendering.
+ *
+ * A snapshot is captured at the first boundary at or past each
+ * interval threshold. Thresholds only sit beyond everything already
+ * captured, and the walk from a restored snapshot reproduces the
+ * from-the-top walk exactly, so the set of snapshot positions is the
+ * same whichever seeks happen to build it. */
+static int rmt_seek_walk( struct rmodtracker *rmt, int start_pos, int target )
+{
+	struct replay *replay = rmt->replay;
+	int idx, current_pos = start_pos;
+	int tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
+	while( ( target - current_pos ) >= tick_len ) {
+		for( idx = 0; idx < replay->module->num_channels; idx++ ) {
+			channel_update_sample_idx( &replay->channels[ idx ],
+				tick_len * 2, replay->sample_rate * 2 );
+		}
+		current_pos += tick_len;
+		replay_tick( replay );
+		tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
+		if( rmt->snaps && rmt->snap_count < RMT_SNAP_MAX
+				&& current_pos >= rmt->snap_next )
+			rmt_snap_capture( rmt, current_pos );
+	}
+	return current_pos;
+}
 
 rmodtracker *rmodtracker_open_memory( const void *data, size_t size )
 {
@@ -2588,6 +2679,7 @@ void rmodtracker_close( rmodtracker *rmt )
 	free( rmt->mix_i );
 	free( rmt->mix_f );
 	free( rmt->ramp_f );
+	free( rmt->snaps );
 	free( rmt );
 }
 
@@ -2627,7 +2719,7 @@ void rmodtracker_rewind( rmodtracker *rmt )
 int rmodtracker_seek( rmodtracker *rmt, int frame )
 {
 	int16_t scratch[ 256 * 2 ];
-	int reached;
+	int reached, base_pos, idx;
 	if( !rmt || frame < 0 )
 		return 0;
 	/* A module loops, so any frame at all is a position somewhere in the
@@ -2640,7 +2732,21 @@ int rmodtracker_seek( rmodtracker *rmt, int frame )
 	rmodtracker_rewind( rmt );
 	if( frame == 0 )
 		return 0;
-	reached = replay_seek( rmt->replay, frame );
+	base_pos = 0;
+	if( rmt_snaps_init( rmt ) ) {
+		/* Newest snapshot at or before the target; the walk covers
+		 * the rest, extending the snapshot set if the target lies
+		 * beyond everything captured so far. */
+		for( idx = rmt->snap_count - 1; idx >= 0; idx-- ) {
+			struct rmt_snap *s = rmt_snap_at( rmt, idx );
+			if( s->frame <= frame ) {
+				rmt_snap_restore( rmt, s );
+				base_pos = s->frame;
+				break;
+			}
+		}
+	}
+	reached = rmt_seek_walk( rmt, base_pos, frame );
 	/* The walk lands on a tick boundary, so render the rest of the way
 	 * and throw it away - under one tick, some twenty milliseconds, and
 	 * it puts the caller exactly where it asked to be rather than
