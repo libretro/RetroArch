@@ -285,7 +285,8 @@ static void data_sam_s16le( struct data *data, int offset, int count, short *des
 		count = ( length - offset ) / 2;
 	}
 	for( idx = 0; idx < count; idx++ ) {
-		amp = ( buffer[ offset + idx * 2 ] & 0xFF ) | ( buffer[ offset + idx * 2 + 1 ] << 8 );
+		amp = ( buffer[ offset + idx * 2 ] & 0xFF )
+			| ( ( buffer[ offset + idx * 2 + 1 ] & 0xFF ) << 8 );
 		dest[ idx ] = ( amp & 0x7FFF ) - ( amp & 0x8000 );
 	}
 }
