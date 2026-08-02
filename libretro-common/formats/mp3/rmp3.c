@@ -21,29 +21,18 @@
  * tail is carried internally so nothing is decoded twice or lost.
  * audio_transfer's MP3 arm runs on the stream interface.
  *
- * Known, and left alone deliberately: the fixed-point kernels rely on
- * signed integers wrapping, which the standard leaves undefined.  A
- * valid stream never reaches it - the format bounds the values so the
- * sums fit - but a corrupt one is bounded by nothing, and then
- * UndefinedBehaviorSanitizer reports the overflow.  Measured over 300
- * bitflip seeds it is 73 expressions in three places: the IMDCT and
- * antialias around 1233-1303, the DCT-II around 1495-1538, and the
- * synthesis around 1808-1814.
- *
- * Not rewritten, because the compiler is not exploiting it and the
- * rewrite is riskier than the bug: -O0, -O2 and -O2 -fwrapv agree
- * frame for frame on corrupt input, so what is emitted today is the
- * wrap the code expects.  Doing it properly means carrying every one
- * of those expressions through unsigned - the accumulation is defined
- * there, and the result identical on two's complement - and a single
- * mistyped temporary in a hot DSP kernel is a silent wrong sample on
- * a path only malformed input reaches.  Whoever takes it on should
- * check old against new on both valid and corrupt corpora, where a
- * faithful translation has to be bit-identical on each.
- *
- * rflac's LPC path had the same fault in one contained function and
- * was converted; this is the same fault at seventy-three times the
- * surface. */
+ * The fixed-point kernels accumulate in unsigned arithmetic.  A valid
+ * stream cannot overflow them - the format bounds the values so the
+ * sums fit in int32 - but a corrupt one is bounded by nothing, and
+ * signed overflow is undefined rather than merely wrong.  The
+ * additions, subtractions and negations of the DCT-3/IMDCT group, the
+ * DCT-II and the synthesis input pairs are therefore carried through
+ * uint32_t, where the wrap is defined, and reinterpreted where a
+ * signed value is consumed (RMP3_MULQU is that seam): the bits are the
+ * ones every two's-complement target produced for the signed form,
+ * checked bit-identical against it on valid and corrupt corpora at
+ * -O0, -O2 and -O2 -fwrapv.  rflac's LPC prediction is the same
+ * treatment in one contained function. */
 #include <formats/rmp3.h>
 
 #include <stdlib.h>
@@ -1169,6 +1158,12 @@ static void rmp3_L3_change_sign(float *grbuf)
 #define RMP3_MULQ(x, c) \
    ((int32_t)((((int64_t)(x) * (c)) + ((int64_t)1 << 26)) >> 27))
 
+/* RMP3_MULQ for a sample carried in uint32_t: the fixed-point kernels
+ * below accumulate unsigned (see the head comment), and this seam
+ * reinterprets the stored bits as the signed value they are before the
+ * widening multiply, which must be signed to be correct. */
+#define RMP3_MULQU(x, c) RMP3_MULQ((int32_t)(uint32_t)(x), (c))
+
 /* Q-format for fixed-point samples.  Every value between the IMDCT and
  * the s16 output is a fraction (measured |x| <= 0.47 across the corpus,
  * including full-scale square waves; the polyphase window magnitudes
@@ -1265,44 +1260,53 @@ static int16_t rmp3d_scale_pcm_q(int64_t acc)
    return (int16_t)v;
 }
 
+/* This kernel and the IMDCT/DCT-II/synthesis companions below carry
+ * their additions, subtractions and negations in uint32_t.  A valid
+ * stream cannot overflow them - the format bounds the values so the
+ * sums fit in int32 - but a corrupt one is bounded by nothing, and
+ * signed overflow is undefined rather than merely wrong.  Unsigned,
+ * the wrap is defined and the bits are the ones every two's-complement
+ * target produced for the signed form; RMP3_MULQU reinterprets where
+ * the multiply needs the signed value.  rflac's LPC prediction is the
+ * same treatment in one contained function. */
 static void rmp3_L3_dct3_9_q(int32_t *y)
 {
-    int32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, t0, t2, t4;
+    uint32_t s0, s1, s2, s3, s4, s5, s6, s7, s8, t0, t2, t4;
 
     s0 = y[0]; s2 = y[2]; s4 = y[4]; s6 = y[6]; s8 = y[8];
-    t0 = s0 + RMP3_MULQ(s6, 67108864);
+    t0 = s0 + RMP3_MULQU(s6, 67108864);
     s0 -= s6;
-    t4 = RMP3_MULQ(s4 + s2, 126123408);
-    t2 = RMP3_MULQ(s8 + s2, 102816744);
-    s6 = RMP3_MULQ(s4 - s8, 23306664);
+    t4 = RMP3_MULQU(s4 + s2, 126123408);
+    t2 = RMP3_MULQU(s8 + s2, 102816744);
+    s6 = RMP3_MULQU(s4 - s8, 23306664);
     s4 += s8 - s2;
 
-    s2 = s0 - RMP3_MULQ(s4, 67108864);
-    y[4] = s4 + s0;
+    s2 = s0 - RMP3_MULQU(s4, 67108864);
+    y[4] = (int32_t)(s4 + s0);
     s8 = t0 - t2 + s6;
     s0 = t0 - t4 + t2;
     s4 = t0 + t4 - s6;
 
     s1 = y[1]; s3 = y[3]; s5 = y[5]; s7 = y[7];
 
-    s3 = RMP3_MULQ(s3, 116235962);
-    t0 = RMP3_MULQ(s5 + s1, 132178659);
-    t4 = RMP3_MULQ(s5 - s7, 45905166);
-    t2 = RMP3_MULQ(s1 + s7, 86273493);
-    s1 = RMP3_MULQ(s1 - s5 - s7, 116235962);
+    s3 = RMP3_MULQU(s3, 116235962);
+    t0 = RMP3_MULQU(s5 + s1, 132178659);
+    t4 = RMP3_MULQU(s5 - s7, 45905166);
+    t2 = RMP3_MULQU(s1 + s7, 86273493);
+    s1 = RMP3_MULQU(s1 - s5 - s7, 116235962);
 
     s5 = t0 - s3 - t2;
     s7 = t4 - s3 - t0;
     s3 = t4 + s3 - t2;
 
-    y[0] = s4 - s7;
-    y[1] = s2 + s1;
-    y[2] = s0 - s3;
-    y[3] = s8 + s5;
-    y[5] = s8 - s5;
-    y[6] = s0 + s3;
-    y[7] = s2 - s1;
-    y[8] = s4 + s7;
+    y[0] = (int32_t)(s4 - s7);
+    y[1] = (int32_t)(s2 + s1);
+    y[2] = (int32_t)(s0 - s3);
+    y[3] = (int32_t)(s8 + s5);
+    y[5] = (int32_t)(s8 - s5);
+    y[6] = (int32_t)(s0 + s3);
+    y[7] = (int32_t)(s2 - s1);
+    y[8] = (int32_t)(s4 + s7);
 }
 
 static const int32_t g_twid9_q[18] = {
@@ -1317,43 +1321,43 @@ static void rmp3_L3_imdct36_q(int32_t *grbuf, int32_t *overlap, const int32_t *w
     for (j = 0; j < nbands; j++, grbuf += 18, overlap += 9)
     {
         int32_t co[9], si[9];
-        co[0] = -grbuf[0];
+        co[0] = (int32_t)(0u - (uint32_t)grbuf[0]);
         si[0] = grbuf[17];
         for (i = 0; i < 4; i++)
         {
-            si[8 - 2*i] =   grbuf[4*i + 1] - grbuf[4*i + 2];
-            co[1 + 2*i] =   grbuf[4*i + 1] + grbuf[4*i + 2];
-            si[7 - 2*i] =   grbuf[4*i + 4] - grbuf[4*i + 3];
-            co[2 + 2*i] = -(grbuf[4*i + 3] + grbuf[4*i + 4]);
+            si[8 - 2*i] = (int32_t)((uint32_t)grbuf[4*i + 1] - (uint32_t)grbuf[4*i + 2]);
+            co[1 + 2*i] = (int32_t)((uint32_t)grbuf[4*i + 1] + (uint32_t)grbuf[4*i + 2]);
+            si[7 - 2*i] = (int32_t)((uint32_t)grbuf[4*i + 4] - (uint32_t)grbuf[4*i + 3]);
+            co[2 + 2*i] = (int32_t)(0u - ((uint32_t)grbuf[4*i + 3] + (uint32_t)grbuf[4*i + 4]));
         }
         rmp3_L3_dct3_9_q(co);
         rmp3_L3_dct3_9_q(si);
 
-        si[1] = -si[1];
-        si[3] = -si[3];
-        si[5] = -si[5];
-        si[7] = -si[7];
+        si[1] = (int32_t)(0u - (uint32_t)si[1]);
+        si[3] = (int32_t)(0u - (uint32_t)si[3]);
+        si[5] = (int32_t)(0u - (uint32_t)si[5]);
+        si[7] = (int32_t)(0u - (uint32_t)si[7]);
 
         for (i = 0; i < 9; i++)
         {
-            int32_t ovl  = overlap[i];
-            int32_t sum  = RMP3_MULQ(co[i], g_twid9_q[9 + i])
-                         + RMP3_MULQ(si[i], g_twid9_q[0 + i]);
-            overlap[i]   = RMP3_MULQ(co[i], g_twid9_q[0 + i])
-                         - RMP3_MULQ(si[i], g_twid9_q[9 + i]);
-            grbuf[i]      = RMP3_MULQ(ovl, window[0 + i]) - RMP3_MULQ(sum, window[9 + i]);
-            grbuf[17 - i] = RMP3_MULQ(ovl, window[9 + i]) + RMP3_MULQ(sum, window[0 + i]);
+            uint32_t ovl  = (uint32_t)overlap[i];
+            uint32_t sum  = (uint32_t)RMP3_MULQ(co[i], g_twid9_q[9 + i])
+                          + (uint32_t)RMP3_MULQ(si[i], g_twid9_q[0 + i]);
+            overlap[i]    = (int32_t)((uint32_t)RMP3_MULQ(co[i], g_twid9_q[0 + i])
+                          - (uint32_t)RMP3_MULQ(si[i], g_twid9_q[9 + i]));
+            grbuf[i]      = (int32_t)((uint32_t)RMP3_MULQU(ovl, window[0 + i]) - (uint32_t)RMP3_MULQU(sum, window[9 + i]));
+            grbuf[17 - i] = (int32_t)((uint32_t)RMP3_MULQU(ovl, window[9 + i]) + (uint32_t)RMP3_MULQU(sum, window[0 + i]));
         }
     }
 }
 
 static void rmp3_L3_idct3_q(int32_t x0, int32_t x1, int32_t x2, int32_t *dst)
 {
-    int32_t m1 = RMP3_MULQ(x1, 116235962);
-    int32_t a1 = x0 - RMP3_MULQ(x2, 67108864);
-    dst[1] = x0 + x2;
-    dst[0] = a1 + m1;
-    dst[2] = a1 - m1;
+    uint32_t m1 = (uint32_t)RMP3_MULQ(x1, 116235962);
+    uint32_t a1 = (uint32_t)x0 - (uint32_t)RMP3_MULQ(x2, 67108864);
+    dst[1] = (int32_t)((uint32_t)x0 + (uint32_t)x2);
+    dst[0] = (int32_t)(a1 + m1);
+    dst[2] = (int32_t)(a1 - m1);
 }
 
 static const int32_t g_twid3_q[6] = {
@@ -1365,17 +1369,21 @@ static void rmp3_L3_imdct12_q(int32_t *x, int32_t *dst, int32_t *overlap)
     int32_t co[3], si[3];
     int i;
 
-    rmp3_L3_idct3_q(-x[0], x[6] + x[3], x[12] + x[9], co);
-    rmp3_L3_idct3_q(x[15], x[12] - x[9], x[6] - x[3], si);
-    si[1] = -si[1];
+    rmp3_L3_idct3_q((int32_t)(0u - (uint32_t)x[0]),
+          (int32_t)((uint32_t)x[6]  + (uint32_t)x[3]),
+          (int32_t)((uint32_t)x[12] + (uint32_t)x[9]), co);
+    rmp3_L3_idct3_q(x[15],
+          (int32_t)((uint32_t)x[12] - (uint32_t)x[9]),
+          (int32_t)((uint32_t)x[6]  - (uint32_t)x[3]), si);
+    si[1] = (int32_t)(0u - (uint32_t)si[1]);
 
     for (i = 0; i < 3; i++)
     {
-        int32_t ovl  = overlap[i];
-        int32_t sum  = RMP3_MULQ(co[i], g_twid3_q[3 + i]) + RMP3_MULQ(si[i], g_twid3_q[0 + i]);
-        overlap[i]   = RMP3_MULQ(co[i], g_twid3_q[0 + i]) - RMP3_MULQ(si[i], g_twid3_q[3 + i]);
-        dst[i]       = RMP3_MULQ(ovl, g_twid3_q[2 - i]) - RMP3_MULQ(sum, g_twid3_q[5 - i]);
-        dst[5 - i]   = RMP3_MULQ(ovl, g_twid3_q[5 - i]) + RMP3_MULQ(sum, g_twid3_q[2 - i]);
+        uint32_t ovl = (uint32_t)overlap[i];
+        uint32_t sum = (uint32_t)RMP3_MULQ(co[i], g_twid3_q[3 + i]) + (uint32_t)RMP3_MULQ(si[i], g_twid3_q[0 + i]);
+        overlap[i]   = (int32_t)((uint32_t)RMP3_MULQ(co[i], g_twid3_q[0 + i]) - (uint32_t)RMP3_MULQ(si[i], g_twid3_q[3 + i]));
+        dst[i]       = (int32_t)((uint32_t)RMP3_MULQU(ovl, g_twid3_q[2 - i]) - (uint32_t)RMP3_MULQU(sum, g_twid3_q[5 - i]));
+        dst[5 - i]   = (int32_t)((uint32_t)RMP3_MULQU(ovl, g_twid3_q[5 - i]) + (uint32_t)RMP3_MULQU(sum, g_twid3_q[2 - i]));
     }
 }
 
@@ -1397,7 +1405,7 @@ static void rmp3_L3_change_sign_q(int32_t *grbuf)
     int b, i;
     for (b = 0, grbuf += 18; b < 32; b += 2, grbuf += 36)
         for (i = 1; i < 18; i += 2)
-            grbuf[i] = -grbuf[i];
+            grbuf[i] = (int32_t)(0u - (uint32_t)grbuf[i]);
 }
 
 static void rmp3_L3_imdct_gr_q(int32_t *grbuf, int32_t *overlap, unsigned block_type, unsigned n_long_bands)
@@ -1524,26 +1532,27 @@ static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
     int i, k;
     for (k = 0; k < n; k++)
     {
-        int32_t t[4][8], *x, *y = grbuf + k;
+        uint32_t t[4][8], *x;
+        int32_t *y = grbuf + k;
 
         for (x = t[0], i = 0; i < 8; i++, x++)
         {
-            int32_t x0 = y[i*18];
-            int32_t x1 = y[(15 - i)*18];
-            int32_t x2 = y[(16 + i)*18];
-            int32_t x3 = y[(31 - i)*18];
-            int32_t t0 = x0 + x3;
-            int32_t t1 = x1 + x2;
-            int32_t t2 = RMP3_MULQ(x1 - x2, g_sec_q[3*i + 0]);
-            int32_t t3 = RMP3_MULQ(x0 - x3, g_sec_q[3*i + 1]);
+            uint32_t x0 = (uint32_t)y[i*18];
+            uint32_t x1 = (uint32_t)y[(15 - i)*18];
+            uint32_t x2 = (uint32_t)y[(16 + i)*18];
+            uint32_t x3 = (uint32_t)y[(31 - i)*18];
+            uint32_t t0 = x0 + x3;
+            uint32_t t1 = x1 + x2;
+            uint32_t t2 = (uint32_t)RMP3_MULQU(x1 - x2, g_sec_q[3*i + 0]);
+            uint32_t t3 = (uint32_t)RMP3_MULQU(x0 - x3, g_sec_q[3*i + 1]);
             x[0]  = t0 + t1;
-            x[8]  = RMP3_MULQ(t0 - t1, g_sec_q[3*i + 2]);
+            x[8]  = (uint32_t)RMP3_MULQU(t0 - t1, g_sec_q[3*i + 2]);
             x[16] = t3 + t2;
-            x[24] = RMP3_MULQ(t3 - t2, g_sec_q[3*i + 2]);
+            x[24] = (uint32_t)RMP3_MULQU(t3 - t2, g_sec_q[3*i + 2]);
         }
         for (x = t[0], i = 0; i < 4; i++, x += 8)
         {
-            int32_t x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
+            uint32_t x0 = x[0], x1 = x[1], x2 = x[2], x3 = x[3], x4 = x[4], x5 = x[5], x6 = x[6], x7 = x[7], xt;
             xt = x0 - x7; x0 += x7;
             x7 = x1 - x6; x1 += x6;
             x6 = x2 - x5; x2 += x5;
@@ -1551,33 +1560,33 @@ static void rmp3d_DCT_II_q(int32_t *grbuf, int n)
             x4 = x0 - x3; x0 += x3;
             x3 = x1 - x2; x1 += x2;
             x[0] = x0 + x1;
-            x[4] = RMP3_MULQ(x0 - x1, 94906264);
+            x[4] = (uint32_t)RMP3_MULQU(x0 - x1, 94906264);
             x5 =  x5 + x6;
-            x6 = RMP3_MULQ(x6 + x7, 94906264);
+            x6 = (uint32_t)RMP3_MULQU(x6 + x7, 94906264);
             x7 =  x7 + xt;
-            x3 = RMP3_MULQ(x3 + x4, 94906264);
-            x5 -= RMP3_MULQ(x7, 26697566);  /* rotate by PI/8 */
-            x7 += RMP3_MULQ(x5, 51362901);
-            x5 -= RMP3_MULQ(x7, 26697566);
+            x3 = (uint32_t)RMP3_MULQU(x3 + x4, 94906264);
+            x5 -= (uint32_t)RMP3_MULQU(x7, 26697566);  /* rotate by PI/8 */
+            x7 += (uint32_t)RMP3_MULQU(x5, 51362901);
+            x5 -= (uint32_t)RMP3_MULQU(x7, 26697566);
             x0 = xt - x6; xt += x6;
-            x[1] = RMP3_MULQ(xt + x7, 68423609);
-            x[2] = RMP3_MULQ(x4 + x3, 72638112);
-            x[3] = RMP3_MULQ(x0 - x5, 80711144);
-            x[5] = RMP3_MULQ(x0 + x5, 120792759);
-            x[6] = RMP3_MULQ(x4 - x3, 175363920);
-            x[7] = RMP3_MULQ(xt - x7, 343988704);
+            x[1] = (uint32_t)RMP3_MULQU(xt + x7, 68423609);
+            x[2] = (uint32_t)RMP3_MULQU(x4 + x3, 72638112);
+            x[3] = (uint32_t)RMP3_MULQU(x0 - x5, 80711144);
+            x[5] = (uint32_t)RMP3_MULQU(x0 + x5, 120792759);
+            x[6] = (uint32_t)RMP3_MULQU(x4 - x3, 175363920);
+            x[7] = (uint32_t)RMP3_MULQU(xt - x7, 343988704);
         }
         for (i = 0; i < 7; i++, y += 4*18)
         {
-            y[0*18] = t[0][i];
-            y[1*18] = t[2][i] + t[3][i] + t[3][i + 1];
-            y[2*18] = t[1][i] + t[1][i + 1];
-            y[3*18] = t[2][i + 1] + t[3][i] + t[3][i + 1];
+            y[0*18] = (int32_t)t[0][i];
+            y[1*18] = (int32_t)(t[2][i] + t[3][i] + t[3][i + 1]);
+            y[2*18] = (int32_t)(t[1][i] + t[1][i + 1]);
+            y[3*18] = (int32_t)(t[2][i + 1] + t[3][i] + t[3][i + 1]);
         }
-        y[0*18] = t[0][7];
-        y[1*18] = t[2][7] + t[3][7];
-        y[2*18] = t[1][7];
-        y[3*18] = t[3][7];
+        y[0*18] = (int32_t)t[0][7];
+        y[1*18] = (int32_t)(t[2][7] + t[3][7]);
+        y[2*18] = (int32_t)t[1][7];
+        y[3*18] = (int32_t)t[3][7];
     }
 }
 
@@ -1845,14 +1854,17 @@ static int16_t rmp3d_scale_pcm(float sample)
 static void rmp3d_synth_pair_q(short *pcm, int nch, const int32_t *z)
 {
     int64_t a;
-    a  = (int64_t)(z[14*64] - z[    0]) * 29;
-    a += (int64_t)(z[ 1*64] + z[13*64]) * 213;
-    a += (int64_t)(z[12*64] - z[ 2*64]) * 459;
-    a += (int64_t)(z[ 3*64] + z[11*64]) * 2037;
-    a += (int64_t)(z[10*64] - z[ 4*64]) * 5153;
-    a += (int64_t)(z[ 5*64] + z[ 9*64]) * 6574;
-    a += (int64_t)(z[ 8*64] - z[ 6*64]) * 37489;
-    a += (int64_t) z[ 7*64]             * 75038;
+    /* The pair sums and differences wrap unsigned (see the kernel-group
+     * comment at rmp3_L3_dct3_9_q) and re-enter signed for the widening
+     * multiply. */
+    a  = (int64_t)(int32_t)((uint32_t)z[14*64] - (uint32_t)z[    0]) * 29;
+    a += (int64_t)(int32_t)((uint32_t)z[ 1*64] + (uint32_t)z[13*64]) * 213;
+    a += (int64_t)(int32_t)((uint32_t)z[12*64] - (uint32_t)z[ 2*64]) * 459;
+    a += (int64_t)(int32_t)((uint32_t)z[ 3*64] + (uint32_t)z[11*64]) * 2037;
+    a += (int64_t)(int32_t)((uint32_t)z[10*64] - (uint32_t)z[ 4*64]) * 5153;
+    a += (int64_t)(int32_t)((uint32_t)z[ 5*64] + (uint32_t)z[ 9*64]) * 6574;
+    a += (int64_t)(int32_t)((uint32_t)z[ 8*64] - (uint32_t)z[ 6*64]) * 37489;
+    a += (int64_t) z[ 7*64]                                          * 75038;
     pcm[0] = rmp3d_scale_pcm_q(a);
 
     z += 2;
