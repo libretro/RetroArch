@@ -27,6 +27,10 @@ supports rotation, and accepts RGB565 and XRGB8888 software frames. Hardware
 rendered cores are not supported because they do not provide a CPU-readable
 framebuffer.
 
+RetroArch input overlays are composited in software with per-pixel and global
+alpha. Full-screen overlays use the complete LED canvas; non-full-screen
+overlays are positioned relative to the scaled game viewport.
+
 ## Panel configuration
 
 Configuration uses environment variables so panel wiring can be changed
