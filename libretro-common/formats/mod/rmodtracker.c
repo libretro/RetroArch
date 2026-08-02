@@ -233,10 +233,10 @@ static int data_u16le( struct data *data, int offset ) {
 static unsigned int data_u32le( struct data *data, int offset ) {
 	unsigned int value = 0;
 	if( offset >= 0 && offset + 3 < data->length ) {
-		value = ( data->buffer[ offset ] & 0xFF )
-			| ( ( data->buffer[ offset + 1 ] & 0xFF ) << 8 )
-			| ( ( data->buffer[ offset + 2 ] & 0xFF ) << 16 )
-			| ( ( data->buffer[ offset + 3 ] & 0xFF ) << 24 );
+		value = ( unsigned int ) ( data->buffer[ offset ] & 0xFF )
+			| ( ( unsigned int ) ( data->buffer[ offset + 1 ] & 0xFF ) << 8 )
+			| ( ( unsigned int ) ( data->buffer[ offset + 2 ] & 0xFF ) << 16 )
+			| ( ( unsigned int ) ( data->buffer[ offset + 3 ] & 0xFF ) << 24 );
 	}
 	return value;
 }
