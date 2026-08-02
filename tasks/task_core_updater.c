@@ -140,8 +140,6 @@ typedef struct update_installed_cores_handle
    char *path_dir_libretro;
    char *path_dir_core_assets;
    core_updater_list_t* core_list;
-   retro_task_t *list_task;
-   retro_task_t *download_task;
    size_t auto_backup_history_size;
    size_t list_size;
    size_t list_index;
@@ -151,6 +149,14 @@ typedef struct update_installed_cores_handle
    unsigned num_locked;
    enum update_installed_cores_status status;
    bool auto_backup;
+   /* Set from the child task callbacks. The child
+    * retro_task_t pointers are deliberately *not*
+    * retained: task_queue frees a finished task in the
+    * same gather pass that ran its handler, so a stored
+    * pointer can dangle before this task is stepped
+    * again (see UPDATE_INSTALLED_CORES_WAIT_LIST). */
+   bool list_task_complete;
+   bool download_task_complete;
 } update_installed_cores_handle_t;
 
 #if defined(ANDROID)
@@ -523,8 +529,27 @@ static bool task_core_updater_get_list_finder(retro_task_t *task, void *user_dat
    return ((uintptr_t)user_data == (uintptr_t)list_handle->core_list);
 }
 
-void *task_push_get_core_updater_list(
-      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+/* Signals completion of the core list fetch to a parent
+ * 'update installed cores' task, if there is one. The
+ * parent must never poll task_get_flags() on the child
+ * instead: a finished task is retired and freed inside the
+ * same task_queue gather pass that ran its handler, so with
+ * threaded tasks disabled the parent may not get to observe
+ * RETRO_TASK_FLG_FINISHED before the memory is freed. */
+static void cb_task_core_updater_get_list(
+      retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   if (update_installed_handle)
+      update_installed_handle->list_task_complete = true;
+}
+
+static void *task_push_get_core_updater_list_internal(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    task_finder_data_t find_data;
    retro_task_t *task                      = NULL;
@@ -571,6 +596,8 @@ void *task_push_get_core_updater_list(
    task->title            = strdup(msg_hash_to_str(MSG_FETCHING_CORE_LIST));
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
+   task->callback         = cb_task_core_updater_get_list;
+   task->user_data        = (void*)update_installed_handle;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -598,6 +625,13 @@ error:
    return NULL;
 }
 
+void *task_push_get_core_updater_list(
+      core_updater_list_t* core_list, bool mute, bool refresh_menu)
+{
+   return task_push_get_core_updater_list_internal(
+         core_list, mute, refresh_menu, NULL);
+}
+
 /*****************/
 /* Download core */
 /*****************/
@@ -609,7 +643,17 @@ static void cb_task_core_updater_download(
    /* Reload core info files
     * > This must be done on the main thread
     * > Forced: a core file changed on disk */
-   bool refresh = true;
+   bool refresh                                            = true;
+   update_installed_cores_handle_t *update_installed_handle =
+         (update_installed_cores_handle_t*)user_data;
+
+   /* Signal completion to the parent 'update installed
+    * cores' task, if there is one - it cannot safely poll
+    * this task's flags, since the task is freed as soon as
+    * it is retired */
+   if (update_installed_handle)
+      update_installed_handle->download_task_complete = true;
+
    command_event(CMD_EVENT_CORE_INFO_INIT, &refresh);
 
 #if defined(RARCH_INTERNAL) && defined(HAVE_MENU)
@@ -1163,12 +1207,13 @@ static bool task_core_updater_download_finder(retro_task_t *task, void *user_dat
    return false;
 }
 
-void *task_push_core_updater_download(
+static void *task_push_core_updater_download_internal(
       core_updater_list_t* core_list,
       const char *filename, uint32_t crc, bool mute,
       bool auto_backup, size_t auto_backup_history_size,
       const char *path_dir_libretro,
-      const char *path_dir_core_assets)
+      const char *path_dir_core_assets,
+      update_installed_cores_handle_t *update_installed_handle)
 {
    size_t _len;
    task_finder_data_t find_data;
@@ -1285,6 +1330,7 @@ void *task_push_core_updater_download(
    task->progress         = 0;
    task->progress_cb      = task_window_progress_cb;
    task->callback         = cb_task_core_updater_download;
+   task->user_data        = (void*)update_installed_handle;
    task->flags           |=  RETRO_TASK_FLG_ALTERNATIVE_LOOK;
    if (mute)
       task->flags        |=  RETRO_TASK_FLG_MUTE;
@@ -1310,6 +1356,19 @@ error:
       free_core_updater_download_handle(download_handle);
 
    return NULL;
+}
+
+void *task_push_core_updater_download(
+      core_updater_list_t* core_list,
+      const char *filename, uint32_t crc, bool mute,
+      bool auto_backup, size_t auto_backup_history_size,
+      const char *path_dir_libretro,
+      const char *path_dir_core_assets)
+{
+   return task_push_core_updater_download_internal(
+         core_list, filename, crc, mute, auto_backup,
+         auto_backup_history_size, path_dir_libretro,
+         path_dir_core_assets, NULL);
 }
 
 /**************************/
@@ -1348,38 +1407,35 @@ static void task_update_installed_cores_handler(retro_task_t *task)
    switch (update_installed_handle->status)
    {
       case UPDATE_INSTALLED_CORES_BEGIN:
-         /* Request buildbot core list */
-         update_installed_handle->list_task = (retro_task_t*)
-            task_push_get_core_updater_list(
-                  update_installed_handle->core_list,
-                  true, false);
+         /* Request buildbot core list
+          * > Must be cleared *before* the push: the child
+          *   task can finish and fire its callback before
+          *   this returns */
+         update_installed_handle->list_task_complete = false;
 
          /* If push failed, go to end
           * (error will message will be displayed when
           * final task title is set) */
-         if (!update_installed_handle->list_task)
+         if (!task_push_get_core_updater_list_internal(
+                  update_installed_handle->core_list,
+                  true, false, update_installed_handle))
             update_installed_handle->status = UPDATE_INSTALLED_CORES_END;
          else
             update_installed_handle->status = UPDATE_INSTALLED_CORES_WAIT_LIST;
          break;
       case UPDATE_INSTALLED_CORES_WAIT_LIST:
          {
-            bool list_available = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->list_task)
-            {
-               uint8_t _flg      = task_get_flags(update_installed_handle->list_task);
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  list_available = true;
-               else
-                  list_available = false;
-            }
-            else
-               list_available    = true;
+            /* Wait for cb_task_core_updater_get_list() to
+             * trigger. Note that the child task must not be
+             * polled via task_get_flags(): a finished task is
+             * retired and freed inside the same task_queue
+             * gather pass that ran its handler, and with
+             * threaded tasks disabled that pass may run the
+             * child *after* this one - leaving nothing to
+             * observe on the next tick but freed memory, and
+             * this task stuck on 'Fetching core list...'
+             * forever */
+            bool list_available = update_installed_handle->list_task_complete;
 
             /* If list is available, make sure it isn't empty
              * (error will message will be displayed when
@@ -1528,20 +1584,22 @@ static void task_update_installed_cores_handler(retro_task_t *task)
             }
 
             /* Existing core is not the most recent version
-             * > Request download */
-            update_installed_handle->download_task = (retro_task_t*)
-                  task_push_core_updater_download(
+             * > Request download
+             * > Flag must be cleared *before* the push, since
+             *   the child task can complete before it returns */
+            update_installed_handle->download_task_complete = false;
+
+            /* Again, if an error occurred, just return to
+             * UPDATE_INSTALLED_CORES_ITERATE state */
+            if (!task_push_core_updater_download_internal(
                         update_installed_handle->core_list,
                         list_entry->remote_filename,
                         local_crc, true,
                         update_installed_handle->auto_backup,
                         update_installed_handle->auto_backup_history_size,
                         update_installed_handle->path_dir_libretro,
-                        update_installed_handle->path_dir_core_assets);
-
-            /* Again, if an error occurred, just return to
-             * UPDATE_INSTALLED_CORES_ITERATE state */
-            if (!update_installed_handle->download_task)
+                        update_installed_handle->path_dir_core_assets,
+                        update_installed_handle))
                update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
             else
             {
@@ -1570,30 +1628,17 @@ static void task_update_installed_cores_handler(retro_task_t *task)
          break;
       case UPDATE_INSTALLED_CORES_WAIT_DOWNLOAD:
          {
-            bool download_complete = false;
-
-            /* > If task is running, check 'is finished'
-             *   status
-             * > If task is NULL, then it is finished
-             *   by definition */
-            if (update_installed_handle->download_task)
-            {
-               uint8_t _flg      = task_get_flags(update_installed_handle->download_task);
-               if ((_flg & RETRO_TASK_FLG_FINISHED) > 0)
-                  download_complete = true;
-               else
-                  download_complete = false;
-            }
-            else
-               download_complete = true;
+            /* Wait for cb_task_core_updater_download() to
+             * trigger - same lifetime hazard as
+             * UPDATE_INSTALLED_CORES_WAIT_LIST, so the child
+             * task's flags are deliberately not polled */
+            bool download_complete =
+                  update_installed_handle->download_task_complete;
 
             /* If download is complete, return to
              * UPDATE_INSTALLED_CORES_ITERATE state */
             if (download_complete)
-            {
-               update_installed_handle->download_task = NULL;
-               update_installed_handle->status        = UPDATE_INSTALLED_CORES_ITERATE;
-            }
+               update_installed_handle->status = UPDATE_INSTALLED_CORES_ITERATE;
          }
          break;
       case UPDATE_INSTALLED_CORES_END:
@@ -1711,8 +1756,8 @@ void task_push_update_installed_cores(
    update_installed_handle->path_dir_core_assets     = (!path_dir_core_assets || !*path_dir_core_assets) ?
          NULL : strdup(path_dir_core_assets);
    update_installed_handle->core_list                = core_updater_list_init();
-   update_installed_handle->list_task                = NULL;
-   update_installed_handle->download_task            = NULL;
+   update_installed_handle->list_task_complete       = false;
+   update_installed_handle->download_task_complete   = false;
    update_installed_handle->list_size                = 0;
    update_installed_handle->list_index               = 0;
    update_installed_handle->installed_index          = 0;
