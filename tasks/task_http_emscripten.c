@@ -317,7 +317,10 @@ task_finished:
       task_set_error(task,
             strldup("Internal error.", sizeof("Internal error.")));
 
-   http_handle_free(http);
+   /* Handle freed in task_http_transfer_cleanup(), not here: the task
+    * stays findable until the queue retires it, and
+    * task_http_finder() dereferences task->state.  See the matching
+    * note in tasks/task_http.c. */
 }
 
 static bool task_http_finder(retro_task_t *task, void *user_data)
@@ -333,12 +336,20 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
 static void task_http_transfer_cleanup(retro_task_t *task)
 {
    http_transfer_data_t* data = (http_transfer_data_t*)task_get_data(task);
+   http_handle_t        *http = (http_handle_t*)task->state;
+
    if (data)
    {
       string_list_free(data->headers);
       if (data->data)
          free(data->data);
       free(data);
+   }
+
+   if (http)
+   {
+      task->state = NULL;
+      http_handle_free(http);
    }
 }
 

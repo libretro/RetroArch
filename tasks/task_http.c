@@ -293,19 +293,56 @@ task_finished:
       task_set_error(task, strldup("Internal error.",
                sizeof("Internal error.")));
 
-   free(http->connection_url);
-   free(http);
+   /* Deliberately NOT freeing `http` here.
+    *
+    * task->state stays live until the task queue retires the task,
+    * because a task remains *findable* long after its handler has
+    * finished: retro_task_threaded_find() scans the running, finished
+    * AND retiring lists, and task_http_finder() dereferences
+    * task->state on every candidate it is handed.  Freeing the handle
+    * at FINISHED time left task->state dangling for the whole window
+    * between the last handler tick and full retirement -- many frames
+    * -- so any concurrent push racing a finishing download read freed
+    * memory.
+    *
+    * It went unnoticed while connection_url was an inline array,
+    * since reading a freed-but-still-mapped char[] usually yields
+    * stale bytes and strcmp() survives.  Once connection_url became a
+    * pointer, the same read picked up the freed chunk's tombstone and
+    * strcmp() dereferenced it: a hard SIGSEGV inside task_http_finder.
+    *
+    * The teardown now happens in task_http_transfer_cleanup(), which
+    * the queue calls during retirement. */
+   http->handle = NULL;
 }
 
 static void task_http_transfer_cleanup(retro_task_t *task)
 {
    http_transfer_data_t* data = (http_transfer_data_t*)task_get_data(task);
+   http_handle_t        *http = (http_handle_t*)task->state;
+
    if (data)
    {
       string_list_free(data->headers);
       if (data->data)
          free(data->data);
       free(data);
+   }
+
+   /* Release the handle here rather than in the handler; see the note
+    * at the end of task_http_transfer_handler().  task->state is
+    * cleared first so that a finder which somehow still reaches this
+    * task sees no state rather than a stale pointer. */
+   if (http)
+   {
+      task->state = NULL;
+      /* Normally a no-op: the handler already closed the sink with
+       * the correct keep/discard decision and NULLed both fields.
+       * `false` covers the path where the handler never ran, where
+       * a partial file must not be left behind. */
+      task_http_sink_close(http, false);
+      free(http->connection_url);
+      free(http);
    }
 }
 

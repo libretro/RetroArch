@@ -811,17 +811,16 @@ static void task_core_updater_download_handler(retro_task_t *task)
       case CORE_UPDATER_DOWNLOAD_START_TRANSFER:
          {
             size_t _len;
+            size_t _tlen;
             file_transfer_t *transf = NULL;
             char task_title[128];
+            char output_dir[DIR_MAX_LENGTH];
+            char http_title[NAME_MAX_LENGTH];
 
             /* Configure file transfer object */
             if (!(transf = (file_transfer_t*)calloc(1,
                         sizeof(file_transfer_t))))
                goto task_finished;
-
-            char output_dir[DIR_MAX_LENGTH];
-            char http_title[NAME_MAX_LENGTH];
-            size_t _tlen;
 
             strlcpy(
                   transf->path, download_handle->local_download_path,
