@@ -34,14 +34,16 @@
  * (samplingFrequencyIndex 15), channel configurations 1 through 7 and
  * configuration 0 with an embedded PCE, up to eight output channels,
  * M/S and intensity stereo, PNS, pulse data and TNS.  In-stream PCE
- * and DSE elements are parsed and skipped.  Channels are emitted in
- * element transmission order, which for the standard configurations
- * is the ISO order (e.g. 5.1: C, L, R, Ls, Rs, LFE); no downmix or
- * reordering is applied.  Not decoded (open or decode fails cleanly):
- * other object types (Main, SSR, LTP, HE-AAC's explicit SBR
- * signalling), the 960-sample frame length and coupling channel
- * elements.  Implicitly signalled SBR in fill elements is skipped,
- * decoding the LC core band, as plain LC decoders do.
+ * and DSE elements are parsed and skipped.  Coupling channel
+ * elements are decoded and mixed into their targets, dependently or
+ * independently switched, with up to four concurrent coupling tags.
+ * Channels are emitted in element transmission order, which for the
+ * standard configurations is the ISO order (e.g. 5.1: C, L, R, Ls,
+ * Rs, LFE); no downmix or reordering is applied.  Not decoded (open
+ * or decode fails cleanly): other object types (Main, SSR, LTP,
+ * HE-AAC's explicit SBR signalling) and the 960-sample frame length.
+ * Implicitly signalled SBR in fill elements is skipped, decoding the
+ * LC core band, as plain LC decoders do.
  */
 #ifndef __LIBRETRO_SDK_FORMAT_RAAC_H__
 #define __LIBRETRO_SDK_FORMAT_RAAC_H__

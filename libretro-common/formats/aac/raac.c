@@ -36,15 +36,17 @@
  * channel configurations 1 through 7 and configuration 0 with an
  * embedded PCE (up to eight output channels, interleaved in element
  * transmission order), explicit as well as indexed sampling
- * frequencies, M/S and intensity stereo, PNS, TNS, in-stream PCE and
- * DSE elements (skipped), and both the s16 and f32 output paths from
- * a shared float synthesis pipeline.
+ * frequencies, M/S and intensity stereo, PNS, TNS, coupling channel
+ * elements (dependently and independently switched, up to four
+ * concurrent tags), in-stream PCE and DSE elements (skipped), and
+ * both the s16 and f32 output paths from a shared float synthesis
+ * pipeline.
  *
  * What it does not implement: other object types (Main, SSR, LTP,
  * HE-AAC's SBR/PS - configurations other than plain LC are refused
- * at open, as is the 960-sample frame variant), coupling channel
- * elements, downmixing, ADTS/LATM/LOAS framing (the caller supplies
- * the AudioSpecificConfig and raw access units, as rmp4 does), and
+ * at open, as is the 960-sample frame variant), downmixing,
+ * ADTS/LATM/LOAS framing (the caller supplies the
+ * AudioSpecificConfig and raw access units, as rmp4 does), and
  * encoding. */
 
 #include <stdlib.h>
@@ -62,6 +64,9 @@
 #define RAAC_MAX_CH    8
 #define RAAC_MAX_SFB   51
 #define RAAC_MAX_WIN   8
+#define RAAC_MAX_CCE   4   /* concurrently active coupling tags      */
+#define RAAC_CCE_TARG  8   /* num_coupled_elements is 3 bits, plus 1 */
+#define RAAC_CCE_GAIN  16  /* gain lists: 8 CPE targets, two apiece  */
 
 /* quantised spectrum values live in -8191..8191 (13 bit + escape) */
 #define RAAC_ESC_BOOK  11
@@ -686,12 +691,43 @@ typedef struct
    int      prev_window_shape;
 } raac_ch;
 
+/* one coupling channel, bound to an element instance tag. The
+ * spectral state persists across frames so time-domain (independently
+ * switched) coupling keeps filterbank overlap continuity. */
+typedef struct
+{
+   int      in_use;                    /* slot bound to a tag         */
+   int      tag;
+   int      present;                   /* parsed in the current frame */
+   int      point;                     /* 0 before target TNS,
+                                        * 1 between TNS and IMDCT,
+                                        * 3 after IMDCT, time domain  */
+   int      ntarg;
+   uint8_t  targ_is_cpe[RAAC_CCE_TARG];
+   uint8_t  targ_tag[RAAC_CCE_TARG];
+   uint8_t  targ_sel[RAAC_CCE_TARG];   /* SCE fixed 2; CPE 0..3       */
+   float    gain[RAAC_CCE_GAIN][RAAC_MAX_WIN * RAAC_MAX_SFB];
+   raac_ch  ch;                        /* the coupling channel        */
+   float    time[RAAC_FRAME];          /* CC synthesis for time-
+                                        * domain coupling             */
+} raac_cce;
+
+/* one decoded channel element of the current access unit, for
+ * resolving coupling targets (type, tag) to output channels */
+typedef struct
+{
+   uint8_t  kind;                      /* 0 SCE, 1 CPE, 3 LFE         */
+   uint8_t  tag;
+   uint8_t  ch;                        /* first claimed channel       */
+} raac_elem;
+
 struct raac
 {
    unsigned sample_rate;
    unsigned channels;
    int      sfi;                  /* sampling frequency index            */
    raac_ch  ch[RAAC_MAX_CH];
+   raac_cce cce[RAAC_MAX_CCE];
    raac_huff     spec[11];
    raac_huff_sf  sfh;
    /* windows */
@@ -1525,13 +1561,16 @@ static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
    return 0;
 }
 
+/* Decode one individual_channel_stream and reconstruct its spectrum
+ * (the caller consumes the element_instance_tag). TNS synthesis is
+ * deferred to the frame tail so spectral coupling can be applied on
+ * either side of it. Also decodes the coupling channel inside a CCE,
+ * which shares this exact syntax. */
 static int raac_decode_sce(raac_t *a, raac_bits *b, raac_ch *c)
 {
-   raac_getbits(b, 4);               /* element_instance_tag          */
    if (raac_decode_ics(a, b, c, 0) < 0)
       return -1;
    raac_pns(a, c);
-   raac_tns_apply(a, c);
    return 0;
 }
 
@@ -1540,7 +1579,6 @@ static int raac_decode_cpe(raac_t *a, raac_bits *b, raac_ch *l, raac_ch *r)
    uint8_t  ms_used[RAAC_MAX_WIN][RAAC_MAX_SFB];
    int      ms_mask = 0;
    int      common;
-   raac_getbits(b, 4);
    common = (int)raac_getbits(b, 1);
    memset(ms_used, 0, sizeof(ms_used));
    if (common)
@@ -1569,17 +1607,210 @@ static int raac_decode_cpe(raac_t *a, raac_bits *b, raac_ch *l, raac_ch *r)
    if (common)
       raac_ms_stereo(a, l, r, ms_mask == 2, ms_used);
    raac_intensity(a, l, r, ms_mask == 2, ms_used);
-   raac_tns_apply(a, l);
-   raac_tns_apply(a, r);
    return 0;
+}
+
+/* gain step per coded gain word: 2^(1/8), 2^(1/4), 2^(1/2), 2 */
+static const float raac_cce_scale[4] =
+{
+   1.09050773266525765921f, 1.18920711500272106672f,
+   1.41421356237309504880f, 2.0f
+};
+
+/* coupling_channel_element (14496-3 4.4.2.2, table 4.8). Parses the
+ * target list, the coupling channel's own individual_channel_stream,
+ * and the gain element lists. Gain semantics track the reference
+ * behaviour of deployed decoders: the first list is unity and sends
+ * no bits; per-band lists DPCM-accumulate in the coded domain, a
+ * delta of zero keeps the previous band's cached gain, and with
+ * gain_element_sign set the accumulated word carries the sign in its
+ * LSB with the magnitude above it. */
+static int raac_decode_cce(raac_t *a, raac_bits *b, raac_cce *cc)
+{
+   int   num_gain = 0;
+   int   c, g, sfb;
+   int   sign, ind_sw;
+   float scale;
+
+   ind_sw    = (int)raac_getbits(b, 1);
+   cc->point = 2 * ind_sw;
+   cc->ntarg = (int)raac_getbits(b, 3) + 1;
+   for (c = 0; c < cc->ntarg; c++)
+   {
+      num_gain++;
+      cc->targ_is_cpe[c] = (uint8_t)raac_getbits(b, 1);
+      cc->targ_tag[c]    = (uint8_t)raac_getbits(b, 4);
+      if (cc->targ_is_cpe[c])
+      {
+         cc->targ_sel[c] = (uint8_t)raac_getbits(b, 2);
+         if (cc->targ_sel[c] == 3)
+            num_gain++;
+      }
+      else
+         cc->targ_sel[c] = 2;
+   }
+   /* cc_domain; independently switched coupling is always applied in
+    * the time domain, folding both flags into one coupling point */
+   cc->point += (raac_getbits(b, 1) || ind_sw) ? 1 : 0;
+
+   sign  = (int)raac_getbits(b, 1);
+   scale = raac_cce_scale[raac_getbits(b, 2)];
+
+   if (raac_decode_sce(a, b, &cc->ch) < 0)
+      return -1;
+
+   for (c = 0; c < num_gain; c++)
+   {
+      int   idx  = 0;
+      int   cge  = 1;
+      int   gain = 0;
+      float gain_cache = 1.0f;
+      if (c)
+      {
+         cge = (cc->point == 3) ? 1 : (int)raac_getbits(b, 1);
+         if (cge)
+         {
+            gain = raac_huff_decode_sf(b, &a->sfh);
+            if (gain < 0)
+               return -1;
+            gain -= 60;
+         }
+         gain_cache = (float)pow((double)scale, (double)-gain);
+      }
+      if (cc->point == 3)
+         cc->gain[c][0] = gain_cache;
+      else
+      {
+         for (g = 0; g < cc->ch.num_window_groups; g++)
+            for (sfb = 0; sfb < cc->ch.max_sfb; sfb++, idx++)
+            {
+               if (cc->ch.band_cb[g][sfb] == RAAC_CB_ZERO)
+                  continue;
+               if (!cge)
+               {
+                  int t = raac_huff_decode_sf(b, &a->sfh);
+                  if (t < 0)
+                     return -1;
+                  t -= 60;
+                  if (t)
+                  {
+                     int s = 1;
+                     t = gain += t;
+                     if (sign)
+                     {
+                        s  -= 2 * (t & 1);
+                        t >>= 1;
+                     }
+                     gain_cache = (float)pow((double)scale,
+                           (double)-t) * (float)s;
+                  }
+               }
+               cc->gain[c][idx] = gain_cache;
+            }
+      }
+   }
+   return b->err ? -1 : 0;
+}
+
+/* Spectral-domain coupling: add one gain element list's scaling of
+ * the coupling channel into a target channel, walking the coupling
+ * channel's own band layout. The layouts are expected to agree; if a
+ * hostile stream disagrees the adds still stay inside the frame. */
+static void raac_cce_add_spec(const raac_t *a, raac_cce *cc, raac_ch *t,
+      int list)
+{
+   const raac_ch  *c   = &cc->ch;
+   const uint16_t *swb = raac_swb_off(a, c->window_sequence == 2);
+   int g, idx = 0, win_base = 0;
+   for (g = 0; g < c->num_window_groups; g++)
+   {
+      int glen = c->group_len[g], sfb;
+      for (sfb = 0; sfb < c->max_sfb; sfb++, idx++)
+      {
+         if (c->band_cb[g][sfb] != RAAC_CB_ZERO)
+         {
+            float gain = cc->gain[list][idx];
+            int w;
+            for (w = 0; w < glen; w++)
+            {
+               int base = win_base + w * 128;
+               int i;
+               for (i = swb[sfb]; i < swb[sfb + 1]; i++)
+                  t->coef[base + i] += gain * c->coef[base + i];
+            }
+         }
+      }
+      win_base += glen * ((c->window_sequence == 2) ? 128 : 1024);
+   }
+}
+
+/* Walk one CCE's target list for a decoded element, keeping the gain
+ * list index in step with unmatched targets, and apply the coupling
+ * at the requested point to the element's channel(s). ch_select: 2
+ * couples the first (or only) channel, 1 the second, 0 both from a
+ * shared list, 3 both from separate lists. */
+static void raac_cce_couple(raac_t *a, raac_cce *cc, int point,
+      int is_cpe, int tag, unsigned ch0, float *pcm0, float *pcm1)
+{
+   int c, index = 0;
+   if (!cc->present || cc->point != point)
+      return;
+   for (c = 0; c < cc->ntarg; c++)
+   {
+      if ((int)cc->targ_is_cpe[c] == is_cpe && (int)cc->targ_tag[c] == tag)
+      {
+         if (cc->targ_sel[c] != 1)
+         {
+            if (point == 3)
+            {
+               float gain = cc->gain[index][0];
+               int i;
+               for (i = 0; i < RAAC_FRAME; i++)
+                  pcm0[i] += gain * cc->time[i];
+            }
+            else
+               raac_cce_add_spec(a, cc, &a->ch[ch0], index);
+            if (cc->targ_sel[c] != 0)
+               index++;
+         }
+         if (cc->targ_sel[c] != 2)
+         {
+            if (point == 3)
+            {
+               float gain = cc->gain[index][0];
+               int i;
+               for (i = 0; i < RAAC_FRAME; i++)
+                  pcm1[i] += gain * cc->time[i];
+            }
+            else
+               raac_cce_add_spec(a, cc, &a->ch[ch0 + 1], index);
+            index++;
+         }
+      }
+      else
+         index += 1 + (cc->targ_sel[c] == 3);
+   }
+}
+
+/* Apply every active CCE at one coupling point to one element, in
+ * element instance tag order. */
+static void raac_couple_all(raac_t *a, int point, int is_cpe, int tag,
+      unsigned ch0, float *pcm0, float *pcm1)
+{
+   int t, s;
+   for (t = 0; t < 16; t++)
+      for (s = 0; s < RAAC_MAX_CCE; s++)
+         if (a->cce[s].in_use && a->cce[s].tag == t)
+            raac_cce_couple(a, &a->cce[s], point, is_cpe, tag,
+                  ch0, pcm0, pcm1);
 }
 
 /* program_config_element (14496-3 4.4.1.1). Parses one PCE, leaving
  * the reader just past it. Writes the number of channel elements the
  * layout lists (SCE, CPE and LFE each count one) and the channel
- * total (CPEs count two) through the optional out pointers. Returns
- * 0, or -1 when the element is truncated or declares coupling
- * channels, which are out of scope. byte_alignment() inside a PCE is
+ * total (CPEs count two; coupling channels add none) through the
+ * optional out pointers. Returns 0, or -1 when the element is
+ * truncated. byte_alignment() inside a PCE is
  * relative to the start of the enclosing structure - the ASC or the
  * raw_data_block - and the bit reader's buffer begins there in both
  * callers, so aligning the raw position is correct. */
@@ -1625,8 +1856,6 @@ static int raac_pce(raac_bits *b, int *elems, int *channels)
       b->pos += cf * 8;
    }
    if (b->pos > b->size * 8 || b->err)
-      return -1;
-   if (ncc)
       return -1;
    if (elems)
       *elems    = n_elems;
@@ -1764,14 +1993,19 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
 {
    raac_bits b;
    int       got[RAAC_MAX_CH];
+   raac_elem etab[RAAC_MAX_CH];
+   int       n_elems = 0;
    int       done = 0;
    unsigned  ch;
    unsigned  next = 0;
+   int       s, t, e;
 
    if (!a || !pkt || !size)
       return -1;
    raac_bits_init(&b, pkt, size);
    memset(got, 0, sizeof(got));
+   for (s = 0; s < RAAC_MAX_CCE; s++)
+      a->cce[s].present = 0;
 
    while (!done)
    {
@@ -1782,24 +2016,65 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
       {
          case 0:  /* SCE */
          case 3:  /* LFE (same individual_channel_stream)             */
+         {
             /* channel elements claim output channels in transmission
              * order, which for the standard configurations is the ISO
              * order (e.g. 5.1: SCE C, CPE L/R, CPE Ls/Rs, LFE) */
+            unsigned tag = raac_getbits(&b, 4);
             if (next + 1 > a->channels)
                return -1;
             if (raac_decode_sce(a, &b, &a->ch[next]) < 0)
                return -1;
+            etab[n_elems].kind = (uint8_t)id;
+            etab[n_elems].tag  = (uint8_t)tag;
+            etab[n_elems].ch   = (uint8_t)next;
+            n_elems++;
             got[next] = 1;
             next++;
             break;
+         }
          case 1:  /* CPE */
+         {
+            unsigned tag = raac_getbits(&b, 4);
             if (next + 2 > a->channels)
                return -1;
             if (raac_decode_cpe(a, &b, &a->ch[next], &a->ch[next + 1]) < 0)
                return -1;
+            etab[n_elems].kind = 1;
+            etab[n_elems].tag  = (uint8_t)tag;
+            etab[n_elems].ch   = (uint8_t)next;
+            n_elems++;
             got[next] = got[next + 1] = 1;
             next += 2;
             break;
+         }
+         case 2:  /* CCE */
+         {
+            unsigned  tag = raac_getbits(&b, 4);
+            raac_cce *cc  = NULL;
+            for (s = 0; s < RAAC_MAX_CCE; s++)
+               if (a->cce[s].in_use && a->cce[s].tag == (int)tag)
+               {
+                  cc = &a->cce[s];
+                  break;
+               }
+            if (!cc)
+               for (s = 0; s < RAAC_MAX_CCE; s++)
+                  if (!a->cce[s].in_use)
+                  {
+                     cc = &a->cce[s];
+                     memset(cc, 0, sizeof(*cc));
+                     cc->in_use = 1;
+                     cc->tag    = (int)tag;
+                     break;
+                  }
+            if (!cc || cc->present) /* out of slots, or a duplicate  */
+               return -1;
+            if (raac_decode_cce(a, &b, cc) < 0)
+               return -1;
+            cc->present = 1;
+            break;
+         }
          case 4:  /* DSE */
          {
             unsigned cnt;
@@ -1833,18 +2108,57 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
          case 7:  /* END */
             done = 1;
             break;
-         default: /* CCE: out of scope for LC mono/stereo files       */
+         default:
             return -1;
       }
       if (b.pos > b.size * 8)
          return -1;
    }
-   for (ch = 0; ch < a->channels; ch++)
+
+   /* the coupling channels first: their own TNS, and the synthesis
+    * feeding time-domain coupling, so targets can consume them */
+   for (t = 0; t < 16; t++)
+      for (s = 0; s < RAAC_MAX_CCE; s++)
+      {
+         raac_cce *cc = &a->cce[s];
+         if (cc->in_use && cc->tag == t && cc->present)
+         {
+            raac_tns_apply(a, &cc->ch);
+            if (cc->point == 3)
+               raac_filterbank(a, &cc->ch, cc->time);
+         }
+      }
+
+   /* per element: spectral coupling on either side of the target's
+    * TNS, filterbank, then time-domain coupling on the output. LFE
+    * elements are not coupling targets. */
+   for (e = 0; e < n_elems; e++)
    {
-      if (!got[ch])
-         memset(a->ch[ch].coef, 0, sizeof(a->ch[ch].coef));
-      raac_filterbank(a, &a->ch[ch], pcm[ch]);
+      unsigned c0     = etab[e].ch;
+      int      is_cpe = (etab[e].kind == 1);
+      int      targetable = (etab[e].kind <= 1);
+      if (targetable)
+         raac_couple_all(a, 0, is_cpe, etab[e].tag, c0, NULL, NULL);
+      raac_tns_apply(a, &a->ch[c0]);
+      if (is_cpe)
+         raac_tns_apply(a, &a->ch[c0 + 1]);
+      if (targetable)
+         raac_couple_all(a, 1, is_cpe, etab[e].tag, c0, NULL, NULL);
+      raac_filterbank(a, &a->ch[c0], pcm[c0]);
+      if (is_cpe)
+         raac_filterbank(a, &a->ch[c0 + 1], pcm[c0 + 1]);
+      if (targetable)
+         raac_couple_all(a, 3, is_cpe, etab[e].tag, c0,
+               pcm[c0], is_cpe ? pcm[c0 + 1] : NULL);
    }
+
+   /* channels no element claimed keep decaying through the overlap */
+   for (ch = 0; ch < a->channels; ch++)
+      if (!got[ch])
+      {
+         memset(a->ch[ch].coef, 0, sizeof(a->ch[ch].coef));
+         raac_filterbank(a, &a->ch[ch], pcm[ch]);
+      }
    return RAAC_FRAME;
 }
 
@@ -1903,6 +2217,7 @@ void raac_reset(raac_t *a)
       memset(a->ch[ch].coef,    0, sizeof(a->ch[ch].coef));
       a->ch[ch].prev_window_shape = 0;
    }
+   memset(a->cce, 0, sizeof(a->cce));
    /* reseed the PNS generator so a rewound stream decodes exactly as a
     * fresh one */
    a->noise_state = 0x1f2e3d4cu;
