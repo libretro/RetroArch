@@ -1,8 +1,8 @@
 # HUB75 RGB LED matrix video driver
 
 RetroArch can render software-core video directly to HUB75 RGB LED panels
-connected to a Raspberry Pi GPIO header. The driver uses the bundled
-`rpi-rgb-led-matrix` submodule and does not require X11, Wayland, DRM, or a
+connected to a Raspberry Pi GPIO header. The driver uses the vendored
+`rpi-rgb-led-matrix` library and does not require X11, Wayland, DRM, or a
 desktop session.
 
 ## Build on Raspberry Pi
@@ -10,7 +10,6 @@ desktop session.
 Initialize submodules, enable the driver, and build RetroArch:
 
 ```sh
-git submodule update --init --recursive
 ./configure --enable-hub75
 make -j4
 ```
@@ -88,7 +87,6 @@ bridge.
 With an `aarch64-linux-gnu` cross toolchain installed:
 
 ```sh
-git submodule update --init --recursive
 OS=Linux ./configure --host=aarch64-linux-gnu --enable-hub75
 make -j8 OBJDIR_BASE=obj-linux-arm64
 ```
