@@ -20,6 +20,7 @@
 #include <compat/strl.h>
 #include <file/file_path.h>
 #include <net/net_compat.h>
+#include <streams/file_stream.h>
 #include <retro_timers.h>
 #include <retro_miscellaneous.h>
 
@@ -43,13 +44,55 @@ struct http_handle
       struct http_connection_t *handle;
       transfer_cb_t  cb;
    } connection;
+   /* Streaming sink, used by task_push_http_download_file(): the
+    * body is written straight to disk as it arrives instead of being
+    * accumulated and then written in one go.  NULL for every other
+    * entry point. */
+   RFILE *sink_file;
+   char  *sink_path;
    enum http_status_enum status;
    bool error;
    bool headers_accept_err;
+   bool sink_failed;
    char connection_url[NAME_MAX_LENGTH];
 };
 
 typedef struct http_handle http_handle_t;
+
+/* Sink callback: append the run of decoded body bytes to the output
+ * file.  Returning false aborts the transfer, which is how a full
+ * disk surfaces as a failed download rather than a truncated core. */
+static bool task_http_file_sink(void *userdata, const void *data, size_t len)
+{
+   http_handle_t *http = (http_handle_t*)userdata;
+   if (!http->sink_file)
+      return false;
+   if (filestream_write(http->sink_file, data, (int64_t)len) != (int64_t)len)
+   {
+      http->sink_failed = true;
+      return false;
+   }
+   return true;
+}
+
+/* Close the output file, removing it unless the transfer succeeded.
+ * A partial file left behind would otherwise be indistinguishable
+ * from a good one on the next run. */
+static void task_http_sink_close(http_handle_t *http, bool keep)
+{
+   if (http->sink_file)
+   {
+      filestream_close(http->sink_file);
+      http->sink_file = NULL;
+   }
+   if (http->sink_path)
+   {
+      if (!keep)
+         filestream_delete(http->sink_path);
+      free(http->sink_path);
+      http->sink_path = NULL;
+   }
+}
 
 static int task_http_con_iterate_transfer(http_handle_t *http)
 {
@@ -162,6 +205,20 @@ static void task_http_transfer_handler(retro_task_t *task)
 task_finished:
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
+   if (http->sink_path)
+   {
+      /* Keep the file only on a clean, non-cancelled 2xx. */
+      bool ok = http->handle
+             && !http->error
+             && !http->sink_failed
+             && !net_http_error(http->handle)
+             && ((flg & RETRO_TASK_FLG_CANCELLED) == 0);
+      task_http_sink_close(http, ok);
+      if (!ok && !task_get_error(task))
+         task_set_error(task, strldup("Download failed.",
+               sizeof("Download failed.")));
+   }
+
    if (http->handle)
    {
       size_t _len = 0;
@@ -243,7 +300,7 @@ static bool task_http_finder(retro_task_t *task, void *user_data)
 static void *task_push_http_transfer_generic_titled(
       struct http_connection_t *conn,
       const char *url, bool mute, bool headers_accept_err,
-      const char *title,
+      const char *title, const char *sink_path,
       retro_task_callback_t cb, void *user_data)
 {
    retro_task_t  *t        = NULL;
@@ -290,9 +347,27 @@ static void *task_push_http_transfer_generic_titled(
    http->status              = HTTP_STATUS_CONNECTION_TRANSFER;
    http->error               = false;
    http->headers_accept_err = headers_accept_err;
+   http->sink_file           = NULL;
+   http->sink_path           = NULL;
+   http->sink_failed         = false;
    http->connection_url[0]   = '\0';
 
    strlcpy(http->connection_url, url, sizeof(http->connection_url));
+
+   /* Streaming to disk: open the output now, so a bad path fails the
+    * push rather than surfacing megabytes later, and arm the sink
+    * before net_http_new() consumes the connection in
+    * cb_http_conn_default(). */
+   if (sink_path)
+   {
+      if (!(http->sink_path = strdup(sink_path)))
+         goto error;
+      if (!(http->sink_file = filestream_open(sink_path,
+                  RETRO_VFS_FILE_ACCESS_WRITE,
+                  RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+         goto error;
+      net_http_connection_set_sink(conn, task_http_file_sink, http);
+   }
 
    if (!(t = task_init()))
       goto error;
@@ -329,7 +404,10 @@ error:
    if (conn)
       net_http_connection_free(conn);
    if (http)
+   {
+      task_http_sink_close(http, false);
       free(http);
+   }
 
    return NULL;
 }
@@ -340,7 +418,7 @@ static void *task_push_http_transfer_generic(
       retro_task_callback_t cb, void *user_data)
 {
    return task_push_http_transfer_generic_titled(
-         conn, url, mute, headers_accept_err, NULL, cb, user_data);
+         conn, url, mute, headers_accept_err, NULL, NULL, cb, user_data);
 }
 
 void* task_push_http_transfer(const char *url, bool mute,
@@ -493,7 +571,7 @@ void* task_push_http_transfer_file(const char* url, bool mute,
    /* should be using type but some callers now rely on type being ignored */
    return task_push_http_transfer_generic_titled(
          net_http_connection_new(url, "GET", NULL),
-         url, mute, false, tmp, cb, transfer_data);
+         url, mute, false, tmp, NULL, cb, transfer_data);
 }
 
 void* task_push_http_transfer_with_user_agent(const char *url, bool mute,
@@ -603,4 +681,31 @@ void *task_push_http_transfer_with_content(const char *url,
 
    return task_push_http_transfer_generic(conn, url, mute,
          headers_accept_err, cb, user_data);
+}
+
+/**
+ * task_push_http_download_file:
+ *
+ * Download @url straight to @path, streaming the body to disk as it
+ * arrives instead of accumulating it in RAM and writing once at the
+ * end.  Peak memory is the receive window rather than the payload,
+ * which for core and asset downloads is the difference between tens
+ * of kilobytes and up to NET_HTTP_MAX_CONTENT_LENGTH.
+ *
+ * The completion callback receives an http_transfer_data_t with
+ * status and headers populated but data == NULL and len == 0 -- the
+ * body is already on disk.  The partial file is removed unless the
+ * transfer finished cleanly with a 2xx.
+ *
+ * The output directory must exist; this does not create it.
+ **/
+void *task_push_http_download_file(const char *url, const char *path,
+      bool mute, const char *title,
+      retro_task_callback_t cb, void *user_data)
+{
+   if (!url || !*url || !path || !*path)
+      return NULL;
+   return task_push_http_transfer_generic_titled(
+         net_http_connection_new(url, "GET", NULL),
+         url, mute, false, title, path, cb, user_data);
 }

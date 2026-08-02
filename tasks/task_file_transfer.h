@@ -105,6 +105,22 @@ typedef struct
    char path[PATH_MAX_LENGTH];
 } file_transfer_t;
 
+/**
+ * task_push_http_download_file:
+ *
+ * Download @url straight to @path, streaming the body to disk as it
+ * arrives rather than accumulating it in RAM.  Peak memory is the
+ * receive window, not the payload.
+ *
+ * The completion callback gets status and headers but data == NULL
+ * and len == 0; the body is already on disk.  The partial file is
+ * removed unless the transfer finished cleanly with a 2xx.  The
+ * output directory must already exist.
+ **/
+void *task_push_http_download_file(const char *url, const char *path,
+      bool mute, const char *title,
+      retro_task_callback_t cb, void *user_data);
+
 void* task_push_http_transfer_file(const char* url, bool mute, const char* type,
       retro_task_callback_t cb, file_transfer_t* transfer_data);
 

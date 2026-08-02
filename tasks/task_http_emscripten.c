@@ -43,6 +43,7 @@
 #include <string/stdstring.h>
 #include <compat/strl.h>
 #include <file/file_path.h>
+#include <streams/file_stream.h>
 #include <lists/string_list.h>
 #include <retro_timers.h>
 #include <retro_miscellaneous.h>
@@ -61,6 +62,12 @@ struct http_handle
    char                 *req_data;
    size_t                req_len;
    http_transfer_data_t *response;
+   /* Destination for task_push_http_download_file().  The browser
+    * buffers the whole response either way, so unlike the native
+    * backend this is not a memory optimisation -- it exists so the
+    * two backends honour the same API contract: body on disk,
+    * data == NULL in the callback. */
+   char                 *sink_path;
    bool                  settled;
    char                  connection_url[NAME_MAX_LENGTH];
 };
@@ -254,6 +261,7 @@ static void http_handle_free(http_handle_t *http)
    }
    http_req_headers_free(http->req_headers);
    free(http->req_data);
+   free(http->sink_path);
    free(http);
 }
 
@@ -350,7 +358,25 @@ static void http_fetch_settle(emscripten_fetch_t *fetch)
        * old wget2 path handed the callback's buffer straight to the
        * caller, which worked only because wget2 transferred
        * ownership; fetch does not. */
-      if (fetch->numBytes > 0 && fetch->data)
+      if (http->sink_path)
+      {
+         /* Write straight through; the caller gets status and headers
+          * only.  A failed or non-2xx transfer leaves no file behind,
+          * matching the native backend. */
+         if (     fetch->status >= 200 && fetch->status <= 299
+               && fetch->numBytes > 0 && fetch->data)
+         {
+            if (!filestream_write_file(http->sink_path, fetch->data,
+                     (int64_t)fetch->numBytes))
+            {
+               RARCH_ERR("[HTTP] Failed writing %s\n", http->sink_path);
+               resp->status = -1;
+            }
+         }
+         else
+            filestream_delete(http->sink_path);
+      }
+      else if (fetch->numBytes > 0 && fetch->data)
       {
          if ((resp->data = (char*)malloc((size_t)fetch->numBytes)))
          {
@@ -688,4 +714,27 @@ void *task_push_http_transfer_with_content(const char *url,
 
    return task_push_http_transfer_generic(url, method, content, content_len,
          NULL, *hdr ? hdr : NULL, mute, NULL, cb, user_data);
+}
+
+void *task_push_http_download_file(const char *url, const char *path,
+      bool mute, const char *title,
+      retro_task_callback_t cb, void *user_data)
+{
+   retro_task_t  *t;
+   http_handle_t *http;
+
+   if (!url || !*url || !path || !*path)
+      return NULL;
+
+   if (!(t = (retro_task_t*)task_push_http_transfer_generic(url, "GET",
+               NULL, 0, NULL, NULL, mute, title, cb, user_data)))
+      return NULL;
+
+   /* Safe to reach into the handle here: the fetch cannot have
+    * settled yet, since its callbacks only run once this function
+    * yields to the browser event loop. */
+   if ((http = (http_handle_t*)t->state))
+      http->sink_path = strdup(path);
+
+   return t;
 }

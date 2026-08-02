@@ -117,6 +117,18 @@ typedef struct response
    size_t pos;
    size_t len;
    size_t buflen;
+   /* Streaming sink bookkeeping.  Zero/NULL when no sink is set, in
+    * which case none of the flush paths below run and behaviour is
+    * byte-for-byte what it was: the whole body accumulates in `data`.
+    *
+    * With a sink, decoded body bytes are handed off and dropped from
+    * the buffer as they arrive, so peak memory is the receive window
+    * rather than the whole payload.  `flushed` is the running count
+    * already handed off; `content_len` is the Content-Length as
+    * advertised, kept separately because T_LEN's `len` is decremented
+    * as bytes are flushed and can no longer answer progress queries. */
+   size_t flushed;
+   size_t content_len;
    int status;
    enum response_part part;
    enum bodytype bodytype;
@@ -137,6 +149,8 @@ typedef struct request
 
 struct http_t
 {
+   net_http_sink_t sink;
+   void *sink_data;
    bool err;
 
    struct conn_pool_entry *conn;
@@ -159,6 +173,8 @@ struct http_connection_t
    char *useragent;
    char *headers;
    size_t contentlength; /* ptr alignment */
+   net_http_sink_t sink;
+   void *sink_data;
    int port;
    bool ssl;
 };
@@ -549,6 +565,26 @@ void net_http_connection_set_headers(
    conn->headers = headers ? strdup(headers) : NULL;
 }
 
+/**
+ * net_http_connection_set_sink:
+ *
+ * Stream the response body to @cb as it arrives instead of buffering
+ * the whole thing.  net_http_data() then returns NULL with a length of
+ * 0, since the handle keeps nothing.  Response headers and status are
+ * unaffected.
+ *
+ * @cb returning false aborts the transfer with an error, which is how
+ * a full disk or a failed write surfaces.
+ **/
+void net_http_connection_set_sink(struct http_connection_t *conn,
+      net_http_sink_t cb, void *userdata)
+{
+   if (!conn)
+      return;
+   conn->sink      = cb;
+   conn->sink_data = userdata;
+}
+
 void net_http_connection_set_content(
       struct http_connection_t *conn, const char *content_type,
       size_t content_length, const void *content)
@@ -878,8 +914,12 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.port     = conn->port;
 
    state->response.status  = -1;
+   state->sink                  = conn->sink;
+   state->sink_data             = conn->sink_data;
    state->response.owns_data    = true;
    state->response.owns_headers = true;
+   state->response.flushed      = 0;
+   state->response.content_len  = 0;
    state->response.buflen  = 64 * 1024;  /* Start with larger buffer to reduce reallocations */
    state->response.data    = (char*)malloc(state->response.buflen);
    state->response.headers = string_list_new();
@@ -1395,8 +1435,9 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
                      state->err     = true;
                      return -1;
                   }
-                  response->bodytype = T_LEN;
-                  response->len      = val;
+                  response->bodytype    = T_LEN;
+                  response->len         = val;
+                  response->content_len = val;
                }
                break;
             case 't':
@@ -1430,7 +1471,11 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
    {
       len           = response->pos;
       response->pos = 0;
-      if (response->bodytype == T_LEN && response->len > 0)
+      /* With a sink the body never accumulates, so sizing the buffer
+       * to Content-Length would allocate the very thing streaming
+       * exists to avoid -- up to NET_HTTP_MAX_CONTENT_LENGTH of it,
+       * on a server's say-so.  Keep the receive-window buffer. */
+      if (response->bodytype == T_LEN && response->len > 0 && !state->sink)
       {
          /* Use a tmp pointer so a realloc failure does not leak the
           * original buffer AND leave response->data NULL for later
@@ -1464,6 +1509,31 @@ static ssize_t net_http_receive_header(struct http_t *state, ssize_t len)
       }
    }
    return len;
+}
+
+/* Hand @n decoded body bytes from the front of the buffer to the
+ * sink.  Callers reset pos/len afterwards; this only moves the data
+ * out and keeps the running total.
+ *
+ * A sink refusing the write (full disk, I/O error) aborts the
+ * transfer the same way a transport failure would. */
+static bool net_http_sink_flush(struct http_t *state, size_t n)
+{
+   struct response *response = (struct response*)&state->response;
+
+   if (!n)
+      return true;
+
+   if (!state->sink(state->sink_data, response->data, n))
+   {
+      net_http_log_transport_state(state, "sink_write_failed", -1);
+      state->err     = true;
+      response->part = P_DONE;
+      return false;
+   }
+
+   response->flushed += n;
+   return true;
 }
 
 static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
@@ -1533,6 +1603,12 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          {
             response->pos += newlen;
             response->len -= newlen;
+            if (state->sink)
+            {
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+            }
             goto check_grow;
          }
          response->pos += response->len;
@@ -1592,6 +1668,14 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->pos  = (size_t)(out - response->data);
             response->part = P_DONE;
             response->len  = response->pos;
+            if (state->sink)
+            {
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+               response->len = response->flushed;
+               return true;
+            }
             if (   response->buflen != response->len
                 && response->len > 0)
             {
@@ -1618,6 +1702,15 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->pos  = (size_t)(out - response->data);
             response->len  = chunklen - avail;
             response->part = P_BODY;
+            if (state->sink)
+            {
+               /* In P_BODY, pos is the decoded count and len is what
+                * is still outstanding in this chunk, so the decoded
+                * prefix can go and the next receive appends at 0. */
+               if (!net_http_sink_flush(state, response->pos))
+                  return false;
+               response->pos = 0;
+            }
             goto check_grow;
          }
 
@@ -1635,6 +1728,20 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
          memmove(out, in, leftover);
       response->pos  = response->len + leftover;
       response->part = P_BODY_CHUNKLEN;
+      if (state->sink)
+      {
+         /* Decoded bytes sit at data[0..len) with the unconsumed raw
+          * tail behind them; hand off the former and slide the tail
+          * to the front so the invariant (len == decoded offset of
+          * the current chunklen line) still holds at 0. */
+         if (!net_http_sink_flush(state, response->len))
+            return false;
+         if (leftover)
+            memmove(response->data, response->data + response->len,
+                  leftover);
+         response->pos = leftover;
+         response->len = 0;
+      }
    }
    else if (response->bodytype == T_FULL)
    {
@@ -1649,6 +1756,13 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
        * function, which sets P_DONE and shrinks the buffer. */
       response->pos += newlen;
       response->len  = response->pos;
+      if (state->sink)
+      {
+         if (!net_http_sink_flush(state, response->pos))
+            return false;
+         response->pos = 0;
+         response->len = 0;
+      }
    }
    else
    {
@@ -1659,6 +1773,14 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
       else if (response->pos == response->len)
       {
          response->part = P_DONE;
+         if (state->sink)
+         {
+            if (!net_http_sink_flush(state, response->pos))
+               return false;
+            response->pos = 0;
+            response->len = response->flushed;
+            return true;
+         }
          if (response->buflen != response->len && response->len > 0)
          {
             char *tmp = (char*)realloc(response->data, response->len);
@@ -1670,6 +1792,17 @@ static bool net_http_receive_body(struct http_t *state, ssize_t newlen)
             response->data = tmp;
          }
          return true;
+      }
+      if (state->sink)
+      {
+         /* T_LEN's `len` is the outstanding count once streaming, so
+          * decrement it by what we hand off; the "pos == len"
+          * completion test above keeps working unchanged.  The
+          * advertised total lives in content_len for progress. */
+         if (!net_http_sink_flush(state, response->pos))
+            return false;
+         response->len -= response->pos;
+         response->pos  = 0;
       }
    }
 
@@ -1947,12 +2080,14 @@ bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
    }
 
    if (progress)
-      *progress = response->pos;
+      *progress = response->flushed + response->pos;
 
    if (total)
    {
       if (response->bodytype == T_LEN)
-         *total = response->len;
+         /* content_len, not len: with a sink, len counts down as
+          * bytes are handed off. */
+         *total = response->content_len;
       else
          *total = 0;
    }
@@ -2050,6 +2185,14 @@ uint8_t* net_http_data(struct http_t *state, size_t* len, bool accept_err)
       return NULL;
 
    if (!accept_err && (state->err || state->response.status < 200 || state->response.status > 299))
+   {
+      if (len)
+         *len = 0;
+      return NULL;
+   }
+
+   /* Nothing was retained: the body went to the sink as it arrived. */
+   if (state->sink)
    {
       if (len)
          *len = 0;

@@ -167,6 +167,7 @@ static int     (*real_socket)(int, int, int);
 static int    g_record;
 static long   g_recv_calls;
 static size_t g_min_window;
+static size_t g_max_window;
 static size_t g_window_at_min_outstanding;
 static size_t g_outstanding;   /* body bytes still expected */
 
@@ -174,6 +175,7 @@ static void record_reset(size_t body)
 {
    g_recv_calls                = 0;
    g_min_window                = (size_t)-1;
+   g_max_window                = 0;
    g_window_at_min_outstanding = 0;
    g_outstanding               = body;
    g_record                    = 1;
@@ -194,6 +196,8 @@ ssize_t recv(int fd, void *buf, size_t len, int flags)
       g_recv_calls++;
       /* Only judge the window while a full-size read was actually
        * possible; the tail of a transfer legitimately asks for less. */
+      if (len > g_max_window)
+         g_max_window = len;
       if (g_outstanding > ASSERT_MIN_WINDOW && len < g_min_window)
       {
          g_min_window                = len;
@@ -403,7 +407,8 @@ struct xfer_result
 /* Drive one transfer the way task_http_transfer_handler() does: build
  * the connection, then call net_http_update() once per tick until it
  * reports done. */
-static int run_transfer(int port, struct xfer_result *out, unsigned tick_us)
+static int run_transfer_sink(int port, struct xfer_result *out,
+      unsigned tick_us, net_http_sink_t sink, void *sink_data)
 {
    char url[128];
    struct http_connection_t *conn;
@@ -418,6 +423,8 @@ static int run_transfer(int port, struct xfer_result *out, unsigned tick_us)
 
    if (!(conn = net_http_connection_new(url, "GET", NULL)))
       return 0;
+   if (sink)
+      net_http_connection_set_sink(conn, sink, sink_data);
    net_http_connection_iterate(conn);
    if (!net_http_connection_done(conn))
    {
@@ -464,6 +471,11 @@ static int run_transfer(int port, struct xfer_result *out, unsigned tick_us)
    out->data   = (char*)net_http_data(h, &out->len, true);
    net_http_delete(h);
    return 1;
+}
+
+static int run_transfer(int port, struct xfer_result *out, unsigned tick_us)
+{
+   return run_transfer_sink(port, out, tick_us, NULL, NULL);
 }
 
 /* ================================================================= */
@@ -750,6 +762,196 @@ static void test_concurrent(void)
       CHECK(ca[i].ok, "concurrent transfer %d did not reconstruct", i);
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Streaming sink                                                      */
+/* ------------------------------------------------------------------ */
+
+/* Peak buffer ceiling for a streamed transfer.  Without a sink,
+ * T_LEN sizes the buffer to Content-Length, so the receive window
+ * grows to the whole body; with one it must stay near the receive
+ * window.  Asserted against the largest window ever handed to
+ * recv(), which tracks buflen. */
+#define ASSERT_SINK_MAX_WINDOW (1024 * 1024)
+
+struct sink_ctx
+{
+   unsigned char *buf;
+   size_t         len;
+   size_t         cap;
+   int            fail_after;  /* -1 = never fail */
+   int            calls;
+};
+
+static bool test_sink_cb(void *userdata, const void *data, size_t len)
+{
+   struct sink_ctx *sc = (struct sink_ctx*)userdata;
+
+   sc->calls++;
+   if (sc->fail_after >= 0 && sc->calls > sc->fail_after)
+      return false;
+
+   if (sc->len + len > sc->cap)
+   {
+      size_t ncap = sc->cap ? sc->cap : 4096;
+      unsigned char *tmp;
+      while (ncap < sc->len + len)
+         ncap *= 2;
+      if (!(tmp = (unsigned char*)realloc(sc->buf, ncap)))
+         return false;
+      sc->buf = tmp;
+      sc->cap = ncap;
+   }
+   memcpy(sc->buf + sc->len, data, len);
+   sc->len += len;
+   return true;
+}
+
+/* The body must arrive at the sink byte-for-byte and in order, the
+ * handle must retain nothing, and peak memory must stay near the
+ * receive window rather than tracking the payload. */
+static void test_sink(enum framing f, size_t body, size_t chunk,
+      size_t dribble)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   struct xfer_result r;
+   struct sink_ctx sc;
+
+   memset(&sp, 0, sizeof(sp));
+   memset(&sc, 0, sizeof(sc));
+   sc.fail_after = -1;
+   sp.body    = body;
+   sp.chunk   = chunk;
+   sp.frame   = f;
+   sp.dribble = dribble;
+
+   printf("  sink: framing=%-14s body=%-8lu chunk=%-6lu dribble=%lu\n",
+         frame_name(f), (unsigned long)body, (unsigned long)chunk,
+         (unsigned long)dribble);
+
+   if (!srv_start(&sp, &th))
+   {
+      printf("    SKIP: server start failed\n");
+      return;
+   }
+
+   record_reset(body);
+   if (!run_transfer_sink(sp.port, &r, 0, test_sink_cb, &sc))
+   {
+      printf("    SKIP: client setup failed\n");
+      record_stop();
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+      return;
+   }
+   record_stop();
+
+   CHECK(sc.len == body, "sink got %lu of %lu bytes",
+         (unsigned long)sc.len, (unsigned long)body);
+   if (sc.len == body)
+      CHECK(memcmp(sc.buf, g_pattern, body) == 0,
+            "sink content mismatch (out of order or corrupted)");
+   CHECK(r.data == NULL && r.len == 0,
+         "handle retained %lu bytes despite a sink being set",
+         (unsigned long)r.len);
+   CHECK(r.status == 200, "status %d, expected 200", r.status);
+   CHECK(g_max_window <= ASSERT_SINK_MAX_WINDOW,
+         "peak receive window %lu B exceeds %d B -- the body is still "
+         "being buffered",
+         (unsigned long)g_max_window, ASSERT_SINK_MAX_WINDOW);
+
+   free(sc.buf);
+   free(r.data);
+   pthread_join(th, NULL);
+   close(sp.listen_fd);
+}
+
+/* Without a sink, T_LEN sizes the buffer to Content-Length.  Pinning
+ * that here is what makes the ceiling above meaningful: it shows the
+ * two paths genuinely differ rather than both happening to stay
+ * small on this host. */
+static void test_no_sink_buffers_whole_body(void)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   struct xfer_result r;
+
+   memset(&sp, 0, sizeof(sp));
+   sp.body  = BODY_LARGE;
+   sp.frame = FRAME_LEN;
+
+   printf("  no sink: whole body is buffered (contrast case)\n");
+
+   if (!srv_start(&sp, &th))
+   {
+      printf("    SKIP: server start failed\n");
+      return;
+   }
+   record_reset(sp.body);
+   if (!run_transfer(sp.port, &r, 0))
+   {
+      printf("    SKIP: client setup failed\n");
+      record_stop();
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+      return;
+   }
+   record_stop();
+
+   printf("    peak receive window %lu B for a %lu B body\n",
+         (unsigned long)g_max_window, (unsigned long)sp.body);
+   CHECK(r.len == sp.body, "short body: got %lu of %lu",
+         (unsigned long)r.len, (unsigned long)sp.body);
+   CHECK(g_max_window > ASSERT_SINK_MAX_WINDOW,
+         "buffered path peaked at only %lu B; the sink ceiling is not "
+         "actually discriminating",
+         (unsigned long)g_max_window);
+
+   free(r.data);
+   pthread_join(th, NULL);
+   close(sp.listen_fd);
+}
+
+/* A sink that refuses a write -- full disk, I/O error -- must abort
+ * the transfer with an error rather than silently truncating. */
+static void test_sink_write_failure(void)
+{
+   struct srv_spec sp;
+   pthread_t th;
+   struct xfer_result r;
+   struct sink_ctx sc;
+
+   memset(&sp, 0, sizeof(sp));
+   memset(&sc, 0, sizeof(sc));
+   sc.fail_after = 1;
+   sp.body  = BODY_LARGE;
+   sp.frame = FRAME_LEN;
+
+   printf("  sink: write failure aborts the transfer\n");
+
+   if (!srv_start(&sp, &th))
+   {
+      printf("    SKIP: server start failed\n");
+      return;
+   }
+   if (!run_transfer_sink(sp.port, &r, 0, test_sink_cb, &sc))
+   {
+      printf("    SKIP: client setup failed\n");
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+      return;
+   }
+
+   CHECK(r.err, "sink write failure did not mark the transfer as failed");
+   CHECK(sc.len < sp.body, "sink received the whole body despite failing");
+
+   free(sc.buf);
+   free(r.data);
+   pthread_join(th, NULL);
+   close(sp.listen_fd);
+}
+
 /* ================================================================= */
 
 int main(void)
@@ -799,6 +1001,16 @@ int main(void)
    test_malformed_head("content-length and chunked together",
          "HTTP/1.1 200 OK\r\nContent-Length: 4096\r\n"
          "Transfer-Encoding: chunked\r\n\r\n");
+
+   printf("\n[streaming sink]\n");
+   test_sink(FRAME_LEN,     BODY_LARGE,  0,    0);
+   test_sink(FRAME_EOF,     BODY_LARGE,  0,    0);
+   test_sink(FRAME_CHUNKED, BODY_LARGE,  8192, 0);
+   test_sink(FRAME_CHUNKED, 64 * 1024,   1,    1);
+   test_sink(FRAME_CHUNKED, 64 * 1024,   511,  5);
+   test_sink(FRAME_LEN,     32 * 1024,   0,    7);
+   test_no_sink_buffers_whole_body();
+   test_sink_write_failure();
 
    printf("\n[concurrency]\n");
    test_concurrent();
