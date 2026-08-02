@@ -298,6 +298,86 @@ int main(void)
       free(other);
    }
 
+   /* ---- 4: no stale bytes from a recycled stdio buffer ---- */
+   {
+      /* The VFS hands stdio a per-open buffer and no longer zeroes it
+       * (nothing reads those bytes before stdio writes them, and the
+       * WiiU path never zeroed).  The regression that would introduce
+       * is stale content surfacing through a read - most plausibly on
+       * a short read near EOF, where the buffer is only partly
+       * filled, and on a stream opened right after one that left
+       * different bytes in a recycled allocation.
+       *
+       * So: alternate between two files of different lengths and
+       * distinct fills, reading each to EOF a byte-count at a time
+       * that does not divide either length, and verify every byte.
+       * Under the old zeroing build this passes trivially; it is here
+       * to keep passing without it. */
+      const char *pa = "stale_a.bin";
+      const char *pb = "stale_b.bin";
+      size_t   la    = 40000;
+      size_t   lb    = 9001;
+      uint8_t *ba    = (uint8_t*)malloc(la);
+      uint8_t *bb    = (uint8_t*)malloc(lb);
+      uint8_t *got   = (uint8_t*)malloc(la);
+      int      round;
+      bool     clean = true;
+
+      for (i = 0; i < la; i++)
+         ba[i] = (uint8_t)(0xA0 + (i & 0x0f));
+      for (i = 0; i < lb; i++)
+         bb[i] = (uint8_t)(0x50 + (i & 0x0f));
+      write_file(pa, ba, la);
+      write_file(pb, bb, lb);
+
+      for (round = 0; round < 40 && clean; round++)
+      {
+         const char    *path = (round & 1) ? pb : pa;
+         const uint8_t *want = (round & 1) ? bb : ba;
+         size_t         len2 = (round & 1) ? lb : la;
+         size_t         off  = 0;
+         RFILE         *f    = filestream_open(path,
+               RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE);
+
+         if (!f)
+         {
+            clean = false;
+            break;
+         }
+         /* 4093 is prime, so the final read of each file is short and
+          * the buffer is left partly filled. */
+         while (off < len2)
+         {
+            int64_t n = filestream_read(f, got + off, 4093);
+            if (n <= 0)
+               break;
+            off += (size_t)n;
+         }
+         if (off != len2 || memcmp(got, want, len2) != 0)
+            clean = false;
+         /* Past EOF must deliver nothing rather than buffer residue. */
+         {
+            uint8_t tail[64];
+            memset(tail, 0xCC, sizeof(tail));
+            if (filestream_read(f, tail, (int64_t)sizeof(tail)) > 0)
+               clean = false;
+            for (i = 0; i < sizeof(tail); i++)
+               if (tail[i] != 0xCC)
+                  clean = false;
+         }
+         filestream_close(f);
+      }
+      CHECK(clean,
+            "recycled stdio buffers leak no stale bytes across opens");
+
+      free(ba);
+      free(bb);
+      free(got);
+      remove(pa);
+      remove(pb);
+   }
+
    free(body);
    remove("mapped_fixture.bin");
    remove("mapped_empty.bin");
