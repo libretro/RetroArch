@@ -27,6 +27,7 @@
 #include <queues/task_queue.h>
 
 #include <features/features_cpu.h>
+#include <retro_atomic.h>
 
 #if defined(HAVE_GCD) && !defined(HAVE_THREADS)
 #error "gcd uses threads, what are you doing"
@@ -1269,8 +1270,21 @@ char* task_get_title(retro_task_t *task)
 
 retro_task_t *task_init(void)
 {
-   /* TODO/FIXME - static local global */
-   static uint32_t task_count = 0;
+   /* TODO/FIXME - static local global
+    *
+    * Tasks are pushed from whatever thread happens to want one - the
+    * main thread, the menu, netplay, a core's own worker - so this
+    * counter is incremented concurrently.  A plain read-modify-write
+    * is a data race, and hands out duplicate idents when two pushes
+    * interleave.  An acq_rel fetch_add serialises the handout and
+    * gives every task a distinct value.
+    *
+    * int rather than uint32_t because that is the width retro_atomic
+    * offers; ident is an opaque tag, so the eventual wrap at INT_MAX
+    * (2.1 billion task creations) is of no consequence, and the cast
+    * back to uint32_t is well defined for the non-negative values
+    * this can produce before then. */
+   static retro_atomic_int_t task_count;
    retro_task_t *task         = (retro_task_t*)malloc(sizeof(*task));
 
    if (!task)
@@ -1289,7 +1303,8 @@ retro_task_t *task_init(void)
    task->title             = NULL;
    task->type              = TASK_TYPE_NONE;
    task->style             = TASK_STYLE_NONE;
-   task->ident             = task_count++;
+   task->ident             = (uint32_t)
+      retro_atomic_fetch_add_int(&task_count, 1);
    task->frontend_userdata = NULL;
    task->next              = NULL;
    task->when              = 0;
