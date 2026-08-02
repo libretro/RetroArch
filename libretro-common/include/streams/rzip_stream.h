@@ -115,6 +115,14 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len);
  * Returns false in the event of an error */
 bool rzipstream_read_file(const char *path, void **buf, int64_t *len);
 
+/* Size of the buffer rzipstream_matches_buf() decompresses through.
+ *
+ * Exposed so a test can aim at the real chunk boundary rather than a
+ * remembered one.  Sized like its filestream counterpart, by the
+ * smallest thread stacks in the tree (8 KiB on PSP and GX) rather
+ * than by the decompressor - see FILESTREAM_MATCHES_BUF_WINDOW. */
+#define RZIPSTREAM_MATCHES_BUF_CHUNK 1024
+
 /* Does the file at 'path' hold exactly 'len' bytes equal to 'data'?
  *
  * The rzip counterpart of filestream_matches_buf(), for callers

@@ -144,17 +144,17 @@ int main(void)
       expect_diff_at(path, probe, len, len - 1,
             "difference at the last byte is caught");
 
-      /* Read-chunk boundaries.  Must track rzipstream_matches_buf()'s
-       * actual chunk - 4 KiB, sized by the Vita thread stack rather
-       * than by the decompressor - because a boundary test aimed at
-       * the wrong offset is just another mid-file check. */
-      expect_diff_at(path, probe, len, 4096 - 1,
+      /* Read-chunk boundaries, taken from the header rather than
+       * repeated here: the chunk has already been resized once, and a
+       * boundary case aimed at the old value is just another mid-file
+       * check wearing a boundary's name. */
+      expect_diff_at(path, probe, len, RZIPSTREAM_MATCHES_BUF_CHUNK - 1,
             "difference at a read-chunk boundary is caught");
-      expect_diff_at(path, probe, len, 4096,
+      expect_diff_at(path, probe, len, RZIPSTREAM_MATCHES_BUF_CHUNK,
             "difference just past a read-chunk boundary is caught");
-      expect_diff_at(path, probe, len, 4096 + 1,
+      expect_diff_at(path, probe, len, RZIPSTREAM_MATCHES_BUF_CHUNK + 1,
             "difference just after a read-chunk boundary is caught");
-      expect_diff_at(path, probe, len, 64 * 1024,
+      expect_diff_at(path, probe, len, 8 * RZIPSTREAM_MATCHES_BUF_CHUNK,
             "difference at a later read-chunk boundary is caught");
 
       /* rzip's own chunking is independent of the read size, so a

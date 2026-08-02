@@ -782,13 +782,12 @@ bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
       goto done;
 
    {
-      /* 4 KiB, sized by the stack rather than by the decompressor:
-       * this is libretro-common API, so a caller can be on a spawned
-       * thread, and sthread_create() gives Vita threads a 0x10000
-       * stack - a 64 KiB buffer here is the whole of it.  See the
-       * same ceiling and its measured cost in
-       * filestream_matches_buf(). */
-      uint8_t chunk[4096];
+      /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
+       * by the decompressor: this is libretro-common API, so a caller
+       * can be on a spawned thread, and PSP and GX threads get 8 KiB
+       * (STACKSIZE in psp_pthread.h and gx_pthread.h).  See the same
+       * ceiling and its measured cost in filestream_matches_buf(). */
+      uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
       size_t  off = 0;
 
       match = true;

@@ -281,12 +281,12 @@ int main(void)
       other[len - 1] ^= 0xff;
 
       /* A window boundary is where an off-by-one would live.  This
-       * must track filestream_matches_buf()'s actual window - it is
-       * 4 KiB, sized by the Vita thread stack rather than by
-       * throughput - because a "boundary" test aimed at the wrong
-       * offset is just another mid-file check wearing the name. */
+       * takes the window straight from the header rather than
+       * repeating the number here.  It has already been resized once,
+       * and a boundary case aimed at the old value is not a boundary
+       * case at all - just another mid-file check wearing the name. */
       {
-         size_t win = 4096;
+         size_t win = FILESTREAM_MATCHES_BUF_WINDOW;
          size_t at[] = { win - 1, win, win + 1, 2 * win, 8 * win };
          size_t k;
          for (k = 0; k < sizeof(at) / sizeof(at[0]); k++)
