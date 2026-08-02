@@ -177,13 +177,6 @@ endif
 
 all: $(TARGET) $(METALLIB) config.mk
 
-ifeq ($(HAVE_HUB75), 1)
-hub75-library:
-	$(MAKE) -C deps/rpi-rgb-led-matrix/lib CC="$(CC)" CXX="$(CXX)" AR="$(HUB75_AR)" CPU_ARCH_FLAGS= librgbmatrix.a
-$(HUB75_LIBRARY): | hub75-library
-.PHONY: hub75-library
-endif
-
 define INFO
 ASFLAGS: $(ASFLAGS)
 CC: $(CC)
@@ -237,7 +230,7 @@ endif
 
 SYMBOL_MAP := -Wl,-Map=output.map
 
-$(TARGET): $(RARCH_OBJ) $(HUB75_LIBRARY)
+$(TARGET): $(RARCH_OBJ)
 	@$(if $(Q), $(shell echo echo LD $@),)
 	$(Q)$(LINK) -o $@ $(RARCH_OBJ) $(LIBS) $(LDFLAGS) $(LIBRARY_DIRS)
 

@@ -1,16 +1,16 @@
 # HUB75 RGB LED matrix video driver
 
 RetroArch can render software-core video directly to HUB75 RGB LED panels
-connected to a Raspberry Pi GPIO header. The driver uses the bundled
-`rpi-rgb-led-matrix` submodule and does not require X11, Wayland, DRM, or a
-desktop session.
+connected to a Raspberry Pi 5 GPIO header. The driver is a self-contained
+translation unit that drives the RP1 RIO registers directly; it has no external
+matrix-library dependency and does not require X11, Wayland, DRM, or a desktop
+session.
 
 ## Build on Raspberry Pi
 
 Enable the driver and build RetroArch:
 
 ```sh
-git submodule update --init --recursive
 ./configure --enable-hub75
 make -j4
 ```
@@ -41,18 +41,14 @@ without adding hardware-specific values to `retroarch.cfg`:
 | `HUB75_ROWS` | Rows per panel (commonly 32 or 64) |
 | `HUB75_COLS` | Columns per panel (commonly 64) |
 | `HUB75_CHAIN` | Panels daisy-chained horizontally |
-| `HUB75_PARALLEL` | Parallel output chains |
 | `HUB75_BRIGHTNESS` | Brightness from 1 to 100 |
 | `HUB75_SCALING` | Scaling mode: `fit`, `fill`, `stretch`, or `integer` |
-| `HUB75_PWM_BITS` | PWM colour depth from 1 to 11 |
-| `HUB75_GPIO_SLOWDOWN` | GPIO slowdown, usually 1-4 on newer Pi models |
-| `HUB75_GPIO_MAPPING` | Pin mapping, e.g. `regular` or `adafruit-hat` |
-| `HUB75_PIXEL_MAPPER` | Pixel mapper string for unusual panel layouts |
-| `HUB75_RGB_SEQUENCE` | Physical channel order, e.g. `RBG` |
-| `HUB75_PANEL_TYPE` | Panel initialization type such as `FM6126A` |
-| `HUB75_MULTIPLEXING` | Multiplexing mapper number |
-| `HUB75_ROW_ADDR_TYPE` | Row addressing type |
-| `HUB75_RP1_PIO` | Set to 1 to use RP1 PIO on Raspberry Pi 5 |
+| `HUB75_PWM_BITS` | PWM colour depth from 1 to 8 |
+| `HUB75_GPIO_SLOWDOWN` | RP1 GPIO timing slowdown from 1 to 10 |
+
+The initial driver supports the regular HUB75 GPIO mapping, direct ABCDE row
+addressing, and one parallel output. `HUB75_CHAIN` may be used for panels
+daisy-chained horizontally.
 
 Example for one 64x64 panel:
 
@@ -73,16 +69,14 @@ Scaling modes:
   shows the complete image, but may leave larger black borders.
 
 For a single 128x64 panel on Raspberry Pi 5, `fit` preserves the complete
-game image. The RP1 PIO backend is selected at runtime rather than at compile
-time:
+game image. The RP1 RIO backend is initialized at runtime rather than selected
+at compile time:
 
 ```sh
 sudo env \
   HUB75_ROWS=64 \
   HUB75_COLS=128 \
   HUB75_CHAIN=1 \
-  HUB75_PARALLEL=1 \
-  HUB75_RP1_PIO=1 \
   HUB75_SCALING=fit \
   ./retroarch -v
 ```
@@ -99,9 +93,7 @@ a clean build for 64-bit Raspberry Pi Linux:
 ```sh
 cd /path/to/RetroArch
 
-git submodule update --init --recursive
 make clean OBJDIR_BASE=obj-linux-arm64
-make -C deps/rpi-rgb-led-matrix/lib clean
 rm -f config.mk
 
 OS=Linux ./configure \
@@ -116,13 +108,11 @@ file retroarch
 
 The resulting executable should be reported as an `ELF 64-bit LSB` binary for
 `ARM aarch64`. Raspberry Pi 5 does not require separate compile-time CPU
-selection; enable its RP1 PIO backend with `HUB75_RP1_PIO=1` when launching
-RetroArch on the Pi.
+selection; the driver selects its RP1 RIO backend when it starts.
 
 Additional RetroArch features may require a Raspberry Pi sysroot. Disable
 features you do not need or supply their ARM64 headers and libraries through
-the toolchain/sysroot; the bundled HUB75 library itself is built with the same
-`CC`, `CXX`, and `AR` selected by RetroArch.
+the toolchain/sysroot. The HUB75 driver itself only uses Linux system APIs.
 
 Setting `OS=Linux` is required when running RetroArch's configure script on
 macOS; otherwise it identifies the build machine as Darwin while testing the

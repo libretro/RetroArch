@@ -1,6 +1,8 @@
 /*  RetroArch - A frontend for libretro.
  *
  *  Raspberry Pi HUB75 RGB LED matrix video driver.
+ *  RP1 register layout and the regular pin mapping follow the GPL-2.0-or-later
+ *  rpi-rgb-led-matrix project by Henner Zeller and contributors.
  *
  *  RetroArch is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -9,11 +11,16 @@
  */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
 
-#include <led-matrix-c.h>
 #include <retro_miscellaneous.h>
 
 #ifdef HAVE_CONFIG_H
@@ -38,6 +45,53 @@ enum hub75_scaling_mode
    HUB75_SCALING_INTEGER
 };
 
+#define HUB75_RP1_MAP_SIZE       0x40000
+#define HUB75_RP1_GPIO_WORDS     (0x00000 / 4)
+#define HUB75_RP1_RIO_WORDS      (0x10000 / 4)
+#define HUB75_RP1_PAD_WORDS      (0x20000 / 4)
+#define HUB75_RP1_RIO_SET_WORDS  (0x02000 / 4)
+#define HUB75_RP1_RIO_CLR_WORDS  (0x03000 / 4)
+#define HUB75_RP1_SYS_RIO_FUNC   5
+#define HUB75_RP1_PAD_FAST       0x15
+#define HUB75_RP1_PAD_SLOW       0x01
+
+#define HUB75_BIT(pin) (1u << (pin))
+#define HUB75_OE       HUB75_BIT(18)
+#define HUB75_CLK      HUB75_BIT(17)
+#define HUB75_LAT      HUB75_BIT(4)
+#define HUB75_ADDR_A   HUB75_BIT(22)
+#define HUB75_ADDR_B   HUB75_BIT(23)
+#define HUB75_ADDR_C   HUB75_BIT(24)
+#define HUB75_ADDR_D   HUB75_BIT(25)
+#define HUB75_ADDR_E   HUB75_BIT(15)
+#define HUB75_R1       HUB75_BIT(11)
+#define HUB75_G1       HUB75_BIT(27)
+#define HUB75_B1       HUB75_BIT(7)
+#define HUB75_R2       HUB75_BIT(8)
+#define HUB75_G2       HUB75_BIT(9)
+#define HUB75_B2       HUB75_BIT(10)
+
+typedef struct hub75_color
+{
+   uint8_t r;
+   uint8_t g;
+   uint8_t b;
+} hub75_color_t;
+
+typedef struct hub75_gpio_ctrl
+{
+   volatile uint32_t status;
+   volatile uint32_t ctrl;
+} hub75_gpio_ctrl_t;
+
+typedef struct hub75_rio_regs
+{
+   volatile uint32_t out;
+   volatile uint32_t oe;
+   volatile uint32_t in;
+   volatile uint32_t in_sync;
+} hub75_rio_regs_t;
+
 #ifdef HAVE_OVERLAY
 typedef struct hub75_overlay
 {
@@ -60,13 +114,25 @@ typedef struct hub75_overlay
 
 typedef struct hub75
 {
-   struct RGBLedMatrix *matrix;
-   struct LedCanvas *canvas;
-   struct Color *pixels;
+   hub75_color_t *pixels;
+   hub75_color_t *display_pixels;
+   volatile uint32_t *rp1_map;
+   hub75_gpio_ctrl_t *gpio_regs;
+   volatile uint32_t *pad_regs;
+   hub75_rio_regs_t *rio_out;
+   hub75_rio_regs_t *rio_set;
+   hub75_rio_regs_t *rio_clr;
+   pthread_t refresh_thread;
+   pthread_mutex_t refresh_lock;
    unsigned char *menu_frame;
    size_t menu_frame_cap;
    unsigned canvas_width;
    unsigned canvas_height;
+   unsigned panel_rows;
+   unsigned pwm_bits;
+   unsigned brightness;
+   unsigned gpio_slowdown;
+   uint32_t used_gpio_mask;
    unsigned frame_width;
    unsigned frame_height;
    unsigned frame_pitch;
@@ -88,6 +154,9 @@ typedef struct hub75
    bool rgb32;
    bool menu_enabled;
    bool warned_hw_frame;
+   bool refresh_running;
+   bool refresh_thread_started;
+   bool refresh_lock_initialized;
 } hub75_t;
 
 #ifdef HAVE_OVERLAY
@@ -177,6 +246,215 @@ static void hub75_input_driver(const char *joypad_driver,
    *input_data = NULL;
 }
 
+static void hub75_gpio_delay(unsigned slowdown)
+{
+   volatile unsigned i;
+   unsigned iterations = slowdown ? slowdown : 1;
+
+   for (i = 0; i < iterations; i++)
+   {
+#if defined(__aarch64__) || defined(__arm__)
+      __asm__ __volatile__("nop; nop" ::: "memory");
+#endif
+   }
+}
+
+static uint64_t hub75_monotonic_ns(void)
+{
+   struct timespec time;
+
+   if (clock_gettime(CLOCK_MONOTONIC, &time) != 0)
+      return 0;
+   return (uint64_t)time.tv_sec * 1000000000ULL + (uint64_t)time.tv_nsec;
+}
+
+static void hub75_busy_wait_ns(uint64_t nanoseconds)
+{
+   uint64_t start;
+
+   if (!nanoseconds)
+      return;
+   start = hub75_monotonic_ns();
+   while (hub75_monotonic_ns() - start < nanoseconds)
+   {
+#if defined(__aarch64__) || defined(__arm__)
+      __asm__ __volatile__("nop" ::: "memory");
+#endif
+   }
+}
+
+static volatile uint32_t *hub75_try_map_rp1(const char *path, off_t offset)
+{
+   int fd = open(path, O_RDWR | O_SYNC);
+   void *map;
+
+   if (fd < 0)
+      return NULL;
+   map = mmap(NULL, HUB75_RP1_MAP_SIZE, PROT_READ | PROT_WRITE,
+         MAP_SHARED, fd, offset);
+   close(fd);
+   if (map == MAP_FAILED)
+      return NULL;
+   return (volatile uint32_t*)map;
+}
+
+static uint32_t hub75_address_bits(unsigned row)
+{
+   uint32_t result = 0;
+
+   if (row & 0x01)
+      result |= HUB75_ADDR_A;
+   if (row & 0x02)
+      result |= HUB75_ADDR_B;
+   if (row & 0x04)
+      result |= HUB75_ADDR_C;
+   if (row & 0x08)
+      result |= HUB75_ADDR_D;
+   if (row & 0x10)
+      result |= HUB75_ADDR_E;
+   return result;
+}
+
+static uint32_t hub75_color_bits(const hub75_color_t *upper,
+      const hub75_color_t *lower, unsigned bit)
+{
+   uint32_t result = 0;
+   uint8_t mask    = (uint8_t)(1u << bit);
+
+   if (upper->r & mask)
+      result |= HUB75_R1;
+   if (upper->g & mask)
+      result |= HUB75_G1;
+   if (upper->b & mask)
+      result |= HUB75_B1;
+   if (lower->r & mask)
+      result |= HUB75_R2;
+   if (lower->g & mask)
+      result |= HUB75_G2;
+   if (lower->b & mask)
+      result |= HUB75_B2;
+   return result;
+}
+
+static void hub75_refresh_once(hub75_t *hub75)
+{
+   const hub75_color_t *pixels = hub75->display_pixels;
+   unsigned half_rows          = hub75->panel_rows / 2;
+   unsigned first_bit          = 8 - hub75->pwm_bits;
+   unsigned row;
+
+   for (row = 0; row < half_rows; row++)
+   {
+      uint32_t address = hub75_address_bits(row);
+      unsigned bit;
+
+      for (bit = first_bit; bit < 8; bit++)
+      {
+         unsigned column;
+         uint64_t dwell_ns;
+
+         hub75->rio_out->out = address | HUB75_OE;
+         for (column = 0; column < hub75->canvas_width; column++)
+         {
+            const hub75_color_t *upper = &pixels[
+                  (size_t)row * hub75->canvas_width + column];
+            const hub75_color_t *lower = &pixels[
+                  (size_t)(row + half_rows) * hub75->canvas_width + column];
+            uint32_t value = address | HUB75_OE |
+                  hub75_color_bits(upper, lower, bit);
+
+            hub75->rio_out->out = value;
+            hub75_gpio_delay(hub75->gpio_slowdown);
+            hub75->rio_out->out = value | HUB75_CLK;
+            hub75_gpio_delay(hub75->gpio_slowdown);
+         }
+
+         hub75->rio_out->out = address | HUB75_OE;
+         hub75_gpio_delay(hub75->gpio_slowdown);
+         hub75->rio_out->out = address | HUB75_OE | HUB75_LAT;
+         hub75_gpio_delay(hub75->gpio_slowdown);
+         hub75->rio_out->out = address;
+
+         dwell_ns = 200ULL << (bit - first_bit);
+         dwell_ns = dwell_ns * hub75->brightness / 100;
+         hub75_busy_wait_ns(dwell_ns);
+         hub75->rio_out->out = address | HUB75_OE;
+      }
+   }
+}
+
+static void *hub75_refresh_main(void *data)
+{
+   hub75_t *hub75 = (hub75_t*)data;
+
+   for (;;)
+   {
+      pthread_mutex_lock(&hub75->refresh_lock);
+      if (!hub75->refresh_running)
+      {
+         pthread_mutex_unlock(&hub75->refresh_lock);
+         break;
+      }
+      hub75_refresh_once(hub75);
+      pthread_mutex_unlock(&hub75->refresh_lock);
+   }
+   return NULL;
+}
+
+static bool hub75_init_rp1(hub75_t *hub75)
+{
+   unsigned pin;
+   uint32_t address_mask = HUB75_ADDR_A;
+
+   hub75->rp1_map = hub75_try_map_rp1("/dev/gpiomem0", 0);
+   if (!hub75->rp1_map)
+      hub75->rp1_map = hub75_try_map_rp1("/dev/gpiomem0",
+            (off_t)0x1f000d0000ULL);
+   if (!hub75->rp1_map)
+      hub75->rp1_map = hub75_try_map_rp1("/dev/mem",
+            (off_t)0x1f000d0000ULL);
+   if (!hub75->rp1_map)
+   {
+      RARCH_ERR("[HUB75] Could not map Raspberry Pi 5 RP1 GPIO registers.\n");
+      return false;
+   }
+
+   if (hub75->panel_rows / 2 > 2)
+      address_mask |= HUB75_ADDR_B;
+   if (hub75->panel_rows / 2 > 4)
+      address_mask |= HUB75_ADDR_C;
+   if (hub75->panel_rows / 2 > 8)
+      address_mask |= HUB75_ADDR_D;
+   if (hub75->panel_rows / 2 > 16)
+      address_mask |= HUB75_ADDR_E;
+
+   hub75->used_gpio_mask = HUB75_OE | HUB75_CLK | HUB75_LAT | address_mask |
+         HUB75_R1 | HUB75_G1 | HUB75_B1 | HUB75_R2 | HUB75_G2 | HUB75_B2;
+   hub75->gpio_regs = (hub75_gpio_ctrl_t*)(uintptr_t)(hub75->rp1_map +
+         HUB75_RP1_GPIO_WORDS);
+   hub75->pad_regs = hub75->rp1_map + HUB75_RP1_PAD_WORDS + 1;
+   hub75->rio_out = (hub75_rio_regs_t*)(uintptr_t)(hub75->rp1_map +
+         HUB75_RP1_RIO_WORDS);
+   hub75->rio_set = (hub75_rio_regs_t*)(uintptr_t)(hub75->rp1_map +
+         HUB75_RP1_RIO_WORDS + HUB75_RP1_RIO_SET_WORDS);
+   hub75->rio_clr = (hub75_rio_regs_t*)(uintptr_t)(hub75->rp1_map +
+         HUB75_RP1_RIO_WORDS + HUB75_RP1_RIO_CLR_WORDS);
+
+   for (pin = 0; pin < 28; pin++)
+   {
+      uint32_t bit = 1u << pin;
+      if (!(hub75->used_gpio_mask & bit))
+         continue;
+      hub75->gpio_regs[pin].ctrl = HUB75_RP1_SYS_RIO_FUNC;
+      hub75->pad_regs[pin] = (bit == HUB75_CLK || bit == HUB75_LAT)
+            ? HUB75_RP1_PAD_SLOW : HUB75_RP1_PAD_FAST;
+      hub75->rio_set->oe = bit;
+   }
+   __sync_synchronize();
+   hub75->rio_out->out = HUB75_OE;
+   return true;
+}
+
 static void hub75_free(void *data)
 {
    hub75_t *hub75 = (hub75_t*)data;
@@ -184,16 +462,29 @@ static void hub75_free(void *data)
    if (!hub75)
       return;
 
-   if (hub75->canvas)
-      led_canvas_clear(hub75->canvas);
-   if (hub75->matrix)
-      led_matrix_delete(hub75->matrix);
+   if (hub75->refresh_lock_initialized)
+   {
+      pthread_mutex_lock(&hub75->refresh_lock);
+      hub75->refresh_running = false;
+      pthread_mutex_unlock(&hub75->refresh_lock);
+   }
+   if (hub75->refresh_thread_started)
+      pthread_join(hub75->refresh_thread, NULL);
+   if (hub75->rio_out)
+      hub75->rio_out->out = HUB75_OE;
+   if (hub75->rio_clr)
+      hub75->rio_clr->oe = hub75->used_gpio_mask;
+   if (hub75->rp1_map)
+      munmap((void*)(uintptr_t)hub75->rp1_map, HUB75_RP1_MAP_SIZE);
+   if (hub75->refresh_lock_initialized)
+      pthread_mutex_destroy(&hub75->refresh_lock);
 
 #ifdef HAVE_OVERLAY
    hub75_overlay_free(hub75);
 #endif
    free(hub75->menu_frame);
    free(hub75->pixels);
+   free(hub75->display_pixels);
    free(hub75);
 }
 
@@ -202,73 +493,58 @@ static void *hub75_init(const video_info_t *video,
 {
    settings_t *settings = config_get_ptr();
    hub75_t *hub75 = (hub75_t*)calloc(1, sizeof(*hub75));
-   struct RGBLedMatrixOptions options;
-   struct RGBLedRuntimeOptions runtime;
-   int width = 0;
-   int height = 0;
+   int rows;
+   int columns;
+   int chain;
+   int value;
+   size_t pixel_count;
 
    *input      = NULL;
    *input_data = NULL;
    if (!hub75)
       return NULL;
 
-   memset(&options, 0, sizeof(options));
-   memset(&runtime, 0, sizeof(runtime));
-
-   options.hardware_mapping     = getenv("HUB75_GPIO_MAPPING");
-   options.rows                 = hub75_env_int("HUB75_ROWS", 8, 128);
-   options.cols                 = hub75_env_int("HUB75_COLS", 8, 256);
-   options.chain_length         = hub75_env_int("HUB75_CHAIN", 1, 64);
-   options.parallel             = hub75_env_int("HUB75_PARALLEL", 1, 6);
-   options.pwm_bits             = hub75_env_int("HUB75_PWM_BITS", 1, 11);
-   options.brightness           = hub75_env_int("HUB75_BRIGHTNESS", 1, 100);
-   options.multiplexing         = hub75_env_int("HUB75_MULTIPLEXING", 0, 32);
-   options.row_address_type     = hub75_env_int("HUB75_ROW_ADDR_TYPE", 0, 5);
-   options.led_rgb_sequence     = getenv("HUB75_RGB_SEQUENCE");
-   options.pixel_mapper_config = getenv("HUB75_PIXEL_MAPPER");
-   options.panel_type           = getenv("HUB75_PANEL_TYPE");
-   runtime.gpio_slowdown        = hub75_env_int("HUB75_GPIO_SLOWDOWN", 0, 10);
-   runtime.rp1_pio              = hub75_env_int("HUB75_RP1_PIO", 0, 1);
-   runtime.daemon               = 0;
-   runtime.drop_privileges      = 0;
-   runtime.do_gpio_init         = true;
-
-   hub75->matrix = led_matrix_create_from_options_and_rt_options(
-         &options, &runtime);
-   if (!hub75->matrix)
+   rows    = hub75_env_int("HUB75_ROWS", 8, 64);
+   columns = hub75_env_int("HUB75_COLS", 8, 256);
+   chain   = hub75_env_int("HUB75_CHAIN", 1, 16);
+   rows    = rows ? rows : 64;
+   columns = columns ? columns : 64;
+   chain   = chain ? chain : 1;
+   if ((rows & 1) || (unsigned)columns > UINT_MAX / (unsigned)chain)
    {
-      RARCH_ERR("[HUB75] Failed to initialize the RGB LED matrix.\n");
+      RARCH_ERR("[HUB75] Invalid panel geometry.\n");
       hub75_free(hub75);
       return NULL;
    }
 
-   hub75->canvas = led_matrix_create_offscreen_canvas(hub75->matrix);
-   if (!hub75->canvas)
+   hub75->panel_rows    = (unsigned)rows;
+   hub75->canvas_width  = (unsigned)columns * (unsigned)chain;
+   hub75->canvas_height = (unsigned)rows;
+   if ((size_t)hub75->canvas_width > SIZE_MAX / hub75->canvas_height /
+       sizeof(*hub75->pixels))
    {
-      RARCH_ERR("[HUB75] Failed to create an offscreen canvas.\n");
+      RARCH_ERR("[HUB75] Matrix geometry is too large.\n");
       hub75_free(hub75);
       return NULL;
    }
 
-   led_canvas_get_size(hub75->canvas, &width, &height);
-   if (width <= 0 || height <= 0 ||
-       (size_t)width > SIZE_MAX / (size_t)height / sizeof(*hub75->pixels))
-   {
-      RARCH_ERR("[HUB75] Invalid matrix geometry %dx%d.\n", width, height);
-      hub75_free(hub75);
-      return NULL;
-   }
-
-   hub75->pixels = (struct Color*)calloc(
-         (size_t)width * (size_t)height, sizeof(*hub75->pixels));
-   if (!hub75->pixels)
+   pixel_count = (size_t)hub75->canvas_width * hub75->canvas_height;
+   hub75->pixels = (hub75_color_t*)calloc(pixel_count,
+         sizeof(*hub75->pixels));
+   hub75->display_pixels = (hub75_color_t*)calloc(pixel_count,
+         sizeof(*hub75->display_pixels));
+   if (!hub75->pixels || !hub75->display_pixels)
    {
       hub75_free(hub75);
       return NULL;
    }
 
-   hub75->canvas_width    = (unsigned)width;
-   hub75->canvas_height   = (unsigned)height;
+   value = hub75_env_int("HUB75_PWM_BITS", 1, 8);
+   hub75->pwm_bits = value ? (unsigned)value : 8;
+   value = hub75_env_int("HUB75_BRIGHTNESS", 1, 100);
+   hub75->brightness = value ? (unsigned)value : 100;
+   value = hub75_env_int("HUB75_GPIO_SLOWDOWN", 1, 10);
+   hub75->gpio_slowdown = value ? (unsigned)value : 1;
    hub75->viewport_width  = hub75->canvas_width;
    hub75->viewport_height = hub75->canvas_height;
    hub75->frame_width     = video->width;
@@ -278,21 +554,42 @@ static void *hub75_init(const video_info_t *video,
    hub75->menu_enabled    = true;
    hub75->scaling         = hub75_get_scaling_mode();
 
+   if (pthread_mutex_init(&hub75->refresh_lock, NULL) != 0)
+   {
+      RARCH_ERR("[HUB75] Failed to create refresh mutex.\n");
+      hub75_free(hub75);
+      return NULL;
+   }
+   hub75->refresh_lock_initialized = true;
+   if (!hub75_init_rp1(hub75))
+   {
+      hub75_free(hub75);
+      return NULL;
+   }
+   hub75->refresh_running = true;
+   if (pthread_create(&hub75->refresh_thread, NULL,
+            hub75_refresh_main, hub75) != 0)
+   {
+      RARCH_ERR("[HUB75] Failed to create refresh thread.\n");
+      hub75_free(hub75);
+      return NULL;
+   }
+   hub75->refresh_thread_started = true;
+
    hub75_input_driver(settings->arrays.input_joypad_driver, input, input_data);
    frontend_driver_install_signal_handler();
-   led_canvas_clear(hub75->canvas);
-   hub75->canvas = led_matrix_swap_on_vsync(hub75->matrix, hub75->canvas);
 
-   RARCH_LOG("[HUB75] Initialized %ux%u RGB LED matrix (scaling: %s).\n",
+   RARCH_LOG("[HUB75] Initialized %ux%u Raspberry Pi 5 RP1 matrix "
+         "(scaling: %s, PWM bits: %u).\n",
          hub75->canvas_width, hub75->canvas_height,
-         hub75_scaling_name(hub75->scaling));
+         hub75_scaling_name(hub75->scaling), hub75->pwm_bits);
    return hub75;
 }
 
-static struct Color hub75_read_pixel(const void *frame, unsigned pitch,
+static hub75_color_t hub75_read_pixel(const void *frame, unsigned pitch,
       unsigned x, unsigned y, unsigned bits, bool menu)
 {
-   struct Color color;
+   hub75_color_t color;
 
    if (bits == 32)
    {
@@ -374,10 +671,10 @@ static void hub75_render_overlays(hub75_t *hub75)
          base_height = hub75->viewport_height;
       }
 
-      dst_x      = (int)base_x + (int)(overlay->vert_x * base_width);
-      dst_y      = (int)base_y + (int)(overlay->vert_y * base_height);
-      dst_width  = (int)(overlay->vert_w * base_width + 0.5f);
-      dst_height = (int)(overlay->vert_h * base_height + 0.5f);
+      dst_x      = (int)base_x + (int)(overlay->vert_x * (float)base_width);
+      dst_y      = (int)base_y + (int)(overlay->vert_y * (float)base_height);
+      dst_width  = (int)(overlay->vert_w * (float)base_width + 0.5f);
+      dst_height = (int)(overlay->vert_h * (float)base_height + 0.5f);
       if (dst_width <= 0 || dst_height <= 0)
          continue;
 
@@ -393,8 +690,8 @@ static void hub75_render_overlays(hub75_t *hub75)
       for (y = start_y; y < end_y; y++)
       {
          float v = overlay->tex_y +
-               ((float)(y - dst_y) / dst_height) * overlay->tex_h;
-         int source_y = (int)(v * overlay->height);
+               ((float)(y - dst_y) / (float)dst_height) * overlay->tex_h;
+         int source_y = (int)(v * (float)overlay->height);
 
          if (source_y < 0)
             source_y = 0;
@@ -404,14 +701,14 @@ static void hub75_render_overlays(hub75_t *hub75)
          for (x = start_x; x < end_x; x++)
          {
             float u = overlay->tex_x +
-                  ((float)(x - dst_x) / dst_width) * overlay->tex_w;
-            int source_x = (int)(u * overlay->width);
+                  ((float)(x - dst_x) / (float)dst_width) * overlay->tex_w;
+            int source_x = (int)(u * (float)overlay->width);
             uint32_t pixel;
             unsigned alpha;
             unsigned red;
             unsigned green;
             unsigned blue;
-            struct Color *destination;
+            hub75_color_t *destination;
 
             if (source_x < 0)
                source_x = 0;
@@ -420,7 +717,8 @@ static void hub75_render_overlays(hub75_t *hub75)
 
             pixel = overlay->pixels[(size_t)source_y * overlay->width +
                   (unsigned)source_x];
-            alpha = (unsigned)(((pixel >> 24) & 0xff) * overlay->alpha);
+            alpha = (unsigned)((float)((pixel >> 24) & 0xff) *
+                  overlay->alpha);
             if (!alpha)
                continue;
             if (alpha > 255)
@@ -604,9 +902,13 @@ static void hub75_render(hub75_t *hub75, const void *frame,
    (void)render_overlays;
 #endif
 
-   led_canvas_set_pixels(hub75->canvas, 0, 0,
-         (int)output_width, (int)output_height, hub75->pixels);
-   hub75->canvas = led_matrix_swap_on_vsync(hub75->matrix, hub75->canvas);
+   pthread_mutex_lock(&hub75->refresh_lock);
+   {
+      hub75_color_t *swap_pixels = hub75->display_pixels;
+      hub75->display_pixels      = hub75->pixels;
+      hub75->pixels              = swap_pixels;
+   }
+   pthread_mutex_unlock(&hub75->refresh_lock);
 }
 
 static bool hub75_frame(void *data, const void *frame,
