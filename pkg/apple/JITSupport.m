@@ -188,12 +188,14 @@ static bool requires_dual_map(void)
    return false;
 }
 
+#ifdef __arm64__
 static volatile bool s_brk_trapped;
 static void brk_trap_handler(int sig, siginfo_t *info, void *ctx)
 {
    s_brk_trapped = true;
    ((ucontext_t *)ctx)->uc_mcontext->__ss.__pc += 4;
 }
+#endif
 
 /* Ask the debugger to bless an R-X region so TXM allows execution.
  * Uses the universal.js protocol: brk #0xf00d with x16=1
@@ -201,6 +203,7 @@ static void brk_trap_handler(int sig, siginfo_t *info, void *ctx)
  * debugger doesn't crash. */
 static bool bless_executable_region(void *ptr, size_t size)
 {
+#ifdef __arm64__
    struct sigaction prev, act = {};
    act.sa_sigaction = brk_trap_handler;
    act.sa_flags     = SA_SIGINFO;
@@ -217,12 +220,18 @@ static bool bless_executable_region(void *ptr, size_t size)
    );
    sigaction(SIGTRAP, &prev, NULL);
    return !s_brk_trapped;
+#else
+   (void)ptr;
+   (void)size;
+   return false;
+#endif
 }
 
 /* Tell the debugger to detach. Uses the universal.js protocol:
  * brk #0xf00d with x16=0 (CMD_DETACH). */
 static void detach_debugger(void)
 {
+#ifdef __arm64__
    struct sigaction prev, act = {};
    act.sa_sigaction = brk_trap_handler;
    act.sa_flags     = SA_SIGINFO;
@@ -235,6 +244,7 @@ static void detach_debugger(void)
       ::: "x16", "memory"
    );
    sigaction(SIGTRAP, &prev, NULL);
+#endif
 }
 
 /* Create a R-W mirror of an existing R-X region via vm_remap.
