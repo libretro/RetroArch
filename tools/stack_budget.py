@@ -44,14 +44,29 @@ BUDGET     = 2048
 # with the size measured then. They are recorded rather than fixed:
 # almost all are codec and compression inner loops (rvp9, rh264, raac,
 # ropus, rflac, rzstd, rvorbis) and chd, whose working sets are large
-# by nature and whose call graphs have not been traced to a task
-# thread on PSP or GX - and several of those codecs may not be built
-# for those targets at all.
+# by nature.
 #
-# So this list is unaudited, and says so. The check is a ratchet: it
-# does not claim these are safe, it stops the list growing. Removing
-# an entry is always welcome; adding one is a decision someone has to
-# write down.
+# That exemption was originally an assumption - that those call graphs
+# do not reach a task thread on the small-stack targets, and that
+# several of the codecs are not built there at all. It has since been
+# checked with tools/stack_chain.py against the feature sets those
+# targets really use, taken from 'make -f Makefile.griffin platform=wii
+# -n' and Makefile.ctr rather than guessed:
+#
+#   wii  (8 KiB threads, GEKKO):  2 of 37 entries reachable from a task
+#                                 handler - config_file_dump and
+#                                 vh_build. The rest are not compiled.
+#   ctr  (32 KiB threads):        3 of 37 - the same two plus
+#                                 mem_stats_proc_meminfo.
+#
+# So the assumption holds for the codec entries, on those two targets,
+# in those configurations. It is not a general claim: indirect calls
+# are invisible to that analysis, and a target built with a different
+# feature set can reach further.
+#
+# The check remains a ratchet: it does not claim these are safe, it
+# stops the list growing. Removing an entry is always welcome; adding
+# one is a decision someone has to write down.
 #
 # The value is the size at the time of writing, so a frame that grows
 # past its recorded size is caught even while allowlisted.
@@ -91,7 +106,6 @@ ALLOWLIST  = {
     'rzstd_huf_read_bmi2': 2368,
     'rzstd_huf_read_sse': 2368,
     'sha1_calculate': 4304,
-    'vh_build': 16784,
     'vorbis_decode_packet_rest.isra': 2672,
 }
 
