@@ -65,3 +65,17 @@ jobs:
           # branch broken.  This is the same check at source level, for
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
+
+      - name: Check stack frame budget
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # PSP and GX threads get 8 KiB of stack (STACKSIZE in
+          # rthreads/psp_pthread.h and rthreads/gx_pthread.h).  Nothing
+          # warns when a local buffer outgrows that: it builds
+          # everywhere and overflows only on a target most contributors
+          # cannot build.  config_file_write() carried a 16 KiB stdio
+          # buffer as a local - twice that stack - on a path reached
+          # from a task handler, and nothing noticed.
+          python3 tools/stack_budget.py
