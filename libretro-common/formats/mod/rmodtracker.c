@@ -25,6 +25,7 @@
  * but snapshot-accelerated after the first seek.
  */
 #include <limits.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -69,6 +70,10 @@ struct instrument {
 	   calloc's default), 1 continue, 2 note off, 3 fade. dct/dca are
 	   the duplicate check type and action. */
 	char nna, dct, dca;
+	/* IT initial filter cutoff/resonance (bit 7 = set) and the third
+	   envelope, which flag bit 7 repurposes as a filter envelope. */
+	char ifc, ifr, pitch_is_filter;
+	struct envelope pitch_env;
 	char vib_type, vib_sweep, vib_depth, vib_rate;
 	struct envelope vol_env, pan_env;
 	struct sample *samples;
@@ -142,6 +147,15 @@ struct channel {
 	int sample_off, sample_idx, sample_fra, freq, ampl, pann;
 	int volume, panning, fadeout_vol, vol_env_tick, pan_env_tick;
 	int chan_vol, cvol_slide_param, tempo_slide_param, high_offset;
+	/* IT resonant lowpass: parameters, cached coefficient key, Q14
+	   coefficients as IT2 computes them, and left/right filter memory
+	   (the filter is linear, so filtering after panning with one
+	   coefficient set equals IT2's pre-pan mono filtering). */
+	int flt_cutoff, flt_q, flt_env, flt_key, flt_on;
+	int flt_a, flt_b, flt_c;
+	int flt_y1l, flt_y2l, flt_y1r, flt_y2r;
+	int flt_errl, flt_errr;
+	int pitch_env_tick;
 	int period, porta_period, retrig_count, fx_count, av_count;
 	int porta_up_param, porta_down_param, tone_porta_param, offset_param;
 	int fine_porta_up_param, fine_porta_down_param, xfine_porta_param;
@@ -167,6 +181,8 @@ struct replay {
 	int seq_pos, break_pos, row, next_row, tick;
 	int speed, tempo, pl_count, pl_chan;
 	int *ramp_buf;
+	int *flt_buf;
+	float *flt_buf_f;
 	char **play_count;
 	struct channel *channels;
 	struct channel *ghosts;
@@ -941,9 +957,11 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
  * actions (DCT/DCA) are not implemented; linear
  * slide mode is approximated with Amiga periods, so portamento depth
  * can differ; sustain loops are ignored in favour of the normal loop;
- * pitch and filter envelopes, panbrello (Yxy) and the S9x
- * sound-control set are not applied, and the volume column's tone
- * porta uses the engine's rate scale rather than IT's table. Channel
+ * panbrello (Yxy), the S9x sound-control set and Zxx macros are not
+ * applied, and the volume column's tone porta uses the engine's rate
+ * scale rather than IT's table. Panning, pitch and filter envelopes,
+ * the resonant lowpass (initial cutoff/resonance and the filter
+ * envelope, coefficients as IT2 computes them) are applied. Channel
  * volumes (initial table, Mxx, Nxy), Wxy global volume slide, Xxx
  * panning, Pxy panning slide, Txx tempo slides, SAx high offset,
  * volume-column volume effects and duplicate checks (DCT/DCA, sample
@@ -1254,8 +1272,11 @@ static int it_sample_copy( struct sample *dst, struct sample *src, int frames ) 
 
 /* Convert an IT node envelope (up to 25 nodes, value 0..64, tick
    u16) to the engine's 16-point form. */
+/* bias 0 reads unsigned 0..64 values (volume, panning); bias 32
+   reads the pitch block's signed -32..32 values into the same 0..64
+   domain, with the application subtracting the bias back out. */
 static void it_load_envelope( struct data *data, int offset,
-		struct envelope *env ) {
+		struct envelope *env, int bias ) {
 	int flg, num, lpb, lpe, slb, sle, idx;
 	flg = data_u8( data, offset );
 	num = data_u8( data, offset + 1 );
@@ -1270,6 +1291,12 @@ static void it_load_envelope( struct data *data, int offset,
 		env->num_points = ( char ) num;
 		for( idx = 0; idx < num; idx++ ) {
 			int val = data_u8( data, offset + 6 + idx * 3 );
+			if( bias ) {
+				val = ( ( val & 0x7F ) - ( val & 0x80 ) ) + bias;
+			}
+			if( val < 0 ) {
+				val = 0;
+			}
 			env->points_ampl[ idx ] = ( short ) ( val > 64 ? 64 : val );
 			env->points_tick[ idx ] = ( short ) data_u16le( data,
 				offset + 6 + idx * 3 + 1 );
@@ -1521,7 +1548,13 @@ static struct module* module_load_it( struct data *data, char *message ) {
 					}
 				}
 			}
-			it_load_envelope( data, iofs + 0x130, &instrument->vol_env );
+			it_load_envelope( data, iofs + 0x130, &instrument->vol_env, 0 );
+			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 0 );
+			it_load_envelope( data, iofs + 0x1D4, &instrument->pitch_env, 32 );
+			instrument->pitch_is_filter
+				= ( char ) ( ( data_u8( data, iofs + 0x1D4 ) & 0x80 ) >> 7 );
+			instrument->ifc = ( char ) data_u8( data, iofs + 0x3A );
+			instrument->ifr = ( char ) data_u8( data, iofs + 0x3B );
 		}
 	} else {
 		for( ins = 1; ins <= module->num_instruments; ins++ ) {
@@ -2002,6 +2035,9 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->panning = replay->module->default_panning[ idx ];
 	channel->chan_vol = replay->module->default_chan_vol
 		? replay->module->default_chan_vol[ idx ] : 64;
+	channel->flt_cutoff = 127;
+	channel->flt_env = 255;
+	channel->flt_key = -1;
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
 	/* Unsigned: the channel count comes from the file and is not
@@ -2301,8 +2337,22 @@ static void channel_trigger( struct channel *channel ) {
 		}
 		channel->sample_off = 0;
 		channel->vol_env_tick = channel->pan_env_tick = 0;
+		channel->pitch_env_tick = 0;
 		channel->fadeout_vol = 32768;
 		channel->key_on = 1;
+		/* IT filter reset on an instrument-carrying note: the
+		   envelope value opens, initial cutoff/resonance apply when
+		   their set bits say so, and the filter memory clears. */
+		channel->flt_env = 255;
+		if( channel->instrument->ifc & 0x80 ) {
+			channel->flt_cutoff = channel->instrument->ifc & 0x7F;
+		}
+		if( channel->instrument->ifr & 0x80 ) {
+			channel->flt_q = channel->instrument->ifr & 0x7F;
+		}
+		channel->flt_y1l = channel->flt_y2l = 0;
+		channel->flt_y1r = channel->flt_y2r = 0;
+		channel->flt_errl = channel->flt_errr = 0;
 	}
 	if( channel->note.effect == 0x09 || channel->note.effect == 0x8F ) {
 		/* Set Sample Offset. */
@@ -2398,15 +2448,95 @@ static void channel_trigger( struct channel *channel ) {
 	}
 }
 
+/* Recompute the IT filter coefficients when cutoff, resonance or the
+   filter-envelope value changed. The formulas are IT2's own as
+   preserved in it2play: r tracks the cutoff as a power of two scaled
+   to the mixing rate (the 2x oversampled stage here), p is the
+   resonance table, and a/b/c land in Q14 integers. The double math
+   runs at event rate only; the per-sample filter is pure integer, so
+   the deterministic-rendering guarantee is untouched. */
+static int calculate_tick_len( int tempo, int sample_rate );
+
+static void channel_filter_coeffs( struct channel *channel ) {
+	int ffv = channel->flt_env * channel->flt_cutoff;
+	int key = ( ffv << 7 ) | channel->flt_q;
+	double r, p, d, e, a, b, c;
+	if( key == channel->flt_key ) {
+		return;
+	}
+	channel->flt_key = key;
+	if( ffv == 127 * 255 && channel->flt_q == 0 ) {
+		channel->flt_on = 0;
+		return;
+	}
+	r = pow( 2.0, ffv * ( -1.0 / 6144.0 ) )
+		* ( ( ( double ) channel->replay->sample_rate * 2.0 )
+			/ ( 2.0 * 3.14159265358979324 * 110.0 * 1.18920711500272107 ) );
+	p = pow( 10.0, channel->flt_q * ( -24.0 / 2560.0 ) );
+	d = p * r + ( p - 1.0 );
+	e = r * r;
+	a = 16384.0 / ( 1.0 + d + e );
+	b = ( d + e + e ) * a;
+	c = -( e * a );
+	channel->flt_a = ( int ) ( a + 0.5 );
+	channel->flt_b = ( int ) ( b + ( b >= 0.0 ? 0.5 : -0.5 ) );
+	channel->flt_c = ( int ) ( c - 0.5 );
+	channel->flt_on = 1;
+}
+
+/* The per-tick work for the third envelope: as a pitch envelope it is
+   a cumulative linear slide of ( value * 32 ) / 768 octaves per tick,
+   folded into the period the engine recomputes pitch from; as a
+   filter envelope it scales the cutoff through flt_env ( value * 4,
+   0..255, 255 with the envelope off ). Values are stored biased +32.
+   Ghosts keep their filter envelopes running but their frequency is
+   frozen by design, so the pitch branch skips them. */
+static void channel_update_pitch_filter( struct channel *channel ) {
+	struct envelope *env = &channel->instrument->pitch_env;
+	int val, slide;
+	if( env->enabled ) {
+		val = envelope_calculate_ampl( env, channel->pitch_env_tick );
+		if( channel->instrument->pitch_is_filter ) {
+			val = val * 4;
+			channel->flt_env = val > 255 ? 255 : val;
+		} else if( channel->sample ) {
+			slide = ( val - 32 ) * 32;
+			if( slide != 0 && channel->period > 0 ) {
+				channel->period = ( channel->period * FP_ONE )
+					/ exp_2( ( slide * FP_ONE ) / 768 );
+				if( channel->period < 1 ) {
+					channel->period = 1;
+				}
+			}
+		}
+		channel->pitch_env_tick = envelope_next_tick( env,
+			channel->pitch_env_tick, channel->key_on );
+	}
+	channel_filter_coeffs( channel );
+}
+
 static void channel_update_envelopes( struct channel *channel ) {
+	channel_update_pitch_filter( channel );
 	if( channel->instrument->vol_env.enabled ) {
-		if( !channel->key_on ) {
+		struct envelope *env = &channel->instrument->vol_env;
+		int fade = !channel->key_on;
+		/* IT starts the fadeout as soon as a non-looping volume
+		   envelope reaches its final node, key on or not - a
+		   sustained envelope never reaches it while the key is held.
+		   XM holds the last node forever, so this is gated. */
+		if( !fade && channel->replay->module->it_effects
+				&& !env->looped && env->num_points > 0
+				&& channel->vol_env_tick
+					>= env->points_tick[ ( int ) env->num_points - 1 ] ) {
+			fade = 1;
+		}
+		if( fade ) {
 			channel->fadeout_vol -= channel->instrument->vol_fadeout;
 			if( channel->fadeout_vol < 0 ) {
 				channel->fadeout_vol = 0;
 			}
 		}
-		channel->vol_env_tick = envelope_next_tick( &channel->instrument->vol_env,
+		channel->vol_env_tick = envelope_next_tick( env,
 			channel->vol_env_tick, channel->key_on );
 	}
 	if( channel->instrument->pan_env.enabled ) {
@@ -3177,6 +3307,8 @@ static void dispose_replay( struct replay *replay ) {
 		free( replay->play_count );
 	}
 	free( replay->ramp_buf );
+	free( replay->flt_buf );
+	free( replay->flt_buf_f );
 	free( replay->channels );
 	free( replay->ghosts );
 	free( replay );
@@ -3191,6 +3323,17 @@ static struct replay* new_replay( struct module *module, int sample_rate, int in
 		replay->interpolation = interpolation;
 		replay->ramp_buf = calloc( 128, sizeof( int ) );
 		replay->channels = calloc( module->num_channels, sizeof( struct channel ) );
+		/* The background-voice pool for IT new-note actions. Optional:
+		   left NULL, capture bails and every action degrades to cut. */
+		replay->ghosts = calloc( RMT_NUM_GHOSTS, sizeof( struct channel ) );
+		if( module->it_effects ) {
+			/* Scratch for the per-voice filter path, sized for the
+			   slowest tempo the engine clamps to; NULL degrades
+			   filtered voices to unfiltered. */
+			int flt_frames = ( calculate_tick_len( 32, sample_rate ) + 65 ) * 4;
+			replay->flt_buf = calloc( flt_frames, sizeof( int ) );
+			replay->flt_buf_f = calloc( flt_frames, sizeof( float ) );
+		}
 		if( replay->ramp_buf && replay->channels ) {
 			replay_set_sequence_pos( replay, 0 );
 		} else {
@@ -3256,6 +3399,94 @@ static void downsample( int *buf, int count ) {
 
 /* Generates audio and returns the number of stereo samples written into mix_buf.
    Individual channels may be excluded using the mute bitmask. */
+/* Run the Q14 lowpass over an interleaved stereo span. The span
+   covers the tick plus the downsampler's 65-frame overlap tail that
+   the next tick re-renders, so the state committed back to the
+   channel is the state at the tick boundary; the tail is filtered
+   with throwaway state. Products stay within 32 bits: inputs are
+   clamped to 16 bits, a is at most 16384 and a stable filter keeps
+   |b| under two in Q14, at the cost of seven low bits per term. */
+static void channel_filter_run( struct channel *channel, int *buf,
+		int commit, int total ) {
+	int i, x, y, acc;
+	int y1l = channel->flt_y1l, y2l = channel->flt_y2l;
+	int y1r = channel->flt_y1r, y2r = channel->flt_y2r;
+	int errl = channel->flt_errl, errr = channel->flt_errr;
+	for( i = 0; i < total; i++ ) {
+		/* One 14-bit shift per sample with first-order error
+		   feedback: the truncated remainder is carried into the
+		   next sample, so the shift is exactly bias-free. A plain
+		   floor ( or round-half-up ) leaks a half-LSB of DC into
+		   the feedback loop, and a lowpass with near-unity feedback
+		   amplifies it by its DC gain - over a thousandfold at low
+		   cutoffs - into a large standing offset per voice. The
+		   voice scales into a 14-bit-ish domain ( oversampled
+		   voices reach about 1.3x of 16 bits with a hot mix
+		   volume ) so every product and the accumulator stay within
+		   32 bits with the state clamped at 15 bits: worst case
+		   0.18e9 + 1.08e9 + 0.54e9 + err < 2^31. */
+		x = buf[ i * 2 ] >> 2;
+		acc = x * channel->flt_a + y1l * channel->flt_b
+			+ y2l * channel->flt_c + errl;
+		y = acc >> 14;
+		errl = acc - ( y << 14 );
+		if( y > 32767 ) y = 32767;
+		if( y < -32768 ) y = -32768;
+		y2l = y1l;
+		y1l = y;
+		buf[ i * 2 ] = y << 2;
+		x = buf[ i * 2 + 1 ] >> 2;
+		acc = x * channel->flt_a + y1r * channel->flt_b
+			+ y2r * channel->flt_c + errr;
+		y = acc >> 14;
+		errr = acc - ( y << 14 );
+		if( y > 32767 ) y = 32767;
+		if( y < -32768 ) y = -32768;
+		y2r = y1r;
+		y1r = y;
+		buf[ i * 2 + 1 ] = y << 2;
+		if( i == commit - 1 ) {
+			channel->flt_y1l = y1l;
+			channel->flt_y2l = y2l;
+			channel->flt_y1r = y1r;
+			channel->flt_y2r = y2r;
+			channel->flt_errl = errl;
+			channel->flt_errr = errr;
+		}
+	}
+}
+
+static void channel_filter_run_f( struct channel *channel, float *buf,
+		int commit, int total ) {
+	int i;
+	float x, y;
+	float fa = ( float ) channel->flt_a * ( 1.0f / 16384.0f );
+	float fb = ( float ) channel->flt_b * ( 1.0f / 16384.0f );
+	float fc = ( float ) channel->flt_c * ( 1.0f / 16384.0f );
+	float y1l = channel->flt_y1l * ( 1.0f / 32768.0f );
+	float y2l = channel->flt_y2l * ( 1.0f / 32768.0f );
+	float y1r = channel->flt_y1r * ( 1.0f / 32768.0f );
+	float y2r = channel->flt_y2r * ( 1.0f / 32768.0f );
+	for( i = 0; i < total; i++ ) {
+		x = buf[ i * 2 ];
+		y = x * fa + y1l * fb + y2l * fc;
+		y2l = y1l;
+		y1l = y;
+		buf[ i * 2 ] = y;
+		x = buf[ i * 2 + 1 ];
+		y = x * fa + y1r * fb + y2r * fc;
+		y2r = y1r;
+		y1r = y;
+		buf[ i * 2 + 1 ] = y;
+		if( i == commit - 1 ) {
+			channel->flt_y1l = ( int ) ( y1l * 32768.0f );
+			channel->flt_y2l = ( int ) ( y2l * 32768.0f );
+			channel->flt_y1r = ( int ) ( y1r * 32768.0f );
+			channel->flt_y2r = ( int ) ( y2r * 32768.0f );
+		}
+	}
+}
+
 static int replay_get_audio( struct replay *replay, int *mix_buf, int mute ) {
 	struct channel *channel;
 	int idx, num_channels, tick_len = calculate_tick_len( replay->tempo, replay->sample_rate );
@@ -3266,8 +3497,20 @@ static int replay_get_audio( struct replay *replay, int *mix_buf, int mute ) {
 	for( idx = 0; idx < num_channels; idx++ ) {
 		channel = &replay->channels[ idx ];
 		if( !( mute & 1 ) ) {
-			channel_resample( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
-				replay->sample_rate * 2, replay->interpolation );
+			if( channel->flt_on && channel->ampl > 0 && replay->flt_buf ) {
+				int i, span = ( tick_len + 65 ) * 2;
+				memset( replay->flt_buf, 0, span * 2 * sizeof( int ) );
+				channel_resample( channel, replay->flt_buf, 0, span,
+					replay->sample_rate * 2, replay->interpolation );
+				channel_filter_run( channel, replay->flt_buf,
+					tick_len * 2, span );
+				for( i = 0; i < span * 2; i++ ) {
+					mix_buf[ i ] += replay->flt_buf[ i ];
+				}
+			} else {
+				channel_resample( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+					replay->sample_rate * 2, replay->interpolation );
+			}
 		}
 		channel_update_sample_idx( channel, tick_len * 2, replay->sample_rate * 2 );
 		mute >>= 1;
@@ -3276,8 +3519,20 @@ static int replay_get_audio( struct replay *replay, int *mix_buf, int mute ) {
 		for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
 			channel = &replay->ghosts[ idx ];
 			if( channel->sample ) {
-				channel_resample( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
-					replay->sample_rate * 2, replay->interpolation );
+				if( channel->flt_on && channel->ampl > 0 && replay->flt_buf ) {
+					int i, span = ( tick_len + 65 ) * 2;
+					memset( replay->flt_buf, 0, span * 2 * sizeof( int ) );
+					channel_resample( channel, replay->flt_buf, 0, span,
+						replay->sample_rate * 2, replay->interpolation );
+					channel_filter_run( channel, replay->flt_buf,
+						tick_len * 2, span );
+					for( i = 0; i < span * 2; i++ ) {
+						mix_buf[ i ] += replay->flt_buf[ i ];
+					}
+				} else {
+					channel_resample( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+						replay->sample_rate * 2, replay->interpolation );
+				}
 				channel_update_sample_idx( channel, tick_len * 2,
 					replay->sample_rate * 2 );
 			}
@@ -3424,8 +3679,20 @@ static int replay_get_audio_f( struct replay *replay, float *mix_buf,
 	for( idx = 0; idx < num_channels; idx++ ) {
 		channel = &replay->channels[ idx ];
 		if( !( mute & 1 ) ) {
-			channel_resample_f( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
-				replay->sample_rate * 2, replay->interpolation );
+			if( channel->flt_on && channel->ampl > 0 && replay->flt_buf_f ) {
+				int i, span = ( tick_len + 65 ) * 2;
+				memset( replay->flt_buf_f, 0, span * 2 * sizeof( float ) );
+				channel_resample_f( channel, replay->flt_buf_f, 0, span,
+					replay->sample_rate * 2, replay->interpolation );
+				channel_filter_run_f( channel, replay->flt_buf_f,
+					tick_len * 2, span );
+				for( i = 0; i < span * 2; i++ ) {
+					mix_buf[ i ] += replay->flt_buf_f[ i ];
+				}
+			} else {
+				channel_resample_f( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+					replay->sample_rate * 2, replay->interpolation );
+			}
 		}
 		channel_update_sample_idx( channel, tick_len * 2, replay->sample_rate * 2 );
 		mute >>= 1;
@@ -3434,8 +3701,23 @@ static int replay_get_audio_f( struct replay *replay, float *mix_buf,
 		for( idx = 0; idx < RMT_NUM_GHOSTS; idx++ ) {
 			channel = &replay->ghosts[ idx ];
 			if( channel->sample ) {
-				channel_resample_f( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
-					replay->sample_rate * 2, replay->interpolation );
+				if( channel->flt_on && channel->ampl > 0 && replay->flt_buf_f ) {
+					int i, span = ( tick_len + 65 ) * 2;
+					memset( replay->flt_buf_f, 0, span * 2 * sizeof( float ) );
+					channel_resample_f( channel, replay->flt_buf_f, 0, span,
+						replay->sample_rate * 2, replay->interpolation );
+					channel_filter_run_f( channel, replay->flt_buf_f,
+						tick_len * 2, span );
+					for( i = 0; i < span * 2; i++ ) {
+						mix_buf[ i ] += replay->flt_buf_f[ i ];
+					}
+				} else {
+					channel_resample_f( channel, mix_buf, 0, ( tick_len + 65 ) * 2,
+						replay->sample_rate * 2, replay->interpolation );
+					channel_update_sample_idx( channel, tick_len * 2,
+						replay->sample_rate * 2 );
+					continue;
+				}
 				channel_update_sample_idx( channel, tick_len * 2,
 					replay->sample_rate * 2 );
 			}
@@ -3588,6 +3870,8 @@ static void rmt_snap_restore( struct rmodtracker *rmt, struct rmt_snap *s )
 	int ch_bytes = rmt->module->num_channels * ( int ) sizeof( struct channel );
 	struct replay tmp = s->r;
 	tmp.ramp_buf   = replay->ramp_buf;
+	tmp.flt_buf    = replay->flt_buf;
+	tmp.flt_buf_f  = replay->flt_buf_f;
 	tmp.play_count = replay->play_count;
 	tmp.channels   = replay->channels;
 	tmp.ghosts     = replay->ghosts;
