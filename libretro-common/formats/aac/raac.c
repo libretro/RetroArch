@@ -33,18 +33,19 @@
  * computed at open from their defining formulas.
  *
  * What it implements: AAC-LC (audio object type 2) raw access units,
- * mono and stereo (channel configurations 1 and 2, or configuration 0
- * with a PCE describing one SCE or one CPE), explicit as well as
- * indexed sampling frequencies, M/S and intensity stereo, PNS, TNS,
- * in-stream PCE and DSE elements (skipped), and both the s16 and f32
- * output paths from a shared float synthesis pipeline.
+ * channel configurations 1 through 7 and configuration 0 with an
+ * embedded PCE (up to eight output channels, interleaved in element
+ * transmission order), explicit as well as indexed sampling
+ * frequencies, M/S and intensity stereo, PNS, TNS, in-stream PCE and
+ * DSE elements (skipped), and both the s16 and f32 output paths from
+ * a shared float synthesis pipeline.
  *
  * What it does not implement: other object types (Main, SSR, LTP,
- * HE-AAC's SBR/PS - configurations other than plain LC are refused at
- * open, as are the 960-sample frame variant and channel configurations
- * above stereo), coupling channel elements, ADTS/LATM/LOAS framing
- * (the caller supplies the AudioSpecificConfig and raw access units,
- * as rmp4 does), and encoding. */
+ * HE-AAC's SBR/PS - configurations other than plain LC are refused
+ * at open, as is the 960-sample frame variant), coupling channel
+ * elements, downmixing, ADTS/LATM/LOAS framing (the caller supplies
+ * the AudioSpecificConfig and raw access units, as rmp4 does), and
+ * encoding. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -58,7 +59,7 @@
 #endif
 
 #define RAAC_FRAME     1024
-#define RAAC_MAX_CH    2
+#define RAAC_MAX_CH    8
 #define RAAC_MAX_SFB   51
 #define RAAC_MAX_WIN   8
 
@@ -702,6 +703,9 @@ struct raac
    float    tw512_re[1024], tw512_im[1024];    /* pre+post twiddles 2048 */
    float    tw64_re[128],  tw64_im[128];       /* pre+post twiddles 256  */
    float    fft_re[512], fft_im[512];          /* scratch                */
+   float    pcm[RAAC_MAX_CH][RAAC_FRAME];      /* per-frame synthesis
+                                                * scratch: too large for
+                                                * the stack at 8 ch     */
    uint32_t noise_state;                        /* PNS LCG               */
 };
 
@@ -1531,9 +1535,8 @@ static int raac_decode_sce(raac_t *a, raac_bits *b, raac_ch *c)
    return 0;
 }
 
-static int raac_decode_cpe(raac_t *a, raac_bits *b)
+static int raac_decode_cpe(raac_t *a, raac_bits *b, raac_ch *l, raac_ch *r)
 {
-   raac_ch *l = &a->ch[0], *r = &a->ch[1];
    uint8_t  ms_used[RAAC_MAX_WIN][RAAC_MAX_SFB];
    int      ms_mask = 0;
    int      common;
@@ -1632,6 +1635,11 @@ static int raac_pce(raac_bits *b, int *elems, int *channels)
    return 0;
 }
 
+/* channels carried by channelConfiguration 1..7 (14496-3 Table 1.19):
+ * 1 mono, 2 stereo, 3 SCE+CPE, 4 SCE+CPE+SCE, 5 SCE+2CPE,
+ * 6 adds an LFE (5.1), 7 is SCE+3CPE+LFE (7.1, eight channels) */
+static const uint8_t raac_chcfg_channels[8] = { 0, 1, 2, 3, 4, 5, 6, 8 };
+
 /* Map an explicitly coded sampling frequency onto the sampling
  * frequency index whose scalefactor band tables apply, per the
  * ranges of ISO/IEC 14496-3 Table 4.55. */
@@ -1654,7 +1662,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
 {
    raac_t   *a;
    raac_bits b;
-   unsigned  aot, sfi, chcfg, freq;
+   unsigned  aot, sfi, chcfg, freq, channels;
    int       i;
 
    if (!asc || asc_size < 2)
@@ -1680,7 +1688,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
       return NULL;
    else
       freq = raac_sample_rates[sfi];
-   if (chcfg > 2)
+   if (chcfg > 7)
       return NULL;
    if (raac_getbits(&b, 1)) /* frameLengthFlag: 960 */
       return NULL;
@@ -1691,15 +1699,18 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    if (chcfg == 0)
    {
       /* the channel layout is deferred to a PCE embedded in the
-       * GASpecificConfig; accept the shapes the frame parser
-       * decodes - exactly one SCE/LFE (mono) or one CPE (stereo) */
+       * GASpecificConfig; the frame parser assigns elements to output
+       * channels sequentially, so any coupling-free layout that fits
+       * is decodable */
       int elems = 0, nch = 0;
       if (raac_pce(&b, &elems, &nch) < 0)
          return NULL;
-      if (elems != 1 || nch < 1 || nch > 2)
+      if (nch < 1 || nch > RAAC_MAX_CH)
          return NULL;
-      chcfg = (unsigned)nch;
+      channels = (unsigned)nch;
    }
+   else
+      channels = raac_chcfg_channels[chcfg];
    if (b.err)
       return NULL;
 
@@ -1707,7 +1718,7 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
       return NULL;
    a->sfi         = (int)sfi;
    a->sample_rate = freq;
-   a->channels    = chcfg;
+   a->channels    = channels;
    a->noise_state = 0x1f2e3d4cu;
 
    for (i = 0; i < 11; i++)
@@ -1755,11 +1766,12 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
    int       got[RAAC_MAX_CH];
    int       done = 0;
    unsigned  ch;
+   unsigned  next = 0;
 
    if (!a || !pkt || !size)
       return -1;
    raac_bits_init(&b, pkt, size);
-   got[0] = got[1] = 0;
+   memset(got, 0, sizeof(got));
 
    while (!done)
    {
@@ -1770,18 +1782,23 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
       {
          case 0:  /* SCE */
          case 3:  /* LFE (same individual_channel_stream)             */
-            if (a->channels != 1 && id == 0 && got[0])
+            /* channel elements claim output channels in transmission
+             * order, which for the standard configurations is the ISO
+             * order (e.g. 5.1: SCE C, CPE L/R, CPE Ls/Rs, LFE) */
+            if (next + 1 > a->channels)
                return -1;
-            if (raac_decode_sce(a, &b, &a->ch[0]) < 0)
+            if (raac_decode_sce(a, &b, &a->ch[next]) < 0)
                return -1;
-            got[0] = 1;
+            got[next] = 1;
+            next++;
             break;
          case 1:  /* CPE */
-            if (a->channels != 2)
+            if (next + 2 > a->channels)
                return -1;
-            if (raac_decode_cpe(a, &b) < 0)
+            if (raac_decode_cpe(a, &b, &a->ch[next], &a->ch[next + 1]) < 0)
                return -1;
-            got[0] = got[1] = 1;
+            got[next] = got[next + 1] = 1;
+            next += 2;
             break;
          case 4:  /* DSE */
          {
@@ -1834,11 +1851,12 @@ static int raac_decode_frame(raac_t *a, const uint8_t *pkt, size_t size,
 int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       int16_t *out)
 {
-   float    pcm[RAAC_MAX_CH][RAAC_FRAME];
-   int      ret = raac_decode_frame(a, pkt, size, pcm);
+   int      ret;
    int      i;
    unsigned ch;
-   if (ret < 0)
+   if (!a)
+      return -1;
+   if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
    for (i = 0; i < RAAC_FRAME; i++)
       for (ch = 0; ch < a->channels; ch++)
@@ -1847,7 +1865,7 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
           * out-of-range or non-finite float to int is undefined, and
           * hostile TNS filters can push the synthesis arbitrarily
           * high, so saturate before the cast (NaN pins to zero). */
-         float v = pcm[ch][i];
+         float v = a->pcm[ch][i];
          if (!(v > -1e9f && v < 1e9f))
             v = 0.0f;
          v += (v >= 0.0f) ? 0.5f : -0.5f;
@@ -1861,15 +1879,16 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
 int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       float *out)
 {
-   float    pcm[RAAC_MAX_CH][RAAC_FRAME];
-   int      ret = raac_decode_frame(a, pkt, size, pcm);
+   int      ret;
    int      i;
    unsigned ch;
-   if (ret < 0)
+   if (!a)
+      return -1;
+   if ((ret = raac_decode_frame(a, pkt, size, a->pcm)) < 0)
       return ret;
    for (i = 0; i < RAAC_FRAME; i++)
       for (ch = 0; ch < a->channels; ch++)
-         out[i * a->channels + ch] = pcm[ch][i] * (1.0f / 32768.0f);
+         out[i * a->channels + ch] = a->pcm[ch][i] * (1.0f / 32768.0f);
    return ret;
 }
 
