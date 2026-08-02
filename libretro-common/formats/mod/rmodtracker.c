@@ -10,7 +10,9 @@
  * the end of this file.
  *
  * What it implements: ProTracker MOD (including multi-channel
- * variants), Scream Tracker 3 S3M and FastTracker 2 XM modules with
+ * variants, the OKTA/OCTA/CD81/FA08 8-channel tags, Startrekker FLT8
+ * paired patterns and untagged 15-instrument Soundtracker modules),
+ * Scream Tracker 3 S3M and FastTracker 2 XM modules with
  * their effect sets, instrument envelopes and 8/16-bit mono samples,
  * played to interleaved stereo s16 or float at the engine rate, with
  * duration calculation and rewind.
@@ -787,34 +789,64 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	return module;
 }
 
+/* Untagged 15-instrument Soundtracker modules carry no format tag to
+ * key on, so detection is a plausibility check on the fixed-position
+ * header fields: a printable title and sample names, a sane sequence
+ * length and sequence entries within the 7-bit pattern range. This is
+ * the acceptance test pocketmod applied (title and names), tightened
+ * with the sequence checks. A 31-instrument module with a tag this
+ * loader does not know can in principle slip past it - its bytes at
+ * these offsets are also sample names - but such a file would not have
+ * played either way, and the sequence checks reject most of them. */
+static int mod_st15_check( struct data *data ) {
+	int idx, sub, chr, seq_len;
+	if( data->length < 600 ) {
+		return 0;
+	}
+	for( idx = 0; idx < 20; idx++ ) {
+		chr = data_u8( data, idx );
+		if( chr != 0 && ( chr < 32 || chr > 126 ) ) {
+			return 0;
+		}
+	}
+	for( idx = 0; idx < 15; idx++ ) {
+		for( sub = 0; sub < 22; sub++ ) {
+			chr = data_u8( data, 20 + idx * 30 + sub );
+			if( chr != 0 && ( chr < 32 || chr > 126 ) ) {
+				return 0;
+			}
+		}
+	}
+	seq_len = data_u8( data, 470 );
+	if( seq_len < 1 || seq_len > 128 ) {
+		return 0;
+	}
+	for( idx = 0; idx < 128; idx++ ) {
+		if( data_u8( data, 472 + idx ) > 127 ) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 static struct module* module_load_mod( struct data *data, char *message ) {
 	int idx, pat, module_data_idx, pat_data_len, pat_data_idx;
 	int period, key, ins, effect, param, fine_tune;
 	int sample_length, loop_start, loop_length;
+	int tag, pre, flt8, seq_offset, src_idx, cell, row, chan;
 	char *pattern_data;
 	struct instrument *instrument;
 	struct sample *sample;
 	struct module *module = calloc( 1, sizeof( struct module ) );
 	if( module ) {
 		data_ascii( data, 0, 20, module->name );
-		module->sequence_len = data_u8( data, 950 ) & 0x7F;
-		module->restart_pos = data_u8( data, 951 ) & 0x7F;
-		if( module->restart_pos >= module->sequence_len ) {
-			module->restart_pos = 0;
-		}
-		module->sequence = calloc( 128, sizeof( unsigned char ) );
-		if( !module->sequence ){
-			dispose_module( module );
-			return NULL;
-		}
-		for( idx = 0; idx < 128; idx++ ) {
-			pat = data_u8( data, 952 + idx ) & 0x7F;
-			module->sequence[ idx ] = pat;
-			if( pat >= module->num_patterns ) {
-				module->num_patterns = pat + 1;
-			}
-		}
-		switch( data_u16be( data, 1082 ) ) {
+		flt8 = 0;
+		seq_offset = 950;
+		module_data_idx = 1084;
+		module->num_instruments = 31;
+		tag = data_u16be( data, 1082 );
+		pre = data_u16be( data, 1080 );
+		switch( tag ) {
 			case 0x4b2e: /* M.K. */
 			case 0x4b21: /* M!K! */
 			case 0x5434: /* FLT4 */
@@ -822,6 +854,42 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				module->c2_rate = 8287;
 				module->gain = 64;
 				break;
+			case 0x5438: /* FLT8 */
+			case 0x5441: /* OKTA / OCTA */
+			case 0x3831: /* CD81 */
+			case 0x3038: /* FA08 */
+				/* The switch keys on the last two tag bytes, so
+				   confirm the leading two before accepting; a miss
+				   falls through to the untagged heuristic. */
+				if( ( tag == 0x5438 && pre == 0x464c )
+				 || ( tag == 0x5441 && ( pre == 0x4f4b || pre == 0x4f43 ) )
+				 || ( tag == 0x3831 && pre == 0x4344 )
+				 || ( tag == 0x3038 && pre == 0x4641 ) ) {
+					module->num_channels = 8;
+					module->c2_rate = 8287;
+					module->gain = 32;
+					if( tag == 0x5438 ) {
+						flt8 = 1;
+					}
+					break;
+				}
+				/* fall through */
+			default:
+				if( mod_st15_check( data ) ) {
+					/* Untagged 15-instrument Soundtracker module:
+					   the sequence sits at 470 and pattern data at
+					   600 rather than 950 and 1084. */
+					module->num_instruments = 15;
+					module->num_channels = 4;
+					module->c2_rate = 8287;
+					module->gain = 64;
+					seq_offset = 470;
+					module_data_idx = 600;
+					break;
+				}
+				strcpy( message, "MOD Format not recognised!" );
+				dispose_module( module );
+				return NULL;
 			case 0x484e: /* xCHN */
 				module->num_channels = data_u8( data, 1080 ) - 48;
 				module->c2_rate = 8363;
@@ -833,10 +901,29 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				module->c2_rate = 8363;
 				module->gain = 32;
 				break;
-			default:
-				strcpy( message, "MOD Format not recognised!" );
-				dispose_module( module );
-				return NULL;
+		}
+		module->sequence_len = data_u8( data, seq_offset ) & 0x7F;
+		module->restart_pos = data_u8( data, seq_offset + 1 ) & 0x7F;
+		if( module->restart_pos >= module->sequence_len ) {
+			module->restart_pos = 0;
+		}
+		module->sequence = calloc( 128, sizeof( unsigned char ) );
+		if( !module->sequence ){
+			dispose_module( module );
+			return NULL;
+		}
+		for( idx = 0; idx < 128; idx++ ) {
+			pat = data_u8( data, seq_offset + 2 + idx ) & 0x7F;
+			if( flt8 ) {
+				/* An FLT8 sequence addresses the stored 4-channel
+				   patterns, which come in pairs; halve to index the
+				   combined 8-channel patterns. */
+				pat = pat >> 1;
+			}
+			module->sequence[ idx ] = pat;
+			if( pat >= module->num_patterns ) {
+				module->num_patterns = pat + 1;
+			}
 		}
 		module->default_gvol = 64;
 		module->default_speed = 6;
@@ -852,7 +939,6 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				module->default_panning[ idx ] = 204;
 			}
 		}
-		module_data_idx = 1084;
 		module->patterns = calloc( module->num_patterns, sizeof( struct pattern ) );
 		if( !module->patterns ) {
 			dispose_module( module );
@@ -869,18 +955,36 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 			}
 			module->patterns[ pat ].data = pattern_data;
 			for( pat_data_idx = 0; pat_data_idx < pat_data_len; pat_data_idx += 5 ) {
-				period = ( data_u8( data, module_data_idx ) & 0xF ) << 8;
-				period = ( period | data_u8( data, module_data_idx + 1 ) ) * 4;
+				src_idx = module_data_idx;
+				chan = 0;
+				if( flt8 ) {
+					/* An 8-channel FLT8 pattern is stored as two
+					   consecutive 4-channel patterns: the first
+					   holds channels 0-3, the second channels 4-7. */
+					cell = pat_data_idx / 5;
+					row = cell >> 3;
+					chan = cell & 7;
+					src_idx = 1084 + ( pat << 11 )
+						+ ( ( chan >> 2 ) << 10 )
+						+ ( row << 4 ) + ( ( chan & 3 ) << 2 );
+				}
+				period = ( data_u8( data, src_idx ) & 0xF ) << 8;
+				period = ( period | data_u8( data, src_idx + 1 ) ) * 4;
 				if( period >= 112 && period <= 6848 ) {
 					key = -12 * log_2( ( period << FP_SHIFT ) / 29021 );
 					key = ( key + ( key & ( FP_ONE >> 1 ) ) ) >> FP_SHIFT;
 					pattern_data[ pat_data_idx ] = key;
 				}
-				ins = ( data_u8( data, module_data_idx + 2 ) & 0xF0 ) >> 4;
-				ins = ins | ( data_u8( data, module_data_idx ) & 0x10 );
+				ins = ( data_u8( data, src_idx + 2 ) & 0xF0 ) >> 4;
+				ins = ins | ( data_u8( data, src_idx ) & 0x10 );
 				pattern_data[ pat_data_idx + 1 ] = ins;
-				effect = data_u8( data, module_data_idx + 2 ) & 0x0F;
-				param  = data_u8( data, module_data_idx + 3 );
+				effect = data_u8( data, src_idx + 2 ) & 0x0F;
+				param  = data_u8( data, src_idx + 3 );
+				if( flt8 && chan >= 4 && effect == 0xE ) {
+					/* Startrekker uses Exx on the second pattern of
+					   a pair for AM synth macros, not effects. */
+					effect = param = 0;
+				}
 				if( param == 0 && ( effect < 3 || effect == 0xA ) ) {
 					effect = 0;
 				}
@@ -901,7 +1005,6 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				module_data_idx += 4;
 			}
 		}
-		module->num_instruments = 31;
 		module->instruments = calloc( module->num_instruments + 1, sizeof( struct instrument ) );
 		if( !module->instruments ) {
 			dispose_module( module );
