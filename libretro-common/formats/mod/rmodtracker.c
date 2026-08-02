@@ -10,8 +10,9 @@
  * the end of this file.
  *
  * What it implements: ProTracker MOD (including multi-channel
- * variants, the OKTA/OCTA/CD81/FA08 8-channel tags, Startrekker FLT8
- * paired patterns and untagged 15-instrument Soundtracker modules),
+ * variants, the OKTA/OCTA/CD81/FA08 8-channel tags, Startrekker
+ * FLT8/EXO8 paired patterns, Startrekker AM EXO4 and untagged
+ * 15-instrument Soundtracker modules),
  * Scream Tracker 3 S3M and FastTracker 2 XM modules with
  * their effect sets, instrument envelopes and 8/16-bit mono samples,
  * played to interleaved stereo s16 or float at the engine rate, with
@@ -855,20 +856,36 @@ static struct module* module_load_mod( struct data *data, char *message ) {
 				module->gain = 64;
 				break;
 			case 0x5438: /* FLT8 */
+			case 0x4f34: /* EXO4 */
+			case 0x4f38: /* EXO8 */
 			case 0x5441: /* OKTA / OCTA */
 			case 0x3831: /* CD81 */
 			case 0x3038: /* FA08 */
 				/* The switch keys on the last two tag bytes, so
 				   confirm the leading two before accepting; a miss
 				   falls through to the untagged heuristic. */
+				if( tag == 0x4f34 && pre == 0x4558 ) {
+					/* Startrekker AM 4-channel: FLT4 layout. The AM
+					   synth instruments live in a companion file and
+					   are not synthesised; their sample data is
+					   absent so they play silent, as in players
+					   without the companion. */
+					module->num_channels = 4;
+					module->c2_rate = 8287;
+					module->gain = 64;
+					break;
+				}
 				if( ( tag == 0x5438 && pre == 0x464c )
+				 || ( tag == 0x4f38 && pre == 0x4558 )
 				 || ( tag == 0x5441 && ( pre == 0x4f4b || pre == 0x4f43 ) )
 				 || ( tag == 0x3831 && pre == 0x4344 )
 				 || ( tag == 0x3038 && pre == 0x4641 ) ) {
 					module->num_channels = 8;
 					module->c2_rate = 8287;
 					module->gain = 32;
-					if( tag == 0x5438 ) {
+					if( tag == 0x5438 || tag == 0x4f38 ) {
+						/* EXO8 is Startrekker AM's FLT8: the same
+						   paired 4-channel pattern storage. */
 						flt8 = 1;
 					}
 					break;
