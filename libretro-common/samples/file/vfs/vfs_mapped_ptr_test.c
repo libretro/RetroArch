@@ -173,14 +173,30 @@ int main(void)
             CHECK(memcmp(map, body, len) == 0,
                   "mapped view holds the file's bytes");
             /* The point of the accessor: the same bytes a read would
-             * have copied, without the copy. */
+             * have copied, without the copy.  Checked over the whole
+             * file, not a prefix - consumers hash or compare the
+             * entire mapping (task_cloudsync's MD5 does exactly
+             * that), so a view that agreed only at the start would
+             * silently produce a different digest from the read path
+             * on the same content. */
             {
-               uint8_t probe[4096];
-               int64_t got = filestream_read(f, probe, (int64_t)sizeof(probe));
-               CHECK(got == (int64_t)sizeof(probe),
-                     "read from the same stream still works");
-               CHECK(memcmp(probe, map, sizeof(probe)) == 0,
-                     "read agrees with the mapped view");
+               uint8_t *probe = (uint8_t*)malloc(len);
+               int64_t  got   = 0;
+               size_t   off   = 0;
+
+               while (off < len)
+               {
+                  got = filestream_read(f, probe + off,
+                        (int64_t)(len - off));
+                  if (got <= 0)
+                     break;
+                  off += (size_t)got;
+               }
+               CHECK(off == len,
+                     "sequential read from the same stream reaches EOF");
+               CHECK(off == len && memcmp(probe, map, len) == 0,
+                     "read agrees with the mapped view over the whole file");
+               free(probe);
             }
          }
          else
