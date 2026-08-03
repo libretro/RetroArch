@@ -3291,11 +3291,10 @@ static const int ropus_ordery_table[] =
    15,  0,  8,  7, 12,  3, 11,  4, 14,  1,  9,  6, 13,  2, 10,  5,
 };
 
-static void ropus_deinterleave_hadamard(float *X, int N0, int stride,
-      int hadamard)
+static void ropus_deinterleave_hadamard(float *tmp, float *X, int N0,
+      int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   float tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -3312,11 +3311,10 @@ static void ropus_deinterleave_hadamard(float *X, int N0, int stride,
    memcpy(X, tmp, N * sizeof(*X));
 }
 
-static void ropus_interleave_hadamard(float *X, int N0, int stride,
-      int hadamard)
+static void ropus_interleave_hadamard(float *tmp, float *X, int N0,
+      int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   float tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -3380,6 +3378,13 @@ typedef struct
    uint32_t seed;
    int avoid_split_noise;   /* unused at decode but kept for parity     */
    int disable_inv;
+   /* hadamard (de)interleave scratch, N <= 1024: decoder-owned so the
+    * 4 KiB float / 2 KiB Q14 tmp is not a quant_band stack frame on
+    * 8 KiB thread stacks.  Purely transient within one call, so one
+    * buffer serves the whole band recursion.  had_q is int16_t spelled
+    * out because the ropus_norm typedef appears later in the file. */
+   float   *had_f;
+   int16_t *had_q;
 } ropus_band_ctx;
 
 typedef struct
@@ -3713,14 +3718,14 @@ static unsigned ropus_quant_band(ropus_band_ctx *ctx, float *X,
    rp_B0 = B;
    N_B0 = N_B;
    if (rp_B0 > 1 && lowband)
-      ropus_deinterleave_hadamard(lowband, N_B >> recombine,
-         rp_B0 << recombine, longBlocks);
+      ropus_deinterleave_hadamard(ctx->had_f, lowband,
+         N_B >> recombine, rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    /* resynthesis (always on for the decoder) */
    if (rp_B0 > 1)
-      ropus_interleave_hadamard(X, N_B >> recombine,
+      ropus_interleave_hadamard(ctx->had_f, X, N_B >> recombine,
          rp_B0 << recombine, longBlocks);
    N_B = N_B0;
    B = rp_B0;
@@ -3872,7 +3877,8 @@ static void ropus_quant_all_bands(int start, int end, float *X_, float *Y_,
       uint8_t *collapse_masks, const int *pulses, int shortBlocks,
       int spread, int dual_stereo, int intensity, const int *tf_res,
       int32_t total_bits, int32_t balance, ropus_ec *ec, int LM,
-      int codedBands, uint32_t *seed, int disable_inv, float *_norm)
+      int codedBands, uint32_t *seed, int disable_inv, float *_norm,
+      float *_had)
 {
    int i;
    int32_t remaining_bits;
@@ -3899,6 +3905,8 @@ static void ropus_quant_all_bands(int start, int end, float *X_, float *Y_,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.disable_inv = disable_inv;
+   ctx.had_f = _had;
+   ctx.had_q = NULL;
    ctx.avoid_split_noise = B > 1;
    for (i = start; i < end; i++)
    {
@@ -5071,6 +5079,7 @@ typedef struct
          float X[2 * 960 + 960];
          float norm[2 * 960];
          float freq[2 * 960];      /* IMDCT staging in celt_synthesis */
+         float had[1024];          /* quant_band hadamard interleave  */
       } f;
       struct
       {
@@ -5078,6 +5087,7 @@ typedef struct
          int16_t norm[2 * 960];
          int32_t freq[2 * 960];    /* ropus_sig (Q12), typedef'd later
                                     * in the file than this struct     */
+         int16_t had[1024];        /* quant_band hadamard interleave  */
       } q;
    } celt;
 } ropus_frame_scratch;
@@ -5289,7 +5299,8 @@ static int ropus_celt_decode(ropus_celt *st,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
       (int32_t)len * (8 << ROPUS_BITRES) - f.anti_collapse_rsv,
-      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf);
+      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf,
+      scr->celt.f.had);
 
    if (f.anti_collapse_rsv > 0)
       anti_collapse_on = (int)ropus_ec_dec_bits(dec, 1);
@@ -5862,11 +5873,10 @@ static void ropus_haar1_q(ropus_norm *X, int N0, int stride)
       }
 }
 
-static void ropus_deinterleave_hadamard_q(ropus_norm *X, int N0,
-      int stride, int hadamard)
+static void ropus_deinterleave_hadamard_q(ropus_norm *tmp, ropus_norm *X,
+      int N0, int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   ropus_norm tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -5883,11 +5893,10 @@ static void ropus_deinterleave_hadamard_q(ropus_norm *X, int N0,
    memcpy(X, tmp, N * sizeof(*X));
 }
 
-static void ropus_interleave_hadamard_q(ropus_norm *X, int N0,
-      int stride, int hadamard)
+static void ropus_interleave_hadamard_q(ropus_norm *tmp, ropus_norm *X,
+      int N0, int stride, int hadamard)
 {
    int i, j, N = N0 * stride;
-   ropus_norm tmp[1024];
    if (hadamard)
    {
       const int *ordery = ropus_ordery_table + stride - 2;
@@ -6158,13 +6167,13 @@ static unsigned ropus_quant_band_q(ropus_band_ctx *ctx, ropus_norm *X,
    rp_B0 = B;
    N_B0 = N_B;
    if (rp_B0 > 1 && lowband)
-      ropus_deinterleave_hadamard_q(lowband, N_B >> recombine,
-         rp_B0 << recombine, longBlocks);
+      ropus_deinterleave_hadamard_q(ctx->had_q, lowband,
+         N_B >> recombine, rp_B0 << recombine, longBlocks);
 
    cm = ropus_quant_partition_q(ctx, X, N, b, B, lowband, LM, gain, fill);
 
    if (rp_B0 > 1)
-      ropus_interleave_hadamard_q(X, N_B >> recombine,
+      ropus_interleave_hadamard_q(ctx->had_q, X, N_B >> recombine,
          rp_B0 << recombine, longBlocks);
    N_B = N_B0;
    B = rp_B0;
@@ -6315,7 +6324,7 @@ static void ropus_quant_all_bands_q(int start, int end, ropus_norm *X_,
       int shortBlocks, int spread, int dual_stereo, int intensity,
       const int *tf_res, int32_t total_bits, int32_t balance,
       ropus_ec *ec, int LM, int codedBands, uint32_t *seed,
-      int disable_inv, ropus_norm *_norm)
+      int disable_inv, ropus_norm *_norm, ropus_norm *_had)
 {
    int i;
    int32_t remaining_bits;
@@ -6341,6 +6350,8 @@ static void ropus_quant_all_bands_q(int start, int end, ropus_norm *X_,
    ctx.seed = *seed;
    ctx.spread = spread;
    ctx.disable_inv = disable_inv;
+   ctx.had_f = NULL;
+   ctx.had_q = _had;
    ctx.avoid_split_noise = B > 1;
    for (i = start; i < end; i++)
    {
@@ -7341,7 +7352,8 @@ static int ropus_celt_decode_q(ropus_celt_q *st,
       collapse_masks, f.pulses, f.shortBlocks, f.spread_decision,
       f.dual_stereo, f.intensity, f.tf_res,
       (int32_t)len * (8 << ROPUS_BITRES) - f.anti_collapse_rsv,
-      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf);
+      f.balance, dec, f.LM, f.codedBands, &st->rng, 0, normbuf,
+      scr->celt.q.had);
 
    if (f.anti_collapse_rsv > 0)
       anti_collapse_on = (int)ropus_ec_dec_bits(dec, 1);
