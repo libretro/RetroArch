@@ -2122,17 +2122,27 @@ static chd_error hunk_read_into_memory(chd_file *chd, uint32_t hunknum, uint8_t 
 static chd_error map_read(chd_file *chd)
 {
 	uint32_t entrysize = (chd->header.version < 3) ? OLD_MAP_ENTRY_SIZE : MAP_ENTRY_SIZE;
-	uint8_t raw_map_entries[MAP_STACK_ENTRIES * MAP_ENTRY_SIZE];
+	/* 8 KiB chunk buffer: heap-allocated because a v3/v4 open can run
+	 * on threads with 8 KiB stacks on some targets, which a local of
+	 * this size overruns on entry. One allocation per open. */
+	uint8_t *raw_map_entries;
 	uint64_t fileoffset, maxoffset = 0;
 	uint8_t cookie[MAP_ENTRY_SIZE];
 	uint32_t count;
 	chd_error err;
 	uint32_t i;
 
+	raw_map_entries = (uint8_t *)malloc(MAP_STACK_ENTRIES * MAP_ENTRY_SIZE);
+	if (!raw_map_entries)
+		return CHDERR_OUT_OF_MEMORY;
+
 	/* first allocate memory */
 	chd->map = (map_entry *)malloc(sizeof(chd->map[0]) * chd->header.totalhunks);
 	if (!chd->map)
+	{
+		free(raw_map_entries);
 		return CHDERR_OUT_OF_MEMORY;
+	}
 
 	/* read the map entries in in chunks and extract to the map list */
 	fileoffset = chd->header.length;
@@ -2187,9 +2197,11 @@ static chd_error map_read(chd_file *chd)
 		err = CHDERR_INVALID_FILE;
 		goto cleanup;
 	}
+	free(raw_map_entries);
 	return CHDERR_NONE;
 
 cleanup:
+	free(raw_map_entries);
 	if (chd->map)
 		free(chd->map);
 	chd->map = NULL;
