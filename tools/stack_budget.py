@@ -115,7 +115,11 @@ ALLOWLIST  = {
 
 
 def stack_usage(path, workdir):
-    """Compile one TU and return [(func, bytes)] from its .su file.
+    """Compile one TU and return ([(func, bytes)], gcc stderr).
+
+    Frames are None when the TU did not build, and the stderr is
+    returned with it so a caller that named the file itself can say
+    why rather than skipping it silently.
 
     gcc writes the .su alongside the object named by -o, not alongside
     the source, so the name has to be derived from the object.  Getting
@@ -123,6 +127,12 @@ def stack_usage(path, workdir):
     reports no frames, and the check passes while measuring nothing.
     It did, until a deliberately oversized buffer failed to trip it.
     """
+    # gcc runs with cwd=workdir so the .su lands there, which means a
+    # relative source path would resolve against the temp directory and
+    # not be found.  The tree walk never hit this because SRC_ROOT is
+    # built from abspath(__file__); a path typed on the command line is
+    # relative more often than not.
+    path = os.path.abspath(path)
     obj = os.path.join(workdir, 'o.o')
     su  = os.path.join(workdir, 'o.su')
     if os.path.exists(su):
@@ -146,7 +156,7 @@ def stack_usage(path, workdir):
     if r.returncode != 0 or not os.path.exists(su):
         # Did not compile on this host (platform-specific TU, missing
         # dependency).  Report it rather than counting it as scanned.
-        return None
+        return None, r.stderr.decode('utf-8', 'replace')
     out = []
     with open(su) as f:
         for line in f:
@@ -158,37 +168,91 @@ def stack_usage(path, workdir):
                 out.append((name, int(parts[1])))
             except ValueError:
                 pass
-    return out
+    return out, ''
 
 
-def main():
+def walk(root):
+    """Yield the .c files under root that a console actually builds."""
+    for dirpath, _, files in os.walk(root):
+        parts = dirpath.split(os.sep)
+        # Shipped code only: samples, tools and tests are
+        # host programs, not console builds, and their
+        # frames are irrelevant to a PSP thread stack.
+        if ({'samples', 'tools', 'test', 'tests'} & set(parts)):
+            continue
+        for fn in sorted(files):
+            if fn.endswith('.c'):
+                yield os.path.join(dirpath, fn)
+
+
+def sources(args):
+    """(path, named) for each TU to measure.
+
+    named is True for a file the caller spelled out, and decides what a
+    failure to compile means.  In a walk it means "not this host" and
+    is skipped, which is right for a platform TU nobody expects to
+    build here.  For a file someone named it means the measurement did
+    not happen, and skipping it would print a clean result for a file
+    that was never looked at - the same failure mode as the missing
+    .su.  A directory given as an argument is a walk of that
+    directory, and its files skip like any other walk.
+    """
+    if not args:
+        for path in walk(SRC_ROOT):
+            yield path, False
+        return
+    for arg in args:
+        if os.path.isdir(arg):
+            for path in walk(arg):
+                yield path, False
+        else:
+            yield arg, True
+
+
+def main(argv):
+    if any(a in ('-h', '--help') for a in argv):
+        print('usage: stack_budget.py [FILE.c | DIR ...]\n\n'
+              'With no arguments, measures every shipped .c under\n'
+              'libretro-common - what CI runs, and the only form CI\n'
+              'depends on.  With arguments, measures exactly those\n'
+              'files, and a named file that does not compile is an\n'
+              'error rather than a skip.')
+        return 0
+
     over    = []
     scanned = 0
     skipped = 0
     with tempfile.TemporaryDirectory() as tmp:
-        for dirpath, _, files in os.walk(SRC_ROOT):
-            parts = dirpath.split(os.sep)
-            # Shipped code only: samples, tools and tests are
-            # host programs, not console builds, and their
-            # frames are irrelevant to a PSP thread stack.
-            if ({'samples', 'tools', 'test', 'tests'} & set(parts)):
+        for path, named in sources(argv):
+            if named and not os.path.exists(path):
+                print('error: %s: no such file' % path, file=sys.stderr)
+                return 2
+            # A header compiles to a .gch and yields no .su, which
+            # would otherwise be reported as "did not compile" with
+            # nothing to say about why.
+            if named and not path.endswith('.c'):
+                print('error: %s: not a .c translation unit'
+                      % path, file=sys.stderr)
+                return 2
+            frames, err = stack_usage(path, tmp)
+            if frames is None:
+                if named:
+                    print('error: %s did not compile; nothing was '
+                          'measured for it' % path, file=sys.stderr)
+                    print(err.rstrip(), file=sys.stderr)
+                    return 2
+                skipped += 1
                 continue
-            for fn in sorted(files):
-                if not fn.endswith('.c'):
+            scanned += 1
+            fn = os.path.basename(path)
+            for name, size in frames:
+                if size <= BUDGET:
                     continue
-                frames = stack_usage(os.path.join(dirpath, fn), tmp)
-                if frames is None:
-                    skipped += 1
+                # Allowlisted, but only at the size recorded: a
+                # frame that has grown since is a new problem.
+                if name in ALLOWLIST and size <= ALLOWLIST[name]:
                     continue
-                scanned += 1
-                for name, size in frames:
-                    if size <= BUDGET:
-                        continue
-                    # Allowlisted, but only at the size recorded: a
-                    # frame that has grown since is a new problem.
-                    if name in ALLOWLIST and size <= ALLOWLIST[name]:
-                        continue
-                    over.append((size, name, fn))
+                over.append((size, name, fn))
 
     # A run that measured nothing is a broken check, not a clean tree.
     if scanned == 0:
@@ -214,4 +278,4 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
