@@ -905,6 +905,17 @@ typedef struct rzstd_huf
 {
    uint16_t entry[1 << RZSTD_HUF_MAX_BITS];   /* symbol << 8 | width */
    uint32_t max_bits;
+   /* Weights-read scratch: the FSE decode of a compressed weights
+    * header needs a count table, a 64-entry decode table and the FSE
+    * state struct -- 2.3 KiB that used to sit on the block-decode
+    * stack.  Transient within one rzstd_huf_read call; the struct
+    * already lives in the heap-held frame state. */
+   struct
+   {
+      int16_t           counts[RZSTD_FSE_MAX_SYMBOLS];
+      rzstd_fse_entry_t table[1 << 6];
+      rzstd_fse_t       fse;
+   } wscr;
 } rzstd_huf_t;
 
 /* Turns weights into a table. The final symbol's weight is not stored:
@@ -1088,9 +1099,9 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
     * bitstream, alternating, which halves the dependency chain -- the
     * reason the format does it rather than a single state. */
    {
-      int16_t           counts[RZSTD_FSE_MAX_SYMBOLS];
-      rzstd_fse_entry_t table[1 << 6];
-      rzstd_fse_t       fse;
+      int16_t           *counts = huf->wscr.counts;
+      rzstd_fse_entry_t *table  = huf->wscr.table;
+      rzstd_fse_t       *fse    = &huf->wscr.fse;
       rzstd_rbits_t     bits;
       uint32_t          symbol_count = 0;
       uint32_t          accuracy_log = 0;
@@ -1112,7 +1123,7 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
       if (desc_used > size)
          return RZ_DATA;
 
-      if ((e = rzstd_fse_build(&fse, table, counts, symbol_count,
+      if ((e = rzstd_fse_build(fse, table, counts, symbol_count,
                   accuracy_log)) != RZ_OK)
          return e;
 
@@ -1120,8 +1131,8 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
                   size - desc_used)) != RZ_OK)
          return e;
 
-      state1 = rzstd_fse_begin(&fse, &bits);
-      state2 = rzstd_fse_begin(&fse, &bits);
+      state1 = rzstd_fse_begin(fse, &bits);
+      state2 = rzstd_fse_begin(fse, &bits);
 
       /* The stream does not say how many weights it holds. It ends when
        * updating a state would need more bits than remain, at which
@@ -1136,29 +1147,29 @@ RZSTD_BODY_INLINE int rzstd_huf_read_body(rzstd_huf_t *huf, const uint8_t *src, 
          if (count + 2 > RZSTD_HUF_MAX_SYMBOLS)
             return RZ_DATA;
 
-         w = rzstd_fse_symbol(&fse, state1);
+         w = rzstd_fse_symbol(fse, state1);
          weights[count++] = (uint8_t)w;
          rank_count[w]++;
-         if (!rzstd_rbits_have(&bits, fse.table[state1].bits))
+         if (!rzstd_rbits_have(&bits, fse->table[state1].bits))
          {
-            w = rzstd_fse_symbol(&fse, state2);
+            w = rzstd_fse_symbol(fse, state2);
             weights[count++] = (uint8_t)w;
             rank_count[w]++;
             break;
          }
-         state1 = rzstd_fse_next(&fse, state1, &bits);
+         state1 = rzstd_fse_next(fse, state1, &bits);
 
-         w = rzstd_fse_symbol(&fse, state2);
+         w = rzstd_fse_symbol(fse, state2);
          weights[count++] = (uint8_t)w;
          rank_count[w]++;
-         if (!rzstd_rbits_have(&bits, fse.table[state2].bits))
+         if (!rzstd_rbits_have(&bits, fse->table[state2].bits))
          {
-            w = rzstd_fse_symbol(&fse, state1);
+            w = rzstd_fse_symbol(fse, state1);
             weights[count++] = (uint8_t)w;
             rank_count[w]++;
             break;
          }
-         state2 = rzstd_fse_next(&fse, state2, &bits);
+         state2 = rzstd_fse_next(fse, state2, &bits);
       }
 
       *used = 1 + size;
