@@ -190,22 +190,22 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
 
       /* Set the LED to match the player number. */
       switch (slot) {
-         case 0: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;
-         case 1: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;
-         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;
-         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;
-         case 4: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;
-         case 5: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;
-         case 6: SDL_SetGamepadLED(gamepad, 255, 128, 0); break;
-         case 7: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;
-         case 8: SDL_SetGamepadLED(gamepad, 128, 0, 255); break;
-         case 9: SDL_SetGamepadLED(gamepad, 0, 128, 255); break;
-         case 10: SDL_SetGamepadLED(gamepad, 128, 255, 0); break;
-         case 11: SDL_SetGamepadLED(gamepad, 255, 0, 128); break;
-         case 12: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;
-         case 13: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;
-         case 14: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;
-         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;
+         case 0: SDL_SetGamepadLED(gamepad, 0, 0, 255); break;       /* Blue */
+         case 1: SDL_SetGamepadLED(gamepad, 255, 0, 0); break;       /* Red */
+         case 2: SDL_SetGamepadLED(gamepad, 0, 255, 0); break;       /* Green */
+         case 3: SDL_SetGamepadLED(gamepad, 255, 255, 0); break;     /* Yellow */
+         case 4: SDL_SetGamepadLED(gamepad, 0, 255, 255); break;     /* Cyan */
+         case 5: SDL_SetGamepadLED(gamepad, 255, 0, 255); break;     /* Magenta */
+         case 6: SDL_SetGamepadLED(gamepad, 0, 0, 128); break;       /* Navy */
+         case 7: SDL_SetGamepadLED(gamepad, 128, 0, 0); break;       /* Maroon */
+         case 8: SDL_SetGamepadLED(gamepad, 0, 128, 0); break;       /* Dark Green */
+         case 9: SDL_SetGamepadLED(gamepad, 128, 128, 0); break;     /* Olive */
+         case 10: SDL_SetGamepadLED(gamepad, 0, 128, 128); break;    /* Teal */
+         case 11: SDL_SetGamepadLED(gamepad, 128, 0, 128); break;    /* Purple */
+         case 12: SDL_SetGamepadLED(gamepad, 128, 128, 255); break;  /* Sky Blue */
+         case 13: SDL_SetGamepadLED(gamepad, 255, 128, 128); break;  /* Light Pink */
+         case 14: SDL_SetGamepadLED(gamepad, 255, 255, 255); break;  /* White */
+         case 15: SDL_SetGamepadLED(gamepad, 128, 128, 128); break;  /* Gray */
          default: SDL_SetGamepadLED(gamepad, 0, 0, 0); break;
       }
    }
@@ -219,7 +219,7 @@ static void sdl3_joypad_connect(SDL_JoystickID jid)
          sdl3_joypad_name(slot),
          NULL,
          SDL_GetJoystickPath(joypad),
-         sdl_joypad.ident,
+         sdl3_joypad.ident,
          slot,
          vendor,
          product,
@@ -268,7 +268,7 @@ static void sdl3_joypad_disconnect(SDL_JoystickID jid)
       else if (sdl3_joypads[i].joypad)
          SDL_CloseJoystick(sdl3_joypads[i].joypad);
 
-      input_autoconfigure_disconnect(i, sdl_joypad.ident);
+      input_autoconfigure_disconnect(i, sdl3_joypad.ident);
 
       memset(&sdl3_joypads[i], 0, sizeof(sdl3_joypads[i]));
       return;
@@ -645,7 +645,7 @@ static bool sdl3_joypad_query_pad(unsigned pad)
    return pad < MAX_USERS && sdl3_joypads[pad].joypad != NULL;
 }
 
-input_device_driver_t sdl_joypad = {
+input_device_driver_t sdl3_joypad = {
    sdl3_joypad_init,
    sdl3_joypad_query_pad,
    sdl3_joypad_destroy,

@@ -68,6 +68,7 @@ ifeq ($(SALAMANDER_BUILD),1)
    OBJ += libretro-common/compat/compat_strl.o
    OBJ += libretro-common/compat/compat_strldup.o
    OBJ += libretro-common/file/config_file.o
+   OBJ += libretro-common/file/config_file_io.o
    OBJ += libretro-common/streams/file_stream.o
    OBJ += libretro-common/vfs/vfs_implementation.o
    OBJ += libretro-common/hash/lrc_hash.o
@@ -108,7 +109,7 @@ endif
    ifeq ($(GRIFFIN_BUILD), 1)
       OBJ += griffin/griffin.o griffin/griffin_cpp.o
 
-      INCDIRS += -Ilibretro-common/include/compat/zlib
+      INCDIRS +=
       # for stb, libfat, iosuhax
       INCDIRS += -Ideps -Ideps/libfat/include -Ideps/libiosuhax/include
       # pad_functions uses wiiu/input.h
@@ -119,9 +120,9 @@ endif
       DEFINES += -DHAVE_RWAV
       DEFINES += -DHAVE_GRIFFIN=1 -DHAVE_MENU -DHAVE_GFX_WIDGETS -DHAVE_CONFIGFILE -DHAVE_PATCH -DHAVE_CHEATS -DHAVE_RGUI -DHAVE_LIBRETRODB
 		DEFINES += -DHAVE_REWIND
-      DEFINES += -DHAVE_ZLIB -DHAVE_RPNG -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
+      DEFINES += -DHAVE_RPNG -DHAVE_RWEBP -DHAVE_RDDS -DHAVE_RJPEG -DHAVE_RBMP -DHAVE_RTGA -DHAVE_CC_RESAMPLER
       DEFINES += -DHAVE_SPIRV_CROSS -DHAVE_SLANG
-      DEFINES += -DHAVE_STB_FONT -DHAVE_STB_VORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETPLAYDISCOVERY
+      DEFINES += -DHAVE_STB_FONT -DHAVE_RVORBIS -DHAVE_LANGEXTRA -DHAVE_LIBRETRODB -DHAVE_NETWORKING -DHAVE_IFINFO -DHAVE_NETPLAYDISCOVERY
       #DEFINES += -DWANT_IFADDRS
       #DEFINES += -DHAVE_FREETYPE
       DEFINES += -DHAVE_XMB -DHAVE_MATERIALUI
@@ -139,6 +140,8 @@ endif
       HAVE_GFX_WIDGETS = 1
       HAVE_RTGA = 1
       HAVE_RPNG = 1
+      HAVE_RWEBP = 1
+      HAVE_RDDS = 1
       HAVE_RJPEG = 1
       HAVE_RBMP = 1
       HAVE_CONFIGFILE = 1
@@ -149,8 +152,6 @@ endif
       HAVE_MENU = 1
       HAVE_RGUI = 1
       HAVE_7ZIP = 1
-      HAVE_ZLIB = 1
-      HAVE_BUILTINZLIB = 0
       HAVE_LIBRETRODB = 1
       HAVE_MATERIALUI = 1
       HAVE_XMB = 1
@@ -239,15 +240,6 @@ endif
 
 LIBS := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END) -lm
 
-# Use portlibs zlib if deps/ isn't being used
-ifeq ($(HAVE_ZLIB),1)
-ifeq ($(HAVE_BUILTINZLIB),0)
-   INCDIRS += -I$(DEVKITPRO)/portlibs/ppc/include
-   LIBDIRS += -L$(DEVKITPRO)/portlibs/ppc/lib
-   # Bonus: libpng for cores that need it
-   LIBS += -lpng -lz
-endif
-endif
 
 LDFLAGS += -Wl,--gc-sections
 

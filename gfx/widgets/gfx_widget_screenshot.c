@@ -328,6 +328,7 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
       ticker.idx        = p_anim->ticker_idx;
       ticker.len        = state->shotname_length;
       ticker.s          = shotname;
+      ticker.s_len      = sizeof(shotname);
       ticker.selected   = true;
       ticker.str        = state->shotname;
       ticker.spacer     = NULL;
@@ -388,7 +389,7 @@ static void gfx_widget_screenshot_iterate(
       state->y       = 0.0f;
 
       gfx_display_reset_textures_list(state->filename,
-            "", &state->texture, TEXTURE_FILTER_LINEAR,
+            "", &state->texture, gfx_display_texture_filter(),
             &state->texture_width, &state->texture_height);
 
       state->height = font_regular->line_height * 4;

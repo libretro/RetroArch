@@ -1,4 +1,4 @@
-/* Copyright  (C) 2010-2020 The RetroArch team
+/* Copyright  (C) 2010-2026 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
  * The following license statement only applies to this file (encoding_crc32.c).
@@ -22,188 +22,439 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <encodings/crc32.h>
+#include <string.h>
 #include <stdlib.h>
 
+#include <encodings/crc32.h>
+#include <retro_endianness.h>
+#include <retro_inline.h>
+
+#include "encoding_crc32_tables.h"
+
 /*
- * Standard CRC-32 lookup table (slice 0).
- * Polynomial 0xEDB88320 (bit-reflected 0x04C11DB7),
- * compatible with zlib, gzip, PNG, etc.
+ * CRC-32, polynomial 0xEDB88320 (bit-reflected 0x04C11DB7).
+ * Bit-exact with zlib crc32(), gzip and PNG.
+ *
+ * Three implementations, in descending order of speed:
+ *
+ *   1. Carry-less multiply folding (x86 PCLMULQDQ, chosen at runtime).
+ *   2. ARMv8 CRC32 instructions (chosen at compile time).
+ *   3. Slicing-by-8 over a const table (every other target, both endians).
+ *
+ * The byte-at-a-time loop survives only as the tail handler for the
+ * table path; no target uses it as a whole-buffer implementation.
  */
-static const uint32_t crc32_table[256] = {
-   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
-   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
-   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
-   0x90bf1d91L, 0x1db71064L, 0x6ab020f2L, 0xf3b97148L, 0x84be41deL,
-   0x1adad47dL, 0x6ddde4ebL, 0xf4d4b551L, 0x83d385c7L, 0x136c9856L,
-   0x646ba8c0L, 0xfd62f97aL, 0x8a65c9ecL, 0x14015c4fL, 0x63066cd9L,
-   0xfa0f3d63L, 0x8d080df5L, 0x3b6e20c8L, 0x4c69105eL, 0xd56041e4L,
-   0xa2677172L, 0x3c03e4d1L, 0x4b04d447L, 0xd20d85fdL, 0xa50ab56bL,
-   0x35b5a8faL, 0x42b2986cL, 0xdbbbc9d6L, 0xacbcf940L, 0x32d86ce3L,
-   0x45df5c75L, 0xdcd60dcfL, 0xabd13d59L, 0x26d930acL, 0x51de003aL,
-   0xc8d75180L, 0xbfd06116L, 0x21b4f4b5L, 0x56b3c423L, 0xcfba9599L,
-   0xb8bda50fL, 0x2802b89eL, 0x5f058808L, 0xc60cd9b2L, 0xb10be924L,
-   0x2f6f7c87L, 0x58684c11L, 0xc1611dabL, 0xb6662d3dL, 0x76dc4190L,
-   0x01db7106L, 0x98d220bcL, 0xefd5102aL, 0x71b18589L, 0x06b6b51fL,
-   0x9fbfe4a5L, 0xe8b8d433L, 0x7807c9a2L, 0x0f00f934L, 0x9609a88eL,
-   0xe10e9818L, 0x7f6a0dbbL, 0x086d3d2dL, 0x91646c97L, 0xe6635c01L,
-   0x6b6b51f4L, 0x1c6c6162L, 0x856530d8L, 0xf262004eL, 0x6c0695edL,
-   0x1b01a57bL, 0x8208f4c1L, 0xf50fc457L, 0x65b0d9c6L, 0x12b7e950L,
-   0x8bbeb8eaL, 0xfcb9887cL, 0x62dd1ddfL, 0x15da2d49L, 0x8cd37cf3L,
-   0xfbd44c65L, 0x4db26158L, 0x3ab551ceL, 0xa3bc0074L, 0xd4bb30e2L,
-   0x4adfa541L, 0x3dd895d7L, 0xa4d1c46dL, 0xd3d6f4fbL, 0x4369e96aL,
-   0x346ed9fcL, 0xad678846L, 0xda60b8d0L, 0x44042d73L, 0x33031de5L,
-   0xaa0a4c5fL, 0xdd0d7cc9L, 0x5005713cL, 0x270241aaL, 0xbe0b1010L,
-   0xc90c2086L, 0x5768b525L, 0x206f85b3L, 0xb966d409L, 0xce61e49fL,
-   0x5edef90eL, 0x29d9c998L, 0xb0d09822L, 0xc7d7a8b4L, 0x59b33d17L,
-   0x2eb40d81L, 0xb7bd5c3bL, 0xc0ba6cadL, 0xedb88320L, 0x9abfb3b6L,
-   0x03b6e20cL, 0x74b1d29aL, 0xead54739L, 0x9dd277afL, 0x04db2615L,
-   0x73dc1683L, 0xe3630b12L, 0x94643b84L, 0x0d6d6a3eL, 0x7a6a5aa8L,
-   0xe40ecf0bL, 0x9309ff9dL, 0x0a00ae27L, 0x7d079eb1L, 0xf00f9344L,
-   0x8708a3d2L, 0x1e01f268L, 0x6906c2feL, 0xf762575dL, 0x806567cbL,
-   0x196c3671L, 0x6e6b06e7L, 0xfed41b76L, 0x89d32be0L, 0x10da7a5aL,
-   0x67dd4accL, 0xf9b9df6fL, 0x8ebeeff9L, 0x17b7be43L, 0x60b08ed5L,
-   0xd6d6a3e8L, 0xa1d1937eL, 0x38d8c2c4L, 0x4fdff252L, 0xd1bb67f1L,
-   0xa6bc5767L, 0x3fb506ddL, 0x48b2364bL, 0xd80d2bdaL, 0xaf0a1b4cL,
-   0x36034af6L, 0x41047a60L, 0xdf60efc3L, 0xa867df55L, 0x316e8eefL,
-   0x4669be79L, 0xcb61b38cL, 0xbc66831aL, 0x256fd2a0L, 0x5268e236L,
-   0xcc0c7795L, 0xbb0b4703L, 0x220216b9L, 0x5505262fL, 0xc5ba3bbeL,
-   0xb2bd0b28L, 0x2bb45a92L, 0x5cb36a04L, 0xc2d7ffa7L, 0xb5d0cf31L,
-   0x2cd99e8bL, 0x5bdeae1dL, 0x9b64c2b0L, 0xec63f226L, 0x756aa39cL,
-   0x026d930aL, 0x9c0906a9L, 0xeb0e363fL, 0x72076785L, 0x05005713L,
-   0x95bf4a82L, 0xe2b87a14L, 0x7bb12baeL, 0x0cb61b38L, 0x92d28e9bL,
-   0xe5d5be0dL, 0x7cdcefb7L, 0x0bdbdf21L, 0x86d3d2d4L, 0xf1d4e242L,
-   0x68ddb3f8L, 0x1fda836eL, 0x81be16cdL, 0xf6b9265bL, 0x6fb077e1L,
-   0x18b74777L, 0x88085ae6L, 0xff0f6a70L, 0x66063bcaL, 0x11010b5cL,
-   0x8f659effL, 0xf862ae69L, 0x616bffd3L, 0x166ccf45L, 0xa00ae278L,
-   0xd70dd2eeL, 0x4e048354L, 0x3903b3c2L, 0xa7672661L, 0xd06016f7L,
-   0x4969474dL, 0x3e6e77dbL, 0xaed16a4aL, 0xd9d65adcL, 0x40df0b66L,
-   0x37d83bf0L, 0xa9bcae53L, 0xdebb9ec5L, 0x47b2cf7fL, 0x30b5ffe9L,
-   0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
-   0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
-   0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-   0x2d02ef8dL
-};
 
-#if __ARM_FEATURE_CRC32
-
-#ifdef _M_ARM64
-# include <arm64_neon.h>
-#else
-# include <arm_acle.h>
+#if defined(__ARM_FEATURE_CRC32)
+/* Baseline already has the instructions, so use them unconditionally. */
+#define CRC32_HAVE_ARM_PATH 1
+#elif (defined(__aarch64__) || defined(_M_ARM64)) \
+   && (defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 9))
+/* Baseline does not, but the toolchain can build the instructions into
+ * one function without raising the ISA for the translation unit, so
+ * compile them in and choose at runtime.  This is the common case: of
+ * everything in tree only Makefile.libnx passes +crc explicitly, and
+ * arm64 macOS gets it from the compiler default, which leaves Android,
+ * Linux ARM, iOS and tvOS on the table path despite every one of those
+ * CPUs from ARMv8.1 onwards having the instructions. */
+#define CRC32_HAVE_ARM_PATH     1
+#define CRC32_ARM_NEEDS_TARGET  1
+#define CRC32_ARM_DISPATCH      1
+#elif defined(__x86_64__) || defined(__i386__) \
+   || defined(_M_X64)     || defined(_M_IX86)
+/* Being on x86 is necessary but not sufficient: the toolchain also has
+ * to be able to build the intrinsics.  Prefer the feature tests, and
+ * never fall back on a bare __GNUC__ version comparison -- Clang
+ * reports itself as GCC 4.2 forever, so a ">= 4.4" predicate rejects
+ * every Clang build, which is every Apple, Android NDK, Emscripten and
+ * PS4 toolchain.  The version fallback below carries !__clang__ for
+ * that reason and exists only for GCC old enough to lack
+ * __has_attribute. */
+#  if defined(_MSC_VER)
+     /* wmmintrin.h arrived in Visual Studio 2008 SP1, which is not
+      * distinguishable from RTM by _MSC_VER, so require VS2010. */
+#    if _MSC_VER >= 1600
+#      define CRC32_HAVE_PCLMUL_PATH 1
+#    endif
+#  elif defined(__has_attribute) && defined(__has_include)
+#    if __has_attribute(target) && __has_include(<wmmintrin.h>)
+#      define CRC32_HAVE_PCLMUL_PATH 1
+#    endif
+#  elif defined(__GNUC__) && !defined(__clang__) \
+     && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4))
+     /* GCC 4.4 introduced both wmmintrin.h and x86 target attributes. */
+#    define CRC32_HAVE_PCLMUL_PATH 1
+#  endif
 #endif
 
-uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
+/* ------------------------------------------------------------------ */
+/* Portable slicing-by-8                                              */
+/* ------------------------------------------------------------------ */
+
+#if !defined(CRC32_HAVE_ARM_PATH) || defined(CRC32_ARM_DISPATCH)
+
+/* Load a 32-bit little-endian word without assuming pointer alignment
+ * and without punning through a uint32_t lvalue. A constant-size memcpy
+ * lowers to a single load on every compiler we support. */
+static INLINE uint32_t crc32_load_le32(const uint8_t *p)
 {
-   crc = ~crc;
-   /* Align data if it is not aligned */
-   while (((uintptr_t)data & 7) && len > 0)
-   {
-      crc = __crc32b(crc, *(uint8_t *)data);
-      data++;
-      len--;
-   }
-   while (len >= 8)
-   {
-      crc = __crc32d(crc, *(uint64_t *)data);
-      data += 8;
-      len -= 8;
-   }
-   while (len > 0)
-   {
-      crc = __crc32b(crc, *(uint8_t *)data);
-      data++;
-      len--;
-   }
-   return ~crc;
+   uint32_t v;
+   memcpy(&v, p, sizeof(v));
+#ifdef MSB_FIRST
+   v = SWAP32(v);
+#endif
+   return v;
 }
 
-#elif defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
-
-/*
- * Slicing-by-8: processes 8 bytes per loop iteration using 8 parallel
- * table lookups and XORs. ~4-5x faster than the byte-at-a-time fallback
- * on x86 without requiring any SIMD or special instruction set extensions.
- *
- * Reference: "High Octane CRC Generation with the Intel Slicing-by-8
- * Algorithm", Intel Corporation.
- *
- * The 8 KiB table (crc32_slice8[8][256]) is generated at startup from
- * the base crc32_table[256] to avoid a massive static initializer.
- * The generation runs once and is guarded by a simple flag.
- */
-
-static uint32_t crc32_slice8[8][256];
-static int      crc32_slice8_ready;
-
-static void crc32_slice8_init(void)
+static uint32_t crc32_slice_by_8(uint32_t crc, const uint8_t *data, size_t len)
 {
-   unsigned i;
-
-   /* Slice 0 is a copy of the standard table */
-   for (i = 0; i < 256; i++)
-      crc32_slice8[0][i] = crc32_table[i];
-
-   /* Build slices 1-7: each entry is one more byte of CRC iteration
-    * applied to the previous slice's entry. */
-   for (i = 0; i < 256; i++)
-   {
-      unsigned s;
-      uint32_t c = crc32_slice8[0][i];
-      for (s = 1; s < 8; s++)
-      {
-         c = crc32_slice8[0][c & 0xff] ^ (c >> 8);
-         crc32_slice8[s][i] = c;
-      }
-   }
-
-   crc32_slice8_ready = 1;
-}
-
-uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
-{
-   if (!crc32_slice8_ready)
-      crc32_slice8_init();
-
-   crc = ~crc;
-
-   /* Process 8 bytes at a time */
    while (len >= 8)
    {
-      /* Read two 32-bit words (little-endian assumed on x86) */
-      uint32_t lo  = *(const uint32_t *)(data + 0) ^ crc;
-      uint32_t hi  = *(const uint32_t *)(data + 4);
+      uint32_t lo = crc32_load_le32(data)     ^ crc;
+      uint32_t hi = crc32_load_le32(data + 4);
 
-      crc = crc32_slice8[7][ lo        & 0xff]
-          ^ crc32_slice8[6][(lo >>  8) & 0xff]
-          ^ crc32_slice8[5][(lo >> 16) & 0xff]
-          ^ crc32_slice8[4][(lo >> 24)       ]
-          ^ crc32_slice8[3][ hi        & 0xff]
-          ^ crc32_slice8[2][(hi >>  8) & 0xff]
-          ^ crc32_slice8[1][(hi >> 16) & 0xff]
-          ^ crc32_slice8[0][(hi >> 24)       ];
+      crc = crc32_slice8[7][ lo        & 0xFF]
+          ^ crc32_slice8[6][(lo >>  8) & 0xFF]
+          ^ crc32_slice8[5][(lo >> 16) & 0xFF]
+          ^ crc32_slice8[4][(lo >> 24) & 0xFF]
+          ^ crc32_slice8[3][ hi        & 0xFF]
+          ^ crc32_slice8[2][(hi >>  8) & 0xFF]
+          ^ crc32_slice8[1][(hi >> 16) & 0xFF]
+          ^ crc32_slice8[0][(hi >> 24) & 0xFF];
 
       data += 8;
       len  -= 8;
    }
 
-   /* Handle remaining bytes */
-   while (len--)
-      crc = crc32_table[(crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+   /* Decrement inside the body rather than in the loop test: the
+    * test-and-decrement form wraps len to SIZE_MAX on the final
+    * iteration. That is defined behaviour, but it trips
+    * -fsanitize=unsigned-integer-overflow and there is no reason to
+    * make callers filter it out. */
+   while (len > 0)
+   {
+      crc = crc32_slice8[0][(crc ^ (*data++)) & 0xFF] ^ (crc >> 8);
+      len--;
+   }
 
-   return ~crc;
+   return crc;
 }
+#endif /* !CRC32_HAVE_ARM_PATH || CRC32_ARM_DISPATCH */
+
+/* ------------------------------------------------------------------ */
+/* x86 carry-less multiply folding                                    */
+/* ------------------------------------------------------------------ */
+
+#if defined(CRC32_HAVE_PCLMUL_PATH)
+
+#include <features/features_cpu.h>
+
+#if defined(_MSC_VER)
+#include <wmmintrin.h>
+#define CRC32_TARGET_PCLMUL
 #else
-static uint32_t encoding_crc32_sw(uint32_t crc, const uint8_t *data, size_t len)
+#include <emmintrin.h>
+#include <wmmintrin.h>
+#define CRC32_TARGET_PCLMUL __attribute__((target("pclmul")))
+#endif
+
+/* Folding constants, all of the form
+ *    K(n) = bit_reflect_32(x^n mod P(x)) << 1
+ * with P(x) = 0x104C11DB7:
+ *
+ *    k1 = K(4*128 + 32)  advance four 128-bit accumulators
+ *    k2 = K(4*128 - 32)
+ *    k3 = K(  128 + 32)  advance one 128-bit accumulator
+ *    k4 = K(  128 - 32)
+ *    k5 = K(64)          reduce 128 -> 64
+ *    mu = bit_reflect_33(floor(x^64 / P(x)))   Barrett quotient
+ *    P' = bit_reflect_33(P(x))
+ */
+/* Built with _mm_set_epi32 rather than _mm_set_epi64x: the latter is
+ * not available in 32-bit MSVC. Each pair is {high dword, low dword}. */
+#define CRC32_K1_HI 0x00000001
+#define CRC32_K1_LO 0x54442BD4
+#define CRC32_K2_HI 0x00000001
+#define CRC32_K2_LO 0xC6E41596
+#define CRC32_K3_HI 0x00000001
+#define CRC32_K3_LO 0x751997D0
+#define CRC32_K4_HI 0x00000000
+#define CRC32_K4_LO 0xCCAA009E
+#define CRC32_K5_HI 0x00000001
+#define CRC32_K5_LO 0x63CD6124
+#define CRC32_MU_HI 0x00000001
+#define CRC32_MU_LO 0xF7011641
+#define CRC32_PP_HI 0x00000001
+#define CRC32_PP_LO 0xDB710641
+
+CRC32_TARGET_PCLMUL
+static INLINE __m128i crc32_fold16(__m128i x, __m128i k)
 {
-   crc = ~crc;
-   while (len--)
-      crc = crc32_table[(crc ^ (*data++)) & 0xff] ^ (crc >> 8);
-   return ~crc;
+   return _mm_xor_si128(_mm_clmulepi64_si128(x, k, 0x00),
+                        _mm_clmulepi64_si128(x, k, 0x11));
+}
+
+CRC32_TARGET_PCLMUL
+static uint32_t crc32_pclmul(uint32_t crc, const uint8_t *data, size_t len)
+{
+   const __m128i k1k2   = _mm_set_epi32((int)CRC32_K2_HI, (int)CRC32_K2_LO,
+                                        (int)CRC32_K1_HI, (int)CRC32_K1_LO);
+   const __m128i k3k4   = _mm_set_epi32((int)CRC32_K4_HI, (int)CRC32_K4_LO,
+                                        (int)CRC32_K3_HI, (int)CRC32_K3_LO);
+   const __m128i k5     = _mm_set_epi32(0, 0,
+                                        (int)CRC32_K5_HI, (int)CRC32_K5_LO);
+   const __m128i mupp   = _mm_set_epi32((int)CRC32_PP_HI, (int)CRC32_PP_LO,
+                                        (int)CRC32_MU_HI, (int)CRC32_MU_LO);
+   const __m128i mask32 = _mm_set_epi32(0, 0, 0, -1);
+   __m128i x0, x1, x2, x3, t;
+
+   /* Below four accumulators' worth, the reduction tail dominates. */
+   if (len < 64)
+      return crc32_slice_by_8(crc, data, len);
+
+   x0 = _mm_loadu_si128((const __m128i *)(data +  0));
+   x1 = _mm_loadu_si128((const __m128i *)(data + 16));
+   x2 = _mm_loadu_si128((const __m128i *)(data + 32));
+   x3 = _mm_loadu_si128((const __m128i *)(data + 48));
+   x0 = _mm_xor_si128(x0, _mm_cvtsi32_si128((int)crc));
+   data += 64;
+   len  -= 64;
+
+   /* Four independent chains, 64 bytes per iteration. */
+   while (len >= 64)
+   {
+      x0 = _mm_xor_si128(crc32_fold16(x0, k1k2),
+            _mm_loadu_si128((const __m128i *)(data +  0)));
+      x1 = _mm_xor_si128(crc32_fold16(x1, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 16)));
+      x2 = _mm_xor_si128(crc32_fold16(x2, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 32)));
+      x3 = _mm_xor_si128(crc32_fold16(x3, k1k2),
+            _mm_loadu_si128((const __m128i *)(data + 48)));
+      data += 64;
+      len  -= 64;
+   }
+
+   /* Collapse the four chains into one. */
+   x1 = _mm_xor_si128(crc32_fold16(x0, k3k4), x1);
+   x2 = _mm_xor_si128(crc32_fold16(x1, k3k4), x2);
+   x0 = _mm_xor_si128(crc32_fold16(x2, k3k4), x3);
+
+   while (len >= 16)
+   {
+      x0 = _mm_xor_si128(crc32_fold16(x0, k3k4),
+            _mm_loadu_si128((const __m128i *)data));
+      data += 16;
+      len  -= 16;
+   }
+
+   /* 128 -> 64 */
+   t  = _mm_clmulepi64_si128(x0, k3k4, 0x10);
+   x0 = _mm_xor_si128(_mm_srli_si128(x0, 8), t);
+
+   /* 64 -> 32 */
+   t  = _mm_clmulepi64_si128(_mm_and_si128(x0, mask32), k5, 0x00);
+   x0 = _mm_xor_si128(_mm_srli_si128(x0, 4), t);
+
+   /* Barrett reduction to the final 32-bit remainder. */
+   t  = _mm_clmulepi64_si128(_mm_and_si128(x0, mask32), mupp, 0x00);
+   t  = _mm_clmulepi64_si128(_mm_and_si128(t,  mask32), mupp, 0x10);
+   x0 = _mm_xor_si128(x0, t);
+
+   crc = (uint32_t)_mm_cvtsi128_si32(_mm_srli_si128(x0, 4));
+
+   if (len)
+      crc = crc32_slice_by_8(crc, data, len);
+   return crc;
+}
+
+/* Detection lives in cpu_features_get(), which probes once behind an
+ * acquire/release pair and is the frontend's single answer to "what
+ * does this CPU have".  PCLMULQDQ needs no OSXSAVE/XCR0 dance: it is
+ * an XMM instruction, so CR4.OSFXSR is the only OS requirement and
+ * that is universal.  Only AVX-width state needs the xgetbv check. */
+static int crc32_have_pclmul(void)
+{
+   return (cpu_features_get() & RETRO_SIMD_PCLMUL) != 0;
+}
+
+#endif /* x86 */
+
+/* ------------------------------------------------------------------ */
+/* ARMv8 CRC32 instructions                                           */
+/* ------------------------------------------------------------------ */
+
+#if defined(CRC32_HAVE_ARM_PATH)
+
+/* arm64_neon.h is an MSVC header. Selecting it on _M_ARM64 alone breaks
+ * every Clang that defines that macro for Windows-on-ARM compatibility,
+ * MSYS2's CLANGARM64 among them, which has arm_acle.h and no
+ * arm64_neon.h. Key on the compiler rather than the target macro. */
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <arm64_neon.h>
+#else
+#include <arm_acle.h>
+#endif
+
+#if defined(CRC32_ARM_NEEDS_TARGET)
+#include <features/features_cpu.h>
+#if defined(__clang__)
+#define CRC32_TARGET_ARM __attribute__((target("crc")))
+#else
+#define CRC32_TARGET_ARM __attribute__((target("arch=armv8-a+crc")))
+#endif
+#else
+#define CRC32_TARGET_ARM
+#endif
+
+CRC32_TARGET_ARM
+static uint32_t crc32_arm(uint32_t crc, const uint8_t *data, size_t len)
+{
+   while (((uintptr_t)data & 7) && len > 0)
+   {
+      crc = __crc32b(crc, *data);
+      data++;
+      len--;
+   }
+   while (len >= 8)
+   {
+      uint64_t v;
+      memcpy(&v, data, sizeof(v));
+      crc = __crc32d(crc, v);
+      data += 8;
+      len  -= 8;
+   }
+   while (len > 0)
+   {
+      crc = __crc32b(crc, *data++);
+      len--;
+   }
+   return crc;
+}
+#endif /* __ARM_FEATURE_CRC32 */
+
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ *
+ * Ogg page CRC                                                         *
+ * ------------------------------------------------------------------ *
+ *
+ * A different checksum that shares the CRC-32 name: the same generator
+ * polynomial written the other way round (0x04C11DB7, MSB-first rather
+ * than reflected), seeded with zero and with no final complement. Ogg
+ * specifies it that way, so it is not interchangeable with
+ * encoding_crc32() above and the two must not be confused.
+ *
+ * The table is generated rather than built at first use. The three
+ * callers that used to carry their own each guarded a lazily-filled
+ * table with a non-atomic flag - the pattern removed from this file by
+ * 19278 - and one of them called its initialiser on every entry with a
+ * comment saying that avoided the race, which it does not: concurrent
+ * writers storing identical values are still a data race. A const
+ * table has no initialiser to race on.
+ */
+
+/* ------------------------------------------------------------------ *
+ * CRC-16/CCITT-FALSE                                                   *
+ * ------------------------------------------------------------------ *
+ *
+ * Polynomial 0x1021 MSB-first, no final xor. The seed is the caller's:
+ * this variant is conventionally started at 0xFFFF, which is what the
+ * CHD readers pass, but nothing here assumes it.
+ *
+ * Sixteen bits rather than thirty-two, and a different polynomial from
+ * either function above, so it shares no table with them - only the
+ * slicing arrangement, which is a property of the technique rather
+ * than of any particular CRC.
+ */
+
+uint16_t encoding_crc16_ccitt(uint16_t crc, const uint8_t *data, size_t len)
+{
+   while (len >= 8)
+   {
+      crc = (uint16_t)(
+              crc16_ccitt_slice8[7][(uint8_t)(data[0] ^ (crc >> 8))]
+            ^ crc16_ccitt_slice8[6][(uint8_t)(data[1] ^  crc      )]
+            ^ crc16_ccitt_slice8[5][data[2]]
+            ^ crc16_ccitt_slice8[4][data[3]]
+            ^ crc16_ccitt_slice8[3][data[4]]
+            ^ crc16_ccitt_slice8[2][data[5]]
+            ^ crc16_ccitt_slice8[1][data[6]]
+            ^ crc16_ccitt_slice8[0][data[7]]);
+
+      data += 8;
+      len  -= 8;
+   }
+
+   /* Decremented inside the body, as in the two above, so the loop
+    * test cannot wrap len to SIZE_MAX on its last pass. */
+   while (len > 0)
+   {
+      crc = (uint16_t)((crc << 8)
+            ^ crc16_ccitt_slice8[0][(uint8_t)((crc >> 8) ^ (*data++))]);
+      len--;
+   }
+
+   return crc;
+}
+
+uint32_t encoding_crc32_ogg(uint32_t crc, const uint8_t *data, size_t len)
+{
+   /* Slicing-by-8, as for the reflected variant above, but assembling
+    * each word from bytes rather than loading it. The reflected path
+    * can load little-endian and let the table order absorb it; this
+    * one consumes bytes most-significant first, so a load would need
+    * a byte swap on one endianness or the other. Byte assembly costs
+    * a little of the gain and keeps a single path for both. */
+   while (len >= 8)
+   {
+      crc ^= ((uint32_t)data[0] << 24) | ((uint32_t)data[1] << 16)
+           | ((uint32_t)data[2] <<  8) |  (uint32_t)data[3];
+
+      crc  = crc32_ogg_slice8[7][(crc >> 24) & 0xFF]
+           ^ crc32_ogg_slice8[6][(crc >> 16) & 0xFF]
+           ^ crc32_ogg_slice8[5][(crc >>  8) & 0xFF]
+           ^ crc32_ogg_slice8[4][ crc        & 0xFF]
+           ^ crc32_ogg_slice8[3][data[4]]
+           ^ crc32_ogg_slice8[2][data[5]]
+           ^ crc32_ogg_slice8[1][data[6]]
+           ^ crc32_ogg_slice8[0][data[7]];
+
+      data += 8;
+      len  -= 8;
+   }
+
+   /* Decremented inside the body for the same reason as the reflected
+    * tail: the test-and-decrement form wraps len to SIZE_MAX on the
+    * last iteration and trips -fsanitize=unsigned-integer-overflow. */
+   while (len > 0)
+   {
+      crc = (crc << 8) ^ crc32_ogg_slice8[0][(uint8_t)(crc >> 24) ^ (*data++)];
+      len--;
+   }
+
+   return crc;
 }
 
 uint32_t encoding_crc32(uint32_t crc, const uint8_t *data, size_t len)
 {
-   return encoding_crc32_sw(crc, data, len);
-}
+   crc = ~crc;
+
+#if defined(CRC32_ARM_DISPATCH)
+   if (cpu_features_get() & RETRO_SIMD_CRC32)
+      crc = crc32_arm(crc, data, len);
+   else
+      crc = crc32_slice_by_8(crc, data, len);
+#elif defined(CRC32_HAVE_ARM_PATH)
+   crc = crc32_arm(crc, data, len);
+#elif defined(CRC32_HAVE_PCLMUL_PATH)
+   if (len >= 64 && crc32_have_pclmul())
+      crc = crc32_pclmul(crc, data, len);
+   else
+      crc = crc32_slice_by_8(crc, data, len);
+#else
+   crc = crc32_slice_by_8(crc, data, len);
 #endif
+
+   return ~crc;
+}

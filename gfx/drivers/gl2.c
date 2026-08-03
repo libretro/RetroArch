@@ -247,13 +247,7 @@
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 0] = gl->coords.lut_tex_coord[0]; \
-   font_lut_tex_coord[    2 * (6 * i + c) + 1] = gl->coords.lut_tex_coord[1]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -468,6 +462,10 @@ void glkitview_bind_fbo(void);
 #define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
 #endif
 
+/* Defined with the scRGB helpers further down; referenced from the
+ * renderchain's final-target bind above them. */
+static GLuint gl2_frame_target_fbo(gl2_t *gl);
+
 /**
  * DISPLAY DRIVER
  */
@@ -612,6 +610,7 @@ gfx_display_gl2_discard_draw_rectangle(gl2_t *gl,
 static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_width, unsigned video_height)
 {
+   video_coords_t     coords;
    gl2_t             *gl  = (gl2_t*)data;
 
    if (!gl || !draw)
@@ -627,24 +626,35 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
    }
 #endif
 
-   if (!draw->coords->vertex)
-      draw->coords->vertex        = &gl2_vertexes[0];
-   if (!draw->coords->tex_coord)
-      draw->coords->tex_coord     = &gl2_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord = &gl2_tex_coords[0];
+   /* Default the absent streams into a local copy rather than back
+    * into the caller's struct.  For the XMB ribbon pipeline
+    * draw->coords aliases &p_disp->dispca.coords, whose four stream
+    * pointers are heap-owned and free()d by
+    * video_coord_array_free(); writing a static array's address into
+    * one of them there is a free() of .rodata waiting to happen.  It
+    * cannot fire today only because dispca always has all four
+    * streams allocated -- which is exactly the property anyone
+    * making them optional would remove. */
+   coords = *draw->coords;
+
+   if (!coords.vertex)
+      coords.vertex        = &gl2_vertexes[0];
+   if (!coords.tex_coord)
+      coords.tex_coord     = &gl2_tex_coords[0];
+   if (!coords.lut_tex_coord)
+      coords.lut_tex_coord = &gl2_tex_coords[0];
 
    glViewport(draw->x, draw->y, draw->width, draw->height);
    glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
 
-   gl->shader->set_coords(gl->shader_data, draw->coords);
+   gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
          draw->matrix_data ? (math_matrix_4x4*)draw->matrix_data
       : (math_matrix_4x4*)&gl->mvp_no_rot);
 
 
    /* Menu draws use a triangle-strip layout. */
-   glDrawArrays(GL_TRIANGLE_STRIP, 0, draw->coords->vertices);
+   glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
 
    gl->coords.color     = gl->white_color_ptr;
 }
@@ -817,30 +827,50 @@ static void gl2_raster_font_free(void *data,
    free(font);
 }
 
-static void gl2_raster_font_upload_atlas(gl2_raster_t *font)
+/* Convert the atlas rows [y0, y1) to LUMINANCE_ALPHA and upload them.
+ * Uploading full-width row bands (rather than an x/y sub-rectangle)
+ * avoids GL_UNPACK_ROW_LENGTH, which OpenGL ES 2 does not have. When
+ * 'respecify' is set the texture storage is (re)created at full size;
+ * otherwise the band is updated in place with glTexSubImage2D. */
+static void gl2_raster_font_upload_atlas(gl2_raster_t *font,
+      unsigned y0, unsigned y1, bool respecify)
 {
    int i, j;
    GLint  gl_internal          = GL_LUMINANCE_ALPHA;
    GLenum gl_format            = GL_LUMINANCE_ALPHA;
    size_t ncomponents          = 2;
-   uint8_t *tmp                = (uint8_t*)calloc(font->tex_height, font->tex_width * ncomponents);
+   unsigned band               = respecify ? font->tex_height : (y1 - y0);
+   uint8_t *tmp;
+
+   if (!respecify && (y1 <= y0 || y1 > (unsigned)font->atlas->height))
+      return;
+
+   tmp = (uint8_t*)calloc(band, font->tex_width * ncomponents);
+   if (!tmp)
+      return;
+
+   if (respecify)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
 
    switch (ncomponents)
    {
       case 1:
-         for (i = 0; i < (int)font->atlas->height; ++i)
+         for (i = (int)y0; i < (int)y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - (int)y0) * font->tex_width * ncomponents];
 
             memcpy(dst, src, font->atlas->width);
          }
          break;
       case 2:
-         for (i = 0; i < (int)font->atlas->height; ++i)
+         for (i = (int)y0; i < (int)y1; ++i)
          {
             const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[i * font->tex_width * ncomponents];
+            uint8_t       *dst = &tmp[(i - (int)y0) * font->tex_width * ncomponents];
 
             for (j = 0; j < (int)font->atlas->width; ++j)
             {
@@ -851,9 +881,14 @@ static void gl2_raster_font_upload_atlas(gl2_raster_t *font)
          break;
    }
 
-   glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
-         font->tex_width, font->tex_height,
-         0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   if (respecify)
+      glTexImage2D(GL_TEXTURE_2D, 0, gl_internal,
+            font->tex_width, font->tex_height,
+            0, gl_format, GL_UNSIGNED_BYTE, tmp);
+   else
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (GLint)y0,
+            font->tex_width, band,
+            gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
 }
@@ -892,7 +927,7 @@ static void *gl2_raster_font_init(void *data,
    font->tex_width  = next_pow2(font->atlas->width);
    font->tex_height = next_pow2(font->atlas->height);
 
-   gl2_raster_font_upload_atlas(font);
+   gl2_raster_font_upload_atlas(font, 0, 0, true);
 
    font->atlas->dirty = false;
 
@@ -943,7 +978,8 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
 {
    if (font->atlas->dirty)
    {
-      gl2_raster_font_upload_atlas(font);
+      gl2_raster_font_upload_atlas(font,
+            font->atlas->dirty_y0, font->atlas->dirty_y1, false);
       font->atlas->dirty   = false;
    }
 
@@ -968,7 +1004,8 @@ static void gl2_raster_font_render_line(gl2_t *gl,
    GLfloat font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_vertex[2 * 6 * MAX_MSG_LEN_CHUNK];
    GLfloat font_color[4 * 6 * MAX_MSG_LEN_CHUNK];
-   GLfloat font_lut_tex_coord[2 * 6 * MAX_MSG_LEN_CHUNK];
+   GLfloat color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = roundf(pos_x * gl->vp.width);
    int y                = roundf(pos_y * gl->vp.height);
@@ -1008,6 +1045,14 @@ static void gl2_raster_font_render_line(gl2_t *gl,
 
    glyph_q = get_glyph(font_data, '?');
 
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
+   }
+
    while (msg < msg_end)
    {
       i = 0;
@@ -1037,6 +1082,9 @@ static void gl2_raster_font_render_line(gl2_t *gl,
          GL_RASTER_FONT_EMIT(4, 0, 0); /* Top-left */
          GL_RASTER_FONT_EMIT(5, 1, 1); /* Bottom-right */
 
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
+
          i++;
 
          delta_x += glyph->advance_x;
@@ -1047,7 +1095,7 @@ static void gl2_raster_font_render_line(gl2_t *gl,
       coords.vertex        = font_vertex;
       coords.color         = font_color;
       coords.vertices      = i * 6;
-      coords.lut_tex_coord = font_lut_tex_coord;
+      coords.lut_tex_coord = NULL;
 
       if (font->block)
          video_coord_array_append(&font->block->carr,
@@ -1135,10 +1183,20 @@ static void gl2_raster_font_render_msg(
       drop_mod    = params->drop_mod;
       drop_alpha  = params->drop_alpha;
 
-      color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
-      color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
-      color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
-      color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+      if (params->color_hp)
+      {
+         color[0]    = params->color_hp[0];
+         color[1]    = params->color_hp[1];
+         color[2]    = params->color_hp[2];
+         color[3]    = params->color_hp[3];
+      }
+      else
+      {
+         color[0]    = FONT_COLOR_GET_RED(params->color)   / 255.0f;
+         color[1]    = FONT_COLOR_GET_GREEN(params->color) / 255.0f;
+         color[2]    = FONT_COLOR_GET_BLUE(params->color)  / 255.0f;
+         color[3]    = FONT_COLOR_GET_ALPHA(params->color) / 255.0f;
+      }
 
       /* If alpha is 0.0f, turn it into default 1.0f */
       if (color[3] <= 0.0f)
@@ -1590,8 +1648,14 @@ static void gl2_renderchain_render(
    memcpy(fbo_info->coord, fbo_tex_coords, sizeof(fbo_tex_coords));
    fbo_tex_info_cnt++;
 
-   /* Render our FBO texture to back buffer. */
-   gl2_renderchain_bind_backbuffer();
+   /* Render our FBO texture to back buffer (or, under scRGB output,
+    * into the SDR offscreen the end-of-frame encode consumes).
+    * The macro is kept for the SDR case: on iOS the "backbuffer" is
+    * GLKit's FBO, not 0. */
+   if (gl->scrgb.active)
+      gl2_bind_fb(gl2_frame_target_fbo(gl));
+   else
+      gl2_renderchain_bind_backbuffer();
 
    gl->shader->use(gl, gl->shader_data,
          chain->fbo_pass + 1, true);
@@ -2583,7 +2647,19 @@ static void gl2_renderchain_readback(
    glPixelStorei(GL_PACK_ALIGNMENT, alignment);
 #ifndef HAVE_OPENGLES
    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-   glReadBuffer(GL_BACK);
+#endif
+   /* Under scRGB, read the pre-encode SDR offscreen -- roundtrip-free
+    * SDR capture, same as the glcore driver. */
+   if (gl->scrgb.active && gl->scrgb.fbo)
+   {
+      gl2_bind_fb(gl->scrgb.fbo);
+#ifndef HAVE_OPENGLES
+      glReadBuffer(RARCH_GL_COLOR_ATTACHMENT0);
+#endif
+   }
+#ifndef HAVE_OPENGLES
+   else
+      glReadBuffer(GL_BACK);
 #endif
 
    glReadPixels(
@@ -2592,6 +2668,9 @@ static void gl2_renderchain_readback(
          (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width,
          (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height,
          (GLenum)fmt, (GLenum)type, (GLvoid*)src);
+
+   if (gl->scrgb.active && gl->scrgb.fbo)
+      gl2_bind_fb(0);
 }
 
 static void gl2_renderchain_fence_iterate(
@@ -3362,13 +3441,20 @@ static void gl2_render_osd_background(gl2_t *gl, bool video_scale_integer, const
    float *verts            = (float*)malloc(2 * vertices_total * sizeof(float));
    settings_t *settings    = config_get_ptr();
    float video_font_size   = settings->floats.video_font_size;
+   /* NOTE: must go through the font driver here - the active font is
+    * owned by the font driver, not by gl2_t. Calling
+    * gl2_raster_font_get_message_width() with 'gl' reinterprets a
+    * gl2_t* as a gl2_raster_t*, which reads ctx_data/ctx_driver as
+    * font_driver/font_data and then branches through a garbage
+    * get_glyph pointer. */
    int msg_width           =
-      gl2_raster_font_get_message_width(gl, msg, strlen(msg), 1.0f);
+      font_driver_get_message_width(NULL, msg, strlen(msg), 1.0f);
 
    /* shader driver expects vertex coords as 0..1 */
    float x                 = settings->floats.video_msg_pos_x;
    float y                 = settings->floats.video_msg_pos_y;
-   float width             = msg_width / (float)gl->video_width;
+   float width             = (msg_width > 0 ? msg_width : 0)
+      / (float)gl->video_width;
    float height            = video_font_size / (float)gl->video_height;
    float x2                = 0.005f; /* extend background around text */
    float y2                = 0.005f;
@@ -3560,6 +3646,178 @@ static void gl2_pbo_async_readback(gl2_t *gl)
    gl2_renderchain_unbind_pbo();
 }
 
+/* GLSL 1.20 scRGB encode: mirror of the glcore / hdr_sm5 SDR branch
+ * (gamma 2.4 linearize, expand-gamut matrix select, gamut round-trip,
+ * paper-white / 80 scale). The matrices are the shared constants
+ * transposed for GLSL column-major construction, identical to the
+ * (column-by-column verified) glcore versions. */
+/* Sources are string arrays fed to glShaderSource as multiple
+ * segments: C90 only guarantees 509 characters per literal, and the
+ * fragment shader exceeds that as one string
+ * (-Werror=overlength-strings on the strict CI targets). */
+static const char *gl2_scrgb_vert_src[] = {
+   "attribute vec2 Pos;\n"
+   "attribute vec2 Tex;\n"
+   "varying vec2 vTex;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = vec4(Pos * 2.0 - 1.0, 0.0, 1.0);\n"
+   "   vTex = Tex;\n"
+   "}\n"
+};
+
+static const char *gl2_scrgb_frag_src[] = {
+   "uniform sampler2D uTex;\n"
+   "uniform float uNits;\n"
+   "uniform float uExpand;\n"
+   "varying vec2 vTex;\n"
+   "const mat3 k709to2020 = mat3(\n"
+   "   0.6274040, 0.0690970, 0.0163916,\n"
+   "   0.3292820, 0.9195400, 0.0880132,\n"
+   "   0.0433136, 0.0113612, 0.8955950);\n"
+   "const mat3 kExpanded709to2020 = mat3(\n"
+   "   0.6274040, 0.0457456, -0.00121055,\n"
+   "   0.3292820, 0.9417770,  0.0176041,\n"
+   "   0.0433136, 0.0124772,  0.9836070);\n",
+   "const mat3 kP3to2020 = mat3(\n"
+   "   0.753833,  0.045744, -0.001210,\n"
+   "   0.198597,  0.941777,  0.017602,\n"
+   "   0.047570,  0.012479,  0.983609);\n"
+   "const mat3 k2020to709 = mat3(\n"
+   "    1.6604910, -0.1245505, -0.0181508,\n"
+   "   -0.5876411,  1.1328999, -0.1005789,\n"
+   "   -0.0728499, -0.0083494,  1.1187297);\n",
+   "void main()\n"
+   "{\n"
+   "   vec4 sdr = texture2D(uTex, vTex);\n"
+   "   vec3 lin = pow(abs(sdr.rgb), vec3(2.4));\n"
+   "   if (uExpand < 0.5)\n"
+   "      lin = k709to2020 * lin;\n"
+   "   else if (uExpand < 1.5)\n"
+   "      lin = kExpanded709to2020 * lin;\n"
+   "   else if (uExpand < 2.5)\n"
+   "      lin = kP3to2020 * lin;\n"
+   "   lin = max(lin, vec3(0.0));\n"
+   "   lin = k2020to709 * lin;\n"
+   "   lin = lin * (uNits / 80.0);\n"
+   "   gl_FragColor = vec4(lin, sdr.a);\n"
+   "}\n"
+};
+
+static GLuint gl2_scrgb_compile_stage(GLenum stage,
+      const char **src, GLsizei count)
+{
+   GLint status = 0;
+   GLuint sh;
+   if (!(sh = glCreateShader(stage)))
+      return 0;
+   glShaderSource(sh, count, src, NULL);
+   glCompileShader(sh);
+   glGetShaderiv(sh, GL_COMPILE_STATUS, &status);
+   if (!status)
+   {
+      glDeleteShader(sh);
+      return 0;
+   }
+   return sh;
+}
+
+static bool gl2_scrgb_init_program(gl2_t *gl)
+{
+   GLint status = 0;
+   GLuint vs, fs, prog;
+
+   /* On a GL 1.x context the GLSL entry points do not resolve;
+    * without them the encode cannot exist and stage-1 dim output is
+    * the (documented) best available behavior. The check only makes
+    * sense where glsym remaps the names to loadable pointers (the
+    * remap is a macro, hence the defined() test); where they are
+    * directly linked functions the address is never null and clang
+    * (Orbis) rejects the comparison outright. */
+#if defined(glCreateShader) && defined(glCreateProgram)
+   if (!glCreateShader || !glCreateProgram)
+      return false;
+#endif
+
+   if (!(vs = gl2_scrgb_compile_stage(GL_VERTEX_SHADER,
+               gl2_scrgb_vert_src,
+               (GLsizei)ARRAY_SIZE(gl2_scrgb_vert_src))))
+      return false;
+   if (!(fs = gl2_scrgb_compile_stage(GL_FRAGMENT_SHADER,
+               gl2_scrgb_frag_src,
+               (GLsizei)ARRAY_SIZE(gl2_scrgb_frag_src))))
+   {
+      glDeleteShader(vs);
+      return false;
+   }
+   prog = glCreateProgram();
+   glAttachShader(prog, vs);
+   glAttachShader(prog, fs);
+   glBindAttribLocation(prog, 0, "Pos");
+   glBindAttribLocation(prog, 1, "Tex");
+   glLinkProgram(prog);
+   glDeleteShader(vs);
+   glDeleteShader(fs);
+   glGetProgramiv(prog, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      glDeleteProgram(prog);
+      return false;
+   }
+   gl->scrgb.program    = prog;
+   gl->scrgb.loc_tex    = glGetUniformLocation(prog, "uTex");
+   gl->scrgb.loc_nits   = glGetUniformLocation(prog, "uNits");
+   gl->scrgb.loc_expand = glGetUniformLocation(prog, "uExpand");
+   return true;
+}
+
+/* (Re)create the SDR offscreen; returns the FBO the frame's final
+ * targets should bind: the offscreen under scRGB, 0 otherwise. */
+static GLuint gl2_frame_target_fbo(gl2_t *gl)
+{
+   if (!gl->scrgb.active)
+      return 0;
+
+   if (     !gl->scrgb.fbo
+         || gl->scrgb.width  != gl->video_width
+         || gl->scrgb.height != gl->video_height)
+   {
+      if (gl->scrgb.fbo)
+         gl2_delete_fb(1, &gl->scrgb.fbo);
+      if (gl->scrgb.tex)
+         glDeleteTextures(1, &gl->scrgb.tex);
+      glGenTextures(1, &gl->scrgb.tex);
+      glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
+      glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
+            gl->video_width, gl->video_height, 0,
+            RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      gl2_gen_fb(1, &gl->scrgb.fbo);
+      gl2_bind_fb(gl->scrgb.fbo);
+      gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, gl->scrgb.tex, 0);
+      if (gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
+            != RARCH_GL_FRAMEBUFFER_COMPLETE)
+      {
+         RARCH_ERR("[GL] scRGB offscreen FBO incomplete; falling back to direct rendering.\n");
+         gl2_bind_fb(0);
+         gl2_delete_fb(1, &gl->scrgb.fbo);
+         glDeleteTextures(1, &gl->scrgb.tex);
+         gl->scrgb.fbo    = 0;
+         gl->scrgb.tex    = 0;
+         gl->scrgb.active = false;
+         return 0;
+      }
+      gl2_bind_fb(0);
+      gl->scrgb.width  = gl->video_width;
+      gl->scrgb.height = gl->video_height;
+   }
+   return gl->scrgb.fbo;
+}
+
 static bool gl2_frame(void *data, const void *frame,
       unsigned frame_width, unsigned frame_height,
       uint64_t frame_count,
@@ -3706,6 +3964,13 @@ static bool gl2_frame(void *data, const void *frame,
          glGenerateMipmap(GL_TEXTURE_2D);
    }
 
+   /* scRGB: route the whole frame into the SDR offscreen; the encode
+    * at the end of the frame writes the FP16 backbuffer. This early
+    * bind covers the direct (no-FBO-chain) draw path; the chain's own
+    * back-buffer binds below are redirected the same way. */
+   if (gl->scrgb.active)
+      gl2_bind_fb(gl2_frame_target_fbo(gl));
+
    /* Have to reset rendering state which libretro core
     * could easily have overridden. */
    if (gl->flags & GL2_FLAG_HW_RENDER_FBO_INIT)
@@ -3713,7 +3978,10 @@ static bool gl2_frame(void *data, const void *frame,
       gl2_update_input_size(gl, frame_width, frame_height, pitch, false);
       if (!(gl->flags & GL2_FLAG_FBO_INITED))
       {
-         gl2_renderchain_bind_backbuffer();
+         if (gl->scrgb.active)
+            gl2_bind_fb(gl2_frame_target_fbo(gl));
+         else
+            gl2_renderchain_bind_backbuffer();
          gl2_set_viewport(gl, width, height, false, true);
       }
 
@@ -3782,7 +4050,7 @@ static bool gl2_frame(void *data, const void *frame,
             frame_count, &gl->tex_info, &feedback_info,
             video_scale_integer);
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    /* Workaround for a chromium-specific bug */
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -3793,6 +4061,12 @@ static bool gl2_frame(void *data, const void *frame,
    /* Set prev textures. */
    gl2_renderchain_bind_prev_texture(gl,
          chain, &gl->tex_info);
+
+   /* scRGB: re-assert the frame target before UI draws (chain
+    * internals may have restored FBO 0). Same choke-point pattern
+    * as the glcore driver. No-op in SDR. */
+   if (gl->scrgb.active)
+      gl2_bind_fb(gl2_frame_target_fbo(gl));
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -3842,6 +4116,85 @@ static bool gl2_frame(void *data, const void *frame,
       glBindTexture(GL_TEXTURE_2D, 0);
    }
 
+   /* scRGB: encode the SDR offscreen into the FP16 backbuffer.
+    * Runs before the read-back blocks below: SDR capture reads the
+    * offscreen (roundtrip-free), the native HDR capture reads the
+    * encoded backbuffer. Menu HDR Brightness semantics match the
+    * other five HDR paths: menu_nits when any UI is composited this
+    * frame, paper white otherwise. */
+   if (gl->scrgb.active && gl->scrgb.fbo && gl->scrgb.program)
+   {
+      settings_t *settings = config_get_ptr();
+      float nits           = 200.0f;
+      bool ui_visible      = false;
+      static const float quad_pos[8] = {
+         0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
+      };
+      static const float quad_tex[8] = {
+         0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f
+      };
+
+#ifdef HAVE_MENU
+      if (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE)
+         ui_visible = true;
+#endif
+#ifdef HAVE_OVERLAY
+      if (gl->flags & GL2_FLAG_OVERLAY_ENABLE)
+         ui_visible = true;
+#endif
+      if ((msg && *msg) || statistics_show)
+         ui_visible = true;
+#ifdef HAVE_GFX_WIDGETS
+      if (widgets_active)
+         ui_visible = true;
+#endif
+
+      if (settings)
+         nits = ui_visible
+               ? settings->floats.video_hdr_menu_nits
+               : settings->floats.video_hdr_paper_white_nits;
+
+      gl2_bind_fb(0);
+      glViewport(0, 0, gl->video_width, gl->video_height);
+      glDisable(GL_BLEND);
+      glUseProgram(gl->scrgb.program);
+      if (gl->scrgb.loc_tex >= 0)
+         glUniform1i(gl->scrgb.loc_tex, 0);
+      if (gl->scrgb.loc_nits >= 0)
+         glUniform1f(gl->scrgb.loc_nits, nits);
+      if (gl->scrgb.loc_expand >= 0)
+         glUniform1f(gl->scrgb.loc_expand, settings
+               ? (float)settings->uints.video_hdr_expand_gamut : 0.0f);
+
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, gl->scrgb.tex);
+
+      glBindBuffer(GL_ARRAY_BUFFER, 0);
+      glEnableVertexAttribArray(0);
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, quad_pos);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, quad_tex);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glDisableVertexAttribArray(0);
+      glDisableVertexAttribArray(1);
+      glUseProgram(0);
+
+      /* Restore the aspect-correct viewport the composite just
+       * clobbered. glViewport is context state, not per-FBO, and this
+       * driver only re-establishes it on resize (and, for hardware
+       * cores, in the HW_RENDER_FBO_INIT block above) -- so without
+       * this the next frame draws into the offscreen with the full
+       * window viewport still latched and the image is stretched to
+       * fill, ignoring the aspect ratio. Same save/restore convention
+       * as the fullscreen branch of gl2_draw_texture.
+       *
+       * The glcore driver has the same shape here but is unaffected:
+       * its filter chain re-runs glViewport on the final pass every
+       * frame (shader_gl3.cpp), so the leak never survives to a draw.
+       * The gl2 GLSL path has no equivalent choke point. */
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
+   }
+
    /* Screenshots. */
    if (gl->readback_buffer_screenshot)
       gl2_renderchain_readback(gl,
@@ -3872,7 +4225,7 @@ static bool gl2_frame(void *data, const void *frame,
         gl->ctx_driver->swap_buffers(gl->ctx_data);
 
  /* Emscripten has to do black frame insertion in its main loop */
-#ifndef EMSCRIPTEN
+#ifndef __EMSCRIPTEN__
    /* Disable BFI during fast forward, slow-motion,
     * and pause to prevent flicker. */
    if (
@@ -3959,6 +4312,26 @@ static void gl2_destroy_resources(gl2_t *gl)
    gl_query_core_context_unset();
 }
 
+static void gl2_scrgb_deinit(gl2_t *gl)
+{
+   if (gl->scrgb.program)
+   {
+      glDeleteProgram(gl->scrgb.program);
+      gl->scrgb.program = 0;
+   }
+   if (gl->scrgb.fbo)
+   {
+      gl2_delete_fb(1, &gl->scrgb.fbo);
+      gl->scrgb.fbo = 0;
+   }
+   if (gl->scrgb.tex)
+   {
+      glDeleteTextures(1, &gl->scrgb.tex);
+      gl->scrgb.tex = 0;
+   }
+   gl->scrgb.active = false;
+}
+
 static void gl2_deinit_chain(gl2_t *gl)
 {
    if (!gl)
@@ -3986,6 +4359,8 @@ static void gl2_free(void *data)
    font_driver_free_osd();
 
    gl->shader->deinit(gl->shader_data);
+
+   gl2_scrgb_deinit(gl);
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -4527,6 +4902,22 @@ static void *gl2_init(const video_info_t *video,
    RARCH_LOG("[GL] Vendor: %s, Renderer: %s.\n", vendor, renderer);
    RARCH_LOG("[GL] Version: %s.\n", version);
 
+   {
+      gfx_ctx_flags_t ctx_flags;
+      ctx_flags.flags = 0;
+      video_context_driver_get_flags(&ctx_flags);
+      if (BIT32_GET(ctx_flags.flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER))
+      {
+         if (gl2_scrgb_init_program(gl))
+         {
+            gl->scrgb.active = true;
+            RARCH_LOG("[GL] scRGB backbuffer active; SDR content will be encoded for HDR output.\n");
+         }
+         else
+            RARCH_WARN("[GL] scRGB backbuffer present but the encode program could not be built; output will be dim (paper-white mapped).\n");
+      }
+   }
+
    if (string_is_equal(ctx_driver->ident, "null"))
       goto error;
 
@@ -4801,7 +5192,6 @@ static void *gl2_init(const video_info_t *video,
             input, input_data);
    }
 
-   if (video->font_enable)
       font_driver_init_osd(gl, video,
             false,
             video->is_threaded,
@@ -5442,6 +5832,142 @@ static uint32_t gl2_get_flags(void *data)
    return flags;
 }
 
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT1_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 0x83F1
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT3_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 0x83F2
+#endif
+#ifndef GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 0x83F3
+#endif
+#ifndef GL_COMPRESSED_RGBA_BPTC_UNORM
+#define GL_COMPRESSED_RGBA_BPTC_UNORM 0x8E8C
+#endif
+
+static GLenum gl2_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+      case TEXTURE_GPU_FORMAT_BC2: return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+      case TEXTURE_GPU_FORMAT_BC3: return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+      case TEXTURE_GPU_FORMAT_BC7: return GL_COMPRESSED_RGBA_BPTC_UNORM;
+      default:                     break;
+   }
+   return 0;
+}
+
+static bool gl2_supports_texture_format(void *data,
+      enum texture_gpu_format fmt)
+{
+   (void)data;
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+      case TEXTURE_GPU_FORMAT_BC2:
+      case TEXTURE_GPU_FORMAT_BC3:
+         return gl_query_extension("EXT_texture_compression_s3tc")
+             || gl_query_extension("ANGLE_texture_compression_dxt5")
+             || gl_query_extension("EXT_texture_compression_dxt1");
+      case TEXTURE_GPU_FORMAT_BC7:
+         return gl_query_extension("ARB_texture_compression_bptc")
+             || gl_query_extension("EXT_texture_compression_bptc");
+      default:
+         break;
+   }
+   return false;
+}
+
+static uintptr_t gl2_upload_texture_compressed(
+      const struct texture_compressed *tc,
+      enum texture_filter_type filter_type)
+{
+   GLuint   id   = 0;
+   GLenum   ifmt;
+   unsigned i;
+   GLint    minf;
+   GLint    magf;
+   bool     nearest;
+
+   if (!tc || tc->num_mips == 0)
+      return 0;
+   ifmt = gl2_gpu_format(tc->format);
+   if (!ifmt)
+      return 0;
+
+   nearest = (filter_type == TEXTURE_FILTER_NEAREST
+           || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST);
+   magf    = nearest ? GL_NEAREST : GL_LINEAR;
+   if (tc->num_mips > 1)
+      minf = nearest ? GL_NEAREST_MIPMAP_NEAREST : GL_LINEAR_MIPMAP_LINEAR;
+   else
+      minf = magf;
+
+   glGenTextures(1, &id);
+   glBindTexture(GL_TEXTURE_2D, id);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+   for (i = 0; i < tc->num_mips; i++)
+      glCompressedTexImage2D(GL_TEXTURE_2D, (GLint)i, ifmt,
+            (GLsizei)tc->mips[i].width, (GLsizei)tc->mips[i].height, 0,
+            (GLsizei)tc->mips[i].size, tc->mips[i].data);
+
+#ifdef GL_TEXTURE_MAX_LEVEL
+   /* Not defined by GLES2 / Orbis (PS4) GL headers; only meaningful when
+    * the file actually carries a mip chain. */
+   if (tc->num_mips > 1)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL,
+            (GLint)(tc->num_mips - 1));
+#endif
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minf);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magf);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+   glBindTexture(GL_TEXTURE_2D, 0);
+
+   return (uintptr_t)id;
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   gl2_t                           *gl;
+   const struct texture_compressed *tc;
+   enum texture_filter_type         filter;
+} gl2_texture_compressed_cmd_t;
+
+static uintptr_t video_texture_load_wrap_gl2_compressed(void *data)
+{
+   gl2_texture_compressed_cmd_t *cmd = (gl2_texture_compressed_cmd_t*)data;
+   gl2_t                        *gl  = cmd->gl;
+   if (gl && gl->ctx_driver->make_current)
+      gl->ctx_driver->make_current(false);
+   return gl2_upload_texture_compressed(cmd->tc, cmd->filter);
+}
+#endif
+
+static uintptr_t gl2_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gl2_texture_compressed_cmd_t cmd;
+      cmd.gl     = (gl2_t*)video_data;
+      cmd.tc     = tc;
+      cmd.filter = filter_type;
+      return video_thread_texture_handle(&cmd,
+            video_texture_load_wrap_gl2_compressed);
+   }
+#else
+   (void)video_data;
+   (void)threaded;
+#endif
+   return gl2_upload_texture_compressed(tc, filter_type);
+}
+
 static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_flags,
    gl2_load_texture,
@@ -5468,7 +5994,9 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   gl2_supports_texture_format,
+   gl2_load_texture_compressed
 };
 
 static void gl2_get_poke_interface(void *data,
@@ -5490,6 +6018,127 @@ static bool gl2_focus(void *data)
    gl2_t *gl = (gl2_t*)data;
    if (gl && gl->ctx_driver && gl->ctx_driver->has_focus)
       return gl->ctx_driver->has_focus(gl->ctx_data);
+   return true;
+}
+
+/* CPU-side scRGB -> PQ helpers; same (vulkan-verbatim) math as the
+ * other drivers' native HDR read-backs. */
+static float gl2_hdr_pq_encode(float v)
+{
+   const float m1 = 0.1593017578125f, m2 = 78.84375f;
+   const float c1 = 0.8359375f, c2 = 18.8515625f, c3 = 18.6875f;
+   float yp;
+   if (v < 0.0f) v = 0.0f;
+   else if (v > 1.0f) v = 1.0f;
+   yp = powf(v, m1);
+   return powf((c1 + c2 * yp) / (1.0f + c3 * yp), m2);
+}
+
+static uint16_t gl2_hdr_scrgb_to_pq16(float scrgb)
+{
+   float nits = scrgb * 80.0f;
+   float pq;
+   if (nits < 0.0f) nits = 0.0f;
+   else if (nits > 10000.0f) nits = 10000.0f;
+   pq = gl2_hdr_pq_encode(nits / 10000.0f);
+   if (pq < 0.0f) pq = 0.0f;
+   else if (pq > 1.0f) pq = 1.0f;
+   return (uint16_t)(pq * 65535.0f + 0.5f);
+}
+
+/* Native (no tone-map) HDR read-back of the encoded FP16 scRGB
+ * backbuffer, row by row as floats; GL rows arrive bottom-up matching
+ * the 48-bit buffer convention. Metadata matches the shared scRGB
+ * tagging (PQ transfer, BT.709 primaries, D65, measured cLLI,
+ * 1000 / 0.001 nit mastering defaults). */
+static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   gl2_t *gl = (gl2_t*)data;
+   int      vp_x, vp_y;
+   unsigned w, h, x;
+   size_t   y;
+   float   *row;
+   float    max_cll  = 0.0f;
+   double   sum_fall = 0.0;
+
+   if (!gl || !(gl->scrgb.active) || !buffer)
+      return false;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   vp_x = (gl->vp.x > 0) ? gl->vp.x : 0;
+   vp_y = (gl->vp.y > 0) ? gl->vp.y : 0;
+   w    = (gl->vp.width  > gl->video_width)  ? gl->video_width  : gl->vp.width;
+   h    = (gl->vp.height > gl->video_height) ? gl->video_height : gl->vp.height;
+   if (!w || !h)
+      return false;
+
+   row = (float*)malloc((size_t)w * 4 * sizeof(float));
+   if (!row)
+      return false;
+
+   gl2_bind_fb(0);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+#ifndef HAVE_OPENGLES
+   glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+   glReadBuffer(GL_BACK);
+#endif
+
+   for (y = 0; y < h; y++)
+   {
+      uint16_t *dst = buffer + y * (size_t)w * 3;
+      glReadPixels(vp_x, vp_y + (int)y, w, 1, GL_RGBA, GL_FLOAT, row);
+      for (x = 0; x < w; x++)
+      {
+         float r        = row[4 * x + 0];
+         float g        = row[4 * x + 1];
+         float b        = row[4 * x + 2];
+         float lvl;
+         dst[3 * x + 0] = gl2_hdr_scrgb_to_pq16(r);
+         dst[3 * x + 1] = gl2_hdr_scrgb_to_pq16(g);
+         dst[3 * x + 2] = gl2_hdr_scrgb_to_pq16(b);
+         lvl = r;
+         if (g > lvl)
+            lvl = g;
+         if (b > lvl)
+            lvl = b;
+         lvl *= 80.0f;
+         if (lvl < 0.0f)
+            lvl = 0.0f;
+         else if (lvl > 10000.0f)
+            lvl = 10000.0f;
+         if (lvl > max_cll)
+            max_cll = lvl;
+         sum_fall += lvl;
+      }
+   }
+
+   free(row);
+
+   if (out_meta)
+   {
+      memset(out_meta, 0, sizeof(*out_meta));
+      out_meta->colour_primaries      = 1;  /* BT.709 (scRGB) */
+      out_meta->transfer_function     = 16; /* SMPTE ST 2084 (PQ) */
+      out_meta->matrix_coefficients   = 0;  /* RGB */
+      out_meta->video_full_range_flag = 1;
+      out_meta->max_cll               = max_cll;
+      out_meta->max_fall              = (float)(sum_fall
+            / ((double)w * (double)h));
+      out_meta->write_mdcv            = 1;
+      out_meta->primary_chromaticity[0][0] = 0.640f;
+      out_meta->primary_chromaticity[0][1] = 0.330f;
+      out_meta->primary_chromaticity[1][0] = 0.300f;
+      out_meta->primary_chromaticity[1][1] = 0.600f;
+      out_meta->primary_chromaticity[2][0] = 0.150f;
+      out_meta->primary_chromaticity[2][1] = 0.060f;
+      out_meta->white_point[0] = 0.3127f;
+      out_meta->white_point[1] = 0.3290f; /* D65 */
+      out_meta->max_luminance  = 1000.0f;
+      out_meta->min_luminance  = 0.001f;
+   }
    return true;
 }
 
@@ -5521,6 +6170,8 @@ video_driver_t video_gl2 = {
    NULL, /* shader_load_begin */
    NULL, /* shader_load_step */
 #ifdef HAVE_GFX_WIDGETS
-   gl2_gfx_widgets_enabled
+   gl2_gfx_widgets_enabled,
 #endif
+   NULL, /* invalidate_hw_render_cache */
+   gl2_read_viewport_hdr
 };

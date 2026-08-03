@@ -27,7 +27,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
-#include <file/nbio.h>
+#include <formats/data_transfer.h>
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -79,6 +79,22 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[2] | 0x20) == 'a')
             return IMAGE_TYPE_TGA;
 #endif
+#ifdef HAVE_RDDS
+         if ((ext[0] | 0x20) == 'd' &&
+             (ext[1] | 0x20) == 'd' &&
+             (ext[2] | 0x20) == 's')
+            return IMAGE_TYPE_DDS;
+#endif
+#ifdef HAVE_RMP4
+         if ((ext[0] | 0x20) == 'm' &&
+              ext[1]         == '4' &&
+             (ext[2] | 0x20) == 'v')
+            return IMAGE_TYPE_MP4;
+         if ((ext[0] | 0x20) == 'm' &&
+             (ext[1] | 0x20) == 'p' &&
+              ext[2]         == '4')
+            return IMAGE_TYPE_MP4;
+#endif
          break;
 
       case 4:
@@ -96,6 +112,13 @@ enum image_type_enum image_texture_get_type(const char *path)
              (ext[3] | 0x20) == 'p')
             return IMAGE_TYPE_WEBP;
 #endif
+#ifdef HAVE_RWEBM
+         if ((ext[0] | 0x20) == 'w' &&
+             (ext[1] | 0x20) == 'e' &&
+             (ext[2] | 0x20) == 'b' &&
+             (ext[3] | 0x20) == 'm')
+            return IMAGE_TYPE_WEBM;
+#endif
          break;
    }
 
@@ -109,8 +132,11 @@ static bool image_texture_load_internal(
       struct texture_image *out_img)
 {
    int ret;
-   void *img    = image_transfer_new(type);
+   void *img;
 
+   out_img->compressed = NULL;
+
+   img = image_transfer_new(type);
    if (!img)
       return false;
 
@@ -128,6 +154,51 @@ static bool image_texture_load_internal(
    {
       image_transfer_free(img, type);
       return false;
+   }
+
+   /* GPU-native fast path: if the loader can hand back BCn blocks for
+    * direct upload, copy the source (so the mip pointers survive the
+    * caller freeing its buffer) and defer any RGBA8 decode. */
+   {
+      struct image_gpu_layout lay;
+      if (image_transfer_get_gpu_layout(img, type, len, &lay))
+      {
+         struct texture_compressed *tc = (struct texture_compressed*)
+            calloc(1, sizeof(*tc));
+         if (tc)
+         {
+            tc->mips    = (struct texture_mip*)
+               malloc((size_t)lay.num_mips * sizeof(*tc->mips));
+            tc->storage = malloc(len);
+            if (tc->mips && tc->storage)
+            {
+               unsigned i;
+               memcpy(tc->storage, ptr, len);
+               tc->storage_len = len;
+               tc->num_mips    = lay.num_mips;
+               tc->format      = lay.format;
+               tc->type        = type;
+               for (i = 0; i < lay.num_mips; i++)
+               {
+                  tc->mips[i].data   = (const unsigned char*)tc->storage
+                                     + lay.offset[i];
+                  tc->mips[i].width  = lay.width[i];
+                  tc->mips[i].height = lay.height[i];
+                  tc->mips[i].size   = lay.size[i];
+               }
+               out_img->compressed = tc;
+               out_img->pixels     = NULL;
+               out_img->width      = lay.width[0];
+               out_img->height     = lay.height[0];
+               image_transfer_free(img, type);
+               return true;
+            }
+            free(tc->storage);
+            free(tc->mips);
+            free(tc);
+         }
+         /* allocation failure: fall through to the CPU decode below */
+      }
    }
 
    do
@@ -152,11 +223,95 @@ void image_texture_free(struct texture_image *img)
    if (!img)
       return;
 
+   if (img->compressed)
+   {
+      free(img->compressed->storage);
+      free(img->compressed->mips);
+      free(img->compressed);
+      img->compressed = NULL;
+   }
    if (img->pixels)
       free(img->pixels);
    img->width  = 0;
    img->height = 0;
    img->pixels = NULL;
+}
+
+bool image_texture_realize_rgba(struct texture_image *img)
+{
+   struct texture_compressed *tc;
+   void    *decoded = NULL;
+   void    *xfer;
+   unsigned w       = 0;
+   unsigned h       = 0;
+   int      ret;
+
+   if (!img)
+      return false;
+   if (img->pixels)               /* already decoded */
+      return true;
+   tc = img->compressed;
+   if (!tc || !tc->storage)
+      return false;
+
+   xfer = image_transfer_new(tc->type);
+   if (!xfer)
+      return false;
+   image_transfer_set_buffer_ptr(xfer, tc->type,
+         (uint8_t*)tc->storage, tc->storage_len);
+   if (!image_transfer_start(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   while (image_transfer_iterate(xfer, tc->type));
+   if (!image_transfer_is_valid(xfer, tc->type))
+   {
+      image_transfer_free(xfer, tc->type);
+      return false;
+   }
+   do
+   {
+      ret = image_transfer_process(xfer, tc->type,
+            (uint32_t**)&decoded, tc->storage_len, &w, &h,
+            img->supports_rgba);
+   } while (ret == IMAGE_PROCESS_NEXT);
+   image_transfer_free(xfer, tc->type);
+
+   if (     ret == IMAGE_PROCESS_ERROR
+         || ret == IMAGE_PROCESS_ERROR_END
+         || !decoded)
+      return false;
+
+   img->pixels = (uint32_t*)decoded;
+   img->width  = w;
+   img->height = h;
+   return true;
+}
+
+void image_texture_narrow_10bit(struct texture_image *img)
+{
+   size_t n, i;
+   uint32_t *px;
+   if (!img || !img->pix10 || !img->pixels)
+      return;
+   px = img->pixels;
+   n  = (size_t)img->width * img->height;
+   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to 8-bit ARGB8888
+    * (0xAARRGGBB, opaque) in place, for drivers without native 10-bit
+    * texture support. Matches the >> 2 narrowing used elsewhere. */
+   for (i = 0; i < n; i++)
+   {
+      uint32_t p = px[i];
+      uint32_t r = (p >> 20) & 0x3ff;
+      uint32_t g = (p >> 10) & 0x3ff;
+      uint32_t b =  p        & 0x3ff;
+      px[i] = 0xff000000u
+            | ((r >> 2) << 16)
+            | ((g >> 2) <<  8)
+            |  (b >> 2);
+   }
+   img->pix10 = false;
 }
 
 bool image_texture_load_buffer(struct texture_image *out_img,
@@ -173,6 +328,7 @@ bool image_texture_load_buffer(struct texture_image *out_img,
    out_img->pixels = NULL;
    out_img->width = 0;
    out_img->height = 0;
+   out_img->compressed = NULL;
 
    return false;
 }
@@ -184,27 +340,30 @@ bool image_texture_load(struct texture_image *out_img,
 
    if (type != IMAGE_TYPE_NONE)
    {
-      struct nbio_t *handle = (struct nbio_t*)
-         nbio_open(path, NBIO_READ);
-      if (handle)
+      /* The synchronous read rides the data_transfer prefix spine
+       * like every other loader: filestream/VFS routing (overlays
+       * and driver assets from archive members or content://
+       * documents), 64-bit lengths, the hardware guard behind the
+       * read, and honest short-read detection.  A zero budget fills
+       * to completion in one blocking call, which is this API's
+       * contract. */
+      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
+      if (dt)
       {
-         void *ptr       = NULL;
-         size_t file_len = 0;
+         size_t file_len    = 0;
+         const uint8_t *ptr = NULL;
 
-         /* Fast path: collapses begin_read + iterate-loop + get_ptr
-          * into a single call. For mmap this is zero-copy (instant),
-          * for AIO a single blocking syscall, for stdio one fread. */
-         if ((ptr = nbio_load_entire(handle, &file_len)))
-         {
-            if (image_texture_load_internal(
+         data_transfer_iterate(dt, 0);
+         ptr = data_transfer_ptr(dt, &file_len);
+         if (data_transfer_complete(dt) && ptr && file_len
+               && image_texture_load_internal(
                      type,
-                     ptr, file_len, out_img))
-            {
-               nbio_free(handle);
-               return true;
-            }
+                     (void*)ptr, file_len, out_img))
+         {
+            data_transfer_free(dt);
+            return true;
          }
-         nbio_free(handle);
+         data_transfer_free(dt);
       }
    }
 
@@ -212,6 +371,7 @@ bool image_texture_load(struct texture_image *out_img,
    out_img->pixels        = NULL;
    out_img->width         = 0;
    out_img->height        = 0;
+   out_img->compressed    = NULL;
 
    return false;
 }

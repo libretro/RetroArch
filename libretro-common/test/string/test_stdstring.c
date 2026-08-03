@@ -36,7 +36,9 @@ START_TEST (test_string_filter)
    char test2[] = "";
    string_remove_all_chars(test1, 's');
    string_remove_all_chars(test2, '0');
-   string_remove_all_chars(NULL, 'a');
+   /* No NULL call here: stdstring.h documents @s as "must be non-NULL,
+    * otherwise UB" and the function is a leaf with no guard.  The test
+    * used to pass NULL and segfaulted once the guard went away. */
    ck_assert(!strcmp(test1, "foo bar ome tring"));
    ck_assert(!strcmp(test2, ""));
 }
@@ -46,7 +48,7 @@ START_TEST (test_string_replace)
 {
    char test1[] = "foo bar some string";
    string_replace_all_chars(test1, 's', 'S');
-   string_replace_all_chars(NULL, 'a', 'A');
+   /* Likewise documented as non-NULL only. */
    ck_assert(!strcmp(test1, "foo bar Some String"));
 }
 END_TEST
@@ -138,7 +140,13 @@ END_TEST
 
 START_TEST (test_string_replacesubstr)
 {
-   char *res = string_replace_substring("foobaarhellowooorldtest", "oo", "ooo");
+   /* string_replace_substring() gained explicit lengths for all three
+    * arguments; this call was never updated, so the suite has not
+    * compiled since. */
+   char *res = string_replace_substring(
+         "foobaarhellowooorldtest", STRLEN_CONST("foobaarhellowooorldtest"),
+         "oo",                      STRLEN_CONST("oo"),
+         "ooo",                     STRLEN_CONST("ooo"));
    ck_assert(res != NULL);
    ck_assert(!strcmp(res, "fooobaarhellowoooorldtest"));
    free(res);
@@ -281,6 +289,114 @@ START_TEST (test_utf16_conv)
 }
 END_TEST
 
+/* Boundary sweep for the wrappers.
+ *
+ * The existing test above checks that word_wrap() produces the right
+ * output for a comfortable case.  This one checks it stays inside the
+ * buffer for uncomfortable ones: destinations allocated at exactly the
+ * size passed in, so a single byte past the end is an ASan report
+ * rather than a stomp on whatever followed; multi-byte and four-byte
+ * UTF-8; a truncated sequence; input with no break opportunity at all;
+ * and every line width and destination size across the interesting
+ * range.
+ *
+ * Written after a glyph-versus-byte confusion in gfx_animation.c's
+ * ticker overran a caller's stack buffer with CJK text.  The same
+ * arithmetic lives here, so it is worth pinning.  Makefile.test builds
+ * this suite with -fsanitize=address -fsanitize=undefined, which is
+ * where the actual bound checking happens; the assertions below only
+ * cover termination.
+ */
+START_TEST (test_word_wrap_bounds)
+{
+   static const char *const inputs[] =
+   {
+      "",
+      "a",
+      "one two three four five six seven eight nine ten",
+      /* Nothing to break on. */
+      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      /* Three bytes per glyph, no spaces. */
+      "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e\xe3\x81\xae\xe3\x83\x86"
+         "\xe3\x82\xb9\xe3\x83\x88\xe3\x81\xa7\xe3\x81\x99",
+      /* Three bytes per glyph, with spaces. */
+      "\xe6\x97\xa5\xe6\x9c\xac \xe8\xaa\x9e\xe3\x81\xae \xe3\x83\x86"
+         "\xe3\x82\xb9\xe3\x83\x88 \xe3\x81\xa7\xe3\x81\x99",
+      /* Four-byte sequences. */
+      "\xf0\x9f\x8e\xae\xf0\x9f\x8e\xae\xf0\x9f\x8e\xae\xf0\x9f\x8e\xae"
+         "\xf0\x9f\x8e\xae\xf0\x9f\x8e\xae",
+      "first\nsecond\nthird line that runs on a good deal longer",
+      "   leading and trailing   ",
+      /* A lead byte with its continuation bytes cut off. */
+      "valid text \xe6\x97"
+   };
+   const int n_inputs = (int)(sizeof(inputs) / sizeof(inputs[0]));
+   long wrote         = 0;
+   int i;
+
+   for (i = 0; i < n_inputs; i++)
+   {
+      const char *src = inputs[i];
+      size_t src_len  = strlen(src);
+      size_t dst_size;
+
+      for (dst_size = 1; dst_size <= src_len + 16; dst_size++)
+      {
+         int line_width;
+
+         for (line_width = 0; line_width <= 24; line_width += 3)
+         {
+            unsigned max_lines;
+
+            for (max_lines = 0; max_lines <= 4; max_lines += 2)
+            {
+               char *dst = (char*)malloc(dst_size);
+               ck_assert_ptr_nonnull(dst);
+               memset(dst, 'X', dst_size);
+
+               word_wrap(dst, dst_size, src, src_len,
+                     line_width, 0, max_lines);
+
+               /* Both wrappers decline rather than truncate when the
+                * destination is too small, so an untouched buffer is a
+                * legitimate outcome; what must not happen is a write
+                * that runs off the end or leaves no terminator. */
+               if (dst[0] != 'X')
+               {
+                  wrote++;
+                  ck_assert_ptr_nonnull(memchr(dst, '\0', dst_size));
+               }
+
+               free(dst);
+            }
+
+            {
+               char *dst = (char*)malloc(dst_size);
+               ck_assert_ptr_nonnull(dst);
+               memset(dst, 'X', dst_size);
+
+               word_wrap_wideglyph(dst, dst_size, src, src_len,
+                     line_width, 150, 100);
+
+               if (dst[0] != 'X')
+               {
+                  wrote++;
+                  ck_assert_ptr_nonnull(memchr(dst, '\0', dst_size));
+               }
+
+               free(dst);
+            }
+         }
+      }
+   }
+
+   /* Guard against the whole sweep passing by declining every call:
+    * both wrappers return early when dst_size < src_len + 1, and a
+    * range that never cleared that bar would test nothing. */
+   ck_assert_int_gt(wrote, 0);
+}
+END_TEST
+
 Suite *create_suite(void)
 {
    Suite *s = suite_create(SUITE_NAME);
@@ -296,6 +412,7 @@ Suite *create_suite(void)
    tcase_add_test(tc_core, test_string_trim);
    tcase_add_test(tc_core, test_string_replacesubstr);
    tcase_add_test(tc_core, test_word_wrap);
+   tcase_add_test(tc_core, test_word_wrap_bounds);
    tcase_add_test(tc_core, test_strlcpy);
    tcase_add_test(tc_core, test_strlcat);
    tcase_add_test(tc_core, test_strldup);

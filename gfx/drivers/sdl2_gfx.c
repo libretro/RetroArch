@@ -48,6 +48,8 @@
 #include "SDL_syswm.h"
 #include "../common/sdl2_common.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 
 #include "../../configuration.h"
@@ -463,7 +465,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * We also gain a working render_msg path for any other RA
     * subsystem that calls font_driver_render_msg with NULL font -
     * this is the same wiring every other modern driver does. */
-   if (video->font_enable)
       font_driver_init_osd(vid, video, false, video->is_threaded,
             FONT_DRIVER_RENDER_SDL2);
 #endif
@@ -522,7 +523,43 @@ static bool sdl2_gfx_frame(void *data, const void *frame, unsigned width,
       SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
    }
 
-   SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL, vid->rotation, NULL, SDL_FLIP_NONE);
+   {
+      /* For 90/270 degree rotation the frame must not be clipped by the
+       * aspect-corrected game viewport.  SDL_RenderCopyEx() scales the
+       * texture to the destination then rotates it about the centre, so
+       * a NULL dst (== the viewport) leaves the rotated frame overflowing
+       * the viewport, which clips it to the smaller dimension: the output
+       * collapses towards square and the aspect ratio is wrong for
+       * vertical ("tate") games (issue #17893).  Render into the full
+       * window with an explicit dst rect whose width/height are the
+       * viewport's swapped, centred on the game area.  Even rotations
+       * keep the existing (viewport, NULL dst) path. */
+      int deg = ((int)vid->rotation) % 360;
+      if (deg < 0)
+         deg += 360;
+      if (deg == 90 || deg == 270)
+      {
+         SDL_Rect dst;
+         SDL_Rect game_vp;
+         dst.w     = (int)vid->vp.height;
+         dst.h     = (int)vid->vp.width;
+         dst.x     = vid->vp.x + ((int)vid->vp.width  - dst.w) / 2;
+         dst.y     = vid->vp.y + ((int)vid->vp.height - dst.h) / 2;
+         SDL_RenderSetViewport(vid->renderer, NULL);
+         SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, &dst,
+               vid->rotation, NULL, SDL_FLIP_NONE);
+         /* Restore the game viewport for the menu/widget/overlay passes,
+          * which save and restore vid->vp. */
+         game_vp.x = vid->vp.x;
+         game_vp.y = vid->vp.y;
+         game_vp.w = (int)vid->vp.width;
+         game_vp.h = (int)vid->vp.height;
+         SDL_RenderSetViewport(vid->renderer, &game_vp);
+      }
+      else
+         SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL,
+               vid->rotation, NULL, SDL_FLIP_NONE);
+   }
 
 #ifdef HAVE_MENU
    {
@@ -1557,22 +1594,24 @@ static int sdl2_raster_font_get_message_width(void *data, const char *msg,
 {
    sdl2_raster_t *font = (sdl2_raster_t*)data;
    const char    *cur  = msg;
-   size_t         i    = 0;
+   const char    *end  = msg + msg_len;
    int            width = 0;
 
    if (!font || !msg)
       return 0;
 
-   while (i < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * byte-wise lookups turned multi-byte text into per-byte Latin-1
+    * glyph queries. */
+   while (cur < end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (glyph)
          width += glyph->advance_x;
-      i++;
-      cur++;
    }
 
    return (int)((float)width * scale);
@@ -1598,7 +1637,7 @@ static void sdl2_raster_font_render_line(
    int         idx[SDL2_FONT_MAX_GLYPHS * 6];
    int         n_glyphs = 0;
    const char *cur      = msg;
-   size_t      ci       = 0;
+   const char *cur_end  = msg + msg_len;
    float       x        = pos_x;
    float       y        = pos_y;
    float       inv_w;
@@ -1625,14 +1664,14 @@ static void sdl2_raster_font_render_line(
    inv_w = 1.0f / (float)font->tex_width;
    inv_h = 1.0f / (float)font->tex_height;
 
-   /* gfx_display draw_text passes 8-bit-clean strings; we walk byte
-    * by byte. UTF-8 multi-byte sequences are handled by the upstream
-    * font renderer's glyph lookup (which keys on uint32_t codepoints
-    * but tolerates byte-by-byte queries for the ASCII-only RA UI). */
-   while (ci < msg_len && *cur)
+   /* Decode UTF-8 code points like every other raster font backend;
+    * localized UI text is not ASCII-only and byte-wise lookups turned
+    * multi-byte sequences into per-byte Latin-1 glyph queries. */
+   while (cur < cur_end && *cur)
    {
+      uint32_t code = utf8_walk(&cur);
       const struct font_glyph *glyph =
-         font->font_driver->get_glyph(font->font_data, (uint8_t)*cur);
+         font->font_driver->get_glyph(font->font_data, code);
       float gx, gy, gw, gh;
       float u0, v0, u1, v1;
       int   base;
@@ -1640,11 +1679,7 @@ static void sdl2_raster_font_render_line(
       if (!glyph)
          glyph = font->font_driver->get_glyph(font->font_data, '?');
       if (!glyph)
-      {
-         ci++;
-         cur++;
          continue;
-      }
 
       gx = x + glyph->draw_offset_x * scale;
       gy = y + glyph->draw_offset_y * scale;
@@ -1691,8 +1726,6 @@ static void sdl2_raster_font_render_line(
 
       x += glyph->advance_x * scale;
       n_glyphs++;
-      ci++;
-      cur++;
 
       if (n_glyphs >= SDL2_FONT_MAX_GLYPHS)
       {

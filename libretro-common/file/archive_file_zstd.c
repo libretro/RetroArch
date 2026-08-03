@@ -33,7 +33,24 @@
 #include <file/file_path.h>
 #include <compat/strl.h>
 
+/* Either decoder will do; rzstd is preferred where a build has it, and
+ * the reference remains available until every platform has moved. */
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#else
 #include <zstd.h>
+#endif
+
+/* One spelling for whichever decoder is compiled in. */
+#ifdef HAVE_RZSTD
+#define ZSTD_FRAME_HEADER_MAX RZSTD_FRAME_HEADER_MAX
+#define ZSTD_SIZE_UNKNOWN     RZSTD_CONTENT_SIZE_UNKNOWN
+#define ZSTD_SIZE_ERROR       RZSTD_CONTENT_SIZE_ERROR
+#else
+#define ZSTD_FRAME_HEADER_MAX 18
+#define ZSTD_SIZE_UNKNOWN     ((int64_t)ZSTD_CONTENTSIZE_UNKNOWN)
+#define ZSTD_SIZE_ERROR       ((int64_t)ZSTD_CONTENTSIZE_ERROR)
+#endif
 
 #define ZSTD_MAGIC         "\x28\xB5\x2F\xFD"
 #define ZSTD_MAGIC_LEN     4
@@ -104,7 +121,7 @@ static int zstd_parse_file_iterate_step(void *context,
 {
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
    file_archive_transfer_t *state;
-   unsigned long long content_size;
+   int64_t            content_size;
 
    if (!ctx || ctx->parsed)
       return 0;
@@ -118,28 +135,41 @@ static int zstd_parse_file_iterate_step(void *context,
 #ifdef HAVE_MMAP
    if (state->archive_mmap_data)
    {
-      content_size = ZSTD_getFrameContentSize(
+#ifdef HAVE_RZSTD
+      content_size = rzstd_frame_content_size(
             state->archive_mmap_data, (size_t)state->archive_size);
+#else
+      content_size = (int64_t)ZSTD_getFrameContentSize(
+            state->archive_mmap_data, (size_t)state->archive_size);
+#endif
    }
    else
 #endif
    {
-      /* Only need to read the header; ZSTD_frameHeaderSize_max is 18 */
-      uint8_t header_buf[18];
-      int64_t to_read = state->archive_size < 18
-                       ? state->archive_size : 18;
+      /* Only the header is needed, and it is at most
+       * ZSTD_FRAME_HEADER_MAX bytes. */
+      uint8_t header_buf[ZSTD_FRAME_HEADER_MAX];
+      int64_t to_read = state->archive_size < ZSTD_FRAME_HEADER_MAX
+                       ? state->archive_size : ZSTD_FRAME_HEADER_MAX;
       if (filestream_read(state->archive_file, header_buf, to_read) != to_read)
          return -1;
-      content_size = ZSTD_getFrameContentSize(header_buf, (size_t)to_read);
+#ifdef HAVE_RZSTD
+      content_size = rzstd_frame_content_size(header_buf, (size_t)to_read);
+#else
+      content_size = (int64_t)ZSTD_getFrameContentSize(header_buf,
+            (size_t)to_read);
+#endif
    }
 
-   if (  content_size == ZSTD_CONTENTSIZE_UNKNOWN
-      || content_size == ZSTD_CONTENTSIZE_ERROR)
+   /* A frame that does not state its size is no use here: the whole
+    * member has to be allocated before it is decoded. */
+   if (  content_size == ZSTD_SIZE_UNKNOWN
+      || content_size == ZSTD_SIZE_ERROR)
       return -1;
 
    /* decompressed_size is a uint32_t and feeds a later malloc; reject
     * values that would truncate to a smaller size and mismatch the
-    * actual ZSTD_decompress output length. */
+    * length the decode actually produces. */
    if (content_size > UINT32_MAX)
       return -1;
 
@@ -186,6 +216,7 @@ static int zstd_stream_decompress_data_to_file_iterate(
    struct zstd_file_context *ctx = (struct zstd_file_context*)context;
    void *compressed_data = NULL;
    size_t result;
+   int    e;
    RFILE *file;
 
    if (!ctx || !handle)
@@ -227,11 +258,18 @@ static int zstd_stream_decompress_data_to_file_iterate(
       return -1;
    }
 
+#ifdef HAVE_RZSTD
+   e = (rzstd_decode(ctx->decompressed_data, ctx->decompressed_size,
+         compressed_data, (size_t)ctx->archive_size, &result)
+         != RZSTD_PROCESS_END);
+#else
    result = ZSTD_decompress(ctx->decompressed_data, ctx->decompressed_size,
          compressed_data, (size_t)ctx->archive_size);
+   e      = ZSTD_isError(result);
+#endif
    free(compressed_data);
 
-   if (ZSTD_isError(result))
+   if (e)
    {
       free(ctx->decompressed_data);
       ctx->decompressed_data = NULL;
@@ -254,8 +292,9 @@ static int64_t zstd_file_read(
    int64_t file_size;
    void *compressed_data    = NULL;
    uint8_t *decompressed    = NULL;
-   unsigned long long content_size;
+   int64_t            content_size;
    size_t result;
+   int    e;
    RFILE *file;
 
    zstd_derive_inner_filename(path, inner_name, sizeof(inner_name));
@@ -292,9 +331,15 @@ static int64_t zstd_file_read(
 
    filestream_close(file);
 
-   content_size = ZSTD_getFrameContentSize(compressed_data, (size_t)file_size);
-   if (  content_size == ZSTD_CONTENTSIZE_UNKNOWN
-      || content_size == ZSTD_CONTENTSIZE_ERROR)
+#ifdef HAVE_RZSTD
+   content_size = rzstd_frame_content_size(compressed_data,
+         (size_t)file_size);
+#else
+   content_size = (int64_t)ZSTD_getFrameContentSize(compressed_data,
+         (size_t)file_size);
+#endif
+   if (  content_size == ZSTD_SIZE_UNKNOWN
+      || content_size == ZSTD_SIZE_ERROR)
    {
       free(compressed_data);
       return -1;
@@ -304,8 +349,8 @@ static int64_t zstd_file_read(
     * truncate when cast to size_t on 32-bit hosts.  Without this guard
     * content_size = 0xFFFFFFFF on a 32-bit host wraps the +1 to zero,
     * malloc(0) may return a non-NULL pointer, and the following
-    * ZSTD_decompress writes 4 GiB into it. */
-   if (content_size >= SIZE_MAX)
+    * decode writes 4 GiB into it. */
+   if ((uint64_t)content_size >= (uint64_t)SIZE_MAX)
    {
       free(compressed_data);
       return -1;
@@ -318,11 +363,18 @@ static int64_t zstd_file_read(
       return -1;
    }
 
+#ifdef HAVE_RZSTD
+   e = (rzstd_decode(decompressed, (size_t)content_size,
+         compressed_data, (size_t)file_size, &result)
+         != RZSTD_PROCESS_END);
+#else
    result = ZSTD_decompress(decompressed, (size_t)content_size,
          compressed_data, (size_t)file_size);
+   e      = ZSTD_isError(result);
+#endif
    free(compressed_data);
 
-   if (ZSTD_isError(result))
+   if (e)
    {
       free(decompressed);
       return -1;
@@ -346,19 +398,13 @@ static int64_t zstd_file_read(
    return (int64_t)result;
 }
 
-static uint32_t zstd_stream_crc32_calculate(uint32_t crc,
-      const uint8_t *data, size_t len)
-{
-   return encoding_crc32(crc, data, len);
-}
-
 const struct file_archive_file_backend zstd_backend = {
    zstd_parse_file_init,
    zstd_parse_file_iterate_step,
    zstd_parse_file_free,
    zstd_stream_decompress_data_to_file_init,
    zstd_stream_decompress_data_to_file_iterate,
-   zstd_stream_crc32_calculate,
+   encoding_crc32,
    zstd_file_read,
    "zstd"
 };

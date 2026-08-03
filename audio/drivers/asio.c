@@ -678,6 +678,14 @@ typedef struct ra_asio
    slock_t           *cond_lock;
 #endif
    ASIOBufferInfo     buf_info[2];  /* L and R output channels */
+   /* Deinterleave scratch, owned by the consumer (ASIO callback).
+    * One bulk retro_spsc_read per callback lands here and the format
+    * conversion below reads out of it, instead of taking the ring's
+    * cursors once per frame.  Sized for buffer_frames stereo float
+    * frames; allocated once buffer_frames is known in ra_asio_init and
+    * kept across park/reclaim, since the ASIO buffer size is fixed by
+    * the driver for the lifetime of the COM object. */
+   float             *scratch;
    ASIOSampleType     sample_type;
    long               buffer_frames;
    size_t             ring_size;
@@ -738,6 +746,7 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       long index, long frames)
 {
    long i;
+   const float *src = ad->scratch;
    void *buf_l  = ad->buf_info[0].buffers[index];
    void *buf_r  = ad->buf_info[1].buffers[index];
    /* Acquire-load on the producer's head cursor.  Pairs with the
@@ -750,18 +759,25 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
    if (have > frames)
       have = frames;
 
+   /* Drain what we're going to use in one go.  The cursors are touched
+    * exactly once per callback rather than once per frame; everything
+    * below reads out of thread-local scratch.  retro_spsc_read is
+    * capped by the read_avail above so it returns the full request,
+    * but use its return value in case that contract changes. */
+   if (have > 0)
+      have = (long)(retro_spsc_read(&ad->ring, ad->scratch,
+            (size_t)have * 2 * sizeof(float)) / (2 * sizeof(float)));
+
    switch (ad->sample_type)
    {
       case ASIOSTFloat32LSB:
       {
          float *dl = (float *)buf_l;
          float *dr = (float *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = tmp[0];
-            dr[i] = tmp[1];
+            dl[i] = src[i * 2 + 0];
+            dr[i] = src[i * 2 + 1];
          }
          for (; i < frames; i++) { dl[i] = 0.0f; dr[i] = 0.0f; }
          break;
@@ -771,12 +787,10 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          double *dl = (double *)buf_l;
          double *dr = (double *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = (double)tmp[0];
-            dr[i] = (double)tmp[1];
+            dl[i] = (double)src[i * 2 + 0];
+            dr[i] = (double)src[i * 2 + 1];
          }
          for (; i < frames; i++) { dl[i] = 0.0; dr[i] = 0.0; }
          break;
@@ -786,12 +800,27 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          int32_t *dl = (int32_t *)buf_l;
          int32_t *dr = (int32_t *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            dl[i] = (int32_t)((double)tmp[0] * 2147483647.0);
-            dr[i] = (int32_t)((double)tmp[1] * 2147483647.0);
+            double l, r;
+            /* Symmetric full-scale (2^31) with round-half-away and
+             * saturation, matching convert_float_to_s16's semantics at
+             * 16-bit.  The previous (2^31 - 1) truncating form had an
+             * asymmetric transfer curve and doubled the quantisation
+             * error; it also relied on the frontend's float clamp for
+             * range safety.  Computed in double: float's 24-bit mantissa
+             * cannot address 32-bit steps, and the +-0.5 bias would be
+             * absorbed at float precision. */
+            l = (double)src[i * 2 + 0] * 2147483648.0;
+            r = (double)src[i * 2 + 1] * 2147483648.0;
+            l += (l >= 0.0) ? 0.5 : -0.5;
+            r += (r >= 0.0) ? 0.5 : -0.5;
+            if      (l >  2147483647.0) dl[i] = INT32_MAX;
+            else if (l < -2147483648.0) dl[i] = INT32_MIN;
+            else                        dl[i] = (int32_t)l;
+            if      (r >  2147483647.0) dr[i] = INT32_MAX;
+            else if (r < -2147483648.0) dr[i] = INT32_MIN;
+            else                        dr[i] = (int32_t)r;
          }
          for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
          break;
@@ -801,15 +830,22 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          char *dl = (char *)buf_l;
          char *dr = (char *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            l = (int32_t)(tmp[0] * 8388607.0f);
-            r = (int32_t)(tmp[1] * 8388607.0f);
-            l = l >  8388607 ?  8388607 : (l < -8388608 ? -8388608 : l);
-            r = r >  8388607 ?  8388607 : (r < -8388608 ? -8388608 : r);
+            float fl, fr;
+            /* Symmetric full-scale (2^23), round-half-away, saturate -
+             * see the Int32 branch comment. */
+            fl = src[i * 2 + 0] * 8388608.0f;
+            fr = src[i * 2 + 1] * 8388608.0f;
+            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
+            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
+            if      (fl >  8388607.0f) l =  8388607;
+            else if (fl < -8388608.0f) l = -8388608;
+            else                       l = (int32_t)fl;
+            if      (fr >  8388607.0f) r =  8388607;
+            else if (fr < -8388608.0f) r = -8388608;
+            else                       r = (int32_t)fr;
             dl[i*3+0]=(char)(l&0xFF); dl[i*3+1]=(char)((l>>8)&0xFF); dl[i*3+2]=(char)((l>>16)&0xFF);
             dr[i*3+0]=(char)(r&0xFF); dr[i*3+1]=(char)((r>>8)&0xFF); dr[i*3+2]=(char)((r>>16)&0xFF);
          }
@@ -825,15 +861,26 @@ static void asio_deinterleave_to_buffers(ra_asio_t *ad,
       {
          int16_t *dl = (int16_t *)buf_l;
          int16_t *dr = (int16_t *)buf_r;
-         float tmp[2];
          for (i = 0; i < have; i++)
          {
             int32_t l, r;
-            retro_spsc_read(&ad->ring, tmp, sizeof(tmp));
-            l = (int32_t)(tmp[0] * 32767.0f);
-            r = (int32_t)(tmp[1] * 32767.0f);
-            dl[i] = (int16_t)(l > 32767 ? 32767 : (l < -32768 ? -32768 : l));
-            dr[i] = (int16_t)(r > 32767 ? 32767 : (r < -32768 ? -32768 : r));
+            float fl, fr;
+            /* Same semantics as convert_float_to_s16's scalar path:
+             * symmetric 0x8000 scale, round-half-away, saturate.  The
+             * previous 32767-scale truncating form cost ~6 dB of
+             * quantisation noise and skewed the transfer curve. */
+            fl = src[i * 2 + 0] * 32768.0f;
+            fr = src[i * 2 + 1] * 32768.0f;
+            fl += (fl >= 0.0f) ? 0.5f : -0.5f;
+            fr += (fr >= 0.0f) ? 0.5f : -0.5f;
+            if      (fl >  32767.0f) l =  32767;
+            else if (fl < -32768.0f) l = -32768;
+            else                     l = (int32_t)fl;
+            if      (fr >  32767.0f) r =  32767;
+            else if (fr < -32768.0f) r = -32768;
+            else                     r = (int32_t)fr;
+            dl[i] = (int16_t)l;
+            dr[i] = (int16_t)r;
          }
          for (; i < frames; i++) { dl[i] = 0; dr[i] = 0; }
          break;
@@ -858,7 +905,8 @@ static void asio_cb_buffer_switch(long index,
 {
    ra_asio_t *ad = g_asio;
 
-   if (!ad || !ad->ring_initialized || ad->is_paused || ad->shutdown)
+   if (     !ad || !ad->ring_initialized || !ad->scratch
+         || ad->is_paused || ad->shutdown)
    {
       if (ad && ad->buf_info[0].buffers[index])
       {
@@ -885,6 +933,22 @@ static void asio_cb_sample_rate_changed(ASIOSampleRate rate)
    RARCH_LOG("[ASIO] Sample rate changed to %.0f Hz.\n", rate);
 }
 
+/* Raise the shutdown flag and wake anyone blocked in ra_asio_write.
+ * Setting the flag alone is not enough: it makes asio_cb_buffer_switch
+ * take its early-out, so the routine that would otherwise have done the
+ * waking stops signalling from that moment on. */
+static void asio_request_shutdown(void)
+{
+   ra_asio_t *ad = g_asio;
+   if (!ad)
+      return;
+   ad->shutdown = true;
+#ifdef HAVE_THREADS
+   if (ad->cond)
+      scond_signal(ad->cond);
+#endif
+}
+
 static long asio_cb_message(long selector, long value,
       void *message, double *opt)
 {
@@ -904,13 +968,11 @@ static long asio_cb_message(long selector, long value,
          return 2L;
       case kAsioResetRequest:
          RARCH_WARN("[ASIO] Driver requests reset.\n");
-         if (g_asio)
-            g_asio->shutdown = true;
+         asio_request_shutdown();
          return 1L;
       case kAsioBufferSizeChange:
          RARCH_WARN("[ASIO] Buffer size change requested.\n");
-         if (g_asio)
-            g_asio->shutdown = true;
+         asio_request_shutdown();
          return 1L;
       case kAsioSupportsTimeInfo:
          return 1L; /* We implement bufferSwitchTimeInfo */
@@ -962,6 +1024,12 @@ static void asio_atexit_cleanup(void)
       ad->ring_initialized = false;
    }
 
+   if (ad->scratch)
+   {
+      free(ad->scratch);
+      ad->scratch = NULL;
+   }
+
 #ifdef HAVE_THREADS
    if (ad->cond_lock)
       slock_free(ad->cond_lock);
@@ -978,6 +1046,29 @@ static void asio_atexit_cleanup(void)
 /* ═══════════════════════════════════════════════════════════════════
  *  RetroArch audio_driver_t implementation
  * ═══════════════════════════════════════════════════════════════════ */
+
+/* Prime the ring to the rate-control setpoint (half capacity) with
+ * silence.  Init/reclaim-time only - not on any streaming path.
+ *
+ * Streaming starts the moment ASIOStart is called, but the writer has
+ * produced nothing yet: an empty ring means a deterministic burst of
+ * underruns (a pop) on every fresh init and on every park/reclaim -
+ * i.e. every content load, fullscreen toggle and settings change.
+ * Half capacity is exactly where rate control holds the ring in
+ * steady state, so priming there adds no latency beyond the setpoint
+ * and no convergence transient: the stream begins already balanced,
+ * with silence draining ahead of the first real audio. */
+static void asio_prime_ring(ra_asio_t *ad)
+{
+   static const char zeros[512]; /* zero-initialised */
+   size_t left = retro_spsc_write_avail(&ad->ring) / 2;
+   while (left > 0)
+   {
+      size_t n = (left < sizeof(zeros)) ? left : sizeof(zeros);
+      retro_spsc_write(&ad->ring, zeros, n);
+      left -= n;
+   }
+}
 
 static void *ra_asio_init(const char *device, unsigned rate,
       unsigned latency, unsigned block_frames, unsigned *new_rate)
@@ -1029,8 +1120,39 @@ static void *ra_asio_init(const char *device, unsigned rate,
       /* Discard any stale audio left over from the previous
        * session.  Safe here because the ASIO callback isn't
        * running yet (g_asio is still NULL until the next line),
-       * so the SPSC is single-threaded at this point. */
-      retro_spsc_clear(&ad->ring);
+       * so the SPSC is single-threaded at this point.  For the
+       * same reason it is safe to recreate the ring outright when
+       * the latency-derived size changed (audio settings changes
+       * reinit the driver through free()/init(), which lands here
+       * on the reuse path - without this, a latency change would
+       * silently keep the old ring size). */
+      {
+         size_t latency_frames = (size_t)ad->sample_rate * latency / 1000;
+         size_t period_frames  = (size_t)ad->buffer_frames * ASIO_RING_MULT;
+         size_t ring_frames    = (latency_frames > period_frames)
+               ? latency_frames : period_frames;
+         size_t want           = ring_frames * 2 * sizeof(float);
+         if (want > ad->ring_size || want * 2 <= ad->ring_size)
+         {
+            retro_spsc_free(&ad->ring);
+            ad->ring_initialized = false;
+            if (!retro_spsc_init(&ad->ring, want))
+            {
+               RARCH_ERR("[ASIO] Failed to resize ring buffer.\n");
+               g_asio_persistent = ad; /* Park it again */
+               return NULL;
+            }
+            ad->ring_initialized = true;
+            ad->ring_size        = retro_spsc_write_avail(&ad->ring);
+            RARCH_LOG("[ASIO] Ring buffer resized: %u frames (%.1f ms).\n",
+                  (unsigned)(ad->ring_size / (2 * sizeof(float))),
+                  (double)(ad->ring_size / (2 * sizeof(float)))
+                        * 1000.0 / ad->sample_rate);
+         }
+         else
+            retro_spsc_clear(&ad->ring);
+      }
+      asio_prime_ring(ad);
 
       g_asio = ad;
       ad->running = true;
@@ -1175,6 +1297,21 @@ static void *ra_asio_init(const char *device, unsigned rate,
          ad->buffer_frames,
          (float)ad->buffer_frames * 1000.0f / ad->sample_rate);
 
+   /* Scratch for the callback's bulk ring drain.  Allocated here, once
+    * buffer_frames is known and before anything can issue a
+    * bufferSwitch: the driver may call back during ASIOCreateBuffers.
+    * buffer_frames is never reassigned afterwards - the ASIO buffer
+    * size belongs to the COM object, which outlives park/reclaim - so
+    * this allocation stays correctly sized for the instance's whole
+    * life and is only released when the instance is really destroyed. */
+   ad->scratch = (float *)malloc((size_t)ad->buffer_frames
+         * 2 * sizeof(float));
+   if (!ad->scratch)
+   {
+      RARCH_ERR("[ASIO] Failed to allocate deinterleave scratch.\n");
+      goto error;
+   }
+
    /* Query output channel sample type */
    memset(&ch_info, 0, sizeof(ch_info));
    ch_info.channel  = 0;
@@ -1198,16 +1335,40 @@ static void *ra_asio_init(const char *device, unsigned rate,
    /* Create ring buffer BEFORE ASIO buffers — the driver may issue
     * a bufferSwitch callback during ASIOCreateBuffers, and the
     * callback needs the ring buffer to exist (even if empty).
-    * retro_spsc_init rounds capacity up to a power of 2; the
-    * over-allocation is small (factor of < 2) and irrelevant to
-    * the ASIO latency calculation, which uses ad->buffer_frames
-    * not the ring's actual byte capacity. */
-   ad->ring_size = pref_sz * 2 * sizeof(float) * ASIO_RING_MULT;
+    *
+    * Size the ring from the user's audio latency setting, floored at
+    * ASIO_RING_MULT device periods.  The previous sizing used device
+    * periods alone, which ignored the latency setting entirely: a pro
+    * interface at a typical 32-128 sample ASIO buffer produced a
+    * 1.3-5 ms ring at 96 kHz, far below main-thread scheduling jitter
+    * (the writer runs once per video frame), so the ring chronically
+    * underran and every underrun's zero-fill in bufferSwitch was an
+    * audible pop.  Like other drivers, the DRC steady state holds the
+    * ring about half full, so effective added latency is roughly half
+    * this size plus the device's own double buffer. */
+   {
+      size_t latency_frames = (size_t)ad->sample_rate * latency / 1000;
+      size_t period_frames  = (size_t)pref_sz * ASIO_RING_MULT;
+      size_t ring_frames    = (latency_frames > period_frames)
+            ? latency_frames : period_frames;
+      ad->ring_size = ring_frames * 2 * sizeof(float);
+   }
    if (!retro_spsc_init(&ad->ring, ad->ring_size))
    {
       RARCH_ERR("[ASIO] Failed to create ring buffer.\n");
       goto error;
    }
+   /* retro_spsc_init rounds capacity up to a power of 2.  Report the
+    * true capacity as the driver buffer size, so the frontend's rate
+    * control computes its setpoint against the ring's real bounds
+    * rather than the pre-rounding request.  An empty ring's write
+    * avail is exactly its capacity. */
+   ad->ring_size = retro_spsc_write_avail(&ad->ring);
+   asio_prime_ring(ad);
+   RARCH_LOG("[ASIO] Ring buffer: %u frames (%.1f ms).\n",
+         (unsigned)(ad->ring_size / (2 * sizeof(float))),
+         (double)(ad->ring_size / (2 * sizeof(float)))
+               * 1000.0 / ad->sample_rate);
    ad->ring_initialized = true;
 
 #ifdef HAVE_THREADS
@@ -1277,6 +1438,11 @@ error:
       retro_spsc_free(&ad->ring);
       ad->ring_initialized = false;
    }
+   if (ad->scratch)
+   {
+      free(ad->scratch);
+      ad->scratch = NULL;
+   }
 #ifdef HAVE_THREADS
    if (ad->cond_lock)
       slock_free(ad->cond_lock);
@@ -1294,9 +1460,20 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
    ra_asio_t *ad      = (ra_asio_t *)data;
    const char *src    = (const char *)buf;
    size_t written     = 0;
+   int64_t wait_us    = 1000;
 
    if (!ad || ad->shutdown)
       return -1;
+
+   /* Bound for the blocking wait below, one device period.  Both
+    * operands are fixed for the lifetime of the COM object, so this is
+    * loop-invariant. */
+   if (ad->sample_rate)
+   {
+      wait_us = (int64_t)ad->buffer_frames * 1000000 / ad->sample_rate;
+      if (wait_us < 1000)
+         wait_us = 1000;
+   }
 
    while (len > 0)
    {
@@ -1325,8 +1502,25 @@ static ssize_t ra_asio_write(void *data, const void *buf, size_t len)
       else if (!ad->nonblock)
       {
 #ifdef HAVE_THREADS
+         /* Timed, not indefinite.  The predicate here is the ring's
+          * write_avail, which is lock-free by design - the consumer is
+          * a real-time ASIO callback and must not take a lock - so
+          * cond_lock cannot also guard the predicate and a signal
+          * raised between the write_avail test above and this wait has
+          * no waiter to reach.  Where a condition variable can lose a
+          * wakeup by construction, the correct shape is a timed wait
+          * inside a loop that rechecks, which is what the enclosing
+          * while does: it retests ad->shutdown and write_avail on
+          * every pass.
+          *
+          * This is also the only thing standing between a driver reset
+          * and a hung emulator thread.  asio_cb_buffer_switch is the
+          * sole routine that signals during streaming, and it returns
+          * early - before signalling - once shutdown or is_paused is
+          * set.  An untimed wait entered before that point was never
+          * woken again. */
          slock_lock(ad->cond_lock);
-         scond_wait(ad->cond, ad->cond_lock);
+         scond_wait_timeout(ad->cond, ad->cond_lock, wait_us);
          slock_unlock(ad->cond_lock);
 #else
          Sleep(1);

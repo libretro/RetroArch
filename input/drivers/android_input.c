@@ -48,6 +48,10 @@
 #include "../../runloop.h"
 #include "../input_driver.h"
 
+#ifdef HAVE_THREADS
+#include "../../gfx/video_thread_wrapper.h"
+#endif
+
 #define MAX_TOUCH 16
 #define MAX_NUM_KEYBOARDS 3
 #define DEFAULT_ASENSOR_EVENT_RATE 60
@@ -365,6 +369,20 @@ bool android_input_can_be_keyboard(void *data, int port)
     return android_input_can_be_keyboard_jni(device->id);
 }
 
+static void android_input_destroy_surface(video_driver_state_t *state)
+{
+   if (!state || !state->current_video_context.destroy_surface)
+      return;
+
+#ifdef HAVE_THREADS
+   /* The video worker may still be recording a frame that references the
+    * surface. Drain it before the context driver frees the surface. */
+   video_thread_wait_idle();
+#endif
+
+   state->current_video_context.destroy_surface(state->context_data);
+}
+
 static void android_input_poll_main_cmd(void)
 {
    int8_t cmd;
@@ -421,32 +439,64 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_RESUME:
       case APP_CMD_START:
       case APP_CMD_PAUSE:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
+         slock_lock(android_app->mutex);
+         android_app->activityState = cmd;
+         /* RESUME/START can arrive before INIT_WINDOW. In that case,
+          * wait for INIT_WINDOW rather than falling back to a full
+          * video-driver reinitialization without a native window. */
+         if (  (cmd == APP_CMD_RESUME || cmd == APP_CMD_START)
+             && state->current_video_context.ident
+             && string_is_equal(state->current_video_context.ident,
+                   "vk_android")
+             && android_app->window
+             && state->current_video_context.create_surface)
+            android_app->reinitRequested = 1;
+         scond_broadcast(android_app->cond);
+         slock_unlock(android_app->mutex);
+         break;
+      }
+
       case APP_CMD_STOP:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
          slock_lock(android_app->mutex);
          android_app->activityState = cmd;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
+
+         /* Android may retain the same ANativeWindow while the app is
+          * backgrounded. Release Vulkan's acquired buffers anyway so BLAST
+          * cannot wedge before APP_CMD_TERM_WINDOW is delivered. */
+         if (     state->current_video_context.ident
+               && string_is_equal(state->current_video_context.ident,
+                     "vk_android"))
+            android_input_destroy_surface(state);
          break;
+      }
 
       case APP_CMD_CONFIG_CHANGED:
          AConfiguration_fromAssetManager(android_app->config,
                android_app->activity->assetManager);
          break;
       case APP_CMD_TERM_WINDOW:
+      {
+         video_driver_state_t *state = video_state_get_ptr();
+
+         android_input_destroy_surface(state);
+
          slock_lock(android_app->mutex);
 
          /* The window is being hidden or closed, clean it up. */
          /* terminate display/EGL context here */
-         {
-            video_driver_state_t *state = video_state_get_ptr();
-            if (state->current_video_context.destroy_surface != NULL)
-               state->current_video_context.destroy_surface(state->context_data);
-         }
-
          android_app->window = NULL;
          scond_broadcast(android_app->cond);
          slock_unlock(android_app->mutex);
          break;
+      }
 
       case APP_CMD_GAINED_FOCUS:
          {
@@ -987,6 +1037,64 @@ static bool android_is_keyboard_id(int id)
    return false;
 }
 
+/* Resolves the printable Unicode codepoint produced by a hardware-key
+ * press, honouring the active keyboard layout and modifier (shift, caps
+ * lock, ...) state via the device's KeyCharacterMap - this mirrors what
+ * android.view.KeyEvent.getUnicodeChar() does.
+ *
+ * Returns 0 for keys that do not produce a character (modifiers, lock
+ * keys, navigation/function keys, ...).  That is exactly what the
+ * keyboard line-editor expects: such keys must not emit text, and were
+ * previously leaking into menu text fields as '?'.
+ *
+ * Also returns 0 (rather than failing) whenever JNI is unavailable, so
+ * the caller can fall back to its previous keysym-based behaviour. */
+static unsigned android_keycode_to_unicode(int device_id,
+      int keycode, int meta_state)
+{
+   jint      unicode = 0;
+   jobject   kcm     = NULL;
+   jmethodID load    = NULL;
+   jmethodID get     = NULL;
+   jclass    class   = NULL;
+   JNIEnv   *env     = (JNIEnv*)jni_thread_getenv();
+
+   if (!env)
+      return 0;
+
+   /* Bound the local references created below so they are released as
+    * soon as the lookup completes, rather than accumulating in the
+    * thread-local reference table across key presses. */
+   if ((*env)->PushLocalFrame(env, 4) < 0)
+      return 0;
+
+   FIND_CLASS(env, class, "android/view/KeyCharacterMap");
+   if (class)
+   {
+      GET_STATIC_METHOD_ID(env, load, class, "load",
+            "(I)Landroid/view/KeyCharacterMap;");
+      if (load)
+      {
+         CALL_OBJ_STATIC_METHOD_PARAM(env, kcm, class, load,
+               (jint)device_id);
+         if (kcm)
+         {
+            GET_METHOD_ID(env, get, class, "get", "(II)I");
+            if (get)
+               CALL_INT_METHOD_PARAM(env, unicode, kcm, get,
+                     (jint)keycode, (jint)meta_state);
+         }
+      }
+   }
+
+   (*env)->PopLocalFrame(env, NULL);
+
+   /* KeyCharacterMap.get() sets the COMBINING_ACCENT (0x80000000) flag
+    * for dead keys; the menu line-editor cannot compose those, so strip
+    * the flag and keep the base accent character. */
+   return ((unsigned)unicode) & 0x7fffffff;
+}
+
 static INLINE void android_input_poll_event_type_keyboard(
       AInputEvent *event, int keycode, int *handled)
 {
@@ -996,6 +1104,7 @@ static INLINE void android_input_poll_event_type_keyboard(
    /* Set keyboard modifier based on shift,ctrl and alt state */
    uint16_t mod          = 0;
    int meta              = AKeyEvent_getMetaState(event);
+   uint32_t character    = 0;
 
    if (meta & AMETA_ALT_ON)
       mod |= RETROKMOD_ALT;
@@ -1012,8 +1121,23 @@ static INLINE void android_input_poll_event_type_keyboard(
    if (meta & AMETA_META_ON)
       mod |= RETROKMOD_META;
 
+   /* Resolve the actual printable character for this key in the current
+    * layout + modifier state.  This produces capitals and shifted
+    * symbols, and yields 0 for modifier/lock keys so they no longer leak
+    * into menu text fields as '?'. */
+   character = android_keycode_to_unicode(
+         AInputEvent_getDeviceId(event), keycode, meta);
+
+   /* Fall back to the raw keysym for the plain ASCII range when the
+    * platform could not resolve a character (e.g. JNI unavailable).
+    * This preserves the previous behaviour for lowercase input while
+    * still suppressing modifier/lock keys, whose keysyms are >= 0x80,
+    * from being emitted as text. */
+   if (character == 0 && keyboardcode < 0x80)
+      character = keyboardcode;
+
    input_keyboard_event(keydown, keyboardcode,
-         keyboardcode, mod, RETRO_DEVICE_KEYBOARD);
+         character, mod, RETRO_DEVICE_KEYBOARD);
 
    if ((keycode == AKEYCODE_VOLUME_UP || keycode == AKEYCODE_VOLUME_DOWN))
       *handled = 0;
@@ -1046,9 +1170,13 @@ static INLINE void android_input_poll_event_type_key(
    {
       case AKEY_EVENT_ACTION_UP:
          BIT_CLEAR(buf, keysym);
+         if (keysym == AKEYCODE_BACK)
+            BIT_CLEAR(buf, AKEYCODE_X); /* alias BACK on remote */
          break;
       case AKEY_EVENT_ACTION_DOWN:
          BIT_SET(buf, keysym);
+         if (keysym == AKEYCODE_BACK)
+            BIT_SET(buf, AKEYCODE_X);
          break;
    }
 
@@ -1447,7 +1575,9 @@ static void handle_hotplug(android_input_t *android,
    /* If device is keyboard only and didn't match any of the devices above
     * then assume it is a keyboard, register the id, and return unless the
     * maximum number of keyboards are already registered. */
-   else if (source == AINPUT_SOURCE_KEYBOARD && kbd_num < MAX_NUM_KEYBOARDS)
+   else if ((source == AINPUT_SOURCE_KEYBOARD ||
+      source == (AINPUT_SOURCE_KEYBOARD | AINPUT_SOURCE_DPAD))
+      && kbd_num < MAX_NUM_KEYBOARDS)
    {
       kbd_id[kbd_num] = id;
       kbd_num++;
@@ -1461,9 +1591,9 @@ static void handle_hotplug(android_input_t *android,
    else if ((source & AINPUT_SOURCE_KEYBOARD) && kbd_num < MAX_NUM_KEYBOARDS &&
             is_configured_as_physical_keyboard(vendorId, productId, device_name))
    {
-       kbd_id[kbd_num] = id;
-       kbd_num++;
-       return;
+      kbd_id[kbd_num] = id;
+      kbd_num++;
+      return;
    }
 
    /* if device was not keyboard only, yet did not match any of the devices
@@ -1810,11 +1940,10 @@ static void android_input_reinit(void)
 
    if (runloop_flags & RUNLOOP_FLAG_PAUSED)
    {
-      /* When using OpenGL, pausing the app (e.g. by opening the app switcher)
-       * will result in the EGL window surface being destroyed, but the actual
-       * OpenGL context will be preserved on most devices, so we may be able to
-       * get away with reinitializing only the window surface without having to
-       * do a full video driver reinitialization. */
+      /* When the app is paused (e.g. by opening the app switcher), Android may
+       * destroy the presentation surface while retaining the OpenGL context or
+       * Vulkan device. Recreate only the surface when supported before falling
+       * back to a full video driver reinitialization. */
       video_driver_state_t *state = video_state_get_ptr();
       if (state->current_video_context.create_surface == NULL || !state->current_video_context.create_surface(state->context_data))
          command_event(CMD_EVENT_REINIT, NULL);
@@ -1833,7 +1962,7 @@ static void android_input_poll(void *data)
    settings_t            *settings = config_get_ptr();
 
    while ((ident =
-            ALooper_pollAll(settings->uints.input_block_timeout,
+            ALooper_pollOnce(settings->uints.input_block_timeout,
                NULL, NULL, NULL)) >= 0)
    {
       switch (ident)

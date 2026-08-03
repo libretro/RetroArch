@@ -22,6 +22,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <file/archive_file.h>
+#include <streams/interface_stream.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -210,6 +212,12 @@ const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS] = {
    { "custom",    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM }
 };
 
+/* NOTE: zero-initialised, so both discovery sockets start out as fd 0
+ * rather than as -1.  Every '>= 0' guard in this file therefore reads
+ * as 'valid' before the first init, and deinit_netplay_discovery()
+ * would close descriptor 0 - stdin.  Fixed up in
+ * netplay_discovery_state_init() below, which runs before either
+ * descriptor can be reached. */
 static net_driver_state_t networking_driver_st = {0};
 
 net_driver_state_t *networking_state_get_ptr(void)
@@ -227,15 +235,107 @@ static bool netplay_process_savestate(netplay_t* netplay, retro_ctx_serialize_in
 #define NETPLAYSTATE_CHEEVOS_BLOCK "ACHV"
 #define NETPLAYSTATE_END_BLOCK "END "
 
+#ifdef HAVE_NETWORKING
+/* The content fingerprint netplay advertises, compares and searches by.
+ *
+ * Netplay is the only thing in the frontend that wants this, so it is
+ * derived here and nowhere else.  A session that never hosts, joins or
+ * answers a discovery query never computes it - which for a core
+ * opening a multi-gigabyte disc image is the difference between
+ * reading that image and not touching it.
+ *
+ * The content path is the whole input, and it has to be read the way
+ * the scanner reads it, because the lobby searches the playlists the
+ * scanner wrote: an "archive#entry" path is hashed by decompressing
+ * the entry, and everything else by hashing the file.  Getting that
+ * split wrong yields zero, which reads as "no CRC" and quietly
+ * disables both the handshake check and the lookup.
+ *
+ * Soft-patched content is reported by the CRC of the ROM on disk, not
+ * of the patched bytes.  That is the useful answer: patched bytes
+ * match no playlist entry anywhere, so hashing them broke the lobby's
+ * lookup for every patched user, and two peers running the same patch
+ * agree on the unpatched file anyway.  What it gives up is the warning
+ * when one peer has applied a patch and the other has not - a warning
+ * that never blocked the session it warned about.
+ *
+ * Cached because the callers repeat: the LAN ad server answers every
+ * discovery query. Keyed on the content path, so a different load
+ * recomputes on its own without anything having to invalidate it.
+ */
+uint32_t netplay_content_crc(void)
+{
+   static char     cached_path[PATH_MAX_LENGTH] = {0};
+   static uint32_t cached_crc                   = 0;
+   const char     *path                         = path_get(RARCH_PATH_CONTENT);
+
+   if (!path || !*path)
+      return 0;
+
+   if (!string_is_equal(cached_path, path))
+   {
+      uint32_t crc = 0;
+
+      if (path_contains_compressed_file(path))
+      {
+         uint64_t size = 0;
+         crc = file_archive_get_file_crc32_and_size(path, &size);
+      }
+      else
+      {
+         intfstream_t *fd = intfstream_open_file(path,
+               RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+         if (fd)
+         {
+            if (!intfstream_get_crc(fd, &crc))
+               crc = 0;
+            intfstream_close(fd);
+            free(fd);
+         }
+      }
+
+      cached_crc = crc;
+      strlcpy(cached_path, path, sizeof(cached_path));
+   }
+   return cached_crc;
+}
+#endif
+
+
 #ifdef HAVE_NETPLAYDISCOVERY
+/* Give the discovery client descriptor its 'closed' value.
+ *
+ * net_driver_state_t is a zero-initialised static, so without this
+ * lan_ad_client_fd starts at 0, which every '>= 0' test in this file
+ * accepts as a live socket - and deinit_netplay_discovery() would
+ * close descriptor 0.  (lan_ad_server_fd has always been set to -1 by
+ * init_netplay(), which is the only thing that reaches it; it is left
+ * alone here so that this - which runs on the task worker thread -
+ * cannot race that, which runs on the main thread.) */
+static void netplay_discovery_client_state_init(void)
+{
+   static bool inited;
+   net_driver_state_t *net_st = &networking_driver_st;
+
+   if (inited)
+      return;
+   inited                   = true;
+
+   net_st->lan_ad_client_fd = -1;
+}
+
 /** Initialize Netplay discovery (client) */
 bool init_netplay_discovery(void)
 {
    struct addrinfo *addr      = NULL;
    net_driver_state_t *net_st = &networking_driver_st;
-   int fd                     = socket_init((void**)&addr, 0, NULL,
-      SOCKET_TYPE_DATAGRAM, AF_INET);
-   bool ret                   = fd >= 0 && addr;
+   int fd;
+   bool ret;
+
+   netplay_discovery_client_state_init();
+
+   fd  = socket_init((void**)&addr, 0, NULL, SOCKET_TYPE_DATAGRAM, AF_INET);
+   ret = fd >= 0 && addr;
 
    if (ret)
    {
@@ -278,6 +378,21 @@ bool init_netplay_discovery(void)
 #else
    return ret;
 #endif
+}
+
+/** Release the LAN discovery result list.
+ *
+ * Nothing else in the tree frees it: the list is grown from discovery
+ * responses and only ever truncated (size = 0) between scans, so the
+ * last allocation lives until the process exits.  Called once from
+ * RARCH_CTL_MAIN_DEINIT, after the menu can no longer be reading it. */
+void netplay_discovery_free_hosts(void)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+
+
+   free(net_st->discovered_hosts.hosts);
+   memset(&net_st->discovered_hosts, 0, sizeof(net_st->discovered_hosts));
 }
 
 /** Deinitialize Netplay discovery (client) */
@@ -330,21 +445,84 @@ static bool netplay_lan_ad_client_query(void)
    return ret;
 }
 
+/* Reserve room for one more entry in the discovered-host list.
+ *
+ * Growth used to be 1 then +4 forever, which is quadratic in the number
+ * of hosts: reaching 4096 entries copies 1.4GB through realloc() where
+ * doubling copies 2.9MB.  That only matters because the list length is
+ * remote input (see NETPLAY_MAX_DISCOVERED_HOSTS), but it costs nothing
+ * to make it geometric. */
+static bool netplay_discovery_reserve_host(net_driver_state_t *net_st)
+{
+   size_t new_allocated;
+   struct netplay_host *new_hosts;
+
+   if (net_st->discovered_hosts.size < net_st->discovered_hosts.allocated)
+      return true;
+   if (net_st->discovered_hosts.size >= NETPLAY_MAX_DISCOVERED_HOSTS)
+      return false;
+
+   new_allocated = net_st->discovered_hosts.allocated
+      ? net_st->discovered_hosts.allocated * 2 : 4;
+   if (new_allocated > NETPLAY_MAX_DISCOVERED_HOSTS)
+      new_allocated = NETPLAY_MAX_DISCOVERED_HOSTS;
+
+   if (!(new_hosts = (struct netplay_host*)realloc(
+         net_st->discovered_hosts.hosts,
+         new_allocated * sizeof(*new_hosts))))
+   {
+      free(net_st->discovered_hosts.hosts);
+      memset(&net_st->discovered_hosts, 0, sizeof(net_st->discovered_hosts));
+
+      return false;
+   }
+
+   net_st->discovered_hosts.allocated = new_allocated;
+   net_st->discovered_hosts.hosts     = new_hosts;
+
+   return true;
+}
+
+/* Have we already listed this address/port pair?
+ *
+ * Responses are unsolicited datagrams; a peer that answers twice - or
+ * keeps answering - would otherwise get one list entry per packet. */
+static bool netplay_discovery_host_known(const net_driver_state_t *net_st,
+      const char *address, int port)
+{
+   size_t i;
+
+   for (i = 0; i < net_st->discovered_hosts.size; i++)
+   {
+      const struct netplay_host *host = &net_st->discovered_hosts.hosts[i];
+
+      if (host->port == port && string_is_equal(host->address, address))
+         return true;
+   }
+
+   return false;
+}
+
 static bool netplay_lan_ad_client_response(void)
 {
    size_t count;
    ssize_t ret;
+   int port;
    char address[16];
    struct ad_packet ad_packet_buffer;
    struct netplay_host *host;
    uint32_t has_password;
+   struct sockaddr_storage their_addr;
    net_driver_state_t *net_st = &networking_driver_st;
 
    /* Check for any ad queries */
    for (count = 0;;)
    {
-      struct sockaddr_storage their_addr = {0};
-      socklen_t addr_size                = sizeof(their_addr);
+      /* recvfrom() fills in as much of this as the address needs and
+       * reports how much that was, so only the length has to be reset
+       * per datagram - zeroing all 128 bytes every time round the loop
+       * was pure overhead. */
+      socklen_t addr_size = sizeof(their_addr);
 
       ret = recvfrom(net_st->lan_ad_client_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
@@ -361,47 +539,34 @@ static bool netplay_lan_ad_client_response(void)
          continue;
 
       /* And that we know how to handle it */
+      if (addr_size > (socklen_t)sizeof(their_addr))
+         continue;
+
       if (!addr_6to4(&their_addr))
          continue;
 
       if (!ipv4_is_lan_address((struct sockaddr_in*)&their_addr))
          continue;
 
-      if (getnameinfo_retro((struct sockaddr*)&their_addr, sizeof(their_addr),
+      if (getnameinfo_retro((struct sockaddr*)&their_addr,
+            sizeof(struct sockaddr_in),
             address, sizeof(address), NULL, 0, NI_NUMERICHOST))
          continue;
 
+      /* The advertised port is entirely under the responder's control;
+       * it ends up in a struct netplay_room and is later connected to,
+       * so reject anything that is not a usable TCP port rather than
+       * carrying a negative or out-of-range value forward. */
+      port = (int)ntohl(ad_packet_buffer.port);
+      if (port <= 0 || port > 65535)
+         continue;
+
+      if (netplay_discovery_host_known(net_st, address, port))
+         continue;
+
       /* Allocate space for it */
-      if (net_st->discovered_hosts.size >= net_st->discovered_hosts.allocated)
-      {
-         if (!net_st->discovered_hosts.size)
-         {
-            net_st->discovered_hosts.hosts = (struct netplay_host*)
-               malloc(sizeof(*net_st->discovered_hosts.hosts));
-            if (!net_st->discovered_hosts.hosts)
-               return false;
-            net_st->discovered_hosts.allocated = 1;
-         }
-         else
-         {
-            size_t new_allocated = net_st->discovered_hosts.allocated + 4;
-            struct netplay_host *new_hosts = (struct netplay_host*)realloc(
-               net_st->discovered_hosts.hosts,
-               new_allocated * sizeof(*new_hosts));
-
-            if (!new_hosts)
-            {
-               free(net_st->discovered_hosts.hosts);
-               memset(&net_st->discovered_hosts, 0,
-                  sizeof(net_st->discovered_hosts));
-
-               return false;
-            }
-
-            net_st->discovered_hosts.allocated = new_allocated;
-            net_st->discovered_hosts.hosts     = new_hosts;
-         }
-      }
+      if (!netplay_discovery_reserve_host(net_st))
+         return count > 0;
 
       /* Get our host structure */
       host = &net_st->discovered_hosts.hosts[net_st->discovered_hosts.size++];
@@ -420,7 +585,7 @@ static bool netplay_lan_ad_client_response(void)
 
       /* Copy in the response */
       host->content_crc = (int)ntohl(ad_packet_buffer.content_crc);
-      host->port        = (int)ntohl(ad_packet_buffer.port);
+      host->port        = port;
 
       strlcpy(host->address, address, sizeof(host->address));
       strlcpy(host->nick, ad_packet_buffer.nick, sizeof(host->nick));
@@ -449,6 +614,8 @@ bool netplay_discovery_driver_ctl(
 {
    net_driver_state_t *net_st = &networking_driver_st;
 
+   netplay_discovery_client_state_init();
+
    switch (state)
    {
       case RARCH_NETPLAY_DISCOVERY_CTL_LAN_SEND_QUERY:
@@ -456,7 +623,7 @@ bool netplay_discovery_driver_ctl(
             bool rv = false;
             if (net_st->lan_ad_client_fd >= 0)
                rv = netplay_lan_ad_client_query();
-#if HAVE_NETPLAYDISCOVERY_NSNET
+#ifdef HAVE_NETPLAYDISCOVERY_NSNET
             rv = true;
 #endif
             return rv;
@@ -525,6 +692,7 @@ static void deinit_lan_ad_server_socket(void)
  *
  * Respond to any LAN ad queries that the netplay server has received.
  */
+
 static bool netplay_lan_ad_server(netplay_t *netplay)
 {
    uint32_t header;
@@ -585,14 +753,28 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
             sizeof(frontend_architecture_tmp));
       if (frontend_drv)
       {
+         /* strlcpy() returns the length of the *source*, not the number
+          * of bytes written, so its result is only usable as a cursor
+          * once it has been clamped: an ident longer than the field
+          * would otherwise leave _len past the end of frontend[] and
+          * make 'sizeof(frontend) - _len' underflow to a huge size_t,
+          * with the following copies landing in the sibling members.
+          * Every ident in the driver table is short enough today that
+          * this cannot happen, which is exactly why it should not be
+          * left resting on that. */
          size_t _len = strlcpy(ad_packet_buffer.frontend, frontend_drv->ident,
                sizeof(ad_packet_buffer.frontend));
-         _len += strlcpy(ad_packet_buffer.frontend + _len,
-               " ",
-               sizeof(ad_packet_buffer.frontend)   - _len);
-         strlcpy(ad_packet_buffer.frontend         + _len,
-               frontend_architecture_tmp,
-               sizeof(ad_packet_buffer.frontend)   - _len);
+
+         if (_len > sizeof(ad_packet_buffer.frontend) - 1)
+            _len = sizeof(ad_packet_buffer.frontend) - 1;
+
+         if (_len < sizeof(ad_packet_buffer.frontend) - 1)
+         {
+            ad_packet_buffer.frontend[_len++] = ' ';
+            strlcpy(ad_packet_buffer.frontend + _len,
+                  frontend_architecture_tmp,
+                  sizeof(ad_packet_buffer.frontend) - _len);
+         }
       }
       else
          strlcpy(ad_packet_buffer.frontend, "N/A",
@@ -647,7 +829,7 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          strlcpy(ad_packet_buffer.subsystem_name, "N/A",
             sizeof(ad_packet_buffer.subsystem_name));
 
-         ad_packet_buffer.content_crc = (int32_t)htonl(content_get_crc());
+         ad_packet_buffer.content_crc = (int32_t)htonl(netplay_content_crc());
       }
 
       if (*settings->paths.netplay_password)
@@ -656,10 +838,17 @@ static bool netplay_lan_ad_server(netplay_t *netplay)
          has_password |= 2;
       ad_packet_buffer.has_password = htonl(has_password);
 
-      /* Send our response */
+      /* Send our response.
+       *
+       * Not addr_size: that still holds whatever recvfrom() reported
+       * for the address as it arrived, but addr_6to4() may since have
+       * rewritten a v4-mapped v6 source into a shorter AF_INET one in
+       * place.  Linux tolerates the mismatch; Winsock is stricter about
+       * namelen, and ipv4_is_lan_address() above has already
+       * established the family. */
       sendto(net_st->lan_ad_server_fd,
          (char*)&ad_packet_buffer, sizeof(ad_packet_buffer), 0,
-         (struct sockaddr*)&their_addr, addr_size);
+         (struct sockaddr*)&their_addr, sizeof(struct sockaddr_in));
    }
 
    return true;
@@ -1234,7 +1423,7 @@ static bool netplay_handshake_info(netplay_t *netplay,
             sizeof(info_buf.core_version));
    }
 
-   info_buf.content_crc   = htonl(content_get_crc()); /* Get our content CRC */
+   info_buf.content_crc   = htonl(netplay_content_crc());
    connection->ping_timer = cpu_features_get_time_usec(); /* Third ping */
 
    /* Send it off and wait for info back */
@@ -1680,7 +1869,7 @@ static bool netplay_handshake_pre_info(netplay_t *netplay,
    }
 
    /* Check the content CRC */
-   content_crc = content_get_crc();
+   content_crc = netplay_content_crc();
 
    if (content_crc && ntohl(info_buf.content_crc) != content_crc)
    {
@@ -6014,6 +6203,7 @@ static bool netplay_get_cmd(netplay_t *netplay,
             size_t   load_ptr;
             uint32_t load_frame_count;
             uint32_t rd, wn;
+            enum trans_stream_error zerr = TRANS_STREAM_ERROR_NONE;
             struct compression_transcoder *ctrans = NULL;
             NETPLAY_ASSERT_MODUS(NETPLAY_MODUS_INPUT_FRAME_SYNC);
 
@@ -6134,9 +6324,21 @@ static bool netplay_get_cmd(netplay_t *netplay,
             ctrans->decompression_backend->set_out(
                ctrans->decompression_stream,
                (uint8_t*)netplay->buffer[load_ptr].state, state_size);
-            ctrans->decompression_backend->trans(
-               ctrans->decompression_stream,
-               true, &rd, &wn, NULL);
+            /* trans() returns true for a finalized stream and also for
+             * "input exhausted, codec still mid-stream" (reported as
+             * TRANS_STREAM_ERROR_AGAIN), so neither the return value nor
+             * a nonzero wn means the state decompressed.  A truncated or
+             * malformed payload from a peer would otherwise be loaded as
+             * a partially-filled state buffer. */
+            if (!ctrans->decompression_backend->trans(
+                     ctrans->decompression_stream,
+                     true, &rd, &wn, &zerr)
+                  || zerr != TRANS_STREAM_ERROR_NONE
+                  || wn != state_size)
+            {
+               RARCH_ERR("[Netplay] Failed to decompress peer save state.\n");
+               return netplay_cmd_nak(netplay, connection);
+            }
 
             if (memcmp(netplay->buffer[load_ptr].state, "NETPLAY", 7) != 0)
             {
@@ -8710,7 +8912,7 @@ static void netplay_announce(netplay_t *netplay)
 
       net_http_urlencode(&subsystemname, "N/A");
 
-      content_crc = content_get_crc();
+      content_crc = netplay_content_crc();
    }
 
    frontend_drv =

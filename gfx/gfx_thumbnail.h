@@ -34,6 +34,8 @@
 
 #include "../playlist.h"
 
+struct data_transfer;
+
 RETRO_BEGIN_DECLS
 
 /* Note: This implementation reflects the current
@@ -183,7 +185,8 @@ enum gfx_thumbnail_flags
 {
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
-   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2)
+   GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
 };
 
 /* Holds all runtime parameters associated with
@@ -201,15 +204,64 @@ enum gfx_thumbnail_flags
  * layout is unchanged.  The cost of the acquire/release barriers
  * on weak-memory ARM/PowerPC is negligible at this field's
  * access rates (menu and frame draw, never per-sample). */
+/* LIFECYCLE CONTRACT: every instance must be zeroed before any
+ * other thumbnail API call - including gfx_thumbnail_reset(),
+ * which frees the animation pointers below and therefore treats
+ * nonzero garbage as live allocations. calloc'd and static
+ * instances are inherently safe; anything malloc'd or
+ * stack-allocated must go through gfx_thumbnail_init_blank(),
+ * which also stores the atomically-typed status correctly and
+ * stays complete as fields are added. Manual field-by-field
+ * initialization is how the materialui Android startup abort
+ * happened; do not reintroduce it. */
 typedef struct
 {
    uintptr_t texture;
+   /* Animated thumbnail state (all main-thread only). 'anim' is a
+    * streaming image_transfer handle which BORROWS 'anim_buf'; both
+    * are owned by the thumbnail and released in gfx_thumbnail_reset
+    * (or when the animation finishes its final loop). 'anim_buf'
+    * is either a malloc'd file read (anim_dt NULL, freed with
+    * free()) or borrowed from an adopted nbio handle (released via
+    * data_transfer_free(anim_dt); anim_buf itself must not be
+    * freed). */
+   void *anim;
+   void *anim_buf;
+   struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
+                                      adopted nbio handle beneath it)   */
+   /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
+    * the frame held in one job waits for its due time, the other is
+    * already decoding its successor.  anim_job_upload selects which
+    * of the two uploads next. */
+   void *anim_job;
+   void *anim_job2;
+   size_t anim_buf_len;    /* size of anim_buf                         */
+   int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
+   /* Generation the in-flight request was issued under.  Only
+    * meaningful while status is PENDING: if it no longer matches the
+    * current generation, that request was superseded and nothing will
+    * ever deliver it, so the slot must be re-requested rather than
+    * waited on. */
+   uint64_t list_id;
+   int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    unsigned width;
    unsigned height;
    float alpha;
    float delay_timer;
    retro_atomic_int_t status;
    uint8_t flags;
+   uint8_t anim_type;      /* enum image_type_enum of 'anim' */
+   uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
+   uint8_t anim_read_pending; /* adopted nbio read still in flight;
+                                 animation/audio held at the static
+                                 frame until it completes */
+   uint8_t anim_windowed;  /* anim_dt is a sliding window fed from the
+                              decoder frontier during playback, not a
+                              buffer pumped to completion: residency is
+                              the window, not the whole file (large
+                              video previews).  0 = classic whole-file
+                              buffer (audio preview, non-reserve
+                              platforms, adopted stills). */
 } gfx_thumbnail_t;
 
 /* Field-by-field initializer for non-trivial gfx_thumbnail_t.
@@ -230,13 +282,26 @@ typedef struct
  * UNKNOWN). */
 static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
 {
-   t->texture     = 0;
-   t->width       = 0;
-   t->height      = 0;
-   t->alpha       = 0.0f;
-   t->delay_timer = 0.0f;
+   t->texture         = 0;
+   t->anim            = NULL;
+   t->anim_buf        = NULL;
+   t->anim_dt         = NULL;
+   t->anim_job        = NULL;
+   t->anim_job2       = NULL;
+   t->anim_buf_len    = 0;
+   t->anim_next_us    = 0;
+   t->list_id         = 0;
+   t->anim_loops_left = 0;
+   t->width           = 0;
+   t->height          = 0;
+   t->alpha           = 0.0f;
+   t->delay_timer     = 0.0f;
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
-   t->flags       = 0;
+   t->flags           = 0;
+   t->anim_type       = 0;
+   t->anim_job_upload = 0;
+   t->anim_read_pending = 0;
+   t->anim_windowed   = 0;
 }
 
 /* Holds all configuration parameters associated
@@ -278,6 +343,12 @@ struct gfx_thumbnail_state
     * for at least gfx_thumbnail_delay ms */
    float stream_delay;
 
+   /* Animated thumbnails: per-vsync frame-decode budget, so many
+    * simultaneously visible animations degrade to a lower frame rate
+    * instead of stalling the menu (main thread only) */
+   int64_t anim_budget_start_us;
+   int64_t anim_budget_used_us;
+
    /* Duration in ms of the thumbnail 'fade in' animation */
    float fade_duration;
 
@@ -310,6 +381,12 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing);
 
 /* Core interface */
 
+/* Tears down the shared animated-thumbnail decode worker (a no-op in
+ * builds without HAVE_THREADS, and when the worker was never started).
+ * Must be called after every gfx_thumbnail_t has been reset. The worker
+ * is recreated lazily by the next animated thumbnail. */
+void gfx_thumbnail_anim_worker_deinit(void);
+
 /* When called, prevents the handling of any pending
  * thumbnail load requests
  * >> **MUST** be called before deleting any gfx_thumbnail_t
@@ -317,6 +394,15 @@ void gfx_thumbnail_set_fade_missing(bool fade_missing);
  *    gfx_thumbnail_process_stream(), otherwise
  *    heap-use-after-free errors *will* occur */
 void gfx_thumbnail_cancel_pending_requests(void);
+
+/* True if 'thumbnail' is waiting on a request that has since been
+ * superseded, i.e. it is PENDING with nothing behind it.  Resets the
+ * thumbnail (returning it to UNKNOWN) and returns true in that case, so
+ * the caller's normal "request if UNKNOWN" path picks it up again.
+ * gfx_thumbnail_process_stream()/_streams() call this themselves; menu
+ * drivers that call gfx_thumbnail_request() directly should call it
+ * before testing the status. */
+bool gfx_thumbnail_reset_if_orphaned(gfx_thumbnail_t *thumbnail);
 
 /* Requests loading of the specified thumbnail
  * - If operation fails, 'thumbnail->status' will be set to
@@ -351,6 +437,13 @@ void gfx_thumbnail_request_file(
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);
+
+/* Advances an animated thumbnail (animated WebP / WebM) by at most one frame,
+ * if its frame duration has elapsed. Call once per frame, on the main
+ * thread, for every on-screen thumbnail. Non-animated thumbnails and
+ * non-WebP image types return immediately (single flag test), so this
+ * is safe and near-free to call for every thumbnail unconditionally. */
+void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail);
 
 /* Stream processing */
 

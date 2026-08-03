@@ -147,19 +147,37 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 {
    size_t path_length;
    int sector;
-   uint8_t buffer[2048], *tmp;
+   int ret;
+   /* Heap-held, one allocation per path component: this function
+    * recurses per directory level with the sector buffer live in
+    * every frame, so as a local it cost 2 KiB times the path depth
+    * on stacks whose whole budget is 8 KiB.  A shared buffer would
+    * not do -- the recursive call receives this level's buffer as
+    * its path argument. */
+   uint8_t *buffer, *tmp;
    const char* slash = strrchr(path, '\\');
+
+   if (!(buffer = (uint8_t*)malloc(2048)))
+      return -1;
 
    if (slash)
    {
       /* navigate the path to the directory record for the file */
       const int dir_length = (int)(slash - path);
+      /* buffer is 2048 bytes and gets a NUL at [dir_length], so the
+       * directory component must be shorter than that.  path comes
+       * from the caller; the in-tree caller passes NULL, but this is
+       * a libretro-common entry point other consumers reach with an
+       * arbitrary path, and without this a long component overruns
+       * the stack buffer. */
+      if (dir_length >= 2048)
+         { ret = -1; free(buffer); return ret; }
       memcpy(buffer, path, dir_length);
       buffer[dir_length] = '\0';
 
       sector = cdfs_find_file(file, (const char*)buffer);
       if (sector < 0)
-         return sector;
+         { ret = sector; free(buffer); return ret; }
 
       path += dir_length + 1;
    }
@@ -169,7 +187,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 
       /* find the CD information (always 16 frames in) */
       cdfs_seek_track_sector(file->track, 16);
-      intfstream_read(file->track->stream, buffer, sizeof(buffer));
+      intfstream_read(file->track->stream, buffer, 2048);
 
       /* the directory_record starts at 156 bytes into the sector.
        * the sector containing the root directory contents is a
@@ -180,7 +198,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
 
    /* process the contents of the directory */
    cdfs_seek_track_sector(file->track, sector);
-   intfstream_read(file->track->stream, buffer, sizeof(buffer));
+   intfstream_read(file->track->stream, buffer, 2048);
 
    path_length = strlen(path);
    tmp         = buffer;
@@ -199,7 +217,7 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
     * end of the 2048-byte stack buffer when a malformed disc
     * image had a record positioned (or chained via the
     * tmp += tmp[0] advance) so that tmp + 33 + path_length lay
-    * past buffer + sizeof(buffer).  An attacker who can place a
+    * past buffer + 2048.  An attacker who can place a
     * crafted sector at the directory offset gets:
     *  - a 1-byte info-leak from adjacent stack via the
     *    tmp[33 + path_length] comparison vs ';' / '\0';
@@ -219,8 +237,8 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
     * byte at offset 33 + path_length) must fit, and require the
     * record's claimed length to be at least large enough to
     * cover the filename comparison. */
-   while (   tmp < buffer + sizeof(buffer)
-          && (size_t)(tmp - buffer) + 33 + path_length < sizeof(buffer))
+   while (   tmp < buffer + 2048
+          && (size_t)(tmp - buffer) + 33 + path_length < 2048)
    {
       /* The first byte of the record is the length of
        * the record - if 0, we reached the end of the data */
@@ -250,14 +268,14 @@ static int cdfs_find_file(cdfs_file_t* file, const char* path)
          /* the file contents are in the sector identified
           * in bytes 2-4 of the record */
          sector = tmp[2] | (tmp[3] << 8) | (tmp[4] << 16);
-         return sector;
+         { ret = sector; free(buffer); return ret; }
       }
 
       /* the first byte of the record is the length of the record */
       tmp += tmp[0];
    }
 
-   return -1;
+   { ret = -1; free(buffer); return ret; }
 }
 
 int cdfs_open_file(cdfs_file_t* file, cdfs_track_t* track, const char* path)

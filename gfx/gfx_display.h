@@ -97,13 +97,14 @@ enum gfx_display_driver_type
    GFX_VIDEO_DRIVER_DIRECT3D10,
    GFX_VIDEO_DRIVER_DIRECT3D11,
    GFX_VIDEO_DRIVER_DIRECT3D12,
-   GFX_VIDEO_DRIVER_VITA2D,
+   GFX_VIDEO_DRIVER_GXM,
    GFX_VIDEO_DRIVER_CTR,
    GFX_VIDEO_DRIVER_WIIU,
    GFX_VIDEO_DRIVER_GDI,
    GFX_VIDEO_DRIVER_SWITCH,
    GFX_VIDEO_DRIVER_RSX,
-   GFX_VIDEO_DRIVER_SDL2
+   GFX_VIDEO_DRIVER_SDL2,
+   GFX_VIDEO_DRIVER_SDL3
 };
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
@@ -218,6 +219,18 @@ void gfx_display_draw_text(
       float scale_factor, bool shadows_enable, float shadow_offset,
       bool draw_outside);
 
+/* As gfx_display_draw_text, but drives glyph colour at full float precision
+ * (color_rgba = 4 floats R,G,B,A in 0..1) for deep-colour framebuffers.
+ * Backends that do not implement the high-precision path fall back to the
+ * 8-bit 'color', so supply an equivalent packed value there. */
+void gfx_display_draw_text_hp(
+      const font_data_t *font, const char *text,
+      float x, float y, int width, int height,
+      uint32_t color, const float *color_rgba,
+      enum text_alignment text_align,
+      float scale_factor, bool shadows_enable, float shadow_offset,
+      bool draw_outside);
+
 void gfx_display_scissor_begin(
       gfx_display_t *p_disp,
       void *userdata,
@@ -285,6 +298,14 @@ bool gfx_display_reset_textures_list(
       unsigned *width,
       unsigned *height);
 
+/* Returns the texture filter type used when uploading menu/UI
+ * images (icons, thumbnails, wallpapers).  Mip-mapped filtering
+ * keeps images smooth when drawn below their native size at the
+ * cost of extra video memory; plain linear filtering is cheaper
+ * but aliases under heavy minification.  Controlled by the
+ * 'menu_texture_mipmapping' setting. */
+enum texture_filter_type gfx_display_texture_filter(void);
+
 bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type,
@@ -348,13 +369,14 @@ extern gfx_display_ctx_driver_t gfx_display_ctx_d3d9_hlsl;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d10;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d11;
 extern gfx_display_ctx_driver_t gfx_display_ctx_d3d12;
-extern gfx_display_ctx_driver_t gfx_display_ctx_vita2d;
+extern gfx_display_ctx_driver_t gfx_display_ctx_gxm;
 extern gfx_display_ctx_driver_t gfx_display_ctx_ctr;
 extern gfx_display_ctx_driver_t gfx_display_ctx_wiiu;
 extern gfx_display_ctx_driver_t gfx_display_ctx_gdi;
 extern gfx_display_ctx_driver_t gfx_display_ctx_switch;
 extern gfx_display_ctx_driver_t gfx_display_ctx_rsx;
 extern gfx_display_ctx_driver_t gfx_display_ctx_sdl2;
+extern gfx_display_ctx_driver_t gfx_display_ctx_sdl3;
 
 RETRO_END_DECLS
 

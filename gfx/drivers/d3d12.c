@@ -25,6 +25,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <string.h>
+#include <math.h>
 #include <malloc.h>
 
 #include <retro_inline.h>
@@ -114,7 +115,11 @@ enum d3d12_video_flags
    D3D12_ST_FLAG_WAITABLE_SWAPCHAINS   = (1 << 13),
    D3D12_ST_FLAG_HW_IFACE_ENABLE       = (1 << 14),
    D3D12_ST_FLAG_FRAME_DUPE_LOCK       = (1 << 15),
-   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16)
+   D3D12_ST_FLAG_SW_FRAMEBUFFER_READY  = (1 << 16),
+   /* The core's frames are already PQ-encoded Rec.2020 at absolute
+    * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
+    * must pass them through rather than encode them a second time. */
+   D3D12_ST_FLAG_SOURCE_HDR10          = (1 << 17)
 };
 
 typedef enum
@@ -230,6 +235,9 @@ typedef struct
    UINT64                             total_bytes;
    d3d12_descriptor_heap_t*           srv_heap;
    float4_t                           size_data;
+   /* 0 = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING; non-zero
+    * overrides the SRV component mapping (see d3d12_init_texture) */
+   UINT                               srv_mapping;
    bool                               dirty;
 } d3d12_texture_t;
 
@@ -360,6 +368,11 @@ typedef struct
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_view;
       D3D12Resource                    ubo_post;
       D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_post_view;
+      /* Tiny per-frame CB for the HDR-aware sprite/font entries
+       * (SpriteHDR at register b1, bound via ROOT_ID_PC):
+       * { mode, paper_white_nits, expand_gamut, pad } */
+      D3D12Resource                    ubo_sprites;
+      D3D12_CONSTANT_BUFFER_VIEW_DESC  ubo_sprites_view;
       D3D12PipelineState               pso_readback; /* lazy: HDR -> SDR tonemap PSO for read_viewport */
       float                            menu_nits;
       float                            max_output_nits;
@@ -478,6 +491,13 @@ typedef struct
    void*                         font_data;
    struct font_atlas*            atlas;
    d3d12_video_t*                d3d12; /* For GPU sync on free */
+   /* Pending atlas dirty rectangle, staged to the upload buffer on
+    * the CPU and awaiting the boxed GPU copy at draw time */
+   unsigned                      region_x0;
+   unsigned                      region_y0;
+   unsigned                      region_x1;
+   unsigned                      region_y1;
+   bool                          region_pending;
 } d3d12_font_t;
 
 static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
@@ -488,7 +508,7 @@ static D3D12_RENDER_TARGET_BLEND_DESC d3d12_blend_enable_desc = {
    D3D12_BLEND_OP_ADD,
    D3D12_BLEND_SRC_ALPHA,
    D3D12_BLEND_INV_SRC_ALPHA,
-   D3D12_BLEND_OP_MAX,
+   D3D12_BLEND_OP_ADD,
    D3D12_LOGIC_OP_NOOP,
    D3D12_COLOR_WRITE_ENABLE_ALL,
 };
@@ -801,7 +821,12 @@ static void d3d12_init_texture(D3D12Device device, d3d12_texture_t* texture)
    {
       D3D12_SHADER_RESOURCE_VIEW_DESC desc = { texture->desc.Format };
 
-      desc.Shader4ComponentMapping   = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      /* srv_mapping 0 selects the default component mapping; a
+       * non-zero value overrides it (e.g. the HDR font atlas maps
+       * alpha from the R16 channel so the A8 shader stays valid) */
+      desc.Shader4ComponentMapping   = texture->srv_mapping
+            ? texture->srv_mapping
+            : D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
       desc.ViewDimension             = D3D12_SRV_DIMENSION_TEXTURE2D;
       desc.Texture2D.MipLevels       = texture->desc.MipLevels;
 
@@ -905,13 +930,16 @@ static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       {
          unsigned width  = texture->desc.Width  >> i;
          unsigned height = texture->desc.Height >> i;
-         if (width == 0) width = 1;
-         if (height == 0) height = 1;
          struct
          {
             uint32_t src_level;
             float    texel_size[2];
-         } cbuffer = { i - 1, { 1.0f / width, 1.0f / height } };
+         } cbuffer;
+         if (width == 0) width = 1;
+         if (height == 0) height = 1;
+         cbuffer.src_level    = i - 1;
+         cbuffer.texel_size[0] = 1.0f / width;
+         cbuffer.texel_size[1] = 1.0f / height;
 
          {
             D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION };
@@ -975,6 +1003,7 @@ static void d3d12_update_texture(
          case DXGI_FORMAT_B8G8R8X8_UNORM:
          case DXGI_FORMAT_B8G8R8A8_UNORM:
          case DXGI_FORMAT_R8G8B8A8_UNORM:
+         case DXGI_FORMAT_R10G10B10A2_UNORM:
             pitch = width * 4;
             break;
          case DXGI_FORMAT_B5G6R5_UNORM:
@@ -1331,37 +1360,77 @@ gfx_display_ctx_driver_t gfx_display_ctx_d3d12 = {
  * FONT DRIVER
  */
 
+static void d3d12_font_update_atlas_region(d3d12_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1);
+
 static void * d3d12_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   d3d12_video_t* d3d12 = (d3d12_video_t*)data;
-   d3d12_font_t*  font  = (d3d12_font_t*)calloc(1, sizeof(*font));
+   d3d12_video_t* d3d12       = (d3d12_video_t*)data;
+   d3d12_font_t*  font        = (d3d12_font_t*)calloc(1, sizeof(*font));
+   bool           want_a16    = false;
+   enum font_atlas_format prev_fmt;
 
    if (!font)
       return NULL;
+
+#ifdef HAVE_DXGI_HDR
+   /* When outputting HDR, ask the font renderer for a
+    * higher-precision coverage atlas */
+   want_a16 =
+         (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      || (d3d12->chain.current_rt_format == DXGI_FORMAT_R16G16B16A16_FLOAT);
+#endif
+
+   prev_fmt = font_renderer_get_preferred_atlas_format();
+   if (want_a16)
+      font_renderer_set_preferred_atlas_format(FONT_ATLAS_FORMAT_A16);
 
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size))
    {
+      font_renderer_set_preferred_atlas_format(prev_fmt);
       free(font);
       return NULL;
    }
+   font_renderer_set_preferred_atlas_format(prev_fmt);
 
    font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    font->texture.sampler     = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_BORDER];
    font->texture.desc.Width  = font->atlas->width;
    font->texture.desc.Height = font->atlas->height;
-   font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
+   if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+   {
+      /* 16-bit coverage: sample alpha from the R16 channel so the
+       * A8 pixel shader entry keeps working unchanged */
+      font->texture.desc.Format = DXGI_FORMAT_R16_UNORM;
+      font->texture.srv_mapping = D3D12_ENCODE_SHADER_4_COMPONENT_MAPPING(
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FORCE_VALUE_0,
+            D3D12_SHADER_COMPONENT_MAPPING_FROM_MEMORY_COMPONENT_0);
+   }
+   else
+      font->texture.desc.Format = DXGI_FORMAT_A8_UNORM;
    font->texture.srv_heap    = &d3d12->desc.srv_heap;
    d3d12_release_texture(&font->texture);
    d3d12_init_texture(d3d12->device, &font->texture);
    if (font->texture.upload_buffer)
-      d3d12_update_texture(
-            font->atlas->width, font->atlas->height,
-            font->atlas->width, DXGI_FORMAT_A8_UNORM,
-            font->atlas->buffer, &font->texture);
+   {
+      if (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+         /* stage the whole atlas; the boxed copy at first draw
+          * transfers it (the generic path's conversion table does
+          * not cover R16) */
+         d3d12_font_update_atlas_region(font,
+               0, 0, font->atlas->width, font->atlas->height);
+      else
+         d3d12_update_texture(
+               font->atlas->width, font->atlas->height,
+               font->atlas->width, DXGI_FORMAT_A8_UNORM,
+               font->atlas->buffer, &font->texture);
+   }
    font->atlas->dirty = false;
 
    return font;
@@ -1434,6 +1503,101 @@ static int d3d12_font_get_message_width(void* data,
    }
 
    return delta_x * scale;
+}
+
+/* Stage only the atlas dirty rectangle into the persistent upload
+ * buffer; previous contents are preserved, so untouched rows remain
+ * valid. The matching boxed GPU copy is issued at draw time by
+ * d3d12_font_upload_region(); the generic d3d12_update_texture() /
+ * d3d12_upload_texture() pair re-transfers the whole surface. */
+static void d3d12_font_update_atlas_region(d3d12_font_t *font,
+      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+{
+   unsigned y;
+   uint8_t *dst;
+   D3D12_RANGE read_range;
+   ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
+   unsigned row_pitch       = font->texture.layout.Footprint.RowPitch;
+
+   if (     !resource
+         || x1 <= x0 || y1 <= y0
+         || x1 > (unsigned)font->atlas->width
+         || y1 > (unsigned)font->atlas->height)
+      return;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (FAILED(resource->lpVtbl->Map(resource, 0, &read_range, (void**)&dst))
+         || !dst)
+      return;
+
+   {
+      size_t esz = (font->atlas->format == FONT_ATLAS_FORMAT_A16)
+            ? sizeof(uint16_t) : sizeof(uint8_t);
+      for (y = y0; y < y1; y++)
+         memcpy(dst + (size_t)y * row_pitch + (size_t)x0 * esz,
+                font->atlas->buffer
+                      + ((size_t)y * font->atlas->width + x0) * esz,
+                (size_t)(x1 - x0) * esz);
+   }
+
+   resource->lpVtbl->Unmap(resource, 0, NULL);
+
+   if (!font->region_pending)
+   {
+      font->region_x0      = x0;
+      font->region_y0      = y0;
+      font->region_x1      = x1;
+      font->region_y1      = y1;
+      font->region_pending = true;
+   }
+   else
+   {
+      if (x0 < font->region_x0) font->region_x0 = x0;
+      if (y0 < font->region_y0) font->region_y0 = y0;
+      if (x1 > font->region_x1) font->region_x1 = x1;
+      if (y1 > font->region_y1) font->region_y1 = y1;
+   }
+}
+
+/* Issue the boxed copy for the staged rectangle */
+static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
+      d3d12_font_t *font)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   D3D12_BOX box;
+
+   src.pResource        = font->texture.upload_buffer;
+   src.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint  = font->texture.layout;
+
+   dst.pResource        = font->texture.handle;
+   dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex = 0;
+
+   box.left   = font->region_x0;
+   box.top    = font->region_y0;
+   box.front  = 0;
+   box.right  = font->region_x1;
+   box.bottom = font->region_y1;
+   box.back   = 1;
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         font->texture.handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst,
+         font->region_x0, font->region_y0, 0, &src, &box);
+
+   D3D12_RESOURCE_TRANSITION(
+         cmd,
+         font->texture.handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+   font->region_pending = false;
 }
 
 static void d3d12_font_render_msg(
@@ -1556,11 +1720,9 @@ static void d3d12_font_render_msg(
 
    if (font->atlas->dirty)
    {
-      if (font->texture.upload_buffer)
-         d3d12_update_texture(
-               font->atlas->width, font->atlas->height,
-               font->atlas->width, DXGI_FORMAT_A8_UNORM,
-               font->atlas->buffer, &font->texture);
+      d3d12_font_update_atlas_region(font,
+            font->atlas->dirty_x0, font->atlas->dirty_y0,
+            font->atlas->dirty_x1, font->atlas->dirty_y1);
       font->atlas->dirty = false;
    }
 
@@ -1728,6 +1890,8 @@ next_line:
 
    if (font->texture.dirty)
       d3d12_upload_texture(cmd, &font->texture, d3d12);
+   if (font->region_pending)
+      d3d12_font_upload_region(cmd, font);
 
 #ifdef HAVE_DXGI_HDR
    if (   (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
@@ -1795,6 +1959,7 @@ static uint32_t d3d12_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
    BIT32_SET(flags, GFX_CTX_FLAGS_SUBFRAME_SHADERS);
    BIT32_SET(flags, GFX_CTX_FLAGS_FAST_TOGGLE_SHADERS);
+   BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
 
    return flags;
@@ -2730,14 +2895,30 @@ static bool d3d12_shader_load_step(void *data,
          ? d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* Only a format the shader declared itself (#pragma format)
+       * means the shader performed its own HDR encode.  A format
+       * derived from preset FBO flags (float_framebuffer /
+       * rgb10_framebuffer) carries no such intent and must not put
+       * the driver into passthrough. */
+      enum glslang_format last_hdr_fmt =
+         (     d3d12->shader_preset && d3d12->shader_preset->passes
+            && d3d12->pass[d3d12->shader_preset->passes - 1].semantics.explicit_format)
+         ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
+      /* A core supplying PQ has the same effect as a final shader pass that
+       * emits PQ: the samples must not be encoded again. */
+      if (     (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+
       if (menu_hdr_mode == 2)
       {
          d3d12_set_hdr_inverse_tonemap(d3d12, false);
          d3d12_set_hdr10(d3d12, false);
 
-         if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
             d3d12->hdr.ubo_values.hdr_mode = 0;
-         else if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         else if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
             d3d12->hdr.ubo_values.hdr_mode = 3;
          else
          {
@@ -2752,8 +2933,8 @@ static bool d3d12_shader_load_step(void *data,
       }
       else
       {
-         if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
-               || last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32
+               || last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
          {
             d3d12_set_hdr_inverse_tonemap(d3d12, false);
             d3d12_set_hdr10(d3d12, false);
@@ -2996,15 +3177,31 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
          ? d3d12->pass[d3d12->shader_preset->passes - 1].semantics.format
          : SLANG_FORMAT_UNKNOWN;
 
+      /* Only a format the shader declared itself (#pragma format)
+       * means the shader performed its own HDR encode.  A format
+       * derived from preset FBO flags (float_framebuffer /
+       * rgb10_framebuffer) carries no such intent and must not put
+       * the driver into passthrough. */
+      enum glslang_format last_hdr_fmt =
+         (     d3d12->shader_preset && d3d12->shader_preset->passes
+            && d3d12->pass[d3d12->shader_preset->passes - 1].semantics.explicit_format)
+         ? last_fmt : SLANG_FORMAT_UNKNOWN;
+
+      /* A core supplying PQ has the same effect as a final shader pass that
+       * emits PQ: the samples must not be encoded again. */
+      if (     (d3d12->flags & D3D12_ST_FLAG_SOURCE_HDR10)
+            && last_hdr_fmt == SLANG_FORMAT_UNKNOWN)
+         last_hdr_fmt = SLANG_FORMAT_A2B10G10R10_UNORM_PACK32;
+
       if (menu_hdr_mode == 2) /* scRGB */
       {
          /* scRGB: legacy inverse tonemap / PQ encoding never used */
          d3d12_set_hdr_inverse_tonemap(d3d12, false);
          d3d12_set_hdr10(d3d12, false);
 
-         if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
             d3d12->hdr.ubo_values.hdr_mode = 0; /* passthrough: already scRGB */
-         else if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         else if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
             d3d12->hdr.ubo_values.hdr_mode = 3; /* PQ→scRGB at Point 2 */
          else
          {
@@ -3019,14 +3216,14 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       }
       else /* HDR10 */
       {
-         if (last_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
+         if (last_hdr_fmt == SLANG_FORMAT_A2B10G10R10_UNORM_PACK32)
          {
             /* Shader emits HDR10 PQ: passthrough */
             d3d12_set_hdr_inverse_tonemap(d3d12, false);
             d3d12_set_hdr10(d3d12, false);
             d3d12->flags |= D3D12_ST_FLAG_RESIZE_CHAIN;
          }
-         else if (last_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
+         else if (last_hdr_fmt == SLANG_FORMAT_R16G16B16A16_SFLOAT)
          {
             /* Shader emits RGBA16F: passthrough, HW quantises */
             d3d12_set_hdr_inverse_tonemap(d3d12, false);
@@ -3217,6 +3414,14 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       if (!d3d_compile(shader, sizeof(shader), NULL, "GSMain", "gs_5_0", &gs_code))
          goto error;
 
+      /* HDR-aware pixel entry replaces PSMain for these pipes:
+       * passthrough at sprite_hdr_mode 0, encodes for the
+       * direct-to-swapchain UI case otherwise */
+      Release(ps_code);
+      ps_code = NULL;
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainHDR", "ps_5_0", &ps_code))
+         goto error;
+
       desc.PrimitiveTopologyType          = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
       desc.InputLayout.pInputElementDescs = inputElementDesc;
       desc.InputLayout.NumElements        = countof(inputElementDesc);
@@ -3235,7 +3440,7 @@ static bool d3d12_gfx_init_hdr_pipes(d3d12_video_t* d3d12, DXGI_FORMAT format)
       Release(ps_code);
       ps_code = NULL;
 
-      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8", "ps_5_0", &ps_code))
+      if (!d3d_compile(shader, sizeof(shader), NULL, "PSMainA8HDR", "ps_5_0", &ps_code))
          goto error;
 
       Release(d3d12->sprites.pipe_font_hdr);
@@ -3596,6 +3801,7 @@ static void d3d12_gfx_free(void* data)
 
 #ifdef HAVE_DXGI_HDR
    Release(d3d12->hdr.ubo);
+   Release(d3d12->hdr.ubo_sprites);
    Release(d3d12->hdr.ubo_post);
    Release(d3d12->hdr.pso_readback);
 #endif
@@ -3724,7 +3930,15 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
          ? DXGI_SWAPCHAIN_BIT_DEPTH_16 : DXGI_SWAPCHAIN_BIT_DEPTH_10;
    }
    else
-      d3d12->chain.bit_depth   = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+   {
+      /* SDR.  A 10-bit swapchain here removes the final-pass
+       * quantisation for chains that darken heavily (CRT beam
+       * profiles, aperture grilles) without pulling in the HDR
+       * pipeline.  Opt-in; G22/P709 is correct for both depths. */
+      settings_t *settings     = config_get_ptr();
+      d3d12->chain.bit_depth   = (settings->uints.video_swapchain_bit_depth == 2)
+         ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
+   }
 #endif
 
    desc.BufferCount          = countof(d3d12->chain.renderTargets);
@@ -4424,6 +4638,9 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.ubo_post_view.SizeInBytes      = sizeof(dxgi_hdr_uniform_t);
    d3d12->hdr.ubo_post_view.BufferLocation   =
       d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_post_view.SizeInBytes, &d3d12->hdr.ubo_post);
+   d3d12->hdr.ubo_sprites_view.SizeInBytes   = 256;
+   d3d12->hdr.ubo_sprites_view.BufferLocation =
+      d3d12_create_buffer(d3d12->device, d3d12->hdr.ubo_sprites_view.SizeInBytes, &d3d12->hdr.ubo_sprites);
 
    d3d12->hdr.ubo_values.mvp                 = d3d12->mvp_no_rot;
    d3d12->hdr.menu_nits           = settings->floats.video_hdr_menu_nits;
@@ -4486,8 +4703,20 @@ static void *d3d12_gfx_init(const video_info_t* video,
    else
       d3d12->flags             &= ~D3D12_ST_FLAG_KEEP_ASPECT;
 
-   d3d12->format                = (video->rgb32)
-      ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   d3d12->format                = video->source_10bit
+      ? DXGI_FORMAT_R10G10B10A2_UNORM
+      : ((video->rgb32)
+      ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM);
+
+   /* Both 10-bit formats upload through DXGI_FORMAT_R10G10B10A2_UNORM; they
+    * differ only in how the samples are interpreted downstream.  A PQ frame
+    * is already in the swapchain's encoding, which is the same state a
+    * shader preset emitting HDR10 leaves us in, so it takes the same
+    * passthrough path below rather than a separate one. */
+   if (video->source_hdr10)
+      d3d12->flags             |=  D3D12_ST_FLAG_SOURCE_HDR10;
+   else
+      d3d12->flags             &= ~D3D12_ST_FLAG_SOURCE_HDR10;
 
    d3d12->frame.texture[0].desc.Format = d3d12->format;
    d3d12->frame.texture[0].desc.Width  = 4;
@@ -4754,6 +4983,11 @@ static bool d3d12_gfx_frame(
       &video_info->osd_stat_params;
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
    bool overlay_behind_menu       = video_info->overlay_behind_menu;
+   D3D12GraphicsCommandList cmd;
+   bool message_visible;
+#ifdef HAVE_GFX_WIDGETS
+   bool widgets_visible;
+#endif
    unsigned black_frame_insertion = video_info->black_frame_insertion;
    int bfi_light_frames;
    unsigned n;
@@ -4779,9 +5013,54 @@ static bool d3d12_gfx_frame(
       && !(back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT
             && swapchain_format == DXGI_FORMAT_R10G10B10A2_UNORM);
 
+   /* When HDR is on and a menu or overlay is up, the frame is composited
+    * from back_buffer to the swapchain (the "Copy over back buffer" pass
+    * below). That pass reads back_buffer unconditionally, so the core frame
+    * must have been rendered there this frame - otherwise it reads a stale/
+    * empty back_buffer and the menu background goes black (independent of
+    * colour depth). If the formats matched, use_back_buffer would be false
+    * and the frame would go straight to the swapchain, leaving back_buffer
+    * empty; force it on for that case. */
+   if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+         && (   (d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+             || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
+      use_back_buffer = true;
+
+   /* HDR-aware sprite entries: when UI (widgets / OSD) draws
+    * directly into the HDR swapchain -- no back-buffer composite
+    * this frame -- the sprite shaders must encode SDR content
+    * themselves; when the composite runs later, they pass through
+    * (mode 0) and the composite encodes. The two cases never mix
+    * within one frame. */
+   {
+      void *mapped = NULL;
+      D3D12_RANGE read_range;
+      float vals[4];
+
+      vals[0] = 0.0f;
+      vals[1] = d3d12->hdr.menu_nits;
+      vals[2] = (float)d3d12->hdr.ubo_values.expand_gamut;
+      vals[3] = 0.0f;
+
+      if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
+            && !(d3d12->flags & D3D12_ST_FLAG_MENU_ENABLE)
+            && !(d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE))
+         vals[0] = (back_buffer_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+               ? 2.0f : 1.0f;
+
+      read_range.Begin = 0;
+      read_range.End   = 0;
+      if (SUCCEEDED(D3D12Map(d3d12->hdr.ubo_sprites, 0, &read_range, &mapped))
+            && mapped)
+      {
+         memcpy(mapped, vals, sizeof(vals));
+         D3D12Unmap(d3d12->hdr.ubo_sprites, 0, NULL);
+      }
+   }
+
    d3d12->chain.current_rt_format = back_buffer_format;
 #endif
-   D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
+   cmd                            = d3d12->queue.cmd;
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       WaitForSingleObjectEx(
@@ -4808,7 +5087,16 @@ static bool d3d12_gfx_frame(
       else if (video_info->hdr_mode == 1)
          desired_bit_depth = DXGI_SWAPCHAIN_BIT_DEPTH_10;
       else
-         desired_bit_depth = DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      {
+         /* SDR.  This runs every frame and rebuilds the chain
+          * whenever it disagrees with the current depth, so it has
+          * to honour the setting the creation path already honours,
+          * or a 10-bit SDR chain is torn straight back down. */
+         settings_t *settings = config_get_ptr();
+         desired_bit_depth    =
+            (settings->uints.video_swapchain_bit_depth == 2)
+            ? DXGI_SWAPCHAIN_BIT_DEPTH_10 : DXGI_SWAPCHAIN_BIT_DEPTH_8;
+      }
 
       if (     (d3d12->flags & D3D12_ST_FLAG_RESIZE_CHAIN)
             || (d3d12_hdr_enable != video_hdr_enable)
@@ -5657,6 +5945,10 @@ static bool d3d12_gfx_frame(
       cmd->lpVtbl->RSSetScissorRects(cmd, 1, &d3d12->chain.scissorRect);
 
       cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->chain.back_buffer.gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -5739,12 +6031,16 @@ static bool d3d12_gfx_frame(
 #endif
       cmd->lpVtbl->SetPipelineState(cmd, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
-
-#ifdef HAVE_GFX_WIDGETS
-   const bool widgets_visible        = gfx_widgets_visible(video_info);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
 #endif
 
-   const bool message_visible         = ((statistics_show) && (osd_params)) || (msg && *msg);
+#ifdef HAVE_GFX_WIDGETS
+   widgets_visible                   = gfx_widgets_visible(video_info);
+#endif
+
+   message_visible                    = ((statistics_show) && (osd_params)) || (msg && *msg);
 
 #ifdef HAVE_DXGI_HDR
    if ((d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) &&
@@ -5769,12 +6065,14 @@ static bool d3d12_gfx_frame(
        * warning
        */
 
-      float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-      cmd->lpVtbl->ClearRenderTargetView(
-            cmd,
-            d3d12->chain.back_buffer.rt_view,
-            clear_colour,
-            0, NULL);
+      {
+         float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+         cmd->lpVtbl->ClearRenderTargetView(
+               cmd,
+               d3d12->chain.back_buffer.rt_view,
+               clear_colour,
+               0, NULL);
+      }
    }
 #endif
 
@@ -5941,6 +6239,10 @@ static bool d3d12_gfx_frame(
             FALSE, NULL);
 
       cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
             d3d12->chain.back_buffer.gpu_descriptor[0]);
       cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -5964,10 +6266,15 @@ static bool d3d12_gfx_frame(
             d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 2;
          }
-         else /* HDR10 */
+         else /* HDR10: the back buffer is already PQ-encoded (the stock HDR
+               * pass wrote it), so pass it straight through. Re-encoding it
+               * here (inverse_tonemap/hdr10) is a second PQ encode and drives
+               * the whole menu background to black. This mirrors the
+               * non-menu game-frame composite above. The menu glyphs are
+               * drawn separately as SDR sprites and are unaffected. */
          {
-            d3d12->hdr.ubo_values.inverse_tonemap  = 1.0f;
-            d3d12->hdr.ubo_values.hdr10            = 1.0f;
+            d3d12->hdr.ubo_values.inverse_tonemap  = 0.0f;
+            d3d12->hdr.ubo_values.hdr10            = 0.0f;
             d3d12->hdr.ubo_values.hdr_mode         = 0;
          }
 
@@ -6394,6 +6701,10 @@ static bool d3d12_gpu_hdr_readback_to_bgr24(
    /* Bind RT, root signature, descriptor tables, UBO. */
    cmd->lpVtbl->OMSetRenderTargets(cmd, 1, &sdr_rt.rt_view, FALSE, NULL);
    cmd->lpVtbl->SetGraphicsRootSignature(cmd, d3d12->desc.rootSignature);
+#ifdef HAVE_DXGI_HDR
+   cmd->lpVtbl->SetGraphicsRootConstantBufferView(cmd, ROOT_ID_PC,
+         d3d12->hdr.ubo_sprites_view.BufferLocation);
+#endif
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_TEXTURE_T,
          hdr_src.gpu_descriptor[0]);
    cmd->lpVtbl->SetGraphicsRootDescriptorTable(cmd, ROOT_ID_SAMPLER_T,
@@ -6496,6 +6807,216 @@ cleanup:
    d3d12_release_texture(&sdr_rt);
    d3d12_release_texture(&hdr_src);
    return ret;
+}
+#endif /* HAVE_DXGI_HDR */
+
+#ifdef HAVE_DXGI_HDR
+/* Native HDR screenshot read-back: copies the presented HDR backbuffer
+ * raw (no tone-map) and converts to 48-bit RGB, bottom-up, mirroring
+ * vulkan_read_viewport_hdr:
+ *
+ *   - HDR10 (R10G10B10A2_UNORM, PQ Rec.2020): unpack, 10->16 bit by bit
+ *     replication. Tagged PQ / BT.2100.
+ *   - scRGB (R16G16B16A16_FLOAT, linear Rec.709): decode halves, scale
+ *     to nits, PQ-encode to 16 bit. Tagged PQ / BT.709. Extended range
+ *     clamps to [0,10000] nits, unavoidable for a UNORM PNG.
+ *
+ * The fence-wait / footprint / copy machinery intentionally mirrors
+ * d3d12_gfx_read_viewport below rather than sharing code with it, so
+ * the proven SDR path is not restructured. NB: structural validation
+ * only in the build environment; the unpack/encode helpers match the
+ * unit-tested vulkan ports. On-hardware pixel verification is the
+ * hand-off. */
+static bool d3d12_gfx_read_viewport_hdr(void *data, uint16_t *buffer,
+      bool is_idle, struct rpng_hdr_metadata *out_meta)
+{
+   d3d12_video_t*            d3d12       = (d3d12_video_t*)data;
+   D3D12GraphicsCommandList  cmd;
+   D3D12Resource             back_buffer = NULL;
+   D3D12Resource             readback    = NULL;
+   D3D12_RESOURCE_DESC       tex_desc;
+   D3D12_HEAP_PROPERTIES     heap_props;
+   D3D12_RESOURCE_DESC       buf_desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+   D3D12_TEXTURE_COPY_LOCATION src_loc;
+   D3D12_TEXTURE_COPY_LOCATION dst_loc;
+   D3D12_BOX                 src_box;
+   D3D12_RANGE               read_range;
+   UINT64                    total_bytes    = 0;
+   UINT                      num_rows       = 0;
+   UINT64                    row_size_bytes = 0;
+   const uint8_t*            src_pixels     = NULL;
+   uint8_t*                  mapped         = NULL;
+   unsigned                  vp_x, vp_y, vp_w, vp_h;
+   bool                      is_scrgb;
+   DXGI_FORMAT               fmt;
+   float                     max_cll      = 0.0f;
+   float                     max_fall_avg = 0.0f;
+
+   if (!d3d12)
+      return false;
+
+   /* Need an active HDR swapchain; SDR is not handled here (the caller
+    * falls back to the ordinary read_viewport). */
+   if (!(d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE))
+      return false;
+
+   fmt      = d3d12->chain.formats[d3d12->chain.bit_depth];
+   is_scrgb = (fmt == DXGI_FORMAT_R16G16B16A16_FLOAT);
+   if (!is_scrgb && (fmt != DXGI_FORMAT_R10G10B10A2_UNORM))
+      return false;
+
+   if (!is_idle)
+      video_driver_cached_frame();
+
+   /* Ensure the cached_frame submission has finished before reusing the
+    * command allocator. */
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+            ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
+   back_buffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
+   if (!back_buffer)
+      return false;
+
+   memset(&tex_desc, 0, sizeof(tex_desc));
+   tex_desc.Dimension          = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Alignment          = 0;
+   tex_desc.Width              = (UINT64)d3d12->chain.viewport.Width;
+   tex_desc.Height             = (UINT)  d3d12->chain.viewport.Height;
+   tex_desc.DepthOrArraySize   = 1;
+   tex_desc.MipLevels          = 1;
+   tex_desc.Format             = fmt;
+   tex_desc.SampleDesc.Count   = 1;
+   tex_desc.SampleDesc.Quality = 0;
+   tex_desc.Layout             = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags              = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+
+   d3d12->device->lpVtbl->GetCopyableFootprints(d3d12->device,
+         &tex_desc, 0, 1, 0, &footprint, &num_rows,
+         &row_size_bytes, &total_bytes);
+
+   heap_props.Type                 = D3D12_HEAP_TYPE_READBACK;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+
+   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width                  = total_bytes;
+   buf_desc.Height                 = 1;
+   buf_desc.DepthOrArraySize       = 1;
+   buf_desc.MipLevels              = 1;
+   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count       = 1;
+   buf_desc.SampleDesc.Quality     = 0;
+   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   buf_desc.Flags                  = D3D12_RESOURCE_FLAG_NONE;
+
+   if (FAILED(d3d12->device->lpVtbl->CreateCommittedResource(d3d12->device,
+               &heap_props, D3D12_HEAP_FLAG_NONE,
+               &buf_desc, D3D12_RESOURCE_STATE_COPY_DEST, NULL,
+               uuidof(ID3D12Resource), (void**)&readback)))
+   {
+      RARCH_ERR("[D3D12] Failed to create HDR readback buffer.\n");
+      return false;
+   }
+
+   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+   cmd = d3d12->queue.cmd;
+   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
+         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_PRESENT,
+         D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+   src_loc.pResource        = back_buffer;
+   src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   src_loc.SubresourceIndex = 0;
+
+   dst_loc.pResource        = readback;
+   dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   dst_loc.PlacedFootprint  = footprint;
+
+   src_box.left   = 0;
+   src_box.top    = 0;
+   src_box.front  = 0;
+   src_box.right  = (UINT)tex_desc.Width;
+   src_box.bottom = tex_desc.Height;
+   src_box.back   = 1;
+
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, &src_box);
+
+   D3D12_RESOURCE_TRANSITION(cmd, back_buffer,
+         D3D12_RESOURCE_STATE_COPY_SOURCE,
+         D3D12_RESOURCE_STATE_PRESENT);
+
+   cmd->lpVtbl->Close(cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(
+         d3d12->queue.handle, 1, (ID3D12CommandList* const*)&cmd);
+
+   {
+      D3D12Fence fence = d3d12->queue.fence;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
+            ++d3d12->queue.fenceValue);
+      if (fence->lpVtbl->GetCompletedValue(fence) < d3d12->queue.fenceValue)
+      {
+         fence->lpVtbl->SetEventOnCompletion(fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+
+   read_range.Begin = 0;
+   read_range.End   = (SIZE_T)total_bytes;
+   if (FAILED(readback->lpVtbl->Map(readback, 0, &read_range,
+               (void**)&mapped)))
+   {
+      Release(readback);
+      RARCH_ERR("[D3D12] Failed to map HDR readback buffer.\n");
+      return false;
+   }
+
+   src_pixels = mapped + footprint.Offset;
+
+   vp_x = (d3d12->vp.x > 0) ? d3d12->vp.x : 0;
+   vp_y = (d3d12->vp.y > 0) ? d3d12->vp.y : 0;
+   vp_w = (d3d12->vp.width  > d3d12->vp.full_width)
+         ? d3d12->vp.full_width  : d3d12->vp.width;
+   vp_h = (d3d12->vp.height > d3d12->vp.full_height)
+         ? d3d12->vp.full_height : d3d12->vp.height;
+
+   if (!dxgi_hdr_readback_to_rgb16(fmt, src_pixels,
+            footprint.Footprint.RowPitch, vp_x, vp_y, vp_w, vp_h,
+            buffer, &max_cll, &max_fall_avg))
+   {
+      readback->lpVtbl->Unmap(readback, 0, NULL);
+      Release(readback);
+      return false;
+   }
+
+   readback->lpVtbl->Unmap(readback, 0, NULL);
+   Release(readback);
+
+   d3d12->hdr.max_cll  = max_cll;
+   d3d12->hdr.max_fall = max_fall_avg;
+
+   if (out_meta)
+      dxgi_hdr_meta_fill(out_meta, is_scrgb,
+            d3d12->hdr.max_cll, d3d12->hdr.max_fall,
+            d3d12->hdr.max_output_nits, d3d12->hdr.min_output_nits);
+
+   return true;
 }
 #endif /* HAVE_DXGI_HDR */
 
@@ -6923,7 +7444,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->desc.Format = image->pix10
+         ? DXGI_FORMAT_R10G10B10A2_UNORM
+         : DXGI_FORMAT_B8G8R8A8_UNORM;
    texture->srv_heap    = &d3d12->desc.srv_heap;
 
    d3d12_release_texture(texture);
@@ -6932,7 +7455,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
    if (texture->upload_buffer)
       d3d12_update_texture(
             image->width, image->height, 0,
-            DXGI_FORMAT_B8G8R8A8_UNORM, image->pixels, texture);
+            image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
+                         : DXGI_FORMAT_B8G8R8A8_UNORM,
+            image->pixels, texture);
 
    return (uintptr_t)texture;
 }
@@ -7254,6 +7779,215 @@ static bool d3d12_get_current_software_framebuffer(
    return true;
 }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+static DXGI_FORMAT d3d12_dxgi_from_gpu_format(enum texture_gpu_format fmt)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1: return DXGI_FORMAT_BC1_UNORM;
+      case TEXTURE_GPU_FORMAT_BC2: return DXGI_FORMAT_BC2_UNORM;
+      case TEXTURE_GPU_FORMAT_BC3: return DXGI_FORMAT_BC3_UNORM;
+      case TEXTURE_GPU_FORMAT_BC7: return DXGI_FORMAT_BC7_UNORM;
+      default:                     break;
+   }
+   return DXGI_FORMAT_UNKNOWN;
+}
+
+static bool d3d12_gfx_supports_texture_format(void* data,
+      enum texture_gpu_format fmt)
+{
+   d3d12_video_t*                    d3d12 = (d3d12_video_t*)data;
+   D3D12_FEATURE_DATA_FORMAT_SUPPORT fs;
+   DXGI_FORMAT                       dxgi  = d3d12_dxgi_from_gpu_format(fmt);
+   if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
+      return false;
+   memset(&fs, 0, sizeof(fs));
+   fs.Format = dxgi;
+   if (FAILED(d3d12->device->lpVtbl->CheckFeatureSupport(d3d12->device,
+         D3D12_FEATURE_FORMAT_SUPPORT, &fs, sizeof(fs))))
+      return false;
+   return (fs.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) != 0;
+}
+
+static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
+      const struct texture_compressed* tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d12_video_t*        d3d12       = (d3d12_video_t*)video_data;
+   d3d12_texture_t*      texture     = NULL;
+   D3D12Device           device;
+   DXGI_FORMAT           dxgi;
+   D3D12_HEAP_PROPERTIES heap_props;
+   D3D12_RESOURCE_DESC   tex_desc;
+   D3D12_RESOURCE_DESC   buf_desc;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT layouts[IMAGE_MAX_MIPS];
+   UINT                  num_rows[IMAGE_MAX_MIPS];
+   UINT64                row_sizes[IMAGE_MAX_MIPS];
+   UINT64                total_bytes = 0;
+   D3D12CommandAllocator alloc       = NULL;
+   D3D12GraphicsCommandList cmd       = NULL;
+   uint8_t*              mapped      = NULL;
+   D3D12_RANGE           norange;
+   unsigned              i;
+   unsigned              block_bytes = 16;
+   HRESULT               hr;
+
+   (void)threaded;
+   if (!d3d12 || !d3d12->device || !tc || tc->num_mips == 0)
+      return 0;
+   dxgi = d3d12_dxgi_from_gpu_format(tc->format);
+   if (dxgi == DXGI_FORMAT_UNKNOWN)
+      return 0;
+   if (tc->format == TEXTURE_GPU_FORMAT_BC1)
+      block_bytes = 8;
+   device = d3d12->device;
+
+   if (!(texture = (d3d12_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+      texture->sampler = d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+   else
+      texture->sampler = d3d12->samplers[RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->srv_heap = &d3d12->desc.srv_heap;
+
+   /* Default-heap texture with the file's pre-baked mip count.  No UAV
+    * flags: the driver's compute mip generation cannot write BC blocks. */
+   memset(&tex_desc, 0, sizeof(tex_desc));
+   tex_desc.Dimension        = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+   tex_desc.Width            = tc->mips[0].width;
+   tex_desc.Height           = tc->mips[0].height;
+   tex_desc.DepthOrArraySize = 1;
+   tex_desc.MipLevels        = (UINT16)tc->num_mips;
+   tex_desc.Format           = dxgi;
+   tex_desc.SampleDesc.Count = 1;
+   tex_desc.Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+   tex_desc.Flags            = D3D12_RESOURCE_FLAG_NONE;
+   texture->desc             = tex_desc;
+
+   memset(&heap_props, 0, sizeof(heap_props));
+   heap_props.Type             = D3D12_HEAP_TYPE_DEFAULT;
+   heap_props.CreationNodeMask = 1;
+   heap_props.VisibleNodeMask  = 1;
+   hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
+         D3D12_HEAP_FLAG_NONE, &tex_desc, D3D12_RESOURCE_STATE_COPY_DEST,
+         NULL, uuidof(ID3D12Resource), (void**)&texture->handle);
+   if (FAILED(hr) || !texture->handle)
+   {
+      free(texture);
+      return 0;
+   }
+
+   device->lpVtbl->GetCopyableFootprints(device, &tex_desc, 0, tc->num_mips,
+         0, layouts, num_rows, row_sizes, &total_bytes);
+
+   memset(&buf_desc, 0, sizeof(buf_desc));
+   buf_desc.Dimension        = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Width            = total_bytes;
+   buf_desc.Height           = 1;
+   buf_desc.DepthOrArraySize = 1;
+   buf_desc.MipLevels        = 1;
+   buf_desc.Format           = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count = 1;
+   buf_desc.Layout           = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   heap_props.Type           = D3D12_HEAP_TYPE_UPLOAD;
+   hr = device->lpVtbl->CreateCommittedResource(device, &heap_props,
+         D3D12_HEAP_FLAG_NONE, &buf_desc, D3D12_RESOURCE_STATE_GENERIC_READ,
+         NULL, uuidof(ID3D12Resource), (void**)&texture->upload_buffer);
+   if (FAILED(hr) || !texture->upload_buffer)
+   {
+      d3d12_release_texture(texture);
+      free(texture);
+      return 0;
+   }
+
+   norange.Begin = 0;
+   norange.End   = 0;
+   if (FAILED(texture->upload_buffer->lpVtbl->Map(texture->upload_buffer, 0,
+         &norange, (void**)&mapped)) || !mapped)
+   {
+      d3d12_release_texture(texture);
+      free(texture);
+      return 0;
+   }
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      unsigned       blocks_w  = (tc->mips[i].width + 3u) >> 2;
+      unsigned       src_pitch = blocks_w * block_bytes;
+      const uint8_t* src       = (const uint8_t*)tc->mips[i].data;
+      uint8_t*       dst       = mapped + layouts[i].Offset;
+      UINT           r;
+      for (r = 0; r < num_rows[i]; r++)
+         memcpy(dst + (size_t)r * layouts[i].Footprint.RowPitch,
+                src + (size_t)r * src_pitch, (size_t)row_sizes[i]);
+   }
+   texture->upload_buffer->lpVtbl->Unmap(texture->upload_buffer, 0, NULL);
+
+   /* One-shot copy on a temporary DIRECT command list, executed on the
+    * driver's queue and fence-waited (mirrors the unload synchronisation). */
+   device->lpVtbl->CreateCommandAllocator(device,
+         D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
+         (void**)&alloc);
+   device->lpVtbl->CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT,
+         alloc, NULL, uuidof(ID3D12GraphicsCommandList), (void**)&cmd);
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      D3D12_TEXTURE_COPY_LOCATION src_loc;
+      D3D12_TEXTURE_COPY_LOCATION dst_loc;
+      src_loc.pResource        = texture->upload_buffer;
+      src_loc.Type             = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+      src_loc.PlacedFootprint  = layouts[i];
+      dst_loc.pResource        = texture->handle;
+      dst_loc.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+      dst_loc.SubresourceIndex = i;
+      cmd->lpVtbl->CopyTextureRegion(cmd, &dst_loc, 0, 0, 0, &src_loc, NULL);
+   }
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   cmd->lpVtbl->Close(cmd);
+   {
+      D3D12CommandList lists[1];
+      lists[0] = (D3D12CommandList)cmd;
+      d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1, lists);
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+            d3d12->queue.fence, ++d3d12->queue.fenceValue);
+      if (d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+            < d3d12->queue.fenceValue)
+      {
+         d3d12->queue.fence->lpVtbl->SetEventOnCompletion(d3d12->queue.fence,
+               d3d12->queue.fenceValue, d3d12->queue.fenceEvent);
+         WaitForSingleObject(d3d12->queue.fenceEvent, INFINITE);
+      }
+   }
+   Release(cmd);
+   Release(alloc);
+   Release(texture->upload_buffer);
+   texture->upload_buffer = NULL;
+
+   {
+      D3D12_SHADER_RESOURCE_VIEW_DESC srv;
+      memset(&srv, 0, sizeof(srv));
+      srv.Format                  = dxgi;
+      srv.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+      srv.ViewDimension           = D3D12_SRV_DIMENSION_TEXTURE2D;
+      srv.Texture2D.MipLevels     = tc->num_mips;
+      texture->cpu_descriptor[0]  = d3d12_descriptor_heap_slot_alloc(texture->srv_heap);
+      device->lpVtbl->CreateShaderResourceView(device, texture->handle,
+            &srv, texture->cpu_descriptor[0]);
+      texture->gpu_descriptor[0].ptr = texture->cpu_descriptor[0].ptr
+            - texture->srv_heap->cpu.ptr + texture->srv_heap->gpu.ptr;
+   }
+
+   texture->size_data.x = (float)tc->mips[0].width;
+   texture->size_data.y = (float)tc->mips[0].height;
+   texture->size_data.z = 1.0f / (float)tc->mips[0].width;
+   texture->size_data.w = 1.0f / (float)tc->mips[0].height;
+   texture->dirty       = false;
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -7292,14 +8026,16 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_set_hdr_paper_white_nits,
    d3d12_set_hdr_expand_gamut,
    d3d12_set_hdr_scanlines,
-   d3d12_set_hdr_subpixel_layout
+   d3d12_set_hdr_subpixel_layout,
 #else
       NULL, /* set_hdr_menu_nits */
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
 #endif
+   d3d12_gfx_supports_texture_format,
+   d3d12_gfx_load_texture_compressed
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)
@@ -7335,6 +8071,12 @@ video_driver_t video_d3d12 = {
    d3d12_shader_load_begin,
    d3d12_shader_load_step,
 #ifdef HAVE_GFX_WIDGETS
-   d3d12_gfx_widgets_enabled
+   d3d12_gfx_widgets_enabled,
+#endif
+   NULL, /* invalidate_hw_render_cache */
+#ifdef HAVE_DXGI_HDR
+   d3d12_gfx_read_viewport_hdr
+#else
+   NULL /* read_viewport_hdr */
 #endif
 };

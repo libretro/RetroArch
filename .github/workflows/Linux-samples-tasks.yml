@@ -194,3 +194,631 @@ jobs:
           test -x bps_patch_bounds_test
           timeout 60 ./bps_patch_bounds_test
           echo "[pass] bps_patch_bounds_test"
+
+      - name: Build and run patch_stream_test (ASan/UBSan)
+        shell: bash
+        working-directory: samples/tasks/patch_stream
+        run: |
+          set -eu
+          # Differential harness for the streaming patch appliers in
+          # tasks/patch_stream.c.  Each streamed applier must produce
+          # output byte-identical to the whole-buffer applier it
+          # mirrors in tasks/task_patch.c, at every chunk size - the
+          # oracle for IPS, UPS and BPS is a copy of that whole-buffer
+          # logic held in the test, so if task_patch.c changes its
+          # appliers the copy has to follow.  The .xdelta case checks
+          # the delegation to the VCDIFF decoder instead, since that
+          # decoder is verified separately against the reference
+          # implementation.
+          #
+          # The cases that matter most are the ones a whole-buffer
+          # applier cannot have: an empty source, a source that ends
+          # short of its declared length, and chunk boundaries landing
+          # inside a patch command.  A truncated feed must be refused
+          # rather than answered with a target built from a partial
+          # source.
+          make clean all SANITIZER=address,undefined
+          test -x patch_stream_test
+          timeout 900 ./patch_stream_test
+          echo "[pass] patch_stream_test"
+
+      - name: Build and run task_file_transfer_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/file_transfer
+        run: |
+          set -eu
+          # Oracle for tasks/task_file_transfer.c, compiled from the
+          # tree so it exercises the shipping translation unit.  The
+          # handler is a switch whose states advance at most one step
+          # per tick, so what matters is how many ticks a load takes,
+          # whether every input reaches a terminal at all, and what a
+          # caller reading task_get_progress() sees on the way - a
+          # test that only checks the bytes passes on every defect
+          # below.  Lanes run to a tick cap rather than looping, so a
+          # task that never finishes reports instead of hanging CI.
+          #
+          # Pinned here: a NULL path and a parse callback that
+          # returns success without setting is_finished, both of
+          # which once left the task running forever with no flag set
+          # (a per-frame call under the regular queue, a hot spin on
+          # the worker thread under the threaded one); progress
+          # reaching 100 on every completion path, not just the
+          # single-tick one; the tick that opens the file also
+          # reading, which one byte either side of the threshold used
+          # to decide; a file truncated underneath an in-flight fill
+          # cancelling rather than parsing a buffer whose tail was
+          # never written; and every audio type reaching the mixer
+          # arm, since M4A and OPUS were once absent from that switch
+          # while both push paths set them, so those sounds loaded
+          # and silently did not play.
+          #
+          # Two lanes guard the 256 MiB prefix cap that cancelled
+          # every large non-faststart video.  The real-demuxer lane
+          # pins the premise the cap got wrong: a genuine h264 MP4
+          # (real ftyp/mdat/moov, real coded frames) is written with
+          # a ~300 MiB free box pushing moov to EOF - a valid file,
+          # the layout most cameras produce - and the real rmp4, via
+          # image_transfer's avail-aware open, must answer need_more
+          # on a 1 MiB prefix and decode real frames once fully
+          # resident.  Anyone restoring a prefix ceiling on the
+          # "a still only needs a few per cent" argument is refuted
+          # by that lane directly.  The task lane pins the
+          # mechanism: a still ready only at EOF, over a 300 MiB
+          # file, must finish uncancelled with every byte resident.
+          # On the capped tree it stops at exactly 268435456 and
+          # cancels - no thumbnail, no animation - and the oracle
+          # exits non-zero.
+          #
+          # The conc lane runs disjoint handles on many threads at
+          # once.  data_transfer synchronises nothing by design and
+          # the task layer gives one handle to one task, so it is not
+          # looking for contention on a shared handle - it checks
+          # that the spine keeps no hidden static state, which a
+          # sanitizer build can answer and inspection cannot.
+          make clean all SANITIZER=address,undefined
+          test -x task_file_transfer_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./task_file_transfer_test
+          ASAN_OPTIONS=detect_leaks=1 timeout 600 \
+             ./task_file_transfer_test conc
+          echo "[pass] task_file_transfer_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./task_file_transfer_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./task_file_transfer_test conc
+          echo "[pass] task_file_transfer_test (TSan)"
+
+      - name: Build and run core_crc_slice_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_updater
+        run: |
+          set -eu
+          # Oracle for the resumable CRC in
+          # libretro-common/streams/interface_stream.c and the sliced
+          # hashing loop tasks/task_core_updater.c drives it with.
+          #
+          # intfstream_get_crc() consumes a whole stream in one call,
+          # so the cost of the tick that invoked it was a function of
+          # core size and nothing else - 43ms for a 40MB core measured
+          # cold on NVMe, an order of magnitude worse on the SD-card
+          # and spinning-disk targets, and the updater hashes the
+          # installed core on every update check.  intfstream_crc_step()
+          # hashes a bounded slice and resumes, so the work spreads
+          # across ticks.
+          #
+          # The property that needs pinning is not "the CRC is
+          # correct" - a whole-stream call gets that right too - but
+          # that no single tick hashes the whole file while the answer
+          # still matches the unsliced value at every chunk size,
+          # including sizes that do not divide the file evenly and a
+          # final slice of one byte.  Both are asserted against
+          # intfstream_get_crc() as the oracle.
+          make clean all
+          test -x core_crc_slice_test
+          timeout 600 ./core_crc_slice_test
+          echo "[pass] core_crc_slice_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./core_crc_slice_test
+          echo "[pass] core_crc_slice_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./core_crc_slice_test
+          make clean
+          echo "[pass] core_crc_slice_test (TSan)"
+
+      - name: Build and run core_backup_io_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/core_backup
+        run: |
+          set -eu
+          # Oracle for the file I/O in tasks/task_core_backup.c,
+          # compiled from the tree so it exercises the shipping
+          # translation unit.  As in save_state and
+          # image_decode_slice, the clock is the test's instrument:
+          # cpu_features_get_time_usec is wrapped so the tick budget is
+          # assertable exactly rather than measured against a wall
+          # clock.
+          #
+          # The throughput lanes pin the budget that replaced a fixed
+          # one-quantum-per-tick loop: a 4KB quantum capped a backup at
+          # ~245KB/s whatever the device could do, and an automatic
+          # backup runs on every core update over cores that are
+          # routinely tens of megabytes.  The exhausted-budget lane
+          # asserts the floor from the other side - with a clock that
+          # spends the budget on its first observation the handler must
+          # still move exactly one quantum per tick and still produce a
+          # correct backup, which is the old behaviour reached through
+          # the new code and what the slowest supported storage gets.
+          #
+          # The read-amplification lane counts bytes at the VFS
+          # boundary, which is the only place they can be counted:
+          # interposing libc read()/write() silently reports zero here,
+          # because glibc's stdio reaches them through internal aliases
+          # that never go via the PLT.  It measures 2x when the CRC is
+          # unknown - the handler hashes the core to name the backup,
+          # then reads it again to copy it - and 1x when the caller
+          # supplies a CRC.  The second figure is the one that matters:
+          # tasks/task_core_updater.c hands its already-computed
+          # local_crc to the automatic backup precisely so that pass is
+          # skipped, and nothing in the type system enforces it.  Pass
+          # 0 from the updater and every automatic backup silently
+          # doubles its read I/O.
+          #
+          # The restore lane round-trips a backup byte for byte.  It is
+          # worth noting why it is asserted rather than skipped: it
+          # used to skip, silently, on every run.  The suite stubbed
+          # frontend_driver_get_core_extension() with the wrong
+          # signature - const char *f(void) against the real
+          # bool f(char *, size_t) - which compiles, because nothing
+          # includes the real declaration, but left core_backup.c
+          # comparing an extension against uninitialised stack.  Every
+          # archive read as CORE_BACKUP_TYPE_INVALID,
+          # task_push_core_restore() refused, and the lane printed SKIP
+          # while the suite reported PASSED.  Both refusal paths are
+          # now CHECK failures: a fixture this test builds itself
+          # cannot legitimately be unavailable to it.
+          make clean all
+          test -x core_backup_io_test
+          timeout 600 ./core_backup_io_test
+          echo "[pass] core_backup_io_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./core_backup_io_test
+          echo "[pass] core_backup_io_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 ./core_backup_io_test
+          make clean
+          echo "[pass] core_backup_io_test (TSan)"
+
+      - name: Build and run image_decode_slice_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/image_decode_slice
+        run: |
+          set -eu
+          # Oracle for the shared decode window in tasks/task_image.c,
+          # compiled from the tree so it exercises the shipping
+          # translation unit.  The clock is the test's instrument: the
+          # sample provides cpu_features_get_time_usec() itself,
+          # advancing a fixed quantum per observation, so the decode
+          # loops are budget-bound deterministically and the cost of a
+          # gather is readable as the fake-clock delta across
+          # task_queue_check() - no wall-clock measurement, no
+          # flakiness.
+          #
+          # The regression it pins has two faces, both verified to
+          # fail it: the pre-window code, where eight concurrent
+          # decodes each took a full frame_duration per gather (~8
+          # frames of decode in one gather), and the subtler
+          # period == allowance variant of the window itself, where a
+          # task that spends its whole allowance has aged the window a
+          # full period and the next task in the same gather resets
+          # it - the multiplication surviving a fix that reads
+          # correct.  That variant passed inspection and failed
+          # simulation, which is why this oracle asserts on measured
+          # gather cost rather than on the code's shape.
+          #
+          # It also checks the decode itself end to end - dimensions
+          # and a pixel spot-check on every delivered image - so the
+          # budget rework cannot silently break what it budgets.
+          make clean all
+          test -x image_decode_slice_test
+          timeout 600 ./image_decode_slice_test
+          echo "[pass] image_decode_slice_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./image_decode_slice_test
+          echo "[pass] image_decode_slice_test (ASan)"
+
+      - name: Build and run save_state_io_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/save_state
+        run: |
+          set -eu
+          # Oracle for the file I/O in tasks/task_save.c, compiled
+          # from the tree so it exercises the shipping translation
+          # unit.  As in image_decode_slice, the clock is the test's
+          # instrument: the sample provides
+          # cpu_features_get_time_usec() itself, advancing a fixed
+          # step per observation, so the tick budget is assertable
+          # exactly rather than measured against a wall clock.  Step 0
+          # is a budget that never expires; step >= the budget is one
+          # that expires on first observation.
+          #
+          # The throughput regression it pins: both handlers used to
+          # transfer exactly one SAVE_STATE_CHUNK per queue tick,
+          # which caps a save at chunk * tick_rate (~6 MB/s) whatever
+          # the device can do - a 16 MB state took 164 ticks, 2.7s at
+          # 60Hz, while one 100 KB write costs ~62us of a 16667us
+          # frame.  A tick is now bounded by time and transfers as
+          # many quanta as fit.  Because a time budget is only an
+          # improvement if it cannot be worse than the fixed count it
+          # replaced, the exhausted-budget lane asserts the fallback
+          # directly: with a clock that spends the budget on its first
+          # observation the handler must still transfer exactly one
+          # quantum per tick and still produce a correct file.  That
+          # is the old behaviour reached through the new code, and it
+          # is what the slowest supported storage gets.
+          #
+          # The rest are the defects the audit turned up, each
+          # verified to fail this oracle on the pre-fix tree:
+          #
+          #  - The rastate block walker looped on 'input < stop', so
+          #    it could enter the body with one byte left and read the
+          #    block length out of input[4..7] - six bytes past the
+          #    end.  content_deserialize_state had the same shape one
+          #    level up, reading seven bytes of magic and input[7] for
+          #    the version with no length check at all.  Savestates
+          #    are shared, synced and recovered off failing media, and
+          #    the load handler's own short-read path produces exactly
+          #    this buffer, so this is a format parser on hostile
+          #    input.  ASan reports both for any state truncated to
+          #    9..15 bytes.
+          #
+          #  - A block's declared 32-bit length was never checked
+          #    against the bytes actually remaining and was then
+          #    passed to core_unserialize as the size of the buffer at
+          #    that offset.  The stub core here reads every byte it is
+          #    told the buffer holds before judging the size, exactly
+          #    as a real core does, so ASan - not the stub's own
+          #    opinion - is what catches an over-long block.  A stub
+          #    that checked size first would pass against the unfixed
+          #    walker.
+          #
+          #  - That length was also assembled as input[7] << 24 on an
+          #    int, undefined for every top byte >= 0x80, i.e. every
+          #    length at or above 2 GB - the range a corrupt length
+          #    lands in, and the value the bound check is asked to
+          #    trust.  UBSan is the assertion.
+          #
+          #  - A failed core_serialize left data NULL and size 0, at
+          #    which point every test in the save handler read as
+          #    success and the task reported COMPLETED.  The file had
+          #    already been opened and truncated, so the user was told
+          #    the save succeeded and the slot held zero bytes.
+          #
+          #  - A failed open was a bare return: not errored, not
+          #    finished, so the queue re-entered the task every tick
+          #    and it retried forever.  Save tasks are
+          #    TASK_TYPE_BLOCKING, so that one task held the single
+          #    blocking slot for the rest of the session - no state
+          #    could be saved or loaded again without a restart.  The
+          #    exclusion rule that makes it severe is itself pinned,
+          #    together with the cleanup the refusal path owes (the
+          #    task, its title, the state struct and the caller's
+          #    serialized buffer), which is why leak detection is on.
+          #
+          # The undo-snapshot lane is the one that needs the counting
+          # allocator (-Wl,--wrap=malloc in the sample's Makefile).
+          # content_load_state_cb retakes the undo snapshot on every
+          # state load, and that capture used to free its destination
+          # and malloc a new one each time; it now keeps the outgoing
+          # allocation as a spare and swaps the two.  Pointer identity
+          # cannot see the difference - a state-sized block is mmap'd,
+          # munmap hands the region back, and the next request of the
+          # same size is usually given the same address - so a run of
+          # captures looks identical either way while only one of them
+          # pays the first-touch faults.  Counting state-sized malloc
+          # calls is the discriminator: eight captures allocate two
+          # buffers after the change and eight before it.
+          #
+          # The conc lane runs the same round-trip under a threaded
+          # queue, where the transfer loop executes on the worker
+          # while content_deserialize_state and the undo bookkeeping
+          # stay on the gathering thread.  It is one task at a time by
+          # design, not by simplification: TASK_TYPE_BLOCKING means
+          # the frontend cannot produce concurrent save tasks, so a
+          # lane that pushed them would be asserting against a
+          # configuration that cannot occur.  What it asks TSan is
+          # whether a loop that newly carries a deadline across
+          # iterations kept any of it shared.
+          make clean all
+          test -x save_state_io_test
+          timeout 300 ./save_state_io_test
+          timeout 300 ./save_state_io_test conc
+          echo "[pass] save_state_io_test"
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 300 \
+             ./save_state_io_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 300 ./save_state_io_test conc
+          echo "[pass] save_state_io_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./save_state_io_test
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./save_state_io_test conc
+          echo "[pass] save_state_io_test (TSan)"
+
+  samples-tasks-http:
+    name: Build and run samples/tasks/http
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: C89 syntax check for the HTTP task translation units
+        shell: bash
+        run: |
+          set -eu
+          # Fast guard for the C89 dialect rules these files are built
+          # under.  RetroArch's full C89 build lives in retroarch.yml
+          # (make C89_BUILD=1), which does catch violations but only
+          # after a configure and a complete build; a syntax-only pass
+          # over the handful of translation units this area touches
+          # fails in seconds instead.
+          #
+          # It exists because a mixed declaration slipped into
+          # task_core_updater.c and reached master: the C99-style
+          # "declare where first used" habit is silent under the
+          # default build and only surfaces here.
+          # -Werror=declaration-after-statement is the specific rule
+          # that catches it; the rest of the flag set mirrors the
+          # C89_BUILD block in the top-level Makefile.  _GNU_SOURCE is
+          # added because -ansi otherwise hides the POSIX prototypes
+          # (strdup and friends) that these files legitimately use,
+          # which would produce a wall of int-conversion noise
+          # unrelated to the dialect rules being checked.
+          C89="-std=c89 -ansi -pedantic -Werror=pedantic -Wno-long-long"
+          C89="$C89 -Werror=declaration-after-statement -Wno-variadic-macros"
+          C89="$C89 -D_GNU_SOURCE"
+          INC="-Ilibretro-common/include -I. -Ideps"
+          DEF="-DRARCH_INTERNAL -DHAVE_NETWORKING -DHAVE_THREADS -DHAVE_COMPRESSION"
+          rc=0
+          for f in libretro-common/net/net_http.c \
+                   libretro-common/queues/task_queue.c \
+                   tasks/task_http.c \
+                   tasks/task_core_updater.c \
+                   tasks/task_pl_thumbnail_download.c \
+                   tasks/task_core_backup.c \
+                   core_backup.c \
+                   libretro-common/streams/interface_stream.c; do
+            if gcc -fsyntax-only $C89 $INC $DEF "$f"; then
+              echo "[pass] C89 $f"
+            else
+              echo "::error title=C89 violation::$f"
+              rc=1
+            fi
+          done
+          exit $rc
+
+      - name: Build and run http_url_dedup_test (ASan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Regression test for the duplicate-download suppression key
+          # in tasks/task_http.c and tasks/task_http_emscripten.c.
+          # connection_url was a fixed char[NAME_MAX_LENGTH] filled by
+          # strlcpy, but task_http_finder() compares that stored copy
+          # against the raw candidate URL - so past NAME_MAX_LENGTH the
+          # two could never compare equal and the "concurrent download
+          # of the same file is not allowed" guard returned false for
+          # every candidate.  Playlist thumbnail URLs exceed it
+          # routinely, and both tasks then reached their completion
+          # callback and raced filestream_write_file() over one path.
+          #
+          # The failure is one-directional: truncation cannot conflate
+          # two distinct URLs, since the candidate is never truncated
+          # to match.  So the test asserts both that the owned key
+          # self-matches at any length and that distinct long URLs
+          # stay distinct - the latter guarding against a future "fix"
+          # that hashes the key to a fixed width and introduces the
+          # false positive this bug did not have.  It keeps the old
+          # fixed-buffer shape as a second oracle so a revert is
+          # caught.  Both NAME_MAX_LENGTH values are covered: 256 on
+          # most targets, 128 on the small-path platforms.
+          make -f Makefile.dedup clean all SANITIZER=address
+          timeout 60 ./http_url_dedup_test
+          make -f Makefile.dedup clean all SANITIZER=address \
+             CFLAGS_EXTRA=-DNAME_MAX_LENGTH=128
+          timeout 60 ./http_url_dedup_test
+          make -f Makefile.dedup clean
+          echo "[pass] http_url_dedup_test"
+
+      - name: Build and run http_emscripten_headers_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Header marshalling for tasks/task_http_emscripten.c, which
+          # sits between two representations: RetroArch's raw
+          # CRLF-delimited blob and the NULL-terminated key/value array
+          # emscripten_fetch wants, plus the response blob that has to
+          # become the same "Name: Value" string_list net_http.c
+          # produces.  Neither conversion existed while the backend was
+          # on emscripten_async_wget2_data, which has no header support
+          # at all - the `headers` argument was accepted and dropped on
+          # every entry point, so cloud sync could not authenticate.
+          #
+          # The parsing is where the sharp edges are: hand-built blobs
+          # in task_push_webdav_move() and
+          # task_push_http_transfer_with_content() mean bare LF,
+          # missing trailing CRLF, empty values, embedded colons and
+          # malformed lines all reach it.  A header dropped here is an
+          # auth failure rather than a crash - silent, and awkward to
+          # trace back - so the degenerate cases are worth pinning.
+          # Pure logic, so it runs natively without emcc.
+          make -f Makefile.emsc_headers clean all SANITIZER=address
+          timeout 60 ./http_emscripten_headers_test
+          make -f Makefile.emsc_headers clean all SANITIZER=undefined
+          UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./http_emscripten_headers_test
+          make -f Makefile.emsc_headers clean
+          echo "[pass] http_emscripten_headers_test"
+
+      - name: Build and run http_task_lifetime_test (ASan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Lifetime contract for task->state between tasks/task_http.c
+          # and libretro-common/queues/task_queue.c.  Links the real
+          # task_http.c and the real task_queue.c; only
+          # msg_hash_to_str() and task_window_progress_cb() are
+          # stubbed, since neither participates in lifetime.
+          #
+          # This is the lane the other HTTP samples could not cover:
+          # they drive net_http.c directly, which exercises the
+          # protocol engine well and the task layer not at all - and
+          # the task layer is where the crash was.
+          # task_http_transfer_handler() freed its http_handle_t as
+          # soon as it set RETRO_TASK_FLG_FINISHED, but a task stays
+          # findable long after its handler is done:
+          # retro_task_threaded_find() scans the running, finished AND
+          # retiring lists, and task_http_finder() dereferences
+          # task->state on every candidate.  So task->state dangled for
+          # the whole window between the last handler tick and full
+          # retirement, and any concurrent push racing a finishing
+          # download read freed memory.
+          #
+          # It survived for years because connection_url was an inline
+          # char[NAME_MAX_LENGTH]: reading a freed-but-still-mapped
+          # array yields stale bytes and strcmp() plods through them.
+          # Making connection_url a pointer turned the same read into
+          # "load the freed chunk's tombstone and dereference it" - a
+          # hard SIGSEGV inside task_http_finder on Windows.  The
+          # pointer change did not introduce the defect; it removed the
+          # padding hiding it.
+          #
+          # The shape is the one from that backtrace: threads push GETs
+          # for a small set of URLs while the queue finishes and
+          # retires earlier ones, so every push runs task_queue_find()
+          # over all three lists and collides with retirement
+          # continuously.  ASan is what makes it assertable - without
+          # it a use-after-free on a recently freed chunk reads
+          # plausible bytes and passes.  TSan matters as much, since
+          # the race is what makes the window reachable.
+          #
+          # To confirm this test still bites, move the teardown in
+          # task_http.c from task_http_transfer_cleanup() back into
+          # task_http_transfer_handler() and rerun under ASan.
+          make -f Makefile.task_lifetime clean all SANITIZER=address
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             timeout 300 ./http_task_lifetime_test
+          echo "[pass] http_task_lifetime_test (ASan)"
+          make -f Makefile.task_lifetime clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./http_task_lifetime_test
+          make -f Makefile.task_lifetime clean
+          echo "[pass] http_task_lifetime_test (TSan)"
+
+      - name: Build and run http_transfer_stress_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Transport-level oracle for libretro-common/net/net_http.c
+          # as driven by tasks/task_http.c, against a real loopback
+          # server.  Framing correctness comes first - Content-Length,
+          # chunked across chunk sizes 1..65536, and
+          # connection-close-delimited, then the same again with the
+          # server dribbling a few bytes per write so every header
+          # line, chunk header and chunk boundary is torn across
+          # receive calls.
+          #
+          # Two things make the tick-cost lane mean anything.  It
+          # interposes socket() to pin SO_RCVBUF, because per-update
+          # byte yield otherwise tracks host /proc/sys/net tuning and
+          # autoscaling; and it sleeps the task-queue tick period
+          # between updates, because without that the client polls
+          # faster than the peer can fill the socket, every recv()
+          # takes a sliver, and the number reports the server's write
+          # rate rather than the structural per-tick cap - it swung
+          # between 263 and 93207 B/tick across runs.  Sleeping the
+          # period lets the receive buffer saturate, which is the
+          # regime RetroArch actually runs in and the only one where
+          # ticks-per-body is stable.
+          #
+          # The peak-window ceiling for the streaming sink is paired
+          # with a contrast case asserting the buffered path *exceeds*
+          # it, so the pair cannot pass by both paths happening to stay
+          # small on a given host.  The teardown lane deinits,
+          # re-inits and transfers again: calling net_http_deinit() is
+          # what makes a leak in the DNS cache and connection pool
+          # visible to LeakSan at all, since both lists hang off
+          # file-scope globals and otherwise count as still reachable.
+          make -f Makefile.stress clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 600 \
+             ./http_transfer_stress_test
+          echo "[pass] http_transfer_stress_test (ASan)"
+          make -f Makefile.stress clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 600 \
+             ./http_transfer_stress_test
+          make -f Makefile.stress clean
+          echo "[pass] http_transfer_stress_test (TSan)"
+
+      - name: Build and run http_dns_evict_deadlock_test (ASan, TSan)
+        shell: bash
+        working-directory: samples/tasks/http
+        run: |
+          set -eu
+          # Deadlock regression for
+          # net_http_dns_cache_remove_expired(), which runs with the
+          # DNS cache lock held and used to sthread_join() the resolver
+          # thread of any entry it evicted.  net_http_resolve() takes
+          # that same lock twice, so a join against a thread blocked
+          # acquiring the lock the joiner holds never returns.
+          #
+          # The window is not theoretical: entry->addr stays NULL for
+          # the whole resolution, so the fail-timeout arm fires after
+          # 30s - and getaddrinfo() against a blackholed resolver
+          # routinely blocks longer.  The entry looks expired precisely
+          # while its own resolver is still running, hanging the task
+          # thread (and in unthreaded builds the frontend) over nothing
+          # worse than a slow DNS server.
+          #
+          # Reproducing that honestly would mean a 30s wait against an
+          # unreachable nameserver, so the test wraps two symbols at
+          # link time instead: getaddrinfo, to park the resolver
+          # mid-flight on one nominated hostname, and
+          # cpu_features_get_time_usec, to age the entry past the
+          # timeout instantly.  --wrap rather than a strong definition
+          # because both live in libretro-common objects linked into
+          # the test.
+          #
+          # Because the failure mode is a hang rather than a wrong
+          # answer, the sweep runs behind a watchdog: on timeout the
+          # test reports and exits non-zero instead of blocking CI.
+          make -f Makefile.dns_evict clean all SANITIZER=address
+          ASAN_OPTIONS=detect_leaks=1 timeout 300 \
+             ./http_dns_evict_deadlock_test
+          echo "[pass] http_dns_evict_deadlock_test (ASan)"
+          make -f Makefile.dns_evict clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 \
+             ./http_dns_evict_deadlock_test
+          make -f Makefile.dns_evict clean
+          echo "[pass] http_dns_evict_deadlock_test (TSan)"

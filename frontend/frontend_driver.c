@@ -14,6 +14,7 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <memory/mem_stats.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -53,8 +54,6 @@ static frontend_ctx_driver_t frontend_ctx_null = {
    NULL,                         /* get_architecture */
    NULL,                         /* get_powerstate */
    NULL,                         /* parse_drive_list */
-   NULL,                         /* get_mem_total */
-   NULL,                         /* get_mem_free */
    NULL,                         /* install_signal_handler */
    NULL,                         /* get_sighandler_state */
    NULL,                         /* set_sighandler_state */
@@ -77,7 +76,7 @@ static frontend_ctx_driver_t frontend_ctx_null = {
 };
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
    &frontend_ctx_emscripten,
 #endif
 #if defined(__PS3__)
@@ -212,7 +211,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
    if (envIsHomebrew())
       return strlcpy(s, "3dsx", len);
    return strlcpy(s, "cia", len);
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    /* may not contain the core */
    return strlcpy(s, "core", len);
 #else
@@ -467,23 +466,7 @@ const void *frontend_driver_get_cpu_architecture_str(char *s, size_t len)
    return frontend;
 }
 
-uint64_t frontend_driver_get_total_memory(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->get_total_mem)
-      return frontend->get_total_mem();
-   return 0;
-}
 
-uint64_t frontend_driver_get_free_memory(void)
-{
-   frontend_state_t *frontend_st   = &frontend_driver_st;
-   frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
-   if (frontend && frontend->get_free_mem)
-      return frontend->get_free_mem();
-   return 0;
-}
 
 void frontend_driver_install_signal_handler(void)
 {

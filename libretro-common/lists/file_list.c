@@ -296,7 +296,12 @@ void file_list_free_actiondata(const file_list_t *list, size_t idx)
    if (!list)
       return;
    if (list->list[idx].actiondata)
-       free(list->list[idx].actiondata);
+   {
+      if (list->actiondata_free)
+         list->actiondata_free(list->list[idx].actiondata);
+      else
+         free(list->list[idx].actiondata);
+   }
    list->list[idx].actiondata = NULL;
 }
 
@@ -331,7 +336,7 @@ bool file_list_search(const file_list_t *list, const char *needle, size_t *idx)
             continue;
       }
 
-      if ((str = (const char *)strcasestr(alt, needle)) == alt)
+      if ((str = (const char *)compat_strcasestr(alt, needle)) == alt)
       {
          /* Found match with first chars, best possible match. */
          *idx = i;

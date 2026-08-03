@@ -43,7 +43,9 @@
 #define INPUT_TEST_COMMAND_SET_SENSOR_LUX    16
 
 /* TODO/FIXME - static globals */
-static uint16_t test_key_state[DEFAULT_MAX_PADS+1][RETROK_LAST];
+/* Allocated with the step array when the test driver starts; see
+ * the note there. Indexed as [DEFAULT_MAX_PADS+1][RETROK_LAST]. */
+static uint16_t (*test_key_state)[RETROK_LAST];
 
 typedef struct
 {
@@ -70,7 +72,10 @@ typedef struct
    bool handled;
 } input_test_step_t;
 
-static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+/* Allocated when the test driver or core actually starts; a static
+ * array here is load-resident forever on platforms without demand
+ * paging, for a feature almost no session activates. */
+static input_test_step_t *input_test_steps;
 
 static unsigned current_test_step     = 0;
 static unsigned last_test_step        = MAX_TEST_STEPS + 1;
@@ -287,6 +292,8 @@ static void test_keyboard_free(void)
 {
    unsigned i, j;
 
+   if (!test_key_state)
+      return;
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
       for (j = 0; j < RETROK_LAST; j++)
          test_key_state[i][j] = 0;
@@ -357,11 +364,26 @@ static int16_t test_input_state(
 static void test_input_free_input(void *data)
 {
    test_keyboard_free();
+   if (input_test_steps)
+      free(input_test_steps);
+   input_test_steps = NULL;
+   if (test_key_state)
+      free(test_key_state);
+   test_key_state = NULL;
 }
 
 static void* test_input_init(const char *joypad_driver)
 {
    settings_t *settings = config_get_ptr();
+
+   if (!input_test_steps)
+      input_test_steps = (input_test_step_t*)
+            calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
+   if (!test_key_state)
+      test_key_state = (uint16_t(*)[RETROK_LAST])
+            calloc(DEFAULT_MAX_PADS + 1, sizeof(*test_key_state));
+   if (!input_test_steps || !test_key_state)
+      return NULL;
 
    RARCH_DBG("[Test input] Start.\n");
 

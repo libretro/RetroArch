@@ -411,7 +411,7 @@ void conv_argb8888_rgba4444(void *output_, const void *input_,
    uint16_t *output      = (uint16_t*)output_;
 
    for (h = 0; h < height;
-         h++, output += out_stride >> 2, input += in_stride >> 1)
+         h++, output += out_stride >> 1, input += in_stride >> 2)
    {
       for (w = 0; w < width; w++)
       {
@@ -438,7 +438,18 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
    const uint16_t *input = (const uint16_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
 
-#if defined(__MMX__)
+#if defined(__SSE2__)
+   const __m128i pix_mask_r = _mm_set1_epi16(0xf << 10);
+   const __m128i pix_mask_g = _mm_set1_epi16(0xf << 8);
+   const __m128i pix_mask_b = _mm_set1_epi16(0xf << 8);
+   const __m128i pix_mask_a = _mm_set1_epi16(0x000f);
+   const __m128i mul16_r    = _mm_set1_epi16(0x0440);
+   const __m128i mul16_g    = _mm_set1_epi16(0x1100);
+   const __m128i mul16_b    = _mm_set1_epi16(0x1100);
+   const __m128i mul_a      = _mm_set1_epi16(0x0011);
+
+   int max_width            = width - 7;
+#elif defined(__MMX__)
    const __m64 pix_mask_r = _mm_set1_pi16(0xf << 10);
    const __m64 pix_mask_g = _mm_set1_pi16(0xf << 8);
    const __m64 pix_mask_b = _mm_set1_pi16(0xf << 8);
@@ -455,7 +466,40 @@ void conv_rgba4444_argb8888(void *output_, const void *input_,
          h++, output += out_stride >> 2, input += in_stride >> 1)
    {
       int w = 0;
-#if defined(__MMX__)
+#if defined(__SSE2__)
+      for (; w < max_width; w += 8)
+      {
+         __m128i res_lo, res_hi;
+         __m128i res_lo_bg, res_hi_bg, res_lo_ra, res_hi_ra;
+         const __m128i in = _mm_loadu_si128(
+               (const __m128i*)(const void*)(input + w));
+         __m128i         r = _mm_and_si128(_mm_srli_epi16(in, 2), pix_mask_r);
+         __m128i         g = _mm_and_si128(in, pix_mask_g);
+         __m128i         b = _mm_and_si128(_mm_slli_epi16(in, 4), pix_mask_b);
+         /* Source is rgba4444 -- alpha is the low nibble of each 16-bit
+          * input word.  Expand 4-bit -> 8-bit via a*0x11 (== a<<4 | a),
+          * matching the scalar fallback. */
+         __m128i         a = _mm_and_si128(in, pix_mask_a);
+
+         r                 = _mm_mulhi_epi16(r, mul16_r);
+         g                 = _mm_mulhi_epi16(g, mul16_g);
+         b                 = _mm_mulhi_epi16(b, mul16_b);
+         a                 = _mm_mullo_epi16(a, mul_a);
+
+         res_lo_bg         = _mm_unpacklo_epi8(b, g);
+         res_hi_bg         = _mm_unpackhi_epi8(b, g);
+         res_lo_ra         = _mm_unpacklo_epi8(r, a);
+         res_hi_ra         = _mm_unpackhi_epi8(r, a);
+
+         res_lo            = _mm_or_si128(res_lo_bg,
+               _mm_slli_si128(res_lo_ra, 2));
+         res_hi            = _mm_or_si128(res_hi_bg,
+               _mm_slli_si128(res_hi_ra, 2));
+
+         _mm_storeu_si128((__m128i*)(void*)(output + w + 0), res_lo);
+         _mm_storeu_si128((__m128i*)(void*)(output + w + 4), res_hi);
+      }
+#elif defined(__MMX__)
       for (; w < max_width; w += 4)
       {
          __m64 res_lo, res_hi;
@@ -917,11 +961,51 @@ void conv_argb8888_abgr8888(void *output_, const void *input_,
    int h, w;
    const uint32_t *input = (const uint32_t*)input_;
    uint32_t *output      = (uint32_t*)output_;
+#if defined(__SSE2__)
+   const __m128i mask_ag = _mm_set1_epi32(0xff00ff00);
+   const __m128i mask_r  = _mm_set1_epi32(0x00ff0000);
+   const __m128i mask_b  = _mm_set1_epi32(0x000000ff);
+   int max_width         = width - 3;
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+   int max_width         = width - 3;
+#endif
 
    for (h = 0; h < height;
          h++, output += out_stride >> 2, input += in_stride >> 2)
    {
-      for (w = 0; w < width; w++)
+      w = 0;
+#if defined(__SSE2__)
+      /* Swap R and B while keeping A and G in place; identical per-lane
+       * to the scalar path. */
+      for (; w < max_width; w += 4)
+      {
+         const __m128i col = _mm_loadu_si128((const __m128i*)(input + w));
+         const __m128i ag  = _mm_and_si128(col, mask_ag);
+         const __m128i r   = _mm_and_si128(_mm_slli_epi32(col, 16), mask_r);
+         const __m128i b   = _mm_and_si128(_mm_srli_epi32(col, 16), mask_b);
+         _mm_storeu_si128((__m128i*)(output + w),
+               _mm_or_si128(ag, _mm_or_si128(r, b)));
+      }
+#elif (defined(__ARM_NEON__) || defined(__ARM_NEON))
+      /* Reverse the four bytes of each pixel (A,R,G,B -> B,G,R,A) then
+       * rotate so A and G return to their lanes: equivalently, view the
+       * pixels as bytes and swap byte 0 with byte 2 per pixel. */
+      for (; w < max_width; w += 4)
+      {
+         /* Swap the R and B bytes of each pixel, keeping A and G, using
+          * the same shift/mask arithmetic as the scalar path (portable
+          * across ARMv7 and AArch64 NEON). */
+         const uint32x4_t mask_ag = vdupq_n_u32(0xff00ff00);
+         const uint32x4_t mask_r  = vdupq_n_u32(0x00ff0000);
+         const uint32x4_t mask_b  = vdupq_n_u32(0x000000ff);
+         uint32x4_t col = vld1q_u32(input + w);
+         uint32x4_t ag  = vandq_u32(col, mask_ag);
+         uint32x4_t r   = vandq_u32(vshlq_n_u32(col, 16), mask_r);
+         uint32x4_t b   = vandq_u32(vshrq_n_u32(col, 16), mask_b);
+         vst1q_u32(output + w, vorrq_u32(ag, vorrq_u32(r, b)));
+      }
+#endif
+      for (; w < width; w++)
       {
          uint32_t col = input[w];
          output[w]    = ((col << 16) & 0xff0000) |

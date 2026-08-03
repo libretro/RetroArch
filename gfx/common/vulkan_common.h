@@ -27,7 +27,7 @@
 #define VULKAN_MAX_DESCRIPTOR_POOL_SIZES        16
 #define VULKAN_BUFFER_BLOCK_SIZE                (64 * 1024)
 
-#define VULKAN_MAX_SWAPCHAIN_IMAGES             8
+#define VULKAN_MAX_SWAPCHAIN_IMAGES             16
 
 #define VULKAN_DIRTY_DYNAMIC_BIT                0x0001
 
@@ -108,7 +108,16 @@ enum vk_flags
    VK_FLAG_READBACK_STREAMED   = (1 << 13),
    VK_FLAG_OVERLAY_ENABLE      = (1 << 14),
    VK_FLAG_OVERLAY_FULLSCREEN  = (1 << 15),
-   VK_FLAG_SDR_PIPELINE        = (1 << 16)
+   VK_FLAG_SDR_PIPELINE        = (1 << 16),
+   /* The core's frames are already PQ-encoded Rec.2020 at absolute
+    * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
+    * must pass them through rather than encode them again. */
+   VK_FLAG_SOURCE_HDR10        = (1 << 17),
+   /* A synchronous HDR screenshot read-back is pending: the frame path
+    * should copy the HDR backbuffer (not the tone-mapped SDR one) into the
+    * HDR readback staging buffer. Distinct from READBACK_PENDING so the two
+    * never interfere. */
+   VK_FLAG_READBACK_HDR        = (1 << 18)
 };
 
 enum vk_texture_type
@@ -257,6 +266,12 @@ typedef struct gfx_ctx_vulkan_data
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
+#ifdef VULKAN_HDR_SWAPCHAIN
+   /* Loaded from VK_EXT_hdr_metadata when that optional device extension is
+    * present; NULL otherwise. Used to signal SMPTE-2086 mastering-display
+    * metadata to the compositor after (re)creating an HDR swapchain. */
+   PFN_vkSetHdrMetadataEXT set_hdr_metadata;
+#endif
 } gfx_ctx_vulkan_data_t;
 
 struct vulkan_display_surface_info
@@ -329,6 +344,13 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
 
+#ifdef __APPLE__
+/* Returns the version string of the MoltenVK implementation in use,
+ * captured at Vulkan context creation. Returns an empty string if no
+ * Vulkan context has been initialized yet. */
+const char *vulkan_get_moltenvk_version(void);
+#endif
+
 void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       bool destroy_surface);
 
@@ -337,6 +359,8 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       void *display, void *surface,
       unsigned width, unsigned height,
       int8_t swap_interval);
+
+bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk);
 
 void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index);
 

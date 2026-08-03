@@ -63,15 +63,71 @@
 
 #if __SSE2__
 #include <emmintrin.h>
+/* An AVX2 scanner doubles the bytes compared per iteration. It is selected at
+ * runtime, and is only built where the compiler can emit an AVX2 function
+ * without raising the baseline ISA for the whole file. */
+#if (defined(__GNUC__) || defined(__clang__)) && (defined(__i386__) || defined(__x86_64__))
+#include <immintrin.h>
+#include <features/features_cpu.h>
+#define STATE_MANAGER_HAVE_AVX2_SCAN 1
 #endif
+#endif
+
+/* Tail padding on each block, in bytes. Must be >= the widest vector load
+ * find_change() can issue (32 for AVX2); 64 leaves room for a wider scanner
+ * without having to revisit the allocation. */
+#define STATE_MANAGER_SCAN_PAD 64
 
 /* There's no equivalent in libc, you'd think so ...
  * std::mismatch exists, but it's not optimized at all. */
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+__attribute__((target("avx2")))
+static size_t find_change_avx2(const uint16_t *a, const uint16_t *b)
+{
+   const __m256i *a256 = (const __m256i*)a;
+   const __m256i *b256 = (const __m256i*)b;
+
+   for (;;)
+   {
+      __m256i v0    = _mm256_loadu_si256(a256);
+      __m256i v1    = _mm256_loadu_si256(b256);
+      __m256i c     = _mm256_cmpeq_epi8(v0, v1);
+      uint32_t mask = (uint32_t)_mm256_movemask_epi8(c);
+
+      if (mask != 0xffffffffu)
+      {
+         /* Offset is a multiple of 32 and the tzcnt is 0..31, so the OR is
+          * an add, exactly as in the SSE2 form. */
+         size_t ret = (((uint8_t*)a256 - (uint8_t*)a) |
+               (compat_ctz(~mask)));
+
+         return (ret >> 1);
+      }
+
+      a256++;
+      b256++;
+   }
+}
+
+static int state_manager_use_avx2(void)
+{
+   static int cached = -1;
+   if (cached < 0)
+      cached = (cpu_features_get() & RETRO_SIMD_AVX2) ? 1 : 0;
+   return cached;
+}
+#endif
+
 static size_t find_change(const uint16_t *a, const uint16_t *b)
 {
 #if __SSE2__
    const __m128i *a128 = (const __m128i*)a;
    const __m128i *b128 = (const __m128i*)b;
+
+#ifdef STATE_MANAGER_HAVE_AVX2_SCAN
+   if (state_manager_use_avx2())
+      return find_change_avx2(a, b);
+#endif
 
    for (;;)
    {
@@ -148,11 +204,36 @@ static size_t find_same(const uint16_t *a, const uint16_t *b)
       const uint32_t *a_big = (const uint32_t*)a;
       const uint32_t *b_big = (const uint32_t*)b;
 
+#if __SSE2__
+      /* Four words per iteration. The granularity stays 32-bit -- the lane
+       * mask is per word, so this stops at exactly the word the scalar loop
+       * would, which the compressed output depends on. */
+      for (;;)
+      {
+         __m128i v0 = _mm_loadu_si128((const __m128i*)a_big);
+         __m128i v1 = _mm_loadu_si128((const __m128i*)b_big);
+         int mask   = _mm_movemask_ps(_mm_castsi128_ps(
+                  _mm_cmpeq_epi32(v0, v1)));
+
+         if (mask)
+         {
+            unsigned lane = (unsigned)compat_ctz((unsigned)mask);
+
+            a_big += lane;
+            b_big += lane;
+            break;
+         }
+
+         a_big += 4;
+         b_big += 4;
+      }
+#else
       while (*a_big != *b_big)
       {
          a_big++;
          b_big++;
       }
+#endif
       a = (const uint16_t*)a_big;
       b = (const uint16_t*)b_big;
 
@@ -371,10 +452,17 @@ static state_manager_t *state_manager_new(
       goto error;
 
    /* Combine thisblock and nextblock into a single allocation.
-    * Each block needs: block_size rounded to uint16_t alignment,
-    * plus padding (4 uint16_t + 16 bytes).
-    * We allocate one contiguous buffer and split it in two. */
-   single_block_alloc = block_size + sizeof(uint16_t) * 4 + 16;
+    * Each block needs: block_size rounded to uint16_t alignment, plus the
+    * four sentinel uint16_t, plus STATE_MANAGER_SCAN_PAD.
+    *
+    * find_change() deliberately scans past the end of the logical data --
+    * the caller bounds the result afterwards -- and terminates only on the
+    * sentinel at byte block_size + 6. The final vector load may therefore
+    * begin at that sentinel and read a full vector beyond it, so the tail
+    * padding must be at least the widest load find_change can issue.
+    * Keep the two in step: widening the scanner means widening this. */
+   single_block_alloc = block_size + sizeof(uint16_t) * 4
+      + STATE_MANAGER_SCAN_PAD;
    alloc_size         = single_block_alloc * 2;
    block_buf          = (uint8_t*)calloc(alloc_size, 1);
 

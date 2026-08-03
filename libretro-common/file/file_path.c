@@ -730,6 +730,12 @@ bool path_is_absolute(const char *path)
    {
       if (path[0] == '/')
          return true;
+      /* VFS URL schemes (smb://, cdrom://, saf://, ...) are absolute. */
+      {
+         const char *scheme = strstr(path, "://");
+         if (scheme && scheme > path)
+            return true;
+      }
 #if defined(_WIN32)
       if (path[0] == '\\' && path[1] == '\\')
          return true;

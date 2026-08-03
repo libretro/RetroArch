@@ -21,6 +21,8 @@
 #include "../microphone_driver.h"
 #include "../../verbosity.h"
 
+/* Per-microphone context: created by open_mic(), destroyed by close_mic().
+ * Owns the audio unit and every buffer the render callback touches. */
 typedef struct coreaudio_microphone
 {
     AudioUnit audio_unit;
@@ -36,6 +38,19 @@ typedef struct coreaudio_microphone
     size_t callback_buffer_size;
     unsigned drop_count;
 } coreaudio_microphone_t;
+
+/* Driver-wide context: created by init(), destroyed by free().
+ * The frontend holds this for as long as the driver is selected, which is a
+ * strictly longer lifetime than any microphone opened through it, so the two
+ * must never be the same allocation. */
+typedef struct coreaudio_microphone_driver
+{
+    coreaudio_microphone_t *mic; /* The frontend opens at most one at a time */
+    bool nonblock;               /* Latched so it survives open/close cycles */
+} coreaudio_microphone_driver_t;
+
+static void coreaudio_microphone_close_mic(void *driver_context,
+      void *microphone_context);
 
 /* Callback for receiving audio samples — runs on the real-time audio thread. */
 static OSStatus coreaudio_input_callback(
@@ -107,44 +122,25 @@ static OSStatus coreaudio_input_callback(
 /* Initialize CoreAudio microphone driver */
 static void *coreaudio_microphone_init(void)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)calloc(1, sizeof(*microphone));
-   if (!microphone)
-      return NULL;
-
-   microphone->sample_rate = 0;
-   microphone->nonblock    = false;
-   microphone->use_float   = false;
-   microphone->fifo_lock = slock_new();
-   microphone->fifo_cond = scond_new();
-
-   return microphone;
+   /* No microphone is opened here: the frontend calls open_mic() for that,
+    * and the resulting handle has its own, shorter lifetime. */
+   return calloc(1, sizeof(coreaudio_microphone_driver_t));
 }
 
 /* Free CoreAudio microphone driver */
 static void coreaudio_microphone_free(void *driver_context)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
-   if (microphone)
-   {
-      if (microphone->audio_unit)
-      {
-         if (microphone->is_running)
-         {
-            AudioOutputUnitStop(microphone->audio_unit);
-            microphone->is_running = false;
-         }
-         AudioUnitUninitialize(microphone->audio_unit);
-         AudioComponentInstanceDispose(microphone->audio_unit);
-         microphone->audio_unit = nil;
-      }
-      if (microphone->callback_buffer)
-         free(microphone->callback_buffer);
-      if (microphone->sample_buffer)
-         fifo_free(microphone->sample_buffer);
-      slock_free(microphone->fifo_lock);
-      scond_free(microphone->fifo_cond);
-      free(microphone);
-   }
+   coreaudio_microphone_driver_t *drv =
+      (coreaudio_microphone_driver_t*)driver_context;
+   if (!drv)
+      return;
+
+   /* The frontend closes every microphone before freeing the driver; don't
+    * leak one should that ever stop being true. */
+   if (drv->mic)
+      coreaudio_microphone_close_mic(drv, drv->mic);
+
+   free(drv);
 }
 
 /* Read samples from microphone */
@@ -152,9 +148,10 @@ static int coreaudio_microphone_read(void *driver_context,
       void *microphone_context, void *buf, size_t size)
 {
    size_t avail, read_amt;
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
+   coreaudio_microphone_t *microphone =
+      (coreaudio_microphone_t*)microphone_context;
 
-   if (!microphone || !buf)
+   if (!microphone || !microphone->sample_buffer || !buf)
       return -1;
 
    slock_lock(microphone->fifo_lock);
@@ -182,9 +179,15 @@ static int coreaudio_microphone_read(void *driver_context,
 /* Set non-blocking state */
 static void coreaudio_microphone_set_nonblock_state(void *driver_context, bool state)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
-   if (microphone)
-      microphone->nonblock = state;
+   coreaudio_microphone_driver_t *drv =
+      (coreaudio_microphone_driver_t*)driver_context;
+   if (!drv)
+      return;
+
+   /* Kept on the driver so a mic opened later inherits it. */
+   drv->nonblock = state;
+   if (drv->mic)
+      drv->mic->nonblock = state;
 }
 
 /* Helper method to set audio format */
@@ -215,53 +218,64 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
       unsigned latency,
       unsigned *new_rate)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)driver_context;
-   if (!microphone)
+   coreaudio_microphone_driver_t *drv =
+      (coreaudio_microphone_driver_t*)driver_context;
+   coreaudio_microphone_t *microphone = NULL;
+
+   if (!drv)
       return NULL;
 
    /* Guard against calling open_mic twice without close_mic */
-   if (microphone->audio_unit)
+   if (drv->mic)
    {
       RARCH_WARN("[CoreAudio] Microphone already open, closing first.\n");
-      if (microphone->is_running)
-      {
-         AudioOutputUnitStop(microphone->audio_unit);
-         microphone->is_running = false;
-      }
-      AudioUnitUninitialize(microphone->audio_unit);
-      AudioComponentInstanceDispose(microphone->audio_unit);
-      microphone->audio_unit = nil;
-      if (microphone->callback_buffer)
-      {
-         free(microphone->callback_buffer);
-         microphone->callback_buffer = NULL;
-      }
-      if (microphone->sample_buffer)
-      {
-         fifo_free(microphone->sample_buffer);
-         microphone->sample_buffer = NULL;
-      }
+      coreaudio_microphone_close_mic(drv, drv->mic);
    }
+
+   if (!(microphone = (coreaudio_microphone_t*)calloc(1, sizeof(*microphone))))
+      return NULL;
+
+   if (!(microphone->fifo_lock = slock_new()))
+      goto error;
+   if (!(microphone->fifo_cond = scond_new()))
+      goto error;
 
    microphone->sample_rate = rate;
    microphone->use_float   = false;
+   microphone->nonblock    = drv->nonblock;
 
 #if TARGET_OS_IPHONE
    /* Configure audio session */
    {
       AVAudioSession *audioSession = [AVAudioSession sharedInstance];
       NSError *error = nil;
+      AVAudioSessionCategoryOptions options =
+         AVAudioSessionCategoryOptionAllowBluetoothA2DP;
       Float64 actualRate;
 
+#if TARGET_OS_IOS
+      /* PlayAndRecord routes output to the receiver on iPhone unless
+       * DefaultToSpeaker is set, which would make game audio quiet and thin
+       * the moment a core asks for a microphone. tvOS has no receiver to be
+       * routed to and marks the option unavailable, so it is iOS-only -
+       * TARGET_OS_IPHONE covers tvOS as well and is too broad to gate it. */
+      options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+#endif
+
+      /* AllowBluetooth (HFP) is deliberately not requested: it would make a
+       * paired headset's microphone available, but only by dragging the whole
+       * route down to narrowband mono. Keeping A2DP alone leaves game audio
+       * at full quality on the headset and takes input from the built-in mic,
+       * which is the better trade for an emulator. It is also the option
+       * deprecated in the iOS 26 SDK in favour of AllowBluetoothHFP. */
       [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord
-                    withOptions:AVAudioSessionCategoryOptionAllowBluetooth
-                              | AVAudioSessionCategoryOptionAllowBluetoothA2DP
+                    withOptions:options
                           error:&error];
       if (error)
       {
          RARCH_ERR("[CoreAudio] Failed to set audio session category: %s.\n",
                [[error localizedDescription] UTF8String]);
-         return NULL;
+         goto error;
       }
 
       /* Let iOS negotiate the rate — don't restrict to 44100/48000. */
@@ -270,7 +284,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
       {
          RARCH_ERR("[CoreAudio] Failed to set preferred sample rate: %s.\n",
                [[error localizedDescription] UTF8String]);
-         return NULL;
+         goto error;
       }
 
       actualRate = [audioSession sampleRate];
@@ -295,7 +309,7 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
       }
       microphone->sample_buffer = fifo_new(fifoBufferSize);
       if (!microphone->sample_buffer)
-         return NULL;
+         goto error;
    }
 
    /* Initialize audio unit */
@@ -401,35 +415,30 @@ static void *coreaudio_microphone_open_mic(void *driver_context,
    }
 
    microphone->is_running = true;
+   drv->mic               = microphone;
    return microphone;
 
 error:
-   if (microphone->audio_unit)
-   {
-      AudioUnitUninitialize(microphone->audio_unit);
-      AudioComponentInstanceDispose(microphone->audio_unit);
-      microphone->audio_unit = nil;
-   }
-   if (microphone->callback_buffer)
-   {
-      free(microphone->callback_buffer);
-      microphone->callback_buffer = NULL;
-   }
-   if (microphone->sample_buffer)
-   {
-      fifo_free(microphone->sample_buffer);
-      microphone->sample_buffer = NULL;
-   }
+   /* close_mic() performs exactly this teardown, and tolerates a handle that
+    * was only partially built, so there is no second cleanup path to keep in
+    * step with the one above. */
+   coreaudio_microphone_close_mic(drv, microphone);
    return NULL;
 }
 
 /* Close microphone */
 static void coreaudio_microphone_close_mic(void *driver_context, void *microphone_context)
 {
-   coreaudio_microphone_t *microphone = (coreaudio_microphone_t*)microphone_context;
+   coreaudio_microphone_driver_t *drv =
+      (coreaudio_microphone_driver_t*)driver_context;
+   coreaudio_microphone_t *microphone =
+      (coreaudio_microphone_t*)microphone_context;
    if (!microphone)
       return;
 
+   /* Stopping the unit does not wait for a render callback that is already
+    * in flight; disposing it does. Everything the callback dereferences must
+    * therefore stay alive until after the dispose below. */
    if (microphone->is_running)
    {
       AudioOutputUnitStop(microphone->audio_unit);
@@ -454,6 +463,14 @@ static void coreaudio_microphone_close_mic(void *driver_context, void *microphon
       fifo_free(microphone->sample_buffer);
       microphone->sample_buffer = NULL;
    }
+
+   slock_free(microphone->fifo_lock);
+   scond_free(microphone->fifo_cond);
+
+   if (drv && drv->mic == microphone)
+      drv->mic = NULL;
+
+   free(microphone);
 }
 
 /* Start microphone */

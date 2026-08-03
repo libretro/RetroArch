@@ -39,6 +39,7 @@
 #include <audio/audio_mixer.h>
 #endif
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 
 #include "audio_defines.h"
 
@@ -73,6 +74,28 @@ typedef struct audio_mixer_stream_params
    enum audio_mixer_stream_type stream_type;
    enum audio_mixer_type type;
    enum audio_mixer_state state;
+   /* Optional ownership transfer: when buf_owner is non-NULL,
+    * add_stream borrows 'buf' from it instead of copying, and
+    * buf_owner_free(buf_owner) runs when the stream's sound is
+    * destroyed - or immediately on any failure path, or after the
+    * conversion for WAV.  Ownership transfers on the call in every
+    * outcome; 'buf' must stay valid inside the owner until release.
+    * Callers with no owned object set both to NULL and keep today's
+    * copy semantics. */
+   void *buf_owner;
+   void (*buf_owner_free)(void *owner);
+   /* Optional: receives the slot index the stream landed in (or -1 on
+    * failure).  NULL when the caller does not need it. */
+   int *out_slot;
+   /* Optional (windowed Ogg-Opus only): the stream's last-page granule,
+    * found by the feeder from a bounded tail peek so the decoder need
+    * not scan the whole file for it.  0 means not supplied - the
+    * decoder does its normal full end-granule scan. */
+   int64_t end_granule;
+   /* Windowed sources: bytes resident from the start of buf when the
+    * stream is added, bounding the decoder's container header parse.
+    * 0 means the whole buffer is there. */
+   size_t avail;
 } audio_mixer_stream_params_t;
 #endif
 
@@ -206,17 +229,30 @@ typedef struct
 #endif
 
    /**
-    * A scratch buffer for processed audio output to be converted to 16-bit,
-    * so that it can be sent to the driver.
+    * The driver's int16 output staging buffer. Holds the final 16-bit samples
+    * that are sent to the audio driver and to recording, from whichever source
+    * produced them: the float->s16 conversion of the float resampler's output,
+    * the integer s16 resampler writing here directly, or the single-sample
+    * callback. Only the float path performs an int16 conversion into it; the
+    * other producers write s16 directly.
     */
-   int16_t *output_samples_conv_buf;
-   size_t output_samples_conv_buf_length;
+   int16_t *output_samples_int16;
+   size_t output_samples_int16_length;
 #ifdef HAVE_DSP_FILTER
    retro_dsp_filter_t *dsp;
 #endif
    const retro_resampler_t *resampler;
 
    void *resampler_data;
+
+   /* Optional deterministic integer (s16) resampler, used by the s16 path
+    * in audio_driver_flush() when the selected resampler has an int16
+    * implementation ("sinc", "nearest", "CC") and no float-domain stage is
+    * active.  NULL otherwise.  The process/free entry points are selected
+    * alongside the handle so the s16 path is backend-agnostic. */
+   void *resampler_data_int16;
+   void (*resampler_int16_process)(void *, struct resampler_data_int16 *);
+   void (*resampler_int16_free)(void *);
 
    /**
     * The current audio driver.
@@ -230,6 +266,11 @@ typedef struct
     */
    float *input_data;
    float *synth_buf;
+   /* int16 scratch for the s16 path: running a fully-int16 DSP chain
+    * and/or summing an in-process synth without an int16<->float round-trip.
+    * Allocated only when an int16 resampler exists, since that path cannot
+    * run without one; NULL otherwise. */
+   int16_t *input_data_int16;
    size_t input_data_length;
 #ifdef HAVE_AUDIOMIXER
    struct audio_mixer_stream mixer_streams[AUDIO_MIXER_MAX_SYSTEM_STREAMS];
@@ -299,6 +340,22 @@ typedef struct
    double   cached_rate_adjust;        /* last computed factor; default 1.0 */
    size_t   samples_since_drc;         /* int16 samples submitted since last update */
    size_t   drc_threshold_int16s;      /* one frame's worth of stereo int16 at the current rate */
+
+   /* Last-flush sample-format diagnostics for the on-screen statistics
+    * overlay. stat_core_is_float records whether the core delivered float
+    * (audio_driver_sample_batch_float) or int16 (audio_driver_sample_batch)
+    * samples; stat_frontend_is_float records whether the frontend processed
+    * that audio through the float resampler path (true) or an integer path
+    * (false: either the write_raw raw-int16 fast path or the deterministic
+    * s16 resampler path). */
+   bool     stat_core_is_float;
+   bool     stat_frontend_is_float;
+
+   /* Unity passthrough state: set when the float path skipped the
+    * resampler because the ratio was exactly 1.0 (see audio_driver_flush).
+    * Used to re-initialise the resampler on the transition back to actual
+    * resampling so it does not resume from a stale ring buffer. */
+   bool     resampler_bypassed;
 } audio_driver_state_t;
 
 bool audio_driver_enable_callback(void);
@@ -334,6 +391,16 @@ audio_mixer_stream_t *audio_driver_mixer_get_stream(unsigned i);
 
 bool audio_driver_mixer_add_stream(audio_mixer_stream_params_t *params);
 
+/* Compressed-byte read position of the stream in 'slot' (its
+ * decoder's offset within the source buffer), or -1 when the slot
+ * holds no live stream.  The windowed-source feeder's polling
+ * input. */
+int64_t audio_driver_mixer_stream_byte_tell(unsigned i);
+
+/* Raise a windowed stream's resident prefix as its feeder slides the
+ * window forward.  The mirror of audio_driver_mixer_stream_byte_tell. */
+void audio_driver_mixer_stream_set_avail(unsigned i, size_t avail);
+
 void audio_driver_mixer_play_stream(unsigned i);
 
 void audio_driver_mixer_play_menu_sound(unsigned i);
@@ -357,6 +424,8 @@ void audio_driver_mixer_remove_stream(unsigned i);
 enum audio_mixer_state audio_driver_mixer_get_stream_state(unsigned i);
 
 const char *audio_driver_mixer_get_stream_name(unsigned i);
+
+unsigned audio_driver_mixer_get_streams_playing(void);
 
 void audio_driver_load_system_sounds(void);
 
@@ -405,6 +474,17 @@ void audio_driver_sample(int16_t left, int16_t right);
  * Returns: amount of frames sampled.
  **/
 size_t audio_driver_sample_batch(const int16_t *data, size_t frames);
+
+/**
+ * audio_driver_sample_batch_float:
+ *
+ * Float counterpart of audio_driver_sample_batch(), handed to a core via
+ * RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_FLOAT. Samples are interleaved
+ * stereo float normalized to [-1.0, 1.0].
+ *
+ * @return Number of frames processed.
+ **/
+size_t audio_driver_sample_batch_float(const float *data, size_t frames);
 
 #ifdef HAVE_REWIND
 /**

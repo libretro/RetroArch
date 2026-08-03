@@ -27,8 +27,46 @@
 #include <retro_endianness.h>
 #include <boolean.h>
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
+/* Either decoder will do; rzstd is preferred where a build has it, and
+ * the reference remains available until every platform has moved. */
+#ifdef HAVE_RZSTD
+#include <encodings/rzstd.h>
+#define RVZ_SIZE_UNKNOWN RZSTD_CONTENT_SIZE_UNKNOWN
+#define RVZ_SIZE_ERROR   RZSTD_CONTENT_SIZE_ERROR
+#else
 #include <zstd.h>
+#define RVZ_SIZE_UNKNOWN ((int64_t)ZSTD_CONTENTSIZE_UNKNOWN)
+#define RVZ_SIZE_ERROR   ((int64_t)ZSTD_CONTENTSIZE_ERROR)
+#endif
+
+/* One decode for either backend: non-zero means the frame did not
+ * decode, and @out receives how much came out. */
+static int rvz_zstd_decode(uint8_t *dst, size_t dst_len,
+      const uint8_t *src, size_t src_len, size_t *out, const char **why)
+{
+#ifdef HAVE_RZSTD
+   int e = rzstd_decode(dst, dst_len, src, src_len, out);
+   *why  = rzstd_error_name(e);
+   return e != RZSTD_PROCESS_END;
+#else
+   size_t r = ZSTD_decompress(dst, dst_len, src, src_len);
+   *why     = ZSTD_isError(r) ? ZSTD_getErrorName(r) : "no error";
+   if (ZSTD_isError(r))
+      return 1;
+   *out = r;
+   return 0;
+#endif
+}
+
+static int64_t rvz_zstd_frame_size(const uint8_t *src, size_t src_len)
+{
+#ifdef HAVE_RZSTD
+   return rzstd_frame_content_size(src, src_len);
+#else
+   return (int64_t)ZSTD_getFrameContentSize(src, src_len);
+#endif
+}
 #endif
 
 #include "../verbosity.h"
@@ -397,10 +435,12 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
       return compressed_data;
    }
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
    if (compression_type == RVZ_COMPRESSION_ZSTD)
    {
       size_t result;
+      int    zerr;
+   const char *zmsg;
       decompressed_data = (uint8_t*)malloc(decompressed_size);
       if (!decompressed_data)
       {
@@ -408,14 +448,14 @@ static uint8_t* rvz_decompress_data(RFILE* file, uint64_t offset, uint32_t compr
          return NULL;
       }
 
-      result = ZSTD_decompress(decompressed_data, decompressed_size,
-                               compressed_data, compressed_size);
+      zerr = rvz_zstd_decode(decompressed_data, decompressed_size,
+                             compressed_data, compressed_size, &result, &zmsg);
 
       free(compressed_data);
 
-      if (ZSTD_isError(result))
+      if (zerr)
       {
-         CHEEVOS_ERR("[RVZ] Failed to decompress metadata: %s\n", ZSTD_getErrorName(result));
+         CHEEVOS_ERR("[RVZ] Failed to decompress metadata: %s\n", zmsg);
          free(decompressed_data);
          return NULL;
       }
@@ -538,13 +578,18 @@ static void lfg_initialize(lfg_state_t* lfg)
                        lfg->buffer[i - 1];
    }
 
-   /* Bit shift and byteswap for LFG output (unconditional swap required by algorithm) */
+   /* Bit shift, then serialize each word big-endian for output.  The
+    * algorithm (and Dolphin's reference implementation, which assumes a
+    * little-endian host) defines the junk byte stream as the big-endian
+    * serialization of the tweaked words; an unconditional swap only
+    * achieves that on little-endian hosts and produces byte-reversed
+    * junk (and thus wrong hashes) on big-endian ones. */
    for (i = 0; i < LFG_K; i++)
    {
       x = lfg->buffer[i];
       x = (x & 0xFF00FFFF) | ((x >> 2) & 0x00FF0000);
-      /* Unconditional byte swap */
-      lfg->buffer[i] = SWAP32(x);
+      /* host -> big-endian store (no-op on big-endian) */
+      lfg->buffer[i] = swap_if_little32(x);
    }
 
    /* Forward 4 times */
@@ -994,7 +1039,7 @@ static bool rvz_decompress_rvzpack_only(rcheevos_rvz_file_t* rvz,
    return true;
 }
 
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
 /* Two-stage decompression: Zstd → RVZPack
  * Used for:
  * - GameCube with RVZPack
@@ -1015,12 +1060,14 @@ static bool rvz_decompress_zstd_rvzpack(rcheevos_rvz_file_t* rvz,
    rvz_pack_state_t* pack_state;
    uint32_t bytes_written;
    size_t result;
+   int    zerr;
+   const char *zmsg;
 
    /* Stage 1: Zstd decompress to intermediate buffer
     * Query Zstd for the actual decompressed size */
    {
-      unsigned long long frame_size = ZSTD_getFrameContentSize(compressed_data, compressed_size);
-      if (frame_size == ZSTD_CONTENTSIZE_ERROR || frame_size == ZSTD_CONTENTSIZE_UNKNOWN)
+      int64_t frame_size = rvz_zstd_frame_size(compressed_data, compressed_size);
+      if (frame_size == RVZ_SIZE_ERROR || frame_size == RVZ_SIZE_UNKNOWN)
       {
          /* Fall back to rvz_packed_size if frame size unknown */
          zstd_output_size = group->rvz_packed_size;
@@ -1035,12 +1082,12 @@ static bool rvz_decompress_zstd_rvzpack(rcheevos_rvz_file_t* rvz,
    if (!zstd_output)
       return false;
 
-   result = ZSTD_decompress(zstd_output, zstd_output_size,
-                            compressed_data, compressed_size);
+   zerr = rvz_zstd_decode(zstd_output, zstd_output_size,
+                          compressed_data, compressed_size, &result, &zmsg);
 
-   if (ZSTD_isError(result))
+   if (zerr)
    {
-      CHEEVOS_ERR("[RVZ] Zstd decompression (stage 1) failed: %s\n", ZSTD_getErrorName(result));
+      CHEEVOS_ERR("[RVZ] Zstd decompression (stage 1) failed: %s\n", zmsg);
       free(zstd_output);
       return false;
    }
@@ -1158,6 +1205,8 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
    uint8_t* decompressed_data;
    uint32_t buffer_size;
    size_t result;
+   int    zerr;
+   const char *zmsg;
 
    /* For partition data, the compressed data includes exception lists which can make
     * the decompressed size larger than chunk_size. Query ZSTD for actual size.
@@ -1166,8 +1215,8 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
 
    if (rvz_group_is_partition_data(rvz, group_index))
    {
-      unsigned long long frame_size = ZSTD_getFrameContentSize(compressed_data, compressed_size);
-      if (frame_size != ZSTD_CONTENTSIZE_ERROR && frame_size != ZSTD_CONTENTSIZE_UNKNOWN)
+      int64_t frame_size = rvz_zstd_frame_size(compressed_data, compressed_size);
+      if (frame_size != RVZ_SIZE_ERROR && frame_size != RVZ_SIZE_UNKNOWN)
       {
          buffer_size = (uint32_t)frame_size;
       }
@@ -1184,12 +1233,12 @@ static bool rvz_decompress_zstd_only(rcheevos_rvz_file_t* rvz,
 
    /* Use buffer_size (full buffer) instead of actual_decompressed_size
     * to avoid "buffer too small" errors when frame size > rvz_packed_size */
-   result = ZSTD_decompress(decompressed_data, buffer_size,
-                            compressed_data, compressed_size);
+   zerr = rvz_zstd_decode(decompressed_data, buffer_size,
+                          compressed_data, compressed_size, &result, &zmsg);
 
-   if (ZSTD_isError(result))
+   if (zerr)
    {
-      CHEEVOS_ERR("[RVZ] Zstd decompression failed: %s\n", ZSTD_getErrorName(result));
+      CHEEVOS_ERR("[RVZ] Zstd decompression failed: %s\n", zmsg);
       free(decompressed_data);
       return false;
    }
@@ -1347,7 +1396,7 @@ static bool rvz_decompress_chunk(rcheevos_rvz_file_t* rvz, uint32_t group_index,
 
       switch (compression_type)
       {
-#ifdef HAVE_ZSTD
+#if defined(HAVE_ZSTD) || defined(HAVE_RZSTD)
          case RVZ_COMPRESSION_ZSTD:
             if (group->rvz_packed_size != 0)
                return rvz_decompress_zstd_rvzpack(rvz, group_index, compressed_data,

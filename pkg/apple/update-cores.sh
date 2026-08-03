@@ -241,6 +241,7 @@ appstore_cores=(
     mrboom
     mu
     mupen64plus_next
+    native32emu
     neocd
     nestopia
     noods
@@ -277,6 +278,7 @@ appstore_cores=(
     stella2023
     tgbdual
     theodore
+    tia
     tic80
     tyrquake
     uzem

@@ -45,7 +45,17 @@ enum audio_mixer_type
    AUDIO_MIXER_TYPE_OGG,
    AUDIO_MIXER_TYPE_MOD,
    AUDIO_MIXER_TYPE_FLAC,
-   AUDIO_MIXER_TYPE_MP3
+   AUDIO_MIXER_TYPE_MP3,
+   AUDIO_MIXER_TYPE_M4A,
+   AUDIO_MIXER_TYPE_OPUS,
+   AUDIO_MIXER_TYPE_WEBA, /* resolves to OPUS or OGG at load */
+   /* A WAV played as a stream: decoded a chunk at a time out of the
+    * source buffer rather than converted whole at load, so its cost
+    * is the source and not the source plus a decoded copy, and its
+    * source may be a window rather than the file.  AUDIO_MIXER_TYPE_WAV
+    * remains the right choice for the short sounds - menu clicks and
+    * the like - that want their PCM ready before the first mix. */
+   AUDIO_MIXER_TYPE_WAV_STREAM
 };
 
 typedef struct audio_mixer_sound audio_mixer_sound_t;
@@ -62,14 +72,54 @@ void audio_mixer_init(unsigned rate);
 
 void audio_mixer_done(void);
 
+/* want_s16 selects which PCM format is built at load - the one the
+ * mixer's current mode will play.  The other format derives on
+ * demand at the first mode-mismatched play (see the derivation notes
+ * in the implementation), so a WAV holds one PCM copy, not two. */
 audio_mixer_sound_t* audio_mixer_load_wav(void *buffer, int32_t size,
-      const char *resampler_ident, enum resampler_quality quality);
+      const char *resampler_ident, enum resampler_quality quality,
+      bool want_s16);
+audio_mixer_sound_t* audio_mixer_load_wav_stream(void *buffer,
+      int32_t size);
 audio_mixer_sound_t* audio_mixer_load_ogg(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mod(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_flac(void *buffer, int32_t size);
 audio_mixer_sound_t* audio_mixer_load_mp3(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_m4a(void *buffer, int32_t size);
+audio_mixer_sound_t* audio_mixer_load_opus(void *buffer, int32_t size);
+/* WebM audio (.weba): identifies the track's codec and returns a sound
+ * of the matching existing type (OPUS or OGG), or NULL when the
+ * container carries no supported track. */
+audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, int32_t size);
+
+/* Compressed-byte read position of a stream voice's decoder (0 when
+ * not a live buffer-mode stream voice).  Thread-safe. */
+size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
+
+/* Mark the sound's compressed source data as borrowed: destroy will
+ * hand it back through release(owner) instead of free()ing it.  For
+ * callers whose bytes live inside a larger owned object (a file
+ * mapping, a data_transfer) this removes the defensive copy.
+ * Ownership of 'owner' transfers on this call in every outcome
+ * (a NULL sound releases immediately). */
+void audio_mixer_sound_set_data_owner(audio_mixer_sound_t *sound,
+      void *owner, void (*release)(void *owner));
+
+/* Windowed Ogg-Opus only: supply the stream's last-page granule so
+ * the decoder skips its full-file end scan at play.  0 = not supplied.
+ * No-op for a NULL sound or any non-Opus stream. */
+void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
+      int64_t end_granule);
+
+/* Resident prefix of a windowed sound's source buffer: bounds the
+ * decoder's container header parse at open.  0 = fully resident. */
+void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);
+
+/* Raise a live stream voice's resident prefix as the window slides.
+ * Takes the voice lock, like audio_mixer_voice_buffer_tell. */
+void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail);
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,
       bool repeat, float volume,
@@ -83,7 +133,37 @@ float audio_mixer_voice_get_volume(audio_mixer_voice_t *voice);
 
 void audio_mixer_voice_set_volume(audio_mixer_voice_t *voice, float val);
 
+/* Q16.16 fixed-point gain: AUDIO_MIXER_GAIN_UNITY is 1.0. This is the
+ * form the s16 pipeline uses throughout, so a build with no hardware
+ * float never has to produce one to drive it. */
+#define AUDIO_MIXER_GAIN_UNITY 0x10000
+
+int32_t audio_mixer_voice_get_gain(audio_mixer_voice_t *voice);
+
+/* s16 form of set_volume. set_volume still works on an s16 voice - it
+ * converts once, off the audio thread - but a float-free caller can
+ * use this and never touch a float at all. */
+void audio_mixer_voice_set_gain(audio_mixer_voice_t *voice, int32_t gain);
+
 void audio_mixer_mix(float* buffer, size_t num_frames, float volume_override, bool override);
+
+/* s16 (fixed-point) mixer pipeline: parallel to the float API above,
+ * no int16<->float round-trip. Voices played via audio_mixer_play_s16
+ * are mixed only by audio_mixer_mix_s16, and vice versa.
+ *
+ * Gains are Q16.16, not float: this path exists for builds without
+ * hardware float, and taking a float here meant one was converted on
+ * every mix call, on the audio thread. */
+void audio_mixer_mix_s16(int16_t* buffer, size_t num_frames,
+      int32_t gain_override, bool override);
+
+bool audio_mixer_has_float_voices(void);
+
+bool audio_mixer_has_s16_voices(void);
+
+audio_mixer_voice_t* audio_mixer_play_s16(audio_mixer_sound_t* sound,
+      bool repeat, int32_t gain, enum resampler_quality quality,
+      audio_mixer_stop_cb_t stop_cb);
 
 RETRO_END_DECLS
 

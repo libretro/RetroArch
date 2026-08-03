@@ -76,13 +76,60 @@ static void video_thread_send_packet(thread_video_t *thr,
 
 }
 
+/* As video_thread_send_packet(), but drops the packet and reports
+ * failure if the worker is no longer alive.  thr->alive is written by
+ * video_thread_loop() under thr->lock, so the test has to happen with
+ * that lock held; doing it here reuses the critical section this
+ * function enters anyway rather than taking a second one. */
+static bool video_thread_send_packet_if_alive(thread_video_t *thr,
+      const thread_packet_t *pkt)
+{
+   slock_lock(thr->lock);
+
+   if (!thr->alive)
+   {
+      slock_unlock(thr->lock);
+      return false;
+   }
+
+   thr->cmd_data  = *pkt;
+
+   thr->send_cmd  = pkt->type;
+   thr->reply_cmd = CMD_VIDEO_NONE;
+
+   scond_signal(thr->cond_thread);
+   slock_unlock(thr->lock);
+
+   return true;
+}
+
+/* One condvar-wait iteration that lets a main-thread waiter drain the
+ * cocoa main-thread trampoline, so work the worker marshals back via
+ * cocoa_main_thread_sync() runs and the handshake does not deadlock (the
+ * worker blocks on the main thread while the main thread blocks on the
+ * reply).  Returns true if it fully handled this wait iteration; false if
+ * the caller should perform a plain blocking scond_wait().  A no-op
+ * returning false on non-Apple platforms. */
+static bool video_thread_pump_wait(scond_t *cond, slock_t *lock)
+{
+#ifdef __APPLE__
+   bool cocoa_main_thread_cond_wait_pump(scond_t *cond, slock_t *lock);
+   return cocoa_main_thread_cond_wait_pump(cond, lock);
+#else
+   (void)cond;
+   (void)lock;
+   return false;
+#endif
+}
+
 /* user -> thread */
 static void video_thread_wait_reply(thread_video_t *thr, thread_packet_t *pkt)
 {
    slock_lock(thr->lock);
 
    while (pkt->type != thr->reply_cmd)
-      scond_wait(thr->cond_cmd, thr->lock);
+      if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
+         scond_wait(thr->cond_cmd, thr->lock);
 
    *pkt               = thr->cmd_data;
    thr->cmd_data.type = CMD_VIDEO_NONE;
@@ -346,8 +393,20 @@ static bool video_thread_handle_packet(
 
       case CMD_CUSTOM_COMMAND:
          if (pkt.data.custom_command.method)
+         {
+            /* The user thread is blocked in video_thread_wait_reply for
+             * the whole of this call. On some platforms that waiter is a
+             * higher-priority (e.g. main/UI) thread while this worker runs
+             * at a lower scheduling class, so the wait is a priority
+             * inversion; slock/scond do not propagate priority. Lift this
+             * thread for the duration of the synchronous work (no-op where
+             * unsupported), covering the heavy GPU uploads the custom
+             * command path carries (texture/font resource commands). */
+            void *qos_override = sthread_priority_override_begin();
             pkt.data.custom_command.return_value =
                pkt.data.custom_command.method(pkt.data.custom_command.data);
+            sthread_priority_override_end(qos_override);
+         }
          video_thread_reply(thr, &pkt);
          break;
 
@@ -469,9 +528,19 @@ static void video_thread_loop(void *data)
                video_frame_info_t video_info;
                bool               ret;
 
-               /* TODO/FIXME - not thread-safe - should get
-                * rid of this */
-               video_driver_build_info(&video_info);
+               /* Built by video_driver_frame() on the main thread and
+                * carried across with the frame data.  Do not call
+                * video_driver_build_info() here: it reads video_driver_st
+                * and runloop_state while the main thread writes them. */
+               video_info = thr->frame.video_info;
+
+               /* video_driver_build_info() resolves userdata from
+                * video_driver_st, and video_thread_free() clears
+                * VIDEO_FLAG_THREAD_WRAPPER_ACTIVE before this thread
+                * stops, so a frame built inside that window would carry
+                * the thread_video_t wrapper instead of the real driver
+                * data.  This thread knows its own. */
+               video_info.userdata = thr->driver_data;
 
                ret = thr->driver->frame(thr->driver_data,
                   thr->frame.buffer, thr->frame.width, thr->frame.height,
@@ -505,6 +574,11 @@ static void video_thread_loop(void *data)
          thr->focus         = focus;
          thr->has_windowed  = has_windowed;
          thr->vp            = vp;
+         /* Statistics. The viewport maths ran on this thread during
+          * thr->driver->frame() above, so publish the result rather
+          * than letting the main thread read video_driver_st. */
+         thr->scale_width   = video_state_get_ptr()->scale_width;
+         thr->scale_height  = video_state_get_ptr()->scale_height;
          thr->frame.updated = false;
          scond_signal(thr->cond_cmd);
          slock_unlock(thr->lock);
@@ -651,6 +725,13 @@ static bool video_thread_frame(void *data, const void *frame_,
       thr->frame.count   = frame_count;
       thr->frame.pitch   = copy_stride;
 
+      /* Hand the caller's video_frame_info_t across with the frame data.
+       * It was built by video_driver_frame() on this thread; rebuilding
+       * it on the worker races the main thread's writes to
+       * video_driver_st and runloop_state. */
+      if (video_info)
+         thr->frame.video_info = *video_info;
+
       if (msg)
          strlcpy(thr->frame.msg, msg, sizeof(thr->frame.msg));
       else
@@ -661,9 +742,17 @@ static bool video_thread_frame(void *data, const void *frame_,
 #ifdef HAVE_MENU
       if (thr->texture.enable)
       {
+         /* Unbounded wait that may run on the main thread; the worker can
+          * marshal main-thread-only work (e.g. Vulkan swapchain recreation
+          * on resize) via cocoa_main_thread_sync() before clearing
+          * frame.updated, so drain the trampoline while waiting. The timed
+          * frame-pacing wait above needs no such treatment: it breaks after
+          * at most one frame period and the main runloop then drains common
+          * modes. */
          do
          {
-            scond_wait(thr->cond_cmd, thr->lock);
+            if (!video_thread_pump_wait(thr->cond_cmd, thr->lock))
+               scond_wait(thr->cond_cmd, thr->lock);
          } while (thr->frame.updated);
       }
 #endif
@@ -1253,7 +1342,17 @@ static void thread_unload_texture(void *data,
    thread_video_t *thr = (thread_video_t*)data;
 
    if (thr && thr->driver_data && thr->poke && thr->poke->unload_texture)
+   {
+      /* Releasing a GPU texture while the video thread is mid-frame can
+       * free something the in-flight frame still references -- the AI
+       * service overlay is drawn straight from
+       * dispgfx_widget_t::ai_service_overlay_texture after a plain
+       * ai_service_overlay_state test, with no handshake.  Drain any
+       * pending frame first; no-op when this is the video thread or
+       * when the wrapper is not running. */
+      video_thread_wait_idle();
       thr->poke->unload_texture(thr->driver_data, threaded, id);
+   }
 }
 
 static void thread_apply_state_changes(void *data)
@@ -1290,6 +1389,36 @@ static uint32_t thread_get_flags(void *data)
    return 0;
 }
 
+static bool thread_supports_texture_format(void *video_data,
+      enum texture_gpu_format fmt)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->supports_texture_format)
+      return thr->poke->supports_texture_format(thr->driver_data, fmt);
+   return false;
+}
+
+/* Forward the compressed upload with 'threaded' passed through, exactly as
+ * thread_load_texture does. The underlying driver decides whether to marshal
+ * the GPU work onto the video thread; the descriptor stays alive because
+ * video_thread_texture_handle is synchronous. */
+static uintptr_t thread_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (     thr
+         && thr->driver_data
+         && thr->poke
+         && thr->poke->load_texture_compressed)
+      return thr->poke->load_texture_compressed(thr->driver_data,
+         tc, threaded, filter_type);
+   return 0;
+}
+
 static const video_poke_interface_t thread_poke = {
    thread_get_flags,
    thread_load_texture,
@@ -1316,7 +1445,9 @@ static const video_poke_interface_t thread_poke = {
    thread_set_hdr_paper_white_nits,
    thread_set_hdr_expand_gamut,
    thread_set_hdr_scanlines,
-   thread_set_hdr_subpixel_layout
+   thread_set_hdr_subpixel_layout,
+   thread_supports_texture_format,
+   thread_load_texture_compressed
 };
 
 static void video_thread_get_poke_interface(void *data,
@@ -1506,14 +1637,20 @@ uintptr_t video_thread_texture_handle(void *data, custom_command_method_t func)
 
    /* if we're already on the video thread, just call the function, otherwise
     * we may deadlock with ourself waiting for the packet to be processed. */
-   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id() || !thr->alive)
+   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return func(data);
 
    pkt.type                       = CMD_CUSTOM_COMMAND;
    pkt.data.custom_command.method = func;
    pkt.data.custom_command.data   = data;
 
-   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   /* Aliveness is tested inside the send, under the lock it already
+    * takes.  Reading thr->alive here instead would race the worker's
+    * write in video_thread_loop(). */
+   if (!video_thread_send_packet_if_alive(thr, &pkt))
+      return func(data);
+
+   video_thread_wait_reply(thr, &pkt);
 
    return pkt.data.custom_command.return_value;
 }

@@ -4,6 +4,7 @@ import com.retroarch.BuildConfig;
 import com.retroarch.browser.preferences.util.UserPreferences;
 import com.retroarch.browser.retroactivity.RetroActivityFuture;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
@@ -13,12 +14,14 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 
+import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import android.content.pm.PackageManager;
 import android.Manifest;
 import android.content.DialogInterface;
 import android.app.AlertDialog;
+import android.net.Uri;
 import android.util.Log;
 
 /**
@@ -57,7 +60,40 @@ public final class MainMenuActivity extends PreferenceActivity
 
 	public void checkRuntimePermissions()
 	{
-		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
+		// The SDK on the user's device >= 30 (Android 11)
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+		{
+			if (!Environment.isExternalStorageManager())
+			{
+				checkPermissions = true;
+				showMessageOKCancel("RetroArch requires All Files Access permission to scan and load game ROMs from your storage.",
+					new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							if (which == AlertDialog.BUTTON_POSITIVE)
+							{
+								try
+								{
+									Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+									intent.addCategory("android.intent.category.DEFAULT");
+									intent.setData(Uri.parse(String.format("package:%s", getPackageName())));
+									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+								}
+								catch (Exception e)
+								{
+									Intent intent = new Intent();
+									intent.setAction(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+									startActivityForResult(intent, REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
+								}
+							}
+						}
+					});
+			}
+		}
+		// The SDK on the user's device >= 23 (Android 6)
+		else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M)
 		{
 			// Android 6.0+ needs runtime permission checks
 			List<String> permissionsNeeded = new ArrayList<String>();
@@ -114,6 +150,22 @@ public final class MainMenuActivity extends PreferenceActivity
 		}
 	}
 
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+
+		// If the user just came back from settings and granted the permission, boot immediately
+		if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+		{
+			if (Environment.isExternalStorageManager() && checkPermissions)
+			{
+				checkPermissions = false;
+				finalStartup();
+			}
+		}
+	}
+
 	public void finalStartup()
 	{
 		Intent retro = new Intent(this, RetroActivityFuture.class);
@@ -127,6 +179,7 @@ public final class MainMenuActivity extends PreferenceActivity
 			final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
 			startRetroActivity(
+					this,
 					retro,
 					null,
 					prefs.getString("libretro_path", getApplicationInfo().dataDir + "/cores/"),
@@ -141,7 +194,7 @@ public final class MainMenuActivity extends PreferenceActivity
 	}
 
 
-	@Override
+@Override
 	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
 	{
 		switch (requestCode)
@@ -165,10 +218,29 @@ public final class MainMenuActivity extends PreferenceActivity
 				break;
 		}
 
+		// The SDK on the user's device < 30 (Android 11)
+		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R)
+		{
+			boolean allGranted = true;
+			for (int result : grantResults)
+			{
+				if (result != PackageManager.PERMISSION_GRANTED)
+				{
+					allGranted = false;
+					break;
+				}
+			}
+			if (!allGranted)
+			{
+				checkRuntimePermissions();
+				return;
+			}
+		}
+
 		finalStartup();
 	}
 
-	public static void startRetroActivity(Intent retro, String contentPath, String corePath,
+	public static void startRetroActivity(Context ctx, Intent retro, String contentPath, String corePath,
 			String configFilePath, String imePath, String dataDirPath, String dataSourcePath)
 	{
 		if (contentPath != null) {
@@ -179,8 +251,31 @@ public final class MainMenuActivity extends PreferenceActivity
 		retro.putExtra("IME", imePath);
 		retro.putExtra("DATADIR", dataDirPath);
 		retro.putExtra("APK", dataSourcePath);
-		String external = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + PACKAGE_NAME + "/files";
-		retro.putExtra("SDCARD", BuildConfig.PLAY_STORE_BUILD ? external : Environment.getExternalStorageDirectory().getAbsolutePath());
+
+		String external;
+		if (BuildConfig.PLAY_STORE_BUILD)
+		{
+			File[] mediaDirs = ctx.getExternalMediaDirs();
+			if (mediaDirs != null && mediaDirs.length > 0 && mediaDirs[0] != null)
+			{
+				File dir = mediaDirs[0];
+				if (!dir.exists())
+					dir.mkdirs();
+				external = dir.getAbsolutePath();
+			}
+			else
+			{
+				// Fallback: external media unavailable
+				external = Environment.getExternalStorageDirectory().getAbsolutePath()
+						+ "/Android/data/" + PACKAGE_NAME + "/files";
+			}
+		}
+		else
+		{
+			external = Environment.getExternalStorageDirectory().getAbsolutePath();
+		}
+
+		retro.putExtra("SDCARD", external);
 		retro.putExtra("EXTERNAL", external);
 	}
 

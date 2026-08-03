@@ -182,7 +182,12 @@ struct discord_rpc
 /*  File-scope globals (replaces upstream's scattered static storage)        */
 /* ------------------------------------------------------------------------ */
 
-static struct discord_rpc discord_rpc_inst;
+/* The rpc instance, presence slot and send queue together are over
+ * 200 kilobytes of buffers; heap-allocated at discord_init so a
+ * session that never enables rich presence never pays for them.
+ * Load-resident statics are never free on platforms without demand
+ * paging. */
+static struct discord_rpc *discord_rpc_inst;
 static bool discord_rpc_inst_valid = false;
 
 static int discord_pid   = 0;
@@ -207,11 +212,11 @@ static bool discord_was_spectate_game     = false;
 
 /* Pending presence update. Only the most recent one matters; we just keep one
  * slot and overwrite it. */
-static struct discord_queued_msg discord_queued_presence;
+static struct discord_queued_msg *discord_queued_presence;
 
 /* Send queue (subscribe / unsubscribe / respond commands). Single-threaded, so
  * it is just a wraparound ring buffer with a pending counter. */
-static struct discord_queued_msg discord_send_queue[DISCORD_SEND_QUEUE_SIZE];
+static struct discord_queued_msg *discord_send_queue;
 static unsigned discord_send_next_add  = 0;
 static unsigned discord_send_next_send = 0;
 static unsigned discord_send_pending   = 0;
@@ -876,15 +881,15 @@ static void discord_rpc_close(struct discord_rpc *rpc);
 
 static void discord_rpc_create(const char *application_id)
 {
-   memset(&discord_rpc_inst, 0, sizeof(discord_rpc_inst));
+   memset(discord_rpc_inst, 0, sizeof(*discord_rpc_inst));
 #ifdef _WIN32
-   discord_rpc_inst.pipe = INVALID_HANDLE_VALUE;
+   discord_rpc_inst->pipe = INVALID_HANDLE_VALUE;
 #else
-   discord_rpc_inst.sock = -1;
+   discord_rpc_inst->sock = -1;
 #endif
-   discord_rpc_inst.state = DISCORD_STATE_DISCONNECTED;
-   strlcpy(discord_rpc_inst.app_id, application_id,
-         sizeof(discord_rpc_inst.app_id));
+   discord_rpc_inst->state = DISCORD_STATE_DISCONNECTED;
+   strlcpy(discord_rpc_inst->app_id, application_id,
+         sizeof(discord_rpc_inst->app_id));
    discord_rpc_inst_valid = true;
 }
 
@@ -892,7 +897,7 @@ static void discord_rpc_destroy(void)
 {
    if (!discord_rpc_inst_valid)
       return;
-   discord_rpc_close(&discord_rpc_inst);
+   discord_rpc_close(discord_rpc_inst);
    discord_rpc_inst_valid = false;
 }
 
@@ -1135,6 +1140,8 @@ static void discord_rpc_open(struct discord_rpc *rpc)
 static struct discord_queued_msg *discord_send_queue_next_add(void)
 {
    unsigned idx;
+   if (!discord_send_queue)
+      return NULL;
    if (discord_send_pending >= DISCORD_SEND_QUEUE_SIZE)
       return NULL;
    idx = (discord_send_next_add++) % DISCORD_SEND_QUEUE_SIZE;
@@ -1153,7 +1160,10 @@ static bool discord_send_queue_has_pending(void)
 
 static struct discord_queued_msg *discord_send_queue_next_send(void)
 {
-   unsigned idx = (discord_send_next_send++) % DISCORD_SEND_QUEUE_SIZE;
+   unsigned idx;
+   if (!discord_send_queue)
+      return NULL;
+   idx = (discord_send_next_send++) % DISCORD_SEND_QUEUE_SIZE;
    return &discord_send_queue[idx];
 }
 
@@ -1300,12 +1310,12 @@ static void discord_update_connection(void)
    if (!discord_rpc_inst_valid)
       return;
 
-   if (!discord_rpc_is_open(&discord_rpc_inst))
+   if (!discord_rpc_is_open(discord_rpc_inst))
    {
       if (discord_now_ms() >= discord_next_connect_ms)
       {
          discord_next_connect_ms = discord_now_ms() + discord_backoff_next_delay();
-         discord_rpc_open(&discord_rpc_inst);
+         discord_rpc_open(discord_rpc_inst);
       }
       return;
    }
@@ -1314,7 +1324,7 @@ static void discord_update_connection(void)
    for (;;)
    {
       char       *json_buf      = NULL;
-      rjson_t    *r             = discord_rpc_read(&discord_rpc_inst, &json_buf);
+      rjson_t    *r             = discord_rpc_read(discord_rpc_inst, &json_buf);
       char       *evt_name      = NULL;
       char       *nonce         = NULL;
       char       *secret        = NULL;
@@ -1426,25 +1436,25 @@ static void discord_update_connection(void)
    }
 
    /* Writes -------------------------------------------------------------- */
-   if (discord_queued_presence.length)
+   if (discord_queued_presence->length)
    {
       struct discord_queued_msg local;
-      local.length = discord_queued_presence.length;
-      memcpy(local.buffer, discord_queued_presence.buffer, local.length);
-      discord_queued_presence.length = 0;
+      local.length = discord_queued_presence->length;
+      memcpy(local.buffer, discord_queued_presence->buffer, local.length);
+      discord_queued_presence->length = 0;
 
-      if (!discord_rpc_write(&discord_rpc_inst, local.buffer, local.length))
+      if (!discord_rpc_write(discord_rpc_inst, local.buffer, local.length))
       {
          /* On failure, requeue for a later attempt. */
-         discord_queued_presence.length = local.length;
-         memcpy(discord_queued_presence.buffer, local.buffer, local.length);
+         discord_queued_presence->length = local.length;
+         memcpy(discord_queued_presence->buffer, local.buffer, local.length);
       }
    }
 
    while (discord_send_queue_has_pending())
    {
       struct discord_queued_msg *q = discord_send_queue_next_send();
-      discord_rpc_write(&discord_rpc_inst, q->buffer, q->length);
+      discord_rpc_write(discord_rpc_inst, q->buffer, q->length);
       discord_send_queue_commit_send();
    }
 }
@@ -1478,6 +1488,8 @@ void Discord_Initialize(const char *application_id,
 {
    (void)auto_register;
    (void)optional_steam_id;
+   if (!discord_rpc_inst)
+      return;
 
    /* Seed the cheap backoff jitter once. */
    srand((unsigned)time(NULL));
@@ -1497,6 +1509,18 @@ void Discord_Initialize(const char *application_id,
    if (discord_rpc_inst_valid)
       return;
 
+   if (!discord_rpc_inst)
+      discord_rpc_inst = (struct discord_rpc*)
+            calloc(1, sizeof(*discord_rpc_inst));
+   if (!discord_queued_presence)
+      discord_queued_presence = (struct discord_queued_msg*)
+            calloc(1, sizeof(*discord_queued_presence));
+   if (!discord_send_queue)
+      discord_send_queue = (struct discord_queued_msg*)
+            calloc(DISCORD_SEND_QUEUE_SIZE, sizeof(*discord_send_queue));
+   if (!discord_rpc_inst || !discord_queued_presence || !discord_send_queue)
+      return;
+
    discord_rpc_create(application_id);
    discord_next_connect_ms = discord_now_ms();
 }
@@ -1507,6 +1531,15 @@ void Discord_Shutdown(void)
       return;
    memset(&discord_handlers, 0, sizeof(discord_handlers));
    discord_rpc_destroy();
+   if (discord_rpc_inst)
+      free(discord_rpc_inst);
+   if (discord_queued_presence)
+      free(discord_queued_presence);
+   if (discord_send_queue)
+      free(discord_send_queue);
+   discord_rpc_inst        = NULL;
+   discord_queued_presence = NULL;
+   discord_send_queue      = NULL;
 }
 
 void Discord_UpdateConnection(void)
@@ -1516,9 +1549,11 @@ void Discord_UpdateConnection(void)
 
 void Discord_UpdatePresence(const DiscordRichPresence *presence)
 {
-   discord_queued_presence.length = discord_json_write_rich_presence(
-         discord_queued_presence.buffer,
-         sizeof(discord_queued_presence.buffer),
+   if (!discord_queued_presence)
+      return;
+   discord_queued_presence->length = discord_json_write_rich_presence(
+         discord_queued_presence->buffer,
+         sizeof(discord_queued_presence->buffer),
          discord_nonce++, discord_pid, presence);
 }
 
@@ -1531,7 +1566,7 @@ void Discord_Respond(const char *user_id, int reply)
 {
    struct discord_queued_msg *q;
 
-   if (!discord_rpc_inst_valid || !discord_rpc_is_open(&discord_rpc_inst))
+   if (!discord_rpc_inst_valid || !discord_rpc_is_open(discord_rpc_inst))
       return;
 
    q = discord_send_queue_next_add();
@@ -1552,7 +1587,7 @@ void Discord_RunCallbacks(void)
 
    was_disconnected              = discord_was_just_disconnected;
    discord_was_just_disconnected = false;
-   is_connected                  = discord_rpc_is_open(&discord_rpc_inst);
+   is_connected                  = discord_rpc_is_open(discord_rpc_inst);
 
    /* If we are currently connected, fire the disconnect callback first so
     * the outward-facing sequence is always ready -> ... -> disconnected. */

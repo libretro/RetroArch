@@ -154,6 +154,68 @@ typedef struct
 database_info_list_t *database_info_list_new(const char *rdb_path,
       const char *query);
 
+/* One-slot cache of the most recent async database scan result
+ * (see tasks/task_database_info.c). The cache retains ownership
+ * of the returned list - callers must not free it. */
+database_info_list_t *menu_dbinfo_cache_get(const char *path,
+      const char *query);
+bool menu_dbinfo_cache_has(const char *path, const char *query);
+
+/* A crc -> record-offset index over one database, built in a single
+ * pass.  The scanner otherwise walks a whole database per content
+ * file; with an index it walks once and binary-searches thereafter.
+ * Costs 8 bytes per indexed record - a 32-bit offset beside the key -
+ * and lives for as long as the caller keeps it. */
+typedef struct database_info_crc_index database_info_crc_index_t;
+
+/* @max_bytes caps the entry table; the build gives up and returns
+ * NULL rather than exceed it, because a partial index would miss
+ * matches without saying so.  Zero means no limit. */
+database_info_crc_index_t *database_info_crc_index_new(const char *rdb_path,
+      size_t max_bytes);
+
+/* Bytes the index actually holds, for a caller tracking a budget
+ * across several databases. */
+size_t database_info_crc_index_bytes(const database_info_crc_index_t *idx);
+void database_info_crc_index_free(database_info_crc_index_t *idx);
+size_t database_info_crc_index_count(const database_info_crc_index_t *idx);
+
+/* Size range of the records the index covers, collected during the
+ * same walk that built it.  False when no record carried a size. */
+bool database_info_crc_index_size_range(
+      const database_info_crc_index_t *idx, int64_t *min, int64_t *max);
+
+/* Records whose crc is @crc or @archive_crc, in file order, with
+ * @fields extracted - the same list database_info_list_new_filtered()
+ * returns for "{crc:or(...)}".  NULL if the lookup could not be
+ * served, so the caller falls back to the query path. */
+/* @rdb_path is the database the caller believes @idx describes; the
+ * lookup refuses if it does not match, so an index paired with the
+ * wrong database degrades to the query path instead of answering with
+ * another system's records.  Pass NULL to skip the check. */
+database_info_list_t *database_info_list_new_crc(
+      const database_info_crc_index_t *idx, const char *rdb_path,
+      uint32_t crc, uint32_t archive_crc, unsigned fields);
+
+/* The same treatment for the serial lookup disc content uses.  A
+ * serial is variable-length, so the index keeps a hash and the
+ * candidate records are read back and compared exactly: a collision
+ * costs an extra read, never a wrong match. */
+typedef struct database_info_serial_index database_info_serial_index_t;
+
+database_info_serial_index_t *database_info_serial_index_new(
+      const char *rdb_path, size_t max_bytes);
+
+size_t database_info_serial_index_bytes(
+      const database_info_serial_index_t *idx);
+void database_info_serial_index_free(database_info_serial_index_t *idx);
+size_t database_info_serial_index_count(
+      const database_info_serial_index_t *idx);
+
+database_info_list_t *database_info_list_new_serial(
+      const database_info_serial_index_t *idx, const char *rdb_path,
+      const char *serial, unsigned fields);
+
 database_info_list_t *database_info_list_new_filtered(const char *rdb_path,
       const char *query, unsigned fields);
 

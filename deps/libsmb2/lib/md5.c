@@ -34,8 +34,11 @@
 #include "md5.h"
 
 #ifdef WORDS_BIGENDIAN
-void
-byteSwap(UWORD32 *buf, unsigned words)
+/* static + smb2_ prefix: only used in this file; the unprefixed name
+ * collides with libFLAC's byteSwap in single-TU (griffin) big-endian
+ * builds */
+static void
+smb2_byteSwap(UWORD32 *buf, unsigned words)
 {
 	md5byte *p = (md5byte *)buf;
 
@@ -46,7 +49,7 @@ byteSwap(UWORD32 *buf, unsigned words)
 	} while (--words);
 }
 #else
-#define byteSwap(buf,words)
+#define smb2_byteSwap(buf,words)
 #endif
 
 /*
@@ -87,7 +90,7 @@ MD5Update(struct MD5Context *ctx, md5byte const *buf, unsigned len)
 	}
 	/* First chunk is an odd size */
 	memcpy((md5byte *)ctx->in + 64 - t, buf, t);
-	byteSwap(ctx->in, 16);
+	smb2_byteSwap(ctx->in, 16);
 	MD5Transform(ctx->buf, ctx->in);
 	buf += t;
 	len -= t;
@@ -95,7 +98,7 @@ MD5Update(struct MD5Context *ctx, md5byte const *buf, unsigned len)
 	/* Process data in 64-byte chunks */
 	while (len >= 64) {
 		memcpy(ctx->in, buf, 64);
-		byteSwap(ctx->in, 16);
+		smb2_byteSwap(ctx->in, 16);
 		MD5Transform(ctx->buf, ctx->in);
 		buf += 64;
 		len -= 64;
@@ -123,20 +126,20 @@ MD5Final(md5byte digest[16], struct MD5Context *ctx)
 
 	if (count < 0) {	/* Padding forces an extra block */
 		memset(p, 0, count + 8);
-		byteSwap(ctx->in, 16);
+		smb2_byteSwap(ctx->in, 16);
 		MD5Transform(ctx->buf, ctx->in);
 		p = (md5byte *)ctx->in;
 		count = 56;
 	}
 	memset(p, 0, count);
-	byteSwap(ctx->in, 14);
+	smb2_byteSwap(ctx->in, 14);
 
 	/* Append length in bits and transform */
 	ctx->in[14] = ctx->bytes[0] << 3;
 	ctx->in[15] = ctx->bytes[1] << 3 | ctx->bytes[0] >> 29;
 	MD5Transform(ctx->buf, ctx->in);
 
-	byteSwap(ctx->buf, 4);
+	smb2_byteSwap(ctx->buf, 4);
 	memcpy(digest, ctx->buf, 16);
 	memset(ctx, 0, sizeof(*ctx));	/* In case it's sensitive */
 }

@@ -34,7 +34,7 @@
 #endif
 
 #ifdef HW_RVL
-#include "../../memory/wii/mem2_manager.h"
+#include <memory/mem2_manager.h>
 #endif
 
 #include <defines/gx_defines.h>
@@ -1548,7 +1548,12 @@ static void gx_free(void *data)
 
    if (g_video_cond)
       OSCloseThreadQueue(g_video_cond);
-   g_video_cond = NULL;
+   /* OSCond is lwpq_t, an unsigned handle rather than a pointer.  Zero
+    * is what the static starts as and what the test above reads as
+    * closed, so that is the value to put back - not libogc's
+    * LWP_TQUEUE_NULL, which is 0xffffffff and would make the test above
+    * try to close the queue a second time. */
+   g_video_cond = 0;
 
    /* g_tex.data is allocated in init_vtx via memalign(32, ...) and was
     * previously leaked on every gx_free / re-init pair. */

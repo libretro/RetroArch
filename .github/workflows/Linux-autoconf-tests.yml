@@ -1,0 +1,52 @@
+name: CI Linux autoconfig regression
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  autoconf-tests:
+    name: Build and run the autoconfig regression suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential zlib1g-dev libfreetype6-dev
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure (headless, test drivers)
+        run: |
+          set -eu
+          # The suite drives the test input/joypad drivers with the
+          # null video/audio/menu drivers - no X11/Vulkan/menu needed.
+          # HAVE_TEST_DRIVERS is on by default; assert it survived
+          # configure so a silent drop turns into a clear failure
+          # rather than a skipped test.
+          ./configure --disable-menu --disable-ffmpeg --disable-x11 --disable-wayland
+          grep -q '^HAVE_TEST_DRIVERS = 1' config.mk
+
+      - name: Build
+        run: make -j"$(nproc)"
+
+      - name: Run autoconfig regression suite
+        shell: bash
+        run: |
+          set -eu
+          test -x ./retroarch
+          ./tests-other/test_autoconf.sh ./retroarch

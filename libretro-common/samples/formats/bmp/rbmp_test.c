@@ -154,7 +154,14 @@ static void test_happy_1x1_24bpp(void)
 
    rbmp = rbmp_alloc();
    rbmp_set_buf_ptr(rbmp, file);
-   rc = rbmp_process_image(rbmp, &out, (size_t)hdr_len + 4, &w, &h, true);
+   /* The decoder is sliced: process_image fills a bounded run of the
+    * image per call and returns IMAGE_PROCESS_NEXT until the surface is
+    * complete, exactly as image_texture_load_buffer() and
+    * task_image_process_transfer() drive it.  Loop to completion. */
+   do
+   {
+      rc = rbmp_process_image(rbmp, &out, (size_t)hdr_len + 4, &w, &h, true);
+   } while (rc == IMAGE_PROCESS_NEXT);
 
    if (rc != IMAGE_PROCESS_END || w != 1 || h != 1 || !out)
    {

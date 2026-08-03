@@ -509,16 +509,6 @@ static int frontend_ctr_parse_drive_list(void* data, bool load_content)
    return 0;
 }
 
-static uint64_t frontend_ctr_get_total_mem(void)
-{
-   return osGetMemRegionSize(MEMREGION_ALL);
-}
-
-static uint64_t frontend_ctr_get_free_mem(void)
-{
-   return osGetMemRegionFree(MEMREGION_ALL);
-}
-
 static enum frontend_powerstate frontend_ctr_get_powerstate(
       int* seconds, int* percent)
 {
@@ -620,8 +610,6 @@ frontend_ctx_driver_t frontend_ctx_ctr =
    frontend_ctr_get_arch,        /* get_architecture               */
    frontend_ctr_get_powerstate,  /* get_powerstate                 */
    frontend_ctr_parse_drive_list,/* parse_drive_list               */
-   frontend_ctr_get_total_mem,   /* get_total_mem                  */
-   frontend_ctr_get_free_mem,    /* get_free_mem                   */
    NULL,                         /* install_signal_handler         */
    NULL,                         /* get_signal_handler_state       */
    NULL,                         /* set_signal_handler_state       */

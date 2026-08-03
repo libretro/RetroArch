@@ -100,10 +100,10 @@ static void *rwebaudio_init(const char *device, unsigned rate, unsigned latency,
 
 static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 {
-   size_t _len = 0;
    rwebaudio_data_t *rwebaudio = (rwebaudio_data_t*)data;
    const float *samples = (const float*)s;
    size_t num_frames    = len / 2 / sizeof(float);
+   size_t total_frames  = num_frames;
    if (!rwebaudio)
       return -1;
 
@@ -122,7 +122,6 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
          /* fast-forward or context is suspended */
          if (queued < rwebaudio->tmpbuf_frames)
             break;
-         _len += queued;
       }
    }
 
@@ -148,7 +147,14 @@ static ssize_t rwebaudio_write(void *data, const void *s, size_t len)
 #endif
    }
 
-   return _len;
+   /* Return bytes consumed from the input, like every other audio
+    * driver (the previous code returned queued *frames*, and zero for
+    * anything parked in a partially filled tmpbuf).  Frames awaiting a
+    * full block are consumed - a later call queues them.  Frames the
+    * context dropped on a short queue (fast-forward / suspended) were
+    * still drained from the caller's buffer, so they count too; the
+    * remaining num_frames were never touched and do not. */
+   return (ssize_t)((total_frames - num_frames) * 2 * sizeof(float));
 }
 
 #ifdef EMSCRIPTEN_AUDIO_EXTERNAL_BLOCK

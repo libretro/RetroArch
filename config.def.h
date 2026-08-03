@@ -89,7 +89,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN) || defined (VITA)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(__EMSCRIPTEN__) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -164,6 +164,9 @@
 #define DEFAULT_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE true
 #define DEFAULT_MENU_THUMBNAIL_BACKGROUND_ENABLE false
 
+/* Play the audio track of animated WebM thumbnails (menu preview). */
+#define DEFAULT_MENU_THUMBNAIL_PREVIEW_AUDIO false
+
 #define DEFAULT_SCREEN_BRIGHTNESS 100
 
 #define DEFAULT_CRT_SWITCH_RESOLUTION CRT_SWITCH_NONE
@@ -204,7 +207,7 @@
 #define DEFAULT_BLUETOOTH_ERTM false
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(__EMSCRIPTEN__)
 #define DEFAULT_MOUSE_ENABLE true
 #else
 #define DEFAULT_MOUSE_ENABLE false
@@ -546,11 +549,20 @@
 /* HDR output mode: 0 = off, 1 = HDR10, 2 = scRGB */
 #define DEFAULT_VIDEO_HDR_MODE 0
 
+/* Swapchain bit depth when HDR is off: 0 = auto (8), 1 = force 8, 2 = force 10.
+ * Only meaningful in SDR; HDR dictates its own swapchain format. */
+#define DEFAULT_VIDEO_SWAPCHAIN_BIT_DEPTH 0
+
 /* Brightness of the SDR menu/overlay when composited into the HDR backbuffer */
 #define DEFAULT_MENU_HDR_BRIGHTNESS_NITS 200.0f
 
 /* The number of nits that paper white is at */
 #define DEFAULT_VIDEO_HDR_PAPER_WHITE_NITS 200.0f
+
+/* Peak luminance of the display, in nits. 1000 is the HDR10 reference peak and
+ * roughly what mid-range HDR panels reach, so it is a safe default for a value
+ * the frontend cannot query - no platform exposes it portably. */
+#define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
 
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
@@ -824,6 +836,7 @@
 
 #define DEFAULT_KIOSK_MODE_ENABLE false
 #define DEFAULT_MENU_HORIZONTAL_ANIMATION true
+#define DEFAULT_MENU_SHOW_FULL_PATHS true
 
 #define DEFAULT_MENU_TICKER_TYPE (TICKER_TYPE_LOOP)
 #define DEFAULT_MENU_TICKER_SPEED 2.0f
@@ -886,8 +899,11 @@
 #endif
 #define DEFAULT_MENU_CONTENT_SHOW_CONTENTLESS_CORES MENU_CONTENTLESS_CORES_DISPLAY_SINGLE_PURPOSE
 
-#ifdef HAVE_XMB
+/* Shared with the Ozone driver. */
+#if defined(HAVE_XMB) || defined(HAVE_OZONE)
 #define DEFAULT_XMB_ANIMATION                      0
+#endif
+#ifdef HAVE_XMB
 #define DEFAULT_XMB_VERTICAL_FADE_FACTOR           100
 #define DEFAULT_XMB_SHOW_HORIZONTAL_LIST           true
 #define DEFAULT_XMB_SHOW_TITLE_HEADER              true
@@ -922,7 +938,7 @@
 #define DEFAULT_MENU_FOOTER_OPACITY 1.000f
 #define DEFAULT_MENU_HEADER_OPACITY 1.000f
 
-#if (defined(HAVE_OPENGLES2) && !defined(EMSCRIPTEN)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if (defined(HAVE_OPENGLES2) && !defined(__EMSCRIPTEN__)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -935,6 +951,12 @@
 
 #define DEFAULT_RGUI_INLINE_THUMBNAILS false
 #define DEFAULT_RGUI_SWAP_THUMBNAILS false
+
+/* Dithering trades banding for a fine pattern, which is the better
+ * bargain at normal menu scales.  It is magnified by the menu's
+ * nearest-neighbour upscale though, so users running a large scale
+ * factor may prefer it off. */
+#define DEFAULT_RGUI_THUMBNAIL_DITHER true
 #define DEFAULT_RGUI_THUMBNAIL_DOWNSCALER RGUI_THUMB_SCALE_POINT
 #define DEFAULT_RGUI_THUMBNAIL_DELAY 0
 #define DEFAULT_RGUI_INTERNAL_UPSCALE_LEVEL RGUI_UPSCALE_NONE
@@ -1228,7 +1250,7 @@
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #define DEFAULT_INPUT_RATE  32730
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #define DEFAULT_OUTPUT_RATE 44100
 #define DEFAULT_INPUT_RATE  44100
 #else
@@ -1241,7 +1263,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(__EMSCRIPTEN__) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1291,6 +1313,16 @@
 #define DEFAULT_AUDIO_FASTFORWARD_MUTE false
 /* Speed up audio to match fast forward speed up. */
 #define DEFAULT_AUDIO_FASTFORWARD_SPEEDUP false
+/* When a core outputs 16-bit integer audio, the deterministic
+ * fixed-point (int16) resampler variant of the selected backend
+ * (sinc, nearest, or CC) can be preferred over the float one for any
+ * needed resampling, avoiding the s16<->float round-trip
+ * (bit-reproducible). Opt-in; the float path remains the default. */
+#define DEFAULT_AUDIO_FASTPATH_S16 false
+/* Requested output sample format for negotiable audio drivers:
+ * AUDIO_FORMAT_NEGOTIATION_INT16 (0) or AUDIO_FORMAT_NEGOTIATION_FLOAT (1).
+ * Float by default, matching RetroArch's historical driver behaviour. */
+#define DEFAULT_AUDIO_FORMAT_NEGOTIATION AUDIO_FORMAT_NEGOTIATION_FLOAT
 /* Automatically mute audio when rewind is enabled. */
 #define DEFAULT_AUDIO_REWIND_MUTE false
 
@@ -1610,6 +1642,11 @@
 #else
 #define DEFAULT_MENU_SCALE_FACTOR 1.0f
 #endif
+/* Specifies whether menu images (icons, thumbnails,
+ * wallpapers) are uploaded with mip-mapped filtering.
+ * Keeps images smooth when drawn below their native size,
+ * at the cost of slightly higher video memory usage. */
+#define DEFAULT_MENU_TEXTURE_MIPMAPPING true
 /* Specifies whether display widgets should be scaled
  * automatically using the default menu scale factor */
 #define DEFAULT_MENU_WIDGET_SCALE_AUTO true
@@ -1940,7 +1977,7 @@
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "https://buildbot.libretro.com/assets/"
 #else
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"
@@ -1960,7 +1997,7 @@
 
 #define DEFAULT_AI_SERVICE_URL "http://localhost:4404/"
 
-#if defined(HAVE_FFMPEG) || defined(HAVE_MPV)
+#if defined(HAVE_FFMPEG) || defined(HAVE_MPV) || defined(HAVE_WEBMPLAYER)
 #define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE true
 #else
 #define DEFAULT_BUILTIN_MEDIAPLAYER_ENABLE false

@@ -25,6 +25,8 @@
 
 #include <retro_common_api.h>
 
+#include <stdint.h>
+
 RETRO_BEGIN_DECLS
 
 #define DSPFILTER_SIMD_SSE      (1 << 0)
@@ -58,7 +60,12 @@ typedef const struct dspfilter_implementation *(
 const struct dspfilter_implementation *dspfilter_get_implementation(
       dspfilter_simd_mask_t mask);
 
-#define DSPFILTER_API_VERSION 1
+/* Version 2 adds the optional int16 processing entry point (process_i16)
+ * and the dspfilter_{input,output}_i16 structs. A v2 host may run a chain
+ * entirely in int16 when every filter provides process_i16, avoiding the
+ * int16<->float round-trip and keeping the path deterministic. Filters that
+ * only implement the float process() must keep reporting version 1. */
+#define DSPFILTER_API_VERSION 2
 
 struct dspfilter_info
 {
@@ -114,6 +121,23 @@ struct dspfilter_input
    unsigned frames;
 };
 
+/* int16 counterparts of dspfilter_output / dspfilter_input, used by the
+ * optional process_i16 entry point (API version >= 2). Samples are
+ * interleaved LRLRLR... in the full int16 range [-32768, 32767]. As with the
+ * float path, a filter may write output in place into the input buffer when
+ * output frames <= input frames; block filters provide their own buffering. */
+struct dspfilter_output_i16
+{
+   int16_t *samples;
+   unsigned frames;
+};
+
+struct dspfilter_input_i16
+{
+   int16_t *samples;
+   unsigned frames;
+};
+
 /* Returns true if config key was found. Otherwise,
  * returns false, and sets value to default value.
  */
@@ -165,6 +189,13 @@ typedef void (*dspfilter_free_t)(void *data);
 typedef void (*dspfilter_process_t)(void *data,
       struct dspfilter_output *output, const struct dspfilter_input *input);
 
+/* Optional int16 processing (API version >= 2). Same contract as
+ * dspfilter_process_t, operating on int16 samples. A filter that provides
+ * this lets a v2 host keep an int16 chain integer-only end to end. */
+typedef void (*dspfilter_process_i16_t)(void *data,
+      struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input);
+
 struct dspfilter_implementation
 {
    dspfilter_init_t     init;
@@ -180,6 +211,11 @@ struct dspfilter_implementation
    /* Computer-friendly short version of ident.
     * Lower case, no spaces and special characters, etc. */
    const char *short_ident;
+
+   /* Optional int16 processing entry point. NULL for float-only filters.
+    * Only read by the host when api_version >= 2, so appending it here is
+    * ABI-compatible with v1 plugins (whose struct ends at short_ident). */
+   dspfilter_process_i16_t process_i16;
 };
 
 RETRO_END_DECLS

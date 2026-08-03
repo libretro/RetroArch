@@ -92,22 +92,44 @@ enum settings_free_flags
 {
    SD_FREE_FLAG_VALUES    = (1 << 0),
    SD_FREE_FLAG_NAME      = (1 << 1),
-   SD_FREE_FLAG_SHORT     = (1 << 2)
+   SD_FREE_FLAG_SHORT     = (1 << 2),
+   /* Not an ownership bit: set at build time on ST_GROUP entries
+    * whose parent is the main menu, replacing the parent_group
+    * string the callbacks compared against - equality with the main
+    * menu label was the only thing that string was ever read for.
+    * Lives here because the byte has spare bits. */
+   SD_FREE_FLAG_MAIN_MENU_GROUP = (1 << 3)
 };
 
 typedef struct rarch_setting rarch_setting_t;
+typedef struct setting_actions setting_actions_t;
 typedef struct rarch_setting_group_info rarch_setting_group_info_t;
 
 typedef void (*change_handler_t               )(rarch_setting_t *setting);
 typedef int  (*action_left_handler_t          )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_right_handler_t         )(rarch_setting_t *setting, size_t idx, bool wraparound);
-typedef int  (*action_up_handler_t            )(rarch_setting_t *setting);
-typedef int  (*action_down_handler_t          )(rarch_setting_t *setting);
 typedef int  (*action_start_handler_t         )(rarch_setting_t *setting);
-typedef int  (*action_cancel_handler_t        )(rarch_setting_t *setting);
 typedef int  (*action_ok_handler_t            )(rarch_setting_t *setting, size_t idx, bool wraparound);
 typedef int  (*action_select_handler_t        )(rarch_setting_t *setting, size_t idx, bool wraparound);
+
+
 typedef size_t (*get_string_representation_t    )(rarch_setting_t *setting, char *s, size_t len);
+
+struct setting_actions
+{
+   action_ok_handler_t         ok;
+   action_start_handler_t      start;
+   /* Named sel, not select: net_compat.h defines select as a
+    * five-argument macro on platforms without a native one, and a
+    * member of that name breaks every consumer that includes the
+    * networking headers first - the Wii found this the hard way. */
+   action_select_handler_t     sel;
+   action_left_handler_t       left;
+   action_right_handler_t      right;
+   change_handler_t            change;
+   change_handler_t            read;
+   get_string_representation_t repr;
+};
 
 struct rarch_setting_group_info
 {
@@ -119,29 +141,22 @@ struct rarch_setting
 
    float               min;
    float               max;
-   struct
+   /* Disjoint by type: float entries store their printf rounding
+    * string, directory entries the string shown while unset. */
+   union
    {
-      const char     *empty_path;
-   } dir;
-   const char           *rounding_fraction;
+      const char        *rounding_fraction;   /* ST_FLOAT */
+      const char        *empty_path;          /* ST_DIR   */
+   } aux;
    const char           *name;
    const char           *short_description;
-   const char           *group;
-   const char           *subgroup;
-   const char           *parent_group;
    const char           *values;
 
-   change_handler_t              change_handler;
-   change_handler_t              read_handler;
-   action_start_handler_t        action_start;
-   action_left_handler_t         action_left;
-   action_right_handler_t        action_right;
-   action_up_handler_t           action_up;
-   action_down_handler_t         action_down;
-   action_cancel_handler_t       action_cancel;
-   action_ok_handler_t           action_ok;
-   action_select_handler_t       action_select;
-   get_string_representation_t   get_string_representation;
+   /* Every per-entry handler lives in shared interned tuples: the
+    * full eight-handler combination counts 150 distinct blocks
+    * across 1,904 entries, so each entry stores one pointer instead
+    * of eight handlers. Never NULL. */
+   const setting_actions_t      *actions;
 
    struct
    {
@@ -171,19 +186,21 @@ struct rarch_setting
 
    uint32_t             index_offset;
    uint32_t             size;
-   unsigned             bind_type;
    float                step;
 
-   enum event_command   cmd_trigger_idx;
-   enum ui_setting_type ui_type;
-   enum setting_type    browser_selection_type;
-   enum msg_hash_enums  enum_idx;
-   enum msg_hash_enums  enum_value_idx;
-   enum setting_type    type;
-
+   /* Narrow storage for enum-valued fields; every value in use fits,
+    * reads promote back to int, and nothing takes their address.
+    * enum event_command tops out below 1024, the setting and ui type
+    * enums below 64, and the hash enums below 65536. */
+   uint16_t             bind_type;
+   uint16_t             cmd_trigger_idx;   /* enum event_command      */
+   uint16_t             enum_idx;          /* enum msg_hash_enums     */
+   uint16_t             enum_value_idx;    /* enum msg_hash_enums     */
    uint16_t             flags;
-
    int16_t              offset_by;
+   uint8_t              ui_type;           /* enum ui_setting_type    */
+   uint8_t              browser_selection_type; /* enum setting_type  */
+   uint8_t              type;              /* enum setting_type       */
    uint8_t              free_flags;
    uint8_t              index;
 };

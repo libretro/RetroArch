@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/libretro/RetroArch.svg?branch=master)](https://travis-ci.org/libretro/RetroArch)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/8936/badge.svg)](https://scan.coverity.com/projects/retroarch)
 [![Crowdin](https://badges.crowdin.net/retroarch/localized.svg)](https://crowdin.com/project/retroarch)
 
 # RetroArch
@@ -333,12 +331,10 @@ The links below belong to our official channels. Links other than this may have 
 - [Facebook](https://www.facebook.com/libretro)
 - [Twitter](https://twitter.com/libretro)
 - [Reddit](https://www.reddit.com/r/RetroArch/)
-- [YouTube](https://www.youtube.com/Libretro)
-- [Google Post](https://posts.google.com/share/55Nhs2jG)
+- [YouTube](https://www.youtube.com/@Libretro)
 - [Steam](https://store.steampowered.com/app/1118310/RetroArch/)
-- [YouTube Topic](https://www.youtube.com/channel/UC5q007PYyQPgin0HHbzF0zQ)
+- [YouTube Topic](https://www.youtube.com/channel/UCyXchL2xdEpHNzqE52w8XYw)
 - [Patreon](https://www.patreon.com/libretro)
-- [BOUNTYSOURCE](https://www.bountysource.com/teams/libretro/issues)
 - [Discord](https://discord.gg/C4amCeV)
 - [Teespring](https://teespring.com/stores/retroarch)
 - [Documentation](https://docs.libretro.com/)

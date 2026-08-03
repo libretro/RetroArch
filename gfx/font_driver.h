@@ -101,6 +101,14 @@ static INLINE void font_unbind(font_data_impl_t *font_data)
 }
 
 /* font_path can be NULL for default font. */
+/* Video drivers that want higher-precision glyph coverage (HDR
+ * output) set the preferred atlas format before creating their
+ * fonts; renderers consult it when allocating the atlas. The hint is
+ * process-global, so callers set it around font creation and restore
+ * it afterwards. Renderers without 16-bit support ignore it. */
+void font_renderer_set_preferred_atlas_format(enum font_atlas_format fmt);
+enum font_atlas_format font_renderer_get_preferred_atlas_format(void);
+
 int font_renderer_create_default(
       const font_renderer_driver_t **drv,
       void **handle,
@@ -113,6 +121,11 @@ void font_driver_render_msg(void *data,
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 void font_driver_free(font_data_t *font);
+
+/* Returns a monotonic counter incremented on every font free;
+ * see font_driver.c for rationale. Used to validate externally
+ * cached per-font derived data */
+uint32_t font_driver_get_generation(void);
 
 void font_flush(
       unsigned video_width,
@@ -145,7 +158,7 @@ extern font_renderer_t gl2_raster_font;
 extern font_renderer_t gl3_raster_font;
 extern font_renderer_t gl1_raster_font;
 extern font_renderer_t ps2_font;
-extern font_renderer_t vita2d_vita_font;
+extern font_renderer_t gxm_font;
 extern font_renderer_t ctr_font;
 extern font_renderer_t wiiu_font;
 extern font_renderer_t vulkan_raster_font;
@@ -163,9 +176,9 @@ extern font_renderer_t sixel_font;
 extern font_renderer_t switch_font;
 extern font_renderer_t rsx_font;
 extern font_renderer_t sdl2_raster_font;
+extern font_renderer_t sdl3_raster_font;
 
 extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t stb_unicode_font_renderer;
 extern font_renderer_driver_t freetype_font_renderer;
 extern font_renderer_driver_t coretext_font_renderer;
 extern font_renderer_driver_t bitmap_font_renderer;

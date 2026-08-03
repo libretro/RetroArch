@@ -93,6 +93,21 @@ typedef struct menu_input_ctx_bind
    size_t len;
 } menu_input_ctx_bind_t;
 
+/* Force a helper out of line even though it has a single call site.
+ * Follows the RXML_NOINLINE precedent in
+ * libretro-common/formats/xml/rxml.c.  Under -Os the compiler already
+ * optimises for size and the outlining only adds call overhead, so it
+ * is disabled there. */
+#if defined(__OPTIMIZE_SIZE__)
+#define MENU_NOINLINE
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
+#define MENU_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define MENU_NOINLINE __declspec(noinline)
+#else
+#define MENU_NOINLINE
+#endif
+
 #ifdef HAVE_LIBNX
 #define LIBNX_SWKBD_LIMIT 500 /* enforced by HOS */
 
@@ -526,9 +541,51 @@ static menu_search_terms_t *menu_entries_search_get_terms_internal(void)
    {
       menu_file_list_cbs_t *cbs = NULL;
       if ((cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata))
-         return &cbs->search;
+         return cbs->search;
    }
    return NULL;
+}
+
+/* As above, but allocates the block on first use.  Only
+ * menu_entries_search_push() needs this; every other caller is happy
+ * to see NULL and treat it as "no search active". */
+static menu_search_terms_t *menu_entries_search_get_terms_alloc(void)
+{
+   struct menu_state *menu_st   = &menu_driver_state;
+   file_list_t *list            = MENU_LIST_GET(menu_st->entries.list, 0);
+   if (list && (list->size >= 1))
+   {
+      menu_file_list_cbs_t *cbs = NULL;
+      if ((cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata))
+      {
+         if (!cbs->search)
+            cbs->search = (menu_search_terms_t*)
+               calloc(1, sizeof(*cbs->search));
+         return cbs->search;
+      }
+   }
+   return NULL;
+}
+
+/* file_list_t::actiondata_free hook for every list the menu owns.
+ * menu_file_list_cbs_t owns a further allocation now, so it can no
+ * longer be torn down with a plain free(); routing it through the
+ * hook means the seven call sites that can destroy a menu list --
+ * menu_list_free_list(), menu_entries_clear(), the two append paths,
+ * menu_driver_list_free(), xmb_list_free() and ozone_list_free() --
+ * do not each have to know that. */
+void menu_entries_cbs_free(void *actiondata)
+{
+   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)actiondata;
+
+   if (!cbs)
+      return;
+
+   if (cbs->search)
+      free(cbs->search);
+   cbs->search = NULL;
+
+   free(cbs);
 }
 
 /* Searches current menu list for specified 'needle'
@@ -606,7 +663,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
        * comparison */
       else
       {
-         const char *found_str = (const char *)strcasestr(entry_label, needle);
+         const char *found_str = (const char *)compat_strcasestr(entry_label, needle);
 
          /* Found a match with the first characters
           * of the label -> best possible match,
@@ -1213,7 +1270,7 @@ static float menu_input_get_dpi(
    return dpi;
 }
 
-static bool input_event_osk_show_symbol_pages(
+MENU_NOINLINE static bool input_event_osk_show_symbol_pages(
       menu_handle_t *menu)
 {
 #if defined(HAVE_LANGEXTRA)
@@ -1432,6 +1489,7 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       list->menu_stack[i]->list     = NULL;
       list->menu_stack[i]->capacity = 0;
       list->menu_stack[i]->size     = 0;
+      list->menu_stack[i]->actiondata_free = menu_entries_cbs_free;
    }
 
    for (i = 0; i < list->selection_buf_size; i++)
@@ -1444,6 +1502,7 @@ static menu_list_t *menu_list_new(const menu_ctx_driver_t *menu_driver_ctx)
       list->selection_buf[i]->list     = NULL;
       list->selection_buf[i]->capacity = 0;
       list->selection_buf[i]->size     = 0;
+      list->selection_buf[i]->actiondata_free = menu_entries_cbs_free;
    }
 
    return list;
@@ -1809,7 +1868,7 @@ static void menu_input_key_bind_poll_bind_get_rested_axes(
    }
 }
 
-static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
+MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
 {
 #ifndef HAVE_LANGEXTRA
    /* If HAVE_LANGEXTRA is not defined, define some ASCII-friendly pages. */
@@ -1877,7 +1936,7 @@ static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
    }
 }
 
-static void menu_input_get_mouse_hw_state(
+MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -1925,7 +1984,17 @@ static void menu_input_get_mouse_hw_state(
    hw_state->flags                 = 0;
 
    if (!menu_mouse_enable)
+   {
+      /* 'hw_state->flags' has just been zeroed, but the button
+       * edge detectors below are not reached on this path. Reset
+       * them to match, otherwise they retain the state from the
+       * last enabled frame and report a spurious change - and so
+       * a spurious MENU_INP_PTR_FLG_ACTIVE - once mouse input is
+       * re-enabled (e.g. when an overlay is dismissed) */
+      last_select_pressed = false;
+      last_cancel_pressed = false;
       return;
+   }
 
    joypad_info.joy_idx             = 0;
    joypad_info.auto_binds          = NULL;
@@ -2105,7 +2174,7 @@ static void menu_input_get_mouse_hw_state(
       hw_state->flags &= ~MENU_INP_PTR_FLG_ACTIVE;
 }
 
-static void menu_input_get_touchscreen_hw_state(
+MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
       input_driver_state_t *input_st,
@@ -2159,6 +2228,12 @@ static void menu_input_get_touchscreen_hw_state(
       hw_state->y       = 0;
       hw_state->flags  &= ~(MENU_INP_PTR_FLG_PRESS_SELECT
                           | MENU_INP_PTR_FLG_PRESS_CANCEL);
+      /* Keep the edge detectors in step with the cleared flags,
+       * otherwise they retain the state from the last enabled
+       * frame and report a spurious change once touch input is
+       * re-enabled (e.g. when an overlay is dismissed) */
+      last_select_pressed = false;
+      last_cancel_pressed = false;
       return;
    }
 
@@ -2298,7 +2373,7 @@ static bool menu_driver_displaylist_push_internal(
    else if (string_is_equal(label, MENU_ENUM_LABEL_SETTINGS_TAB_STR))
       return menu_displaylist_ctl(DISPLAYLIST_SETTINGS_ALL, info, settings);
 #ifdef HAVE_CHEATS
-   else if (string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS)))
+   else if (string_is_equal(label, MENU_ENUM_LABEL_CHEAT_SEARCH_SETTINGS_STR))
       return menu_displaylist_ctl(DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST, info, settings);
 #endif
    else if (string_is_equal(label, MENU_ENUM_LABEL_MUSIC_TAB_STR))
@@ -2409,13 +2484,14 @@ static bool menu_driver_displaylist_push(
    bool ret                       = false;
    enum msg_hash_enums enum_idx   = MSG_UNKNOWN;
    file_list_t *list              = MENU_LIST_GET(menu_st->entries.list, 0);
-   menu_file_list_cbs_t *cbs      = (menu_file_list_cbs_t*)
-      list->list[list->size - 1].actiondata;
+   menu_file_list_cbs_t *cbs      = NULL;
 
    menu_displaylist_info_init(&info);
 
    if (list && list->size)
    {
+      cbs       = (menu_file_list_cbs_t*)
+         list->list[list->size - 1].actiondata;
       path      = list->list[list->size - 1].path;
       label     = list->list[list->size - 1].label;
       type      = list->list[list->size - 1].type;
@@ -2443,7 +2519,9 @@ static bool menu_driver_displaylist_push(
       goto end;
    }
 
-   cbs = (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata;
+   cbs = (list && list->size)
+      ? (menu_file_list_cbs_t*)list->list[list->size - 1].actiondata
+      : NULL;
 
    if (cbs && cbs->action_deferred_push)
       if (cbs->action_deferred_push(&info) != 0)
@@ -2775,7 +2853,8 @@ void menu_driver_get_last_shader_pass_path(
          directory, file_name);
 }
 
-int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+static int menu_shader_manager_clear_num_passes_internal(
+      struct video_shader *shader, bool apply_changes)
 {
    if (shader)
    {
@@ -2784,10 +2863,16 @@ int menu_shader_manager_clear_num_passes(struct video_shader *shader)
       menu_st->flags             |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
       video_shader_resolve_parameters(shader);
       shader->flags              |= SHDR_FLAG_MODIFIED;
-      command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
+      if (apply_changes)
+         command_event(CMD_EVENT_SHADERS_APPLY_CHANGES, NULL);
    }
 
    return 0;
+}
+
+int menu_shader_manager_clear_num_passes(struct video_shader *shader)
+{
+   return menu_shader_manager_clear_num_passes_internal(shader, true);
 }
 
 int menu_shader_manager_clear_parameter(struct video_shader *shader,
@@ -3479,7 +3564,7 @@ static void menu_input_key_bind_poll_bind_state(
    }
 }
 
-static int menu_dialog_iterate(
+MENU_NOINLINE static int menu_dialog_iterate(
       menu_dialog_t *p_dialog,
       settings_t *settings,
       char *s, size_t len,
@@ -3587,7 +3672,7 @@ static void generic_menu_init_list(struct menu_state *menu_st,
    menu_displaylist_info_init(&info);
 
    info.label                   = strdup(
-         msg_hash_to_str(MENU_ENUM_LABEL_MAIN_MENU));
+         MENU_ENUM_LABEL_MAIN_MENU_STR);
    info.enum_idx                = MENU_ENUM_LABEL_MAIN_MENU;
 
    menu_entries_append(menu_stack,
@@ -3713,7 +3798,7 @@ static bool rarch_menu_init(
    return true;
 }
 
-static void menu_input_set_pointer_visibility(
+MENU_NOINLINE static void menu_input_set_pointer_visibility(
       menu_input_pointer_hw_state_t *pointer_hw_state,
       menu_input_t *menu_input,
       retro_time_t current_time)
@@ -3850,7 +3935,7 @@ static bool menu_entries_search_push(const char *search_term)
 {
    size_t i;
    char search_term_clipped[MENU_SEARCH_FILTER_MAX_LENGTH];
-   menu_search_terms_t *search = menu_entries_search_get_terms_internal();
+   menu_search_terms_t *search = menu_entries_search_get_terms_alloc();
 
    /* Sanity check + verify whether we have reached
     * the maximum number of allowed search terms */
@@ -4129,15 +4214,29 @@ bool menu_entries_append(
    if (!list || !label)
       return false;
 
-   file_list_append(list, path, label, type, directory_ptr, entry_idx);
+   /* Bail out on a failed append rather than carrying on with
+    * idx = list->size - 1, which underflows to SIZE_MAX when the
+    * list is still empty. */
+   if (!file_list_append(list, path, label, type, directory_ptr, entry_idx))
+      return false;
+
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
    idx                   = list->size - 1;
 
-   list_info.fullpath    = NULL;
-
-   if (menu_path && *menu_path)
-      list_info.fullpath = strdup(menu_path);
+   /* The menu path is handed to list_insert() by pointer rather than
+    * copied.  It is the same string for every entry of a list, so the
+    * strdup()/free() pair this replaces ran once per appended entry --
+    * tens of thousands of times for a MAME or FBNeo playlist -- to
+    * hand each driver a private copy none of them needed.
+    *
+    * Checked against all three hooks that take it: xmb_list_insert()
+    * and ozone_list_insert() strdup() their own copy into the node,
+    * materialui_list_insert() only compares and atoi()s it, and rgui
+    * has no list_insert at all.  None of them appends to or frees a
+    * menu list, so nothing can reallocate mlist->list underneath the
+    * pointer while they hold it. */
+   list_info.fullpath    = (menu_path && *menu_path) ? menu_path : NULL;
    list_info.list        = list;
    list_info.path        = path;
    list_info.label       = label;
@@ -4154,9 +4253,6 @@ bool menu_entries_append(
             list_info.label,
             list_info.idx,
             list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
 
@@ -4182,9 +4278,7 @@ bool menu_entries_append(
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
-   cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
+   cbs->search                     = NULL;
 
    list->list[idx].actiondata      = cbs;
 
@@ -4227,10 +4321,8 @@ void menu_entries_prepend(file_list_t *list,
    if (mlist && mlist->size)
       menu_path          = mlist->list[mlist->size - 1].path;
 
-   list_info.fullpath    = NULL;
-
-   if (menu_path && *menu_path)
-      list_info.fullpath = strdup(menu_path);
+   /* See menu_entries_append(): handed over by pointer, not copied. */
+   list_info.fullpath    = (menu_path && *menu_path) ? menu_path : NULL;
    list_info.list        = list;
    list_info.path        = path;
    list_info.label       = label;
@@ -4247,9 +4339,6 @@ void menu_entries_prepend(file_list_t *list,
             list_info.label,
             list_info.idx,
             list_info.entry_type);
-
-   if (list_info.fullpath)
-      free(list_info.fullpath);
 
    file_list_free_actiondata(list, idx);
    cbs                             = (menu_file_list_cbs_t*)
@@ -4276,9 +4365,7 @@ void menu_entries_prepend(file_list_t *list,
    cbs->action_sublabel            = NULL;
    cbs->action_get_value           = NULL;
 
-   cbs->search.size                = 0;
-   for (i = 0; i < MENU_SEARCH_FILTER_MAX_TERMS; i++)
-      cbs->search.terms[i][0]      = '\0';
+   cbs->search                     = NULL;
 
    list->list[idx].actiondata      = cbs;
 
@@ -4338,11 +4425,7 @@ bool menu_entries_clear(file_list_t *list)
       menu_st->driver_ctx->list_clear(list);
 
    for (i = 0; i < list->size; i++)
-   {
-      if (list->list[i].actiondata)
-         free(list->list[i].actiondata);
-      list->list[i].actiondata = NULL;
-   }
+      file_list_free_actiondata(list, i);
 
    file_list_clear(list);
    return true;
@@ -4769,7 +4852,7 @@ bool menu_input_key_bind_set_mode(
    return true;
 }
 
-static bool menu_input_key_bind_iterate(
+MENU_NOINLINE static bool menu_input_key_bind_iterate(
       settings_t *settings,
       menu_input_ctx_bind_t *bind,
       retro_time_t current_time)
@@ -4899,8 +4982,10 @@ static bool menu_input_key_bind_iterate(
             new_binds.timer_hold.current        = current_time;
             new_binds.timer_hold.timeout_us     = new_binds.timer_hold.timeout_end - current_time;
 
+            /* Transient bind under capture: it lives on the stack and has
+             * no entry in the label arrays, so it carries no labels. */
             input_config_get_bind_string(settings, hold_label,
-                  &new_binds.buffer, NULL, sizeof(hold_label));
+                  &new_binds.buffer, NULL, NULL, NULL, sizeof(hold_label));
 
             snprintf(bind->s, bind->len,
                   "%s..\n(%s %1.1f %s)\n \n%s\n   %s",
@@ -5128,10 +5213,15 @@ unsigned menu_event(
    static float delay_timer                        = 0.0f;
    static float delay_count                        = 0.0f;
    static unsigned ok_old                          = 0;
+   static uint8_t switch_old                       = 0;
+   static size_t ok_enum_idx                       = 0;
+   static bool keydown[RARCH_FIRST_CUSTOM_BIND]    = {false};
    static bool navigation_reset_delay              = true;
    static bool hold_initial                        = true;
    static bool hold_reset                          = true;
    unsigned ret                                    = MENU_ACTION_NOOP;
+   uint8_t switch_current                          = 0;
+   uint8_t switch_trigger                          = 0;
    bool set_scroll                                 = false;
    unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
@@ -5192,9 +5282,34 @@ unsigned menu_event(
       RETRO_DEVICE_ID_JOYPAD_Y
    };
 
-   /* Check if all menu input is blocked */
+   /* Check if all menu input is blocked
+    * > 'ok_old' must be updated before returning, otherwise the
+    *   button state is frozen for the duration of the block and a
+    *   phantom trigger/release edge is generated against a stale
+    *   'ok_enum_idx' once input is unblocked */
    if (menu_st->flags & MENU_ST_FLAG_BLOCK_ALL_INPUT)
+   {
+      ok_old                                       = ok_current;
+      switch_old                                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                                   | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      /* Reset the navigation auto-repeat state machine, not just
+       * its clock. A hold that spans the blocked interval would
+       * otherwise resume with 'hold_reset' still false and
+       * 'delay_count' already partway to 'delay_timer', so the
+       * first unblocked frame fires a repeat immediately - and it
+       * does so at the accumulated scroll acceleration, which
+       * menu_driver_ctl() turns into up to six entries per step.
+       * That is what makes the selection jump several places when
+       * the menu unblocks mid-hold. Treat the block as ending the
+       * hold: the next press starts from the initial delay again. */
+      last_time_us                                 = menu_st->current_time_us;
+      hold_reset                                   = true;
+      hold_initial                                 = true;
+      delay_count                                  = 0.0f;
+      navigation_initial                           = 0;
+      menu_st->scroll.acceleration                 = 0;
       return MENU_ACTION_NOOP;
+   }
 
    /* Clear OK if dragged */
    if (menu_input->pointer.flags & MENU_INP_PTR_FLG_DRAGGED)
@@ -5329,6 +5444,16 @@ unsigned menu_event(
                                         | MENU_INP_PTR_FLG_PRESS_RIGHT);
       menu_input->select_inhibit      = true;
       menu_input->cancel_inhibit      = true;
+      switch_old                      = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                      | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+      /* Reset the navigation auto-repeat state machine, for the
+       * same reason as the BLOCK_ALL_INPUT path above */
+      last_time_us                    = menu_st->current_time_us;
+      hold_reset                      = true;
+      hold_initial                    = true;
+      delay_count                     = 0.0f;
+      navigation_initial              = 0;
+      menu_st->scroll.acceleration    = 0;
       return MENU_ACTION_NOOP;
    }
 
@@ -5396,6 +5521,16 @@ unsigned menu_event(
 
    if (set_scroll)
       menu_st->scroll.acceleration  = new_scroll_accel;
+
+   /* Left/Right edge detection
+    * > Must be maintained regardless of the on-screen keyboard
+    *   state, otherwise 'switch_old' freezes for the duration of
+    *   the OSK session and a stale edge is emitted on the first
+    *   frame after it closes, bypassing the ST_BOOL debounce */
+   switch_current                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
+                                    | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+   switch_trigger                   = switch_current & ~switch_old;
+   switch_old                       = switch_current;
 
    if (display_kb)
    {
@@ -5507,16 +5642,8 @@ unsigned menu_event(
    }
    else
    {
-      static size_t ok_enum_idx = 0;
-      static uint8_t switch_old = 0;
-      static bool keydown[RARCH_FIRST_CUSTOM_BIND] = {false};
       unsigned onkeyup          =
             input_combo_type_onkeyup_lut[settings->uints.input_menu_toggle_gamepad_combo];
-      uint8_t switch_current    = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
-                                | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      uint8_t switch_trigger    = switch_current & ~switch_old;
-
-      switch_old                = switch_current;
 
       /* Always process Select and Start on release */
       onkeyup |= (1 << RETRO_DEVICE_ID_JOYPAD_SELECT)
@@ -5744,7 +5871,7 @@ unsigned menu_event(
    return ret;
 }
 
-static int menu_input_post_iterate(
+MENU_NOINLINE static int menu_input_post_iterate(
       gfx_display_t *p_disp,
       struct menu_state *menu_st,
       unsigned action,
@@ -6744,6 +6871,11 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
           * tasks to complete */
          menu_explore_wait_for_init_task();
          menu_explore_free();
+
+         /* Likewise for any in-flight database info
+          * scan, then drop its result cache */
+         menu_dbinfo_wait_for_task();
+         menu_dbinfo_cache_free();
 #endif
          menu_contentless_cores_free();
 #endif
@@ -6795,6 +6927,12 @@ bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data)
             if (menu_st->thumbnail_path_data)
                free(menu_st->thumbnail_path_data);
             menu_st->thumbnail_path_data    = NULL;
+
+            /* The menu driver's free() above has reset every
+             * gfx_thumbnail_t, so the animated-thumbnail decode
+             * worker is idle and can be torn down (it is recreated
+             * lazily if the menu comes back). */
+            gfx_thumbnail_anim_worker_deinit();
 
             if (menu_st->driver_data->core_buf)
                free(menu_st->driver_data->core_buf);
@@ -7043,7 +7181,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(menu_shader);
+   menu_shader_manager_clear_num_passes_internal(menu_shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -7088,7 +7226,7 @@ clear:
     *   entries in the shader options menu which can in
     *   turn lead to the menu selection pointer going out
     *   of bounds. This causes undefined behaviour/segfaults */
-   menu_shader_manager_clear_num_passes(shader);
+   menu_shader_manager_clear_num_passes_internal(shader, false);
    command_event(CMD_EVENT_SHADER_PRESET_LOADED, NULL);
    return ret;
 }
@@ -7584,7 +7722,20 @@ static int generic_menu_iterate(
       /* If pointer devices are disabled, just ensure mouse
        * cursor is hidden */
       if (menu_input->pointer.type == MENU_POINTER_DISABLED)
+      {
+         /* menu_input_post_iterate() is skipped here, so its
+          * 'last_*_pressed' edge detectors stop being updated
+          * while the hardware press flags are left untouched.
+          * Clear the flags so that the two cannot desynchronise
+          * and emit a phantom press/release once pointer input
+          * is re-enabled */
+         menu_st->input_pointer_hw_state.flags &=
+               ~(MENU_INP_PTR_FLG_PRESS_SELECT
+               | MENU_INP_PTR_FLG_PRESS_CANCEL
+               | MENU_INP_PTR_FLG_PRESS_LEFT
+               | MENU_INP_PTR_FLG_PRESS_RIGHT);
          ret = 0;
+      }
       else
          ret = menu_input_post_iterate(p_disp, menu_st, action,
                current_time);
@@ -7902,12 +8053,29 @@ int generic_menu_entry_action(
 
    if (MENU_ENTRIES_NEEDS_REFRESH(menu_st) && selection_buf_size)
    {
-      menu_driver_displaylist_push(
-            menu_st,
-            settings,
-            selection_buf,
-            menu_stack);
-      menu_st->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+      /* The action handler dispatched above is free to tear the menu
+       * down and build it again from scratch - a menu or video reinit,
+       * a driver switch, a language change and 'close content' all end
+       * up in RARCH_MENU_CTL_DEINIT, which menu_list_free()s every
+       * menu_stack[i] / selection_buf[i] before menu_list_new()
+       * allocates replacements.
+       *
+       * The pointers captured on entry to this function are dangling in
+       * that case, so re-fetch them from menu_st before handing them to
+       * the displaylist push. */
+      menu_list         = menu_st->entries.list;
+      selection_buf     = menu_list
+         ? MENU_LIST_GET_SELECTION(menu_list, (unsigned)0) : NULL;
+      menu_stack        = menu_list
+         ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+
+      if (selection_buf && menu_stack)
+         menu_driver_displaylist_push(
+               menu_st,
+               settings,
+               selection_buf,
+               menu_stack);
+      menu_st->flags   &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
    }
 
 #ifdef HAVE_ACCESSIBILITY

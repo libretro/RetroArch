@@ -965,20 +965,32 @@ static bool x11_check_atom_supported(Display *dpy, Atom atom)
    Atom XA_NET_SUPPORTED = XInternAtom(dpy, "_NET_SUPPORTED", True);
    Atom type;
    int format;
-   unsigned long nitems;
-   unsigned long bytes_after;
-   Atom *prop;
+   unsigned long nitems      = 0;
+   unsigned long bytes_after = 0;
+   Atom *prop                = NULL;
    int i;
 
    if (XA_NET_SUPPORTED == None)
       return false;
 
-   XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
-         0, UINT_MAX, False, XA_ATOM, &type, &format,&nitems,
-         &bytes_after, (unsigned char **) &prop);
-
-   if (!prop || type != XA_ATOM)
+   /* On failure XGetWindowProperty() leaves the return parameters
+    * undefined, so prop has to start NULL and the status has to be
+    * tested -- reading an uninitialised pointer is the one outcome
+    * the NULL test below cannot catch.  x11_get_wm_name() a few lines
+    * down already does both. */
+   if (XGetWindowProperty(dpy, DefaultRootWindow(dpy), XA_NET_SUPPORTED,
+         0, UINT_MAX, False, XA_ATOM, &type, &format, &nitems,
+         &bytes_after, (unsigned char **)&prop) != Success)
       return false;
+
+   if (!prop)
+      return false;
+
+   if (type != XA_ATOM)
+   {
+      XFree(prop);
+      return false;
+   }
 
    for (i = 0; i < (int)nitems; i++)
    {
@@ -1031,6 +1043,15 @@ char *x11_get_wm_name(Display *dpy)
                                &propdata) == Success &&
 		   propdata))
 	   return NULL;
+
+   /* A _NET_SUPPORTING_WM_CHECK that exists but carries nothing still
+    * yields a non-NULL propdata; reading element zero of it is out of
+    * bounds. */
+   if (nitems < 1)
+   {
+      XFree(propdata);
+      return NULL;
+   }
 
    window = ((Window *) propdata)[0];
 

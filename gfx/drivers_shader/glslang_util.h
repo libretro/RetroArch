@@ -180,6 +180,28 @@ const char *glslang_format_to_string(glslang_format fmt);
 enum glslang_format glslang_find_format(const char *fmt);
 
 /* Initialize a shader_line_buf to empty state. Returns false on alloc failure. */
+/* Include cache.
+ *
+ * Expanding a shader re-reads whatever its '#include' directives name,
+ * and shader packs share helper .inc files across passes, so expanding
+ * a whole preset reads the same handful of files many times over.  A
+ * cache handle lets one caller keep those reads for the span it cares
+ * about - a pass, a parameter-harvesting loop, a whole filter chain -
+ * instead of each root expansion starting cold.
+ *
+ * The handle is owned by the caller and is not internally synchronised:
+ * give each thread (or each chain creation) its own.  Passing NULL to
+ * the _cached entry point behaves exactly like
+ * glslang_read_shader_file(), i.e. a cache scoped to that one call. */
+void *glslang_include_cache_new(void);
+
+void glslang_include_cache_free(void *cache);
+
+/* As glslang_read_shader_file(), but reads through @cache. */
+bool glslang_read_shader_file_cached(const char *path,
+      struct shader_line_buf *output, bool root_file, bool is_optional,
+      void *cache);
+
 bool shader_line_buf_init(struct shader_line_buf *buf);
 
 /* Free all memory owned by a shader_line_buf. */

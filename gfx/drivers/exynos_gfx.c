@@ -42,6 +42,7 @@
 
 #include "../common/drm_common.h"
 #include "../font_driver.h"
+#include "../../verbosity.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
 
@@ -71,7 +72,7 @@ enum exynos_buffer_type
 enum exynos_image_type
 {
   EXYNOS_IMAGE_FRAME = 0,
-  EXYNOS_IMAGE_FRONT,
+  EXYNOS_IMAGE_FONT,
   EXYNOS_IMAGE_MENU,
   EXYNOS_IMAGE_COUNT
 };
@@ -360,7 +361,7 @@ static void exynos_put_glyph_rgba4444(struct exynos_data *pdata,
       unsigned g_pitch, unsigned dst_x, unsigned dst_y)
 {
    unsigned x, y;
-   const enum exynos_image_type buf_type = defaults[EXYNOS_IMAGE_FONT].buf_type;
+   const enum exynos_buffer_type buf_type = defaults[EXYNOS_IMAGE_FONT].buf_type;
    const              unsigned buf_width = pdata->src[EXYNOS_IMAGE_FONT]->width;
    uint16_t            *__restrict__ dst = (uint16_t*)pdata->buf[buf_type]->vaddr +
       dst_y * buf_width + dst_x;
@@ -526,6 +527,7 @@ static int exynos_open(struct exynos_data *pdata)
    int fd                                 = -1;
    char buf[32]                           = {0};
    int devidx                             = exynos_get_device_index();
+   settings_t *settings                   = config_get_ptr();
 
    if (pdata)
       g_drm_fd                            = -1;
@@ -549,7 +551,7 @@ static int exynos_open(struct exynos_data *pdata)
    if (!drm_get_resources(fd))
       goto fail;
 
-   if (!drm_get_decoder(fd))
+   if (!drm_get_connector(fd, settings->uints.video_monitor_index))
       goto fail;
 
    if (!drm_get_encoder(fd))
@@ -586,7 +588,7 @@ static void exynos_close(struct exynos_data *pdata)
    g_drm_fd   = -1;
 }
 
-static int exynos_init(struct exynos_data *pdata, unsigned bpp)
+static int exynos_data_init(struct exynos_data *pdata, unsigned bpp)
 {
    unsigned i;
    settings_t *settings        = config_get_ptr();
@@ -596,7 +598,7 @@ static int exynos_init(struct exynos_data *pdata, unsigned bpp)
    if (  video_fullscreen_x != 0 &&
          video_fullscreen_y != 0)
    {
-      for (i = 0; i < g_drm_connector->count_modes; i++)
+      for (i = 0; i < (unsigned)g_drm_connector->count_modes; i++)
       {
          if (g_drm_connector->modes[i].hdisplay   == video_fullscreen_x &&
                g_drm_connector->modes[i].vdisplay == video_fullscreen_y)
@@ -655,7 +657,7 @@ fail:
    return -1;
 }
 
-/* Counterpart to exynos_init. */
+/* Counterpart to exynos_data_init. */
 static void exynos_deinit(struct exynos_data *pdata)
 {
    drm_restore_crtc();
@@ -754,7 +756,7 @@ static int exynos_alloc(struct exynos_data *pdata)
    /* Setup CRTC: display the last allocated page. */
    if (drmModeSetCrtc(g_drm_fd, g_crtc_id,
             pages[pdata->num_pages - 1].buf_id,
-            0, 0, &g_drm_connector_id, 1, g_drm_mode))
+            0, 0, &g_connector_id, 1, g_drm_mode))
    {
       RARCH_ERR("[Exynos] Initial CRTC setup failed.\n");
       goto fail;
@@ -775,7 +777,7 @@ fail_alloc:
 }
 
 /* Counterpart to exynos_alloc. */
-static void exynos_free(struct exynos_data *pdata)
+static void exynos_data_free(struct exynos_data *pdata)
 {
    unsigned i;
 
@@ -1052,7 +1054,7 @@ static int exynos_init_font(struct exynos_video *vid)
    const unsigned buf_bpp    = defaults[EXYNOS_IMAGE_FONT].bpp;
    settings_t *settings      = config_get_ptr();
    bool video_font_enable    = settings->bools.video_font_enable;
-   const char *font_path     = settings->video.font_path;
+   const char *font_path     = settings->paths.path_font;
    float video_font_size     = settings->floats.video_font_size;
    float video_msg_color_r   = settings->floats.video_msg_color_r;
    float video_msg_color_g   = settings->floats.video_msg_color_g;
@@ -1116,16 +1118,16 @@ static int exynos_render_msg(struct exynos_video *vid,
    {
       int base_x, base_y;
       int glyph_width, glyph_height;
+      int max_width, max_height;
       const uint8_t *src = NULL;
       const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
       if (!glyph)
          continue;
 
-      base_x = msg_base_x + glyph->draw_offset_x;
-      base_y = msg_base_y + glyph->draw_offset_y;
-
-      const int max_width  = dst->width - base_x;
-      const int max_height = dst->height - base_y;
+      base_x       = msg_base_x + glyph->draw_offset_x;
+      base_y       = msg_base_y + glyph->draw_offset_y;
+      max_width    = dst->width - base_x;
+      max_height   = dst->height - base_y;
 
       glyph_width  = glyph->width;
       glyph_height = glyph->height;
@@ -1187,7 +1189,7 @@ static void *exynos_init(const video_info_t *video,
       goto fail;
    }
 
-   if (exynos_init(vid->data, fb_bpp) != 0)
+   if (exynos_data_init(vid->data, fb_bpp) != 0)
    {
       RARCH_ERR("[Exynos] Initialization failed.\n");
       goto fail_init;
@@ -1228,7 +1230,7 @@ fail_font:
    exynos_g2d_free(vid->data);
 
 fail_g2d:
-   exynos_free(vid->data);
+   exynos_data_free(vid->data);
 
 fail_alloc:
    exynos_deinit(vid->data);
@@ -1260,7 +1262,7 @@ static void exynos_free(void *data)
    while (exynos_pages_used(pdata->pages, pdata->num_pages) > 1)
       drm_wait_flip(-1);
 
-   exynos_free(pdata);
+   exynos_data_free(pdata);
    exynos_deinit(pdata);
    exynos_close(pdata);
 
@@ -1447,7 +1449,7 @@ static void exynos_set_texture_enable(void *data, bool state, bool full_screen)
 }
 
 static void exynos_set_osd_msg(void *data, const char *msg, size_t msg_len,
-      const struct font_params *params) { }
+      const struct font_params *params, void *font) { }
 static void exynos_show_mouse(void *data, bool state) { }
 
 static const video_poke_interface_t exynos_poke_interface = {

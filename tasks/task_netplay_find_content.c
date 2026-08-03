@@ -822,7 +822,7 @@ bool task_push_netplay_crc_scan(uint32_t crc, const char *content,
          settings->paths.path_content_history, attr);
    }
 
-   data->current.crc = content_get_crc();
+   data->current.crc = netplay_content_crc();
 
    pbasename  = path_get(RARCH_PATH_BASENAME);
    if (pbasename && *pbasename)

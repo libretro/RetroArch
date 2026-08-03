@@ -1,13 +1,14 @@
 package com.retroarch.playcore;
 
+import com.google.android.play.core.splitinstall.SplitInstallHelper;
 import com.google.android.play.core.splitinstall.SplitInstallManager;
 import com.google.android.play.core.splitinstall.SplitInstallManagerFactory;
 import com.google.android.play.core.splitinstall.SplitInstallRequest;
 import com.google.android.play.core.splitinstall.SplitInstallSessionState;
 import com.google.android.play.core.splitinstall.SplitInstallStateUpdatedListener;
 import com.google.android.play.core.splitinstall.model.SplitInstallSessionStatus;
-import com.google.android.play.core.tasks.OnFailureListener;
-import com.google.android.play.core.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.retroarch.browser.retroactivity.RetroActivityCommon;
 
 import java.util.Collections;
@@ -43,6 +44,8 @@ public class PlayCoreManager {
                     activity.coreInstallStatusChanged(coreNames, INSTALL_STATUS_INSTALLING, state.bytesDownloaded(), state.totalBytesToDownload());
                     break;
                 case SplitInstallSessionStatus.INSTALLED:
+                    SplitInstallHelper.updateAppInfo(activity);
+
                     activity.updateSymlinks();
 
                     activity.coreInstallStatusChanged(coreNames, INSTALL_STATUS_INSTALLED, state.bytesDownloaded(), state.totalBytesToDownload());

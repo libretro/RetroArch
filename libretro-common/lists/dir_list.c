@@ -190,12 +190,26 @@ bool dir_list_deinitialize(struct string_list *list)
  *
  * @return -1 on error, 0 on success.
  **/
-static int dir_list_read(const char *dir,
-      struct string_list *list, struct string_list *ext_list,
-      bool include_dirs, bool include_hidden,
-      bool include_compressed, bool recursive)
+struct dir_list_ctx
 {
-   struct RDIR *entry = retro_opendir_include_hidden(dir, include_hidden);
+   struct string_list *list;
+   struct string_list *ext_list;
+   char               *path;  /* single buffer, used as a prefix stack */
+   bool                include_dirs;
+   bool                include_hidden;
+   bool                include_compressed;
+   bool                recursive;
+};
+
+/* @dir_len : length of the current directory prefix already sitting
+ * in ctx->path. The buffer is shared across recursion levels: each
+ * level only ever writes at [dir_len, ...) and restores the NUL on
+ * the way back out, so no level can clobber its parent's prefix. */
+static int dir_list_read_ctx(size_t dir_len, struct dir_list_ctx *ctx)
+{
+   char *path         = ctx->path;
+   struct RDIR *entry = retro_opendir_include_hidden(path,
+         ctx->include_hidden);
 
    if (!entry)
       return -1;
@@ -207,18 +221,16 @@ static int dir_list_read(const char *dir,
 
    while (retro_readdir(entry))
    {
+      size_t _len;
       union string_list_elem_attr attr;
-      char file_path[PATH_MAX_LENGTH];
       const char *name = retro_dirent_get_name(entry);
 
       if (name[0] == '.' || name[0] == '$')
       {
          /* Do not include hidden files and directories */
-         if (!include_hidden)
+         if (!ctx->include_hidden)
             continue;
-
          /* char-wise comparisons to avoid string comparison */
-
          /* Do not include current dir */
          if (name[1] == '\0')
             continue;
@@ -227,12 +239,17 @@ static int dir_list_read(const char *dir,
             continue;
       }
 
-      fill_pathname_join_special(file_path, dir, name, sizeof(file_path));
+      /* Append @name to the prefix instead of rebuilding the whole
+       * path: the prefix is already in place from the parent level. */
+      _len = dir_len;
+      if (_len && path[_len - 1] != '/' && path[_len - 1] != '\\')
+         path[_len++] = '/';
+      _len += strlcpy(path + _len, name, PATH_MAX_LENGTH - _len);
 
       if (retro_dirent_is_dir(entry, NULL))
       {
          /* Exclude this frequent hidden dir on platforms which can not handle hidden attribute */
-         if (!include_hidden && strcmp(name, "System Volume Information") == 0)
+         if (!ctx->include_hidden && strcmp(name, "System Volume Information") == 0)
             continue;
 
 #if defined(IOS) || defined(OSX)
@@ -242,7 +259,7 @@ static int dir_list_read(const char *dir,
                   && !memcmp(name + name_len - 10, ".framework", 10))
             {
                attr.i = RARCH_PLAIN_FILE;
-               if (!string_list_append(list, file_path, attr))
+               if (!string_list_append(ctx->list, path, attr))
                {
                   retro_closedir(entry);
                   return -1;
@@ -251,11 +268,13 @@ static int dir_list_read(const char *dir,
             }
          }
 #endif
-         if (recursive)
-            dir_list_read(file_path, list, ext_list, include_dirs,
-                  include_hidden, include_compressed, recursive);
+         if (ctx->recursive)
+         {
+            dir_list_read_ctx(_len, ctx);
+            path[_len] = '\0';
+         }
 
-         if (!include_dirs)
+         if (!ctx->include_dirs)
             continue;
          attr.i = RARCH_DIRECTORY;
       }
@@ -265,29 +284,21 @@ static int dir_list_read(const char *dir,
 
          attr.i                  = RARCH_FILETYPE_UNSET;
 
-         /*
-          * If the file format is explicitly supported by the libretro-core, we
-          * need to immediately load it and not designate it as a compressed file.
-          *
-          * Example: .zip could be supported as a image by the core and as a
-          * compressed_file. In that case, we have to interpret it as a image.
-          *
-          * */
-         if (string_list_find_elem_prefix(ext_list, ".", file_ext))
+         if (string_list_find_elem_prefix(ctx->ext_list, ".", file_ext))
             attr.i            = RARCH_PLAIN_FILE;
          else
          {
             bool is_compressed_file;
-            if ((is_compressed_file = path_is_compressed_file(file_path)))
+            if ((is_compressed_file = path_is_compressed_file(path)))
                attr.i               = RARCH_COMPRESSED_ARCHIVE;
 
-            if (ext_list &&
-                  (!is_compressed_file || !include_compressed))
+            if (ctx->ext_list &&
+                  (!is_compressed_file || !ctx->include_compressed))
                continue;
          }
       }
 
-      if (!string_list_append(list, file_path, attr))
+      if (!string_list_append(ctx->list, path, attr))
       {
          retro_closedir(entry);
          return -1;
@@ -329,8 +340,24 @@ bool dir_list_append(struct string_list *list,
       string_split_noalloc(&ext_list, ext, "|");
       ext_list_ptr                  = &ext_list;
    }
-   ret                            = dir_list_read(dir, list, ext_list_ptr,
-         include_dirs, include_hidden, include_compressed, recursive) != -1;
+   {
+      struct dir_list_ctx ctx;
+      char *path = (char*)malloc(PATH_MAX_LENGTH);
+      if (!path)
+      {
+         string_list_deinitialize(&ext_list);
+         return false;
+      }
+      ctx.list               = list;
+      ctx.ext_list           = ext_list_ptr;
+      ctx.path               = path;
+      ctx.include_dirs       = include_dirs;
+      ctx.include_hidden     = include_hidden;
+      ctx.include_compressed = include_compressed;
+      ctx.recursive          = recursive;
+      ret = dir_list_read_ctx(strlcpy(path, dir, PATH_MAX_LENGTH), &ctx) != -1;
+      free(path);
+   }
    string_list_deinitialize(&ext_list);
    return ret;
 }

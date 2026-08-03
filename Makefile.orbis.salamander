@@ -13,7 +13,6 @@ AUTH_INFO = 000000000000000000000000001C004000FF00000000008000000000000000000000
 
 
 
-endif
 
 ifeq ($(strip $(ORBISDEV)),)
 $(error "Please set ORBISDEV in your environment. export ORBISDEV=<path to>orbisdev")
@@ -87,6 +86,7 @@ OBJS = frontend/frontend_salamander.o \
 		 libretro-common/compat/compat_strcasestr.o \
 		 libretro-common/compat/fopen_utf8.o \
 		 libretro-common/file/config_file.o \
+		 libretro-common/file/config_file_io.o \
 		 libretro-common/streams/file_stream.o \
 		 libretro-common/vfs/vfs_implementation.o \
 		 libretro-common/hash/lrc_hash.o \

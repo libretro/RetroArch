@@ -179,7 +179,14 @@ static void test_happy_path_rgb(void)
 
    rtga = rtga_alloc();
    rtga_set_buf_ptr(rtga, file);
-   rc = rtga_process_image(rtga, &out, (size_t)hdr_len + 12, &w, &h, true);
+   /* The decoder is sliced: process_image fills a bounded run of the
+    * image per call and returns IMAGE_PROCESS_NEXT until the surface is
+    * complete, exactly as image_texture_load_buffer() and
+    * task_image_process_transfer() drive it.  Loop to completion. */
+   do
+   {
+      rc = rtga_process_image(rtga, &out, (size_t)hdr_len + 12, &w, &h, true);
+   } while (rc == IMAGE_PROCESS_NEXT);
 
    if (rc != IMAGE_PROCESS_END || w != 2 || h != 2 || !out)
    {

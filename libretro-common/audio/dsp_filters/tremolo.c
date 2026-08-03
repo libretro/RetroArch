@@ -32,6 +32,8 @@
 struct tremolo_core
 {
    float *wavetable;
+   /* Q16 fixed-point mirror of wavetable, for the int16 path. */
+   int32_t *wavetable_i;
    float freq;
    float depth;
    unsigned index;
@@ -48,6 +50,8 @@ static void tremolo_free(void *data)
    struct tremolo *tre = (struct tremolo*)data;
    free(tre->left.wavetable);
    free(tre->right.wavetable);
+   free(tre->left.wavetable_i);
+   free(tre->right.wavetable_i);
    free(data);
 }
 
@@ -60,11 +64,15 @@ static void tremolocore_init(struct tremolo_core *core,float depth,int samplerat
    core->maxindex  = samplerate / freq;
    core->wavetable = (float*)malloc(core->maxindex   * sizeof(float));
    memset(core->wavetable, 0, core->maxindex * sizeof(float));
+   core->wavetable_i = (int32_t*)malloc(core->maxindex * sizeof(int32_t));
+   memset(core->wavetable_i, 0, core->maxindex * sizeof(int32_t));
    for (i = 0; i < core->maxindex; i++)
    {
       env                = freq * i / samplerate;
       env                = sin((M_PI*2) * fmod(env + 0.25, 1.0));
       core->wavetable[i] = env * (1 - fabs(offset)) + offset;
+      core->wavetable_i[i] =
+            (int32_t)floor((double)core->wavetable[i] * 65536.0 + 0.5);
    }
 }
 
@@ -93,6 +101,42 @@ static void tremolo_process(void *data, struct dspfilter_output *output,
    }
 }
 
+/* Deterministic int16 path: multiply by the same per-sample envelope as the
+ * float path, using the Q16 wavetable (int64 product, round-half-away-from-
+ * zero, saturate). */
+static int16_t tremolocore_core_i16(struct tremolo_core *core, int16_t in)
+{
+   int64_t v;
+   int32_t r;
+   core->index = core->index % core->maxindex;
+   v = (int64_t)in * core->wavetable_i[core->index++];
+   r = (v >= 0) ? (int32_t)(( v + 32768) >> 16)
+               : -(int32_t)((-v + 32768) >> 16);
+   if      (r >  32767) r =  32767;
+   else if (r < -32768) r = -32768;
+   return (int16_t)r;
+}
+
+static void tremolo_process_i16(void *data,
+      struct dspfilter_output_i16 *output,
+      const struct dspfilter_input_i16 *input)
+{
+   unsigned i;
+   int16_t *out;
+   struct tremolo *tre = (struct tremolo*)data;
+
+   output->samples     = input->samples;
+   output->frames      = input->frames;
+   out                 = output->samples;
+
+   for (i = 0; i < input->frames; i++, out += 2)
+   {
+      int16_t in[2]    = { out[0], out[1] };
+      out[0]           = tremolocore_core_i16(&tre->left, in[0]);
+      out[1]           = tremolocore_core_i16(&tre->right, in[1]);
+   }
+}
+
 static void *tremolo_init(const struct dspfilter_info *info,
       const struct dspfilter_config *config, void *userdata)
 {
@@ -116,6 +160,8 @@ static const struct dspfilter_implementation tremolo_plug = {
    DSPFILTER_API_VERSION,
    "Tremolo",
    "tremolo",
+
+   tremolo_process_i16,
 };
 
 #ifdef HAVE_FILTERS_BUILTIN

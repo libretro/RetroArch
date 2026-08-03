@@ -286,13 +286,6 @@ parsed:
       state_slot = (unsigned)val;
    }
 
-   if (     state_slot >= 0
-         && state_slot < 1000)
-   {
-      runloop_state_t *runloop_st  = runloop_state_get_ptr();
-      runloop_st->entry_state_slot = state_slot;
-   }
-
    /* If we reach this point then all is well
     * > Assign values to runtime_log object */
    runtime_log->runtime.hours      = runtime_hours;

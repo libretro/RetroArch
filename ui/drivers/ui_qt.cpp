@@ -1501,16 +1501,16 @@ MainWindow::MainWindow(QWidget *parent) :
    ,m_statusMessageElapsedTimer()
 #if defined(HAVE_MENU)
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   ,m_shaderParamsDialog(new ShaderParamsDialog())
+   ,m_shaderParamsDialog(new ShaderParamsDialog(this))
 #endif
 #endif
-   ,m_coreOptionsDialog(new CoreOptionsDialog())
+   ,m_coreOptionsDialog(new CoreOptionsDialog(this))
    ,m_currentHttpTask(NULL)
-   ,m_updateProgressDialog(new QProgressDialog())
-   ,m_thumbnailDownloadProgressDialog(new QProgressDialog())
+   ,m_updateProgressDialog(new QProgressDialog(this))
+   ,m_thumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingThumbnailDownloadTypes()
-   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog())
-   ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog())
+   ,m_thumbnailPackDownloadProgressDialog(new QProgressDialog(this))
+   ,m_playlistThumbnailDownloadProgressDialog(new QProgressDialog(this))
    ,m_pendingPlaylistThumbnails()
    ,m_downloadedThumbnails(0)
    ,m_failedThumbnails(0)
@@ -1544,8 +1544,8 @@ MainWindow::MainWindow(QWidget *parent) :
     * selection changes don't flicker stale images in. */
    m_previewLoader = new ThumbnailLoader(this);
    connect(m_previewLoader,
-         SIGNAL(imageLoaded(QImage,QModelIndex,QString)), this,
-         SLOT(onPreviewImageLoaded(QImage,QModelIndex,QString)));
+         SIGNAL(imageLoaded(QImage,QPersistentModelIndex,QString)), this,
+         SLOT(onPreviewImageLoaded(QImage,QPersistentModelIndex,QString)));
    m_previewLoader->start();
 
    /* Cancel all progress dialogs immediately since
@@ -2428,7 +2428,7 @@ void MainWindow::appendLogMessage(const QString &msg)
 void MainWindow::onGotLogMessage(const QString &msg)
 {
    QString newMsg = msg;
-   if (newMsg.at(newMsg.size() - 1) == '\n')
+   if (!newMsg.isEmpty() && newMsg.at(newMsg.size() - 1) == '\n')
       newMsg.chop(1);
    m_logTextEdit->appendMessage(newMsg);
 }
@@ -3607,7 +3607,7 @@ void MainWindow::onCurrentItemChanged(const PlaylistEntry &entry)
 }
 
 void MainWindow::onPreviewImageLoaded(const QImage image,
-      const QModelIndex & /* index */, const QString &path)
+      const QPersistentModelIndex & /* index */, const QString &path)
 {
    size_t i;
 
@@ -4403,9 +4403,16 @@ static void* ui_application_qt_initialize(void)
       /* Can't declare the pixmap at the top, because:
        * "QPixmap: Must construct a QGuiApplication before a QPixmap" */
       QImage iconImage(16, 16, QImage::Format_ARGB32);
-      unsigned char *bits = iconImage.bits();
+      int y;
 
-      memcpy(bits, retroarch_qt_icon_data, 16 * 16 * sizeof(unsigned));
+      /* Copy per scanline rather than one flat memcpy: QImage may pad
+       * each row to a larger bytesPerLine() than width * 4, so a single
+       * 16*16*4 copy into bits() is only correct as long as there is no
+       * padding. Per-row copies via scanLine() are safe regardless. */
+      for (y = 0; y < 16; y++)
+         memcpy(iconImage.scanLine(y),
+               retroarch_qt_icon_data + (y * 16),
+               16 * sizeof(unsigned));
 
       iconPixmap = QPixmap::fromImage(iconImage);
 
@@ -4525,9 +4532,13 @@ void ThumbnailWidget::dropEvent(QDropEvent *event)
          emit(filesDropped(image, m_thumbnailType));
       else
       {
-         const char *string_data = QDir::toNativeSeparators(
-               imageString).toUtf8().constData();
-         RARCH_ERR("[Qt] Could not read image: \"%s\".\n", string_data);
+         /* Keep the QByteArray alive for the duration of the log call:
+          * calling constData() on a temporary QByteArray leaves a
+          * dangling pointer once the full expression ends. */
+         QByteArray stringArray = QDir::toNativeSeparators(
+               imageString).toUtf8();
+         RARCH_ERR("[Qt] Could not read image: \"%s\".\n",
+               stringArray.constData());
       }
    }
 }
@@ -4595,7 +4606,6 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
       int newHeight        = (m_pixmap->height()
                            / static_cast<float>(m_pixmap->width())) * width();
       QPixmap pixmapScaled = *m_pixmap;
-      unsigned *buf        = new unsigned[w * h];
 
       if (newHeight > h)
          pixmapScaled = pixmapScaled.scaledToHeight(h, Qt::SmoothTransformation);
@@ -4619,8 +4629,6 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
          p.drawPixmap(rect(), pixmap, pixmap.rect());
          p.end();
       }
-
-      delete []buf;
    }
    else
       QWidget::paintEvent(event);
@@ -5038,7 +5046,8 @@ static void* ui_companion_qt_init(void)
    handle->window  = static_cast<ui_window_qt_t*>(ui_window_qt.init());
 
    screen          = qApp->primaryScreen();
-   desktopRect     = screen->availableGeometry();
+   if (screen)
+      desktopRect  = screen->availableGeometry();
 
    mainwindow      = handle->window->qtWindow;
    qsettings       = mainwindow->settings();
@@ -5161,10 +5170,12 @@ static void ui_companion_qt_toggle(void *data, bool force)
 static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 {
    ui_companion_qt_t *handle  = (ui_companion_qt_t*)data;
-   ui_window_qt_t *win_handle = (ui_window_qt_t*)handle->window;
+   ui_window_qt_t *win_handle = NULL;
 
    if (!handle)
       return;
+
+   win_handle = (ui_window_qt_t*)handle->window;
 
    switch (cmd)
    {

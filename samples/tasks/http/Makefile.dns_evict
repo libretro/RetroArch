@@ -1,0 +1,61 @@
+# Regression test for the DNS cache eviction deadlock in net_http.c.
+#
+# Wraps getaddrinfo and cpu_features_get_time_usec at link time so the
+# 30-second fail-timeout window can be reproduced instantly and
+# deterministically; see the comment at the top of the test.
+#
+#   make -f Makefile.dns_evict check
+#   make -f Makefile.dns_evict check SANITIZER=thread
+
+TARGET  := http_dns_evict_deadlock_test
+CORE_DIR := ../../..
+LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
+
+SOURCES := \
+	http_dns_evict_deadlock_test.c \
+	$(LIBRETRO_COMM_DIR)/net/net_http.c \
+	$(LIBRETRO_COMM_DIR)/net/net_compat.c \
+	$(LIBRETRO_COMM_DIR)/net/net_socket.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/file/retro_dirent.c \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c
+
+OBJS := $(SOURCES:.c=.o)
+
+CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
+           -I$(LIBRETRO_COMM_DIR)/include -DHAVE_THREADS
+LDFLAGS += -Wl,--wrap=getaddrinfo -Wl,--wrap=cpu_features_get_time_usec
+LIBS    += -lpthread -lm
+
+ifneq ($(SANITIZER),)
+   CFLAGS  := -fsanitize=$(SANITIZER) $(CFLAGS)
+   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
+all: $(TARGET)
+
+%.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+
+.PHONY: all check clean

@@ -30,7 +30,7 @@
 #ifdef __linux__
 #include <linux/version.h>
 #if __STDC_VERSION__ >= 199901L && !defined(ANDROID)
-#include "feralgamemode/gamemode_client.h"
+#include "../../deps/feralgamemode/gamemode_client.h"
 #define FERAL_GAMEMODE
 #endif
 /* inotify API was added in 2.6.13 */
@@ -49,7 +49,7 @@
 #endif
 
 #include <signal.h>
-#include <pthread.h>
+#include <rthreads/rthreads.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -122,7 +122,7 @@ enum platform_android_flags
    PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
 };
 
-static pthread_key_t thread_key;
+static sthread_tls_t thread_key;
 static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
@@ -136,14 +136,6 @@ static uint8_t g_platform_android_flags  = 0;
 static char unix_cpu_model_name[64]      = {0};
 #endif
 
-/* /proc/meminfo parameters */
-#define PROC_MEMINFO_PATH                "/proc/meminfo"
-#define PROC_MEMINFO_MEM_TOTAL_TAG       "MemTotal:"
-#define PROC_MEMINFO_MEM_AVAILABLE_TAG   "MemAvailable:"
-#define PROC_MEMINFO_MEM_FREE_TAG        "MemFree:"
-#define PROC_MEMINFO_BUFFERS_TAG         "Buffers:"
-#define PROC_MEMINFO_CACHED_TAG          "Cached:"
-#define PROC_MEMINFO_SHMEM_TAG           "Shmem:"
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
 static int speak_pid                     = 0;
@@ -422,7 +414,7 @@ JNIEnv *jni_thread_getenv(void)
       RARCH_ERR("jni_thread_getenv: Failed to attach current thread.\n");
       return NULL;
    }
-   pthread_setspecific(thread_key, (void*)env);
+   sthread_tls_set(&thread_key, (void*)env);
 
    return env;
 }
@@ -438,7 +430,7 @@ static void jni_thread_destruct(void *value)
    if (android_app)
       (*android_app->activity->vm)->
          DetachCurrentThread(android_app->activity->vm);
-   pthread_setspecific(thread_key, NULL);
+   sthread_tls_set(&thread_key, NULL);
 }
 
 static void android_app_entry(void *data)
@@ -570,8 +562,8 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
          | AWINDOW_FLAG_FULLSCREEN, 0);
 
-   if (pthread_key_create(&thread_key, jni_thread_destruct))
-      RARCH_ERR("Error initializing pthread_key.\n");
+   if (!sthread_tls_create_with_dtor(&thread_key, jni_thread_destruct))
+      RARCH_ERR("Error initializing thread-local storage key.\n");
 
    activity->instance = android_app_create(activity,
          savedState, savedStateSize);
@@ -582,12 +574,12 @@ void frontend_android_get_name(char *s, size_t len)
    system_property_get("getprop", "ro.product.model", s, len);
 }
 
-static void frontend_android_get_version(int32_t *major,
+void frontend_android_get_version(int32_t *major,
       int32_t *minor, int32_t *rel)
 {
    char os_version_str[PROP_VALUE_MAX] = {0};
-   system_property_get("getprop", "ro.build.version.release",
-         os_version_str, sizeof(os_version_str));
+   __system_property_get("ro.build.version.release",
+         os_version_str);
    *major  = 0;
    *minor  = 0;
    *rel    = 0;
@@ -2416,16 +2408,12 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
 
    JNIEnv *env = jni_thread_getenv();
    jint output           = 0;
-   jobject obj           = NULL;
    jstring jstr          = NULL;
 
    int volume_count = 0;
 
    if (!env || !g_android)
       return 0;
-
-   CALL_OBJ_METHOD(env, obj, g_android->activity->clazz,
-         g_android->getIntent);
 
    if (!g_android->is_play_store_build && g_android->getVolumeCount)
    {
@@ -2799,135 +2787,6 @@ static void frontend_unix_exitspawn(char *s, size_t len, char *args)
    frontend_unix_exec(s, should_load_content);
 }
 #endif
-
-static uint64_t frontend_unix_get_total_mem(void)
-{
-#if defined(DINGUX)
-   char line[256];
-   unsigned long mem_total = 0;
-   FILE* meminfo_file      = NULL;
-
-   line[0] = '\0';
-
-   /* Open /proc/meminfo */
-   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
-      return 0;
-
-   /* Parse lines
-    * (Note: virtual filesystem, so don't have to
-    *  worry about buffering file reads) */
-   while (fgets(line, sizeof(line), meminfo_file))
-   {
-      if (string_starts_with_size(line, PROC_MEMINFO_MEM_TOTAL_TAG,
-            STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG)))
-      {
-         /* Prefix already matched above; strtoul skips leading
-          * whitespace and stops at the first non-digit, so the
-          * trailing " kB" need not be matched (sscanf "%lu kB"
-          * did not require it either). */
-         mem_total = strtoul(line + STRLEN_CONST(PROC_MEMINFO_MEM_TOTAL_TAG),
-               NULL, 10);
-         break;
-      }
-   }
-
-   /* Close /proc/meminfo */
-   fclose(meminfo_file);
-   meminfo_file = NULL;
-
-   return (uint64_t)mem_total * 1024;
-#else
-   uint64_t pages            = sysconf(_SC_PHYS_PAGES);
-   uint64_t page_size        = sysconf(_SC_PAGE_SIZE);
-   return pages * page_size;
-#endif
-}
-
-static uint64_t frontend_unix_get_free_mem(void)
-{
-   char line[256];
-   unsigned long mem_available = 0;
-   unsigned long mem_free      = 0;
-   unsigned long buffers       = 0;
-   unsigned long cached        = 0;
-   unsigned long shmem         = 0;
-   bool mem_available_found    = false;
-   bool mem_free_found         = false;
-   bool buffers_found          = false;
-   bool cached_found           = false;
-   bool shmem_found            = false;
-   FILE* meminfo_file          = NULL;
-
-   line[0] = '\0';
-
-   /* Open /proc/meminfo */
-   if (!(meminfo_file = fopen(PROC_MEMINFO_PATH, "r")))
-      return 0;
-
-   /* Parse lines
-    * (Note: virtual filesystem, so don't have to
-    *  worry about buffering file reads) */
-   while (fgets(line, sizeof(line), meminfo_file))
-   {
-      /* If 'MemAvailable' is found, we can return immediately */
-      if (!mem_available_found)
-         if (string_starts_with_size(line, PROC_MEMINFO_MEM_AVAILABLE_TAG,
-               STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG)))
-         {
-            mem_available_found = true;
-            mem_available = strtoul(line
-                  + STRLEN_CONST(PROC_MEMINFO_MEM_AVAILABLE_TAG), NULL, 10);
-            break;
-         }
-
-      if (!mem_free_found)
-         if (string_starts_with_size(line, PROC_MEMINFO_MEM_FREE_TAG,
-               STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG)))
-         {
-            mem_free_found = true;
-            mem_free = strtoul(line
-                  + STRLEN_CONST(PROC_MEMINFO_MEM_FREE_TAG), NULL, 10);
-         }
-
-      if (!buffers_found)
-         if (string_starts_with_size(line, PROC_MEMINFO_BUFFERS_TAG,
-               STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG)))
-         {
-            buffers_found = true;
-            buffers = strtoul(line
-                  + STRLEN_CONST(PROC_MEMINFO_BUFFERS_TAG), NULL, 10);
-         }
-
-      if (!cached_found)
-         if (string_starts_with_size(line, PROC_MEMINFO_CACHED_TAG,
-               STRLEN_CONST(PROC_MEMINFO_CACHED_TAG)))
-         {
-            cached_found = true;
-            cached = strtoul(line
-                  + STRLEN_CONST(PROC_MEMINFO_CACHED_TAG), NULL, 10);
-         }
-
-      if (!shmem_found)
-         if (string_starts_with_size(line, PROC_MEMINFO_SHMEM_TAG,
-               STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG)))
-         {
-            shmem_found = true;
-            shmem = strtoul(line
-                  + STRLEN_CONST(PROC_MEMINFO_SHMEM_TAG), NULL, 10);
-         }
-   }
-
-   /* Close /proc/meminfo */
-   fclose(meminfo_file);
-   meminfo_file = NULL;
-
-   /* Use 'accurate' free memory value, if available */
-   if (mem_available_found)
-      return (uint64_t)mem_available * 1024;
-
-   /* ...Otherwise, use estimate */
-   return (uint64_t)((mem_free + buffers + cached) - shmem) * 1024;
-}
 
 /*#include <valgrind/valgrind.h>*/
 static void frontend_unix_sighandler(int sig)
@@ -3542,8 +3401,6 @@ frontend_ctx_driver_t frontend_ctx_unix = {
    frontend_unix_get_arch,             /* get_architecture */
    frontend_unix_get_powerstate,
    frontend_unix_parse_drive_list,
-   frontend_unix_get_total_mem,
-   frontend_unix_get_free_mem,
    frontend_unix_install_signal_handlers,
    frontend_unix_get_signal_handler_state,
    frontend_unix_set_signal_handler_state,

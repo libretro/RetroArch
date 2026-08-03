@@ -240,11 +240,7 @@ typedef struct
    font_vertex[     2 * (6 * i + c) + 0] = (x + (delta_x + off_x + vx * width) * scale) * inv_win_width; \
    font_vertex[     2 * (6 * i + c) + 1] = (y + (delta_y - off_y - vy * height) * scale) * inv_win_height; \
    font_tex_coords[ 2 * (6 * i + c) + 0] = (tex_x + vx * width) * inv_tex_size_x; \
-   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y; \
-   font_color[      4 * (6 * i + c) + 0] = color[0]; \
-   font_color[      4 * (6 * i + c) + 1] = color[1]; \
-   font_color[      4 * (6 * i + c) + 2] = color[2]; \
-   font_color[      4 * (6 * i + c) + 3] = color[3]
+   font_tex_coords[ 2 * (6 * i + c) + 1] = (tex_y + vy * height) * inv_tex_size_y
 
 #define MAX_MSG_LEN_CHUNK 64
 
@@ -345,8 +341,6 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->coords->lut_tex_coord)
-      draw->coords->lut_tex_coord   = &rsx_tex_coords[0];
    if (!draw->texture)
       return;
 
@@ -540,7 +534,20 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
 {
    u8 *texbuffer               = (u8 *)font->texture.data;
    const u8 *atlas_data        = (u8 *)font->atlas->buffer;
-   memcpy(texbuffer, atlas_data, font->atlas->height * font->atlas->width);
+   /* Texture pitch equals the atlas width, so the dirty row band is
+    * contiguous in both buffers and one memcpy of just that band
+    * suffices; the initial upload (dirty rect covering everything
+    * after the renderer pre-cache) still transfers the full atlas. */
+   unsigned y0                 = font->atlas->dirty_y0;
+   unsigned y1                 = font->atlas->dirty_y1;
+   if (y1 > font->atlas->height || y1 <= y0)
+   {
+      y0 = 0;
+      y1 = font->atlas->height;
+   }
+   memcpy(texbuffer   + (size_t)y0 * font->atlas->width,
+          atlas_data  + (size_t)y0 * font->atlas->width,
+          (size_t)(y1 - y0) * font->atlas->width);
 
    font->texture.tex.format    = GCM_TEXTURE_FORMAT_B8 | GCM_TEXTURE_FORMAT_LIN;
    font->texture.tex.mipmap    = 1;
@@ -762,6 +769,8 @@ static void rsx_font_render_line(rsx_t *rsx,
    float font_tex_coords[2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_vertex    [2 * 6 * MAX_MSG_LEN_CHUNK];
    float font_color     [4 * 6 * MAX_MSG_LEN_CHUNK];
+   float color_block[4 * 6];
+   int n;
    const char* msg_end  = msg + msg_len;
    int x                = pre_x;
    int y                = roundf(pos_y * rsx->vp.height);
@@ -790,6 +799,14 @@ static void rsx_font_render_line(rsx_t *rsx,
          x -= (int)(width_accum * scale);
       else
          x -= (int)(width_accum * scale) / 2;
+   }
+
+   for (n = 0; n < 6; n++)
+   {
+      color_block[4 * n + 0] = color[0];
+      color_block[4 * n + 1] = color[1];
+      color_block[4 * n + 2] = color[2];
+      color_block[4 * n + 3] = color[3];
    }
 
    while (msg < msg_end)
@@ -821,6 +838,9 @@ static void rsx_font_render_line(rsx_t *rsx,
          RSX_FONT_EMIT(3, 1, 0); /* Top-right */
          RSX_FONT_EMIT(4, 0, 0); /* Top-left */
          RSX_FONT_EMIT(5, 1, 1); /* Bottom-right */
+
+         memcpy(&font_color[4 * 6 * i], color_block,
+               sizeof(color_block));
 
          i++;
 
@@ -2505,6 +2525,128 @@ static void rsx_set_osd_msg(void *data,
 
 static uint32_t rsx_get_flags(void *data) { return 0; }
 
+/* --- GPU-native BCn compressed-texture upload (PoC) --- */
+/* RSX (NV47/G70) natively samples DXT1/DXT23/DXT45 == BC1/BC2/BC3.
+ * Nothing above BC3 exists on this GPU. */
+static bool rsx_gcm_compressed_format(enum texture_gpu_format fmt,
+      u32 *gcm_out, u32 *block_bytes)
+{
+   switch (fmt)
+   {
+      case TEXTURE_GPU_FORMAT_BC1:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT1;  *block_bytes = 8;  return true;
+      case TEXTURE_GPU_FORMAT_BC2:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT23; *block_bytes = 16; return true;
+      case TEXTURE_GPU_FORMAT_BC3:
+         *gcm_out = GCM_TEXTURE_FORMAT_DXT45; *block_bytes = 16; return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+static bool rsx_supports_texture_format(void *data, enum texture_gpu_format fmt)
+{
+   u32 gcm, bb;
+   (void)data;
+   return rsx_gcm_compressed_format(fmt, &gcm, &bb);
+}
+
+static uintptr_t rsx_load_texture_compressed(void *video_data,
+      const struct texture_compressed *tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   rsx_t         *rsx = (rsx_t*)video_data;
+   rsx_texture_t *texture;
+   u8            *dst;
+   size_t         total       = 0;
+   size_t         off         = 0;
+   u32            gcm_fmt      = 0;
+   u32            block_bytes  = 16;
+   u32            min_filter, mag_filter;
+   unsigned       blocks_w0;
+   unsigned       i;
+
+   /* Regular texture loads on this driver marshal to the video thread;
+    * the compressed path does not yet, so under threading decline here
+    * and let the CPU-decode fallback go through the marshalled path. */
+   if (threaded)
+      return 0;
+   if (!rsx || !tc || tc->num_mips == 0)
+      return 0;
+   if (!rsx_gcm_compressed_format(tc->format, &gcm_fmt, &block_bytes))
+      return 0;
+
+   if (!(texture = (rsx_texture_t*)malloc(sizeof(rsx_texture_t))))
+      return 0;
+
+   for (i = 0; i < tc->num_mips; i++)
+      total += tc->mips[i].size;
+
+   texture->width  = tc->mips[0].width;
+   texture->height = tc->mips[0].height;
+   texture->data   = (u32*)rsxMemalign(128, total);
+   if (!texture->data)
+   {
+      free(texture);
+      return 0;
+   }
+   rsxAddressToOffset(texture->data, &texture->offset);
+
+   /* Mip chain is stored contiguously; the RSX derives per-level
+    * offsets from the base offset and mip count. */
+   dst = (u8*)texture->data;
+   for (i = 0; i < tc->num_mips; i++)
+   {
+      memcpy(dst + off, tc->mips[i].data, tc->mips[i].size);
+      off += tc->mips[i].size;
+   }
+
+   blocks_w0              = (tc->mips[0].width + 3u) >> 2;
+
+   texture->tex.format    = gcm_fmt | GCM_TEXTURE_FORMAT_LIN;
+   texture->tex.mipmap    = tc->num_mips;
+   texture->tex.dimension = GCM_TEXTURE_DIMS_2D;
+   texture->tex.cubemap   = GCM_FALSE;
+   /* DXT decodes to RGBA on-chip; reuse the driver's remap.  NOTE: RPCS3
+    * uses an identity R,G,B,A swizzle for the DXT formats -- if colours
+    * come out with R/B swapped on hardware, this remap is why. */
+   texture->tex.remap     =  ((GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_TYPE_REMAP << GCM_TEXTURE_REMAP_TYPE_A_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_B << GCM_TEXTURE_REMAP_COLOR_B_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_G << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_R << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
+                            | (GCM_TEXTURE_REMAP_COLOR_A << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
+   texture->tex.width     = tc->mips[0].width;
+   texture->tex.height    = tc->mips[0].height;
+   texture->tex.depth     = 1;
+   texture->tex.location  = GCM_LOCATION_RSX;
+   /* Linear compressed surface: pitch is the byte width of one row of
+    * 4x4 blocks at mip 0. */
+   texture->tex.pitch     = blocks_w0 * block_bytes;
+   texture->tex.offset    = texture->offset;
+
+   if (     filter_type == TEXTURE_FILTER_NEAREST
+         || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+   {
+      min_filter = GCM_TEXTURE_NEAREST;
+      mag_filter = GCM_TEXTURE_NEAREST;
+   }
+   else
+   {
+      min_filter = GCM_TEXTURE_LINEAR;
+      mag_filter = GCM_TEXTURE_LINEAR;
+   }
+   texture->min_filter    = min_filter;
+   texture->mag_filter    = mag_filter;
+   texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
+
+   return (uintptr_t)texture;
+}
+
 static const video_poke_interface_t rsx_poke_interface = {
    rsx_get_flags,
    rsx_load_texture,
@@ -2531,7 +2673,9 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   rsx_supports_texture_format,
+   rsx_load_texture_compressed
 };
 
 static void rsx_get_poke_interface(void* data,

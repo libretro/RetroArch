@@ -60,9 +60,13 @@ typedef struct xv
 
    struct video_viewport vp;
 
-   uint8_t *ytable;
-   uint8_t *utable;
-   uint8_t *vtable;
+   /* One entry per RGB565 colour. For packed (YUY2/UYVY) formats each
+    * entry already holds the complete 4-byte macropixel in destination
+    * byte order, so the render loops need a single load and two 32-bit
+    * stores instead of three loads and eight byte stores. For planar
+    * (YV12) formats the entry holds { y, u, v, 0 }. Built byte-wise, so
+    * no endianness fixups are required. */
+   uint32_t *yuv_table;
 
    void *font;
    const font_renderer_driver_t *font_driver;
@@ -77,6 +81,7 @@ typedef struct xv
 			int glyph_width, int glyph_height);
    int depth;
    int visualid;
+   int fmt_format; /* XvPacked or XvPlanar */
    unsigned luma_index[2];
    unsigned chroma_u_index;
    unsigned chroma_v_index;
@@ -117,19 +122,23 @@ static INLINE void xv_calculate_yuv(uint8_t *y, uint8_t *u, uint8_t *v,
          - ((double)b * 0.071) + 128.0);
 
    *y     = y_ < 0 ? 0 : (y_ > 255 ? 255 : y_);
-   *u     = y_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
+   *u     = u_ < 0 ? 0 : (u_ > 255 ? 255 : u_);
    *v     = v_ < 0 ? 0 : (v_ > 255 ? 255 : v_);
 }
 
 static void xv_init_yuv_tables(xv_t *xv)
 {
    unsigned i;
-   xv->ytable = (uint8_t*)malloc(0x10000);
-   xv->utable = (uint8_t*)malloc(0x10000);
-   xv->vtable = (uint8_t*)malloc(0x10000);
+   uint8_t *entry;
 
-   for (i = 0; i < 0x10000; i++)
+   if (!(xv->yuv_table = (uint32_t*)calloc(0x10000, sizeof(uint32_t))))
+      return;
+
+   entry = (uint8_t*)xv->yuv_table;
+
+   for (i = 0; i < 0x10000; i++, entry += 4)
    {
+      uint8_t  y, u, v;
       /* Extract RGB565 color data from i */
       unsigned r = (i >> 11) & 0x1f;
       unsigned g = (i >> 5)  & 0x3f;
@@ -138,8 +147,24 @@ static void xv_init_yuv_tables(xv_t *xv)
       g          = (g << 2) | (g >> 4);  /* G6->G8 */
       b          = (b << 3) | (b >> 2);  /* B5->B8 */
 
-      xv_calculate_yuv(&xv->ytable[i],
-            &xv->utable[i], &xv->vtable[i], r, g, b);
+      xv_calculate_yuv(&y, &u, &v, r, g, b);
+
+      if (xv->fmt_format == XvPlanar)
+      {
+         entry[0] = y;
+         entry[1] = u;
+         entry[2] = v;
+      }
+      else
+      {
+         /* Pre-assemble the destination macropixel: both luma slots
+          * carry the same sample, chroma goes where the adaptor wants
+          * it. Covers YUY2 ({0,2}/1/3) and UYVY ({1,3}/0/2) alike. */
+         entry[xv->luma_index[0]] = y;
+         entry[xv->luma_index[1]] = y;
+         entry[xv->chroma_u_index] = u;
+         entry[xv->chroma_v_index] = v;
+      }
    }
 }
 
@@ -178,28 +203,22 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
 
 /* We render @ 2x scale to combat chroma downsampling.
  * Also makes fonts more bearable. */
-static void render16_yuy2(xv_t *xv, const void *input_,
+static void render16_packed(xv_t *xv, const void *input_,
       unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
-   const uint16_t *input = (const uint16_t*)input_;
-   uint8_t *output       = (uint8_t*)xv->image->data;
+   const uint16_t *input    = (const uint16_t*)input_;
+   uint8_t *output          = (uint8_t*)xv->image->data;
+   const uint32_t *tbl      = xv->yuv_table;
+   const unsigned img_width = xv->width << 1;
 
    for (y = 0; y < height; y++)
    {
       for (x = 0; x < width; x++)
       {
-         uint16_t p         = *input++;
-         uint8_t y0         = xv->ytable[p];
-         uint8_t u          = xv->utable[p];
-         uint8_t v          = xv->vtable[p];
-
-         unsigned img_width = xv->width << 1;
-
-         output[0] = output[img_width]     = y0;
-         output[1] = output[img_width + 1] = u;
-         output[2] = output[img_width + 2] = y0;
-         output[3] = output[img_width + 3] = v;
+         uint32_t t = tbl[*input++];
+         memcpy(output, &t, sizeof(t));
+         memcpy(output + img_width, &t, sizeof(t));
          output += 4;
       }
 
@@ -208,95 +227,26 @@ static void render16_yuy2(xv_t *xv, const void *input_,
    }
 }
 
-static void render16_uyvy(xv_t *xv, const void *input_,
+static void render32_packed(xv_t *xv, const void *input_,
       unsigned width, unsigned height, unsigned pitch)
 {
    unsigned x, y;
-   const uint16_t *input = (const uint16_t*)input_;
-   uint8_t       *output = (uint8_t*)xv->image->data;
+   const uint32_t *input    = (const uint32_t*)input_;
+   uint8_t *output          = (uint8_t*)xv->image->data;
+   const uint32_t *tbl      = xv->yuv_table;
+   const unsigned img_width = xv->width << 1;
 
    for (y = 0; y < height; y++)
    {
       for (x = 0; x < width; x++)
       {
-         uint16_t p         = *input++;
-         uint8_t y0         = xv->ytable[p];
-         uint8_t u          = xv->utable[p];
-         uint8_t v          = xv->vtable[p];
-         unsigned img_width = xv->width << 1;
-
-         output[0] = output[img_width]     = u;
-         output[1] = output[img_width + 1] = y0;
-         output[2] = output[img_width + 2] = v;
-         output[3] = output[img_width + 3] = y0;
-         output += 4;
-      }
-
-      input  += (pitch >> 1) - width;
-      output += (xv->width - width) << 2;
-   }
-}
-
-static void render32_yuy2(xv_t *xv, const void *input_,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   unsigned x, y;
-   const uint32_t *input = (const uint32_t*)input_;
-   uint8_t *output       = (uint8_t*)xv->image->data;
-
-   for (y = 0; y < height; y++)
-   {
-      for (x = 0; x < width; x++)
-      {
-         uint8_t y0, u, v;
-         unsigned img_width;
          uint32_t p = *input++;
+         uint32_t t;
          p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0)
             | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
-
-         y0        = xv->ytable[p];
-         u         = xv->utable[p];
-         v         = xv->vtable[p];
-
-         img_width = xv->width << 1;
-         output[0] = output[img_width] = y0;
-         output[1] = output[img_width + 1] = u;
-         output[2] = output[img_width + 2] = y0;
-         output[3] = output[img_width + 3] = v;
-         output += 4;
-      }
-
-      input  += (pitch >> 2) - width;
-      output += (xv->width - width) << 2;
-   }
-}
-
-static void render32_uyvy(xv_t *xv, const void *input_,
-      unsigned width, unsigned height, unsigned pitch)
-{
-   unsigned x, y;
-   const uint32_t *input = (const uint32_t*)input_;
-   uint16_t *output      = (uint16_t*)xv->image->data;
-
-   for (y = 0; y < height; y++)
-   {
-      for (x = 0; x < width; x++)
-      {
-         uint8_t y0, u, v;
-         unsigned img_width;
-         uint32_t p = *input++;
-         p = ((p >> 8) & 0xf800)
-            | ((p >> 5) & 0x07e0) | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
-
-         y0        = xv->ytable[p];
-         u         = xv->utable[p];
-         v         = xv->vtable[p];
-
-         img_width = xv->width << 1;
-         output[0] = output[img_width] = u;
-         output[1] = output[img_width + 1] = y0;
-         output[2] = output[img_width + 2] = v;
-         output[3] = output[img_width + 3] = y0;
+         t = tbl[p];
+         memcpy(output, &t, sizeof(t));
+         memcpy(output + img_width, &t, sizeof(t));
          output += 4;
       }
 
@@ -310,6 +260,8 @@ static void render32_yuv12(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint32_t *input = (const uint32_t*)input_;
+   const uint32_t *tbl   = xv->yuv_table;
+   const uint8_t *e;
    unsigned w0 = xv->width >> 1;
    unsigned w1 = w0 << 1;
    unsigned h0 = xv->height >> 1;
@@ -327,9 +279,10 @@ static void render32_yuv12(xv_t *xv, const void *input_,
          p = ((p >> 8) & 0xf800) | ((p >> 5) & 0x07e0)
             | ((p >> 3) & 0x1f); /* ARGB -> RGB16 */
 
-         y0        = xv->ytable[p];
-         u         = xv->utable[p];
-         v         = xv->vtable[p];
+         e         = (const uint8_t*)&tbl[p];
+         y0        = e[0];
+         u         = e[1];
+         v         = e[2];
 
          output[0] = output[w1] = y0;
 	 output[1] = output[w1+1] = y0;
@@ -350,6 +303,7 @@ static void render16_yuv12(xv_t *xv, const void *input_,
 {
    unsigned x, y;
    const uint16_t *input = (const uint16_t*)input_;
+   const uint32_t *tbl   = xv->yuv_table;
    unsigned w0 = xv->width >> 1;
    unsigned w1 = w0 << 1;
    unsigned h0 = xv->height >> 1;
@@ -362,9 +316,10 @@ static void render16_yuv12(xv_t *xv, const void *input_,
       for (x = 0; x < width; x++)
       {
          uint16_t p         = *input++;
-         uint8_t y0         = xv->ytable[p];
-         uint8_t u          = xv->utable[p];
-         uint8_t v          = xv->vtable[p];
+         const uint8_t *e   = (const uint8_t*)&tbl[p];
+         uint8_t y0         = e[0];
+         uint8_t u          = e[1];
+         uint8_t v          = e[2];
 
          output[0] = output[w1] = y0;
 	 output[1] = output[w1+1] = y0;
@@ -510,8 +465,8 @@ struct format_desc
 
 static const struct format_desc formats[] = {
    {
-      render16_yuy2,
-      render32_yuy2,
+      render16_packed,
+      render32_packed,
       render_glyph_yuv_packed,
       { 'Y', 'U', 'Y', 'V' },
       { 0, 2 },
@@ -521,8 +476,8 @@ static const struct format_desc formats[] = {
       XvPacked
    },
    {
-      render16_uyvy,
-      render32_uyvy,
+      render16_packed,
+      render32_packed,
       render_glyph_yuv_packed,
       { 'U', 'Y', 'V', 'Y' },
       { 1, 3 },
@@ -570,6 +525,7 @@ static bool xv_adaptor_set_format(xv_t *xv, Display *dpy,
                   format[i].component_order[3] == formats[j].components[3])
             {
                xv->fourcc         = format[i].id;
+               xv->fmt_format     = formats[j].format;
                xv->render_func16  = formats[j].render_16;
                xv->render_func32  = formats[j].render_32;
                xv->render_glyph   = formats[j].render_glyph;
@@ -1051,9 +1007,7 @@ static void xv_free(void *data)
 
    XCloseDisplay(g_x11_dpy);
 
-   free(xv->ytable);
-   free(xv->utable);
-   free(xv->vtable);
+   free(xv->yuv_table);
 
    if (xv->font)
       xv->font_driver->free(xv->font);

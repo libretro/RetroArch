@@ -24,16 +24,24 @@
 #define __LIBRETRO_SDK_ATOMIC_H
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
 
 /* Minimal portable atomic operations for SPSC patterns.
  *
  * This header consolidates the ad-hoc atomic shims previously duplicated
  * in audio/drivers/{coreaudio,coreaudio3,xaudio,opensl}.c, audio/common/
  * mmdevice_common.c and gfx/gfx_thumbnail.c.  The surface is intentionally
- * narrow: load, store, fetch_add, fetch_sub, plus inc/dec convenience
- * wrappers.  Everything is on plain machine words (int and size_t); no
- * compare-exchange, no double-word ops, no thread-fences.  Add only when
- * a real caller needs it.
+ * narrow: load, store, fetch_add, fetch_sub, fetch_or, fetch_and, plus
+ * inc/dec convenience wrappers.  Everything is on plain machine words
+ * (int and size_t); no compare-exchange, no double-word ops, no
+ * thread-fences.  Add only when a real caller needs it.
+ *
+ * fetch_or / fetch_and are int-width only, deliberately.  They exist for
+ * flag words, which are 32-bit everywhere in the tree, and the Apple
+ * OSAtomic backend has no 64-bit bitwise primitive -- a _size variant
+ * could not be implemented there without a compare-exchange loop, which
+ * this header does not provide.  Rather than ship a size variant that is
+ * unavailable on one backend, the operation is simply not offered.
  *
  * Memory ordering is fixed per-operation rather than parameterised, to
  * keep the call sites readable and to avoid having to invent ordering
@@ -43,6 +51,8 @@
  *   retro_atomic_store_release  - release store  (pairs with acquire load)
  *   retro_atomic_fetch_add      - acq_rel RMW
  *   retro_atomic_fetch_sub      - acq_rel RMW
+ *   retro_atomic_fetch_or       - acq_rel RMW, int only, returns old value
+ *   retro_atomic_fetch_and      - acq_rel RMW, int only, returns old value
  *   retro_atomic_inc / dec      - acq_rel RMW, return void
  *
  * Backend selection (in order):
@@ -254,6 +264,17 @@
 #define RETRO_ATOMIC_BACKEND_SYNC 1
 #elif defined(RETRO_ATOMIC_FORCE_VOLATILE)
 #define RETRO_ATOMIC_BACKEND_VOLATILE 1
+/* Some targets ship a modern C11/GCC toolchain on hardware with no
+ * usable atomic instruction -- the PS2 R5900 is the case in point.  The
+ * builtins compile there, but the compiler lowers them to __atomic_*
+ * libcalls, and those SDKs do not ship libatomic, so the link fails with
+ * undefined references to e.g. __atomic_fetch_or_4.  GCC and Clang both
+ * publish __GCC_ATOMIC_INT_LOCK_FREE: 2 means always lock-free, anything
+ * less means the compiler may emit a call.  Only take a builtin backend
+ * when it is 2.  Such targets are single-core in practice, which is
+ * exactly the condition under which the volatile fallback is sound. */
+#elif defined(__GCC_ATOMIC_INT_LOCK_FREE) && __GCC_ATOMIC_INT_LOCK_FREE != 2
+#define RETRO_ATOMIC_BACKEND_VOLATILE 1
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L && \
     !defined(__STDC_NO_ATOMICS__)
 #define RETRO_ATOMIC_BACKEND_C11 1
@@ -340,6 +361,7 @@ typedef atomic_int    retro_atomic_int_t;
 typedef atomic_size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    atomic_init((p), (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   atomic_init((p), (v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -350,6 +372,10 @@ typedef atomic_size_t retro_atomic_size_t;
    atomic_fetch_add_explicit((p), (v), memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
    atomic_fetch_sub_explicit((p), (v), memory_order_acq_rel)
+#define retro_atomic_fetch_or_int(p, v) \
+   atomic_fetch_or_explicit((p), (v), memory_order_acq_rel)
+#define retro_atomic_fetch_and_int(p, v) \
+   atomic_fetch_and_explicit((p), (v), memory_order_acq_rel)
 
 #define retro_atomic_load_acquire_size(p) \
    atomic_load_explicit((p), memory_order_acquire)
@@ -386,6 +412,13 @@ typedef std::atomic<int>         retro_atomic_int_t;
 typedef std::atomic<std::size_t> retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    std::atomic_init((p), (v))
+
+/* Static/aggregate initializer for a retro_atomic_int_t member.
+ * std::atomic<int> is a class type, so it must be brace-initialized
+ * inside an aggregate initializer list; the C backends below are all
+ * plain scalars and must NOT be braced, or GCC/Clang emit
+ * -Wbraces-around-scalar-init. */
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  { (v) }
 #define retro_atomic_size_init(p, v)   std::atomic_init((p), (std::size_t)(v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -396,6 +429,10 @@ typedef std::atomic<std::size_t> retro_atomic_size_t;
    std::atomic_fetch_add_explicit((p), (v), std::memory_order_acq_rel)
 #define retro_atomic_fetch_sub_int(p, v) \
    std::atomic_fetch_sub_explicit((p), (v), std::memory_order_acq_rel)
+#define retro_atomic_fetch_or_int(p, v) \
+   std::atomic_fetch_or_explicit((p), (v), std::memory_order_acq_rel)
+#define retro_atomic_fetch_and_int(p, v) \
+   std::atomic_fetch_and_explicit((p), (v), std::memory_order_acq_rel)
 
 #define retro_atomic_load_acquire_size(p) \
    std::atomic_load_explicit((p), std::memory_order_acquire)
@@ -415,6 +452,7 @@ typedef int    retro_atomic_int_t;
 typedef size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -425,6 +463,10 @@ typedef size_t retro_atomic_size_t;
    __atomic_fetch_add((p), (v), __ATOMIC_ACQ_REL)
 #define retro_atomic_fetch_sub_int(p, v) \
    __atomic_fetch_sub((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_or_int(p, v) \
+   __atomic_fetch_or((p), (v), __ATOMIC_ACQ_REL)
+#define retro_atomic_fetch_and_int(p, v) \
+   __atomic_fetch_and((p), (v), __ATOMIC_ACQ_REL)
 
 #define retro_atomic_load_acquire_size(p) \
    __atomic_load_n((p), __ATOMIC_ACQUIRE)
@@ -489,6 +531,7 @@ typedef volatile LONG_PTR retro_atomic_size_t;
  * on every Windows ABI. */
 
 #define retro_atomic_int_init(p, v)    (*(p) = (LONG)(v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (LONG_PTR)(v))
 
 #define retro_atomic_load_acquire_int(p) \
@@ -506,6 +549,57 @@ typedef volatile LONG_PTR retro_atomic_size_t;
 #define retro_atomic_fetch_sub_int(p, v) (                                \
    RETRO_ATOMIC_MSVC_ARM_FENCE(),                                         \
    InterlockedExchangeAdd((LONG volatile*)(p), -(LONG)(v)) )
+/* fetch_or / fetch_and are built from InterlockedCompareExchange rather
+ * than from InterlockedOr / InterlockedAnd.
+ *
+ * InterlockedOr / InterlockedAnd / InterlockedXor are declared by winnt.h
+ * from the Windows XP SDK onwards, but kernel32 exports no x86
+ * implementation of them: the declaration is backed solely by the
+ * _InterlockedOr / _InterlockedAnd compiler intrinsics, and the
+ * '#pragma intrinsic' that binds the two is not applied on VS2005 RTM
+ * (link.exe 8.00.50727.42) or earlier, nor on the OG Xbox / Xbox 360
+ * XDKs.  On those toolchains the call is emitted as a plain external
+ * reference and the link fails:
+ *
+ *   error LNK2019: unresolved external symbol _InterlockedOr
+ *   error LNK2019: unresolved external symbol _InterlockedAnd
+ *
+ * InterlockedCompareExchange has no such gap -- it is exported by
+ * kernel32 on every Win32 target and is an intrinsic on every newer
+ * MSVC -- so the compare-exchange loop below is the portable spelling.
+ * It returns the value observed immediately before the successful
+ * swap, which is exactly the fetch_* contract.  Both call sites are
+ * uncontended flag words, so the loop cost is not a concern. */
+static INLINE LONG retro_atomic_fetch_or_int_cas(LONG volatile *p, LONG v)
+{
+   LONG old;
+   LONG prev;
+   RETRO_ATOMIC_MSVC_ARM_FENCE();
+   do
+   {
+      old  = *p;
+      prev = InterlockedCompareExchange(p, old | v, old);
+   } while (prev != old);
+   return prev;
+}
+
+static INLINE LONG retro_atomic_fetch_and_int_cas(LONG volatile *p, LONG v)
+{
+   LONG old;
+   LONG prev;
+   RETRO_ATOMIC_MSVC_ARM_FENCE();
+   do
+   {
+      old  = *p;
+      prev = InterlockedCompareExchange(p, old & v, old);
+   } while (prev != old);
+   return prev;
+}
+
+#define retro_atomic_fetch_or_int(p, v) \
+   retro_atomic_fetch_or_int_cas((LONG volatile*)(p), (LONG)(v))
+#define retro_atomic_fetch_and_int(p, v) \
+   retro_atomic_fetch_and_int_cas((LONG volatile*)(p), (LONG)(v))
 /* Note: on ARM we'd ideally want a __dmb both before AND after the
  * RMW for full sequential consistency (PostgreSQL's recent fix does
  * exactly that).  acq_rel needs only one barrier on most use cases;
@@ -556,6 +650,7 @@ typedef volatile intptr_t retro_atomic_size_t;
  * size_t == intptr_t in width.  Holds on every Apple ABI. */
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (intptr_t)(v))
 
 #define retro_atomic_load_acquire_int(p)  OSAtomicAdd32Barrier(0, (p))
@@ -565,6 +660,13 @@ typedef volatile intptr_t retro_atomic_size_t;
    (OSAtomicAdd32Barrier((v), (p)) - (v))
 #define retro_atomic_fetch_sub_int(p, v) \
    (OSAtomicAdd32Barrier(-(v), (p)) + (v))
+/* The *OrigBarrier forms return the value from BEFORE the operation,
+ * which is the fetch_* contract.  The plain OSAtomicOr32Barrier /
+ * OSAtomicAnd32Barrier return the NEW value -- do not use them here. */
+#define retro_atomic_fetch_or_int(p, v) \
+   ((int)OSAtomicOr32OrigBarrier((uint32_t)(v), (volatile uint32_t*)(p)))
+#define retro_atomic_fetch_and_int(p, v) \
+   ((int)OSAtomicAnd32OrigBarrier((uint32_t)(v), (volatile uint32_t*)(p)))
 
 #if defined(__LP64__)
 #define retro_atomic_load_acquire_size(p) \
@@ -595,6 +697,7 @@ typedef volatile int    retro_atomic_int_t;
 typedef volatile size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 /* __sync builtins are full sequential-consistency; over-strong but correct.
@@ -608,6 +711,10 @@ typedef volatile size_t retro_atomic_size_t;
    __sync_fetch_and_add((p), (v))
 #define retro_atomic_fetch_sub_int(p, v) \
    __sync_fetch_and_sub((p), (v))
+#define retro_atomic_fetch_or_int(p, v) \
+   __sync_fetch_and_or((p), (v))
+#define retro_atomic_fetch_and_int(p, v) \
+   __sync_fetch_and_and((p), (v))
 
 #define retro_atomic_load_acquire_size(p) \
    __sync_fetch_and_add((p), (size_t)0)
@@ -627,6 +734,7 @@ typedef volatile int    retro_atomic_int_t;
 typedef volatile size_t retro_atomic_size_t;
 
 #define retro_atomic_int_init(p, v)    (*(p) = (v))
+#define RETRO_ATOMIC_INT_INITIALIZER(v)  (v)
 #define retro_atomic_size_init(p, v)   (*(p) = (v))
 
 /* No barriers.  Correct only on single-core or x86 TSO. */
@@ -634,6 +742,25 @@ typedef volatile size_t retro_atomic_size_t;
 #define retro_atomic_store_release_int(p, v)     do { *(p) = (v); } while (0)
 #define retro_atomic_fetch_add_int(p, v)         ((*(p) += (v)) - (v))
 #define retro_atomic_fetch_sub_int(p, v)         ((*(p) -= (v)) + (v))
+/* OR and AND are not invertible, so the old value cannot be recovered
+ * arithmetically the way it is for add/sub above.  Use a helper rather
+ * than a statement expression, which MSVC does not support. */
+#define retro_atomic_fetch_or_int(p, v)  retro_atomic_fetch_or_int_fb((p), (v))
+#define retro_atomic_fetch_and_int(p, v) retro_atomic_fetch_and_int_fb((p), (v))
+
+static INLINE int retro_atomic_fetch_or_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old | v;
+   return old;
+}
+
+static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = old & v;
+   return old;
+}
 
 #define retro_atomic_load_acquire_size(p)        (*(p))
 #define retro_atomic_store_release_size(p, v)    do { *(p) = (v); } while (0)

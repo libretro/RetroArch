@@ -30,8 +30,6 @@
 #include <retro_timers.h>
 #include <rthreads/rthreads.h>
 
-/* We can assume that pthreads are available on Linux. */
-#include <pthread.h>
 #include <retro_dirent.h>
 #include <streams/file_stream.h>
 #include <string.h>
@@ -172,13 +170,13 @@ static void linux_poll_illuminance_sensor(void *data)
 
         /* Don't allow cancellation inside the critical section,
          * as it opens up a file; we don't want to leak it! */
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+        sthread_set_cancel_enable(false);
         lux = linux_read_illuminance_sensor(sensor);
         millilux = (int)(lux * 1000.0);
         retro_assert(poll_rate != 0);
 
         sensor->millilux = millilux;
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+        sthread_set_cancel_enable(true);
 
         /* Allow cancellation here so that the main thread doesn't block
          * while waiting for this thread to wake up and exit. */
@@ -263,10 +261,9 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
 
    if (sensor->thread)
    {
-      pthread_t thread = (pthread_t)sthread_get_thread_id(sensor->thread);
       sensor->done = true;
 
-      if (pthread_cancel(thread) != 0)
+      if (!sthread_cancel(sensor->thread))
       {
          int err = errno;
          char errmesg[NAME_MAX_LENGTH];

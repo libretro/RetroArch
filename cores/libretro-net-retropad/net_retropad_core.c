@@ -235,7 +235,10 @@ typedef struct
    bool detected;
 } input_test_step_t;
 
-static input_test_step_t input_test_steps[MAX_TEST_STEPS];
+/* Allocated when the test driver or core actually starts; a static
+ * array here is load-resident forever on platforms without demand
+ * paging, for a feature almost no session activates. */
+static input_test_step_t *input_test_steps;
 
 static unsigned current_frame         = 0;
 static unsigned next_teststep_frame   = 0;
@@ -569,6 +572,10 @@ static void flip_screen(void)
 
 void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 {
+   if (!input_test_steps)
+      input_test_steps = (input_test_step_t*)
+            calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
+
    unsigned i;
 
    dump_state_blocked = false;
@@ -590,6 +597,10 @@ void NETRETROPAD_CORE_PREFIX(retro_init)(void)
 
 void NETRETROPAD_CORE_PREFIX(retro_deinit)(void)
 {
+   if (input_test_steps)
+      free(input_test_steps);
+   input_test_steps = NULL;
+
    unsigned i;
 
    if (frame_buf)

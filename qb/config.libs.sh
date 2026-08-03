@@ -101,10 +101,6 @@ if [ "$HAVE_DISPMANX" = 'yes' ] && [ "$HAVE_VIDEOCORE" != 'yes' ]; then
    die : 'Notice: Dispmanx support disabled, VideoCore (bcm_host) was not found.'
 fi
 
-if [ "$HAVE_7ZIP" = "yes" ]; then
-   add_dirs INCLUDE ./deps/7zip
-fi
-
 if [ "$HAVE_PRESERVE_DYLIB" = "yes" ]; then
    die : 'Notice: Disabling dlclose() of shared objects for Valgrind support.'
 fi
@@ -149,7 +145,10 @@ if [ "$HAVE_EGL" = 'yes' ]; then
    EGL_LIBS="$EGL_LIBS $EXTRA_GL_LIBS"
 fi
 
-check_header '' XDELTA lzma.h
+# .xdelta softpatching is a self-contained VCDIFF decoder in
+# libretro-common now; it has no external dependency, so there is
+# nothing to probe for.
+[ "$HAVE_XDELTA" = 'auto' ] && HAVE_XDELTA='yes'
 check_lib '' SSA '-lfribidi -lass' ass_library_init
 check_lib '' SSE '-msse -msse2'
 check_pkgconf EXYNOS libdrm_exynos
@@ -215,6 +214,9 @@ if [ "$HAVE_NETWORKING" != 'no' ]; then
 else
    add_opt NETWORK_CMD no
 fi
+
+check_enabled RWEBM WEBMPLAYER 'the WebM player' 'RWEBM is' false
+check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
 
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
@@ -387,11 +389,6 @@ if [ "$OS" = 'Darwin' ]; then
    HAVE_X11=no # X11 breaks on recent OSXes even if present.
    HAVE_SDL=no
    HAVE_SW2=no
-   # Prefer the system zlib on macOS. The vendored copy in deps/libz
-   # (zlib 1.3) no longer compiles against recent macOS SDKs because
-   # its zutil.h defines fdopen() as a macro that collides with the
-   # fdopen declaration in <stdio.h>. The system libz works fine.
-   [ "$HAVE_BUILTINZLIB" = 'auto' ] && HAVE_BUILTINZLIB=no
 else
    check_lib '' AL -lopenal alcOpenDevice
 fi
@@ -468,8 +465,6 @@ if [ "$HAVE_QT" != 'no' ]; then
 
    check_pkgconf OPENSSL openssl 1.0.0
 fi
-
-check_enabled FLAC BUILTINFLAC 'builtin flac' 'flac is' true
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
@@ -609,8 +604,6 @@ fi
 check_enabled 'OPENGL OPENGLES OPENGLES3' GLSL GLSL \
    'OpenGL and OpenGLES are' false
 
-check_enabled ZLIB BUILTINZLIB 'builtin zlib' 'zlib is' true
-
 check_val '' ZLIB '-lz' '' zlib '' '' false
 check_val '' MPV -lmpv '' mpv '' '' false
 
@@ -720,7 +713,8 @@ if [ "$OS" != 'Win32' ] && [ "$OS" != 'Linux' ]; then
    check_lib '' STRL "$CLIB" strlcpy
 fi
 
-check_lib '' STRCASESTR "$CLIB" strcasestr
+# strcasestr: not probed - compat_strcasestr is used by name on every
+# platform, so whether the C library has one is irrelevant.
 check_lib '' MMAP "$CLIB" mmap
 check_lib '' MEMFD_CREATE "$CLIB" memfd_create
 
@@ -899,7 +893,6 @@ if [ "$HAVE_DEBUG" = 'yes' ]; then
    fi
 fi
 
-check_enabled 'ZLIB BUILTINZLIB' RPNG RPNG 'zlib is' false
 check_enabled V4L2 VIDEOPROCESSOR 'video processor' 'Video4linux2 is' true
 
 if [ "$HAVE_CXX11" = 'yes' ]; then

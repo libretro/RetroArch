@@ -20,6 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/* rpng -- PNG decoder.
+ *
+ * What it implements: all PNG colour types at their legal bit depths
+ * (greyscale 1-16, palette 1-8, RGB / greyscale+alpha / RGBA at 8 and
+ * 16 bits), tRNS transparency, Adam7 interlacing, incremental decoding
+ * over partially resident buffers (rpng_set_avail), and 32-bit XRGB
+ * output with an optional packed-XRGB2101010 path for 16-bit sources.
+ * APNG animation streaming lives in rpng_apng.c and a PNG encoder in
+ * rpng_encode.c.
+ *
+ * What it does not implement: colour management (gAMA/cHRM/iCCP and
+ * other ancillary chunks are skipped), 16-bit-per-channel output
+ * beyond the XRGB2101010 path, and MNG/JNG.
+ */
+
 #ifdef DEBUG
 #include <stdio.h>
 #endif
@@ -43,11 +58,39 @@
 #endif
 
 #include <boolean.h>
+#include <retro_endianness.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
 #include <streams/trans_stream.h>
 
 #include "rpng_internal.h"
+
+/* Branchless Paeth predictor.
+ *
+ * filters.h's paeth() is shared with the scaler and resampler and is
+ * left alone; this is the same function written without the two
+ * unpredictable branches.  Image data makes the a/b/c choice close to
+ * random, so those branches mispredict constantly - dropping them is
+ * worth 1.4x-1.8x on the scalar path depending on stride, which is what
+ * platforms without SSE2 or NEON run.
+ *
+ * Identity used, as in the vector kernels:
+ *   pa = |b - c|, pb = |a - c|, pc = |(b - c) + (a - c)|
+ * Selection order is a, then b, then c, matching the spec. */
+static INLINE int rpng_paeth(int a, int b, int c)
+{
+   int pa   = b - c;
+   int pb   = a - c;
+   int pc   = pa + pb;
+   int apa  = pa < 0 ? -pa : pa;
+   int apb  = pb < 0 ? -pb : pb;
+   int apc  = pc < 0 ? -pc : pc;
+   /* All-ones masks: "do not pick a" and "pick c over b". */
+   int nota = -(int)((apa > apb) | (apa > apc));
+   int pick = -(int)(apb > apc);
+   int bc   = (b & ~pick) | (c & pick);
+   return (a & ~nota) | (bc & nota);
+}
 
 enum png_ihdr_color_type
 {
@@ -75,6 +118,9 @@ enum png_chunk_type
    PNG_CHUNK_IDAT,
    PNG_CHUNK_PLTE,
    PNG_CHUNK_tRNS,
+   PNG_CHUNK_cICP,
+   PNG_CHUNK_cLLI,
+   PNG_CHUNK_mDCV,
    PNG_CHUNK_IEND
 };
 
@@ -86,19 +132,44 @@ struct adam7_pass
    unsigned stride_y;
 };
 
-struct idat_buffer
+/* One IDAT payload's position in the caller's buffer.  The compressed
+ * stream is no longer copied out of that buffer: the pointer handed to
+ * rpng_set_buf_ptr is stable for the life of the decode (task_image
+ * documents this - every nbio backend sizes or maps it up front, and
+ * only the resident frontier moves), and the APNG path synthesises
+ * each frame's PNG into a buffer that is only ever reallocated between
+ * frames.  Offsets are kept relative to buff_start rather than as raw
+ * pointers because buff_data advances as chunks are consumed. */
+struct idat_span
 {
-   uint8_t *data;
-   size_t size;
-   size_t capacity;
+   size_t   off;             /* payload start, relative to buff_start   */
+   uint32_t len;
+};
+
+struct idat_spans
+{
+   struct idat_span *v;
+   size_t n;
+   size_t cap;               /* elements allocated                      */
+   size_t total;             /* summed payload bytes across all spans   */
 };
 
 enum rpng_process_flags
 {
    RPNG_PROCESS_FLAG_INFLATE_INITIALIZED    = (1 << 0),
    RPNG_PROCESS_FLAG_ADAM7_PASS_INITIALIZED = (1 << 1),
-   RPNG_PROCESS_FLAG_PASS_INITIALIZED       = (1 << 2)
+   RPNG_PROCESS_FLAG_PASS_INITIALIZED       = (1 << 2),
+   RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED     = (1 << 3),
+   RPNG_PROCESS_FLAG_FILTER_STARVED         = (1 << 4)
 };
+
+/* Internal signal from the reverse-filter layer: not enough of the
+ * stream has been inflated yet for the next unit of work (a scanline,
+ * or a whole Adam7 pass) - come back after another inflate slice.
+ * Deliberately -3: it travels the same int returns as
+ * enum image_process_code, where -2 is already IMAGE_PROCESS_ERROR
+ * and -1 IMAGE_PROCESS_ERROR_END. */
+#define RPNG_FILTER_WAIT (-3)
 
 struct rpng_process
 {
@@ -106,15 +177,56 @@ struct rpng_process
    uint32_t *palette;
    void *stream;
    const struct trans_stream_backend *stream_backend;
-   uint8_t *prev_scanline;
-   uint8_t *decoded_scanline;
-   uint8_t *inflate_buf;
+   /* Unfiltering runs in place inside the inflate ring wherever a
+    * kernel's stores cannot clobber raw bytes a later step still
+    * needs: None, Up, the prefix and stride-exact Sub widths, and
+    * Average/Paeth at stride == window (bpp 4 and 8).  For those, a
+    * line's decoded bytes overwrite its raw bytes and the previous
+    * line's ring slot doubles as the prev pointer; held is that
+    * slot's byte size, excluded from restore_buf_size until the next
+    * line no longer needs it, so the ring cannot recycle it.  The
+    * remaining filter/bpp combinations keep their wide window stores
+    * and decode out of place into three rotating scratch lines -
+    * three, because the wavefront pair needs two fresh lines while a
+    * third may still be the pair's prev.  scratch[0] starts zeroed
+    * and serves as row 0's prev; scratch_cur indexes the most
+    * recently written line, so (cur + 1) % 3 and (cur + 2) % 3 are
+    * always free. */
+   uint8_t       *scratch[3];
+   unsigned       scratch_cur;
+   const uint8_t *prev_line;
+   size_t         held;
+   uint8_t *inflate_buf;      /* walking read cursor for the filters     */
+   uint8_t *inflate_base;     /* fixed allocation base: inflate writes at
+                               * inflate_base + inflated_total, immune to
+                               * the cursor walk and to Adam7's per-pass
+                               * total_out consumption accounting        */
    size_t restore_buf_size;
    size_t adam7_restore_buf_size;
-   size_t data_restore_buf_size;
-   size_t inflate_buf_size;
+   /* Where the next unfiltered scanline's pixels land.  This is the
+    * walking cursor that used to live in the CALLER'S pointer
+    * (*data += width per line, subtracted back at the end): any
+    * externally abandoned decode - a cancelled thumbnail task being
+    * the everyday case - left the caller holding an interior
+    * pointer, and freeing it corrupts the heap.  Manifested on
+    * Windows as STATUS_HEAP_CORRUPTION (c0000374) at a later free in
+    * task_image_load_free.  The caller's pointer now never moves. */
+   uint32_t *out_cursor;
+   size_t inflate_buf_size;   /* expected total inflated bytes (geometry) */
+   size_t ring_size;          /* allocation size of inflate_base.  Equal to
+                               * inflate_buf_size for interlaced images and
+                               * images at or below the ring floor; smaller
+                               * for regular images, where the window
+                               * recycles: writes land at
+                               * inflated_total % ring_size and the read
+                               * cursor wraps at the ring end.  Sized as a
+                               * whole number of scanlines so a line never
+                               * straddles the wrap.                       */
    size_t avail_in;
    size_t avail_out;
+   size_t span_idx;          /* current IDAT span being fed             */
+   uint32_t span_pos;        /* bytes of it already consumed            */
+   size_t inflated_total;    /* monotone bytes produced by the stream   */
    size_t total_out;
    size_t pass_size;
    struct png_ihdr ihdr; /* uint32_t alignment */
@@ -126,6 +238,7 @@ struct rpng_process
    unsigned pass_pos;
    uint8_t flags;
    bool supports_rgba;
+   bool want_10bit;
 };
 
 enum rpng_flags
@@ -134,19 +247,38 @@ enum rpng_flags
    RPNG_FLAG_HAS_IDAT = (1 << 1),
    RPNG_FLAG_HAS_IEND = (1 << 2),
    RPNG_FLAG_HAS_PLTE = (1 << 3),
-   RPNG_FLAG_HAS_TRNS = (1 << 4)
+   RPNG_FLAG_HAS_TRNS = (1 << 4),
+   RPNG_FLAG_HAS_HDR  = (1 << 5),
+   RPNG_FLAG_AVAIL_SET = (1 << 6)  /* rpng_set_avail called: frontier
+                                      is caller-driven, not whole-buffer */
 };
 
 struct rpng
 {
    struct rpng_process *process;
    uint8_t *buff_data;
+   uint8_t *buff_start;  /* fixed buffer base (buff_data advances)     */
    uint8_t *buff_end;
-   struct idat_buffer idat_buf; /* ptr alignment */
+   /* Resident frontier for prefix decoding: the chunk walk reads only
+    * bytes at or before avail_end, even when buff_end (the true file
+    * end, known from the file size) lies further ahead.  A chunk that
+    * extends past avail_end while more of the file is still to arrive
+    * sets need_more instead of ending the walk, so a caller feeding a
+    * growing buffer can retry.  Defaults to buff_end (whole buffer
+    * resident) when never set. */
+   uint8_t *avail_end;
+   bool     need_more;   /* last iterate stopped at the resident wall */
+   struct idat_spans idat_buf; /* ptr alignment */
    struct png_ihdr ihdr; /* uint32 alignment */
    uint32_t palette[256];
+   /* Populated from cICP / cLLI / mDCV when present (RPNG_FLAG_HAS_HDR). */
+   struct rpng_hdr_metadata hdr;
    uint8_t flags;
    bool supports_rgba;
+   /* When set and the source is 16-bit, decode to packed XRGB2101010
+    * (10-bit) instead of narrowing to 8-bit ARGB, so HDR PNGs can reach a
+    * 10-bit display path. Ignored for 8-bit sources. */
+   bool want_10bit;
 };
 
 static const struct adam7_pass rpng_passes[] = {
@@ -164,6 +296,11 @@ static INLINE uint32_t rpng_dword_be(const uint8_t *buf)
    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
 }
 
+static INLINE uint16_t rpng_word_be(const uint8_t *buf)
+{
+   return (uint16_t)((buf[0] << 8) | (buf[1] << 0));
+}
+
 /* ---------------------------------------------------------------------------
  * SIMD-accelerated PNG filter reconstruction helpers
  * -------------------------------------------------------------------------*/
@@ -177,9 +314,26 @@ static void rpng_filter_up(uint8_t *out,
       size_t len)
 {
 #if defined(RPNG_SIMD_SSE2)
+   /* Four vectors per iteration: the loop is bound by load/store
+    * throughput, and the wider body halves the per-16-byte loop
+    * overhead against the single-vector form. */
    size_t i  = 0;
-   size_t n  = len & ~15UL;         /* floor to multiple of 16 */
-   for (; i < n; i += 16)
+   for (; i + 64 <= len; i += 64)
+   {
+      __m128i r0 = _mm_loadu_si128((const __m128i*)(raw   + i));
+      __m128i p0 = _mm_loadu_si128((const __m128i*)(prior + i));
+      __m128i r1 = _mm_loadu_si128((const __m128i*)(raw   + i + 16));
+      __m128i p1 = _mm_loadu_si128((const __m128i*)(prior + i + 16));
+      __m128i r2 = _mm_loadu_si128((const __m128i*)(raw   + i + 32));
+      __m128i p2 = _mm_loadu_si128((const __m128i*)(prior + i + 32));
+      __m128i r3 = _mm_loadu_si128((const __m128i*)(raw   + i + 48));
+      __m128i p3 = _mm_loadu_si128((const __m128i*)(prior + i + 48));
+      _mm_storeu_si128((__m128i*)(out + i),      _mm_add_epi8(r0, p0));
+      _mm_storeu_si128((__m128i*)(out + i + 16), _mm_add_epi8(r1, p1));
+      _mm_storeu_si128((__m128i*)(out + i + 32), _mm_add_epi8(r2, p2));
+      _mm_storeu_si128((__m128i*)(out + i + 48), _mm_add_epi8(r3, p3));
+   }
+   for (; i + 16 <= len; i += 16)
    {
       __m128i r  = _mm_loadu_si128((const __m128i*)(raw   + i));
       __m128i p  = _mm_loadu_si128((const __m128i*)(prior + i));
@@ -189,8 +343,22 @@ static void rpng_filter_up(uint8_t *out,
       out[i] = raw[i] + prior[i];
 #elif defined(RPNG_SIMD_NEON)
    size_t i  = 0;
-   size_t n  = len & ~15UL;
-   for (; i < n; i += 16)
+   for (; i + 64 <= len; i += 64)
+   {
+      uint8x16_t r0 = vld1q_u8(raw   + i);
+      uint8x16_t p0 = vld1q_u8(prior + i);
+      uint8x16_t r1 = vld1q_u8(raw   + i + 16);
+      uint8x16_t p1 = vld1q_u8(prior + i + 16);
+      uint8x16_t r2 = vld1q_u8(raw   + i + 32);
+      uint8x16_t p2 = vld1q_u8(prior + i + 32);
+      uint8x16_t r3 = vld1q_u8(raw   + i + 48);
+      uint8x16_t p3 = vld1q_u8(prior + i + 48);
+      vst1q_u8(out + i,      vaddq_u8(r0, p0));
+      vst1q_u8(out + i + 16, vaddq_u8(r1, p1));
+      vst1q_u8(out + i + 32, vaddq_u8(r2, p2));
+      vst1q_u8(out + i + 48, vaddq_u8(r3, p3));
+   }
+   for (; i + 16 <= len; i += 16)
    {
       uint8x16_t r  = vld1q_u8(raw   + i);
       uint8x16_t p  = vld1q_u8(prior + i);
@@ -219,7 +387,7 @@ static void rpng_filter_up(uint8_t *out,
  *
  * All three helpers assume:
  *   - bpp == 4, pitch is a multiple of 4 (guaranteed by PNG spec for RGBA)
- *   - prev is a valid prev_scanline pointer (zero-initialised on row 0
+ *   - prev is a valid previous-line pointer (a zero line on row 0
  *     by rpng_reverse_filter_init -> calloc)
  *   - raw and decoded may alias (the original code memcpy's raw->decoded
  *     first; we do the filter in-place from raw directly)
@@ -255,36 +423,193 @@ static INLINE void rpng_store4_u16_to_u8(uint8_t *p, __m128i v)
    memcpy(p, &tmp, sizeof(tmp));
 }
 
-static void rpng_filter_sub_rgba(uint8_t *decoded,
+/* Load 8 bytes and zero-extend each to 16 bits, filling all 8 lanes.
+ * Used by the Paeth kernel, which steps by the pixel stride (bpp) rather
+ * than by the register width, so it wants the widest window it can get. */
+static INLINE __m128i rpng_load8_u8_to_u16(const uint8_t *p)
+{
+   __m128i v = _mm_loadl_epi64((const __m128i*)p);
+   return _mm_unpacklo_epi8(v, _mm_setzero_si128());
+}
+
+/* Store all 8 lanes back as packed u8.  The caller guarantees 8 bytes of
+ * room; lanes past the stride are overwritten by later iterations or by
+ * the scalar tail. */
+static INLINE void rpng_store8_u16_to_u8(uint8_t *p, __m128i v)
+{
+   _mm_storel_epi64((__m128i*)p, _mm_packus_epi16(v, v));
+}
+
+/* Sub and Average both fit in 8-bit lanes, so unlike Paeth they never
+ * need the widening load.  Sub is a plain mod-256 add.  Average wants
+ * floor((a + b) / 2) and pavgb gives (a + b + 1) >> 1, but
+ *   floor((a + b) / 2) = pavgb(a, b) - ((a ^ b) & 1)
+ * so the rounding correction is two extra ops off the critical path.
+ * Staying in u8 removes the unpack from the loop-carried chain and
+ * doubles the useful lanes; see rpng_filter_paeth_simd for why a fixed
+ * window may be stepped by an arbitrary stride. */
+static INLINE __m128i rpng_load4_u8(const uint8_t *p)
+{
+   int32_t tmp;
+   memcpy(&tmp, p, sizeof(tmp));
+   return _mm_cvtsi32_si128(tmp);
+}
+
+static INLINE void rpng_store4_u8(uint8_t *p, __m128i v)
+{
+   int32_t tmp = _mm_cvtsi128_si32(v);
+   memcpy(p, &tmp, sizeof(tmp));
+}
+
+static void rpng_filter_sub_prefix1(uint8_t *decoded,
       const uint8_t *raw, size_t pitch)
 {
-   size_t i;
-   __m128i prev_pixel = _mm_setzero_si128();
-   const __m128i mask = _mm_set1_epi16(0x00FF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
    {
-      __m128i r   = rpng_load4_u8_to_u16(raw + i);
-      __m128i out = _mm_and_si128(_mm_add_epi16(r, prev_pixel), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel  = out;
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 1));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 2));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      /* broadcast byte 15 (SSE2 has no byte splat) */
+      carry = _mm_unpackhi_epi8(x, x);
+      carry = _mm_shufflehi_epi16(carry, 0xFF);
+      carry = _mm_shuffle_epi32(carry, 0xEE);
+   }
+   {
+      uint8_t c = i ? decoded[i - 1] : 0;
+      for (; i < pitch; i++)
+      {
+         c          = (uint8_t)(raw[i] + c);
+         decoded[i] = c;
+      }
    }
 }
 
-static void rpng_filter_avg_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+static void rpng_filter_sub_prefix2(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
 {
-   size_t i;
-   __m128i prev_pixel = _mm_setzero_si128();
-   const __m128i mask = _mm_set1_epi16(0x00FF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
    {
-      __m128i r   = rpng_load4_u8_to_u16(raw  + i);
-      __m128i pv  = rpng_load4_u8_to_u16(prev + i);
-      __m128i avg = _mm_srli_epi16(_mm_add_epi16(prev_pixel, pv), 1);
-      __m128i out = _mm_and_si128(_mm_add_epi16(r, avg), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel  = out;
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 2));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      carry = _mm_shufflehi_epi16(x, 0xFF);
+      carry = _mm_shuffle_epi32(carry, 0xEE);
    }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 2 ? decoded[i - 2] : 0));
+}
+
+static void rpng_filter_sub_prefix4(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i      = 0;
+   __m128i carry = _mm_setzero_si128();
+   for (; i + 16 <= pitch; i += 16)
+   {
+      __m128i x = _mm_loadu_si128((const __m128i*)(raw + i));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 4));
+      x = _mm_add_epi8(x, _mm_slli_si128(x, 8));
+      x = _mm_add_epi8(x, carry);
+      _mm_storeu_si128((__m128i*)(decoded + i), x);
+      carry = _mm_shuffle_epi32(x, 0xFF);
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 4 ? decoded[i - 4] : 0));
+}
+
+static void rpng_filter_sub_simd(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
+   __m128i prev_pixel = _mm_setzero_si128();
+   switch (bpp)
+   {
+      case 1:
+         rpng_filter_sub_prefix1(decoded, raw, pitch);
+         return;
+      case 2:
+         rpng_filter_sub_prefix2(decoded, raw, pitch);
+         return;
+      case 4:
+         rpng_filter_sub_prefix4(decoded, raw, pitch);
+         return;
+   }
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         __m128i out = _mm_add_epi8(rpng_load4_u8(raw + i), prev_pixel);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel  = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         __m128i out = _mm_add_epi8(
+               _mm_loadl_epi64((const __m128i*)(raw + i)), prev_pixel);
+         _mm_storel_epi64((__m128i*)(decoded + i), out);
+         prev_pixel  = out;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   /* Leading bpp bytes have no left neighbour and stay as-is. */
+   if (i < bpp)
+      i = bpp < pitch ? bpp : pitch;
+   for (; i < pitch; i++)
+      decoded[i] += decoded[i - bpp];
+}
+
+static void rpng_filter_avg_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
+   __m128i prev_pixel = _mm_setzero_si128();
+   const __m128i one  = _mm_set1_epi8(1);
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         __m128i pv  = rpng_load4_u8(prev + i);
+         __m128i avg = _mm_sub_epi8(_mm_avg_epu8(prev_pixel, pv),
+               _mm_and_si128(_mm_xor_si128(prev_pixel, pv), one));
+         __m128i out = _mm_add_epi8(rpng_load4_u8(raw + i), avg);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel  = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         __m128i pv  = _mm_loadl_epi64((const __m128i*)(prev + i));
+         __m128i avg = _mm_sub_epi8(_mm_avg_epu8(prev_pixel, pv),
+               _mm_and_si128(_mm_xor_si128(prev_pixel, pv), one));
+         __m128i out = _mm_add_epi8(
+               _mm_loadl_epi64((const __m128i*)(raw + i)), avg);
+         _mm_storel_epi64((__m128i*)(decoded + i), out);
+         prev_pixel  = out;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i] >> 1;
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)((decoded[i - bpp] + prev[i]) >> 1);
 }
 
 /* Branch-free Paeth predictor for 16-bit lanes, following the identity
@@ -293,44 +618,334 @@ static void rpng_filter_avg_rgba(uint8_t *decoded,
  *   pc = |(b - c) + (a - c)| = |a + b - 2c|
  * PNG selection rule (in priority order): a if pa <= pb && pa <= pc,
  * else b if pb <= pc, else c. */
-static INLINE __m128i rpng_paeth_predictor_epi16(
-      __m128i a, __m128i b, __m128i c)
+/* One Paeth pixel, selecting among speculative sums.  The three
+ * candidate outputs (r + a) & FF, (r + b) & FF and (r + c) & FF are
+ * formed up front: sb and sc do not involve a, so they leave the
+ * loop-carried chain entirely, and the final add and mask move off the
+ * chain as well.  The "don't pick a" test compares pa against
+ * min(pb, pc), one comparison instead of two plus an or.  The chain a
+ * -> ac -> pb -> min -> compare -> select is nine ops; the plain
+ * predictor's is eleven.
+ *
+ * SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
+static INLINE __m128i rpng_paeth_step_epi16(__m128i a, __m128i b,
+      __m128i c, __m128i r, __m128i sb, __m128i sc, __m128i mask)
 {
    __m128i bc = _mm_sub_epi16(b, c);
    __m128i ac = _mm_sub_epi16(a, c);
    __m128i sm = _mm_add_epi16(bc, ac);
    __m128i z  = _mm_setzero_si128();
-   /* SSE2 lacks abs_epi16; max(x, -x) is the standard substitute. */
    __m128i pa = _mm_max_epi16(bc, _mm_sub_epi16(z, bc));
    __m128i pb = _mm_max_epi16(ac, _mm_sub_epi16(z, ac));
    __m128i pc = _mm_max_epi16(sm, _mm_sub_epi16(z, sm));
-   /* cmpgt returns 0xFFFF on "greater than" — mask of "don't pick a/b". */
-   __m128i not_a  = _mm_or_si128(_mm_cmpgt_epi16(pa, pb),
-                                 _mm_cmpgt_epi16(pa, pc));
+   __m128i not_a  = _mm_cmpgt_epi16(pa, _mm_min_epi16(pb, pc));
    __m128i pick_c = _mm_cmpgt_epi16(pb, pc);
-   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, b),
-                                 _mm_and_si128(   pick_c, c));
-   return            _mm_or_si128(_mm_andnot_si128(not_a, a),
+   __m128i sa     = _mm_and_si128(_mm_add_epi16(r, a), mask);
+   __m128i bc_sel = _mm_or_si128(_mm_andnot_si128(pick_c, sb),
+                                 _mm_and_si128(   pick_c, sc));
+   return            _mm_or_si128(_mm_andnot_si128(not_a, sa),
                                   _mm_and_si128(   not_a, bc_sel));
 }
 
-static void rpng_filter_paeth_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+/* Paeth reverse filter for any pixel stride from 1 to 8 bytes, i.e.
+ * every bpp rpng can produce: 1 (gray/palette 8), 2 (gray+alpha 8,
+ * gray 16), 3 (RGB8), 4 (RGBA8), 6 (RGB16), 8 (RGBA16).
+ *
+ * The loop advances by bpp but loads and stores a fixed window (4 bytes
+ * for bpp <= 4, 8 for the 16-bit colour types), so lanes at or past bpp
+ * hold values that are not yet final.  That is harmless: byte j only
+ * ever depends on decoded[j-bpp], prev[j] and prev[j-bpp], so lane
+ * k < bpp of a step reads lane k of the *previous* step's output, which
+ * was final.  Lanes >= bpp feed only lanes >= bpp, and every byte they
+ * write is either rewritten by a later step or fixed up by the scalar
+ * tail below.
+ *
+ * The window is also why the loop guard is i + 4 / i + 8 <= pitch rather
+ * than i + bpp <= pitch - reading or writing past the scanline would be
+ * out of bounds even though the extra lanes are discarded.
+ *
+ * Stride is a runtime value on purpose.  The chain through
+ * rpng_paeth_predictor_epi16 is latency-bound, so the loop has cycles to
+ * spare for a variable increment: measured throughput matches
+ * per-stride specialized copies to within 1% at every bpp, without the
+ * code size of six kernels. */
+static void rpng_filter_paeth_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
 {
-   size_t i;
-   __m128i prev_pixel      = _mm_setzero_si128();  /* decoded[i-4] */
-   __m128i prev_upper_left = _mm_setzero_si128();  /* prev[i-4]    */
+   size_t i                = 0;
+   __m128i prev_pixel      = _mm_setzero_si128();  /* decoded[i-bpp] */
+   __m128i prev_upper_left = _mm_setzero_si128();  /* prev[i-bpp]    */
    const __m128i mask      = _mm_set1_epi16(0x00FF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   if (bpp <= 4)
    {
-      __m128i r    = rpng_load4_u8_to_u16(raw  + i);
-      __m128i pv   = rpng_load4_u8_to_u16(prev + i);
-      __m128i pred = rpng_paeth_predictor_epi16(
-            prev_pixel, pv, prev_upper_left);
-      __m128i out  = _mm_and_si128(_mm_add_epi16(r, pred), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel      = out;
-      prev_upper_left = pv;
+      /* Only lanes below bpp are ever consumed, so a 4-byte window is
+       * enough here and is measurably cheaper than the 8-byte one
+       * (~4% end-to-end on RGBA8 Paeth). */
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         __m128i r    = rpng_load4_u8_to_u16(raw  + i);
+         __m128i pv   = rpng_load4_u8_to_u16(prev + i);
+         __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
+         __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
+               mask);
+         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+               prev_upper_left, r, sb, sc, mask);
+         rpng_store4_u16_to_u8(decoded + i, out);
+         prev_pixel      = out;
+         prev_upper_left = pv;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         __m128i r    = rpng_load8_u8_to_u16(raw  + i);
+         __m128i pv   = rpng_load8_u8_to_u16(prev + i);
+         __m128i sb   = _mm_and_si128(_mm_add_epi16(r, pv), mask);
+         __m128i sc   = _mm_and_si128(_mm_add_epi16(r, prev_upper_left),
+               mask);
+         __m128i out  = rpng_paeth_step_epi16(prev_pixel, pv,
+               prev_upper_left, r, sb, sc, mask);
+         rpng_store8_u16_to_u8(decoded + i, out);
+         prev_pixel      = out;
+         prev_upper_left = pv;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   /* A scanline shorter than the vector window leaves i == 0, so the
+    * leading bpp bytes still have to go through the a == c == 0 case
+    * (Paeth(0, b, 0) == b) before the general tail can index i - bpp. */
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i];
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)rpng_paeth(decoded[i - bpp], prev[i],
+            prev[i - bpp]);
+}
+
+#define RPNG_HAVE_PAIR_KERNELS 1
+
+/* --- Wavefront pair kernels --------------------------------------------
+ *
+ * Average and Paeth are bound by the serial chain through the left
+ * neighbour: one pixel per chain length, however wide the machine.
+ * But two consecutive rows carrying the same filter can be unfiltered
+ * in one interleaved pass along the classic diagonal wavefront: row 1
+ * runs one pixel behind row 0, so its up neighbour is the row 0 output
+ * produced in the *previous* iteration and the two carried chains
+ * never wait on each other inside an iteration.  Two pixels per chain
+ * length, on the two filters where the chain is the whole cost.
+ * (A row-at-a-time decoder cannot do this, whatever its ISA level.)
+ *
+ * Window and stride semantics are exactly those of the single-row
+ * kernels above: a fixed 4- or 8-byte window stepped by bpp, lanes at
+ * or past the stride rewritten by later steps or the scalar tails.
+ * Both rows share the frontier i at loop exit - row 1 trails by one
+ * step inside the loop and settles its last window in the epilogue -
+ * so both tails resume from i, row 0 first since row 1's tail reads
+ * dec0. */
+static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i           = 0;
+   const __m128i mask = _mm_set1_epi16(0x00FF);
+   __m128i a0         = _mm_setzero_si128();
+   __m128i c0         = _mm_setzero_si128();
+   __m128i a1         = _mm_setzero_si128();
+   __m128i c1         = _mm_setzero_si128();
+   __m128i a0p        = _mm_setzero_si128();
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         __m128i b0 = rpng_load4_u8_to_u16(prev);
+         __m128i r0 = rpng_load4_u8_to_u16(raw0);
+         __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+         __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         rpng_store4_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            __m128i r1;
+            b0 = rpng_load4_u8_to_u16(prev + i);
+            r0 = rpng_load4_u8_to_u16(raw0 + i);
+            sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            rpng_store4_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            __m128i r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         __m128i b0 = rpng_load8_u8_to_u16(prev);
+         __m128i r0 = rpng_load8_u8_to_u16(raw0);
+         __m128i sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+         __m128i sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+         a0  = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+         rpng_store8_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            __m128i r1;
+            b0 = rpng_load8_u8_to_u16(prev + i);
+            r0 = rpng_load8_u8_to_u16(raw0 + i);
+            sb = _mm_and_si128(_mm_add_epi16(r0, b0), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r0, c0), mask);
+            a0 = rpng_paeth_step_epi16(a0, b0, c0, r0, sb, sc, mask);
+            rpng_store8_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            sb = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            sc = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, sb, sc, mask);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            __m128i r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            __m128i s1 = _mm_and_si128(_mm_add_epi16(r1, a0p), mask);
+            __m128i s2 = _mm_and_si128(_mm_add_epi16(r1, c1),  mask);
+            a1 = rpng_paeth_step_epi16(a1, a0p, c1, r1, s1, s2, mask);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + prev[j]);
+         else
+            dec0[j] = (uint8_t)(raw0[j] + rpng_paeth(dec0[j - bpp],
+                  prev[j], prev[j - bpp]));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + dec0[j]);
+         else
+            dec1[j] = (uint8_t)(raw1[j] + rpng_paeth(dec1[j - bpp],
+                  dec0[j], dec0[j - bpp]));
+      }
+   }
+}
+
+static void rpng_filter_avg_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i          = 0;
+   const __m128i one = _mm_set1_epi8(1);
+   __m128i a0        = _mm_setzero_si128();
+   __m128i a1        = _mm_setzero_si128();
+   __m128i a0p       = _mm_setzero_si128();
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         __m128i b0 = rpng_load4_u8(prev);
+         __m128i av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+               _mm_and_si128(_mm_xor_si128(a0, b0), one));
+         a0  = _mm_add_epi8(rpng_load4_u8(raw0), av);
+         rpng_store4_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            b0 = rpng_load4_u8(prev + i);
+            av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+                  _mm_and_si128(_mm_xor_si128(a0, b0), one));
+            a0 = _mm_add_epi8(rpng_load4_u8(raw0 + i), av);
+            rpng_store4_u8(dec0 + i, a0);
+            av = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(rpng_load4_u8(raw1 + i - bpp), av);
+            rpng_store4_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         {
+            __m128i av1 = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(rpng_load4_u8(raw1 + i - bpp), av1);
+            rpng_store4_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         __m128i b0 = _mm_loadl_epi64((const __m128i*)prev);
+         __m128i av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+               _mm_and_si128(_mm_xor_si128(a0, b0), one));
+         a0  = _mm_add_epi8(_mm_loadl_epi64((const __m128i*)raw0), av);
+         _mm_storel_epi64((__m128i*)dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            b0 = _mm_loadl_epi64((const __m128i*)(prev + i));
+            av = _mm_sub_epi8(_mm_avg_epu8(a0, b0),
+                  _mm_and_si128(_mm_xor_si128(a0, b0), one));
+            a0 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw0 + i)), av);
+            _mm_storel_epi64((__m128i*)(dec0 + i), a0);
+            av = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw1 + i - bpp)), av);
+            _mm_storel_epi64((__m128i*)(dec1 + i - bpp), a1);
+            a0p = a0;
+         }
+         {
+            __m128i av1 = _mm_sub_epi8(_mm_avg_epu8(a1, a0p),
+                  _mm_and_si128(_mm_xor_si128(a1, a0p), one));
+            a1 = _mm_add_epi8(
+                  _mm_loadl_epi64((const __m128i*)(raw1 + i - bpp)), av1);
+            _mm_storel_epi64((__m128i*)(dec1 + i - bpp), a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + (prev[j] >> 1));
+         else
+            dec0[j] = (uint8_t)(raw0[j]
+                  + ((dec0[j - bpp] + prev[j]) >> 1));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + (dec0[j] >> 1));
+         else
+            dec1[j] = (uint8_t)(raw1[j]
+                  + ((dec1[j - bpp] + dec0[j]) >> 1));
+      }
    }
 }
 
@@ -352,40 +967,176 @@ static INLINE void rpng_store4_u16_to_u8(uint8_t *p, uint16x4_t v)
    memcpy(p, &word, sizeof(word));
 }
 
-static void rpng_filter_sub_rgba(uint8_t *decoded,
+/* u8-lane Sub/Average, mirroring the SSE2 side.  NEON's vhadd_u8 is
+ * already floor((a + b) / 2), so Average needs no rounding correction
+ * here. */
+static INLINE uint8x8_t rpng_load4_u8(const uint8_t *p)
+{
+   uint32_t v;
+   memcpy(&v, p, sizeof(v));
+   return vreinterpret_u8_u32(vdup_n_u32(v));
+}
+
+static INLINE void rpng_store4_u8(uint8_t *p, uint8x8_t v)
+{
+   uint32_t word = vget_lane_u32(vreinterpret_u32_u8(v), 0);
+   memcpy(p, &word, sizeof(word));
+}
+
+static void rpng_filter_sub_prefix1(uint8_t *decoded,
       const uint8_t *raw, size_t pitch)
 {
-   size_t i;
-   uint16x4_t prev_pixel = vdup_n_u16(0);
-   const uint16x4_t mask = vdup_n_u16(0xFF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
    {
-      uint16x4_t r   = rpng_load4_u8_to_u16(raw + i);
-      uint16x4_t out = vand_u16(vadd_u16(r, prev_pixel), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel     = out;
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 15));
+      x = vaddq_u8(x, vextq_u8(zero, x, 14));
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vdupq_lane_u8(vget_high_u8(x), 7);
+   }
+   {
+      uint8_t c = i ? decoded[i - 1] : 0;
+      for (; i < pitch; i++)
+      {
+         c          = (uint8_t)(raw[i] + c);
+         decoded[i] = c;
+      }
    }
 }
 
-static void rpng_filter_avg_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+static void rpng_filter_sub_prefix2(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
 {
-   size_t i;
-   uint16x4_t prev_pixel = vdup_n_u16(0);
-   const uint16x4_t mask = vdup_n_u16(0xFF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
    {
-      uint16x4_t r   = rpng_load4_u8_to_u16(raw  + i);
-      uint16x4_t pv  = rpng_load4_u8_to_u16(prev + i);
-      uint16x4_t avg = vshr_n_u16(vadd_u16(prev_pixel, pv), 1);
-      uint16x4_t out = vand_u16(vadd_u16(r, avg), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel     = out;
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 14));
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vreinterpretq_u8_u16(vdupq_lane_u16(
+            vreinterpret_u16_u8(vget_high_u8(x)), 3));
    }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 2 ? decoded[i - 2] : 0));
 }
 
-static INLINE uint16x4_t rpng_paeth_predictor_u16(
-      uint16x4_t a, uint16x4_t b, uint16x4_t c)
+static void rpng_filter_sub_prefix4(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch)
+{
+   size_t i         = 0;
+   uint8x16_t carry = vdupq_n_u8(0);
+   const uint8x16_t zero = vdupq_n_u8(0);
+   for (; i + 16 <= pitch; i += 16)
+   {
+      uint8x16_t x = vld1q_u8(raw + i);
+      x = vaddq_u8(x, vextq_u8(zero, x, 12));
+      x = vaddq_u8(x, vextq_u8(zero, x, 8));
+      x = vaddq_u8(x, carry);
+      vst1q_u8(decoded + i, x);
+      carry = vreinterpretq_u8_u32(vdupq_lane_u32(
+            vreinterpret_u32_u8(vget_high_u8(x)), 1));
+   }
+   for (; i < pitch; i++)
+      decoded[i] = (uint8_t)(raw[i] + (i >= 4 ? decoded[i - 4] : 0));
+}
+
+static void rpng_filter_sub_simd(uint8_t *decoded,
+      const uint8_t *raw, size_t pitch, unsigned bpp)
+{
+   size_t i             = 0;
+   uint8x8_t prev_pixel = vdup_n_u8(0);
+   switch (bpp)
+   {
+      case 1:
+         rpng_filter_sub_prefix1(decoded, raw, pitch);
+         return;
+      case 2:
+         rpng_filter_sub_prefix2(decoded, raw, pitch);
+         return;
+      case 4:
+         rpng_filter_sub_prefix4(decoded, raw, pitch);
+         return;
+   }
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         uint8x8_t out = vadd_u8(rpng_load4_u8(raw + i), prev_pixel);
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         uint8x8_t out = vadd_u8(vld1_u8(raw + i), prev_pixel);
+         vst1_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   if (i < bpp)
+      i = bpp < pitch ? bpp : pitch;
+   for (; i < pitch; i++)
+      decoded[i] += decoded[i - bpp];
+}
+
+static void rpng_filter_avg_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
+{
+   size_t i             = 0;
+   uint8x8_t prev_pixel = vdup_n_u8(0);
+   if (bpp <= 4)
+   {
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         uint8x8_t pv  = rpng_load4_u8(prev + i);
+         uint8x8_t out = vadd_u8(rpng_load4_u8(raw + i),
+               vhadd_u8(prev_pixel, pv));
+         rpng_store4_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         uint8x8_t pv  = vld1_u8(prev + i);
+         uint8x8_t out = vadd_u8(vld1_u8(raw + i),
+               vhadd_u8(prev_pixel, pv));
+         vst1_u8(decoded + i, out);
+         prev_pixel    = out;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i] >> 1;
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)((decoded[i - bpp] + prev[i]) >> 1);
+}
+
+/* One Paeth pixel, selecting among speculative sums; see the SSE2
+ * side for the derivation.  The masked sums sb = (r + b) & FF and
+ * sc = (r + c) & FF do not involve a, so they run off the carried
+ * chain, and pa > min(pb, pc) replaces the two-compare-plus-or
+ * "don't pick a" test. */
+static INLINE uint16x4_t rpng_paeth_step_u16(
+      uint16x4_t a, uint16x4_t b, uint16x4_t c,
+      uint16x4_t r, uint16x4_t sb, uint16x4_t sc, uint16x4_t mask)
 {
    int16x4_t bc = vsub_s16(vreinterpret_s16_u16(b), vreinterpret_s16_u16(c));
    int16x4_t ac = vsub_s16(vreinterpret_s16_u16(a), vreinterpret_s16_u16(c));
@@ -393,29 +1144,288 @@ static INLINE uint16x4_t rpng_paeth_predictor_u16(
    uint16x4_t pa = vreinterpret_u16_s16(vabs_s16(bc));
    uint16x4_t pb = vreinterpret_u16_s16(vabs_s16(ac));
    uint16x4_t pc = vreinterpret_u16_s16(vabs_s16(sm));
-   uint16x4_t not_a  = vorr_u16(vcgt_u16(pa, pb), vcgt_u16(pa, pc));
+   uint16x4_t not_a  = vcgt_u16(pa, vmin_u16(pb, pc));
    uint16x4_t pick_c = vcgt_u16(pb, pc);
-   uint16x4_t bc_sel = vbsl_u16(pick_c, c, b);
-   return              vbsl_u16(not_a,  bc_sel, a);
+   uint16x4_t sa     = vand_u16(vadd_u16(r, a), mask);
+   uint16x4_t bc_sel = vbsl_u16(pick_c, sc, sb);
+   return              vbsl_u16(not_a,  bc_sel, sa);
 }
 
-static void rpng_filter_paeth_rgba(uint8_t *decoded,
-      const uint8_t *raw, const uint8_t *prev, size_t pitch)
+/* 8-lane forms of the load/store/predict trio, mirroring the SSE2 side. */
+static INLINE uint16x8_t rpng_load8_u8_to_u16(const uint8_t *p)
 {
-   size_t i;
-   uint16x4_t prev_pixel      = vdup_n_u16(0);
-   uint16x4_t prev_upper_left = vdup_n_u16(0);
-   const uint16x4_t mask      = vdup_n_u16(0xFF);
-   for (i = 0; i + 4 <= pitch; i += 4)
+   return vmovl_u8(vld1_u8(p));
+}
+
+static INLINE void rpng_store8_u16_to_u8(uint8_t *p, uint16x8_t v)
+{
+   vst1_u8(p, vmovn_u16(v));
+}
+
+static INLINE uint16x8_t rpng_paeth_step_u16q(
+      uint16x8_t a, uint16x8_t b, uint16x8_t c,
+      uint16x8_t r, uint16x8_t sb, uint16x8_t sc, uint16x8_t mask)
+{
+   int16x8_t bc      = vsubq_s16(vreinterpretq_s16_u16(b),
+                                 vreinterpretq_s16_u16(c));
+   int16x8_t ac      = vsubq_s16(vreinterpretq_s16_u16(a),
+                                 vreinterpretq_s16_u16(c));
+   int16x8_t sm      = vaddq_s16(bc, ac);
+   uint16x8_t pa     = vreinterpretq_u16_s16(vabsq_s16(bc));
+   uint16x8_t pb     = vreinterpretq_u16_s16(vabsq_s16(ac));
+   uint16x8_t pc     = vreinterpretq_u16_s16(vabsq_s16(sm));
+   uint16x8_t not_a  = vcgtq_u16(pa, vminq_u16(pb, pc));
+   uint16x8_t pick_c = vcgtq_u16(pb, pc);
+   uint16x8_t sa     = vandq_u16(vaddq_u16(r, a), mask);
+   uint16x8_t bc_sel = vbslq_u16(pick_c, sc, sb);
+   return              vbslq_u16(not_a,  bc_sel, sa);
+}
+
+/* See the SSE2 rpng_filter_paeth_simd above for why an 8-byte window can
+ * be stepped by an arbitrary stride, and why the guard is i + 8. */
+static void rpng_filter_paeth_simd(uint8_t *decoded,
+      const uint8_t *raw, const uint8_t *prev, size_t pitch, unsigned bpp)
+{
+   size_t i                   = 0;
+   uint16x8_t prev_pixel      = vdupq_n_u16(0);
+   uint16x8_t prev_upper_left = vdupq_n_u16(0);
+   const uint16x8_t mask      = vdupq_n_u16(0xFF);
+   if (bpp <= 4)
    {
-      uint16x4_t r    = rpng_load4_u8_to_u16(raw  + i);
-      uint16x4_t pv   = rpng_load4_u8_to_u16(prev + i);
-      uint16x4_t pred = rpng_paeth_predictor_u16(
-            prev_pixel, pv, prev_upper_left);
-      uint16x4_t out  = vand_u16(vadd_u16(r, pred), mask);
-      rpng_store4_u16_to_u8(decoded + i, out);
-      prev_pixel      = out;
-      prev_upper_left = pv;
+      uint16x4_t pp  = vdup_n_u16(0);
+      uint16x4_t pul = vdup_n_u16(0);
+      const uint16x4_t m4 = vdup_n_u16(0xFF);
+      for (; i + 4 <= pitch; i += bpp)
+      {
+         uint16x4_t r    = rpng_load4_u8_to_u16(raw  + i);
+         uint16x4_t pv   = rpng_load4_u8_to_u16(prev + i);
+         uint16x4_t sb   = vand_u16(vadd_u16(r, pv),  m4);
+         uint16x4_t sc   = vand_u16(vadd_u16(r, pul), m4);
+         uint16x4_t out  = rpng_paeth_step_u16(pp, pv, pul, r, sb, sc, m4);
+         rpng_store4_u16_to_u8(decoded + i, out);
+         pp  = out;
+         pul = pv;
+      }
+   }
+   else
+   {
+      for (; i + 8 <= pitch; i += bpp)
+      {
+         uint16x8_t r    = rpng_load8_u8_to_u16(raw  + i);
+         uint16x8_t pv   = rpng_load8_u8_to_u16(prev + i);
+         uint16x8_t sb   = vandq_u16(vaddq_u16(r, pv), mask);
+         uint16x8_t sc   = vandq_u16(vaddq_u16(r, prev_upper_left), mask);
+         uint16x8_t out  = rpng_paeth_step_u16q(
+               prev_pixel, pv, prev_upper_left, r, sb, sc, mask);
+         rpng_store8_u16_to_u8(decoded + i, out);
+         prev_pixel      = out;
+         prev_upper_left = pv;
+      }
+   }
+   if (decoded != raw)
+      memcpy(decoded + i, raw + i, pitch - i);
+   /* A scanline shorter than the vector window leaves i == 0, so the
+    * leading bpp bytes still have to go through the a == c == 0 case
+    * (Paeth(0, b, 0) == b) before the general tail can index i - bpp. */
+   for (; i < bpp && i < pitch; i++)
+      decoded[i] += prev[i];
+   for (; i < pitch; i++)
+      decoded[i] += (uint8_t)rpng_paeth(decoded[i - bpp], prev[i],
+            prev[i - bpp]);
+}
+
+#define RPNG_HAVE_PAIR_KERNELS 1
+
+/* Wavefront pair kernels; see the SSE2 side for the derivation.  Row 1
+ * trails row 0 by one step, so its up neighbour comes from a register
+ * written in the previous iteration and the two serial chains overlap.
+ * NEON's vhadd_u8 is floor((a + b) / 2) directly, so the Average pair
+ * needs no rounding correction. */
+static void rpng_filter_paeth_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i = 0;
+   if (bpp <= 4)
+   {
+      const uint16x4_t m4 = vdup_n_u16(0xFF);
+      uint16x4_t a0  = vdup_n_u16(0);
+      uint16x4_t c0  = vdup_n_u16(0);
+      uint16x4_t a1  = vdup_n_u16(0);
+      uint16x4_t c1  = vdup_n_u16(0);
+      uint16x4_t a0p = vdup_n_u16(0);
+      if (4 <= pitch)
+      {
+         uint16x4_t b0 = rpng_load4_u8_to_u16(prev);
+         uint16x4_t r0 = rpng_load4_u8_to_u16(raw0);
+         uint16x4_t sb = vand_u16(vadd_u16(r0, b0), m4);
+         uint16x4_t sc = vand_u16(vadd_u16(r0, c0), m4);
+         a0  = rpng_paeth_step_u16(a0, b0, c0, r0, sb, sc, m4);
+         rpng_store4_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            uint16x4_t r1;
+            b0 = rpng_load4_u8_to_u16(prev + i);
+            r0 = rpng_load4_u8_to_u16(raw0 + i);
+            sb = vand_u16(vadd_u16(r0, b0), m4);
+            sc = vand_u16(vadd_u16(r0, c0), m4);
+            a0 = rpng_paeth_step_u16(a0, b0, c0, r0, sb, sc, m4);
+            rpng_store4_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            sb = vand_u16(vadd_u16(r1, a0p), m4);
+            sc = vand_u16(vadd_u16(r1, c1),  m4);
+            a1 = rpng_paeth_step_u16(a1, a0p, c1, r1, sb, sc, m4);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            uint16x4_t r1 = rpng_load4_u8_to_u16(raw1 + i - bpp);
+            uint16x4_t s1 = vand_u16(vadd_u16(r1, a0p), m4);
+            uint16x4_t s2 = vand_u16(vadd_u16(r1, c1),  m4);
+            a1 = rpng_paeth_step_u16(a1, a0p, c1, r1, s1, s2, m4);
+            rpng_store4_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   else
+   {
+      const uint16x8_t m8 = vdupq_n_u16(0xFF);
+      uint16x8_t a0  = vdupq_n_u16(0);
+      uint16x8_t c0  = vdupq_n_u16(0);
+      uint16x8_t a1  = vdupq_n_u16(0);
+      uint16x8_t c1  = vdupq_n_u16(0);
+      uint16x8_t a0p = vdupq_n_u16(0);
+      if (8 <= pitch)
+      {
+         uint16x8_t b0 = rpng_load8_u8_to_u16(prev);
+         uint16x8_t r0 = rpng_load8_u8_to_u16(raw0);
+         uint16x8_t sb = vandq_u16(vaddq_u16(r0, b0), m8);
+         uint16x8_t sc = vandq_u16(vaddq_u16(r0, c0), m8);
+         a0  = rpng_paeth_step_u16q(a0, b0, c0, r0, sb, sc, m8);
+         rpng_store8_u16_to_u8(dec0, a0);
+         c0  = b0;
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            uint16x8_t r1;
+            b0 = rpng_load8_u8_to_u16(prev + i);
+            r0 = rpng_load8_u8_to_u16(raw0 + i);
+            sb = vandq_u16(vaddq_u16(r0, b0), m8);
+            sc = vandq_u16(vaddq_u16(r0, c0), m8);
+            a0 = rpng_paeth_step_u16q(a0, b0, c0, r0, sb, sc, m8);
+            rpng_store8_u16_to_u8(dec0 + i, a0);
+            c0 = b0;
+            r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            sb = vandq_u16(vaddq_u16(r1, a0p), m8);
+            sc = vandq_u16(vaddq_u16(r1, c1),  m8);
+            a1 = rpng_paeth_step_u16q(a1, a0p, c1, r1, sb, sc, m8);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+            c1  = a0p;
+            a0p = a0;
+         }
+         {
+            uint16x8_t r1 = rpng_load8_u8_to_u16(raw1 + i - bpp);
+            uint16x8_t s1 = vandq_u16(vaddq_u16(r1, a0p), m8);
+            uint16x8_t s2 = vandq_u16(vaddq_u16(r1, c1),  m8);
+            a1 = rpng_paeth_step_u16q(a1, a0p, c1, r1, s1, s2, m8);
+            rpng_store8_u16_to_u8(dec1 + i - bpp, a1);
+         }
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + prev[j]);
+         else
+            dec0[j] = (uint8_t)(raw0[j] + rpng_paeth(dec0[j - bpp],
+                  prev[j], prev[j - bpp]));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + dec0[j]);
+         else
+            dec1[j] = (uint8_t)(raw1[j] + rpng_paeth(dec1[j - bpp],
+                  dec0[j], dec0[j - bpp]));
+      }
+   }
+}
+
+static void rpng_filter_avg_pair(uint8_t *dec0, uint8_t *dec1,
+      const uint8_t *raw0, const uint8_t *raw1, const uint8_t *prev,
+      size_t pitch, unsigned bpp)
+{
+   size_t i       = 0;
+   uint8x8_t a0   = vdup_n_u8(0);
+   uint8x8_t a1   = vdup_n_u8(0);
+   uint8x8_t a0p  = vdup_n_u8(0);
+   if (bpp <= 4)
+   {
+      if (4 <= pitch)
+      {
+         uint8x8_t b0 = rpng_load4_u8(prev);
+         a0  = vadd_u8(rpng_load4_u8(raw0), vhadd_u8(a0, b0));
+         rpng_store4_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 4 <= pitch; i += bpp)
+         {
+            b0 = rpng_load4_u8(prev + i);
+            a0 = vadd_u8(rpng_load4_u8(raw0 + i), vhadd_u8(a0, b0));
+            rpng_store4_u8(dec0 + i, a0);
+            a1 = vadd_u8(rpng_load4_u8(raw1 + i - bpp),
+                  vhadd_u8(a1, a0p));
+            rpng_store4_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         a1 = vadd_u8(rpng_load4_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+         rpng_store4_u8(dec1 + i - bpp, a1);
+      }
+   }
+   else
+   {
+      if (8 <= pitch)
+      {
+         uint8x8_t b0 = vld1_u8(prev);
+         a0  = vadd_u8(vld1_u8(raw0), vhadd_u8(a0, b0));
+         vst1_u8(dec0, a0);
+         a0p = a0;
+         for (i = bpp; i + 8 <= pitch; i += bpp)
+         {
+            b0 = vld1_u8(prev + i);
+            a0 = vadd_u8(vld1_u8(raw0 + i), vhadd_u8(a0, b0));
+            vst1_u8(dec0 + i, a0);
+            a1 = vadd_u8(vld1_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+            vst1_u8(dec1 + i - bpp, a1);
+            a0p = a0;
+         }
+         a1 = vadd_u8(vld1_u8(raw1 + i - bpp), vhadd_u8(a1, a0p));
+         vst1_u8(dec1 + i - bpp, a1);
+      }
+   }
+   {
+      size_t j;
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec0[j] = (uint8_t)(raw0[j] + (prev[j] >> 1));
+         else
+            dec0[j] = (uint8_t)(raw0[j]
+                  + ((dec0[j - bpp] + prev[j]) >> 1));
+      }
+      for (j = i; j < pitch; j++)
+      {
+         if (j < bpp)
+            dec1[j] = (uint8_t)(raw1[j] + (dec0[j] >> 1));
+         else
+            dec1[j] = (uint8_t)(raw1[j]
+                  + ((dec1[j - bpp] + dec0[j]) >> 1));
+      }
    }
 }
 
@@ -426,33 +1436,48 @@ static void rpng_filter_paeth_rgba(uint8_t *decoded,
  * -------------------------------------------------------------------------*/
 
 /* Pack 8-bit RGB triples into ARGB32/ABGR32 words (alpha = 0xFF).
- * SSE2 version processes 4 pixels (12 input bytes) per iteration. */
+ * SSE2 version expands 4 pixels (12 input bytes) per 16-byte load:
+ * SSE2 has no byte shuffle (pshufb is SSSE3), but the fixed 3->4 byte
+ * expansion falls out of whole-register byte shifts plus dword masks -
+ *    w = (v & M0) | (v<<1B & M1) | (v<<2B & M2) | (v<<3B & M3)
+ * places triple k at output byte 4k, giving memory order R,G,B after
+ * the alpha OR (the ABGR32 supports_rgba layout on LE); the ARGB
+ * layout additionally swaps R and B inside each word. The load reads
+ * 4 bytes past the 12 consumed, so the vector loop requires at least
+ * 6 pixels (18 bytes) of remaining scanline. */
 #if defined(RPNG_SIMD_SSE2)
 static void rpng_copy_line_rgb_sse2(uint32_t *data,
       const uint8_t *src, unsigned width, bool supports_rgba)
 {
    unsigned i = 0;
+   const __m128i m0   = _mm_setr_epi32((int)0x00FFFFFF, 0, 0, 0);
+   const __m128i m1   = _mm_setr_epi32(0, (int)0x00FFFFFF, 0, 0);
+   const __m128i m2   = _mm_setr_epi32(0, 0, (int)0x00FFFFFF, 0);
+   const __m128i m3   = _mm_setr_epi32(0, 0, 0, (int)0x00FFFFFF);
+   const __m128i ma   = _mm_set1_epi32((int)0xFF000000u);
+   const __m128i keep = _mm_set1_epi32((int)0xFF00FF00u);
+   const __m128i lowm = _mm_set1_epi32(0xFF);
+
+   for (; (int)(width - i) >= 6; i += 4)
+   {
+      __m128i v = _mm_loadu_si128((const __m128i*)(src + (size_t)i * 3));
+      __m128i w = _mm_or_si128(
+            _mm_or_si128(_mm_and_si128(v, m0),
+                         _mm_and_si128(_mm_slli_si128(v, 1), m1)),
+            _mm_or_si128(_mm_and_si128(_mm_slli_si128(v, 2), m2),
+                         _mm_and_si128(_mm_slli_si128(v, 3), m3)));
+      if (!supports_rgba)
+      {
+         /* memory R,G,B -> B,G,R: swap the low and high channel bytes */
+         __m128i lo = _mm_slli_epi32(_mm_and_si128(w, lowm), 16);
+         __m128i hi = _mm_and_si128(_mm_srli_epi32(w, 16), lowm);
+         w = _mm_or_si128(_mm_and_si128(w, keep), _mm_or_si128(lo, hi));
+      }
+      _mm_storeu_si128((__m128i*)(data + i), _mm_or_si128(w, ma));
+   }
+
    if (supports_rgba)
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i + 0] = 0xFF000000u
-                     | ((unsigned)src[i*3+2] << 16)
-                     | ((unsigned)src[i*3+1] <<  8)
-                     | ((unsigned)src[i*3+0]      );
-         data[i + 1] = 0xFF000000u
-                     | ((unsigned)src[i*3+5] << 16)
-                     | ((unsigned)src[i*3+4] <<  8)
-                     | ((unsigned)src[i*3+3]      );
-         data[i + 2] = 0xFF000000u
-                     | ((unsigned)src[i*3+8] << 16)
-                     | ((unsigned)src[i*3+7] <<  8)
-                     | ((unsigned)src[i*3+6]      );
-         data[i + 3] = 0xFF000000u
-                     | ((unsigned)src[i*3+11] << 16)
-                     | ((unsigned)src[i*3+10] <<  8)
-                     | ((unsigned)src[i*3+9]       );
-      }
       for (; i < width; i++)
          data[i] = 0xFF000000u
                  | ((unsigned)src[i*3+2] << 16)
@@ -461,25 +1486,6 @@ static void rpng_copy_line_rgb_sse2(uint32_t *data,
    }
    else
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i + 0] = 0xFF000000u
-                     | ((unsigned)src[i*3+0] << 16)
-                     | ((unsigned)src[i*3+1] <<  8)
-                     | ((unsigned)src[i*3+2]      );
-         data[i + 1] = 0xFF000000u
-                     | ((unsigned)src[i*3+3] << 16)
-                     | ((unsigned)src[i*3+4] <<  8)
-                     | ((unsigned)src[i*3+5]      );
-         data[i + 2] = 0xFF000000u
-                     | ((unsigned)src[i*3+6] << 16)
-                     | ((unsigned)src[i*3+7] <<  8)
-                     | ((unsigned)src[i*3+8]      );
-         data[i + 3] = 0xFF000000u
-                     | ((unsigned)src[i*3+9]  << 16)
-                     | ((unsigned)src[i*3+10] <<  8)
-                     | ((unsigned)src[i*3+11]      );
-      }
       for (; i < width; i++)
          data[i] = 0xFF000000u
                  | ((unsigned)src[i*3+0] << 16)
@@ -492,7 +1498,10 @@ static void rpng_copy_line_rgb_sse2(uint32_t *data,
 /* Pack 8-bit RGBA bytes into ARGB32 or ABGR32 words.
  * Each input pixel is 4 bytes: R G B A
  * ARGB output: (A<<24)|(R<<16)|(G<<8)|B
- * ABGR output: (A<<24)|(B<<16)|(G<<8)|R  (when supports_rgba) */
+ * ABGR output: (A<<24)|(B<<16)|(G<<8)|R  (when supports_rgba)
+ * On LE (implied by SSE2/x86) the ABGR layout is the input bytes
+ * verbatim, so that case is a straight row copy; the ARGB layout is a
+ * vectorized R/B swap within each word. */
 #if defined(RPNG_SIMD_SSE2)
 static void rpng_copy_line_rgba_sse2(uint32_t *data,
       const uint8_t *src, unsigned width, bool supports_rgba)
@@ -500,38 +1509,24 @@ static void rpng_copy_line_rgba_sse2(uint32_t *data,
    unsigned i = 0;
    if (supports_rgba)
    {
-      for (; (int)(width - i) >= 4; i += 4)
-      {
-         data[i+0] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+2] << 16)
-                   | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+0]);
-         data[i+1] = ((unsigned)src[i*4+7] << 24) | ((unsigned)src[i*4+6] << 16)
-                   | ((unsigned)src[i*4+5] <<  8) | ((unsigned)src[i*4+4]);
-         data[i+2] = ((unsigned)src[i*4+11] << 24) | ((unsigned)src[i*4+10] << 16)
-                   | ((unsigned)src[i*4+9]  <<  8) | ((unsigned)src[i*4+8]);
-         data[i+3] = ((unsigned)src[i*4+15] << 24) | ((unsigned)src[i*4+14] << 16)
-                   | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+12]);
-      }
-      for (; i < width; i++)
-         data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+2] << 16)
-                 | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+0]);
+      memcpy(data, src, (size_t)width * 4);
+      return;
    }
-   else
    {
+      const __m128i keep = _mm_set1_epi32((int)0xFF00FF00u);
+      const __m128i lowm = _mm_set1_epi32(0xFF);
       for (; (int)(width - i) >= 4; i += 4)
       {
-         data[i+0] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
-                   | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
-         data[i+1] = ((unsigned)src[i*4+7] << 24) | ((unsigned)src[i*4+4] << 16)
-                   | ((unsigned)src[i*4+5] <<  8) | ((unsigned)src[i*4+6]);
-         data[i+2] = ((unsigned)src[i*4+11] << 24) | ((unsigned)src[i*4+8]  << 16)
-                   | ((unsigned)src[i*4+9]  <<  8) | ((unsigned)src[i*4+10]);
-         data[i+3] = ((unsigned)src[i*4+15] << 24) | ((unsigned)src[i*4+12] << 16)
-                   | ((unsigned)src[i*4+13] <<  8) | ((unsigned)src[i*4+14]);
+         __m128i w  = _mm_loadu_si128((const __m128i*)(src + (size_t)i * 4));
+         __m128i lo = _mm_slli_epi32(_mm_and_si128(w, lowm), 16);
+         __m128i hi = _mm_and_si128(_mm_srli_epi32(w, 16), lowm);
+         _mm_storeu_si128((__m128i*)(data + i),
+               _mm_or_si128(_mm_and_si128(w, keep), _mm_or_si128(lo, hi)));
       }
-      for (; i < width; i++)
-         data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
-                 | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
    }
+   for (; i < width; i++)
+      data[i] = ((unsigned)src[i*4+3] << 24) | ((unsigned)src[i*4+0] << 16)
+              | ((unsigned)src[i*4+1] <<  8) | ((unsigned)src[i*4+2]);
 }
 #endif /* RPNG_SIMD_SSE2 */
 
@@ -733,13 +1728,14 @@ static bool rpng_process_ihdr(struct png_ihdr *ihdr)
 
 static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned bpp,
-      bool supports_rgba)
+      bool supports_rgba, bool want_10bit)
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 24): 
-    * each pixel is exactly 3 bytes. */
-   if (bpp == 24)
+   /* bpp here is ihdr->depth: bits per SAMPLE (8 or 16), not bits per
+    * pixel - the scalar loop below strides bpp/8 bytes per channel.
+    * Fast path for 8-bit depth: each pixel is exactly 3 bytes. */
+   if (bpp == 8)
    {
 #if defined(RPNG_SIMD_NEON)
       rpng_copy_line_rgb_neon(data, decoded, width, supports_rgba);
@@ -748,6 +1744,25 @@ static void rpng_reverse_filter_copy_line_rgb(uint32_t *data,
       rpng_copy_line_rgb_sse2(data, decoded, width, supports_rgba);
       return;
 #endif
+   }
+
+   /* 16-bit source requested as 10-bit output: pack XRGB2101010
+    * (R in bits [29:20], G [19:10], B [9:0]) from the full 16-bit samples,
+    * scaled 16->10 bit by >> 6. Independent of supports_rgba: the packed
+    * layout is a fixed R-high ordering the 10-bit upload paths expect. */
+   if (want_10bit && bpp == 16)
+   {
+      for (i = 0; i < (int)width; i++, decoded += 6)
+      {
+         uint32_t r = (((uint32_t)decoded[0] << 8) | decoded[1]) >> 6;
+         uint32_t g = (((uint32_t)decoded[2] << 8) | decoded[3]) >> 6;
+         uint32_t b = (((uint32_t)decoded[4] << 8) | decoded[5]) >> 6;
+         /* Top 2 bits = alpha 3 (opaque), matching the video 10-bit blit;
+          * A2R10G10B10_UNORM samples these as alpha, so leaving them 0 would
+          * render the image fully transparent. */
+         data[i]    = (r << 20) | (g << 10) | b | 0xC0000000u;
+      }
+      return;
    }
 
    bpp /= 8;
@@ -788,10 +1803,22 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
 {
    int i;
 
-   /* Fast path for 8-bit depth (bpp == 32): 
-    * each pixel is exactly 4 bytes. */
-   if (bpp == 32)
+   /* bpp here is ihdr->depth: bits per SAMPLE (8 or 16), not bits per
+    * pixel - the scalar loop below strides bpp/8 bytes per channel.
+    * Fast paths for 8-bit depth: each pixel is exactly 4 bytes. */
+   if (bpp == 8)
    {
+#if !defined(MSB_FIRST)
+      /* The unfiltered scanline bytes are already R,G,B,A in memory
+       * order, which on a little-endian host is exactly the ABGR32
+       * word layout the supports_rgba output wants: the conversion is
+       * the identity, so copy the row wholesale. */
+      if (supports_rgba)
+      {
+         memcpy(data, decoded, (size_t)width * 4);
+         return;
+      }
+#endif
 #if defined(RPNG_SIMD_NEON)
       rpng_copy_line_rgba_neon(data, decoded, width, supports_rgba);
       return;
@@ -837,6 +1864,93 @@ static void rpng_reverse_filter_copy_line_rgba(uint32_t *data,
    }
 }
 
+/* Greyscale expansion, vector fast paths for the byte-aligned depths.
+ * A grey sample g becomes the word (0xFF<<24)|(g<<16)|(g<<8)|g; ORing
+ * the splatted word with 0xFF000000 forces the alpha lane regardless
+ * of g.  Depth 16 keeps the high byte only, matching the scalar path
+ * (PNG stores samples big-endian, so the high byte is the even one).
+ * Sub-byte depths (1/2/4) stay on the scalar bit walker: they multiply
+ * out through mul_table and are rare enough not to matter. */
+#if defined(RPNG_SIMD_SSE2)
+static unsigned rpng_copy_line_bw8_sse2(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   const __m128i amask = _mm_set1_epi32((int)0xFF000000u);
+   for (; (int)(width - i) >= 16; i += 16)
+   {
+      __m128i g  = _mm_loadu_si128((const __m128i*)(decoded + i));
+      __m128i lo = _mm_unpacklo_epi8(g, g);  /* g0 g0 g1 g1 ..  */
+      __m128i hi = _mm_unpackhi_epi8(g, g);
+      _mm_storeu_si128((__m128i*)(data + i + 0),
+            _mm_or_si128(_mm_unpacklo_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 4),
+            _mm_or_si128(_mm_unpackhi_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 8),
+            _mm_or_si128(_mm_unpacklo_epi16(hi, hi), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 12),
+            _mm_or_si128(_mm_unpackhi_epi16(hi, hi), amask));
+   }
+   return i;
+}
+
+static unsigned rpng_copy_line_bw16_sse2(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   const __m128i amask = _mm_set1_epi32((int)0xFF000000u);
+   const __m128i bmask = _mm_set1_epi16(0x00FF);
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      /* 8 big-endian 16-bit samples: high bytes sit in the low byte
+       * of each LE 16-bit lane. */
+      __m128i v  = _mm_loadu_si128((const __m128i*)(decoded + (size_t)i * 2));
+      __m128i g  = _mm_packus_epi16(_mm_and_si128(v, bmask), _mm_setzero_si128());
+      __m128i lo = _mm_unpacklo_epi8(g, g);
+      _mm_storeu_si128((__m128i*)(data + i + 0),
+            _mm_or_si128(_mm_unpacklo_epi16(lo, lo), amask));
+      _mm_storeu_si128((__m128i*)(data + i + 4),
+            _mm_or_si128(_mm_unpackhi_epi16(lo, lo), amask));
+   }
+   return i;
+}
+#elif defined(RPNG_SIMD_NEON)
+static unsigned rpng_copy_line_bw8_neon(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      uint8x8x4_t o;
+      uint8x8_t g = vld1_u8(decoded + i);
+      o.val[0]    = g;
+      o.val[1]    = g;
+      o.val[2]    = g;
+      o.val[3]    = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(data + i), o);
+   }
+   return i;
+}
+
+static unsigned rpng_copy_line_bw16_neon(uint32_t *data,
+      const uint8_t *decoded, unsigned width)
+{
+   unsigned i = 0;
+   for (; (int)(width - i) >= 8; i += 8)
+   {
+      /* De-interleave (hi,lo) byte pairs; val[0] is the high bytes. */
+      uint8x8x2_t v = vld2_u8(decoded + (size_t)i * 2);
+      uint8x8x4_t o;
+      o.val[0]      = v.val[0];
+      o.val[1]      = v.val[0];
+      o.val[2]      = v.val[0];
+      o.val[3]      = vdup_n_u8(0xFF);
+      vst4_u8((uint8_t*)(data + i), o);
+   }
+   return i;
+}
+#endif /* RPNG_SIMD_SSE2 / RPNG_SIMD_NEON */
+
 static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
       const uint8_t *decoded, unsigned width, unsigned depth)
 {
@@ -847,11 +1961,30 @@ static void rpng_reverse_filter_copy_line_bw(uint32_t *data,
 
    if (depth == 16)
    {
-      for (i = 0; i < (int)width; i++)
+      unsigned j = 0;
+#if defined(RPNG_SIMD_SSE2)
+      j = rpng_copy_line_bw16_sse2(data, decoded, width);
+#elif defined(RPNG_SIMD_NEON)
+      j = rpng_copy_line_bw16_neon(data, decoded, width);
+#endif
+      for (i = (int)j; i < (int)width; i++)
       {
          uint32_t val = decoded[i << 1];
          data[i]      = (val * 0x010101) | (0xffu << 24);
       }
+      return;
+   }
+
+   if (depth == 8)
+   {
+      unsigned j = 0;
+#if defined(RPNG_SIMD_SSE2)
+      j = rpng_copy_line_bw8_sse2(data, decoded, width);
+#elif defined(RPNG_SIMD_NEON)
+      j = rpng_copy_line_bw8_neon(data, decoded, width);
+#endif
+      for (i = (int)j; i < (int)width; i++)
+         data[i] = ((uint32_t)decoded[i] * 0x010101) | (0xffu << 24);
       return;
    }
 
@@ -917,16 +2050,22 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
             {
                case 7:
                   data[6] = palette[(*decoded >> 1) & 1];
+                  /* fall-through */
                case 6:
                   data[5] = palette[(*decoded >> 2) & 1];
+                  /* fall-through */
                case 5:
                   data[4] = palette[(*decoded >> 3) & 1];
+                  /* fall-through */
                case 4:
                   data[3] = palette[(*decoded >> 4) & 1];
+                  /* fall-through */
                case 3:
                   data[2] = palette[(*decoded >> 5) & 1];
+                  /* fall-through */
                case 2:
                   data[1] = palette[(*decoded >> 6) & 1];
+                  /* fall-through */
                case 1:
                   data[0] = palette[(*decoded >> 7) & 1];
                   break;
@@ -950,8 +2089,10 @@ static void rpng_reverse_filter_copy_line_plt(uint32_t *data,
             {
                case 3:
                   data[2] = palette[(*decoded >> 2) & 3];
+                  /* fall-through */
                case 2:
                   data[1] = palette[(*decoded >> 4) & 3];
+                  /* fall-through */
                case 1:
                   data[0] = palette[(*decoded >> 6) & 3];
                   break;
@@ -1041,6 +2182,40 @@ static void rpng_pass_geom(const struct png_ihdr *ihdr,
       *pitch_out = (unsigned)pitch;
 }
 
+/* Exact size of an Adam7 stream: the seven passes are seven independent
+ * sub-images, each with its own scanline rounded up to a whole byte and
+ * its own filter byte per row, so the total is not the non-interlaced
+ * size and cannot be approximated from it.
+ *
+ * It used to be approximated - the non-interlaced size doubled, "to be
+ * sure".  That holds at 8 bits and up, where the per-pass rounding adds
+ * a byte or two per row, but not below: a 16x1 1-bit image is 3 bytes
+ * non-interlaced and 8 interlaced, because all four non-empty passes
+ * round their 2-to-8 pixel scanlines up to one byte apiece.  The
+ * undersized buffer failed the decode outright, so 1- and 2-bit
+ * interlaced images at a range of sizes did not load at all. */
+static size_t rpng_adam7_buf_size(const struct png_ihdr *ihdr)
+{
+   size_t total = 0;
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(rpng_passes); i++)
+   {
+      struct png_ihdr sub;
+      size_t pass_size = 0;
+      if (     ihdr->width  <= rpng_passes[i].x
+            || ihdr->height <= rpng_passes[i].y)
+         continue;   /* empty pass, contributes nothing */
+      sub        = *ihdr;
+      sub.width  = (ihdr->width  - rpng_passes[i].x
+            + rpng_passes[i].stride_x - 1) / rpng_passes[i].stride_x;
+      sub.height = (ihdr->height - rpng_passes[i].y
+            + rpng_passes[i].stride_y - 1) / rpng_passes[i].stride_y;
+      rpng_pass_geom(&sub, sub.width, sub.height, NULL, NULL, &pass_size);
+      total += pass_size;
+   }
+   return total;
+}
+
 static void rpng_reverse_filter_adam7_deinterlace_pass(uint32_t *data,
       const struct png_ihdr *ihdr,
       const uint32_t *input, unsigned pass_width, unsigned pass_height,
@@ -1064,12 +2239,16 @@ static void rpng_reverse_filter_deinit(struct rpng_process *pngp)
 {
    if (!pngp)
       return;
-   if (pngp->decoded_scanline)
-      free(pngp->decoded_scanline);
-   pngp->decoded_scanline = NULL;
-   if (pngp->prev_scanline)
-      free(pngp->prev_scanline);
-   pngp->prev_scanline    = NULL;
+   if (pngp->scratch[0])
+      free(pngp->scratch[0]);
+   if (pngp->scratch[1])
+      free(pngp->scratch[1]);
+   if (pngp->scratch[2])
+      free(pngp->scratch[2]);
+   pngp->scratch[0] = NULL;
+   pngp->scratch[1] = NULL;
+   pngp->scratch[2] = NULL;
+   pngp->prev_line  = NULL;
 
    pngp->flags           &= ~RPNG_PROCESS_FLAG_PASS_INITIALIZED;
    pngp->h                = 0;
@@ -1106,8 +2285,15 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
 
       if (pngp->pass_size > pngp->total_out)
       {
+         /* Pass not fully inflated yet.  While the stream is still
+          * being fed this is a wait, not an error; once the stream
+          * has ended it is a truncation (and the inflate end path
+          * has already refused an under-produced stream, so this
+          * arm is belt and braces). */
          free(pngp->data);
          pngp->data = NULL;
+         if (!(pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+            return RPNG_FILTER_WAIT;
          return -1;
       }
 
@@ -1121,16 +2307,28 @@ static int rpng_reverse_filter_init(const struct png_ihdr *ihdr,
 
    rpng_pass_geom(ihdr, ihdr->width, ihdr->height, &pngp->bpp, &pngp->pitch, &pass_size);
 
-   if (pngp->total_out < pass_size)
+   /* Interleaved decode: this init now runs after the first inflate
+    * slice rather than after the whole stream, so the whole-image
+    * sufficiency check only applies once the stream has ended (the
+    * inflate end path enforces full production; this arm keeps the
+    * old failure for a completed-but-short stream). */
+   if (      pngp->total_out < pass_size
+         && (pngp->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
       return -1;
 
    pngp->restore_buf_size      = 0;
-   pngp->data_restore_buf_size = 0;
-   pngp->prev_scanline         = (uint8_t*)calloc(1, pngp->pitch);
-   pngp->decoded_scanline      = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->held                  = 0;
+   /* scratch[0] doubles as row 0's zero prev; scratch_cur starts at 0
+    * so the first out-of-place line (cur ^= 1) lands in scratch[1],
+    * leaving the zeroes intact while anything still points at them. */
+   pngp->scratch[0]            = (uint8_t*)calloc(1, pngp->pitch);
+   pngp->scratch[1]            = (uint8_t*)malloc(pngp->pitch);
+   pngp->scratch[2]            = (uint8_t*)malloc(pngp->pitch);
+   pngp->scratch_cur           = 0;
 
-   if (!pngp->prev_scanline || !pngp->decoded_scanline)
+   if (!pngp->scratch[0] || !pngp->scratch[1] || !pngp->scratch[2])
       goto error;
+   pngp->prev_line             = pngp->scratch[0];
 
    pngp->h                    = 0;
    pngp->flags               |= RPNG_PROCESS_FLAG_PASS_INITIALIZED;
@@ -1144,127 +2342,222 @@ error:
 
 /* ---------------------------------------------------------------------------*/
 
+/* Pixel-format conversion of one unfiltered scanline into the 32-bit
+ * output row, factored out of the per-line path so the wavefront pair
+ * path below can convert two rows from two buffers. */
+static void rpng_reverse_filter_convert(uint32_t *data,
+      const struct png_ihdr *ihdr,
+      struct rpng_process *pngp, const uint8_t *decoded)
+{
+   switch (ihdr->color_type)
+   {
+      case PNG_IHDR_COLOR_GRAY:
+         rpng_reverse_filter_copy_line_bw(data, decoded, ihdr->width,
+               ihdr->depth);
+         break;
+      case PNG_IHDR_COLOR_RGB:
+         rpng_reverse_filter_copy_line_rgb(data, decoded, ihdr->width,
+               ihdr->depth, pngp->supports_rgba, pngp->want_10bit);
+         break;
+      case PNG_IHDR_COLOR_PLT:
+         rpng_reverse_filter_copy_line_plt(
+               data, decoded, ihdr->width, ihdr->depth, pngp->palette);
+         break;
+      case PNG_IHDR_COLOR_GRAY_ALPHA:
+         rpng_reverse_filter_copy_line_gray_alpha(
+               data, decoded, ihdr->width, ihdr->depth);
+         break;
+      case PNG_IHDR_COLOR_RGBA:
+         rpng_reverse_filter_copy_line_rgba(
+               data, decoded, ihdr->width, ihdr->depth,
+               pngp->supports_rgba);
+         break;
+   }
+}
+
 static int rpng_reverse_filter_copy_line(uint32_t *data,
       const struct png_ihdr *ihdr,
       struct rpng_process *pngp, unsigned filter)
 {
+   /* In-place when the kernel tolerates dec aliasing raw: None does
+    * no work, Up and the prefix Subs load before every store, and at
+    * stride == window the window kernels' spill lanes land exactly on
+    * their own next input.  At stride < window a wide store would
+    * clobber raw bytes the next step re-reads, and width-exact stores
+    * measure worse (a 1-3 byte store feeding an overlapping 4-byte
+    * load stalls forwarding every pixel), so those combinations keep
+    * their wide stores and decode into alternating scratch lines
+    * instead. */
+   uint8_t       *dec = pngp->inflate_buf;
+   const uint8_t *raw = pngp->inflate_buf;
+#if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
+   if (!(   filter == PNG_FILTER_NONE
+         || filter == PNG_FILTER_UP
+         || (filter == PNG_FILTER_SUB
+               && pngp->bpp != 3 && pngp->bpp != 6)
+         || (pngp->bpp == 4 || pngp->bpp == 8)))
+   {
+      pngp->scratch_cur = (pngp->scratch_cur + 1) % 3;
+      dec = pngp->scratch[pngp->scratch_cur];
+   }
+#endif
+#if !defined(RPNG_SIMD_SSE2) && !defined(RPNG_SIMD_NEON)
    unsigned i;
+#endif
 
    switch (filter)
    {
       case PNG_FILTER_NONE:
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
          break;
       case PNG_FILTER_SUB:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         if (pngp->bpp == 4)
-         {
-            rpng_filter_sub_rgba(pngp->decoded_scanline,
-                  pngp->inflate_buf, pngp->pitch);
-            break;
-         }
-#endif
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += pngp->decoded_scanline[i - pngp->bpp];
+         rpng_filter_sub_simd(dec, raw, pngp->pitch, pngp->bpp);
          break;
+#else
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+            dec[i] += dec[i - pngp->bpp];
+         break;
+#endif
       case PNG_FILTER_UP:
          /* Filter Up is a pure vector add—no inter-byte dependency. */
-         rpng_filter_up(pngp->decoded_scanline,
-               pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
+         rpng_filter_up(dec, raw, pngp->prev_line, pngp->pitch);
          break;
       case PNG_FILTER_AVERAGE:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         if (pngp->bpp == 4)
-         {
-            rpng_filter_avg_rgba(pngp->decoded_scanline,
-                  pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
-            break;
-         }
-#endif
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->bpp; i++)
-         {
-            uint8_t avg = pngp->prev_scanline[i] >> 1;
-            pngp->decoded_scanline[i] += avg;
-         }
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-         {
-            uint8_t avg = (pngp->decoded_scanline[i - pngp->bpp] + pngp->prev_scanline[i]) >> 1;
-            pngp->decoded_scanline[i] += avg;
-         }
+         rpng_filter_avg_simd(dec, raw, pngp->prev_line,
+               pngp->pitch, pngp->bpp);
          break;
+#else
+         for (i = 0; i < pngp->bpp; i++)
+            dec[i] += (uint8_t)(pngp->prev_line[i] >> 1);
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+            dec[i] += (uint8_t)((dec[i - pngp->bpp]
+                  + pngp->prev_line[i]) >> 1);
+         break;
+#endif
       case PNG_FILTER_PAETH:
 #if defined(RPNG_SIMD_SSE2) || defined(RPNG_SIMD_NEON)
-         if (pngp->bpp == 4)
-         {
-            rpng_filter_paeth_rgba(pngp->decoded_scanline,
-                  pngp->inflate_buf, pngp->prev_scanline, pngp->pitch);
-            break;
-         }
-#endif
-         memcpy(pngp->decoded_scanline, pngp->inflate_buf, pngp->pitch);
-         for (i = 0; i < pngp->bpp; i++)
-            pngp->decoded_scanline[i] += pngp->prev_scanline[i];
-         for (i = pngp->bpp; i < pngp->pitch; i++)
-            pngp->decoded_scanline[i] += paeth(
-                  pngp->decoded_scanline[i - pngp->bpp],
-                  pngp->prev_scanline[i],
-                  pngp->prev_scanline[i - pngp->bpp]);
+         /* Stride-generic: every bpp benefits, not just RGBA8. */
+         rpng_filter_paeth_simd(dec, raw, pngp->prev_line,
+               pngp->pitch, pngp->bpp);
          break;
+#else
+         for (i = 0; i < pngp->bpp; i++)
+            dec[i] += pngp->prev_line[i];
+         for (i = pngp->bpp; i < pngp->pitch; i++)
+            dec[i] += (uint8_t)rpng_paeth(dec[i - pngp->bpp],
+                  pngp->prev_line[i], pngp->prev_line[i - pngp->bpp]);
+         break;
+#endif
       default:
          return IMAGE_PROCESS_ERROR_END;
    }
 
-   switch (ihdr->color_type)
-   {
-      case PNG_IHDR_COLOR_GRAY:
-         rpng_reverse_filter_copy_line_bw(data, pngp->decoded_scanline, ihdr->width, ihdr->depth);
-         break;
-      case PNG_IHDR_COLOR_RGB:
-         rpng_reverse_filter_copy_line_rgb(data, pngp->decoded_scanline, ihdr->width, ihdr->depth,
-               pngp->supports_rgba);
-         break;
-      case PNG_IHDR_COLOR_PLT:
-         rpng_reverse_filter_copy_line_plt(
-               data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth, pngp->palette);
-         break;
-      case PNG_IHDR_COLOR_GRAY_ALPHA:
-         rpng_reverse_filter_copy_line_gray_alpha(
-               data, pngp->decoded_scanline, ihdr->width,
-               ihdr->depth);
-         break;
-      case PNG_IHDR_COLOR_RGBA:
-         rpng_reverse_filter_copy_line_rgba(
-               data, pngp->decoded_scanline, ihdr->width, ihdr->depth,
-               pngp->supports_rgba);
-         break;
-   }
+rpng_reverse_filter_convert(data, ihdr, pngp, dec);
 
-   /* Swap scanline pointers instead of copying — the current decoded
-    * scanline becomes the previous scanline for the next row.
-    * Both buffers are the same size (pitch bytes), allocated in
-    * rpng_reverse_filter_init, so swapping is always safe. */
-   {
-      uint8_t *tmp           = pngp->prev_scanline;
-      pngp->prev_scanline    = pngp->decoded_scanline;
-      pngp->decoded_scanline = tmp;
-   }
+   /* The line just unfiltered becomes the previous line; its ring
+    * slot stays protected through pngp->held until the next line has
+    * consumed it. */
+   pngp->prev_line = dec;
 
    return IMAGE_PROCESS_NEXT;
 }
 
 static int rpng_reverse_filter_regular_iterate(
-      uint32_t **data, const struct png_ihdr *ihdr,
+      const struct png_ihdr *ihdr,
       struct rpng_process *pngp)
 {
    int ret = IMAGE_PROCESS_END;
+#if defined(RPNG_HAVE_PAIR_KERNELS)
+   /* Wavefront pair: when the next two scanlines are fully inflated,
+    * contiguous in the ring and carry the same chain-bound filter,
+    * unfilter them in one interleaved pass (see the pair kernels),
+    * in place, the second row's up neighbour being the first row's
+    * bytes as they decode.  Residency: total_out - restore_buf_size
+    * - held is exactly the inflated, not yet unfiltered byte count on
+    * the regular path; the interlaced path only filters once its
+    * whole pass is resident, so the check is conservative there.
+    * Contiguity: the ring recycles only at whole-line boundaries, so
+    * two lines are contiguous unless the second would start past the
+    * ring end. */
+   if (pngp->h + 2 <= ihdr->height)
+   {
+      size_t line = (size_t)pngp->pitch + 1;
+      if (      pngp->total_out - pngp->restore_buf_size - pngp->held
+             >= 2 * line
+          && (   pngp->ring_size >= pngp->inflate_buf_size
+              ||    pngp->inflate_buf + 2 * line
+                 <= pngp->inflate_base + pngp->ring_size))
+      {
+         unsigned f0 = pngp->inflate_buf[0];
+         unsigned f1 = pngp->inflate_buf[line];
+         if (   f0 == f1
+             && (f0 == PNG_FILTER_PAETH || f0 == PNG_FILTER_AVERAGE))
+         {
+            const uint8_t *raw0 = pngp->inflate_buf + 1;
+            const uint8_t *raw1 = raw0 + line;
+            uint8_t *dec0;
+            uint8_t *dec1;
+            int in_place = (pngp->bpp == 4 || pngp->bpp == 8);
+            if (in_place)
+            {
+               /* Stride == window: the wide stores land exactly on
+                * their own next input, so decode in the ring. */
+               dec0 = pngp->inflate_buf + 1;
+               dec1 = dec0 + line;
+            }
+            else
+            {
+               /* Stride < window: wide stores would clobber raw, so
+                * take the next two free scratch lines. */
+               unsigned i0 = (pngp->scratch_cur + 1) % 3;
+               unsigned i1 = (pngp->scratch_cur + 2) % 3;
+               dec0 = pngp->scratch[i0];
+               dec1 = pngp->scratch[i1];
+               pngp->scratch_cur = i1;
+            }
+            if (f0 == PNG_FILTER_PAETH)
+               rpng_filter_paeth_pair(dec0, dec1, raw0, raw1,
+                     pngp->prev_line, pngp->pitch, pngp->bpp);
+            else
+               rpng_filter_avg_pair(dec0, dec1, raw0, raw1,
+                     pngp->prev_line, pngp->pitch, pngp->bpp);
+            rpng_reverse_filter_convert(pngp->out_cursor, ihdr, pngp,
+                  dec0);
+            rpng_reverse_filter_convert(pngp->out_cursor + ihdr->width,
+                  ihdr, pngp, dec1);
+            if (in_place)
+            {
+               /* Release the line the pair's first row used as prev
+                * and the first row itself; the second row is the new
+                * prev and stays held so the ring cannot recycle its
+                * slot. */
+               pngp->restore_buf_size += pngp->held + line;
+               pngp->held              = line;
+            }
+            else
+            {
+               /* Scratch lines need no ring protection: release both
+                * raw lines and anything held. */
+               pngp->restore_buf_size += pngp->held + 2 * line;
+               pngp->held              = 0;
+            }
+            pngp->prev_line         = dec1;
+            pngp->h                += 2;
+            pngp->inflate_buf      += 2 * line;
+            if (    pngp->ring_size < pngp->inflate_buf_size
+                &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
+               pngp->inflate_buf = pngp->inflate_base;
+            pngp->out_cursor    += 2 * (size_t)ihdr->width;
+            return IMAGE_PROCESS_NEXT;
+         }
+      }
+   }
+#endif
    if (pngp->h < ihdr->height)
    {
       unsigned filter         = *pngp->inflate_buf++;
-      pngp->restore_buf_size += 1;
-      ret                     = rpng_reverse_filter_copy_line(*data,
+      ret                     = rpng_reverse_filter_copy_line(pngp->out_cursor,
             ihdr, pngp, filter);
       if (ret == IMAGE_PROCESS_END || ret == IMAGE_PROCESS_ERROR_END)
          goto end;
@@ -1273,20 +2566,46 @@ static int rpng_reverse_filter_regular_iterate(
       goto end;
 
    pngp->h++;
+   /* Consume-late: a line unfiltered in place is the next line's
+    * prev, living in the ring, so the previously held line is
+    * released and this one held in its stead.  A line decoded into
+    * scratch needs no ring protection: release it and any held line
+    * at once. */
+   if (pngp->prev_line == pngp->inflate_buf)
+   {
+      pngp->restore_buf_size   += pngp->held;
+      pngp->held                = (size_t)pngp->pitch + 1;
+   }
+   else
+   {
+      pngp->restore_buf_size   += pngp->held + pngp->pitch + 1;
+      pngp->held                = 0;
+   }
    pngp->inflate_buf           += pngp->pitch;
-   pngp->restore_buf_size      += pngp->pitch;
 
-   *data                       += ihdr->width;
-   pngp->data_restore_buf_size += ihdr->width;
+   /* Recycling window: the ring is a whole number of scanlines, so
+    * the cursor lands exactly on the ring end between lines and
+    * never mid-line. */
+   if (    pngp->ring_size < pngp->inflate_buf_size
+       &&  pngp->inflate_buf == pngp->inflate_base + pngp->ring_size)
+      pngp->inflate_buf = pngp->inflate_base;
+
+   pngp->out_cursor            += ihdr->width;
 
    return IMAGE_PROCESS_NEXT;
 
 end:
+   /* Nothing will use the held line as prev any more; fold it into
+    * the consumed count so the full-buffer rewind below and the
+    * ring's free-space arithmetic both see every processed byte. */
+   pngp->restore_buf_size += pngp->held;
+   pngp->held              = 0;
    rpng_reverse_filter_deinit(pngp);
 
-   pngp->inflate_buf -= pngp->restore_buf_size;
-   *data             -= pngp->data_restore_buf_size;
-   pngp->data_restore_buf_size = 0;
+   if (pngp->ring_size < pngp->inflate_buf_size)
+      pngp->inflate_buf = pngp->inflate_base;
+   else
+      pngp->inflate_buf -= pngp->restore_buf_size;
    return ret;
 }
 
@@ -1303,16 +2622,19 @@ static int rpng_reverse_filter_adam7_iterate(uint32_t **data_,
 
    if ((ret = rpng_reverse_filter_init(ihdr, pngp)) == 1)
       return IMAGE_PROCESS_NEXT;
+   else if (ret == RPNG_FILTER_WAIT)
+      return RPNG_FILTER_WAIT;
    else if (ret == -1)
       return IMAGE_PROCESS_ERROR_END;
 
    if (rpng_reverse_filter_init(&pngp->ihdr, pngp) == -1)
       return IMAGE_PROCESS_ERROR;
 
+   pngp->out_cursor = pngp->data;
+
    do
    {
-      ret = rpng_reverse_filter_regular_iterate(&pngp->data,
-            &pngp->ihdr, pngp);
+      ret = rpng_reverse_filter_regular_iterate(&pngp->ihdr, pngp);
    } while (ret == IMAGE_PROCESS_NEXT);
 
    if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
@@ -1350,6 +2672,12 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
       case IMAGE_PROCESS_ERROR_END:
       case IMAGE_PROCESS_END:
          break;
+      case RPNG_FILTER_WAIT:
+         /* More inflate needed before this pass can start; do not
+          * advance pass_pos and do not disturb the restore
+          * bookkeeping.  Tell the driver to pull a slice. */
+         pngp->flags |= RPNG_PROCESS_FLAG_FILTER_STARVED;
+         return 0;
       case IMAGE_PROCESS_NEXT:
          pngp->pass_pos++;
          return 0;
@@ -1369,18 +2697,95 @@ static int rpng_reverse_filter_adam7(uint32_t **data_,
    return ret;
 }
 
+/* Output slice fed to the inflate backend per call.  Inflating with the
+ * whole image as avail_out makes zlib verify the stream's Adler-32 in
+ * one cold pass over the entire decompressed buffer at stream end -- on
+ * a 256 KB last-level cache that is a guaranteed full re-read from DRAM
+ * (measured: 16K line fills for a 1 MB image, ~17% of the decode's
+ * total LL misses).  Bounded slices keep the checksum running over
+ * output that the same inflate call just wrote, so it stays cache-warm;
+ * the slice must comfortably exceed the 32 KB deflate window and small
+ * enough to sit in L1/L2 alongside the window.  64 KB does both.  This
+ * also restores the incremental pacing the nbio callers were written
+ * for: one bounded step per rpng_process_image call instead of one
+ * unbounded one. */
+#define RPNG_INFLATE_SLICE 32768
+
 static int rpng_load_image_argb_process_inflate_init(
       rpng_t *rpng, uint32_t **data)
 {
    bool zstatus;
    enum trans_stream_error err;
-   uint32_t rd, wn;
+   uint32_t rd, wn, slice;
    struct rpng_process *process = (struct rpng_process*)rpng->process;
-   bool to_continue             = (process->avail_in  > 0
-                                && process->avail_out > 0);
+   /* Keep going while output is still owed, even once the compressed
+    * input is exhausted.  An inflate backend buffers whole input bytes
+    * into its bit accumulator ahead of use and reports them as read, so
+    * "input consumed" does not mean "output finished" - there can be a
+    * bit accumulator's worth of decodable data left after the last byte
+    * has been handed over.  Requiring avail_in > 0 here truncated those
+    * trailing bytes and then failed the whole image on the
+    * under-produced check below.  Progress is enforced after the call
+    * instead. */
+   bool to_continue             = (process->avail_out > 0);
 
    if (!to_continue)
       goto end;
+
+   /* Feed the compressed stream straight from the caller's buffer,
+    * one IDAT span at a time (the accumulated idat_buf copy this
+    * replaces was ~20% of a decode's DRAM traffic on a small cache,
+    * and its allocation the decode's largest after the inflate
+    * buffer).  Skip any spans already fully consumed, then hand the
+    * backend the remainder of the current one; set_in only
+    * resets the backend's input window, so re-declaring the remainder each
+    * call is the normal streaming usage. */
+   while (   process->span_idx < rpng->idat_buf.n
+          && process->span_pos >= rpng->idat_buf.v[process->span_idx].len)
+   {
+      process->span_idx++;
+      process->span_pos = 0;
+   }
+   if (process->span_idx < rpng->idat_buf.n)
+   {
+      const struct idat_span *sp = &rpng->idat_buf.v[process->span_idx];
+      process->stream_backend->set_in(process->stream,
+            rpng->buff_start + sp->off + process->span_pos,
+            sp->len - process->span_pos);
+   }
+   else
+   {
+      /* All spans consumed: declare an empty input window so the
+       * backend drains whatever it still holds internally rather than
+       * re-reading the previous one. */
+      process->stream_backend->set_in(process->stream,
+            rpng->buff_start, 0);
+   }
+
+   {
+      size_t wpos    = process->inflated_total % process->ring_size;
+      size_t contig  = process->ring_size - wpos;
+      /* Free ring space: what has been produced but not yet consumed
+       * by the filters stays untouchable.  restore_buf_size counts
+       * consumed bytes exactly on the regular path; on the interlaced
+       * path the ring equals the full buffer, where this bound is
+       * provably never the minimum, whatever the pass-local counter
+       * holds. */
+      size_t free_sp = process->ring_size
+            - (process->inflated_total - process->restore_buf_size);
+      size_t bound   = process->avail_out;
+      if (bound > RPNG_INFLATE_SLICE)
+         bound = RPNG_INFLATE_SLICE;
+      if (bound > contig)
+         bound = contig;
+      if (bound > free_sp)
+         bound = free_sp;
+      slice = (uint32_t)bound;
+      if (!slice)  /* ring momentarily full; filters must drain first */
+         return 0;
+      process->stream_backend->set_out(process->stream,
+            process->inflate_base + wpos, slice);
+   }
 
    zstatus = process->stream_backend->trans(
       process->stream, false, &rd, &wn, &err);
@@ -1388,16 +2793,51 @@ static int rpng_load_image_argb_process_inflate_init(
    if (!zstatus && err != TRANS_STREAM_ERROR_BUFFER_FULL)
       goto error;
 
-   process->avail_in -= rd;
-   process->avail_out -= wn;
-   process->total_out += wn;
+   process->avail_in      -= rd;
+   process->span_pos      += rd;
+   process->avail_out     -= wn;
+   process->total_out     += wn;
+   process->inflated_total += wn;
+
+   /* No input taken and no output made means the backend cannot get any
+    * further - a truncated or corrupt stream.  Without this the
+    * avail_in > 0 condition above was doing double duty as the
+    * termination guarantee. */
+   if (rd == 0 && wn == 0)
+      goto error;
 
    if (err)
       return 0;
 
 end:
+   /* Stream complete.  An under-produced stream (declared geometry
+    * not fully covered) was previously caught by the reverse-filter
+    * init's whole-image check, which now runs before the stream ends;
+    * enforce it here instead, in the one place that knows the stream
+    * is finished. */
+   if (process->avail_out > 0 && rpng->ihdr.interlace != 1)
+      goto error;
    process->stream_backend->stream_free(process->stream);
    process->stream = NULL;
+
+   process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   return 1;
+
+error:
+   process->flags &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
+   return -1;
+}
+
+/* One-time output-side setup, run before the first reverse-filter
+ * step rather than after the whole stream has inflated (the decode is
+ * interleaved: unfiltering consumes scanlines while later slices are
+ * still being inflated, so each slice is unfiltered while it is still
+ * cache-warm instead of being re-read cold after a full-image inflate
+ * pass). */
+static int rpng_load_image_argb_process_output_init(
+      rpng_t *rpng, uint32_t **data)
+{
+   struct rpng_process *process = (struct rpng_process*)rpng->process;
 
 #ifdef GEKKO
    /* We often use these in textures, make sure 
@@ -1409,7 +2849,7 @@ end:
          (size_t)rpng->ihdr.height * sizeof(uint32_t));
 #endif
    if (!*data)
-      goto false_end;
+      return -1;
 
    process->adam7_restore_buf_size = 0;
    process->restore_buf_size       = 0;
@@ -1417,69 +2857,69 @@ end:
 
    if (rpng->ihdr.interlace != 1)
       if (rpng_reverse_filter_init(&rpng->ihdr, process) == -1)
-         goto false_end;
+         return -1;
 
-   process->flags |=  RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
-   return 1;
+   process->out_cursor = *data;
 
-error:
-false_end:
-   process->flags &= ~RPNG_PROCESS_FLAG_INFLATE_INITIALIZED;
-   return -1;
+   process->flags |= RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED;
+   return 0;
 }
 
-/* Cap on the accumulated IDAT stream.  The IHDR check rejects
- * images whose decoded output would exceed 4 GiB, so any legitimate
- * IDAT stream will be well under this ceiling.  256 MiB of
- * compressed IDAT is far larger than any realistic libretro asset
- * and small enough that even on 32-bit the doubling loop below
- * cannot overflow.  Rejecting here closes off a decompression-bomb
- * path where a hostile PNG streams many large IDAT chunks to force
- * the intermediate buffer to grow arbitrarily. */
-#define RPNG_IDAT_MAX ((size_t)256 * 1024 * 1024)
+/* Ceiling on the accumulated IDAT stream.  The PNG specification sets
+ * no limit here: IDAT may repeat without bound and the accumulated
+ * compressed stream can legitimately be very large, so this is not a
+ * policy number - a 320 MiB screenshot or scan is a real file, not a
+ * hostile one.  What the arithmetic below genuinely needs is a value
+ * to subtract from so the running total, the per-chunk addition and
+ * the capacity doubling cannot overflow size_t.  Use the largest
+ * quantity that can actually be addressed: SIZE_MAX/2 leaves the
+ * doubling loop headroom (new_cap *= 2 stays representable) and still
+ * rejects only what malloc could never satisfy.
+ *
+ * The decompression-bomb concern the old, much lower cap also served
+ * is covered independently: the IHDR guards reject any image whose
+ * decoded output or intermediate inflate buffer would exceed 4 GiB, so
+ * an IDAT stream far larger than its declared geometry is refused at
+ * inflate time regardless of how much of it accumulated. */
+#define RPNG_IDAT_MAX ((size_t)-1 / 2)
 
-static bool rpng_realloc_idat(struct idat_buffer *buf, uint32_t chunk_size)
+/* When the whole file is in the buffer (every in-tree caller: the
+ * task spine and the synchronous loader decode at completion), the
+ * compressed size is knowable before accumulating: walk the chunk
+ * headers from the first IDAT and sum them.  One exact allocation
+ * replaces the doubling - no copies during accumulation, no
+ * capacity overshoot held across the decode.  A walk that runs off
+ * the end (a truncated or genuinely streaming buffer) returns 0 and
+ * the doubling below stays the fallback. */
+/* Record one IDAT payload.  Both caps mirror the copying path this
+ * replaces: total payload bytes stay bounded by RPNG_IDAT_MAX exactly
+ * as before (the overflow-guarded accumulation was the subject of a
+ * past hardening fix), and the span array itself is held to the same
+ * byte bound so a malicious stream of millions of tiny IDAT chunks
+ * cannot make the bookkeeping allocation exceed what the old payload
+ * copy could ever have reached. */
+static bool rpng_idat_append_span(struct idat_spans *sp,
+      size_t off, uint32_t chunk_size)
 {
-   size_t required;
-
-   /* Pre-patch: buf->size + chunk_size was size_t + uint32_t.  On
-    * 32-bit size_t the sum could wrap (accumulated IDAT plus a
-    * near-UINT32_MAX chunk_size), making "required > capacity"
-    * false, the realloc skipped, and the subsequent memcpy writing
-    * past the existing buffer.  Detect overflow explicitly and
-    * cap total growth. */
-   if (chunk_size > RPNG_IDAT_MAX - buf->size)
+   if (chunk_size > RPNG_IDAT_MAX - sp->total)
       return false;
-   required = buf->size + chunk_size;
-
-   if (required > buf->capacity)
+   if (sp->n >= sp->cap)
    {
-      uint8_t *new_buffer = NULL;
-      size_t new_cap      = buf->capacity ? buf->capacity : 4096;
-
-      /* Cap the doubling too so a malicious chunk at the edge of
-       * RPNG_IDAT_MAX cannot drive new_cap past SIZE_MAX / 2. */
-      while (new_cap < required)
-      {
-         if (new_cap > RPNG_IDAT_MAX / 2)
-         {
-            new_cap = RPNG_IDAT_MAX;
-            break;
-         }
-         new_cap *= 2;
-      }
-      if (new_cap < required)
+      struct idat_span *nv;
+      size_t ncap = sp->cap ? sp->cap * 2 : 64;
+      if (sp->n >= RPNG_IDAT_MAX / sizeof(*sp->v))
          return false;
-
-      new_buffer = (uint8_t*)realloc(buf->data, new_cap);
-
-      if (!new_buffer)
+      if (ncap > RPNG_IDAT_MAX / sizeof(*sp->v))
+         ncap = RPNG_IDAT_MAX / sizeof(*sp->v);
+      if (!(nv = (struct idat_span*)realloc(sp->v, ncap * sizeof(*nv))))
          return false;
-
-      buf->data     = new_buffer;
-      buf->capacity = new_cap;
+      sp->v   = nv;
+      sp->cap = ncap;
    }
-
+   sp->v[sp->n].off = off;
+   sp->v[sp->n].len = chunk_size;
+   sp->n++;
+   sp->total += chunk_size;
    return true;
 }
 
@@ -1494,10 +2934,49 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
 
    process->stream_backend         = trans_stream_get_zlib_inflate_backend();
 
-   rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
-         rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
-   if (rpng->ihdr.interlace == 1) /* To be sure. */
-      process->inflate_buf_size *= 2;
+   /* A build without an inflate backend (no HAVE_ZLIB) gets a stub
+    * whose members are NULL; without this check the call below jumps
+    * to address zero.  Such a build cannot decode a PNG at all, so
+    * fail the open honestly. */
+   if (   !process->stream_backend
+       || !process->stream_backend->stream_new)
+   {
+      free(process);
+      return NULL;
+   }
+
+   if (rpng->ihdr.interlace == 1)
+      process->inflate_buf_size = rpng_adam7_buf_size(&rpng->ihdr);
+   else
+      rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+            rpng->ihdr.height, NULL, NULL, &process->inflate_buf_size);
+
+   /* Interleaved decode lets the inflate window recycle: filtering
+    * consumes scanlines as slices arrive, so for regular images the
+    * buffer only needs to cover the in-flight region, not the whole
+    * image.  A whole number of scanlines at least two lines and at
+    * least two inflate slices deep keeps lines contiguous across the
+    * wrap and guarantees progress (if no whole line is available, at
+    * least a line's worth of ring is free).  Adam7 consumes whole
+    * passes and rewinds across them, so interlaced images keep the
+    * full-size buffer, which makes every ring expression below an
+    * identity. */
+   if (rpng->ihdr.interlace == 1)
+      process->ring_size = process->inflate_buf_size;
+   else
+   {
+      unsigned pitch_l = 0;
+      size_t   line, k;
+      rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+            rpng->ihdr.height, NULL, &pitch_l, NULL);
+      line = (size_t)pitch_l + 1;
+      k    = ((size_t)(2 * RPNG_INFLATE_SLICE) + line - 1) / line;
+      if (k < 2)
+         k = 2;
+      process->ring_size = k * line;
+      if (process->ring_size > process->inflate_buf_size)
+         process->ring_size = process->inflate_buf_size;
+   }
 
    process->stream = process->stream_backend->stream_new();
 
@@ -1507,22 +2986,20 @@ static struct rpng_process *rpng_process_init(rpng_t *rpng)
       return NULL;
    }
 
-   inflate_buf = (uint8_t*)malloc(process->inflate_buf_size);
+   inflate_buf = (uint8_t*)malloc(process->ring_size);
    if (!inflate_buf)
       goto error;
 
-   process->inflate_buf = inflate_buf;
-   process->avail_in    = rpng->idat_buf.size;
+   process->inflate_buf  = inflate_buf;
+   process->inflate_base = inflate_buf;
+   process->avail_in     = rpng->idat_buf.total;
    process->avail_out   = process->inflate_buf_size;
+   process->span_idx    = 0;
+   process->span_pos    = 0;
 
-   process->stream_backend->set_in(
-         process->stream,
-         rpng->idat_buf.data,
-         (uint32_t)rpng->idat_buf.size);
-   process->stream_backend->set_out(
-         process->stream,
-         process->inflate_buf,
-         (uint32_t)process->inflate_buf_size);
+   /* Input is fed span by span from the caller's buffer in
+    * rpng_load_image_argb_process_inflate_init; output likewise in
+    * bounded slices there.  Nothing to hand the backend yet. */
 
    return process;
 
@@ -1570,6 +3047,12 @@ static enum png_chunk_type rpng_read_chunk_header(
       return PNG_CHUNK_PLTE;
    if (tag == 0x74524E53) /* "tRNS" */
       return PNG_CHUNK_tRNS;
+   if (tag == 0x63494350) /* "cICP" */
+      return PNG_CHUNK_cICP;
+   if (tag == 0x634C4C49) /* "cLLI" */
+      return PNG_CHUNK_cLLI;
+   if (tag == 0x6D444356) /* "mDCV" */
+      return PNG_CHUNK_mDCV;
 
    return PNG_CHUNK_NOOP;
 }
@@ -1580,15 +3063,34 @@ bool rpng_iterate_image(rpng_t *rpng)
    uint32_t chunk_size      = 0;
    size_t   remaining;
 
+   rpng->need_more = false;
+
    /* Check whether data buffer pointer is valid */
    if (buf > rpng->buff_end)
       return false;
 
-   /* Check whether reading the header will overflow
-    * the data buffer.  buff_end points at the LAST byte of the
-    * input, so bytes-remaining = (buff_end - buf) + 1. */
-   if ((size_t)(rpng->buff_end - buf) + 1 < 8)
+   /* The read cursor may have advanced past the resident frontier (the
+    * previous chunk ended near it): that is the wall, not EOF.  Guard
+    * before the size subtractions below, which are unsigned and would
+    * otherwise wrap to a huge "remaining" and wave a non-resident
+    * chunk through. */
+   if (buf > rpng->avail_end)
+   {
+      if (rpng->avail_end < rpng->buff_end)
+         rpng->need_more = true;
       return false;
+   }
+
+   /* The chunk header (length + type = 8 bytes) must lie within the
+    * resident frontier.  If it does not but more of the file is still
+    * to arrive, this is the resident wall, not a malformed header:
+    * flag need_more so the caller retries after feeding. */
+   if ((size_t)(rpng->avail_end - buf) + 1 < 8)
+   {
+      if (rpng->avail_end < rpng->buff_end)
+         rpng->need_more = true;
+      return false;
+   }
 
    chunk_size = rpng_dword_be(buf);
 
@@ -1603,10 +3105,27 @@ bool rpng_iterate_image(rpng_t *rpng)
     * check, letting the memcpy at the IDAT handler read ~4 GiB
     * past the end of the input).  Compare sizes instead of
     * pointers, and reject chunk_size that cannot possibly fit
-    * even before accounting for the type/CRC overhead. */
-   remaining = (size_t)(rpng->buff_end - buf) + 1;
+    * even before accounting for the type/CRC overhead.
+    *
+    * 'remaining' counts only RESIDENT bytes (to avail_end): a chunk
+    * whose body has not fully arrived yet is a wall, not an
+    * overflow.  A chunk that cannot fit within the TRUE end
+    * (buff_end) even when fully resident is genuinely malformed. */
+   remaining = (size_t)(rpng->avail_end - buf) + 1;
    if (chunk_size > remaining || remaining - chunk_size < 12)
+   {
+      /* Would the chunk fit if the rest of the file were resident?
+       * If so, we are only at the resident wall - ask for more. */
+      size_t true_remaining = (size_t)(rpng->buff_end - buf) + 1;
+      if (rpng->avail_end < rpng->buff_end
+            && chunk_size <= true_remaining
+            && true_remaining - chunk_size >= 12)
+      {
+         rpng->need_more = true;
+         return false;
+      }
       return false;
+   }
 
    switch (rpng_read_chunk_header(buf, chunk_size))
    {
@@ -1674,8 +3193,11 @@ bool rpng_iterate_image(rpng_t *rpng)
           * when each factor is 32-bit). */
          {
             size_t pass_size = 0;
-            rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
-                           rpng->ihdr.height, NULL, NULL, &pass_size);
+            if (rpng->ihdr.interlace == 1)
+               pass_size = rpng_adam7_buf_size(&rpng->ihdr);
+            else
+               rpng_pass_geom(&rpng->ihdr, rpng->ihdr.width,
+                              rpng->ihdr.height, NULL, NULL, &pass_size);
             if ((uint64_t)rpng->ihdr.width * rpng->ihdr.height
                      * sizeof(uint32_t) >= 0x100000000ULL
 #if SIZE_MAX > 0xFFFFFFFFULL
@@ -1751,6 +3273,58 @@ bool rpng_iterate_image(rpng_t *rpng)
          rpng->flags         |= RPNG_FLAG_HAS_TRNS;
          break;
 
+      case PNG_CHUNK_cICP:
+         /* Coding-independent code points: 4-byte payload
+          * (primaries, transfer, matrix, full-range flag). Must
+          * precede IDAT. Ignore malformed sizes rather than failing
+          * the whole decode over an ancillary chunk. */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 4)
+         {
+            buf += 8;
+            rpng->hdr.colour_primaries      = buf[0];
+            rpng->hdr.transfer_function     = buf[1];
+            rpng->hdr.matrix_coefficients   = buf[2];
+            rpng->hdr.video_full_range_flag = buf[3];
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
+      case PNG_CHUNK_cLLI:
+         /* Content light level: MaxCLL, MaxFALL as 4-byte unsigned
+          * integers in units of 0.0001 cd/m^2. */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 8)
+         {
+            buf += 8;
+            rpng->hdr.max_cll  = (float)rpng_dword_be(buf + 0) / 10000.0f;
+            rpng->hdr.max_fall = (float)rpng_dword_be(buf + 4) / 10000.0f;
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
+      case PNG_CHUNK_mDCV:
+         /* Mastering display colour volume: R,G,B then white
+          * chromaticity pairs (2-byte, units of 0.00002), then max
+          * and min luminance (4-byte, units of 0.0001 cd/m^2). */
+         if (!(rpng->flags & RPNG_FLAG_HAS_IDAT) && chunk_size == 24)
+         {
+            int c;
+            buf += 8;
+            for (c = 0; c < 3; c++)
+            {
+               rpng->hdr.primary_chromaticity[c][0] =
+                  (float)rpng_word_be(buf + c * 4 + 0) / 50000.0f;
+               rpng->hdr.primary_chromaticity[c][1] =
+                  (float)rpng_word_be(buf + c * 4 + 2) / 50000.0f;
+            }
+            rpng->hdr.white_point[0] = (float)rpng_word_be(buf + 12) / 50000.0f;
+            rpng->hdr.white_point[1] = (float)rpng_word_be(buf + 14) / 50000.0f;
+            rpng->hdr.max_luminance  = (float)rpng_dword_be(buf + 16) / 10000.0f;
+            rpng->hdr.min_luminance  = (float)rpng_dword_be(buf + 20) / 10000.0f;
+            rpng->hdr.write_mdcv     = 1;
+            rpng->flags |= RPNG_FLAG_HAS_HDR;
+         }
+         break;
+
       case PNG_CHUNK_IDAT:
          if (     !(rpng->flags & RPNG_FLAG_HAS_IHDR)
                ||  (rpng->flags & RPNG_FLAG_HAS_IEND)
@@ -1759,14 +3333,17 @@ bool rpng_iterate_image(rpng_t *rpng)
                   !(rpng->flags & RPNG_FLAG_HAS_PLTE)))
             return false;
 
-         if (!rpng_realloc_idat(&rpng->idat_buf, chunk_size))
-            return false;
-
          buf += 8;
 
-         memcpy(rpng->idat_buf.data + rpng->idat_buf.size, buf, chunk_size);
-
-         rpng->idat_buf.size += chunk_size;
+         /* Zero-length IDAT chunks are legal; they contribute no
+          * payload, so no span - the HAS_IDAT flag alone records
+          * them. */
+         if (chunk_size)
+         {
+            if (!rpng_idat_append_span(&rpng->idat_buf,
+                  (size_t)(buf - rpng->buff_start), chunk_size))
+               return false;
+         }
 
          rpng->flags         |= RPNG_FLAG_HAS_IDAT;
          break;
@@ -1829,29 +3406,74 @@ int rpng_process_image(rpng_t *rpng,
 
       rpng->process = process;
       rpng->process->supports_rgba = supports_rgba;
+      rpng->process->want_10bit    = rpng->want_10bit;
       return IMAGE_PROCESS_NEXT;
    }
 
-   if (!(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+   /* Interleaved decode: inflate is demand-driven.  A slice is only
+    * pulled when the next unit of filtering work (a scanline, or an
+    * Adam7 pass) has not fully arrived, so consumption tracks
+    * production and each slice is unfiltered while still cache-warm
+    * rather than re-read cold after a whole-image inflate pass. */
+   if (!(rpng->process->flags & RPNG_PROCESS_FLAG_OUTPUT_INITIALIZED))
    {
-      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+      if (rpng_load_image_argb_process_output_init(rpng, data) == -1)
          goto error;
-      return IMAGE_PROCESS_NEXT;
    }
 
    *width  = rpng->ihdr.width;
    *height = rpng->ihdr.height;
 
    if (rpng->ihdr.interlace && rpng->process)
-      return rpng_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
-   return rpng_reverse_filter_regular_iterate(data,
-      &rpng->ihdr, rpng->process);
+   {
+      int ret;
+      rpng->process->flags &= ~RPNG_PROCESS_FLAG_FILTER_STARVED;
+      ret = rpng_reverse_filter_adam7(data, &rpng->ihdr, rpng->process);
+      if (   (rpng->process->flags & RPNG_PROCESS_FLAG_FILTER_STARVED)
+          && !(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED))
+      {
+         if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+            goto error;
+      }
+      return ret;
+   }
+
+   /* A scanline is one filter byte plus pitch bytes; pull one inflate
+    * slice when the next one has not fully arrived.  held bytes are
+    * already unfiltered in place - they lag restore_buf_size only to
+    * keep their ring slot out of the recycling window - so they do
+    * not count as an available raw line. */
+   if (   !(rpng->process->flags & RPNG_PROCESS_FLAG_INFLATE_INITIALIZED)
+       &&   rpng->process->total_out - rpng->process->restore_buf_size
+              - rpng->process->held
+          < (size_t)rpng->process->pitch + 1)
+   {
+      if (rpng_load_image_argb_process_inflate_init(rpng, data) == -1)
+         goto error;
+      if (   rpng->process->total_out - rpng->process->restore_buf_size
+               - rpng->process->held
+           < (size_t)rpng->process->pitch + 1)
+         return IMAGE_PROCESS_NEXT;
+   }
+
+   return rpng_reverse_filter_regular_iterate(&rpng->ihdr, rpng->process);
 
 error:
    if (rpng->process)
    {
-      if (rpng->process->inflate_buf)
-         free(rpng->process->inflate_buf);
+      /* An externally abandoned decode (cancelled task) can be torn
+       * down at any machine state: the per-pass output, the scanline
+       * buffers and the inflate window may all still be live here. */
+      if (rpng->process->data)
+         free(rpng->process->data);
+      if (rpng->process->scratch[0])
+         free(rpng->process->scratch[0]);
+      if (rpng->process->scratch[1])
+         free(rpng->process->scratch[1]);
+      if (rpng->process->scratch[2])
+         free(rpng->process->scratch[2]);
+      if (rpng->process->inflate_base)
+         free(rpng->process->inflate_base);
       if (rpng->process->stream)
          rpng->process->stream_backend->stream_free(rpng->process->stream);
       free(rpng->process);
@@ -1865,12 +3487,24 @@ void rpng_free(rpng_t *rpng)
    if (!rpng)
       return;
 
-   if (rpng->idat_buf.data)
-      free(rpng->idat_buf.data);
+   if (rpng->idat_buf.v)
+      free(rpng->idat_buf.v);
    if (rpng->process)
    {
-      if (rpng->process->inflate_buf)
-         free(rpng->process->inflate_buf);
+      /* An externally abandoned decode (cancelled task) is torn down
+       * here at an arbitrary machine state: the per-pass output and
+       * the scanline buffers may still be live alongside the inflate
+       * window. */
+      if (rpng->process->data)
+         free(rpng->process->data);
+      if (rpng->process->scratch[0])
+         free(rpng->process->scratch[0]);
+      if (rpng->process->scratch[1])
+         free(rpng->process->scratch[1]);
+      if (rpng->process->scratch[2])
+         free(rpng->process->scratch[2]);
+      if (rpng->process->inflate_base)
+         free(rpng->process->inflate_base);
       if (rpng->process->stream)
       {
          if (   rpng->process->stream_backend 
@@ -1903,6 +3537,25 @@ bool rpng_start(rpng_t *rpng)
    return true;
 }
 
+/* Prefix early-start gate: return true once the resident bytes contain
+ * the 8-byte signature and the whole IHDR chunk, so the chunk walk can
+ * begin (it parses IHDR before anything else, then gathers IDAT with
+ * per-chunk need_more waits as the read progresses).  IHDR is a fixed
+ * 13-byte payload: signature (8) + length (4) + "IHDR" (4) + data (13)
+ * + CRC (4) = 33 bytes.  No allocation, no decode. */
+bool rpng_header_ready(const uint8_t *data, size_t len)
+{
+   if (!data || len < 33)
+      return false;
+   if (memcmp(data, png_magic, sizeof(png_magic)) != 0)
+      return false;
+   /* Bytes 12..15 are the chunk type of the first chunk after the
+    * signature; per spec it must be IHDR. */
+   if (memcmp(data + 12, "IHDR", 4) != 0)
+      return false;
+   return true;
+}
+
 /**
  * rpng_is_valid:
  *
@@ -1922,15 +3575,98 @@ bool rpng_is_valid(rpng_t *rpng)
    return (rpng && ((rpng->flags & valid_mask) == valid_mask));
 }
 
+bool rpng_get_hdr_metadata(rpng_t *rpng, struct rpng_hdr_metadata *out)
+{
+   if (!rpng || !out || !(rpng->flags & RPNG_FLAG_HAS_HDR))
+      return false;
+   *out = rpng->hdr;
+   return true;
+}
+
+void rpng_set_want_10bit(rpng_t *rpng, int want)
+{
+   if (rpng)
+      rpng->want_10bit = (want != 0);
+}
+
+bool rpng_is_10bit(const rpng_t *rpng)
+{
+   /* True only when 10-bit output was requested and the source is a 16-bit
+    * RGB image, i.e. the decode actually produced packed XRGB2101010. Only
+    * the RGB (colour type 2) path packs 10-bit; 16-bit RGBA still narrows to
+    * 8-bit, so it must not report 10-bit here. */
+   return rpng
+      && rpng->want_10bit
+      && (rpng->flags & RPNG_FLAG_HAS_IHDR)
+      && rpng->ihdr.depth == 16
+      && rpng->ihdr.color_type == PNG_IHDR_COLOR_RGB;
+}
+
 bool rpng_set_buf_ptr(rpng_t *rpng, void *data, size_t len)
 {
    if (!rpng || (len < 1))
       return false;
 
    rpng->buff_data = (uint8_t*)data;
+   rpng->buff_start = rpng->buff_data;
    rpng->buff_end  = rpng->buff_data + (len - 1);
+   /* Default: the whole buffer is resident.  A prefix-feeding caller
+    * lowers the frontier with rpng_set_avail after this. */
+   rpng->avail_end = rpng->buff_end;
+   rpng->need_more = false;
 
    return true;
+}
+
+/* Prefix decoding: declare how many bytes from buff_data are actually
+ * resident.  'avail' is a byte count; the frontier is clamped to the
+ * true buffer end and only ever advances.  While the frontier is below
+ * buff_end, rpng_iterate_image treats a chunk that reaches past it as
+ * "need more" (rpng_need_more() returns true) rather than end-of-file,
+ * so a caller feeding a growing read can retry.  With avail == full
+ * length (the default) the walk is exactly the classic whole-buffer
+ * one. */
+void rpng_set_avail(rpng_t *rpng, size_t avail)
+{
+   uint8_t *front;
+   size_t   full;
+   if (!rpng || !rpng->buff_start || !rpng->buff_end)
+      return;
+   /* Clamp in the size domain first: a caller signalling "whole buffer
+    * resident" passes (size_t)-1, and buff_start + (avail - 1) would
+    * overflow the pointer (UB) before the buff_end clamp below could
+    * catch it.  full = total length = (buff_end - buff_start) + 1. */
+   full = (size_t)(rpng->buff_end - rpng->buff_start) + 1;
+   if (avail > full)
+      avail = full;
+   if (avail == 0)   /* nothing resident yet: keep the frontier unset */
+      return;
+   /* Anchor on buff_start (the fixed buffer base captured at
+    * set_buf_ptr): buff_data advances as chunks are consumed, so
+    * deriving the frontier from it would place the wall 'avail' bytes
+    * past the CURSOR instead of past the start. */
+   front = rpng->buff_start + avail - 1;
+   if (front > rpng->buff_end)
+      front = rpng->buff_end;
+   /* The default frontier is the whole buffer (for callers that never
+    * feed a prefix).  The first set_avail switches to caller-driven
+    * mode and sets the frontier absolutely - it is lower than the
+    * default - after which it is strictly monotonic. */
+   if (!(rpng->flags & RPNG_FLAG_AVAIL_SET))
+   {
+      rpng->flags    |= RPNG_FLAG_AVAIL_SET;
+      rpng->avail_end = front;
+   }
+   else if (front > rpng->avail_end)
+      rpng->avail_end = front;
+}
+
+/* True when the last rpng_iterate_image stopped because a chunk lay
+ * past the resident frontier (not EOF, not malformed): raise the
+ * frontier with rpng_set_avail and iterate again. */
+bool rpng_need_more(const rpng_t *rpng)
+{
+   return rpng ? rpng->need_more : false;
 }
 
 rpng_t *rpng_alloc(void)

@@ -749,6 +749,12 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    else if (string_is_equal(interface, wp_viewporter_interface.name) && found++)
       wl->viewporter = (struct wp_viewporter*)wl_registry_bind(reg,
             id, &wp_viewporter_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_presentation_interface.name) && found++)
+   {
+      wl->presentation = (struct wp_presentation*)wl_registry_bind(reg,
+         id, &wp_presentation_interface, MIN(version, 2));
+      wp_presentation_add_listener(wl->presentation, &presentation_listener, wl);
+   }
    else if (string_is_equal(interface, wp_fractional_scale_manager_v1_interface.name) && found++)
       wl->fractional_scale_manager = (struct wp_fractional_scale_manager_v1*)
          wl_registry_bind(reg, id, &wp_fractional_scale_manager_v1_interface, MIN(version, 1));
@@ -782,7 +788,7 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
    }
    else if (string_is_equal(interface, xdg_wm_base_interface.name) && found++)
       wl->xdg_shell = (struct xdg_wm_base*)
-         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 3));
+         wl_registry_bind(reg, id, &xdg_wm_base_interface, MIN(version, 6));
    else if (string_is_equal(interface, wl_shm_interface.name) && found++)
       wl->shm = (struct wl_shm*)wl_registry_bind(reg, id, &wl_shm_interface, MIN(version, 1));
    else if (string_is_equal(interface, wl_seat_interface.name) && found++)
@@ -837,6 +843,10 @@ static void wl_registry_handle_global(void *data, struct wl_registry *reg,
       wl->xdg_toplevel_tag_manager = (struct xdg_toplevel_tag_manager_v1*)
          wl_registry_bind(
             reg, id, &xdg_toplevel_tag_manager_v1_interface, MIN(version, 1));
+   else if (string_is_equal(interface, wp_tearing_control_manager_v1_interface.name) && found++)
+      wl->tearing_control_manager = (struct wp_tearing_control_manager_v1*)
+         wl_registry_bind(
+            reg, id, &wp_tearing_control_manager_v1_interface, MIN(version, 1));
 
    if (found > 1)
    RARCH_LOG("[Wayland] Registered interface %s at version %u.\n",
@@ -856,7 +866,23 @@ static void wl_registry_handle_global_remove(void *data,
       {
          if (wl_current_outputs_remove(wl, od->output->output))
             surface_output_removed = true;
+
+         /* wl->current_output points into the output_info_t about to
+          * be freed.  wl_update_scale() below only reassigns it when
+          * it finds a replacement, so on the last output going away --
+          * a single monitor unplugged, or the surface leaving every
+          * output -- it would be left dangling for the next scale
+          * query to read. */
+         if (wl->current_output == od->output)
+            wl->current_output = NULL;
+
          wl_list_remove(&od->link);
+         /* The wl_output proxy is ours from wl_registry_bind() and has
+          * to go back; freeing only the output_info_t leaks it on
+          * every hotplug.  The teardown in
+          * gfx/common/wayland_common.c does destroy it. */
+         if (od->output->output)
+            wl_output_destroy(od->output->output);
          free(od->output);
          free(od);
          break;

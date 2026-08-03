@@ -46,6 +46,7 @@ import android.view.WindowManager;
 import android.app.UiModeManager;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Environment;
 import android.os.PowerManager;
 import android.os.CombinedVibration;
 import android.os.Vibrator;
@@ -139,7 +140,18 @@ public class RetroActivityCommon extends NativeActivity
     cleanupSymlinks();
     updateSymlinks();
 
-    registerReceiver(mUsbPermissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+    if (Build.VERSION.SDK_INT >= 33) {
+      registerReceiver(
+        mUsbPermissionReceiver,
+        new IntentFilter(ACTION_USB_PERMISSION),
+        4 /* Context.RECEIVER_NOT_EXPORTED */
+      );
+    } else {
+      registerReceiver(
+        mUsbPermissionReceiver,
+        new IntentFilter(ACTION_USB_PERMISSION)
+      );
+    }
     ((InputManager) getSystemService(Context.INPUT_SERVICE))
             .registerInputDeviceListener(this, null);
     PlayCoreManager.getInstance().onCreate(this);
@@ -159,6 +171,39 @@ public class RetroActivityCommon extends NativeActivity
   @Override
   public void onActivityResult(int requestCode, int resultCode, Intent intent)
   {
+    if (requestCode == 124)
+    {
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+      {
+        if (android.os.Environment.isExternalStorageManager())
+        {
+          Intent restartIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+          if (restartIntent != null)
+          {
+            restartIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(restartIntent);
+          }
+          finish();
+        }
+        else
+        {
+          try
+          {
+            Intent permIntent = new Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+            permIntent.addCategory("android.intent.category.DEFAULT");
+            permIntent.setData(Uri.parse(String.format("package:%s", getPackageName())));
+            startActivityForResult(permIntent, 124);
+          }
+          catch (Exception e)
+          {
+            Intent permIntent = new Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+            startActivityForResult(permIntent, 124);
+          }
+        }
+      }
+      return;
+    }
+
     if (intent == null)
       return;
 
@@ -894,7 +939,16 @@ public class RetroActivityCommon extends NativeActivity
    * @return the list of available cores
    */
   public String[] getAvailableCores() {
-    int id = getResources().getIdentifier("module_names_" + Build.CPU_ABI.replace('-', '_'), "array", getPackageName());
+    int id = getResources().getIdentifier(
+      "module_names_" + Build.CPU_ABI.replace('-', '_'),
+      "array",
+      getPackageName()
+    );
+
+    if (id == 0) {
+      Log.w("RetroActivity", "No dynamic feature core list found for ABI: " + Build.CPU_ABI);
+      return new String[0];
+    }
 
     String[] returnVal = getResources().getStringArray(id);
     Log.i("RetroActivity", "getAvailableCores: " + Arrays.toString(returnVal));

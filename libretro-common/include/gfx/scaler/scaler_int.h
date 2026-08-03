@@ -41,6 +41,13 @@ void scaler_argb8888_point_special(const struct scaler_ctx *ctx,
       int in_width, int in_height,
       int out_stride, int in_stride);
 
+/* XRGB2101010 variants: same filter chain, 10-bit pack/unpack ends. */
+void scaler_xrgb2101010_vert(const struct scaler_ctx *ctx,
+      void *output, int stride);
+
+void scaler_xrgb2101010_horiz(const struct scaler_ctx *ctx,
+      const void *input, int stride);
+
 RETRO_END_DECLS
 
 #endif

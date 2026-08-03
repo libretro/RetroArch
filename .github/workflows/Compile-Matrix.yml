@@ -1,0 +1,25 @@
+name: CI Compile Matrix [Codec Combinations]
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  compile-matrix: # every codec combination real builds select, not just this one
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Compile matrix
+        run: ./.github/workflows/scripts/compile-matrix.sh

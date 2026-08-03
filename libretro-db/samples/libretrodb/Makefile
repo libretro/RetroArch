@@ -1,10 +1,9 @@
-TARGET := libretrodb_leak_test
+TARGETS := libretrodb_leak_test libretrodb_parser_test
 
 LIBRETRODB_DIR    := ../..
 LIBRETRO_COMM_DIR := ../../../libretro-common
 
-SOURCES := \
-	libretrodb_leak_test.c \
+COMMON_SOURCES := \
 	$(LIBRETRODB_DIR)/libretrodb.c \
 	$(LIBRETRODB_DIR)/rmsgpack.c \
 	$(LIBRETRODB_DIR)/rmsgpack_dom.c \
@@ -18,13 +17,14 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g \
            -I$(LIBRETRO_COMM_DIR)/include \
@@ -40,15 +40,30 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGETS)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS)
+libretrodb_leak_test: libretrodb_leak_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-clean:
-	rm -f $(TARGET) $(OBJS)
+libretrodb_parser_test: libretrodb_parser_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-.PHONY: clean
+# Run both under the sanitizers the tests are written for.
+check: all
+	./libretrodb_leak_test
+	./libretrodb_parser_test
+
+# Build and run everything under ASan, UBSan, LeakSan and TSan.
+# Set SWEEP_CORPUS to add the checks that need .rdb data too large
+# to keep in the repository; see the header of sweep.sh.
+sweep:
+	./sweep.sh
+
+clean:
+	rm -f $(TARGETS) $(COMMON_OBJS) libretrodb_leak_test.o \
+	      libretrodb_parser_test.o
+
+.PHONY: clean check sweep

@@ -29,6 +29,7 @@
 #include <gfx/video_frame.h>
 #include <file/config_file.h>
 #include <audio/audio_resampler.h>
+#include <audio/sinc_resampler_int16.h>
 #include <string/stdstring.h>
 #include <audio/conversion/float_to_s16.h>
 #include <audio/conversion/s16_to_float.h>
@@ -133,6 +134,11 @@ struct ff_audio_info
     */
    const retro_resampler_t *resampler;
    void *resampler_data;
+
+   /* When the encoder consumes s16 and a resample is required, use the
+    * integer sinc resampler so the game signal never detours through
+    * float (s16 -> resample -> s16 directly). */
+   void *resampler_int16;
 
    bool use_float;
    bool is_planar;
@@ -334,12 +340,29 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
       audio->codec->sample_rate = params->sample_rate;
       audio->codec->time_base   = av_d2q(1.0 / params->sample_rate, 1000000);
 
-      retro_resampler_realloc(
-            &audio->resampler_data,
-            &audio->resampler,
-            audio_resampler,
-            RESAMPLER_QUALITY_DONTCARE,
-            audio->ratio);
+      /* For an s16 encoder, resample directly in the integer domain and
+       * skip the s16<->float round-trip on the game signal.  For a float
+       * encoder, keep the float resampler (its output is needed as float
+       * anyway). */
+      /* The integer sinc resampler is interleaved-stereo only, so it is
+       * used only for 2-channel s16 output; mono and float keep the
+       * float path. */
+      if (!audio->use_float && param->channels == 2)
+      {
+         /* Pass the raw ratio as bandwidth_mod, matching the main audio
+          * path: <1.0 (downsampling) lowers the cutoff for anti-aliasing,
+          * >=1.0 (upsampling) leaves it unchanged. */
+         audio->resampler_int16 = sinc_resampler_int16_init(
+               audio->ratio, SINC_INT16_QUALITY_NORMAL);
+      }
+
+      if (!audio->resampler_int16)
+         retro_resampler_realloc(
+               &audio->resampler_data,
+               &audio->resampler,
+               audio_resampler,
+               RESAMPLER_QUALITY_DONTCARE,
+               audio->ratio);
    }
    else
    {
@@ -1036,6 +1059,10 @@ static void ffmpeg_free(void *data)
    handle->audio.resampler      = NULL;
    handle->audio.resampler_data = NULL;
 
+   if (handle->audio.resampler_int16)
+      sinc_resampler_int16_free(handle->audio.resampler_int16);
+   handle->audio.resampler_int16 = NULL;
+
    av_free(handle->audio.float_conv);
    av_free(handle->audio.resample_out);
    av_free(handle->audio.fixed_conv);
@@ -1505,6 +1532,37 @@ static bool encode_audio(ffmpeg_t *handle, bool dry)
 static void ffmpeg_audio_resample(ffmpeg_t *handle,
       struct record_audio_data *aud)
 {
+   /* Integer path: s16 encoder with an integer resampler.  Resample
+    * s16 -> s16 with no float detour.  The output buffer is fixed_conv
+    * (reused from the float path's final-stage buffer). */
+   if (handle->audio.resampler_int16)
+   {
+      struct resampler_data_int16 info;
+      size_t needed_out = (size_t)(aud->frames * handle->audio.ratio) + 16;
+
+      if (needed_out > handle->audio.fixed_conv_frames)
+      {
+         int16_t *new_fixed = (int16_t*)av_realloc(handle->audio.fixed_conv,
+               needed_out * handle->params.channels * sizeof(int16_t));
+         if (!new_fixed)
+            return;
+         handle->audio.fixed_conv        = new_fixed;
+         handle->audio.fixed_conv_frames = needed_out;
+      }
+
+      info.data_in       = (const int16_t*)aud->data;
+      info.data_out      = handle->audio.fixed_conv;
+      info.input_frames  = aud->frames;
+      info.output_frames = 0;
+      info.ratio         = handle->audio.ratio;
+
+      sinc_resampler_int16_process(handle->audio.resampler_int16, &info);
+
+      aud->data   = handle->audio.fixed_conv;
+      aud->frames = info.output_frames;
+      return;
+   }
+
    if (!handle->audio.use_float && !handle->audio.resampler)
       return;
 

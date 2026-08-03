@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <math.h>
 
 #include <CoreFoundation/CFString.h>
 
@@ -38,6 +39,14 @@
 #define CT_ATLAS_ROWS 16
 #define CT_ATLAS_COLS 16
 #define CT_ATLAS_SIZE (CT_ATLAS_ROWS * CT_ATLAS_COLS)
+/* Padding is required between each glyph in the atlas to prevent
+ * texture bleed when drawing with linear filtering enabled */
+#define CT_ATLAS_PADDING 1
+
+/* Mix in upper bits to reduce clustering for CJK and other
+ * non-Latin codepoints */
+#define CT_HASH_SIZE 0x100
+#define CT_HASH(c) (((c) ^ ((c) >> 8)) & (CT_HASH_SIZE - 1))
 
 typedef struct coretext_atlas_slot
 {
@@ -51,7 +60,7 @@ typedef struct coretext_renderer
 {
    struct font_atlas atlas;
    coretext_atlas_slot_t atlas_slots[CT_ATLAS_SIZE];
-   coretext_atlas_slot_t *uc_map[0x100];
+   coretext_atlas_slot_t *uc_map[CT_HASH_SIZE];
    struct font_line_metrics line_metrics;
    unsigned usage_counter;
    CTFontRef font_face;
@@ -80,7 +89,7 @@ static coretext_atlas_slot_t* coretext_font_renderer_get_slot(ct_font_renderer_t
          oldest = i;
 
    /* remove from map */
-   map_id = handle->atlas_slots[oldest].charcode & 0xFF;
+   map_id = CT_HASH(handle->atlas_slots[oldest].charcode);
    if (handle->uc_map[map_id] == &handle->atlas_slots[oldest])
       handle->uc_map[map_id] = handle->atlas_slots[oldest].next;
    else if (handle->uc_map[map_id])
@@ -94,6 +103,31 @@ static coretext_atlas_slot_t* coretext_font_renderer_get_slot(ct_font_renderer_t
    return &handle->atlas_slots[oldest];
 }
 
+/* Merge one updated glyph cell into the atlas dirty region */
+static void font_renderer_ct_dirty_cell(struct font_atlas *atlas,
+      unsigned x, unsigned y, unsigned w, unsigned h)
+{
+   if (!atlas->dirty)
+   {
+      atlas->dirty_x0 = x;
+      atlas->dirty_y0 = y;
+      atlas->dirty_x1 = x + w;
+      atlas->dirty_y1 = y + h;
+      atlas->dirty    = true;
+   }
+   else
+   {
+      if (x < atlas->dirty_x0)
+         atlas->dirty_x0 = x;
+      if (y < atlas->dirty_y0)
+         atlas->dirty_y0 = y;
+      if (x + w > atlas->dirty_x1)
+         atlas->dirty_x1 = x + w;
+      if (y + h > atlas->dirty_y1)
+         atlas->dirty_y1 = y + h;
+   }
+}
+
 static const struct font_glyph *font_renderer_ct_get_glyph(
       void *data, uint32_t charcode)
 {
@@ -104,7 +138,7 @@ static const struct font_glyph *font_renderer_ct_get_glyph(
    if (!handle)
       return NULL;
 
-   map_id = charcode & 0xFF;
+   map_id = CT_HASH(charcode);
    atlas_slot = handle->uc_map[map_id];
 
    while (atlas_slot)
@@ -124,11 +158,18 @@ static const struct font_glyph *font_renderer_ct_get_glyph(
    handle->uc_map[map_id] = atlas_slot;
 
    /* Render the glyph on demand */
-   if (handle->font_face)
-      coretext_font_renderer_render_glyph(handle->font_face, handle, atlas_slot, charcode);
+   if (handle->font_face &&
+         coretext_font_renderer_render_glyph(handle->font_face, handle,
+               atlas_slot, charcode))
+      /* The cell is always written in full (glyph coverage or the
+       * missing-glyph rectangle), so it is the dirty unit; failed
+       * renders write nothing and no longer mark the atlas dirty */
+      font_renderer_ct_dirty_cell(&handle->atlas,
+            atlas_slot->glyph.atlas_offset_x,
+            atlas_slot->glyph.atlas_offset_y,
+            atlas_slot->glyph.width, atlas_slot->glyph.height);
 
    atlas_slot->last_used = handle->usage_counter++;
-   handle->atlas.dirty = true;
    return &atlas_slot->glyph;
 }
 
@@ -162,11 +203,24 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    int max_glyph_size          = (font_size < 0) ? -font_size : font_size;
    float ascent, descent;
 
-   handle->atlas.width         = max_glyph_size * CT_ATLAS_COLS;
-   handle->atlas.height        = max_glyph_size * CT_ATLAS_ROWS;
+   /* Clamp the per-glyph cell so the atlas stays within common GPU
+    * texture limits and the width * height product cannot overflow;
+    * font_size ultimately comes from user configuration. */
+   if (max_glyph_size < 1)
+      return false;
+   if (max_glyph_size > 127)
+      max_glyph_size = 127;
 
+   handle->atlas.width         = (max_glyph_size + CT_ATLAS_PADDING) * CT_ATLAS_COLS;
+   handle->atlas.height        = (max_glyph_size + CT_ATLAS_PADDING) * CT_ATLAS_ROWS;
+
+   /* Higher-precision coverage when the video driver asked for it
+    * (HDR output); the atlas then stores uint16_t samples. */
+   handle->atlas.format        = font_renderer_get_preferred_atlas_format();
    handle->atlas.buffer        = (uint8_t*)calloc(
-         handle->atlas.width * handle->atlas.height, 1);
+         (size_t)handle->atlas.height,
+         (size_t)handle->atlas.width *
+         ((handle->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
 
    if (!handle->atlas.buffer)
       return false;
@@ -188,8 +242,8 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    {
       for (x = 0; x < CT_ATLAS_COLS; x++)
       {
-         slot->glyph.atlas_offset_x = x * max_glyph_size;
-         slot->glyph.atlas_offset_y = y * max_glyph_size;
+         slot->glyph.atlas_offset_x = x * (max_glyph_size + CT_ATLAS_PADDING);
+         slot->glyph.atlas_offset_y = y * (max_glyph_size + CT_ATLAS_PADDING);
          slot->glyph.width          = max_glyph_size;
          slot->glyph.height         = max_glyph_size;
          slot++;
@@ -203,58 +257,142 @@ static bool coretext_font_renderer_create_atlas(CTFontRef face, ct_font_renderer
    return true;
 }
 
+/* Copy rasterized coverage into the atlas. This helper and the
+ * bitmap-context format in coretext_font_renderer_render_glyph() are
+ * the ONLY places that know the atlas is 8-bit; a higher-bit-depth
+ * atlas (HDR output) needs a sibling of this routine and an alternate
+ * context format, nothing else.
+ *
+ * Notes for that future path: kCGImageAlphaOnly contexts are 8 bits
+ * per pixel only. The >= 10-bit variant renders white-on-transparent
+ * into a 16 bits-per-component DeviceGray context
+ * (kCGImageAlphaNone | kCGBitmapByteOrder16Host) and copies the gray
+ * channel out as 16-bit coverage. CoreGraphics has no meaningful OS
+ * floor for such contexts; the version gates are all on the display
+ * side and are already the video driver's concern:
+ * CAMetalLayer.wantsExtendedDynamicRangeContent (scRGB/EDR) needs
+ * macOS 10.11+ / iOS 16.0+, CAEDRMetadata (HDR10 PQ tone mapping)
+ * needs macOS 10.15+ / iOS 16.0+, and neither exists on tvOS. */
+static void coretext_font_renderer_copy_coverage(
+      ct_font_renderer_t *handle, coretext_atlas_slot_t *slot,
+      const void *src)
+{
+   unsigned r, c;
+
+   if (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
+   {
+      /* Gray channel of the 16 bits-per-component DeviceGray
+       * context, host byte order, copied through as-is */
+      const uint16_t *s16 = (const uint16_t*)src;
+      uint16_t *dst = (uint16_t*)(void*)handle->atlas.buffer +
+            slot->glyph.atlas_offset_x +
+            (size_t)slot->glyph.atlas_offset_y * handle->atlas.width;
+
+      for (r = 0; r < slot->glyph.height; r++)
+         for (c = 0; c < slot->glyph.width; c++)
+            dst[r * handle->atlas.width + c] =
+                  s16[r * slot->glyph.width + c];
+   }
+   else
+   {
+      const uint8_t *s8 = (const uint8_t*)src;
+      uint8_t *dst = (uint8_t*)handle->atlas.buffer +
+            slot->glyph.atlas_offset_x +
+            (size_t)slot->glyph.atlas_offset_y * handle->atlas.width;
+
+      for (r = 0; r < slot->glyph.height; r++)
+         for (c = 0; c < slot->glyph.width; c++)
+            dst[r * handle->atlas.width + c] =
+                  s8[r * slot->glyph.width + c];
+   }
+}
+
 static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer_t *handle, coretext_atlas_slot_t *slot, uint32_t charcode)
 {
-   CGGlyph glyph;
+   CGGlyph glyphs[2];
    CGRect bounds;
    CGSize advance;
    CGContextRef offscreen;
    void *bitmapData;
-   UniChar character = (UniChar)charcode;
+   /* UTF-16 encoding of the codepoint: one unit for the BMP, a
+    * surrogate pair beyond it. Truncating to a single UniChar would
+    * render the wrong glyph for anything above U+FFFF. */
+   UniChar utf16[2];
+   CFIndex utf16_len;
    CFStringRef glyph_cfstr;
    CFAttributedStringRef attrString;
    CTLineRef line;
    uint8_t *dst;
-   const uint8_t *src;
    unsigned r, c;
+   bool has_glyph;
 
-   /* Get glyph for character */
-   bool has_glyph = CTFontGetGlyphsForCharacters(face, &character, &glyph, 1);
+   if (charcode > 0x10FFFF || (charcode >= 0xD800 && charcode <= 0xDFFF))
+      has_glyph = false;
+   else
+   {
+      if (charcode > 0xFFFF)
+      {
+         uint32_t v  = charcode - 0x10000;
+         utf16[0]    = (UniChar)(0xD800 + (v >> 10));
+         utf16[1]    = (UniChar)(0xDC00 + (v & 0x3FF));
+         utf16_len   = 2;
+      }
+      else
+      {
+         utf16[0]    = (UniChar)charcode;
+         utf16_len   = 1;
+      }
+
+      /* Get glyph for character */
+      has_glyph = CTFontGetGlyphsForCharacters(face, utf16, glyphs, utf16_len);
+   }
 
    /* If character is not available in font, render a missing glyph rectangle */
    if (!has_glyph)
    {
-      /* Draw rectangle directly in atlas buffer */
-      dst = (uint8_t*)handle->atlas.buffer +
-            slot->glyph.atlas_offset_x +
-            slot->glyph.atlas_offset_y * handle->atlas.width;
-
-      /* Only draw rectangle if glyph is large enough and within atlas bounds */
+      /* Draw rectangle directly in atlas buffer, at the atlas
+       * element size (255 full coverage for A8, 0xFFFF for A16).
+       * Only draw the rectangle if the cell is large enough. All
+       * positions below are cell-relative and stay inside the cell,
+       * which tiles the atlas exactly, so no further bounds checks
+       * are needed. */
       if (slot->glyph.width >= 6 && slot->glyph.height >= 6)
       {
          unsigned max_r = slot->glyph.height - 2;
          unsigned max_c = slot->glyph.width - 2;
-         int atlas_size = handle->atlas.width * handle->atlas.height;
 
-         /* Draw 2-pixel border rectangle */
-         for (r = 2; r < max_r; r++)
+         if (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
          {
-            int left_pos = r * handle->atlas.width + 2;
-            int right_pos = r * handle->atlas.width + max_c - 1;
-            if (left_pos < atlas_size && right_pos < atlas_size)
+            uint16_t *dst16 = (uint16_t*)(void*)handle->atlas.buffer +
+                  slot->glyph.atlas_offset_x +
+                  (size_t)slot->glyph.atlas_offset_y * handle->atlas.width;
+
+            for (r = 2; r < max_r; r++)
             {
-               dst[left_pos] = 255;   /* Left */
-               dst[right_pos] = 255;  /* Right */
+               dst16[r * handle->atlas.width + 2]         = 0xFFFF;
+               dst16[r * handle->atlas.width + max_c - 1] = 0xFFFF;
+            }
+            for (c = 2; c < max_c; c++)
+            {
+               dst16[2 * handle->atlas.width + c]           = 0xFFFF;
+               dst16[(max_r - 1) * handle->atlas.width + c] = 0xFFFF;
             }
          }
-         for (c = 2; c < max_c; c++)
+         else
          {
-            int top_pos = 2 * handle->atlas.width + c;
-            int bottom_pos = (max_r - 1) * handle->atlas.width + c;
-            if (top_pos < atlas_size && bottom_pos < atlas_size)
+            dst = (uint8_t*)handle->atlas.buffer +
+                  slot->glyph.atlas_offset_x +
+                  slot->glyph.atlas_offset_y * handle->atlas.width;
+
+            for (r = 2; r < max_r; r++)
             {
-               dst[top_pos] = 255;    /* Top */
-               dst[bottom_pos] = 255; /* Bottom */
+               dst[r * handle->atlas.width + 2]         = 255; /* Left  */
+               dst[r * handle->atlas.width + max_c - 1] = 255; /* Right */
+            }
+            for (c = 2; c < max_c; c++)
+            {
+               dst[2 * handle->atlas.width + c]           = 255; /* Top    */
+               dst[(max_r - 1) * handle->atlas.width + c] = 255; /* Bottom */
             }
          }
       }
@@ -273,7 +411,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         &glyph, &bounds, 1);
+         glyphs, &bounds, 1);
 
    CTFontGetAdvancesForGlyphs(face,
 #if MAC_OS_X_VERSION_MAX_ALLOWED >= 1080
@@ -281,16 +419,20 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
 #else
          kCTFontDefaultOrientation,
 #endif
-         &glyph, &advance, 1);
+         glyphs, &advance, 1);
 
    /* Set up glyph metrics using cached ascent */
    slot->glyph.draw_offset_x = (int)ceil(bounds.origin.x);
    slot->glyph.draw_offset_y = (int)floor(-bounds.origin.y) - (int)floor(handle->cached_ascent) + 1;
-   slot->glyph.advance_x     = (int)round(advance.width);
-   slot->glyph.advance_y     = (int)round(advance.height);
+   /* round() is C99; advances are non-negative so floor(x + 0.5)
+    * is equivalent */
+   slot->glyph.advance_x     = (int)floor(advance.width + 0.5);
+   slot->glyph.advance_y     = (int)floor(advance.height + 0.5);
 
    /* Create bitmap context */
-   bitmapData = calloc(slot->glyph.height, slot->glyph.width);
+   bitmapData = calloc(slot->glyph.height,
+         (size_t)slot->glyph.width *
+         ((handle->atlas.format == FONT_ATLAS_FORMAT_A16) ? 2 : 1));
    /* NULL-check: CGBitmapContextCreate tolerates NULL (it will
     * allocate its own backing store), but the byte-wise copy
     * into the atlas at lines ~321-325 dereferences bitmapData
@@ -299,8 +441,28 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
     * NULL-deref on the atlas copy step.  Fail cleanly now. */
    if (!bitmapData)
       return false;
-   offscreen  = CGBitmapContextCreate(bitmapData, slot->glyph.width, slot->glyph.height,
-                                      8, slot->glyph.width, NULL, kCGImageAlphaOnly);
+   if (handle->atlas.format == FONT_ATLAS_FORMAT_A16)
+   {
+      /* 16 bits-per-component DeviceGray, host byte order:
+       * white-on-transparent gray is copied out as 16-bit coverage
+       * (see coretext_font_renderer_copy_coverage) */
+      CGColorSpaceRef gray = CGColorSpaceCreateDeviceGray();
+      if (!gray)
+      {
+         free(bitmapData);
+         return false;
+      }
+      offscreen = CGBitmapContextCreate(bitmapData,
+            slot->glyph.width, slot->glyph.height,
+            16, (size_t)slot->glyph.width * 2, gray,
+            kCGImageAlphaNone | kCGBitmapByteOrder16Host);
+      CGColorSpaceRelease(gray);
+   }
+   else
+      /* 8-bit alpha-only coverage */
+      offscreen = CGBitmapContextCreate(bitmapData,
+            slot->glyph.width, slot->glyph.height,
+            8, slot->glyph.width, NULL, kCGImageAlphaOnly);
 
    if (!offscreen)
    {
@@ -308,14 +470,38 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
       return false;
    }
 
+   /* Fill color for kCTForegroundColorFromContextAttributeName:
+    * full-white coverage in the gray context, ignored by the
+    * alpha-only one */
+   CGContextSetGrayFillColor(offscreen, 1.0f, 1.0f);
+
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
-   /* Create string from Unicode character using cached dictionary */
-   glyph_cfstr = CFStringCreateWithCharacters(NULL, &character, 1);
-   attrString  = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
+   /* Create string from Unicode character using cached dictionary.
+    * Each CF/CT allocation is checked: passing NULL onwards or
+    * CFRelease(NULL) would crash rather than fail. */
+   if (!(glyph_cfstr = CFStringCreateWithCharacters(NULL, utf16, utf16_len)))
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
+   attrString = CFAttributedStringCreate(NULL, glyph_cfstr, handle->attr_dict);
    CFRelease(glyph_cfstr);
-   line        = CTLineCreateWithAttributedString(attrString);
+   if (!attrString)
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
+   line = CTLineCreateWithAttributedString(attrString);
    CFRelease(attrString);
+   if (!line)
+   {
+      CGContextRelease(offscreen);
+      free(bitmapData);
+      return false;
+   }
 
    /* Render glyph */
    CGContextSetTextPosition(offscreen, -bounds.origin.x, -bounds.origin.y);
@@ -323,14 +509,7 @@ static bool coretext_font_renderer_render_glyph(CTFontRef face, ct_font_renderer
    CFRelease(line);
 
    /* Copy bitmap to atlas */
-   dst = (uint8_t*)handle->atlas.buffer +
-         slot->glyph.atlas_offset_x +
-         slot->glyph.atlas_offset_y * handle->atlas.width;
-   src = (const uint8_t*)bitmapData;
-
-   for (r = 0; r < slot->glyph.height; r++)
-      for (c = 0; c < slot->glyph.width; c++)
-         dst[r * handle->atlas.width + c] = src[r * slot->glyph.width + c];
+   coretext_font_renderer_copy_coverage(handle, slot, bitmapData);
 
    CGContextRelease(offscreen);
    free(bitmapData);
@@ -355,19 +534,31 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
    }
 
    if (!(cf_font_path = CFStringCreateWithCString(
-                     NULL, font_path, kCFStringEncodingASCII)))
+                     NULL, font_path, kCFStringEncodingUTF8)))
    {
       err = 1;
       goto error;
    }
 
-   url          = CFURLCreateWithFileSystemPath(
-         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false);
-   dataProvider = CGDataProviderCreateWithURL(url);
-   theCGFont    = CGFontCreateWithDataProvider(dataProvider);
-   face         = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL);
-
-   if (!face)
+   /* Each step is checked before use: several of these APIs do not
+    * accept NULL arguments. */
+   if (!(url = CFURLCreateWithFileSystemPath(
+         kCFAllocatorDefault, cf_font_path, kCFURLPOSIXPathStyle, false)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(dataProvider = CGDataProviderCreateWithURL(url)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(theCGFont = CGFontCreateWithDataProvider(dataProvider)))
+   {
+      err = 1;
+      goto error;
+   }
+   if (!(face = CTFontCreateWithGraphicsFont(theCGFont, font_size, NULL, NULL)))
    {
       err = 1;
       goto error;
@@ -379,10 +570,25 @@ static void *font_renderer_ct_init(const char *font_path, float font_size)
 
    /* Create reusable attribute dictionary for performance */
    {
-      CFTypeRef values[1] = {face};
-      CFStringRef keys[1] = {kCTFontAttributeName};
+      /* C89: block-scope aggregate initializers must be constant */
+      CFTypeRef values[2];
+      CFStringRef keys[2];
+      values[0] = face;
+      keys[0]   = kCTFontAttributeName;
+      /* Take the fill color from the context: irrelevant for the
+       * alpha-only (A8) context, where any opaque color yields the
+       * same coverage, but required for the 16-bit DeviceGray (A16)
+       * context, where the default black foreground on a zeroed
+       * buffer would render nothing. */
+      values[1] = kCFBooleanTrue;
+      keys[1]   = kCTForegroundColorFromContextAttributeName;
       handle->attr_dict = CFDictionaryCreate(NULL, (const void **)&keys, (const void **)&values,
-            1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+            2, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+   }
+   if (!handle->attr_dict)
+   {
+      err = 1;
+      goto error;
    }
 
    if (!coretext_font_renderer_create_atlas(face, handle, font_size))
@@ -443,6 +649,8 @@ static void font_renderer_ct_get_line_metrics(
       void* data, struct font_line_metrics **metrics)
 {
    ct_font_renderer_t *handle   = (ct_font_renderer_t*)data;
+   if (!handle)
+      return;
    *metrics = &handle->line_metrics;
 }
 

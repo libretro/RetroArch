@@ -212,6 +212,13 @@ typedef struct thread_video
    struct video_viewport vp;
    struct video_viewport read_vp; /* Last viewport reported to caller. */
 
+   /* Content scale, published under 'lock' at the end of each frame.
+    * The viewport maths that produces these runs on the video thread,
+    * so video_driver_build_info() must read them from here rather than
+    * from video_driver_st directly. Statistics only. */
+   unsigned scale_width;
+   unsigned scale_height;
+
    thread_packet_t cmd_data;
    video_driver_t video_thread;
 
@@ -229,6 +236,11 @@ typedef struct thread_video
       unsigned height;
       unsigned pitch;
       char msg[NAME_MAX_LENGTH];
+      /* Built by the caller (main thread) in video_thread_frame() and
+       * consumed by video_thread_loop().  video_driver_build_info()
+       * reads video_driver_st and runloop_state, both of which the main
+       * thread mutates, so it must not be called from the worker. */
+      video_frame_info_t video_info;
       bool updated;
       bool within_thread;
    } frame;
