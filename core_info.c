@@ -1971,6 +1971,18 @@ typedef struct
    uint8_t  used;
 } core_info_ext_slot_t;
 
+/* The whole working set of the resolver in one piece: 4 KiB of slots
+ * plus the 8 KiB token buffer.  As two locals this was a ~12 KiB
+ * stack frame, which does not fit the 8 KiB thread stacks some
+ * console targets give the task threads this runs on -- so it is one
+ * allocation for the lifetime of the call instead.  The function runs
+ * once per core-list refresh; a single malloc is noise there. */
+typedef struct
+{
+   core_info_ext_slot_t slots[_HASH_SLOTS];
+   char                 token_buf[_TOKEN_BUF];
+} core_info_ext_scratch_t;
+
 /*
  * Inline FNV-1a hash + insert into a stack-resident hash set slot.
  * ext/ext_len: the extension token to insert.
@@ -2026,14 +2038,16 @@ static size_t core_info_list_resolve_all_extensions(
    size_t unique_count  = 0;
    size_t total_chars   = 0;
    char  *result;
-   core_info_ext_slot_t slots[_HASH_SLOTS];
-   char                 token_buf[_TOKEN_BUF];
+   core_info_ext_scratch_t *scr = (core_info_ext_scratch_t*)
+      calloc(1, sizeof(*scr));
 
-   memset(slots, 0, sizeof(slots));
+   if (!scr)
+      return 0;
 
    /*
     * Phase 1 — parse every core's extension list, split on '|',
-    * and insert each token into the hash set. Zero heap allocations.
+    * and insert each token into the hash set. One heap allocation
+    * (the scratch itself); the token strings never leave it.
     */
    for (i = 0; i < core_info_list->count; i++)
    {
@@ -2049,25 +2063,30 @@ static size_t core_info_list_resolve_all_extensions(
             if (!tok_end)
                tok_end = end;
             tok_len = tok_end - p;
-            CORE_INFO_EXT_INSERT(p, tok_len, slots, token_buf,
-                  token_pos, _TOKEN_BUF, unique_count, total_chars,
-                  _HASH_MASK);
+            CORE_INFO_EXT_INSERT(p, tok_len, scr->slots,
+                  scr->token_buf, token_pos, _TOKEN_BUF,
+                  unique_count, total_chars, _HASH_MASK);
             p = tok_end + 1;
          }
       }
    }
 
 #ifdef HAVE_7ZIP
-   CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), slots, token_buf,
-         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
+   CORE_INFO_EXT_INSERT("7z", STRLEN_CONST("7z"), scr->slots,
+         scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
+         total_chars, _HASH_MASK);
 #endif
 #ifdef HAVE_COMPRESSION
-   CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), slots, token_buf,
-         token_pos, _TOKEN_BUF, unique_count, total_chars, _HASH_MASK);
+   CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), scr->slots,
+         scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
+         total_chars, _HASH_MASK);
 #endif
 
    if (unique_count == 0)
+   {
+      free(scr);
       return 0;
+   }
 
    /*
     * Phase 2 — single exactly-sized allocation for the result.
@@ -2078,21 +2097,25 @@ static size_t core_info_list_resolve_all_extensions(
    final_len = total_chars + (unique_count - 1);
    result    = (char*)malloc(final_len + 1);
    if (!result)
+   {
+      free(scr);
       return 0;
+   }
 
    pos = 0;
    for (i = 0; i < _HASH_SLOTS; i++)
    {
-      core_info_ext_slot_t *s = &slots[i];
+      core_info_ext_slot_t *s = &scr->slots[i];
       if (!s->used)
          continue;
       if (pos > 0)
          result[pos++] = '|';
-      memcpy(result + pos, token_buf + s->off, s->len);
+      memcpy(result + pos, scr->token_buf + s->off, s->len);
       pos += s->len;
    }
    result[pos] = '\0';
 
+   free(scr);
    core_info_list->all_ext = result;
    return pos;
 }
