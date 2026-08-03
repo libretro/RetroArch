@@ -2839,11 +2839,15 @@ static bool playlist_read_file(playlist_t *playlist)
    {
       size_t i;
       size_t _len = RBUF_LEN(playlist->entries);
-      char line_buf[PLAYLIST_ENTRIES][PATH_MAX_LENGTH] = {{0}};
+      /* Heap-held: at six entries this is 3 KiB even at the console
+       * path length, on the playlist load path that runs from task
+       * threads.  On allocation failure the legacy-format file simply
+       * reads as empty, matching every other read failure here. */
+      char (*line_buf)[PATH_MAX_LENGTH] = (char (*)[PATH_MAX_LENGTH])
+            calloc(PLAYLIST_ENTRIES, PATH_MAX_LENGTH);
 
-      /* Unnecessary, but harmless */
-      for (i = 0; i < PLAYLIST_ENTRIES; i++)
-         line_buf[i][0] = '\0';
+      if (!line_buf)
+         goto end;   /* reads as an empty playlist, like a missing file */
 
       /* Read playlist entries */
       while (_len < playlist->config.capacity)
@@ -3011,6 +3015,7 @@ static bool playlist_read_file(playlist_t *playlist)
             break;
          }
       }
+      free(line_buf);
    }
 
 end:

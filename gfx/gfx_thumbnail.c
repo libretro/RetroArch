@@ -891,17 +891,30 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
     * bail out early for ordinary PNGs. */
    if (type == IMAGE_TYPE_PNG)
    {
-      uint8_t  probe[4096];
+      /* Heap-held: this runs on the menu hot path from task threads,
+       * where 4 KiB is half the smallest thread stack in the tree.
+       * On allocation failure the file is treated as a still image --
+       * the same documented fallback as every other inconclusive
+       * probe below. */
+      uint8_t *probe;
       int64_t  got  = 0;
       int      more = 0;
       RFILE   *fp   = filestream_open(path,
             RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
       if (!fp)
          return;
-      got = filestream_read(fp, probe, sizeof(probe));
+      if (!(probe = (uint8_t*)malloc(4096)))
+      {
+         filestream_close(fp);
+         return;
+      }
+      got = filestream_read(fp, probe, 4096);
       filestream_close(fp);
       if (got <= 0)
+      {
+         free(probe);
          return;
+      }
       if (!rpng_is_apng_ex(probe, (size_t)got, &more))
       {
          /* Conclusive "still PNG" - or the acTL would lie beyond this
@@ -910,8 +923,10 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
           * path cheap; such a file simply shows its default image, the
           * behaviour before APNG support existed. */
          (void)more;
+         free(probe);
          return;
       }
+      free(probe);
    }
 #endif
 
@@ -3493,31 +3508,49 @@ void gfx_savestate_thumbnail_get_path(
       if (entry && *entry->path)
       {
          size_t _len;
-         char new_path[PATH_MAX_LENGTH];
-         char entry_basename[PATH_MAX_LENGTH];
-         char old_savefile_dir[PATH_MAX_LENGTH];
-         char old_savestate_dir[PATH_MAX_LENGTH];
+         /* Four path buffers in one heap block: even at the console
+          * PATH_MAX_LENGTH of 512 the set is a whole 2 KiB stack
+          * budget, and this runs from the menu task path.  On
+          * allocation failure the thumbnail path is simply not
+          * resolved -- the caller already treats an empty result as
+          * "no savestate thumbnail". */
+         struct gfx_ss_thumb_paths
+         {
+            char new_path[PATH_MAX_LENGTH];
+            char entry_basename[PATH_MAX_LENGTH];
+            char old_savefile_dir[PATH_MAX_LENGTH];
+            char old_savestate_dir[PATH_MAX_LENGTH];
+         } *pb = (struct gfx_ss_thumb_paths*)calloc(1, sizeof(*pb));
+         char *new_path          = pb ? pb->new_path : NULL;
+         char *entry_basename    = pb ? pb->entry_basename : NULL;
+         char *old_savefile_dir  = pb ? pb->old_savefile_dir : NULL;
+         char *old_savestate_dir = pb ? pb->old_savestate_dir : NULL;
 
-         strlcpy(old_savefile_dir, runloop_st->savefile_dir, sizeof(old_savefile_dir));
-         strlcpy(old_savestate_dir, runloop_st->savestate_dir, sizeof(old_savestate_dir));
+         if (!pb)
+            return;
 
-         strlcpy(new_path, entry->path, sizeof(new_path));
+         strlcpy(old_savefile_dir, runloop_st->savefile_dir, PATH_MAX_LENGTH);
+         strlcpy(old_savestate_dir, runloop_st->savestate_dir, PATH_MAX_LENGTH);
+
+         strlcpy(new_path, entry->path, PATH_MAX_LENGTH);
          path_remove_extension(new_path);
 
-         _len = strlcpy(entry_basename, path_basename(new_path), sizeof(entry_basename));
-         _len = strlcpy(entry_basename + _len, ".state", sizeof(entry_basename) - _len);
+         _len = strlcpy(entry_basename, path_basename(new_path), PATH_MAX_LENGTH);
+         _len = strlcpy(entry_basename + _len, ".state", PATH_MAX_LENGTH - _len);
 
          /* Set temporary save redirection paths */
          runloop_path_set_redirect(config_get_ptr(), old_savefile_dir, old_savestate_dir);
 
          fill_pathname_join_special(new_path,
-               runloop_st->savestate_dir, entry_basename, sizeof(new_path));
+               runloop_st->savestate_dir, entry_basename, PATH_MAX_LENGTH);
 
          /* Restore current save redirection paths */
          dir_set(RARCH_DIR_CURRENT_SAVEFILE, old_savefile_dir);
          dir_set(RARCH_DIR_CURRENT_SAVESTATE, old_savestate_dir);
 
          state_name = strdup(new_path);
+      
+         free(pb);
       }
    }
 #endif /* HAVE_MENU */
