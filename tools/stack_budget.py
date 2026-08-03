@@ -138,7 +138,12 @@ def stack_usage(path, workdir):
            '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV',
            '-I' + INCLUDE, '-fstack-usage', '-c', path, '-o', obj]
     r = subprocess.run(cmd, cwd=workdir, capture_output=True)
-    if not os.path.exists(su):
+    # The .su existing is not proof the compile succeeded: gcc creates
+    # it and then bails, so a TU that fails to parse leaves an empty
+    # one behind and reports no frames - measuring nothing while
+    # looking clean, the same failure the file name once caused.  The
+    # exit status is the thing to trust.
+    if r.returncode != 0 or not os.path.exists(su):
         # Did not compile on this host (platform-specific TU, missing
         # dependency).  Report it rather than counting it as scanned.
         return None
