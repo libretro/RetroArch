@@ -959,7 +959,7 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
 };
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 /* this is generated at runtime, so it isn't constant */
 struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];
 #endif

@@ -322,7 +322,7 @@ VIDEO CONTEXT
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
 #include "../gfx/drivers_context/qnx_ctx.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../gfx/drivers_context/emscriptenegl_ctx.c"
 #elif defined(__PS3__)
 #include "../gfx/drivers_context/ps3_ctx.c"
@@ -751,7 +751,7 @@ INPUT
 #elif defined(__QNX__)
 #include "../input/drivers/qnx_input.c"
 #include "../input/drivers_joypad/qnx_joypad.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../input/drivers/rwebinput_input.c"
 #include "../input/drivers_joypad/rwebpad_joypad.c"
 #elif defined(DJGPP)
@@ -887,7 +887,7 @@ CAMERA
 #include "../camera/camera_driver.c"
 #if defined(ANDROID)
 #include "../camera/drivers/android.c"
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #include "../camera/drivers/rwebcam.c"
 #endif
 

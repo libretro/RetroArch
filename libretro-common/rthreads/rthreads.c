@@ -172,7 +172,7 @@ sthread_t *sthread_create(void (*thread_func)(void*), void *userdata)
 }
 
 /* TODO/FIXME - this needs to be implemented for Switch/3DS */
-#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(EMSCRIPTEN)
+#if !defined(SWITCH) && !defined(USE_WIN32_THREADS) && !defined(_3DS) && !defined(GEKKO) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 #define HAVE_THREAD_ATTR
 #endif
 

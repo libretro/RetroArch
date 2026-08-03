@@ -361,7 +361,7 @@ command_t* command_stdin_new(void);
 #ifdef HAVE_LAKKA
 command_t* command_uds_new(void);
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 command_t* command_emscripten_new(void);
 #endif
 

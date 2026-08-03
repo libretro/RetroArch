@@ -36,7 +36,7 @@
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
 #endif
-#if defined(EMSCRIPTEN) || defined(_3DS)
+#if defined(__EMSCRIPTEN__) || defined(_3DS)
 #include <retro_timers.h>
 #endif
 #ifdef HAVE_GCD
@@ -684,7 +684,7 @@ static void threaded_worker(void *userdata)
 
       slock_unlock(running_lock);
       task->handler(task);
-#if defined(EMSCRIPTEN) || defined(_3DS)
+#if defined(__EMSCRIPTEN__) || defined(_3DS)
       /* Workaround emscripten pthread bug where not parking the
          thread will prevent other important stuff from
          happening. Maybe due to lack of signals implementation in

@@ -76,7 +76,7 @@ static frontend_ctx_driver_t frontend_ctx_null = {
 };
 
 static frontend_ctx_driver_t *frontend_ctx_drivers[] = {
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
    &frontend_ctx_emscripten,
 #endif
 #if defined(__PS3__)
@@ -211,7 +211,7 @@ size_t frontend_driver_get_core_extension(char *s, size_t len)
    if (envIsHomebrew())
       return strlcpy(s, "3dsx", len);
    return strlcpy(s, "cia", len);
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    /* may not contain the core */
    return strlcpy(s, "core", len);
 #else

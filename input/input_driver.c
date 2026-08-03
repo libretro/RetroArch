@@ -338,7 +338,7 @@ input_device_driver_t *joypad_drivers[] = {
 #if defined(HAVE_HID) && !defined(WIIU)
    &hid_joypad,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &rwebpad_joypad,
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
@@ -423,7 +423,7 @@ input_driver_t *input_drivers[] = {
 #ifdef __QNX__
    &input_qnx,
 #endif
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
    &input_rwebinput,
 #endif
 #ifdef DJGPP
@@ -6140,7 +6140,7 @@ void input_driver_init_command(input_driver_state_t *input_st,
 #if defined(HAVE_LAKKA)
    if (!(input_st->command[2] = command_uds_new()))
       RARCH_ERR("Failed to initialize the UDS command interface.\n");
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
    if (!(input_st->command[2] = command_emscripten_new()))
       RARCH_ERR("Failed to initialize the emscripten command interface.\n");
 #endif

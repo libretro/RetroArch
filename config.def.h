@@ -89,7 +89,7 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
-#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(EMSCRIPTEN) || defined (VITA)
+#if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(__EMSCRIPTEN__) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
 #define DEFAULT_POINTER_ENABLE false
@@ -207,7 +207,7 @@
 #define DEFAULT_BLUETOOTH_ERTM false
 #endif
 
-#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(EMSCRIPTEN)
+#if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !defined(IOS)) || defined(__EMSCRIPTEN__)
 #define DEFAULT_MOUSE_ENABLE true
 #else
 #define DEFAULT_MOUSE_ENABLE false
@@ -938,7 +938,7 @@
 #define DEFAULT_MENU_FOOTER_OPACITY 1.000f
 #define DEFAULT_MENU_HEADER_OPACITY 1.000f
 
-#if (defined(HAVE_OPENGLES2) && !defined(EMSCRIPTEN)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if (defined(HAVE_OPENGLES2) && !defined(__EMSCRIPTEN__)) || (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
 #define DEFAULT_MENU_SHADER_PIPELINE 1
 #else
 #define DEFAULT_MENU_SHADER_PIPELINE 2
@@ -1250,7 +1250,7 @@
 #elif defined(_3DS) || defined(RETROFW)
 #define DEFAULT_OUTPUT_RATE 32730
 #define DEFAULT_INPUT_RATE  32730
-#elif defined(EMSCRIPTEN)
+#elif defined(__EMSCRIPTEN__)
 #define DEFAULT_OUTPUT_RATE 44100
 #define DEFAULT_INPUT_RATE  44100
 #else
@@ -1263,7 +1263,7 @@
 
 /* Desired audio latency in milliseconds. Might not be honored
  * if driver can't provide given latency. */
-#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(EMSCRIPTEN) && defined(HAVE_AL))
+#if defined(ANDROID) || defined(RETROFW) || defined(MIYOO) || (defined(__EMSCRIPTEN__) && defined(HAVE_AL))
 /* For most Android devices, 64ms is way too low. */
 #define DEFAULT_OUT_LATENCY 128
 #define DEFAULT_IN_LATENCY 128
@@ -1977,7 +1977,7 @@
 #define DEFAULT_BUILDBOT_SERVER_URL ""
 #endif
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "https://buildbot.libretro.com/assets/"
 #else
 #define DEFAULT_BUILDBOT_ASSETS_SERVER_URL "http://buildbot.libretro.com/assets/"

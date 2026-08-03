@@ -34,7 +34,7 @@
 #include <unistd.h>
 #endif
 
-#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(EMSCRIPTEN)
+#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(__EMSCRIPTEN__)
 #include <signal.h>
 #endif
 
@@ -89,7 +89,7 @@
 #include <retro_miscellaneous.h>
 #include <lists/dir_list.h>
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #include "frontend/drivers/platform_emscripten.h"
 #include "gfx/common/gl_common.h"
@@ -6591,7 +6591,7 @@ int rarch_main(int argc, char *argv[], void *data)
    return 0;
 }
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
 
 bool platform_emscripten_finish_deferred_sleep(void);
 

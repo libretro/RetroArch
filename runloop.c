@@ -38,7 +38,7 @@
 #include <unistd.h>
 #endif
 
-#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(EMSCRIPTEN)
+#if (defined(__linux__) || defined(__unix__) || defined(DINGUX)) && !defined(__EMSCRIPTEN__)
 #include <signal.h>
 #endif
 
@@ -87,7 +87,7 @@
 #include <queues/message_queue.h>
 #include <lists/dir_list.h>
 
-#ifdef EMSCRIPTEN
+#ifdef __EMSCRIPTEN__
 #include "frontend/drivers/platform_emscripten.h"
 #endif
 
@@ -7978,7 +7978,7 @@ int runloop_iterate(void)
          /* FIXME: This is an ugly way to tell Netplay this... */
          netplay_driver_ctl(RARCH_NETPLAY_CTL_PAUSE, NULL);
 #endif
-#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+#if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
          platform_emscripten_deferred_sleep(10);
 #else
 #if defined(HAVE_COCOATOUCH)
@@ -8209,7 +8209,7 @@ end:
 
             if (sleep_ms > 0)
             {
-#if defined(EMSCRIPTEN) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
+#if defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD)
                platform_emscripten_deferred_sleep(sleep_ms);
 #else
 #if defined(HAVE_COCOATOUCH)

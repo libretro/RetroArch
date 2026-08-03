@@ -379,7 +379,7 @@ command_t* command_stdin_new(void)
    command_t *cmd;
    command_stdin_t *stdincmd;
 
-#if !(defined(_WIN32) || defined(EMSCRIPTEN))
+#if !(defined(_WIN32) || defined(__EMSCRIPTEN__))
 #ifdef HAVE_NETWORKING
    if (!socket_nonblock(STDIN_FILENO))
       return NULL;
@@ -409,7 +409,7 @@ command_t* command_stdin_new(void)
 }
 #endif
 
-#if defined(EMSCRIPTEN)
+#if defined(__EMSCRIPTEN__)
 #include "frontend/drivers/platform_emscripten.h"
 typedef struct
 {

@@ -359,7 +359,17 @@ void memrelease(void *addr, size_t len)
    (void)len;
    VirtualFree(addr, 0, MEM_RELEASE);
 #else
-   munmap(addr, len);
+   {
+      /* memreserve() rounded the request up to a whole number of pages
+       * and mapped that, so the same rounding has to be applied here:
+       * munmap() is specified against the pages the range covers, and
+       * an implementation that takes the length literally rather than
+       * rounding it - and rejects a partial unmap - leaks the whole
+       * reservation when len is not already a multiple. */
+      size_t ps = mempagesize();
+      size_t r  = ps ? ((len + ps - 1) & ~(ps - 1)) : len;
+      munmap(addr, r);
+   }
 #endif
 #endif
 }
