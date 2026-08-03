@@ -2129,18 +2129,24 @@ static void config_file_dump_line(struct config_file_dump_buf *b,
 
 void config_file_dump(config_file_t *conf, FILE *file, bool sort)
 {
-   struct config_file_dump_buf buf;
+   /* The dump buffer carries 4 KiB of data inline; heap-held because
+    * dumps run from task handlers -- the same lesson config_file_write
+    * already learned with its stdio buffer. */
+   struct config_file_dump_buf *buf =
+      (struct config_file_dump_buf*)malloc(sizeof(*buf));
    struct config_entry_list       *list = NULL;
    struct config_include_list *includes = conf->includes;
    struct path_linked_list *ref_tmp = conf->references;
 
-   buf.file = file;
-   buf.fill = 0;
+   if (!buf)
+      return;
+   buf->file = file;
+   buf->fill = 0;
 
    while (ref_tmp)
    {
       pathname_make_slashes_portable(ref_tmp->path);
-      config_file_dump_line(&buf,
+      config_file_dump_line(buf,
             "#reference \"", STRLEN_CONST("#reference \""),
             ref_tmp->path, strlen(ref_tmp->path),
             "\"\n", STRLEN_CONST("\"\n"));
@@ -2162,12 +2168,12 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
       {
          /* Lengths were cached when the strings were parsed or set;
           * zero means unknown and falls back to measuring. */
-         config_file_dump_put(&buf, list->key,
+         config_file_dump_put(buf, list->key,
                list->key_len ? list->key_len : strlen(list->key));
-         config_file_dump_put(&buf, " = \"", STRLEN_CONST(" = \""));
-         config_file_dump_put(&buf, list->value,
+         config_file_dump_put(buf, " = \"", STRLEN_CONST(" = \""));
+         config_file_dump_put(buf, list->value,
                list->value_len ? list->value_len : strlen(list->value));
-         config_file_dump_put(&buf, "\"\n", STRLEN_CONST("\"\n"));
+         config_file_dump_put(buf, "\"\n", STRLEN_CONST("\"\n"));
       }
       list = list->next;
    }
@@ -2180,15 +2186,17 @@ void config_file_dump(config_file_t *conf, FILE *file, bool sort)
     * any custom-set values */
    while (includes)
    {
-      config_file_dump_line(&buf,
+      config_file_dump_line(buf,
             "#include \"", STRLEN_CONST("#include \""),
             includes->path, strlen(includes->path),
             "\"\n", STRLEN_CONST("\"\n"));
       includes = includes->next;
    }
 
-   config_file_dump_flush(&buf);
+   config_file_dump_flush(buf);
+   free(buf);
 }
+
 
 /**
  * config_get_entry_list_head:
