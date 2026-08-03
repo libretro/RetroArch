@@ -4178,6 +4178,21 @@ static bool gl2_frame(void *data, const void *frame,
       glDisableVertexAttribArray(0);
       glDisableVertexAttribArray(1);
       glUseProgram(0);
+
+      /* Restore the aspect-correct viewport the composite just
+       * clobbered. glViewport is context state, not per-FBO, and this
+       * driver only re-establishes it on resize (and, for hardware
+       * cores, in the HW_RENDER_FBO_INIT block above) -- so without
+       * this the next frame draws into the offscreen with the full
+       * window viewport still latched and the image is stretched to
+       * fill, ignoring the aspect ratio. Same save/restore convention
+       * as the fullscreen branch of gl2_draw_texture.
+       *
+       * The glcore driver has the same shape here but is unaffected:
+       * its filter chain re-runs glViewport on the final pass every
+       * frame (shader_gl3.cpp), so the leak never survives to a draw.
+       * The gl2 GLSL path has no equivalent choke point. */
+      glViewport(gl->vp.x, gl->vp.y, gl->vp.width, gl->vp.height);
    }
 
    /* Screenshots. */
