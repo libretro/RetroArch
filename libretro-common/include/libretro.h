@@ -3040,6 +3040,10 @@ typedef const char *(RETRO_CALLCONV *retro_vfs_get_path_t)(struct retro_vfs_file
  * @param path The path to open.
  * @param mode A bitwise combination of \c RETRO_VFS_FILE_ACCESS flags.
  * At a minimum, one of \c RETRO_VFS_FILE_ACCESS_READ or \c RETRO_VFS_FILE_ACCESS_WRITE must be specified.
+ * If \c RETRO_VFS_FILE_ACCESS_WRITE is specified and \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is not specified,
+ * and no file or directory exists at \c path, this function will attempt to create an empty file at \c path.
+ * If either \c RETRO_VFS_FILE_ACCESS_WRITE is not specified or \c RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING is specified,
+ * and no file or directory exists at \c path, this function will return \c NULL without attempting to create a file at \c path.
  * @param hints A bitwise combination of \c RETRO_VFS_FILE_ACCESS_HINT flags.
  * @return A handle to the opened file,
  * or \c NULL upon failure.
