@@ -119,12 +119,6 @@ CROSS_COMPILERS   = ('x86_64-w64-mingw32-gcc', 'i686-w64-mingw32-gcc')
 # size on REFERENCE_TARGETS; see the module docstring for why it is
 # not comparable against a measurement from another triple.
 ALLOWLIST  = {
-    'cdfs_find_file.constprop': 2160,
-    'config_file_dump': 4208,
-    'mem_stats_proc_meminfo.constprop': 2160,
-    'rzstd_huf_read_bmi2': 2368,
-    'rzstd_huf_read_sse': 2368,
-    'vorbis_decode_packet_rest.isra': 2672,
 }
 
 

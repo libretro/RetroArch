@@ -367,6 +367,17 @@ struct rvorbis
 
    int16_t *finalY[RVORBIS_MAX_CHANNELS];
 
+  /* per-packet channel flags for decode_packet_rest, held here rather
+   * than as 2 KiB of int[256] locals on the decode stack.  Sized by
+   * RVORBIS_MAX_CHANNELS rather than the locals' spec-maximum 256:
+   * both arrays are indexed only by channel number, header setup
+   * rejects streams above the cap, and the struct can be placed in a
+   * caller-provided alloc buffer whose budget should not grow by more
+   * than it must.  (The floor decoder's step2_flag stays a local --
+   * it is indexed by floor curve point, not by channel.) */
+   int zero_channel[RVORBIS_MAX_CHANNELS];
+   int really_zero_channel[RVORBIS_MAX_CHANNELS];
+
    uint32_t current_loc; /* sample location of next frame to decode */
    int    current_loc_valid;
 
@@ -4025,8 +4036,8 @@ static int vorbis_decode_packet_rest(vorb *f, int *len, Mode *m, int left_start,
 {
    Mapping *map;
    int i,j,k,n,n2;
-   int zero_channel[256];
-   int really_zero_channel[256];
+   int *zero_channel        = f->zero_channel;
+   int *really_zero_channel = f->really_zero_channel;
 
 /* WINDOWING */
 
