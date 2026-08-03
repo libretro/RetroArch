@@ -1519,6 +1519,12 @@ ifeq ($(HAVE_NETWORK_VIDEO), 1)
    OBJ += gfx/drivers/network_gfx.o
 endif
 
+ifeq ($(HAVE_HUB75), 1)
+   DEFINES += -DHAVE_HUB75
+   OBJ += gfx/drivers/hub75_gfx.o
+   LIBS += -lrt -lm -lpthread
+endif
+
 ifeq ($(HAVE_PLAIN_DRM), 1)
    OBJ += gfx/drivers/drm_gfx.o
    ifneq ($(HAVE_LAKKA), 1)
