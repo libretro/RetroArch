@@ -83,13 +83,17 @@ unsigned raac_channels(const raac_t *a);
  * downsampled SBR (extension rate equal to the core rate) decodes as
  * plain LC at the core rate. Size output buffers from
  * raac_frame_len() and raac_channels(), never a constant. */
+#define RAAC_MAX_FRAME 2048   /* upper bound of raac_frame_len() */
 unsigned raac_frame_len(const raac_t *a);
 unsigned raac_sample_rate(const raac_t *a);
 
 /* Decode one access unit (one MP4 sample). out must hold at least
- * 1024 * channels samples. Returns the number of samples produced
- * per channel (1024), or -1 on a bitstream or scope error - the
- * decoder stays usable for following packets.
+ * raac_frame_len(a) * raac_channels(a) samples - the core frame
+ * length (1024, or 960) doubles when the SBR path is active, so a
+ * fixed buffer must be sized for RAAC_MAX_FRAME per channel.  Returns
+ * the number of samples produced per channel (raac_frame_len(a)), or
+ * -1 on a bitstream or scope error - the decoder stays usable for
+ * following packets.
  *
  * The synthesis pipeline is float throughout; the two entry points
  * differ only in the output conversion.  s16 rounds and saturates

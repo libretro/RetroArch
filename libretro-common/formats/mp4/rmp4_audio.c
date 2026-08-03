@@ -178,16 +178,20 @@ static int rmp4_audio_decode_aac(rmp4_t *m, const rmp4_track *t,
 
    a->channels = raac_channels(d);
    *rate       = raac_sample_rate(d);
-   /* the track's edit list trims the encoder delay; media units are
-    * sample counts for audio */
+   /* the track's edit list trims the encoder delay in media-timescale
+    * units, i.e. core-rate samples; the trim is consumed in output
+    * frames, which double under SBR, so convert by the rate ratio */
    skip        = (size_t)t->media_skip;
+   if (t->sample_rate && *rate != t->sample_rate)
+      skip = (size_t)((t->media_skip * *rate
+            + t->sample_rate / 2) / t->sample_rate);
 
    while (rmp4_read_packet(m, &pkt) == 1)
    {
       int produced;
       if (pkt.track != track_idx)
          continue;
-      if (!rmp4_pcm_reserve(a, 1024))
+      if (!rmp4_pcm_reserve(a, raac_frame_len(d)))
          break;
       if (a->elem == sizeof(float))
          produced = raac_decode_f32(d, pkt.data, pkt.size,

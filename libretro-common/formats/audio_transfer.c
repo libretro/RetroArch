@@ -445,7 +445,8 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     the last access unit is not handed out and the length info()
  *     reports is the length that comes out; rewind; buffer_tell in ADTS
  *     mode, hence windowing there.
- *     Seeks: every access unit this decoder takes is 1024 frames, so
+ *     Seeks: every access unit this decoder takes yields a fixed
+ *     raac_frame_len() frames, so
  *     the units before the target are counted rather than decoded and
  *     only a pre-roll before it is decoded and dropped.
  *   Does not: reproduce a playthrough exactly across a seek where the
@@ -470,10 +471,13 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     caller's.  ADTS carries no delay signalling, so
  *     that path forces the trim to 0 and is not gapless.  A lost ADTS
  *     sync is reported as end of stream rather than resynchronised.
- *     Beyond that the scope is raac's: AAC-LC mono/stereo at the
- *     1024-sample frame length, so no HE-AAC (SBR/PS), no Main/SSR/LTP,
- *     no 960-sample frames, no multichannel - and the ADTS header parse
- *     here refuses anything outside that before the decoder is opened.
+ *     Beyond that the scope is raac's: the AAC-LC core (no
+ *     Main/SSR/LTP) with raac's SBR upsampling path, whose doubled
+ *     frame length and output rate this arm follows via
+ *     raac_frame_len()/raac_sample_rate(); parametric stereo payloads
+ *     are skipped (HE-AAC v2 decodes as v1).  The ADTS header parse
+ *     refuses anything outside raac's scope before the decoder is
+ *     opened.
  *
  * Across all arms: no file I/O and no ownership of the encoded bytes -
  * buffers are borrowed and must outlive the decoder (rmodtracker copies
@@ -912,7 +916,12 @@ struct audio_transfer_aac
     * pipeline with two edges, so that arm keeps its format latch. */
    size_t      pend_frames;
    size_t      pend_pos;
-   float       pend_f32[1024 * 2];
+   /* raac's per-packet output: raac_frame_len() (doubled under SBR)
+    * times the channel count, sized at start when both are known.  A
+    * fixed 1024x2 array here once assumed plain LC and overflowed on
+    * SBR stereo streams. */
+   float      *pend_f32;
+   size_t      pend_cap;   /* capacity in samples */
 };
 #endif
 
@@ -3264,13 +3273,19 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                   at->codec_private_size);
             if (!ac->handle)
                return false;
-            /* the track's edit list carries the encoder delay */
-            ac->start_trim = at->media_skip;
             {
                int64_t ns = rmp4_duration_ns(ac->demux);
                unsigned sr = raac_sample_rate(ac->handle);
                if (ns > 0 && sr)
                   ac->limit = (ns * (int64_t)sr + 500000000) / 1000000000;
+               /* the track's edit list carries the encoder delay in
+                * media-timescale units, i.e. core-rate samples; the
+                * trim is consumed in output frames, which double under
+                * SBR, so convert by the rate ratio */
+               ac->start_trim = at->media_skip;
+               if (at->sample_rate && sr && sr != at->sample_rate)
+                  ac->start_trim = (at->media_skip * sr
+                        + at->sample_rate / 2) / at->sample_rate;
             }
          }
          else
@@ -3283,6 +3298,23 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
                return false;
          }
          ac->channels    = raac_channels(ac->handle);
+         {
+            size_t need = (size_t)raac_frame_len(ac->handle)
+                  * ac->channels;
+            if (need > ac->pend_cap)
+            {
+               float *nf = (float*)realloc(ac->pend_f32,
+                     need * sizeof(float));
+               if (!nf)
+               {
+                  raac_close(ac->handle);
+                  ac->handle = NULL;
+                  return false;
+               }
+               ac->pend_f32 = nf;
+               ac->pend_cap = need;
+            }
+         }
          ac->trim_left   = ac->start_trim;
          ac->emitted     = 0;
          ac->pkt_index   = 0;
@@ -3982,11 +4014,18 @@ static int audio_transfer_aac_pull(struct audio_transfer_aac *ac,
 /* Frames decoded before the target and dropped so the decoder has its
  * overlap-add history back.  One access unit is the overlap itself and
  * the walk stops on a unit boundary, so three covers both. */
-#define AUDIO_AAC_PREROLL (1024 * 3)
+#define AUDIO_AAC_PREROLL 3   /* access units decoded before target */
 
-/* Every access unit this decoder takes is 1024 frames, so the walk to a
- * target needs no decoding at all - only the pre-roll does.  Returns
- * the frame reached, or < 0 if the stream ends first. */
+/* Every access unit this decoder takes yields a fixed frame count -
+ * raac_frame_len(), the core 1024 doubled under SBR - so the walk to a
+ * target needs no decoding at all; only the pre-roll does.  Returns
+ * the frame reached, or < 0 if the stream ends first.
+ *
+ * Streams using PNS reconstruct their noise bands from a generator
+ * whose state advances with every draw; a seek skips the draws of the
+ * walked-over access units, so noise samples after a seek differ from
+ * a straight decode (by an LSB or so at s16).  Deterministic loops on
+ * PNS content need seek(0), which raac_reset makes exact. */
 static int audio_transfer_aac_fill(struct audio_transfer_aac *ac);
 
 static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
@@ -3994,7 +4033,8 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
 {
    int64_t  pos  = 0;
    uint64_t skip = ac->start_trim;
-   int64_t  stop = frame - AUDIO_AAC_PREROLL;
+   int64_t  flen = (int64_t)raac_frame_len(ac->handle);
+   int64_t  stop = frame - AUDIO_AAC_PREROLL * flen;
 
    raac_reset(ac->handle);
    ac->adts_pos = 0;
@@ -4012,7 +4052,7 @@ static int64_t audio_transfer_aac_seek_to(struct audio_transfer_aac *ac,
    {
       const uint8_t *pdata;
       uint32_t plen;
-      int64_t d = 1024;
+      int64_t d = flen;
       int r = audio_transfer_aac_pull(ac, &pdata, &plen);
       if (r <= 0)
          return -1;              /* asked past the end of the stream   */
@@ -5072,6 +5112,8 @@ void audio_transfer_free(void *data, enum audio_type_enum type)
       case AUDIO_TYPE_AAC:
       {
          struct audio_transfer_aac *ac = (struct audio_transfer_aac*)data;
+         if (ac)
+            free(ac->pend_f32);
          if (ac && ac->handle)
             raac_close(ac->handle);
 #ifdef HAVE_RMP4
