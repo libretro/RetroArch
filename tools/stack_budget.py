@@ -127,7 +127,7 @@ ALLOWLIST  = {
     'rh264_cabac_decode_islice.constprop.isra': 2240,
     'rh264_cabac_decode_mb_ctx.isra': 2112,
     'rh264_cabac_decode_pslice.constprop.isra': 2608,
-    'rh264_video_decode_inter': 7520,
+    'rh264_video_decode_inter': 3024,
     'rhuff_dec_build': 4240,
     'rhuff_read_tree_packed': 2288,
     'rzstd_huf_read_bmi2': 2368,
