@@ -412,9 +412,9 @@ bool retro_vfs_file_open_smb(libretro_vfs_implementation_file *stream,
       flags = O_WRONLY;
    }
 
-   if ((mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) &&
+   if (!(mode & RETRO_VFS_FILE_ACCESS_UPDATE_EXISTING) &&
        (mode & RETRO_VFS_FILE_ACCESS_WRITE))
-      flags |= O_CREAT;
+      flags |= O_CREAT | O_TRUNC;
 
    fh = smb2_open(smb_context, full_path, flags);
    if (!fh)
