@@ -9,11 +9,11 @@
  * glue can drive either container identically.
  *
  * The codec set mirrors what libretro-common can decode: VP8 ('vp08'),
- * VP9 ('vp09') and H.264 ('avc1'/'avc3') video; Opus ('Opus'),
- * Vorbis and AAC ('mp4a' by object type) audio.  Other codecs (HEVC,
- * AV1, ...) are reported with their sample-entry fourcc in codec_id
- * and the codec field left RMP4_CODEC_UNKNOWN so callers can skip
- * them.
+ * VP9 ('vp09'), H.264 ('avc1'/'avc3') and H.265/HEVC ('hvc1'/'hev1')
+ * video; Opus ('Opus'), Vorbis and AAC ('mp4a' by object type) audio.
+ * Other codecs (AV1, ...) are reported with their sample-entry fourcc
+ * in codec_id and the codec field left RMP4_CODEC_UNKNOWN so callers
+ * can skip them.
  *
  * Both progressive files (sample tables in moov/trak/mdia/minf/stbl)
  * and fragmented movies (an mvex-marked moov followed by moof/mdat
@@ -53,7 +53,8 @@ enum rmp4_codec
    RMP4_CODEC_H264,
    RMP4_CODEC_VORBIS,
    RMP4_CODEC_OPUS,
-   RMP4_CODEC_AAC
+   RMP4_CODEC_AAC,
+   RMP4_CODEC_H265
 };
 
 typedef struct

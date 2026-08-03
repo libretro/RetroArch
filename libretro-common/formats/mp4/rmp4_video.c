@@ -20,11 +20,12 @@
  * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* MP4 video-to-image glue: rmp4 demuxer + rh264/rvp8/rvp9 decoders
- * exposed through the still-image and streaming-animation contracts
- * that image_transfer.c dispatches on (see rmp4_video.h).  The
- * structure mirrors rwebm_video.c with the demuxer swapped and H.264
- * (avc1, with its avcC extradata) added to the codec dispatch. */
+/* MP4 video-to-image glue: rmp4 demuxer + rh264/rh265/rvp8/rvp9
+ * decoders exposed through the still-image and streaming-animation
+ * contracts that image_transfer.c dispatches on (see rmp4_video.h).
+ * The structure mirrors rwebm_video.c with the demuxer swapped and
+ * H.264 (avc1, with its avcC extradata) and H.265 (hvc1/hev1, with
+ * hvcC) added to the codec dispatch. */
 
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +48,7 @@
 #include <formats/rwebm_video.h>
 #endif
 #include <formats/rh264.h>
+#include <formats/rh265.h>
 #include <formats/rmp4_video.h>
 
 /* Per-packet timestamps are pre-scanned at open so every frame's display
@@ -66,6 +68,7 @@ struct rmp4_video_stream
    rvp9_dec    *vp9;
 #endif
    rh264_video *h264;
+   rh265_video *h265;
    uint32_t    *frame;      /* width * height ABGR words              */
    int64_t     *ts;         /* pre-scanned packet timestamps (ns)     */
    int          ts_count;   /* entries stored in ts                   */
@@ -77,7 +80,7 @@ struct rmp4_video_stream
     * rmp4_video_stream_render and never happens at all for frames a
     * caller passes over with rmp4_video_stream_skip (this replaces
     * the old seek-only 'catchup' blit suppression). */
-   int          rndr_kind;     /* 0 none, 1 vp8, 2 vp9, 3 h264       */
+   int          rndr_kind;     /* 0 none, 1 vp8, 2 vp9, 3 h264, 4 h265 */
    int          rndr_vp9_show; /* fbs index of the vp9 picture       */
    int          wait_key;   /* a reference failed; hold out for a key */
    int          track;      /* index of the chosen video track        */
@@ -467,6 +470,16 @@ static bool rmp4_video_stream_open_decoder(rmp4_video_stream_t *s)
                   t->codec_private_size);
          return true;
       }
+      case RMP4_CODEC_H265:
+      {
+         const rmp4_track *t = rmp4_get_track(s->demux, s->track);
+         if (!(s->h265 = rh265_video_open()))
+            return false;
+         if (t && t->codec_private && t->codec_private_size)
+            rh265_video_set_extradata(s->h265, t->codec_private,
+                  t->codec_private_size);
+         return true;
+      }
       default:
          break;
    }
@@ -492,6 +505,11 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
    {
       rh264_video_close(s->h264);
       s->h264 = NULL;
+   }
+   if (s->h265)
+   {
+      rh265_video_close(s->h265);
+      s->h265 = NULL;
    }
 }
 
@@ -541,6 +559,7 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
           && t->codec != RMP4_CODEC_VP9
 #endif
           && t->codec != RMP4_CODEC_H264
+          && t->codec != RMP4_CODEC_H265
          )
          continue;
       s->track  = i;
@@ -739,6 +758,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
        && !s->vp9
 #endif
        && !s->h264
+       && !s->h265
       )
       return -1;
 #ifdef HAVE_RVP9
@@ -817,6 +837,38 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
       s->rndr_kind = 3;
       return 1;
    }
+   if (s->codec == RMP4_CODEC_H265)
+   {
+      /* rh265 reconstructs Main-profile intra pictures only for now,
+       * so the freeze-until-key policy above does the heavy lifting:
+       * streams with inter frames hold the last decoded intra picture
+       * until the next key frame instead of aborting, and all-intra
+       * HEVC plays in full.  A key frame that fails to decode (an
+       * out-of-scope feature such as tiles or 10-bit) is a real
+       * error. */
+      int dec;
+      if (s->wait_key && !pkt->keyframe)
+      {
+         s->disp_idx++;  /* the sample's presentation slot is gone */
+         return 0;
+      }
+      dec = rh265_video_decode(s->h265, pkt->data, pkt->size);
+      if (dec < 0)
+      {
+         if (pkt->keyframe)
+            return -1;
+         s->wait_key = 1;
+         return 0;
+      }
+      s->wait_key = 0;
+      if (dec == 0)   /* consumed; picture held for display reordering */
+         return 0;
+      /* Planes stay valid until the next decode; defer conversion. */
+      if (!rh265_video_plane(s->h265, 0, NULL, NULL, NULL))
+         return -1;
+      s->rndr_kind = 4;
+      return 1;
+   }
    return -1;
 }
 
@@ -865,6 +917,18 @@ static int rmp4_video_stream_step(rmp4_video_stream_t *s,
       if (rh264_video_plane(s->h264, 0, NULL, NULL, NULL))
       {
          s->rndr_kind = 3;
+         if (duration_ms)
+            *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
+         s->disp_idx++;
+         return 1;
+      }
+   }
+   if (s->h265 && rh265_video_drain(s->h265) == 0)
+   {
+      s->rndr_kind = 0;   /* the drain replaced the current picture */
+      if (rh265_video_plane(s->h265, 0, NULL, NULL, NULL))
+      {
+         s->rndr_kind = 4;
          if (duration_ms)
             *duration_ms = rmp4_video_duration_ms(s, s->disp_idx);
          s->disp_idx++;
@@ -978,6 +1042,27 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
+         rmp4_video_blit_yuv(s->frame, s->width,
+               (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
+               (ch < h) ? 1 : 0, s->emit_argb);
+         return s->frame;
+      }
+      case 4:  /* H.265: planes valid until the next decode or drain */
+      {
+         const uint8_t *y, *u, *v;
+         int ys, uvs, w, h, cw, ch;
+         y = rh265_video_plane(s->h265, 0, &ys,  &w,  &h);
+         u = rh265_video_plane(s->h265, 1, &uvs, &cw, &ch);
+         v = rh265_video_plane(s->h265, 2, &uvs, &cw, &ch);
+         if (!y || !u || !v)
+            return NULL;
+         if ((unsigned)w > s->width)
+            w = (int)s->width;
+         if ((unsigned)h > s->height)
+            h = (int)s->height;
+         /* rh265 is 4:2:0 only, so the chroma-vertical-shift argument
+          * the H.264 arm derives is always 1 here; keep the same
+          * derivation anyway so the two arms stay textually parallel. */
          rmp4_video_blit_yuv(s->frame, s->width,
                (unsigned)w, (unsigned)h, y, ys, u, v, uvs, s->matrix,
                (ch < h) ? 1 : 0, s->emit_argb);

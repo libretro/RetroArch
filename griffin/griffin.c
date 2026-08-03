@@ -484,6 +484,7 @@ VIDEO IMAGE
 
 #ifdef HAVE_RMP4
 #include "../libretro-common/formats/h264/rh264.c"
+#include "../libretro-common/formats/h265/rh265.c"
 #include "../libretro-common/formats/mp4/rmp4.c"
 #include "../libretro-common/formats/mp4/rmp4_video.c"
 #include "../libretro-common/formats/mp4/rmp4_audio.c"
