@@ -193,7 +193,11 @@ int memsync(void *start, void *end)
    sys_icache_invalidate(start, _len);
    return 0;
 #elif defined(__arm__) && !defined(__QNX__)
-   __clear_cache(start, end);
+   /* __builtin___clear_cache, not bare __clear_cache: the builtin is
+    * known to GCC and clang without any declaration, while the plain
+    * symbol is only declared by some toolchains' libgcc headers -- the
+    * webOS armv7 GCC rejects it as an implicit declaration. */
+   __builtin___clear_cache((char*)start, (char*)end);
    return 0;
 #elif defined(HAVE_MMAN) && defined(MS_SYNC) && defined(MS_INVALIDATE)
    /* Gate on the constants rather than on HAVE_MMAN alone: DJGPP falls
