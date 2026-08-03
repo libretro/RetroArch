@@ -303,7 +303,8 @@ static void gfx_thumbnail_init_fade(
       defined(HAVE_AUDIOMIXER) && \
       (defined(HAVE_ROPUS) || defined(HAVE_RVORBIS) || defined(HAVE_RAAC))
 #define GFX_THUMB_PREVIEW_AUDIO 1
-/* Cap decoded PCM (memory bound: 90 s stereo 48 kHz s16 = ~17 MB). */
+/* The mixer streams the audio track and decodes on the flush, so no
+ * PCM is buffered up front and the clip is not length-capped. */
 #define GFX_THUMB_PREVIEW_AUDIO_NAME   "__gfx_thumb_preview"
 #endif
 
