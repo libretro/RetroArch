@@ -659,8 +659,8 @@ static void sdl3_input_poll(void *data)
       }
       else if (event.type == SDL_EVENT_MOUSE_WHEEL)
       {
-         Sint32 wx = event.wheel.integer_x;
-         Sint32 wy = event.wheel.integer_y;
+         float wx = event.wheel.x;
+         float wy = event.wheel.y;
 
          /* FLIPPED = "natural" scrolling: SDL delivers inverted
           * signs and expects the caller to negate them. */
