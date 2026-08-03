@@ -328,6 +328,10 @@ struct rchd
     * on first use rather than per hunk, and not at all for an image
     * that never names the codec. */
    uint16_t          *huff_lookup;
+   /* And its decoder struct, for the same reasons: rhuff_dec_t holds
+    * its lengths inline (2 KiB), which as a per-hunk local was most
+    * of the frame that kept rchd_decompress on the allowlist. */
+   rhuff_dec_t       *huff_dec;
 
    /* The zlib codec's inflate state: ~42 KiB, held across hunks and
     * reset per hunk rather than reallocated, and not made at all for
@@ -774,8 +778,14 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
 {
    static const uint32_t tree_codes = 16;
    static const uint32_t tree_bits  = 8;
-   uint16_t     lookup[1 << 8];
-   rhuff_dec_t  dec;
+   /* The map tree's decoder plus its hs->lookup: rhuff_dec_t carries its
+    * lengths inline, so as locals the pair was a 2.7 KiB frame on the
+    * open path.  One allocation for the duration of the parse. */
+   struct rchd_map_huff
+   {
+      rhuff_dec_t dec;
+      uint16_t    lookup[1 << 8];
+   } *hs;
    rhuff_bits_t bits;
    uint8_t     *codes;
    uint8_t     *checkbuf;
@@ -808,17 +818,20 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
    if ((uint64_t)maplength + 16 > raw_len)
       return RCHD_ERROR_DATA;
 
-   if (rhuff_dec_init(&dec, tree_codes, tree_bits, lookup,
+   if (!(hs = (struct rchd_map_huff*)malloc(sizeof(*hs))))
+      return RCHD_ERROR_MEM;
+
+   if (rhuff_dec_init(&hs->dec, tree_codes, tree_bits, hs->lookup,
             RHUFF_LOOKUP_ENTRIES(8)) != RHUFF_OK)
-      return RCHD_ERROR_DATA;
+      { free(hs); return RCHD_ERROR_DATA; }
 
    rhuff_bits_init(&bits, raw + 16, maplength);
 
-   if (rhuff_read_tree_rle(&dec, &bits) != RHUFF_OK)
-      return RCHD_ERROR_DATA;
+   if (rhuff_read_tree_rle(&hs->dec, &bits) != RHUFF_OK)
+      { free(hs); return RCHD_ERROR_DATA; }
 
    if (!(codes = (uint8_t*)malloc(chd->info.hunk_count)))
-      return RCHD_ERROR_MEM;
+      { free(hs); return RCHD_ERROR_MEM; }
 
    /* First pass: one code per hunk. Two of the sixteen repeat the
     * previous hunk's code rather than naming their own. */
@@ -833,17 +846,17 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
          continue;
       }
 
-      value = rhuff_dec_decode_one(&dec, &bits);
+      value = rhuff_dec_decode_one(&hs->dec, &bits);
 
       if (value == RCHD_V5_RLE_SMALL)
       {
          codes[n] = (uint8_t)last_code;
-         repeat   = 2 + rhuff_dec_decode_one(&dec, &bits);
+         repeat   = 2 + rhuff_dec_decode_one(&hs->dec, &bits);
       }
       else if (value == RCHD_V5_RLE_LARGE)
       {
-         uint32_t hi = rhuff_dec_decode_one(&dec, &bits);
-         uint32_t lo = rhuff_dec_decode_one(&dec, &bits);
+         uint32_t hi = rhuff_dec_decode_one(&hs->dec, &bits);
+         uint32_t lo = rhuff_dec_decode_one(&hs->dec, &bits);
          codes[n] = (uint8_t)last_code;
          repeat   = 2 + 16 + (hi << 4) + lo;
       }
@@ -857,7 +870,7 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
    if (!(checkbuf = (uint8_t*)malloc((size_t)chd->info.hunk_count * 12)))
    {
       free(codes);
-      return RCHD_ERROR_MEM;
+      { free(hs); return RCHD_ERROR_MEM; }
    }
 
    /* Second pass: the fields each code implies, continuing the same
@@ -963,6 +976,7 @@ static int rchd_map_v5(rchd_t *chd, const uint8_t *raw, size_t raw_len)
 done:
    free(checkbuf);
    free(codes);
+   free(hs);
    return err;
 }
 
@@ -1070,6 +1084,7 @@ void rchd_free(rchd_t *chd)
    free(chd->meta);
    free(chd->codecs);
    free(chd->huff_lookup);
+   free(chd->huff_dec);
    if (chd->inflate)
       rinflate_free(chd->inflate);
 #ifdef HAVE_RCHD_LZMA
@@ -2204,7 +2219,6 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
 
       case RCHD_CODEC_HUFFMAN:
       {
-         rhuff_dec_t  dec;
          rhuff_bits_t bits;
 
          if (!chd->huff_lookup)
@@ -2214,11 +2228,18 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
             if (!chd->huff_lookup)
                return RCHD_ERROR_MEM;
          }
-         if (rhuff_dec_init(&dec, 256, 16, chd->huff_lookup,
+         if (!chd->huff_dec)
+         {
+            chd->huff_dec = (rhuff_dec_t*)malloc(sizeof(*chd->huff_dec));
+            if (!chd->huff_dec)
+               return RCHD_ERROR_MEM;
+         }
+         if (rhuff_dec_init(chd->huff_dec, 256, 16, chd->huff_lookup,
                   RHUFF_LOOKUP_ENTRIES(16)) != RHUFF_OK)
             return RCHD_ERROR_DATA;
          rhuff_bits_init(&bits, src, src_len);
-         if (rhuff_decode_block(&dec, &bits, dst, dst_len) != RHUFF_OK)
+         if (rhuff_decode_block(chd->huff_dec, &bits, dst, dst_len)
+               != RHUFF_OK)
             return RCHD_ERROR_DATA;
          return RCHD_OK;
       }
