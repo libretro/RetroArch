@@ -364,7 +364,7 @@ static void rh265_skip_scaling_list_data(rh265_bits *b)
 
 /* st_ref_pic_set (7.3.7), resolving inter-RPS prediction against the
  * previously parsed sets so every set is stored in explicit form. */
-static int rh265_parse_st_rps(rh265_bits *b, rh265_sps *s, int idx,
+static int rh265_parse_st_rps(rh265_bits *b, const rh265_sps *s, int idx,
       rh265_st_rps *rps, int is_slice_header)
 {
    int inter_pred = 0;
@@ -770,12 +770,10 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
       sh->poc_lsb = (int)rh265_un(b, s->log2_max_poc_lsb);
       if (!rh265_u1(b))                 /* short_term_ref_pic_set_sps_flag */
       {
-         rh265_sps tmp;
-         /* parse an explicit set; sets already in the SPS may be referenced
-          * by inter-set prediction, so give the parser the SPS context with
-          * the explicit set appended at index num_st_rps */
-         memcpy(&tmp, s, sizeof(tmp));
-         if (rh265_parse_st_rps(b, &tmp, s->num_st_rps, &sh->rps, 1) < 0)
+         /* parse an explicit set at virtual index num_st_rps; inter-set
+          * prediction only reads the sets already stored in the SPS, so
+          * the SPS is passed directly (and never written) */
+         if (rh265_parse_st_rps(b, s, s->num_st_rps, &sh->rps, 1) < 0)
             return -1;
       }
       else if (s->num_st_rps > 0)
@@ -1276,6 +1274,8 @@ typedef struct
    int      in_use;
 } rh265_pic;
 
+#define RH265_MAX_PB 64
+
 typedef struct
 {
    const rh265_sps *sps;
@@ -1312,6 +1312,16 @@ typedef struct
    /* current-slice decode state */
    int slice_start_zaddr;
    int        slice_start_ctb;   /* raster CTB address of the slice start */
+
+   /* Large per-call work buffers.  These live here rather than on the
+    * stack because several console targets run threads on 8 KiB
+    * stacks; the decode call tree is single-threaded and none of these
+    * are live across the calls that use them. */
+   int      mc_val0[RH265_MAX_PB * RH265_MAX_PB];
+   int      mc_val1[RH265_MAX_PB * RH265_MAX_PB];
+   uint8_t  mc_patch[(RH265_MAX_PB + 7) * (RH265_MAX_PB + 7)];
+   int      mc_tmp[(RH265_MAX_PB + 7) * RH265_MAX_PB];
+   int16_t  coeff_scratch[32 * 32];
    int cur_zaddr;             /* z-scan address of the current TU/CU origin */
    int qp_y;                  /* current QpY */
    int qp_y_pred;             /* qPY_PREV of 8.6.1 */
@@ -1822,7 +1832,7 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
    int x_cg_last, y_cg_last;
    const uint8_t *scan_x_cg, *scan_y_cg, *scan_x_off, *scan_y_off;
    uint8_t sig_cg[8][8];
-   int16_t coeffs[32 * 32];
+   int16_t *coeffs = d->coeff_scratch;
    int qp, shift, add, scale;
    int i;
    int shiftc = c_idx ? 1 : 0;
@@ -2493,7 +2503,6 @@ static const int8_t rh265_epel_filt[8][4] =
    { -2, 10, 58, -2 }
 };
 
-#define RH265_MAX_PB 64
 
 /* Fetch a (w x h) source patch whose top-left is (x, y) in the given
  * reference plane, with picture-edge clamping, into a tightly packed
@@ -2522,11 +2531,12 @@ static void rh265_mc_fetch(const uint8_t *src, int stride, int pw, int ph,
 /* Luma quarter-pel interpolation into the intermediate domain.
  * (x, y) are the integer-pel block origin in the reference, (mx, my)
  * the fractional phases 0..3.  out is w*h ints. */
-static void rh265_mc_luma(const uint8_t *ref, int stride, int pw, int ph,
+static void rh265_mc_luma(rh265_dec *d,
+      const uint8_t *ref, int stride, int pw, int ph,
       int x, int y, int mx, int my, int *out, int w, int h)
 {
-   uint8_t patch[(RH265_MAX_PB + 7) * (RH265_MAX_PB + 7)];
-   int tmp[(RH265_MAX_PB + 7) * RH265_MAX_PB];
+   uint8_t *patch = d->mc_patch;
+   int *tmp = d->mc_tmp;
    const int8_t *f;
    int i, j;
    if (!mx && !my)
@@ -2587,11 +2597,12 @@ static void rh265_mc_luma(const uint8_t *ref, int stride, int pw, int ph,
 }
 
 /* Chroma eighth-pel interpolation, phases 0..7. */
-static void rh265_mc_chroma(const uint8_t *ref, int stride, int pw, int ph,
+static void rh265_mc_chroma(rh265_dec *d,
+      const uint8_t *ref, int stride, int pw, int ph,
       int x, int y, int mx, int my, int *out, int w, int h)
 {
-   uint8_t patch[(RH265_MAX_PB / 2 + 3) * (RH265_MAX_PB / 2 + 3)];
-   int tmp[(RH265_MAX_PB / 2 + 3) * (RH265_MAX_PB / 2)];
+   uint8_t *patch = d->mc_patch;   /* chroma fits in the luma scratch */
+   int *tmp = d->mc_tmp;
    const int8_t *f;
    int i, j;
    if (!mx && !my)
@@ -3267,8 +3278,8 @@ static int rh265_luma_intra_mode(rh265_dec *d, int x0, int y0, int pu_size,
 static void rh265_mc_pu(rh265_dec *d, int x0, int y0, int w, int h,
       const rh265_mvfield *mv)
 {
-   int val0[RH265_MAX_PB * RH265_MAX_PB];
-   int val1[RH265_MAX_PB * RH265_MAX_PB];
+   int *val0 = d->mc_val0;
+   int *val1 = d->mc_val1;
    const rh265_shdr *sh = &d->sh;
    int weighted = (sh->slice_type == RH265_SLICE_P && d->pps->weighted_pred)
         || (sh->slice_type == RH265_SLICE_B && d->pps->weighted_bipred);
@@ -3293,11 +3304,11 @@ static void rh265_mc_pu(rh265_dec *d, int x0, int y0, int w, int h,
 
    /* luma */
    if (r0)
-      rh265_mc_luma(r0->pl[0], d->strd[0], d->pw[0], d->ph[0],
+      rh265_mc_luma(d, r0->pl[0], d->strd[0], d->pw[0], d->ph[0],
             x0 + (mv->mv[0].x >> 2), y0 + (mv->mv[0].y >> 2),
             mv->mv[0].x & 3, mv->mv[0].y & 3, val0, w, h);
    if (r1)
-      rh265_mc_luma(r1->pl[0], d->strd[0], d->pw[0], d->ph[0],
+      rh265_mc_luma(d, r1->pl[0], d->strd[0], d->pw[0], d->ph[0],
             x0 + (mv->mv[1].x >> 2), y0 + (mv->mv[1].y >> 2),
             mv->mv[1].x & 3, mv->mv[1].y & 3,
             r0 ? val1 : val0, w, h);
@@ -3322,11 +3333,11 @@ static void rh265_mc_pu(rh265_dec *d, int x0, int y0, int w, int h,
       if (!wc || !hc)
          continue;
       if (r0)
-         rh265_mc_chroma(r0->pl[c], d->strd[c], d->pw[c], d->ph[c],
+         rh265_mc_chroma(d, r0->pl[c], d->strd[c], d->pw[c], d->ph[c],
                xc + (mv->mv[0].x >> 3), yc + (mv->mv[0].y >> 3),
                mv->mv[0].x & 7, mv->mv[0].y & 7, val0, wc, hc);
       if (r1)
-         rh265_mc_chroma(r1->pl[c], d->strd[c], d->pw[c], d->ph[c],
+         rh265_mc_chroma(d, r1->pl[c], d->strd[c], d->pw[c], d->ph[c],
                xc + (mv->mv[1].x >> 3), yc + (mv->mv[1].y >> 3),
                mv->mv[1].x & 7, mv->mv[1].y & 7,
                r0 ? val1 : val0, wc, hc);
@@ -4177,6 +4188,13 @@ struct rh265_video
    /* RefPicSetStCurrBefore/After of the current picture (DPB slots) */
    int st_bef[RH265_MAX_REFS], st_aft[RH265_MAX_REFS];
    int nb_st_bef, nb_st_aft;
+
+   /* Parameter-set and slice-header parse scratch.  rh265_sps alone is
+    * ~11 KiB (the SPS-stored RPS list), far over the 8 KiB thread
+    * stacks of some console targets, so these cannot be locals. */
+   rh265_sps  sps_tmp;
+   rh265_pps  pps_tmp;
+   rh265_shdr sh_tmp;
 };
 
 static void rh265_free_frame(rh265_video *v)
@@ -4534,44 +4552,45 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
 
    if (nal_type == RH265_NAL_SPS)
    {
-      rh265_sps s;
+      rh265_sps *sp = &v->sps_tmp;
       int id;
-      ret = rh265_parse_sps(rbsp, rbsp_size, &s, &id);
+      ret = rh265_parse_sps(rbsp, rbsp_size, sp, &id);
       if (ret == 0)
       {
-         if (s.chroma_format_idc != 1 ||
-             s.bit_depth_luma != 8 || s.bit_depth_chroma != 8 ||
-             s.pcm_enabled || s.scaling_list_enabled)
+         if (sp->chroma_format_idc != 1 ||
+             sp->bit_depth_luma != 8 || sp->bit_depth_chroma != 8 ||
+             sp->pcm_enabled || sp->scaling_list_enabled)
             ret = -2;                   /* out of the supported profile */
          else
-            memcpy(&v->sps[id], &s, sizeof(s));
+            memcpy(&v->sps[id], sp, sizeof(*sp));
       }
    }
    else if (nal_type == RH265_NAL_PPS)
    {
-      rh265_pps p;
+      rh265_pps *pp = &v->pps_tmp;
       int id;
-      ret = rh265_parse_pps(rbsp, rbsp_size, &p, &id);
+      ret = rh265_parse_pps(rbsp, rbsp_size, pp, &id);
       if (ret == 0)
       {
-         if (p.entropy_coding_sync_enabled || p.transquant_bypass_enabled ||
-             p.constrained_intra_pred)
+         if (pp->entropy_coding_sync_enabled ||
+             pp->transquant_bypass_enabled ||
+             pp->constrained_intra_pred)
             ret = -2;
          else
-            memcpy(&v->pps[id], &p, sizeof(p));
+            memcpy(&v->pps[id], pp, sizeof(*pp));
       }
    }
    else
    {
       /* slice segment */
       rh265_bits b;
-      rh265_shdr sh;
+      rh265_shdr *shp = &v->sh_tmp;
       rh265_bits_init(&b, rbsp, rbsp_size);
       ret = rh265_parse_slice_header(&b, nal_type, NULL, NULL,
-            v->pps, v->sps, &sh);
+            v->pps, v->sps, shp);
       if (ret == 0)
       {
-         const rh265_pps *pps = &v->pps[sh.pps_id];
+         const rh265_pps *pps = &v->pps[shp->pps_id];
          const rh265_sps *sps = &v->sps[pps->sps_id];
          int tid = (nal[1] & 7) - 1;
          int is_rasl = nal_type == RH265_NAL_RASL_N ||
@@ -4580,7 +4599,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                        nal_type == RH265_NAL_RADL_R;
          v->d.sps = sps;
          v->d.pps = pps;
-         memcpy(&v->d.sh, &sh, sizeof(sh));
+         memcpy(&v->d.sh, shp, sizeof(*shp));
          if (rh265_alloc_frame(v, sps) < 0)
             ret = -1;
          else if (is_rasl && v->rasl_skip)
@@ -4589,10 +4608,10 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          {
             if (!is_rasl && !is_radl && !RH265_IS_IRAP(nal_type))
                v->rasl_skip = 0;
-            if (sh.first_slice_in_pic)
+            if (shp->first_slice_in_pic)
             {
                int slot, p;
-               rh265_compute_poc(v, sps, nal_type, sh.poc_lsb, tid);
+               rh265_compute_poc(v, sps, nal_type, shp->poc_lsb, tid);
                if (RH265_IS_IRAP(nal_type) &&
                    (nal_type != RH265_NAL_CRA || !v->first_pic_decoded))
                {
@@ -4633,13 +4652,13 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   memset(v->d.hedge, 0, (size_t)v->d.w4 * v->d.h4);
                   memset(v->d.nzc, 0, (size_t)v->d.w4 * v->d.h4);
                   memset(v->d.skipm, 0, (size_t)v->d.w4 * v->d.h4);
-                  memset(v->d.qpy, (uint8_t)sh.slice_qp,
+                  memset(v->d.qpy, (uint8_t)shp->slice_qp,
                         (size_t)v->d.w8 * v->d.h8);
                   memset(v->d.sao, 0,
                         (size_t)sps->pic_size_ctbs * sizeof(rh265_sao_params));
                   cur->poc        = v->poc;
                   cur->is_ref     = 1;
-                  cur->needed_out = sh.pic_output_flag;
+                  cur->needed_out = shp->pic_output_flag;
                   cur->in_use     = 1;
                   if (!RH265_IS_IDR(nal_type))
                      ret = rh265_apply_rps(v);
