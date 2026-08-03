@@ -9347,7 +9347,7 @@ static void ropus_silk_lpc_analysis_filter(int16_t *out, const int16_t *in,
          out32_Q12 = ROPUS_SILK_ADD32_OVF(out32_Q12,
             ROPUS_SILK_SMULBB(in_ptr[-j - 1], B[j + 1]));
       }
-      out32_Q12 = (int32_t)((uint32_t)((int32_t)in_ptr[1] << 12)
+      out32_Q12 = (int32_t)(((uint32_t)(int32_t)in_ptr[1] << 12)
          - (uint32_t)out32_Q12);
       out32 = ROPUS_SILK_RSHIFT_ROUND(out32_Q12, 12);
       out[ix] = (int16_t)ROPUS_SILK_SAT16(out32);
@@ -9360,7 +9360,8 @@ static const int16_t ropus_quant_offsets_Q10[2][2] =
 
 /* silk_decode_core (decode_core.c), no-loss path.                      */
 static void ropus_silk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
-      int16_t *xq, const int16_t *pulses, int32_t *prev_gain_Q16)
+      int16_t *xq, const int16_t *pulses, int32_t *prev_gain_Q16,
+      int16_t *sLTP, int32_t *sLTP_Q15)
 {
    int i, k, lag = 0, start_idx, sLTP_buf_idx;
    int NLSF_interpolation_flag, signalType;
@@ -9368,8 +9369,6 @@ static void ropus_silk_decode_core(ropus_silk_state *st, ropus_silk_ctrl *ctrl,
    int16_t *B_Q14;
    int16_t *pxq;
    int16_t A_Q12_tmp[ROPUS_SILK_MAX_LPC_ORDER];
-   int16_t sLTP[20 * 16];
-   int32_t sLTP_Q15[20 * 16 + ROPUS_SILK_MAX_FRAME_LEN];
    int32_t res_Q14[5 * 16];
    int32_t sLPC_Q14[5 * 16 + ROPUS_SILK_MAX_LPC_ORDER];
    int32_t LTP_pred_Q13, LPC_pred_Q10, Gain_Q10;
@@ -9904,6 +9903,18 @@ typedef struct
    ropus_silk_stereo sStereo;
    int nChannelsInternal;
    int prev_decode_only_middle;
+
+   /* Decode scratch, per state rather than per call: these were the
+    * decode-path stack frames (sLTP alone is 3.2 KiB with its Q15
+    * shadow) on the audio task thread, against the tree's 8 KiB
+    * floor.  All four are transient within one call -- buf spans the
+    * MS->LR step inside one ropus_silk2_decode, the others live
+    * within one channel's frame decode -- and channels decode
+    * sequentially, so one set serves both. */
+   int16_t scr_buf[2][2 + ROPUS_SILK_MAX_FRAME_LEN];
+   int16_t scr_pulses[ROPUS_SILK_MAX_FRAME_LEN + ROPUS_SILK_SHELL_LEN];
+   int16_t scr_sLTP[20 * 16];
+   int32_t scr_sLTP_Q15[20 * 16 + ROPUS_SILK_MAX_FRAME_LEN];
 } ropus_silk2;
 
 static void ropus_silk2_init(ropus_silk2 *s)
@@ -9925,14 +9936,15 @@ static void ropus_silk2_decode_frame_ch(ropus_silk2 *s, int n,
 {
    ropus_silk_state *st = &s->ch[n];
    ropus_silk_ctrl ctrl;
-   int16_t pulses[ROPUS_SILK_MAX_FRAME_LEN + ROPUS_SILK_SHELL_LEN];
+   int16_t *pulses = s->scr_pulses;
    int mv_len;
    memset(&ctrl, 0, sizeof ctrl);
    ropus_silk_decode_indices(st, dec, st->nFramesDecoded, 0, condCoding);
    ropus_silk_decode_pulses(dec, pulses, st->indices.signalType,
       st->indices.quantOffsetType, st->frame_length);
    ropus_silk_decode_parameters(st, &ctrl, condCoding);
-   ropus_silk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n]);
+   ropus_silk_decode_core(st, &ctrl, pOut, pulses, &s->prev_gain_Q16[n],
+      s->scr_sLTP, s->scr_sLTP_Q15);
    st->prevSignalType = st->indices.signalType;
    st->first_frame_after_reset = 0;
    mv_len = st->ltp_mem_length - st->frame_length;
@@ -9953,7 +9965,7 @@ static int ropus_silk2_decode(ropus_silk2 *s, ropus_ec *dec,
    int i, n, nOut, frame_length;
    int32_t MS_pred_Q13[2] = { 0, 0 };
    int decode_only_middle = 0, has_side;
-   int16_t buf[2][2 + ROPUS_SILK_MAX_FRAME_LEN];
+   int16_t (*buf)[2 + ROPUS_SILK_MAX_FRAME_LEN] = s->scr_buf;
 
    if (newPacket)
       for (n = 0; n < nch; n++)
