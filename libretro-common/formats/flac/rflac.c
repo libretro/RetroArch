@@ -4240,7 +4240,8 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
       rflac_seek_proc onSeek, rflac_meta_proc onMeta, void* pUserData,
       void* pUserDataMD)
 {
-   rflac_init_info init;
+   /* Heap-held for the same reason as in rflac__alloc_raw above. */
+   rflac_init_info *init;
    uint32_t allocationSize;
    uint32_t wholeSIMDVectorCountPerChannel;
    uint32_t decodedSamplesAllocationSize;
@@ -4253,8 +4254,13 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
    /* CPU support first. */
    rflac__init_cpu_caps();
 
-   if (!rflac__init_private(&init, onRead, onSeek, onMeta, pUserData, pUserDataMD))
+   if (!(init = (rflac_init_info*)calloc(1, sizeof(*init))))
       return NULL;
+   if (!rflac__init_private(init, onRead, onSeek, onMeta, pUserData, pUserDataMD))
+   {
+      free(init);
+      return NULL;
+   }
 
    /*
    The size of the allocation for the rflac object needs to be large enough to fit the following:
@@ -4269,18 +4275,18 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
    /* The allocation size for decoded frames depends on the number of 32-bit
     * integers that fit inside the largest SIMD vector we are supporting.
     */
-   if ((init.maxBlockSizeInPCMFrames % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) == 0)
-      wholeSIMDVectorCountPerChannel = (init.maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t)));
+   if ((init->maxBlockSizeInPCMFrames % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) == 0)
+      wholeSIMDVectorCountPerChannel = (init->maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t)));
    else
-      wholeSIMDVectorCountPerChannel = (init.maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) + 1;
+      wholeSIMDVectorCountPerChannel = (init->maxBlockSizeInPCMFrames / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) + 1;
 
-   decodedSamplesAllocationSize = wholeSIMDVectorCountPerChannel * RFLAC_MAX_SIMD_VECTOR_SIZE * init.channels;
+   decodedSamplesAllocationSize = wholeSIMDVectorCountPerChannel * RFLAC_MAX_SIMD_VECTOR_SIZE * init->channels;
 
    /* 32-bit stereo streams need a 64-bit plane for the 33-bit stereo
     * difference channel. */
    wideSamplesAllocationSize = 0;
-   if (init.bitsPerSample == 32 && init.channels == 2)
-      wideSamplesAllocationSize = init.maxBlockSizeInPCMFrames * (uint32_t)sizeof(int64_t) + 8;
+   if (init->bitsPerSample == 32 && init->channels == 2)
+      wideSamplesAllocationSize = init->maxBlockSizeInPCMFrames * (uint32_t)sizeof(int64_t) + 8;
 
    allocationSize += decodedSamplesAllocationSize;
    allocationSize += wideSamplesAllocationSize;
@@ -4296,14 +4302,17 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
    firstFramePos  = 42;   /* <-- We know we are at byte 42 at this point. */
    seektablePos   = 0;
    seekpointCount = 0;
-   if (init.hasMetadataBlocks) {
+   if (init->hasMetadataBlocks) {
       rflac_read_proc onReadOverride = onRead;
       rflac_seek_proc onSeekOverride = onSeek;
       void* pUserDataOverride = pUserData;
 
 
       if (!rflac__read_and_decode_metadata(onReadOverride, onSeekOverride, onMeta, pUserDataOverride, pUserDataMD, &firstFramePos, &seektablePos, &seekpointCount))
+      {
+         free(init);
          return NULL;
+      }
 
       allocationSize += seekpointCount * sizeof(rflac_seekpoint);
    }
@@ -4311,9 +4320,13 @@ static rflac* rflac_open_with_metadata_private(rflac_read_proc onRead,
 
    pFlac = (rflac*)malloc(allocationSize);
    if (pFlac == NULL)
+   {
+      free(init);
       return NULL;
+   }
 
-   rflac__init_from_info(pFlac, &init);
+   rflac__init_from_info(pFlac, init);
+   free(init);
    pFlac->pDecodedSamples = (int32_t*)RFLAC_ALIGN((size_t)pFlac->pExtraData, RFLAC_MAX_SIMD_VECTOR_SIZE);
    pFlac->pWideSamples     = NULL;
    pFlac->wideChannelIndex = 0xFF;
@@ -6487,7 +6500,11 @@ static uint32_t rflac__on_seek_push(void *pUserData, int offset,
 static rflac *rflac__alloc_raw(const rflac_format_t *fmt,
       rflac_push_source *src)
 {
-   rflac_init_info init;
+   /* Heap-held: rflac_init_info carries the bit streamer's cache and
+    * makes this a 4 KiB frame on the stream-open path, which runs on
+    * 8 KiB thread stacks on some targets.  Nothing below keeps a
+    * pointer into it -- rflac__init_from_info copies by value. */
+   rflac_init_info *init;
    rflac           *pFlac;
    uint32_t         vectors;
    uint32_t         decodedSize;
@@ -6496,36 +6513,40 @@ static rflac *rflac__alloc_raw(const rflac_format_t *fmt,
 
    rflac__init_cpu_caps();
 
-   memset(&init, 0, sizeof(init));
-   init.sampleRate              = fmt->sample_rate;
-   init.channels                = (uint8_t)fmt->channels;
-   init.bitsPerSample           = (uint8_t)fmt->bits_per_sample;
-   init.totalPCMFrameCount      = 0;
-   init.maxBlockSizeInPCMFrames = (uint16_t)fmt->block_size;
-   init.hasMetadataBlocks       = 0;
-   init.bs.onRead               = rflac__on_read_push;
-   init.bs.onSeek               = rflac__on_seek_push;
-   init.bs.pUserData            = src;
+   if (!(init = (rflac_init_info*)calloc(1, sizeof(*init))))
+      return NULL;
+   init->sampleRate              = fmt->sample_rate;
+   init->channels                = (uint8_t)fmt->channels;
+   init->bitsPerSample           = (uint8_t)fmt->bits_per_sample;
+   init->totalPCMFrameCount      = 0;
+   init->maxBlockSizeInPCMFrames = (uint16_t)fmt->block_size;
+   init->hasMetadataBlocks       = 0;
+   init->bs.onRead               = rflac__on_read_push;
+   init->bs.onSeek               = rflac__on_seek_push;
+   init->bs.pUserData            = src;
 
-   vectors = init.maxBlockSizeInPCMFrames
+   vectors = init->maxBlockSizeInPCMFrames
            / (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t));
-   if ((init.maxBlockSizeInPCMFrames
+   if ((init->maxBlockSizeInPCMFrames
             % (RFLAC_MAX_SIMD_VECTOR_SIZE / sizeof(int32_t))) != 0)
       vectors++;
 
-   decodedSize = vectors * RFLAC_MAX_SIMD_VECTOR_SIZE * init.channels;
+   decodedSize = vectors * RFLAC_MAX_SIMD_VECTOR_SIZE * init->channels;
 
    wideSize = 0;
-   if (init.bitsPerSample == 32 && init.channels == 2)
-      wideSize = init.maxBlockSizeInPCMFrames * (uint32_t)sizeof(int64_t) + 8;
+   if (init->bitsPerSample == 32 && init->channels == 2)
+      wideSize = init->maxBlockSizeInPCMFrames * (uint32_t)sizeof(int64_t) + 8;
 
    allocationSize = (uint32_t)sizeof(rflac) + decodedSize + wideSize
                   + RFLAC_MAX_SIMD_VECTOR_SIZE;
 
    if (!(pFlac = (rflac*)malloc(allocationSize)))
+   {
+      free(init);
       return NULL;
+   }
 
-   rflac__init_from_info(pFlac, &init);
+   rflac__init_from_info(pFlac, init);
    pFlac->bs.pUserData            = src;
    pFlac->firstFLACFramePosInBytes = 0;
    pFlac->pDecodedSamples         = (int32_t*)RFLAC_ALIGN(
@@ -6534,6 +6555,7 @@ static rflac *rflac__alloc_raw(const rflac_format_t *fmt,
       pFlac->pWideSamples = (int64_t*)(((uint8_t*)pFlac->pDecodedSamples)
             + decodedSize);
 
+   free(init);
    return pFlac;
 }
 
