@@ -64,6 +64,11 @@ int rh265_video_decode(rh265_video *v, const uint8_t *data, size_t len);
 int rh265_video_drain(rh265_video *v);
 
 /* Borrow a decoded plane (0=Y, 1=U, 2=V). Valid until the next decode call. */
+/* Active luma bit depth of the stream (8 or 10).  At 10 bits the
+ * plane pointers reference uint16_t samples: cast the returned byte
+ * pointer and index with the sample stride. */
+int rh265_video_bit_depth(const rh265_video *v);
+
 const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
       int *stride, int *width, int *height);
 

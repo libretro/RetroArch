@@ -841,7 +841,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    {
       /* rh265 reconstructs Main-profile pictures (intra, P and B with
        * display reordering), handing pictures out in display order.
-       * Anything it still cannot handle (tiles, WPP, 10-bit, 4:2:2) is
+       * Anything it still cannot handle (tiles, WPP, 4:2:2) is
        * skipped rather than aborting the stream, holding the last good
        * picture until the next key frame restarts the prediction
        * chain.  A key frame that fails to decode is a real error. */
@@ -1059,6 +1059,29 @@ const uint32_t *rmp4_video_stream_render(rmp4_video_stream_t *s)
             w = (int)s->width;
          if ((unsigned)h > s->height)
             h = (int)s->height;
+         if (rh265_video_bit_depth(s->h265) == 10)
+         {
+            /* Main10: the plane pointers reference uint16_t samples
+             * with the stride in samples; hand them to the shared
+             * high-bit-depth blits exactly as the VP9 arm does. */
+            if (s->want10)
+            {
+               rwebm_video_blit_i420_10bit(s->frame, s->width,
+                     (unsigned)w, (unsigned)h,
+                     (const uint16_t*)y, ys,
+                     (const uint16_t*)u, (const uint16_t*)v, uvs,
+                     s->matrix, s->transfer, s->range, 0);
+               s->is10 = 1;
+            }
+            else
+               rwebm_video_blit_i420_hbd(s->frame, s->width,
+                     (unsigned)w, (unsigned)h,
+                     (const uint16_t*)y, ys,
+                     (const uint16_t*)u, (const uint16_t*)v, uvs,
+                     s->matrix, s->transfer, s->range, 0,
+                     s->emit_argb ? 0 : 1);
+            return s->frame;
+         }
          /* rh265 is 4:2:0 only, so the chroma-vertical-shift argument
           * the H.264 arm derives is always 1 here; keep the same
           * derivation anyway so the two arms stay textually parallel. */

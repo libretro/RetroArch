@@ -57,11 +57,20 @@
  * bumping, CRA/BLA/IDR NoRaslOutputFlag handling with RASL skipping,
  * and prevTid0 POC prediction across temporal sub-layers.
  *
+ * Both Main (8-bit) and Main10 (10-bit) streams decode; the
+ * sample-touching layers are instantiated per bit depth from
+ * rh265_bd.inc and everything above them is depth-independent apart
+ * from the QpBdOffset domain, the transform scaling shifts and the
+ * sao_offset_abs binarisation bound.  At 10 bits the picture planes
+ * hold uint16_t samples: rh265_video_plane still returns a byte
+ * pointer (cast it; the stride counts samples) and
+ * rh265_video_bit_depth reports the active depth.
+ *
  * What it does not implement: long-term reference pictures, 4:2:2,
- * 4:4:4 and monochrome, bit depths above 8, tiles, wavefront parallel
- * processing (entropy_coding_sync), dependent slice segments,
- * explicit scaling lists, PCM, transquant bypass, constrained intra
- * prediction, and encoding.  Out-of-scope streams are refused at the
+ * 4:4:4 and monochrome, bit depths above 10, tiles, wavefront
+ * parallel processing (entropy_coding_sync), dependent slice
+ * segments, explicit scaling lists, PCM, transquant bypass,
+ * constrained intra prediction, and encoding.  Out-of-scope streams are refused at the
  * parameter-set or slice level rather than decoded wrongly.
  *
  * The CABAC context-init tables, coefficient scan orders and the
@@ -1319,9 +1328,16 @@ typedef struct
     * are live across the calls that use them. */
    int      mc_val0[RH265_MAX_PB * RH265_MAX_PB];
    int      mc_val1[RH265_MAX_PB * RH265_MAX_PB];
-   uint8_t  mc_patch[(RH265_MAX_PB + 7) * (RH265_MAX_PB + 7)];
+   /* element capacity for either pel width; the bit-depth template
+    * views this as RH265_PEL[] */
+   uint16_t mc_patch[(RH265_MAX_PB + 7) * (RH265_MAX_PB + 7)];
    int      mc_tmp[(RH265_MAX_PB + 7) * RH265_MAX_PB];
    int16_t  coeff_scratch[32 * 32];
+
+   /* active bit depth and its per-depth function table */
+   int      bd;
+   int      pel_bytes;
+   const struct rh265_bd_fns_s *fns;
    int cur_zaddr;             /* z-scan address of the current TU/CU origin */
    int qp_y;                  /* current QpY */
    int qp_y_pred;             /* qPY_PREV of 8.6.1 */
@@ -1342,6 +1358,23 @@ typedef struct
    int max_merge;             /* MaxNumMergeCand */
    int slice_tmvp;            /* slice_temporal_mvp_enabled_flag */
 } rh265_dec;
+
+/* Per-bit-depth entry points, instantiated from rh265_bd.inc.  Common
+ * code never touches samples directly: everything pixel-typed goes
+ * through this table, selected once per SPS activation. */
+typedef struct rh265_bd_fns_s
+{
+   void (*intra_pred)(rh265_dec *d, int x0, int y0, int log2_size,
+         int c_idx, int mode);
+   void (*add_residual)(rh265_dec *d, int c_idx, int px, int py,
+         const int16_t *coeffs, int size);
+   void (*mc_pu)(rh265_dec *d, int x0, int y0, int w, int h,
+         const rh265_mvfield *mv);
+   void (*deblock_frame)(rh265_dec *d);
+   int  (*sao_frame)(rh265_dec *d);
+} rh265_bd_fns;
+
+static const rh265_bd_fns *rh265_get_fns(int bd);
 
 #define RH265_PF_L0 1
 #define RH265_PF_L1 2
@@ -1417,200 +1450,6 @@ static const int16_t rh265_inv_angle[35]={
 /* Predict one nTbS x nTbS intra block.  x0/y0 are luma sample
  * coordinates of the TB; for chroma the plane coordinates are x0>>1,
  * y0>>1.  Writes into the frame planes. */
-static void rh265_intra_pred(rh265_dec *d, int x0, int y0, int log2_size,
-      int c_idx, int mode)
-{
-   const rh265_sps *sps = d->sps;
-   int size = 1 << log2_size;
-   int shift = c_idx ? 1 : 0;
-   int px = x0 >> shift, py = y0 >> shift;
-   int stride = d->strd[c_idx];
-   uint8_t *dst = d->pl[c_idx] + py * stride + px;
-   int cur = d->cur_zaddr;
-   /* linear reference array: ref[0] = p[-1][2N-1] .. ref[2N] = p[-1][-1]
-    * .. ref[4N] = p[2N-1][-1] */
-   uint8_t ref[4 * RH265_MAX_TB + 1];
-   uint8_t avail[4 * RH265_MAX_TB + 1];
-   uint8_t left[2 * RH265_MAX_TB + 1];
-   uint8_t *top;
-   int n4 = 4 * size;
-   int i, x, y;
-   int any = 0;
-
-   for (i = 0; i <= n4; i++)
-   {
-      int sx, sy;
-      if (i < 2 * size)      { sx = -1; sy = 2 * size - 1 - i; }
-      else if (i == 2 * size){ sx = -1; sy = -1; }
-      else                   { sx = i - 2 * size - 1; sy = -1; }
-      /* sx/sy are -1 for the left/top ring, so scale by multiplication:
-       * left-shifting a negative value is undefined behaviour. */
-      avail[i] = (uint8_t)rh265_avail(d,
-            x0 + sx * (1 << shift), y0 + sy * (1 << shift), cur);
-      if (avail[i])
-      {
-         ref[i] = d->pl[c_idx][(py + sy) * stride + (px + sx)];
-         any = 1;
-      }
-   }
-   if (!any)
-      memset(ref, 128, (size_t)(n4 + 1));
-   else
-   {
-      /* 8.4.4.2.2 substitution: bottom-left up, then left to right */
-      if (!avail[0])
-      {
-         for (i = 1; i <= n4 && !avail[i]; i++) ;
-         ref[0] = ref[i];
-      }
-      for (i = 1; i <= n4; i++)
-         if (!avail[i])
-            ref[i] = ref[i - 1];
-   }
-
-   /* split into left[-1..2N-1] (top-down) and top[-1..2N-1] */
-   left[0] = ref[2 * size];                  /* corner at left[-1] slot */
-   for (i = 0; i < 2 * size; i++)
-      left[1 + i] = ref[2 * size - 1 - i];
-   top = &ref[2 * size];                     /* top[-1] = corner .. */
-
-   /* 8.4.4.2.3 reference smoothing (luma only) */
-   if (c_idx == 0 && mode != 1 && size > 4)
-   {
-      int min_dist = rh265_min(abs(mode - 26), abs(mode - 10));
-      int thres = (size == 8) ? 7 : ((size == 16) ? 1 : 0);
-      if (mode == 0 || min_dist > thres)
-      {
-         int strong = 0;
-         if (sps->strong_intra_smoothing && size == 32)
-         {
-            int c  = top[0];
-            if (abs(c + top[64] - 2 * top[32]) < 8 &&
-                abs(c + left[64] - 2 * left[32]) < 8)
-               strong = 1;
-         }
-         if (strong)
-         {
-            uint8_t tl = top[0], tr = top[64], bl = left[64];
-            for (i = 0; i < 63; i++)
-            {
-               top[1 + i]  = (uint8_t)(((63 - i) * tl + (i + 1) * tr + 32) >> 6);
-               left[1 + i] = (uint8_t)(((63 - i) * tl + (i + 1) * bl + 32) >> 6);
-            }
-         }
-         else
-         {
-            uint8_t ftop[2 * RH265_MAX_TB + 1];
-            uint8_t fleft[2 * RH265_MAX_TB + 1];
-            ftop[0] = fleft[0] =
-               (uint8_t)((left[1] + 2 * top[0] + top[1] + 2) >> 2);
-            for (i = 1; i < 2 * size; i++)
-            {
-               ftop[i]  = (uint8_t)((top[i - 1] + 2 * top[i] + top[i + 1] + 2) >> 2);
-               fleft[i] = (uint8_t)((left[i - 1] + 2 * left[i] + left[i + 1] + 2) >> 2);
-            }
-            ftop[2 * size]  = top[2 * size];
-            fleft[2 * size] = left[2 * size];
-            memcpy(top, ftop, (size_t)(2 * size + 1));
-            memcpy(left, fleft, (size_t)(2 * size + 1));
-         }
-      }
-   }
-
-   if (mode == 0)
-   {
-      /* 8.4.4.2.4 planar */
-      for (y = 0; y < size; y++)
-         for (x = 0; x < size; x++)
-            dst[y * stride + x] = (uint8_t)(
-               ((size - 1 - x) * left[1 + y] + (x + 1) * top[1 + size] +
-                (size - 1 - y) * top[1 + x] + (y + 1) * left[1 + size] +
-                size) >> (log2_size + 1));
-   }
-   else if (mode == 1)
-   {
-      /* 8.4.4.2.5 DC */
-      int dc = size;
-      for (i = 0; i < size; i++)
-         dc += top[1 + i] + left[1 + i];
-      dc >>= (log2_size + 1);
-      for (y = 0; y < size; y++)
-         memset(dst + y * stride, dc, (size_t)size);
-      if (c_idx == 0 && size < 32)
-      {
-         dst[0] = (uint8_t)((left[1] + 2 * dc + top[1] + 2) >> 2);
-         for (x = 1; x < size; x++)
-            dst[x] = (uint8_t)((top[1 + x] + 3 * dc + 2) >> 2);
-         for (y = 1; y < size; y++)
-            dst[y * stride] = (uint8_t)((left[1 + y] + 3 * dc + 2) >> 2);
-      }
-   }
-   else
-   {
-      /* 8.4.4.2.6 angular; rr[] carries the spec's ref[] array, where
-       * ref[0] is the corner and ref[x] = p[x-1][-1] (vertical modes) or
-       * p[-1][x-1] (horizontal modes); the local top[]/left[] arrays are
-       * laid out the same way, so the main reference copies verbatim */
-      int angle = rh265_pred_angle[mode];
-      int last = (size * angle) >> 5;
-      uint8_t mref[4 * RH265_MAX_TB + 2];
-      uint8_t *rr = mref + RH265_MAX_TB;      /* rr[-N..2N] valid */
-      if (mode >= 18)
-      {
-         memcpy(rr, top, (size_t)(2 * size + 1));
-         if (angle < 0 && last < -1)
-         {
-            int inv = rh265_inv_angle[mode];
-            for (i = last; i <= -1; i++)
-               rr[i] = left[((i * inv + 128) >> 8)];
-         }
-         for (y = 0; y < size; y++)
-         {
-            int idx  = ((y + 1) * angle) >> 5;
-            int fact = ((y + 1) * angle) & 31;
-            if (fact)
-               for (x = 0; x < size; x++)
-                  dst[y * stride + x] = (uint8_t)(
-                        ((32 - fact) * rr[x + idx + 1] +
-                         fact * rr[x + idx + 2] + 16) >> 5);
-            else
-               for (x = 0; x < size; x++)
-                  dst[y * stride + x] = rr[x + idx + 1];
-         }
-         if (mode == 26 && c_idx == 0 && size < 32)
-            for (y = 0; y < size; y++)
-               dst[y * stride] = rh265_clip8(top[1] +
-                     ((left[1 + y] - top[0]) >> 1));
-      }
-      else
-      {
-         memcpy(rr, left, (size_t)(2 * size + 1));
-         if (angle < 0 && last < -1)
-         {
-            int inv = rh265_inv_angle[mode];
-            for (i = last; i <= -1; i++)
-               rr[i] = top[((i * inv + 128) >> 8)];
-         }
-         for (x = 0; x < size; x++)
-         {
-            int idx  = ((x + 1) * angle) >> 5;
-            int fact = ((x + 1) * angle) & 31;
-            if (fact)
-               for (y = 0; y < size; y++)
-                  dst[y * stride + x] = (uint8_t)(
-                        ((32 - fact) * rr[y + idx + 1] +
-                         fact * rr[y + idx + 2] + 16) >> 5);
-            else
-               for (y = 0; y < size; y++)
-                  dst[y * stride + x] = rr[y + idx + 1];
-         }
-         if (mode == 10 && c_idx == 0 && size < 32)
-            for (x = 0; x < size; x++)
-               dst[x] = rh265_clip8(left[1] + ((top[1 + x] - top[0]) >> 1));
-      }
-   }
-}
-
 /* ==================== rh265_xform.h ==================== */
 
 /* HEVC inverse-transform basis (H.265 clause 8.6.4.2 constants), rows are
@@ -1672,13 +1511,13 @@ static RH265_INLINE void rh265_idst4_pass(int16_t *dst, const int16_t *src,
    dst[3 * dstep] = (int16_t)rh265_clip3(-32768, 32767, (v + add) >> shift);
 }
 
-static void rh265_idst4(int16_t *coeffs)
+static void rh265_idst4(int16_t *coeffs, int bd)
 {
    int i;
    for (i = 0; i < 4; i++)
       rh265_idst4_pass(coeffs + i, coeffs + i, 4, 4, 7);
    for (i = 0; i < 4; i++)
-      rh265_idst4_pass(coeffs + 4 * i, coeffs + 4 * i, 1, 1, 12);
+      rh265_idst4_pass(coeffs + 4 * i, coeffs + 4 * i, 1, 1, 20 - bd);
 }
 
 /* One inverse-DCT pass of length size: dst[n] = sum_k src[k]*T[k][n],
@@ -1707,46 +1546,34 @@ static void rh265_idct_pass(int16_t *dst, const int16_t *src,
             (acc[n] + add) >> shift);
 }
 
-static void rh265_idct(int16_t *coeffs, int log2_size)
+static void rh265_idct(int16_t *coeffs, int log2_size, int bd)
 {
    int size = 1 << log2_size;
    int i;
    for (i = 0; i < size; i++)
       rh265_idct_pass(coeffs + i, coeffs + i, size, size, size, 7);
    for (i = 0; i < size; i++)
-      rh265_idct_pass(coeffs + size * i, coeffs + size * i, 1, 1, size, 12);
+      rh265_idct_pass(coeffs + size * i, coeffs + size * i, 1, 1, size,
+            20 - bd);
 }
 
 /* transform_skip rescale (FFmpeg FUNC(dequant)): shift = 15 - bd - log2 */
-static void rh265_tskip_rescale(int16_t *coeffs, int log2_size)
+static void rh265_tskip_rescale(int16_t *coeffs, int log2_size, int bd)
 {
-   int shift = 15 - 8 - log2_size;
+   int shift = 15 - bd - log2_size;
    int n = 1 << (2 * log2_size);
    int i, off = 1 << (shift - 1);
    for (i = 0; i < n; i++)
       coeffs[i] = (int16_t)((coeffs[i] + off) >> shift);
 }
 
-static void rh265_add_residual(uint8_t *dst, int stride,
-      const int16_t *coeffs, int size)
-{
-   int x, y;
-   for (y = 0; y < size; y++)
-   {
-      for (x = 0; x < size; x++)
-         dst[x] = rh265_clip8(dst[x] + coeffs[x]);
-      dst += stride;
-      coeffs += size;
-   }
-}
-
 /* chroma QP mapping for 4:2:0 (Table 8-10) */
 static const uint8_t rh265_qp_c[14]={29,30,31,32,33,33,34,34,35,35,36,36,37,37};
 static const uint8_t rh265_level_scale[6]={40,45,51,57,64,72};
 
-static int rh265_chroma_qp(int qp_y, int offset)
+static int rh265_chroma_qp(int qp_y, int offset, int bd)
 {
-   int qp_i = rh265_clip3(0, 57, qp_y + offset);
+   int qp_i = rh265_clip3(-6 * (bd - 8), 57, qp_y + offset);
    if (qp_i < 30) return qp_i;
    if (qp_i > 43) return qp_i - 6;
    return rh265_qp_c[qp_i - 30];
@@ -1836,22 +1663,20 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
    int qp, shift, add, scale;
    int i;
    int shiftc = c_idx ? 1 : 0;
-   uint8_t *dst = d->pl[c_idx] + (y0 >> shiftc) * d->strd[c_idx]
-         + (x0 >> shiftc);
 
    memset(sig_cg, 0, sizeof(sig_cg));
    memset(coeffs, 0, sizeof(int16_t) << (2 * log2_size));
 
    if (c_idx == 0)
-      qp = d->qp_y;
+      qp = d->qp_y + 6 * (d->bd - 8);
    else
    {
       int off = (c_idx == 1)
             ? pps->cb_qp_offset + d->sh.cb_qp_offset
             : pps->cr_qp_offset + d->sh.cr_qp_offset;
-      qp = rh265_chroma_qp(d->qp_y, off);
+      qp = rh265_chroma_qp(d->qp_y, off, d->bd) + 6 * (d->bd - 8);
    }
-   shift = 8 + log2_size - 5;
+   shift = d->bd + log2_size - 5;
    add   = 1 << (shift - 1);
    scale = rh265_level_scale[qp % 6] << (qp / 6);
 
@@ -2117,13 +1942,14 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
    }
 
    if (transform_skip_flag)
-      rh265_tskip_rescale(coeffs, log2_size);
+      rh265_tskip_rescale(coeffs, log2_size, d->bd);
    else if (c_idx == 0 && log2_size == 2 && intra_mode >= 0)
-      rh265_idst4(coeffs);
+      rh265_idst4(coeffs, d->bd);
    else
-      rh265_idct(coeffs, log2_size);
+      rh265_idct(coeffs, log2_size, d->bd);
 
-   rh265_add_residual(dst, d->strd[c_idx], coeffs, trafo_size);
+   d->fns->add_residual(d, c_idx, x0 >> shiftc, y0 >> shiftc,
+         coeffs, trafo_size);
    return 0;
 }
 
@@ -2328,7 +2154,7 @@ static int rh265_transform_unit(rh265_dec *d, int x0, int y0,
    if (d->cu_pred_intra)
    {
       d->cur_zaddr = rh265_zaddr(d, x0, y0);
-      rh265_intra_pred(d, x0, y0, log2_size, 0, luma_mode);
+      d->fns->intra_pred(d, x0, y0, log2_size, 0, luma_mode);
    }
    else
       luma_mode = chroma_mode = -1;    /* DCT everywhere, no MDCS */
@@ -2371,7 +2197,7 @@ static int rh265_transform_unit(rh265_dec *d, int x0, int y0,
       if (d->cu_pred_intra)
       {
          d->cur_zaddr = rh265_zaddr(d, x0, y0);
-         rh265_intra_pred(d, x0, y0, log2_size - 1, 1, chroma_mode);
+         d->fns->intra_pred(d, x0, y0, log2_size - 1, 1, chroma_mode);
       }
       if (cbf_cb)
          if (rh265_residual_coding(d, x0, y0, log2_size - 1, scan_idx_c, 1,
@@ -2380,7 +2206,7 @@ static int rh265_transform_unit(rh265_dec *d, int x0, int y0,
       if (d->cu_pred_intra)
       {
          d->cur_zaddr = rh265_zaddr(d, x0, y0);
-         rh265_intra_pred(d, x0, y0, log2_size - 1, 2, chroma_mode);
+         d->fns->intra_pred(d, x0, y0, log2_size - 1, 2, chroma_mode);
       }
       if (cbf_cr)
          if (rh265_residual_coding(d, x0, y0, log2_size - 1, scan_idx_c, 2,
@@ -2392,7 +2218,7 @@ static int rh265_transform_unit(rh265_dec *d, int x0, int y0,
       if (d->cu_pred_intra)
       {
          d->cur_zaddr = rh265_zaddr(d, xBase, yBase);
-         rh265_intra_pred(d, xBase, yBase, log2_size, 1, chroma_mode);
+         d->fns->intra_pred(d, xBase, yBase, log2_size, 1, chroma_mode);
       }
       if (cbf_cb)
          if (rh265_residual_coding(d, xBase, yBase, log2_size, scan_idx_c, 1,
@@ -2401,7 +2227,7 @@ static int rh265_transform_unit(rh265_dec *d, int x0, int y0,
       if (d->cu_pred_intra)
       {
          d->cur_zaddr = rh265_zaddr(d, xBase, yBase);
-         rh265_intra_pred(d, xBase, yBase, log2_size, 2, chroma_mode);
+         d->fns->intra_pred(d, xBase, yBase, log2_size, 2, chroma_mode);
       }
       if (cbf_cr)
          if (rh265_residual_coding(d, xBase, yBase, log2_size, scan_idx_c, 2,
@@ -2507,203 +2333,6 @@ static const int8_t rh265_epel_filt[8][4] =
 /* Fetch a (w x h) source patch whose top-left is (x, y) in the given
  * reference plane, with picture-edge clamping, into a tightly packed
  * buffer.  Coordinates may be negative or beyond the plane. */
-static void rh265_mc_fetch(const uint8_t *src, int stride, int pw, int ph,
-      int x, int y, uint8_t *dst, int w, int h)
-{
-   int i, j;
-   for (j = 0; j < h; j++)
-   {
-      int sy = y + j;
-      const uint8_t *row;
-      if (sy < 0) sy = 0;
-      if (sy > ph - 1) sy = ph - 1;
-      row = src + sy * stride;
-      for (i = 0; i < w; i++)
-      {
-         int sx = x + i;
-         if (sx < 0) sx = 0;
-         if (sx > pw - 1) sx = pw - 1;
-         dst[j * w + i] = row[sx];
-      }
-   }
-}
-
-/* Luma quarter-pel interpolation into the intermediate domain.
- * (x, y) are the integer-pel block origin in the reference, (mx, my)
- * the fractional phases 0..3.  out is w*h ints. */
-static void rh265_mc_luma(rh265_dec *d,
-      const uint8_t *ref, int stride, int pw, int ph,
-      int x, int y, int mx, int my, int *out, int w, int h)
-{
-   uint8_t *patch = d->mc_patch;
-   int *tmp = d->mc_tmp;
-   const int8_t *f;
-   int i, j;
-   if (!mx && !my)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x, y, patch, w, h);
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-            out[j * w + i] = (int)patch[j * w + i] << 6;
-      return;
-   }
-   if (my == 0)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x - 3, y, patch, w + 7, h);
-      f = rh265_qpel_filt[mx];
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-         {
-            const uint8_t *p = patch + j * (w + 7) + i;
-            out[j * w + i] = f[0]*p[0] + f[1]*p[1] + f[2]*p[2] + f[3]*p[3]
-                  + f[4]*p[4] + f[5]*p[5] + f[6]*p[6] + f[7]*p[7];
-         }
-      return;
-   }
-   if (mx == 0)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x, y - 3, patch, w, h + 7);
-      f = rh265_qpel_filt[my];
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-         {
-            const uint8_t *p = patch + j * w + i;
-            out[j * w + i] = f[0]*p[0] + f[1]*p[w] + f[2]*p[2*w]
-                  + f[3]*p[3*w] + f[4]*p[4*w] + f[5]*p[5*w]
-                  + f[6]*p[6*w] + f[7]*p[7*w];
-         }
-      return;
-   }
-   /* separable h then v; the horizontal pass output feeds the vertical
-    * filter and the result is scaled back by >> 6 (dsp_template hv) */
-   rh265_mc_fetch(ref, stride, pw, ph, x - 3, y - 3, patch, w + 7, h + 7);
-   f = rh265_qpel_filt[mx];
-   for (j = 0; j < h + 7; j++)
-      for (i = 0; i < w; i++)
-      {
-         const uint8_t *p = patch + j * (w + 7) + i;
-         tmp[j * w + i] = f[0]*p[0] + f[1]*p[1] + f[2]*p[2] + f[3]*p[3]
-               + f[4]*p[4] + f[5]*p[5] + f[6]*p[6] + f[7]*p[7];
-      }
-   f = rh265_qpel_filt[my];
-   for (j = 0; j < h; j++)
-      for (i = 0; i < w; i++)
-      {
-         const int *p = tmp + j * w + i;
-         out[j * w + i] = (f[0]*p[0] + f[1]*p[w] + f[2]*p[2*w]
-               + f[3]*p[3*w] + f[4]*p[4*w] + f[5]*p[5*w]
-               + f[6]*p[6*w] + f[7]*p[7*w]) >> 6;
-      }
-}
-
-/* Chroma eighth-pel interpolation, phases 0..7. */
-static void rh265_mc_chroma(rh265_dec *d,
-      const uint8_t *ref, int stride, int pw, int ph,
-      int x, int y, int mx, int my, int *out, int w, int h)
-{
-   uint8_t *patch = d->mc_patch;   /* chroma fits in the luma scratch */
-   int *tmp = d->mc_tmp;
-   const int8_t *f;
-   int i, j;
-   if (!mx && !my)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x, y, patch, w, h);
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-            out[j * w + i] = (int)patch[j * w + i] << 6;
-      return;
-   }
-   if (my == 0)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x - 1, y, patch, w + 3, h);
-      f = rh265_epel_filt[mx];
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-         {
-            const uint8_t *p = patch + j * (w + 3) + i;
-            out[j * w + i] = f[0]*p[0] + f[1]*p[1] + f[2]*p[2] + f[3]*p[3];
-         }
-      return;
-   }
-   if (mx == 0)
-   {
-      rh265_mc_fetch(ref, stride, pw, ph, x, y - 1, patch, w, h + 3);
-      f = rh265_epel_filt[my];
-      for (j = 0; j < h; j++)
-         for (i = 0; i < w; i++)
-         {
-            const uint8_t *p = patch + j * w + i;
-            out[j * w + i] = f[0]*p[0] + f[1]*p[w] + f[2]*p[2*w]
-                  + f[3]*p[3*w];
-         }
-      return;
-   }
-   rh265_mc_fetch(ref, stride, pw, ph, x - 1, y - 1, patch, w + 3, h + 3);
-   f = rh265_epel_filt[mx];
-   for (j = 0; j < h + 3; j++)
-      for (i = 0; i < w; i++)
-      {
-         const uint8_t *p = patch + j * (w + 3) + i;
-         tmp[j * w + i] = f[0]*p[0] + f[1]*p[1] + f[2]*p[2] + f[3]*p[3];
-      }
-   f = rh265_epel_filt[my];
-   for (j = 0; j < h; j++)
-      for (i = 0; i < w; i++)
-      {
-         const int *p = tmp + j * w + i;
-         out[j * w + i] = (f[0]*p[0] + f[1]*p[w] + f[2]*p[2*w]
-               + f[3]*p[3*w]) >> 6;
-      }
-}
-
-/* Write one predicted block into the current picture.  val0/val1 are
- * intermediate-domain blocks for the (up to two) hypotheses. */
-static void rh265_mc_write(uint8_t *dst, int stride, const int *val0,
-      const int *val1, int w, int h, int weighted, int denom,
-      int w0, int o0, int w1, int o1)
-{
-   int i, j;
-   if (!val1)
-   {
-      if (!weighted)
-      {
-         for (j = 0; j < h; j++)
-            for (i = 0; i < w; i++)
-               dst[j * stride + i] =
-                     rh265_clip8((val0[j * w + i] + 32) >> 6);
-      }
-      else
-      {
-         int shift  = denom + 6;
-         int offset = 1 << (shift - 1);
-         for (j = 0; j < h; j++)
-            for (i = 0; i < w; i++)
-               dst[j * stride + i] = rh265_clip8(
-                     ((val0[j * w + i] * w0 + offset) >> shift) + o0);
-      }
-   }
-   else
-   {
-      if (!weighted)
-      {
-         for (j = 0; j < h; j++)
-            for (i = 0; i < w; i++)
-               dst[j * stride + i] = rh265_clip8(
-                     (val0[j * w + i] + val1[j * w + i] + 64) >> 7);
-      }
-      else
-      {
-         int log2wd = denom + 6;
-         int oxp1   = o0 + o1 + 1;
-         for (j = 0; j < h; j++)
-            for (i = 0; i < w; i++)
-               dst[j * stride + i] = rh265_clip8(
-                     (val1[j * w + i] * w1 + val0[j * w + i] * w0
-                      + (oxp1 << log2wd)) >> (log2wd + 1));
-      }
-   }
-}
-
 /* ==================== rh265_mv.h ==================== */
 
 /* Merge and AMVP candidate derivation (8.5.3).  The structure follows
@@ -3273,91 +2902,6 @@ static int rh265_luma_intra_mode(rh265_dec *d, int x0, int y0, int pu_size,
    return mode;
 }
 
-/* Run motion compensation for one prediction unit into the current
- * picture, in up to two hypotheses per plane. */
-static void rh265_mc_pu(rh265_dec *d, int x0, int y0, int w, int h,
-      const rh265_mvfield *mv)
-{
-   int *val0 = d->mc_val0;
-   int *val1 = d->mc_val1;
-   const rh265_shdr *sh = &d->sh;
-   int weighted = (sh->slice_type == RH265_SLICE_P && d->pps->weighted_pred)
-        || (sh->slice_type == RH265_SLICE_B && d->pps->weighted_bipred);
-   int denom_l = weighted ? sh->luma_log2_denom : 0;
-   int denom_c = weighted ? sh->chroma_log2_denom : 0;
-   const rh265_pic *r0 = NULL, *r1 = NULL;
-   int i0 = 0, i1 = 0;
-   int c;
-
-   if (mv->pred & RH265_PF_L0)
-   {
-      i0 = mv->ref_idx[0];
-      r0 = d->ref_list[0][i0];
-   }
-   if (mv->pred & RH265_PF_L1)
-   {
-      i1 = mv->ref_idx[1];
-      r1 = d->ref_list[1][i1];
-   }
-   if ((mv->pred & RH265_PF_L0) && !r0) return;
-   if ((mv->pred & RH265_PF_L1) && !r1) return;
-
-   /* luma */
-   if (r0)
-      rh265_mc_luma(d, r0->pl[0], d->strd[0], d->pw[0], d->ph[0],
-            x0 + (mv->mv[0].x >> 2), y0 + (mv->mv[0].y >> 2),
-            mv->mv[0].x & 3, mv->mv[0].y & 3, val0, w, h);
-   if (r1)
-      rh265_mc_luma(d, r1->pl[0], d->strd[0], d->pw[0], d->ph[0],
-            x0 + (mv->mv[1].x >> 2), y0 + (mv->mv[1].y >> 2),
-            mv->mv[1].x & 3, mv->mv[1].y & 3,
-            r0 ? val1 : val0, w, h);
-   if (mv->pred == RH265_PF_BI)
-      rh265_mc_write(d->pl[0] + y0 * d->strd[0] + x0, d->strd[0],
-            val0, val1, w, h, weighted, denom_l,
-            sh->luma_w[0][i0], sh->luma_o[0][i0],
-            sh->luma_w[1][i1], sh->luma_o[1][i1]);
-   else
-   {
-      int l = (mv->pred == RH265_PF_L1);
-      int ri = l ? i1 : i0;
-      rh265_mc_write(d->pl[0] + y0 * d->strd[0] + x0, d->strd[0],
-            val0, NULL, w, h, weighted, denom_l,
-            sh->luma_w[l][ri], sh->luma_o[l][ri], 0, 0);
-   }
-
-   /* chroma */
-   for (c = 1; c < 3; c++)
-   {
-      int xc = x0 >> 1, yc = y0 >> 1, wc = w >> 1, hc = h >> 1;
-      if (!wc || !hc)
-         continue;
-      if (r0)
-         rh265_mc_chroma(d, r0->pl[c], d->strd[c], d->pw[c], d->ph[c],
-               xc + (mv->mv[0].x >> 3), yc + (mv->mv[0].y >> 3),
-               mv->mv[0].x & 7, mv->mv[0].y & 7, val0, wc, hc);
-      if (r1)
-         rh265_mc_chroma(d, r1->pl[c], d->strd[c], d->pw[c], d->ph[c],
-               xc + (mv->mv[1].x >> 3), yc + (mv->mv[1].y >> 3),
-               mv->mv[1].x & 7, mv->mv[1].y & 7,
-               r0 ? val1 : val0, wc, hc);
-      if (mv->pred == RH265_PF_BI)
-         rh265_mc_write(d->pl[c] + yc * d->strd[c] + xc, d->strd[c],
-               val0, val1, wc, hc, weighted, denom_c,
-               sh->chroma_w[0][i0][c - 1], sh->chroma_o[0][i0][c - 1],
-               sh->chroma_w[1][i1][c - 1], sh->chroma_o[1][i1][c - 1]);
-      else
-      {
-         int l = (mv->pred == RH265_PF_L1);
-         int ri = l ? i1 : i0;
-         rh265_mc_write(d->pl[c] + yc * d->strd[c] + xc, d->strd[c],
-               val0, NULL, wc, hc, weighted, denom_c,
-               sh->chroma_w[l][ri][c - 1], sh->chroma_o[l][ri][c - 1],
-               0, 0);
-      }
-   }
-}
-
 /* 7.3.8.6 prediction_unit: parse, derive the motion field, store it,
  * and run motion compensation. */
 static int rh265_pred_unit(rh265_dec *d, int x0, int y0, int w, int h,
@@ -3492,7 +3036,7 @@ static int rh265_pred_unit(rh265_dec *d, int x0, int y0, int w, int h,
             d->mvf[y4 * d->w4 + x4] = mv;
       }
 
-   rh265_mc_pu(d, x0, y0, w, h, &mv);
+   d->fns->mc_pu(d, x0, y0, w, h, &mv);
    return merge;
 }
 
@@ -3807,184 +3351,6 @@ static const uint8_t rh265_tctable[54]={
 
 /* filter one 4-line luma edge segment (8.7.2.5.7); pix points at q0 of
  * the first line, xs steps across the edge, ys along it */
-static void rh265_filter_luma_edge(uint8_t *pix, int xs, int ys,
-      int beta, int tc)
-{
-   int dp0, dq0, dp3, dq3, d0, d3;
-   uint8_t *l0 = pix, *l3 = pix + 3 * ys;
-   int j;
-   if (!tc)
-      return;
-   dp0 = abs(l0[-3*xs] - 2*l0[-2*xs] + l0[-1*xs]);
-   dq0 = abs(l0[ 2*xs] - 2*l0[ 1*xs] + l0[ 0]);
-   dp3 = abs(l3[-3*xs] - 2*l3[-2*xs] + l3[-1*xs]);
-   dq3 = abs(l3[ 2*xs] - 2*l3[ 1*xs] + l3[ 0]);
-   d0 = dp0 + dq0;
-   d3 = dp3 + dq3;
-   if (d0 + d3 >= beta)
-      return;
-   if (abs(l0[-4*xs]-l0[-1*xs]) + abs(l0[3*xs]-l0[0]) < (beta >> 3) &&
-       abs(l0[-1*xs]-l0[0]) < ((tc * 5 + 1) >> 1) &&
-       abs(l3[-4*xs]-l3[-1*xs]) + abs(l3[3*xs]-l3[0]) < (beta >> 3) &&
-       abs(l3[-1*xs]-l3[0]) < ((tc * 5 + 1) >> 1) &&
-       (d0 << 1) < (beta >> 2) && (d3 << 1) < (beta >> 2))
-   {
-      /* strong */
-      int tc2 = tc << 1;
-      for (j = 0; j < 4; j++)
-      {
-         uint8_t *e = pix + j * ys;
-         int p3 = e[-4*xs], p2 = e[-3*xs], p1 = e[-2*xs], p0 = e[-1*xs];
-         int q0 = e[0], q1 = e[1*xs], q2 = e[2*xs], q3 = e[3*xs];
-         e[-1*xs] = (uint8_t)rh265_clip3(p0-tc2, p0+tc2,
-               (p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4) >> 3);
-         e[-2*xs] = (uint8_t)rh265_clip3(p1-tc2, p1+tc2,
-               (p2 + p1 + p0 + q0 + 2) >> 2);
-         e[-3*xs] = (uint8_t)rh265_clip3(p2-tc2, p2+tc2,
-               (2*p3 + 3*p2 + p1 + p0 + q0 + 4) >> 3);
-         e[0]     = (uint8_t)rh265_clip3(q0-tc2, q0+tc2,
-               (q2 + 2*q1 + 2*q0 + 2*p0 + p1 + 4) >> 3);
-         e[1*xs]  = (uint8_t)rh265_clip3(q1-tc2, q1+tc2,
-               (q2 + q1 + q0 + p0 + 2) >> 2);
-         e[2*xs]  = (uint8_t)rh265_clip3(q2-tc2, q2+tc2,
-               (2*q3 + 3*q2 + q1 + q0 + p0 + 4) >> 3);
-      }
-   }
-   else
-   {
-      /* weak */
-      int dEp = (dp0 + dp3 < ((beta + (beta >> 1)) >> 3));
-      int dEq = (dq0 + dq3 < ((beta + (beta >> 1)) >> 3));
-      for (j = 0; j < 4; j++)
-      {
-         uint8_t *e = pix + j * ys;
-         int p2 = e[-3*xs], p1 = e[-2*xs], p0 = e[-1*xs];
-         int q0 = e[0], q1 = e[1*xs], q2 = e[2*xs];
-         int delta = (9 * (q0 - p0) - 3 * (q1 - p1) + 8) >> 4;
-         if (abs(delta) < tc * 10)
-         {
-            delta = rh265_clip3(-tc, tc, delta);
-            e[-1*xs] = rh265_clip8(p0 + delta);
-            e[0]     = rh265_clip8(q0 - delta);
-            if (dEp)
-            {
-               int d = rh265_clip3(-(tc >> 1), tc >> 1,
-                     (((p2 + p0 + 1) >> 1) - p1 + delta) >> 1);
-               e[-2*xs] = rh265_clip8(p1 + d);
-            }
-            if (dEq)
-            {
-               int d = rh265_clip3(-(tc >> 1), tc >> 1,
-                     (((q2 + q0 + 1) >> 1) - q1 - delta) >> 1);
-               e[1*xs] = rh265_clip8(q1 + d);
-            }
-         }
-      }
-   }
-}
-
-/* filter one 4-line chroma edge segment (8.7.2.5.8) */
-static void rh265_filter_chroma_edge(uint8_t *pix, int xs, int ys, int tc)
-{
-   int j;
-   if (!tc)
-      return;
-   for (j = 0; j < 4; j++)
-   {
-      uint8_t *e = pix + j * ys;
-      int p1 = e[-2*xs], p0 = e[-1*xs], q0 = e[0], q1 = e[1*xs];
-      int delta = rh265_clip3(-tc, tc,
-            (((q0 - p0) * 4 + p1 - q1 + 4) >> 3));
-      e[-1*xs] = rh265_clip8(p0 + delta);
-      e[0]     = rh265_clip8(q0 - delta);
-   }
-}
-
-static int rh265_deblock_chroma_tc(rh265_dec *d, int qp_y, int c_idx)
-{
-   int off = (c_idx == 1) ? d->pps->cb_qp_offset : d->pps->cr_qp_offset;
-   int qp = rh265_chroma_qp(qp_y, off);
-   /* bS is always 2 for intra: intra tc offset 2*(bS-1) = 2 */
-   return rh265_tctable[rh265_clip3(0, 53, qp + 2
-         + d->sh.tc_offset_div2 * 2)];
-}
-
-/* Deblock the whole picture: all marked TU/PU edges on the 8x8 luma grid
- * carry bS 2 in an intra picture.  Vertical edges over the full picture
- * first, then horizontal edges (8.7.2.1). */
-static void rh265_deblock_frame(rh265_dec *d)
-{
-   const rh265_sps *sps = d->sps;
-   /* the div2 offsets are se(v) values in -6..6; scale by
-    * multiplication, not by a shift of a possibly negative value */
-   int beta_off = d->sh.beta_offset_div2 * 2;
-   int tc_off   = d->sh.tc_offset_div2 * 2;
-   int x, y, bs;
-
-   if (d->sh.deblocking_filter_disabled)
-      return;
-
-   /* vertical edges */
-   for (x = 8; x < sps->width; x += 8)
-      for (y = 0; y < sps->height; y += 4)
-      {
-         bs = d->vedge[(y >> 2) * d->w4 + (x >> 2)];
-         if (!bs)
-            continue;
-         {
-            int qp = (d->qpy[(y >> 3) * d->w8 + ((x - 1) >> 3)]
-                    + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            int beta = rh265_betatable[rh265_clip3(0, 51, qp + beta_off)];
-            int tc = rh265_tctable[rh265_clip3(0, 53,
-                  qp + 2 * (bs - 1) + tc_off)];
-            rh265_filter_luma_edge(d->pl[0] + y * d->strd[0] + x,
-                  1, d->strd[0], beta, tc);
-         }
-         if (bs == 2 && (x & 15) == 0 && (y & 7) == 0 &&
-             (y >> 1) + 4 <= d->ph[1])
-         {
-            int qp = (d->qpy[(y >> 3) * d->w8 + ((x - 1) >> 3)]
-                    + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            rh265_filter_chroma_edge(
-                  d->pl[1] + (y >> 1) * d->strd[1] + (x >> 1),
-                  1, d->strd[1], rh265_deblock_chroma_tc(d, qp, 1));
-            rh265_filter_chroma_edge(
-                  d->pl[2] + (y >> 1) * d->strd[2] + (x >> 1),
-                  1, d->strd[2], rh265_deblock_chroma_tc(d, qp, 2));
-         }
-      }
-
-   /* horizontal edges */
-   for (y = 8; y < sps->height; y += 8)
-      for (x = 0; x < sps->width; x += 4)
-      {
-         bs = d->hedge[(y >> 2) * d->w4 + (x >> 2)];
-         if (!bs)
-            continue;
-         {
-            int qp = (d->qpy[((y - 1) >> 3) * d->w8 + (x >> 3)]
-                    + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            int beta = rh265_betatable[rh265_clip3(0, 51, qp + beta_off)];
-            int tc = rh265_tctable[rh265_clip3(0, 53,
-                  qp + 2 * (bs - 1) + tc_off)];
-            rh265_filter_luma_edge(d->pl[0] + y * d->strd[0] + x,
-                  d->strd[0], 1, beta, tc);
-         }
-         if (bs == 2 && (y & 15) == 0 && (x & 7) == 0 &&
-             (x >> 1) + 4 <= d->pw[1])
-         {
-            int qp = (d->qpy[((y - 1) >> 3) * d->w8 + (x >> 3)]
-                    + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
-            rh265_filter_chroma_edge(
-                  d->pl[1] + (y >> 1) * d->strd[1] + (x >> 1),
-                  d->strd[1], 1, rh265_deblock_chroma_tc(d, qp, 1));
-            rh265_filter_chroma_edge(
-                  d->pl[2] + (y >> 1) * d->strd[2] + (x >> 1),
-                  d->strd[2], 1, rh265_deblock_chroma_tc(d, qp, 2));
-         }
-      }
-}
-
 /* ==================== rh265_sao.h ==================== */
 
 static const int8_t rh265_sao_eo_dx[4]={-1, 0,-1, 1};
@@ -3992,98 +3358,38 @@ static const int8_t rh265_sao_eo_dy[4]={ 0,-1,-1,-1};
 
 /* Apply SAO for one component of one CTB, reading the deblocked picture
  * from src (a copy) and writing into the frame plane (8.7.3). */
-static void rh265_sao_ctb(rh265_dec *d, const uint8_t *src, int src_stride,
-      int c_idx, int rx, int ry)
-{
-   const rh265_sao_params *sao = &d->sao[ry * d->sps->ctb_w + rx];
-   int shift = c_idx ? 1 : 0;
-   int ctb = 1 << (d->sps->log2_ctb - shift);
-   int x0 = rx << (d->sps->log2_ctb - shift);
-   int y0 = ry << (d->sps->log2_ctb - shift);
-   int w = rh265_min(ctb, d->pw[c_idx] - x0);
-   int h = rh265_min(ctb, d->ph[c_idx] - y0);
-   uint8_t *dst = d->pl[c_idx] + y0 * d->strd[c_idx] + x0;
-   const uint8_t *s = src + y0 * src_stride + x0;
-   int x, y;
+/* ==================== bit-depth instantiations ==================== */
 
-   if (sao->type_idx[c_idx] == 1)
-   {
-      /* band offset */
-      int8_t band[32];
-      int k;
-      memset(band, 0, sizeof(band));
-      for (k = 0; k < 4; k++)
-         band[(sao->band_pos[c_idx] + k) & 31] = sao->off[c_idx][k];
-      for (y = 0; y < h; y++)
-         for (x = 0; x < w; x++)
-            dst[y * d->strd[c_idx] + x] = rh265_clip8(
-                  s[y * src_stride + x] + band[s[y * src_stride + x] >> 3]);
-   }
-   else if (sao->type_idx[c_idx] == 2)
-   {
-      /* edge offset; samples whose neighbours leave the picture keep
-       * their value (loop-filter-across-slices is moot with one slice) */
-      int dx = rh265_sao_eo_dx[sao->eo_class[c_idx]];
-      int dy = rh265_sao_eo_dy[sao->eo_class[c_idx]];
-      for (y = 0; y < h; y++)
-         for (x = 0; x < w; x++)
-         {
-            int px = x0 + x, py = y0 + y;
-            int a, b, cval, edge;
-            if (px + dx < 0 || px + dx >= d->pw[c_idx] ||
-                py + dy < 0 || py + dy >= d->ph[c_idx] ||
-                px - dx < 0 || px - dx >= d->pw[c_idx] ||
-                py - dy < 0 || py - dy >= d->ph[c_idx])
-               continue;
-            cval = s[y * src_stride + x];
-            a = s[(y + dy) * src_stride + (x + dx)];
-            b = s[(y - dy) * src_stride + (x - dx)];
-            edge = 2 + ((cval > a) - (cval < a)) + ((cval > b) - (cval < b));
-            if (edge == 2)
-               continue;
-            if (edge < 2)
-               edge++;             /* 0->1, 1->2 */
-            /* offsets: index 1..4 -> off[0..3], 3 and 4 negated */
-            {
-               int v = sao->off[c_idx][edge - 1];
-               dst[y * d->strd[c_idx] + x] = rh265_clip8(cval + v);
-            }
-         }
-   }
-}
+#define RH265_BD  8
+#define RH265_PEL uint8_t
+#define RH265_FN(name) rh265_ ## name ## _8
+#include "rh265_bd.inc"
+#undef RH265_BD
+#undef RH265_PEL
+#undef RH265_FN
 
-static int rh265_sao_frame(rh265_dec *d)
+#define RH265_BD  10
+#define RH265_PEL uint16_t
+#define RH265_FN(name) rh265_ ## name ## _10
+#include "rh265_bd.inc"
+#undef RH265_BD
+#undef RH265_PEL
+#undef RH265_FN
+
+static const rh265_bd_fns rh265_bd8_fns =
 {
-   const rh265_sps *sps = d->sps;
-   int c_idx, rx, ry;
-   uint8_t *copy[3];
-   int need = 0;
-   for (ry = 0; ry < sps->ctb_h && !need; ry++)
-      for (rx = 0; rx < sps->ctb_w && !need; rx++)
-      {
-         const rh265_sao_params *p = &d->sao[ry * sps->ctb_w + rx];
-         if (p->type_idx[0] || p->type_idx[1] || p->type_idx[2])
-            need = 1;
-      }
-   if (!need)
-      return 0;
-   for (c_idx = 0; c_idx < 3; c_idx++)
-   {
-      copy[c_idx] = (uint8_t*)malloc((size_t)d->strd[c_idx] * d->ph[c_idx]);
-      if (!copy[c_idx])
-      {
-         while (c_idx--) free(copy[c_idx]);
-         return -1;
-      }
-      memcpy(copy[c_idx], d->pl[c_idx], (size_t)d->strd[c_idx] * d->ph[c_idx]);
-   }
-   for (ry = 0; ry < sps->ctb_h; ry++)
-      for (rx = 0; rx < sps->ctb_w; rx++)
-         for (c_idx = 0; c_idx < 3; c_idx++)
-            rh265_sao_ctb(d, copy[c_idx], d->strd[c_idx], c_idx, rx, ry);
-   for (c_idx = 0; c_idx < 3; c_idx++)
-      free(copy[c_idx]);
-   return 0;
+   rh265_intra_pred_8, rh265_add_residual_8, rh265_mc_pu_8,
+   rh265_deblock_frame_8, rh265_sao_frame_8
+};
+static const rh265_bd_fns rh265_bd10_fns =
+{
+   rh265_intra_pred_10, rh265_add_residual_10, rh265_mc_pu_10,
+   rh265_deblock_frame_10, rh265_sao_frame_10
+};
+
+static const rh265_bd_fns *rh265_get_fns(int bd)
+{
+   return bd > 8 ? &rh265_bd10_fns : &rh265_bd8_fns;
 }
 
 /* sao syntax for one CTB (7.3.8.3) */
@@ -4136,12 +3442,19 @@ static void rh265_sao_param(rh265_dec *d, int rx, int ry)
       }
       if (!sao->type_idx[c_idx])
          continue;
-      for (i = 0; i < 4; i++)
       {
-         int v = 0;
-         while (v < 7 && rh265_cabac_bypass(cb))
-            v++;
-         abs_off[i] = v;
+         /* sao_offset_abs is truncated-Rice with
+          * cMax = (1 << (Min(bitDepth, 10) - 5)) - 1: 7 at 8-bit but
+          * 31 at 10-bit, so the bound is bitstream syntax, not just a
+          * value range */
+         int cmax = (1 << (d->bd - 5)) - 1;
+         for (i = 0; i < 4; i++)
+         {
+            int v = 0;
+            while (v < cmax && rh265_cabac_bypass(cb))
+               v++;
+            abs_off[i] = v;
+         }
       }
       if (sao->type_idx[c_idx] == 1)
       {
@@ -4172,6 +3485,7 @@ struct rh265_video
    rh265_pps pps[RH265_MAX_PPS];
    rh265_dec d;
    int alloc_w, alloc_h;      /* dimensions the frame buffers were sized for */
+   int alloc_bd;
    int poc;
    int prev_poc_tid0;         /* prevTid0Pic POC for 8.3.1 */
    int length_size;           /* NAL length prefix size from hvcC, else 0 */
@@ -4232,9 +3546,14 @@ static void rh265_free_frame(rh265_video *v)
 static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
 {
    rh265_dec *d = &v->d;
-   if (v->alloc_w == s->width && v->alloc_h == s->height && d->ipm)
+   d->bd        = s->bit_depth_luma;
+   d->pel_bytes = 1 + (d->bd > 8);
+   d->fns       = rh265_get_fns(d->bd);
+   if (v->alloc_w == s->width && v->alloc_h == s->height
+         && v->alloc_bd == d->bd && d->ipm)
       return 0;
    rh265_free_frame(v);
+   v->alloc_bd = d->bd;
    d->pw[0] = s->width;      d->ph[0] = s->height;
    d->pw[1] = s->width >> 1; d->ph[1] = s->height >> 1;
    d->pw[2] = d->pw[1];      d->ph[2] = d->ph[1];
@@ -4275,10 +3594,21 @@ static int rh265_pic_alloc(rh265_video *v, int slot)
    for (i = 0; i < 3; i++)
       if (!p->pl[i])
       {
-         p->pl[i] = (uint8_t*)malloc((size_t)d->strd[i] * d->ph[i]);
+         size_t n = (size_t)d->strd[i] * d->ph[i];
+         p->pl[i] = (uint8_t*)malloc(n * d->pel_bytes);
          if (!p->pl[i])
             return -1;
-         memset(p->pl[i], i ? 128 : 0, (size_t)d->strd[i] * d->ph[i]);
+         if (!i)
+            memset(p->pl[i], 0, n * d->pel_bytes);
+         else if (d->bd == 8)
+            memset(p->pl[i], 128, n);
+         else
+         {
+            uint16_t *q = (uint16_t*)p->pl[i];
+            size_t k;
+            for (k = 0; k < n; k++)
+               q[k] = (uint16_t)(1 << (d->bd - 1));
+         }
       }
    if (!p->mvf)
    {
@@ -4558,7 +3888,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       if (ret == 0)
       {
          if (sp->chroma_format_idc != 1 ||
-             sp->bit_depth_luma != 8 || sp->bit_depth_chroma != 8 ||
+             (sp->bit_depth_luma != 8 && sp->bit_depth_luma != 10) ||
+             sp->bit_depth_chroma != sp->bit_depth_luma ||
              sp->pcm_enabled || sp->scaling_list_enabled)
             ret = -2;                   /* out of the supported profile */
          else
@@ -4684,9 +4015,9 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                   if (ret >= sps->pic_size_ctbs)
                   {
                      /* picture complete: run the loop filters */
-                     rh265_deblock_frame(&v->d);
+                     v->d.fns->deblock_frame(&v->d);
                      if (sps->sao_enabled)
-                        if (rh265_sao_frame(&v->d) < 0)
+                        if (v->d.fns->sao_frame(&v->d) < 0)
                         {
                            free(rbsp);
                            return -1;
@@ -4881,7 +4212,15 @@ const uint8_t *rh265_video_plane(const rh265_video *v, int plane,
          >> shift;
    if (height) *height = (s->height - 2 * (s->crop_top + s->crop_bottom))
          >> shift;
+   /* the returned pointer is bytes; at 10 bits the caller casts to
+    * uint16_t and indexes with the sample stride, as with the VP9
+    * high-bit-depth planes */
    return pic->pl[plane]
-         + ((s->crop_top << 1) >> shift) * v->d.strd[plane]
-         + ((s->crop_left << 1) >> shift);
+         + (((s->crop_top << 1) >> shift) * v->d.strd[plane]
+            + ((s->crop_left << 1) >> shift)) * v->d.pel_bytes;
+}
+
+int rh265_video_bit_depth(const rh265_video *v)
+{
+   return (v && v->d.bd) ? v->d.bd : 8;
 }
