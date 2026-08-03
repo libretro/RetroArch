@@ -526,6 +526,7 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    input_driver_state_t *input_st = input_state_get_ptr();
    uint8_t *compressed_data = NULL, *encoded_data = NULL;
    bool ret = true;
+   bool checkpoint_loaded = false;
    if (intfstream_read(handle->file, &(size),
                sizeof(uint32_t)) != sizeof(uint32_t))
    {
@@ -558,6 +559,24 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
       goto exit;
    }
 
+   /* These encodings do not transform their input. The three size
+    * fields are serialized independently, so reject inconsistent
+    * values before using one to size a buffer and another to fill it. */
+   if (   compression == REPLAY_CHECKPOINT2_COMPRESSION_NONE
+       && compressed_encoded_size != encoded_size)
+   {
+      RARCH_ERR("[Replay] Uncompressed checkpoint has mismatched sizes\n");
+      ret = false;
+      goto exit;
+   }
+   if (   encoding == REPLAY_CHECKPOINT2_ENCODING_RAW
+       && size != encoded_size)
+   {
+      RARCH_ERR("[Replay] Raw checkpoint has mismatched sizes\n");
+      ret = false;
+      goto exit;
+   }
+
    if (handle->cur_save_size < size)
    {
       free(handle->cur_save);
@@ -567,6 +586,12 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
    {
       handle->cur_save_size  = size;
       handle->cur_save       = (uint8_t*)malloc(size);
+      if (size && !handle->cur_save)
+      {
+         RARCH_ERR("[Replay] Failed to allocate checkpoint buffer\n");
+         ret = false;
+         goto exit;
+      }
       handle->cur_save_valid = false;
    }
 
@@ -574,7 +599,15 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          && encoding == REPLAY_CHECKPOINT2_ENCODING_RAW)
       compressed_data = handle->cur_save;
    else
+   {
       compressed_data = (uint8_t*)malloc(compressed_encoded_size);
+      if (compressed_encoded_size && !compressed_data)
+      {
+         RARCH_ERR("[Replay] Failed to allocate compressed checkpoint buffer\n");
+         ret = false;
+         goto exit;
+      }
+   }
    if (intfstream_read(handle->file, compressed_data,
        compressed_encoded_size) != (int64_t)compressed_encoded_size)
    {
@@ -594,8 +627,10 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          {
             uLongf uncompressed_size_zlib = encoded_size;
             encoded_data = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
-            if (uncompress(encoded_data, &uncompressed_size_zlib,
-                compressed_data, compressed_encoded_size) != Z_OK)
+            if (   (encoded_size && !encoded_data)
+                || uncompress(encoded_data, &uncompressed_size_zlib,
+                compressed_data, compressed_encoded_size) != Z_OK
+                || uncompressed_size_zlib != encoded_size)
             {
                ret = false;
                goto exit;
@@ -614,10 +649,16 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
                calling the function that takes the compressed frames as
                an input?  */
             encoded_data          = (uint8_t*)calloc(encoded_size, sizeof(uint8_t));
+            if (encoded_size && !encoded_data)
+            {
+               ret = false;
+               goto exit;
+            }
 #ifdef HAVE_RZSTD
             if (rzstd_decode(encoded_data, encoded_size,
                      compressed_data, compressed_encoded_size,
-                     &uncompressed_size_big) != RZSTD_PROCESS_END)
+                     &uncompressed_size_big) != RZSTD_PROCESS_END
+                  || uncompressed_size_big != encoded_size)
                {
                   ret = false;
                   goto exit;
@@ -625,7 +666,8 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
 #else
             uncompressed_size_big = ZSTD_decompress(encoded_data, encoded_size,
                   compressed_data, compressed_encoded_size);
-            if (ZSTD_isError(uncompressed_size_big))
+            if (   ZSTD_isError(uncompressed_size_big)
+                || uncompressed_size_big != encoded_size)
                {
                   ret = false;
                   goto exit;
@@ -665,12 +707,16 @@ bool bsv_movie_load_checkpoint(bsv_movie_t *handle, uint8_t compression,
          ret = false;
          goto exit;
    }
+   checkpoint_loaded = true;
    if (checkpoint_behavior != REPLAY_CPBEHAVIOR_DESERIALIZE)
       goto exit;
    handle->checkpoint_ready = true;
  exit:
-   handle->cur_save_size = size;
-   handle->last_save_size = handle->cur_save_size;
+   if (checkpoint_loaded)
+   {
+      handle->cur_save_size  = size;
+      handle->last_save_size = handle->cur_save_size;
+   }
 
    if (compressed_data)
       free(compressed_data);
