@@ -26,6 +26,28 @@ and are under 4 KiB there.
 
 The budget is deliberately well under 8 KiB: a frame is not alone on
 the stack, it sits under whatever called it.
+
+Two things about how this is measured, both learned the hard way.
+
+A frame size is a property of an ABI, not of the source. The Windows
+x64 ABI has the caller reserve 32 bytes of shadow space for every
+call, keeps more registers callee-saved, and passes four arguments in
+registers where SysV passes six. Every recorded size below therefore
+comes out 16 to 192 bytes larger under mingw-w64 than under the
+reference toolchain, on identical code. Comparing an absolute
+recorded size against a measurement from a different target triple
+reports the whole allowlist as regressed and buries anything real in
+the noise, so the recorded sizes are only ratcheted when the host is
+the reference target; elsewhere they are reported as drift.
+
+The check also only ever sees the code its host compiles, which is
+the same blind spot it exists to cover. read_stdin() carried a 5 KiB
+INPUT_RECORD array for years inside `#elif defined(_WIN32)`, invisible
+to every Linux run of this script. So when a cross-compiler is on
+PATH it is used for a second pass, and BUDGET - unlike the recorded
+sizes - is enforced on every pass, because a coarse threshold is
+robust to a few hundred bytes of ABI overhead in a way that an exact
+byte count is not.
 """
 import os
 import re
@@ -39,6 +61,22 @@ SRC_ROOT   = os.path.join(ROOT, 'libretro-common')
 
 # Bytes. Leaves the majority of an 8 KiB stack for callers.
 BUDGET     = 2048
+
+# The target the sizes in ALLOWLIST were measured on.
+REFERENCE_TARGETS = ('x86_64-pc-linux-gnu', 'x86_64-linux-gnu')
+
+# Added to both BUDGET and the recorded sizes when the measuring
+# target is not a reference one, so that pure ABI overhead does not
+# read as a regression. The largest gap observed between SysV and
+# Windows x64 across this tree is 192 bytes; a frame that has really
+# grown, by a buffer someone added, clears 256 easily. This is slack
+# for a comparison that is already approximate off-reference - it is
+# not a raise in the budget, and BUDGET itself does not move.
+ABI_SLACK         = 256
+
+# Used for an extra pass when present, to reach code the host's own
+# preprocessor throws away. Not required: absent ones are skipped.
+CROSS_COMPILERS   = ('x86_64-w64-mingw32-gcc', 'i686-w64-mingw32-gcc')
 
 # Frames that exceeded the budget when this check was written, with
 # the size measured then.
@@ -77,7 +115,9 @@ BUDGET     = 2048
 # reasons that counts.
 #
 # The value is the size at the time of writing, so a frame that grows
-# past its recorded size is caught even while allowlisted.
+# past its recorded size is caught even while allowlisted. It is the
+# size on REFERENCE_TARGETS; see the module docstring for why it is
+# not comparable against a measurement from another triple.
 ALLOWLIST  = {
     'cdfs_find_file.constprop': 2160,
     'config_file_dump': 4208,
@@ -114,7 +154,28 @@ ALLOWLIST  = {
 }
 
 
-def stack_usage(path, workdir):
+def toolchains():
+    """[(cc, target, is_reference)] for every compiler available here.
+
+    The host compiler is always first: it is the one that decides
+    whether a named file failing to compile is an error, and the only
+    one that may ratchet ALLOWLIST, and then only if its target is a
+    reference one.
+    """
+    found = []
+    for cc in ('gcc',) + CROSS_COMPILERS:
+        try:
+            r = subprocess.run([cc, '-dumpmachine'], capture_output=True)
+        except OSError:
+            continue
+        if r.returncode != 0:
+            continue
+        target = r.stdout.decode().strip()
+        found.append((cc, target, target in REFERENCE_TARGETS))
+    return found
+
+
+def stack_usage(path, workdir, cc='gcc'):
     """Compile one TU and return ([(func, bytes)], gcc stderr).
 
     Frames are None when the TU did not build, and the stderr is
@@ -143,7 +204,7 @@ def stack_usage(path, workdir):
     # libchdr_chd.c's largest frame is 8320 bytes, with it 57504 - a
     # seven-fold difference in shipped code, under a define that wii,
     # ctr and every desktop build set.
-    cmd = ['gcc', '-O2', '-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
+    cmd = [cc, '-O2', '-DPSP', '-DHAVE_COMPRESSION', '-DHAVE_7ZIP',
            '-DHAVE_CHD', '-DHAVE_RPNG', '-DHAVE_RJPEG', '-DHAVE_RBMP',
            '-DHAVE_RTGA', '-DHAVE_RWEBP', '-DHAVE_RDDS', '-DHAVE_RWAV',
            '-I' + INCLUDE, '-fstack-usage', '-c', path, '-o', obj]
@@ -209,6 +270,44 @@ def sources(args):
             yield arg, True
 
 
+class Fatal(Exception):
+    """A file the caller named could not be measured."""
+
+
+def measure(cc, is_host, argv, tmp):
+    """([(size, name, fn)], scanned, skipped) for one toolchain.
+
+    The strictness about a named file that does not compile is the
+    host compiler's alone.  A cross pass is extra coverage over code
+    the host preprocesses away, so a POSIX-only TU someone named
+    failing to build under mingw is expected rather than an error -
+    the host pass has already measured it.
+    """
+    frames  = []
+    scanned = 0
+    skipped = 0
+    for path, named in sources(argv):
+        named = named and is_host
+        if named and not os.path.exists(path):
+            raise Fatal('error: %s: no such file' % path)
+        # A header compiles to a .gch and yields no .su, which
+        # would otherwise be reported as "did not compile" with
+        # nothing to say about why.
+        if named and not path.endswith('.c'):
+            raise Fatal('error: %s: not a .c translation unit' % path)
+        found, err = stack_usage(path, tmp, cc)
+        if found is None:
+            if named:
+                raise Fatal('error: %s did not compile; nothing was '
+                            'measured for it\n%s' % (path, err.rstrip()))
+            skipped += 1
+            continue
+        scanned += 1
+        fn = os.path.basename(path)
+        frames += [(size, name, fn) for name, size in found]
+    return frames, scanned, skipped
+
+
 def main(argv):
     if any(a in ('-h', '--help') for a in argv):
         print('usage: stack_budget.py [FILE.c | DIR ...]\n\n'
@@ -216,43 +315,50 @@ def main(argv):
               'libretro-common - what CI runs, and the only form CI\n'
               'depends on.  With arguments, measures exactly those\n'
               'files, and a named file that does not compile is an\n'
-              'error rather than a skip.')
+              'error rather than a skip.\n\n'
+              'Every cross-compiler in CROSS_COMPILERS that is on PATH\n'
+              'is measured as well, to reach code this host would\n'
+              'preprocess away.  The sizes in ALLOWLIST are enforced\n'
+              'only on REFERENCE_TARGETS, since a frame size is a\n'
+              'property of an ABI; elsewhere they are reported as\n'
+              'drift.')
         return 0
 
-    over    = []
+    chains = toolchains()
+    if not chains:
+        print('error: no C compiler found; the check is not measuring '
+              'anything', file=sys.stderr)
+        return 2
+
+    over    = []   # hard failures
+    drift   = []   # allowlisted, over its recorded size, off-reference
     scanned = 0
-    skipped = 0
+
     with tempfile.TemporaryDirectory() as tmp:
-        for path, named in sources(argv):
-            if named and not os.path.exists(path):
-                print('error: %s: no such file' % path, file=sys.stderr)
+        for i, (cc, target, is_reference) in enumerate(chains):
+            try:
+                frames, n, skipped = measure(cc, i == 0, argv, tmp)
+            except Fatal as e:
+                print(e, file=sys.stderr)
                 return 2
-            # A header compiles to a .gch and yields no .su, which
-            # would otherwise be reported as "did not compile" with
-            # nothing to say about why.
-            if named and not path.endswith('.c'):
-                print('error: %s: not a .c translation unit'
-                      % path, file=sys.stderr)
-                return 2
-            frames, err = stack_usage(path, tmp)
-            if frames is None:
-                if named:
-                    print('error: %s did not compile; nothing was '
-                          'measured for it' % path, file=sys.stderr)
-                    print(err.rstrip(), file=sys.stderr)
-                    return 2
-                skipped += 1
-                continue
-            scanned += 1
-            fn = os.path.basename(path)
-            for name, size in frames:
-                if size <= BUDGET:
-                    continue
-                # Allowlisted, but only at the size recorded: a
-                # frame that has grown since is a new problem.
-                if name in ALLOWLIST and size <= ALLOWLIST[name]:
-                    continue
-                over.append((size, name, fn))
+            scanned += n
+            print('  %-24s %-24s %4d TU measured, %3d not built'
+                  % (cc, target, n, skipped))
+            # Off-reference, every limit is approximate by the width
+            # of the ABI difference, so both of them move together.
+            slack = 0 if is_reference else ABI_SLACK
+            for size, name, fn in frames:
+                if name not in ALLOWLIST:
+                    # Never recorded at any size, on any target.
+                    if size > BUDGET + slack:
+                        over.append((size, name, fn, target))
+                elif size > ALLOWLIST[name] + slack:
+                    # Grown past what was recorded.  An error on the
+                    # target that recorded it, drift anywhere else.
+                    if is_reference:
+                        over.append((size, name, fn, target))
+                    else:
+                        drift.append((size, name, fn, target))
 
     # A run that measured nothing is a broken check, not a clean tree.
     if scanned == 0:
@@ -260,20 +366,34 @@ def main(argv):
               'check is not measuring anything', file=sys.stderr)
         return 2
 
+    if not any(ref for _, _, ref in chains):
+        print('\nnote: no reference target (%s) among the compilers '
+              'here, so the sizes recorded in ALLOWLIST were not '
+              'enforced. CI is authoritative for those.'
+              % ', '.join(REFERENCE_TARGETS))
+
+    if drift:
+        print('\nnote: allowlisted frames more than %d bytes above '
+              'their recorded size on a non-reference target, which is '
+              'more than the ABI accounts for:' % ABI_SLACK)
+        for size, name, fn, target in sorted(drift, reverse=True):
+            print('   %7d  (recorded %d, %+d)  %s  (%s, %s)'
+                  % (size, ALLOWLIST[name], size - ALLOWLIST[name],
+                     name, fn, target))
+
     if over:
-        print('error: stack frames over %d bytes, against an 8 KiB '
+        print('\nerror: stack frames over %d bytes, against an 8 KiB '
               'thread stack on PSP and GX:' % BUDGET, file=sys.stderr)
-        for size, name, fn in sorted(over, reverse=True):
-            print('   %7d  %s  (%s)' % (size, name, fn), file=sys.stderr)
+        for size, name, fn, target in sorted(over, reverse=True):
+            print('   %7d  %s  (%s, %s)' % (size, name, fn, target),
+                  file=sys.stderr)
         print('\nMove the buffer to the heap, shrink it, or - if it '
               'genuinely cannot reach a thread on those targets - add '
               'it to ALLOWLIST in %s with the reason.'
               % os.path.basename(__file__), file=sys.stderr)
         return 1
 
-    print('stack budget: %d translation units measured (%d did not '
-          'build on this host), no frame over %d bytes'
-          % (scanned, skipped, BUDGET))
+    print('\nstack budget: no frame over %d bytes' % BUDGET)
     return 0
 
 
