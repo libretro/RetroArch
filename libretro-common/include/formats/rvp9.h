@@ -254,6 +254,18 @@ typedef struct
    int      fb_bit_depth;
 
    rvp9_tran dqcoeff[32 * 32];
+
+   /* Reconstruction scratch, kept in the (heap-recommended) decoder
+    * state rather than on the stack: several targets run decode on
+    * 8 KiB thread stacks.  mc_scratch is the motion-compensation
+    * edge-emulation buffer (worst case is the 10-bit path: a
+    * 160x160 block of uint16 pixels, 50 KiB); iht_scratch holds the
+    * inverse-transform row-pass output for the largest transform. */
+   uint16_t  mc_scratch[80 * 2 * 80 * 2];
+   rvp9_tran iht_scratch[32 * 32];
+   /* rvp9_convolve8's horizontal-pass intermediate; separate from
+    * mc_scratch because both are live during edge-emulated MC. */
+   uint16_t  convolve_scratch[64 * 135];
    int      max_blocks_wide, max_blocks_high;  /* token ctx trunc  */
    int      mb_to_right_edge, mb_to_bottom_edge; /* in 1/8 pel *8  */
    int      mb_to_left_edge, mb_to_top_edge;
