@@ -839,13 +839,12 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    }
    if (s->codec == RMP4_CODEC_H265)
    {
-      /* rh265 reconstructs Main-profile intra pictures only for now,
-       * so the freeze-until-key policy above does the heavy lifting:
-       * streams with inter frames hold the last decoded intra picture
-       * until the next key frame instead of aborting, and all-intra
-       * HEVC plays in full.  A key frame that fails to decode (an
-       * out-of-scope feature such as tiles or 10-bit) is a real
-       * error. */
+      /* rh265 reconstructs Main-profile pictures (intra, P and B with
+       * display reordering), handing pictures out in display order.
+       * Anything it still cannot handle (tiles, WPP, 10-bit, 4:2:2) is
+       * skipped rather than aborting the stream, holding the last good
+       * picture until the next key frame restarts the prediction
+       * chain.  A key frame that fails to decode is a real error. */
       int dec;
       if (s->wait_key && !pkt->keyframe)
       {
