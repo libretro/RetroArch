@@ -4131,30 +4131,37 @@ static int raac_sbr_read_grid(raac_sbr *s, raac_bits *b, raac_sbr_ch *c)
       case 1:  /* FIXVAR */
          abs_bord_trail   += (int)raac_getbits(b, 2);
          num_rel_trail     = (int)raac_getbits(b, 2);
-         c->bs_num_env     = (unsigned)(num_rel_trail + 1);
+         num_env           = num_rel_trail + 1;
+         if (num_env > 5)
+            return -1;      /* 1..4 by construction; keeps the array
+                             * writes below provably in bounds */
+         c->bs_num_env     = (unsigned)num_env;
          c->t_env[0]       = 0;
-         c->t_env[c->bs_num_env] = abs_bord_trail;
+         c->t_env[num_env] = abs_bord_trail;
          for (i = 0; i < num_rel_trail; i++)
-            c->t_env[c->bs_num_env - 1 - i] =
-                  c->t_env[c->bs_num_env - i] -
+            c->t_env[num_env - 1 - i] =
+                  c->t_env[num_env - i] -
                   2 * (int)raac_getbits(b, 2) - 2;
          bs_pointer = (int)raac_getbits(b,
-               raac_sbr_ceil_log2[c->bs_num_env]);
-         for (i = 0; i < (int)c->bs_num_env; i++)
-            c->bs_freq_res[c->bs_num_env - i] =
+               raac_sbr_ceil_log2[num_env]);
+         for (i = 0; i < num_env; i++)
+            c->bs_freq_res[num_env - i] =
                   (uint8_t)raac_getbits(b, 1);
          break;
       case 2:  /* VARFIX */
          c->t_env[0]   = (int)raac_getbits(b, 2);
          num_rel_lead  = (int)raac_getbits(b, 2);
-         c->bs_num_env = (unsigned)(num_rel_lead + 1);
-         c->t_env[c->bs_num_env] = abs_bord_trail;
+         num_env       = num_rel_lead + 1;
+         if (num_env > 5)
+            return -1;      /* 1..4 by construction; provable bound */
+         c->bs_num_env = (unsigned)num_env;
+         c->t_env[num_env] = abs_bord_trail;
          for (i = 0; i < num_rel_lead; i++)
             c->t_env[i + 1] = c->t_env[i] +
                   2 * (int)raac_getbits(b, 2) + 2;
          bs_pointer = (int)raac_getbits(b,
-               raac_sbr_ceil_log2[c->bs_num_env]);
-         for (i = 0; i < (int)c->bs_num_env; i++)
+               raac_sbr_ceil_log2[num_env]);
+         for (i = 0; i < num_env; i++)
             c->bs_freq_res[i + 1] = (uint8_t)raac_getbits(b, 1);
          break;
       default: /* VARVAR */
@@ -4242,14 +4249,22 @@ static void raac_sbr_copy_grid(raac_sbr_ch *dst, const raac_sbr_ch *src)
    dst->e_a[1] = src->e_a[1];
 }
 
-static void raac_sbr_read_dtdf(raac_sbr *s, raac_bits *b, raac_sbr_ch *c)
+static int raac_sbr_read_dtdf(raac_sbr *s, raac_bits *b, raac_sbr_ch *c)
 {
    unsigned i;
+   unsigned n_env   = c->bs_num_env;
+   unsigned n_noise = c->bs_num_noise;
    (void)s;
-   for (i = 0; i < c->bs_num_env; i++)
+   /* the grid parse establishes 1..5 envelopes and 1..2 noise floors;
+    * restate the bounds here so the array writes are provably in range
+    * even if that invariant ever regresses upstream of this call */
+   if (n_env > 5 || n_noise > 2)
+      return -1;
+   for (i = 0; i < n_env; i++)
       c->bs_df_env[i] = (uint8_t)raac_getbits(b, 1);
-   for (i = 0; i < c->bs_num_noise; i++)
+   for (i = 0; i < n_noise; i++)
       c->bs_df_noise[i] = (uint8_t)raac_getbits(b, 1);
+   return 0;
 }
 
 static void raac_sbr_read_invf(raac_sbr *s, raac_bits *b, raac_sbr_ch *c)
@@ -4394,7 +4409,8 @@ static int raac_sbr_read_sce(raac_t *a, raac_sbr *s, raac_bits *b)
       raac_getbits(b, 4);
    if (raac_sbr_read_grid(s, b, &s->d[0]) < 0)
       return -1;
-   raac_sbr_read_dtdf(s, b, &s->d[0]);
+   if (raac_sbr_read_dtdf(s, b, &s->d[0]) < 0)
+      return -1;
    raac_sbr_read_invf(s, b, &s->d[0]);
    if (raac_sbr_read_envelope(a, s, b, &s->d[0], 0) < 0)
       return -1;
@@ -4419,8 +4435,10 @@ static int raac_sbr_read_cpe(raac_t *a, raac_sbr *s, raac_bits *b)
       if (raac_sbr_read_grid(s, b, &s->d[0]) < 0)
          return -1;
       raac_sbr_copy_grid(&s->d[1], &s->d[0]);
-      raac_sbr_read_dtdf(s, b, &s->d[0]);
-      raac_sbr_read_dtdf(s, b, &s->d[1]);
+      if (raac_sbr_read_dtdf(s, b, &s->d[0]) < 0)
+      return -1;
+      if (raac_sbr_read_dtdf(s, b, &s->d[1]) < 0)
+      return -1;
       raac_sbr_read_invf(s, b, &s->d[0]);
       memcpy(s->d[1].bs_invf_mode[1], s->d[1].bs_invf_mode[0], 5);
       memcpy(s->d[1].bs_invf_mode[0], s->d[0].bs_invf_mode[0], 5);
@@ -4435,8 +4453,10 @@ static int raac_sbr_read_cpe(raac_t *a, raac_sbr *s, raac_bits *b)
       if (raac_sbr_read_grid(s, b, &s->d[0]) < 0 ||
             raac_sbr_read_grid(s, b, &s->d[1]) < 0)
          return -1;
-      raac_sbr_read_dtdf(s, b, &s->d[0]);
-      raac_sbr_read_dtdf(s, b, &s->d[1]);
+      if (raac_sbr_read_dtdf(s, b, &s->d[0]) < 0)
+      return -1;
+      if (raac_sbr_read_dtdf(s, b, &s->d[1]) < 0)
+      return -1;
       raac_sbr_read_invf(s, b, &s->d[0]);
       raac_sbr_read_invf(s, b, &s->d[1]);
       if (raac_sbr_read_envelope(a, s, b, &s->d[0], 0) < 0 ||
