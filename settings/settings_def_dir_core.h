@@ -67,7 +67,7 @@ S_DIR(directory_menu_config, RGUI_CONFIG_DIRECTORY,
       "rgui_config_directory",
       g_defaults.dirs[DEFAULT_DIR_MENU_CONFIG], DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
       "Configurations",
-      "This directory stores configuration files managed by Configuration Files,"
+      "This directory stores configuration files managed by Configuration File,"
       "Overrides, and Manage Core Options menu items."
 #endif
 /* config key "libretro_directory" differs from the label string; the
