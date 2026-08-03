@@ -14,6 +14,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <encodings/crc32.h>
 
@@ -146,26 +147,34 @@ static bool patch_stream_fill(patch_stream_t *ps, size_t at,
 }
 
 /* Variable-length integer, as used by both UPS and BPS. */
-static uint64_t patch_stream_decode(patch_stream_t *ps)
+static bool patch_stream_decode(patch_stream_t *ps, uint64_t *out)
 {
    uint64_t val   = 0;
    uint64_t shift = 1;
 
    for (;;)
    {
-      uint8_t x = (ps->p_off < ps->patch_len) ? ps->patch[ps->p_off] : 0;
+      uint8_t x;
 
-      if (ps->p_off < ps->patch_len)
-         ps->p_off++;
+      if (ps->p_off >= ps->patch_len)
+         return false;
+      x = ps->patch[ps->p_off++];
 
+      if ((uint64_t)(x & 0x7f) > (UINT64_MAX - val) / shift)
+         return false;
       val += (x & 0x7f) * shift;
       if (x & 0x80)
-         break;
+      {
+         *out = val;
+         return true;
+      }
+      if (shift > UINT64_MAX >> 7)
+         return false;
       shift <<= 7;
+      if (val > UINT64_MAX - shift)
+         return false;
       val   += shift;
    }
-
-   return val;
 }
 
 /* --------------------------------------------------------------------
@@ -402,6 +411,8 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
       size_t src_len)
 {
    patch_stream_t *ps;
+   uint64_t declared_src;
+   uint64_t declared_tgt;
 
    if (patch_len < 18 || memcmp(patch, "UPS1", 4))
       return NULL;
@@ -418,9 +429,17 @@ patch_stream_t *patch_stream_ups_open(const uint8_t *patch, size_t patch_len,
    /* The caller's src_len stays authoritative for decoding, exactly as
     * in the whole-buffer applier, but the declared lengths are part of
     * what the trailer is checked against. */
-   ps->ups_declared_src_len = (uint32_t)patch_stream_decode(ps);
-   ps->tgt_len              = (size_t)patch_stream_decode(ps);
-   ps->ups_declared_tgt_len = (uint32_t)ps->tgt_len;
+   if (   !patch_stream_decode(ps, &declared_src)
+       || !patch_stream_decode(ps, &declared_tgt)
+       || declared_src > UINT32_MAX
+       || declared_tgt > UINT32_MAX)
+   {
+      patch_stream_free(ps);
+      return NULL;
+   }
+   ps->ups_declared_src_len = (uint32_t)declared_src;
+   ps->tgt_len              = (size_t)declared_tgt;
+   ps->ups_declared_tgt_len = (uint32_t)declared_tgt;
 
    ps->carry_cap = 65536;
    if (     !(ps->carry = (uint8_t*)malloc(ps->carry_cap))
@@ -474,7 +493,13 @@ static void patch_stream_ups_run(patch_stream_t *ps)
       size_t   save_p = ps->p_off;
       size_t   save_s = ps->s_off;
       size_t   save_t = ps->t_off;
-      uint64_t skip   = patch_stream_decode(ps);
+      uint64_t skip;
+
+      if (!patch_stream_decode(ps, &skip))
+      {
+         ps->failed = 1;
+         return;
+      }
 
       while (skip--)
       {
@@ -656,9 +681,13 @@ patch_stream_t *patch_stream_bps_open(const uint8_t *patch, size_t patch_len,
    ps->src_len   = src_len;
    ps->p_off     = 4;
 
-   decl_src = patch_stream_decode(ps);
-   decl_tgt = patch_stream_decode(ps);
-   markup   = patch_stream_decode(ps);
+   if (   !patch_stream_decode(ps, &decl_src)
+       || !patch_stream_decode(ps, &decl_tgt)
+       || !patch_stream_decode(ps, &markup))
+   {
+      patch_stream_free(ps);
+      return NULL;
+   }
 
    if (     markup   > patch_len - ps->p_off
          || decl_src > src_len
@@ -688,9 +717,16 @@ static void patch_stream_bps_run(patch_stream_t *ps)
       size_t   save_o = ps->t_off;
       size_t   save_s = ps->s_off;
       size_t   save_t = ps->bt_off;
-      uint64_t len    = patch_stream_decode(ps);
-      unsigned mode   = (unsigned)(len & 3);
+      uint64_t len;
+      unsigned mode;
       uint64_t k;
+
+      if (!patch_stream_decode(ps, &len))
+      {
+         ps->failed = 1;
+         return;
+      }
+      mode = (unsigned)(len & 3);
 
       len = (len >> 2) + 1;
 
@@ -742,9 +778,18 @@ static void patch_stream_bps_run(patch_stream_t *ps)
 
          default: /* SourceCopy / TargetCopy */
          {
-            int64_t  raw = (int64_t)patch_stream_decode(ps);
-            int      neg = (int)(raw & 1);
+            uint64_t decoded;
+            int64_t  raw;
+            int      neg;
             int64_t  off;
+
+            if (!patch_stream_decode(ps, &decoded))
+            {
+               ps->failed = 1;
+               return;
+            }
+            raw = (int64_t)decoded;
+            neg = (int)(raw & 1);
 
             raw >>= 1;
             off   = neg ? -raw : raw;
