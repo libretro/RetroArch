@@ -750,6 +750,75 @@ char* rzipstream_gets(rzipstream_t *stream, char *s, size_t len)
    return (s);
 }
 
+/* Does the file at 'path' hold exactly 'len' bytes equal to 'data'?
+ *
+ * The rzip counterpart of filestream_matches_buf(), for the same
+ * "has this changed since I last wrote it?" question, and answering
+ * it the same way: the uncompressed size settles a mismatch before
+ * anything is decompressed, and the comparison stops at the first
+ * differing byte.
+ *
+ * There is no mapped fast path here and there cannot be - the bytes
+ * being compared do not exist on disk in that form - so this always
+ * decompresses into a window.  What it avoids is the whole-file
+ * allocation: callers asked this question by decompressing the
+ * entire file into a fresh buffer, comparing it, and freeing it.
+ *
+ * False for a missing file, a size mismatch, a short or failed read,
+ * or the first difference - all of which mean "write it". */
+bool rzipstream_matches_buf(const char *path, const void *data, size_t len)
+{
+   const uint8_t *mem   = (const uint8_t*)data;
+   bool           match = false;
+   rzipstream_t  *stream;
+
+   if (!path || !*path || (len && !data))
+      return false;
+
+   if (!(stream = rzipstream_open(path, RETRO_VFS_FILE_ACCESS_READ)))
+      return false;
+
+   if (rzipstream_get_size(stream) != (int64_t)len)
+      goto done;
+
+   {
+      /* RZIPSTREAM_MATCHES_BUF_CHUNK, sized by the stack rather than
+       * by the decompressor: this is libretro-common API, so a caller
+       * can be on a spawned thread, and GEKKO threads get 8 KiB
+       * (STACKSIZE in rthreads/gx_pthread.h).  See the same
+       * ceiling and its measured cost in filestream_matches_buf(). */
+      uint8_t chunk[RZIPSTREAM_MATCHES_BUF_CHUNK];
+      size_t  off = 0;
+
+      match = true;
+      while (off < len)
+      {
+         int64_t got;
+         size_t  want = len - off;
+
+         if (want > sizeof(chunk))
+            want = sizeof(chunk);
+
+         if ((got = rzipstream_read(stream, chunk, (int64_t)want))
+               != (int64_t)want)
+         {
+            match = false;
+            break;
+         }
+         if (memcmp(chunk, mem + off, (size_t)got) != 0)
+         {
+            match = false;
+            break;
+         }
+         off += (size_t)got;
+      }
+   }
+
+done:
+   rzipstream_close(stream);
+   return match;
+}
+
 /* Reads all data from file specified by 'path' and
  * copies it to 'buf'.
  * - 'buf' will be allocated and must be free()'d manually.

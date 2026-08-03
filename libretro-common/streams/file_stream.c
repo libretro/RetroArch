@@ -879,16 +879,33 @@ static int fs_scan_wide(const char **pp, const fs_scan_spec_t *sp,
 
 int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 {
-   char        buf[4096];
+   /* The scan window is heap rather than a local: at char buf[4096]
+    * this was a 4368-byte frame, over half of the 8 KiB a GEKKO
+    * thread gets (STACKSIZE in rthreads/gx_pthread.h).  Shrinking it
+    * instead would have been the cheaper change and the wrong one -
+    * the window is how far a single conversion may reach, so a
+    * smaller one fails differently on long input rather than merely
+    * more slowly.  One allocation per call is nothing beside the read
+    * this function already performs. */
+   char       *buf       = (char*)malloc(FILESTREAM_SCANF_WINDOW);
    va_list     args_copy;
    const char *bufiter;
    const char *fmt      = format;
    int         ret      = 0;
-   int64_t     startpos = filestream_tell(stream);
-   int64_t     maxlen   = filestream_read(stream, buf, sizeof(buf) - 1);
+   int64_t     startpos;
+   int64_t     maxlen;
+
+   if (!buf)
+      return EOF;
+
+   startpos = filestream_tell(stream);
+   maxlen   = filestream_read(stream, buf, FILESTREAM_SCANF_WINDOW - 1);
 
    if (maxlen <= 0)
+   {
+      free(buf);
       return EOF;
+   }
 
    buf[maxlen] = '\0';
 
@@ -1007,9 +1024,12 @@ int filestream_vscanf(RFILE *stream, const char *format, va_list *args)
 
    va_end(args_copy);
 
+   /* Seek before the free: the new position is derived from how far
+    * bufiter walked into buf. */
    filestream_seek(stream, startpos + (bufiter - buf),
          RETRO_VFS_SEEK_POSITION_START);
 
+   free(buf);
    return ret;
 }
 
@@ -1197,6 +1217,110 @@ const char* filestream_get_path(RFILE *stream)
          (libretro_vfs_implementation_file*)stream->hfile);
 }
 
+bool filestream_matches_buf(const char *path, const void *data, size_t len)
+{
+   const uint8_t *mem     = (const uint8_t*)data;
+   const uint8_t *map     = NULL;
+   int64_t        map_len = 0;
+   bool           match   = false;
+   RFILE         *file;
+
+   if (!path || !*path || (len && !data))
+      return false;
+
+   if (!(file = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS)))
+      return false;
+
+   /* The cheap answer, before a byte moves.  Callers that slurped the
+    * file to memcmp it were paying a full-size allocation and a
+    * full-file read to learn this, and learning it last. */
+   if (filestream_get_size(file) != (int64_t)len)
+      goto done;
+
+   if ((map = filestream_get_mapped_ptr(file, &map_len)))
+   {
+      /* A view that does not span the file would compare the wrong
+       * bytes; fall through to the copying path rather than guess. */
+      if (map_len == (int64_t)len)
+      {
+         match = (len == 0) || (memcmp(map, mem, len) == 0);
+         goto done;
+      }
+      if (filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START) != 0)
+         goto done;
+   }
+
+   {
+      /* FILESTREAM_MATCHES_BUF_WINDOW, which is sized by the smallest
+       * thread stack in the tree rather than by throughput.  GEKKO
+       * threads get 8 KiB (STACKSIZE in rthreads/gx_pthread.h), 3DS
+       * 32 KiB (ctr_pthread.h) and Vita 64 KiB - and this is
+       * libretro-common API, so a caller on a spawned thread is not
+       * hypothetical.  (psp_pthread.h declares 8 KiB too, but nothing
+       * includes it: rthreads.c reaches for gx_pthread.h under GEKKO
+       * and ctr_pthread.h under _3DS, and PSP falls through to plain
+       * pthreads.  The 8 KiB floor is GEKKO's.)
+       *
+       * Bigger reads are faster, and at or above the VFS's own 64 KiB
+       * stdio buffer they skip it entirely: measured on the unchanged
+       * case, which reads every byte, 1 KiB against 4 KiB against
+       * 64 KiB is 1753 / 1432 / 1153 us on an 8 MiB file.  The
+       * platforms paying that are the ones with no memory mapping -
+       * the mapped branch above copies nothing - which are the same
+       * ones with the 8 KiB stacks, and this runs when a save is
+       * written rather than in a frame. */
+      uint8_t window[FILESTREAM_MATCHES_BUF_WINDOW];
+      size_t  off = 0;
+
+      match = true;
+      while (off < len)
+      {
+         int64_t got;
+         size_t  want = len - off;
+
+         if (want > sizeof(window))
+            want = sizeof(window);
+
+         if ((got = filestream_read(file, window, (int64_t)want))
+               != (int64_t)want)
+         {
+            match = false;
+            break;
+         }
+         /* Stop at the first difference: the caller asked a yes/no
+          * question and a 'no' is final. */
+         if (memcmp(window, mem + off, (size_t)got) != 0)
+         {
+            match = false;
+            break;
+         }
+         off += (size_t)got;
+      }
+   }
+
+done:
+   if (filestream_close(file) != 0)
+      free(file);
+   return match;
+}
+
+const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
+{
+   if (len)
+      *len = 0;
+   if (!stream)
+      return NULL;
+   /* A frontend- or core-supplied VFS is driven entirely through the
+    * callbacks below and has no mapping this side of them, so there
+    * is nothing to hand back.  Answer NULL rather than reaching into
+    * a handle this layer does not own. */
+   if (filestream_read_cb)
+      return NULL;
+   return retro_vfs_file_get_mapped_ptr_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, len);
+}
+
 int64_t filestream_write(RFILE *stream, const void *s, int64_t len)
 {
    int64_t output;
@@ -1267,6 +1391,78 @@ int filestream_close(RFILE *stream)
    return output;
 }
 
+/* Read an already-open stream to EOF, growing the buffer as it goes.
+ *
+ * For the path below that sizes its allocation from
+ * filestream_get_size(), a file reporting zero bytes yields a zero-
+ * byte read - so procfs, whose entries all stat as size 0, came back
+ * as an empty string *and a success return*.  Callers cannot tell
+ * that from a genuinely empty file, and did not: the /proc/apm
+ * battery probe, the /proc/modules sg check in cdrom.c and the
+ * dingux /proc/jz/battery reader all silently saw nothing.  (Which
+ * is also why mem_stats.c reads /proc/meminfo through a raw open()
+ * and read() rather than this helper.)
+ *
+ * A stat size is a hint, not a contract - synthetic filesystems have
+ * no length until they are read, and a growing file's is stale the
+ * moment it is taken - so when there is no usable hint, read until
+ * the stream says stop.  Returns bytes read, or -1.
+ */
+static int64_t filestream_read_file_to_eof(RFILE *file, void **buf)
+{
+   /* One page holds essentially every procfs entry this is used for,
+    * so the doubling below rarely runs at all. */
+   size_t   cap  = 4096;
+   size_t   used = 0;
+   char    *data = (char*)malloc(cap);
+
+   if (!data)
+      return -1;
+
+   for (;;)
+   {
+      int64_t got;
+
+      /* Keep a spare byte for the NUL, and grow before reading so a
+       * read is never issued with zero space. */
+      if (used + 1 >= cap)
+      {
+         char  *tmp;
+         size_t want = cap * 2;
+
+         /* Refuse a doubling that would wrap, rather than allocating
+          * a smaller buffer than the offsets below assume. */
+         if (want < cap)
+         {
+            free(data);
+            return -1;
+         }
+         if (!(tmp = (char*)realloc(data, want)))
+         {
+            free(data);
+            return -1;
+         }
+         data = tmp;
+         cap  = want;
+      }
+
+      if ((got = filestream_read(file, data + used,
+                  (int64_t)(cap - used - 1))) < 0)
+      {
+         free(data);
+         return -1;
+      }
+      if (got == 0)
+         break;
+
+      used += (size_t)got;
+   }
+
+   data[used] = '\0';
+   *buf       = data;
+   return (int64_t)used;
+}
+
 int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 {
    int64_t ret              = 0;
@@ -1284,6 +1480,22 @@ int64_t filestream_read_file(const char *path, void **buf, int64_t *len)
 
    if ((content_buf_size = filestream_get_size(file)) < 0)
       goto error;
+
+   /* No usable size hint: read to EOF instead of trusting the zero.
+    * See filestream_read_file_to_eof() above. */
+   if (content_buf_size == 0)
+   {
+      if ((ret = filestream_read_file_to_eof(file, &content_buf)) < 0)
+         goto error;
+
+      if (filestream_close(file) != 0)
+         free(file);
+
+      *buf = content_buf;
+      if (len)
+         *len = ret;
+      return 1;
+   }
 
    /* Reject sizes that would not survive the cast to size_t for
     * the malloc below.  Pre-patch the only check here was a

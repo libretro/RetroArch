@@ -568,40 +568,69 @@ static INLINE int task_cloud_sync_key_cmp(struct item_file *left, struct item_fi
 
 static char *task_cloud_sync_md5_rfile(RFILE *file)
 {
-   int rv;
    MD5_CTX md5;
-   /* 256 KB reads, same reasoning as intfstream_get_crc: hashing a
-    * large savestate at 4 KB a call is call overhead, not hashing.
-    * Heap once per file; this is a background sync path. */
-   size_t buf_len = 256 * 1024;
-   unsigned char *buf;
-   unsigned char digest[16];
-   libretro_vfs_implementation_file *hfile = filestream_get_vfs_handle(file);
-   char *hash = (char*)malloc(33);
+   unsigned char  digest[16];
+   const uint8_t *map     = NULL;
+   int64_t        map_len = 0;
+   char          *hash    = (char*)malloc(33);
 
    if (!hash)
       return NULL;
 
-   if (!(buf = (unsigned char*)malloc(buf_len)))
-   {
-      free(hash);
-      return NULL;
-   }
-
    MD5_Init(&md5);
 
-   if (hfile && hfile->mapped)
-      MD5_Update(&md5, hfile->mapped, hfile->size);
+   /* Hash the whole file, from the start, whichever path is taken.
+    * The mapped branch below always covered the entire file while the
+    * read branch started wherever the stream happened to be, and one
+    * caller hands this a stream it got from a fetch callback rather
+    * than one it just opened - so on a platform with mappings and a
+    * non-zero position the two branches hashed different bytes and
+    * produced different manifest entries for the same content.  A
+    * partial hash is not a useful answer to "what is this file", so
+    * the read path is squared up with the mapped one rather than the
+    * other way round. */
+   filestream_seek(file, 0, RETRO_VFS_SEEK_POSITION_START);
+
+   /* The files are opened with HINT_FREQUENT_ACCESS, so where the
+    * platform maps them the whole file is already addressable and
+    * there is nothing to copy.  This used to read the mapping out of
+    * the VFS handle directly - the only place in the tree that did -
+    * which meant a task reaching past filestream into a struct it
+    * does not own, and getting no answer at all from a
+    * frontend-supplied VFS.  filestream_get_mapped_ptr() answers the
+    * same question through the layer that owns it, and NULL is a
+    * normal answer, so the read loop below stays the general case. */
+   if ((map = filestream_get_mapped_ptr(file, &map_len)) && map_len > 0)
+      MD5_Update(&md5, map, (size_t)map_len);
    else
    {
+      /* 256 KB reads, same reasoning as intfstream_get_crc: hashing a
+       * large savestate at 4 KB a call is call overhead, not hashing.
+       * Heap once per file; this is a background sync path.
+       *
+       * Allocated here rather than before the branch above, where it
+       * was malloc'd and freed on every mapped hash as well without a
+       * byte of it ever being touched. */
+      size_t         buf_len = 256 * 1024;
+      unsigned char *buf     = (unsigned char*)malloc(buf_len);
+      int            rv;
+
+      if (!buf)
+      {
+         free(hash);
+         return NULL;
+      }
+
       do
       {
          rv = (int)filestream_read(file, buf, (int64_t)buf_len);
          if (rv > 0)
             MD5_Update(&md5, buf, rv);
       } while (rv > 0);
+
+      free(buf);
    }
-   free(buf);
+
    MD5_Final(digest, &md5);
 
    snprintf(hash, 33, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",

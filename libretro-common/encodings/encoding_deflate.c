@@ -1701,6 +1701,21 @@ struct rdeflate
    uint8_t  dyn_rle[288 + 30];    /* RLE'd (lit+dist) code lengths           */
    uint8_t  dyn_rle_extra[288 + 30];
    int      dyn_rle_n;
+
+   /* Huffman length-generation scratch.  These were locals in
+    * rd_gen_lengths(), which made that a 12768-byte frame - the
+    * two-queue tree needs 2*288 nodes of weight, left, right and
+    * depth, on top of the 288-entry sort arrays.  A frame that size
+    * does not belong on a stack whatever the target: it sits under
+    * whatever called it, and the state struct here is calloc'd once
+    * per stream, so the arrays cost nothing extra to keep. */
+   int      gl_idx[288];
+   uint32_t gl_fr[288];
+   int      gl_lc[288];
+   uint32_t gl_wt[2 * 288];
+   int      gl_left[2 * 288];
+   int      gl_right[2 * 288];
+   int      gl_depth[2 * 288];
 };
 
 /* ------- bit writer (LSB-first) -------
@@ -2528,12 +2543,13 @@ static int rd_emit_block_stored(struct rdeflate *s)
  * always yielding a complete (Kraft-exact) code.  Builds a Huffman tree by
  * repeated lowest-weight sibling merges, reads off depths, then repairs any
  * over-long codes with a Kraft-sum redistribution. */
-static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
+static void rd_gen_lengths(struct rdeflate *s,
+      const uint32_t *freq, int n, int max_bits,
       uint8_t *lengths_out)
 {
-   int      idx[288];
-   uint32_t fr[288];
-   int      lc[288];
+   int      *idx = s->gl_idx;
+   uint32_t *fr  = s->gl_fr;
+   int      *lc  = s->gl_lc;
    int      m = 0;
    int      i;
 
@@ -2584,10 +2600,10 @@ static void rd_gen_lengths(const uint32_t *freq, int n, int max_bits,
     * once assigns every depth without the per-leaf parent-chain
     * walk the old code did. */
    {
-      uint32_t wt[2 * 288];
-      int      left[2 * 288];
-      int      right[2 * 288];
-      int      depth[2 * 288];
+      uint32_t *wt    = s->gl_wt;
+      int      *left  = s->gl_left;
+      int      *right = s->gl_right;
+      int      *depth = s->gl_depth;
       int      lq = 0;   /* front of the leaf queue                   */
       int      iq = 288; /* front of the internal queue (base 288)    */
       int      node_used;
@@ -2758,8 +2774,8 @@ static uint32_t rd_build_dynamic(struct rdeflate *s)
    /* the end-of-block symbol (256) always occurs once */
    s->freq_lit[256]++;
 
-   rd_gen_lengths(s->freq_lit, 286, 15, s->dyn_lit_len);
-   rd_gen_lengths(s->freq_dist, 30, 15, s->dyn_dist_len);
+   rd_gen_lengths(s, s->freq_lit, 286, 15, s->dyn_lit_len);
+   rd_gen_lengths(s, s->freq_dist, 30, 15, s->dyn_dist_len);
 
    /* hlit: number of lit/len codes (257..286); hdist: dist codes (1..30) */
    maxlit = 285;
@@ -2777,7 +2793,7 @@ static uint32_t rd_build_dynamic(struct rdeflate *s)
    rd_codes_from_lengths(s->dyn_dist_len, 30, s->dyn_dist_code);
 
    rd_rle_lengths(s, cl_freq);
-   rd_gen_lengths(cl_freq, 19, 7, s->dyn_cl_len);
+   rd_gen_lengths(s, cl_freq, 19, 7, s->dyn_cl_len);
    rd_codes_from_lengths(s->dyn_cl_len, 19, s->dyn_cl_code);
 
    /* hclen: number of CL code lengths present (in clc_order), min 4 */

@@ -662,6 +662,27 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
    return stream->orig_path;
 }
 
+const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
+      libretro_vfs_implementation_file *stream, int64_t *len)
+{
+   /* This backend never maps a file: retro_vfs_file_open_impl() above
+    * nulls 'mapped' and clears
+    * RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS unconditionally.  NULL
+    * is the documented answer for "no mapping here", and every caller
+    * must already handle it - the hint is advisory on every backend -
+    * so there is nothing to implement beyond saying so.
+    *
+    * It has to be said out loud rather than omitted, though:
+    * filestream_get_mapped_ptr() calls this whenever no frontend VFS
+    * is installed, and this file replaces vfs_implementation.c
+    * wholesale on UWP, so leaving it out is a link error rather than
+    * a fallback. */
+   (void)stream;
+   if (len)
+      *len = 0;
+   return NULL;
+}
+
 int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    wchar_t *path_wide;

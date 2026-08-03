@@ -170,14 +170,37 @@ bool config_file_write(config_file_t *conf, const char *path, bool sort)
          config_file_dump(conf, stdout, sort);
       else
       {
-         char buf[0x4000];
+         /* The stdio buffer is heap, not a local.  At 16 KiB it was
+          * twice the whole thread stack on the smallest target -
+          * GEKKO threads get 8 KiB, see STACKSIZE in
+          * rthreads/gx_pthread.h - and this is reached from a task
+          * handler, so it runs on the task thread rather than the
+          * main one whenever the queue is threaded:
+          * input_autoconfigure_connect_handler ->
+          * ..._scan_config_files_external -> ..._index_write ->
+          * here, which is the path a gamepad being plugged in takes.
+          * -fstack-usage put the frame at 16432 bytes.
+          *
+          * C89 has no way to ask setvbuf for a buffer of a given size
+          * without supplying one, so it is allocated here and freed
+          * after fclose - the buffer has to outlive every write
+          * through the stream.  If the allocation fails the C library
+          * default is used, exactly as in
+          * retro_vfs_file_open_impl(): a platform under real memory
+          * pressure gets slower writes rather than no config. */
+         char *buf  = (char*)malloc(0x4000);
          FILE *file = (FILE*)fopen_utf8(path, "wb");
          if (!file)
+         {
+            free(buf);
             return false;
-         setvbuf(file, buf, _IOFBF, sizeof(buf));
+         }
+         if (buf)
+            setvbuf(file, buf, _IOFBF, 0x4000);
          config_file_dump(conf, file, sort);
          if (file != stdout)
             fclose(file);
+         free(buf);
          conf->flags &= ~CONF_FILE_FLG_MODIFIED;
       }
    }

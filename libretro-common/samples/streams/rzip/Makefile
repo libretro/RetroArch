@@ -1,5 +1,6 @@
-TARGET := rzip
-TARGET_TEST := rzip_chunk_size_test
+TARGET       := rzip
+TARGET_TEST  := rzip_chunk_size_test
+TARGET_TEST2 := rzip_matches_buf_test
 
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
@@ -48,9 +49,11 @@ COMMON_SOURCES := \
 
 SOURCES      := rzip.c $(COMMON_SOURCES)
 SOURCES_TEST := rzip_chunk_size_test.c $(COMMON_SOURCES)
+SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
 
 OBJS      := $(SOURCES:.c=.o)
 OBJS_TEST := $(SOURCES_TEST:.c=.o)
+OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS += -DHAVE_COMPRESSION -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
@@ -64,13 +67,18 @@ ifeq ($(UNAME), MSYS)
 	CFLAGS += -Wno-format
 endif
 
+ifneq ($(SANITIZER),)
+	CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+	LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+endif
+
 ifeq ($(DEBUG), 1)
 	CFLAGS += -O0 -g -DDEBUG -D_DEBUG
 else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
-all: $(TARGET) $(TARGET_TEST)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -81,7 +89,10 @@ $(TARGET): $(OBJS)
 $(TARGET_TEST): $(OBJS_TEST)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(TARGET_TEST2): $(OBJS_TEST2)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(OBJS) $(OBJS_TEST)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2)
 
 .PHONY: clean
