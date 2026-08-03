@@ -973,7 +973,12 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
          data_transfer_free(dt);
          return;
       }
-      if (   blen > GFX_THUMB_ANIM_ABS_MAX_FILE
+      /* The absolute file-length cap protects the fully-resident
+       * loads; a reserved window commits only its fixed head+window
+       * budget no matter how long the file is, so length is not a
+       * cost there - a two-hour 4K recording previews from the same
+       * 20 MiB as a ten-second clip. */
+      if (   (!reserved && blen > GFX_THUMB_ANIM_ABS_MAX_FILE)
           || !(reserved ? gfx_thumb_anim_window_ok(0)
                         : gfx_thumb_anim_mem_ok((uint64_t)blen, 0)))
       {

@@ -66,9 +66,21 @@
  * pointer (cast it; the stride counts samples) and
  * rh265_video_bit_depth reports the active depth.
  *
+ * Wavefront parallel processing (entropy_coding_sync) decodes
+ * serially: slice-header entry points position each CTB row's
+ * substream (offsets translated from the escaped byte domain), the
+ * CABAC engine re-anchors per row with contexts carried from after
+ * the second CTB of the row above (9.3.2.2-3, falling back to slice
+ * initialisation across slice boundaries), end_of_subset bits close
+ * each row, and qPY_PREV resets to SliceQpY at row starts (8.6.1).
+ * Since WPP is x265's default, this is what most real-world HEVC
+ * needs.  Multi-slice pictures honour
+ * slice_loop_filter_across_slices: deblocking skips slice-boundary
+ * edges and SAO treats cross-slice neighbours as unavailable when
+ * the flag is off (8.7.2, 8.7.3).
+ *
  * What it does not implement: long-term reference pictures, 4:2:2,
- * 4:4:4 and monochrome, bit depths above 10, tiles, wavefront
- * parallel processing (entropy_coding_sync), dependent slice
+ * 4:4:4 and monochrome, bit depths above 10, tiles, dependent slice
  * segments, explicit scaling lists, PCM, transquant bypass,
  * constrained intra prediction, and encoding.  Out-of-scope streams are refused at the
  * parameter-set or slice level rather than decoded wrongly.
@@ -179,17 +191,36 @@ static int32_t rh265_se(rh265_bits *b)
 static int rh265_bits_overrun(const rh265_bits *b)
 { return b->bitpos > b->size * 8; }
 
-/* Strip emulation-prevention bytes (00 00 03 -> 00 00). */
-static uint8_t *rh265_unescape(const uint8_t *nal, size_t len, size_t *out_size)
+/* Strip emulation-prevention bytes (00 00 03 -> 00 00).  When esc_pos
+ * is non-NULL it receives a malloc'd array of the removed bytes'
+ * positions in the escaped input (caller frees), for translating
+ * WPP entry-point offsets, which count escaped bytes. */
+static uint8_t *rh265_unescape_ex(const uint8_t *nal, size_t len,
+      size_t *out_size, uint32_t **esc_pos, int *esc_count)
 {
    uint8_t *rbsp = (uint8_t*)malloc(len ? len : 1);
+   uint32_t *ep  = NULL;
+   int       ec  = 0;
    size_t i, j = 0;
    int zeros = 0;
    if (!rbsp) return NULL;
+   if (esc_pos)
+   {
+      *esc_pos = NULL;
+      *esc_count = 0;
+      ep = (uint32_t*)malloc((len / 3 + 1) * sizeof(uint32_t));
+      if (!ep)
+      {
+         free(rbsp);
+         return NULL;
+      }
+   }
    for (i = 0; i < len; i++)
    {
       if (zeros >= 2 && nal[i] == 3)
       {
+         if (ep)
+            ep[ec++] = (uint32_t)i;
          zeros = 0;
          continue;      /* emulation prevention byte */
       }
@@ -197,7 +228,18 @@ static uint8_t *rh265_unescape(const uint8_t *nal, size_t len, size_t *out_size)
       rbsp[j++] = nal[i];
    }
    *out_size = j;
+   if (esc_pos)
+   {
+      *esc_pos   = ep;
+      *esc_count = ec;
+   }
    return rbsp;
+}
+
+static uint8_t *rh265_unescape(const uint8_t *nal, size_t len,
+      size_t *out_size)
+{
+   return rh265_unescape_ex(nal, len, out_size, NULL, NULL);
 }
 
 /* ==================== rh265_nal.h ==================== */
@@ -237,6 +279,8 @@ static uint8_t *rh265_unescape(const uint8_t *nal, size_t len, size_t *out_size)
 #define RH265_MAX_SPS       16
 #define RH265_MAX_PPS       64
 #define RH265_MAX_ST_RPS    65
+/* one substream per CTB row: 16888 / 16 rows at the smallest CTB */
+#define RH265_MAX_ENTRY_POINTS 1056
 #define RH265_MAX_REFS      16
 #define RH265_MAX_TB        32   /* MaxTbSizeY */
 
@@ -681,6 +725,11 @@ typedef struct
    int luma_log2_denom, chroma_log2_denom;
    int16_t luma_w[2][16], luma_o[2][16];
    int16_t chroma_w[2][16][2], chroma_o[2][16][2];
+
+   /* WPP substream entry points: offsets between consecutive
+    * substreams in escaped slice-data bytes (7.4.7.1) */
+   int      num_entry_points;
+   uint32_t entry_point[RH265_MAX_ENTRY_POINTS];
 } rh265_shdr;
 
 /* 7.3.6.3 pred_weight_table.  Weights fold to (1 << denom) and offsets
@@ -898,7 +947,24 @@ static int rh265_parse_slice_header(rh265_bits *b, int nal_type,
    if (p->loop_filter_across_slices &&
        (sh->sao_luma || sh->sao_chroma || !sh->deblocking_filter_disabled))
       sh->loop_filter_across_slices = (int)rh265_u1(b);
-   /* entry_point_offsets absent: tiles and WPP are refused */
+   sh->num_entry_points = 0;
+   if (p->entropy_coding_sync_enabled)
+   {
+      /* tiles are refused at the PPS, so every entry point marks a CTB
+       * row boundary within the slice */
+      int n = (int)rh265_ue(b);
+      if (n < 0 || n > RH265_MAX_ENTRY_POINTS)
+         return -1;
+      if (n > 0)
+      {
+         int olen = (int)rh265_ue(b) + 1;
+         if (olen < 1 || olen > 32)
+            return -1;
+         sh->num_entry_points = n;
+         for (i = 0; i < n; i++)
+            sh->entry_point[i] = rh265_un(b, olen) + 1;
+      }
+   }
    if (p->slice_segment_header_extension_present)
    {
       int len = (int)rh265_ue(b);
@@ -1333,6 +1399,16 @@ typedef struct
    uint16_t mc_patch[(RH265_MAX_PB + 7) * (RH265_MAX_PB + 7)];
    int      mc_tmp[(RH265_MAX_PB + 7) * RH265_MAX_PB];
    int16_t  coeff_scratch[32 * 32];
+
+   /* per-CTB slice index and its loop_filter_across_slices flag, for
+    * the 8.7.2/8.7.3 slice-boundary filtering restriction */
+   uint16_t *ctb_slice;
+   uint8_t  *ctb_lf_across;
+   int       slice_seq;
+
+   /* WPP row-context storage (9.3.2.3) */
+   uint8_t  wpp_state[RH265_CTX_COUNT];
+   uint8_t  wpp_mps[RH265_CTX_COUNT];
 
    /* active bit depth and its per-depth function table */
    int      bd;
@@ -3541,6 +3617,8 @@ static void rh265_free_frame(rh265_video *v)
    free(d->skipm); d->skipm = NULL;
    free(d->qpy);   d->qpy = NULL;
    free(d->sao);   d->sao = NULL;
+   free(d->ctb_slice);     d->ctb_slice = NULL;
+   free(d->ctb_lf_across); d->ctb_lf_across = NULL;
 }
 
 static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
@@ -3573,8 +3651,12 @@ static int rh265_alloc_frame(rh265_video *v, const rh265_sps *s)
    d->qpy   = (int8_t*)malloc((size_t)d->w8 * d->h8);
    d->sao   = (rh265_sao_params*)malloc(
          (size_t)s->pic_size_ctbs * sizeof(rh265_sao_params));
+   d->ctb_slice     = (uint16_t*)malloc(
+         (size_t)s->pic_size_ctbs * sizeof(uint16_t));
+   d->ctb_lf_across = (uint8_t*)malloc((size_t)s->pic_size_ctbs);
    if (!d->ipm || !d->ctd || !d->vedge || !d->hedge || !d->nzc ||
-       !d->skipm || !d->qpy || !d->sao)
+       !d->skipm || !d->qpy || !d->sao || !d->ctb_slice ||
+       !d->ctb_lf_across)
       goto fail;
    v->alloc_w = s->width;
    v->alloc_h = s->height;
@@ -3666,15 +3748,32 @@ static void rh265_dpb_bump(rh265_video *v, int reorder)
  * whole slice NAL payload (unescaped); data_bit is the first bit after
  * the slice header's byte alignment. */
 static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
-      size_t size, size_t data_bit)
+      size_t size, size_t data_bit, const uint32_t *esc_pos, int esc_count)
 {
    rh265_dec *d = &v->d;
    const rh265_sps *sps = d->sps;
    int ctb_addr = d->sh.slice_segment_address;
    int end_of_slice = 0;
+   int wpp = d->pps->entropy_coding_sync_enabled;
+   int substream = 0;
+   int have_save = 0;
+   /* the escaped-domain position of the current unescaped slice-data
+    * byte: entry-point offsets count escaped bytes, so each jump adds
+    * the coded offset here and translates back by subtracting the
+    * escapes before that point */
+   size_t esc_base;
+   int    esc_idx = 0;
 
    if ((data_bit & 7) || data_bit / 8 > size)
       return -1;
+
+   /* escaped position of the first slice-data byte */
+   esc_base = data_bit / 8;
+   while (esc_idx < esc_count && esc_pos[esc_idx] <= esc_base)
+   {
+      esc_base++;                 /* removed byte sat at or before here */
+      esc_idx++;
+   }
 
    rh265_cabac_init_engine(&d->cb, rbsp + data_bit / 8, rbsp + size);
    {
@@ -3702,15 +3801,74 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       int ry = ctb_addr / sps->ctb_w;
       int x0 = rx << sps->log2_ctb;
       int y0 = ry << sps->log2_ctb;
+
+      if (wpp && rx == 0 && ctb_addr != d->slice_start_ctb)
+      {
+         /* CTB-row start (9.3.1): the substream begins at the next
+          * entry point, byte-positioned in the unescaped buffer by
+          * removing the escapes the coded offset counted */
+         size_t un;
+         if (substream >= d->sh.num_entry_points)
+            return -1;             /* fewer entry points than rows */
+         esc_base += d->sh.entry_point[substream];
+         substream++;
+         while (esc_idx < esc_count && esc_pos[esc_idx] < esc_base)
+            esc_idx++;
+         un = esc_base - (size_t)esc_idx;
+         if (un > size)
+            return -1;
+         rh265_cabac_init_engine(&d->cb, rbsp + un, rbsp + size);
+         /* contexts continue from the stored state after the second
+          * CTB of the row above when that CTB lies in this slice;
+          * otherwise the row initialises like a slice (9.3.2.2) */
+         if (have_save &&
+             ctb_addr - sps->ctb_w + 1 >= d->slice_start_ctb)
+         {
+            memcpy(d->cb.state, d->wpp_state, sizeof(d->cb.state));
+            memcpy(d->cb.mps,   d->wpp_mps,   sizeof(d->cb.mps));
+         }
+         else
+         {
+            int init_type = 0;
+            if (d->sh.slice_type == RH265_SLICE_P)
+               init_type = d->sh.cabac_init ? 2 : 1;
+            else if (d->sh.slice_type == RH265_SLICE_B)
+               init_type = d->sh.cabac_init ? 1 : 2;
+            rh265_cabac_init_contexts(&d->cb, d->sh.slice_qp, init_type);
+         }
+         /* qPY_PREV resets to SliceQpY at the first quantisation group
+          * of a WPP CTB row (8.6.1) */
+         d->qp_y_pred = d->sh.slice_qp;
+         d->first_qg  = 1;
+      }
+
+      d->ctb_slice[ctb_addr]     = (uint16_t)d->slice_seq;
+      d->ctb_lf_across[ctb_addr] =
+            (uint8_t)d->sh.loop_filter_across_slices;
       d->cur_zaddr = rh265_zaddr(d, x0, y0);
       if (sps->sao_enabled)
          rh265_sao_param(d, rx, ry);
       if (rh265_coding_quadtree(d, x0, y0, sps->log2_ctb, 0) < 0)
          return -1;
+      if (wpp && rx == 1)
+      {
+         /* storage process (9.3.2.3): contexts after the second CTB of
+          * a row seed the row below */
+         memcpy(d->wpp_state, d->cb.state, sizeof(d->cb.state));
+         memcpy(d->wpp_mps,   d->cb.mps,   sizeof(d->cb.mps));
+         have_save = 1;
+      }
       ctb_addr++;
       end_of_slice = rh265_cabac_terminate(&d->cb);
       if (end_of_slice)
          break;
+      if (wpp && rx == sps->ctb_w - 1)
+      {
+         /* end_of_subset_one_bit closes the row's substream; the next
+          * row re-anchors at its entry point above */
+         if (!rh265_cabac_terminate(&d->cb))
+            return -1;
+      }
    }
    /* the slice must end exactly with the last CTB of its coverage; a
     * terminate bin that fires early or fails to fire at the picture end
@@ -3859,6 +4017,8 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
    int nal_type, ret = 0;
    uint8_t *rbsp;
    size_t rbsp_size;
+   uint32_t *esc_pos = NULL;
+   int esc_count = 0;
    if (len < 3)
       return 0;
    if (nal[0] & 0x80)
@@ -3876,7 +4036,15 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
        nal_type != RH265_NAL_SPS && nal_type != RH265_NAL_PPS)
       return 0;                         /* reserved/unknown: skip */
 
-   rbsp = rh265_unescape(nal + 2, len - 2, &rbsp_size);
+   {
+      /* slices need the escape positions to translate WPP entry-point
+       * offsets; parameter sets never do */
+      if (RH265_IS_SLICE(nal_type))
+         rbsp = rh265_unescape_ex(nal + 2, len - 2, &rbsp_size,
+               &esc_pos, &esc_count);
+      else
+         rbsp = rh265_unescape(nal + 2, len - 2, &rbsp_size);
+   }
    if (!rbsp)
       return -1;
 
@@ -3903,8 +4071,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
       ret = rh265_parse_pps(rbsp, rbsp_size, pp, &id);
       if (ret == 0)
       {
-         if (pp->entropy_coding_sync_enabled ||
-             pp->transquant_bypass_enabled ||
+         if (pp->transquant_bypass_enabled ||
              pp->constrained_intra_pred)
             ret = -2;
          else
@@ -3942,6 +4109,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
             if (shp->first_slice_in_pic)
             {
                int slot, p;
+               v->d.slice_seq = 0;
                rh265_compute_poc(v, sps, nal_type, shp->poc_lsb, tid);
                if (RH265_IS_IRAP(nal_type) &&
                    (nal_type != RH265_NAL_CRA || !v->first_pic_decoded))
@@ -4009,7 +4177,10 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                ret = rh265_build_ref_lists(v);
             if (ret == 0)
             {
-               ret = rh265_decode_slice_data(v, rbsp, rbsp_size, b.bitpos);
+               if (!shp->first_slice_in_pic)
+                  v->d.slice_seq++;
+               ret = rh265_decode_slice_data(v, rbsp, rbsp_size,
+                     b.bitpos, esc_pos, esc_count);
                if (ret >= 0)
                {
                   if (ret >= sps->pic_size_ctbs)
@@ -4019,6 +4190,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
                      if (sps->sao_enabled)
                         if (v->d.fns->sao_frame(&v->d) < 0)
                         {
+                           free(esc_pos);
                            free(rbsp);
                            return -1;
                         }
@@ -4031,6 +4203,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          }
       }
    }
+   free(esc_pos);
    free(rbsp);
    return ret;
 }

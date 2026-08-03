@@ -841,7 +841,7 @@ static int rmp4_video_decode_packet(rmp4_video_stream_t *s,
    {
       /* rh265 reconstructs Main-profile pictures (intra, P and B with
        * display reordering), handing pictures out in display order.
-       * Anything it still cannot handle (tiles, WPP, 4:2:2) is
+       * Anything it still cannot handle (tiles, 4:2:2) is
        * skipped rather than aborting the stream, holding the last good
        * picture until the next key frame restarts the prediction
        * chain.  A key frame that fails to decode is a real error. */

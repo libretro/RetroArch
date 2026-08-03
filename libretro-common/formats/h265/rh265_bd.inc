@@ -674,6 +674,19 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
          bs = d->vedge[(y >> 2) * d->w4 + (x >> 2)];
          if (!bs)
             continue;
+         if (d->slice_seq)
+         {
+            /* 8.7.2: an edge on a slice boundary is left unfiltered
+             * when the containing slice forbids filtering across it;
+             * single-slice pictures (slice_seq 0) skip the lookups */
+            int pc = ((y >> d->sps->log2_ctb) * d->sps->ctb_w)
+                   + ((x - 1) >> d->sps->log2_ctb);
+            int qc = ((y >> d->sps->log2_ctb) * d->sps->ctb_w)
+                   + (x >> d->sps->log2_ctb);
+            if (d->ctb_slice[pc] != d->ctb_slice[qc] &&
+                !d->ctb_lf_across[qc])
+               continue;
+         }
          {
             int qp = (d->qpy[(y >> 3) * d->w8 + ((x - 1) >> 3)]
                     + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
@@ -705,6 +718,16 @@ static void RH265_FN(deblock_frame)(rh265_dec *d)
          bs = d->hedge[(y >> 2) * d->w4 + (x >> 2)];
          if (!bs)
             continue;
+         if (d->slice_seq)
+         {
+            int pc = (((y - 1) >> d->sps->log2_ctb) * d->sps->ctb_w)
+                   + (x >> d->sps->log2_ctb);
+            int qc = ((y >> d->sps->log2_ctb) * d->sps->ctb_w)
+                   + (x >> d->sps->log2_ctb);
+            if (d->ctb_slice[pc] != d->ctb_slice[qc] &&
+                !d->ctb_lf_across[qc])
+               continue;
+         }
          {
             int qp = (d->qpy[((y - 1) >> 3) * d->w8 + (x >> 3)]
                     + d->qpy[(y >> 3) * d->w8 + (x >> 3)] + 1) >> 1;
@@ -775,6 +798,26 @@ static void RH265_FN(sao_ctb)(rh265_dec *d, const RH265_PEL *src,
                 px - dx < 0 || px - dx >= d->pw[c_idx] ||
                 py - dy < 0 || py - dy >= d->ph[c_idx])
                continue;
+            if (d->slice_seq)
+            {
+               /* 8.7.3: neighbours across a slice boundary are
+                * unavailable when the current slice forbids filtering
+                * across it; the sample then keeps its value */
+               int cc = ry * d->sps->ctb_w + rx;
+               if (!d->ctb_lf_across[cc])
+               {
+                  int lshift = c_idx ? 1 : 0;
+                  int na = (((py + dy) << lshift) >> d->sps->log2_ctb)
+                         * d->sps->ctb_w
+                         + (((px + dx) << lshift) >> d->sps->log2_ctb);
+                  int nb = (((py - dy) << lshift) >> d->sps->log2_ctb)
+                         * d->sps->ctb_w
+                         + (((px - dx) << lshift) >> d->sps->log2_ctb);
+                  if (d->ctb_slice[na] != d->ctb_slice[cc] ||
+                      d->ctb_slice[nb] != d->ctb_slice[cc])
+                     continue;
+               }
+            }
             cval = s[y * src_stride + x];
             a = s[(y + dy) * src_stride + (x + dx)];
             b = s[(y - dy) * src_stride + (x - dx)];
