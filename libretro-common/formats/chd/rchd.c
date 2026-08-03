@@ -334,6 +334,17 @@ struct rchd
     * an image that never names the codec. */
    void              *inflate;
 
+#ifdef HAVE_RCHD_LZMA
+   /* The LZMA codec's decoder: ~29 KiB of probability model that used
+    * to live in rchd_decompress's frame.  Heap-held for the same
+    * reasons as the inflate state above, and because some targets
+    * decode hunks on 8 KiB thread stacks, which a 29 KiB local
+    * overruns before the codec reads a byte.  rlzma_dec_decode
+    * re-initialises the whole model on entry, so reuse across hunks
+    * is behaviour-identical to a fresh struct. */
+   rlzma_dec_t       *lzma;
+#endif
+
    /* Three lookup tables and one channel of samples, for A/V hunks.
     * Made on first use, so an image that is not audio/video pays
     * nothing for them. */
@@ -1061,6 +1072,9 @@ void rchd_free(rchd_t *chd)
    free(chd->huff_lookup);
    if (chd->inflate)
       rinflate_free(chd->inflate);
+#ifdef HAVE_RCHD_LZMA
+   free(chd->lzma);
+#endif
    free(chd->cache);
    free(chd->cd_scratch);
    free(chd->tracks);
@@ -2063,13 +2077,22 @@ static int rchd_decompress(rchd_t *chd, uint32_t tag,
 #ifdef HAVE_RCHD_LZMA
       case RCHD_CODEC_LZMA:
       {
-         rlzma_dec_t dec;
-         uint8_t     props[5];
+         uint8_t props[5];
 
+         /* Made on first use like the inflate state: an image that
+          * never names the codec pays nothing, and the ~29 KiB model
+          * stays off the stack. */
+         if (!chd->lzma)
+         {
+            chd->lzma = (rlzma_dec_t*)malloc(sizeof(*chd->lzma));
+            if (!chd->lzma)
+               return RCHD_ERROR_MEM;
+         }
          rchd_lzma_props(props, chd->info.hunk_bytes);
-         if (rlzma_dec_init(&dec, props) != RLZMA_OK)
+         if (rlzma_dec_init(chd->lzma, props) != RLZMA_OK)
             return RCHD_ERROR_DATA;
-         if (rlzma_dec_decode(&dec, dst, dst_len, src, src_len) != RLZMA_OK)
+         if (rlzma_dec_decode(chd->lzma, dst, dst_len,
+               src, src_len) != RLZMA_OK)
             return RCHD_ERROR_DATA;
          return RCHD_OK;
       }
