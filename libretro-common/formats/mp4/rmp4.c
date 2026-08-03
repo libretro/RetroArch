@@ -385,6 +385,26 @@ static void rmp4_parse_stsd(rmp4_itrack *t, const uint8_t *p, uint64_t size)
             }
             break;
          }
+         case RMP4_FOURCC('h','v','c','1'):
+         case RMP4_FOURCC('h','e','v','1'):
+         {
+            /* HEVCSampleEntry carries an hvcC
+             * (HEVCDecoderConfigurationRecord) child at the same
+             * 78-byte offset.  'hvc1' keeps all parameter sets in the
+             * hvcC; 'hev1' may also repeat them in-band, which the
+             * decoder accepts either way.  As with avcC the record
+             * supplies the VPS/SPS/PPS and the NAL length size. */
+            rmp4_box hvcc;
+            if (e.size > 78
+                && rmp4_find_child(e.body + 78, e.size - 78,
+                      RMP4_FOURCC('h','v','c','C'), &hvcc))
+            {
+               t->pub.codec              = RMP4_CODEC_H265;
+               t->pub.codec_private      = hvcc.body;
+               t->pub.codec_private_size = (size_t)hvcc.size;
+            }
+            break;
+         }
          default:
             break;
       }

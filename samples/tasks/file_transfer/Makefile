@@ -21,6 +21,7 @@ SOURCES := task_file_transfer_test.c \
            $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/h264/rh264.c \
+           $(LIBRETRO_COMM_DIR)/formats/h265/rh265.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4.c \
            $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_video.c \
