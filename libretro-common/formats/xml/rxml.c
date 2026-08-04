@@ -487,6 +487,72 @@ RXML_COLD static int rxml_scan_ref(struct rxml_parser *ps)
 /* Element start: link a node exactly as the old event loop did.  The
  * node and its name live in one allocation (the name directly after
  * the struct), both out of the document arena. */
+
+/* Mixed content: an element that has child elements can still carry
+ * text between and around them.  The old implementation dropped such
+ * runs entirely; expat-class parsers deliver them.  Non-whitespace
+ * runs are appended (in document order, concatenated exactly as an
+ * expat character-data handler would see them) to the enclosing
+ * element's data.  Whitespace-only runs - the indentation between
+ * every pair of elements in pretty-printed XML - are still dropped,
+ * which also keeps the observable behavior of container nodes
+ * (data == NULL) unchanged for such documents. */
+/* Cheap hot-path test: is the pending run whitespace only?  True for
+ * the indentation between every pair of elements in pretty-printed
+ * XML, so this runs per element and must stay inline; the cold append
+ * below then only ever runs on genuine mixed content. */
+static INLINE int rxml_pending_is_ws(const struct rxml_parser *ps)
+{
+   const unsigned char *s;
+   size_t len, i;
+   if (ps->txt_direct)
+   {
+      s   = ps->txt_direct;
+      len = ps->txt_direct_len;
+   }
+   else
+   {
+      s   = (const unsigned char*)ps->acc;
+      len = ps->acc_len;
+   }
+   for (i = 0; i < len; i++)
+      if (!(rxml_is_sp(s[i]) || s[i] == 0x0d))
+         return 0;
+   return 1;
+}
+
+RXML_COLD static int rxml_flush_mixed(struct rxml_parser *ps,
+      rxml_node_t *owner)
+{
+   const unsigned char *s;
+   size_t len, old;
+   char *nd;
+   if (ps->txt_direct)
+   {
+      s   = ps->txt_direct;
+      len = ps->txt_direct_len;
+   }
+   else
+   {
+      s   = (const unsigned char*)ps->acc;
+      len = ps->acc_len;
+   }
+   ps->txt_direct = NULL;
+   ps->acc_len    = 0;
+   if (!owner)
+      return 1;
+   old = owner->data ? strlen(owner->data) : 0;
+   nd  = (char*)rxml_arena_alloc(ps->doc, old + len + 1, 1);
+   if (!nd)
+      return 0;
+   if (old)
+      memcpy(nd, owner->data, old);
+   memcpy(nd + old, s, len);
+   nd[old + len] = '\0';
+   owner->data   = nd;
+   return 1;
+}
+
 static INLINE int rxml_on_elemstart(struct rxml_parser *ps,
       const unsigned char *name, size_t name_len)
 {
@@ -525,10 +591,28 @@ static INLINE int rxml_on_elemstart(struct rxml_parser *ps,
    }
    else
       ps->doc->root_node           = n;
-   ps->node       = n;
    ps->attr       = NULL;
-   ps->acc_len    = 0;
-   ps->txt_direct = NULL;
+   if (ps->txt_direct || ps->acc_len)
+   {
+      if (rxml_pending_is_ws(ps))
+      {
+         ps->txt_direct = NULL;
+         ps->acc_len    = 0;
+      }
+      else
+      {
+         /* Text pending at a child's open tag belongs to the enclosing
+          * element: the node just descended from, or the parent of the
+          * sibling chain (computed against the pre-link state, which
+          * the level/stack_i comparison still reflects). */
+         rxml_node_t *owner = (ps->node && ps->level > ps->stack_i)
+               ? ps->node
+               : (ps->stack_i ? ps->frames[ps->stack_i - 1].node : NULL);
+         if (!rxml_flush_mixed(ps, owner))
+            return 0;
+      }
+   }
+   ps->node       = n;
    ps->frames[ps->level].name = name;
    ps->frames[ps->level].len  = name_len;
    ps->level++;
@@ -546,8 +630,11 @@ static INLINE int rxml_on_elemend(struct rxml_parser *ps)
        * a deferred run in first. */
       if (ps->level == ps->stack_i)
       {
-         /* An earlier text run for this element is simply abandoned in
-          * the arena; there is nothing to free. */
+         /* Childless element: the text is its value.  A mixed-content
+          * fragment can already be present if the element interleaved
+          * text and children that were all closed - but then this
+          * branch is not taken; childless means no descend happened
+          * and data is still NULL, so the direct store below is safe. */
          if (ps->txt_direct)
          {
             /* As for an attribute value: the byte one past a deferred
@@ -563,9 +650,22 @@ static INLINE int rxml_on_elemend(struct rxml_parser *ps)
             if (!ps->node->data)
                return 0;
          }
+         ps->txt_direct = NULL;
+         ps->acc_len    = 0;
       }
-      ps->txt_direct = NULL;
-      ps->acc_len    = 0;
+      else if (rxml_pending_is_ws(ps))
+      {
+         ps->txt_direct = NULL;
+         ps->acc_len    = 0;
+      }
+      else
+      {
+         /* Element with children: a run after the last child is
+          * trailing mixed content of the element being closed. */
+         if (!rxml_flush_mixed(ps,
+               ps->stack_i ? ps->frames[ps->stack_i - 1].node : NULL))
+            return 0;
+      }
    }
    if (ps->level < ps->stack_i)
       ps->node = ps->frames[--ps->stack_i].node;
