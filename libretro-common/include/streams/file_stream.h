@@ -123,7 +123,7 @@ RFILE* filestream_open(const char *path, unsigned mode, unsigned hints);
  * @param offset The new stream position, in bytes.
  * @param seek_position The position to seek from.
  * Should be one of the values in \refitem RETRO_VFS_SEEK_POSITION.
- * @return The new stream position in bytes relative to the beginning,
+ * @return 0 if the stream position was set successfully,
  * or -1 if there was an error.
  * @see RETRO_VFS_SEEK_POSITION
  * @see retro_vfs_seek_t
