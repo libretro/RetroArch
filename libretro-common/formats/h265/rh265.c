@@ -79,10 +79,20 @@
  * edges and SAO treats cross-slice neighbours as unavailable when
  * the flag is off (8.7.2, 8.7.3).
  *
+ * Scaling lists are implemented in full: the default matrices of
+ * Table 7-5/7-6 (what hardware encoders typically signal), explicit
+ * SPS/PPS-coded lists with DPCM coefficients in up-right diagonal
+ * order and matrix-delta prediction, and per-coefficient
+ * dequantisation with the sub-sampled 16x16/32x32 grids and their
+ * separate DC terms (7.3.4, 7.4.5, 8.6.3).  Version-1 4x4
+ * transform-skip blocks use the lists like any other TU; the m = 16
+ * transform-skip carve-out in 8.6.3 only applies to the
+ * range-extension sizes.
+ *
  * What it does not implement: long-term reference pictures, 4:2:2,
  * 4:4:4 and monochrome, bit depths above 10, tiles, dependent slice
- * segments, explicit scaling lists, PCM, transquant bypass,
- * constrained intra prediction, and encoding.  Out-of-scope streams are refused at the
+ * segments, PCM, transquant bypass, constrained intra prediction,
+ * and encoding.  Out-of-scope streams are refused at the
  * parameter-set or slice level rather than decoded wrongly.
  *
  * The CABAC context-init tables, coefficient scan orders and the
@@ -296,6 +306,20 @@ typedef struct
    int     num_positive;
 } rh265_st_rps;
 
+/* Derived scaling lists in raster order per size class: 4x4 entries
+ * are full, the 8x8 grids also serve 16x16 and 32x32 through the
+ * (x >> s, y >> s) sub-sampling of 7-4x, with the coded DC values
+ * kept separately for the two larger sizes. */
+typedef struct
+{
+   uint8_t l4[6][16];
+   uint8_t l8[6][64];
+   uint8_t l16[6][64];
+   uint8_t l32[6][64];
+   uint8_t dc16[6];
+   uint8_t dc32[6];
+} rh265_scaling;
+
 typedef struct
 {
    int valid;
@@ -311,6 +335,7 @@ typedef struct
    int max_transform_hierarchy_depth_inter;
    int max_transform_hierarchy_depth_intra;
    int scaling_list_enabled;
+   rh265_scaling sl;          /* defaults or the SPS-coded lists */
    int amp_enabled;
    int sao_enabled;
    int pcm_enabled;
@@ -360,7 +385,149 @@ typedef struct
    int lists_modification_present;
    int log2_parallel_merge_level;
    int slice_segment_header_extension_present;
+   int has_scaling;           /* pps_scaling_list_data_present */
+   rh265_scaling sl;
 } rh265_pps;
+
+
+/* ==================== scaling lists (7.3.4 / 7.4.5) ==================== */
+
+
+/* up-right diagonal scan (6.5.3): coded scaling-list coefficients and
+ * their raster positions */
+static const uint8_t rh265_diag4[16] =
+{
+    0, 4, 1, 8, 5, 2,12, 9,
+    6, 3,13,10, 7,14,11,15
+};
+static const uint8_t rh265_diag8[64] =
+{
+    0, 8, 1,16, 9, 2,24,17,
+   10, 3,32,25,18,11, 4,40,
+   33,26,19,12, 5,48,41,34,
+   27,20,13, 6,56,49,42,35,
+   28,21,14, 7,57,50,43,36,
+   29,22,15,58,51,44,37,30,
+   23,59,52,45,38,31,60,53,
+   46,39,61,54,47,62,55,63
+};
+
+/* default matrices (Table 7-5/7-6): 4x4 is flat 16; the 8x8 pair also
+ * seeds 16x16 and 32x32 */
+static const uint8_t rh265_sl_default_intra8[64] =
+{
+   16,16,16,16,17,18,21,24,
+   16,16,16,16,17,19,22,25,
+   16,16,17,18,20,22,25,29,
+   16,16,18,21,24,27,31,36,
+   17,17,20,24,30,35,41,47,
+   18,19,22,27,35,44,54,65,
+   21,22,25,31,41,54,70,88,
+   24,25,29,36,47,65,88,115
+};
+static const uint8_t rh265_sl_default_inter8[64] =
+{
+   16,16,16,16,17,18,20,24,
+   16,16,16,17,18,20,24,25,
+   16,16,17,18,20,24,25,28,
+   16,17,18,20,24,25,28,33,
+   17,18,20,24,25,28,33,41,
+   18,20,24,25,28,33,41,54,
+   20,24,25,28,33,41,54,71,
+   24,25,28,33,41,54,71,91
+};
+
+static void rh265_sl_set_default(rh265_scaling *sl, int size_id,
+      int matrix_id)
+{
+   const uint8_t *d8 = (matrix_id < 3)
+         ? rh265_sl_default_intra8 : rh265_sl_default_inter8;
+   switch (size_id)
+   {
+      case 0: memset(sl->l4[matrix_id], 16, 16); break;
+      case 1: memcpy(sl->l8[matrix_id],  d8, 64); break;
+      case 2: memcpy(sl->l16[matrix_id], d8, 64);
+              sl->dc16[matrix_id] = 16; break;
+      default: memcpy(sl->l32[matrix_id], d8, 64);
+              sl->dc32[matrix_id] = 16; break;
+   }
+}
+
+static void rh265_sl_defaults(rh265_scaling *sl)
+{
+   int size_id, matrix_id;
+   for (size_id = 0; size_id < 4; size_id++)
+      for (matrix_id = 0; matrix_id < 6; matrix_id++)
+         rh265_sl_set_default(sl, size_id, matrix_id);
+}
+
+/* scaling_list_data, stored (7.3.4); the walker this replaces only
+ * kept the bit position. */
+static int rh265_parse_scaling_list_data(rh265_bits *b, rh265_scaling *sl)
+{
+   int size_id, matrix_id;
+   for (size_id = 0; size_id < 4; size_id++)
+      for (matrix_id = 0; matrix_id < 6;
+            matrix_id += (size_id == 3) ? 3 : 1)
+      {
+         uint8_t *dst = (size_id == 0) ? sl->l4[matrix_id]
+                      : (size_id == 1) ? sl->l8[matrix_id]
+                      : (size_id == 2) ? sl->l16[matrix_id]
+                      :                  sl->l32[matrix_id];
+         if (!rh265_u1(b))               /* scaling_list_pred_mode_flag */
+         {
+            int delta = (int)rh265_ue(b);
+            int step  = (size_id == 3) ? 3 : 1;
+            int ref   = matrix_id - delta * step;
+            if (delta == 0)
+               rh265_sl_set_default(sl, size_id, matrix_id);
+            else
+            {
+               if (ref < 0)
+                  return -1;
+               switch (size_id)
+               {
+                  case 0: memcpy(dst, sl->l4[ref], 16); break;
+                  case 1: memcpy(dst, sl->l8[ref], 64); break;
+                  case 2: memcpy(dst, sl->l16[ref], 64);
+                          sl->dc16[matrix_id] = sl->dc16[ref]; break;
+                  default: memcpy(dst, sl->l32[ref], 64);
+                          sl->dc32[matrix_id] = sl->dc32[ref]; break;
+               }
+            }
+         }
+         else
+         {
+            int coef_num = rh265_min(64, 1 << (4 + (size_id << 1)));
+            const uint8_t *scan = (size_id == 0)
+                  ? rh265_diag4 : rh265_diag8;
+            int next = 8;
+            int i;
+            if (size_id > 1)
+            {
+               int dc = 8 + (int)rh265_se(b);
+               if (dc < 1 || dc > 255)
+                  return -1;
+               next = dc;
+               if (size_id == 2)
+                  sl->dc16[matrix_id] = (uint8_t)dc;
+               else
+                  sl->dc32[matrix_id] = (uint8_t)dc;
+            }
+            for (i = 0; i < coef_num; i++)
+            {
+               int delta = (int)rh265_se(b);
+               if (delta < -128 || delta > 127)
+                  return -1;
+               next = (next + delta + 256) % 256;
+               if (next == 0)
+                  return -1;      /* zero scaling coefficients invalid */
+               dst[scan[i]] = (uint8_t)next;
+            }
+         }
+      }
+   return rh265_bits_overrun(b) ? -1 : 0;
+}
 
 /* profile_tier_level: fixed layout; nothing in it is needed to decode,
  * so parse it for its exact size only (7.3.3). */
@@ -393,27 +560,6 @@ static void rh265_skip_ptl(rh265_bits *b, int max_sub_layers_minus1)
    }
 }
 
-/* scaling_list_data: parsed for its size only; SPS/PPS with
- * scaling_list_enabled are refused before this data is ever used. */
-static void rh265_skip_scaling_list_data(rh265_bits *b)
-{
-   int size_id, matrix_id;
-   for (size_id = 0; size_id < 4; size_id++)
-      for (matrix_id = 0; matrix_id < 6; matrix_id += (size_id == 3) ? 3 : 1)
-      {
-         if (!rh265_u1(b))               /* scaling_list_pred_mode_flag */
-            rh265_ue(b);                 /* scaling_list_pred_matrix_id_delta */
-         else
-         {
-            int coef_num = rh265_min(64, 1 << (4 + (size_id << 1)));
-            int i;
-            if (size_id > 1)
-               rh265_se(b);              /* scaling_list_dc_coef_minus8 */
-            for (i = 0; i < coef_num; i++)
-               rh265_se(b);              /* scaling_list_delta_coef */
-         }
-      }
-}
 
 /* st_ref_pic_set (7.3.7), resolving inter-RPS prediction against the
  * previously parsed sets so every set is stored in explicit form. */
@@ -582,9 +728,14 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, rh265_sps *s,
    s->max_transform_hierarchy_depth_intra = (int)rh265_ue(&b);
    s->scaling_list_enabled = (int)rh265_u1(&b);
    if (s->scaling_list_enabled)
+      rh265_sl_defaults(&s->sl);
+   if (s->scaling_list_enabled)
    {
       if (rh265_u1(&b))                  /* sps_scaling_list_data_present */
-         rh265_skip_scaling_list_data(&b);
+      {
+         if (rh265_parse_scaling_list_data(&b, &s->sl) < 0)
+            return -1;
+      }
    }
    s->amp_enabled = (int)rh265_u1(&b);
    s->sao_enabled = (int)rh265_u1(&b);
@@ -676,8 +827,12 @@ static int rh265_parse_pps(const uint8_t *rbsp, size_t size, rh265_pps *p,
          p->tc_offset_div2   = (int)rh265_se(&b);
       }
    }
-   if (rh265_u1(&b))                    /* pps_scaling_list_data_present */
-      rh265_skip_scaling_list_data(&b);
+   if ((p->has_scaling = (int)rh265_u1(&b)))
+   {
+      rh265_sl_defaults(&p->sl);
+      if (rh265_parse_scaling_list_data(&b, &p->sl) < 0)
+         return -1;
+   }
    p->lists_modification_present       = (int)rh265_u1(&b);
    p->log2_parallel_merge_level        = (int)rh265_ue(&b) + 2;
    p->slice_segment_header_extension_present = (int)rh265_u1(&b);
@@ -1400,6 +1555,11 @@ typedef struct
    int      mc_tmp[(RH265_MAX_PB + 7) * RH265_MAX_PB];
    int16_t  coeff_scratch[32 * 32];
 
+   /* active scaling lists (PPS override, else SPS defaults/coded);
+    * NULL when scaling_list_enabled is off, keeping the flat-16
+    * dequantisation path untouched */
+   const rh265_scaling *sl;
+
    /* per-CTB slice index and its loop_filter_across_slices flag, for
     * the 8.7.2/8.7.3 slice-boundary filtering restriction */
    uint16_t *ctb_slice;
@@ -1737,6 +1897,8 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
    uint8_t sig_cg[8][8];
    int16_t *coeffs = d->coeff_scratch;
    int qp, shift, add, scale;
+   const uint8_t *sl_m;
+   int sl_dc, sl_sub, sl_row;
    int i;
    int shiftc = c_idx ? 1 : 0;
 
@@ -1755,6 +1917,30 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
    shift = d->bd + log2_size - 5;
    add   = 1 << (shift - 1);
    scale = rh265_level_scale[qp % 6] << (qp / 6);
+
+   /* m[x][y] of 8.6.3: raster lists per size class, the two larger
+    * grids sub-sampled from their 8x8 form with the coded DC at the
+    * origin.  Flat 16 when lists are off or the block is transform
+    * skip. */
+   sl_m    = NULL;
+   sl_dc   = 16;
+   sl_sub  = 0;
+   sl_row  = 8;
+   if (d->sl)
+   {
+      int matrix_id = (d->cu_pred_intra ? 0 : 3) + c_idx;
+      switch (log2_size)
+      {
+         case 2:  sl_m = d->sl->l4[matrix_id];  sl_row = 4; break;
+         case 3:  sl_m = d->sl->l8[matrix_id];  break;
+         case 4:  sl_m = d->sl->l16[matrix_id];
+                  sl_dc = d->sl->dc16[matrix_id];
+                  sl_sub = 1; break;
+         default: sl_m = d->sl->l32[matrix_id];
+                  sl_dc = d->sl->dc32[matrix_id];
+                  sl_sub = 2; break;
+      }
+   }
 
    if (pps->transform_skip_enabled && log2_size <= 2)
       transform_skip_flag = rh265_cabac_decode(cb,
@@ -2009,7 +2195,21 @@ static int rh265_residual_coding(rh265_dec *d, int x0, int y0,
                level = -level;
             sign_flags <<= 1;
             {
-               int64_t t = ((int64_t)level * scale * 16 + add) >> shift;
+               int m = 16;
+               int64_t t;
+               /* 8.6.3: m stays 16 for transform skip only when
+                * nTbS > 4 (a range-extension case); the 4x4
+                * transform-skip blocks of version-1 streams use the
+                * scaling list like any other TU */
+               if (sl_m)
+               {
+                  if (sl_sub && x_c == 0 && y_c == 0)
+                     m = sl_dc;
+                  else
+                     m = sl_m[(y_c >> sl_sub) * sl_row
+                           + (x_c >> sl_sub)];
+               }
+               t = ((int64_t)level * scale * m + add) >> shift;
                coeffs[y_c * trafo_size + x_c] = (int16_t)
                      rh265_clip3(-32768, 32767, (int)t);
             }
@@ -3785,6 +3985,10 @@ static int rh265_decode_slice_data(rh265_video *v, const uint8_t *rbsp,
       rh265_cabac_init_contexts(&d->cb, d->sh.slice_qp, init_type);
    }
 
+   d->sl = NULL;
+   if (sps->scaling_list_enabled)
+      d->sl = d->pps->has_scaling ? &d->pps->sl : &sps->sl;
+
    d->qp_y = d->sh.slice_qp;
    d->qp_y_pred = d->sh.slice_qp;
    d->first_qg = 1;
@@ -4058,7 +4262,7 @@ static int rh265_handle_nal(rh265_video *v, const uint8_t *nal, size_t len)
          if (sp->chroma_format_idc != 1 ||
              (sp->bit_depth_luma != 8 && sp->bit_depth_luma != 10) ||
              sp->bit_depth_chroma != sp->bit_depth_luma ||
-             sp->pcm_enabled || sp->scaling_list_enabled)
+             sp->pcm_enabled)
             ret = -2;                   /* out of the supported profile */
          else
             memcpy(&v->sps[id], sp, sizeof(*sp));
