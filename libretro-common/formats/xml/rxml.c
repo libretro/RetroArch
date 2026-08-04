@@ -196,6 +196,7 @@ struct rxml_parser
    rxml_node_t *node;
    struct rxml_attrib_node *attr;
    rxml_document_t *doc;
+   unsigned opts;
 };
 
 /* Accumulator ------------------------------------------------------- */
@@ -578,6 +579,13 @@ static INLINE int rxml_on_elemstart(struct rxml_parser *ps,
    n->attrib   = NULL;
    n->children = NULL;
    n->next     = NULL;
+   /* Byte offset of the '<'; RXML_OPT_LINES turns it into a line
+    * number after the parse.  Recorded unconditionally: the store is
+    * free here, while any conditional form (ternary or predicted
+    * branch) measurably perturbs the parser's hot loop on text-heavy
+    * documents (cmov chains a dependent doc->buf load per element;
+    * even a never-taken branch costs ~25%). */
+   n->line     = (unsigned)((const char*)name - 1 - ps->doc->buf);
    if (ps->node)
    {
       if (ps->level > ps->stack_i)
@@ -1179,7 +1187,17 @@ RXML_NOINLINE static int rxml_scan_misc(struct rxml_parser *ps, int mode)
       rxml_skip_sp(ps);
       c = *ps->p;
       if (c != '<')
-         return c ? 0 : -1;
+      {
+         /* End of input between constructs is the one place a document
+          * may legitimately end; in the epilog it is the normal way a
+          * complete parse finishes, and must stay distinguishable from
+          * the -1 that scanners return for input ending inside a
+          * construct so that RXML_OPT_STRICT_EOF only rejects genuine
+          * truncation. */
+         if (!c)
+            return mode ? -1 : 2;
+         return 0;
+      }
       ps->p++;
       c = *ps->p;
       if (!c)
@@ -1491,8 +1509,83 @@ element_closed:
    }
 
 epilog:
-   /* After the root element: whitespace, comments and PIs only. */
-   return rxml_scan_misc(ps, 0);
+   /* After the root element: whitespace, comments and PIs only; input
+    * ending cleanly between them completes the parse. */
+   {
+      int r2 = rxml_scan_misc(ps, 0);
+      return (r2 == 2) ? 1 : r2;
+   }
+}
+
+
+/* Turn the element-start offsets recorded in ->line into 1-based line
+ * numbers.  Pre-order tree order is ascending offset order, so a
+ * single sweep of the document with an incrementally advanced newline
+ * count covers every node.  Returns 0 on allocation failure (treated
+ * by the caller like any other parse-time allocation failure). */
+static int rxml_annotate_lines(rxml_document_t *doc)
+{
+   rxml_node_t *n     = doc->root_node;
+   rxml_node_t **up   = NULL;
+   size_t up_len      = 0, up_cap = 0;
+   const char *at     = doc->buf;
+   unsigned line      = 1;
+   while (n)
+   {
+      const char *to = doc->buf + n->line;
+      const char *nl;
+      while (at < to && (nl = (const char*)memchr(at, '\n', to - at)))
+      {
+         line++;
+         at = nl + 1;
+      }
+      at      = to;
+      n->line = line;
+      if (n->children)
+      {
+         if (n->next)
+         {
+            if (up_len == up_cap)
+            {
+               size_t ncap       = up_cap ? (up_cap << 1) : 16;
+               rxml_node_t **nup = (rxml_node_t**)
+                     realloc(up, ncap * sizeof(*nup));
+               if (!nup)
+               {
+                  free(up);
+                  return 0;
+               }
+               up     = nup;
+               up_cap = ncap;
+            }
+            up[up_len++] = n->next;
+         }
+         n = n->children;
+      }
+      else if (n->next)
+         n = n->next;
+      else
+         n = up_len ? up[--up_len] : NULL;
+   }
+   free(up);
+   return 1;
+}
+
+/* Compute the 1-based line/column of a byte offset. */
+static void rxml_error_position(const char *buf, size_t offset,
+      rxml_parse_error_t *err)
+{
+   const char *at = buf, *to = buf + offset, *nl, *bol = buf;
+   unsigned line  = 1;
+   while (at < to && (nl = (const char*)memchr(at, '\n', to - at)))
+   {
+      line++;
+      at  = nl + 1;
+      bol = at;
+   }
+   err->offset = offset;
+   err->line   = line;
+   err->col    = (unsigned)(to - bol) + 1;
 }
 
 /* Public API --------------------------------------------------------- */
@@ -1505,12 +1598,14 @@ struct rxml_node *rxml_root_node(rxml_document_t *doc)
 }
 
 /* Parse a buffer the document takes ownership of. */
-static rxml_document_t *rxml_parse_owned(char *buf, size_t len)
+static rxml_document_t *rxml_parse_owned(char *buf, size_t len,
+      unsigned opts, rxml_parse_error_t *err)
 {
    struct rxml_parser ps;
    int r;
 
    memset(&ps, 0, sizeof(ps));
+   ps.opts       = opts;
    ps.p          = (const unsigned char*)buf;
    ps.acc_cap    = 4096;
    ps.acc        = (char*)malloc(ps.acc_cap);
@@ -1541,23 +1636,43 @@ static rxml_document_t *rxml_parse_owned(char *buf, size_t len)
 
    /* r > 0: fully parsed; r < 0: input ended mid-construct, which the
     * old implementation also accepted (it never signalled EOF to the
-    * parser), returning the tree built so far; r == 0: parse error. */
+    * parser), returning the tree built so far unless
+    * RXML_OPT_STRICT_EOF asks for expat-style rejection;
+    * r == 0: parse error. */
+   if (r < 0 && (opts & RXML_OPT_STRICT_EOF))
+      r = 0;
    if (r == 0)
    {
+      if (err)
+         rxml_error_position(buf, (const char*)ps.p - buf, err);
       if (ps.doc)
          rxml_free_document(ps.doc);
       else
          free(buf);
       return NULL;
    }
+   if ((opts & RXML_OPT_LINES) && ps.doc->root_node
+         && !rxml_annotate_lines(ps.doc))
+   {
+      if (err)
+         rxml_error_position(buf, 0, err);
+      rxml_free_document(ps.doc);
+      return NULL;
+   }
    return ps.doc;
 }
 
-rxml_document_t *rxml_load_document_string(const char *str)
+rxml_document_t *rxml_load_document_string_opts(const char *str,
+      unsigned opts, rxml_parse_error_t *err)
 {
    size_t len;
    char  *buf;
 
+   if (err)
+   {
+      err->offset = 0;
+      err->line   = err->col = 0;
+   }
    if (!str)
       return NULL;
 
@@ -1570,7 +1685,12 @@ rxml_document_t *rxml_load_document_string(const char *str)
       return NULL;
    memcpy(buf, str, len + 1);
 
-   return rxml_parse_owned(buf, len);
+   return rxml_parse_owned(buf, len, opts, err);
+}
+
+rxml_document_t *rxml_load_document_string(const char *str)
+{
+   return rxml_load_document_string_opts(str, 0, NULL);
 }
 
 rxml_document_t *rxml_load_document(const char *path)
@@ -1605,7 +1725,7 @@ rxml_document_t *rxml_load_document(const char *path)
 
    /* The document takes the buffer: the tree points into it, and
     * rxml_parse_owned frees it on failure. */
-   return rxml_parse_owned(memory_buffer, (size_t)len);
+   return rxml_parse_owned(memory_buffer, (size_t)len, 0, NULL);
 
 error:
    free(memory_buffer);
