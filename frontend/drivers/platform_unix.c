@@ -68,6 +68,7 @@
 #endif
 
 #include <boolean.h>
+#include <libretro.h>
 #include <retro_dirent.h>
 #include <retro_inline.h>
 #include <compat/strl.h>
@@ -127,6 +128,11 @@ static char app_dir[DIR_MAX_LENGTH];
 unsigned storage_permissions             = 0;
 struct android_app *g_android            = NULL;
 static uint8_t g_platform_android_flags  = 0;
+
+#ifdef HAVE_SAF
+static struct retro_vfs_authorized_location *android_vfs_authorized_locations = NULL;
+static size_t android_vfs_authorized_locations_count = 0;
+#endif
 #else
 #define PROC_APM_PATH                    "/proc/apm"
 #define PROC_ACPI_BATTERY_PATH           "/proc/acpi/battery"
@@ -676,6 +682,160 @@ static void frontend_android_shutdown(bool unused)
 }
 
 #ifdef HAVE_SAF
+static void android_vfs_authorized_locations_free(void)
+{
+   size_t i;
+
+   if (!android_vfs_authorized_locations)
+      return;
+
+   for (i = 0; i < android_vfs_authorized_locations_count; i++)
+   {
+      free((void*)android_vfs_authorized_locations[i].path);
+      free((void*)android_vfs_authorized_locations[i].label);
+   }
+
+   free(android_vfs_authorized_locations);
+   android_vfs_authorized_locations       = NULL;
+   android_vfs_authorized_locations_count = 0;
+}
+
+static bool android_vfs_authorized_locations_refresh(void)
+{
+   JNIEnv *env;
+   jarray trees;
+   jsize trees_length;
+   jsize i;
+
+   android_vfs_authorized_locations_free();
+
+   if (!g_android || !g_android->have_saf)
+      return false;
+
+   env = jni_thread_getenv();
+   if (!env)
+      return false;
+
+   trees = (*env)->CallObjectMethod(
+         env,
+         g_android->activity->clazz,
+         g_android->getPersistedSafTrees);
+
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+      return false;
+   }
+
+   if (!trees)
+      return false;
+
+   trees_length = (*env)->GetArrayLength(env, trees);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+      (*env)->DeleteLocalRef(env, trees);
+      return false;
+   }
+
+   if (trees_length <= 0)
+   {
+      (*env)->DeleteLocalRef(env, trees);
+      return true;
+   }
+
+   android_vfs_authorized_locations =
+      (struct retro_vfs_authorized_location*)calloc(
+            (size_t)trees_length,
+            sizeof(*android_vfs_authorized_locations));
+
+   if (!android_vfs_authorized_locations)
+   {
+      (*env)->DeleteLocalRef(env, trees);
+      return false;
+   }
+
+   for (i = 0; i < trees_length; ++i)
+   {
+      jstring tree;
+      const char *tree_chars;
+      char *serialized_path;
+
+      tree = (jstring)(*env)->GetObjectArrayElement(env, trees, i);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+         continue;
+      }
+
+      tree_chars = (*env)->GetStringUTFChars(env, tree, NULL);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+         (*env)->DeleteLocalRef(env, tree);
+         continue;
+      }
+
+      serialized_path = retro_vfs_path_join_saf(tree_chars, "");
+
+      if (serialized_path)
+      {
+         const char *label = msg_hash_to_str(MSG_REMOVABLE_STORAGE);
+
+         android_vfs_authorized_locations[android_vfs_authorized_locations_count].path  = serialized_path;
+         android_vfs_authorized_locations[android_vfs_authorized_locations_count].label = strdup(label ? label : "Storage");
+         android_vfs_authorized_locations[android_vfs_authorized_locations_count].flags = 0;
+
+         android_vfs_authorized_locations_count++;
+      }
+
+      (*env)->ReleaseStringUTFChars(env, tree, tree_chars);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+      }
+
+      (*env)->DeleteLocalRef(env, tree);
+      if ((*env)->ExceptionOccurred(env))
+      {
+         (*env)->ExceptionDescribe(env);
+         (*env)->ExceptionClear(env);
+      }
+   }
+
+   (*env)->DeleteLocalRef(env, trees);
+   if ((*env)->ExceptionOccurred(env))
+   {
+      (*env)->ExceptionDescribe(env);
+      (*env)->ExceptionClear(env);
+   }
+
+   return true;
+}
+
+bool android_get_vfs_authorized_locations(
+      struct retro_vfs_authorized_locations *locations)
+{
+   if (!g_android || !g_android->have_saf)
+      return false;
+
+   if (!android_vfs_authorized_locations && !android_vfs_authorized_locations_refresh())
+      return false;
+
+   if (!locations)
+      return true;
+
+   locations->locations = android_vfs_authorized_locations;
+   locations->count     = android_vfs_authorized_locations_count;
+
+   return true;
+}
+
 void android_show_saf_tree_picker(void)
 {
    JNIEnv *env;
@@ -730,6 +890,8 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
       (*env)->ExceptionDescribe(env);
       (*env)->ExceptionClear(env);
    }
+
+   android_vfs_authorized_locations_refresh();
 #endif
 }
 
@@ -2175,6 +2337,8 @@ static void android_app_destroy(struct android_app *android_app)
             android_app->onRetroArchExit);
 
 #ifdef HAVE_SAF
+   android_vfs_authorized_locations_free();
+
    if (android_app->have_saf)
       retro_vfs_deinit_saf();
 #endif
@@ -2368,6 +2532,9 @@ static void frontend_unix_init(void *data)
          "getPersistedSafTrees", "()[Ljava/lang/String;");
 
    android_app->have_saf = retro_vfs_init_saf(jni_thread_getenv, android_app->activity->clazz);
+
+   if (android_app->have_saf)
+      android_vfs_authorized_locations_refresh();
 #endif
 
    GET_OBJECT_CLASS(env, class, obj);
