@@ -2302,6 +2302,11 @@ ifeq ($(HAVE_RMP4), 1)
           $(LIBRETRO_COMM_DIR)/formats/mp4/rmp4_audio.o \
           $(LIBRETRO_COMM_DIR)/formats/h264/rh264.o \
           $(LIBRETRO_COMM_DIR)/formats/h265/rh265.o
+ifneq ($(HAVE_RVP9), 1)
+   # rmp4_video's H.265 Main10 arm uses the shared 10-bit / HDR
+   # I420->RGB blits; normally linked from the HAVE_RVP9 block below.
+   OBJ += $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.o
+endif
 ifneq ($(HAVE_RWEBP), 1)
 ifneq ($(HAVE_RWEBM), 1)
    # rmp4_video decodes VP8 tracks with rvp8, normally built with RWEBP

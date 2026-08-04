@@ -43,10 +43,12 @@
 #include <formats/rvp8.h>
 #ifdef HAVE_RVP9
 #include <formats/rvp9.h>
-/* The 10-bit / HDR I420->RGB blits are shared (image_hdr_blit.c) but still
- * declared in rwebm_video.h; the implementation is demuxer-independent. */
-#include <formats/rwebm_video.h>
 #endif
+/* The 10-bit / HDR I420->RGB blits are shared (image_hdr_blit.c) but still
+ * declared in rwebm_video.h; the implementation is demuxer-independent.
+ * Included outside the HAVE_RVP9 guard because the H.265 Main10 arm of
+ * the render switch uses the same blits regardless of rvp9. */
+#include <formats/rwebm_video.h>
 #include <formats/rh264.h>
 #include <formats/rh265.h>
 #include <formats/rmp4_video.h>
