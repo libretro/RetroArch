@@ -22,6 +22,8 @@
 #ifndef __LIBRETRO_SDK_FORMAT_RXML_H__
 #define __LIBRETRO_SDK_FORMAT_RXML_H__
 
+#include <stddef.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
