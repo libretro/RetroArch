@@ -356,7 +356,7 @@ static int real_rmp4_needs_whole_file(const char *path)
    fclose(f);
 
    s = image_transfer_anim_stream_new_avail(b, (size_t)n, 1u << 20,
-         IMAGE_TYPE_MP4, &need);
+         IMAGE_TYPE_MP4, &need, NULL, NULL);
    if (s || !need)
    {
       printf("  [FAIL] rmp4 opened a moov-at-EOF file from a 1 MiB "
@@ -370,7 +370,7 @@ static int real_rmp4_needs_whole_file(const char *path)
    else
    {
       s = image_transfer_anim_stream_new_avail(b, (size_t)n, (size_t)n,
-            IMAGE_TYPE_MP4, &need);
+            IMAGE_TYPE_MP4, &need, NULL, NULL);
       if (!s)
       {
          printf("  [FAIL] rmp4 cannot open the fixture even fully "
