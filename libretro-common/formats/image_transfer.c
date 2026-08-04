@@ -1083,10 +1083,15 @@ void *image_transfer_anim_stream_new(void *buf, size_t len,
 }
 
 void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
-      size_t avail, enum image_type_enum type, int *need_more)
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi)
 {
    if (need_more)
       *need_more = 0;
+   if (need_lo)
+      *need_lo = 0;
+   if (need_hi)
+      *need_hi = 0;
    switch (type)
    {
       case IMAGE_TYPE_PNG:
@@ -1106,7 +1111,7 @@ void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
       case IMAGE_TYPE_MP4:
 #ifdef HAVE_RMP4
          return rmp4_video_stream_open_avail((const uint8_t*)buf, len,
-               avail, need_more);
+               avail, need_more, need_lo, need_hi);
 #else
          break;
 #endif

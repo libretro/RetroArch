@@ -596,6 +596,46 @@ bool data_transfer_window_extend(data_transfer_t *dt, size_t hi)
    return true;
 }
 
+bool data_transfer_window_ensure(data_transfer_t *dt, size_t lo,
+      size_t hi)
+{
+   if (!dt || !dt->window || dt->failed)
+      return false;
+   if (hi > dt->len)
+      hi = dt->len;
+   if (lo >= hi)
+      return true;
+   if (!dt->map_len)
+      return true;               /* fallback: whole file resident */
+   if (!data_transfer_wcommit(dt, lo, hi))
+   {
+      data_transfer_wfail(dt);
+      return false;
+   }
+   if (!data_transfer_read_at(dt, lo, dt->map + lo, hi - lo))
+   {
+      data_transfer_wfail(dt);
+      return false;
+   }
+   return true;
+}
+
+void data_transfer_window_rebase(data_transfer_t *dt, size_t pos)
+{
+   size_t p;
+   if (!dt || !dt->window || !dt->map_len || dt->failed)
+      return;
+   if (pos > dt->len)
+      pos = dt->len;
+   p = (pos / dt->page) * dt->page;
+   if (p <= dt->whi)
+      return;                    /* frontier already covers it */
+   dt->wlo    = p;
+   dt->whi    = p;
+   dt->wfreed = p;
+   return;
+}
+
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo)
 {
    if (!dt || !dt->window || !dt->map_len || dt->failed)

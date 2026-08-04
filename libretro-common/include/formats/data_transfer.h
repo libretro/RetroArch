@@ -174,6 +174,27 @@ bool data_transfer_window_is_reserved(data_transfer_t *dt);
  * would silently take the wrong branch. */
 bool data_transfer_reserve_supported(void);
 bool data_transfer_window_extend(data_transfer_t *dt, size_t hi);
+/* Make an arbitrary byte range resident and read, without touching
+ * the sequential window: pages between the frontier and the range
+ * stay uncommitted.  This is what lets a trailing MP4 moov become
+ * readable without paging the multi-gigabyte mdat before it through
+ * memory.  Idempotent; safe to overlap the head, the window, or a
+ * previous island.  The island stays resident until the handle is
+ * freed - the decommit sweeps only run below the sequential
+ * frontier, which an island by construction sits above.  Callers
+ * must only dereference bytes inside the head, the window, or a
+ * range this call has covered. */
+bool data_transfer_window_ensure(data_transfer_t *dt, size_t lo,
+      size_t hi);
+/* Restart the sequential window at pos: after a need-range open
+ * jumped over the mdat to a trailing moov, the read frontier still
+ * sits at the head, and the first extend() toward the media would
+ * read the skipped gigabytes after all.  Rebasing moves the frontier
+ * to the media floor so extend()/advance() stream the samples from
+ * there, exactly as they do for a front-moov file from the head.
+ * No-op when pos does not lie past the frontier, so front-moov files
+ * are unaffected. */
+void data_transfer_window_rebase(data_transfer_t *dt, size_t pos);
 void data_transfer_window_advance(data_transfer_t *dt, size_t lo);
 void data_transfer_window_rewind(data_transfer_t *dt);
 /* Raise the permanently-resident head.  For codecs whose loop

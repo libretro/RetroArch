@@ -529,7 +529,8 @@ static void rmp4_video_stream_close_decoder(rmp4_video_stream_t *s)
  * one-shot behaviour. */
 
 static rmp4_video_stream_t *rmp4_video_stream_open_begin(
-      const uint8_t *buf, size_t len, size_t avail, int *need_more)
+      const uint8_t *buf, size_t len, size_t avail, int *need_more,
+      size_t *need_lo, size_t *need_hi)
 {
    rmp4_video_stream_t *s;
    const rmp4_track *trk = NULL;
@@ -543,7 +544,8 @@ static rmp4_video_stream_t *rmp4_video_stream_open_begin(
    if (!(s = (rmp4_video_stream_t*)calloc(1, sizeof(*s))))
       return NULL;
 
-   if (!(s->demux = rmp4_open_memory_avail(buf, len, avail, need_more)))
+   if (!(s->demux = rmp4_open_memory_avail(buf, len, avail, need_more,
+         need_lo, need_hi)))
       goto fail;
 
    /* Pick the first video track whose codec we can decode. */
@@ -657,7 +659,8 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 {
    rmp4_video_stream_t *s;
 
-   if (!(s = rmp4_video_stream_open_begin(buf, len, len, NULL)))
+   if (!(s = rmp4_video_stream_open_begin(buf, len, len, NULL,
+         NULL, NULL)))
       return NULL;
    rmp4_video_stream_scan_step(s, 0);
    if (rmp4_video_stream_open_finish(s) != 0)
@@ -669,13 +672,15 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 }
 
 rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
-      size_t len, size_t avail, int *need_more)
+      size_t len, size_t avail, int *need_more,
+      size_t *need_lo, size_t *need_hi)
 {
    rmp4_video_stream_t *s;
 
    if (need_more)
       *need_more = 0;
-   if (!(s = rmp4_video_stream_open_begin(buf, len, avail, need_more)))
+   if (!(s = rmp4_video_stream_open_begin(buf, len, avail, need_more,
+         need_lo, need_hi)))
       return NULL;
    /* The pre-scan reads the moov sample tables (no media bytes), so
     * once the open itself succeeded it always completes. */
@@ -1309,7 +1314,7 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
             mp4->stream = NULL;
          }
          if (!(mp4->stream = rmp4_video_stream_open_begin(
-               mp4->buf, mp4->len, avail, &need_more)))
+               mp4->buf, mp4->len, avail, &need_more, NULL, NULL)))
             /* The moov is still arriving (or, for a trailing moov or a
              * fragmented movie, most of the file is): wait for more
              * bytes rather than failing. */

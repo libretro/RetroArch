@@ -459,8 +459,10 @@ static int rmp4_audio_decode_any(const void *buf, size_t len,
     * below returns a non-1 value at the first sample past the wall,
     * which every codec loop already treats as "stop and keep what was
     * decoded". */
+   /* Prefix semantics suffice here: the audio preview grows its
+    * window by probing, so the precise need-range stays unused. */
    if (!(m = rmp4_open_memory_avail((const uint8_t*)buf, len, avail,
-         need_more)))
+         need_more, NULL, NULL)))
       return 0;
 
    for (i = 0; i < rmp4_num_tracks(m); i++)

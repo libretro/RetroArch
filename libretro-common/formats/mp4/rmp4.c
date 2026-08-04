@@ -1018,15 +1018,20 @@ static void rmp4_parse_moof(rmp4_t *m, const uint8_t *body, uint64_t size,
 /* ===== public API ===== */
 
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
-      size_t avail, int *need_more)
+      size_t avail, int *need_more, size_t *need_lo, size_t *need_hi)
 {
    rmp4_t  *m;
    uint64_t pos = 0, next;
    rmp4_box b;
    int      seen_known = 0, have_moov = 0, hit_wall = 0;
+   uint64_t want_lo = 0, want_hi = 0;
 
    if (need_more)
       *need_more = 0;
+   if (need_lo)
+      *need_lo = 0;
+   if (need_hi)
+      *need_hi = 0;
    if (avail > size)
       avail = size;
    if (!data || size < 16)
@@ -1051,7 +1056,13 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
        * header; at worst this costs one extra retry near the wall,
        * never a read past it). */
       if (avail < size && pos + 16 > avail)
-      { hit_wall = 1; break; }
+      {
+         /* the walk needs exactly this header; reporting the range
+          * lets a windowed caller commit it without reading the
+          * skipped body bytes in between */
+         want_lo = pos; want_hi = pos + 16;
+         hit_wall = 1; break;
+      }
       if (!rmp4_box_at(data, (uint64_t)size, pos, &b, &next))
          break;
       switch (b.type)
@@ -1067,7 +1078,11 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
          case RMP4_FOURCC('m','o','o','v'):
             seen_known = 1;
             if ((uint64_t)(b.body - data) + b.size > avail)
-            { hit_wall = 1; break; }   /* moov body still arriving */
+            {
+               want_lo = (uint64_t)(b.body - data) - 16;
+               want_hi = (uint64_t)(b.body - data) + b.size;
+               hit_wall = 1; break;    /* moov body still arriving */
+            }
             if (rmp4_parse_moov(m, b.body, b.size))
                have_moov = 1;
             break;
@@ -1085,7 +1100,16 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
    {
       rmp4_close(m);
       if ((hit_wall || avail < size) && need_more)
+      {
          *need_more = 1;
+         if (hit_wall && want_hi > want_lo && want_hi <= (uint64_t)size)
+         {
+            if (need_lo)
+               *need_lo = (size_t)want_lo;
+            if (need_hi)
+               *need_hi = (size_t)want_hi;
+         }
+      }
       return NULL;
    }
    if (!seen_known)
@@ -1124,7 +1148,7 @@ rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
 
 rmp4_t *rmp4_open_memory(const uint8_t *data, size_t size)
 {
-   return rmp4_open_memory_avail(data, size, size, NULL);
+   return rmp4_open_memory_avail(data, size, size, NULL, NULL, NULL);
 }
 
 const int64_t *rmp4_track_pts(const rmp4_t *m, int track, uint32_t *count)

@@ -93,8 +93,10 @@ rmp4_video_stream_t *rmp4_video_stream_open(const uint8_t *buf,
 /* Open against a partially-read buffer: 'avail' leading bytes are
  * valid (raise later with the stream set_avail).  On NULL, *need_more
  * distinguishes "feed more bytes and retry" from malformed data. */
+/* need_lo/need_hi: see rmp4_open_memory_avail. */
 rmp4_video_stream_t *rmp4_video_stream_open_avail(const uint8_t *buf,
-      size_t len, size_t avail, int *need_more);
+      size_t len, size_t avail, int *need_more,
+      size_t *need_lo, size_t *need_hi);
 
 void rmp4_video_stream_close(rmp4_video_stream_t *stream);
 

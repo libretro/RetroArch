@@ -143,8 +143,13 @@ int rmp4_read_packet(rmp4_t *mp4, rmp4_packet *pkt);
  * non-NULL) is set when the failure was running out of available
  * bytes rather than malformed data - retry with a larger avail.
  * rmp4_open_memory is this with avail == size. */
+/* need_lo/need_hi (optional): when the open stalls on the available
+ * prefix, the exact byte range that would let it progress - a box
+ * header past the wall, or the whole moov body.  A windowed caller
+ * can commit just that range instead of reading everything up to it;
+ * both stay 0 when the stall has no such range. */
 rmp4_t *rmp4_open_memory_avail(const uint8_t *data, size_t size,
-      size_t avail, int *need_more);
+      size_t avail, int *need_more, size_t *need_lo, size_t *need_hi);
 
 /* Raise the number of valid bytes (monotonic; clamped to the file
  * size). */

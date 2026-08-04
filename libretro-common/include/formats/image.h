@@ -268,8 +268,13 @@ void *image_transfer_anim_stream_new(void *buf, size_t len,
  * resident and a larger prefix should be retried.  Returns NULL for
  * types without a partial open (animated WEBP), so the caller keeps
  * the whole-buffer path for those. */
+/* need_lo/need_hi (optional): a precise byte range that unblocks a
+ * stalled progressive open, when the container can name one (MP4's
+ * box headers and moov body).  0/0 otherwise; the caller then grows
+ * the available prefix instead. */
 void *image_transfer_anim_stream_new_avail(void *buf, size_t len,
-      size_t avail, enum image_type_enum type, int *need_more);
+      size_t avail, enum image_type_enum type, int *need_more,
+      size_t *need_lo, size_t *need_hi);
 
 void image_transfer_anim_stream_free(void *stream,
       enum image_type_enum type);

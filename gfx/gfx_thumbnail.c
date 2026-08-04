@@ -992,21 +992,64 @@ static void gfx_thumbnail_anim_open(gfx_thumbnail_t *thumbnail,
        * window until the header/index is covered. */
       {
          int need_more = 0;
+         size_t need_lo = 0, need_hi = 0;
          size_t avail  = GFX_THUMB_ANIM_WINDOW_KEEP;
+         int    jumps  = 0;
          if (avail > blen)
             avail = blen;
          for (;;)
          {
             stream = image_transfer_anim_stream_new_avail(
-                  (void*)base, blen, avail, type, &need_more);
+                  (void*)base, blen, avail, type, &need_more,
+                  &need_lo, &need_hi);
             if (stream || !need_more || avail >= blen)
                break;
+            if (need_hi > need_lo && need_hi > avail && need_hi <= blen)
+            {
+               /* The demuxer named the exact bytes that unblock it -
+                * a box header past the wall, or a trailing moov body.
+                * Committing just that island skips the mdat between
+                * the frontier and the metadata, which is what makes a
+                * multi-gigabyte tail-moov recording open from a
+                * few-MiB footprint instead of paging the whole file
+                * through the window.  The jump cap only guards
+                * against a demuxer bug looping without progress;
+                * a well-formed file needs one or two. */
+               if (++jumps > 64 ||
+                   !data_transfer_window_ensure(dt, need_lo, need_hi))
+                  break;
+               avail = need_hi;
+               continue;
+            }
+            /* No range named (WEBM, or a stall at unread front
+             * bytes): the historical sequential growth. */
             avail += GFX_THUMB_ANIM_WINDOW_KEEP;
             if (avail > blen)
                avail = blen;
             if (!data_transfer_window_extend(dt, avail))
                break;
          }
+         if (stream && jumps)
+         {
+            /* The open jumped over the media to reach a trailing
+             * moov; the sequential read frontier is still at the
+             * head.  Restart it at the media floor and prime one
+             * window so the first frames decode from resident bytes,
+             * after which the animate feeder streams as usual. */
+            size_t fl = image_transfer_anim_stream_media_floor(stream,
+                  type);
+            size_t hi = fl + GFX_THUMB_ANIM_WINDOW_KEEP
+                  + GFX_THUMB_ANIM_WINDOW_AHEAD;
+            if (hi > blen)
+               hi = blen;
+            data_transfer_window_rebase(dt, fl);
+            if (!data_transfer_window_extend(dt, hi))
+            {
+               image_transfer_anim_stream_free(stream, type);
+               stream = NULL;
+            }
+         }
+
          /* Types without a progressive open (animated WEBP) return
           * NULL with need_more clear: fall back to the whole buffer,
           * which the window has to make resident. */
@@ -1062,6 +1105,14 @@ static void gfx_thumbnail_anim_upload(gfx_thumbnail_t *thumbnail,
       thumbnail->texture = new_texture;
       thumbnail->width   = width;
       thumbnail->height  = height;
+      /* Anim-first bootstrap: the first frame of a video opened
+       * without a still decode makes the thumbnail drawable.
+       * Release-store pairs with the acquire-load in the draw path,
+       * as with the still upload. */
+      if (GFX_THUMB_STATUS_LOAD(&thumbnail->status) ==
+            GFX_THUMBNAIL_STATUS_PENDING)
+         GFX_THUMB_STATUS_STORE(&thumbnail->status,
+               GFX_THUMBNAIL_STATUS_AVAILABLE);
    }
 }
 
@@ -1124,10 +1175,19 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail)
 
    if (   !thumbnail
        || !(thumbnail->flags & GFX_THUMB_FLAG_ANIM_ACTIVE)
-       || !thumbnail->anim
-       || (GFX_THUMB_STATUS_LOAD(&thumbnail->status) !=
-             GFX_THUMBNAIL_STATUS_AVAILABLE))
+       || !thumbnail->anim)
       return;
+   {
+      /* AVAILABLE is the normal running state.  PENDING with a stream
+       * installed is the anim-first bootstrap for video files opened
+       * over a window without a preceding still decode: the first
+       * uploaded frame flips the status in anim_upload. */
+      enum gfx_thumbnail_status st = (enum gfx_thumbnail_status)
+            GFX_THUMB_STATUS_LOAD(&thumbnail->status);
+      if (   st != GFX_THUMBNAIL_STATUS_AVAILABLE
+          && st != GFX_THUMBNAIL_STATUS_PENDING)
+         return;
+   }
 
    now  = cpu_features_get_time_usec();
    type = (enum image_type_enum)thumbnail->anim_type;
@@ -1894,6 +1954,32 @@ void gfx_thumbnail_request_file(
    if (   (!file_path || !*file_path)
        || !path_is_valid(file_path))
       return;
+
+   /* Video containers open over a sliding window before anything
+    * else: the still task reads the whole file into memory, which a
+    * multi-gigabyte recording fails outright (the allocation) or
+    * turns into a minute of disk reads for one frame - while the
+    * windowed animation path holds a fixed few-MiB footprint at any
+    * length, and its first decoded frame doubles as the still.  Only
+    * when the windowed open declines (admission, no reservation
+    * support, malformed container) does the file fall through to the
+    * historical whole-file still decode, which keeps small files on
+    * exotic platforms working exactly as before. */
+   {
+      enum image_type_enum ptype = image_texture_get_type(file_path);
+      if (   (ptype == IMAGE_TYPE_WEBM)
+          || (ptype == IMAGE_TYPE_MP4))
+      {
+         gfx_thumbnail_anim_open(thumbnail, file_path);
+         if (thumbnail->anim)
+         {
+            thumbnail->list_id = p_gfx_thumb->list_id;
+            GFX_THUMB_STATUS_STORE(&thumbnail->status,
+                  GFX_THUMBNAIL_STATUS_PENDING);
+            return;
+         }
+      }
+   }
 
    /* Load thumbnail */
    if (!(thumbnail_tag = (gfx_thumbnail_tag_t*)malloc(sizeof(gfx_thumbnail_tag_t))))
