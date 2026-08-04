@@ -293,7 +293,12 @@ static const struct adam7_pass rpng_passes[] = {
 
 static INLINE uint32_t rpng_dword_be(const uint8_t *buf)
 {
-   return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
+   /* Each byte promotes to int, so a leading byte >= 0x80 shifted left by
+    * 24 overflows a 32-bit signed int.  That is undefined behavior, and
+    * UBSan flags it on the chunk-header path for any chunk whose length
+    * or type byte has the high bit set.  Widen to uint32_t first. */
+   return  ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
+         | ((uint32_t)buf[2] <<  8) | ((uint32_t)buf[3] <<  0);
 }
 
 static INLINE uint16_t rpng_word_be(const uint8_t *buf)
