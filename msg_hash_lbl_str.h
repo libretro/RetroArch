@@ -348,6 +348,7 @@
 #define MENU_ENUM_LABEL_INFORMATION_STR "information"
 #define MENU_ENUM_LABEL_INFO_SCREEN_STR "info_screen"
 #define MENU_ENUM_LABEL_INPUT_SELECT_PHYSICAL_KEYBOARD_STR "input_android_physical_keyboard"
+#define MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD_STR "input_android_system_keyboard"
 #define MENU_ENUM_LABEL_INPUT_SENSOR_ORIENTATION_STR "input_sensor_orientation"
 #define MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND_STR "input_descriptor_hide_unbound"
 #define MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW_STR "input_descriptor_label_show"

@@ -12983,7 +12983,7 @@ static void settings_build_drivers(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i, j = 0;
          struct string_options_entry string_options_entries[14] = {{0}};
 
@@ -13171,7 +13171,7 @@ static void settings_build_drivers(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13186,7 +13186,7 @@ static void settings_build_core(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i, listing = 0;
 #ifndef HAVE_DYNAMIC
          struct bool_entry bool_entries[11];
@@ -13312,7 +13312,7 @@ static void settings_build_core(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13327,7 +13327,7 @@ static void settings_build_configuration(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          uint8_t i, listing = 0;
          struct bool_entry bool_entries[10];
          START_GROUP(list, list_info, &group_info,
@@ -13440,7 +13440,7 @@ static void settings_build_configuration(
             ADD_DESC(configuration_desc_0);
 
          GROUP_END();
-       
+
    }
 }
 
@@ -13455,7 +13455,7 @@ static void settings_build_logging(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          bool *tmp_b = NULL;
          START_GROUP(list, list_info, &group_info, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LOGGING_SETTINGS), parent_group);
          parent_group = MENU_ENUM_LABEL_LOGGING_SETTINGS_STR;
@@ -13510,7 +13510,7 @@ ADD_DESC(logging_desc_0);
                general_write_handler,
                general_read_handler,
                SD_FLAG_ADVANCED);
-       
+
       GROUP_END();
    }
 }
@@ -13526,7 +13526,7 @@ static void settings_build_saving(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          uint8_t i, listing = 0;
          struct bool_entry bool_entries[12];
 
@@ -13652,7 +13652,7 @@ static void settings_build_saving(
             ADD_DESC(saving2_desc_0);
 
          GROUP_END();
-       
+
 
    }
 }
@@ -14260,7 +14260,7 @@ static void settings_build_video(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS),
                parent_group);
@@ -14625,7 +14625,7 @@ static void settings_build_video(
                   ADD_DESC(video_filter_desc);
 
          GROUP_END();
-       
+
    }
 }
 
@@ -14818,7 +14818,7 @@ static void settings_build_input(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
 
          START_GROUP(list, list_info, &group_info,
                MENU_ENUM_LABEL_INPUT_SETTINGS_BEGIN_STR,
@@ -14879,6 +14879,21 @@ static void settings_build_input(
             (*list)[list_info->index - 1].default_value.string      = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
          }
       }
+
+            CONFIG_BOOL(
+                  list, list_info,
+                  &settings->bools.input_android_system_keyboard,
+                  MENU_ENUM_LABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD,
+                  MENU_ENUM_LABEL_VALUE_OFF,
+                  MENU_ENUM_LABEL_VALUE_ON,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler,
+                  SD_FLAG_NONE);
 #endif
 
             ADD_DESC(inp_desc_10);
@@ -14955,7 +14970,7 @@ static void settings_build_input(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -15054,7 +15069,7 @@ static void settings_build_input_hotkey(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          unsigned i;
          START_GROUP(list, list_info, &group_info,
                MENU_ENUM_LABEL_INPUT_HOTKEY_BINDS_BEGIN_STR,
@@ -15088,7 +15103,7 @@ static void settings_build_input_hotkey(
          }
 
          GROUP_END();
-       
+
    }
 }
 
@@ -16438,7 +16453,7 @@ static void settings_build_lakka_services(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
 #if defined(HAVE_LAKKA)
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES),
@@ -16554,7 +16569,7 @@ static void settings_build_lakka_services(
 
          GROUP_END();
 #endif
-       
+
    }
 }
 
@@ -16570,7 +16585,7 @@ static void settings_build_lakka_switch_options(
    subgroup_info.name = NULL;
    (void)settings; (void)global; (void)group_info; (void)subgroup_info;
    {
-       
+
          START_GROUP(list, list_info, &group_info,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS),
                parent_group);
@@ -16629,7 +16644,7 @@ static void settings_build_lakka_switch_options(
                SD_FLAG_NONE);
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], bluetooth_ertm_disable_toggle_change_handler)
          GROUP_END();
-       
+
    }
 }
 #endif
